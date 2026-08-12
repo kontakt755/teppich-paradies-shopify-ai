@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "qa": "node qa/run-qa.mjs"
+    "qa": "node qa/run-qa.mjs",
+    "qa:evidence:test": "node --test qa/tests/evidence-filter.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"

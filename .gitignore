@@ -39,6 +39,7 @@ qa/artifacts/
 qa/results/
 qa/*.tmp
 qa/*.log
+qa/evidence/latest-failure.json
 
 # Local backups, archives, and sensitive exports
 backup/

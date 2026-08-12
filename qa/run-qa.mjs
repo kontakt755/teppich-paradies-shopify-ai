@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -276,6 +277,9 @@ fs.writeFileSync(path.join(root, 'QA_REPORT.md'), report);
 const result = { status, exitCode: errors.length ? 1 : 0, startedAt: startedAt.toISOString(), durationSeconds, themeCheck: themeCheck.failed ? themeCheck : { baseline: { errors: baseline.errors, warnings: baseline.warnings }, current: { errors: themeCheck.errors, warnings: themeCheck.warnings }, newFindings: themeCheck.newFindings }, checks, pages: details.map(({ page, viewport, url, finalUrl, status }) => ({ page, viewport, url, finalUrl, status })) };
 fs.writeFileSync(path.join(resultsDir, 'latest.json'), JSON.stringify(result, null, 2) + '\n');
 fs.writeFileSync(path.join(resultsDir, 'latest-details.json'), JSON.stringify(details, null, 2) + '\n');
+const evidence = buildEvidence(result);
+writeEvidence(evidence, path.join(qaDir, 'evidence', 'latest-failure.json'));
 console.log(`QA ${status} – ${errors.length} relevante Fehler, ${warnings.length} Hinweise – ${durationSeconds} s`);
 console.log(`Bericht: ${path.join(root, 'QA_REPORT.md')}`);
+console.log(formatEvidenceForConsole(evidence));
 process.exitCode = result.exitCode;
