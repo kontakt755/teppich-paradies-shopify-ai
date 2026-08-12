@@ -1,0 +1,8 @@
+[
+  { "id": "TEST-1", "scenario": "LOW_PASS", "expected": "PASS" },
+  { "id": "TEST-2", "scenario": "QA_RED", "expected": "FAIL" },
+  { "id": "TEST-3", "scenario": "ALLOWLIST_VIOLATION", "expected": "HARD_STOP" },
+  { "id": "TEST-4", "scenario": "PROVIDER_SWITCH", "expected": "CLEAN_HANDOFF" },
+  { "id": "TEST-5", "scenario": "REPEATED_FAILURE", "expected": "PARKED" },
+  { "id": "TEST-6", "scenario": "NEEDS_AHMET", "expected": "NEEDS_AHMET" }
+]
