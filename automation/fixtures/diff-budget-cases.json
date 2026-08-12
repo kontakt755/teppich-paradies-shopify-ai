@@ -1,0 +1,13 @@
+{
+  "task": {
+    "id": "SHP-006-FIXTURE",
+    "risk": "LOW",
+    "allowedFiles": ["automation/**"],
+    "allowedOperations": ["test_write"],
+    "maxFiles": 2,
+    "maxChangedLines": 10
+  },
+  "passing": "3\t2\tautomation/core/a.mjs\n1\t0\tautomation/tests/a.test.mjs\n",
+  "tooManyFiles": "1\t0\tautomation/core/a.mjs\n1\t0\tautomation/core/b.mjs\n1\t0\tautomation/core/c.mjs\n",
+  "tooManyLines": "8\t3\tautomation/core/a.mjs\n"
+}

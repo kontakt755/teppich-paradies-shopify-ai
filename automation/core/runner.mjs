@@ -12,12 +12,13 @@ export class RunnerStoppedError extends Error {
 }
 
 export class ManifestRunner {
-  constructor({ manifest, stateDir, executeTask, riskGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
+  constructor({ manifest, stateDir, executeTask, riskGuard = null, diffBudgetGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
     this.manifest = validateManifest(manifest);
     this.store = new StateStore({ stateDir, io, clock });
     this.lock = new RunLock({ lockPath: path.join(stateDir, 'run.lock'), io, now: clock });
     this.executeTask = executeTask ?? (async () => ({ status: 'PASS' }));
     this.riskGuard = riskGuard;
+    this.diffBudgetGuard = diffBudgetGuard;
     this.needsAhmetPath = needsAhmetPath ?? path.join(stateDir, 'needs-ahmet.md');
     this.clock = clock;
   }
@@ -83,7 +84,13 @@ export class ManifestRunner {
           if (!dependencies.every(dep => dep.status === 'PASS')) continue;
           this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString() });
           const result = await this.executeTask(task);
-          if (this.riskGuard) this.riskGuard.postflight({
+          if (this.diffBudgetGuard) this.diffBudgetGuard.evaluate({
+            task,
+            entries: result?.diffEntries ?? [],
+            actualOperations: result?.actualOperations ?? task.allowedOperations,
+            resources: result?.resources ?? []
+          });
+          else if (this.riskGuard) this.riskGuard.postflight({
             task,
             changedFiles: result?.changedFiles ?? [],
             actualOperations: result?.actualOperations ?? task.allowedOperations,
