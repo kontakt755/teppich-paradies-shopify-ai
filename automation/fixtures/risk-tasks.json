@@ -1,0 +1,5 @@
+{
+  "low": { "id": "LOW-1", "risk": "LOW", "allowedFiles": ["automation/fixtures/**"], "allowedOperations": ["report_write"] },
+  "medium": { "id": "MEDIUM-1", "risk": "MEDIUM", "allowedFiles": ["sections/fixture.liquid"], "allowedOperations": ["multi_file_theme_edit"] },
+  "high": { "id": "HIGH-1", "risk": "HIGH", "allowedFiles": ["templates/product.json"], "allowedOperations": ["theme_publish"] }
+}

@@ -2,6 +2,7 @@ import path from 'node:path';
 import { validateManifest } from './manifest.mjs';
 import { RunLock } from './run-lock.mjs';
 import { StateStore, StateWriteError, TERMINAL_STATUSES } from './state-store.mjs';
+import { routeRiskDecision } from './risk-guard.mjs';
 
 export class RunnerStoppedError extends Error {
   constructor(message, options) {
@@ -11,11 +12,13 @@ export class RunnerStoppedError extends Error {
 }
 
 export class ManifestRunner {
-  constructor({ manifest, stateDir, executeTask, io, clock = () => new Date() }) {
+  constructor({ manifest, stateDir, executeTask, riskGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
     this.manifest = validateManifest(manifest);
     this.store = new StateStore({ stateDir, io, clock });
     this.lock = new RunLock({ lockPath: path.join(stateDir, 'run.lock'), io, now: clock });
     this.executeTask = executeTask ?? (async () => ({ status: 'PASS' }));
+    this.riskGuard = riskGuard;
+    this.needsAhmetPath = needsAhmetPath ?? path.join(stateDir, 'needs-ahmet.md');
     this.clock = clock;
   }
 
@@ -64,7 +67,9 @@ export class ManifestRunner {
         for (const task of this.manifest.tasks) {
           const current = states.get(task.id);
           if (TERMINAL_STATUSES.has(current.status) || current.status === 'RUNNING') continue;
-          if (task.risk === 'HIGH') {
+          const riskEvaluation = this.riskGuard ? this.riskGuard.evaluate({ task }) : { effectiveRisk: task.risk };
+          if (riskEvaluation.effectiveRisk === 'HIGH') {
+            routeRiskDecision({ task, evaluation: riskEvaluation, statePath: this.store.taskPath(task.id), needsAhmetPath: this.needsAhmetPath, io: this.store.io, now: this.clock });
             this.updateTask(states, task, 'NEEDS_AHMET', { reason: 'HIGH tasks never run autonomously' });
             progress = true;
             continue;
@@ -78,6 +83,12 @@ export class ManifestRunner {
           if (!dependencies.every(dep => dep.status === 'PASS')) continue;
           this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString() });
           const result = await this.executeTask(task);
+          if (this.riskGuard) this.riskGuard.postflight({
+            task,
+            changedFiles: result?.changedFiles ?? [],
+            actualOperations: result?.actualOperations ?? task.allowedOperations,
+            resources: result?.resources ?? []
+          });
           const status = result?.status ?? 'FAIL';
           if (!['PASS', 'FAIL', 'PARKED', 'BLOCKED'].includes(status)) throw new Error(`Executor returned invalid status ${status}`);
           this.updateTask(states, task, status, { result: result?.result ?? null, finishedAt: this.clock().toISOString() });
