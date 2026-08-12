@@ -1,32 +1,33 @@
 # Orchestrator Core Phase Report
 
-GitHub Remote eingerichtet: NEIN
+GitHub Remote eingerichtet: JA
 
-Remote privat bestätigt: NEIN
+Remote privat bestätigt: JA
 
-Erster Push erfolgreich: NEIN
+Erster Push erfolgreich: JA
 
-SHP-004: BLOCKED
+SHP-004: PASS
 
-SHP-005: BLOCKED
+SHP-005: PASS
 
-Runner Tests: NICHT AUSGEFÜHRT
+Runner Tests: PASS – 7
 
-Risk Guard Tests: NICHT AUSGEFÜHRT
+Risk Guard Tests: PASS – 11
 
-Hard-Stop Tests: NICHT AUSGEFÜHRT
+Hard-Stop Tests: PASS
 
-Resume Test: NICHT AUSGEFÜHRT
+Resume Test: PASS
 
-Parked-Test: NICHT AUSGEFÜHRT
+Parked-Test: PASS
 
-Needs-Ahmet-Test: NICHT AUSGEFÜHRT
+Needs-Ahmet-Test: PASS
 
 Commits:
 
-- Keine SHP-004-/SHP-005-Commits erstellt.
+- `8c97ab95bb39b7b301dbfd036a50ee6ad0050dfe` – SHP-004 Manifest-/State-Runner
+- `fc1a04b61f499dbb3f1a8f392387bf0da0b6ca74` – SHP-005 Deterministischer Risk Guard
 
-Remote Push aktuell: NEIN
+Remote Push aktuell: JA
 
 Live Theme verändert: NEIN
 
@@ -34,14 +35,39 @@ Dev Theme verändert: NEIN
 
 Fallback verändert: NEIN
 
-## Blocker
+## GitHub
 
-GitHub CLI (`gh.exe`) ist weder im PATH noch in den üblichen lokalen Installationspfaden vorhanden. Eine GitHub-Authentifizierung und die private Repository-Sichtbarkeit konnten deshalb nicht sicher verifiziert werden. Es wurde kein Remote erfunden, kein Repository angelegt und kein Push versucht.
+- Repository: `kontakt755/teppich-paradies-shopify-ai`
+- Sichtbarkeit: PRIVATE
+- Remote: `origin`
+- Hauptbranch/Upstream: `main` / `origin/main`
+- Pre-Push-Secret-Check: 0 Treffer; keine Secret-Inhalte ausgegeben
 
-Der lokale Pre-Push-Secret-Check untersuchte 523 getrackte Dateien, davon 520 Textdateien. Ergebnis: 0 Secret-Treffer und 0 getrackte sensible Dateinamen. Es wurden keine Trefferinhalte oder Zugangsdaten ausgegeben.
+## SHP-004
 
-## Konkreter manueller Schritt
+Der domainneutrale Core verwaltet Manifest, Task- und Run-State, atomare Schreibvorgänge, exklusives Locking, Heartbeat, Resume und Dependency-Reihenfolge. `PASS`, `FAIL`, `PARKED`, `NEEDS_AHMET`, `SKIPPED_DEPENDENCY` und `BLOCKED` sind terminal; ein unterbrochenes `RUNNING` wird beim Resume kontrolliert neu eingeplant. Abgeschlossene und geparkte Tasks starten nicht erneut. State-/Heartbeat-Schreibfehler stoppen den Lauf.
 
-GitHub CLI für Windows installieren, anschließend interaktiv mit dem vorgesehenen GitHub-Konto anmelden (`gh auth login`) und mit `gh auth status` bestätigen. Danach diesen Arbeitsblock ab Phase A erneut starten. Erst nach bestätigtem privaten Remote und erfolgreichem Erst-Push dürfen SHP-004 und anschließend SHP-005 beginnen.
+## SHP-005
 
-Empfohlener nächster Task: Phase A entsperren; danach SHP-004. SHP-006 ist noch nicht freigegeben.
+Die maschinenlesbare Shopify Risk Map liegt in `domains/shopify/risk-map.json`. Die Entscheidung ist deterministisch und verwendet deklarierte Operationen, tatsächliche Dateien/Pfade und geschützte Ressourcen. Jede Datei und Operation muss explizit erlaubt sein. Unbekannte Operationen, Allowlist-Verstöße sowie ein höheres tatsächliches Diff-Risiko erzeugen `HardStopError`. HIGH läuft nicht autonom und erzeugt `NEEDS_AHMET` sowie einen kompakten `needs-ahmet.md`-Eintrag. Unveröffentlichte Produktentwürfe bleiben ausdrücklich MEDIUM.
+
+## Verifikation
+
+Die 18 Core-Tests decken ab:
+
+1. normaler LOW Task
+2. normaler MEDIUM Task
+3. HIGH → NEEDS_AHMET
+4. fehlende Dependency
+5. PARKED wird übersprungen
+6. Resume nach Abbruch
+7. Lock verhindert Doppelstart
+8. Datei außerhalb Allowlist → HARD STOP
+9. höher riskanter tatsächlicher Diff → HARD STOP
+10. unbekannte Operation → HARD STOP
+11. State-/Heartbeat-Schreibfehler → STOP
+12. Roadmap Block Complete
+13. geschützte Live-/Fallback-Ressourcen → HIGH/HARD STOP
+14. unveröffentlichter Draft → MEDIUM
+
+Empfohlener nächster Task: SHP-006
