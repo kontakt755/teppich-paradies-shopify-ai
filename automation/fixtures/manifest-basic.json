@@ -1,0 +1,8 @@
+{
+  "runId": "fixture-basic",
+  "tasks": [
+    { "id": "LOW-1", "domain": "fixture", "risk": "LOW", "dependencies": [], "allowedFiles": ["fixture/**"], "allowedOperations": ["report_write"] },
+    { "id": "MEDIUM-1", "domain": "fixture", "risk": "MEDIUM", "dependencies": ["LOW-1"], "allowedFiles": ["fixture/**"], "allowedOperations": ["multi_file_feature_edit"] },
+    { "id": "HIGH-1", "domain": "fixture", "risk": "HIGH", "dependencies": [], "allowedFiles": ["fixture/**"], "allowedOperations": ["publish_or_deploy"] }
+  ]
+}
