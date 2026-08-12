@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import test from 'node:test';
+import { discoverGitFiles, formatScanResult, scanFiles, scanText } from '../core/secret-scan.mjs';
+
+test('clean fixture PASS', () => {
+  const root = path.resolve(new URL('../..', import.meta.url).pathname.replace(/^\/(.:)/, '$1'));
+  assert.equal(scanFiles({ root, files: ['automation/fixtures/secret-clean.txt'] }).status, 'PASS');
+});
+
+test('artificial secret BLOCK without exposing value', () => {
+  const fake = ['ghp', 'A'.repeat(24)].join('_');
+  const result = { status: 'BLOCK', findings: scanText({ file: 'fixture.txt', text: `token=${fake}` }) };
+  const output = formatScanResult(result);
+  assert.equal(result.status, 'BLOCK');
+  assert.match(output, /GITHUB_TOKEN/);
+  assert.doesNotMatch(output, new RegExp(fake));
+});
+
+test('explicit .env path BLOCK', () => assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE'));
+
+test('git ignored files are excluded from default discovery', t => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-secret-git-'));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  fs.writeFileSync(path.join(root, '.gitignore'), '.env\n');
+  fs.writeFileSync(path.join(root, '.env'), 'ignored');
+  fs.writeFileSync(path.join(root, 'visible.txt'), 'visible');
+  assert.deepEqual(discoverGitFiles({ root }).sort(), ['.gitignore', 'visible.txt']);
+});
+
+test('finding output contains only file line and rule', () => {
+  const finding = scanText({ file: 'x.txt', text: `password=${'Z'.repeat(12)}` })[0];
+  assert.deepEqual(Object.keys(finding), ['file', 'line', 'rule']);
+});
