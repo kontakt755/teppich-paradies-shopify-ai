@@ -1,0 +1,588 @@
+{% doc %}
+  @prompt
+    Paket-Auswahl für Teppiche. m² pro Paket kommt aus einem Produkt-Metafeld.
+    Primäre Eingabe: frei editierbare benötigte Fläche in m². Pakete werden
+    daraus abgeleitet (aufgerundet, nie unterberechnet) und im Ergebnisblock
+    immer sichtbar, aber optisch sekundär (kleiner +/- Steller) angeboten.
+{% enddoc %}
+
+{% assign package_selector_id = block.id | replace: '_', '' | downcase %}
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% assign sqm_per_package = product.metafields.custom.qm_pro_paket.value | default: 2.05 | times: 1.0 %}
+{% assign initial_packages = 1 %}
+
+{% style %}
+  .carpet-package__message-{{ package_selector_id }} {
+    margin-top: 10px;
+    font-size: 15px;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__message-{{ package_selector_id }}[data-error="true"] {
+    color: #b00020;
+  }
+
+  .carpet-package-{{ package_selector_id }} {
+    --cp-text: var(--color-foreground, #222222);
+    --cp-background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.045);
+    --cp-surface: var(--color-background, #ffffff);
+    --cp-border: rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    --cp-border-strong: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    --cp-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68);
+    --cp-success: #008a2e;
+    --cp-button-bg: var(--color-foreground, #111111);
+    --cp-button-text: var(--color-background, #ffffff);
+
+    width: 100%;
+    max-width: 440px;
+    background: var(--cp-background);
+    border-radius: var(--style-border-radius, 8px);
+    padding: 16px 16px 16px;
+    color: var(--cp-text);
+    font-family: inherit;
+  }
+
+  .carpet-package__label-{{ package_selector_id }} {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+
+  .carpet-package__primary-{{ package_selector_id }} {
+    min-width: 0;
+  }
+
+  .carpet-package__input-row-{{ package_selector_id }} {
+    display: grid;
+    grid-template-columns: 38px 1fr auto 38px;
+    align-items: center;
+    height: 44px;
+    background: var(--cp-surface);
+    border: 1px solid var(--cp-border-strong);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+
+  .carpet-package__button-{{ package_selector_id }} {
+    height: 100%;
+    border: 0;
+    background: var(--cp-surface);
+    color: var(--cp-text);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .carpet-package__input-row-{{ package_selector_id }} .carpet-package__button-{{ package_selector_id }}:first-child {
+    border-right: 1px solid var(--cp-border);
+  }
+
+  .carpet-package__input-row-{{ package_selector_id }} .carpet-package__button-{{ package_selector_id }}:last-child {
+    border-left: 1px solid var(--cp-border);
+  }
+
+  .carpet-package__button-{{ package_selector_id }}:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+
+  .carpet-package__input-{{ package_selector_id }} {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    text-align: center;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--cp-text);
+    background: transparent;
+    -moz-appearance: textfield;
+  }
+
+  .carpet-package__input-{{ package_selector_id }}::-webkit-outer-spin-button,
+  .carpet-package__input-{{ package_selector_id }}::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .carpet-package__input-unit-{{ package_selector_id }} {
+    padding-right: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__waste-{{ package_selector_id }} {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 10px;
+    font-size: 16px;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__waste-{{ package_selector_id }} input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--cp-text);
+  }
+
+  .carpet-package__results-{{ package_selector_id }} {
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    background: var(--cp-surface);
+    border: 1px solid var(--cp-border);
+    border-radius: 7px;
+    font-size: 16px;
+  }
+
+  .carpet-package__results-row-{{ package_selector_id }} {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__results-row-{{ package_selector_id }}[data-emphasis] {
+    color: var(--cp-text);
+    font-weight: 700;
+    border-top: 1px solid var(--cp-border);
+    margin-top: 4px;
+    padding-top: 8px;
+  }
+
+  .carpet-package__packages-control-{{ package_selector_id }} {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .carpet-package__packages-control-{{ package_selector_id }} button {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--cp-border);
+    border-radius: 6px;
+    background: var(--cp-surface);
+    color: var(--cp-text);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .carpet-package__packages-control-{{ package_selector_id }} button:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+
+  .carpet-package__packages-control-{{ package_selector_id }} [data-package-display] {
+    min-width: 1.5ch;
+    text-align: center;
+    font-weight: 700;
+  }
+
+  .carpet-package__packages-unit-{{ package_selector_id }} {
+    color: var(--cp-muted);
+    font-weight: 400;
+  }
+
+  .carpet-package__hint-{{ package_selector_id }} {
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__total-{{ package_selector_id }} {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 16px 0 12px;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--cp-text);
+  }
+
+  .carpet-package__submit-{{ package_selector_id }} {
+    width: 100%;
+    min-height: 74px;
+    border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 7px);
+    background: var(--cp-button-bg);
+    color: var(--cp-button-text);
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    font-size: 20px;
+  }
+
+  .carpet-package__submit-{{ package_selector_id }}:hover {
+    opacity: 0.88;
+  }
+
+  @media screen and (max-width: 749px) {
+    .carpet-package-{{ package_selector_id }} {
+      max-width: none;
+      padding: 14px 12px 14px;
+    }
+
+    .carpet-package__total-{{ package_selector_id }} {
+      font-size: 16px;
+    }
+
+    .carpet-package__submit-{{ package_selector_id }} {
+      font-size: 18px;
+    }
+  }
+{% endstyle %}
+
+<carpet-package-selector-{{ package_selector_id }}
+  class="carpet-package-{{ package_selector_id }}"
+  data-sqm-per-package="{{ sqm_per_package }}"
+  data-package-price-cents="{{ selected_variant.price }}"
+  data-variant-id="{{ selected_variant.id }}"
+  data-initial-packages="{{ initial_packages }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="carpet-package__primary-{{ package_selector_id }}">
+    <label class="carpet-package__label-{{ package_selector_id }}" for="tp-sqm-input-{{ package_selector_id }}">
+      Benötigte Fläche
+    </label>
+
+    <div class="carpet-package__input-row-{{ package_selector_id }}">
+      <button
+        class="carpet-package__button-{{ package_selector_id }}"
+        type="button"
+        data-decrease-sqm
+        aria-label="Fläche verringern"
+      >
+        −
+      </button>
+
+      <input
+        class="carpet-package__input-{{ package_selector_id }}"
+        type="number"
+        inputmode="decimal"
+        step="0.01"
+        min="0.01"
+        id="tp-sqm-input-{{ package_selector_id }}"
+        data-sqm-input
+      >
+
+      <span class="carpet-package__input-unit-{{ package_selector_id }}">m²</span>
+
+      <button
+        class="carpet-package__button-{{ package_selector_id }}"
+        type="button"
+        data-increase-sqm
+        aria-label="Fläche erhöhen"
+      >
+        +
+      </button>
+    </div>
+
+    <label class="carpet-package__waste-{{ package_selector_id }}">
+      <input type="checkbox" data-waste-checkbox>
+      <span>+ 5% Verschnitt</span>
+    </label>
+  </div>
+
+  <div class="carpet-package__results-{{ package_selector_id }}">
+    <div class="carpet-package__results-row-{{ package_selector_id }}">
+      <span data-need-label>Bedarf</span>
+      <span data-need-display>–</span>
+    </div>
+    <div class="carpet-package__results-row-{{ package_selector_id }}" data-emphasis>
+      <span>Bestellmenge</span>
+      <span data-sqm-display>–</span>
+    </div>
+    <div class="carpet-package__results-row-{{ package_selector_id }} carpet-package__results-row--packages-{{ package_selector_id }}">
+      <span>Pakete</span>
+      <span class="carpet-package__packages-control-{{ package_selector_id }}">
+        <button type="button" data-decrease-packages aria-label="Ein Paket weniger">−</button>
+        <span data-package-display>–</span>
+        <button type="button" data-increase-packages aria-label="Ein Paket mehr">+</button>
+        <span class="carpet-package__packages-unit-{{ package_selector_id }}">à <span data-package-unit-value>{{ sqm_per_package }}</span> m²</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="carpet-package__hint-{{ package_selector_id }}">Wird auf volle Pakete aufgerundet.</div>
+
+  <div class="carpet-package__total-{{ package_selector_id }}">
+    <div>Gesamtpreis <span data-total-display>–</span></div>
+  </div>
+
+  <button
+    class="carpet-package__submit-{{ package_selector_id }}"
+    type="button"
+    data-add-to-cart
+  >
+    In den Warenkorb
+  </button>
+
+  <div
+    class="carpet-package__message-{{ package_selector_id }}"
+    data-cart-message
+  ></div>
+</carpet-package-selector-{{ package_selector_id }}>
+
+<script>
+  (function () {
+    const component = document.querySelector('carpet-package-selector-{{ package_selector_id }}');
+    if (!component) return;
+
+    const sqmPerPackageRaw = component.dataset.sqmPerPackage || '0';
+    const sqmPerPackage = parseFloat(sqmPerPackageRaw);
+    const packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
+    const variantId = component.dataset.variantId;
+    const WASTE_FACTOR = 1.05;
+    const SQM_STEP = 0.25;
+
+    // Einheitliche Nachkommastellen-Anzahl fuer alle m²-Anzeigen dieses
+    // Rechners, abgeleitet aus der tatsaechlichen Praezision des
+    // Paket-Metafelds (z.B. 0.794 -> 3 Nachkommastellen). So verschwindet
+    // nie echte Praezision durch Rundung, ohne unnoetige Nullen anzuhaengen.
+    // Mindestens 2 Nachkommastellen fuer ein einheitliches, lesbares Format.
+    const sqmDecimalsFromValue = (sqmPerPackageRaw.split('.')[1] || '').length;
+    const sqmDecimals = Math.min(3, Math.max(2, sqmDecimalsFromValue));
+
+    // Gewünschte Fläche ist der einzige Zustand ("single source of truth").
+    // Paketanzahl wird daraus IMMER über computePackages() abgeleitet - dieselbe
+    // Funktion wird für die Anzeige (update) und für den Warenkorb-Payload
+    // (addToCart) verwendet, damit beide niemals auseinanderlaufen. Sowohl das
+    // primäre m²-Feld als auch die sekundäre manuelle Paketanpassung verändern
+    // ausschließlich desiredSqm - es gibt keinen zweiten, unabhängigen Zustand.
+    const initialPackages = parseInt(component.dataset.initialPackages || '1', 10);
+    let desiredSqm = Math.max(1, initialPackages) * sqmPerPackage;
+
+    const sqmInput = component.querySelector('[data-sqm-input]');
+    const needLabel = component.querySelector('[data-need-label]');
+    const needDisplay = component.querySelector('[data-need-display]');
+    const sqmDisplay = component.querySelector('[data-sqm-display]');
+    const packageDisplay = component.querySelector('[data-package-display]');
+    const packageUnitValue = component.querySelector('[data-package-unit-value]');
+    const totalDisplay = component.querySelector('[data-total-display]');
+    const wasteCheckbox = component.querySelector('[data-waste-checkbox]');
+    const addToCartButton = component.querySelector('[data-add-to-cart]');
+    const cartMessage = component.querySelector('[data-cart-message]');
+
+    function formatGermanNumber(value, decimals) {
+      const places = typeof decimals === 'number' ? decimals : 2;
+      return value.toFixed(places).replace('.', ',');
+    }
+
+    function formatSqm(value) {
+      return formatGermanNumber(value, sqmDecimals);
+    }
+
+    function formatMoney(cents) {
+      return formatGermanNumber(cents / 100) + ' €';
+    }
+
+    // Epsilon faengt Gleitkomma-Rauschen ab (z.B. wiederholtes += auf
+    // sqmPerPackage), damit eine Flaeche, die exakt einem Vielfachen der
+    // Paketgroesse entspricht, nicht durch minimale Rundungsfehler ein
+    // ganzes Zusatzpaket erzwingt.
+    const FLOAT_EPSILON = 1e-9;
+
+    function getWasteFactor() {
+      return wasteCheckbox && wasteCheckbox.checked ? WASTE_FACTOR : 1.0;
+    }
+
+    function getRequiredSqm() {
+      return Math.max(0, desiredSqm) * getWasteFactor();
+    }
+
+    // Einzige Berechnungsquelle: gewünschte Fläche -> Verschnitt -> auf volle
+    // Pakete aufrunden. Wird nie abgerundet, damit Warenkorb/Checkout nie zu
+    // wenig berechnen.
+    function computePackages() {
+      if (!sqmPerPackage) return 1;
+      return Math.max(1, Math.ceil(getRequiredSqm() / sqmPerPackage - FLOAT_EPSILON));
+    }
+
+    function setMessage(text, isError) {
+      if (!cartMessage) return;
+
+      cartMessage.textContent = text || '';
+
+      if (isError) {
+        cartMessage.setAttribute('data-error', 'true');
+      } else {
+        cartMessage.removeAttribute('data-error');
+      }
+    }
+
+    // Aktualisiert nur die Ergebnis-Anzeigen, nicht den Wert des m²-Eingabefelds
+    // selbst - damit der Cursor beim Tippen nicht springt.
+    function renderResults() {
+      const packages = computePackages();
+      const requiredSqm = getRequiredSqm();
+      const actualSqm = packages * sqmPerPackage;
+      const totalCents = packages * packagePriceCents;
+
+      if (needLabel) {
+        needLabel.textContent = getWasteFactor() > 1 ? 'Bedarf inkl. 5% Verschnitt' : 'Bedarf';
+      }
+
+      if (needDisplay) {
+        needDisplay.textContent = formatSqm(requiredSqm) + ' m²';
+      }
+
+      if (sqmDisplay) {
+        sqmDisplay.textContent = formatSqm(actualSqm) + ' m²';
+      }
+
+      if (packageDisplay) {
+        packageDisplay.textContent = String(packages);
+      }
+
+      if (totalDisplay) {
+        totalDisplay.textContent = formatMoney(totalCents);
+      }
+
+      return packages;
+    }
+
+    // Wird von den sekundären +/- Bedienelementen (m²-Feinsteuerung und
+    // manuelle Paketanpassung) genutzt: schreibt desiredSqm zurück in das
+    // Eingabefeld, weil der Nutzer hier gerade nicht selbst tippt.
+    function syncInputValue() {
+      if (sqmInput) {
+        sqmInput.value = desiredSqm.toFixed(2);
+      }
+    }
+
+    function setDesiredSqm(value, options) {
+      const opts = options || {};
+      desiredSqm = Math.max(0.01, value);
+      if (opts.syncInput !== false) {
+        syncInputValue();
+      }
+      renderResults();
+    }
+
+    async function addToCart() {
+      const packages = renderResults();
+      const actualSqm = packages * sqmPerPackage;
+      setMessage('', false);
+
+      if (!variantId) {
+        setMessage('Variante konnte nicht gefunden werden.', true);
+        return;
+      }
+
+      addToCartButton.disabled = true;
+      addToCartButton.textContent = 'Wird hinzugefügt...';
+
+      const payload = {
+        id: variantId,
+        quantity: packages,
+        properties: {
+          'Benötigte Fläche': formatSqm(desiredSqm) + ' m²',
+          'Paket(e)': String(packages),
+          'm² gesamt (aufgerundet)': formatSqm(actualSqm) + ' m²',
+          'm² pro Paket': formatSqm(sqmPerPackage) + ' m²',
+          Verschnitt: wasteCheckbox && wasteCheckbox.checked ? '5%' : '0%',
+        },
+      };
+
+      try {
+        const response = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const error = await response.json().catch(function () {
+            return {};
+          });
+
+          throw new Error(error.description || error.message || 'Produkt konnte nicht hinzugefügt werden.');
+        }
+
+        window.location.href = '/cart';
+      } catch (error) {
+        setMessage(error.message, true);
+        addToCartButton.disabled = false;
+        addToCartButton.textContent = 'In den Warenkorb';
+      }
+    }
+
+    if (sqmInput) {
+      sqmInput.addEventListener('input', function () {
+        const parsed = parseFloat(sqmInput.value.replace(',', '.'));
+        desiredSqm = isNaN(parsed) ? 0 : Math.max(0, parsed);
+        renderResults();
+      });
+
+      sqmInput.addEventListener('blur', function () {
+        setDesiredSqm(desiredSqm);
+      });
+    }
+
+    component.addEventListener('click', function (event) {
+      const increaseSqm = event.target.closest('[data-increase-sqm]');
+      const decreaseSqm = event.target.closest('[data-decrease-sqm]');
+      const increasePackages = event.target.closest('[data-increase-packages]');
+      const decreasePackages = event.target.closest('[data-decrease-packages]');
+      const cartButton = event.target.closest('[data-add-to-cart]');
+
+      if (increaseSqm) {
+        setDesiredSqm(desiredSqm + SQM_STEP);
+        return;
+      }
+
+      if (decreaseSqm) {
+        setDesiredSqm(desiredSqm - SQM_STEP);
+        return;
+      }
+
+      // Sekundäre, manuelle Paketanpassung: verändert ebenfalls nur
+      // desiredSqm (um eine ganze Paketgröße), kein zweiter Zustand.
+      if (increasePackages) {
+        setDesiredSqm(desiredSqm + sqmPerPackage);
+        return;
+      }
+
+      if (decreasePackages) {
+        setDesiredSqm(Math.max(sqmPerPackage, desiredSqm - sqmPerPackage));
+        return;
+      }
+
+      if (cartButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        addToCart();
+      }
+    });
+
+    if (wasteCheckbox) {
+      wasteCheckbox.addEventListener('change', function () {
+        renderResults();
+      });
+    }
+
+    if (packageUnitValue) {
+      packageUnitValue.textContent = formatSqm(sqmPerPackage);
+    }
+
+    syncInputValue();
+    renderResults();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Paket-Auswahl",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "Paket-Auswahl"
+    }
+  ]
+}
+{% endschema %}

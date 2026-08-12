@@ -1,0 +1,361 @@
+{% doc %}
+  @prompt
+    Eine Komponente, die Links ein Bild hat und rechts Impressum
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-impressum-container-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+  }
+
+  .ai-impressum-wrapper-{{ ai_gen_id }} {
+    display: flex;
+    gap: {{ block.settings.gap }}px;
+    align-items: {{ block.settings.vertical_alignment }};
+    background-color: {{ block.settings.background_color }};
+    padding: {{ block.settings.padding }}px;
+    border-radius: {{ block.settings.border_radius }}px;
+  }
+
+  .ai-impressum-image-column-{{ ai_gen_id }} {
+    flex: 0 0 {{ block.settings.image_width }}%;
+    max-width: {{ block.settings.image_width }}%;
+  }
+
+  .ai-impressum-image-wrapper-{{ ai_gen_id }} {
+    width: 100%;
+    height: auto;
+    border-radius: {{ block.settings.image_border_radius }}px;
+    overflow: hidden;
+  }
+
+  .ai-impressum-image-wrapper-{{ ai_gen_id }} img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .ai-impressum-image-placeholder-{{ ai_gen_id }} {
+    background-color: #f4f4f4;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .ai-impressum-image-placeholder-{{ ai_gen_id }} svg {
+    width: 60%;
+    height: 60%;
+  }
+
+  .ai-impressum-content-column-{{ ai_gen_id }} {
+    flex: 1;
+    color: {{ block.settings.text_color }};
+  }
+
+  .ai-impressum-heading-{{ ai_gen_id }} {
+    margin: 0 0 {{ block.settings.heading_spacing }}px;
+    color: {{ block.settings.heading_color }};
+    font-size: {{ block.settings.heading_size }}px;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} {
+    font-size: {{ block.settings.text_size }}px;
+    line-height: 1.6;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} p {
+    margin: 0 0 16px;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} p:last-child {
+    margin-bottom: 0;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} h1,
+  .ai-impressum-text-{{ ai_gen_id }} h2,
+  .ai-impressum-text-{{ ai_gen_id }} h3,
+  .ai-impressum-text-{{ ai_gen_id }} h4,
+  .ai-impressum-text-{{ ai_gen_id }} h5,
+  .ai-impressum-text-{{ ai_gen_id }} h6 {
+    margin: 24px 0 12px;
+    color: {{ block.settings.heading_color }};
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} h1:first-child,
+  .ai-impressum-text-{{ ai_gen_id }} h2:first-child,
+  .ai-impressum-text-{{ ai_gen_id }} h3:first-child,
+  .ai-impressum-text-{{ ai_gen_id }} h4:first-child,
+  .ai-impressum-text-{{ ai_gen_id }} h5:first-child,
+  .ai-impressum-text-{{ ai_gen_id }} h6:first-child {
+    margin-top: 0;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} a {
+    color: {{ block.settings.link_color }};
+    text-decoration: underline;
+  }
+
+  .ai-impressum-text-{{ ai_gen_id }} a:hover {
+    color: {{ block.settings.link_hover_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-impressum-wrapper-{{ ai_gen_id }} {
+      flex-direction: column;
+      gap: {{ block.settings.gap_mobile }}px;
+    }
+
+    .ai-impressum-image-column-{{ ai_gen_id }} {
+      flex: 0 0 100%;
+      max-width: 100%;
+    }
+
+    .ai-impressum-heading-{{ ai_gen_id }} {
+      font-size: {{ block.settings.heading_size | times: 0.8 }}px;
+    }
+
+    .ai-impressum-text-{{ ai_gen_id }} {
+      font-size: {{ block.settings.text_size | times: 0.9 }}px;
+    }
+  }
+{% endstyle %}
+
+<div
+  class="ai-impressum-container-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-impressum-wrapper-{{ ai_gen_id }}">
+    <div class="ai-impressum-image-column-{{ ai_gen_id }}">
+      <div class="ai-impressum-image-wrapper-{{ ai_gen_id }}">
+        {% if block.settings.image %}
+          <img
+            src="{{ block.settings.image | image_url: width: 800 }}"
+            alt="{{ block.settings.image.alt | escape }}"
+            loading="lazy"
+            width="{{ block.settings.image.width }}"
+            height="{{ block.settings.image.height }}"
+          >
+        {% else %}
+          <div class="ai-impressum-image-placeholder-{{ ai_gen_id }}">
+            {{ 'image' | placeholder_svg_tag }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="ai-impressum-content-column-{{ ai_gen_id }}">
+      {% if block.settings.heading != blank %}
+        <h2 class="ai-impressum-heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+      {% endif %}
+
+      {% if block.settings.impressum_content != blank %}
+        <div class="ai-impressum-text-{{ ai_gen_id }}">
+          {{ block.settings.impressum_content }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Bild mit Impressum",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Bild"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Bild"
+    },
+    {
+      "type": "range",
+      "id": "image_width",
+      "label": "Bildbreite",
+      "min": 20,
+      "max": 50,
+      "step": 5,
+      "unit": "%",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "image_border_radius",
+      "label": "Bild Eckenradius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Inhalt"
+    },
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Überschrift",
+      "default": "Impressum"
+    },
+    {
+      "type": "richtext",
+      "id": "impressum_content",
+      "label": "Impressum Text",
+      "default": "<p><strong>Firmenname</strong><br>Musterstraße 123<br>12345 Musterstadt<br>Deutschland</p><p><strong>Kontakt</strong><br>Telefon: +49 123 456789<br>E-Mail: info@beispiel.de</p><p><strong>Geschäftsführer</strong><br>Max Mustermann</p><p><strong>Handelsregister</strong><br>Amtsgericht Musterstadt<br>HRB 12345</p><p><strong>Umsatzsteuer-ID</strong><br>DE123456789</p>"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "label": "Überschriftgröße",
+      "min": 16,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "heading_spacing",
+      "label": "Abstand nach Überschrift",
+      "min": 8,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "label": "Textgröße",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "vertical_alignment",
+      "label": "Vertikale Ausrichtung",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "Oben"
+        },
+        {
+          "value": "center",
+          "label": "Mitte"
+        },
+        {
+          "value": "flex-end",
+          "label": "Unten"
+        }
+      ],
+      "default": "flex-start"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Abstand zwischen Spalten",
+      "min": 16,
+      "max": 80,
+      "step": 8,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "Abstand mobil",
+      "min": 16,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "label": "Innenabstand",
+      "min": 0,
+      "max": 80,
+      "step": 8,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Eckenradius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop Breite",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "header",
+      "content": "Farben"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Hintergrund",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Überschrift",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Link",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "link_hover_color",
+      "label": "Link Hover",
+      "default": "#333333"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Bild mit Impressum"
+    }
+  ],
+  "tag": null
+}
+{% endschema %}

@@ -1,0 +1,183 @@
+<style>
+  .verlege-hero-section {
+    max-width: 1300px;
+    margin: 80px auto 60px;
+    padding: 0 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 60px;
+  }
+
+  .verlege-hero-text {
+    flex: 1 1 520px;
+  }
+
+  .verlege-hero-title {
+    font-size: clamp(2.5rem, 5vw, 3.4rem);
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: #2a2a2a;
+  }
+
+  .verlege-hero-sub {
+    font-size: 18px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  .verlege-hero-img {
+    flex: 1 1 520px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .verlege-hero-img img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .verlegepreise-bereich {
+    max-width: 1200px;
+    margin: 80px auto;
+    padding: 0 20px;
+  }
+
+  .verlegepreise-bereich h2 {
+    font-size: 32px;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2a2a2a;
+    position: relative;
+  }
+
+  .verlegepreise-bereich h2::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: #b4976c;
+  }
+
+  .verlegepreise-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  .preis-box {
+    flex: 1 1 450px;
+    background: #f5f5f5;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  }
+
+  .preis-box h3 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #1a1a1a;
+  }
+
+  .preis-box ul {
+    list-style: none;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .preis-box ul li::before {
+    content: "✔";
+    color: #2e7d32;
+    margin-right: 10px;
+  }
+
+  .hinweis-text {
+    margin-top: 30px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #555;
+    background: #fffbea;
+    padding: 20px;
+    border-left: 4px solid #b4976c;
+    border-radius: 8px;
+  }
+
+  @media (max-width: 768px) {
+    .verlege-hero-section {
+      flex-direction: column;
+      gap: 40px;
+    }
+    .verlegepreise-grid {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<section class="verlege-hero-section">
+  <div class="verlege-hero-text">
+    <h1 class="verlege-hero-title">Ihr Teppichboden. Fachgerecht verlegt. Persönlich beraten.</h1>
+    <p class="verlege-hero-sub">Ab 649 € Einkaufswert bieten wir Ihnen kostenlose Lieferung und lose Verlegung – im Umkreis von 15 km rund um unseren Showroom in Oranienburg. Persönlich. Fair. Transparent.</p>
+  </div>
+  <div class="verlege-hero-img">
+    <img 
+      src="{{ section.settings.image | img_url: '900x' }}" 
+      alt="{{ section.settings.image.alt | escape }}" 
+      loading="lazy"
+    >
+  </div>
+</section>
+
+<section class="verlegepreise-bereich">
+  <h2>Unsere Verlegepreise im Überblick</h2>
+
+  <div class="verlegepreise-grid">
+    <div class="preis-box">
+      <h3>✅ Ab 649 € Warenwert</h3>
+      <ul>
+        <li>Lieferung & lose Verlegung kostenlos</li>
+        <li>Gilt im Umkreis von 15 km</li>
+        <li>Flure & Küchen pauschal auf Anfrage</li>
+      </ul>
+    </div>
+
+    <div class="preis-box">
+      <h3>💶 Unter 649 € Warenwert</h3>
+      <ul>
+        <li>Mit Band ab 8,95 €/m²</li>
+        <li>Mit Flüssigfixierung ab 9,95 €/m²</li>
+        <li>Mit Kleber ab 10,95 €/m²</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hinweis-text">
+    <strong>Hinweis zu Klebematerialien:</strong><br>
+    Für die feste Verlegung fallen Zusatzkosten an. Band ca. 25 €/Raum, Flüssigfixierung ab 3,95 €/m², Kleber ab 4,95 €/m². Diese Kosten gelten unabhängig vom Warenwert.
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Tebo Verlegen Hero",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Bild für Hero-Bereich"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Teppich Verlegen Hero",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}

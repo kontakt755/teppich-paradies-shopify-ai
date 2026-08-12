@@ -1,0 +1,154 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "section_yJxqxx": {
+      "type": "section",
+      "blocks": {
+        "text_6a4FrQ": {
+          "type": "text",
+          "name": "t:names.heading",
+          "settings": {
+            "text": "<h2>Allgemeine Geschäftsbedingungen</h2>",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "rte",
+            "font": "var(--font-body--family)",
+            "font_size": "1rem",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "var(--color-foreground)",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "text_LxxrmK": {
+          "type": "text",
+          "name": "t:names.text",
+          "settings": {
+            "text": "<p><strong>1. Geltungsbereich</strong></p><p>1.1. Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge, die zwischen Ihnen als Kunde und der Teppich Paradies Oranienburg GmbH über unseren Online-Shop abgeschlossen werden.</p><p>1.2. Kunden im Sinne dieser AGB sind sowohl Verbraucher als auch Unternehmer.</p><p><strong>2. Vertragspartner</strong></p><p>Der Kaufvertrag kommt zustande mit:</p><p>Teppich Paradies Oranienburg GmbH<br/>Saarlandstr. 73-81<br/>16515 Oranienburg<br/>Telefon: 03301 / 5733720<br/>E-Mail: <a>kontakt@teppich-paradies.net</a><br/>Website: <a href=\"http://www.teppich-paradies.net\">www.teppich-paradies.net</a></p><p><strong>3. Angebot und Vertragsschluss</strong></p><p>3.1. Die Darstellung der Produkte in unserem Online-Shop stellt kein rechtlich bindendes Angebot, sondern eine Aufforderung zur Bestellung dar.</p><p>3.2. Durch Anklicken des Bestellbuttons geben Sie eine verbindliche Bestellung der im Warenkorb enthaltenen Waren ab.</p><p>3.3. Der Kaufvertrag kommt zustande, wenn wir Ihre Bestellung durch eine Auftragsbestätigung per E-Mail annehmen.</p><p><strong>4. Preise und Versandkosten</strong></p><p>4.1. Die auf den Produktseiten genannten Preise enthalten die gesetzliche Mehrwertsteuer und sonstige Preisbestandteile.</p><p>4.2. Zusätzlich zu den angegebenen Preisen berechnen wir Versandkosten.</p><p><strong>5. Lieferung</strong></p><p>5.1. Die Lieferung erfolgt an die von Ihnen angegebene Lieferadresse.</p><p>5.2. Die Lieferzeit beträgt, sofern nicht anders angegeben, 5-7 Werktage.</p><p><strong>6. Zahlung</strong></p><p>6.1. In unserem Shop stehen Ihnen die folgenden Zahlungsarten zur Verfügung:</p><ul><li><strong>PayPal</strong>: Sie bezahlen den Rechnungsbetrag über den Online-Anbieter PayPal.</li><li><strong>Stripe</strong>: Zahlung per Kreditkarte über den Zahlungsdienstleister Stripe.</li><li><strong>Klarna</strong>: Kauf auf Rechnung oder Ratenkauf über Klarna.</li></ul><p><strong>7. Eigentumsvorbehalt</strong></p><p>Bis zur vollständigen Zahlung bleibt die Ware unser Eigentum.</p><p><strong>8. Widerrufsrecht</strong></p><p>8.1. <strong>Kein Widerrufsrecht bei Maßanfertigungen</strong></p><p>Bei Verträgen zur Lieferung von Waren, die nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung durch den Verbraucher maßgeblich ist oder die eindeutig auf die persönlichen Bedürfnisse des Verbrauchers zugeschnitten sind, besteht kein Widerrufsrecht (§ 312g Abs. 2 Nr. 1 BGB). </p><p></p><p>8.2. <strong>Widerrufsbelehrung für Standardprodukte</strong></p><p>Für Standardprodukte, die nicht nach Kundenspezifikation angefertigt wurden, gilt das gesetzliche Widerrufsrecht.</p><p><strong>9. Gewährleistung</strong></p><p>Es gelten die gesetzlichen Gewährleistungsrechte.</p><p><strong>10. Haftung</strong></p><p>10.1. Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit.</p><p>10.2. Bei leichter Fahrlässigkeit haften wir nur für die Verletzung wesentlicher Vertragspflichten.</p><p><strong>11. Schlussbestimmungen</strong></p><p>11.1. Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts.</p><p>11.2. Sollten einzelne Bestimmungen dieser AGB unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>",
+            "width": "fit-content",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "rte",
+            "font": "var(--font-body--family)",
+            "font_size": "1rem",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "var(--color-foreground)",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "text_6a4FrQ",
+        "text_LxxrmK"
+      ],
+      "name": "t:names.rich_text_section",
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "center",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 25,
+        "section_width": "page-width",
+        "section_height": "small",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 48,
+        "padding-block-end": 48
+      }
+    }
+  },
+  "order": [
+    "main",
+    "section_yJxqxx"
+  ]
+}

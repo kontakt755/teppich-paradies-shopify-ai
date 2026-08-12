@@ -1,0 +1,243 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "177859431850222fa1": {
+      "type": "_blocks",
+      "blocks": {
+        "ai_gen_block_18d894e_Mipttw": {
+          "type": "ai_gen_block_18d894e",
+          "settings": {
+            "columns_desktop": 3,
+            "columns_mobile": "1",
+            "grid_gap": 20,
+            "desktop_width_percent": 100,
+            "section_padding": 40,
+            "tile_background_color": "#ffffff",
+            "tile_border_radius": 8,
+            "tile_padding": 20,
+            "tile_border_style": "solid",
+            "tile_border_width": 1,
+            "tile_border_color": "#e6e6e6",
+            "image_aspect_ratio": "4 / 3",
+            "title_size": 20,
+            "title_color": "#000000",
+            "button_background_color": "#000000",
+            "button_text_color": "#ffffff",
+            "button_hover_color": "#333333",
+            "button_border_radius": 14,
+            "tile_1_enabled": true,
+            "tile_1_image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+            "tile_1_title": "Teppichboden fachgerecht legen",
+            "tile_1_button_text": "Mehr erfahren",
+            "tile_1_button_link": "shopify://pages/teppichboden-verlegen-lassen",
+            "tile_2_enabled": true,
+            "tile_2_image": "shopify://shop_images/ChatGPT_Image_12._Mai_2026_16_12_29.png",
+            "tile_2_title": "Vinylboden fachgerecht legen",
+            "tile_2_button_text": "Mehr erfahren",
+            "tile_2_button_link": "shopify://pages/vinylboden-verlegen",
+            "tile_3_enabled": true,
+            "tile_3_image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26_1.jpg",
+            "tile_3_title": "Treppen fachgerecht legen",
+            "tile_3_button_text": "Mehr erfahren",
+            "tile_3_button_link": "shopify://pages/treppenverlegung",
+            "tile_4_enabled": true,
+            "tile_4_image": "shopify://shop_images/Gemini_Generated_Image_y2yh0ty2yh0ty2yh.png",
+            "tile_4_title": "Für Firmenkunden",
+            "tile_4_button_text": "Mehr erfahren",
+            "tile_4_button_link": "shopify://pages/firmenkunden",
+            "tile_5_enabled": false,
+            "tile_5_title": "Kachel 5",
+            "tile_5_button_text": "Mehr erfahren",
+            "tile_5_button_link": "",
+            "tile_6_enabled": false,
+            "tile_6_title": "Kachel 6",
+            "tile_6_button_text": "Mehr erfahren",
+            "tile_6_button_link": ""
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "ai_gen_block_18d894e_Mipttw"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
+    "google_MkFfBg": {
+      "type": "google",
+      "name": "Google Bewertungen",
+      "settings": {}
+    },
+    "kundenbilder_grid_NJW4hw": {
+      "type": "kundenbilder-grid",
+      "blocks": {
+        "kundenbild_DbHcQP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_c8rQxK": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-4-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_FxWpW4": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20231005_135521.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_g6HVpi": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-0-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_TtFkWU": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/1000008940.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_mcJqdp": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20230914_113814.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_QrzDE9": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20221104_122103.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_kNQ6Jz": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-5-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_AtADGP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20220905_122131.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        }
+      },
+      "block_order": [
+        "kundenbild_DbHcQP",
+        "kundenbild_c8rQxK",
+        "kundenbild_FxWpW4",
+        "kundenbild_g6HVpi",
+        "kundenbild_TtFkWU",
+        "kundenbild_mcJqdp",
+        "kundenbild_QrzDE9",
+        "kundenbild_kNQ6Jz",
+        "kundenbild_AtADGP"
+      ],
+      "name": "Kundenbilder Grid",
+      "settings": {}
+    },
+    "1778594052789eab71": {
+      "type": "_blocks",
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    }
+  },
+  "order": [
+    "main",
+    "177859431850222fa1",
+    "google_MkFfBg",
+    "kundenbilder_grid_NJW4hw",
+    "1778594052789eab71"
+  ]
+}

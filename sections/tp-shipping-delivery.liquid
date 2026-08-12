@@ -1,0 +1,141 @@
+<section class="tp-shipping-delivery section section--page-width">
+  <div class="tp-shipping-delivery__intro">
+    <p class="tp-shipping-delivery__eyebrow">Serviceinformation</p>
+    <h1>Versand &amp; Lieferung</h1>
+    <p>Hier finden Sie die wichtigsten Informationen zur Lieferung unseres regulären Online-Sortiments.</p>
+  </div>
+
+  <div class="tp-shipping-delivery__grid">
+    <article>
+      <h2>Deutschlandweiter Versand</h2>
+      <p>Das reguläre Online-Sortiment wird deutschlandweit aus unserem Liefernetzwerk versendet.</p>
+    </article>
+
+    <article>
+      <h2>Paket oder Spedition</h2>
+      <p>Je nach Produkt, Größe und Abmessungen erfolgt der Versand als Paket oder per Spedition.</p>
+    </article>
+
+    <article>
+      <h2>Speditionslieferung</h2>
+      <p>Sperrige Bodenbeläge und Rollenware werden frei Bordsteinkante geliefert.</p>
+      <p>
+        Frei Bordsteinkante bedeutet: Die Spedition bringt die Ware bis zur nächstmöglichen, für das
+        Lieferfahrzeug erreichbaren Stelle an Ihrer Lieferadresse. Der Weitertransport ins Gebäude oder in die
+        Wohnung ist nicht Bestandteil der Lieferung.
+      </p>
+    </article>
+
+    <article>
+      <h2>Lieferzeiten</h2>
+      <p>Lieferzeiten können produktabhängig sein. Die konkrete Angabe finden Sie auf der jeweiligen Produktseite.</p>
+    </article>
+
+    <article>
+      <h2>Versandkosten</h2>
+      <p>Die konkreten Versandkosten werden im Checkout vor Abschluss der Bestellung angezeigt.</p>
+    </article>
+
+    <article>
+      <h2>Fragen zur Lieferung</h2>
+      <p>Wir helfen Ihnen gerne persönlich weiter.</p>
+      <div class="tp-shipping-delivery__contact">
+        <a href="tel:+4933015733720">03301 5733720</a>
+        <a href="/pages/kontakt">Kontaktformular</a>
+        <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-shipping-delivery {
+    padding-block: clamp(36px, 6vw, 72px);
+  }
+
+  .tp-shipping-delivery__intro {
+    max-width: 720px;
+    margin-bottom: clamp(28px, 4vw, 44px);
+  }
+
+  .tp-shipping-delivery__intro h1 {
+    margin: 4px 0 12px;
+  }
+
+  .tp-shipping-delivery__intro > p:last-child {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-shipping-delivery__eyebrow {
+    margin: 0;
+    color: #8d714c;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tp-shipping-delivery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .tp-shipping-delivery article {
+    padding: clamp(20px, 3vw, 28px);
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    border-radius: 10px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+  }
+
+  .tp-shipping-delivery article h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+  }
+
+  .tp-shipping-delivery article p {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.74);
+    line-height: 1.55;
+  }
+
+  .tp-shipping-delivery article p + p {
+    margin-top: 10px;
+  }
+
+  .tp-shipping-delivery__contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 12px;
+  }
+
+  .tp-shipping-delivery__contact a {
+    color: inherit;
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-shipping-delivery__grid {
+      grid-template-columns: 1fr;
+    }
+
+    .tp-shipping-delivery article h2 {
+      font-size: 18px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Versand & Lieferung",
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Versand & Lieferung"
+    }
+  ]
+}
+{% endschema %}

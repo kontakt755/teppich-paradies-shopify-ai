@@ -1,0 +1,134 @@
+{% doc %}
+  Kompakter Vorteilsbereich direkt nach Titel/Preis, aus echten Produkt-Metafeldern.
+  Zeigt nur Eigenschaften, die am Produkt tatsächlich gesetzt sind (keine erfundenen
+  Werte). Maximal 3 Einträge (die kaufentscheidendsten), um den oberen
+  Kaufbereich ruhig zu halten. Fußbodenheizung bewusst nicht hier - steht
+  bereits in den technischen Daten weiter unten auf der Seite.
+{% enddoc %}
+
+{%- liquid
+  assign tp_v_id = block.id | replace: '_', '' | downcase
+  assign tp_v_items = ''
+  assign tp_v_count = 0
+  assign tp_v_max = 3
+-%}
+
+{%- capture tp_v_gesamtstarke -%}{{ product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
+{%- assign tp_v_gesamtstarke = tp_v_gesamtstarke | strip -%}
+{%- if tp_v_gesamtstarke != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_gesamtstarke }} Gesamtstärke{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_v_nutzungsklassen_mf = product.metafields.custom.nutzungsklassen -%}
+{%- assign tp_v_nutzungsklassen_val = tp_v_nutzungsklassen_mf.value -%}
+{%- assign tp_v_nutzungsklassen = '' -%}
+{%- if tp_v_nutzungsklassen_val != blank -%}
+  {%- if tp_v_nutzungsklassen_mf.type contains 'list.' -%}
+    {%- capture tp_v_nutzungsklassen -%}
+      {%- for item in tp_v_nutzungsklassen_val -%}
+        {%- assign nk = item.nutzungsklasse -%}
+        {{- nk.value | default: nk | default: item.name | default: item -}}
+        {%- unless forloop.last %}, {% endunless -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- else -%}
+    {%- assign nk = tp_v_nutzungsklassen_val.nutzungsklasse -%}
+    {%- capture tp_v_nutzungsklassen -%}{{ nk.value | default: nk | default: tp_v_nutzungsklassen_val.name | default: tp_v_nutzungsklassen_val }}{%- endcapture -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign tp_v_nutzungsklassen = tp_v_nutzungsklassen | strip -%}
+{%- if tp_v_nutzungsklassen != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_nutzungsklassen }}{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_v_fasermaterial -%}{{ product.metafields.custom.fasermaterial.value.fasermaterial.value | default: product.metafields.custom.fasermaterial.value.fasermaterial }}{%- endcapture -%}
+{%- assign tp_v_fasermaterial = tp_v_fasermaterial | strip -%}
+{%- if tp_v_fasermaterial != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_fasermaterial }}{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_v_material -%}{{ product.metafields.custom.material.value }}{%- endcapture -%}
+{%- assign tp_v_material = tp_v_material | strip -%}
+{%- if tp_v_material != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|{{ tp_v_material }}{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_v_trittschall -%}{{ product.metafields.custom.trittschallverbesserung.value }}{%- endcapture -%}
+{%- assign tp_v_trittschall = tp_v_trittschall | strip -%}
+{%- if tp_v_trittschall != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|Trittschallverbesserung {{ tp_v_trittschall }}{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_v_brandverhalten -%}{{ product.metafields.custom.brandverhalten.value[0].brandverhalten.value | default: product.metafields.custom.brandverhalten.value[0].brandverhalten }}{%- endcapture -%}
+{%- assign tp_v_brandverhalten = tp_v_brandverhalten | strip -%}
+{%- if tp_v_brandverhalten != blank and tp_v_count < tp_v_max -%}
+  {%- capture tp_v_items -%}{{ tp_v_items }}|Brandverhalten {{ tp_v_brandverhalten }}{%- endcapture -%}
+  {%- assign tp_v_count = tp_v_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_v_list = tp_v_items | split: '|' -%}
+
+{%- if tp_v_count > 0 -%}
+  <ul class="tp-vorteile-{{ tp_v_id }}" {{ block.shopify_attributes }}>
+    {%- for entry in tp_v_list -%}
+      {%- if entry != blank -%}
+        <li>{{ entry | strip }}</li>
+      {%- endif -%}
+    {%- endfor -%}
+  </ul>
+
+  <style>
+    .tp-vorteile-{{ tp_v_id }} {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .tp-vorteile-{{ tp_v_id }} li {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--color-foreground);
+    }
+
+    .tp-vorteile-{{ tp_v_id }} li::before {
+      content: '\2713';
+      color: #008a2e;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-vorteile-{{ tp_v_id }} {
+        gap: 5px 12px;
+      }
+
+      .tp-vorteile-{{ tp_v_id }} li {
+        font-size: 14.5px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Vorteile",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Vorteile"
+    }
+  ]
+}
+{% endschema %}

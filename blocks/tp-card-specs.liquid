@@ -1,0 +1,114 @@
+{% doc %}
+  Kompakte technische Kurzmerkmale für Produktkarten (Kollektion/Suche).
+  Nur für Paketprodukte (Metafeld custom.qm_pro_paket gesetzt) - Fixpreis-/
+  Rollenware-Karten bleiben unveraendert. Zeigt ausschliesslich Werte, die am
+  Produkt tatsaechlich gesetzt sind (max. 3, keine erfundenen Eigenschaften).
+{% enddoc %}
+
+{%- liquid
+  assign tp_cs_product = closest.product
+  assign tp_cs_id = block.id | replace: '_', '' | downcase
+  assign tp_cs_sqm_per_package = tp_cs_product.metafields.custom.qm_pro_paket.value
+-%}
+
+{%- if tp_cs_sqm_per_package != blank and tp_cs_sqm_per_package > 0 -%}
+  {%- liquid
+    assign tp_cs_items = ''
+    assign tp_cs_count = 0
+    assign tp_cs_max = 3
+  -%}
+
+  {%- capture tp_cs_staerke -%}{{ tp_cs_product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
+  {%- assign tp_cs_staerke = tp_cs_staerke | strip -%}
+  {%- if tp_cs_staerke != blank and tp_cs_count < tp_cs_max -%}
+    {%- capture tp_cs_items -%}{{ tp_cs_items }}|{{ tp_cs_staerke }} Stärke{%- endcapture -%}
+    {%- assign tp_cs_count = tp_cs_count | plus: 1 -%}
+  {%- endif -%}
+
+  {%- comment -%}
+    Nutzschicht: aktuell kein Metafeld im Schema vorhanden, Feld daher noch
+    leer. Bewusst schon vorbereitet (Prioritaet 2 laut Vorgabe) - erscheint
+    automatisch, sobald das Metafeld custom.nutzschicht gepflegt wird, ohne
+    dass dieser Block nochmal angepasst werden muss.
+  {%- endcomment -%}
+  {%- capture tp_cs_nutzschicht -%}{{ tp_cs_product.metafields.custom.nutzschicht.value }}{%- endcapture -%}
+  {%- assign tp_cs_nutzschicht = tp_cs_nutzschicht | strip -%}
+  {%- if tp_cs_nutzschicht != blank and tp_cs_count < tp_cs_max -%}
+    {%- capture tp_cs_items -%}{{ tp_cs_items }}|{{ tp_cs_nutzschicht }} Nutzschicht{%- endcapture -%}
+    {%- assign tp_cs_count = tp_cs_count | plus: 1 -%}
+  {%- endif -%}
+
+  {%- assign tp_cs_nk_mf = tp_cs_product.metafields.custom.nutzungsklassen -%}
+  {%- assign tp_cs_nk_val = tp_cs_nk_mf.value -%}
+  {%- assign tp_cs_nk = '' -%}
+  {%- if tp_cs_nk_val != blank -%}
+    {%- if tp_cs_nk_mf.type contains 'list.' -%}
+      {%- capture tp_cs_nk -%}
+        {%- assign nk0 = tp_cs_nk_val[0].nutzungsklasse -%}
+        {{- nk0.value | default: nk0 | default: tp_cs_nk_val[0].name | default: tp_cs_nk_val[0] -}}
+      {%- endcapture -%}
+    {%- else -%}
+      {%- assign nk = tp_cs_nk_val.nutzungsklasse -%}
+      {%- capture tp_cs_nk -%}{{ nk.value | default: nk | default: tp_cs_nk_val.name | default: tp_cs_nk_val }}{%- endcapture -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- assign tp_cs_nk = tp_cs_nk | strip -%}
+  {%- if tp_cs_nk != blank and tp_cs_count < tp_cs_max -%}
+    {%- capture tp_cs_items -%}{{ tp_cs_items }}|Klasse {{ tp_cs_nk }}{%- endcapture -%}
+    {%- assign tp_cs_count = tp_cs_count | plus: 1 -%}
+  {%- endif -%}
+
+  {%- assign tp_cs_list = tp_cs_items | split: '|' -%}
+
+  {%- if tp_cs_count > 0 -%}
+    <ul class="tp-card-specs-{{ tp_cs_id }}" {{ block.shopify_attributes }}>
+      {%- for entry in tp_cs_list -%}
+        {%- if entry != blank -%}
+          <li>{{ entry | strip }}</li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+
+    <style>
+      .tp-card-specs-{{ tp_cs_id }} {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 3px 8px;
+        margin: 4px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .tp-card-specs-{{ tp_cs_id }} li {
+        font-size: 11.5px;
+        line-height: 1.3;
+        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+      }
+
+      .tp-card-specs-{{ tp_cs_id }} li:not(:last-child)::after {
+        content: '·';
+        margin-left: 8px;
+        opacity: 0.6;
+      }
+
+      @media screen and (max-width: 749px) {
+        .tp-card-specs-{{ tp_cs_id }} li {
+          font-size: 11px;
+        }
+      }
+    </style>
+  {%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Card-Merkmale",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Card-Merkmale"
+    }
+  ]
+}
+{% endschema %}

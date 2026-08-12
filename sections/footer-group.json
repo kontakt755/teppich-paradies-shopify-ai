@@ -1,0 +1,74 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "type": "footer",
+  "name": "Footer",
+  "sections": {
+    "final_cta_MwtQiF": {
+      "type": "final-cta",
+      "name": "Final CTA",
+      "settings": {
+        "heading": "Beratung gewünscht?",
+        "text": "Wir begleiten Ihr Projekt von der Auswahl bis zur fachgerechten Ausführung – zuverlässig, termintreu und persönlich.",
+        "primary_label": "Angebot anfragen",
+        "primary_link": "",
+        "call_label": "Direkt anrufen",
+        "whatsapp_label": "WhatsApp schreiben",
+        "whatsapp_link": "https://wa.me/491792612211",
+        "phone_text": "",
+        "phone_number": "+4933015733720",
+        "phone_display": ""
+      }
+    },
+    "footer_MgRaFN": {
+      "type": "footer",
+      "blocks": {
+        "menu_dbJFAF": {
+          "type": "tp-footer-links",
+          "name": "TP Footer-Links",
+          "settings": {},
+          "blocks": {}
+        },
+        "payment_icons_LaADL7": {
+          "type": "payment-icons",
+          "name": "t:names.payment_icons",
+          "settings": {
+            "horizontal_alignment": "flex-start",
+            "gap": 10,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "menu_dbJFAF",
+        "payment_icons_LaADL7"
+      ],
+      "custom_css": [
+        ".footer-content {align-items: start;}"
+      ],
+      "name": "t:names.footer",
+      "settings": {
+        "section_width": "page-width",
+        "gap": 20,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 36,
+        "padding-block-end": 36
+      }
+    }
+  },
+  "order": [
+    "final_cta_MwtQiF",
+    "footer_MgRaFN"
+  ]
+}

@@ -1,0 +1,418 @@
+{%- liquid
+  assign block_settings = block.settings
+  assign product_resource = closest.product
+  assign selected_variant = product_resource.selected_or_first_available_variant
+  assign unit_label = block_settings.unit_label | default: 'm²'
+  assign current_price = selected_variant.price
+  assign compare_at_price = selected_variant.compare_at_price
+  assign show_compare_price = false
+  if compare_at_price != blank and compare_at_price > current_price
+    assign show_compare_price = true
+  endif
+-%}
+
+{% liquid
+  if block_settings.type_preset == 'rte' or block_settings.type_preset == 'paragraph'
+    assign is_rte = true
+  endif
+
+  capture text_block_classes
+    if block_settings.width == '100%'
+      echo 'text-block--align-' | append: block_settings.alignment
+      if block_settings.max_width == 'none'
+        echo ' text-block--full-width'
+      endif
+    endif
+
+    if block_settings.type_preset == 'custom'
+      echo ' custom-typography'
+      if block_settings.font_size != ''
+        echo ' custom-font-size'
+      endif
+      if block_settings.color != ''
+        echo ' custom-color'
+      endif
+    endif
+
+    if block_settings.background
+      echo ' text-block--background'
+    endif
+
+    if is_rte
+      echo ' rte'
+    endif
+  endcapture
+%}
+
+<product-price
+  class="text-block {{ text_block_classes }} text-{{ block_settings.alignment }} {{ block_settings.type_preset | default: 'paragraph' }} spacing-style price-with-unit"
+  data-block-id="{{ block.id }}"
+  data-product-id="{{ product_resource.id }}"
+  style="
+    {% render 'typography-style', settings: block_settings %}
+    {% render 'spacing-style', settings: block_settings %}
+    --width: {{ block_settings.width }};
+  "
+  {{ block.shopify_attributes }}
+>
+  <div class="price-with-unit__wrapper" ref="priceContainer">
+    {% if show_compare_price %}
+      <span class="price-with-unit__compare">
+        {{ compare_at_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
+      </span>
+    {% endif %}
+    <span class="price-with-unit__current">
+      {{ current_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
+    </span>
+  </div>
+
+  {% if block_settings.show_tax_info %}
+    <div class="tax-note">
+      {%- if cart.duties_included and cart.taxes_included -%}
+        {{ 'content.duties_and_taxes_included' | t }}
+      {%- elsif cart.taxes_included -%}
+        {{ 'content.taxes_included' | t }}
+      {%- elsif cart.duties_included -%}
+        {{ 'content.duties_included' | t }}
+      {%- endif -%}
+
+      {%- if shop.shipping_policy.body != blank -%}
+        {{ 'content.shipping_policy' | t }}
+      {%- endif -%}
+    </div>
+  {% endif %}
+
+  {%- if selected_variant != blank and block_settings.show_installments -%}
+    <div class="installments">
+      {%- assign product_form_installment_id = 'product-form-installment-' | append: block.id -%}
+      {%- form 'product', product_resource, id: product_form_installment_id, class: 'payment-terms' -%}
+        <input
+          type="hidden"
+          name="id"
+          value="{{ selected_variant.id }}"
+        >
+        {{ form | payment_terms }}
+      {%- endform -%}
+    </div>
+  {%- endif -%}
+</product-price>
+
+<style>
+  .price-with-unit__wrapper {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .price-with-unit__current {
+    font-size: 1.18em;
+    font-weight: 700;
+  }
+
+  .price-with-unit__compare {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+    font-size: 0.82em;
+    text-decoration: line-through;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Produktpreis mit Einheit",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Zeigt den Produktpreis mit einer Einheit wie m², Paket oder Rolle an."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sale_price_first",
+      "label": "Sale-Preis zuerst anzeigen",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "unit_label",
+      "label": "Einheit",
+      "default": "m²"
+    },
+    {
+      "type": "text",
+      "id": "unit_separator",
+      "label": "Trennzeichen vor Einheit",
+      "default": "/"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_installments",
+      "label": "Ratenzahlung anzeigen",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tax_info",
+      "label": "Steuerhinweis anzeigen",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Typografie"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "Stil",
+      "options": [
+        {
+          "value": "",
+          "label": "Standard"
+        },
+        {
+          "value": "paragraph",
+          "label": "Absatz"
+        },
+        {
+          "value": "h1",
+          "label": "H1"
+        },
+        {
+          "value": "h2",
+          "label": "H2"
+        },
+        {
+          "value": "h3",
+          "label": "H3"
+        },
+        {
+          "value": "h4",
+          "label": "H4"
+        },
+        {
+          "value": "h5",
+          "label": "H5"
+        },
+        {
+          "value": "h6",
+          "label": "H6"
+        },
+        {
+          "value": "custom",
+          "label": "Benutzerdefiniert"
+        }
+      ],
+      "default": "paragraph"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Breite",
+      "options": [
+        {
+          "value": "fit-content",
+          "label": "Inhalt"
+        },
+        {
+          "value": "100%",
+          "label": "Volle Breite"
+        }
+      ],
+      "default": "100%"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "Ausrichtung",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "Schriftart",
+      "options": [
+        {
+          "value": "var(--font-body--family)",
+          "label": "Body"
+        },
+        {
+          "value": "var(--font-subheading--family)",
+          "label": "Subheading"
+        },
+        {
+          "value": "var(--font-heading--family)",
+          "label": "Heading"
+        },
+        {
+          "value": "var(--font-accent--family)",
+          "label": "Accent"
+        }
+      ],
+      "default": "var(--font-body--family)",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "Größe",
+      "options": [
+        {
+          "value": "",
+          "label": "Standard"
+        },
+        {
+          "value": "0.875rem",
+          "label": "14px"
+        },
+        {
+          "value": "1rem",
+          "label": "16px"
+        },
+        {
+          "value": "1.25rem",
+          "label": "20px"
+        },
+        {
+          "value": "1.5rem",
+          "label": "24px"
+        },
+        {
+          "value": "2rem",
+          "label": "32px"
+        }
+      ],
+      "default": "1rem",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "line_height",
+      "label": "Zeilenhöhe",
+      "options": [
+        {
+          "value": "tight",
+          "label": "Eng"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        },
+        {
+          "value": "loose",
+          "label": "Locker"
+        }
+      ],
+      "default": "normal",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "letter_spacing",
+      "label": "Buchstabenabstand",
+      "options": [
+        {
+          "value": "tight",
+          "label": "Eng"
+        },
+        {
+          "value": "normal",
+          "label": "Normal"
+        },
+        {
+          "value": "loose",
+          "label": "Locker"
+        }
+      ],
+      "default": "normal",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "case",
+      "label": "Großschreibung",
+      "options": [
+        {
+          "value": "none",
+          "label": "Standard"
+        },
+        {
+          "value": "uppercase",
+          "label": "Großbuchstaben"
+        }
+      ],
+      "default": "none",
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "color",
+      "label": "Farbe",
+      "options": [
+        {
+          "value": "var(--color-foreground)",
+          "label": "Text"
+        },
+        {
+          "value": "var(--color-foreground-heading)",
+          "label": "Überschrift"
+        },
+        {
+          "value": "var(--color-primary)",
+          "label": "Link"
+        }
+      ],
+      "default": "var(--color-foreground)"
+    },
+    {
+      "type": "header",
+      "content": "Abstand"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Oben",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Unten",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "Links",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "Rechts",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Produktpreis mit Einheit",
+      "category": "Produkt"
+    }
+  ]
+}
+{% endschema %}

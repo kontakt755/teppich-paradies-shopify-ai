@@ -1,0 +1,377 @@
+{% doc %}
+  @prompt
+    Basierend auf User Eingaben von Höhe und Breite soll eine Vorschau für die Teppichgröße erstellt werden.
+{% enddoc %}
+
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% assign desktop_width_percent = 100 %}
+{% assign title = 'Vorschau' %}
+{% assign area_label = 'Fläche' %}
+{% assign empty_state_text = 'Geben Sie die gewünschten Maße ein, um eine Vorschau zu sehen' %}
+
+{% assign title_size = 24 %}
+{% assign border_radius = 14 %}
+{% assign preview_height = 300 %}
+{% assign max_display_width = 280 %}
+{% assign max_display_height = 240 %}
+{% assign preview_border_radius = 8 %}
+
+{% assign carpet_color = '#8B7355' %}
+{% assign carpet_border_width = 2 %}
+{% assign carpet_border_color = '#5D4E37' %}
+{% assign carpet_border_radius = 4 %}
+
+{% assign background_color = '#f5f5f5' %}
+{% assign text_color = '#000000' %}
+{% assign preview_background_color = '#ffffff' %}
+{% assign info_background_color = '#ffffff' %}
+{% assign dimension_text_color = '#000000' %}
+{% assign dimension_background_color = '#ffffff' %}
+{% assign info_border_radius = 8 %}
+
+{% style %}
+  .ai-carpet-preview-{{ ai_gen_id }} {
+    display: block;
+    width: {{ desktop_width_percent }}%;
+    max-width: 100%;
+    padding: 30px;
+    background-color: {{ background_color }};
+    border-radius: {{ border_radius }}px;
+  }
+
+  .ai-carpet-preview__title-{{ ai_gen_id }} {
+    margin: 0 0 20px;
+    font-size: {{ title_size }}px;
+    color: {{ text_color }};
+  }
+
+  .ai-carpet-preview__visualization-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    height: {{ preview_height }}px;
+    background-color: {{ preview_background_color }};
+    border-radius: {{ preview_border_radius }}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .ai-carpet-preview__carpet-{{ ai_gen_id }} {
+    background-color: {{ carpet_color }};
+    border: {{ carpet_border_width }}px solid {{ carpet_border_color }};
+    border-radius: {{ carpet_border_radius }}px;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: none;
+  }
+
+  .ai-carpet-preview__dimensions-{{ ai_gen_id }} {
+    position: absolute;
+    font-size: 12px;
+    color: {{ dimension_text_color }};
+    font-weight: 600;
+    background-color: {{ dimension_background_color }};
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+
+  .ai-carpet-preview__dimension-width-{{ ai_gen_id }} {
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .ai-carpet-preview__dimension-height-{{ ai_gen_id }} {
+    right: -24px;
+    top: 50%;
+    transform: translateY(-50%) rotate(90deg);
+  }
+
+  .ai-carpet-preview__info-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .ai-carpet-preview__info-item-{{ ai_gen_id }} {
+    flex: 1;
+    min-width: 150px;
+    padding: 16px;
+    background-color: {{ info_background_color }};
+    border-radius: {{ info_border_radius }}px;
+  }
+
+  .ai-carpet-preview__info-label-{{ ai_gen_id }} {
+    font-size: 12px;
+    color: {{ text_color }};
+    opacity: 0.7;
+    margin-bottom: 4px;
+  }
+
+  .ai-carpet-preview__info-value-{{ ai_gen_id }} {
+    font-size: 20px;
+    font-weight: 600;
+    color: {{ text_color }};
+  }
+
+  .ai-carpet-preview__empty-state-{{ ai_gen_id }} {
+    text-align: center;
+    color: {{ text_color }};
+    opacity: 0.5;
+    font-size: 14px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-carpet-preview-{{ ai_gen_id }} {
+      padding: 20px;
+    }
+
+    .ai-carpet-preview__visualization-{{ ai_gen_id }} {
+      height: {{ preview_height | times: 0.7 }}px;
+    }
+  }
+{% endstyle %}
+
+<carpet-size-preview-{{ ai_gen_id }}
+  class="ai-carpet-preview-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  {% if title != blank %}
+    <h3 class="ai-carpet-preview__title-{{ ai_gen_id }}">{{ title }}</h3>
+  {% endif %}
+
+  <div class="ai-carpet-preview__visualization-{{ ai_gen_id }}">
+    <div class="ai-carpet-preview__carpet-{{ ai_gen_id }}" data-carpet-element>
+      <span
+        class="ai-carpet-preview__dimensions-{{ ai_gen_id }} ai-carpet-preview__dimension-width-{{ ai_gen_id }}"
+        data-width-display
+      ></span>
+      <span
+        class="ai-carpet-preview__dimensions-{{ ai_gen_id }} ai-carpet-preview__dimension-height-{{ ai_gen_id }}"
+        data-height-display
+      ></span>
+    </div>
+
+    <div class="ai-carpet-preview__empty-state-{{ ai_gen_id }}" data-empty-state>
+      {{ empty_state_text }}
+    </div>
+  </div>
+
+  <div class="ai-carpet-preview__info-{{ ai_gen_id }}">
+    <div class="ai-carpet-preview__info-item-{{ ai_gen_id }}">
+      <div class="ai-carpet-preview__info-label-{{ ai_gen_id }}">{{ area_label }}</div>
+      <div class="ai-carpet-preview__info-value-{{ ai_gen_id }}" data-area-display>–</div>
+    </div>
+  </div>
+</carpet-size-preview-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    const MAX_DISPLAY_WIDTH = {{ max_display_width }};
+    const MAX_DISPLAY_HEIGHT = {{ max_display_height }};
+    const componentSelector = 'carpet-size-preview-{{ ai_gen_id }}';
+    const widthFieldsetSelector = 'fieldset[data-fieldset-index="1"]';
+    const calcFormSelector = '#calc-form-preview';
+
+    let currentBreite = null;
+
+  function parseBreiteValue(value) {
+  if (!value) return null;
+
+  const normalizedValue = String(value).trim().toLowerCase();
+
+  if (normalizedValue === 'benutzerdefiniert') {
+    return 'Benutzerdefiniert';
+  }
+
+  const match = normalizedValue.match(/^(\d+(?:[.,]\d+)?)\s*(cm|m)?$/);
+  if (!match) return null;
+
+  const numericValue = parseFloat(match[1].replace(',', '.'));
+  const unit = match[2] || 'm';
+
+  if (Number.isNaN(numericValue)) return null;
+
+  if (unit === 'cm') {
+    return numericValue / 100;
+  }
+
+  return numericValue;
+}
+
+
+    function formatGermanNumber(value) {
+      return value.toFixed(2).replace('.', ',');
+    }
+
+    function readSelectedBreite() {
+      const checkedRadio = document.querySelector(
+        widthFieldsetSelector + ' input[type="radio"]:checked'
+      );
+      console.log(checkedRadio)
+
+      if (!checkedRadio) return null;
+
+      currentBreite = parseBreiteValue(checkedRadio.value);
+      console.log(currentBreite)
+      return currentBreite;
+    }
+
+    function getSelectedBreite() {
+      return currentBreite !== null ? currentBreite : readSelectedBreite();
+    }
+
+    function getNumberInput(index) {
+      const inputs = document.querySelectorAll(calcFormSelector + ' input[type="number"]');
+      return inputs[index] || null;
+    }
+
+    function getDimensions() {
+      const breite = getSelectedBreite();
+
+      if (breite === 'Benutzerdefiniert') {
+        const hoeheInput = getNumberInput(0);
+        const breiteInput = getNumberInput(1);
+
+        const hoeheCm = hoeheInput ? parseFloat(hoeheInput.value) : 0;
+        const breiteCm = breiteInput ? parseFloat(breiteInput.value) : 0;
+
+        return {
+          breite: breiteCm > 0 ? breiteCm / 100 : null,
+          hoehe: hoeheCm > 0 ? hoeheCm / 100 : null
+        };
+      }
+
+      const hoeheInput = getNumberInput(0);
+      const hoeheCm = hoeheInput ? parseFloat(hoeheInput.value) : 0;
+
+      return {
+        breite: typeof breite === 'number' ? breite : null,
+        hoehe: hoeheCm > 0 ? hoeheCm / 100 : null
+      };
+    }
+
+    function updatePreview() {
+      const component = document.querySelector(componentSelector);
+      if (!component) return;
+
+      const carpetEl = component.querySelector('[data-carpet-element]');
+      const emptyState = component.querySelector('[data-empty-state]');
+      const widthDisplay = component.querySelector('[data-width-display]');
+      const heightDisplay = component.querySelector('[data-height-display]');
+      const areaDisplay = component.querySelector('[data-area-display]');
+
+      const dimensions = getDimensions();
+      const breite = dimensions.breite;
+      const hoehe = dimensions.hoehe;
+
+      if (breite && hoehe) {
+        carpetEl.style.display = 'block';
+        emptyState.style.display = 'none';
+
+        const aspectRatio = breite / hoehe;
+        let displayWidth;
+        let displayHeight;
+
+        if (aspectRatio > 1) {
+          displayWidth = Math.min(MAX_DISPLAY_WIDTH, breite * 50);
+          displayHeight = displayWidth / aspectRatio;
+
+          if (displayHeight > MAX_DISPLAY_HEIGHT) {
+            displayHeight = MAX_DISPLAY_HEIGHT;
+            displayWidth = displayHeight * aspectRatio;
+          }
+        } else {
+          displayHeight = Math.min(MAX_DISPLAY_HEIGHT, hoehe * 50);
+          displayWidth = displayHeight * aspectRatio;
+
+          if (displayWidth > MAX_DISPLAY_WIDTH) {
+            displayWidth = MAX_DISPLAY_WIDTH;
+            displayHeight = displayWidth / aspectRatio;
+          }
+        }
+
+        carpetEl.style.width = displayWidth + 'px';
+        carpetEl.style.height = displayHeight + 'px';
+
+        widthDisplay.textContent = formatGermanNumber(breite) + ' m';
+        heightDisplay.textContent = formatGermanNumber(hoehe) + ' m';
+
+        const area = breite * hoehe;
+        areaDisplay.textContent = formatGermanNumber(area) + ' m²';
+      } else {
+        carpetEl.style.display = 'none';
+        emptyState.style.display = 'block';
+        areaDisplay.textContent = '–';
+      }
+    }
+
+    function scheduleUpdate() {
+      window.requestAnimationFrame(function() {
+        updatePreview();
+      });
+    }
+
+    document.addEventListener('change', function(event) {
+      const target = event.target;
+
+      if (target.matches(widthFieldsetSelector + ' input[type="radio"]')) {
+        currentBreite = parseBreiteValue(target.value);
+        scheduleUpdate();
+        return;
+      }
+
+      if (target.matches(calcFormSelector + ' input[type="number"]')) {
+        scheduleUpdate();
+      }
+    });
+
+    document.addEventListener('input', function(event) {
+      if (event.target.matches(calcFormSelector + ' input[type="number"]')) {
+        scheduleUpdate();
+      }
+    });
+
+    function initWhenReady() {
+      const calcReady = document.querySelector(calcFormSelector + ' input[type="number"]');
+      const radiosReady = document.querySelector(widthFieldsetSelector + ' input[type="radio"]');
+
+      if (!calcReady || !radiosReady) return false;
+
+      readSelectedBreite();
+      updatePreview();
+      return true;
+    }
+
+    if (!initWhenReady()) {
+      const observer = new MutationObserver(function() {
+        if (initWhenReady()) {
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Teppichgrößen-Vorschau",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "Teppichgrößen-Vorschau"
+    }
+  ]
+}
+{% endschema %}

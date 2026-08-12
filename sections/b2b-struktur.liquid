@@ -1,0 +1,182 @@
+<style>
+  .b2b-struktur-section {
+    max-width: 1200px;
+    margin: 100px auto;
+    padding: 0 20px;
+  }
+
+  .b2b-struktur-header {
+    text-align: center;
+    margin-bottom: 50px;
+  }
+
+  .b2b-struktur-header h2 {
+    font-size: 34px;
+    margin-bottom: 15px;
+    color: #2a2a2a;
+  }
+
+  .b2b-struktur-header p {
+    font-size: 18px;
+    color: #555;
+    max-width: 750px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .b2b-struktur-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+    margin-top: 50px;
+  }
+
+  .b2b-struktur-box {
+    background: #f5f5f5;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+  }
+
+  .b2b-struktur-icon {
+    font-size: 32px;
+    margin-bottom: 15px;
+  }
+
+  .b2b-struktur-box h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+    color: #1a1a1a;
+  }
+
+  .b2b-struktur-box p {
+    font-size: 16px;
+    color: #555;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 1000px) {
+    .b2b-struktur-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 600px) {
+    .b2b-struktur-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="b2b-struktur-section">
+  <div class="b2b-struktur-header">
+    <h2>{{ section.settings.title }}</h2>
+    <p>{{ section.settings.subtitle }}</p>
+  </div>
+
+  <div class="b2b-struktur-grid">
+    <div class="b2b-struktur-box">
+      <div class="b2b-struktur-icon">🗂</div>
+      <h3>{{ section.settings.box1_title }}</h3>
+      <p>{{ section.settings.box1_text }}</p>
+    </div>
+
+    <div class="b2b-struktur-box">
+      <div class="b2b-struktur-icon">⏱</div>
+      <h3>{{ section.settings.box2_title }}</h3>
+      <p>{{ section.settings.box2_text }}</p>
+    </div>
+
+    <div class="b2b-struktur-box">
+      <div class="b2b-struktur-icon">🛡</div>
+      <h3>{{ section.settings.box3_title }}</h3>
+      <p>{{ section.settings.box3_text }}</p>
+    </div>
+
+    <div class="b2b-struktur-box">
+      <div class="b2b-struktur-icon">📞</div>
+      <h3>{{ section.settings.box4_title }}</h3>
+      <p>{{ section.settings.box4_text }}</p>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "B2B Struktur",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Überschrift",
+      "default": "Strukturierte Umsetzung für gewerbliche Räume"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Untertext",
+      "default": "Gerade in Praxen, Kanzleien und Büros zählt eine saubere Planung. Wir arbeiten strukturiert, termintreu und mit klarer Kommunikation – damit Ihr Betrieb reibungslos weiterläuft."
+    },
+
+    {
+      "type": "text",
+      "id": "box1_title",
+      "label": "Box 1 Titel",
+      "default": "Klare Projektplanung"
+    },
+    {
+      "type": "textarea",
+      "id": "box1_text",
+      "label": "Box 1 Text",
+      "default": "Transparente Abstimmung von Beginn an – keine Überraschungen während der Umsetzung."
+    },
+
+    {
+      "type": "text",
+      "id": "box2_title",
+      "label": "Box 2 Titel",
+      "default": "Termintreue Umsetzung"
+    },
+    {
+      "type": "textarea",
+      "id": "box2_text",
+      "label": "Box 2 Text",
+      "default": "Verlässliche Zeitplanung, damit Ihre Räume schnell wieder nutzbar sind."
+    },
+
+    {
+      "type": "text",
+      "id": "box3_title",
+      "label": "Box 3 Titel",
+      "default": "Saubere Arbeitsweise"
+    },
+    {
+      "type": "textarea",
+      "id": "box3_text",
+      "label": "Box 3 Text",
+      "default": "Schutzmaßnahmen, Staubkontrolle und ordentliche Übergabe gehören für uns selbstverständlich dazu."
+    },
+
+    {
+      "type": "text",
+      "id": "box4_title",
+      "label": "Box 4 Titel",
+      "default": "Direkter Ansprechpartner"
+    },
+    {
+      "type": "textarea",
+      "id": "box4_text",
+      "label": "Box 4 Text",
+      "default": "Sie sprechen mit einem festen Ansprechpartner – nicht mit wechselnden Kontaktpersonen."
+    }
+  ],
+  "presets": [
+  {
+    "name": "B2B Struktur",
+    "category": "Custom"
+  }
+]
+
+}
+{% endschema %}

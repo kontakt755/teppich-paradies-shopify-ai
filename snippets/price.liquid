@@ -1,0 +1,268 @@
+{%- doc -%}
+  This snippet is used to render a product card.
+  It is used in the product block,featured product block, and the product card block.
+
+  @param {product} product_resource - The product to render
+  @param {boolean} [show_unit_price] - Whether to show the unit price
+  @param {boolean} [show_sale_price_first] - Whether to show the sale price first
+{%- enddoc -%}
+
+{%- liquid
+  assign show_unit_price = show_unit_price | default: false
+  assign show_sale_price_first = show_sale_price_first | default: false
+  assign selected_variant = product_resource.selected_or_first_available_variant
+  assign price = selected_variant.price
+  assign compare_at_price = selected_variant.compare_at_price
+
+  if product_resource == blank
+    assign price = 1999
+  endif
+
+  # Check if variant has volume pricing
+  assign has_volume_pricing = null
+  assign price_min = null
+  assign price_max = null
+
+  # For product cards (collection/search pages), calculate min/max across all variants
+  # For product pages, only use the selected variant's pricing
+  assign is_product_card = false
+  if template.name != 'product'
+    assign is_product_card = true
+  endif
+
+  if is_product_card
+    assign price_min = product_resource.price_min
+    assign price_max = product_resource.price_max
+    assign has_volume_pricing = product_resource.quantity_price_breaks_configured? | default: false
+  else
+    # Product page: only use selected variant's pricing
+    if selected_variant.quantity_price_breaks.size > 0
+      assign has_volume_pricing = true
+      assign price_min = selected_variant.quantity_price_breaks.last.price
+      assign price_max = selected_variant.price
+    endif
+  endif
+
+  # Karten mit Quadratmeterpreis: Paketware wird auf dieselbe Einheit
+  # umgerechnet; bei Rollen-/Raummassware ist Shopify bereits in €/m² gepflegt.
+  # OPC-Konfiguratorvarianten enthalten Gesamtpreise und werden deshalb nicht
+  # zur Ermittlung eines sichtbaren "ab"-Preises herangezogen.
+  assign is_package_card = false
+  assign is_roll_card = false
+  assign is_sqm_card = false
+  assign show_from_price = false
+  assign sqm_per_package = product_resource.metafields.custom.qm_pro_paket.value
+
+  # Auf Product Cards ist allein ein gueltiges custom.rollenbreite auf einer
+  # echten Variante (oder als Product-Fallback) der Rollenware-Nachweis.
+  # Produkttyp, Tags, Titel und qm_pro_paket spielen dafuer keine Rolle.
+  if is_product_card
+    for roll_variant in product_resource.variants
+      assign roll_variant_title = roll_variant.title | downcase
+      unless roll_variant_title contains 'opc-'
+        assign roll_variant_width = roll_variant.metafields.custom.rollenbreite.value | times: 1
+        if roll_variant_width > 0
+          assign is_roll_card = true
+          break
+        endif
+      endunless
+    endfor
+
+    if is_roll_card == false
+      assign roll_product_metafield = product_resource.metafields.custom.rollenbreite
+      assign roll_product_value = roll_product_metafield.value
+
+      if roll_product_value != blank
+        if roll_product_metafield.type contains 'list.'
+          for roll_product_width in roll_product_value
+            assign roll_product_width_number = roll_product_width | times: 1
+            if roll_product_width_number > 0
+              assign is_roll_card = true
+              break
+            endif
+          endfor
+        else
+          assign roll_product_width_number = roll_product_value | times: 1
+          if roll_product_width_number > 0
+            assign is_roll_card = true
+          endif
+        endif
+      endif
+    endif
+
+    if is_roll_card
+      assign is_sqm_card = true
+      assign has_volume_pricing = false
+    elsif sqm_per_package != blank and sqm_per_package > 0 and has_volume_pricing != true
+      assign is_package_card = true
+      assign is_sqm_card = true
+    endif
+  elsif has_volume_pricing != true
+    # Bestehendes PDP-Verhalten unveraendert lassen; diese Korrektur betrifft
+    # ausschliesslich die gemeinsame Product-Card-Erkennung.
+    assign product_type_downcase = product_resource.type | downcase
+    assign product_tags_downcase = product_resource.tags | join: '|' | downcase
+    if product_type_downcase == 'teppichboden' or product_type_downcase == 'vinyl von der rolle'
+      assign is_roll_card = true
+    elsif product_tags_downcase contains 'art: teppichboden' and product_tags_downcase contains 'maß: wunschmaß'
+      assign is_roll_card = true
+    endif
+    if is_roll_card
+      assign is_sqm_card = true
+    endif
+  endif
+
+  if is_sqm_card
+    if is_product_card
+      assign sqm_price_min = blank
+      assign sqm_price_max = blank
+      assign sqm_compare_at_for_min = blank
+      for price_variant in product_resource.variants
+        assign price_variant_title = price_variant.title | downcase
+        unless is_roll_card and price_variant_title contains 'opc-'
+          if sqm_price_min == blank or price_variant.price < sqm_price_min
+            assign sqm_price_min = price_variant.price
+            assign sqm_compare_at_for_min = price_variant.compare_at_price
+          endif
+          if sqm_price_max == blank or price_variant.price > sqm_price_max
+            assign sqm_price_max = price_variant.price
+          endif
+        endunless
+      endfor
+
+      assign sqm_price_min = sqm_price_min | default: selected_variant.price
+      assign sqm_price_max = sqm_price_max | default: selected_variant.price
+      assign price = sqm_price_min
+      assign compare_at_price = sqm_compare_at_for_min
+    else
+      assign sqm_price_min = selected_variant.price
+      assign sqm_price_max = selected_variant.price
+      assign price = selected_variant.price
+      assign compare_at_price = selected_variant.compare_at_price
+    endif
+
+    if is_package_card
+      assign price = price | times: 1.0 | divided_by: sqm_per_package | round
+      if compare_at_price != blank
+        assign compare_at_price = compare_at_price | times: 1.0 | divided_by: sqm_per_package | round
+      endif
+    endif
+
+    if sqm_price_max > sqm_price_min
+      assign show_from_price = true
+    endif
+  endif
+
+  assign show_compare_price = false
+  if compare_at_price != blank and compare_at_price > price
+    assign show_compare_price = true
+  endif
+
+  # Determine if currency code should be shown
+  assign use_currency = false
+  if product.handle == product_resource.handle
+    if settings.currency_code_enabled_product_pages
+      assign use_currency = true
+    endif
+  elsif settings.currency_code_enabled_product_cards
+    assign use_currency = true
+  endif
+
+  # Format all prices
+  if is_sqm_card
+    assign price = price | money_without_currency
+    assign compare_at_price = compare_at_price | money_without_currency
+  elsif use_currency
+    assign price = price | money_with_currency
+    assign compare_at_price = compare_at_price | money_with_currency
+    assign price_min = price_min | money_with_currency
+    assign price_max = price_max | money_with_currency
+  else
+    assign price = price | money
+    assign compare_at_price = compare_at_price | money
+    assign price_min = price_min | money
+    assign price_max = price_max | money
+  endif
+-%}
+
+<div ref="priceContainer">
+  {% if has_volume_pricing %}
+    {% comment %} Volume pricing display {% endcomment %}
+    {% if show_compare_price %}
+      <span class="price-item__group">
+        <span class="visually-hidden">{{ 'content.price_regular' | t }}&nbsp;</span>
+        <span class="compare-at-price">{{- compare_at_price -}}{% if is_sqm_card %}&nbsp;€/m²{% endif %}</span>
+      </span>
+    {% endif %}
+    <span class="price-item__group">
+      <span class="visually-hidden">{{ 'content.price_range' | t }}&nbsp;</span>
+      <span class="price">{{ price_min }} - {{ price_max }}</span>
+    </span>
+  {% else %}
+    {% comment %} Standard pricing display {% endcomment %}
+    {% if show_compare_price %}
+      <div class="price__sale">
+        {% if show_sale_price_first %}
+          <span class="price-item__group">
+            <span class="visually-hidden">{{ 'content.price_sale' | t }}&nbsp;</span>
+            <span class="price-item--sale price">{% if show_from_price %}<span class="price-card-from">ab&nbsp;</span>{% endif %}{{ price | default: '&nbsp;' }}{% if is_roll_card %}<span class="price-card-per-unit">&nbsp;€/m²</span>{% elsif is_sqm_card %}&nbsp;€/m²{% endif %}</span>
+          </span>
+          <span class="price-item__group">
+            <span class="visually-hidden">{{ 'content.price_regular' | t }}&nbsp;</span>
+            <span class="price-item--regular compare-at-price">{{- compare_at_price -}}{% if is_sqm_card %}&nbsp;€/m²{% endif %}</span>
+          </span>
+        {% else %}
+          <span class="price-item__group">
+            <span class="visually-hidden">{{ 'content.price_regular' | t }}&nbsp;</span>
+            <span class="price-item--regular compare-at-price">{{- compare_at_price -}}{% if is_sqm_card %}&nbsp;€/m²{% endif %}</span>
+          </span>
+          <span class="price-item__group">
+            <span class="visually-hidden">{{ 'content.price_sale' | t }}&nbsp;</span>
+            <span class="price-item--sale price">{% if show_from_price %}<span class="price-card-from">ab&nbsp;</span>{% endif %}{{ price | default: '&nbsp;' }}{% if is_roll_card %}<span class="price-card-per-unit">&nbsp;€/m²</span>{% elsif is_sqm_card %}&nbsp;€/m²{% endif %}</span>
+          </span>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="price__regular">
+        <span class="price">
+          {%- if show_from_price %}<span class="price-card-from">ab&nbsp;</span>{% endif -%}
+          {{- price | default: '&nbsp;' -}}
+        </span>
+        {%- if is_sqm_card %}
+          <span class="price-card-per-unit">&nbsp;€/m²</span>
+        {%- endif -%}
+      </div>
+    {% endif %}
+  {% endif %}
+  {%- if selected_variant.unit_price and show_unit_price %}
+    {%- liquid
+      if use_currency
+        assign unit_price = selected_variant.unit_price | money_with_currency
+      else
+        assign unit_price = selected_variant.unit_price | money
+      endif
+    -%}
+    {% render 'unit-price', price: unit_price, measurement: selected_variant.unit_price_measurement %}
+  {%- endif -%}
+</div>
+{%- if has_volume_pricing -%}
+  <small
+    ref="volumePricingNote"
+    class="volume-pricing-note"
+  >
+    {{- 'content.volume_pricing_available' | t -}}
+  </small>
+{%- endif -%}
+
+{% stylesheet %}
+  .price-card-per-unit {
+    font-size: 0.82em;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .price-card-from {
+    font-size: 0.82em;
+    font-weight: 500;
+  }
+{% endstylesheet %}

@@ -1,0 +1,167 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "vinylboden_verlegen_8thyEt": {
+      "type": "vinylboden-verlegen",
+      "name": "Vinyl Verlegen Hero",
+      "settings": {}
+    },
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "google_MkFfBg": {
+      "type": "google",
+      "name": "Google Bewertungen",
+      "settings": {}
+    },
+    "kundenbilder_grid_NJW4hw": {
+      "type": "kundenbilder-grid",
+      "blocks": {
+        "kundenbild_DbHcQP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_c8rQxK": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-4-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_FxWpW4": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20231005_135521.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_g6HVpi": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-0-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_TtFkWU": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/1000008940.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_mcJqdp": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20230914_113814.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_QrzDE9": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20221104_122103.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_kNQ6Jz": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-5-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_AtADGP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20220905_122131.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        }
+      },
+      "block_order": [
+        "kundenbild_DbHcQP",
+        "kundenbild_c8rQxK",
+        "kundenbild_FxWpW4",
+        "kundenbild_g6HVpi",
+        "kundenbild_TtFkWU",
+        "kundenbild_mcJqdp",
+        "kundenbild_QrzDE9",
+        "kundenbild_kNQ6Jz",
+        "kundenbild_AtADGP"
+      ],
+      "name": "Kundenbilder Grid",
+      "settings": {}
+    }
+  },
+  "order": [
+    "vinylboden_verlegen_8thyEt",
+    "main",
+    "google_MkFfBg",
+    "kundenbilder_grid_NJW4hw"
+  ]
+}

@@ -1,0 +1,72 @@
+{%- doc -%}
+  Zeigt den Preis pro m² prominent an, Paketpreis und Paketinhalt klein darunter.
+  Nur für Paketprodukte (Metafeld custom.qm_pro_paket gesetzt) gedacht.
+  Shopify behält intern weiterhin den Paketpreis (variant.price) — hier wird
+  ausschließlich für die Anzeige daraus der Preis pro m² abgeleitet.
+
+  @param {variant} selected_variant
+  @param {number} sqm_per_package
+{%- enddoc -%}
+
+{%- liquid
+  assign package_price = selected_variant.price
+  assign package_compare_at_price = selected_variant.compare_at_price
+  assign price_per_sqm = package_price | times: 1.0 | divided_by: sqm_per_package | round
+  assign compare_per_sqm = blank
+  assign show_compare_price = false
+  if package_compare_at_price != blank and package_compare_at_price > package_price
+    assign compare_per_sqm = package_compare_at_price | times: 1.0 | divided_by: sqm_per_package | round
+    assign show_compare_price = true
+  endif
+  # Deutsches Dezimalkomma, konsistent mit der Anzeige im Paket-Rechner
+  # (siehe blocks/paket-auswahl.liquid).
+  assign sqm_per_package_display = sqm_per_package | append: '' | replace: '.', ','
+-%}
+
+<div class="tp-price-per-sqm">
+  {% if show_compare_price %}
+    <div class="tp-price-per-sqm__compare">
+      {{ compare_per_sqm | money_without_currency }}&nbsp;€/m²
+    </div>
+  {% endif %}
+  <div class="tp-price-per-sqm__unit">
+    <span class="tp-price-per-sqm__amount">{{ price_per_sqm | money_without_currency }}</span>
+    <span class="tp-price-per-sqm__label">€/m²</span>
+  </div>
+  <div class="tp-price-per-sqm__package">
+    {{ package_price | money_without_currency }}&nbsp;€ pro Paket ({{ sqm_per_package_display }} m²)
+  </div>
+</div>
+
+<style>
+  .tp-price-per-sqm__unit {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .tp-price-per-sqm__compare {
+    margin-bottom: 2px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+    font-size: 0.82em;
+    text-decoration: line-through;
+  }
+
+  .tp-price-per-sqm__amount {
+    font-size: 1.3em;
+    font-weight: 700;
+  }
+
+  .tp-price-per-sqm__label {
+    font-size: 0.75em;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  .tp-price-per-sqm__package {
+    margin-top: 2px;
+    font-size: 0.8em;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+</style>

@@ -1,0 +1,74 @@
+{% doc %}
+  Kurze, rein erklärende Hilfe für Rollenware. Die OPC-Konfiguration und
+  Warenkorblogik werden nicht verändert. Rendering nur bei belegter
+  custom.rollenbreite an Produkt oder echter Variante.
+{% enddoc %}
+
+{%- liquid
+  assign tp_roh_is_roll = false
+
+  for tp_roh_variant in product.variants
+    assign tp_roh_variant_title = tp_roh_variant.title | downcase
+    unless tp_roh_variant_title contains 'opc-'
+      assign tp_roh_variant_width = tp_roh_variant.metafields.custom.rollenbreite.value | times: 1
+      if tp_roh_variant_width > 0
+        assign tp_roh_is_roll = true
+        break
+      endif
+    endunless
+  endfor
+
+  if tp_roh_is_roll == false
+    assign tp_roh_product_width = product.metafields.custom.rollenbreite.value | times: 1
+    if tp_roh_product_width > 0
+      assign tp_roh_is_roll = true
+    endif
+  endif
+-%}
+
+{%- if tp_roh_is_roll -%}
+  <div class="tp-roll-order-help" {{ block.shopify_attributes }}>
+    <p><strong>So bestellen Sie Rollenware</strong></p>
+    <p>Rollenbreite auswählen und gewünschte Länge in cm eingeben. Der Gesamtpreis wird automatisch berechnet.</p>
+    <p>Die Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.</p>
+    <p class="tp-roll-order-help__measure-note">Bitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.</p>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-roll-order-help {
+    padding: 12px 14px;
+    border-left: 3px solid #b4976c;
+    border-radius: 0 8px 8px 0;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.035);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.76);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .tp-roll-order-help p {
+    margin: 0;
+  }
+
+  .tp-roll-order-help p + p {
+    margin-top: 4px;
+  }
+
+  .tp-roll-order-help__measure-note {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    font-size: 12px;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Rollenware-Hilfe",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Rollenware-Hilfe"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,217 @@
+{% doc %}
+  Zeigt die deduplizierten, numerisch sortierten Rollenbreiten einer echten
+  Rollenware-Produktkarte. Ausschliessliche Datenquelle sind die vorhandenen
+  Varianten-Metafelder custom.rollenbreite; OPC-Konfiguratorvarianten werden
+  ignoriert.
+
+  @param {product} product_resource - Das Produkt der Karte
+{% enddoc %}
+
+{%- liquid
+  assign tp_rw_seen = '|'
+  assign tp_rw_entries = ''
+  assign tp_rw_count = 0
+
+  if product_resource != blank
+    for tp_rw_variant in product_resource.variants
+      assign tp_rw_variant_title = tp_rw_variant.title | downcase
+
+      unless tp_rw_variant_title contains 'opc-'
+        assign tp_rw_metres = tp_rw_variant.metafields.custom.rollenbreite.value
+
+        if tp_rw_metres != blank
+          assign tp_rw_centimetres = tp_rw_metres | times: 100 | round
+          assign tp_rw_token = '|' | append: tp_rw_centimetres | append: '|'
+
+          if tp_rw_centimetres > 0
+            unless tp_rw_seen contains tp_rw_token
+              assign tp_rw_seen = tp_rw_seen | append: tp_rw_centimetres | append: '|'
+              assign tp_rw_sort_key = tp_rw_centimetres | prepend: '000000'
+              assign tp_rw_sort_key_size = tp_rw_sort_key | size
+              assign tp_rw_sort_key_start = tp_rw_sort_key_size | minus: 6
+              assign tp_rw_sort_key = tp_rw_sort_key | slice: tp_rw_sort_key_start, 6
+
+              if tp_rw_entries != blank
+                assign tp_rw_entries = tp_rw_entries | append: ','
+              endif
+              assign tp_rw_entries = tp_rw_entries | append: tp_rw_sort_key | append: ':' | append: tp_rw_centimetres
+              assign tp_rw_count = tp_rw_count | plus: 1
+            endunless
+          endif
+        endif
+      endunless
+    endfor
+
+    # Product-Metafeld nur als strukturierter Fallback, wenn keine echte
+    # Variante eine Rollenbreite besitzt.
+    if tp_rw_count == 0
+      assign tp_rw_product_metafield = product_resource.metafields.custom.rollenbreite
+      assign tp_rw_product_value = tp_rw_product_metafield.value
+
+      if tp_rw_product_value != blank
+        if tp_rw_product_metafield.type contains 'list.'
+          for tp_rw_metres in tp_rw_product_value
+            assign tp_rw_centimetres = tp_rw_metres | times: 100 | round
+            assign tp_rw_token = '|' | append: tp_rw_centimetres | append: '|'
+
+            if tp_rw_centimetres > 0
+              unless tp_rw_seen contains tp_rw_token
+                assign tp_rw_seen = tp_rw_seen | append: tp_rw_centimetres | append: '|'
+                assign tp_rw_sort_key = tp_rw_centimetres | prepend: '000000'
+                assign tp_rw_sort_key_size = tp_rw_sort_key | size
+                assign tp_rw_sort_key_start = tp_rw_sort_key_size | minus: 6
+                assign tp_rw_sort_key = tp_rw_sort_key | slice: tp_rw_sort_key_start, 6
+
+                if tp_rw_entries != blank
+                  assign tp_rw_entries = tp_rw_entries | append: ','
+                endif
+                assign tp_rw_entries = tp_rw_entries | append: tp_rw_sort_key | append: ':' | append: tp_rw_centimetres
+                assign tp_rw_count = tp_rw_count | plus: 1
+              endunless
+            endif
+          endfor
+        else
+          assign tp_rw_centimetres = tp_rw_product_value | times: 100 | round
+
+          if tp_rw_centimetres > 0
+            assign tp_rw_sort_key = tp_rw_centimetres | prepend: '000000'
+            assign tp_rw_sort_key_size = tp_rw_sort_key | size
+            assign tp_rw_sort_key_start = tp_rw_sort_key_size | minus: 6
+            assign tp_rw_sort_key = tp_rw_sort_key | slice: tp_rw_sort_key_start, 6
+            assign tp_rw_entries = tp_rw_sort_key | append: ':' | append: tp_rw_centimetres
+            assign tp_rw_count = 1
+          endif
+        endif
+      endif
+    endif
+  endif
+
+  assign tp_rw_sorted_entries = tp_rw_entries | split: ',' | sort
+
+  # Optionale, bereits strukturierte Produktart fuer die visuelle Card-Hierarchie.
+  # Maximal zwei vorhandene custom.arten-Werte, keine Ableitung oder Ergaenzung.
+  assign tp_rw_kind_text = ''
+  assign tp_rw_kind_metafield = product_resource.metafields.custom.arten
+  assign tp_rw_kind_value = tp_rw_kind_metafield.value
+
+  if tp_rw_kind_value != blank
+    if tp_rw_kind_metafield.type contains 'list.'
+      for tp_rw_kind_item in tp_rw_kind_value limit: 2
+        capture tp_rw_kind_name
+          echo tp_rw_kind_item.name.value | default: tp_rw_kind_item.name
+        endcapture
+        assign tp_rw_kind_name = tp_rw_kind_name | strip
+
+        if tp_rw_kind_name != blank
+          if tp_rw_kind_text != blank
+            assign tp_rw_kind_text = tp_rw_kind_text | append: ' · '
+          endif
+          assign tp_rw_kind_text = tp_rw_kind_text | append: tp_rw_kind_name
+        endif
+      endfor
+    else
+      capture tp_rw_kind_text
+        echo tp_rw_kind_value.name.value | default: tp_rw_kind_value.name | default: tp_rw_kind_value
+      endcapture
+      assign tp_rw_kind_text = tp_rw_kind_text | strip
+    endif
+  endif
+-%}
+
+{%- if tp_rw_count > 0 -%}
+  {%- if tp_rw_kind_text != blank -%}
+    <p class="tp-card-product-kind">{{ tp_rw_kind_text }}</p>
+  {%- endif -%}
+  <p class="tp-card-roll-widths" data-tp-roll-width-count="{{ tp_rw_count }}">
+    <span class="tp-card-roll-widths__label">Rollenbreite</span>
+    <span class="tp-card-roll-widths__values">
+      {%- for tp_rw_entry in tp_rw_sorted_entries -%}
+        {%- assign tp_rw_value = tp_rw_entry | split: ':' | last -%}
+        {%- if tp_rw_count == 2 and forloop.index == 2 -%}
+          &nbsp;&amp;&nbsp;
+        {%- elsif tp_rw_count > 2 and forloop.index > 1 -%}
+          &nbsp;·&nbsp;
+        {%- endif -%}
+        {{- tp_rw_value -}}
+      {%- endfor -%}
+      &nbsp;cm
+    </span>
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-product-kind {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+    font-family: var(--font-body--family);
+    font-size: 0.75rem;
+    font-weight: 450;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tp-card-roll-widths {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    font-family: var(--font-body--family);
+    font-size: clamp(0.72rem, 0.69rem + 0.1vw, 0.78rem);
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.003em;
+    white-space: nowrap;
+  }
+
+  .tp-card-roll-widths__label {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+    font-weight: 600;
+  }
+
+  .product-card__content:has(> .tp-card-roll-widths) > [ref='productTitleLink'] .text-block p,
+  .resource-card__content:has(> .tp-card-roll-widths) > .resource-card__title {
+    font-size: clamp(1rem, 0.96rem + 0.15vw, 1.075rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .product-card__content:has(> .tp-card-roll-widths) > product-price.spacing-style {
+    margin-block-start: 3px;
+  }
+
+  .product-card__content:has(> .tp-card-roll-widths) > product-price .price,
+  .resource-card__content:has(> .tp-card-roll-widths) > [ref='priceContainer'] .price {
+    font-size: clamp(1.2rem, 1.15rem + 0.2vw, 1.35rem);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+  }
+
+  .product-card__content:has(> .tp-card-roll-widths) > product-price .price-card-per-unit,
+  .resource-card__content:has(> .tp-card-roll-widths) > [ref='priceContainer'] .price-card-per-unit {
+    font-size: clamp(0.82rem, 0.8rem + 0.08vw, 0.9rem);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-product-kind {
+      font-size: 0.6875rem;
+    }
+
+    .tp-card-roll-widths {
+      letter-spacing: -0.008em;
+    }
+  }
+
+  @media screen and (max-width: 359px) {
+    .tp-card-roll-widths {
+      white-space: normal;
+    }
+  }
+{% endstylesheet %}

@@ -1,0 +1,191 @@
+{% doc %}
+  Verkaufs-/Nutzenbereich zwischen Kaufbereich und technischer Datentabelle.
+  Übersetzt echte Produkt-Metafelder und die vorhandene Produktbeschreibung
+  in Kundennutzen-Sätze. Jeder Satz ist an eine reale Datenquelle gekoppelt
+  und erscheint nur, wenn diese vorhanden ist - keine erfundenen Eigenschaften.
+{% enddoc %}
+
+{%- liquid
+  assign tp_vt_id = block.id | replace: '_', '' | downcase
+  assign tp_vt_sentences = ''
+  assign tp_vt_count = 0
+-%}
+
+{%- comment -%}
+  Intro: erster echter Satz aus der vorhandenen Produktbeschreibung. Kurze
+  Kopfzeilen (z.B. ein vorangestellter Produktname ohne Punkt) werden
+  uebersprungen, damit nicht die Ueberschrift statt eines echten Satzes
+  erscheint.
+{%- endcomment -%}
+{%- assign tp_vt_desc_plain = product.description | strip_html | strip -%}
+{%- assign tp_vt_desc_lines = tp_vt_desc_plain | newline_to_br | split: '<br />' -%}
+{%- assign tp_vt_intro_source = blank -%}
+{%- for tp_vt_line in tp_vt_desc_lines -%}
+  {%- assign tp_vt_line = tp_vt_line | strip_newlines | strip -%}
+  {%- if tp_vt_line.size > 30 -%}
+    {%- assign tp_vt_intro_source = tp_vt_line -%}
+    {%- break -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- if tp_vt_intro_source == blank -%}
+  {%- assign tp_vt_intro_source = tp_vt_desc_plain -%}
+{%- endif -%}
+{%- if tp_vt_intro_source != blank -%}
+  {%- assign tp_vt_intro = tp_vt_intro_source | split: '.' | first | strip | append: '.' -%}
+{%- endif -%}
+
+{%- capture tp_vt_gesamtstarke -%}{{ product.metafields.custom.gesamtstarke.value }}{%- endcapture -%}
+{%- assign tp_vt_gesamtstarke = tp_vt_gesamtstarke | strip -%}
+{%- if tp_vt_gesamtstarke != blank -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Mit {{ tp_vt_gesamtstarke }} Gesamtstärke bietet dieser Boden eine robuste, alltagstaugliche Basis.{%- endcapture -%}
+  {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_vt_nk_mf = product.metafields.custom.nutzungsklassen -%}
+{%- assign tp_vt_nk_val = tp_vt_nk_mf.value -%}
+{%- assign tp_vt_nk = '' -%}
+{%- if tp_vt_nk_val != blank -%}
+  {%- if tp_vt_nk_mf.type contains 'list.' -%}
+    {%- capture tp_vt_nk -%}
+      {%- for item in tp_vt_nk_val -%}
+        {%- assign nk = item.nutzungsklasse -%}
+        {{- nk.value | default: nk | default: item.name | default: item -}}
+        {%- unless forloop.last %}, {% endunless -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- else -%}
+    {%- assign nk = tp_vt_nk_val.nutzungsklasse -%}
+    {%- capture tp_vt_nk -%}{{ nk.value | default: nk | default: tp_vt_nk_val.name | default: tp_vt_nk_val }}{%- endcapture -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign tp_vt_nk = tp_vt_nk | strip -%}
+{%- if tp_vt_nk != blank -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Die Nutzungsklasse ({{ tp_vt_nk }}) zeigt, wie belastbar der Boden im Alltag ist – auch für stark beanspruchte Bereiche.{%- endcapture -%}
+  {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_vt_heating_mf = product.metafields.custom.fusbodenheizung -%}
+{%- assign tp_vt_heating_val = tp_vt_heating_mf.value -%}
+{%- assign tp_vt_heating = tp_vt_heating_val.fusbodenheizung.value | default: tp_vt_heating_val.fusbodenheizung | default: tp_vt_heating_val.name | default: tp_vt_heating_val -%}
+{%- if tp_vt_heating == 'Ja' -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Er ist fußbodenheizungsgeeignet – für gleichmäßige Wärme im ganzen Raum.{%- endcapture -%}
+  {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_vt_trittschall -%}{{ product.metafields.custom.trittschallverbesserung.value }}{%- endcapture -%}
+{%- assign tp_vt_trittschall = tp_vt_trittschall | strip -%}
+{%- if tp_vt_trittschall != blank -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Die Trittschallverbesserung ({{ tp_vt_trittschall }}) sorgt für ein spürbar leiseres Wohngefühl.{%- endcapture -%}
+  {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_vt_zimmer_mf = product.metafields.custom.zimmer -%}
+{%- assign tp_vt_zimmer_val = tp_vt_zimmer_mf.value -%}
+{%- assign tp_vt_zimmer = '' -%}
+{%- if tp_vt_zimmer_val != blank -%}
+  {%- if tp_vt_zimmer_mf.type contains 'list.' -%}
+    {%- capture tp_vt_zimmer -%}
+      {%- for item in tp_vt_zimmer_val -%}
+        {{- item.name | default: item -}}
+        {%- unless forloop.last %}, {% endunless -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign tp_vt_zimmer = tp_vt_zimmer | strip -%}
+{%- if tp_vt_zimmer != blank -%}
+  {%- capture tp_vt_sentences -%}{{ tp_vt_sentences }}|Geeignet für {{ tp_vt_zimmer }}.{%- endcapture -%}
+  {%- assign tp_vt_count = tp_vt_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_vt_list = tp_vt_sentences | split: '|' -%}
+
+{%- if tp_vt_intro != blank or tp_vt_count > 0 -%}
+  <div class="tp-verkaufstext-{{ tp_vt_id }}" {{ block.shopify_attributes }}>
+    <h2 class="tp-verkaufstext__heading-{{ tp_vt_id }}">Warum dieser Boden zu Ihnen passt</h2>
+    {%- if tp_vt_intro != blank -%}
+      <p class="tp-verkaufstext__intro-{{ tp_vt_id }}">{{ tp_vt_intro }}</p>
+    {%- endif -%}
+    {%- if tp_vt_count > 0 -%}
+      <ul class="tp-verkaufstext__list-{{ tp_vt_id }}">
+        {%- for sentence in tp_vt_list -%}
+          {%- if sentence != blank -%}
+            <li>{{ sentence | strip }}</li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+
+  <style>
+    .tp-verkaufstext-{{ tp_vt_id }} {
+      max-width: 62ch;
+      margin: 4px 0 0;
+    }
+
+    .tp-verkaufstext__heading-{{ tp_vt_id }} {
+      margin: 0 0 10px;
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--color-foreground);
+    }
+
+    .tp-verkaufstext__intro-{{ tp_vt_id }} {
+      margin: 0 0 12px;
+      font-size: 16.5px;
+      line-height: 1.6;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+    }
+
+    .tp-verkaufstext__list-{{ tp_vt_id }} {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+
+    .tp-verkaufstext__list-{{ tp_vt_id }} li {
+      padding-left: 18px;
+      position: relative;
+      font-size: 16.5px;
+      line-height: 1.55;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+    }
+
+    .tp-verkaufstext__list-{{ tp_vt_id }} li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.6em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #b4976c;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-verkaufstext__heading-{{ tp_vt_id }} {
+        font-size: 18px;
+      }
+
+      .tp-verkaufstext__intro-{{ tp_vt_id }},
+      .tp-verkaufstext__list-{{ tp_vt_id }} li {
+        font-size: 15.5px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Verkaufstext",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Verkaufstext"
+    }
+  ]
+}
+{% endschema %}

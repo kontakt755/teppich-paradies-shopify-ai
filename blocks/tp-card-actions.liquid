@@ -1,0 +1,142 @@
+{% doc %}
+  Kompakte Aktionszeile auf Produktkarten: "Zum Vergleich hinzufügen" (nutzt
+  dieselbe Vergleichsfunktion/dasselbe Script wie auf der Produktseite, siehe
+  blocks/tp-compare-toggle.liquid + assets/tp-compare.js - hier nur kompakt
+  gestylt für die Karte, keine neue Logik) und ein kurzer Muster-Link. Nur für
+  Paketprodukte (Metafeld custom.qm_pro_paket gesetzt), damit Fixpreis-/
+  Rollenware-Karten unveraendert bleiben.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ca_product = closest.product
+  assign tp_ca_id = block.id | replace: '_', '' | downcase
+  assign tp_ca_sqm_per_package = tp_ca_product.metafields.custom.qm_pro_paket.value
+-%}
+
+{%- if tp_ca_sqm_per_package != blank and tp_ca_sqm_per_package > 0 -%}
+  {%- liquid
+    assign tp_ca_variant = tp_ca_product.selected_or_first_available_variant
+
+    assign tp_ca_price_per_sqm = ''
+    assign tp_ca_price_per_sqm_raw = tp_ca_variant.price | times: 1.0 | divided_by: tp_ca_sqm_per_package | round
+    assign tp_ca_price_per_sqm = tp_ca_price_per_sqm_raw | money | strip_html
+
+    assign tp_ca_belagsart = tp_ca_product.metafields.custom.belagsart.value
+    assign tp_ca_staerke = tp_ca_product.metafields.custom.gesamtstarke.value
+
+    assign tp_ca_nk_mf = tp_ca_product.metafields.custom.nutzungsklassen
+    assign tp_ca_nk_val = tp_ca_nk_mf.value
+    assign tp_ca_nutzungsklasse = ''
+    if tp_ca_nk_val != blank
+      if tp_ca_nk_mf.type contains 'list.'
+        capture tp_ca_nutzungsklasse
+          for item in tp_ca_nk_val
+            assign nk = item.nutzungsklasse
+            echo nk.value | default: nk | default: item.name | default: item
+            unless forloop.last
+              echo ', '
+            endunless
+          endfor
+        endcapture
+      else
+        assign nk = tp_ca_nk_val.nutzungsklasse
+        assign tp_ca_nutzungsklasse = nk.value | default: nk | default: tp_ca_nk_val.name | default: tp_ca_nk_val
+      endif
+    endif
+    assign tp_ca_nutzungsklasse = tp_ca_nutzungsklasse | strip
+
+    assign tp_ca_trittschall = tp_ca_product.metafields.custom.trittschallverbesserung.value
+
+    assign tp_ca_heating_val = tp_ca_product.metafields.custom.fusbodenheizung.value
+    assign tp_ca_heating = tp_ca_heating_val.fusbodenheizung.value | default: tp_ca_heating_val.fusbodenheizung | default: tp_ca_heating_val.name | default: tp_ca_heating_val
+
+    assign tp_ca_paketinhalt = tp_ca_sqm_per_package | append: '' | replace: '.', ',' | append: ' m²'
+  -%}
+  {%- capture tp_ca_snapshot -%}
+{"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
+  {%- endcapture -%}
+
+  <div class="tp-card-actions-{{ tp_ca_id }}" {{ block.shopify_attributes }}>
+    <button
+      type="button"
+      class="tp-card-actions__compare-{{ tp_ca_id }}"
+      data-tp-compare-toggle
+      data-tp-compare-handle="{{ tp_ca_product.handle }}"
+      data-tp-compare-snapshot="{{ tp_ca_snapshot | strip | escape }}"
+      data-tp-compare-compact
+      aria-pressed="false"
+    >
+      Vergleichen
+    </button>
+    <a
+      class="tp-card-actions__sample-{{ tp_ca_id }}"
+      href="/pages/kontakt?thema=muster&produkt={{ tp_ca_product.handle | url_encode }}"
+    >
+      Muster
+    </a>
+  </div>
+
+  <style>
+    .tp-card-actions-{{ tp_ca_id }} {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tp-card-actions__compare-{{ tp_ca_id }} {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 5px 8px;
+      background: transparent;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+      border-radius: 6px;
+      color: var(--color-foreground);
+      font: inherit;
+      font-size: 10.5px;
+      font-weight: 600;
+      line-height: 1.2;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .tp-card-actions__compare-{{ tp_ca_id }}[aria-pressed='true'] {
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+      border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
+    }
+
+    .tp-card-actions__sample-{{ tp_ca_id }} {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+      border-radius: 6px;
+      color: var(--color-foreground);
+      font-size: 10.5px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tp-card-actions__sample-{{ tp_ca_id }}:hover {
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Card-Aktionen",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Card-Aktionen"
+    }
+  ]
+}
+{% endschema %}

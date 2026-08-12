@@ -1,0 +1,282 @@
+<style>
+  .kontakt-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    max-width: 1200px;
+    margin: 60px auto;
+    padding: 0 20px;
+  }
+  .kontakt-info, .kontakt-formular {
+    flex: 1;
+    min-width: 300px;
+  }
+  .kontakt-info h2 {
+    font-size: 28px;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  .kontakt-info p {
+    font-size: 16px;
+    margin: 6px 0;
+    color: #555;
+  }
+  .kontakt-formular form {
+    display: flex;
+    flex-direction: column;
+  }
+  .kontakt-formular label {
+    margin-top: 15px;
+    font-weight: 600;
+    color: #333;
+  }
+  .kontakt-formular input,
+  .kontakt-formular textarea {
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+  }
+  .kontakt-formular button {
+    margin-top: 20px;
+    padding: 12px;
+    background-color: #222;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .kontakt-formular button:hover {
+    background-color: #444;
+  }
+  .google-map {
+    width: 100%;
+    height: 300px;
+    margin-top: 40px;
+    border: none;
+    border-radius: 8px;
+  }
+  .whatsapp-link {
+    color: #25D366;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+  .whatsapp-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Musterbestellung: eigener, kompakter Zustand oberhalb des Formulars.
+     Standardmaessig ausgeblendet - wird nur per JS sichtbar gemacht, wenn
+     ?thema=muster in der URL erkannt wird (siehe assets/tp-sample-request.js).
+     Ohne diesen Parameter bleibt die Kontaktseite unveraendert. */
+  .tp-sample-intro {
+    display: none;
+    margin-bottom: 8px;
+  }
+
+  [data-tp-sample-request][data-mode="sample"] .tp-sample-intro {
+    display: block;
+  }
+
+  .tp-sample-intro__heading {
+    font-size: 22px;
+    margin: 0 0 8px;
+    color: #222;
+  }
+
+  .tp-sample-intro__product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .tp-sample-intro__image {
+    display: none;
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex: 0 0 auto;
+  }
+
+  .tp-sample-intro__product-name {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .tp-sample-intro__text {
+    margin: 0;
+    color: #555;
+    font-size: 15px;
+  }
+
+  [data-sample-field] {
+    display: none;
+  }
+
+  [data-tp-sample-request][data-mode="sample"] [data-sample-field] {
+    display: block;
+  }
+
+  .tp-form-success,
+  .tp-form-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-size: 14.5px;
+  }
+
+  .tp-form-success {
+    background: rgb(0 138 46 / 0.1);
+    color: #00641f;
+  }
+
+  .tp-form-error {
+    background: rgb(176 0 32 / 0.08);
+    color: #b00020;
+  }
+
+  .tp-form-success svg,
+  .tp-form-error svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+  }
+
+  .tp-success--sample {
+    display: none;
+  }
+
+  [data-tp-sample-request][data-mode="sample"] .tp-success--generic {
+    display: none;
+  }
+
+  [data-tp-sample-request][data-mode="sample"] .tp-success--sample {
+    display: flex;
+  }
+
+  @media screen and (max-width: 749px) {
+    .kontakt-section {
+      margin: 32px auto;
+      gap: 28px;
+    }
+  }
+</style>
+
+<section class="kontakt-section">
+  <div class="kontakt-info">
+    <h2>Kontaktieren Sie uns</h2>
+    <p><strong>Adresse:</strong> Saarlandstraße 73-81, 16515 Oranienburg</p>
+    <p><strong>Telefon:</strong> 03301 573 37 20</p>
+    <p><strong>E-Mail:</strong> kontakt@teppich-paradies.net</p>
+    <p><strong>WhatsApp:</strong>
+      <a href="https://wa.me/+4917657931322" target="_blank" class="whatsapp-link">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="whatsapp-icon" width="18" height="18"/>
+        0176 579 31322
+      </a>
+    </p>
+    <p><strong>Öffnungszeiten:</strong><br>Mo–Fr: 08:30–18:00 Uhr<br>Sa: 08:30–14:30 Uhr</p>
+  </div>
+
+  <div class="kontakt-formular" data-tp-sample-request>
+    <div class="tp-sample-intro">
+      <h3 class="tp-sample-intro__heading">Kostenloses Muster bestellen</h3>
+      <div class="tp-sample-intro__product">
+        <img class="tp-sample-intro__image" data-tp-product-image alt="" width="56" height="56">
+        <span class="tp-sample-intro__product-name" data-tp-product-name></span>
+      </div>
+      <p class="tp-sample-intro__text" data-tp-intro>Wir senden Ihnen gerne ein kostenloses Muster zu.</p>
+    </div>
+
+    {%- form 'contact', id: 'ContactForm-sample', class: 'contact-form' -%}
+      <input type="hidden" name="contact[id]" value="ContactForm-sample">
+      <input type="hidden" name="contact[Betreff]" value="" data-tp-hidden-field="Betreff">
+      <input type="hidden" name="contact[Produkt]" value="" data-tp-hidden-field="Produkt">
+      <input type="hidden" name="contact[Produkt-Handle]" value="" data-tp-hidden-field="Produkt-Handle">
+      <input type="hidden" name="contact[Produkt-Link]" value="" data-tp-hidden-field="Produkt-Link">
+
+      {%- if form.posted_successfully? -%}
+        <div class="tp-form-success tp-success--generic" tabindex="-1" autofocus>
+          {{- 'icon-checkmark.svg' | inline_asset_content -}}
+          <span>Vielen Dank für Ihre Nachricht! Wir melden uns schnellstmöglich bei Ihnen.</span>
+        </div>
+        <div class="tp-form-success tp-success--sample" tabindex="-1">
+          {{- 'icon-checkmark.svg' | inline_asset_content -}}
+          <span>Vielen Dank! Ihre Musteranfrage ist bei uns eingegangen – wir senden Ihnen das Muster schnellstmöglich zu.</span>
+        </div>
+      {%- endif -%}
+
+      {%- if form.errors -%}
+        <div class="tp-form-error" tabindex="-1" autofocus>
+          {{- 'icon-error.svg' | inline_asset_content -}}
+          <span>{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</span>
+        </div>
+      {%- endif -%}
+
+      <label for="ContactFormName">Name</label>
+      <input type="text" id="ContactFormName" name="contact[name]" value="{{ form.name }}" required>
+
+      <label for="ContactFormEmail">E-Mail</label>
+      <input type="email" id="ContactFormEmail" name="contact[email]" value="{{ form.email }}" required>
+
+      <div data-sample-field>
+        <label for="ContactFormStreet">Straße und Hausnummer</label>
+        <input type="text" id="ContactFormStreet" name="contact[Straße und Hausnummer]" autocomplete="street-address">
+      </div>
+
+      <div data-sample-field>
+        <label for="ContactFormZip">PLZ</label>
+        <input type="text" id="ContactFormZip" name="contact[PLZ]" autocomplete="postal-code" inputmode="numeric">
+      </div>
+
+      <div data-sample-field>
+        <label for="ContactFormCity">Ort</label>
+        <input type="text" id="ContactFormCity" name="contact[Ort]" autocomplete="address-level2">
+      </div>
+
+      <div data-sample-field>
+        <label for="ContactFormPhone">Telefon (optional)</label>
+        <input type="tel" id="ContactFormPhone" name="contact[phone]" value="{{ form.phone }}" autocomplete="tel">
+      </div>
+
+      <label for="ContactFormMessage" data-message-label>Nachricht</label>
+      <textarea id="ContactFormMessage" name="contact[body]" rows="5" data-message-field required>{{ form.body }}</textarea>
+
+      <button type="submit">Nachricht senden</button>
+    {%- endform -%}
+  </div>
+</section>
+
+<iframe
+  class="google-map"
+  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2415.89022847034!2d13.242245077649626!3d52.73417322034972!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47a900b2dd3a3391%3A0xaec22baa10182b4!2sTeppich%20Paradies%20Oranienburg%20GmbH!5e0!3m2!1sde!2sde!4v1778188111105!5m2!1sde!2sde"
+  allowfullscreen
+  loading="lazy"
+  referrerpolicy="no-referrer-when-downgrade"
+  width="1200"
+  height="300"
+></iframe>
+
+<script src="{{ 'tp-sample-request.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Kontaktseite",
+  "settings": [],
+  "presets": [
+    {
+      "name": "Kontaktseite"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,189 @@
+<!-- Abschnitt: Treppenverlegung -->
+<section class="treppen-section">
+  <div class="treppen-wrapper">
+    <h1 class="treppen-title">Treppenverlegung – Sicher & Stilvoll</h1>
+    <p class="treppen-einleitung">Entdecken Sie unsere hochwertigen Läufer und Teppichlösungen für Ihre Treppe. Robust, schön und professionell verlegt.</p>
+
+    <div class="belagsarten-grid">
+      {% for block in section.blocks %}
+        {% if block.type == 'belagsart' %}
+        <div class="belagsart">
+          <img src="{{ block.settings.image | img_url: '600x' }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+          <h3>{{ block.settings.title }}</h3>
+          <p>{{ block.settings.text }}</p>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="treppen-why-highlight">
+      <h2>Warum uns wählen?</h2>
+      <ul>
+        <li>Jahrelange Erfahrung in der Treppenverlegung</li>
+        <li>Individuelle Beratung & Bemusterung</li>
+        <li>Saubere, präzise & termintreue Ausführung</li>
+        <li>Faire Preise & transparente Angebote</li>
+      </ul>
+      <a href="/pages/kontakt" class="treppen-button">Jetzt Termin vereinbaren</a>
+    </div>
+  </div>
+</section>
+
+<style>
+.treppen-section {
+  max-width: 1200px;
+  margin: 80px auto;
+  padding: 0 20px;
+  font-size: 1.4rem;
+}
+.treppen-title {
+  text-align: center;
+  font-size: 3.2rem;
+  margin-bottom: 30px;
+  color: #2a2a2a;
+}
+.treppen-einleitung {
+  text-align: center;
+  font-size: 1.8rem;
+  color: #555;
+  margin-bottom: 50px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.belagsarten-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 36px;
+  margin-bottom: 60px;
+}
+.belagsart img {
+  width: 100%;
+  border-radius: 14px;
+  height: 220px;
+  object-fit: cover;
+}
+.belagsart h3 {
+  margin-top: 20px;
+  font-size: 2rem;
+  color: #2a2a2a;
+}
+.belagsart p {
+  font-size: 1.4rem;
+  color: #555;
+  margin-top: 10px;
+}
+.treppen-why-highlight {
+  background-color: #f2f4f7;
+  border-radius: 14px;
+  padding: 50px 30px;
+  margin-top: 60px;
+  margin-bottom: 60px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.treppen-why-highlight h2 {
+  font-size: 2.8rem;
+  margin-bottom: 24px;
+  color: #2a2a2a;
+}
+.treppen-why-highlight ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto 30px;
+  max-width: 700px;
+  font-size: 1.7rem;
+}
+.treppen-why-highlight li {
+  margin-bottom: 16px;
+  position: relative;
+  padding-left: 28px;
+  color: #444;
+}
+.treppen-why-highlight li::before {
+  content: "✔";
+  position: absolute;
+  left: 0;
+  color: #2e7d32;
+  font-weight: bold;
+}
+.treppen-button {
+  display: inline-block;
+  background: #2e7d32;
+  color: white;
+  padding: 16px 32px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 1.6rem;
+  font-weight: 600;
+  transition: background 0.2s ease;
+  border: 2px solid transparent;
+}
+.treppen-button:hover,
+.treppen-button:focus {
+  background: #1b5e20;
+  border-color: #b4976c;
+  outline: none;
+}
+</style>
+
+{% schema %}
+{
+  "name": "Treppenverlegung",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "belagsart",
+      "name": "Belagsart",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Bild"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titel",
+          "default": "Kokosläufer"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Beschreibung",
+          "default": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Treppenverlegung",
+      "category": "Custom",
+      "blocks": [
+        {
+          "type": "belagsart",
+          "settings": {
+            "title": "Kokosläufer",
+            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+          }
+        },
+        {
+          "type": "belagsart",
+          "settings": {
+            "title": "Sisalläufer",
+            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisalläufer sind antistatisch und strapazierfähig."
+          }
+        },
+        {
+          "type": "belagsart",
+          "settings": {
+            "title": "Teppichläufer",
+            "text": "Komfortabel und vielseitig, in verschiedenen Farben und Mustern erhältlich. Teppichboden bietet eine weiche und gemütliche Oberfläche."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

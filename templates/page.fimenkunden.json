@@ -1,0 +1,212 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "b2b_hero_bereich_VzQnzf": {
+      "type": "b2b-hero-bereich",
+      "name": "B2B",
+      "settings": {
+        "image": "shopify://shop_images/Gemini_Generated_Image_y2yh0ty2yh0ty2yh.png",
+        "hero_title": "Innenausbau für Praxen & Gewerbe – Boden und Wand aus einer Hand",
+        "hero_sub": "Wir unterstützen Praxen, Steuerberater, Kanzleien und Gewerbebetriebe in Berlin & Brandenburg bei Renovierungen und Umgestaltungen. Von hochwertigen Bodenbelägen über Spachtelarbeiten bis hin zu professionellen Maler- und Tapezierarbeiten – zuverlässig geplant und sauber umgesetzt.",
+        "primary_btn_text": "Projekt anfragen",
+        "primary_btn_link": "",
+        "secondary_btn_text": "Beratung",
+        "secondary_btn_link": "",
+        "benefits_title": "Ihre Vorteile",
+        "box1_title": "✅ Alles aus einer Hand",
+        "box1_li1": "Bodenbeläge inklusive Verlegung",
+        "box1_li2": "Spachtel- & Untergrundarbeiten",
+        "box1_li3": "Maler- & Tapezierarbeiten (innen)",
+        "box2_title": "🏢 Für gewerbliche Räume",
+        "box2_li1": "Praxen & medizinische Einrichtungen",
+        "box2_li2": "Steuerberater & Kanzleien",
+        "box2_li3": "Büros & Gewerbeflächen",
+        "hinweis_title": "Hinweis:",
+        "hinweis_text": "Renovierung im laufenden Betrieb? Wir stimmen Termine so ab, dass Ihre Abläufe möglichst wenig gestört werden – sauber, zuverlässig und termintreu.",
+        "steps_title": "So läuft Ihr Projekt ab",
+        "step1_title": "Analyse & Beratung",
+        "step1_text": "Wir besprechen Flächen, Nutzung und Anforderungen – vor Ort oder telefonisch.",
+        "step2_title": "Planung & Angebot",
+        "step2_text": "Sie erhalten ein klares, transparentes Angebot – nachvollziehbar und ohne versteckte Positionen.",
+        "step3_title": "Saubere Umsetzung",
+        "step3_text": "Termintreue Ausführung mit Fokus auf Schutzmaßnahmen, Ordnung und minimaler Betriebsstörung.",
+        "cta_title": "Projekt geplant?",
+        "cta_text": "Ob Praxis, Kanzlei oder Büro: Wir übernehmen Boden- und Wandarbeiten im Innenbereich – zuverlässig, sauber und professionell. Senden Sie uns kurz die Eckdaten, wir melden uns zeitnah."
+      }
+    },
+    "b2b_struktur_PGUfVe": {
+      "type": "b2b-struktur",
+      "name": "B2B Struktur",
+      "settings": {
+        "title": "Strukturierte Umsetzung für gewerbliche Räume",
+        "subtitle": "Gerade in Praxen, Kanzleien und Büros zählt eine saubere Planung. Wir arbeiten strukturiert, termintreu und mit klarer Kommunikation – damit Ihr Betrieb reibungslos weiterläuft.",
+        "box1_title": "Klare Projektplanung",
+        "box1_text": "Transparente Abstimmung von Beginn an – keine Überraschungen während der Umsetzung.",
+        "box2_title": "Termintreue Umsetzung",
+        "box2_text": "Verlässliche Zeitplanung, damit Ihre Räume schnell wieder nutzbar sind.",
+        "box3_title": "Saubere Arbeitsweise",
+        "box3_text": "Schutzmaßnahmen, Staubkontrolle und ordentliche Übergabe gehören für uns selbstverständlich dazu.",
+        "box4_title": "Direkter Ansprechpartner",
+        "box4_text": "Sie sprechen mit einem festen Ansprechpartner – nicht mit wechselnden Kontaktpersonen."
+      }
+    },
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "google_MkFfBg": {
+      "type": "google",
+      "name": "Google Bewertungen",
+      "settings": {}
+    },
+    "kundenbilder_grid_NJW4hw": {
+      "type": "kundenbilder-grid",
+      "blocks": {
+        "kundenbild_DbHcQP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_c8rQxK": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-4-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_FxWpW4": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20231005_135521.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_g6HVpi": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-0-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_TtFkWU": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/1000008940.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_mcJqdp": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20230914_113814.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_QrzDE9": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20221104_122103.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_kNQ6Jz": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/image-5-compressed.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_AtADGP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20220905_122131.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        }
+      },
+      "block_order": [
+        "kundenbild_DbHcQP",
+        "kundenbild_c8rQxK",
+        "kundenbild_FxWpW4",
+        "kundenbild_g6HVpi",
+        "kundenbild_TtFkWU",
+        "kundenbild_mcJqdp",
+        "kundenbild_QrzDE9",
+        "kundenbild_kNQ6Jz",
+        "kundenbild_AtADGP"
+      ],
+      "name": "Kundenbilder Grid",
+      "settings": {}
+    }
+  },
+  "order": [
+    "b2b_hero_bereich_VzQnzf",
+    "b2b_struktur_PGUfVe",
+    "main",
+    "google_MkFfBg",
+    "kundenbilder_grid_NJW4hw"
+  ]
+}

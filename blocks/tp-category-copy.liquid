@@ -1,0 +1,99 @@
+<div class="tp-category-copy" {{ block.shopify_attributes }}>
+  <p class="tp-category-copy__label">{{ block.settings.category | escape }}</p>
+  <p class="tp-category-copy__benefit">{{ block.settings.benefit | escape }}</p>
+  <p class="tp-category-copy__detail">{{ block.settings.detail | escape }}</p>
+</div>
+
+{% stylesheet %}
+  .tp-category-copy {
+    display: grid;
+    gap: 5px;
+    width: 100%;
+    margin-block-start: 15px;
+  }
+
+  .tp-category-copy p {
+    margin: 0;
+  }
+
+  .tp-category-copy__label {
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+    font-size: 0.72rem;
+    font-weight: 650;
+    line-height: 1.2;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .tp-category-copy__benefit {
+    color: var(--color-foreground);
+    font-size: clamp(1.05rem, 1.35vw, 1.22rem);
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .tp-category-copy__detail {
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+    font-size: 0.92rem;
+    line-height: 1.42;
+    text-wrap: pretty;
+  }
+
+  .tp-category-copy + .link {
+    margin-block-start: 13px;
+    font-weight: 650;
+    text-underline-offset: 4px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .tp-category-copy {
+      min-height: 6.25rem;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-category-copy {
+      gap: 4px;
+      margin-block-start: 13px;
+    }
+
+    .tp-category-copy__benefit {
+      font-size: 1.05rem;
+    }
+
+    .tp-category-copy__detail {
+      font-size: 0.9rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Kategorietext",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "category",
+      "label": "Kategorie"
+    },
+    {
+      "type": "text",
+      "id": "benefit",
+      "label": "Nutzenzeile"
+    },
+    {
+      "type": "text",
+      "id": "detail",
+      "label": "Kurzbeschreibung"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Kategorietext"
+    }
+  ]
+}
+{% endschema %}

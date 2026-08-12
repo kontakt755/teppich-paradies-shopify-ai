@@ -1,0 +1,91 @@
+version: 1
+default_unknown_risk: MEDIUM
+production_unknown_risk: HIGH
+precedence:
+  - LOW
+  - MEDIUM
+  - HIGH
+
+global:
+  data:
+    secrets: HIGH
+    credentials: HIGH
+    personal_customer_data: HIGH
+    payment_data: HIGH
+    live_price_or_inventory: HIGH
+    unpublished_draft_without_final_price: MEDIUM
+    public_content: LOW
+  operations:
+    read: LOW
+    report_write: LOW
+    isolated_code_edit: LOW
+    multi_file_feature_edit: MEDIUM
+    create_reversible_draft: MEDIUM
+    external_write: HIGH
+    delete: HIGH
+    publish_or_deploy: HIGH
+    purchase_or_order: HIGH
+  blast_radius:
+    files_over_task_budget: MEDIUM
+    bulk_records_over_domain_threshold: HIGH
+    production: HIGH
+
+domains:
+  shopify:
+    paths:
+      "reports/**": LOW
+      "qa/**": LOW
+      "locales/**": LOW
+      "snippets/**": LOW
+      "assets/**/*.css": LOW
+      "sections/**": MEDIUM
+      "blocks/**": MEDIUM
+      "templates/collection*.json": MEDIUM
+      "templates/product*.json": HIGH
+      "config/settings_data.json": HIGH
+      "layout/checkout*": HIGH
+    operations:
+      theme_read_or_preview: LOW
+      unpublished_dev_theme_write: MEDIUM
+      live_theme_push_files: HIGH
+      theme_publish: HIGH
+      fallback_theme_write: HIGH
+      existing_live_product_write: HIGH
+      product_delete: HIGH
+      draft_product_create_unpublished: MEDIUM
+      collection_assignment_existing_product: HIGH
+      price_or_compare_at_write: HIGH
+      inventory_write: HIGH
+      cart_or_checkout_logic_write: HIGH
+      opc_price_logic_write: HIGH
+      merchant_offer_or_feed_price_write: HIGH
+      json_ld_offer_write: HIGH
+      app_install_or_delete: HIGH
+      webhook_write: HIGH
+      discount_write: HIGH
+      sales_channel_availability_write: HIGH
+      ads_write: HIGH
+      test_order: HIGH
+    protected_resources:
+      fallback_theme_196301750606: HIGH
+      customer_data: HIGH
+      payment_and_shipping_settings: HIGH
+  lexware:
+    default_write_risk: HIGH
+  sumup:
+    default_write_risk: HIGH
+  suppliers:
+    default_write_risk: MEDIUM
+    order_or_contract_acceptance: HIGH
+  marketing:
+    default_write_risk: HIGH
+  backoffice:
+    default_write_risk: MEDIUM
+    external_send_or_personnel_data: HIGH
+
+enforcement:
+  allowed_files_violation: HARD_STOP
+  actual_risk_above_task_risk: HARD_STOP
+  secret_detected: HARD_STOP
+  unknown_production_mutation: HARD_STOP
+  high_task_action: NEEDS_AHMET

@@ -1,0 +1,128 @@
+{% comment %}
+  Kompakter Fachhandel-/Verlegeservice-Bereich fuer die Startseite. Nutzt nur
+  echte, bereits vorhandene Inhalte (Beratung, Aufmaß, Lieferung, Verlegung -
+  siehe auch /pages/liefer-verlegeservice und snippets/tp-service-links.liquid).
+  Keine langen Textwaende.
+{% endcomment %}
+
+<div class="tp-fachhandel color-{{ section.settings.color_scheme }}">
+  <div class="tp-fachhandel__inner">
+    <div class="tp-fachhandel__intro">
+      <h2>Nicht nur online – wir verlegen auch.</h2>
+      <p>Vom Aufmaß bis zur fertigen Verlegung begleitet Sie unser Team persönlich.</p>
+    </div>
+
+    <ul class="tp-fachhandel__steps">
+      <li>
+        <span class="tp-fachhandel__step-title">Beratung &amp; Aufmaß</span>
+        <span class="tp-fachhandel__step-text">Persönlich vor Ort oder telefonisch</span>
+      </li>
+      <li>
+        <span class="tp-fachhandel__step-title">Lieferung</span>
+        <span class="tp-fachhandel__step-text">Direkt zu Ihnen nach Hause</span>
+      </li>
+      <li>
+        <span class="tp-fachhandel__step-title">Fachgerechte Verlegung</span>
+        <span class="tp-fachhandel__step-text">Durch unser eigenes Team</span>
+      </li>
+    </ul>
+
+    <a href="/pages/liefer-verlegeservice" class="tp-fachhandel__cta">Verlegeservice entdecken</a>
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-fachhandel {
+    padding: 48px 20px;
+  }
+
+  .tp-fachhandel__inner {
+    max-width: 1000px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .tp-fachhandel__intro h2 {
+    margin: 0 0 6px;
+    font-size: 26px;
+  }
+
+  .tp-fachhandel__intro p {
+    margin: 0 0 28px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    font-size: 15px;
+  }
+
+  .tp-fachhandel__steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 760px;
+    margin: 0 auto 28px;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-fachhandel__steps li {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tp-fachhandel__step-title {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .tp-fachhandel__step-text {
+    font-size: 13.5px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+  }
+
+  .tp-fachhandel__cta {
+    display: inline-block;
+    padding: 12px 22px;
+    background: #b4976c;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tp-fachhandel__cta:hover {
+    opacity: 0.9;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-fachhandel {
+      padding: 36px 16px;
+    }
+
+    .tp-fachhandel__steps {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      text-align: left;
+      max-width: 340px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegeservice",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    { "name": "TP Verlegeservice" }
+  ]
+}
+{% endschema %}

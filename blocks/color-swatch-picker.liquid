@@ -1,0 +1,457 @@
+{% doc %}
+  @prompt
+    Farb-Auswahl mit Bild-Swatches. Wenn kein Bild vorhanden ist, wird die Farbe als Swatch gerendert.
+    Beim Wechsel der Farbe soll die Seite nicht neu laden. Stattdessen sollen Variante,
+    URL, aktiver Farbtext und Produktbild aktualisiert werden.
+{% enddoc %}
+
+{% assign color_picker_id = block.id | replace: '_', '' | downcase %}
+{% assign color_option = blank %}
+{% assign color_option_index = 0 %}
+
+{% for option in product.options_with_values %}
+  {% assign option_name = option.name | downcase %}
+  {% if option_name == 'farbe' or option_name == 'color' %}
+    {% assign color_option = option %}
+    {% assign color_option_index = option.position | minus: 1 %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% assign selected_color = blank %}
+
+{% if color_option != blank %}
+  {% assign selected_color = selected_variant.options[color_option_index] | default: color_option.selected_value %}
+{% endif %}
+
+{% style %}
+  .color-swatch-picker-{{ color_picker_id }} {
+    display: block;
+    width: 100%;
+    color: var(--color-foreground, #222);
+  }
+
+  .color-swatch-picker__active-{{ color_picker_id }} {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-foreground, #222);
+  }
+
+  .color-swatch-picker__active-label-{{ color_picker_id }} {
+    opacity: 0.7;
+  }
+
+  .color-swatch-picker__active-value-{{ color_picker_id }} {
+    margin-left: 6px;
+  }
+
+  .color-swatch-picker__list-{{ color_picker_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .color-swatch-picker__item-{{ color_picker_id }} {
+    position: relative;
+  }
+
+  .color-swatch-picker__input-{{ color_picker_id }} {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .color-swatch-picker__button-{{ color_picker_id }} {
+    width: 76px;
+    height: 58px;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .color-swatch-picker__input-{{ color_picker_id }}:checked + .color-swatch-picker__button-{{ color_picker_id }} {
+    border-color: var(--color-foreground, #111);
+  }
+
+  .color-swatch-picker__button-{{ color_picker_id }}:hover {
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.35);
+  }
+
+  .color-swatch-picker__image-{{ color_picker_id }} {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  .color-swatch-picker__color-{{ color_picker_id }} {
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    display: block;
+  }
+
+  .color-swatch-picker__fallback-{{ color_picker_id }} {
+    background: var(--swatch-color, #d8d8d8);
+  }
+{% endstyle %}
+
+{% if color_option != blank %}
+  <color-swatch-picker-{{ color_picker_id }}
+    class="color-swatch-picker-{{ color_picker_id }}"
+    data-option-name="{{ color_option.name | escape }}"
+    {{ block.shopify_attributes }}
+  >
+    {% comment %} <p class="color-swatch-picker__active-{{ color_picker_id }}"> {% endcomment %}
+    <p data-active-color>{{ selected_color }}</p>
+    {% comment %} </p> {% endcomment %}
+
+    <div class="color-swatch-picker__list-{{ color_picker_id }}">
+      {% for value in color_option.values %}
+        {% assign value_name = value | append: '' %}
+        {% assign swatch_image = blank %}
+        {% assign swatch_color = blank %}
+
+        {% if value.swatch.image != blank %}
+          {% assign swatch_image = value.swatch.image %}
+        {% elsif value.swatch.color != blank %}
+          {% assign swatch_color = value.swatch.color %}
+        {% endif %}
+
+        {% if swatch_image == blank %}
+          {% for variant in product.variants %}
+            {% if variant.options[color_option_index] == value_name and variant.featured_image != blank %}
+              {% assign swatch_image = variant.featured_image %}
+              {% break %}
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        {% if swatch_color == blank %}
+          {% assign value_downcase = value_name | downcase %}
+
+          {% case value_downcase %}
+            {% when 'weiß', 'weiss', 'white' %}
+              {% assign swatch_color = '#ffffff' %}
+            {% when 'schwarz', 'black' %}
+              {% assign swatch_color = '#000000' %}
+            {% when 'grau', 'gray', 'grey' %}
+              {% assign swatch_color = '#808080' %}
+            {% when 'rot', 'red' %}
+              {% assign swatch_color = '#d92d2d' %}
+            {% when 'blau', 'blue' %}
+              {% assign swatch_color = '#1f5fbf' %}
+            {% when 'grün', 'gruen', 'green' %}
+              {% assign swatch_color = '#2f9e44' %}
+            {% when 'gelb', 'yellow' %}
+              {% assign swatch_color = '#f2c500' %}
+            {% when 'braun', 'brown' %}
+              {% assign swatch_color = '#8b5a3c' %}
+            {% when 'beige' %}
+              {% assign swatch_color = '#e8d7ad' %}
+            {% when 'orange' %}
+              {% assign swatch_color = '#ff8f1f' %}
+            {% when 'sand' %}
+              {% assign swatch_color = '#d9c7a1' %}
+            {% else %}
+              {% assign swatch_color = '#d8d8d8' %}
+          {% endcase %}
+        {% endif %}
+
+        {% if value_name contains '/' %}
+          {% assign first_color = '#ffffff' %}
+          {% assign second_color = swatch_color %}
+
+          {% if value_name contains 'Gelb' or value_name contains 'gelb' %}
+            {% assign second_color = '#f2c500' %}
+          {% endif %}
+
+          {% if value_name contains 'Rot' or value_name contains 'rot' %}
+            {% assign second_color = '#d92d2d' %}
+          {% endif %}
+
+          {% if value_name contains 'Blau' or value_name contains 'blau' %}
+            {% assign second_color = '#1f5fbf' %}
+          {% endif %}
+
+          {% assign swatch_color = 'repeating-linear-gradient(135deg, '
+            | append: first_color
+            | append: ' 0 7px, '
+            | append: second_color
+            | append: ' 7px 14px)'
+          %}
+        {% endif %}
+
+        <label class="color-swatch-picker__item-{{ color_picker_id }}">
+          <input
+            class="color-swatch-picker__input-{{ color_picker_id }}"
+            type="radio"
+            name="color-swatch-{{ color_picker_id }}"
+            value="{{ value_name | escape }}"
+            {% if value_name == selected_color %}
+              checked
+            {% endif %}
+          >
+
+          <span
+            class="color-swatch-picker__button-{{ color_picker_id }}"
+            title="{{ value_name | escape }}"
+            aria-label="{{ value_name | escape }}"
+          >
+            {% if swatch_image != blank %}
+              <img
+                class="color-swatch-picker__image-{{ color_picker_id }}"
+                src="{{ swatch_image | image_url: width: 120 }}"
+                alt="{{ value_name | escape }}"
+                width="60"
+                height="46"
+                loading="lazy"
+              >
+            {% else %}
+              <span
+                class="color-swatch-picker__color-{{ color_picker_id }} color-swatch-picker__fallback-{{ color_picker_id }}"
+                style="--swatch-color: {{ swatch_color }};"
+              ></span>
+            {% endif %}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+  </color-swatch-picker-{{ color_picker_id }}>
+
+  <script>
+    (function() {
+      const picker = document.querySelector('color-swatch-picker-{{ color_picker_id }}');
+      if (!picker || picker.dataset.initialized === 'true') return;
+      picker.dataset.initialized = 'true';
+
+      const swatchInputs = Array.from(
+        picker.querySelectorAll('.color-swatch-picker__input-{{ color_picker_id }}')
+      );
+      const activeColorLabel = picker.querySelector('[data-active-color]');
+
+      const variants = {{ product.variants | json }};
+      const optionNames = {{ product.options | json }};
+      const colorOptionName = {{ color_option.name | json }};
+      const colorOptionIndex = {{ color_option_index }};
+      const productUrl = {{ product.url | json }};
+
+      function getNativeOptionInputs(optionName) {
+        const radioInputs = Array.from(
+          document.querySelectorAll('input[type="radio"][name="options[' + optionName + ']"]')
+        );
+
+        if (radioInputs.length > 0) {
+          return radioInputs;
+        }
+
+        const selectInput = document.querySelector('select[name="options[' + optionName + ']"]');
+        return selectInput ? [selectInput] : [];
+      }
+
+      function getCurrentVariantIdFromForms() {
+        const variantInput = document.querySelector('form[action*="/cart/add"] input[name="id"]');
+        return variantInput ? String(variantInput.value) : null;
+      }
+
+      function getCurrentOptionValues() {
+        return optionNames.map(function(optionName, index) {
+          const nativeInputs = getNativeOptionInputs(optionName);
+
+          if (nativeInputs.length === 0) {
+            const currentVariantId =
+              getCurrentVariantIdFromForms() ||
+              new URLSearchParams(window.location.search).get('variant');
+
+            const currentVariant = variants.find(function(variant) {
+              return String(variant.id) === String(currentVariantId);
+            });
+
+            return currentVariant ? currentVariant.options[index] : null;
+          }
+
+          const firstInput = nativeInputs[0];
+
+          if (firstInput.tagName === 'SELECT') {
+            return firstInput.value;
+          }
+
+          const checkedInput = nativeInputs.find(function(input) {
+            return input.checked;
+          });
+
+          return checkedInput ? checkedInput.value : null;
+        });
+      }
+
+      function findMatchingVariant(nextColor) {
+        const nextOptions = getCurrentOptionValues();
+        nextOptions[colorOptionIndex] = nextColor;
+
+        return variants.find(function(variant) {
+          return variant.options.every(function(optionValue, index) {
+            return optionValue === nextOptions[index];
+          });
+        });
+      }
+
+      function setNativeColorValue(colorValue) {
+        const nativeInputs = getNativeOptionInputs(colorOptionName);
+        if (nativeInputs.length === 0) return;
+
+        const firstInput = nativeInputs[0];
+
+        if (firstInput.tagName === 'SELECT') {
+          if (firstInput.value === colorValue) return;
+
+          firstInput.value = colorValue;
+          firstInput.dispatchEvent(new Event('input', { bubbles: true }));
+          firstInput.dispatchEvent(new Event('change', { bubbles: true }));
+          return;
+        }
+
+        const matchingInput = nativeInputs.find(function(input) {
+          return input.value === colorValue;
+        });
+
+        if (!matchingInput || matchingInput.checked) return;
+
+        nativeInputs.forEach(function(input) {
+          input.checked = input.value === colorValue;
+        });
+
+        matchingInput.dispatchEvent(new Event('input', { bubbles: true }));
+        matchingInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+
+      function setVariantIdInput(variantId) {
+        document.querySelectorAll('form[action*="/cart/add"] input[name="id"]').forEach(function(input) {
+          input.value = variantId;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      }
+
+      function syncSwatchUI(colorValue) {
+        swatchInputs.forEach(function(input) {
+          input.checked = input.value === colorValue;
+        });
+
+        if (activeColorLabel) {
+          activeColorLabel.textContent = colorValue;
+        }
+      }
+
+      function updateUrl(variantId) {
+        const nextUrl = productUrl + '?variant=' + variantId;
+        window.history.replaceState({ path: nextUrl }, '', nextUrl);
+      }
+
+      function updateProductMedia(variant) {
+        if (!variant) return;
+
+        const featuredMediaId = variant.featured_media ? String(variant.featured_media.id) : null;
+        const featuredImageSrc = variant.featured_image ? variant.featured_image.src : null;
+
+        if (featuredMediaId) {
+          document.querySelectorAll('[data-media-id], [data-product-media-id], [data-media-item]').forEach(function(item) {
+            const mediaId =
+              item.getAttribute('data-media-id') ||
+              item.getAttribute('data-product-media-id') ||
+              item.getAttribute('data-media-item');
+
+            if (!mediaId) return;
+
+            const normalizedId = String(mediaId).replace(/^.+-/, '');
+
+            if (normalizedId === featuredMediaId || String(mediaId) === featuredMediaId) {
+              const trigger = item.querySelector('button, [role="button"], img') || item;
+
+              if (trigger && typeof trigger.click === 'function') {
+                trigger.click();
+              }
+            }
+          });
+        }
+
+        if (featuredImageSrc) {
+          const mainImages = document.querySelectorAll(
+            '.product__media img, .product-media img, media-gallery img'
+          );
+
+          mainImages.forEach(function(image) {
+            image.src = featuredImageSrc;
+            image.removeAttribute('srcset');
+          });
+        }
+      }
+
+      picker.addEventListener('change', function(event) {
+        const input = event.target;
+        if (!input.matches('input[type="radio"]')) return;
+
+        const variant = findMatchingVariant(input.value);
+        if (!variant) return;
+
+        syncSwatchUI(input.value);
+        setVariantIdInput(variant.id);
+        updateUrl(variant.id);
+        updateProductMedia(variant);
+        setNativeColorValue(input.value);
+      });
+
+      syncSwatchUI({{ selected_color | json }});
+    })();
+  </script>
+{% endif %}
+
+<script>
+  (function () {
+    if (window.__hideColorOptionsInitialized) return;
+    window.__hideColorOptionsInitialized = true;
+
+    function hideColorOptions() {
+      document.querySelectorAll('legend, label, .variant-option__legend').forEach(function (label) {
+        const text = label.textContent.trim().toLowerCase();
+
+        if (text === 'farbe' || text.startsWith('farbe:') || text === 'color' || text.startsWith('color:')) {
+          const optionGroup = label.closest('fieldset, .variant-option, .product-form__input');
+
+          if (optionGroup) {
+            optionGroup.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    hideColorOptions();
+
+    const observer = new MutationObserver(hideColorOptions);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Farb-Swatches",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "Farb-Swatches"
+    }
+  ]
+}
+{% endschema %}

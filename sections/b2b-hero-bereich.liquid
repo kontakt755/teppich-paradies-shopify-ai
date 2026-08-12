@@ -1,0 +1,361 @@
+<style>
+  .b2b-hero-section {
+    max-width: 1300px;
+    margin: 80px auto 60px;
+    padding: 0 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 60px;
+  }
+
+  .b2b-hero-text {
+    flex: 1 1 520px;
+  }
+
+  .b2b-hero-title {
+    font-size: clamp(2.5rem, 5vw, 3.4rem);
+    font-weight: 700;
+    margin-bottom: 28px;
+    color: #2a2a2a;
+  }
+
+  .b2b-hero-sub {
+    font-size: 18px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 26px;
+  }
+
+  .b2b-hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 10px;
+  }
+
+  .b2b-btn {
+    display: inline-block;
+    padding: 14px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 16px;
+  }
+
+  .b2b-btn-primary {
+    background: #2a2a2a;
+    color: #fff;
+  }
+
+  .b2b-btn-primary:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+  }
+
+  .b2b-btn-secondary {
+    background: #f5f5f5;
+    color: #2a2a2a;
+    border: 1px solid rgba(0,0,0,0.10);
+  }
+
+  .b2b-btn-secondary:hover {
+    background: #efefef;
+    transform: translateY(-1px);
+  }
+
+  .b2b-hero-img {
+    flex: 1 1 520px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .b2b-hero-img img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .b2b-bereich {
+    max-width: 1200px;
+    margin: 80px auto;
+    padding: 0 20px;
+  }
+
+  .b2b-bereich h2 {
+    font-size: 32px;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2a2a2a;
+    position: relative;
+  }
+
+  .b2b-bereich h2::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: #b4976c;
+  }
+
+  .b2b-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    margin-top: 40px;
+  }
+
+  .b2b-box {
+    flex: 1 1 450px;
+    background: #f5f5f5;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  }
+
+  .b2b-box h3 {
+    font-size: 24px;
+    margin-bottom: 18px;
+    color: #1a1a1a;
+  }
+
+  .b2b-box ul {
+    list-style: none;
+    padding: 0;
+    font-size: 18px;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .b2b-box ul li::before {
+    content: "✔";
+    color: #2e7d32;
+    margin-right: 10px;
+  }
+
+  .b2b-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .b2b-step {
+    background: #ffffff;
+    padding: 26px;
+    border-radius: 16px;
+    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  }
+
+  .b2b-step-num {
+    display: inline-block;
+    font-weight: 700;
+    color: #b4976c;
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  .b2b-step h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #1a1a1a;
+  }
+
+  .b2b-step p {
+    margin: 0;
+    color: #555;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+
+  .b2b-hinweis {
+    margin-top: 30px;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #555;
+    background: #fffbea;
+    padding: 20px;
+    border-left: 4px solid #b4976c;
+    border-radius: 8px;
+  }
+
+  .b2b-cta {
+    max-width: 1200px;
+    margin: 80px auto 100px;
+    padding: 0 20px;
+    text-align: center;
+  }
+
+  .b2b-cta h2 {
+    font-size: 32px;
+    margin-bottom: 16px;
+    color: #2a2a2a;
+  }
+
+  .b2b-cta p {
+    font-size: 18px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 22px;
+  }
+
+  @media (max-width: 900px) {
+    .b2b-steps {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .b2b-hero-section {
+      flex-direction: column;
+      gap: 40px;
+    }
+    .b2b-grid {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<section class="b2b-hero-section"> 
+  <div class="b2b-hero-text">
+    <h1 class="b2b-hero-title">{{ section.settings.hero_title }}</h1>
+    <p class="b2b-hero-sub">{{ section.settings.hero_sub }}</p>
+
+    <div class="b2b-hero-cta">
+      <a class="b2b-btn b2b-btn-primary" href="{{ section.settings.primary_btn_link }}">
+        {{ section.settings.primary_btn_text }}
+      </a>
+      <a class="b2b-btn b2b-btn-secondary" href="{{ section.settings.secondary_btn_link }}">
+        {{ section.settings.secondary_btn_text }}
+      </a>
+    </div>
+  </div>
+
+  <div class="b2b-hero-img">
+    <img
+      src="{{ section.settings.image | img_url: '900x' }}"
+      alt="{{ section.settings.image.alt | escape }}"
+      loading="lazy"
+    >
+  </div>
+</section>
+
+<section class="b2b-bereich">
+  <h2>{{ section.settings.benefits_title }}</h2>
+
+  <div class="b2b-grid">
+    <div class="b2b-box">
+      <h3>{{ section.settings.box1_title }}</h3>
+      <ul>
+        <li>{{ section.settings.box1_li1 }}</li>
+        <li>{{ section.settings.box1_li2 }}</li>
+        <li>{{ section.settings.box1_li3 }}</li>
+      </ul>
+    </div>
+
+    <div class="b2b-box">
+      <h3>{{ section.settings.box2_title }}</h3>
+      <ul>
+        <li>{{ section.settings.box2_li1 }}</li>
+        <li>{{ section.settings.box2_li2 }}</li>
+        <li>{{ section.settings.box2_li3 }}</li>
+      </ul>
+    </div>
+  </div>
+
+  {% if section.settings.hinweis_text != blank %}
+    <div class="b2b-hinweis">
+      <strong>{{ section.settings.hinweis_title }}</strong><br>
+      {{ section.settings.hinweis_text }}
+    </div>
+  {% endif %}
+</section>
+
+<section class="b2b-bereich">
+  <h2>{{ section.settings.steps_title }}</h2>
+
+  <div class="b2b-steps">
+    <div class="b2b-step">
+      <div class="b2b-step-num">1</div>
+      <h3>{{ section.settings.step1_title }}</h3>
+      <p>{{ section.settings.step1_text }}</p>
+    </div>
+
+    <div class="b2b-step">
+      <div class="b2b-step-num">2</div>
+      <h3>{{ section.settings.step2_title }}</h3>
+      <p>{{ section.settings.step2_text }}</p>
+    </div>
+
+    <div class="b2b-step">
+      <div class="b2b-step-num">3</div>
+      <h3>{{ section.settings.step3_title }}</h3>
+      <p>{{ section.settings.step3_text }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="b2b-cta">
+  <h2>{{ section.settings.cta_title }}</h2>
+  <p>{{ section.settings.cta_text }}</p>
+
+  <div class="b2b-hero-cta" style="justify-content:center;">
+    <a class="b2b-btn b2b-btn-primary" href="{{ section.settings.primary_btn_link }}">
+      {{ section.settings.primary_btn_text }}
+    </a>
+    <a class="b2b-btn b2b-btn-secondary" href="{{ section.settings.secondary_btn_link }}">
+      {{ section.settings.secondary_btn_text }}
+    </a>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "B2B",
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Hero Bild" },
+
+    { "type": "text", "id": "hero_title", "label": "Hero Titel", "default": "Innenausbau für Praxen & Gewerbe – Boden und Wand aus einer Hand" },
+    { "type": "textarea", "id": "hero_sub", "label": "Hero Untertext", "default": "Wir unterstützen Praxen, Steuerberater, Kanzleien und Gewerbebetriebe in Berlin & Brandenburg bei Renovierungen und Umgestaltungen. Von hochwertigen Bodenbelägen über Spachtelarbeiten bis hin zu professionellen Maler- und Tapezierarbeiten – zuverlässig geplant und sauber umgesetzt." },
+
+    { "type": "text", "id": "primary_btn_text", "label": "Button 1 Text", "default": "Projekt anfragen" },
+    { "type": "url", "id": "primary_btn_link", "label": "Button 1 Link" },
+    { "type": "text", "id": "secondary_btn_text", "label": "Button 2 Text", "default": "Beratung" },
+    { "type": "url", "id": "secondary_btn_link", "label": "Button 2 Link" },
+
+    { "type": "text", "id": "benefits_title", "label": "Vorteile Titel", "default": "Ihre Vorteile" },
+
+    { "type": "text", "id": "box1_title", "label": "Box 1 Titel", "default": "✅ Alles aus einer Hand" },
+    { "type": "text", "id": "box1_li1", "label": "Box 1 Punkt 1", "default": "Bodenbeläge inklusive Verlegung" },
+    { "type": "text", "id": "box1_li2", "label": "Box 1 Punkt 2", "default": "Spachtel- & Untergrundarbeiten" },
+    { "type": "text", "id": "box1_li3", "label": "Box 1 Punkt 3", "default": "Maler- & Tapezierarbeiten (innen)" },
+
+    { "type": "text", "id": "box2_title", "label": "Box 2 Titel", "default": "🏢 Für gewerbliche Räume" },
+    { "type": "text", "id": "box2_li1", "label": "Box 2 Punkt 1", "default": "Praxen & medizinische Einrichtungen" },
+    { "type": "text", "id": "box2_li2", "label": "Box 2 Punkt 2", "default": "Steuerberater & Kanzleien" },
+    { "type": "text", "id": "box2_li3", "label": "Box 2 Punkt 3", "default": "Büros & Gewerbeflächen" },
+
+    { "type": "text", "id": "hinweis_title", "label": "Hinweis Titel", "default": "Hinweis:" },
+    { "type": "textarea", "id": "hinweis_text", "label": "Hinweis Text", "default": "Renovierung im laufenden Betrieb? Wir stimmen Termine so ab, dass Ihre Abläufe möglichst wenig gestört werden – sauber, zuverlässig und termintreu." },
+
+    { "type": "text", "id": "steps_title", "label": "Ablauf Titel", "default": "So läuft Ihr Projekt ab" },
+    { "type": "text", "id": "step1_title", "label": "Schritt 1 Titel", "default": "Analyse & Beratung" },
+    { "type": "textarea", "id": "step1_text", "label": "Schritt 1 Text", "default": "Wir besprechen Flächen, Nutzung und Anforderungen – vor Ort oder telefonisch." },
+    { "type": "text", "id": "step2_title", "label": "Schritt 2 Titel", "default": "Planung & Angebot" },
+    { "type": "textarea", "id": "step2_text", "label": "Schritt 2 Text", "default": "Sie erhalten ein klares, transparentes Angebot – nachvollziehbar und ohne versteckte Positionen." },
+    { "type": "text", "id": "step3_title", "label": "Schritt 3 Titel", "default": "Saubere Umsetzung" },
+    { "type": "textarea", "id": "step3_text", "label": "Schritt 3 Text", "default": "Termintreue Ausführung mit Fokus auf Schutzmaßnahmen, Ordnung und minimaler Betriebsstörung." },
+
+    { "type": "text", "id": "cta_title", "label": "CTA Titel", "default": "Projekt geplant?" },
+    { "type": "textarea", "id": "cta_text", "label": "CTA Text", "default": "Ob Praxis, Kanzlei oder Büro: Wir übernehmen Boden- und Wandarbeiten im Innenbereich – zuverlässig, sauber und professionell. Senden Sie uns kurz die Eckdaten, wir melden uns zeitnah." }
+  ],
+  "presets": [
+    { "name": "B2B", "category": "Custom" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,198 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "treppenverlegun_jXADaz": {
+      "type": "treppenverlegun",
+      "blocks": {
+        "belagsart_gX3rAm": {
+          "type": "belagsart",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26_1.jpg",
+            "title": "Kokosläufer",
+            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+          }
+        },
+        "belagsart_8aG4Ad": {
+          "type": "belagsart",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26.jpg",
+            "title": "Sisalläufer",
+            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisalläufer sind antistatisch und strapazierfähig."
+          }
+        },
+        "belagsart_JMcTyG": {
+          "type": "belagsart",
+          "settings": {
+            "image": "shopify://shop_images/20230327_132901.jpg",
+            "title": "Teppichläufer",
+            "text": "Komfortabel und vielseitig, in verschiedenen Farben und Mustern erhältlich. Teppichboden bietet eine weiche und gemütliche Oberfläche."
+          }
+        }
+      },
+      "block_order": [
+        "belagsart_gX3rAm",
+        "belagsart_8aG4Ad",
+        "belagsart_JMcTyG"
+      ],
+      "name": "Treppenverlegung",
+      "settings": {}
+    },
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "google_MkFfBg": {
+      "type": "google",
+      "name": "Google Bewertungen",
+      "settings": {}
+    },
+    "kundenbilder_grid_NJW4hw": {
+      "type": "kundenbilder-grid",
+      "blocks": {
+        "kundenbild_DbHcQP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20230327_132924.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_c8rQxK": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20220920_113832.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_FxWpW4": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/20220920_113826.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_g6HVpi": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/IMG_20220919_105242.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_TtFkWU": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/inCollage_20200316_204204021_3229.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_mcJqdp": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-27_3.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_QrzDE9": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-51-26.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_kNQ6Jz": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-28_1.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        },
+        "kundenbild_AtADGP": {
+          "type": "kundenbild",
+          "settings": {
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-27_1.jpg",
+            "caption": "",
+            "alt": ""
+          }
+        }
+      },
+      "block_order": [
+        "kundenbild_DbHcQP",
+        "kundenbild_c8rQxK",
+        "kundenbild_FxWpW4",
+        "kundenbild_g6HVpi",
+        "kundenbild_TtFkWU",
+        "kundenbild_mcJqdp",
+        "kundenbild_QrzDE9",
+        "kundenbild_kNQ6Jz",
+        "kundenbild_AtADGP"
+      ],
+      "name": "Kundenbilder Grid",
+      "settings": {}
+    }
+  },
+  "order": [
+    "treppenverlegun_jXADaz",
+    "main",
+    "google_MkFfBg",
+    "kundenbilder_grid_NJW4hw"
+  ]
+}

@@ -1,0 +1,72 @@
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+.auth/
+.sessions/
+sessions/
+tokens/
+secrets/
+local-secrets/
+*.token
+*.session
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+cookies*.json
+
+# Shopify CLI and local authentication state
+.shopify/
+
+# Dependencies and package-manager noise
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Browser automation and temporary browser data
+playwright-report/
+test-results/
+browser-data/
+browser-profile/
+user-data-dir/
+*.har
+qa/artifacts/
+qa/results/
+qa/*.tmp
+qa/*.log
+
+# Local backups, archives, and sensitive exports
+backup/
+backups/
+*.zip
+exports/private/
+exports/sensitive/
+sensitive-exports/
+private-exports/
+*_PRIVATE.*
+*_SENSITIVE.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.Spotlight-V100
+.Trashes
+.idea/
+.vscode/
+*.code-workspace

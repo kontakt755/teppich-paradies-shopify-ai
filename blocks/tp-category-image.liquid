@@ -1,0 +1,72 @@
+{% liquid
+  assign asset_filename = block.settings.asset_filename | strip
+  assign category_image_url = asset_filename | asset_url
+%}
+
+{% capture category_image %}
+  <img
+    src="{{ category_image_url }}"
+    alt="{{ block.settings.alt | escape }}"
+    width="1200"
+    height="900"
+    loading="lazy"
+    decoding="async"
+    class="tp-category-image__image"
+  >
+{% endcapture %}
+
+{% if block.settings.link == blank %}
+  <div class="tp-category-image" {{ block.shopify_attributes }}>
+    {{ category_image }}
+  </div>
+{% else %}
+  <a href="{{ block.settings.link }}" class="tp-category-image" {{ block.shopify_attributes }}>
+    {{ category_image }}
+  </a>
+{% endif %}
+
+{% stylesheet %}
+  .tp-category-image {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .tp-category-image__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    object-position: center;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Kategoriebild",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "asset_filename",
+      "label": "Theme-Asset-Dateiname"
+    },
+    {
+      "type": "text",
+      "id": "alt",
+      "label": "Alternativtext"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Kategoriebild"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,107 @@
+{% doc %}
+  "Zum Vergleich hinzufügen"-Button. Traegt einen JSON-Snapshot der echten
+  Vergleichsfelder dieses Produkts (nur vorhandene Metafelder + berechneter
+  €/m²-Preis) als data-Attribut. nutzschicht/feuchtraum existieren aktuell
+  als keine Metafelder im Schema - bleiben deshalb leer/"–", statt erfunden
+  zu werden.
+{% enddoc %}
+
+{%- liquid
+  assign tp_cmp_variant = product.selected_or_first_available_variant
+  assign tp_cmp_sqm_per_package = product.metafields.custom.qm_pro_paket.value
+
+  assign tp_cmp_price_per_sqm = ''
+  if tp_cmp_sqm_per_package != blank and tp_cmp_sqm_per_package > 0
+    assign tp_cmp_price_per_sqm_raw = tp_cmp_variant.price | times: 1.0 | divided_by: tp_cmp_sqm_per_package | round
+    assign tp_cmp_price_per_sqm = tp_cmp_price_per_sqm_raw | money | strip_html
+  endif
+
+  assign tp_cmp_belagsart = product.metafields.custom.belagsart.value
+  assign tp_cmp_staerke = product.metafields.custom.gesamtstarke.value
+
+  assign tp_cmp_nk_mf = product.metafields.custom.nutzungsklassen
+  assign tp_cmp_nk_val = tp_cmp_nk_mf.value
+  assign tp_cmp_nutzungsklasse = ''
+  if tp_cmp_nk_val != blank
+    if tp_cmp_nk_mf.type contains 'list.'
+      capture tp_cmp_nutzungsklasse
+        for item in tp_cmp_nk_val
+          assign nk = item.nutzungsklasse
+          echo nk.value | default: nk | default: item.name | default: item
+          unless forloop.last
+            echo ', '
+          endunless
+        endfor
+      endcapture
+    else
+      assign nk = tp_cmp_nk_val.nutzungsklasse
+      assign tp_cmp_nutzungsklasse = nk.value | default: nk | default: tp_cmp_nk_val.name | default: tp_cmp_nk_val
+    endif
+  endif
+  assign tp_cmp_nutzungsklasse = tp_cmp_nutzungsklasse | strip
+
+  assign tp_cmp_trittschall = product.metafields.custom.trittschallverbesserung.value
+
+  assign tp_cmp_heating_val = product.metafields.custom.fusbodenheizung.value
+  assign tp_cmp_heating = tp_cmp_heating_val.fusbodenheizung.value | default: tp_cmp_heating_val.fusbodenheizung | default: tp_cmp_heating_val.name | default: tp_cmp_heating_val
+
+  assign tp_cmp_paketinhalt = ''
+  if tp_cmp_sqm_per_package != blank
+    # Deutsches Dezimalkomma, konsistent mit der Anzeige im Paket-Rechner
+    # (siehe blocks/paket-auswahl.liquid).
+    assign tp_cmp_paketinhalt = tp_cmp_sqm_per_package | append: '' | replace: '.', ',' | append: ' m²'
+  endif
+-%}
+{%- capture tp_cmp_snapshot -%}
+{"handle":{{ product.handle | json }},"title":{{ product.title | json }},"pricePerSqm":{{ tp_cmp_price_per_sqm | json }},"belagsart":{{ tp_cmp_belagsart | json }},"staerke":{{ tp_cmp_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_cmp_nutzungsklasse | json }},"trittschall":{{ tp_cmp_trittschall | json }},"fussbodenheizung":{{ tp_cmp_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_cmp_paketinhalt | json }}}
+{%- endcapture -%}
+
+<button
+  type="button"
+  class="tp-compare-toggle"
+  data-tp-compare-toggle
+  data-tp-compare-handle="{{ product.handle }}"
+  data-tp-compare-snapshot="{{ tp_cmp_snapshot | strip | escape }}"
+  aria-pressed="false"
+  {{ block.shopify_attributes }}
+>
+  Zum Vergleich hinzufügen
+</button>
+
+<style>
+  .tp-compare-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 38px;
+    margin-top: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.25);
+    border-radius: 7px;
+    color: var(--color-foreground);
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .tp-compare-toggle[aria-pressed='true'] {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Vergleichen-Button",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Vergleichen-Button"
+    }
+  ]
+}
+{% endschema %}

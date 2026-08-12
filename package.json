@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "qa": "node qa/run-qa.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.54.2"
+  }
+}

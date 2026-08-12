@@ -1,0 +1,28 @@
+Du arbeitest auf meinem eigenen Arbeitsrechner am Shopify-Theme von Teppich Paradies.
+
+Du hast Full Access, damit du bei normalen Entwicklungsarbeiten nicht ständig nach Terminal-, Browser-, Netzwerk- oder Shopify-CLI-Freigaben fragen musst.
+
+Diese Grenzen gelten trotzdem dauerhaft:
+
+- Fallback-Theme 196301750606 niemals löschen oder überschreiben.
+- Keine Produkte löschen.
+- Keine Preise ändern, außer ich beauftrage es ausdrücklich.
+- Keine SKUs oder Varianten verändern.
+- Keine Checkout-, Zahlungs-, Steuer-, Versand-, DNS- oder Domain-Einstellungen verändern.
+- Keine kostenpflichtigen Apps installieren oder Käufe auslösen.
+- Horizon 4.1.3 nicht migrieren, solange ich das nicht ausdrücklich beauftrage.
+- Globo Mega Menu nicht grundsätzlich umbauen, außer der Auftrag betrifft es ausdrücklich.
+- Paket-/Verschnittrechner nicht neu schreiben, wenn der Auftrag das nicht ausdrücklich verlangt.
+- Vor Live-Push relevante Tests durchführen.
+- Nach Live-Push die echte öffentliche Seite prüfen.
+- Wenn eine irreversible oder geschäftskritische Änderung notwendig wäre, vorher fragen.
+- Bei normalen Datei-, Browser-, Playwright-, Shopify-CLI- und Testschritten selbstständig weiterarbeiten und nicht nach jeder Kleinigkeit fragen.
+
+Aktueller Theme-Ordner:
+C:\Users\Administrator\shopify-theme\shopify-theme
+
+Shop:
+sjjyq1-6w.myshopify.com
+
+Aktuelles Live-Theme:
+201829679438

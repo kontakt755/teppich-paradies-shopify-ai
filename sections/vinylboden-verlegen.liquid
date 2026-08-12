@@ -1,0 +1,220 @@
+<!-- Abschnitt: Hero + Einleitung -->
+<section class="vinyl-hero-section">
+  <div class="vinyl-hero-wrapper">
+    <div class="vinyl-hero-text">
+      <h1 class="vinyl-hero-title">Vinylboden fachgerecht verlegen lassen</h1>
+      <p class="vinyl-hero-subtext">
+        Entdecken Sie den perfekten Vinylboden für Ihr Zuhause – wir liefern und verlegen Klickvinyl, Klebevinyl und Vinyl-Rollenware. Schnell, sauber und zu fairen Konditionen.
+      </p>
+      <a href="/pages/kontakt" class="vinyl-hero-button">Jetzt Angebot anfordern</a>
+    </div>
+  </div>
+</section>
+
+<style>
+.vinyl-hero-section {
+  background: #f7f7f7;
+  padding: 80px 20px 60px;
+  text-align: center;
+}
+.vinyl-hero-title {
+  font-size: clamp(2.5rem, 5vw, 3.4rem);
+  margin-bottom: 24px;
+  color: #2a2a2a;
+}
+.vinyl-hero-subtext {
+  font-size: clamp(1.3rem, 2.5vw, 1.6rem);
+  color: #555;
+  max-width: 700px;
+  margin: 0 auto 36px;
+}
+.vinyl-hero-button {
+  display: inline-block;
+  background: #2e7d32;
+  color: white;
+  padding: 16px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 1.3rem;
+  transition: background 0.2s ease;
+}
+.vinyl-hero-button:hover {
+  background: #1b5e20;
+}
+</style>
+
+<!-- Abschnitt: Vergleich der Vinyl-Arten -->
+<style>
+.vinylarten-section {
+  max-width: 1200px;
+  margin: 80px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+.vinylarten-title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #2a2a2a;
+}
+.vinylarten-subtitle {
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 48px;
+}
+.vinylarten-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+.vinylart-card {
+  background: #f9f9f9;
+  border-radius: 14px;
+  padding: 30px 20px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: left;
+}
+.vinylart-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+.vinylart-card h3 {
+  font-size: 22px;
+  margin-bottom: 16px;
+  color: #2a2a2a;
+}
+.vinylart-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+.vinylart-card ul li::before {
+  content: "\2713";
+  color: #2e7d32;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.vinylart-card ul li {
+  margin-bottom: 10px;
+  color: #444;
+  font-size: 16px;
+}
+.vinylart-card a {
+  display: inline-block;
+  background: #2e7d32;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+.vinylart-card a:hover {
+  background: #1b5e20;
+}
+</style>
+
+<section class="vinylarten-section">
+  <h2 class="vinylarten-title">Welche Vinylart passt zu Ihnen?</h2>
+  <p class="vinylarten-subtitle">Finden Sie den passenden Boden für Ihre Wohnsituation, Ihren Untergrund und Ihre Ansprüche.</p>
+
+  <div class="vinylarten-grid">
+
+    <div class="vinylart-card">
+      <h3>Klickvinyl</h3>
+      <ul>
+        <li>Schnell und sauber verlegt durch Klicksystem</li>
+        <li>Wasserfest – perfekt für Küche und Bad</li>
+        <li>Auch zum Austausch einzelner Planken</li>
+      </ul>
+      <a href="/collections/klickvinyl">Zu Klickvinyl</a>
+    </div>
+
+    <div class="vinylart-card">
+      <h3>Klebevinyl</h3>
+      <ul>
+        <li>Besonders flach – ideal bei geringen Aufbauhöhen</li>
+        <li>Fester Halt durch vollflächiges Verkleben</li>
+        <li>Optimal für Gewerbe & stark genutzte Flächen</li>
+      </ul>
+      <a href="/collections/klebevinyl">Zu Klebevinyl</a>
+    </div>
+
+    <div class="vinylart-card">
+      <h3>Vinyl-Rollenware</h3>
+      <ul>
+        <li>Große Fläche, wenig Fugen – ideal für Wohnzimmer</li>
+        <li>Besonders günstig & schnell verlegt</li>
+        <li>Auch für temporäre Lösungen geeignet</li>
+      </ul>
+      <a href="/collections/rollenware">Zu Rollenware</a>
+    </div>
+
+  </div>
+</section>
+
+
+<style>
+.vinyl-arten-section {
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 0 20px;
+  text-align: center;
+}
+.vinyl-arten-title {
+  font-size: 30px;
+  margin-bottom: 40px;
+  color: #2a2a2a;
+}
+.vinyl-arten-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+}
+.vinyl-art-box {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.vinyl-art-box h3 {
+  font-size: 22px;
+  color: #2a2a2a;
+  margin-bottom: 18px;
+}
+.vinyl-art-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+}
+.vinyl-art-box ul li {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #555;
+}
+.vinyl-art-link {
+  display: inline-block;
+  margin-top: 10px;
+  background: #222;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 15px;
+}
+</style>
+
+
+{% schema %}
+{
+  "name": "Tebo Verlegen Hero",
+  "presets": [
+    {
+      "name": "Vinyl Verlegen Hero",
+      "category": "Custom"
+    }
+  ]
+}
+{% endschema %}

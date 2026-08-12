@@ -1,0 +1,291 @@
+{% doc %}
+  @prompt
+    Tabellarische Anzeige von Produktinformationen. Links Key, rechts entsprechender Wert.
+{% enddoc %}
+
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-product-info-table-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+  }
+
+  .ai-product-info-table__wrapper-{{ ai_gen_id }} {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: {{ block.settings.background_color }};
+    border-radius: {{ block.settings.border_radius }}px;
+    overflow: hidden;
+  }
+
+  .ai-product-info-table__row-{{ ai_gen_id }} {
+    border-bottom: {{ block.settings.row_border_width }}px solid {{ block.settings.border_color }};
+  }
+
+  .ai-product-info-table__row-{{ ai_gen_id }}:last-child {
+    border-bottom: none;
+  }
+
+  .ai-product-info-table__key-{{ ai_gen_id }},
+  .ai-product-info-table__value-{{ ai_gen_id }} {
+    padding: {{ block.settings.cell_padding }}px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .ai-product-info-table__key-{{ ai_gen_id }} {
+    font-weight: {{ block.settings.key_font_weight }};
+    color: {{ block.settings.key_text_color }};
+    width: {{ block.settings.key_column_width }}%;
+    font-size: {{ block.settings.key_font_size }}px;
+  }
+
+  .ai-product-info-table__value-{{ ai_gen_id }} {
+    color: {{ block.settings.value_text_color }};
+    font-size: {{ block.settings.value_font_size }}px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-product-info-table__key-{{ ai_gen_id }},
+    .ai-product-info-table__value-{{ ai_gen_id }} {
+      display: block;
+      width: 100%;
+    }
+
+    .ai-product-info-table__key-{{ ai_gen_id }} {
+      padding-bottom: {{ block.settings.cell_padding | divided_by: 2 }}px;
+    }
+
+    .ai-product-info-table__value-{{ ai_gen_id }} {
+      padding-top: 0;
+    }
+  }
+{% endstyle %}
+
+{% comment %}
+  Format:
+  Label::metafield_key::display_field
+  display_field:
+  - name = Metaobject-Feld "name" verwenden
+  - value = direkten Wert/String verwenden
+  - optik / fasermaterial / nutzungsklasse / brandverhalten = entsprechendes Feld verwenden
+{% endcomment %}
+{% capture table_config %}
+Marke::marke::name|
+Belagsart::belagsart::name|
+Optik::optik::optik|
+Material::material::name|
+Fasermaterial::fasermaterial::fasermaterial|
+Zimmer::zimmer::zimmer|
+Aufbau::aufbau::name|
+Rückenausstattung::ruckenausstattung::name|
+Florhöhe::florhohe::name|
+Gesamtstärke::gesamtstarke::name|
+Poleneinsatzgewicht::poleneinsatzgewicht::name|
+Nutzungsklassen::nutzungsklassen::nutzungsklasse|
+Komfortklasse::komfortklasse::name|
+Fußbodenheizung::fusbodenheizung::fusbodenheizung|
+Trittschallverbesserung::trittschallverbesserung::name|
+Brandverhalten::brandverhalten::brandverhalten
+{% endcapture %}
+
+{% assign table_rows = table_config | strip | split: '|' %}
+
+<product-info-table-{{ ai_gen_id }}
+  class="ai-product-info-table-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <table class="ai-product-info-table__wrapper-{{ ai_gen_id }}">
+    {% for row in table_rows %}
+      {% assign row_parts = row | split: '::' %}
+      {% assign row_label = row_parts[0] | strip %}
+      {% assign metafield_key = row_parts[1] | strip %}
+      {% assign display_field = row_parts[2] | strip %}
+      {% assign metafield = product.metafields.custom[metafield_key] %}
+      {% assign metafield_value = metafield.value %}
+
+      {% if metafield_value != blank %}
+        <tr class="ai-product-info-table__row-{{ ai_gen_id }}">
+          <td class="ai-product-info-table__key-{{ ai_gen_id }}">{{ row_label }}</td>
+
+          <td class="ai-product-info-table__value-{{ ai_gen_id }}">
+            {% if metafield != blank and metafield_value != blank %}
+              {% if metafield.type contains 'list.' %}
+                {%- for item in metafield_value -%}
+                  {%- if display_field == 'value' -%}
+                    {{- item -}}
+                  {%- elsif display_field == 'name' -%}
+                    {{- item.name | default: item -}}
+                  {%- else -%}
+                    {%- assign field_drop = item[display_field] -%}
+                    {{- field_drop.value | default: field_drop | default: item.name | default: item -}}
+                  {%- endif -%}
+                  {%- unless forloop.last -%}, {% endunless -%}
+                {%- endfor -%}
+
+              {% else %}
+                {% if display_field == 'value' %}
+                  {{ metafield_value }}
+                {% elsif display_field == 'name' %}
+                  {{ metafield_value.name | default: metafield_value }}
+                {% else %}
+                  {% assign field_drop = metafield_value[display_field] %}
+                  {{
+                    field_drop.value
+                    | default: field_drop
+                    | default: metafield_value.name
+                    | default: metafield_value
+                  }}
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+  </table>
+</product-info-table-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ProductInfoTable{{ ai_gen_id }} extends HTMLElement {}
+
+    if (!customElements.get('product-info-table-{{ ai_gen_id }}')) {
+      customElements.define('product-info-table-{{ ai_gen_id }}', ProductInfoTable{{ ai_gen_id }});
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Produktinformationen",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop-Breite",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "key_column_width",
+      "label": "Breite Bezeichnungsspalte",
+      "min": 20,
+      "max": 50,
+      "step": 5,
+      "unit": "%",
+      "default": 35
+    },
+    {
+      "type": "range",
+      "id": "cell_padding",
+      "label": "Zellenabstand",
+      "min": 8,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Eckenradius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "row_border_width",
+      "label": "Trennlinienstärke",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "header",
+      "content": "Farben"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Hintergrund",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Trennlinien",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "color",
+      "id": "key_text_color",
+      "label": "Bezeichnungstext",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "value_text_color",
+      "label": "Werttext",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Typografie"
+    },
+    {
+      "type": "range",
+      "id": "key_font_size",
+      "label": "Schriftgröße Bezeichnung",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 15
+    },
+    {
+      "type": "select",
+      "id": "key_font_weight",
+      "label": "Schriftstärke Bezeichnung",
+      "options": [
+        { "value": "400", "label": "Normal" },
+        { "value": "500", "label": "Mittel" },
+        { "value": "600", "label": "Halbfett" },
+        { "value": "700", "label": "Fett" }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "range",
+      "id": "value_font_size",
+      "label": "Schriftgröße Wert",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    }
+  ],
+  "presets": [
+    {
+      "name": "Produktinformationen"
+    }
+  ]
+}
+{% endschema %}

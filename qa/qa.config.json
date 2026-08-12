@@ -1,0 +1,30 @@
+{
+  "baseUrl": "https://www.teppich-paradies.net",
+  "browserExecutable": "auto",
+  "navigationTimeoutMs": 30000,
+  "overflowTolerancePx": 2,
+  "viewports": {
+    "Desktop": { "width": 1440, "height": 1000 },
+    "Mobile": { "width": 390, "height": 844 }
+  },
+  "allowlist": {
+    "console": [],
+    "requests": []
+  },
+  "knownConsoleIssues": [
+    {
+      "id": "header-menu-overflowMenu",
+      "type": "pageerror",
+      "exactMessage": "Required ref \"overflowMenu\" not found in component header-menu",
+      "reportLabel": "header-menu / overflowMenu"
+    }
+  ],
+  "pages": [
+    { "name": "Startseite", "path": "/", "type": "home", "minVisibleImages": 1 },
+    { "name": "Vinylboden", "path": "/collections/vinylboden-1", "type": "vinylCollection", "minVisibleImages": 1 },
+    { "name": "Teppichboden", "path": "/collections/teppischboden", "type": "carpetCollection", "minVisibleImages": 1 },
+    { "name": "Teppichboden Hochflor", "path": "/collections/teppichboden-hochflor", "type": "carpetCollection", "minVisibleImages": 1, "forbiddenText": ["14.000 Bewertungen", "Trusted Shops", "Trusted-Shops"] },
+    { "name": "Klickvinyl PDP", "path": "/products/marlow-eiche-nordisch-klickvinyl-7mm", "type": "packageProduct", "expect": { "pricePerSquareMeter": true, "cart": true, "sample": true, "compare": true } },
+    { "name": "Teppichboden PDP", "path": "/products/softiq-teppichboden", "type": "carpetProduct", "expect": { "cart": true, "sample": true, "compare": true } }
+  ]
+}

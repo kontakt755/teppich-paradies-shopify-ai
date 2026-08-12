@@ -1,0 +1,37 @@
+{% comment %}
+  Google Shopping safety layer.
+
+  Shopify's native structured_data output is kept unchanged for regular and
+  package products. It is intentionally suppressed when either:
+  - a genuine (non-OPC) variant has custom.rollenbreite > 0, because its
+    Shopify price is a non-purchasable square-metre base price; or
+  - an opc-* calculator variant exists, because technical calculator variants
+    must never become Merchant offers.
+
+  Product titles, tags and descriptions are deliberately not used for roll
+  detection. Do not add a guessed minimum price here.
+{% endcomment %}
+
+{%- liquid
+  assign tp_schema_is_roll = false
+  assign tp_schema_has_opc_variant = false
+
+  for tp_schema_variant in product_resource.variants
+    assign tp_schema_variant_title = tp_schema_variant.title | downcase | strip
+
+    if tp_schema_variant_title contains 'opc-'
+      assign tp_schema_has_opc_variant = true
+    else
+      assign tp_schema_roll_width = tp_schema_variant.metafields.custom.rollenbreite.value | times: 1
+      if tp_schema_roll_width > 0
+        assign tp_schema_is_roll = true
+      endif
+    endif
+  endfor
+-%}
+
+{%- unless tp_schema_is_roll or tp_schema_has_opc_variant -%}
+  <script type="application/ld+json">
+    {{ product_resource | structured_data }}
+  </script>
+{%- endunless -%}

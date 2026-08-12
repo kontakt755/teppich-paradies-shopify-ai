@@ -1,0 +1,574 @@
+{% doc %}
+  @prompt
+    Grid Layout, wo man bestimmen kann wie viele Kacheln pro Reihe sind. Eine Kachel soll aus Bild, Titel, Button bestehen, Die Kacheln sollen voneinander mit einem border getrennt sein
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-tile-grid-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+    padding: {{ block.settings.section_padding }}px 0;
+  }
+
+  .ai-tile-grid__container-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat({{ block.settings.columns_desktop }}, 1fr);
+    gap: {{ block.settings.grid_gap }}px;
+  }
+
+  .ai-tile-grid__item-{{ ai_gen_id }} {
+    display: flex;
+    flex-direction: column;
+    background-color: {{ block.settings.tile_background_color }};
+    border-radius: {{ block.settings.tile_border_radius }}px;
+    border: {{ block.settings.tile_border_width }}px {{ block.settings.tile_border_style }} {{ block.settings.tile_border_color }};
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+
+  .ai-tile-grid__item-{{ ai_gen_id }}:hover {
+    transform: translateY(-4px);
+  }
+
+  .ai-tile-grid__image-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    aspect-ratio: {{ block.settings.image_aspect_ratio }};
+    overflow: hidden;
+  }
+
+  .ai-tile-grid__image-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-tile-grid__image-placeholder-{{ ai_gen_id }} {
+    width: 100%;
+    height: 100%;
+    background-color: #f4f4f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ai-tile-grid__image-placeholder-{{ ai_gen_id }} svg {
+    width: 50%;
+    height: 50%;
+    opacity: 0.3;
+  }
+
+  .ai-tile-grid__content-{{ ai_gen_id }} {
+    padding: {{ block.settings.tile_padding }}px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+  }
+
+  .ai-tile-grid__title-{{ ai_gen_id }} {
+    font-size: {{ block.settings.title_size }}px;
+    font-weight: 600;
+    color: {{ block.settings.title_color }};
+    margin: 0;
+  }
+
+  .ai-tile-grid__button-{{ ai_gen_id }} {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: {{ block.settings.button_background_color }};
+    color: {{ block.settings.button_text_color }};
+    text-decoration: none;
+    border-radius: {{ block.settings.button_border_radius }}px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    margin-top: auto;
+  }
+
+  .ai-tile-grid__button-{{ ai_gen_id }}:hover {
+    background-color: {{ block.settings.button_hover_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-tile-grid__container-{{ ai_gen_id }} {
+      grid-template-columns: repeat({{ block.settings.columns_mobile }}, 1fr);
+    }
+  }
+{% endstyle %}
+
+<div class="ai-tile-grid-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-tile-grid__container-{{ ai_gen_id }}">
+    {% for i in (1..6) %}
+      {% liquid
+        assign tile_enabled_key = 'tile_' | append: i | append: '_enabled'
+        assign tile_image_key = 'tile_' | append: i | append: '_image'
+        assign tile_title_key = 'tile_' | append: i | append: '_title'
+        assign tile_button_text_key = 'tile_' | append: i | append: '_button_text'
+        assign tile_button_link_key = 'tile_' | append: i | append: '_button_link'
+
+        assign tile_enabled = block.settings[tile_enabled_key]
+        assign tile_image = block.settings[tile_image_key]
+        assign tile_title = block.settings[tile_title_key]
+        assign tile_button_text = block.settings[tile_button_text_key]
+        assign tile_button_link = block.settings[tile_button_link_key]
+      %}
+
+      {% if tile_enabled %}
+        <div class="ai-tile-grid__item-{{ ai_gen_id }}">
+          <div class="ai-tile-grid__image-wrapper-{{ ai_gen_id }}">
+            {% if tile_image %}
+              <img
+                src="{{ tile_image | image_url: width: 800 }}"
+                alt="{{ tile_image.alt | escape }}"
+                loading="lazy"
+                width="{{ tile_image.width }}"
+                height="{{ tile_image.height }}"
+                class="ai-tile-grid__image-{{ ai_gen_id }}"
+              >
+            {% else %}
+              <div class="ai-tile-grid__image-placeholder-{{ ai_gen_id }}">
+                {{ 'image' | placeholder_svg_tag }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="ai-tile-grid__content-{{ ai_gen_id }}">
+            {% if tile_title != blank %}
+              <h3 class="ai-tile-grid__title-{{ ai_gen_id }}">{{ tile_title }}</h3>
+            {% endif %}
+
+            {% if tile_button_text != blank %}
+              <a
+                href="{{ tile_button_link }}"
+                class="ai-tile-grid__button-{{ ai_gen_id }}"
+              >
+                {{ tile_button_text }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Kachel-Raster",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Spalten (Desktop)",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Spalten (Mobil)",
+      "options": [
+        {
+          "value": "1",
+          "label": "1"
+        },
+        {
+          "value": "2",
+          "label": "2"
+        }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "label": "Abstand zwischen Kacheln",
+      "min": 0,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop-Breite",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Abstand oben/unten",
+      "min": 0,
+      "max": 100,
+      "step": 10,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Kachel-Stil"
+    },
+    {
+      "type": "color",
+      "id": "tile_background_color",
+      "label": "Hintergrundfarbe",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "tile_border_radius",
+      "label": "Eckenradius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "tile_padding",
+      "label": "Innenabstand",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Rahmen"
+    },
+    {
+      "type": "select",
+      "id": "tile_border_style",
+      "label": "Rahmenstil",
+      "options": [
+        {
+          "value": "none",
+          "label": "Kein Rahmen"
+        },
+        {
+          "value": "solid",
+          "label": "Durchgezogen"
+        },
+        {
+          "value": "dashed",
+          "label": "Gestrichelt"
+        },
+        {
+          "value": "dotted",
+          "label": "Gepunktet"
+        }
+      ],
+      "default": "solid"
+    },
+    {
+      "type": "range",
+      "id": "tile_border_width",
+      "label": "Rahmenbreite",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "color",
+      "id": "tile_border_color",
+      "label": "Rahmenfarbe",
+      "default": "#e6e6e6"
+    },
+    {
+      "type": "header",
+      "content": "Bild"
+    },
+    {
+      "type": "select",
+      "id": "image_aspect_ratio",
+      "label": "Seitenverhältnis",
+      "options": [
+        {
+          "value": "1 / 1",
+          "label": "Quadratisch (1:1)"
+        },
+        {
+          "value": "4 / 3",
+          "label": "Querformat (4:3)"
+        },
+        {
+          "value": "16 / 9",
+          "label": "Breit (16:9)"
+        },
+        {
+          "value": "3 / 4",
+          "label": "Hochformat (3:4)"
+        }
+      ],
+      "default": "4 / 3"
+    },
+    {
+      "type": "header",
+      "content": "Titel"
+    },
+    {
+      "type": "range",
+      "id": "title_size",
+      "label": "Schriftgröße",
+      "min": 12,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Textfarbe",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "color",
+      "id": "button_background_color",
+      "label": "Hintergrundfarbe",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Textfarbe",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_hover_color",
+      "label": "Hover-Hintergrundfarbe",
+      "default": "#333333"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Eckenradius",
+      "min": 0,
+      "max": 30,
+      "step": 2,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "header",
+      "content": "Kachel 1"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_1_enabled",
+      "label": "Kachel 1 aktivieren",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_1_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_1_title",
+      "label": "Titel",
+      "default": "Kachel 1"
+    },
+    {
+      "type": "text",
+      "id": "tile_1_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_1_button_link",
+      "label": "Button-Link"
+    },
+    {
+      "type": "header",
+      "content": "Kachel 2"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_2_enabled",
+      "label": "Kachel 2 aktivieren",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_2_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_2_title",
+      "label": "Titel",
+      "default": "Kachel 2"
+    },
+    {
+      "type": "text",
+      "id": "tile_2_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_2_button_link",
+      "label": "Button-Link"
+    },
+    {
+      "type": "header",
+      "content": "Kachel 3"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_3_enabled",
+      "label": "Kachel 3 aktivieren",
+      "default": true
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_3_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_3_title",
+      "label": "Titel",
+      "default": "Kachel 3"
+    },
+    {
+      "type": "text",
+      "id": "tile_3_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_3_button_link",
+      "label": "Button-Link"
+    },
+    {
+      "type": "header",
+      "content": "Kachel 4"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_4_enabled",
+      "label": "Kachel 4 aktivieren",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_4_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_4_title",
+      "label": "Titel",
+      "default": "Kachel 4"
+    },
+    {
+      "type": "text",
+      "id": "tile_4_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_4_button_link",
+      "label": "Button-Link"
+    },
+    {
+      "type": "header",
+      "content": "Kachel 5"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_5_enabled",
+      "label": "Kachel 5 aktivieren",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_5_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_5_title",
+      "label": "Titel",
+      "default": "Kachel 5"
+    },
+    {
+      "type": "text",
+      "id": "tile_5_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_5_button_link",
+      "label": "Button-Link"
+    },
+    {
+      "type": "header",
+      "content": "Kachel 6"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_6_enabled",
+      "label": "Kachel 6 aktivieren",
+      "default": false
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_6_image",
+      "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "tile_6_title",
+      "label": "Titel",
+      "default": "Kachel 6"
+    },
+    {
+      "type": "text",
+      "id": "tile_6_button_text",
+      "label": "Button-Text",
+      "default": "Mehr erfahren"
+    },
+    {
+      "type": "url",
+      "id": "tile_6_button_link",
+      "label": "Button-Link"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Kachel-Raster"
+    }
+  ]
+}
+{% endschema %}

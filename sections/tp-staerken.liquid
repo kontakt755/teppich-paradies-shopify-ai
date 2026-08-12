@@ -1,0 +1,83 @@
+{% comment %}
+  Kompakter Trust-/USP-Bereich fuer die Startseite. Nur tatsaechlich
+  belegbare Leistungen (siehe snippets/tp-service-links.liquid und die
+  bestehende Hero-Kontaktzeile fuer dieselben Fakten: Beratung, Muster,
+  Liefer-/Verlegeservice, stationaerer Fachbetrieb in Oranienburg). Keine
+  erfundenen Garantien oder Lieferzeiten.
+{% endcomment %}
+
+<div class="tp-staerken color-{{ section.settings.color_scheme }}">
+  <ul class="tp-staerken__list">
+    <li>Persönliche Fachberatung</li>
+    <li>Kostenlose Muster</li>
+    <li>Deutschlandweiter Versand</li>
+    <li>Fachbetrieb vor Ort in Oranienburg</li>
+  </ul>
+</div>
+
+{% stylesheet %}
+  .tp-staerken {
+    padding: 32px 20px;
+  }
+
+  .tp-staerken__list {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 32px;
+  }
+
+  .tp-staerken__list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  .tp-staerken__list li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-staerken {
+      padding: 24px 16px;
+    }
+
+    .tp-staerken__list {
+      gap: 10px 20px;
+      justify-content: flex-start;
+    }
+
+    .tp-staerken__list li {
+      font-size: 14px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Unsere Stärken",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    { "name": "TP Unsere Stärken" }
+  ]
+}
+{% endschema %}

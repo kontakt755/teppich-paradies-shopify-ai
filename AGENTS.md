@@ -1,0 +1,197 @@
+# TEPPICH PARADIES – CODEX PROJECT RULES
+
+## Projekt
+
+Shopify-Onlineshop der Teppich Paradies Oranienburg GmbH.
+
+- Öffentlicher Shop: https://www.teppich-paradies.net
+- Shopify Store: `sjjyq1-6w.myshopify.com`
+- Lokale Arbeitsbasis: `C:\Users\Administrator\shopify-theme\shopify-theme`
+
+Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
+
+Stand beim Erstellen dieser Datei:
+
+- Live-Theme: `theme-productpage-v2-night`, ID `201829679438`
+- Fallback-Theme: `Horizon`, ID `196301750606`
+
+## Grundsätzliche Arbeitsweise
+
+- Bestehenden Code zuerst verstehen und funktionierende Lösungen nicht unnötig neu schreiben.
+- Kleine, klar abgegrenzte Aufgaben möglichst selbstständig vollständig durchführen.
+- Nicht nach jedem normalen Terminal-, Browser-, Playwright-, Datei-, Netzwerk- oder Shopify-CLI-Schritt fragen.
+- Bei einem Hindernis selbstständig eine sichere Alternative prüfen.
+- Nicht wegen GitHub, Authentifizierung oder Nebeninfrastruktur unnötig vom eigentlichen Shopify-Auftrag abweichen.
+- Keine unnötigen großen Refactorings durchführen, wenn eine kleine robuste Änderung reicht.
+- Mobile und Desktop berücksichtigen und bestehende Funktionen regressionsprüfen.
+- Nach Theme-Änderungen Shopify Theme Check verwenden, wenn sinnvoll.
+- Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
+- Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
+- Fallback-Theme erhalten; Theme-ID `196301750606` niemals löschen oder überschreiben.
+- Bei kleinen, sicheren und getesteten Theme-Optimierungen darf direkt live veröffentlicht werden, sofern der Auftrag nichts anderes sagt.
+- Bei größeren riskanten Architekturänderungen zuerst analysieren und berichten.
+- Wenn eine irreversible oder geschäftskritische Änderung notwendig wäre, vorher fragen.
+
+## NIEMALS ohne ausdrückliche Freigabe
+
+- Produkte oder Varianten löschen
+- SKUs oder Varianten verändern
+- Preise verändern
+- Checkout-Einstellungen verändern
+- Zahlungsanbieter verändern
+- Steuer-Einstellungen verändern
+- Versand-Einstellungen verändern
+- DNS oder Domains verändern
+- Rechtstexte verändern
+- kostenpflichtige Apps installieren
+- Käufe oder Abonnements auslösen
+- Fallback-Theme löschen oder überschreiben
+- Horizon-Version migrieren
+- große irreversible Shopify-Datenänderungen durchführen
+
+## Produktdaten
+
+Metafelder oder Collection-Zuordnungen nur verändern, wenn der jeweilige Auftrag dies ausdrücklich erlaubt oder wenn die Änderung eindeutig durch verlässliche vorhandene Produkt- oder Herstellerdaten belegt ist.
+
+Nie technische Eigenschaften erfinden oder anhand eines Produktbildes allein ableiten.
+
+Bei unklaren Produktdaten:
+
+- nicht raten
+- als offenen Fall dokumentieren
+- mit der nächsten eindeutigen Aufgabe fortfahren
+
+## Shopify Theme
+
+Bestehende wichtige Funktionen nicht unnötig neu bauen:
+
+- prominente €/m²-Darstellung bei Paketprodukten
+- Paket-/Verschnittrechner
+- deutsche Paket-/Bestellmengenanzeige
+- Produktvergleich bis maximal 3 Produkte
+- Musterbestellung
+- Breadcrumb
+- Produktvorteile
+- Produktbeschreibung / Verkaufsbereich
+- technische Daten
+- neue Product-Card-Logik
+- gekürzte sichtbare Kartentitel
+- Predictive Search
+- Startseiten-Struktur
+- Vinylboden-Kategoriecarousel
+- Mobile Peek / Carousel-Navigation
+
+Der Paket-/Verschnittrechner und dessen Warenkorblogik sind bereits intensiv getestet. Nicht neu schreiben, außer der Benutzer beauftragt dies ausdrücklich.
+
+Globo Mega Menu funktioniert aktuell. Nicht grundsätzlich umbauen, außer der Auftrag betrifft ausdrücklich das Menü.
+
+Horizon 4.1.3 existiert als separates Update. Keine Migration durchführen, solange dies nicht ausdrücklich beauftragt wird.
+
+## Preislogik
+
+Bei Paketprodukten:
+
+- €/m² ist die primäre Kundendarstellung.
+- Der interne Shopify-Preis bleibt der Paketpreis.
+- Den Paketpreis auf Collection-Karten normalerweise nicht prominent anzeigen.
+- Die Produktdetailseite darf den Paketpreis sekundär zeigen.
+- Warenkorb und Checkout müssen mit echten ganzen Paketen arbeiten.
+
+Der Preisfilter bei Vinylboden ist bewusst ausgeblendet, solange Shopify nach Paketpreis statt sichtbarem €/m² filtert. Diese Logik nicht versehentlich zurückbauen.
+
+## Produktkarten
+
+Ziele:
+
+- kurze sichtbare Titel
+- echten vollständigen Produkttitel für Link und Barrierefreiheit erhalten
+- klare €/m²-Darstellung
+- nicht überladen
+- Muster und Vergleichen nur dort, wo sinnvoll
+- auf Mobile nichts abschneiden
+
+Teppichboden-Titel mit angehängten Breiten wie „Piumera Teppichboden 400cm 500cm“ dürfen in der sichtbaren Karte beispielsweise als „Piumera“ dargestellt werden, ohne den echten Shopify-Produkttitel zu verändern.
+
+## UX / Design
+
+Stil:
+
+- moderner Fachhandel
+- hochwertig
+- ruhig
+- verständlich
+- nicht überladen
+- keine unnötige Marketing-Sprache
+- vorhandene Teppich-Paradies-Farbwelt nutzen
+
+Prioritäten:
+
+1. Verständlichkeit
+2. Kaufentscheidung erleichtern
+3. Mobile Bedienbarkeit
+4. Fachhandels-Vertrauen
+5. saubere technische Umsetzung
+
+Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, Bilder oder Designs 1:1 kopieren.
+
+## Bilder
+
+- Vorhandene echte Produkt- und Herstellerbilder bevorzugen.
+- Keine Produkteigenschaften durch erfundene Bilder falsch darstellen.
+- Erklärende Kategorievisuals dürfen verwendet werden, wenn sie technisch korrekt sind.
+- Above-the-fold-Bilder beim ersten Laden sinnvoll priorisieren.
+- Lazy Loading nicht pauschal abschalten.
+
+## Tests
+
+Vor bzw. nach relevanten Theme-Änderungen bevorzugt `npm run qa` verwenden, statt dieselben mechanischen Browser- und Theme-Checks manuell mit Modellarbeit zu wiederholen.
+
+Je nach Änderung sinnvoll und risikobasiert prüfen:
+
+- Desktop
+- Mobile bei ca. 390 px
+- Browser-Konsole
+- Theme Check
+- Links und Bilder
+- Produktkarten und Varianten
+- Warenkorb
+- Vergleich und Muster
+- Rollenware und Fixpreis
+- Teppichboden
+- Klickvinyl und Klebevinyl
+
+Nicht für jede Miniänderung den gesamten Shop unnötig testen.
+
+## Kommunikation
+
+Der Benutzer möchte möglichst wenig Rückfragen.
+
+Bei klaren, reversiblen Aufgaben: analysieren → umsetzen → testen → live prüfen → kurz berichten.
+
+Nur nachfragen, wenn:
+
+- eine wichtige geschäftliche Entscheidung fehlt
+- Daten nicht eindeutig belegbar sind
+- eine irreversible oder riskante Änderung nötig wäre
+- Kosten ausgelöst würden
+- mehrere fachlich unterschiedliche Lösungen erhebliche Auswirkungen hätten
+
+Abschlussberichte kompakt halten:
+
+- was geändert wurde
+- was getestet wurde
+- ob live
+- offene echte Probleme
+
+## Aktueller wichtiger Backlog
+
+Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:
+
+- Teppichboden Mobile-Menü optimieren
+- fehlendes oder graues Kategoriebild bei Teppichboden-Unterseiten endgültig beheben
+- Hochflor-/Mittelflor-Zuordnung fachlich verbessern
+- ecoVella-/Wolle-Zuordnung sauber prüfen
+- Raumplaner / Roomvo evaluieren beziehungsweise später integrieren
+- Horizon 4.1.3 später separat migrieren
+- Produktbilder langfristig verbessern
+- Reste & Sonderposten später als eigenen starken Shopbereich aufbauen

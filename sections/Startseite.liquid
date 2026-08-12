@@ -1,0 +1,313 @@
+<!-- START Custom Startseite mit Premium Hero + Übergang + Kategorien -->
+
+<style>
+/* ============================= */
+/* HERO SECTION */
+/* ============================= */
+
+.hero {
+  position: relative;
+  background: url('https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ChatGPT_Image_12._Feb._2026_09_31_42.png?v=1770885222') center/cover no-repeat;
+  min-height: 520px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  z-index: 1;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.45);
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,0.92);
+  padding: 28px 28px;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-width: 640px;
+  width: 100%;
+}
+
+.hero-text {
+  margin-bottom: 16px;
+}
+
+.hero h1 {
+  font-size: clamp(26px, 4.2vw, 44px);
+  line-height: 1.15;
+  margin: 0 0 10px;
+  color: #222;
+}
+
+.hero p {
+  font-size: clamp(15px, 2.2vw, 18px);
+  line-height: 1.5;
+  margin: 0;
+  color: #555;
+}
+
+.hero-actions{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:18px;
+}
+
+.btn-primary, .btn-secondary{
+  padding:12px 18px;
+  border-radius:10px;
+  text-decoration:none;
+  font-weight:700;
+  font-size:15px;
+  transition: all .2s ease;
+}
+
+.btn-primary{ background:#222; color:#fff; }
+.btn-secondary{ background:transparent; color:#222; border:1px solid #ddd; }
+
+.btn-primary:hover,
+.btn-secondary:hover{ transform: translateY(-2px); }
+
+.hero-contact{
+  margin-top:14px;
+  font-size:13.5px;
+  color:#666;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.hero-contact a{
+  color:inherit;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+
+/* MOBILE */
+@media (max-width: 768px){
+  .hero{
+    min-height: 460px;
+    padding: 30px 18px;
+    align-items: flex-end;
+    background-position: center;
+  }
+
+  .hero::before{
+    background: linear-gradient(
+      to top,
+      rgba(0,0,0,0.68) 0%,
+      rgba(0,0,0,0.50) 45%,
+      rgba(0,0,0,0.22) 75%,
+      rgba(0,0,0,0.10) 100%
+    );
+  }
+
+  .hero-content{
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .hero-text{
+    display: inline-block;
+    padding: 14px 14px;
+    border-radius: 14px;
+    background: rgba(0,0,0,0.28);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    margin-bottom: 14px;
+  }
+
+  .hero h1{
+    color:#fff;
+    font-size: clamp(24px, 6vw, 34px);
+    text-shadow: 0 2px 14px rgba(0,0,0,0.55);
+  }
+
+  .hero p{
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 2px 14px rgba(0,0,0,0.50);
+  }
+
+  .hero-contact{
+    color:#fff;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  }
+
+  .btn-secondary{ border:1px solid rgba(255,255,255,0.6); color:#fff; }
+  .btn-primary{ background:#fff; color:#000; }
+
+  .btn-primary,
+  .btn-secondary{ width:100%; max-width:340px; }
+}
+
+@media (max-width: 420px){
+  .hero{ min-height: 430px; padding: 26px 14px; }
+  .hero-text{ padding: 12px 12px; }
+}
+
+/* ============================= */
+/* KATEGORIEN */
+/* ============================= */
+
+.section-intro{
+  max-width: 1000px;
+  margin: 48px auto 4px;
+  padding: 0 20px;
+  text-align: center;
+}
+
+.section-intro h2{
+  font-size: 22px;
+  margin: 0 0 4px;
+  color:#222;
+}
+
+.section-intro p{
+  margin: 0;
+  color: #666;
+  font-size: 15px;
+}
+
+.categories {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 28px auto 64px;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+/* auto-fit/minmax kann bei sehr schmalen Viewports die Spalte nicht unter
+   260px zusammenziehen und dadurch die Seite horizontal aufreissen - hier
+   deshalb eine feste einspaltige Ansicht statt sich auf auto-fit zu verlassen. */
+@media (max-width: 640px) {
+  .categories {
+    grid-template-columns: 1fr;
+  }
+}
+
+.category-box {
+  background: #f9f9f9;
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.category-box img {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.category-box h3 {
+  margin: 18px 0 6px;
+  font-size: 20px;
+}
+
+.category-box p {
+  margin: 0 16px 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.category-box a.category-cta {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 10px 18px;
+  background: #b4976c;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.category-box a.category-cta:hover {
+  opacity: 0.9;
+}
+</style>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1>Bodenbeläge vom Fachhandel</h1>
+      <p>Vinylboden, Teppichboden und mehr – online entdecken oder persönlich beraten lassen.</p>
+    </div>
+
+    <div class="hero-actions">
+      <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
+      <a href="/pages/liefer-verlegeservice" class="btn-secondary">Beratung & Verlegeservice</a>
+    </div>
+
+    <div class="hero-contact">
+      <a href="tel:+4933015733720">Anrufen: 03301 5733720</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<div class="section-intro">
+  <h2>Unsere Kategorien</h2>
+  <p>Von Klickvinyl bis Teppichboden – direkt zur passenden Auswahl.</p>
+</div>
+
+<div class="categories">
+  <div class="category-box">
+    <a href="{{ collections['vinylboden-1'].url }}">
+      <img
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1165354-8FXC-prod.jpg?width=800"
+        alt="Vinylboden"
+        loading="lazy"
+        width="800"
+        height="600"
+      >
+    </a>
+    <h3>Vinylboden</h3>
+    <p>Klickvinyl, Klebevinyl und Vinyl von der Rolle – robust und pflegeleicht für jeden Raum.</p>
+    <a href="{{ collections['vinylboden-1'].url }}" class="category-cta">Vinylboden entdecken</a>
+  </div>
+
+  <div class="category-box">
+    <a href="{{ collections['teppischboden'].url }}">
+      <img
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1196472-8FXC-prod.jpg?width=800"
+        alt="Teppichboden"
+        loading="lazy"
+        width="800"
+        height="600"
+      >
+    </a>
+    <h3>Teppichboden</h3>
+    <p>Weich, wohnlich und in vielen Qualitäten – von Velours bis Schlinge.</p>
+    <a href="{{ collections['teppischboden'].url }}" class="category-cta">Teppichboden entdecken</a>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Startseite Kategorien",
+  "tag": "section",
+  "class": "section",
+  "settings": [],
+  "blocks": [],
+  "presets": [
+    { "name": "Startseite Kategorien" }
+  ]
+}
+{% endschema %}

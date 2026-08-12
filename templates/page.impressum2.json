@@ -1,0 +1,125 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "177836440083d74012": {
+      "type": "_blocks",
+      "blocks": {
+        "ai_gen_block_2320e95_6rW8W6": {
+          "type": "ai_gen_block_2320e95",
+          "settings": {
+            "image": "shopify://shop_images/2022-08-15.jpg",
+            "image_width": 45,
+            "image_border_radius": 6,
+            "heading": "Impressum",
+            "impressum_content": "<p><strong>Angaben gemäß § 5 TMG:</strong><br/>Teppich Paradies Oranienburg GmbH<br/>Saarlandstr. 73-81<br/>16515 Oranienburg</p><p><strong>Kontakt:</strong><br/>Telefon: 03301 / 5733720<br/>Fax: 03301 / 5733725<br/>E-Mail: <a>kontakt@teppich-paradies.net</a><br/>Website: <a>www.teppich-paradies.net</a></p><p><strong>Vertretungsberechtigte Geschäftsführerin:</strong><br/>Suzan Karakaya</p><p><strong>Registereintrag:</strong><br/>Eingetragen im Handelsregister.<br/>Registergericht: Amtsgericht Neuruppin<br/>Registernummer: HRB 9141 NP</p><p><strong>Umsatzsteuer-ID:</strong><br/>Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: DE 275625233</p><p><strong>Verantwortlich für den Inhalt nach §55 Abs. 2 RStV:</strong><br/>Suzan Karakaya<br/>Saarlandstr. 73-81<br/>16515 Oranienburg</p>",
+            "heading_size": 32,
+            "heading_spacing": 20,
+            "text_size": 14,
+            "vertical_alignment": "flex-start",
+            "gap": 24,
+            "gap_mobile": 20,
+            "padding": 8,
+            "border_radius": 0,
+            "desktop_width_percent": 100,
+            "background_color": "#ffffff",
+            "heading_color": "#000000",
+            "text_color": "#000000",
+            "link_color": "#000000",
+            "link_hover_color": "#333333"
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "ai_gen_block_2320e95_6rW8W6"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "page-width",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    }
+  },
+  "order": [
+    "main",
+    "177836440083d74012"
+  ]
+}

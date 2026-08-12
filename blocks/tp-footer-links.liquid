@@ -1,0 +1,88 @@
+{%- liquid
+  assign tp_footer_shipping_page = pages['versand-lieferung']
+-%}
+
+<div class="tp-footer-links" {{ block.shopify_attributes }}>
+  <nav aria-labelledby="tp-footer-assortment-{{ block.id }}">
+    <h2 id="tp-footer-assortment-{{ block.id }}" class="tp-footer-links__heading">Sortiment</h2>
+    <ul role="list">
+      <li><a href="{{ collections['teppischboden'].url }}">Teppichboden</a></li>
+      <li><a href="{{ collections['vinylboden-klickvinyl'].url }}">Klickvinyl</a></li>
+      <li><a href="{{ collections['vinylboden-klebevinyl'].url }}">Klebevinyl</a></li>
+      <li><a href="{{ collections['vinylboden-vinyl-von-der-rolle'].url }}">Vinyl von der Rolle</a></li>
+    </ul>
+  </nav>
+
+  <nav aria-labelledby="tp-footer-service-{{ block.id }}">
+    <h2 id="tp-footer-service-{{ block.id }}" class="tp-footer-links__heading">Service</h2>
+    <ul role="list">
+      {%- if tp_footer_shipping_page != blank -%}
+        <li><a href="{{ tp_footer_shipping_page.url }}">Versand &amp; Lieferung</a></li>
+      {%- endif -%}
+      <li><a href="/pages/kontakt">Kontakt</a></li>
+    </ul>
+  </nav>
+
+  <nav aria-labelledby="tp-footer-legal-{{ block.id }}">
+    <h2 id="tp-footer-legal-{{ block.id }}" class="tp-footer-links__heading">Rechtliches</h2>
+    <ul role="list">
+      <li><a href="/pages/impressum">Impressum</a></li>
+      <li><a href="/pages/datenschutzerklarung">Datenschutz</a></li>
+      <li><a href="/pages/agbs">AGB</a></li>
+      <li><a href="/pages/karriere">Karriere</a></li>
+    </ul>
+  </nav>
+</div>
+
+{% stylesheet %}
+  .tp-footer-links {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+    width: 100%;
+  }
+
+  .tp-footer-links__heading {
+    margin: 0 0 10px;
+    font: inherit;
+    font-weight: var(--font-heading--weight);
+  }
+
+  .tp-footer-links ul {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-footer-links a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .tp-footer-links a:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-footer-links {
+      grid-template-columns: 1fr;
+      gap: 22px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Footer-Links",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Footer-Links"
+    }
+  ]
+}
+{% endschema %}
