@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
+import { targetUrl as workflowTargetUrl } from './target-url.mjs';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
@@ -17,6 +18,7 @@ const workflowReportDir = process.env.WORKFLOW_REPORT_DIR ? path.resolve(process
 const reportPath = workflowReportDir ? path.join(workflowReportDir, 'QA_REPORT.md') : path.join(root, 'QA_REPORT.md');
 const baselinePath = path.join(qaDir, 'theme-check-baseline.json');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'qa.config.json'), 'utf8'));
+if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
 const args = new Set(process.argv.slice(2));
 const takeAllScreenshots = args.has('--screenshots');
 const updateBaseline = args.has('--update-baseline');
@@ -98,7 +100,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   const knownConsole = [];
   const thirdParty = [];
   const assetErrors = [];
-  const targetUrl = new URL(pageConfig.path, config.baseUrl).href;
+  const targetUrl = workflowTargetUrl(pageConfig.path, config.baseUrl);
   const targetHost = new URL(config.baseUrl).host;
 
   page.on('console', msg => {

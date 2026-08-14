@@ -1,3 +1,5 @@
 # Next Action
 
-Draft-PR für `chore/standard-workflow-pipeline` gegen `main` prüfen und nur nach ausdrücklicher menschlicher Freigabe mergen. Preview und Shopify Live bleiben separate spätere Gates.
+`npm run workflow:state` ausführen und ausschließlich dessen aktuelle, commitgebundene `NEXT ACTION` prüfen. Bei fehlender/veralteter Evidence oder `STOP_REVIEW`: stoppen und menschlich prüfen.
+
+Diese Datei speichert niemals eine Merge-, Preview- oder Live-Freigabe. Human Approval muss am jeweiligen Gate neu und ausdrücklich erfolgen.

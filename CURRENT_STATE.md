@@ -1,10 +1,7 @@
 # Current State
 
-- Aktueller Arbeitsbranch: `chore/standard-workflow-pipeline`
-- Letzter Commit: aktueller `HEAD` von `chore/standard-workflow-pipeline` (`git rev-parse HEAD` ist die verbindliche Maschinenquelle)
-- Ausgangscommit: `3bfd234ed4288e47e8b0105240646dd5e93a29ae`
-- Aktueller Workflow-Status: Standard-Pipeline implementiert; vollständige lokale Validierung PASS
-- Offene P0/P1: 0 / 0
-- Letzter Teststatus: Unit 47/47, Automation 52/52, Workflow 14/14, QA Evidence 33/33, Secret/Compare/SEO/Full QA/Sales PASS, Sales 6/6, `orderCompleted: false`
-- Nächster erlaubter Schritt: Draft-PR gegen `main` menschlich prüfen; kein Merge ohne neue ausdrückliche Freigabe
-- Human Approval nötig: vor Merge nach `main`, vor Preview-Deployment und separat vor Shopify Live
+Diese Datei speichert absichtlich keinen Branch, Commit, PASS-Status oder Human Approval. Solche Angaben veralten und dürfen keine Aktion autorisieren.
+
+Verbindlichen aktuellen Zustand mit `npm run workflow:state` aus Git und commitgebundener Runtime-Evidence ermitteln. Die maschinenlesbare Ausgabe liegt nur lokal unter `.workflow/state.json` und setzt `READY FOR LIVE` immer auf `NEIN`.
+
+Wenn die Ermittlung fehlt, veraltet ist oder `STOP_REVIEW` meldet: keine automatische Aktion; menschliche Prüfung erforderlich.

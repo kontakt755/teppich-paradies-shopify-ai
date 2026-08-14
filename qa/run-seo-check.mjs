@@ -6,6 +6,7 @@ import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
+import { targetUrl as workflowTargetUrl } from './target-url.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 5 * 60_000, label: 'SEO-Check' });
@@ -17,6 +18,7 @@ const seoAdminPath = workflowReportDir ? path.join(workflowReportDir, 'SEO_ADMIN
 const merchantReportPath = workflowReportDir ? path.join(workflowReportDir, 'MERCHANT_READINESS_REPORT.md') : path.join(qaDir, 'MERCHANT_READINESS_REPORT.md');
 const trackingReportPath = workflowReportDir ? path.join(workflowReportDir, 'TRACKING_READINESS.md') : path.join(qaDir, 'TRACKING_READINESS.md');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'seo.config.json'), 'utf8'));
+if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
 const startedAt = new Date();
 const started = Date.now();
 const args = new Set(process.argv.slice(2));
@@ -102,7 +104,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   page.on('pageerror', error => consoleErrors.push({ type: 'pageerror', message: sanitizeText(error.message), url: '' }));
   page.on('requestfailed', request => failedRequests.push({ url: sanitizeUrl(request.url()), type: request.resourceType(), message: sanitizeText(request.failure()?.errorText || '') }));
 
-  const targetUrl = new URL(pageConfig.path, config.baseUrl).href;
+  const targetUrl = workflowTargetUrl(pageConfig.path, config.baseUrl);
   let response;
   let navigationError;
   try {
@@ -388,7 +390,7 @@ async function checkUrl(url, method = 'HEAD') {
 
 async function checkInfrastructure() {
   for (const resourcePath of config.infrastructure) {
-    const url = new URL(resourcePath, config.baseUrl).href;
+    const url = workflowTargetUrl(resourcePath, config.baseUrl);
     const result = await checkUrl(url, 'GET');
     if (result.status === 429) add('WARN', 'INFRASTRUCTURE_RATE_LIMIT', resourcePath, '-', `HTTP 429 beim automatischen Abruf; separat erneut prüfen: ${url}`, result);
     else if (result.status !== 200) add('ERROR', 'INFRASTRUCTURE_HTTP', resourcePath, '-', `HTTP ${result.status || 'Fehler'} für ${url}`, result);
@@ -423,7 +425,7 @@ async function merchantAudit() {
   const rows = [];
   for (const pageConfig of configured) {
     const handle = pageConfig.path.split('/').filter(Boolean).pop();
-    const apiUrl = new URL(`/products/${handle}.js`, config.baseUrl).href;
+    const apiUrl = workflowTargetUrl(`/products/${handle}.js`, config.baseUrl);
     let product;
     let fetchError;
     try {

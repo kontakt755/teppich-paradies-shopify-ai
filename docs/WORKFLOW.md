@@ -19,6 +19,7 @@
 - `npm run workflow:pr -- --p0 0 --p1 0 --title "..."`: nur auf erlaubtem Branch, sauberem und vollständig gepushtem HEAD; validiert und erstellt höchstens einen Draft-PR.
 - `npm run workflow:preview -- --theme-id ID --p0 0 --p1 0 --approve-preview`: nur aus sauberem, aktuellem `main`; Ziel muss vor und nach dem Push `unpublished` sein. `settings_data.json` wird nicht überschrieben und sein Hash muss unverändert bleiben. Vor und nach dem Push wird das Preview-Theme gelesen; alle übrigen Theme-Dateien müssen danach exakt `main` entsprechen. Remote-Dateien werden nicht automatisch gelöscht – vorhandene Extras führen stattdessen fail-closed zum Stopp.
 - `npm run workflow:live`: ist standardmäßig gesperrt. Selbst eine freigegebene Preview reicht nicht.
+- `npm run workflow:state`: leitet den aktuellen Zustand aus Git und commitgebundener lokaler Evidence ab. Veraltete oder unklare Evidence führt zu `STOP_REVIEW`; Freigaben werden nie gespeichert.
 
 ## Live-Gate
 
@@ -27,6 +28,7 @@ Live ist nur möglich, wenn alle Nachweise zum aktuellen `origin/main` passen, d
 `npm run workflow:live -- --theme-id ID --p0 0 --p1 0 --approve-live --approval-text "PUBLISH LIVE" --execute`
 
 Dieser Befehl ist absichtlich unbequem. Er darf erst nach Prüfung der Preview-URL benutzt werden. Shopify Live bleibt ein vom GitHub-Merge getrennter Human Gate.
+Unmittelbar vor Publish werden Preview-Rolle, vollständiger Theme-Dateistand und der geschützte `settings_data.json`-Hash erneut verifiziert. Preview-Browserchecks laufen nach dem Push über die Theme-ID-gebundene Preview-URL.
 
 ## GitHub Actions
 

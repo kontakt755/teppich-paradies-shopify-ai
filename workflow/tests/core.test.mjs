@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import {
-  APPROVAL_TEXT, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, commandName, compareThemeMaps, findingsAreClear,
-  parseThemeList, previewPushArgs, runValidation, verifyPreviewPayload, verifySalesReport,
+  APPROVAL_TEXT, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, commandName, compareThemeMaps, createDryRunSummary,
+  deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyPreviewPayload,
+  verifyPreviewSnapshot, verifySalesReport,
 } from '../core.mjs';
+import { targetUrl } from '../../qa/target-url.mjs';
 
 const cleanContext = { branch: 'chore/test', base: 'main', p0: '0', p1: '0', clean: true, head: 'abc', remoteHead: 'abc' };
 const unpublished = { id: '22', role: 'unpublished' };
@@ -32,6 +37,8 @@ test('preview gate only accepts current main and unpublished non-live theme', ()
   assert.equal(assertPreviewGate({ branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, theme: unpublished, liveTheme: live }), true);
   assert.throws(() => assertPreviewGate({ branch: 'main', head: 'old', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, theme: unpublished, liveTheme: live }), /origin\/main/);
   assert.throws(() => assertPreviewGate({ branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, theme: live, liveTheme: live }), /unpublished/);
+  assert.throws(() => assertPreviewGate({ branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, theme: null, liveTheme: live }), /unpublished/);
+  assert.throws(() => assertPreviewGate({ branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, theme: { id: '33', role: 'published' }, liveTheme: live }), /unpublished/);
 });
 
 test('preview push is settings-safe and can never publish', () => {
@@ -58,6 +65,35 @@ test('live gate refuses missing approval, dry execution and mismatched preview e
   assert.throws(() => assertLiveGate({ ...base, execute: false }), /Live bleibt gesperrt/);
   assert.throws(() => assertLiveGate({ ...base, approvalText: 'yes' }), /Live bleibt gesperrt/);
   assert.throws(() => assertLiveGate({ ...base, previewEvidence: { ...base.previewEvidence, commit: 'old' } }), /Preview-Evidence/);
+  assert.throws(() => assertLiveGate({ ...base, p1: '1' }), /P0 und P1/);
+  assert.throws(() => assertLiveGate({ ...base, previewEvidence: null }), /Preview-Evidence/);
+});
+
+test('live snapshot verification rejects theme and settings drift', () => {
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-workflow-test-'));
+  const root = path.join(fixture, 'root');
+  const pulled = path.join(fixture, 'pulled');
+  for (const directory of [root, pulled]) {
+    fs.mkdirSync(path.join(directory, 'assets'), { recursive: true });
+    fs.mkdirSync(path.join(directory, 'config'), { recursive: true });
+    fs.writeFileSync(path.join(directory, 'assets/app.js'), 'same');
+    fs.writeFileSync(path.join(directory, 'config/settings_data.json'), '{"safe":true}');
+  }
+  const evidence = { status: 'PASS', settingsDataProtected: true, previewDiffCount: 0, settingsDataSha256: fileSha256(path.join(pulled, 'config/settings_data.json')) };
+  try {
+    assert.equal(verifyPreviewSnapshot({ root, pulledRoot: pulled, evidence }), true);
+    fs.writeFileSync(path.join(pulled, 'assets/app.js'), 'changed');
+    assert.throws(() => verifyPreviewSnapshot({ root, pulledRoot: pulled, evidence }), error => error.code === 'PREVIEW_DRIFT');
+    fs.writeFileSync(path.join(pulled, 'assets/app.js'), 'same');
+    fs.writeFileSync(path.join(pulled, 'config/settings_data.json'), '{"safe":false}');
+    assert.throws(() => verifyPreviewSnapshot({ root, pulledRoot: pulled, evidence }), error => error.code === 'PREVIEW_SETTINGS_DRIFT');
+  } finally {
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
+test('preview target URLs retain the verified preview theme ID', () => {
+  assert.equal(targetUrl('/cart', 'https://shop.example/?preview_theme_id=22'), 'https://shop.example/cart?preview_theme_id=22');
 });
 
 test('preview tree comparison blocks missing, extra and changed remote files', () => {
@@ -75,6 +111,19 @@ test('missing Shopify CLI and missing auth fail closed', () => {
   assert.throws(() => parseThemeList({ exitCode: 1, stdout: 'To run this command, log in to Shopify.', stderr: '', spawnError: null }), error => error.code === 'MISSING_SHOPIFY_AUTH');
 });
 
+test('theme selection requires one exact target and one unique live theme', () => {
+  assert.deepEqual(selectThemeTargets([unpublished, live], '22'), { theme: unpublished, liveTheme: live });
+  assert.throws(() => selectThemeTargets([unpublished], '22'), error => error.code === 'LIVE_THEME_AMBIGUOUS');
+  assert.throws(() => selectThemeTargets([unpublished, live, { id: '12', role: 'live' }], '22'), error => error.code === 'LIVE_THEME_AMBIGUOUS');
+  assert.throws(() => selectThemeTargets([live], '22'), error => error.code === 'THEME_ID_AMBIGUOUS');
+});
+
+test('GitHub PR validation has minimal read-only permissions and no sensitive execution', () => {
+  const workflow = fs.readFileSync(new URL('../../.github/workflows/pr-validation.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /permissions:\s*\n\s+contents: read/);
+  assert.doesNotMatch(workflow, /pull_request_target|permissions:[\s\S]*?write|secrets\.|shopify theme (push|publish)/i);
+});
+
 test('sales report requires six PASS flows and orderCompleted false', () => {
   const results = Array.from({ length: 6 }, () => ({ status: 'PASS', orderCompleted: false }));
   assert.equal(verifySalesReport({ orderCompleted: false, results, summary: { passed: 6, failed: 0 } }), true);
@@ -88,6 +137,28 @@ test('validation dry-run executes no subprocess and cannot report PASS', () => {
   assert.equal(calls, 0);
   assert.equal(summary.status, 'DRY_RUN');
   assert.ok(summary.results.every(item => item.status === 'SKIPPED_DRY_RUN'));
+});
+
+test('PR and preview dry-runs never report readiness', () => {
+  for (const workflow of ['pr', 'preview']) {
+    const summary = createDryRunSummary(workflow, { branch: 'chore/test', commit: 'abc' });
+    assert.equal(summary.status, 'DRY_RUN');
+    assert.equal(summary.readyForPr, false);
+    assert.equal(summary.readyForPreview, false);
+    assert.equal(summary.readyForLive, false);
+  }
+});
+
+test('workflow state fails closed for stale evidence and never stores approval', () => {
+  const stale = deriveWorkflowState({ branch: 'chore/test', head: 'new', originMain: 'main', clean: true, latest: { status: 'PASS', branch: 'chore/test', commit: 'old' } });
+  assert.equal(stale.status, 'STOP_REVIEW');
+  assert.match(stale.nextAction, /STOP\/REVIEW/);
+  assert.equal(stale.readyForLive, false);
+  assert.equal(stale.humanApprovalStored, false);
+  const current = deriveWorkflowState({ branch: 'chore/test', head: 'new', originMain: 'main', clean: true, latest: { status: 'PASS', branch: 'chore/test', commit: 'new' } });
+  assert.equal(current.status, 'VALIDATED_BRANCH');
+  assert.equal(current.readyForLive, false);
+  assert.equal(current.humanApprovalStored, false);
 });
 
 test('failed validation step stops without a false PASS', () => {

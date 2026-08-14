@@ -87,7 +87,7 @@ export function verifySalesReport(report, expectedFlows = 6) {
   return true;
 }
 
-export function runValidation({ root, dryRun = false, staticOnly = false, run = runBounded, now = () => Date.now() }) {
+export function runValidation({ root, dryRun = false, staticOnly = false, baseUrl = null, run = runBounded, now = () => Date.now() }) {
   const selected = validationSteps(root).filter(step => !staticOnly || !step.browser);
   const summary = { workflow: 'validate', status: dryRun ? 'DRY_RUN' : 'PASS', commit: null, branch: null, orderCompleted: false, results: [] };
   for (const step of selected) {
@@ -97,7 +97,9 @@ export function runValidation({ root, dryRun = false, staticOnly = false, run = 
     }
     const salesPath = path.join(root, 'qa/results/sales-readiness.json');
     const salesStarted = now();
-    const result = run(step.command, step.args, { cwd: root, env: { ...process.env, WORKFLOW_REPORT_DIR: path.join(root, '.workflow/reports') } });
+    const env = { ...process.env, WORKFLOW_REPORT_DIR: path.join(root, '.workflow/reports') };
+    if (baseUrl) env.WORKFLOW_BASE_URL = baseUrl;
+    const result = run(step.command, step.args, { cwd: root, env });
     const status = result.exitCode === 0 && !result.spawnError && !result.timedOut ? 'PASS' : 'FAIL';
     summary.results.push({ id: step.id, status, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null });
     if (status !== 'PASS') {
@@ -119,6 +121,10 @@ export function requireZeroFindings({ p0, p1 }) {
 
 export function findingsAreClear({ p0, p1 }) {
   return String(p0) === '0' && String(p1) === '0';
+}
+
+export function createDryRunSummary(workflow, values = {}) {
+  return { workflow, status: 'DRY_RUN', ...values, orderCompleted: false, results: [], readyForPr: false, readyForMain: false, readyForPreview: false, readyForLive: false };
 }
 
 export function assertPrGate({ branch, base = OFFICIAL_BASE, p0, p1, clean, head, remoteHead }) {
@@ -144,6 +150,14 @@ export function parseThemeList(result) {
   } catch {
     throw new WorkflowGateError('Shopify Theme-Liste lieferte ungültiges JSON', 'SHOPIFY_OUTPUT');
   }
+}
+
+export function selectThemeTargets(themes, themeId) {
+  const targets = themes.filter(item => String(item.id) === String(themeId));
+  const liveThemes = themes.filter(item => item.role === 'live');
+  if (targets.length !== 1) throw new WorkflowGateError('Theme-ID ist nicht eindeutig vorhanden', 'THEME_ID_AMBIGUOUS');
+  if (liveThemes.length !== 1) throw new WorkflowGateError('Live-Theme ist nicht eindeutig bestimmbar', 'LIVE_THEME_AMBIGUOUS');
+  return { theme: targets[0], liveTheme: liveThemes[0] };
 }
 
 export function assertPreviewGate({ branch, head, originMain, clean, p0, p1, approved, theme, liveTheme }) {
@@ -220,6 +234,32 @@ export function compareThemeMaps(expected, actual) {
   const previewOnly = [...actual.keys()].filter(file => !expected.has(file)).sort();
   const different = [...expected.keys()].filter(file => actual.has(file) && expected.get(file) !== actual.get(file)).sort();
   return { mainOnly, previewOnly, different, differenceCount: mainOnly.length + previewOnly.length + different.length };
+}
+
+export function verifyPreviewSnapshot({ root, pulledRoot, evidence }) {
+  if (!evidence || evidence.status !== 'PASS' || !evidence.settingsDataProtected || evidence.previewDiffCount !== 0) {
+    throw new WorkflowGateError('Verifizierte Preview-Evidence fehlt', 'PREVIEW_EVIDENCE');
+  }
+  const ignored = ['config/settings_data.json'];
+  const comparison = compareThemeMaps(themeFileMap(root, { ignored }), themeFileMap(pulledRoot, { ignored }));
+  if (comparison.differenceCount !== 0) {
+    throw Object.assign(new WorkflowGateError('Preview ist seit der Verifikation von origin/main abgewichen', 'PREVIEW_DRIFT'), { comparison });
+  }
+  const currentSettingsHash = fileSha256(path.join(pulledRoot, 'config/settings_data.json'));
+  if (!evidence.settingsDataSha256 || currentSettingsHash !== evidence.settingsDataSha256) {
+    throw new WorkflowGateError('Preview settings_data.json ist seit der Verifikation abgewichen', 'PREVIEW_SETTINGS_DRIFT');
+  }
+  return true;
+}
+
+export function deriveWorkflowState({ branch, head, originMain, clean, latest }) {
+  const evidenceCurrent = latest?.status === 'PASS' && latest?.commit === head && latest?.branch === branch;
+  const base = { branch, head, originMain, clean, evidenceCurrent, readyForLive: false, humanApprovalStored: false };
+  if (!clean || !head || !branch) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Repository-Zustand ist unklar oder nicht sauber.' };
+  if (!evidenceCurrent) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Validierung für den aktuellen Branch und Commit fehlt oder ist veraltet.' };
+  if (branch !== OFFICIAL_BASE) return { ...base, status: 'VALIDATED_BRANCH', nextAction: 'Draft-PR gegen main vorbereiten; Human Approval vor Merge erforderlich.' };
+  if (head !== originMain) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Lokales main entspricht nicht origin/main.' };
+  return { ...base, status: 'VALIDATED_MAIN', nextAction: 'Preview separat vorbereiten; Human Approval vor Preview und erneut vor Live erforderlich.' };
 }
 
 export function fileSha256(filePath) {

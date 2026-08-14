@@ -3,8 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
-  commandName, compareThemeMaps, createPreviewTempDir, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
-  previewPushArgs, requireSuccess, runBounded, runValidation, themeFileMap, verifyPreviewPayload, writeRuntimeReport,
+  commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
+  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport,
 } from './core.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -56,9 +56,9 @@ function printSummary(summary) {
   ].join('\n'));
 }
 
-function validate({ staticOnly = false } = {}) {
+function validate({ staticOnly = false, baseUrl = null } = {}) {
   const current = context();
-  const summary = runValidation({ root, dryRun, staticOnly });
+  const summary = runValidation({ root, dryRun, staticOnly, baseUrl });
   const findingState = findings();
   const findingsClear = findingsAreClear(findingState);
   Object.assign(summary, current, findingState, { commit: current.head, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
@@ -75,6 +75,18 @@ function themeList(store) {
 async function main() {
   if (mode === 'validate') return validate({ staticOnly: args.static === true });
 
+  if (mode === 'state') {
+    const current = context();
+    const latestPath = path.join(root, '.workflow/latest.json');
+    let latest = null;
+    try { latest = fs.existsSync(latestPath) ? JSON.parse(fs.readFileSync(latestPath, 'utf8')) : null; } catch {}
+    const state = deriveWorkflowState({ ...current, latest });
+    writeRuntimeReport(root, 'state.json', state);
+    console.log(`STATE: ${state.status}\nBRANCH: ${state.branch || '-'}\nCOMMIT: ${state.head || '-'}\nREADY FOR LIVE: NEIN\nHUMAN APPROVAL STORED: NEIN\nNEXT ACTION: ${state.nextAction}`);
+    if (state.status === 'STOP_REVIEW') process.exitCode = 1;
+    return state;
+  }
+
   if (mode === 'pr') {
     const current = context();
     const branchRemote = `origin/${current.branch}`;
@@ -82,7 +94,7 @@ async function main() {
     const remoteHead = remoteHeadResult.exitCode === 0 ? remoteHeadResult.stdout.trim() : null;
     assertPrGate({ ...current, ...findings(), base: args.base ?? OFFICIAL_BASE, remoteHead });
     if (dryRun) {
-      const summary = { workflow: 'pr', status: 'DRY_RUN', ...current, ...findings(), orderCompleted: false, results: [], readyForPr: true, readyForMain: false, readyForPreview: false, readyForLive: false };
+      const summary = createDryRunSummary('pr', { ...current, ...findings() });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
     }
     const validation = validate();
@@ -104,14 +116,13 @@ async function main() {
     if (!themeId) throw new WorkflowGateError('Preview benötigt --theme-id einer vorhandenen unpublished Theme-ID', 'PREVIEW_THEME');
     assertPreviewGate({ ...current, ...findings(), approved: args['approve-preview'] === true, theme: { id: themeId, role: 'unpublished' }, liveTheme: { id: '__live__', role: 'live' } });
     const themes = dryRun ? [{ id: themeId, role: 'unpublished', name: 'dry-run-preview' }, { id: 'live', role: 'live' }] : themeList(store);
-    const theme = themes.find(item => String(item.id) === String(themeId));
-    const liveTheme = themes.find(item => item.role === 'live');
+    const { theme, liveTheme } = selectThemeTargets(themes, themeId);
     assertPreviewGate({ ...current, ...findings(), approved: args['approve-preview'] === true, theme, liveTheme });
     if (dryRun) {
-      const summary = { workflow: 'preview', status: 'DRY_RUN', ...current, ...findings(), themeId: String(themeId), orderCompleted: false, results: [], readyForPreview: true, readyForLive: false };
+      const summary = createDryRunSummary('preview', { ...current, ...findings(), themeId: String(themeId) });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
     }
-    const validation = validate();
+    validate({ staticOnly: true });
     const beforeDir = createPreviewTempDir();
     const afterDir = createPreviewTempDir();
     try {
@@ -131,6 +142,7 @@ async function main() {
       if (comparison.differenceCount !== 0) throw Object.assign(new WorkflowGateError('Preview-Dateien entsprechen nicht exakt origin/main', 'PREVIEW_DIFF'), { comparison });
       const response = await fetch(previewUrl, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
       if (!response.ok) throw new WorkflowGateError(`Preview-URL antwortet mit HTTP ${response.status}`, 'PREVIEW_HTTP');
+      const validation = validate({ baseUrl: previewUrl });
       const evidence = { status: 'PASS', commit: current.originMain, themeId: String(themeId), themeName: after.name, previewUrl, previewHttpStatus: response.status, settingsDataProtected: true, settingsDataSha256: settingsAfter, previewDiffCount: 0, validationStatus: validation.status, createdAt: new Date().toISOString() };
       writeRuntimeReport(root, 'preview.json', evidence);
       const summary = { ...validation, workflow: 'preview', themeId: String(themeId), previewUrl: evidence.previewUrl, readyForPreview: true, readyForLive: false };
@@ -148,13 +160,22 @@ async function main() {
     const evidencePath = path.join(root, '.workflow/preview.json');
     const previewEvidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, 'utf8')) : null;
     if (args['approve-live'] !== true || args['approval-text'] !== APPROVAL_TEXT || args.execute !== true) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich`, 'LIVE_APPROVAL');
-    const themes = dryRun ? [{ id: themeId, role: 'unpublished' }, { id: 'live', role: 'live' }] : themeList(store);
-    const theme = themes.find(item => String(item.id) === String(themeId));
-    const liveTheme = themes.find(item => item.role === 'live');
-    assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
     if (dryRun) throw new WorkflowGateError('Live-Publish wird auch im Dry-Run niemals ausgeführt', 'LIVE_DRY_RUN_BLOCK');
     const validation = validate();
-    requireSuccess(run(commandName('shopify'), livePublishArgs({ store, themeId, root }), { timeoutMs: 5 * 60_000 }), 'Shopify live publish');
+    const themes = themeList(store);
+    const { theme, liveTheme } = selectThemeTargets(themes, themeId);
+    assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
+    const verificationDir = createPreviewTempDir();
+    try {
+      requireSuccess(run(commandName('shopify'), ['theme', 'pull', '--store', store, '--theme', String(themeId), '--path', verificationDir], { timeoutMs: 5 * 60_000 }), 'Shopify live pre-publish verification pull');
+      verifyPreviewSnapshot({ root, pulledRoot: verificationDir, evidence: previewEvidence });
+      const immediatelyBeforePublish = themeList(store);
+      const { theme: currentTheme, liveTheme: currentLiveTheme } = selectThemeTargets(immediatelyBeforePublish, themeId);
+      assertLiveGate({ ...current, ...findings(), approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme });
+      requireSuccess(run(commandName('shopify'), livePublishArgs({ store, themeId, root }), { timeoutMs: 5 * 60_000 }), 'Shopify live publish');
+    } finally {
+      fs.rmSync(verificationDir, { recursive: true, force: true });
+    }
     const after = themeList(store).find(item => String(item.id) === String(themeId));
     if (after?.role !== 'live') throw new WorkflowGateError('Shopify bestätigt das Theme nicht als live', 'LIVE_VERIFY');
     const summary = { ...validation, workflow: 'live', themeId: String(themeId), readyForLive: true, publishedAt: new Date().toISOString() };
