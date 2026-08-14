@@ -6,8 +6,8 @@
 
 1. Ahmet gibt Codex eine Aufgabe.
 2. Codex erstellt `feature/<name>`, `fix/<name>` oder `chore/<name>` – nie Arbeit direkt auf `main`.
-3. Codex ändert, testet und führt `npm run workflow:validate` aus.
-4. Nach P0=0/P1=0, Commit und Branch-Push erstellt `npm run workflow:pr -- --p0 0 --p1 0 --title "Titel"` einen Draft-PR gegen `main`.
+3. Codex ändert, führt die relevanten Tests aus und prüft den vollständigen Ablauf mit `npm run workflow:validate`.
+4. Nach P0=0/P1=0, Commit und Branch-Push führt `npm run workflow:pr -- --p0 0 --p1 0 --title "Titel"` die Validierung erneut für den gepushten HEAD aus und erstellt höchstens einen Draft-PR gegen `main`.
 5. Ahmet prüft und gibt den Merge ausdrücklich frei. Es gibt keinen Auto-Merge.
 6. Nach dem Merge wird lokales `main` auf `origin/main` aktualisiert. Ein vorhandenes, eindeutig unpublished Preview-Theme kann nach separater Freigabe mit `npm run workflow:preview -- --theme-id ID --p0 0 --p1 0 --approve-preview` aktualisiert werden.
 7. Ahmet prüft die Preview-URL und gibt Live separat frei. Test-PASS, PR-Merge oder Preview-PASS veröffentlichen niemals automatisch.
