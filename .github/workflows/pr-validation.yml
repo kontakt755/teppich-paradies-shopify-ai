@@ -37,3 +37,6 @@ jobs:
         with:
           node-version: 24
       - run: node workflow/verify-local-checks.mjs
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}

@@ -78,6 +78,28 @@ export function validationSteps(root) {
   ];
 }
 
+export const REQUIRED_LOCAL_EVIDENCE_STEPS = Object.freeze(['COMPARE', 'SEO', 'FULL_QA', 'SALES']);
+
+// The gate that blocks merge on missing local-only evidence (Compare/SEO/Full
+// QA/Sales require live-storefront network access CI does not have) must bind
+// evidence to the exact commit under review. Without this, one real local run
+// could be committed once and silently replayed as "proof" for every future
+// commit on the branch, including commits that never actually re-ran the
+// checks it claims to cover.
+export function verifyLocalEvidence({ evidence, expectedCommit, expectedBranch = null, requiredSteps = REQUIRED_LOCAL_EVIDENCE_STEPS }) {
+  if (!expectedCommit) throw new WorkflowGateError('Erwarteter Commit (PR HEAD SHA) fehlt für die Evidence-Prüfung', 'EVIDENCE_NO_TARGET');
+  if (!evidence || typeof evidence !== 'object') throw new WorkflowGateError('Evidence-Datei fehlt oder ist ungültig', 'EVIDENCE_MISSING');
+  if (evidence.commit !== expectedCommit) throw new WorkflowGateError(`Evidence-Commit (${evidence.commit ?? '-'}) stimmt nicht mit dem aktuellen HEAD (${expectedCommit}) überein - Evidence ist veraltet oder gehört zu einem anderen Commit`, 'EVIDENCE_STALE');
+  if (expectedBranch && evidence.branch !== expectedBranch) throw new WorkflowGateError(`Evidence-Branch (${evidence.branch ?? '-'}) stimmt nicht mit dem erwarteten Branch (${expectedBranch}) überein`, 'EVIDENCE_BRANCH_MISMATCH');
+  if (evidence.status !== 'PASS') throw new WorkflowGateError(`Evidence-Status ist nicht PASS: ${evidence.status ?? '-'}`, 'EVIDENCE_NOT_PASS');
+  if (String(evidence.p0) !== '0' || String(evidence.p1) !== '0') throw new WorkflowGateError(`Evidence P0/P1 sind nicht explizit 0 (P0=${evidence.p0 ?? '-'}, P1=${evidence.p1 ?? '-'})`, 'EVIDENCE_FINDINGS');
+  if (evidence.orderCompleted !== false) throw new WorkflowGateError('Evidence orderCompleted ist nicht false', 'EVIDENCE_ORDER_COMPLETED');
+  const byId = Object.fromEntries((Array.isArray(evidence.results) ? evidence.results : []).map(item => [item.id, item.status]));
+  const missing = requiredSteps.filter(id => byId[id] !== 'PASS');
+  if (missing.length > 0) throw new WorkflowGateError(`Evidence fehlt PASS für erforderliche Schritte: ${missing.join(', ')}`, 'EVIDENCE_STEP_MISSING');
+  return true;
+}
+
 export function verifySalesReport(report, expectedFlows = 6) {
   if (!report || typeof report !== 'object') throw new WorkflowGateError('Sales-Report fehlt', 'SALES_EVIDENCE');
   if (report.orderCompleted !== false) throw new WorkflowGateError('Sales-Report ist nicht fail-closed: orderCompleted muss false sein', 'ORDER_COMPLETED');
@@ -197,14 +219,25 @@ export function livePublishArgs({ store, themeId, root }) {
   return ['theme', 'publish', '--store', store, '--theme', String(themeId), '--path', root, '--force'];
 }
 
-export function writeRuntimeReport(root, name, value) {
-  const directory = path.join(root, '.workflow');
+export function writeJsonAtomic(directory, name, value) {
   fs.mkdirSync(directory, { recursive: true });
   const target = path.join(directory, name);
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
   fs.renameSync(temporary, target);
   return target;
+}
+
+export function writeRuntimeReport(root, name, value) {
+  return writeJsonAtomic(path.join(root, '.workflow'), name, value);
+}
+
+// Unlike writeRuntimeReport (.workflow/, gitignored, local-only), this writes
+// into qa/evidence/, which is tracked by git. A full non-static validation
+// PASS is copied here so it can be committed and reach CI, where the
+// local-verification-gate job checks it against the exact PR HEAD commit.
+export function writeTrackedEvidence(root, value) {
+  return writeJsonAtomic(path.join(root, 'qa', 'evidence'), 'local-verification.json', value);
 }
 
 export function createPreviewTempDir() {
