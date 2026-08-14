@@ -32,5 +32,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: |
-          echo "Local verified checks required before merge: Compare, SEO, Full QA, Sales 6/6, orderCompleted false, P0=0, P1=0."
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node workflow/verify-local-checks.mjs
