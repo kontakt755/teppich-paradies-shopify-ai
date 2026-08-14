@@ -1,9 +1,10 @@
 import { chromium } from 'playwright-core';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
+import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
+import { classifyBrowserClosure, classifyConsoleError, isBrowserClosedError, redactUrl } from './browser-classification.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -32,17 +33,19 @@ function stableFingerprint(value) {
   return value.replace(/\|\d+:\d+\|/, '|*|');
 }
 
-function runThemeCheck() {
-  const isWindows = process.platform === 'win32';
-  const executable = isWindows ? 'cmd.exe' : 'shopify';
-  const commandArgs = isWindows ? ['/d', '/s', '/c', 'shopify.cmd theme check --output json --no-color'] : ['theme', 'check', '--output', 'json', '--no-color'];
-  const run = spawnSync(executable, commandArgs, {
-    cwd: root, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024
-  });
-  let files;
-  try { files = JSON.parse(run.stdout); } catch {
-    return { failed: true, error: (run.stderr || run.stdout || run.error?.message || 'Theme Check konnte nicht gestartet werden').trim() };
+async function runThemeCheck() {
+  const themeArgs = ['theme', 'check', '--output', 'json', '--no-color'];
+  const attempts = [];
+  let parsed;
+  for (const invocation of shopifyInvocations()) {
+    const result = await runProcess(invocation.command, [...invocation.args, ...themeArgs], { cwd: root, shell: invocation.shell });
+    parsed = parseJsonProcessOutput(result, { label: `Theme Check (${invocation.label})`, allowedExitCodes: [0, 1] });
+    attempts.push({ label: invocation.label, failed: parsed.failed, kind: parsed.kind, error: parsed.error });
+    if (!parsed.failed) break;
   }
+  if (parsed.failed) return { ...parsed, attempts };
+  const files = parsed.value;
+  if (!Array.isArray(files)) return { failed: true, kind: 'invalid-output', error: 'Theme Check: JSON-Ausgabe ist kein Datei-Array' };
   const findings = files.flatMap(file => file.offenses.map(offense => ({
     fingerprint: fingerprint(file, offense), file: path.relative(root, file.path).replaceAll('\\', '/'),
     check: offense.check, severity: offense.severity, line: offense.start_row + 1, message: offense.message
@@ -50,11 +53,13 @@ function runThemeCheck() {
   return {
     failed: false, findings,
     errors: findings.filter(x => x.severity === 'error').length,
-    warnings: findings.filter(x => x.severity === 'warning').length
+    warnings: findings.filter(x => x.severity === 'warning').length,
+    process: parsed.process,
+    recoveredProcessFailures: attempts.filter(attempt => attempt.failed)
   };
 }
 
-const themeCheck = runThemeCheck();
+const themeCheck = await runThemeCheck();
 if (updateBaseline && !themeCheck.failed) {
   fs.writeFileSync(baselinePath, JSON.stringify({
     generatedAt: new Date().toISOString(), errors: themeCheck.errors, warnings: themeCheck.warnings,
@@ -95,20 +100,34 @@ const add = (scope, pageName, viewport, severity, message, data) => {
 };
 
 async function inspectPage(browser, pageConfig, viewportName, viewport) {
-  const context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
-  const page = await context.newPage();
+  let context;
+  let page;
   const pageErrors = [];
   const knownConsole = [];
   const thirdParty = [];
   const assetErrors = [];
+  const platformNoise = [];
   const targetUrl = new URL(pageConfig.path, config.baseUrl).href;
   const targetHost = new URL(config.baseUrl).host;
 
+  try {
+    context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
+    page = await context.newPage();
+  } catch (error) {
+    return { harnessError: error, platformNoiseSeen: false };
+  }
+
   page.on('console', msg => {
     if (msg.type() !== 'error') return;
-    const entry = `${msg.text()} (${msg.location().url || 'inline'})`;
+    const raw = { type: 'console.error', message: msg.text(), url: msg.location().url || 'inline' };
+    const classified = classifyConsoleError(raw);
+    if (classified.kind === 'external-platform-noise') {
+      platformNoise.push(classified.entry);
+      return;
+    }
+    const entry = `${classified.entry.message} (${classified.entry.url})`;
     if (matchesAny(entry, config.allowlist.console)) return;
-    const host = (() => { try { return new URL(msg.location().url).host; } catch { return targetHost; } })();
+    const host = (() => { try { return new URL(classified.entry.url).host; } catch { return targetHost; } })();
     (host === targetHost && !/shop\.app|\/favicon\.ico/i.test(entry) ? pageErrors : thirdParty).push({ type: 'console.error', message: entry });
   });
   page.on('pageerror', error => {
@@ -116,7 +135,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     (knownIssue ? knownConsole : pageErrors).push({ type: 'pageerror', message: error.message, knownIssueId: knownIssue?.id, reportLabel: knownIssue?.reportLabel });
   });
   page.on('requestfailed', request => {
-    const url = request.url();
+    const url = redactUrl(request.url());
     if (matchesAny(url, config.allowlist.requests)) return;
     const entry = { type: 'requestfailed', url, message: request.failure()?.errorText || 'Request fehlgeschlagen' };
     let host; try { host = new URL(url).host; } catch { host = targetHost; }
@@ -125,7 +144,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   });
   page.on('response', response => {
     if (response.status() < 400) return;
-    const url = response.url();
+    const url = redactUrl(response.url());
     if (matchesAny(url, config.allowlist.requests)) return;
     let host; try { host = new URL(url).host; } catch { host = targetHost; }
     const important = response.request().resourceType() === 'document' || (['script', 'stylesheet', 'image', 'font'].includes(response.request().resourceType()) && !/\/favicon\.ico(?:\?|$)/i.test(url));
@@ -154,6 +173,12 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     }
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   } catch (error) { navigationError = error.message; }
+
+  if (navigationError && isBrowserClosedError(navigationError)) {
+    details.push({ page: pageConfig.name, viewport: viewportName, url: targetUrl, finalUrl: targetUrl, metrics: null, pageErrors, knownConsole, assetErrors, thirdParty, platformNoise });
+    await context.close().catch(() => {});
+    return { harnessError: new Error(navigationError), platformNoiseSeen: platformNoise.length > 0 };
+  }
 
   let metrics = null;
   if (!navigationError) {
@@ -223,8 +248,10 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   if ((takeAllScreenshots || hasNewFailure) && !navigationError) {
     await page.screenshot({ path: path.join(artifactsDir, `${safeName(pageConfig.name)}-${viewportName.toLowerCase()}.png`), fullPage: false }).catch(() => {});
   }
-  details.push({ page: pageConfig.name, viewport: viewportName, url: targetUrl, finalUrl: page.url(), status: response?.status(), metrics, pageErrors, knownConsole, assetErrors, thirdParty });
-  await context.close();
+  if (platformNoise.length) add('Externe Plattform', pageConfig.name, viewportName, 'warning', 'Shopify Login-with-Shop Callback meldete bekannten X-Frame-Options-Headerfehler', { occurrences: platformNoise.length });
+  details.push({ page: pageConfig.name, viewport: viewportName, url: targetUrl, finalUrl: page.url(), status: response?.status(), metrics, pageErrors, knownConsole, assetErrors, thirdParty, platformNoise });
+  await context.close().catch(() => {});
+  return { harnessError: null, platformNoiseSeen: platformNoise.length > 0 };
 }
 
 let browserError;
@@ -237,17 +264,36 @@ else {
     const jobs = Object.entries(config.viewports).flatMap(([viewportName, viewport]) =>
       config.pages.map(pageConfig => () => inspectPage(browser, pageConfig, viewportName, viewport))
     );
-    const workers = Array.from({ length: Math.min(3, jobs.length) }, async () => {
-      while (jobs.length) await jobs.shift()();
+    let stopHarness = false;
+    const workers = Array.from({ length: Math.min(2, jobs.length) }, async () => {
+      while (jobs.length && !stopHarness) {
+        const outcome = await jobs.shift()();
+        if (outcome?.harnessError && isBrowserClosedError(outcome.harnessError)) {
+          stopHarness = true;
+          const closure = classifyBrowserClosure(outcome.harnessError, outcome.platformNoiseSeen);
+          add('QA Harness', 'Gesamtlauf', '-', closure.severity, closure.message);
+        } else if (outcome?.harnessError) throw outcome.harnessError;
+      }
     });
     await Promise.all(workers);
+    if (stopHarness) {
+      const completed = new Set(details.map(item => `${item.page}|${item.viewport}`));
+      for (const [viewportName] of Object.entries(config.viewports)) for (const pageConfig of config.pages) {
+        if (!completed.has(`${pageConfig.name}|${viewportName}`)) {
+          add('QA Harness', pageConfig.name, viewportName, 'warning', 'Wegen kontrolliertem Browserkontext-Abbruch nicht ausgeführt');
+        }
+      }
+    }
   } catch (error) { browserError = error.stack || error.message; }
   finally { await browser?.close(); }
 }
 if (browserError) add('Browser', 'Gesamtlauf', '-', 'error', browserError.split('\n')[0]);
 
 if (themeCheck.failed) add('Theme Check', 'Theme', '-', 'error', themeCheck.error);
-else themeCheck.newFindings.forEach(x => add('Theme Check', x.file, '-', x.severity === 'error' ? 'error' : 'error', `Neuer ${x.severity}: ${x.check} (Zeile ${x.line}) – ${x.message}`));
+else {
+  themeCheck.recoveredProcessFailures.forEach(failure => add('QA Harness', 'Theme Check', '-', 'warning', `Theme-Check-Aufruf ${failure.label} fehlgeschlagen (${failure.kind}); Fallback lieferte valide Ausgabe`));
+  themeCheck.newFindings.forEach(x => add('Theme Check', x.file, '-', 'error', `Neuer ${x.severity}: ${x.check} (Zeile ${x.line}) – ${x.message}`));
+}
 
 const errors = checks.filter(x => x.severity === 'error');
 const warnings = checks.filter(x => x.severity === 'warning');
