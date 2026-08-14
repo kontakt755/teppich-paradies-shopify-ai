@@ -66,14 +66,18 @@ const known = new Set((baseline.fingerprints || []).map(stableFingerprint));
 themeCheck.newFindings = themeCheck.failed ? [] : themeCheck.findings.filter(x => !known.has(stableFingerprint(x.fingerprint)));
 
 function browserPath() {
-  if (config.browserExecutable !== 'auto') return config.browserExecutable;
+  if (process.env.TP_BROWSER_EXECUTABLE) return path.resolve(process.env.TP_BROWSER_EXECUTABLE);
+  if (config.browserExecutable !== 'auto') return path.resolve(root, config.browserExecutable);
+  const localAppData = process.env.LOCALAPPDATA;
   const candidates = process.platform === 'win32' ? [
+    localAppData && path.join(localAppData, 'Google/Chrome/Application/chrome.exe'),
+    localAppData && path.join(localAppData, 'Microsoft/Edge/Application/msedge.exe'),
     'C:/Program Files/Google/Chrome/Application/chrome.exe',
     'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
     'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
     'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
   ] : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
-  return candidates.find(fs.existsSync);
+  return candidates.filter(Boolean).find(fs.existsSync);
 }
 
 const matchesAny = (value, patterns = []) => patterns.some(pattern => {

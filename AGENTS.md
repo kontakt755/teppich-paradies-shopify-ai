@@ -6,7 +6,7 @@ Shopify-Onlineshop der Teppich Paradies Oranienburg GmbH.
 
 - Öffentlicher Shop: https://www.teppich-paradies.net
 - Shopify Store: `sjjyq1-6w.myshopify.com`
-- Lokale Arbeitsbasis: `C:\Users\Administrator\shopify-theme\shopify-theme`
+- Lokale Arbeitsbasis: dieses Git-Repository (zurzeit `C:\Users\Administrator\Documents\teppich-paradies-shopify-ai`)
 
 Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
 

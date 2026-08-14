@@ -19,7 +19,7 @@ Diese Grenzen gelten trotzdem dauerhaft:
 - Bei normalen Datei-, Browser-, Playwright-, Shopify-CLI- und Testschritten selbstständig weiterarbeiten und nicht nach jeder Kleinigkeit fragen.
 
 Aktueller Theme-Ordner:
-C:\Users\Administrator\shopify-theme\shopify-theme
+dieses Git-Repository (zurzeit C:\Users\Administrator\Documents\teppich-paradies-shopify-ai)
 
 Shop:
 sjjyq1-6w.myshopify.com
