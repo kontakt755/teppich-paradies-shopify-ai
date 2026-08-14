@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { sanitizeText } from '../automation/core/url-sanitizer.mjs';
 
 const MAX_LOG_LINES = 30;
 const MAX_LINE_LENGTH = 500;
@@ -11,7 +12,7 @@ const scopePriority = new Map([
 ]);
 
 function cleanText(value, maxLength = MAX_LINE_LENGTH) {
-  return String(value ?? '')
+  return sanitizeText(value)
     .replace(/data:(?:image|application)\/[^\s"']+/gi, '[inline data omitted]')
     .replace(/<html[\s\S]*?<\/html>/gi, '[HTML omitted]')
     .replace(/\u001b\[[0-9;]*m/g, '')

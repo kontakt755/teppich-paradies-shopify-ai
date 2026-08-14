@@ -17,9 +17,13 @@ local-secrets/
 *.pfx
 credentials*.json
 cookies*.json
+*.session.json
 
 # Shopify CLI and local authentication state
 .shopify/
+
+# Local Claude Code permission/session overrides (personal, machine-specific)
+.claude/settings.local.json
 
 # Dependencies and package-manager noise
 node_modules/

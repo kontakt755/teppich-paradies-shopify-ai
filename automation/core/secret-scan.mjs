@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { findSensitiveUrlQueryNames } from './url-sanitizer.mjs';
 
 const SECRET_PATH = /(^|\/)(\.env(?:\..+)?|\.auth(?:\/|$)|\.sessions?(?:\/|$)|tokens?(?:\/|$)|secrets?(?:\/|$)|cookies?[^/]*\.json$|credentials?[^/]*\.json$)|\.(?:pem|key|p12|pfx)$/i;
 const RULES = Object.freeze([
@@ -19,6 +20,7 @@ export function scanText({ file, text }) {
   if (SECRET_PATH.test(normalized)) findings.push({ file: normalized, line: 1, rule: 'SECRET_FILE' });
   String(text).split(/\r?\n/).forEach((line, index) => {
     for (const [rule, pattern] of RULES) if (pattern.test(line)) findings.push({ file: normalized, line: index + 1, rule });
+    if (findSensitiveUrlQueryNames(line).length) findings.push({ file: normalized, line: index + 1, rule: 'URL_AUTH_QUERY' });
   });
   return findings;
 }

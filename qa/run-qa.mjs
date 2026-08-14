@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
+import { resolveBrowserExecutable } from './browser-resolver.mjs';
+import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
+import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
+import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -16,6 +20,7 @@ const takeAllScreenshots = args.has('--screenshots');
 const updateBaseline = args.has('--update-baseline');
 const startedAt = new Date();
 const started = Date.now();
+const hardTimeout = installHardProcessTimeout({ timeoutMs: 15 * 60_000, label: 'QA-Gesamtlauf' });
 
 fs.mkdirSync(resultsDir, { recursive: true });
 fs.rmSync(artifactsDir, { recursive: true, force: true });
@@ -65,17 +70,6 @@ let baseline = fs.existsSync(baselinePath) ? JSON.parse(fs.readFileSync(baseline
 const known = new Set((baseline.fingerprints || []).map(stableFingerprint));
 themeCheck.newFindings = themeCheck.failed ? [] : themeCheck.findings.filter(x => !known.has(stableFingerprint(x.fingerprint)));
 
-function browserPath() {
-  if (config.browserExecutable !== 'auto') return config.browserExecutable;
-  const candidates = process.platform === 'win32' ? [
-    'C:/Program Files/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-    'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
-    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'
-  ] : ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
-  return candidates.find(fs.existsSync);
-}
-
 const matchesAny = (value, patterns = []) => patterns.some(pattern => {
   try { return new RegExp(pattern, 'i').test(value); } catch { return value.includes(pattern); }
 });
@@ -86,12 +80,13 @@ const safeName = value => value.normalize('NFKD').replace(/[^a-z0-9]+/gi, '-').r
 const checks = [];
 const details = [];
 const add = (scope, pageName, viewport, severity, message, data) => {
-  const item = { scope, page: pageName, viewport, severity, message, ...(data ? { data } : {}) };
+  const item = sanitizeDeep({ scope, page: pageName, viewport, severity, message, ...(data ? { data } : {}) });
   checks.push(item); return item;
 };
 
 async function inspectPage(browser, pageConfig, viewportName, viewport) {
   const context = await browser.newContext({ viewport, locale: 'de-DE', reducedMotion: 'reduce' });
+  try {
   const page = await context.newPage();
   const pageErrors = [];
   const knownConsole = [];
@@ -102,19 +97,25 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
 
   page.on('console', msg => {
     if (msg.type() !== 'error') return;
-    const entry = `${msg.text()} (${msg.location().url || 'inline'})`;
-    if (matchesAny(entry, config.allowlist.console)) return;
-    const host = (() => { try { return new URL(msg.location().url).host; } catch { return targetHost; } })();
-    (host === targetHost && !/shop\.app|\/favicon\.ico/i.test(entry) ? pageErrors : thirdParty).push({ type: 'console.error', message: entry });
+    const sourceUrl = msg.location().url || '';
+    const event = { type: 'console.error', message: msg.text(), url: sourceUrl };
+    if (isKnownShopifyLoginXFrameWarning(event, config.baseUrl)) {
+      knownConsole.push({ ...event, url: sanitizeUrl(sourceUrl), message: sanitizeText(event.message), knownIssueId: 'shop-login-x-frame', reportLabel: 'Shopify Login with Shop / X-Frame-Options' });
+      return;
+    }
+    const rawEntry = `${event.message} (${sourceUrl || 'inline'})`;
+    if (matchesAny(rawEntry, config.allowlist.console)) return;
+    const host = (() => { try { return new URL(sourceUrl).host; } catch { return targetHost; } })();
+    (host === targetHost && !/shop\.app|\/favicon\.ico/i.test(rawEntry) ? pageErrors : thirdParty).push({ type: event.type, message: sanitizeText(rawEntry), url: sanitizeUrl(sourceUrl) });
   });
   page.on('pageerror', error => {
     const knownIssue = knownConsoleIssue('pageerror', error.message);
-    (knownIssue ? knownConsole : pageErrors).push({ type: 'pageerror', message: error.message, knownIssueId: knownIssue?.id, reportLabel: knownIssue?.reportLabel });
+    (knownIssue ? knownConsole : pageErrors).push({ type: 'pageerror', message: sanitizeText(error.message), knownIssueId: knownIssue?.id, reportLabel: knownIssue?.reportLabel });
   });
   page.on('requestfailed', request => {
     const url = request.url();
     if (matchesAny(url, config.allowlist.requests)) return;
-    const entry = { type: 'requestfailed', url, message: request.failure()?.errorText || 'Request fehlgeschlagen' };
+    const entry = { type: 'requestfailed', url: sanitizeUrl(url), message: sanitizeText(request.failure()?.errorText || 'Request fehlgeschlagen') };
     let host; try { host = new URL(url).host; } catch { host = targetHost; }
     const important = ['document', 'script', 'stylesheet', 'image', 'font'].includes(request.resourceType());
     (host === targetHost && important ? assetErrors : thirdParty).push(entry);
@@ -125,7 +126,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     if (matchesAny(url, config.allowlist.requests)) return;
     let host; try { host = new URL(url).host; } catch { host = targetHost; }
     const important = response.request().resourceType() === 'document' || (['script', 'stylesheet', 'image', 'font'].includes(response.request().resourceType()) && !/\/favicon\.ico(?:\?|$)/i.test(url));
-    const entry = { type: 'http', status: response.status(), resourceType: response.request().resourceType(), url };
+    const entry = { type: 'http', status: response.status(), resourceType: response.request().resourceType(), url: sanitizeUrl(url) };
     if (host === targetHost && important) assetErrors.push(entry); else thirdParty.push(entry);
   });
 
@@ -149,16 +150,75 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       }, { timeout: 5000 }).catch(() => {});
     }
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    // Sichtbare responsive Shopify-Bilder koennen beim ersten CDN-Aufruf noch
+    // verarbeitet werden. Kurz auf deren echten Ladeabschluss warten, damit
+    // ein langsames Bild nicht als defektes Bild gewertet wird. 4xx-Antworten
+    // und naturalWidth === 0 bleiben weiterhin echte Errors.
+    await page.evaluate(() => new Promise(resolve => {
+      const allImages = [...document.images];
+      if (!allImages.length) {
+        resolve();
+        return;
+      }
+      let settled = false;
+      let observer;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        observer?.disconnect();
+        resolve();
+      };
+      const timeout = window.setTimeout(finish, 5000);
+      observer = new IntersectionObserver(entries => {
+        const images = entries.filter(entry => entry.isIntersecting).map(entry => entry.target);
+        if (!images.length || images.every(image => image.complete)) {
+          finish();
+          return;
+        }
+        let pending = images.filter(image => !image.complete).length;
+        const done = () => {
+          pending -= 1;
+          if (pending <= 0) finish();
+        };
+        images.filter(image => !image.complete).forEach(image => {
+          image.addEventListener('load', done, { once: true });
+          image.addEventListener('error', done, { once: true });
+        });
+      });
+      allImages.forEach(image => observer.observe(image));
+    }));
   } catch (error) { navigationError = error.message; }
 
   let metrics = null;
   if (!navigationError) {
-    metrics = await page.evaluate(() => {
+    metrics = await page.evaluate(async () => {
       const visible = element => {
         const rect = element.getBoundingClientRect(); const style = getComputedStyle(element);
-        return rect.width > 1 && rect.height > 1 && rect.bottom > 0 && rect.top < innerHeight && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) > 0;
+        return rect.width > 1 && rect.height > 1 && rect.bottom > 0 && rect.top < innerHeight
+          && rect.right > 0 && rect.left < innerWidth
+          && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity) > 0;
       };
-      const visibleImages = [...document.images].filter(visible);
+      const allImages = [...document.images];
+      const intersectingImages = new Set(await new Promise(resolve => {
+        if (!allImages.length) {
+          resolve([]);
+          return;
+        }
+        let settled = false;
+        let observer;
+        const finish = images => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          observer?.disconnect();
+          resolve(images);
+        };
+        const timeout = window.setTimeout(() => finish([]), 3000);
+        observer = new IntersectionObserver(entries => finish(entries.filter(entry => entry.isIntersecting).map(entry => entry.target)));
+        allImages.forEach(image => observer.observe(image));
+      }));
+      const visibleImages = allImages.filter(image => visible(image) && intersectingImages.has(image));
       const brokenImages = visibleImages.filter(img => img.complete && img.naturalWidth === 0).map(img => img.currentSrc || img.src || img.alt || '(ohne Quelle)');
       const unloadedVisibleImages = visibleImages.filter(img => !img.complete).map(img => img.currentSrc || img.src || img.alt || '(ohne Quelle)');
       const emptyPlaceholders = [...document.querySelectorAll('.placeholder-svg, svg.placeholder, .product-media-container .placeholder')].filter(visible).length;
@@ -219,13 +279,16 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   if ((takeAllScreenshots || hasNewFailure) && !navigationError) {
     await page.screenshot({ path: path.join(artifactsDir, `${safeName(pageConfig.name)}-${viewportName.toLowerCase()}.png`), fullPage: false }).catch(() => {});
   }
-  details.push({ page: pageConfig.name, viewport: viewportName, url: targetUrl, finalUrl: page.url(), status: response?.status(), metrics, pageErrors, knownConsole, assetErrors, thirdParty });
-  await context.close();
+  details.push(sanitizeDeep({ page: pageConfig.name, viewport: viewportName, url: targetUrl, finalUrl: page.url(), status: response?.status(), metrics, pageErrors, knownConsole, assetErrors, thirdParty }));
+  } finally {
+    await closeContextSafely(context);
+  }
 }
 
 let browserError;
-const executablePath = browserPath();
-if (!executablePath) browserError = 'Kein unterstützter Chrome-/Edge-Systembrowser gefunden';
+const browserResolution = resolveBrowserExecutable({ configuredPath: config.browserExecutable, playwrightChromium: chromium });
+const executablePath = browserResolution.executablePath;
+if (!executablePath) browserError = browserResolution.error;
 else {
   let browser;
   try {
@@ -238,7 +301,7 @@ else {
     });
     await Promise.all(workers);
   } catch (error) { browserError = error.stack || error.message; }
-  finally { await browser?.close(); }
+  finally { await closeBrowserSafely(browser); }
 }
 if (browserError) add('Browser', 'Gesamtlauf', '-', 'error', browserError.split('\n')[0]);
 
@@ -272,7 +335,7 @@ const knownConsoleWarnings = warnings.filter(x => x.scope === 'Known Baseline Co
 const thirdPartyWarnings = warnings.filter(x => x.scope === 'Drittanbieter');
 const knownConsoleLabels = [...new Set(knownConsoleWarnings.map(x => x.message))];
 const knownConsoleReport = knownConsoleLabels.length ? `⚠ bekannte Baseline-Console-Issues:\n${knownConsoleLabels.map(label => `  - ${label}`).join('\n')}` : '✓ keine bekannten Console-Baseline-Issues aktiv';
-const report = `# TEPPICH PARADIES – QA\n\nStatus: **${status}**  \nZeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}  \nLaufzeit: ${durationSeconds} s\n\n## Theme Check\n\n${tcLine}\n\n## Live Shop\n\n${pageRows.join('\n')}\n\n## Browser und Bilder\n\n${errors.some(x => x.scope === 'Browser') ? '✗' : '✓'} keine neuen kritischen Console-/Assetfehler  \n${knownConsoleReport}  \n${errors.some(x => x.message.includes('Overflow')) ? '✗' : '✓'} kein horizontaler Overflow  \n${errors.some(x => x.scope === 'Bilder') ? '✗' : '✓'} sichtbare Bilder geladen  \n${thirdPartyWarnings.length ? `⚠ ${thirdPartyWarnings.length} Drittanbieterhinweise (Details in qa/results/latest-details.json)` : '✓ keine Drittanbieterhinweise'}\n\n## Probleme\n\n${problemLines}\n`;
+const report = `# TEPPICH PARADIES – QA\n\nStatus: **${status}**\\\nZeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}\\\nLaufzeit: ${durationSeconds} s\n\n## Theme Check\n\n${tcLine}\n\n## Live Shop\n\n${pageRows.join('\n')}\n\n## Browser und Bilder\n\n${errors.some(x => x.scope === 'Browser') ? '✗' : '✓'} keine neuen kritischen Console-/Assetfehler\\\n${knownConsoleReport}\\\n${errors.some(x => x.message.includes('Overflow')) ? '✗' : '✓'} kein horizontaler Overflow\\\n${errors.some(x => x.scope === 'Bilder') ? '✗' : '✓'} sichtbare Bilder geladen\\\n${thirdPartyWarnings.length ? `⚠ ${thirdPartyWarnings.length} Drittanbieterhinweise (Details in qa/results/latest-details.json)` : '✓ keine Drittanbieterhinweise'}\n\n## Probleme\n\n${problemLines}\n`;
 fs.writeFileSync(path.join(root, 'QA_REPORT.md'), report);
 const result = { status, exitCode: errors.length ? 1 : 0, startedAt: startedAt.toISOString(), durationSeconds, themeCheck: themeCheck.failed ? themeCheck : { baseline: { errors: baseline.errors, warnings: baseline.warnings }, current: { errors: themeCheck.errors, warnings: themeCheck.warnings }, newFindings: themeCheck.newFindings }, checks, pages: details.map(({ page, viewport, url, finalUrl, status }) => ({ page, viewport, url, finalUrl, status })) };
 fs.writeFileSync(path.join(resultsDir, 'latest.json'), JSON.stringify(result, null, 2) + '\n');
@@ -283,3 +346,4 @@ console.log(`QA ${status} – ${errors.length} relevante Fehler, ${warnings.leng
 console.log(`Bericht: ${path.join(root, 'QA_REPORT.md')}`);
 console.log(formatEvidenceForConsole(evidence));
 process.exitCode = result.exitCode;
+hardTimeout.clear();

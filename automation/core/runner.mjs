@@ -3,6 +3,7 @@ import { validateManifest } from './manifest.mjs';
 import { RunLock } from './run-lock.mjs';
 import { StateStore, StateWriteError, TERMINAL_STATUSES } from './state-store.mjs';
 import { routeRiskDecision } from './risk-guard.mjs';
+import { DEFAULT_MAX_REVIEW_ROUNDS, runReviewCorrectionCycle } from './review-cycle.mjs';
 
 export class RunnerStoppedError extends Error {
   constructor(message, options) {
@@ -11,12 +12,32 @@ export class RunnerStoppedError extends Error {
   }
 }
 
+export class MissingPostflightDataError extends Error {
+  constructor(field) {
+    super(`Missing required postflight data: ${field}`);
+    this.name = 'MissingPostflightDataError';
+  }
+}
+
+function requireArray(result, field) {
+  if (!Array.isArray(result?.[field])) throw new MissingPostflightDataError(field);
+  return result[field];
+}
+
+function requireActualOperations(result, task) {
+  if (!Array.isArray(result?.actualOperations)) throw new MissingPostflightDataError('actualOperations');
+  return result.actualOperations;
+}
+
 export class ManifestRunner {
-  constructor({ manifest, stateDir, executeTask, riskGuard = null, diffBudgetGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
+  constructor({ manifest, stateDir, executeTask, reviewTask = null, correctTask = null, maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, riskGuard = null, diffBudgetGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
     this.manifest = validateManifest(manifest);
     this.store = new StateStore({ stateDir, io, clock });
     this.lock = new RunLock({ lockPath: path.join(stateDir, 'run.lock'), io, now: clock });
     this.executeTask = executeTask ?? (async () => ({ status: 'PASS' }));
+    this.reviewTask = reviewTask;
+    this.correctTask = correctTask;
+    this.maxReviewRounds = maxReviewRounds;
     this.riskGuard = riskGuard;
     this.diffBudgetGuard = diffBudgetGuard;
     this.needsAhmetPath = needsAhmetPath ?? path.join(stateDir, 'needs-ahmet.md');
@@ -31,7 +52,7 @@ export class ManifestRunner {
     const states = new Map();
     for (const task of this.manifest.tasks) {
       let state = this.store.readTask(task.id) ?? this.initialTaskState(task);
-      if (state.status === 'RUNNING') state = { ...state, status: 'PENDING', interruptedAt: this.clock().toISOString(), updatedAt: this.clock().toISOString() };
+      if (['RUNNING', 'IMPLEMENT', 'REVIEW', 'CORRECT', 'REVIEW_FINDINGS'].includes(state.status)) state = { ...state, status: 'PENDING', interruptedAt: this.clock().toISOString(), updatedAt: this.clock().toISOString() };
       this.store.writeTask(task.id, state);
       states.set(task.id, state);
     }
@@ -76,29 +97,40 @@ export class ManifestRunner {
             continue;
           }
           const dependencies = task.dependencies.map(id => states.get(id));
-          if (dependencies.some(dep => ['FAIL', 'PARKED', 'NEEDS_AHMET', 'SKIPPED_DEPENDENCY', 'BLOCKED'].includes(dep.status))) {
+          if (dependencies.some(dep => ['FAIL', 'PARKED', 'NEEDS_AHMET', 'SKIPPED_DEPENDENCY', 'BLOCKED', 'CORRECTION_REQUIRED', 'REVIEW_LIMIT_REACHED', 'HARD_FAIL', 'SECURITY_STOP'].includes(dep.status))) {
             this.updateTask(states, task, 'SKIPPED_DEPENDENCY', { reason: 'Dependency did not pass' });
             progress = true;
             continue;
           }
           if (!dependencies.every(dep => dep.status === 'PASS')) continue;
           this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString() });
-          const result = await this.executeTask(task);
+          const transitionHistory = [];
+          const result = await runReviewCorrectionCycle({
+            task,
+            implement: this.executeTask,
+            review: this.reviewTask,
+            correct: this.correctTask,
+            maxReviewRounds: this.maxReviewRounds,
+            onState: transition => {
+              transitionHistory.push({ ...transition, at: this.clock().toISOString() });
+              this.updateTask(states, task, transition.status, { reviewRound: transition.reviewRound, maxReviewRounds: transition.maxReviewRounds, findings: transition.findings ?? null, transitionHistory });
+            },
+          });
           if (this.diffBudgetGuard) this.diffBudgetGuard.evaluate({
             task,
-            entries: result?.diffEntries ?? [],
-            actualOperations: result?.actualOperations ?? task.allowedOperations,
-            resources: result?.resources ?? []
+            entries: requireArray(result, 'diffEntries'),
+            actualOperations: result?.reviewRound > 1 ? requireActualOperations(result, task) : (result?.actualOperations ?? task.allowedOperations),
+            resources: requireArray(result, 'resources')
           });
           else if (this.riskGuard) this.riskGuard.postflight({
             task,
-            changedFiles: result?.changedFiles ?? [],
-            actualOperations: result?.actualOperations ?? task.allowedOperations,
-            resources: result?.resources ?? []
+            changedFiles: requireArray(result, 'changedFiles'),
+            actualOperations: result?.reviewRound > 1 ? requireActualOperations(result, task) : (result?.actualOperations ?? task.allowedOperations),
+            resources: requireArray(result, 'resources')
           });
           const status = result?.status ?? 'FAIL';
-          if (!['PASS', 'FAIL', 'PARKED', 'BLOCKED'].includes(status)) throw new Error(`Executor returned invalid status ${status}`);
-          this.updateTask(states, task, status, { result: result?.result ?? null, finishedAt: this.clock().toISOString() });
+          if (!['PASS', 'FAIL', 'PARKED', 'BLOCKED', 'CORRECTION_REQUIRED', 'REVIEW_LIMIT_REACHED', 'HARD_FAIL', 'SECURITY_STOP'].includes(status)) throw new Error(`Executor returned invalid status ${status}`);
+          this.updateTask(states, task, status, { result: result?.result ?? null, reviewRound: result?.reviewRound ?? 0, maxReviewRounds: result?.maxReviewRounds ?? this.maxReviewRounds, findings: result?.findings ?? null, transitionHistory, finishedAt: this.clock().toISOString() });
           progress = true;
         }
       }

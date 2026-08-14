@@ -48,3 +48,21 @@ test('D: multiple failures have reproducible priority independent of input order
   assert.equal(first.primaryFailure.file, 'snippets/a.liquid');
   assert.equal(first.primaryFailure.line, 12);
 });
+
+test('E: sensitive callback queries are removed from every evidence field', () => {
+  const callback = new URL('/services/login_with_shop/buyer/callback', 'https://www.teppich-paradies.net');
+  callback.searchParams.set('token', 'FAKE_EVIDENCE_VALUE');
+  callback.searchParams.set('foo', 'bar');
+  const evidence = buildEvidence({
+    exitCode: 1,
+    checks: [{
+      scope: 'Browser', page: 'Produkt', viewport: 'Desktop', severity: 'error',
+      message: `Fehler bei ${callback.href}`,
+      data: { url: callback.href, stack: `source ${callback.href}` }
+    }],
+    pages: []
+  });
+  const serialized = JSON.stringify(evidence);
+  assert.doesNotMatch(serialized, /FAKE_EVIDENCE_VALUE|[?&]foo=bar/);
+  assert.match(serialized, /services\/login_with_shop\/buyer\/callback/);
+});

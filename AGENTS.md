@@ -1,4 +1,6 @@
-# TEPPICH PARADIES – CODEX PROJECT RULES
+# TEPPICH PARADIES – AGENT PROJECT RULES
+
+Diese Datei ist die zentrale, verbindliche Regelquelle für alle Agenten, die an diesem Repository arbeiten (Claude Code, Codex, ggf. weitere). Andere Regel-/Hinweisdateien (z. B. `CODEX_RULES.txt`) dürfen ausschließlich kurz auf diese Datei verweisen und keine eigenen, abweichenden fachlichen Regeln führen.
 
 ## Projekt
 
@@ -6,7 +8,8 @@ Shopify-Onlineshop der Teppich Paradies Oranienburg GmbH.
 
 - Öffentlicher Shop: https://www.teppich-paradies.net
 - Shopify Store: `sjjyq1-6w.myshopify.com`
-- Lokale Arbeitsbasis: `C:\Users\Administrator\shopify-theme\shopify-theme`
+
+Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codierte absolute Windows- oder macOS-Pfade. Dieses Repository wird auf mehreren Rechnern (u. a. Windows und macOS) ausgecheckt; ein einzelner lokaler Pfad ist nie allgemeingültig. Falls ein absoluter Pfad in einem Script oder einer Notiz auftaucht, ist er als Hinweis auf einen einzelnen historischen Arbeitsplatz zu verstehen, nicht als Vorgabe.
 
 Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
 
@@ -145,6 +148,8 @@ Gute Konkurrenzseiten dürfen als UX-Benchmark untersucht werden. Keine Texte, B
 ## Tests
 
 Vor bzw. nach relevanten Theme-Änderungen bevorzugt `npm run qa` verwenden, statt dieselben mechanischen Browser- und Theme-Checks manuell mit Modellarbeit zu wiederholen.
+
+Weitere verfügbare, rein lesende lokale Checks: `npm run seo:check`, `npm run compare:check`, `npm run qa:evidence:test`, `npm run secret:scan`. `npm run sales:check` ist ein Live-Storefront-Test ohne Kaufabschluss: Er verändert einen anonymen Test-Warenkorb und kann bis zum Checkout navigieren. Vor einem Commit sollte `npm run secret:scan` laufen, wenn neue Dateien mit potenziell sensiblem Inhalt hinzugekommen sind.
 
 Je nach Änderung sinnvoll und risikobasiert prüfen:
 

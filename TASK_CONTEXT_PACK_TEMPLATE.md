@@ -51,7 +51,27 @@ EXPECTED_OUTPUTS:
   - path/to/output
 
 HUMAN_GATE: false
+
+REVIEW:
+  REQUIRED: true
+  REVIEW_ROUND: 1
+  MAX_REVIEW_ROUNDS: 3
+  AUTHOR_PROVIDER: claude
+  REVIEW_PROVIDER: codex
 ```
+
+## Strukturierte Reviewer-Findings
+
+```yaml
+FINDINGS:
+  - priority: P1
+    file: path/to/file.ext
+    problem: Konkreter reproduzierbarer Befund
+    reason: Technische oder fachliche Auswirkung
+    recommendedFix: Eng begrenzte Korrektur
+```
+
+P0 führt zu `HARD_FAIL` beziehungsweise bei Secret-/Security-Ursache zu `SECURITY_STOP`. P1/P2 führen zu `CORRECTION_REQUIRED`; nach `MAX_REVIEW_ROUNDS` wird `REVIEW_LIMIT_REACHED` gespeichert und kein weiterer Agent gestartet.
 
 ## Worker-Regeln im Pack
 

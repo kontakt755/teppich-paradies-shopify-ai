@@ -46,6 +46,17 @@ global:
     delete: HIGH
     publish_or_deploy: HIGH
     purchase_or_order: HIGH
+    git_status: LOW
+    git_diff: LOW
+    git_log: LOW
+    git_fetch: LOW
+    git_push: HIGH
+    force_push: HIGH
+    pull_request_create: HIGH
+    pull_request_merge: HIGH
+    merge_main: HIGH
+    release_create: HIGH
+    tag_create: HIGH
   blast_radius:
     files_over_task_budget: MEDIUM
     bulk_records_over_domain_threshold: HIGH
@@ -87,6 +98,16 @@ domains:
       sales_channel_availability_write: HIGH
       ads_write: HIGH
       test_order: HIGH
+      theme_push: HIGH
+      product_change: HIGH
+      price_change: HIGH
+      sku_change: HIGH
+      variant_change: HIGH
+      checkout_change: HIGH
+      payment_change: HIGH
+      shipping_change: HIGH
+      dns_change: HIGH
+      paid_app_install: HIGH
     protected_resources:
       fallback_theme_196301750606: HIGH
       customer_data: HIGH
@@ -123,11 +144,15 @@ Die Datei wird später als `core/risk-map.schema.json` validiert und pro Domain 
 - Payment, Steuern, Versand, Apps, Webhooks, Rabatte und Ads
 - echte Bestellung
 - Live-Theme-Push und Theme-Publish
+- Git Push, Force Push, PR-Erstellung/-Merge, Merge nach `main`, Releases und Tags
+- Theme-Push/-Publish sowie Produkt-, Preis-, SKU-, Varianten-, Checkout-, Payment-, Versand-, DNS- und Paid-App-Änderungen
 - Produktlöschung, Sales-Channel-Verfügbarkeit und kritische Massenänderungen
 
 ## 4. Human Gates
 
 HIGH wird nicht implementiert. Der Orchestrator schreibt einen Eintrag nach `needs-ahmet.md`, markiert `NEEDS_AHMET` und fährt mit dem nächsten zulässigen Task fort. Ein späterer beaufsichtigter Lauf benötigt ein neues, explizit genehmigtes Manifest.
+
+Read-only Git (`git status`, `git diff`, `git log`, `git fetch`) bleibt LOW. Schreibende Git-/GitHub-Operationen und alle oben genannten Shopify-Live-/Geschäftsdatenoperationen bleiben unabhängig von Modell-Confidence HIGH und benötigen immer das Human Gate.
 
 Eine menschliche Freigabe kann HIGH autorisieren, aber nie Fallback-Löschung, echte Bestellung oder Preisänderung implizit einschließen. Diese benötigen jeweils ausdrückliche Operationsfreigaben.
 

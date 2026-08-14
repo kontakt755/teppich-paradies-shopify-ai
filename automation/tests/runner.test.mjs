@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { ManifestRunner, RunnerStoppedError } from '../core/runner.mjs';
+import { ManifestRunner, MissingPostflightDataError, RunnerStoppedError } from '../core/runner.mjs';
 import { RunLock, RunLockedError } from '../core/run-lock.mjs';
 import { atomicWriteJson } from '../core/state-store.mjs';
 
@@ -76,4 +76,82 @@ test('completed roadmap block is detected and completed tasks are not rerun', as
   assert.equal(first.runState.roadMapBlockComplete, true);
   assert.equal(second.runState.roadMapBlockComplete, true);
   assert.equal(calls, 2);
+});
+
+test('runner persists review limit and does not mark roadmap complete', async t => {
+  const stateDir = temporary(t);
+  let reviews = 0;
+  let corrections = 0;
+  const finding = { priority: 'P1', file: 'qa/a.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
+  const result = await new ManifestRunner({
+    manifest,
+    stateDir,
+    maxReviewRounds: 2,
+    executeTask: async () => ({ status: 'PASS' }),
+    reviewTask: async () => { reviews += 1; return { findings: [finding] }; },
+    correctTask: async () => { corrections += 1; return { status: 'PASS' }; },
+  }).run();
+  assert.equal(result.tasks['LOW-1'].status, 'REVIEW_LIMIT_REACHED');
+  assert.equal(result.tasks['LOW-1'].reviewRound, 2);
+  assert.equal(result.tasks['MEDIUM-1'].status, 'SKIPPED_DEPENDENCY');
+  assert.equal(result.runState.roadMapBlockComplete, false);
+  assert.equal(reviews, 2);
+  assert.equal(corrections, 1);
+});
+
+test('runner fails closed when a correction omits final postflight evidence', async t => {
+  const stateDir = temporary(t); let reviews = 0;
+  const finding = { priority: 'P1', file: 'qa/a.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
+  const runner = new ManifestRunner({
+    manifest, stateDir, diffBudgetGuard: { evaluate: () => assert.fail('guard must not run') },
+    executeTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/a.mjs', added: 1, deleted: 0 }], resources: ['storefront'], actualOperations: ['report_write'] }),
+    reviewTask: async () => ({ findings: ++reviews === 1 ? [finding] : [] }),
+    correctTask: async () => ({ status: 'PASS' }),
+  });
+  await assert.rejects(() => runner.run(), MissingPostflightDataError);
+});
+
+test('runner uses replacement post-correction postflight data', async t => {
+  const stateDir = temporary(t); const calls = []; let reviews = 0;
+  const finding = { priority: 'P1', file: 'qa/a.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
+  await new ManifestRunner({
+    manifest, stateDir, diffBudgetGuard: { evaluate: input => calls.push(input) },
+    executeTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/old.mjs', added: 1, deleted: 0 }], resources: ['old'], actualOperations: ['report_write'] }),
+    reviewTask: async () => ({ findings: ++reviews === 1 ? [finding] : [] }),
+    correctTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/new.mjs', added: 2, deleted: 0 }], resources: ['new'], actualOperations: ['report_write'] }),
+  }).run();
+  assert.deepEqual(calls[0].entries, [{ file: 'fixture/new.mjs', added: 2, deleted: 0 }]);
+  assert.deepEqual(calls[0].resources, ['new']);
+  assert.deepEqual(calls[0].actualOperations, ['report_write']);
+});
+
+test('runner uses only the final correction evidence after multiple review rounds', async t => {
+  const stateDir = temporary(t); const calls = []; let reviews = 0; let corrections = 0;
+  const finding = { priority: 'P1', file: 'qa/a.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
+  await new ManifestRunner({
+    manifest, stateDir, diffBudgetGuard: { evaluate: input => calls.push(input) },
+    executeTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/implement.mjs', added: 1, deleted: 0 }], resources: ['implement'], actualOperations: ['report_write'] }),
+    reviewTask: async () => ({ findings: ++reviews < 3 ? [finding] : [] }),
+    correctTask: async () => ({ status: 'PASS', diffEntries: [{ file: `fixture/correct-${++corrections}.mjs`, added: corrections, deleted: 0 }], resources: [`correct-${corrections}`], actualOperations: ['report_write'] }),
+  }).run();
+  assert.equal(corrections, 2);
+  assert.deepEqual(calls[0].entries, [{ file: 'fixture/correct-2.mjs', added: 2, deleted: 0 }]);
+  assert.deepEqual(calls[0].resources, ['correct-2']);
+});
+
+test('runner fails closed when a postflight guard lacks required evidence', async t => {
+  const stateDir = temporary(t);
+  const runner = new ManifestRunner({ manifest, stateDir, diffBudgetGuard: { evaluate: () => assert.fail('guard must not run') }, executeTask: async () => ({ status: 'PASS' }) });
+  await assert.rejects(() => runner.run(), MissingPostflightDataError);
+});
+
+test('runner accepts implementation evidence when no correction ran', async t => {
+  const stateDir = temporary(t); const calls = [];
+  await new ManifestRunner({
+    manifest, stateDir, diffBudgetGuard: { evaluate: input => calls.push(input) },
+    executeTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/a.mjs', added: 1, deleted: 0 }], resources: ['storefront'] }),
+  }).run();
+  assert.deepEqual(calls[0].entries, [{ file: 'fixture/a.mjs', added: 1, deleted: 0 }]);
+  assert.deepEqual(calls[0].resources, ['storefront']);
+  assert.deepEqual(calls[0].actualOperations, manifest.tasks[0].allowedOperations);
 });
