@@ -6,12 +6,13 @@ import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
+import { configuredBaseUrl, targetUrl } from './target-url.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 15 * 60_000, label: 'Sales-Check' });
 const resultsDir = path.join(root, 'qa', 'results');
 const outputPath = path.join(resultsDir, 'sales-readiness.json');
-const baseUrl = 'https://www.teppich-paradies.net';
+const baseUrl = configuredBaseUrl('https://www.teppich-paradies.net');
 const FLOW_TIMEOUT_MS = 120_000;
 const CLEANUP_TIMEOUT_MS = 10_000;
 const viewports = {
@@ -86,7 +87,7 @@ async function pageHealth(page) {
 
 async function getCart(context) {
   for (let attempt = 0; attempt < 12; attempt += 1) {
-    const response = await context.request.get(`${baseUrl}/cart.js`, { headers: { accept: 'application/json' }, timeout: 10_000 });
+    const response = await context.request.get(targetUrl('/cart.js', baseUrl), { headers: { accept: 'application/json' }, timeout: 10_000 });
     const cart = await response.json();
     if (cart.item_count > 0) return cart;
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -101,7 +102,7 @@ async function reachCheckout(page, setPhase) {
   };
   if (!isCart()) {
     try {
-      await page.goto(`${baseUrl}/cart`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+      await page.goto(targetUrl('/cart', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
     } catch (error) {
       if (!/interrupted by another navigation[\s\S]*\/cart/i.test(error.message)) throw error;
       await page.waitForURL(url => url.pathname === '/cart', { timeout: 15_000 });
@@ -121,7 +122,7 @@ async function reachCheckout(page, setPhase) {
 
 async function packageFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(`${baseUrl}/products/marlow-eiche-nordisch-klickvinyl-7mm`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
   const input = page.locator('main input[type="number"]').first();
   await input.fill('10');
@@ -155,7 +156,7 @@ async function packageFlow({ page, context, result, setPhase }) {
 
 async function rollFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(`${baseUrl}/products/marano-eiche-braun-vinylboden-von-der-rolle`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.goto(targetUrl('/products/marano-eiche-braun-vinylboden-von-der-rolle', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
   await page.locator('main input[type="radio"][value="400 cm"]').check({ timeout: 10_000 });
   await page.waitForTimeout(1000);
@@ -200,7 +201,7 @@ async function rollFlow({ page, context, result, setPhase }) {
 
 async function sampleFlow({ page, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(`${baseUrl}/products/marlow-eiche-nordisch-klickvinyl-7mm`, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('sample-form');
   await page.getByRole('link', { name: /Kostenloses Muster anfragen/i }).click({ timeout: 10_000 });
   await page.waitForURL(/thema=muster/, { timeout: 15_000 });

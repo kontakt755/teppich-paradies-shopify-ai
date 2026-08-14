@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
+import { targetUrl as workflowTargetUrl } from './target-url.mjs';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
@@ -13,8 +14,11 @@ const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
 const artifactsDir = path.join(qaDir, 'artifacts');
 const resultsDir = path.join(qaDir, 'results');
+const workflowReportDir = process.env.WORKFLOW_REPORT_DIR ? path.resolve(process.env.WORKFLOW_REPORT_DIR) : null;
+const reportPath = workflowReportDir ? path.join(workflowReportDir, 'QA_REPORT.md') : path.join(root, 'QA_REPORT.md');
 const baselinePath = path.join(qaDir, 'theme-check-baseline.json');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'qa.config.json'), 'utf8'));
+if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
 const args = new Set(process.argv.slice(2));
 const takeAllScreenshots = args.has('--screenshots');
 const updateBaseline = args.has('--update-baseline');
@@ -23,6 +27,7 @@ const started = Date.now();
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 15 * 60_000, label: 'QA-Gesamtlauf' });
 
 fs.mkdirSync(resultsDir, { recursive: true });
+if (workflowReportDir) fs.mkdirSync(workflowReportDir, { recursive: true });
 fs.rmSync(artifactsDir, { recursive: true, force: true });
 fs.mkdirSync(artifactsDir, { recursive: true });
 
@@ -95,7 +100,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   const knownConsole = [];
   const thirdParty = [];
   const assetErrors = [];
-  const targetUrl = new URL(pageConfig.path, config.baseUrl).href;
+  const targetUrl = workflowTargetUrl(pageConfig.path, config.baseUrl);
   const targetHost = new URL(config.baseUrl).host;
 
   page.on('console', msg => {
@@ -342,14 +347,14 @@ const thirdPartyWarnings = warnings.filter(x => x.scope === 'Drittanbieter');
 const knownConsoleLabels = [...new Set(knownConsoleWarnings.map(x => x.message))];
 const knownConsoleReport = knownConsoleLabels.length ? `⚠ bekannte Baseline-Console-Issues:\n${knownConsoleLabels.map(label => `  - ${label}`).join('\n')}` : '✓ keine bekannten Console-Baseline-Issues aktiv';
 const report = `# TEPPICH PARADIES – QA\n\nStatus: **${status}**\\\nZeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}\\\nLaufzeit: ${durationSeconds} s\n\n## Theme Check\n\n${tcLine}\n\n## Live Shop\n\n${pageRows.join('\n')}\n\n## Browser und Bilder\n\n${errors.some(x => x.scope === 'Browser') ? '✗' : '✓'} keine neuen kritischen Console-/Assetfehler\\\n${knownConsoleReport}\\\n${errors.some(x => x.message.includes('Overflow')) ? '✗' : '✓'} kein horizontaler Overflow\\\n${errors.some(x => x.scope === 'Bilder') ? '✗' : '✓'} sichtbare Bilder geladen\\\n${thirdPartyWarnings.length ? `⚠ ${thirdPartyWarnings.length} Drittanbieterhinweise (Details in qa/results/latest-details.json)` : '✓ keine Drittanbieterhinweise'}\n\n## Probleme\n\n${problemLines}\n`;
-fs.writeFileSync(path.join(root, 'QA_REPORT.md'), report);
+fs.writeFileSync(reportPath, report);
 const result = { status, exitCode: errors.length ? 1 : 0, startedAt: startedAt.toISOString(), durationSeconds, themeCheck: themeCheck.failed ? themeCheck : { baseline: { errors: baseline.errors, warnings: baseline.warnings }, current: { errors: themeCheck.errors, warnings: themeCheck.warnings }, newFindings: themeCheck.newFindings }, checks, pages: details.map(({ page, viewport, url, finalUrl, status }) => ({ page, viewport, url, finalUrl, status })) };
 fs.writeFileSync(path.join(resultsDir, 'latest.json'), JSON.stringify(result, null, 2) + '\n');
 fs.writeFileSync(path.join(resultsDir, 'latest-details.json'), JSON.stringify(details, null, 2) + '\n');
 const evidence = buildEvidence(result);
 writeEvidence(evidence, path.join(qaDir, 'evidence', 'latest-failure.json'));
 console.log(`QA ${status} – ${errors.length} relevante Fehler, ${warnings.length} Hinweise – ${durationSeconds} s`);
-console.log(`Bericht: ${path.join(root, 'QA_REPORT.md')}`);
+console.log(`Bericht: ${reportPath}`);
 console.log(formatEvidenceForConsole(evidence));
 process.exitCode = result.exitCode;
 hardTimeout.clear();

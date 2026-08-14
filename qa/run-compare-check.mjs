@@ -4,10 +4,11 @@ import path from 'node:path';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
 import { sanitizeDeep, sanitizeText } from '../automation/core/url-sanitizer.mjs';
+import { configuredBaseUrl, targetUrl } from './target-url.mjs';
 
-const baseUrl = 'https://www.teppich-paradies.net';
+const baseUrl = configuredBaseUrl('https://www.teppich-paradies.net');
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 5 * 60_000, label: 'Compare-Check' });
-const collectionUrl = `${baseUrl}/collections/vinylboden-klickvinyl`;
+const collectionUrl = targetUrl('/collections/vinylboden-klickvinyl', baseUrl);
 const root = path.resolve(import.meta.dirname, '..');
 const resultsDir = path.join(root, 'qa', 'results');
 const outputPath = path.join(resultsDir, 'compare-readiness.json');

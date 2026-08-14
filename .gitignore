@@ -67,6 +67,7 @@ temp/
 
 # Operating-system and editor files
 .DS_Store
+.workflow/
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
