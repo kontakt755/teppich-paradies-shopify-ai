@@ -22,6 +22,7 @@ Alle Browser-Checks verwenden dieselbe Reihenfolge:
 3. geeigneter Chrome-/Chromium-/Edge-Systembrowser als plattformabhängiger Fallback.
 
 Es wird keine Browserinstallation automatisch gestartet.
+Der optionale Wert `TP_BROWSER_EXECUTABLE` wird pro Rechner gesetzt und nicht mit einem lokalen absoluten Pfad eingecheckt; das gilt gleichermaßen für Windows, macOS und Linux.
 
 ## Berichte
 

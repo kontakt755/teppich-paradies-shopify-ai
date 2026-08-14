@@ -1,5 +1,4 @@
 import { chromium } from 'playwright-core';
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -8,6 +7,7 @@ import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
+import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -37,17 +37,19 @@ function stableFingerprint(value) {
   return value.replace(/\|\d+:\d+\|/, '|*|');
 }
 
-function runThemeCheck() {
-  const isWindows = process.platform === 'win32';
-  const executable = isWindows ? 'cmd.exe' : 'shopify';
-  const commandArgs = isWindows ? ['/d', '/s', '/c', 'shopify.cmd theme check --output json --no-color'] : ['theme', 'check', '--output', 'json', '--no-color'];
-  const run = spawnSync(executable, commandArgs, {
-    cwd: root, encoding: 'utf8', maxBuffer: 20 * 1024 * 1024
-  });
-  let files;
-  try { files = JSON.parse(run.stdout); } catch {
-    return { failed: true, error: (run.stderr || run.stdout || run.error?.message || 'Theme Check konnte nicht gestartet werden').trim() };
+async function runThemeCheck() {
+  const themeArgs = ['theme', 'check', '--output', 'json', '--no-color'];
+  const attempts = [];
+  let parsed;
+  for (const invocation of shopifyInvocations()) {
+    const result = await runProcess(invocation.command, [...invocation.args, ...themeArgs], { cwd: root });
+    parsed = parseJsonProcessOutput(result, { label: `Theme Check (${invocation.label})`, allowedExitCodes: [0, 1] });
+    attempts.push({ label: invocation.label, failed: parsed.failed, kind: parsed.kind });
+    if (!parsed.failed) break;
   }
+  if (parsed?.failed) return { ...parsed, attempts };
+  const files = parsed?.value;
+  if (!Array.isArray(files)) return { failed: true, kind: 'invalid-output', error: 'Theme Check: JSON-Ausgabe ist kein Datei-Array' };
   const findings = files.flatMap(file => file.offenses.map(offense => ({
     fingerprint: fingerprint(file, offense), file: path.relative(root, file.path).replaceAll('\\', '/'),
     check: offense.check, severity: offense.severity, line: offense.start_row + 1, message: offense.message
@@ -55,11 +57,12 @@ function runThemeCheck() {
   return {
     failed: false, findings,
     errors: findings.filter(x => x.severity === 'error').length,
-    warnings: findings.filter(x => x.severity === 'warning').length
+    warnings: findings.filter(x => x.severity === 'warning').length,
+    recoveredProcessFailures: attempts.filter(attempt => attempt.failed)
   };
 }
 
-const themeCheck = runThemeCheck();
+const themeCheck = await runThemeCheck();
 if (updateBaseline && !themeCheck.failed) {
   fs.writeFileSync(baselinePath, JSON.stringify({
     generatedAt: new Date().toISOString(), errors: themeCheck.errors, warnings: themeCheck.warnings,
@@ -306,7 +309,10 @@ else {
 if (browserError) add('Browser', 'Gesamtlauf', '-', 'error', browserError.split('\n')[0]);
 
 if (themeCheck.failed) add('Theme Check', 'Theme', '-', 'error', themeCheck.error);
-else themeCheck.newFindings.forEach(x => add('Theme Check', x.file, '-', x.severity === 'error' ? 'error' : 'error', `Neuer ${x.severity}: ${x.check} (Zeile ${x.line}) – ${x.message}`));
+else {
+  themeCheck.recoveredProcessFailures.forEach(failure => add('QA Harness', 'Theme Check', '-', 'warning', `Theme-Check-Aufruf ${failure.label} fehlgeschlagen (${failure.kind}); begrenzter Fallback lieferte valide Ausgabe`));
+  themeCheck.newFindings.forEach(x => add('Theme Check', x.file, '-', 'error', `Neuer ${x.severity}: ${x.check} (Zeile ${x.line}) – ${x.message}`));
+}
 
 const errors = checks.filter(x => x.severity === 'error');
 const warnings = checks.filter(x => x.severity === 'warning');
