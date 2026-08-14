@@ -5,7 +5,7 @@
 -%}
 
 {% capture children %}
-  {% content_for 'blocks', closest.product: product %}
+  {% content_for 'blocks', closest.product: product, closest.card_index: closest.card_index %}
 {% endcapture %}
 
 {% render 'product-card', children: children, product: product %}

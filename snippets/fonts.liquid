@@ -1,42 +1,59 @@
 {% # theme-check-disable %}
+{% liquid
+  assign preloaded_font_urls = ''
+%}
 {%- unless settings.type_body_font.system? -%}
+  {% assign body_font_url = settings.type_body_font | font_url %}
   <link
     rel="preload"
     as="font"
-    href="{{ settings.type_body_font | font_url }}"
+    href="{{ body_font_url }}"
     type="font/woff2"
     crossorigin
     fetchpriority="low"
   >
+  {% assign preloaded_font_urls = preloaded_font_urls | append: body_font_url | append: '|' %}
 {%- endunless -%}
 {%- unless settings.type_subheading_font.system? -%}
-  <link
-    rel="preload"
-    as="font"
-    href="{{ settings.type_subheading_font | font_url }}"
-    type="font/woff2"
-    crossorigin
-    fetchpriority="low"
-  >
+  {% assign subheading_font_url = settings.type_subheading_font | font_url %}
+  {%- unless preloaded_font_urls contains subheading_font_url -%}
+    <link
+      rel="preload"
+      as="font"
+      href="{{ subheading_font_url }}"
+      type="font/woff2"
+      crossorigin
+      fetchpriority="low"
+    >
+    {% assign preloaded_font_urls = preloaded_font_urls | append: subheading_font_url | append: '|' %}
+  {%- endunless -%}
 {%- endunless -%}
 {%- unless settings.type_heading_font.system? -%}
-  <link
-    rel="preload"
-    as="font"
-    href="{{ settings.type_heading_font | font_url }}"
-    type="font/woff2"
-    crossorigin
-    fetchpriority="low"
-  >
+  {% assign heading_font_url = settings.type_heading_font | font_url %}
+  {%- unless preloaded_font_urls contains heading_font_url -%}
+    <link
+      rel="preload"
+      as="font"
+      href="{{ heading_font_url }}"
+      type="font/woff2"
+      crossorigin
+      fetchpriority="low"
+    >
+    {% assign preloaded_font_urls = preloaded_font_urls | append: heading_font_url | append: '|' %}
+  {%- endunless -%}
 {%- endunless -%}
 {%- unless settings.type_accent_font.system? -%}
-  <link
-    rel="preload"
-    as="font"
-    href="{{ settings.type_accent_font | font_url }}"
-    type="font/woff2"
-    crossorigin
-    fetchpriority="low"
-  >
+  {% assign accent_font_url = settings.type_accent_font | font_url %}
+  {%- unless preloaded_font_urls contains accent_font_url -%}
+    <link
+      rel="preload"
+      as="font"
+      href="{{ accent_font_url }}"
+      type="font/woff2"
+      crossorigin
+      fetchpriority="low"
+    >
+    {% assign preloaded_font_urls = preloaded_font_urls | append: accent_font_url | append: '|' %}
+  {%- endunless -%}
 {%- endunless -%}
 {% # theme-check-enable %}

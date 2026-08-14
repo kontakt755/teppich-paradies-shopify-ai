@@ -59,7 +59,7 @@
             ref="cards[]"
           >
             {% # theme-check-disable %}
-            {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product %}
+            {% content_for 'block', type: '_product-card', id: 'product-card', closest.product: product, closest.card_index: forloop.index0 %}
             {% # theme-check-enable %}
           </li>
         {% endfor %}
