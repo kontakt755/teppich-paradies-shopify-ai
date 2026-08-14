@@ -1,0 +1,36 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  safe-static-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run qa:unit:test
+      - run: npm run automation:test
+      - run: npm run workflow:test
+      - run: npm run qa:evidence:test
+      - run: npm run secret:scan
+
+  local-verification-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: |
+          echo "Local verified checks required before merge: Compare, SEO, Full QA, Sales 6/6, orderCompleted false, P0=0, P1=0."

@@ -11,6 +11,11 @@ const root = path.resolve(import.meta.dirname, '..');
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 5 * 60_000, label: 'SEO-Check' });
 const qaDir = path.join(root, 'qa');
 const resultsDir = path.join(qaDir, 'results');
+const workflowReportDir = process.env.WORKFLOW_REPORT_DIR ? path.resolve(process.env.WORKFLOW_REPORT_DIR) : null;
+const seoReportPath = workflowReportDir ? path.join(workflowReportDir, 'SEO_REPORT.md') : path.join(root, 'SEO_REPORT.md');
+const seoAdminPath = workflowReportDir ? path.join(workflowReportDir, 'SEO_ADMIN_RECOMMENDATIONS.md') : path.join(root, 'SEO_ADMIN_RECOMMENDATIONS.md');
+const merchantReportPath = workflowReportDir ? path.join(workflowReportDir, 'MERCHANT_READINESS_REPORT.md') : path.join(qaDir, 'MERCHANT_READINESS_REPORT.md');
+const trackingReportPath = workflowReportDir ? path.join(workflowReportDir, 'TRACKING_READINESS.md') : path.join(qaDir, 'TRACKING_READINESS.md');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'seo.config.json'), 'utf8'));
 const startedAt = new Date();
 const started = Date.now();
@@ -18,6 +23,7 @@ const args = new Set(process.argv.slice(2));
 const takeScreenshots = args.has('--screenshots');
 const artifactsDir = path.join(qaDir, 'seo-artifacts');
 fs.mkdirSync(resultsDir, { recursive: true });
+if (workflowReportDir) fs.mkdirSync(workflowReportDir, { recursive: true });
 if (takeScreenshots) fs.mkdirSync(artifactsDir, { recursive: true });
 
 const findings = [];
@@ -472,26 +478,26 @@ function writeReports(internalLinkCount, merchantRows) {
   const grouped = severity => findings.filter(item => item.severity === severity);
   const rows = items => items.length ? items.map(item => `- [${item.code}] ${item.page}${item.viewport !== '-' ? ` / ${item.viewport}` : ''}: ${item.message}`).join('\n') : '- Keine';
   const seoMarkdown = `# TEPPICH PARADIES – SEO CHECK\n\nStatus: **${status}**  \nZeitpunkt: ${startedAt.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}  \nLaufzeit: ${durationSeconds} s  \nExit-Code: ${exitCode}\n\n## Zusammenfassung\n\n- ${errors.length} ERROR\n- ${warnings.length} WARN\n- ${passes.length} PASS\n- ${pageResults.length} Seiten-/Viewport-Prüfungen\n- ${internalLinkCount} eindeutige interne Links geprüft\n\n## ERROR\n\n${rows(grouped('ERROR'))}\n\n## WARN\n\n${rows(grouped('WARN'))}\n\n## PASS\n\n${rows(grouped('PASS'))}\n\n## Bewertungslogik\n\nERROR sind technische, reproduzierbare SEO-/Accessibility-Fehler und führen zu Exit-Code 1. WARN sind redaktionelle, Performance- oder Admin-Hinweise und verändern den Exit-Code nicht.\n`;
-  fs.writeFileSync(path.join(root, 'SEO_REPORT.md'), seoMarkdown);
+  fs.writeFileSync(seoReportPath, seoMarkdown);
 
   const adminPages = config.pages.filter(page => page.recommendation);
   const adminRows = adminPages.map(page => {
     const current = pageResults.find(result => result.path === page.path && result.viewport === 'Desktop');
     return `## ${page.name}\n\n- URL: ${new URL(page.path, config.baseUrl).href}\n- Aktueller Title: ${current?.title || 'nicht ermittelt'}\n- Empfohlener Title: ${page.recommendation.title}\n- Aktuelle Description: ${current?.description || 'fehlt'}\n- Empfohlene Description: ${page.recommendation.description}`;
   }).join('\n\n');
-  fs.writeFileSync(path.join(root, 'SEO_ADMIN_RECOMMENDATIONS.md'), `# SEO-Admin-Empfehlungen\n\nDiese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und Beschreibungen sind redaktionell vor Veröffentlichung zu prüfen.\n\n${adminRows}\n`);
+  fs.writeFileSync(seoAdminPath, `# SEO-Admin-Empfehlungen\n\nDiese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und Beschreibungen sind redaktionell vor Veröffentlichung zu prüfen.\n\n${adminRows}\n`);
 
   const merchantGroups = ['READY', 'NEEDS ATTENTION', 'BLOCKER'].map(group => {
     const items = merchantRows.filter(row => row.status === group);
     return `## ${group}\n\n${items.length ? items.map(row => `### ${row.name}\n\n- URL: ${new URL(row.path, config.baseUrl).href}\n- Typ: ${row.productKind}\n- Produkt: ${row.product?.title || 'nicht lesbar'}\n- Vendor: ${row.product?.vendor || 'fehlt'}\n- Produkttyp: ${row.product?.type || 'fehlt'}\n- Varianten: ${row.product?.variantCount ?? '—'}; mit SKU: ${row.product?.variantsWithSku ?? '—'}; mit GTIN/EAN: ${row.product?.variantsWithBarcode ?? '—'}\n${[...row.blockers, ...row.issues].map(issue => `- Hinweis: ${issue}`).join('\n') || '- Keine mechanischen Auffälligkeiten'}`).join('\n\n') : '- Keine'}\n`;
   }).join('\n');
-  fs.writeFileSync(path.join(qaDir, 'MERCHANT_READINESS_REPORT.md'), `# Merchant Center / Google Shopping Readiness\n\nÖffentlicher mechanischer Stichprobentest; es wurden keine Produktdaten und kein Merchant-Konto verändert.\n\n${merchantGroups}\n## Nächster manueller Schritt\n\nGoogle & YouTube in Shopify sowie Merchant Center öffnen und Feed-Diagnose, Kontoverknüpfung, Versand-/Rückgaberichtlinien und Paketpreis-Darstellung gegen diese Landingpages prüfen.\n`);
+  fs.writeFileSync(merchantReportPath, `# Merchant Center / Google Shopping Readiness\n\nÖffentlicher mechanischer Stichprobentest; es wurden keine Produktdaten und kein Merchant-Konto verändert.\n\n${merchantGroups}\n## Nächster manueller Schritt\n\nGoogle & YouTube in Shopify sowie Merchant Center öffnen und Feed-Diagnose, Kontoverknüpfung, Versand-/Rückgaberichtlinien und Paketpreis-Darstellung gegen diese Landingpages prüfen.\n`);
 
   const ga4Status = trackingSignals.ga4.size ? 'READY' : 'UNKLAR';
   const adsStatus = trackingSignals.ads.size ? 'READY' : 'UNKLAR';
   const metaStatus = trackingSignals.meta.size ? 'READY' : 'UNKLAR';
   const merchantStatus = trackingSignals.merchant.size ? 'READY' : 'UNKLAR';
-  fs.writeFileSync(path.join(qaDir, 'TRACKING_READINESS.md'), `# Tracking Readiness\n\nNur öffentliche Seiten und Theme-Dateien wurden gelesen; Checkout, Bestellungen und Werbekonten blieben unverändert.\n\n- Google Ads Conversion: **${adsStatus}** – ${[...trackingSignals.ads].join(', ') || 'Kein eindeutiger öffentlicher AW-Identifier. In Google & YouTube/Google Ads den Conversion-Status und enhanced conversions prüfen.'}\n- GA4: **${ga4Status}** – ${[...trackingSignals.ga4].join(', ') || 'Kein eindeutiger GA4-Identifier im öffentlichen DOM. In Shopify Customer Events bzw. Google & YouTube prüfen.'}\n- Merchant Center: **${merchantStatus}** – ${[...trackingSignals.merchant].join(', ') || 'Kontoverknüpfung ist öffentlich nicht verlässlich erkennbar. Google & YouTube-App und Merchant Center Diagnosen öffnen.'}\n- Meta: **${metaStatus}** – ${[...trackingSignals.meta].join(', ') || 'Kein eindeutiges Meta-Pixel-Signal im öffentlichen DOM. Shopify Customer Events/Meta-App prüfen.'}\n\n## Event-Abdeckung\n\n- Add to cart: ohne Mutation nur Code/DOM prüfbar; keine Testposition in den Warenkorb gelegt.\n- Begin checkout: ohne Checkout-Manipulation nicht vollständig verifiziert.\n- Purchase: **UNKLAR**, bis ein vollständiger genehmigter Testkauf samt GA4-/Ads-Debug-Ansicht durchgeführt wurde.\n- Theme-Dateien mit Tracking-Begriffen: ${localTrackingSignals().join(', ') || 'keine eigenen Theme-Hits'}\n\n## Nächster manueller Schritt\n\nNach dem genehmigten Testkauf parallel GA4 DebugView, Google Ads Tag-Diagnose und Shopify Customer Events kontrollieren; Transaktions-ID, Wert, Währung und genau ein Purchase-Event abgleichen.\n`);
+  fs.writeFileSync(trackingReportPath, `# Tracking Readiness\n\nNur öffentliche Seiten und Theme-Dateien wurden gelesen; Checkout, Bestellungen und Werbekonten blieben unverändert.\n\n- Google Ads Conversion: **${adsStatus}** – ${[...trackingSignals.ads].join(', ') || 'Kein eindeutiger öffentlicher AW-Identifier. In Google & YouTube/Google Ads den Conversion-Status und enhanced conversions prüfen.'}\n- GA4: **${ga4Status}** – ${[...trackingSignals.ga4].join(', ') || 'Kein eindeutiger GA4-Identifier im öffentlichen DOM. In Shopify Customer Events bzw. Google & YouTube prüfen.'}\n- Merchant Center: **${merchantStatus}** – ${[...trackingSignals.merchant].join(', ') || 'Kontoverknüpfung ist öffentlich nicht verlässlich erkennbar. Google & YouTube-App und Merchant Center Diagnosen öffnen.'}\n- Meta: **${metaStatus}** – ${[...trackingSignals.meta].join(', ') || 'Kein eindeutiges Meta-Pixel-Signal im öffentlichen DOM. Shopify Customer Events/Meta-App prüfen.'}\n\n## Event-Abdeckung\n\n- Add to cart: ohne Mutation nur Code/DOM prüfbar; keine Testposition in den Warenkorb gelegt.\n- Begin checkout: ohne Checkout-Manipulation nicht vollständig verifiziert.\n- Purchase: **UNKLAR**, bis ein vollständiger genehmigter Testkauf samt GA4-/Ads-Debug-Ansicht durchgeführt wurde.\n- Theme-Dateien mit Tracking-Begriffen: ${localTrackingSignals().join(', ') || 'keine eigenen Theme-Hits'}\n\n## Nächster manueller Schritt\n\nNach dem genehmigten Testkauf parallel GA4 DebugView, Google Ads Tag-Diagnose und Shopify Customer Events kontrollieren; Transaktions-ID, Wert, Währung und genau ein Purchase-Event abgleichen.\n`);
   return { status, exitCode, errors: errors.length, warnings: warnings.length };
 }
 
@@ -517,6 +523,6 @@ await checkInfrastructure();
 const merchantRows = await merchantAudit();
 const internalLinkCount = await checkInternalLinks();
 const summary = writeReports(internalLinkCount, merchantRows);
-console.log(`SEO ${summary.status}: ${summary.errors} Errors, ${summary.warnings} Warnings. Bericht: SEO_REPORT.md`);
+console.log(`SEO ${summary.status}: ${summary.errors} Errors, ${summary.warnings} Warnings. Bericht: ${seoReportPath}`);
 process.exitCode = summary.exitCode;
 hardTimeout.clear();

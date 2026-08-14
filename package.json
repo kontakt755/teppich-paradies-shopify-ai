@@ -8,7 +8,12 @@
     "secret:scan": "node automation/scripts/secret-scan.mjs",
     "seo:check": "node qa/run-seo-check.mjs",
     "sales:check": "node qa/run-sales-readiness.mjs",
-    "compare:check": "node qa/run-compare-check.mjs"
+    "compare:check": "node qa/run-compare-check.mjs",
+    "workflow:validate": "node workflow/cli.mjs validate",
+    "workflow:pr": "node workflow/cli.mjs pr",
+    "workflow:preview": "node workflow/cli.mjs preview",
+    "workflow:live": "node workflow/cli.mjs live",
+    "workflow:test": "node --test workflow/tests/*.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"
