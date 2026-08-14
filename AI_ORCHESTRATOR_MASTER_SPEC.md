@@ -1,7 +1,7 @@
 # Teppich Paradies AI Orchestrator – Master Specification
 
 Version: 1.0  
-Status: Zielarchitektur, noch nicht implementiert  
+Status: Core-Pilot teilweise implementiert; Provider-Adapter und produktive Agentenanbindung bleiben Zielarchitektur
 Pilot-Domain: Shopify
 
 ## 1. Zweck und Grenzen
@@ -41,8 +41,10 @@ WORKER ROUTER --> Codex | Claude Code | ChatGPT Work
           v
 DETERMINISTIC CHECKS
           |
-          +--> PASS
-          +--> RETRY (fresh task state)
+          +--> REVIEW --> PASS
+          |       |
+          |       +--> CORRECT --> REVIEW (maximal 3 Review-Runden)
+          +--> REVIEW_LIMIT_REACHED / HUMAN GATE
           +--> PARKED
           +--> SKIPPED_DEPENDENCY
           +--> NEEDS_AHMET
@@ -60,7 +62,7 @@ Liest ein unveränderliches Startmanifest mit Task-IDs, Domain, erlaubtem Risiko
 
 Persistiert pro Task mindestens:
 
-- Status: `PENDING`, `RUNNING`, `PASS`, `FAIL_RETRYABLE`, `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`, `HARD_STOP`
+- Status: `PENDING`, `RUNNING`, `IMPLEMENT`, `REVIEW`, `REVIEW_FINDINGS`, `CORRECTION_REQUIRED`, `CORRECT`, `PASS`, `REVIEW_LIMIT_REACHED`, `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`, `HARD_FAIL`, `SECURITY_STOP`
 - Task-Start-Commit oder Snapshot
 - Provider, Modell, Session-ID
 - Versuchszähler und Diagnosezähler getrennt
@@ -149,19 +151,22 @@ Eine Session entspricht genau einem Task. Innerhalb des Tasks wird nicht geclear
 ## 7. Status- und Übergangsregeln
 
 ```text
-PENDING -> RUNNING -> PASS
-                  -> FAIL_RETRYABLE -> RUNNING (frische Session/Snapshot)
+PENDING -> RUNNING -> IMPLEMENT -> REVIEW -> PASS
+                                      -> REVIEW_FINDINGS -> CORRECTION_REQUIRED -> CORRECT -> REVIEW
+                                      -> REVIEW_LIMIT_REACHED (Human Gate)
+                                      -> HARD_FAIL / SECURITY_STOP
                   -> PARKED
                   -> NEEDS_AHMET
-                  -> HARD_STOP
 PENDING -> SKIPPED_DEPENDENCY
 ```
+
+Der Core implementiert hierfür `reviewRound` und `maxReviewRounds` (Default `3`). Runde 3 kann noch reviewen, ruft bei verbleibenden P1/P2-Findings aber keinen weiteren Correction-Agenten auf. Findings besitzen zwingend `priority`, `file`, `problem`, `reason` und `recommendedFix`. P0 sowie Security-/Datenverlustbefunde stoppen hart; P1/P2 wechseln in `CORRECTION_REQUIRED`.
 
 Ein geparkter Task bleibt in späteren Läufen gesperrt, bis Ahmet oder ein genehmigtes neues Manifest ihn ausdrücklich reaktiviert.
 
 ## 8. ROADMAP BLOCK COMPLETE
 
-Ein Roadmap Block ist exakt dann vollständig, wenn jeder im Startmanifest enthaltene LOW-/MEDIUM-Task einen der Status `PASS`, `PARKED`, `SKIPPED_DEPENDENCY` oder `NEEDS_AHMET` besitzt. Es existiert kein `RUNNING` oder `PENDING`. HIGH-Tasks dürfen nicht Teil eines autonomen Startblocks sein.
+Ein Roadmap Block ist exakt dann vollständig, wenn jeder im Startmanifest enthaltene LOW-/MEDIUM-Task einen der Status `PASS`, `PARKED`, `SKIPPED_DEPENDENCY` oder `NEEDS_AHMET` besitzt. Es existiert kein `RUNNING` oder `PENDING`. `REVIEW_LIMIT_REACHED` und `CORRECTION_REQUIRED` beenden die automatische Schleife, markieren den Roadmap Block aber bis zur menschlichen Entscheidung nicht als vollständig. HIGH-Tasks dürfen nicht Teil eines autonomen Startblocks sein.
 
 ## 9. Observability und Budgetdaten
 

@@ -27,9 +27,10 @@ Gültig für LOW-/MEDIUM-Startmanifeste. HIGH ist ausgeschlossen.
 7. Frische Worker-Session starten.
 8. Nach Schreibschritten Allowlist, Risiko und Diff-Budget prüfen.
 9. Deterministische QA ausführen.
-10. PASS speichern oder Retry-/Parklogik anwenden.
-11. Abhängige Tasks bei endgültigem Block als `SKIPPED_DEPENDENCY` markieren.
-12. Laufabschluss bestimmen und einmal benachrichtigen.
+10. Bei reviewpflichtigen Tasks unabhängig reviewen; P1/P2 strukturiert korrigieren und erneut reviewen.
+11. Nach maximal drei Review-Runden `REVIEW_LIMIT_REACHED` speichern und menschliche Entscheidung verlangen.
+12. Abhängige Tasks bei endgültigem Block als `SKIPPED_DEPENDENCY` markieren.
+13. Laufabschluss bestimmen und einmal benachrichtigen.
 
 ## 3. Fail- und Restore-Regeln
 
@@ -82,7 +83,7 @@ Wanduhrzeit ist Sicherheitsgrenze, kein Beschäftigungsziel.
 
 ## 7. ROADMAP BLOCK COMPLETE
 
-Exakte Definition: Jeder im Startmanifest enthaltene LOW-/MEDIUM-Task besitzt `PASS`, `PARKED`, `SKIPPED_DEPENDENCY` oder `NEEDS_AHMET`; kein Task ist `RUNNING` oder `PENDING`. Außerhalb des Startmanifests entdeckte Vorschläge beeinflussen den Status nicht.
+Exakte Definition: Jeder im Startmanifest enthaltene LOW-/MEDIUM-Task besitzt `PASS`, `PARKED`, `SKIPPED_DEPENDENCY` oder `NEEDS_AHMET`; kein Task ist `RUNNING` oder `PENDING`. `REVIEW_LIMIT_REACHED` und `CORRECTION_REQUIRED` verlangen eine menschliche Entscheidung und gelten noch nicht als Roadmap-Abschluss. Außerhalb des Startmanifests entdeckte Vorschläge beeinflussen den Status nicht.
 
 ## 8. Notifications
 
@@ -97,6 +98,8 @@ Live Backup -> Git Tag -> unveröffentlichtes Dev Theme
 ```
 
 `theme publish` bleibt immer ein menschliches Gate. Fallback-Theme `196301750606` ist technisch deny-listed.
+
+Auch `git push`, Force Push, PR-Erstellung/-Merge, Merge nach `main`, Releases und Tags sind immer separate HIGH-Operationen mit Human Gate. Read-only Git (`status`, `diff`, `log`, `fetch`) bleibt zulässig. Shopify `theme_push`, `theme_publish`, Produkt-, Preis-, SKU-, Varianten-, Checkout-, Payment-, Versand-, DNS- und Paid-App-Änderungen bleiben unabhängig von Modell-Confidence HIGH.
 
 ## 10. Abschlussartefakte
 

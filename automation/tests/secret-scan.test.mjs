@@ -36,3 +36,14 @@ test('finding output contains only file line and rule', () => {
   const finding = scanText({ file: 'x.txt', text: `password=${'Z'.repeat(12)}` })[0];
   assert.deepEqual(Object.keys(finding), ['file', 'line', 'rule']);
 });
+
+test('URL auth query is blocked without exposing its value', () => {
+  const callback = new URL('/services/login_with_shop/buyer/callback', 'https://example.test');
+  const fakeValue = `FAKE_${'Q'.repeat(20)}`;
+  callback.searchParams.set('signature', fakeValue);
+  callback.searchParams.set('harmless', 'visible');
+  const findings = scanText({ file: 'report.md', text: `Callback: ${callback.href}` });
+  const output = formatScanResult({ status: 'BLOCK', findings });
+  assert.ok(findings.some(finding => finding.rule === 'URL_AUTH_QUERY'));
+  assert.doesNotMatch(output, new RegExp(fakeValue));
+});

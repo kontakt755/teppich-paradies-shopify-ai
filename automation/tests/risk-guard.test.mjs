@@ -64,6 +64,16 @@ test('unpublished draft product operation is MEDIUM, not HIGH', () => {
   assert.equal(result.effectiveRisk, 'MEDIUM');
 });
 
+test('Git writes and protected Shopify mutations always require HIGH human gate', () => {
+  const gated = [
+    'git_push', 'force_push', 'pull_request_create', 'pull_request_merge', 'merge_main', 'release_create', 'tag_create',
+    'theme_push', 'theme_publish', 'product_change', 'price_change', 'sku_change', 'variant_change',
+    'checkout_change', 'payment_change', 'shipping_change', 'dns_change', 'paid_app_install',
+  ];
+  gated.forEach(operation => assert.equal(guard.operationRisk(operation), 'HIGH', operation));
+  ['git_status', 'git_diff', 'git_log', 'git_fetch'].forEach(operation => assert.equal(guard.operationRisk(operation), 'LOW', operation));
+});
+
 test('runner applies preflight and actual-diff postflight guard', async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-risk-runner-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
@@ -72,7 +82,7 @@ test('runner applies preflight and actual-diff postflight guard', async t => {
   }] };
   const runner = new ManifestRunner({
     manifest, stateDir: path.join(root, 'state'), riskGuard: guard,
-    executeTask: async () => ({ status: 'PASS', changedFiles: ['templates/product.json'], actualOperations: ['report_write'] })
+    executeTask: async () => ({ status: 'PASS', changedFiles: ['templates/product.json'], actualOperations: ['report_write'], resources: [] })
   });
   await assert.rejects(() => runner.run(), HardStopError);
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'state', 'run-state.json'), 'utf8')).status, 'STOPPED');

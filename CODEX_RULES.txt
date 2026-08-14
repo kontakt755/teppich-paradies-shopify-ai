@@ -1,28 +1,8 @@
-Du arbeitest auf meinem eigenen Arbeitsrechner am Shopify-Theme von Teppich Paradies.
+Die verbindlichen Projektregeln stehen ausschließlich in AGENTS.md.
 
-Du hast Full Access, damit du bei normalen Entwicklungsarbeiten nicht ständig nach Terminal-, Browser-, Netzwerk- oder Shopify-CLI-Freigaben fragen musst.
+Codex muss AGENTS.md vollständig lesen und befolgen, bevor irgendeine Änderung an diesem Repository vorgenommen wird. Diese Datei enthält keine eigenen, abweichenden fachlichen Regeln mehr und dient nur noch als kurzer Codex-spezifischer Zusatzhinweis.
 
-Diese Grenzen gelten trotzdem dauerhaft:
+Codex-spezifische Hinweise:
 
-- Fallback-Theme 196301750606 niemals löschen oder überschreiben.
-- Keine Produkte löschen.
-- Keine Preise ändern, außer ich beauftrage es ausdrücklich.
-- Keine SKUs oder Varianten verändern.
-- Keine Checkout-, Zahlungs-, Steuer-, Versand-, DNS- oder Domain-Einstellungen verändern.
-- Keine kostenpflichtigen Apps installieren oder Käufe auslösen.
-- Horizon 4.1.3 nicht migrieren, solange ich das nicht ausdrücklich beauftrage.
-- Globo Mega Menu nicht grundsätzlich umbauen, außer der Auftrag betrifft es ausdrücklich.
-- Paket-/Verschnittrechner nicht neu schreiben, wenn der Auftrag das nicht ausdrücklich verlangt.
-- Vor Live-Push relevante Tests durchführen.
-- Nach Live-Push die echte öffentliche Seite prüfen.
-- Wenn eine irreversible oder geschäftskritische Änderung notwendig wäre, vorher fragen.
-- Bei normalen Datei-, Browser-, Playwright-, Shopify-CLI- und Testschritten selbstständig weiterarbeiten und nicht nach jeder Kleinigkeit fragen.
-
-Aktueller Theme-Ordner:
-C:\Users\Administrator\shopify-theme\shopify-theme
-
-Shop:
-sjjyq1-6w.myshopify.com
-
-Aktuelles Live-Theme:
-201829679438
+- Codex läuft hier typischerweise mit weitreichenden lokalen Ausführungsrechten (Terminal/Browser/Shopify-CLI), damit normale Entwicklungsschritte nicht einzeln bestätigt werden müssen. Die inhaltlichen Grenzen aus AGENTS.md ("NIEMALS ohne ausdrückliche Freigabe" etc.) gelten davon vollständig unberührt.
+- Für automatisierte/autonome Läufe zusätzlich AUTONOMOUS_RUN_RULES.md beachten, sofern vorhanden.

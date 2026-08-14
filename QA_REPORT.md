@@ -1,8 +1,8 @@
 # TEPPICH PARADIES – QA
 
-Status: **WARN**  
-Zeitpunkt: 12.8.2026, 14:47:54  
-Laufzeit: 169.3 s
+Status: **WARN**\
+Zeitpunkt: 13.8.2026, 22:01:47\
+Laufzeit: 87.4 s
 
 ## Theme Check
 
@@ -17,23 +17,41 @@ Aktuell: 9 Errors / 35 Warnings
 ⚠ Vinylboden Desktop
 ⚠ Teppichboden Desktop
 ⚠ Teppichboden Hochflor Desktop
+⚠ Teppichboden Schlinge Desktop
+⚠ Klickvinyl Collection Desktop
+⚠ Klebevinyl Collection Desktop
+⚠ Vinyl von der Rolle Desktop
 ⚠ Klickvinyl PDP Desktop
+⚠ Klebevinyl PDP Desktop
+⚠ Rollen-Vinyl PDP Desktop
 ⚠ Teppichboden PDP Desktop
+⚠ Suche Desktop
+⚠ Warenkorb Desktop
+⚠ Versand & Lieferung Desktop
 ⚠ Startseite Mobile
 ⚠ Vinylboden Mobile
 ⚠ Teppichboden Mobile
 ⚠ Teppichboden Hochflor Mobile
+⚠ Teppichboden Schlinge Mobile
+⚠ Klickvinyl Collection Mobile
+⚠ Klebevinyl Collection Mobile
+⚠ Vinyl von der Rolle Mobile
 ⚠ Klickvinyl PDP Mobile
+⚠ Klebevinyl PDP Mobile
+⚠ Rollen-Vinyl PDP Mobile
 ⚠ Teppichboden PDP Mobile
+⚠ Suche Mobile
+⚠ Warenkorb Mobile
+⚠ Versand & Lieferung Mobile
 
 ## Browser und Bilder
 
-✓ keine neuen kritischen Console-/Assetfehler  
+✓ keine neuen kritischen Console-/Assetfehler\
 ⚠ bekannte Baseline-Console-Issues:
-  - header-menu / overflowMenu  
-✓ kein horizontaler Overflow  
-✓ sichtbare Bilder geladen  
-⚠ 12 Drittanbieterhinweise (Details in qa/results/latest-details.json)
+  - header-menu / overflowMenu\
+✓ kein horizontaler Overflow\
+✓ sichtbare Bilder geladen\
+⚠ 30 Drittanbieterhinweise (Details in qa/results/latest-details.json)
 
 ## Probleme
 

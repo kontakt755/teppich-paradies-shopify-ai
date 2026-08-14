@@ -19,6 +19,8 @@ Routing erfolgt regelbasiert und wird später anhand echter Laufdaten kalibriert
 
 Claude Code wird ab Verfügbarkeit als echter zweiter Provider registriert, nicht als simultaner Standard-Reviewer.
 
+Für explizit reviewpflichtige Merge-/Implementierungsaufgaben ist der sequenzielle Zielablauf: implementierender Provider → anderer Provider als Reviewer → bei strukturierten P1/P2-Findings Correction-Provider → unabhängiger Review. Der Core begrenzt dies auf drei Review-Runden; danach folgt `REVIEW_LIMIT_REACHED` statt eines weiteren Agentenaufrufs. Der Provider-Adapter, der reale Claude-/Codex-Sessions startet, ist noch nicht Teil des Core-Piloten.
+
 ## 3. Auswahlalgorithmus
 
 1. Kann ein deterministisches Tool die Aufgabe vollständig lösen? Dann kein Modell.
@@ -76,6 +78,8 @@ Kein Reviewer nach normalem LOW + QA PASS. Unabhängiger Review nur bei mindeste
 - Security-/Preis-/Checkout-Nähe trotz formal niedrigerem Task
 
 Reviewer liest nur Context Pack, Diffstat, relevanten Diff und gefilterte Prüfevidenz.
+
+Reviewer-Findings müssen `priority`, `file`, `problem`, `reason` und `recommendedFix` enthalten. Der Correction-Worker erhält primär diese Findings und keinen pauschalen Auftrag zur Gesamtoptimierung.
 
 ## 7. Telemetrie
 

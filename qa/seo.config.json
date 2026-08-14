@@ -1,0 +1,31 @@
+{
+  "baseUrl": "https://www.teppich-paradies.net",
+  "navigationTimeoutMs": 30000,
+  "viewports": {
+    "Desktop": { "width": 1440, "height": 1000 },
+    "Mobile": { "width": 390, "height": 844 }
+  },
+  "pages": [
+    { "name": "Startseite", "path": "/", "type": "home", "indexExpected": true, "recommendation": { "title": "Bodenbeläge online kaufen | Teppichboden & Vinyl | Teppich Paradies", "description": "Teppichboden, Klickvinyl, Klebevinyl und Vinyl-Meterware online kaufen. Muster, persönliche Fachberatung und Verlegeservice aus Oranienburg." } },
+    { "name": "Teppichboden", "path": "/collections/teppischboden", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Teppichboden Meterware online kaufen | Teppich Paradies", "description": "Teppichboden als Meterware für Wohn- und Objektbereiche entdecken. Rollenbreiten vergleichen, Muster bestellen und persönlich beraten lassen." } },
+    { "name": "Vinylboden", "path": "/collections/vinylboden-1", "type": "collection", "indexExpected": true, "recommendation": { "title": "Vinylboden online kaufen | Klick-, Klebe- & Rollenware", "description": "Vinylboden als Klickvinyl, Klebevinyl oder Rollenware entdecken. Dekore und Aufbauarten vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Klickvinyl", "path": "/collections/vinylboden-klickvinyl", "type": "collection", "indexExpected": true, "recommendation": { "title": "Klickvinyl online kaufen | Muster & Fachberatung", "description": "Klickvinyl in authentischen Holz- und Steindekoren online entdecken. Muster bestellen, technische Eigenschaften vergleichen und beraten lassen." } },
+    { "name": "Klebevinyl", "path": "/collections/vinylboden-klebevinyl", "type": "collection", "indexExpected": true, "recommendation": { "title": "Klebevinyl online kaufen | Designboden vom Fachhandel", "description": "Klebevinyl für belastbare, flache Bodenaufbauten online entdecken. Dekore vergleichen, Muster anfordern und Fachberatung nutzen." } },
+    { "name": "Vinyl von der Rolle", "path": "/collections/vinylboden-vinyl-von-der-rolle", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Vinylboden von der Rolle | Meterware online kaufen", "description": "Vinylboden von der Rolle als passgenaue Meterware online kaufen. Rollenbreiten und Dekore vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Teppichboden Hochflor", "path": "/collections/teppichboden-hochflor", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Hochflor Teppichboden als Meterware online kaufen", "description": "Hochflor-Teppichboden mit weicher, voluminöser Oberfläche entdecken. Rollenbreiten vergleichen, Muster bestellen und fachlich beraten lassen." } },
+    { "name": "Teppichboden Kurzflor", "path": "/collections/teppichboden-kurzflor", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Kurzflor Teppichboden als Meterware online kaufen", "description": "Kurzflor-Teppichboden für vielseitige Wohnbereiche entdecken. Farben und Rollenbreiten vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Teppichboden Velours", "path": "/collections/teppichboden-velours", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Velours Teppichboden als Meterware online kaufen", "description": "Velours-Teppichboden mit dichter, weicher Oberfläche entdecken. Qualitäten und Rollenbreiten vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Teppichboden Schlinge", "path": "/collections/teppichboden-schlinge", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Schlingen Teppichboden als Meterware online kaufen", "description": "Schlingen-Teppichboden für Wohn- und Objektbereiche entdecken. Ausführungen und Rollenbreiten vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Teppichboden Wolle", "path": "/collections/teppichboden-wolle", "type": "collection", "indexExpected": true, "rollFacetExpected": true, "recommendation": { "title": "Wollteppichboden als Meterware online kaufen", "description": "Teppichboden aus hochwertigen Wollqualitäten entdecken. Farben, Oberflächen und Rollenbreiten vergleichen, Muster bestellen und beraten lassen." } },
+    { "name": "Suche", "path": "/search?q=teppichboden", "type": "search", "indexExpected": false, "rollFacetExpected": true },
+    { "name": "Warenkorb", "path": "/cart", "type": "cart", "indexExpected": false },
+    { "name": "Versand & Lieferung", "path": "/pages/versand-lieferung", "type": "page", "indexExpected": true, "recommendation": { "title": "Versand & Lieferung | Teppich Paradies", "description": "Informationen zu Versandarten, Lieferzeiten und der Anlieferung von Teppichboden, Vinylboden, Rollenware und Paketware bei Teppich Paradies." } },
+    { "name": "Teppichboden PDP", "path": "/products/softiq-teppichboden", "type": "product", "productKind": "roll", "indexExpected": true },
+    { "name": "Rollen-Vinyl PDP", "path": "/products/marano-eiche-braun-vinylboden-von-der-rolle", "type": "product", "productKind": "roll", "indexExpected": true },
+    { "name": "Klickvinyl PDP", "path": "/products/marlow-eiche-nordisch-klickvinyl-7mm", "type": "product", "productKind": "package", "indexExpected": true },
+    { "name": "Klebevinyl PDP", "path": "/products/alvora-eiche-bernstein-klebevinyl-2-5mm", "type": "product", "productKind": "package", "indexExpected": true }
+  ],
+  "infrastructure": ["/robots.txt", "/sitemap.xml"],
+  "maxInternalLinks": 140,
+  "merchantProductLimit": 12
+}
