@@ -188,6 +188,17 @@ Abschlussberichte kompakt halten:
 - ob live
 - offene echte Probleme
 
+## AI Router und Handoff
+
+Neue Aufgaben zuerst mit `npm run workflow:route -- "Neue Aufgabe: ..."` routen. `npm run workflow:status`, `workflow:next` und `workflow:continue` leiten den nächsten sicheren Schritt aus Task, Git-Diff und commitgebundener Evidence ab. `.workflow/state.json` ist nur eine generierte Momentaufnahme; `CURRENT_STATE.md` und `NEXT_ACTION.md` sind keine Workflow-Wahrheit.
+
+- Scripts erledigen deterministische Mechanik und reine Testausführung zuerst.
+- CLASS A benötigt kein Zweitmodell; CLASS B nur bei sensiblen Dateien; CLASS C normalerweise und CLASS D immer.
+- Externe 429/503/Timeouts wechseln keinen Agenten und erhalten höchstens einen unmittelbaren Script-Retry. Cloud-/Proxy-403 bei Storefront-Zugriff geht an den lokalen Mac-Runner.
+- Maximal drei autonome Reparaturrunden; danach Human Escalation. Reviewer erhalten bevorzugt nur Diff, Testreport und Findings.
+- Human Approval wird nie gespeichert und gilt nur für den konkret geprüften Commit. Merge nach `main`, Live-Publish, Shopify Writes an Preisen/SKUs/Varianten, Massenanlage, Checkout/Payment/Shipping, DNS und irreversible Änderungen bleiben gesperrt.
+- Der Router empfiehlt Rollen, startet aber keine externen Agenten und ruft keine Modell-API auf.
+
 ## Aktueller wichtiger Backlog
 
 Nicht automatisch bearbeiten, aber bei zukünftigen Aufgaben berücksichtigen:

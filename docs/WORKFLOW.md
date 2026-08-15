@@ -14,12 +14,18 @@
 
 ## Befehle
 
+- `npm run workflow:route -- "Neue Aufgabe: ..."`: klassifiziert A–D und empfiehlt Script, Implementer, Review, Local Runner und Human Gate. Startet keine externe KI.
+- `npm run workflow:status`: erzeugt den maschinenlesbaren Handoff-State neu aus Task, Git-Diff und commitgebundener Evidence.
+- `npm run workflow:next`: nennt genau die nächste erlaubte Aktion.
+- `npm run workflow:continue`: führt nur den nächsten sicheren Script-Schritt aus oder stoppt mit Agent-, Local-Runner- bzw. Human-Handoff. Ein späterer externer Retry ist explizit mit `-- --retry-now` möglich; lokales Full-QA mit `-- --local-runner`.
 - `npm run workflow:validate`: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan, Compare, SEO, Full QA und Sales nacheinander. Sales muss 6/6 PASS und `orderCompleted: false` liefern.
 - `npm run workflow:validate -- --dry-run`: zeigt den Ablauf, führt nichts aus und meldet niemals PASS.
 - `npm run workflow:pr -- --p0 0 --p1 0 --title "..."`: nur auf erlaubtem Branch, sauberem und vollständig gepushtem HEAD; validiert und erstellt höchstens einen Draft-PR.
 - `npm run workflow:preview -- --theme-id ID --p0 0 --p1 0 --approve-preview`: nur aus sauberem, aktuellem `main`; Ziel muss vor und nach dem Push `unpublished` sein. `settings_data.json` wird nicht überschrieben und sein Hash muss unverändert bleiben. Vor und nach dem Push wird das Preview-Theme gelesen; alle übrigen Theme-Dateien müssen danach exakt `main` entsprechen. Remote-Dateien werden nicht automatisch gelöscht – vorhandene Extras führen stattdessen fail-closed zum Stopp.
 - `npm run workflow:live`: ist standardmäßig gesperrt. Selbst eine freigegebene Preview reicht nicht.
 - `npm run workflow:state`: leitet den aktuellen Zustand aus Git und commitgebundener lokaler Evidence ab. Veraltete oder unklare Evidence führt zu `STOP_REVIEW`; Freigaben werden nie gespeichert.
+
+Details zu Klassen, Kostenregeln, Handoff und externen Blocks stehen in `docs/AI_ROUTER.md`.
 
 ## Live-Gate
 
@@ -45,3 +51,5 @@ Standardweg: **iPhone → ChatGPT Remote → Mac-Codex-Session**. Kurze Aufträg
 - „Live freigeben“
 
 Codex liest `AGENTS.md`, diese Datei, `CURRENT_STATE.md` und `NEXT_ACTION.md`. „Live freigeben“ ist nur die Absicht; vor dem tatsächlichen Publish müssen Theme-ID, Preview-Evidence und der explizite Live-Befehl weiterhin eindeutig bestätigt sein.
+
+Der normale Kurzdialog ist damit: „Neue Aufgabe: …“ → „Weiter“ → bei einem echten Gate „Freigeben“. Der Nutzer muss nicht zwischen Claude und Codex vermitteln; der Router nennt die benötigte Rolle, ohne sie per API zu starten.

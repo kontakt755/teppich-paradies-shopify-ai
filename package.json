@@ -15,6 +15,10 @@
     "workflow:preview": "node workflow/cli.mjs preview",
     "workflow:live": "node workflow/cli.mjs live",
     "workflow:state": "node workflow/cli.mjs state",
+    "workflow:route": "node workflow/cli.mjs route",
+    "workflow:status": "node workflow/cli.mjs status",
+    "workflow:next": "node workflow/cli.mjs next",
+    "workflow:continue": "node workflow/cli.mjs continue",
     "workflow:test": "node --test workflow/tests/*.test.mjs"
   },
   "devDependencies": {

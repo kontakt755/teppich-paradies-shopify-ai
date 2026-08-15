@@ -1,77 +1,98 @@
 {
   "workflow": "validate",
   "status": "PASS",
-  "commit": "c66a9e6d2f729e511d82a0113124dbcf35c85712",
-  "branch": "claude/performance-phase-1-0n5767",
+  "validationScope": "FULL",
+  "commit": "104a7f22e730a05dfdf3c5bc9fbb2602fee866f4",
+  "branch": "chore/ai-router-orchestrator",
   "orderCompleted": false,
+  "externalBlock": null,
   "results": [
     {
       "id": "UNIT",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "AUTOMATION",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "WORKFLOW_TESTS",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "QA_EVIDENCE",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "SECRET_SCAN",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "COMPARE",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "SEO",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "FULL_QA",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     },
     {
       "id": "SALES",
       "status": "PASS",
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
-      "errorClass": null
+      "errorClass": null,
+      "blocker": null
     }
   ],
-  "head": "c66a9e6d2f729e511d82a0113124dbcf35c85712",
-  "originMain": "62f3d1214f5ec0dedceeda7d8fb12b1f72db3b07",
+  "head": "104a7f22e730a05dfdf3c5bc9fbb2602fee866f4",
+  "originMain": "fbcd9fc0767738b4f77f689e9439d786fed7a6f0",
   "clean": true,
+  "worktreeFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "p0": "0",
   "p1": "0",
   "readyForPr": true,

@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { createHash } from 'node:crypto';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
-  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
+  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
+import { deriveHandoffState, formatRouterOutput, normalizeTaskText, planContinue, routeTask } from './router.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const [mode = 'validate', ...rawArgs] = process.argv.slice(2);
@@ -20,12 +22,32 @@ function git(...gitArgs) {
   return requireSuccess(run('git', gitArgs, { timeoutMs: 60_000 }), `git ${gitArgs.join(' ')}`).stdout.trim();
 }
 
+function worktreeFingerprint() {
+  const excludeEvidence = `:(exclude)${TRACKED_EVIDENCE_PATH}`;
+  const diff = requireSuccess(run('git', ['diff', '--binary', 'HEAD', '--', '.', excludeEvidence], { timeoutMs: 60_000 }), 'git diff fingerprint').stdout;
+  const untrackedResult = requireSuccess(run('git', ['ls-files', '--others', '--exclude-standard', '-z', '--', '.', excludeEvidence], { timeoutMs: 60_000 }), 'git untracked fingerprint');
+  const untracked = untrackedResult.stdout.split('\0').filter(Boolean).sort();
+  const hash = createHash('sha256').update(diff);
+  let bytes = Buffer.byteLength(diff);
+  for (const file of untracked) {
+    const absolute = path.join(root, file);
+    const stat = fs.lstatSync(absolute);
+    bytes += stat.size;
+    if (bytes > 20 * 1024 * 1024) throw new WorkflowGateError('Worktree-Fingerprint überschreitet das 20-MB-Limit', 'WORKTREE_TOO_LARGE');
+    const content = stat.isSymbolicLink() ? Buffer.from(fs.readlinkSync(absolute)) : fs.readFileSync(absolute);
+    hash.update(file).update('\0').update(content).update('\0');
+  }
+  return hash.digest('hex');
+}
+
 function context() {
+  const porcelain = git('status', '--porcelain=v1', '-z');
   return {
     branch: git('branch', '--show-current'),
     head: git('rev-parse', 'HEAD'),
     originMain: git('rev-parse', 'origin/main'),
-    clean: git('status', '--porcelain') === '',
+    clean: porcelain === '',
+    worktreeFingerprint: worktreeFingerprint(),
   };
 }
 
@@ -58,7 +80,16 @@ function printSummary(summary) {
 
 function validate({ staticOnly = false, baseUrl = null } = {}) {
   const current = context();
-  const summary = runValidation({ root, dryRun, staticOnly, baseUrl });
+  let summary;
+  try {
+    summary = runValidation({ root, dryRun, staticOnly, baseUrl });
+  } catch (error) {
+    if (error.summary) {
+      Object.assign(error.summary, current, { commit: current.head });
+      writeRuntimeReport(root, 'latest.json', error.summary);
+    }
+    throw error;
+  }
   const findingState = findings();
   const findingsClear = findingsAreClear(findingState);
   Object.assign(summary, current, findingState, { commit: current.head, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
@@ -71,6 +102,64 @@ function validate({ staticOnly = false, baseUrl = null } = {}) {
   return summary;
 }
 
+function readRuntimeJson(name) {
+  const target = path.join(root, '.workflow', name);
+  try { return fs.existsSync(target) ? JSON.parse(fs.readFileSync(target, 'utf8')) : null; } catch { return null; }
+}
+
+function changedFilesSince(commit) {
+  const files = new Set();
+  const collect = result => {
+    if (result.exitCode !== 0) return;
+    result.stdout.split('\n').map(line => line.trim()).filter(Boolean).filter(file => file !== TRACKED_EVIDENCE_PATH).forEach(file => files.add(file));
+  };
+  if (commit) collect(run('git', ['diff', '--name-only', commit, 'HEAD'], { timeoutMs: 60_000 }));
+  collect(run('git', ['diff', '--name-only'], { timeoutMs: 60_000 }));
+  collect(run('git', ['diff', '--name-only', '--cached'], { timeoutMs: 60_000 }));
+  collect(run('git', ['ls-files', '--others', '--exclude-standard'], { timeoutMs: 60_000 }));
+  return [...files].sort();
+}
+
+function currentHandoffState() {
+  const repo = context();
+  const route = readRuntimeJson('task.json');
+  const latest = readRuntimeJson('latest.json');
+  const review = readRuntimeJson('review.json');
+  const state = deriveHandoffState({
+    route, repo, latest, review,
+    changedFiles: changedFilesSince(route?.routedAtHead),
+    latestChangedFiles: latest?.commit ? changedFilesSince(latest.commit) : null,
+    pr: latest?.pr ?? null,
+  });
+  writeRuntimeReport(root, 'state.json', state);
+  return state;
+}
+
+function printHandoffState(state) {
+  console.log([
+    `TASK_ID: ${state.taskId ?? '-'}`,
+    `TASK_CLASS: ${state.taskClass ?? '-'}`,
+    `BRANCH: ${state.branch ?? '-'}`,
+    `IMPLEMENTER: ${state.implementer ?? '-'}`,
+    `COMMIT: ${state.commit ?? '-'}`,
+    `PR: ${state.pr?.number ?? state.pr?.url ?? state.pr ?? '-'}`,
+    `VALIDATION_STATUS: ${state.validationStatus}`,
+    `P0: ${state.p0 ?? '-'}`,
+    `P1: ${state.p1 ?? '-'}`,
+    `REVIEW_REQUIRED: ${state.reviewRequired ? 'JA' : 'NEIN'}`,
+    `REVIEWER: ${state.reviewer ?? '-'}`,
+    `REVIEW_STATUS: ${state.reviewStatus}`,
+    `EXTERNAL_BLOCK: ${state.externalBlock ?? '-'}`,
+    `NEXT_AGENT: ${state.nextAgent ?? '-'}`,
+    `LOCAL_RUNNER_REQUIRED: ${state.localRunnerRequired ? 'JA' : 'NEIN'}`,
+    `SHOPIFY_WRITE_REQUIRED: ${state.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
+    `HUMAN_GATE: ${state.humanGate}`,
+    `HUMAN_APPROVAL_STORED: NEIN`,
+    `NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`,
+    `UPDATED_AT: ${state.updatedAt}`,
+  ].join('\n'));
+}
+
 function themeList(store) {
   const result = run(commandName('shopify'), ['theme', 'list', '--store', store, '--json'], { timeoutMs: 60_000 });
   return parseThemeList(result);
@@ -79,14 +168,45 @@ function themeList(store) {
 async function main() {
   if (mode === 'validate') return validate({ staticOnly: args.static === true });
 
-  if (mode === 'state') {
+  if (mode === 'route') {
     const current = context();
-    const latestPath = path.join(root, '.workflow/latest.json');
-    let latest = null;
-    try { latest = fs.existsSync(latestPath) ? JSON.parse(fs.readFileSync(latestPath, 'utf8')) : null; } catch {}
+    const taskText = normalizeTaskText(rawArgs.filter(token => !token.startsWith('--')).join(' '));
+    const route = routeTask({ text: taskText, branch: current.branch, head: current.head });
+    writeRuntimeReport(root, 'task.json', route);
+    const state = currentHandoffState();
+    console.log(formatRouterOutput(route, state.nextAllowedAction));
+    return route;
+  }
+
+  if (mode === 'state' || mode === 'status' || mode === 'next' || mode === 'continue') {
+    const routedTask = readRuntimeJson('task.json');
+    if (routedTask) {
+      const state = currentHandoffState();
+      if (mode === 'next') {
+        console.log(`NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`);
+        return state;
+      }
+      if (mode === 'continue') {
+        const decision = planContinue(state, { localRunner: args['local-runner'] === true, retryNow: args['retry-now'] === true });
+        if (decision.kind === 'VALIDATE_STATIC') return validate({ staticOnly: true });
+        if (decision.kind === 'VALIDATE_FULL') return validate();
+        if (decision.kind === 'STOP' && decision.reason === 'NEEDS_LOCAL_RUNNER') console.log('NEEDS_LOCAL_RUNNER: Lokalen Mac-Runner verwenden; Storefront-Browserchecks nicht in der Cloud erzwingen.');
+        else if (decision.kind === 'STOP' && decision.reason === 'BLOCKED_EXTERNAL') console.log('BLOCKED_EXTERNAL: Später mit npm run workflow:continue -- --retry-now erneut versuchen; kein Agenten-Retry.');
+        else printHandoffState(state);
+        if (decision.kind === 'STOP') process.exitCode = 2;
+        if (decision.kind === 'STOP') return state;
+        printHandoffState(state);
+        return state;
+      }
+      printHandoffState(state);
+      return state;
+    }
+    const current = context();
+    const latest = readRuntimeJson('latest.json');
     const state = deriveWorkflowState({ ...current, latest });
     writeRuntimeReport(root, 'state.json', state);
-    console.log(`STATE: ${state.status}\nBRANCH: ${state.branch || '-'}\nCOMMIT: ${state.head || '-'}\nREADY FOR LIVE: NEIN\nHUMAN APPROVAL STORED: NEIN\nNEXT ACTION: ${state.nextAction}`);
+    if (mode === 'next') console.log(`NEXT_ALLOWED_ACTION: ${state.nextAction}`);
+    else console.log(`STATE: ${state.status}\nBRANCH: ${state.branch || '-'}\nCOMMIT: ${state.head || '-'}\nREADY FOR LIVE: NEIN\nHUMAN APPROVAL STORED: NEIN\nNEXT ACTION: ${state.nextAction}`);
     if (state.status === 'STOP_REVIEW') process.exitCode = 1;
     return state;
   }

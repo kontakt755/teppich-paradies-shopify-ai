@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { EXTERNAL_BLOCKS, runWithExternalRetry } from './router.mjs';
 
 export const OFFICIAL_BASE = 'main';
 export const BRANCH_PATTERN = /^(feature|fix|chore)\/[a-z0-9][a-z0-9._-]*$/;
@@ -71,10 +72,10 @@ export function validationSteps(root) {
     { id: 'WORKFLOW_TESTS', label: 'Workflow Tests', command: process.execPath, args: ['--test', ...testFiles(root, 'workflow/tests')] },
     { id: 'QA_EVIDENCE', label: 'QA Evidence', command: process.execPath, args: ['--test', 'qa/tests/evidence-filter.test.mjs', 'qa/tests/url-sanitizer.test.mjs', 'qa/tests/console-classification.test.mjs', 'qa/tests/browser-infra.test.mjs'] },
     { id: 'SECRET_SCAN', label: 'Secret Scan', command: process.execPath, args: ['automation/scripts/secret-scan.mjs'] },
-    { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true },
-    { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true },
-    { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true },
-    { id: 'SALES', label: 'Sales', command: process.execPath, args: ['qa/run-sales-readiness.mjs'], browser: true, sales: true },
+    { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true, report: 'qa/results/compare-readiness.json' },
+    { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true, report: 'qa/results/seo-latest.json' },
+    { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true, report: 'qa/results/latest.json' },
+    { id: 'SALES', label: 'Sales', command: process.execPath, args: ['qa/run-sales-readiness.mjs'], browser: true, sales: true, report: 'qa/results/sales-readiness.json' },
   ];
 }
 
@@ -131,28 +132,51 @@ export function verifySalesReport(report, expectedFlows = 6) {
   return true;
 }
 
+export function freshFailureEvidence(root, step, startedAt, maxBytes = 1024 * 1024) {
+  if (!step?.report) return '';
+  const reportPath = path.join(root, step.report);
+  try {
+    const stat = fs.statSync(reportPath);
+    if (stat.mtimeMs + 1000 < startedAt || stat.size > maxBytes) return '';
+    const text = fs.readFileSync(reportPath, 'utf8');
+    try {
+      const report = JSON.parse(text);
+      const errors = Array.isArray(report.findings) ? report.findings.filter(finding => finding?.severity === 'ERROR') : [];
+      return errors.length > 0 ? JSON.stringify({ status: report.status, findings: errors }) : text;
+    } catch { return text; }
+  } catch { return ''; }
+}
+
 export function runValidation({ root, dryRun = false, staticOnly = false, baseUrl = null, run = runBounded, now = () => Date.now() }) {
   const selected = validationSteps(root).filter(step => !staticOnly || !step.browser);
-  const summary = { workflow: 'validate', status: dryRun ? 'DRY_RUN' : 'PASS', commit: null, branch: null, orderCompleted: false, results: [] };
+  const summary = { workflow: 'validate', status: dryRun ? 'DRY_RUN' : 'PASS', validationScope: staticOnly ? 'STATIC' : 'FULL', commit: null, branch: null, orderCompleted: false, externalBlock: null, results: [] };
   for (const step of selected) {
     if (dryRun) {
       summary.results.push({ id: step.id, status: 'SKIPPED_DRY_RUN' });
       continue;
     }
     const salesPath = path.join(root, 'qa/results/sales-readiness.json');
-    const salesStarted = now();
+    const stepStarted = now();
     const env = { ...process.env, WORKFLOW_REPORT_DIR: path.join(root, '.workflow/reports') };
     if (baseUrl) env.WORKFLOW_BASE_URL = baseUrl;
-    const result = run(step.command, step.args, { cwd: root, env });
+    const execution = runWithExternalRetry(() => {
+      const result = run(step.command, step.args, { cwd: root, env });
+      if (result.exitCode !== 0 || result.spawnError || result.timedOut) result.message = freshFailureEvidence(root, step, stepStarted);
+      return result;
+    });
+    const { result } = execution;
     const status = result.exitCode === 0 && !result.spawnError && !result.timedOut ? 'PASS' : 'FAIL';
-    summary.results.push({ id: step.id, status, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null });
+    summary.results.push({ id: step.id, status, attempts: execution.attempts, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null, blocker: execution.blocker });
     if (status !== 'PASS') {
       summary.status = 'FAIL';
-      throw Object.assign(new WorkflowGateError(`${step.label} fehlgeschlagen`, 'VALIDATION_FAILED'), { summary, commandResult: result });
+      summary.externalBlock = execution.blocker;
+      const externalCodes = new Set([EXTERNAL_BLOCKS.RATE_LIMIT, EXTERNAL_BLOCKS.UPSTREAM, EXTERNAL_BLOCKS.LOCAL_RUNNER]);
+      const code = externalCodes.has(execution.blocker) ? execution.blocker : 'VALIDATION_FAILED';
+      throw Object.assign(new WorkflowGateError(`${step.label} fehlgeschlagen`, code), { summary, commandResult: result });
     }
     if (step.sales) {
       const stat = fs.existsSync(salesPath) ? fs.statSync(salesPath) : null;
-      if (!stat || stat.mtimeMs + 1000 < salesStarted) throw new WorkflowGateError('Sales-Evidence wurde nicht frisch erzeugt', 'SALES_EVIDENCE');
+      if (!stat || stat.mtimeMs + 1000 < stepStarted) throw new WorkflowGateError('Sales-Evidence wurde nicht frisch erzeugt', 'SALES_EVIDENCE');
       verifySalesReport(JSON.parse(fs.readFileSync(salesPath, 'utf8')));
     }
   }
