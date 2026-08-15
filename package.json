@@ -19,7 +19,9 @@
     "workflow:status": "node workflow/cli.mjs status",
     "workflow:next": "node workflow/cli.mjs next",
     "workflow:continue": "node workflow/cli.mjs continue",
-    "workflow:test": "node --test workflow/tests/*.test.mjs"
+    "workflow:test": "node --test workflow/tests/*.test.mjs",
+    "control:center": "node control-center/server.mjs",
+    "control:center:test": "node --test control-center/tests/*.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"
