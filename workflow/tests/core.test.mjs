@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  APPROVAL_TEXT, REQUIRED_LOCAL_EVIDENCE_STEPS, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, commandName, compareThemeMaps, createDryRunSummary,
+  APPROVAL_TEXT, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, commandName, compareThemeMaps, createDryRunSummary,
   deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyLocalEvidence, verifyPreviewPayload,
   verifyPreviewSnapshot, verifySalesReport,
 } from '../core.mjs';
@@ -195,6 +195,41 @@ test('local evidence gate refuses evidence bound to a different commit (blocks s
   );
 });
 
+test('local evidence gate accepts an ancestor commit only when nothing but the evidence file itself changed since (fixes the self-referential commit deadlock)', () => {
+  // evidence.commit is stamped BEFORE the evidence file is committed, so
+  // committing it always produces a new HEAD one commit ahead of what was
+  // recorded - an exact-match requirement can never be satisfied by any
+  // normal commit sequence. The gate must tolerate that specific gap.
+  assert.equal(
+    verifyLocalEvidence({
+      evidence: passingEvidence({ commit: 'parent-sha' }),
+      expectedCommit: 'evidence-commit-sha',
+      changedFilesSinceEvidence: [TRACKED_EVIDENCE_PATH],
+    }),
+    true,
+  );
+  // Same shape as above but a second, unrelated file also changed since the
+  // evidence commit - the evidence no longer provably covers HEAD's code.
+  assert.throws(
+    () => verifyLocalEvidence({
+      evidence: passingEvidence({ commit: 'parent-sha' }),
+      expectedCommit: 'evidence-commit-sha',
+      changedFilesSinceEvidence: [TRACKED_EVIDENCE_PATH, 'sections/hero_split.liquid'],
+    }),
+    error => error.code === 'EVIDENCE_STALE' && error.message.includes('hero_split'),
+  );
+  // git could not compute the diff (unreachable commit, shallow history) -
+  // must fail closed, not silently pass an unverifiable ancestor.
+  assert.throws(
+    () => verifyLocalEvidence({
+      evidence: passingEvidence({ commit: 'unreachable-sha' }),
+      expectedCommit: 'evidence-commit-sha',
+      changedFilesSinceEvidence: null,
+    }),
+    error => error.code === 'EVIDENCE_STALE',
+  );
+});
+
 test('local evidence gate refuses evidence from a different branch when a branch is expected', () => {
   assert.throws(
     () => verifyLocalEvidence({ evidence: passingEvidence({ branch: 'other-branch' }), expectedCommit: 'c0ffee', expectedBranch: 'feature/x' }),
@@ -231,6 +266,10 @@ test('local-verification-gate CI job runs a real script bound to the PR head com
   assert.doesNotMatch(gateSection, /run:\s*\|\s*\n\s*echo/, 'gate must not merely echo a message');
   assert.match(gateSection, /run:\s*node workflow\/verify-local-checks\.mjs/);
   assert.match(gateSection, /PR_HEAD_SHA:\s*\$\{\{\s*github\.event\.pull_request\.head\.sha\s*\}\}/);
+  // The gate diffs the evidence commit against PR HEAD to accept an
+  // unmodified ancestor; that requires full history, not the default shallow
+  // depth-1 checkout, or every ancestor lookup fails closed as unreachable.
+  assert.match(gateSection, /fetch-depth:\s*0/);
 });
 
 test('tracked evidence directory is not blanket-gitignored (evidence must be able to reach CI)', () => {

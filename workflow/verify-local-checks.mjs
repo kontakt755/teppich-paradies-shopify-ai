@@ -3,14 +3,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
-import { REQUIRED_LOCAL_EVIDENCE_STEPS, verifyLocalEvidence } from './core.mjs';
+import { REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, verifyLocalEvidence } from './core.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
-const evidencePath = path.join(root, 'qa', 'evidence', 'local-verification.json');
+const evidencePath = path.join(root, TRACKED_EVIDENCE_PATH);
 
 function currentHead() {
   const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' });
   return result.status === 0 ? result.stdout.trim() : null;
+}
+
+// Evidence is stamped with git HEAD *before* it is itself committed, so
+// committing it always advances HEAD past what it recorded (see core.mjs).
+// When the exact commit doesn't match, ask git what actually changed between
+// the evidence's commit and the commit under review; verifyLocalEvidence only
+// accepts the ancestor if that diff is empty except for the evidence file
+// itself. Any git failure (unreachable commit, shallow history) yields null,
+// which verifyLocalEvidence treats as unverifiable and rejects, fail-closed.
+function changedFilesBetween(fromSha, toSha) {
+  if (!fromSha || !toSha) return null;
+  const result = spawnSync('git', ['diff', '--name-only', fromSha, toSha], { cwd: root, encoding: 'utf8' });
+  if (result.status !== 0) return null;
+  return result.stdout.split('\n').map(line => line.trim()).filter(Boolean);
 }
 
 // In CI, PR_HEAD_SHA/PR_HEAD_REF are passed explicitly from the GitHub Actions
@@ -37,9 +51,15 @@ if (!fs.existsSync(evidencePath)) {
 }
 if (readError) console.error(`❌ ${readError}`);
 
+const changedFilesSinceEvidence = evidence?.commit && evidence.commit !== expectedCommit
+  ? changedFilesBetween(evidence.commit, expectedCommit)
+  : null;
+
 try {
-  verifyLocalEvidence({ evidence, expectedCommit, expectedBranch, requiredSteps: REQUIRED_LOCAL_EVIDENCE_STEPS });
-  console.log(`✓ Evidence-Commit stimmt mit HEAD überein: ${expectedCommit}`);
+  verifyLocalEvidence({ evidence, expectedCommit, expectedBranch, changedFilesSinceEvidence, requiredSteps: REQUIRED_LOCAL_EVIDENCE_STEPS });
+  console.log(evidence.commit === expectedCommit
+    ? `✓ Evidence-Commit stimmt exakt mit HEAD überein: ${expectedCommit}`
+    : `✓ Evidence-Commit ${evidence.commit} ist ein unveränderter Vorgänger von HEAD ${expectedCommit} (nur ${path.basename(evidencePath)} hat sich seither geändert)`);
   console.log(`✓ Erforderliche Schritte PASS: ${REQUIRED_LOCAL_EVIDENCE_STEPS.join(', ')}`);
   console.log('✓ P0/P1 = 0, orderCompleted = false');
   console.log('\n' + '='.repeat(60));
