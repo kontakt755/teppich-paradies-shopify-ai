@@ -4,7 +4,7 @@ import process from 'node:process';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
-  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport,
+  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -63,6 +63,10 @@ function validate({ staticOnly = false, baseUrl = null } = {}) {
   const findingsClear = findingsAreClear(findingState);
   Object.assign(summary, current, findingState, { commit: current.head, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
   writeRuntimeReport(root, 'latest.json', summary);
+  // Only a full (non-static) validation actually runs Compare/SEO/Full QA/Sales;
+  // a --static run never touches the browser-dependent evidence the CI gate
+  // requires, so it must never produce a committable evidence file.
+  if (!dryRun && !staticOnly) writeTrackedEvidence(root, summary);
   printSummary(summary);
   return summary;
 }

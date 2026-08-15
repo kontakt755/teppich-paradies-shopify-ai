@@ -6,12 +6,14 @@
   @param [children] - Additional content rendered below the card gallery
   @param [section] - The section object the snippet is rendered in
   @param [block] - The block object the snippet is rendered in
+  @param [card_index] - Zero-based position of this card within its grid/list, used to decide eager loading. Defaults to 0 (treated as the first/only card) when not provided.
 {%- enddoc -%}
 
 {% liquid
   assign product = closest.product
   assign block_settings = block.settings
   assign image_sizes = '(min-width: 750px) 50vw, 100vw'
+  assign card_index = card_index | default: 0
 
   # Check if product has badges and determine position
   assign has_badges = false
@@ -99,6 +101,14 @@
         assign max_visible_slide_count = 2
       endif
 
+      # Real above-the-fold check for the eager-loading decision below: the
+      # section itself must be near the top of the page (not just "one of
+      # the first five"), independent of the card's grid position.
+      assign section_is_near_top = false
+      if section.index == null or section.index <= 2
+        assign section_is_near_top = true
+      endif
+
       capture slides
         for media in media_list_to_show
           assign loading = 'lazy'
@@ -127,7 +137,11 @@
             continue
           endif
 
-          if forloop.first and section.index == null or section.index < 5
+          # Eager-load only the first image of cards that are both in the first
+          # row of a grid (real card position, not just section position) and
+          # in a section near the very top of the page. Everything else stays
+          # lazy so we don't over-fetch images below the fold.
+          if forloop.first and card_index < 4 and section_is_near_top
             assign loading = 'eager'
             assign sizes = image_sizes
           endif

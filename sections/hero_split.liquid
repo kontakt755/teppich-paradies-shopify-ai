@@ -1,6 +1,20 @@
 {% assign hero_id = section.id | replace: '_', '' | downcase %}
 {% assign hero_image_class = 'hero-feature-split__image-' | append: hero_id %}
 
+{% liquid
+  # Only treat this hero as above the fold when it's actually near the top
+  # of the page. Later hero_split instances fall back to lazy/auto so they
+  # don't compete with the real LCP image for bandwidth and priority.
+  assign hero_fetch_priority = 'auto'
+  assign hero_loading = 'lazy'
+  if section.index == 1
+    assign hero_fetch_priority = 'high'
+  endif
+  if section.index <= 2
+    assign hero_loading = 'eager'
+  endif
+%}
+
 {% style %}
   .hero-feature-split-{{ hero_id }} {
     --hero-content-width: {{ section.settings.content_width }}px;
@@ -160,8 +174,8 @@
               | image_tag:
                 class: hero_image_class,
                 widths: '600, 900, 1200, 1500, 1800',
-                loading: 'eager',
-                fetchpriority: 'high',
+                loading: hero_loading,
+                fetchpriority: hero_fetch_priority,
                 alt: section.settings.heading
             }}
           {% else %}

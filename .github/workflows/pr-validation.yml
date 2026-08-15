@@ -32,5 +32,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: |
-          echo "Local verified checks required before merge: Compare, SEO, Full QA, Sales 6/6, orderCompleted false, P0=0, P1=0."
+      # Full history (not the default shallow depth-1 checkout) is required:
+      # the gate diffs the evidence file's recorded commit against the PR
+      # head to confirm no other file changed since, and that commit is not
+      # necessarily the tip of the fetched history.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node workflow/verify-local-checks.mjs
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}

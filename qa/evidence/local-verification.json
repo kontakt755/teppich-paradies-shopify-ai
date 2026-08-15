@@ -1,0 +1,81 @@
+{
+  "workflow": "validate",
+  "status": "PASS",
+  "commit": "c66a9e6d2f729e511d82a0113124dbcf35c85712",
+  "branch": "claude/performance-phase-1-0n5767",
+  "orderCompleted": false,
+  "results": [
+    {
+      "id": "UNIT",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "AUTOMATION",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "WORKFLOW_TESTS",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "QA_EVIDENCE",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "SECRET_SCAN",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "COMPARE",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "SEO",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "FULL_QA",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    },
+    {
+      "id": "SALES",
+      "status": "PASS",
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null
+    }
+  ],
+  "head": "c66a9e6d2f729e511d82a0113124dbcf35c85712",
+  "originMain": "62f3d1214f5ec0dedceeda7d8fb12b1f72db3b07",
+  "clean": true,
+  "p0": "0",
+  "p1": "0",
+  "readyForPr": true,
+  "readyForMain": false,
+  "readyForPreview": false,
+  "readyForLive": false
+}
