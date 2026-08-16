@@ -1,0 +1,223 @@
+{% doc %}
+  "Auf einen Blick" - kompakte Merkmalsuebersicht fuer Teppiche, unterhalb
+  des Kaufbereichs. Zeigt ausschliesslich Felder, die am Produkt tatsaechlich
+  gepflegt sind (echte custom.*-Metafelder). Kein Feld wird erfunden oder mit
+  Platzhaltertext gefuellt - fehlende Werte werden schlicht nicht gerendert.
+  Icons stammen aus dem vorhandenen Theme-Icon-Set (snippets/icon.liquid);
+  Felder ohne wirklich passendes Icon bleiben bewusst ohne Icon, statt ein
+  irrefuehrendes Symbol zu erzwingen.
+
+  Herstellungsland/OEKO-TEX/Pflegeleicht/Indoor-Outdoor lesen bereits jetzt
+  optionale Metafelder (custom.herstellungsland, custom.oeko_tex,
+  custom.pflegeleicht, custom.indoor_outdoor), die im Shop-Schema aktuell noch
+  nicht angelegt sind. Diese Zeilen erscheinen automatisch, sobald die Felder
+  gepflegt werden - ohne erneute Code-Aenderung.
+{% enddoc %}
+
+{%- liquid
+  assign tp_aeb_id = block.id | replace: '_', '' | downcase
+  assign tp_aeb_rows = ''
+  assign tp_aeb_count = 0
+-%}
+
+{%- capture tp_aeb_material -%}{{ product.metafields.custom.material.value }}{%- endcapture -%}
+{%- assign tp_aeb_material = tp_aeb_material | strip -%}
+{%- if tp_aeb_material != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}none::Material::{{ tp_aeb_material }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_aeb_faser_mf = product.metafields.custom.fasermaterial -%}
+{%- assign tp_aeb_faser_val = tp_aeb_faser_mf.value -%}
+{%- assign tp_aeb_faser = '' -%}
+{%- if tp_aeb_faser_val != blank -%}
+  {%- if tp_aeb_faser_mf.type contains 'list.' -%}
+    {%- capture tp_aeb_faser -%}
+      {%- for item in tp_aeb_faser_val -%}
+        {%- assign fm = item.fasermaterial -%}
+        {{- fm.value | default: fm | default: item.name | default: item -}}
+        {%- unless forloop.last %}, {% endunless -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+  {%- else -%}
+    {%- assign fm = tp_aeb_faser_val.fasermaterial -%}
+    {%- capture tp_aeb_faser -%}{{ fm.value | default: fm | default: tp_aeb_faser_val.name | default: tp_aeb_faser_val }}{%- endcapture -%}
+  {%- endif -%}
+{%- endif -%}
+{%- assign tp_aeb_faser = tp_aeb_faser | strip -%}
+{%- if tp_aeb_faser != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}none::Fasermaterial::{{ tp_aeb_faser }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_florhohe -%}{{ product.metafields.custom.florhohe.value }}{%- endcapture -%}
+{%- assign tp_aeb_florhohe = tp_aeb_florhohe | strip -%}
+{%- if tp_aeb_florhohe != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}ruler::Florhöhe::{{ tp_aeb_florhohe }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_ruecken -%}{{ product.metafields.custom.ruckenausstattung.value }}{%- endcapture -%}
+{%- assign tp_aeb_ruecken = tp_aeb_ruecken | strip -%}
+{%- if tp_aeb_ruecken != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}none::Rücken::{{ tp_aeb_ruecken }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_aeb_heating_mf = product.metafields.custom.fusbodenheizung -%}
+{%- assign tp_aeb_heating_val = tp_aeb_heating_mf.value -%}
+{%- assign tp_aeb_heating = tp_aeb_heating_val.fusbodenheizung.value | default: tp_aeb_heating_val.fusbodenheizung | default: tp_aeb_heating_val.name | default: tp_aeb_heating_val -%}
+{%- if tp_aeb_heating != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}fire::Fußbodenheizung geeignet::{{ tp_aeb_heating }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_pflege -%}{{ product.metafields.custom.pflegeleicht.value }}{%- endcapture -%}
+{%- assign tp_aeb_pflege = tp_aeb_pflege | strip -%}
+{%- if tp_aeb_pflege != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}washing::Pflegeleicht::{{ tp_aeb_pflege }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_indoor_outdoor -%}{{ product.metafields.custom.indoor_outdoor.value }}{%- endcapture -%}
+{%- assign tp_aeb_indoor_outdoor = tp_aeb_indoor_outdoor | strip -%}
+{%- if tp_aeb_indoor_outdoor != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}none::Einsatzbereich::{{ tp_aeb_indoor_outdoor }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_herstellungsland -%}{{ product.metafields.custom.herstellungsland.value }}{%- endcapture -%}
+{%- assign tp_aeb_herstellungsland = tp_aeb_herstellungsland | strip -%}
+{%- if tp_aeb_herstellungsland != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}map_pin::Herstellungsland::{{ tp_aeb_herstellungsland }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_aeb_oeko -%}{{ product.metafields.custom.oeko_tex.value }}{%- endcapture -%}
+{%- assign tp_aeb_oeko = tp_aeb_oeko | strip -%}
+{%- if tp_aeb_oeko != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}leaf::OEKO-TEX::{{ tp_aeb_oeko }}|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- comment -%}
+  Wunschmaß möglich: identisch zur Erkennung in tp-teppich-wunschmass.liquid
+  (custom.wunschmass_mindestbreite_cm gesetzt = Wunschmaß fuer dieses Produkt
+  konfiguriert). Bewusst kein separates Ja/Nein-Metafeld, um zwei
+  Datenquellen fuer denselben Zustand zu vermeiden.
+{%- endcomment -%}
+{%- assign tp_aeb_wunschmass_active = product.metafields.custom.wunschmass_mindestbreite_cm.value -%}
+{%- if tp_aeb_wunschmass_active != blank -%}
+  {%- capture tp_aeb_rows -%}{{ tp_aeb_rows }}ruler::Wunschmaß möglich::Ja|{%- endcapture -%}
+  {%- assign tp_aeb_count = tp_aeb_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_aeb_row_list = tp_aeb_rows | split: '|' -%}
+
+{%- if tp_aeb_count > 0 -%}
+  <div class="tp-teppich-aeb-{{ tp_aeb_id }}" {{ block.shopify_attributes }}>
+    <h2 class="tp-teppich-aeb__heading-{{ tp_aeb_id }}">Auf einen Blick</h2>
+    <ul class="tp-teppich-aeb__grid-{{ tp_aeb_id }}">
+      {%- for row in tp_aeb_row_list -%}
+        {%- if row != blank -%}
+          {%- assign row_parts = row | split: '::' -%}
+          {%- assign row_icon = row_parts[0] -%}
+          {%- assign row_label = row_parts[1] -%}
+          {%- assign row_value = row_parts[2] -%}
+          <li class="tp-teppich-aeb__item-{{ tp_aeb_id }}">
+            {%- unless row_icon == 'none' -%}
+              <svg class="tp-teppich-aeb__icon-{{ tp_aeb_id }}" aria-hidden="true" focusable="false" viewBox="0 0 20 20" width="20" height="20">
+                {%- render 'icon', icon: row_icon -%}
+              </svg>
+            {%- endunless -%}
+            <span class="tp-teppich-aeb__text-{{ tp_aeb_id }}">
+              <span class="tp-teppich-aeb__label-{{ tp_aeb_id }}">{{ row_label }}</span>
+              <span class="tp-teppich-aeb__value-{{ tp_aeb_id }}">{{ row_value }}</span>
+            </span>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+  </div>
+
+  <style>
+    .tp-teppich-aeb-{{ tp_aeb_id }} {
+      margin-top: 8px;
+      padding: 18px 20px;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+      border-radius: 10px;
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+    }
+
+    .tp-teppich-aeb__heading-{{ tp_aeb_id }} {
+      margin: 0 0 14px;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--color-foreground);
+    }
+
+    .tp-teppich-aeb__grid-{{ tp_aeb_id }} {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 20px;
+    }
+
+    .tp-teppich-aeb__item-{{ tp_aeb_id }} {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .tp-teppich-aeb__icon-{{ tp_aeb_id }} {
+      flex: 0 0 auto;
+      margin-top: 1px;
+      color: #8d714c;
+    }
+
+    .tp-teppich-aeb__text-{{ tp_aeb_id }} {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .tp-teppich-aeb__label-{{ tp_aeb_id }} {
+      font-size: 12px;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
+    }
+
+    .tp-teppich-aeb__value-{{ tp_aeb_id }} {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--color-foreground);
+      overflow-wrap: break-word;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-teppich-aeb-{{ tp_aeb_id }} {
+        padding: 16px;
+      }
+
+      .tp-teppich-aeb__grid-{{ tp_aeb_id }} {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich Auf einen Blick",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Teppich Auf einen Blick"
+    }
+  ]
+}
+{% endschema %}

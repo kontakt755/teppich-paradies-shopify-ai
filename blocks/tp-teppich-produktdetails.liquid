@@ -1,0 +1,203 @@
+{% doc %}
+  Vollstaendige technische Datentabelle fuer Teppiche ("Produktdetails"),
+  eigenstaendig gegenueber der Bodenbelag-Tabelle (ai_gen_block_b888d9b).
+  Zeigt nur Zeilen, deren Metafeld am Produkt tatsaechlich gesetzt ist.
+  Wunschmaß-Rahmenbedingungen werden nur angezeigt, wenn Wunschmaß fuer
+  dieses Produkt konfiguriert ist (custom.wunschmass_mindestbreite_cm
+  gesetzt) - identische Erkennung wie in tp-teppich-wunschmass.liquid.
+{% enddoc %}
+
+{% assign tp_pd_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .tp-teppich-pd-{{ tp_pd_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+  }
+
+  .tp-teppich-pd__heading-{{ tp_pd_id }} {
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-foreground);
+  }
+
+  .tp-teppich-pd__table-{{ tp_pd_id }} {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .tp-teppich-pd__row-{{ tp_pd_id }} {
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tp-teppich-pd__row-{{ tp_pd_id }}:last-child {
+    border-bottom: none;
+  }
+
+  .tp-teppich-pd__key-{{ tp_pd_id }},
+  .tp-teppich-pd__value-{{ tp_pd_id }} {
+    padding: 14px 16px;
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+  }
+
+  .tp-teppich-pd__key-{{ tp_pd_id }} {
+    font-weight: 600;
+    width: 32%;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-teppich-pd__key-{{ tp_pd_id }},
+    .tp-teppich-pd__value-{{ tp_pd_id }} {
+      display: block;
+      width: 100%;
+    }
+
+    .tp-teppich-pd__key-{{ tp_pd_id }} {
+      padding-bottom: 4px;
+    }
+
+    .tp-teppich-pd__value-{{ tp_pd_id }} {
+      padding-top: 0;
+    }
+  }
+{% endstyle %}
+
+{% comment %}
+  Format: Label::metafield_key::display_field (siehe ai_gen_block_b888d9b fuer
+  die gleiche Konvention bei Bodenbelaegen).
+{% endcomment %}
+{% capture tp_pd_table_config %}
+Marke::marke::name|
+Material::material::value|
+Fasermaterial::fasermaterial::fasermaterial|
+Florhöhe::florhohe::value|
+Rückenausstattung::ruckenausstattung::value|
+Aufbau::aufbau::value|
+Gesamtstärke::gesamtstarke::value|
+Komfortklasse::komfortklasse::value|
+Fußbodenheizung geeignet::fusbodenheizung::fusbodenheizung|
+Optik::optik::optik|
+Herstellungsland::herstellungsland::value|
+OEKO-TEX::oeko_tex::value|
+Pflegeleicht::pflegeleicht::value|
+Einsatzbereich::indoor_outdoor::value
+{% endcapture %}
+
+{% assign tp_pd_rows = tp_pd_table_config | strip | split: '|' %}
+
+{%- liquid
+  assign tp_pd_wunschmass_min_width = product.metafields.custom.wunschmass_mindestbreite_cm.value
+  assign tp_pd_wunschmass_active = false
+  if tp_pd_wunschmass_min_width != blank
+    assign tp_pd_wunschmass_active = true
+  endif
+-%}
+
+<product-info-table-{{ tp_pd_id }} class="tp-teppich-pd-{{ tp_pd_id }}" {{ block.shopify_attributes }}>
+  <h2 class="tp-teppich-pd__heading-{{ tp_pd_id }}">Produktdetails</h2>
+  <table class="tp-teppich-pd__table-{{ tp_pd_id }}">
+    {% for row in tp_pd_rows %}
+      {% assign row_parts = row | split: '::' %}
+      {% assign row_label = row_parts[0] | strip %}
+      {% assign metafield_key = row_parts[1] | strip %}
+      {% assign display_field = row_parts[2] | strip %}
+      {% assign metafield = product.metafields.custom[metafield_key] %}
+      {% assign metafield_value = metafield.value %}
+
+      {% if metafield_value != blank %}
+        <tr class="tp-teppich-pd__row-{{ tp_pd_id }}">
+          <td class="tp-teppich-pd__key-{{ tp_pd_id }}">{{ row_label }}</td>
+          <td class="tp-teppich-pd__value-{{ tp_pd_id }}">
+            {% if metafield.type contains 'list.' %}
+              {%- for item in metafield_value -%}
+                {%- if display_field == 'value' -%}
+                  {{- item -}}
+                {%- elsif display_field == 'name' -%}
+                  {{- item.name | default: item -}}
+                {%- else -%}
+                  {%- assign field_drop = item[display_field] -%}
+                  {{- field_drop.value | default: field_drop | default: item.name | default: item -}}
+                {%- endif -%}
+                {%- unless forloop.last -%}, {% endunless -%}
+              {%- endfor -%}
+            {% else %}
+              {% if display_field == 'value' %}
+                {{ metafield_value }}
+              {% elsif display_field == 'name' %}
+                {{ metafield_value.name | default: metafield_value }}
+              {% else %}
+                {% assign field_drop = metafield_value[display_field] %}
+                {{
+                  field_drop.value
+                  | default: field_drop
+                  | default: metafield_value.name
+                  | default: metafield_value
+                }}
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+      {% endif %}
+    {% endfor %}
+
+    {%- if tp_pd_wunschmass_active -%}
+      {%- liquid
+        assign tp_pd_wm_max_width = product.metafields.custom.wunschmass_maximalbreite_cm.value
+        assign tp_pd_wm_min_length = product.metafields.custom.wunschmass_mindestlaenge_cm.value
+        assign tp_pd_wm_max_length = product.metafields.custom.wunschmass_maximallaenge_cm.value
+        assign tp_pd_wm_shape = product.metafields.custom.wunschmass_form.value | default: 'Rechteck'
+      -%}
+      <tr class="tp-teppich-pd__row-{{ tp_pd_id }}">
+        <td class="tp-teppich-pd__key-{{ tp_pd_id }}">Wunschmaß</td>
+        <td class="tp-teppich-pd__value-{{ tp_pd_id }}">Möglich, individuell nach Maß gefertigt</td>
+      </tr>
+      {%- if tp_pd_wunschmass_min_width != blank and tp_pd_wm_max_width != blank -%}
+        <tr class="tp-teppich-pd__row-{{ tp_pd_id }}">
+          <td class="tp-teppich-pd__key-{{ tp_pd_id }}">Breite (Wunschmaß)</td>
+          <td class="tp-teppich-pd__value-{{ tp_pd_id }}">{{ tp_pd_wunschmass_min_width }}–{{ tp_pd_wm_max_width }} cm</td>
+        </tr>
+      {%- endif -%}
+      {%- if tp_pd_wm_min_length != blank and tp_pd_wm_max_length != blank -%}
+        <tr class="tp-teppich-pd__row-{{ tp_pd_id }}">
+          <td class="tp-teppich-pd__key-{{ tp_pd_id }}">Länge (Wunschmaß)</td>
+          <td class="tp-teppich-pd__value-{{ tp_pd_id }}">{{ tp_pd_wm_min_length }}–{{ tp_pd_wm_max_length }} cm</td>
+        </tr>
+      {%- endif -%}
+      <tr class="tp-teppich-pd__row-{{ tp_pd_id }}">
+        <td class="tp-teppich-pd__key-{{ tp_pd_id }}">Form</td>
+        <td class="tp-teppich-pd__value-{{ tp_pd_id }}">{{ tp_pd_wm_shape }}</td>
+      </tr>
+    {%- endif -%}
+  </table>
+</product-info-table-{{ tp_pd_id }}>
+
+{% schema %}
+{
+  "name": "TP Teppich Produktdetails",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop-Breite",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Teppich Produktdetails"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,643 @@
+{% doc %}
+  Wunschmaß-Rechner für Teppiche. Rendert NUR, wenn das Produkt ueber das
+  Metafeld custom.wunschmass_mindestbreite_cm als Wunschmaß-Produkt
+  konfiguriert ist - auf allen anderen Teppichen (Standardgroessen/Farben)
+  erscheint dieser Block unsichtbar und aendert nichts.
+
+  PREISLOGIK (wichtig, bitte vor Nutzung lesen):
+  Shopify erlaubt es einem Theme ohne Shopify Plus/Checkout-Erweiterung
+  nicht, beim Hinzufuegen zum Warenkorb einen frei berechneten Preis zu
+  uebergeben. Um trotzdem exakt m²-genau abzurechnen, wird die kleinste
+  Verkaufseinheit dieses Produkts auf 0,01 m² festgelegt:
+    Shopify-Variantenpreis = Preis pro m² ÷ 100
+  Der tatsaechliche Warenkorb-Gesamtpreis ergibt sich aus Variantenpreis ×
+  Menge (Menge = Flaeche in 0,01-m²-Einheiten, aufgerundet). Dadurch stimmen
+  Live-Vorschau und Kassenpreis immer exakt ueberein - es gibt keine zweite,
+  potenziell abweichende Preisquelle. Nachteil: In Shopify-Admin/Bestell-
+  E-Mails erscheint eine ungewoehnlich hohe "Menge" (z.B. 1247 statt 12,47
+  m²) mit einem sehr kleinen Stueckpreis. Deshalb sollte die Variante klar
+  betitelt werden (z.B. "Wunschmaß – pro 0,01 m²"). Die Warenkorb-Zeile
+  dieses Themes zeigt zusaetzlich Breite/Laenge/Flaeche als lesbare
+  Line-Item-Properties.
+  Alternative: Die im Projekt bereits vorhandene App "options-price-
+  calculator" (siehe product.rolle.json) loest das gleiche Problem fuer
+  Rollenware vermutlich mit einer sauberer praesentierten Loesung. Ob diese
+  App auch fuer Wunschmaß-Teppiche genutzt werden soll, ist eine
+  Produktentscheidung, die hier bewusst offen gelassen wird.
+
+  Preis- und Strukturdaten kommen ausschliesslich aus Metafeldern - keine
+  Produktnamen werden im Code hart codiert.
+{% enddoc %}
+
+{%- liquid
+  assign tp_wm_id = block.id | replace: '_', '' | downcase
+  assign tp_wm_min_width_cm = product.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1.0
+-%}
+
+{%- if tp_wm_min_width_cm > 0 -%}
+  {%- liquid
+    assign tp_wm_max_width_cm = product.metafields.custom.wunschmass_maximalbreite_cm.value | times: 1.0
+    assign tp_wm_min_length_cm = product.metafields.custom.wunschmass_mindestlaenge_cm.value | times: 1.0
+    assign tp_wm_max_length_cm = product.metafields.custom.wunschmass_maximallaenge_cm.value | times: 1.0
+    assign tp_wm_min_area_sqm = product.metafields.custom.wunschmass_mindestflaeche_qm.value | times: 1.0
+    assign tp_wm_min_price = product.metafields.custom.wunschmass_mindestpreis.value | times: 1.0
+    assign tp_wm_surcharge = product.metafields.custom.wunschmass_fertigungszuschlag.value | times: 1.0
+    assign tp_wm_shape = product.metafields.custom.wunschmass_form.value | downcase | strip | default: 'rechteck'
+
+    assign tp_wm_valid_shapes = 'rechteck,quadrat,rund,oval' | split: ','
+    unless tp_wm_valid_shapes contains tp_wm_shape
+      assign tp_wm_shape = 'rechteck'
+    endunless
+
+    assign tp_wm_selected_variant = product.selected_or_first_available_variant
+    assign tp_wm_unit_price_cents = tp_wm_selected_variant.price
+
+    assign tp_wm_min_price_cents = tp_wm_min_price | times: 100 | round
+    assign tp_wm_surcharge_cents = tp_wm_surcharge | times: 100 | round
+  -%}
+
+  <style>
+    [data-block-id="{{ block.settings.hide_price_block_id | escape }}"] {
+      display: none !important;
+    }
+    .buy-buttons-block--{{ block.settings.hide_buybuttons_block_id }} {
+      display: none !important;
+    }
+  </style>
+
+  <teppich-wunschmass-{{ tp_wm_id }}
+    class="tp-teppich-wm-{{ tp_wm_id }}"
+    data-shape="{{ tp_wm_shape }}"
+    data-min-width-cm="{{ tp_wm_min_width_cm }}"
+    data-max-width-cm="{{ tp_wm_max_width_cm }}"
+    data-min-length-cm="{{ tp_wm_min_length_cm }}"
+    data-max-length-cm="{{ tp_wm_max_length_cm }}"
+    data-min-area-sqm="{{ tp_wm_min_area_sqm }}"
+    data-min-price-cents="{{ tp_wm_min_price_cents }}"
+    data-surcharge-cents="{{ tp_wm_surcharge_cents }}"
+    data-unit-price-cents="{{ tp_wm_unit_price_cents }}"
+    data-variant-id="{{ tp_wm_selected_variant.id }}"
+    {{ block.shopify_attributes }}
+  >
+    <script type="application/json" data-variants>
+      {{ product.variants | json }}
+    </script>
+
+    <div class="tp-teppich-wm__label-{{ tp_wm_id }}">Ihr Wunschmaß</div>
+
+    <div class="tp-teppich-wm__fields-{{ tp_wm_id }}">
+      {%- if tp_wm_shape == 'rund' -%}
+        <label class="tp-teppich-wm__field-{{ tp_wm_id }}">
+          <span>Durchmesser</span>
+          <span class="tp-teppich-wm__input-row-{{ tp_wm_id }}">
+            <input type="number" inputmode="decimal" step="1" data-input="width" placeholder="z. B. 200">
+            <span>cm</span>
+          </span>
+        </label>
+      {%- elsif tp_wm_shape == 'quadrat' -%}
+        <label class="tp-teppich-wm__field-{{ tp_wm_id }}">
+          <span>Seitenlänge</span>
+          <span class="tp-teppich-wm__input-row-{{ tp_wm_id }}">
+            <input type="number" inputmode="decimal" step="1" data-input="width" placeholder="z. B. 200">
+            <span>cm</span>
+          </span>
+        </label>
+      {%- else -%}
+        <label class="tp-teppich-wm__field-{{ tp_wm_id }}">
+          <span>Breite</span>
+          <span class="tp-teppich-wm__input-row-{{ tp_wm_id }}">
+            <input type="number" inputmode="decimal" step="1" data-input="width" placeholder="z. B. 200">
+            <span>cm</span>
+          </span>
+        </label>
+        <label class="tp-teppich-wm__field-{{ tp_wm_id }}">
+          <span>Länge</span>
+          <span class="tp-teppich-wm__input-row-{{ tp_wm_id }}">
+            <input type="number" inputmode="decimal" step="1" data-input="length" placeholder="z. B. 300">
+            <span>cm</span>
+          </span>
+        </label>
+      {%- endif -%}
+    </div>
+
+    <p class="tp-teppich-wm__range-hint-{{ tp_wm_id }}" data-range-hint></p>
+
+    <div class="tp-teppich-wm__results-{{ tp_wm_id }}">
+      <div class="tp-teppich-wm__results-row-{{ tp_wm_id }}">
+        <span>Fläche</span>
+        <span data-area-display>–</span>
+      </div>
+      <div class="tp-teppich-wm__results-row-{{ tp_wm_id }} tp-teppich-wm__results-row--total-{{ tp_wm_id }}">
+        <span>Preis</span>
+        <span data-price-display>–</span>
+      </div>
+    </div>
+
+    <p class="tp-teppich-wm__note-{{ tp_wm_id }}" data-note></p>
+
+    <button type="button" class="tp-teppich-wm__submit-{{ tp_wm_id }}" data-add-to-cart disabled>
+      In den Warenkorb
+    </button>
+
+    <div class="tp-teppich-wm__message-{{ tp_wm_id }}" data-cart-message></div>
+  </teppich-wunschmass-{{ tp_wm_id }}>
+
+  <style>
+    .tp-teppich-wm-{{ tp_wm_id }} {
+      --wm-text: var(--color-foreground, #222222);
+      --wm-surface: var(--color-background, #ffffff);
+      --wm-border: rgb(var(--color-foreground-rgb, 34 34 34) / 0.2);
+      --wm-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+
+      display: block;
+      width: 100%;
+      max-width: 440px;
+      padding: 16px;
+      border-radius: var(--style-border-radius, 8px);
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.045);
+      color: var(--wm-text);
+    }
+
+    .tp-teppich-wm__label-{{ tp_wm_id }} {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .tp-teppich-wm__fields-{{ tp_wm_id }} {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tp-teppich-wm__fields-{{ tp_wm_id }}:has(.tp-teppich-wm__field-{{ tp_wm_id }}:only-child) {
+      grid-template-columns: 1fr;
+    }
+
+    .tp-teppich-wm__field-{{ tp_wm_id }} {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--wm-muted);
+    }
+
+    .tp-teppich-wm__input-row-{{ tp_wm_id }} {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 12px;
+      background: var(--wm-surface);
+      border: 1px solid var(--wm-border);
+      border-radius: 7px;
+    }
+
+    .tp-teppich-wm__input-row-{{ tp_wm_id }} input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--wm-text);
+      -moz-appearance: textfield;
+    }
+
+    .tp-teppich-wm__input-row-{{ tp_wm_id }} input::-webkit-outer-spin-button,
+    .tp-teppich-wm__input-row-{{ tp_wm_id }} input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .tp-teppich-wm__input-row-{{ tp_wm_id }} span {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--wm-muted);
+    }
+
+    .tp-teppich-wm__range-hint-{{ tp_wm_id }} {
+      margin: 8px 0 0;
+      font-size: 12.5px;
+      color: var(--wm-muted);
+    }
+
+    .tp-teppich-wm__results-{{ tp_wm_id }} {
+      margin: 14px 0 0;
+      padding: 12px 14px;
+      background: var(--wm-surface);
+      border: 1px solid var(--wm-border);
+      border-radius: 7px;
+    }
+
+    .tp-teppich-wm__results-row-{{ tp_wm_id }} {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+      color: var(--wm-muted);
+      font-size: 15px;
+    }
+
+    .tp-teppich-wm__results-row--total-{{ tp_wm_id }} {
+      color: var(--wm-text);
+      font-weight: 800;
+      font-size: 19px;
+      border-top: 1px solid var(--wm-border);
+      margin-top: 4px;
+      padding-top: 8px;
+    }
+
+    .tp-teppich-wm__note-{{ tp_wm_id }} {
+      margin: 8px 0 0;
+      font-size: 12.5px;
+      color: var(--wm-muted);
+      min-height: 1em;
+    }
+
+    .tp-teppich-wm__note-{{ tp_wm_id }}[data-error="true"] {
+      color: #b00020;
+      font-weight: 600;
+    }
+
+    .tp-teppich-wm__submit-{{ tp_wm_id }} {
+      width: 100%;
+      min-height: 56px;
+      margin-top: 14px;
+      border: 0;
+      border-radius: var(--style-border-radius-buttons-primary, 7px);
+      background: var(--color-foreground, #111111);
+      color: var(--color-background, #ffffff);
+      font: inherit;
+      font-weight: 800;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .tp-teppich-wm__submit-{{ tp_wm_id }}:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .tp-teppich-wm__message-{{ tp_wm_id }} {
+      margin-top: 8px;
+      font-size: 13px;
+      min-height: 1em;
+    }
+
+    .tp-teppich-wm__message-{{ tp_wm_id }}[data-error="true"] {
+      color: #b00020;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-teppich-wm-{{ tp_wm_id }} {
+        max-width: none;
+      }
+    }
+  </style>
+
+  <script>
+    (function () {
+      const component = document.querySelector('teppich-wunschmass-{{ tp_wm_id }}');
+      if (!component) return;
+
+      const shape = component.dataset.shape;
+      const minWidthCm = parseFloat(component.dataset.minWidthCm) || 0;
+      const maxWidthCm = parseFloat(component.dataset.maxWidthCm) || 0;
+      const minLengthCm = parseFloat(component.dataset.minLengthCm) || 0;
+      const maxLengthCm = parseFloat(component.dataset.maxLengthCm) || 0;
+      const minAreaSqm = parseFloat(component.dataset.minAreaSqm) || 0;
+      const minPriceCents = parseInt(component.dataset.minPriceCents, 10) || 0;
+      const surchargeCents = parseInt(component.dataset.surchargeCents, 10) || 0;
+
+      let unitPriceCents = parseInt(component.dataset.unitPriceCents, 10) || 0;
+      let variantId = component.dataset.variantId;
+
+      let variants = [];
+      const variantsScript = component.querySelector('[data-variants]');
+      if (variantsScript) {
+        try {
+          variants = JSON.parse(variantsScript.textContent);
+        } catch (e) {
+          variants = [];
+        }
+      }
+
+      const widthInput = component.querySelector('[data-input="width"]');
+      const lengthInput = component.querySelector('[data-input="length"]');
+      const rangeHint = component.querySelector('[data-range-hint]');
+      const areaDisplay = component.querySelector('[data-area-display]');
+      const priceDisplay = component.querySelector('[data-price-display]');
+      const note = component.querySelector('[data-note]');
+      const submitButton = component.querySelector('[data-add-to-cart]');
+      const cartMessage = component.querySelector('[data-cart-message]');
+
+      const FLOAT_EPSILON = 1e-9;
+
+      function formatGermanNumber(value, decimals) {
+        const places = typeof decimals === 'number' ? decimals : 2;
+        return value.toFixed(places).replace('.', ',');
+      }
+
+      function formatMoneyFromCents(cents) {
+        return formatGermanNumber(cents / 100) + ' €';
+      }
+
+      function buildRangeHintText() {
+        if (shape === 'rund' || shape === 'quadrat') {
+          if (minWidthCm && maxWidthCm) {
+            return (shape === 'rund' ? 'Durchmesser' : 'Seitenlänge') + ' zwischen ' + minWidthCm + ' und ' + maxWidthCm + ' cm.';
+          }
+          if (minWidthCm) {
+            return 'Mindestens ' + minWidthCm + ' cm.';
+          }
+          return '';
+        }
+
+        const parts = [];
+        if (minWidthCm && maxWidthCm) {
+          parts.push('Breite ' + minWidthCm + '–' + maxWidthCm + ' cm');
+        } else if (minWidthCm) {
+          parts.push('Breite ab ' + minWidthCm + ' cm');
+        }
+        if (minLengthCm && maxLengthCm) {
+          parts.push('Länge ' + minLengthCm + '–' + maxLengthCm + ' cm');
+        } else if (minLengthCm) {
+          parts.push('Länge ab ' + minLengthCm + ' cm');
+        }
+        return parts.join(' · ');
+      }
+
+      if (rangeHint) {
+        rangeHint.textContent = buildRangeHintText();
+      }
+
+      function getCurrentVariantIdFromForm() {
+        const input = document.querySelector('form[action*="/cart/add"] input[name="id"]');
+        return input ? String(input.value) : null;
+      }
+
+      function refreshVariantContext() {
+        const formVariantId = getCurrentVariantIdFromForm();
+        if (formVariantId && formVariantId !== variantId) {
+          variantId = formVariantId;
+        }
+        const variant = variants.find(function (v) {
+          return String(v.id) === String(variantId);
+        });
+        if (variant && typeof variant.price === 'number') {
+          unitPriceCents = variant.price;
+        }
+      }
+
+      function readDimensionsCm() {
+        const width = widthInput ? parseFloat(String(widthInput.value).replace(',', '.')) : NaN;
+        const length = lengthInput ? parseFloat(String(lengthInput.value).replace(',', '.')) : NaN;
+
+        if (shape === 'rund' || shape === 'quadrat') {
+          return { width: width, length: width };
+        }
+
+        return { width: width, length: length };
+      }
+
+      function computeAreaSqm(dims) {
+        const w = dims.width / 100;
+        const l = dims.length / 100;
+
+        if (!(w > 0) || !(l > 0)) return null;
+
+        if (shape === 'rund') {
+          const radius = w / 2;
+          return Math.PI * radius * radius;
+        }
+
+        if (shape === 'oval') {
+          return Math.PI * (w / 2) * (l / 2);
+        }
+
+        return w * l;
+      }
+
+      function validate(dims) {
+        const errors = [];
+
+        if (isNaN(dims.width) || dims.width <= 0) {
+          return { valid: false, errors: ['Bitte Maße eingeben.'] };
+        }
+        if ((shape === 'rechteck' || shape === 'oval') && (isNaN(dims.length) || dims.length <= 0)) {
+          return { valid: false, errors: ['Bitte Maße eingeben.'] };
+        }
+
+        if (minWidthCm && dims.width < minWidthCm) errors.push('Mindestbreite ' + minWidthCm + ' cm.');
+        if (maxWidthCm && dims.width > maxWidthCm) errors.push('Maximalbreite ' + maxWidthCm + ' cm.');
+
+        if (shape === 'rechteck' || shape === 'oval') {
+          if (minLengthCm && dims.length < minLengthCm) errors.push('Mindestlänge ' + minLengthCm + ' cm.');
+          if (maxLengthCm && dims.length > maxLengthCm) errors.push('Maximallänge ' + maxLengthCm + ' cm.');
+        }
+
+        return { valid: errors.length === 0, errors: errors };
+      }
+
+      function computeUnits(areaSqm) {
+        const areaUnits = Math.max(1, Math.ceil(areaSqm * 100 - FLOAT_EPSILON));
+        const surchargeUnits = surchargeCents > 0 && unitPriceCents > 0
+          ? Math.ceil(surchargeCents / unitPriceCents)
+          : 0;
+        const minPriceUnits = minPriceCents > 0 && unitPriceCents > 0
+          ? Math.ceil(minPriceCents / unitPriceCents)
+          : 0;
+
+        return Math.max(areaUnits + surchargeUnits, minPriceUnits);
+      }
+
+      function render() {
+        refreshVariantContext();
+        const dims = readDimensionsCm();
+        const areaSqm = computeAreaSqm(dims);
+        const result = validate(dims);
+
+        note.removeAttribute('data-error');
+        note.textContent = '';
+
+        if (!areaSqm || !result.valid) {
+          areaDisplay.textContent = '–';
+          priceDisplay.textContent = '–';
+          submitButton.disabled = true;
+          if (result.errors.length && !(isNaN(dims.width))) {
+            note.setAttribute('data-error', 'true');
+            note.textContent = result.errors.join(' ');
+          }
+          return { ok: false };
+        }
+
+        if (minAreaSqm && areaSqm < minAreaSqm - FLOAT_EPSILON) {
+          areaDisplay.textContent = formatGermanNumber(areaSqm, 2) + ' m²';
+          priceDisplay.textContent = '–';
+          submitButton.disabled = true;
+          note.setAttribute('data-error', 'true');
+          note.textContent = 'Mindestfläche ' + formatGermanNumber(minAreaSqm, 2) + ' m².';
+          return { ok: false };
+        }
+
+        if (!unitPriceCents) {
+          areaDisplay.textContent = formatGermanNumber(areaSqm, 2) + ' m²';
+          priceDisplay.textContent = '–';
+          submitButton.disabled = true;
+          note.setAttribute('data-error', 'true');
+          note.textContent = 'Preis kann aktuell nicht berechnet werden.';
+          return { ok: false };
+        }
+
+        const units = computeUnits(areaSqm);
+        const totalCents = units * unitPriceCents;
+
+        areaDisplay.textContent = formatGermanNumber(areaSqm, 2) + ' m²';
+        priceDisplay.textContent = formatMoneyFromCents(totalCents);
+
+        if (surchargeCents > 0 || (minPriceCents > 0 && totalCents <= minPriceCents + unitPriceCents)) {
+          note.textContent = 'inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend';
+        }
+
+        submitButton.disabled = false;
+        return { ok: true, units: units, areaSqm: areaSqm, dims: dims };
+      }
+
+      function shapeLabel() {
+        if (shape === 'rund') return 'Rund';
+        if (shape === 'quadrat') return 'Quadrat';
+        if (shape === 'oval') return 'Oval';
+        return 'Rechteck';
+      }
+
+      function getActiveColor() {
+        const activeColorEl = document.querySelector('[data-active-color]');
+        return activeColorEl ? activeColorEl.textContent.trim() : '';
+      }
+
+      function setMessage(text, isError) {
+        cartMessage.textContent = text || '';
+        if (isError) {
+          cartMessage.setAttribute('data-error', 'true');
+        } else {
+          cartMessage.removeAttribute('data-error');
+        }
+      }
+
+      async function addToCart() {
+        const state = render();
+        if (!state.ok) return;
+
+        refreshVariantContext();
+        setMessage('', false);
+
+        if (!variantId) {
+          setMessage('Variante konnte nicht gefunden werden.', true);
+          return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Wird hinzugefügt...';
+
+        const properties = {
+          Form: shapeLabel(),
+          'Fläche (berechnet)': formatGermanNumber(state.areaSqm, 2) + ' m²',
+        };
+
+        if (shape === 'rund') {
+          properties['Durchmesser'] = formatGermanNumber(state.dims.width, 0) + ' cm';
+        } else if (shape === 'quadrat') {
+          properties['Seitenlänge'] = formatGermanNumber(state.dims.width, 0) + ' cm';
+        } else {
+          properties['Breite'] = formatGermanNumber(state.dims.width, 0) + ' cm';
+          properties['Länge'] = formatGermanNumber(state.dims.length, 0) + ' cm';
+        }
+
+        const activeColor = getActiveColor();
+        if (activeColor) {
+          properties['Farbe'] = activeColor;
+        }
+
+        const payload = {
+          id: variantId,
+          quantity: state.units,
+          properties: properties,
+        };
+
+        try {
+          const response = await fetch('/cart/add.js', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const error = await response.json().catch(function () {
+              return {};
+            });
+            throw new Error(error.description || error.message || 'Produkt konnte nicht hinzugefügt werden.');
+          }
+
+          window.location.href = '/cart';
+        } catch (error) {
+          setMessage(error.message, true);
+          submitButton.disabled = false;
+          submitButton.textContent = 'In den Warenkorb';
+        }
+      }
+
+      [widthInput, lengthInput].forEach(function (input) {
+        if (!input) return;
+        input.addEventListener('input', render);
+      });
+
+      document.addEventListener('change', function (event) {
+        if (event.target.closest('variant-picker') || event.target.matches('input[type="radio"]')) {
+          render();
+        }
+      });
+
+      submitButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        addToCart();
+      });
+
+      render();
+    })();
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich Wunschmaß",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Aktiv, sobald am Produkt das Metafeld custom.wunschmass_mindestbreite_cm gesetzt ist. Ohne dieses Metafeld bleibt der Block unsichtbar."
+    },
+    {
+      "type": "text",
+      "id": "hide_price_block_id",
+      "label": "Block-ID des zu verbergenden Preis-Blocks",
+      "info": "Verhindert die Anzeige eines irrefuehrenden Stueckpreises (siehe Preislogik-Hinweis oben). Leer lassen, wenn kein Preis-Block ausgeblendet werden soll."
+    },
+    {
+      "type": "text",
+      "id": "hide_buybuttons_block_id",
+      "label": "Block-ID des zu verbergenden Standard-Warenkorb-Buttons",
+      "info": "Dieser Rechner bringt einen eigenen Warenkorb-Button mit."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Teppich Wunschmaß"
+    }
+  ]
+}
+{% endschema %}
