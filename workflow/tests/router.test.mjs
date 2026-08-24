@@ -32,6 +32,33 @@ test('CLASS A/B/C/D routing follows cost-aware defaults', () => {
   }
 });
 
+test('explicitly small-scoped tasks are not escalated into the expensive CLASS_C tier by a single buzzword', () => {
+  const cases = [
+    'Kleine Performance-Verbesserung am Ladeverhalten',
+    'Isolierten Refactor einer einzelnen Funktion',
+    'Geringfügige Anpassung der Produktlogik',
+  ];
+  for (const text of cases) {
+    const route = routeTask({ text, branch: 'chore/router', head: 'head-1' });
+    assert.equal(route.taskClass, 'B', `"${text}" sollte nicht in CLASS_C landen`);
+    assert.equal(route.implementer, 'CODEX_LIGHT');
+    assert.equal(route.reviewRequired, false);
+  }
+});
+
+test('genuine complexity signals without a smallness qualifier still escalate to CLASS_C', () => {
+  const route = routeTask({ text: 'Architektur der Produktseite grundlegend refactoren', branch: 'chore/router', head: 'head-1' });
+  assert.equal(route.taskClass, 'C');
+  assert.equal(route.implementer, 'CODEX_MEDIUM');
+  assert.equal(route.reviewRequired, true);
+});
+
+test('small-scope wording never downgrades CLASS_D safety-critical tasks', () => {
+  const route = routeTask({ text: 'Kleine Preisänderung an einem Produkt vornehmen', branch: 'chore/router', head: 'head-1' });
+  assert.equal(route.taskClass, 'D');
+  assert.equal(route.humanGateRequired, true);
+});
+
 test('CLASS B becomes review-required when actual sensitive files are touched', () => {
   const route = routeTask({ text: 'Kleinen CSS Fix umsetzen', branch: 'chore/router', head: 'head-1' });
   assert.equal(route.reviewRequired, false);

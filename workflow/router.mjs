@@ -28,6 +28,14 @@ const CLASS_A = [
   /\b(dateien? prüfen|format(?:ierung)?|docs?|dokumentation|tests? (?:ausführen|laufen lassen)|reports?|datenvalidierung|validieren|lint)\b/i,
 ];
 
+// Explizit als "klein" beschriebene Aufgaben dürfen CLASS_C nicht allein durch
+// ein einzelnes Schlagwort wie "Performance" oder "Refactor" auslösen - das
+// verdoppelt sonst die Kosten unnötig (teurere Implementer-Stufe + Pflicht-
+// Review), obwohl der Task laut eigener Beschreibung klein ist. Gilt bewusst
+// NICHT für CLASS_D: sicherheitskritische Signale (Preis/SKU/Checkout/...)
+// dürfen durch Wortwahl niemals herabgestuft werden.
+const SMALL_SCOPE_OVERRIDE = /\b(klein\w*|isoliert\w*|einzeln\w*|geringfügig\w*|minimal\w*)\b/i;
+
 const SENSITIVE_PATTERNS = [
   /^\.github\/workflows\//i,
   /^scripts\/workflow[^/]*\/?/i,
@@ -93,7 +101,8 @@ export function matchesAnyGlob(file, patterns) {
 export function classifyTask(text, files = []) {
   const normalized = normalizeTaskText(text);
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
-  if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
+  const smallScope = SMALL_SCOPE_OVERRIDE.test(normalized);
+  if (CLASS_C.some(pattern => pattern.test(normalized)) && !smallScope) return 'C';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';
   if (CLASS_A.some(pattern => pattern.test(normalized))) return 'A';
   if (files.some(isSensitiveFile)) return 'B';
