@@ -4,6 +4,8 @@ Version: 1.0
 Status: Core-Pilot teilweise implementiert; Provider-Adapter und produktive Agentenanbindung bleiben Zielarchitektur
 Pilot-Domain: Shopify
 
+**Implementierungsstand (Stand: Audit 2026-08):** Produktiv verdrahtet und tatsächlich ausgeführt (`npm run workflow:*`, CI) sind bisher nur Task-Klassifizierung (`workflow/router.mjs`), Evidence-Binding (`workflow/core.mjs` + CI-Gate) sowie die Theme-Preview-/Live-Gates. Die in diesem Dokument beschriebenen Bausteine `RiskGuard`, `DiffBudgetGuard`, `runReviewCorrectionCycle`, `RunLock`, `ManifestRunner` und `provider-handoff` existieren als vollständig implementierte, unit-getestete Module unter `automation/core/`, werden aber von keinem Skript, keiner CI-Pipeline und keinem Manifest im Repo aufgerufen. Abschnitte wie „Worker Router wählt…“ oder „Vor dem Providerwechsel zwingend…“ beschreiben deshalb den Soll-Zustand, nicht was heute automatisch passiert.
+
 ## 1. Zweck und Grenzen
 
 Das System führt klar freigegebene, reversible Unternehmensaufgaben kontrolliert aus. Es ersetzt keine geschäftliche Verantwortung und startet keine offene „Unternehmensautomatisierung“. Shopify ist der erste Domain Pack; der Core enthält keine Shopify-Regeln.

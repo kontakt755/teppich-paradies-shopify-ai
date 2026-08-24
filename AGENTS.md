@@ -2,6 +2,8 @@
 
 Diese Datei ist die zentrale, verbindliche Regelquelle für alle Agenten, die an diesem Repository arbeiten (Claude Code, Codex, ggf. weitere). Andere Regel-/Hinweisdateien (z. B. `CODEX_RULES.txt`) dürfen ausschließlich kurz auf diese Datei verweisen und keine eigenen, abweichenden fachlichen Regeln führen.
 
+`AGENTS.md` bleibt bewusst providerneutral und die einzige automatisch geladene Regelquelle: Claude Code liest diese Datei nativ, genau wie Codex. Es wird deshalb absichtlich kein zusätzliches `CLAUDE.md` mit denselben fachlichen Regeln angelegt, um Redundanz und Drift zwischen zwei Regelquellen zu vermeiden. Rein Claude-spezifische Betriebshinweise (z. B. empfohlene Subagents/Skills) gehören, falls nötig, in ein schlankes `CLAUDE.md`, das diese Datei referenziert statt sie zu duplizieren.
+
 ## Projekt
 
 Shopify-Onlineshop der Teppich Paradies Oranienburg GmbH.

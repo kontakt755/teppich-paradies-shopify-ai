@@ -2,6 +2,8 @@
 
 Version: 1.0
 
+**Implementierungsstand (Stand: Audit 2026-08):** Dieses Dokument beschreibt Zielarchitektur. Verdrahtet und produktiv aktiv ist heute nur die Task-Klassifizierung (`workflow/router.mjs`), deren Ausgabe `IMPLEMENTER`/`REVIEWER`/`REVIEW_REQUIRED` als Textempfehlung für Menschen ausgibt (`AGENTS.md`: „Der Router empfiehlt Rollen, startet aber keine externen Agenten und ruft keine Modell-API auf.“). Der hier beschriebene automatische Providerwechsel-Ablauf, die Versuchszähler-Automatik und der Reviewer-Trigger-Mechanismus laufen als getestete, aber unverdrahtete Module unter `automation/core/` (`provider-handoff.mjs`, `review-cycle.mjs`) — kein Skript und keine CI-Pipeline ruft sie derzeit auf.
+
 ## 1. Grundsatz
 
 Routing erfolgt regelbasiert und wird später anhand echter Laufdaten kalibriert. Codex und Claude Code arbeiten nicht standardmäßig parallel am selben Task. Der Autor eines Diffs ist nicht der unabhängige Reviewer dieses Diffs.

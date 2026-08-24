@@ -112,6 +112,10 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     shopifyWriteRequired,
     humanGateRequired,
     sensitiveFiles: files.filter(isSensitiveFile),
+    // maxAutonomousRepairRounds ist informativ (AUTONOMOUS_RUN_RULES.md #2), aber
+    // technisch nicht durchgesetzt: kein Codepfad in diesem Modul zählt Reparaturversuche
+    // dagegen. Die Durchsetzung liegt beim menschlichen/agentischen Nutzer der CLI-Ausgabe.
+    // maxImmediateScriptRetries ist dagegen real gebunden, siehe runWithExternalRetry().
     maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     maxImmediateScriptRetries: MAX_IMMEDIATE_SCRIPT_RETRIES,
     routedAt: now(),
