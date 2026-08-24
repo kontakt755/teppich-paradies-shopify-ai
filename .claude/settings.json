@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run test)",
+      "Bash(npm run qa:unit:test)",
+      "Bash(npm run automation:test)",
+      "Bash(npm run workflow:test)",
+      "Bash(npm run qa:evidence:test)",
+      "Bash(npm run secret:scan)",
+      "Bash(npm run workflow:state)",
+      "Bash(npm run workflow:status)",
+      "Bash(npm run workflow:next)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
