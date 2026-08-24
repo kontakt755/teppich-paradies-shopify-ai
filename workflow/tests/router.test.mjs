@@ -6,7 +6,7 @@ import os from 'node:os';
 import {
   EXTERNAL_BLOCKS, MAX_AUTONOMOUS_REPAIR_ROUNDS, MAX_IMMEDIATE_SCRIPT_RETRIES,
   assertProtectedAction, classifyFailure, classifyTask, deriveHandoffState, isSensitiveFile,
-  normalizeTaskText, planContinue, routeTask, runWithExternalRetry,
+  matchesAnyGlob, normalizeAllowedFiles, normalizeTaskText, planContinue, routeTask, runWithExternalRetry,
 } from '../router.mjs';
 import { runValidation } from '../core.mjs';
 
@@ -60,6 +60,32 @@ test('product bulk preparation starts with scripts and gates every future Shopif
   assert.equal(route.executionMode, 'SCRIPT_PIPELINE_THEN_STRONG_JUDGMENT');
   assert.equal(route.shopifyWriteRequired, true);
   assert.equal(route.humanGateRequired, true);
+});
+
+test('routeTask allowedFiles defaults to null (no scope declared, hook fails open)', () => {
+  const route = routeTask({ text: 'Kleinen CSS Fix umsetzen', branch: 'chore/router', head: 'head-1' });
+  assert.equal(route.allowedFiles, null);
+});
+
+test('routeTask normalizes and exposes a declared allowedFiles scope', () => {
+  const route = routeTask({ text: 'Kleinen CSS Fix umsetzen', branch: 'chore/router', head: 'head-1', allowedFiles: [' sections/**', 'snippets/card.liquid '] });
+  assert.deepEqual(route.allowedFiles, ['sections/**', 'snippets/card.liquid']);
+});
+
+test('normalizeAllowedFiles rejects empty arrays and blank entries', () => {
+  assert.equal(normalizeAllowedFiles(null), null);
+  assert.throws(() => normalizeAllowedFiles([]), TypeError);
+  assert.throws(() => normalizeAllowedFiles(['sections/**', '  ']), TypeError);
+  assert.throws(() => normalizeAllowedFiles('sections/**'), TypeError);
+});
+
+test('matchesAnyGlob supports **, * and is path-portable', () => {
+  assert.equal(matchesAnyGlob('sections/card.liquid', ['sections/**']), true);
+  assert.equal(matchesAnyGlob('sections/nested/card.liquid', ['sections/**']), true);
+  assert.equal(matchesAnyGlob('snippets/card.liquid', ['sections/**']), false);
+  assert.equal(matchesAnyGlob('snippets\\card.liquid', ['snippets/*.liquid']), true);
+  assert.equal(matchesAnyGlob('snippets/card.liquid', ['snippets/card.liquid']), true);
+  assert.equal(matchesAnyGlob('snippets/card.liquid', ['snippets/other.liquid']), false);
 });
 
 test('external blocker classification is explicit', () => {

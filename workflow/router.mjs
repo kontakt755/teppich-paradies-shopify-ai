@@ -56,9 +56,38 @@ export function normalizeTaskText(value) {
   return text;
 }
 
+function portablePath(file) {
+  return String(file ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
+}
+
 export function isSensitiveFile(file) {
-  const portable = String(file ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
-  return SENSITIVE_PATTERNS.some(pattern => pattern.test(portable));
+  return SENSITIVE_PATTERNS.some(pattern => pattern.test(portablePath(file)));
+}
+
+// Minimal glob matcher for ALLOWED_FILES-style patterns ("sections/**",
+// "snippets/card.liquid"). Deliberately separate from automation/core/risk-guard.mjs's
+// globMatches: that module is the unwired reference risk engine (see
+// AI_ORCHESTRATOR_MASTER_SPEC.md "Implementierungsstand"), this one is live/wired
+// into routeTask() and the file-scope hook and must not gain that dependency.
+export function globToRegExp(pattern) {
+  const glob = portablePath(pattern);
+  let source = '';
+  for (let index = 0; index < glob.length; index++) {
+    const character = glob[index];
+    if (character === '*' && glob[index + 1] === '*') {
+      const followedBySlash = glob[index + 2] === '/';
+      source += followedBySlash ? '(?:.*/)?' : '.*';
+      index += followedBySlash ? 2 : 1;
+    } else if (character === '*') source += '[^/]*';
+    else if (character === '?') source += '[^/]';
+    else source += character.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+  }
+  return new RegExp(`^${source}$`, 'i');
+}
+
+export function matchesAnyGlob(file, patterns) {
+  const portable = portablePath(file);
+  return patterns.some(pattern => globToRegExp(pattern).test(portable));
 }
 
 export function classifyTask(text, files = []) {
@@ -71,8 +100,17 @@ export function classifyTask(text, files = []) {
   return 'B';
 }
 
-export function routeTask({ text, files = [], branch = null, head = null, now = () => new Date().toISOString() }) {
+export function normalizeAllowedFiles(allowedFiles) {
+  if (allowedFiles == null) return null;
+  if (!Array.isArray(allowedFiles) || allowedFiles.length === 0) throw new TypeError('allowedFiles muss null oder ein nicht-leeres Array von Pfadmustern sein');
+  const patterns = allowedFiles.map(pattern => String(pattern ?? '').trim()).filter(Boolean);
+  if (patterns.length !== allowedFiles.length) throw new TypeError('allowedFiles enthält leere Einträge');
+  return patterns;
+}
+
+export function routeTask({ text, files = [], branch = null, head = null, allowedFiles = null, now = () => new Date().toISOString() }) {
   const taskText = normalizeTaskText(text);
+  const normalizedAllowedFiles = normalizeAllowedFiles(allowedFiles);
   const taskClass = classifyTask(taskText, files);
   const sensitive = files.some(isSensitiveFile);
   const productPreparation = PRODUCT_PIPELINE.test(taskText) && PRODUCT_PREPARATION.test(taskText);
@@ -112,6 +150,10 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     shopifyWriteRequired,
     humanGateRequired,
     sensitiveFiles: files.filter(isSensitiveFile),
+    // null = kein Scope deklariert (Standardfall heute). Der Diff-Scope-Hook
+    // (.claude/hooks/check-file-scope.mjs) erzwingt dann nichts - fail-open,
+    // da er ohne echte Daten keinen sinnvollen Scope durchsetzen kann.
+    allowedFiles: normalizedAllowedFiles,
     // maxAutonomousRepairRounds ist informativ (AUTONOMOUS_RUN_RULES.md #2), aber
     // technisch nicht durchgesetzt: kein Codepfad in diesem Modul zählt Reparaturversuche
     // dagegen. Die Durchsetzung liegt beim menschlichen/agentischen Nutzer der CLI-Ausgabe.

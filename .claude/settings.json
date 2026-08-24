@@ -19,6 +19,12 @@
         "hooks": [
           { "type": "command", "command": "node .claude/hooks/deny-commit-push.mjs" }
         ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/check-file-scope.mjs" }
+        ]
       }
     ],
     "Stop": [

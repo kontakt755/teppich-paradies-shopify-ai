@@ -171,7 +171,10 @@ async function main() {
   if (mode === 'route') {
     const current = context();
     const taskText = normalizeTaskText(rawArgs.filter(token => !token.startsWith('--')).join(' '));
-    const route = routeTask({ text: taskText, branch: current.branch, head: current.head });
+    const allowedFiles = typeof args['allowed-files'] === 'string'
+      ? args['allowed-files'].split(',').map(pattern => pattern.trim()).filter(Boolean)
+      : null;
+    const route = routeTask({ text: taskText, branch: current.branch, head: current.head, allowedFiles });
     writeRuntimeReport(root, 'task.json', route);
     const state = currentHandoffState();
     console.log(formatRouterOutput(route, state.nextAllowedAction));
