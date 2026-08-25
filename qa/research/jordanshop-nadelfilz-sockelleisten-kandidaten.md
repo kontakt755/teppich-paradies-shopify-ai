@@ -1,8 +1,19 @@
 # Jordanshop-Kandidaten: Nadelfilz & Objektware / Sockelleisten
 
-Recherchestand, keine Shopify-Anlage. Musterauswahl (2 Kandidaten je Kategorie) zur Prüfung,
-bevor weitere Produktlinien recherchiert oder etwas in Shopify angelegt wird. Alle Daten live
-von jordanshop.de am 2026-08-25 erhoben (unangemeldet, öffentlich einsehbar).
+Alle Daten live von jordanshop.de am 2026-08-25 erhoben (unangemeldet, öffentlich einsehbar).
+
+**Update 2026-08-25:** Nach manueller Freigabe durch Ahmet (Chat) wurden alle vier Kandidaten
+tatsächlich in Shopify angelegt, aktiviert und im Onlineshop veröffentlicht:
+
+- **Fortiva Teppichboden 200cm** — `gid://shopify/Product/16020483440974` (13 Farben)
+- **Quadra Teppichfliese 50x50cm** — `gid://shopify/Product/16020510277966` (10 Farben)
+- **Basira Sockelleiste** — `gid://shopify/Product/16020510507342` (4 Farben)
+- **Cortessa Sockelleiste** — `gid://shopify/Product/16020510802254` (15 Dekore, Auswahl L600-L615
+  aus insgesamt 35 verfügbaren Dekoren — bewusst nicht vollständig übernommen)
+
+Details zu Preisen, Artikelnummern, Metafeldern und Quellen siehe unten (Recherchestand vor der
+Anlage). Cortessa und Basira haben keine etablierte Metafeld-Struktur wie bei Teppichboden
+(`custom.arten` gesetzt, sonst nur Basis-Tags) — bei Bedarf später ergänzen.
 
 ## Vorbemerkungen
 
