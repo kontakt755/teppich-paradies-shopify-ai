@@ -44,6 +44,7 @@
       ],
       "name": "Hero Split Features",
       "settings": {
+        "image": "shopify://shop_images/vinyl-klickvinyl-erklaerung.png",
         "heading": "Klickvinyl",
         "subheading": "Einfach einklicken. Sofort begehbar.",
         "body": "<p>Klickvinyl wird schwimmend und ohne vollflächige Verklebung verlegt – ideal für eine komfortable Renovierung. Je nach Produkt ist eine passende Unterlage bereits integriert.</p>",
