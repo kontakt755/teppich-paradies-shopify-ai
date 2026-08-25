@@ -1,0 +1,665 @@
+{% doc %}
+  Eigener Rollenware-Rechner (ersetzt den App-Preisrechner auf Rollenware-
+  Templates). Erkennt die Rollenbreite automatisch aus den Produktoptionen,
+  erfasst Länge direkt oder über Raummaße, berechnet Fläche/Menge/Preis und
+  legt die korrekte Menge zum echten Shopify-Variantenpreis (€/m²) in den
+  Warenkorb. Der angezeigte Preis ist nur eine Vorschau - abgerechnet wird
+  immer variant.price * quantity durch Shopify selbst, nie ein selbst
+  berechneter Betrag.
+
+  Rendert nur bei belegter custom.rollenbreite (Variante oder Produkt-
+  Fallback), exakt dieselbe Erkennung wie in tp-roll-order-help.liquid, damit
+  Paketware (Klebevinyl/Klickvinyl) unberuehrt bleibt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_rc_id = block.id | replace: '_', '' | downcase
+  assign tp_rc_is_roll = false
+  assign tp_rc_fallback_width_cm = 0
+
+  for tp_rc_variant in product.variants
+    assign tp_rc_variant_title = tp_rc_variant.title | downcase
+    unless tp_rc_variant_title contains 'opc-'
+      assign tp_rc_variant_width = tp_rc_variant.metafields.custom.rollenbreite.value | times: 1
+      if tp_rc_variant_width > 0
+        assign tp_rc_is_roll = true
+        assign tp_rc_fallback_width_cm = tp_rc_variant_width | times: 100
+        break
+      endif
+    endunless
+  endfor
+
+  if tp_rc_is_roll == false
+    assign tp_rc_product_width = product.metafields.custom.rollenbreite.value | times: 1
+    if tp_rc_product_width > 0
+      assign tp_rc_is_roll = true
+      assign tp_rc_fallback_width_cm = tp_rc_product_width | times: 100
+    endif
+  endif
+-%}
+
+{%- if tp_rc_is_roll -%}
+<div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" style="display:none;" {{ block.shopify_attributes }}>
+
+  <div class="tp-rwc-field" data-width-field>
+    {% render 'tp-step-heading', number: 2, label: 'Wähle deine Breite' %}
+    <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
+  </div>
+
+  <div class="tp-rwc-mode-toggle">
+    <button type="button" class="tp-rwc-mode-btn is-active" data-mode-btn="length" aria-pressed="true">Gewünschte Länge</button>
+    <button type="button" class="tp-rwc-mode-btn" data-mode-btn="room" aria-pressed="false">Raummaße</button>
+  </div>
+
+  <div class="tp-rwc-mode-panel" data-mode-panel="length">
+    <div class="tp-rwc-field">
+      {% render 'tp-step-heading', number: 3, label: 'Gib deine Länge an' %}
+      <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
+      <div class="tp-rwc-input-wrap">
+        <input
+          type="number"
+          id="tp-rwc-len-{{ tp_rc_id }}"
+          class="tp-rwc-input"
+          inputmode="numeric"
+          min="100"
+          step="1"
+          placeholder="240"
+          data-length-input>
+        <span class="tp-rwc-unit">cm</span>
+      </div>
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
+    </div>
+  </div>
+
+  <div class="tp-rwc-mode-panel" data-mode-panel="room" hidden>
+    <div class="tp-rwc-room-row">
+      <div class="tp-rwc-field">
+        <label class="tp-rwc-label" for="tp-rwc-room-l-{{ tp_rc_id }}">Raumlänge</label>
+        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
+          <input
+            type="number"
+            id="tp-rwc-room-l-{{ tp_rc_id }}"
+            class="tp-rwc-input"
+            inputmode="decimal"
+            min="0.1"
+            step="0.01"
+            placeholder="4,00"
+            data-room-length-input>
+          <span class="tp-rwc-unit">m</span>
+        </div>
+      </div>
+      <div class="tp-rwc-field">
+        <label class="tp-rwc-label" for="tp-rwc-room-b-{{ tp_rc_id }}">Raumbreite</label>
+        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
+          <input
+            type="number"
+            id="tp-rwc-room-b-{{ tp_rc_id }}"
+            class="tp-rwc-input"
+            inputmode="decimal"
+            min="0.1"
+            step="0.01"
+            placeholder="3,50"
+            data-room-width-input>
+          <span class="tp-rwc-unit">m</span>
+        </div>
+      </div>
+    </div>
+    <p class="tp-rwc-note tp-rwc-note-error" data-error-room-too-wide hidden>
+      Bei mehreren Bahnen oder besonderen Raumformen beraten wir Sie gerne.
+    </p>
+  </div>
+
+  <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
+
+  <figure class="tp-rwc-draw" aria-hidden="true">
+    <div class="tp-rwc-dim-top">
+      <span class="tp-rwc-rule"></span>
+      <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
+    </div>
+    <div class="tp-rwc-draw-body">
+      <div class="tp-rwc-piece" data-piece></div>
+      <div class="tp-rwc-dim-side">
+        <span class="tp-rwc-rule tp-rwc-rule-v"></span>
+        <span class="tp-rwc-tag tp-rwc-tag-l" data-tag-length>–</span>
+      </div>
+    </div>
+  </figure>
+
+  <dl class="tp-rwc-out" aria-live="polite">
+    <div class="tp-rwc-row">
+      <dt>Fläche</dt>
+      <dd data-area>–</dd>
+    </div>
+    <div class="tp-rwc-row tp-rwc-row-rate">
+      <dt>Preis</dt>
+      <dd data-rate>–</dd>
+    </div>
+    <div class="tp-rwc-row tp-rwc-row-billed" data-row-billed hidden>
+      <dt>Berechnet</dt>
+      <dd data-billed>–</dd>
+    </div>
+    <div class="tp-rwc-row tp-rwc-row-total">
+      <dt>Gesamt</dt>
+      <dd data-total>–</dd>
+    </div>
+  </dl>
+
+  <p class="tp-rwc-hint">
+    Räume sind selten exakt im Winkel. Türnischen und Vorsprünge mitmessen und
+    10–15 cm Zugabe einplanen.
+  </p>
+
+  <p class="tp-rwc-service-line">Regionaler Liefer- &amp; Verlegeservice verfügbar</p>
+  <details class="tp-rwc-service-details">
+    <summary>Details zum Liefergebiet</summary>
+    <p>
+      Oranienburg, Berlin und ca. 50 km Umgebung. Lieferung nach Absprache auch
+      bis in die Räume möglich. Außerhalb dieses Gebiets erfolgt der Versand
+      von Rollenware per Spedition, grundsätzlich frei Bordsteinkante.
+    </p>
+  </details>
+
+  <button type="button" class="tp-rwc-cta" data-cta disabled>Länge eingeben</button>
+  <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+</div>
+
+<script type="application/json" data-rwc-data-{{ tp_rc_id }}>
+{
+  "options": {{ product.options_with_values | json }},
+  "selected_options": {{ product.selected_or_first_available_variant.options | json }},
+  "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
+  "variants": [
+    {%- for variant in product.variants -%}
+      {%- assign tp_rc_v_title = variant.title | downcase -%}
+      {%- unless tp_rc_v_title contains 'opc-' -%}
+        {
+          "id": {{ variant.id | json }},
+          "price": {{ variant.price | json }},
+          "available": {{ variant.available | json }},
+          "options": {{ variant.options | json }}
+        },
+      {%- endunless -%}
+    {%- endfor -%}
+    null
+  ]
+}
+</script>
+
+<style>
+  .tp-rwc-{{ tp_rc_id }} {
+    --tp-rwc-ink: var(--color-foreground, #15171a);
+    --tp-rwc-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    --tp-rwc-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
+    --tp-rwc-surface: var(--color-background, #fcfcfb);
+    --tp-rwc-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
+    margin: 20px 0;
+    color: var(--tp-rwc-ink);
+  }
+  .tp-rwc-{{ tp_rc_id }} *, .tp-rwc-{{ tp_rc_id }} *::before, .tp-rwc-{{ tp_rc_id }} *::after { box-sizing: border-box; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid var(--tp-rwc-line);
+    border-radius: 6px;
+    background: var(--tp-rwc-surface);
+    color: var(--tp-rwc-ink);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn.is-active {
+    background: var(--tp-rwc-ink);
+    border-color: var(--tp-rwc-ink);
+    color: var(--tp-rwc-surface);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-field { margin-bottom: 16px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--tp-rwc-muted);
+    margin-bottom: 7px;
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 84px;
+    padding: 10px 14px;
+    border: 1px solid var(--tp-rwc-line);
+    background: var(--tp-rwc-surface);
+    font-size: .9rem;
+    font-variant-numeric: tabular-nums;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:checked + .tp-rwc-opt {
+    background: var(--tp-rwc-ink);
+    border-color: var(--tp-rwc-ink);
+    color: var(--tp-rwc-surface);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:focus-visible + .tp-rwc-opt { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { position: relative; max-width: 220px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap--room { max-width: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
+    width: 100%;
+    padding: 12px 42px 12px 12px;
+    border: 1px solid var(--tp-rwc-line);
+    border-radius: 6px;
+    background: var(--tp-rwc-surface);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--tp-rwc-ink);
+    -moz-appearance: textfield;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input::-webkit-outer-spin-button,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input:focus { outline: none; border-color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-unit {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: .82rem; color: var(--tp-rwc-muted); pointer-events: none;
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note[hidden] { display: none; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 18px 0; padding: 16px 14px 10px; border-top: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-dim-top { position: relative; display: flex; align-items: center; padding-right: 54px; margin-bottom: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-dim-top .tp-rwc-rule { flex: 1; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw-body { display: grid; grid-template-columns: 1fr 54px; align-items: stretch; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-piece {
+    height: 90px;
+    border: 1px solid var(--tp-rwc-ink);
+    background-color: var(--tp-rwc-material);
+    transition: height .2s ease;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-dim-side { position: relative; display: flex; align-items: center; padding-left: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-rule { display: block; height: 1px; background: var(--tp-rwc-muted); position: relative; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-rule-v { position: absolute; left: 8px; top: 0; bottom: 0; width: 1px; height: auto; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); background: var(--tp-rwc-surface); white-space: nowrap; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag-w { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 0 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-tag-l { margin-left: 6px; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-out { margin: 0 0 16px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 6px 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row[hidden] { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row dt { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row-total { border-top: 1px solid var(--tp-rwc-line); margin-top: 4px; padding-top: 11px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row-total dt { color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-row-total dd { font-size: 1.35rem; font-weight: 700; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hint {
+    margin: 0 0 14px; padding-left: 11px; border-left: 2px solid var(--tp-rwc-line);
+    font-size: .82rem; line-height: 1.5; color: var(--tp-rwc-muted);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details { margin: 0 0 16px; font-size: 12.5px; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details summary { cursor: pointer; color: var(--tp-rwc-ink); font-weight: 600; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details p { margin: 6px 0 0; line-height: 1.5; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta {
+    display: block; width: 100%; padding: 15px 18px; border: 0; border-radius: var(--style-border-radius-buttons-primary, 6px);
+    background: var(--tp-rwc-ink); color: var(--tp-rwc-surface); font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { opacity: .9; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #1d6b47; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-error { background: #a62020; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link[hidden] { display: none; }
+
+  @media screen and (max-width: 749px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-row-total dd { font-size: 1.2rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>
+
+<script>
+(function () {
+  var pid = {{ product.id | json }};
+  var root = document.getElementById('tp-rwc-{{ tp_rc_id }}');
+  var dataEl = document.querySelector('[data-rwc-data-{{ tp_rc_id }}]');
+  if (!root || !dataEl) return;
+
+  var data;
+  try {
+    data = JSON.parse(dataEl.textContent);
+  } catch (e) {
+    return;
+  }
+  var options = data.options || [];
+  var variants = (data.variants || []).filter(function (v) { return v !== null; });
+
+  var widthPattern = /^\d+([.,]\d+)?\s?cm$/i;
+  var wIdx = -1;
+  options.forEach(function (opt, idx) {
+    var vals = opt.values || [];
+    var hits = vals.filter(function (v) { return widthPattern.test(String(v).trim()); });
+    if (hits.length > 0 && hits.length === vals.length) wIdx = idx;
+  });
+  if (!variants.length) return;
+
+  var fallbackWidthCm = parseFloat(data.fallback_width_cm) || 0;
+  if (wIdx === -1 && fallbackWidthCm <= 0) return;
+
+  var widths;
+  if (wIdx !== -1) {
+    var seen = {};
+    variants.forEach(function (v) {
+      var n = parseFloat(String(v.options[wIdx]).replace(',', '.'));
+      if (!isNaN(n)) seen[n] = true;
+    });
+    widths = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+    if (!widths.length) return;
+  } else {
+    // Kein separates Rollenbreite-Produktoption vorhanden (z.B. nur eine
+    // Breite im Sortiment) - feste Breite aus dem rollenbreite-Metafeld
+    // uebernehmen, kein Auswahlfeld noetig.
+    widths = [fallbackWidthCm];
+  }
+
+  root.style.display = '';
+
+  if (wIdx !== -1) {
+    var seg = root.querySelector('[data-width-seg]');
+    widths.forEach(function (w, i) {
+      var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
+      var input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'tp-rwc-width-{{ tp_rc_id }}';
+      input.id = id;
+      input.value = w;
+      if (i === 0) input.checked = true;
+      var label = document.createElement('label');
+      label.className = 'tp-rwc-opt';
+      label.setAttribute('for', id);
+      label.textContent = w + ' cm';
+      seg.appendChild(input);
+      seg.appendChild(label);
+    });
+  } else {
+    var widthField = root.querySelector('[data-width-field]');
+    if (widthField) widthField.hidden = true;
+  }
+
+  var modeBtns = root.querySelectorAll('[data-mode-btn]');
+  var modePanels = root.querySelectorAll('[data-mode-panel]');
+  var currentMode = 'length';
+
+  var lengthInput = root.querySelector('[data-length-input]');
+  var roomLengthInput = root.querySelector('[data-room-length-input]');
+  var roomWidthInput = root.querySelector('[data-room-width-input]');
+  var errMin = root.querySelector('[data-error-min]');
+  var errRoomTooWide = root.querySelector('[data-error-room-too-wide]');
+  var errStock = root.querySelector('[data-error-stock]');
+  var piece = root.querySelector('[data-piece]');
+  var tagW = root.querySelector('[data-tag-width]');
+  var tagL = root.querySelector('[data-tag-length]');
+  var outArea = root.querySelector('[data-area]');
+  var outRate = root.querySelector('[data-rate]');
+  var rowBilled = root.querySelector('[data-row-billed]');
+  var outBilled = root.querySelector('[data-billed]');
+  var outTotal = root.querySelector('[data-total]');
+  var cta = root.querySelector('[data-cta]');
+  var cartLink = root.querySelector('[data-cart-link]');
+
+  var target = null;
+
+  function norm(s) { return String(s).toLowerCase().replace(/\s/g, ''); }
+  function fmt(n) { return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function selectedWidth() {
+    if (wIdx === -1) return widths[0];
+    var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
+    return c ? parseFloat(c.value) : widths[0];
+  }
+
+  function baseOptions() {
+    var f = document.querySelector('form[action*="/cart/add"] input[name="id"]') ||
+            document.querySelector('form[action*="/cart/add"] select[name="id"]');
+    if (f && f.value) {
+      var cur = variants.filter(function (v) { return String(v.id) === String(f.value); })[0];
+      if (cur) return cur.options.slice();
+    }
+    if (data.selected_options && data.selected_options.length) {
+      return data.selected_options.slice();
+    }
+    var first = variants.filter(function (v) { return v.available; })[0] || variants[0];
+    return first.options.slice();
+  }
+
+  function findVariant(w) {
+    var t = baseOptions();
+    return variants.filter(function (v) {
+      if (v.options.length !== t.length) return false;
+      for (var i = 0; i < v.options.length; i++) {
+        if (i === wIdx) {
+          var vw = parseFloat(String(v.options[i]).replace(',', '.'));
+          if (vw !== w) return false;
+        } else if (norm(v.options[i]) !== norm(t[i])) {
+          return false;
+        }
+      }
+      return true;
+    })[0];
+  }
+
+  function draw(w, len) {
+    tagW.textContent = w + ' cm';
+    if (!len) {
+      piece.style.height = '90px';
+      tagL.textContent = '– cm';
+      return;
+    }
+    tagL.textContent = len + ' cm';
+    var boxW = piece.getBoundingClientRect().width || 300;
+    var ideal = boxW * (len / w);
+    var capped = Math.max(44, Math.min(ideal, 220));
+    piece.style.height = Math.round(capped) + 'px';
+  }
+
+  function getEffectiveLengthCm() {
+    if (currentMode === 'room') {
+      var roomL = parseFloat((roomLengthInput.value || '').replace(',', '.')) || 0;
+      var roomB = parseFloat((roomWidthInput.value || '').replace(',', '.')) || 0;
+      var w = selectedWidth();
+
+      if (roomL <= 0 || roomB <= 0) {
+        errRoomTooWide.hidden = true;
+        return 0;
+      }
+
+      if ((roomB * 100) > w + 0.001) {
+        errRoomTooWide.hidden = false;
+        return -1;
+      }
+
+      errRoomTooWide.hidden = true;
+      return Math.round(roomL * 100);
+    }
+
+    errRoomTooWide.hidden = true;
+    return parseInt(lengthInput.value, 10) || 0;
+  }
+
+  function calculate() {
+    var w = selectedWidth();
+    var len = getEffectiveLengthCm();
+    var blocked = (len === -1);
+    var valid = !blocked && len >= 100;
+
+    errMin.hidden = blocked || !(len > 0 && !valid);
+
+    target = findVariant(w);
+    var ok = !!(target && target.available);
+
+    if (blocked) {
+      errStock.hidden = true;
+    } else if (!target) {
+      errStock.textContent = 'Diese Kombination ist nicht verfügbar.';
+      errStock.hidden = false;
+    } else if (!target.available) {
+      errStock.textContent = 'Diese Breite ist derzeit nicht lieferbar.';
+      errStock.hidden = false;
+    } else {
+      errStock.hidden = true;
+    }
+
+    draw(w, valid ? len : 0);
+
+    if (valid && target && ok) {
+      var area = (w * len) / 10000;
+      var rate = parseFloat(target.price) / 100;
+      var qty = Math.ceil(area);
+      var total = qty * rate;
+
+      outArea.textContent = fmt(area) + ' m²  ·  ' + w + ' × ' + len + ' cm';
+      outRate.textContent = fmt(rate) + ' €/m²';
+
+      if (qty !== area) {
+        outBilled.textContent = qty + ' m² (volle Quadratmeter)';
+        rowBilled.hidden = false;
+      } else {
+        rowBilled.hidden = true;
+      }
+
+      outTotal.textContent = fmt(total) + ' €';
+      cta.textContent = qty + ' m² in den Warenkorb';
+    } else {
+      outArea.textContent = '–';
+      outRate.textContent = target ? fmt(parseFloat(target.price) / 100) + ' €/m²' : '–';
+      rowBilled.hidden = true;
+      outBilled.textContent = '–';
+      outTotal.textContent = '–';
+      cta.textContent = blocked ? 'Bitte beraten lassen' : 'Länge eingeben';
+    }
+
+    cta.disabled = !(valid && ok);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    modeBtns.forEach(function (btn) {
+      var active = btn.getAttribute('data-mode-btn') === mode;
+      btn.classList.toggle('is-active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+    modePanels.forEach(function (panel) {
+      panel.hidden = panel.getAttribute('data-mode-panel') !== mode;
+    });
+    calculate();
+  }
+
+  modeBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      setMode(btn.getAttribute('data-mode-btn'));
+    });
+  });
+
+  root.addEventListener('change', function (e) {
+    if (e.target.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+  });
+  lengthInput.addEventListener('input', calculate);
+  roomLengthInput.addEventListener('input', calculate);
+  roomWidthInput.addEventListener('input', calculate);
+
+  window.addEventListener('resize', function () {
+    var w = selectedWidth();
+    var len = getEffectiveLengthCm();
+    draw(w, len >= 100 ? len : 0);
+  });
+
+  document.addEventListener('change', function (e) {
+    var form = e.target.closest && e.target.closest('form[action*="/cart/add"]');
+    if (form) setTimeout(calculate, 100);
+  });
+
+  cta.addEventListener('click', function () {
+    if (!target || !target.available) return;
+    var w = selectedWidth();
+    var len = getEffectiveLengthCm();
+    if (len < 100) return;
+
+    var qty = Math.ceil((w * len) / 10000);
+    var original = cta.textContent;
+
+    var properties = {
+      'Rollenbreite': w + ' cm',
+      'Gewünschte Länge': len + ' cm',
+      'Fläche (aufgerundet)': qty + ' m²'
+    };
+    if (currentMode === 'room') {
+      properties['Berechnet aus Raummaß'] =
+        (roomLengthInput.value || '').replace('.', ',') + ' × ' +
+        (roomWidthInput.value || '').replace('.', ',') + ' m';
+    }
+
+    cta.disabled = true;
+    cta.textContent = 'Wird hinzugefügt …';
+    cartLink.hidden = true;
+
+    fetch('/cart/add.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: target.id, quantity: qty, properties: properties })
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error('add failed');
+        return r.json();
+      })
+      .then(function () {
+        cta.textContent = qty + ' m² hinzugefügt';
+        cta.classList.add('is-done');
+        cartLink.hidden = false;
+        setTimeout(function () {
+          cta.textContent = original;
+          cta.classList.remove('is-done');
+          cta.disabled = false;
+        }, 3000);
+      })
+      .catch(function () {
+        cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
+        cta.classList.add('is-error');
+        setTimeout(function () {
+          cta.textContent = original;
+          cta.classList.remove('is-error');
+          cta.disabled = false;
+        }, 3000);
+      });
+  });
+
+  calculate();
+})();
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Rollenware-Rechner",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Rollenware-Rechner"
+    }
+  ]
+}
+{% endschema %}
