@@ -22,6 +22,19 @@ test('artificial secret BLOCK without exposing value', () => {
 
 test('explicit .env path BLOCK', () => assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE'));
 
+test('artificial NVIDIA API key BLOCK without exposing value', () => {
+  const fake = `nvapi-${'B'.repeat(24)}`;
+  const result = { status: 'BLOCK', findings: scanText({ file: 'fixture.txt', text: `NVIDIA_API_KEY=${fake}` }) };
+  const output = formatScanResult(result);
+  assert.match(output, /NVIDIA_API_KEY/);
+  assert.doesNotMatch(output, new RegExp(fake));
+});
+
+test('empty documented .env template is allowed', () => {
+  const findings = scanText({ file: '.env.example', text: 'SHOPIFY_CLIENT_ID=\nSHOPIFY_CLIENT_SECRET=\n' });
+  assert.deepEqual(findings, []);
+});
+
 test('git ignored files are excluded from default discovery', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-secret-git-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));

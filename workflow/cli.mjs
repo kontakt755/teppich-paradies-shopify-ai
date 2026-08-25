@@ -170,8 +170,13 @@ async function main() {
 
   if (mode === 'route') {
     const current = context();
-    const taskText = normalizeTaskText(rawArgs.filter(token => !token.startsWith('--')).join(' '));
-    const route = routeTask({ text: taskText, branch: current.branch, head: current.head });
+    // Nur Tokens vor dem ersten Flag gehoeren zur Aufgabe. Der Wert von
+    // --files darf weder den Text noch die Klassifizierung verfaelschen.
+    const flagIndex = rawArgs.findIndex(token => token.startsWith('--'));
+    const textTokens = flagIndex === -1 ? rawArgs : rawArgs.slice(0, flagIndex);
+    const taskText = normalizeTaskText(textTokens.join(' '));
+    const files = typeof args.files === 'string' ? args.files.split(',').map(file => file.trim()).filter(Boolean) : [];
+    const route = routeTask({ text: taskText, files, branch: current.branch, head: current.head });
     writeRuntimeReport(root, 'task.json', route);
     const state = currentHandoffState();
     console.log(formatRouterOutput(route, state.nextAllowedAction));

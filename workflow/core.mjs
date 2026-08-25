@@ -37,9 +37,12 @@ export function commandName(name, platform = process.platform) {
   return platform === 'win32' && ['gh', 'npm', 'shopify'].includes(name) ? `${name}.cmd` : name;
 }
 
-export function runBounded(command, args, { cwd, env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, maxBuffer = 20 * 1024 * 1024 } = {}) {
+export function runBounded(command, args, { cwd, env = process.env, timeoutMs = DEFAULT_TIMEOUT_MS, maxBuffer = 20 * 1024 * 1024, input = undefined } = {}) {
   const startedAt = new Date().toISOString();
-  const result = spawnSync(command, args, { cwd, env, timeout: timeoutMs, maxBuffer, encoding: 'utf8', shell: false, windowsHide: true });
+  // `input` reicht Daten ueber stdin durch. Noetig fuer CLIs mit variadischen
+  // Flags (dort wuerde ein Prompt-Argument verschluckt) und fuer Prompts, die
+  // ueber dem Argumentlimit der Shell liegen.
+  const result = spawnSync(command, args, { cwd, env, timeout: timeoutMs, maxBuffer, encoding: 'utf8', shell: false, windowsHide: true, input });
   return {
     command,
     args,
@@ -163,7 +166,7 @@ export function runValidation({ root, dryRun = false, staticOnly = false, baseUr
       const result = run(step.command, step.args, { cwd: root, env });
       if (result.exitCode !== 0 || result.spawnError || result.timedOut) result.message = freshFailureEvidence(root, step, stepStarted);
       return result;
-    });
+    }, { networkCapable: Boolean(step.browser) });
     const { result } = execution;
     const status = result.exitCode === 0 && !result.spawnError && !result.timedOut ? 'PASS' : 'FAIL';
     summary.results.push({ id: step.id, status, attempts: execution.attempts, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null, blocker: execution.blocker });

@@ -28,6 +28,41 @@ const CLASS_A = [
   /\b(dateien? prüfen|format(?:ierung)?|docs?|dokumentation|tests? (?:ausführen|laufen lassen)|reports?|datenvalidierung|validieren|lint)\b/i,
 ];
 
+// --- Shopify-Write-Erkennung -------------------------------------------------
+// Bewusst fail-safe: Im Zweifel lieber ein Human Gate zu viel als eines zu
+// wenig. Negationen ("niemals veroeffentlichen") werden absichtlich NICHT
+// ausgewertet - eine Aufgabe, die Schreiboperationen beschreibt, bleibt eine
+// Schreibaufgabe, auch wenn Teile davon ausgeschlossen sind.
+// Komposita bewusst eingeschlossen ("Produktdaten", "Variantenpreis",
+// "Preisliste"), damit deutsche Zusammenschreibung nicht am Gate vorbeilaeuft.
+const WRITE_OBJECT = String.raw`produkt\w*|product\w*|artikel\w*|listing(?:s)?|variant\w*|sku(?:s)?|ean(?:s)?|gtin(?:s)?|preis\w*|price(?:s)?|bestand\w*|lagerbestand\w*|inventar\w*|inventory|kollektion\w*|collection(?:s)?|metafeld\w*|metafield(?:s)?|entwurf|entwuerfe|entwürfe|draft(?:s)?`;
+// "verbessern", "optimieren", "pruefen" sind bewusst NICHT enthalten: das sind
+// Theme-/Analyseaufgaben und duerfen nicht jedes Mal ein Gate ausloesen.
+const WRITE_VERB = String.raw`anlegen|anzulegen|anlage|erstellen|zu erstellen|erstellung|erzeugen|zu erzeugen|hinzufuegen|hinzuzufuegen|hinzufügen|hinzuzufügen|einpflegen|einzupflegen|pflegen|importieren|zu importieren|import|imports|hochladen|hochzuladen|upload(?:en|s)?|schreiben|zu schreiben|write(?:s)?|aendern|zu aendern|ändern|zu ändern|abaendern|abändern|veraendern|verändern|zu verändern|bearbeiten|zu bearbeiten|aktualisieren|zu aktualisieren|updaten|update(?:n|s)?|ueberschreiben|überschreiben|anpassen|anzupassen|loeschen|löschen|zu löschen|entfernen|publizieren|veroeffentlichen|veröffentlichen|synchronisieren|sync(?:en|s)?|befuellen|befüllen|migrieren`;
+// Kontextsignale, die eine Objekt+Verb-Kombination eindeutig zu einer
+// Shopify-/Datenschreibaufgabe machen.
+const WRITE_CONTEXT = /\b(shopify|myshopify|admin[- ]?api|storefront[- ]?api|graphql|rest[- ]?api|csv|feed|katalog|catalog|bulk|massen\w*|draft|entwurf|entwuerfe|entwürfe|backend|shop[- ]?system)\b/i;
+// Objekte, die auch ohne weiteren Kontext immer ein Gate ausloesen.
+const ALWAYS_GATED_OBJECT = /\b(preis\w*|price(?:s)?|sku(?:s)?|ean(?:s)?|gtin(?:s)?|variant\w*|bestand\w*|lagerbestand\w*|inventar\w*|inventory)\b/i;
+const EXPLICIT_WRITE = /\b(shopify[- ]?write|product[- ]?write|price[- ]?write|bulk[- ]?(?:product[- ]?)?(?:write|import|create)|massen(?:anlage|import|write)|produkt(?:e|en)?[- ]?(?:anlage|import))\b/i;
+const OBJECT_THEN_VERB = new RegExp(String.raw`\b(?:${WRITE_OBJECT})\b[\s\S]{0,80}?\b(?:${WRITE_VERB})\b`, 'i');
+const VERB_THEN_OBJECT = new RegExp(String.raw`\b(?:${WRITE_VERB})\b[\s\S]{0,80}?\b(?:${WRITE_OBJECT})\b`, 'i');
+
+/**
+ * Erkennt, ob eine Aufgabe einen Shopify-/Produktdaten-Write beschreibt.
+ * Bewusst robust gegenueber deutschen Formulierungen und Wortstellungen
+ * ("Shopify-Produkte als DRAFT anlegen", "Produkte importieren",
+ * "Preise aendern", "neue Artikel hochladen", "SKU bearbeiten").
+ */
+export function detectShopifyWrite(value) {
+  const text = String(value ?? '');
+  if (!text.trim()) return false;
+  if (EXPLICIT_WRITE.test(text)) return true;
+  const objectVerb = OBJECT_THEN_VERB.test(text) || VERB_THEN_OBJECT.test(text);
+  if (!objectVerb) return false;
+  return ALWAYS_GATED_OBJECT.test(text) || WRITE_CONTEXT.test(text);
+}
+
 const SENSITIVE_PATTERNS = [
   /^\.github\/workflows\//i,
   /^scripts\/workflow[^/]*\/?/i,
@@ -38,6 +73,23 @@ const SENSITIVE_PATTERNS = [
   /^sections\//i,
   /^snippets\//i,
   /^templates\//i,
+  /(^|\/)(checkout|payment|shipping|zahlung|versand)[-_./]/i,
+  /(^|\/)(product|produkt)[-_./]?(import|write|sync|bulk|mass)/i,
+  /(^|\/)shopify[-_./]?(write|product|import)/i,
+  /^AGENTS\.md$/i,
+  /^docs\/WORKFLOW\.md$/i,
+];
+
+// Teilmenge von SENSITIVE_PATTERNS, die einen sauberen Nemotron-Erstpass NIE
+// ersetzen darf, egal wie klar das PASS ausfaellt - Geld, CI und der
+// Orchestrator/QA-Harness selbst. Bewusst OHNE layout/sections/snippets/
+// templates/config: reines Theme-Markup, fuer das ein Nemotron-PASS die
+// Codex-Eskalation ersparen darf (siehe review() in ai-control-core.mjs).
+const HARD_ESCALATION_PATTERNS = [
+  /^\.github\/workflows\//i,
+  /^scripts\/workflow[^/]*\/?/i,
+  /^workflow\//i,
+  /^qa\//i,
   /(^|\/)(checkout|payment|shipping|zahlung|versand)[-_./]/i,
   /(^|\/)(product|produkt)[-_./]?(import|write|sync|bulk|mass)/i,
   /(^|\/)shopify[-_./]?(write|product|import)/i,
@@ -61,13 +113,22 @@ export function isSensitiveFile(file) {
   return SENSITIVE_PATTERNS.some(pattern => pattern.test(portable));
 }
 
+export function requiresHardEscalation(file) {
+  const portable = String(file ?? '').replaceAll('\\', '/').replace(/^\.\//, '');
+  return HARD_ESCALATION_PATTERNS.some(pattern => pattern.test(portable));
+}
+
 export function classifyTask(text, files = []) {
   const normalized = normalizeTaskText(text);
+  // Ein erkannter Shopify-/Produktdaten-Write ist per Definition kritisch.
+  if (detectShopifyWrite(normalized)) return 'D';
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
   if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';
-  if (CLASS_A.some(pattern => pattern.test(normalized))) return 'A';
+  // Eine mechanisch klingende Aufgabe wird nicht als CLASS A behandelt, wenn
+  // sie tatsaechlich Router-, QA-, Layout- oder andere sensible Dateien aendert.
   if (files.some(isSensitiveFile)) return 'B';
+  if (CLASS_A.some(pattern => pattern.test(normalized))) return 'A';
   return 'B';
 }
 
@@ -78,8 +139,12 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
   const productPreparation = PRODUCT_PIPELINE.test(taskText) && PRODUCT_PREPARATION.test(taskText);
   const profiles = {
     A: { executionMode: 'DETERMINISTIC_SCRIPT_FIRST', implementer: 'SCRIPT', modelTier: 'NONE', reviewer: 'HUMAN' },
-    B: { executionMode: 'LIGHT_AGENT_WITH_STANDARD_TESTS', implementer: 'CODEX_LIGHT', modelTier: 'LIGHT', reviewer: 'CLAUDE_HAIKU' },
-    C: { executionMode: 'STRONG_IMPLEMENTER_FULL_QA', implementer: 'CODEX_MEDIUM', modelTier: 'STRONG', reviewer: 'CLAUDE_SONNET' },
+    // preReviewer: Klasse B bekommt zuerst einen kostenlosen Nemotron-Pass.
+    // CODEX_LIGHT bleibt reviewer (Eskalationsziel) - siehe review() in
+    // ai-control-core.mjs: Nemotron-PASS auf nicht-sensiblen Dateien ersetzt
+    // Codex, jeder Fund oder jede sensible Datei eskaliert wie bisher.
+    B: { executionMode: 'LIGHT_AGENT_WITH_STANDARD_TESTS', implementer: 'CLAUDE_HAIKU', modelTier: 'LIGHT', reviewer: 'CODEX_LIGHT', preReviewer: 'NEMOTRON_REVIEW' },
+    C: { executionMode: 'STRONG_IMPLEMENTER_FULL_QA', implementer: 'CLAUDE_SONNET', modelTier: 'STRONG', reviewer: 'CODEX_MEDIUM' },
     D: { executionMode: 'CRITICAL_STRONG_IMPLEMENTER', implementer: 'CLAUDE_STRONG', modelTier: 'STRONG', reviewer: 'CODEX_MEDIUM' },
   };
   const profile = { ...profiles[taskClass] };
@@ -89,7 +154,7 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     profile.modelTier = 'STRONG_ONLY_FOR_AMBIGUITY';
   }
   const reviewRequired = taskClass === 'D' || taskClass === 'C' || (taskClass === 'B' && sensitive);
-  const shopifyWriteRequired = /\b(shopify[- ]?write|produkte?\b.{0,60}\bshopify\b.{0,30}\b(?:write|schreiben|anlegen|importieren)|produkte? (?:anlegen|importieren|schreiben)|preis(?:e|en)? (?:schreiben|ändern)|sku\w* (?:schreiben|ändern)|variant\w* (?:schreiben|ändern))\b/i.test(taskText);
+  const shopifyWriteRequired = detectShopifyWrite(taskText);
   const humanGateRequired = taskClass === 'D' || shopifyWriteRequired || /\b(merge|publish|live|dns|irreversibel|irreversible)\b/i.test(taskText);
   const storefrontRelated = /\b(storefront|browser|compare|sales readiness|teppich-paradies\.net|preview)\b/i.test(taskText);
   const localRunnerRequired = taskClass === 'C' || taskClass === 'D' || storefrontRelated || files.some(file => /^(sections|snippets|templates|layout)\//i.test(file));
@@ -108,6 +173,9 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     // Keep the recommended model even when review is not initially required:
     // an actual CLASS-B diff can later touch a sensitive file and elevate it.
     reviewer: profile.reviewer,
+    // Optionaler, kostenguenstiger Erstpass vor dem eigentlichen reviewer.
+    // null fuer alle Klassen ausser B - siehe review() in ai-control-core.mjs.
+    preReviewer: profile.preReviewer ?? null,
     localRunnerRequired,
     shopifyWriteRequired,
     humanGateRequired,
@@ -118,24 +186,41 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
   };
 }
 
-export function classifyFailure(result = {}) {
+/**
+ * networkCapable = false (Default: true) unterdrueckt LOCAL_RUNNER/RATE_LIMIT/
+ * UPSTREAM vollstaendig, auch wenn der Text zufaellig passt.
+ *
+ * Grund: Schritte wie UNIT/AUTOMATION/WORKFLOW_TESTS/QA_EVIDENCE/SECRET_SCAN
+ * fuehren nie einen echten Netzwerkaufruf aus (alles gemockt) - sie koennen
+ * also niemals legitim an einem externen Rate Limit oder Upstream-Fehler
+ * scheitern. Trotzdem enthalten ihre eigenen, bestandenen Testnamen oft
+ * woertlich "429" oder "rate limit" (z. B. Tests, die genau diese
+ * Klassifizierung pruefen). Ohne diese Sperre klassifiziert ein simpler
+ * Text-Scan einen echten lokalen Fehlschlag (real beobachtet, Ursache
+ * unklar - vermutlich Ressourcen-Kontention bei vielen parallelen
+ * Node-Prozessen) faelschlich als "externer Blocker" und der Lauf wartet auf
+ * ein Rate Limit, das nie existierte, statt den echten Fehler zu melden.
+ */
+export function classifyFailure(result = {}, { networkCapable = true } = {}) {
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}\n${result.message ?? ''}`;
-  if (/\b403\b.{0,120}(?:claude (?:cloud agent )?proxy|cloud agent proxy)|(?:claude (?:cloud agent )?proxy|cloud agent proxy).{0,120}\b403\b|cloud (?:environment|agent).{0,120}(?:cannot|can't|darf nicht|forbidden).{0,120}storefront/i.test(output)) return EXTERNAL_BLOCKS.LOCAL_RUNNER;
-  if (/\b429\b|too many requests|rate limit|cloudflare.{0,80}(?:limit|block)|temporar(?:y|ily|e).{0,40}waf/is.test(output)) return EXTERNAL_BLOCKS.RATE_LIMIT;
-  if (/shopifysvc\.com\/(?:observeonly|error).{0,240}(?:cors|blocked)|(?:cors|blocked).{0,240}shopifysvc\.com\/(?:observeonly|error)/is.test(output)) return EXTERNAL_BLOCKS.UPSTREAM;
-  if (result.timedOut || /\b503\b|service unavailable|upstream.{0,40}(?:unavailable|error)|network timeout|timed?\s*out|ETIMEDOUT|ECONNRESET|EAI_AGAIN/is.test(output)) return EXTERNAL_BLOCKS.UPSTREAM;
+  if (networkCapable) {
+    if (/\b403\b.{0,120}(?:claude (?:cloud agent )?proxy|cloud agent proxy)|(?:claude (?:cloud agent )?proxy|cloud agent proxy).{0,120}\b403\b|cloud (?:environment|agent).{0,120}(?:cannot|can't|darf nicht|forbidden).{0,120}storefront/i.test(output)) return EXTERNAL_BLOCKS.LOCAL_RUNNER;
+    if (/\b429\b|too many requests|rate limit|cloudflare.{0,80}(?:limit|block)|temporar(?:y|ily|e).{0,40}waf/is.test(output)) return EXTERNAL_BLOCKS.RATE_LIMIT;
+    if (/shopifysvc\.com\/(?:observeonly|error).{0,240}(?:cors|blocked)|(?:cors|blocked).{0,240}shopifysvc\.com\/(?:observeonly|error)/is.test(output)) return EXTERNAL_BLOCKS.UPSTREAM;
+    if (result.timedOut || /\b503\b|service unavailable|upstream.{0,40}(?:unavailable|error)|network timeout|timed?\s*out|ETIMEDOUT|ECONNRESET|EAI_AGAIN/is.test(output)) return EXTERNAL_BLOCKS.UPSTREAM;
+  }
   if (/AssertionError|assertion failed|expected .+ (?:to|but)|\btest(?:s)? failed\b|SyntaxError|TypeError:\s(?!fetch|network)/is.test(output)) return EXTERNAL_BLOCKS.CODE_DEFECT;
   return EXTERNAL_BLOCKS.UNKNOWN;
 }
 
-export function runWithExternalRetry(run, { maxImmediateRetries = MAX_IMMEDIATE_SCRIPT_RETRIES } = {}) {
+export function runWithExternalRetry(run, { maxImmediateRetries = MAX_IMMEDIATE_SCRIPT_RETRIES, networkCapable = true } = {}) {
   const boundedRetries = Math.min(MAX_IMMEDIATE_SCRIPT_RETRIES, Math.max(0, Number(maxImmediateRetries) || 0));
   let attempts = 0;
   while (attempts <= boundedRetries) {
     attempts += 1;
     const result = run();
     if (result.exitCode === 0 && !result.spawnError && !result.timedOut) return { result, attempts, blocker: null };
-    const blocker = classifyFailure(result);
+    const blocker = classifyFailure(result, { networkCapable });
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}\n${result.message ?? ''}`;
     const retryable = blocker === EXTERNAL_BLOCKS.RATE_LIMIT || (blocker === EXTERNAL_BLOCKS.UPSTREAM
       && (result.timedOut || /\b503\b|service unavailable|network timeout|timed?\s*out|ETIMEDOUT|ECONNRESET|EAI_AGAIN/is.test(output)));
@@ -145,11 +230,16 @@ export function runWithExternalRetry(run, { maxImmediateRetries = MAX_IMMEDIATE_
 }
 
 function reviewIsCurrent(review, route, repo) {
-  return review?.status === 'PASS' && review?.taskId === route.taskId && review?.commit === repo.head
-    && String(review.p0) === '0' && String(review.p1) === '0';
+  if (review?.status !== 'PASS' || review?.taskId !== route.taskId || review?.commit !== repo.head) return false;
+  if (String(review.p0) !== '0' || String(review.p1) !== '0') return false;
+  // Zusaetzliche Bindung an den Worktree-Zustand. Aeltere Evidence ohne
+  // Fingerprint bleibt kompatibel; sobald ein Fingerprint hinterlegt ist, muss
+  // er exakt zum aktuellen Working Tree passen, sonst ist die Evidence stale.
+  if (review.worktreeFingerprint && review.worktreeFingerprint !== repo.worktreeFingerprint) return false;
+  return true;
 }
 
-export function deriveHandoffState({ route, repo, latest = null, review = null, changedFiles = [], latestChangedFiles = null, pr = null, now = () => new Date().toISOString() }) {
+export function deriveHandoffState({ route, repo, latest = null, review = null, changedFiles = [], latestChangedFiles = null, pr = null, implementationObserved: observedOverride = null, now = () => new Date().toISOString() }) {
   if (!route || route.branch !== repo.branch) {
     return {
       schemaVersion: 1, taskId: null, taskClass: null, branch: repo.branch, implementer: null, commit: repo.head,
@@ -167,7 +257,14 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
     && latest?.worktreeFingerprint === repo.worktreeFingerprint;
   const validationStatus = latestCurrent ? latest.status : 'STALE_OR_NOT_RUN';
   const externalBlock = latestCurrent && latest?.status === 'FAIL' ? (latest.externalBlock ?? EXTERNAL_BLOCKS.UNKNOWN) : null;
-  const implementationObserved = route.implementer === 'SCRIPT' || changedFiles.length > 0 || repo.head !== route.routedAtHead;
+  // Ohne Override wird aus den geaenderten Dateien geschlossen, ob schon
+  // implementiert wurde. Das ist eine Heuristik: in einem bereits schmutzigen
+  // Working Tree ist sie immer wahr, auch wenn nie ein Agent lief.
+  // Ein Aufrufer, der es besser weiss - etwa der Orchestrator mit seinem
+  // commitgebundenen Implementer-Ergebnis - reicht den echten Wert durch.
+  const implementationObserved = typeof observedOverride === 'boolean'
+    ? observedOverride
+    : (route.implementer === 'SCRIPT' || changedFiles.length > 0 || repo.head !== route.routedAtHead);
   const fullValidation = latestCurrent && latest.status === 'PASS' && latest.validationScope === 'FULL';
   const requiredValidationPassed = latestCurrent && latest.status === 'PASS' && (!route.localRunnerRequired || fullValidation);
   const currentReview = effectiveReviewRequired && reviewIsCurrent(review, route, repo);
