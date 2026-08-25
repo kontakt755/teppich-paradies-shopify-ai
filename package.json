@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test",
+    "test": "npm run qa:unit:test && npm run shopify:test",
     "qa": "node qa/run-qa.mjs",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
     "qa:evidence:test": "node --test qa/tests/evidence-filter.test.mjs qa/tests/url-sanitizer.test.mjs qa/tests/console-classification.test.mjs qa/tests/browser-infra.test.mjs",
@@ -20,8 +20,23 @@
     "workflow:next": "node workflow/cli.mjs next",
     "workflow:continue": "node workflow/cli.mjs continue",
     "workflow:test": "node --test workflow/tests/*.test.mjs",
+    "ai:route": "node --env-file-if-exists=.env workflow/ai-control.mjs route",
+    "ai:status": "node --env-file-if-exists=.env workflow/ai-control.mjs status",
+    "ai:next": "node --env-file-if-exists=.env workflow/ai-control.mjs next",
+    "ai:continue": "node --env-file-if-exists=.env workflow/ai-control.mjs continue",
+    "ai:stop": "node --env-file-if-exists=.env workflow/ai-control.mjs stop",
+    "ai:resume": "node --env-file-if-exists=.env workflow/ai-control.mjs resume",
+    "ai:providers": "node --env-file-if-exists=.env workflow/ai-control.mjs providers",
+    "ai:usage": "node --env-file-if-exists=.env workflow/ai-control.mjs usage",
+    "ai:usage:range": "node --env-file-if-exists=.env workflow/ai-control.mjs usage-range",
+    "ai:unlock": "node --env-file-if-exists=.env workflow/ai-control.mjs unlock",
+    "ai:check-workspace": "node --env-file-if-exists=.env workflow/ai-control.mjs check-workspace",
+    "ai:batch": "node --env-file-if-exists=.env workflow/batch-run.mjs",
+    "ai:test": "node --test workflow/tests/ai-control.test.mjs workflow/tests/providers.test.mjs workflow/tests/nemotron.test.mjs workflow/tests/diff-scope.test.mjs workflow/tests/reviewer-handoff.test.mjs workflow/tests/usage-metrics.test.mjs workflow/tests/batch-run.test.mjs",
     "control:center": "node control-center/server.mjs",
-    "control:center:test": "node --test control-center/tests/*.test.mjs"
+    "control:center:test": "node --test control-center/tests/*.test.mjs",
+    "shopify:check": "node shopify/read-check.mjs",
+    "shopify:test": "node --test shopify/tests/*.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"
