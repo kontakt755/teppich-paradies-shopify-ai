@@ -92,7 +92,10 @@ function validate({ staticOnly = false, baseUrl = null } = {}) {
     }
     throw error;
   }
-  const findingState = findings();
+  const findingState = {
+    p0: args.p0 ?? (previous?.branch === current.branch ? previous.p0 : null),
+    p1: args.p1 ?? (previous?.branch === current.branch ? previous.p1 : null),
+  };
   const findingsClear = findingsAreClear(findingState);
   Object.assign(summary, current, findingState, { commit: current.head, pr: currentPr, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
   writeRuntimeReport(root, 'latest.json', summary);
