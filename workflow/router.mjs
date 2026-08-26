@@ -205,8 +205,10 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
   else if (externalBlock) { nextAllowedAction = 'INSPECT_VALIDATION_FAILURE'; nextAgent = route.implementer; }
   else if (!implementationObserved) { nextAllowedAction = 'HANDOFF_IMPLEMENTER'; nextAgent = route.implementer; }
   else if (!requiredValidationPassed) nextAllowedAction = requiredScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION';
+  else if (!pr) nextAllowedAction = 'PREPARE_DRAFT_PR';
   else if (effectiveReviewRequired && !currentReview) { nextAllowedAction = 'HANDOFF_REVIEWER'; nextAgent = route.reviewer; }
-  else nextAllowedAction = 'PREPARE_DRAFT_PR';
+  else if (effectiveReviewRecommended && !currentReview) { nextAllowedAction = 'REVIEW_DRAFT_PR'; nextAgent = route.reviewer; }
+  else nextAllowedAction = 'DRAFT_PR_READY';
   return {
     schemaVersion: 2,
     taskId: route.taskId,

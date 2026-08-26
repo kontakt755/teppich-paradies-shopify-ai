@@ -213,6 +213,14 @@ test('unclassified validation failures return to the implementer instead of stop
   assert.deepEqual(planContinue(state), { kind: 'HANDOFF', target: 'AGENT', action: 'INSPECT_VALIDATION_FAILURE' });
 });
 
+test('an existing draft PR advances to review instead of being prepared twice', () => {
+  const route = routeTask({ text: 'Router Architektur refactoren', branch: 'chore/router', head: 'head-1' });
+  const state = deriveHandoffState({ route, repo: repo(), latest: latest(), changedFiles: ['workflow/router.mjs'], pr: { number: 10, url: 'https://example.test/pr/10' } });
+  assert.equal(state.nextAllowedAction, 'REVIEW_DRAFT_PR');
+  assert.equal(state.nextAgent, 'INDEPENDENT_REVIEWER');
+  assert.deepEqual(state.pr, { number: 10, url: 'https://example.test/pr/10' });
+});
+
 test('task text is data, bounded, and never interpreted as a shell command', () => {
   const payload = 'Docs prüfen; $(touch SHOULD_NOT_EXIST) && rm -rf nowhere';
   assert.equal(normalizeTaskText(`Neue Aufgabe: ${payload}`), payload);

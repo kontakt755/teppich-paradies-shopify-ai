@@ -80,19 +80,21 @@ function printSummary(summary) {
 
 function validate({ staticOnly = false, baseUrl = null } = {}) {
   const current = context();
+  const previous = readRuntimeJson('latest.json');
+  const currentPr = previous?.branch === current.branch ? (previous.pr ?? null) : null;
   let summary;
   try {
     summary = runValidation({ root, dryRun, staticOnly, baseUrl });
   } catch (error) {
     if (error.summary) {
-      Object.assign(error.summary, current, { commit: current.head });
+      Object.assign(error.summary, current, { commit: current.head, pr: currentPr });
       writeRuntimeReport(root, 'latest.json', error.summary);
     }
     throw error;
   }
   const findingState = findings();
   const findingsClear = findingsAreClear(findingState);
-  Object.assign(summary, current, findingState, { commit: current.head, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
+  Object.assign(summary, current, findingState, { commit: current.head, pr: currentPr, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
   writeRuntimeReport(root, 'latest.json', summary);
   // Only a full (non-static) validation actually runs Compare/SEO/Full QA/Sales;
   // a --static run never touches the browser-dependent evidence the CI gate
