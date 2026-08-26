@@ -12,11 +12,11 @@ export const MAX_AUTONOMOUS_REPAIR_ROUNDS = 3;
 export const MAX_IMMEDIATE_SCRIPT_RETRIES = 1;
 
 const CLASS_D = [
-  /\b(preis(?:e|en)?|price|sku|variant(?:e|en|s)?|checkout|payment|zahlung|shipping|versand|dns)\b/i,
-  /\b(shopify[- ]?write|theme publish|live publish|deployment|deploy|security gate|ci gate)\b/i,
-  /\b(massen(?:anlage|import)|bulk (?:product|import)|produkte? (?:anlegen|importieren|schreiben))\b/i,
-  /\bprodukte?\b.{0,60}\bshopify\b.{0,30}\b(?:write|schreiben|anlegen|importieren)\b/i,
-  /\b\d+\s+[\p{L}0-9_-]*produkte?\s+(?:vorbereiten|anlegen|importieren)\b/iu,
+  /\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b.{0,50}(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren)/i,
+  /(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren).{0,50}\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b/i,
+  /\b(?:checkout|payment|zahlung|shipping|versand|dns)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i,
+  /\b(?:shopify[- ]?write|theme publish|live publish|live schalten|in shopify (?:schreiben|anlegen|importieren))\b/i,
+  /\b(?:massen(?:anlage|import)|bulk (?:product|import)|produkte? (?:anlegen|importieren|schreiben))\b/i,
 ];
 const CLASS_C = [
   /\b(performance|architektur|architecture|komplex|complex|größere? (?:theme[- ]?)?logik|datenlogik|produktlogik|refactor)\b/i,
@@ -32,12 +32,8 @@ const SENSITIVE_PATTERNS = [
   /^\.github\/workflows\//i,
   /^scripts\/workflow[^/]*\/?/i,
   /^workflow\//i,
-  /^qa\//i,
-  /^config\//i,
-  /^layout\//i,
-  /^sections\//i,
-  /^snippets\//i,
-  /^templates\//i,
+  /^automation\/(?:scripts|write|import|sync)/i,
+  /^config\/settings_data\.json$/i,
   /(^|\/)(checkout|payment|shipping|zahlung|versand)[-_./]/i,
   /(^|\/)(product|produkt)[-_./]?(import|write|sync|bulk|mass)/i,
   /(^|\/)shopify[-_./]?(write|product|import)/i,
@@ -47,6 +43,26 @@ const SENSITIVE_PATTERNS = [
 
 const PRODUCT_PIPELINE = /\b(produkt|product|odense|supplier|lieferant)\w*\b/i;
 const PRODUCT_PREPARATION = /\b(vorbereiten|normalize|normalisieren|validate|validieren|import)\b/i;
+
+const PROTECTED_ACTION_PATTERNS = Object.freeze([
+  ['MERGE_MAIN', /\b(?:merge|mergen|zusammenführen)\b.{0,30}\bmain\b|\bmain\b.{0,30}\b(?:merge|mergen|zusammenführen)\b/i],
+  ['SHOPIFY_LIVE_PUBLISH', /\b(?:live (?:publish|schalten|veröffentlichen)|(?:publish|veröffentlichen).{0,30}\blive\b|theme publish)\b/i],
+  ['SHOPIFY_WRITE', /\b(?:shopify[- ]?write|in shopify (?:schreiben|anlegen|importieren)|produkte? (?:anlegen|importieren|schreiben))\b/i],
+  ['PRICE_SKU_VARIANT_WRITE', /\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b.{0,50}(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren)/i],
+  ['PRICE_SKU_VARIANT_WRITE', /(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren).{0,50}\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b/i],
+  ['CHECKOUT_PAYMENT_SHIPPING_CHANGE', /\b(?:checkout|payment|zahlung|shipping|versand)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
+  ['DNS_CHANGE', /\bdns\b.{0,40}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
+  ['IRREVERSIBLE_CHANGE', /\b(?:irreversibel\w*|irreversible)\b.{0,40}(?:ausführen|ändern|löschen|überschreiben)/i],
+]);
+
+const STOREFRONT_VALIDATION = /\b(?:storefront|browser[- ]?qa|sales readiness|compare[- ]?check|live[- ]?shop)\b.{0,50}\b(?:testen|prüfen|ausführen|validieren|check)\b|\b(?:testen|prüfen|ausführen|validieren|check)\b.{0,50}\b(?:storefront|browser[- ]?qa|sales readiness|live[- ]?shop)\b/i;
+
+function withoutNegatedActions(text) {
+  return text
+    .replace(/\bohne\b.{0,70}(?:zu\s+)?(?:ändern|schreiben|setzen|aktualisieren|updaten|löschen|importieren|veröffentlichen|publishen|mergen|ausführen)/giu, '')
+    .replace(/\b(?:nicht|nie|keine(?:n|r|s)?)\b.{0,50}(?:ändern|schreiben|setzen|aktualisieren|updaten|löschen|importieren|veröffentlichen|publishen|mergen|ausführen)/giu, '')
+    .replace(/\b(?:ändern|schreiben|setzen|aktualisieren|updaten|löschen|importieren|veröffentlichen|publishen|mergen|ausführen)\b.{0,30}\b(?:nicht|nie)\b/giu, '');
+}
 
 export function normalizeTaskText(value) {
   const text = String(value ?? '').replace(/^\s*(?:neue aufgabe|task)\s*:\s*/i, '').trim();
@@ -61,8 +77,13 @@ export function isSensitiveFile(file) {
   return SENSITIVE_PATTERNS.some(pattern => pattern.test(portable));
 }
 
+export function protectedActionsForTask(text) {
+  const normalized = withoutNegatedActions(normalizeTaskText(text));
+  return [...new Set(PROTECTED_ACTION_PATTERNS.filter(([, pattern]) => pattern.test(normalized)).map(([action]) => action))];
+}
+
 export function classifyTask(text, files = []) {
-  const normalized = normalizeTaskText(text);
+  const normalized = withoutNegatedActions(normalizeTaskText(text));
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
   if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';
@@ -75,12 +96,13 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
   const taskText = normalizeTaskText(text);
   const taskClass = classifyTask(taskText, files);
   const sensitive = files.some(isSensitiveFile);
+  const protectedActions = protectedActionsForTask(taskText);
   const productPreparation = PRODUCT_PIPELINE.test(taskText) && PRODUCT_PREPARATION.test(taskText);
   const profiles = {
-    A: { executionMode: 'DETERMINISTIC_SCRIPT_FIRST', implementer: 'SCRIPT', modelTier: 'NONE', reviewer: 'HUMAN' },
-    B: { executionMode: 'LIGHT_AGENT_WITH_STANDARD_TESTS', implementer: 'CODEX_LIGHT', modelTier: 'LIGHT', reviewer: 'CLAUDE_HAIKU' },
-    C: { executionMode: 'STRONG_IMPLEMENTER_FULL_QA', implementer: 'CODEX_MEDIUM', modelTier: 'STRONG', reviewer: 'CLAUDE_SONNET' },
-    D: { executionMode: 'CRITICAL_STRONG_IMPLEMENTER', implementer: 'CLAUDE_STRONG', modelTier: 'STRONG', reviewer: 'CODEX_MEDIUM' },
+    A: { executionMode: 'SCRIPT_FIRST', implementer: 'SCRIPT', modelTier: 'NONE', reviewer: 'REVIEWER' },
+    B: { executionMode: 'STANDARD_IMPLEMENTATION', implementer: 'AGENT', modelTier: 'STANDARD', reviewer: 'REVIEWER' },
+    C: { executionMode: 'STRONG_IMPLEMENTATION', implementer: 'STRONG_AGENT', modelTier: 'STRONG', reviewer: 'INDEPENDENT_REVIEWER' },
+    D: { executionMode: 'PROTECTED_CHANGE_PREPARATION', implementer: 'STRONG_AGENT', modelTier: 'STRONG', reviewer: 'INDEPENDENT_REVIEWER' },
   };
   const profile = { ...profiles[taskClass] };
   if (taskClass === 'D' && productPreparation) {
@@ -88,14 +110,15 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     profile.implementer = 'SCRIPT';
     profile.modelTier = 'STRONG_ONLY_FOR_AMBIGUITY';
   }
-  const reviewRequired = taskClass === 'D' || taskClass === 'C' || (taskClass === 'B' && sensitive);
-  const shopifyWriteRequired = /\b(shopify[- ]?write|produkte?\b.{0,60}\bshopify\b.{0,30}\b(?:write|schreiben|anlegen|importieren)|produkte? (?:anlegen|importieren|schreiben)|preis(?:e|en)? (?:schreiben|ändern)|sku\w* (?:schreiben|ändern)|variant\w* (?:schreiben|ändern))\b/i.test(taskText);
-  const humanGateRequired = taskClass === 'D' || shopifyWriteRequired || /\b(merge|publish|live|dns|irreversibel|irreversible)\b/i.test(taskText);
-  const storefrontRelated = /\b(storefront|browser|compare|sales readiness|teppich-paradies\.net|preview)\b/i.test(taskText);
-  const localRunnerRequired = taskClass === 'C' || taskClass === 'D' || storefrontRelated || files.some(file => /^(sections|snippets|templates|layout)\//i.test(file));
+  const reviewRequired = protectedActions.length > 0;
+  const reviewRecommended = reviewRequired || taskClass === 'C' || taskClass === 'D' || sensitive;
+  const shopifyWriteRequired = protectedActions.some(action => ['SHOPIFY_WRITE', 'PRICE_SKU_VARIANT_WRITE', 'CHECKOUT_PAYMENT_SHIPPING_CHANGE'].includes(action));
+  const humanGateRequired = protectedActions.length > 0;
+  const localRunnerRequired = STOREFRONT_VALIDATION.test(taskText) || protectedActions.includes('SHOPIFY_LIVE_PUBLISH');
+  const requiredValidationScope = localRunnerRequired ? 'FULL' : 'STATIC';
   const idMaterial = `${taskText}\0${branch ?? ''}\0${head ?? ''}`;
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     taskId: `TASK-${createHash('sha256').update(idMaterial).digest('hex').slice(0, 12).toUpperCase()}`,
     taskText,
     taskClass,
@@ -105,12 +128,13 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     implementer: profile.implementer,
     modelTier: profile.modelTier,
     reviewRequired,
-    // Keep the recommended model even when review is not initially required:
-    // an actual CLASS-B diff can later touch a sensitive file and elevate it.
+    reviewRecommended,
     reviewer: profile.reviewer,
     localRunnerRequired,
+    requiredValidationScope,
     shopifyWriteRequired,
     humanGateRequired,
+    protectedActions,
     sensitiveFiles: files.filter(isSensitiveFile),
     maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     maxImmediateScriptRetries: MAX_IMMEDIATE_SCRIPT_RETRIES,
@@ -152,38 +176,39 @@ function reviewIsCurrent(review, route, repo) {
 export function deriveHandoffState({ route, repo, latest = null, review = null, changedFiles = [], latestChangedFiles = null, pr = null, now = () => new Date().toISOString() }) {
   if (!route || route.branch !== repo.branch) {
     return {
-      schemaVersion: 1, taskId: null, taskClass: null, branch: repo.branch, implementer: null, commit: repo.head,
+      schemaVersion: 2, taskId: null, taskClass: null, branch: repo.branch, implementer: null, commit: repo.head,
       pr: null, validationStatus: 'NOT_RUN', p0: null, p1: null, reviewRequired: false, reviewer: null,
-      reviewStatus: 'NOT_REQUIRED', externalBlock: null, nextAgent: 'HUMAN', humanGate: 'ROUTE_TASK',
-      localRunnerRequired: false, shopifyWriteRequired: false, humanApprovalStored: false,
+      reviewRecommended: false, reviewStatus: 'NOT_REQUIRED', externalBlock: null, nextAgent: 'AGENT', humanGate: 'ROUTE_TASK',
+      localRunnerRequired: false, requiredValidationScope: 'STATIC', shopifyWriteRequired: false, protectedActions: [], humanApprovalStored: false,
       nextAllowedAction: 'ROUTE_TASK', updatedAt: now(),
     };
   }
   const actualSensitive = changedFiles.filter(isSensitiveFile);
-  const effectiveReviewRequired = route.reviewRequired || (route.taskClass === 'B' && actualSensitive.length > 0);
+  const effectiveReviewRequired = route.reviewRequired;
+  const effectiveReviewRecommended = route.reviewRecommended || actualSensitive.length > 0;
   const evidenceOnlyCommitGap = latest?.commit && latest?.commit !== repo.head && Array.isArray(latestChangedFiles)
     && latestChangedFiles.every(file => file === 'qa/evidence/local-verification.json');
   const latestCurrent = latest?.branch === repo.branch && (latest?.commit === repo.head || evidenceOnlyCommitGap)
     && latest?.worktreeFingerprint === repo.worktreeFingerprint;
   const validationStatus = latestCurrent ? latest.status : 'STALE_OR_NOT_RUN';
-  const externalBlock = latestCurrent && latest?.status === 'FAIL' ? (latest.externalBlock ?? EXTERNAL_BLOCKS.UNKNOWN) : null;
+  const externalBlock = latestCurrent && latest?.status === 'FAIL' ? (latest.externalBlock ?? EXTERNAL_BLOCKS.CODE_DEFECT) : null;
   const implementationObserved = route.implementer === 'SCRIPT' || changedFiles.length > 0 || repo.head !== route.routedAtHead;
   const fullValidation = latestCurrent && latest.status === 'PASS' && latest.validationScope === 'FULL';
-  const requiredValidationPassed = latestCurrent && latest.status === 'PASS' && (!route.localRunnerRequired || fullValidation);
-  const currentReview = effectiveReviewRequired && reviewIsCurrent(review, route, repo);
+  const requiredScope = route.requiredValidationScope ?? (route.localRunnerRequired ? 'FULL' : 'STATIC');
+  const requiredValidationPassed = latestCurrent && latest.status === 'PASS' && (requiredScope !== 'FULL' || fullValidation);
+  const currentReview = effectiveReviewRecommended && reviewIsCurrent(review, route, repo);
   let nextAllowedAction;
   let nextAgent = null;
   if (externalBlock === EXTERNAL_BLOCKS.RATE_LIMIT || externalBlock === EXTERNAL_BLOCKS.UPSTREAM) nextAllowedAction = 'RETRY_SCRIPT_LATER';
   else if (externalBlock === EXTERNAL_BLOCKS.LOCAL_RUNNER) nextAllowedAction = 'USE_LOCAL_MAC_RUNNER';
-  else if (externalBlock === EXTERNAL_BLOCKS.CODE_DEFECT) { nextAllowedAction = 'HANDOFF_IMPLEMENTER'; nextAgent = route.implementer; }
-  else if (externalBlock) { nextAllowedAction = 'STOP_UNKNOWN_BLOCKER'; nextAgent = 'HUMAN'; }
+  else if (externalBlock === EXTERNAL_BLOCKS.CODE_DEFECT) { nextAllowedAction = 'FIX_VALIDATION_FAILURE'; nextAgent = route.implementer; }
+  else if (externalBlock) { nextAllowedAction = 'INSPECT_VALIDATION_FAILURE'; nextAgent = route.implementer; }
   else if (!implementationObserved) { nextAllowedAction = 'HANDOFF_IMPLEMENTER'; nextAgent = route.implementer; }
-  else if (!requiredValidationPassed) nextAllowedAction = route.localRunnerRequired ? 'USE_LOCAL_MAC_RUNNER' : 'RUN_STATIC_VALIDATION';
+  else if (!requiredValidationPassed) nextAllowedAction = requiredScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION';
   else if (effectiveReviewRequired && !currentReview) { nextAllowedAction = 'HANDOFF_REVIEWER'; nextAgent = route.reviewer; }
-  else if (route.humanGateRequired) { nextAllowedAction = 'STOP_HUMAN_GATE'; nextAgent = 'HUMAN'; }
   else nextAllowedAction = 'PREPARE_DRAFT_PR';
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     taskId: route.taskId,
     taskClass: route.taskClass,
     branch: repo.branch,
@@ -196,14 +221,17 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
     p0: latestCurrent ? (latest.p0 ?? null) : null,
     p1: latestCurrent ? (latest.p1 ?? null) : null,
     reviewRequired: effectiveReviewRequired,
-    reviewer: effectiveReviewRequired ? route.reviewer : null,
-    reviewStatus: effectiveReviewRequired ? (currentReview ? 'PASS' : 'REQUIRED') : 'NOT_REQUIRED',
-    reviewerContext: effectiveReviewRequired ? 'DIFF_TEST_REPORT_FINDINGS_ONLY' : null,
+    reviewRecommended: effectiveReviewRecommended,
+    reviewer: effectiveReviewRecommended ? route.reviewer : null,
+    reviewStatus: effectiveReviewRequired ? (currentReview ? 'PASS' : 'REQUIRED') : effectiveReviewRecommended ? (currentReview ? 'PASS' : 'RECOMMENDED') : 'NOT_REQUIRED',
+    reviewerContext: effectiveReviewRecommended ? 'DIFF_TEST_REPORT_FINDINGS_ONLY' : null,
     externalBlock,
     nextAgent,
-    humanGate: route.humanGateRequired ? 'REQUIRED_FOR_PROTECTED_ACTION' : 'NOT_REQUIRED',
+    humanGate: route.humanGateRequired ? 'REQUIRED_BEFORE_PROTECTED_ACTION' : 'NOT_REQUIRED',
     localRunnerRequired: route.localRunnerRequired,
+    requiredValidationScope: requiredScope,
     shopifyWriteRequired: route.shopifyWriteRequired,
+    protectedActions: route.protectedActions ?? [],
     humanApprovalStored: false,
     maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     nextAllowedAction,
@@ -213,7 +241,7 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
 }
 
 export function assertProtectedAction({ action, approved = false, approvalCommit = null, currentCommit = null }) {
-  const protectedActions = new Set(['MERGE_MAIN', 'SHOPIFY_LIVE_PUBLISH', 'SHOPIFY_WRITE', 'MASS_PRODUCT_CREATE', 'CHECKOUT_CHANGE', 'PAYMENT_CHANGE', 'SHIPPING_CHANGE', 'DNS_CHANGE', 'IRREVERSIBLE_CHANGE']);
+  const protectedActions = new Set(['MERGE_MAIN', 'SHOPIFY_LIVE_PUBLISH', 'SHOPIFY_WRITE', 'PRICE_SKU_VARIANT_WRITE', 'MASS_PRODUCT_CREATE', 'CHECKOUT_PAYMENT_SHIPPING_CHANGE', 'CHECKOUT_CHANGE', 'PAYMENT_CHANGE', 'SHIPPING_CHANGE', 'DNS_CHANGE', 'IRREVERSIBLE_CHANGE']);
   if (!protectedActions.has(action)) return true;
   if (!approved || !approvalCommit || approvalCommit !== currentCommit) throw new Error(`${action} verweigert: frische Human-Freigabe für den aktuellen Commit erforderlich`);
   return true;
@@ -222,10 +250,9 @@ export function assertProtectedAction({ action, approved = false, approvalCommit
 export function planContinue(state, { localRunner = false, retryNow = false } = {}) {
   switch (state.nextAllowedAction) {
     case 'RUN_STATIC_VALIDATION': return { kind: 'VALIDATE_STATIC' };
+    case 'RUN_FULL_VALIDATION': return localRunner ? { kind: 'VALIDATE_FULL' } : { kind: 'STOP', reason: 'NEEDS_LOCAL_RUNNER' };
     case 'USE_LOCAL_MAC_RUNNER': return localRunner ? { kind: 'VALIDATE_FULL' } : { kind: 'STOP', reason: 'NEEDS_LOCAL_RUNNER' };
     case 'RETRY_SCRIPT_LATER': return retryNow ? { kind: state.localRunnerRequired ? 'VALIDATE_FULL' : 'VALIDATE_STATIC' } : { kind: 'STOP', reason: 'BLOCKED_EXTERNAL' };
-    case 'STOP_HUMAN_GATE': return { kind: 'STOP', reason: 'HUMAN_GATE' };
-    case 'STOP_UNKNOWN_BLOCKER': return { kind: 'STOP', reason: 'UNKNOWN_BLOCKER' };
     default: return { kind: 'HANDOFF', target: state.nextAgent, action: state.nextAllowedAction };
   }
 }
@@ -238,10 +265,13 @@ export function formatRouterOutput(route, nextAllowedAction = null) {
     `IMPLEMENTER: ${route.implementer}`,
     `MODEL_TIER: ${route.modelTier}`,
     `REVIEW_REQUIRED: ${route.reviewRequired ? 'JA' : 'NEIN'}`,
-    `REVIEWER: ${route.reviewRequired ? route.reviewer : '-'}`,
+    `REVIEW_RECOMMENDED: ${route.reviewRecommended ? 'JA' : 'NEIN'}`,
+    `REVIEWER: ${route.reviewRecommended ? route.reviewer : '-'}`,
     `LOCAL_RUNNER_REQUIRED: ${route.localRunnerRequired ? 'JA' : 'NEIN'}`,
+    `VALIDATION_SCOPE: ${route.requiredValidationScope}`,
     `SHOPIFY_WRITE_REQUIRED: ${route.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
     `HUMAN_GATE_REQUIRED: ${route.humanGateRequired ? 'JA' : 'NEIN'}`,
-    `NEXT_ALLOWED_ACTION: ${nextAllowedAction ?? (route.implementer === 'SCRIPT' ? (route.localRunnerRequired ? 'USE_LOCAL_MAC_RUNNER' : 'RUN_STATIC_VALIDATION') : 'HANDOFF_IMPLEMENTER')}`,
+    `PROTECTED_ACTIONS: ${route.protectedActions.length ? route.protectedActions.join(',') : '-'}`,
+    `NEXT_ALLOWED_ACTION: ${nextAllowedAction ?? (route.implementer === 'SCRIPT' ? (route.requiredValidationScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION') : 'HANDOFF_IMPLEMENTER')}`,
   ].join('\n');
 }

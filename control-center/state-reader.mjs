@@ -168,7 +168,7 @@ function worktreeFingerprint(root) {
 }
 
 function cleanStatus(value) {
-  const known = new Set(['WAITING', 'RUNNING', 'PASS', 'FAIL', 'BLOCKED_EXTERNAL', 'NEEDS_LOCAL_RUNNER', 'HUMAN_GATE', 'SKIPPED']);
+  const known = new Set(['WAITING', 'RUNNING', 'PASS', 'FAIL', 'BLOCKED_EXTERNAL', 'NEEDS_LOCAL_RUNNER', 'HUMAN_GATE', 'RECOMMENDED', 'SKIPPED']);
   return known.has(value) ? value : UNKNOWN;
 }
 
@@ -256,10 +256,10 @@ function blockerDetails(state, latest, failure) {
 function creditProfile(route, state, review) {
   if (!route) return UNKNOWN;
   if (route.modelTier === 'NONE' && route.implementer === 'SCRIPT') return 'SCRIPT_ONLY';
-  if (route.modelTier === 'LIGHT') return 'LOW';
+  if (route.modelTier === 'LIGHT' || route.modelTier === 'STANDARD') return 'LOW';
   if (route.modelTier === 'STRONG_ONLY_FOR_AMBIGUITY') return review?.status === 'PASS' ? 'HIGH' : 'MEDIUM';
   if (route.modelTier === 'STRONG') return 'HIGH';
-  if (state?.executionMode === 'DETERMINISTIC_SCRIPT_FIRST') return 'SCRIPT_ONLY';
+  if (state?.executionMode === 'DETERMINISTIC_SCRIPT_FIRST' || state?.executionMode === 'SCRIPT_FIRST') return 'SCRIPT_ONLY';
   return UNKNOWN;
 }
 
@@ -302,17 +302,19 @@ export function buildControlCenterState(root, now = () => new Date()) {
     secondModelReview: evidenceStatus(loaded.review, null, currentCommit, currentBranch),
   };
   const reviewRequired = Boolean(state?.reviewRequired ?? task?.reviewRequired);
-  const reviewStatus = state?.reviewStatus ?? (reviewRequired ? 'REQUIRED' : 'NOT_REQUIRED');
+  const reviewRecommended = Boolean(state?.reviewRecommended ?? task?.reviewRecommended ?? reviewRequired);
+  const reviewStatus = state?.reviewStatus ?? (reviewRequired ? 'REQUIRED' : reviewRecommended ? 'RECOMMENDED' : 'NOT_REQUIRED');
   const executionObserved = changedFiles.length > 0 || (task?.routedAtHead && task.routedAtHead !== currentCommit);
-  const humanGateRequired = state?.humanGate === 'REQUIRED_FOR_PROTECTED_ACTION' || Boolean(task?.humanGateRequired);
+  const humanGateRequired = ['REQUIRED_FOR_PROTECTED_ACTION', 'REQUIRED_BEFORE_PROTECTED_ACTION'].includes(state?.humanGate) || Boolean(task?.humanGateRequired);
   const writeRequired = Boolean(state?.shopifyWriteRequired ?? task?.shopifyWriteRequired);
+  const protectedActions = state?.protectedActions ?? task?.protectedActions ?? [];
   const timestamp = state?.updatedAt ?? task?.routedAt ?? null;
   const pipeline = [
     { id: 'task', label: 'Task', status: task ? 'PASS' : 'WAITING', description: task?.taskText ?? 'Kein aktueller Task geladen', timestamp: task?.routedAt ?? null, role: 'HUMAN', file: loaded.task?.relative ?? null },
     { id: 'router', label: 'Router', status: task ? 'PASS' : 'WAITING', description: task ? `${task.taskClass ?? UNKNOWN} · ${task.executionMode ?? UNKNOWN}` : 'Router-State fehlt', timestamp: task?.routedAt ?? null, role: 'AI ROUTER', file: loaded.task?.relative ?? null },
     { id: 'execution', label: 'Execution', status: cleanStatus(validationStatus === 'PASS' ? 'PASS' : executionObserved ? 'RUNNING' : 'WAITING'), description: executionObserved ? `${changedFiles.length} lokale Änderung(en) erkannt` : 'Noch keine Implementierung erkannt', timestamp, role: task?.implementer ?? UNKNOWN, file: state ? loaded.state?.relative : loaded.task?.relative },
     { id: 'validation', label: 'Validation', status: blocker.type === 'NEEDS_LOCAL_RUNNER' ? 'NEEDS_LOCAL_RUNNER' : blocker.type?.startsWith('BLOCKED_EXTERNAL') ? 'BLOCKED_EXTERNAL' : cleanStatus(validationStatus), description: state?.validationStatus ?? 'Kein aktueller Testreport', timestamp: latest?.finishedAt ?? latest?.updatedAt ?? null, role: state?.localRunnerRequired ? 'LOCAL RUNNER' : 'SCRIPT', file: loaded.latest?.relative ?? loaded.trackedEvidence?.relative ?? null },
-    { id: 'review', label: 'Review', status: reviewRequired ? (reviewStatus === 'PASS' ? 'PASS' : 'WAITING') : 'SKIPPED', description: reviewRequired ? reviewStatus : 'Kein Second Model Review erforderlich', timestamp: review?.updatedAt ?? review?.createdAt ?? null, role: state?.reviewer ?? task?.reviewer ?? UNKNOWN, file: loaded.review?.relative ?? null },
+    { id: 'review', label: 'Review', status: reviewRequired ? (reviewStatus === 'PASS' ? 'PASS' : 'WAITING') : reviewRecommended ? (reviewStatus === 'PASS' ? 'PASS' : 'RECOMMENDED') : 'SKIPPED', description: reviewRequired ? reviewStatus : reviewRecommended ? 'Review empfohlen, blockiert lokale Arbeit und Draft-PR nicht' : 'Kein Second Model Review erforderlich', timestamp: review?.updatedAt ?? review?.createdAt ?? null, role: state?.reviewer ?? task?.reviewer ?? UNKNOWN, file: loaded.review?.relative ?? null },
     { id: 'audit', label: 'Admin Audit', status: evidence.securityReview.status === 'PASS' ? 'PASS' : UNKNOWN, description: evidence.securityReview.file ? 'Security-/Admin-Report geladen' : 'Kein separater Admin-Audit-Report', timestamp: evidence.securityReview.timestamp, role: 'ADMIN AUDIT', file: evidence.securityReview.file },
     { id: 'gate', label: 'Human Gate', status: humanGateRequired ? 'HUMAN_GATE' : 'SKIPPED', description: humanGateRequired ? 'Frische Freigabe für den aktuellen Commit erforderlich' : 'Für den aktuellen Task nicht erforderlich', timestamp, role: 'HUMAN', file: loaded.state?.relative ?? null },
     { id: 'write', label: 'Write', status: writeRequired ? 'HUMAN_GATE' : 'SKIPPED', description: writeRequired ? 'Write bleibt in Stufe 1 gesperrt' : 'Kein Shopify-Write geplant', timestamp: null, role: 'DEPLOYMENT', file: previews[0]?.relative ?? null },
@@ -332,8 +334,10 @@ export function buildControlCenterState(root, now = () => new Date()) {
       modelUsed: UNKNOWN,
       modelTierPlanned: task?.modelTier ?? UNKNOWN,
       secondReviewRequired: reviewRequired,
-      secondReviewer: reviewRequired ? (state?.reviewer ?? task?.reviewer ?? UNKNOWN) : 'NOT REQUIRED',
+      secondReviewRecommended: reviewRecommended,
+      secondReviewer: reviewRecommended ? (state?.reviewer ?? task?.reviewer ?? UNKNOWN) : 'NOT REQUIRED',
       localRunnerRequired: Boolean(state?.localRunnerRequired ?? task?.localRunnerRequired),
+      validationScope: state?.requiredValidationScope ?? task?.requiredValidationScope ?? 'STATIC',
       scriptSteps: latest?.branch === currentBranch && latest?.commit === currentCommit && Array.isArray(latest.results) ? latest.results.length : UNKNOWN,
       aiSteps: UNKNOWN,
       externalBlocks: blocker.type ? 1 : 0,
@@ -341,6 +345,7 @@ export function buildControlCenterState(root, now = () => new Date()) {
       p1: state?.p1 ?? UNKNOWN,
       p2: latest?.p2 ?? review?.p2 ?? UNKNOWN,
       humanGate: humanGateRequired ? 'REQUIRED' : 'NOT REQUIRED',
+      protectedActions,
       nextAllowedAction: state?.nextAllowedAction ?? UNKNOWN,
       validationStatus: state?.validationStatus ?? UNKNOWN,
       shopifyWriteRequired: writeRequired,
@@ -353,7 +358,7 @@ export function buildControlCenterState(root, now = () => new Date()) {
       actualAgent: task?.actualAgent ?? latest?.actualAgent ?? UNKNOWN,
       knownModel: task?.modelUsed ?? latest?.modelUsed ?? UNKNOWN,
       implementer: task?.implementer ?? UNKNOWN,
-      reviewer: reviewRequired ? (state?.reviewer ?? task?.reviewer ?? UNKNOWN) : 'NOT REQUIRED',
+      reviewer: reviewRecommended ? (state?.reviewer ?? task?.reviewer ?? UNKNOWN) : 'NOT REQUIRED',
       localRunner: state?.localRunnerRequired ? (latest?.runner ?? UNKNOWN) : 'NOT REQUIRED',
       aiSteps: UNKNOWN,
       scriptSteps: latest?.branch === currentBranch && latest?.commit === currentCommit && Array.isArray(latest.results) ? latest.results.length : UNKNOWN,
@@ -373,7 +378,7 @@ export function buildControlCenterState(root, now = () => new Date()) {
       required: humanGateRequired,
       readiness: humanGateRequired ? (validationStatus === 'PASS' && (!reviewRequired || reviewStatus === 'PASS') ? 'READY_FOR_HUMAN_REVIEW' : 'NOT_READY') : 'NOT_REQUIRED',
       reason: humanGateRequired ? 'Geschützte Aktion im aktuellen Router-State' : 'Keine geschützte Aktion im aktuellen Router-State',
-      plannedAction: writeRequired ? 'SHOPIFY WRITE' : UNKNOWN,
+      plannedAction: protectedActions.length ? protectedActions.join(', ') : writeRequired ? 'SHOPIFY WRITE' : UNKNOWN,
       affected: changes.map(change => change.object).filter((value, index, list) => value !== UNKNOWN && list.indexOf(value) === index),
       findings: { p0: state?.p0 ?? UNKNOWN, p1: state?.p1 ?? UNKNOWN, p2: latest?.p2 ?? review?.p2 ?? UNKNOWN },
       plannedWrites: changes.length,

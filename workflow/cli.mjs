@@ -147,12 +147,15 @@ function printHandoffState(state) {
     `P0: ${state.p0 ?? '-'}`,
     `P1: ${state.p1 ?? '-'}`,
     `REVIEW_REQUIRED: ${state.reviewRequired ? 'JA' : 'NEIN'}`,
+    `REVIEW_RECOMMENDED: ${state.reviewRecommended ? 'JA' : 'NEIN'}`,
     `REVIEWER: ${state.reviewer ?? '-'}`,
     `REVIEW_STATUS: ${state.reviewStatus}`,
     `EXTERNAL_BLOCK: ${state.externalBlock ?? '-'}`,
     `NEXT_AGENT: ${state.nextAgent ?? '-'}`,
     `LOCAL_RUNNER_REQUIRED: ${state.localRunnerRequired ? 'JA' : 'NEIN'}`,
+    `VALIDATION_SCOPE: ${state.requiredValidationScope ?? 'STATIC'}`,
     `SHOPIFY_WRITE_REQUIRED: ${state.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
+    `PROTECTED_ACTIONS: ${state.protectedActions?.length ? state.protectedActions.join(',') : '-'}`,
     `HUMAN_GATE: ${state.humanGate}`,
     `HUMAN_APPROVAL_STORED: NEIN`,
     `NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`,
@@ -187,7 +190,7 @@ async function main() {
         return state;
       }
       if (mode === 'continue') {
-        const decision = planContinue(state, { localRunner: args['local-runner'] === true, retryNow: args['retry-now'] === true });
+        const decision = planContinue(state, { localRunner: args['local-runner'] === true || process.platform === 'darwin', retryNow: args['retry-now'] === true });
         if (decision.kind === 'VALIDATE_STATIC') return validate({ staticOnly: true });
         if (decision.kind === 'VALIDATE_FULL') return validate();
         if (decision.kind === 'STOP' && decision.reason === 'NEEDS_LOCAL_RUNNER') console.log('NEEDS_LOCAL_RUNNER: Lokalen Mac-Runner verwenden; Storefront-Browserchecks nicht in der Cloud erzwingen.');

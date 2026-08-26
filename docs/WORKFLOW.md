@@ -6,18 +6,18 @@
 
 1. Ahmet gibt Codex eine Aufgabe.
 2. Codex erstellt `feature/<name>`, `fix/<name>` oder `chore/<name>` – nie Arbeit direkt auf `main`.
-3. Codex ändert, führt die relevanten Tests aus und prüft den vollständigen Ablauf mit `npm run workflow:validate`.
-4. Nach P0=0/P1=0, Commit und Branch-Push führt `npm run workflow:pr -- --p0 0 --p1 0 --title "Titel"` die Validierung erneut für den gepushten HEAD aus und erstellt höchstens einen Draft-PR gegen `main`.
+3. Codex ändert und führt die vom Router verlangte Testtiefe aus: normalerweise `npm run workflow:validate -- --static`, bei ausdrücklicher Storefront-/Browser-Prüfung `npm run workflow:validate`.
+4. Ein empfohlenes Review darf parallel oder später erfolgen und blockiert die lokale Umsetzung nicht. Nach P0=0/P1=0, Commit und Branch-Push führt `npm run workflow:pr -- --p0 0 --p1 0 --title "Titel"` die vollständige PR-Validierung erneut für den gepushten HEAD aus und erstellt höchstens einen Draft-PR gegen `main`.
 5. Ahmet prüft und gibt den Merge ausdrücklich frei. Es gibt keinen Auto-Merge.
 6. Nach dem Merge wird lokales `main` auf `origin/main` aktualisiert. Ein vorhandenes, eindeutig unpublished Preview-Theme kann nach separater Freigabe mit `npm run workflow:preview -- --theme-id ID --p0 0 --p1 0 --approve-preview` aktualisiert werden.
 7. Ahmet prüft die Preview-URL und gibt Live separat frei. Test-PASS, PR-Merge oder Preview-PASS veröffentlichen niemals automatisch.
 
 ## Befehle
 
-- `npm run workflow:route -- "Neue Aufgabe: ..."`: klassifiziert A–D und empfiehlt Script, Implementer, Review, Local Runner und Human Gate. Startet keine externe KI.
+- `npm run workflow:route -- "Neue Aufgabe: ..."`: klassifiziert Aufwand A–D und ermittelt davon getrennt Testtiefe, Review-Empfehlung und echte Protected Actions. Startet keine externe KI.
 - `npm run workflow:status`: erzeugt den maschinenlesbaren Handoff-State neu aus Task, Git-Diff und commitgebundener Evidence.
 - `npm run workflow:next`: nennt genau die nächste erlaubte Aktion.
-- `npm run workflow:continue`: führt nur den nächsten sicheren Script-Schritt aus oder stoppt mit Agent-, Local-Runner- bzw. Human-Handoff. Ein späterer externer Retry ist explizit mit `-- --retry-now` möglich; lokales Full-QA mit `-- --local-runner`.
+- `npm run workflow:continue`: führt den nächsten Testschritt aus oder nennt die nächste Arbeitsaktion. Auf macOS startet erforderliche Full-QA automatisch; ein späterer externer Retry ist explizit mit `-- --retry-now` möglich.
 - `npm run workflow:validate`: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan, Compare, SEO, Full QA und Sales nacheinander. Sales muss 6/6 PASS und `orderCompleted: false` liefern.
 - `npm run workflow:validate -- --dry-run`: zeigt den Ablauf, führt nichts aus und meldet niemals PASS.
 - `npm run workflow:pr -- --p0 0 --p1 0 --title "..."`: nur auf erlaubtem Branch, sauberem und vollständig gepushtem HEAD; validiert und erstellt höchstens einen Draft-PR.
@@ -25,7 +25,7 @@
 - `npm run workflow:live`: ist standardmäßig gesperrt. Selbst eine freigegebene Preview reicht nicht.
 - `npm run workflow:state`: leitet den aktuellen Zustand aus Git und commitgebundener lokaler Evidence ab. Veraltete oder unklare Evidence führt zu `STOP_REVIEW`; Freigaben werden nie gespeichert.
 
-Details zu Klassen, Kostenregeln, Handoff und externen Blocks stehen in `docs/AI_ROUTER.md`.
+Review-Empfehlungen und Human Gates stoppen keine lokale Implementierung. Die harten Schutzregeln greifen in den konkreten PR-, Preview-, Live- oder Shopify-Write-Befehlen. Details stehen in `docs/AI_ROUTER.md`.
 
 ## Live-Gate
 
