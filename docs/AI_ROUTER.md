@@ -39,7 +39,7 @@ Eine Empfehlung blockiert weder Implementierung noch statische Validierung noch 
 
 ## Testtiefe
 
-`STATIC` umfasst Unit-, Automation-, Workflow-, Evidence- und Secret-Checks. `FULL` ergänzt Compare, SEO, Full QA und Sales Readiness gegen Storefront beziehungsweise Preview.
+`STATIC` umfasst Unit-, Automation-, Workflow-, Evidence- und Secret-Checks. `FULL` ergänzt Compare, SEO, Full QA und Sales Readiness gegen Storefront beziehungsweise Preview. Draft-PR und PR-CI bleiben statisch; ein Draft ist nur eine prüfbare Übergabe und keine Deployment-Freigabe.
 
 Full-QA wird nur verlangt, wenn der Auftrag ausdrücklich Storefront-/Browser-/Sales-/Live-Shop-Prüfung fordert oder ein Live-Publish vorbereitet. Ein allgemeiner Theme-Fix oder Architektur-Refactor wird dadurch nicht automatisch zum Local-Runner-Blocker.
 

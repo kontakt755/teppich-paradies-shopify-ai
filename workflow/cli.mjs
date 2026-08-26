@@ -224,12 +224,15 @@ async function main() {
       const summary = createDryRunSummary('pr', { ...current, ...findings() });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
     }
-    const validation = validate();
+    // Draft PRs are collaboration artifacts, not deployment approvals. CI
+    // repeats the same safe static checks; Storefront/Full-QA stays governed
+    // by the routed task and is mandatory again before Preview or Live.
+    const validation = validate({ staticOnly: true });
     const title = String(args.title ?? current.branch.replace(/^(feature|fix|chore)\//, '').replaceAll('-', ' ')).trim();
     const existing = requireSuccess(run(commandName('gh'), ['pr', 'list', '--head', current.branch, '--base', OFFICIAL_BASE, '--state', 'open', '--json', 'number,url'], { timeoutMs: 60_000 }), 'gh pr list');
     const existingPr = JSON.parse(existing.stdout)[0];
     const pr = existingPr ?? (() => {
-      const created = requireSuccess(run(commandName('gh'), ['pr', 'create', '--draft', '--base', OFFICIAL_BASE, '--head', current.branch, '--title', title, '--body', 'Validated by npm run workflow:pr. Human approval is required before merge.'], { timeoutMs: 60_000 }), 'gh pr create');
+      const created = requireSuccess(run(commandName('gh'), ['pr', 'create', '--draft', '--base', OFFICIAL_BASE, '--head', current.branch, '--title', title, '--body', 'Static checks passed via npm run workflow:pr. Routed Storefront/Full-QA remains separate. Human approval is required before merge.'], { timeoutMs: 60_000 }), 'gh pr create');
       return { url: created.stdout.trim() };
     })();
     validation.workflow = 'pr'; validation.pr = pr; validation.readyForPr = true;
