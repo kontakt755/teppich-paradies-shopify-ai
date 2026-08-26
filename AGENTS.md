@@ -196,7 +196,8 @@ Neue Aufgaben zuerst mit `npm run workflow:route -- "Neue Aufgabe: ..."` routen.
 - CLASS A benötigt kein Zweitmodell; CLASS B nur bei sensiblen Dateien; CLASS C normalerweise und CLASS D immer.
 - Externe 429/503/Timeouts wechseln keinen Agenten und erhalten höchstens einen unmittelbaren Script-Retry. Cloud-/Proxy-403 bei Storefront-Zugriff geht an den lokalen Mac-Runner.
 - Maximal drei autonome Reparaturrunden; danach Human Escalation. Reviewer erhalten bevorzugt nur Diff, Testreport und Findings.
-- Human Approval wird nie gespeichert und gilt nur für den konkret geprüften Commit. Merge nach `main`, Live-Publish, Shopify Writes an Preisen/SKUs/Varianten, Massenanlage, Checkout/Payment/Shipping, DNS und irreversible Änderungen bleiben gesperrt.
+- Human Approval wird nie gespeichert und gilt nur für den konkret geprüften Commit. Merge nach `main`, Checkout/Payment/Shipping, DNS und irreversible Änderungen bleiben immer gesperrt, ohne Ausnahme.
+- Ausnahme (seit 2026-08-26, auf Ahmets ausdrücklichen Wunsch): Für `SHOPIFY_WRITE`, `SHOPIFY_LIVE_PUBLISH` und `MASS_PRODUCT_CREATE` kann `TP_STANDING_LIVE_APPROVAL="PUBLISH LIVE"` in der lokalen, nicht committeten `.env` gesetzt werden (`workflow/standing-approval.mjs`) - das ersetzt dann bei unbeaufsichtigten/Batch-Läufen genau die menschlich getippte Freigabe, nicht die übrigen Prüfungen (sauberer Working Tree, Findings, Preview-Evidence, Commit-Bindung bei den ausgenommenen Kategorien). Zeile aus `.env` entfernen, um wieder frische Freigabe pro Aktion zu verlangen.
 - Der Router empfiehlt Rollen, startet aber keine externen Agenten und ruft keine Modell-API auf.
 
 ## Aktueller wichtiger Backlog

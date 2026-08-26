@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { createHash } from 'node:crypto';
 import {
-  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
+  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, hasStandingLiveApproval,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
@@ -288,7 +288,8 @@ async function main() {
     const themeId = args['theme-id'];
     const evidencePath = path.join(root, '.workflow/preview.json');
     const previewEvidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, 'utf8')) : null;
-    if (args['approve-live'] !== true || args['approval-text'] !== APPROVAL_TEXT || args.execute !== true) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich`, 'LIVE_APPROVAL');
+    const cliApproved = args['approve-live'] === true && args['approval-text'] === APPROVAL_TEXT && args.execute === true;
+    if (!cliApproved && !hasStandingLiveApproval()) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich (oder TP_STANDING_LIVE_APPROVAL in .env)`, 'LIVE_APPROVAL');
     if (dryRun) throw new WorkflowGateError('Live-Publish wird auch im Dry-Run niemals ausgeführt', 'LIVE_DRY_RUN_BLOCK');
     const validation = validate();
     const themes = themeList(store);

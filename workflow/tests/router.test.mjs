@@ -8,7 +8,7 @@ import {
   assertProtectedAction, classifyFailure, classifyTask, deriveHandoffState, isSensitiveFile,
   normalizeTaskText, planContinue, routeTask, runWithExternalRetry,
 } from '../router.mjs';
-import { runValidation } from '../core.mjs';
+import { runValidation, APPROVAL_TEXT } from '../core.mjs';
 
 const repo = (overrides = {}) => ({
   branch: 'chore/router', head: 'head-1', originMain: 'main-1', clean: true, worktreeFingerprint: 'clean', ...overrides,
@@ -181,6 +181,22 @@ test('Shopify writes and main merges are refused without commit-bound human appr
     assert.throws(() => assertProtectedAction({ action, currentCommit: 'head-1' }), /verweigert/);
     assert.throws(() => assertProtectedAction({ action, approved: true, approvalCommit: 'old', currentCommit: 'head-1' }), /aktuellen Commit/);
     assert.equal(assertProtectedAction({ action, approved: true, approvalCommit: 'head-1', currentCommit: 'head-1' }), true);
+  }
+});
+
+test('TP_STANDING_LIVE_APPROVAL only covers Shopify write / publish / bulk-create, never MERGE_MAIN or the highest-severity categories', () => {
+  const prior = process.env.TP_STANDING_LIVE_APPROVAL;
+  try {
+    process.env.TP_STANDING_LIVE_APPROVAL = APPROVAL_TEXT;
+    for (const action of ['SHOPIFY_WRITE', 'SHOPIFY_LIVE_PUBLISH', 'MASS_PRODUCT_CREATE']) {
+      assert.equal(assertProtectedAction({ action, currentCommit: 'head-1' }), true);
+    }
+    for (const action of ['MERGE_MAIN', 'CHECKOUT_CHANGE', 'PAYMENT_CHANGE', 'SHIPPING_CHANGE', 'DNS_CHANGE', 'IRREVERSIBLE_CHANGE']) {
+      assert.throws(() => assertProtectedAction({ action, currentCommit: 'head-1' }), /verweigert/);
+    }
+  } finally {
+    if (prior === undefined) delete process.env.TP_STANDING_LIVE_APPROVAL;
+    else process.env.TP_STANDING_LIVE_APPROVAL = prior;
   }
 });
 

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { hasStandingLiveApproval } from './standing-approval.mjs';
 
 export const TASK_CLASSES = Object.freeze(['A', 'B', 'C', 'D']);
 export const EXTERNAL_BLOCKS = Object.freeze({
@@ -309,9 +310,17 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
   };
 }
 
+// Actions a standing TP_STANDING_LIVE_APPROVAL (see core.mjs) may cover for
+// unattended runs. Deliberately excludes MERGE_MAIN and the highest-severity
+// categories (checkout/payment/shipping/DNS/irreversible) - those still need
+// a fresh, commit-bound human approval every time, no override, matching
+// AGENTS.md's "NIEMALS ohne ausdrückliche Freigabe" list.
+const STANDING_APPROVAL_ELIGIBLE = new Set(['SHOPIFY_LIVE_PUBLISH', 'SHOPIFY_WRITE', 'MASS_PRODUCT_CREATE']);
+
 export function assertProtectedAction({ action, approved = false, approvalCommit = null, currentCommit = null }) {
   const protectedActions = new Set(['MERGE_MAIN', 'SHOPIFY_LIVE_PUBLISH', 'SHOPIFY_WRITE', 'MASS_PRODUCT_CREATE', 'CHECKOUT_CHANGE', 'PAYMENT_CHANGE', 'SHIPPING_CHANGE', 'DNS_CHANGE', 'IRREVERSIBLE_CHANGE']);
   if (!protectedActions.has(action)) return true;
+  if (STANDING_APPROVAL_ELIGIBLE.has(action) && hasStandingLiveApproval()) return true;
   if (!approved || !approvalCommit || approvalCommit !== currentCommit) throw new Error(`${action} verweigert: frische Human-Freigabe für den aktuellen Commit erforderlich`);
   return true;
 }
