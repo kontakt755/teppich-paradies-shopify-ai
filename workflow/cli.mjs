@@ -80,19 +80,24 @@ function printSummary(summary) {
 
 function validate({ staticOnly = false, baseUrl = null } = {}) {
   const current = context();
+  const previous = readRuntimeJson('latest.json');
+  const currentPr = previous?.branch === current.branch ? (previous.pr ?? null) : null;
   let summary;
   try {
     summary = runValidation({ root, dryRun, staticOnly, baseUrl });
   } catch (error) {
     if (error.summary) {
-      Object.assign(error.summary, current, { commit: current.head });
+      Object.assign(error.summary, current, { commit: current.head, pr: currentPr });
       writeRuntimeReport(root, 'latest.json', error.summary);
     }
     throw error;
   }
-  const findingState = findings();
+  const findingState = {
+    p0: args.p0 ?? (previous?.branch === current.branch ? previous.p0 : null),
+    p1: args.p1 ?? (previous?.branch === current.branch ? previous.p1 : null),
+  };
   const findingsClear = findingsAreClear(findingState);
-  Object.assign(summary, current, findingState, { commit: current.head, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
+  Object.assign(summary, current, findingState, { commit: current.head, pr: currentPr, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
   writeRuntimeReport(root, 'latest.json', summary);
   // Only a full (non-static) validation actually runs Compare/SEO/Full QA/Sales;
   // a --static run never touches the browser-dependent evidence the CI gate
@@ -147,12 +152,15 @@ function printHandoffState(state) {
     `P0: ${state.p0 ?? '-'}`,
     `P1: ${state.p1 ?? '-'}`,
     `REVIEW_REQUIRED: ${state.reviewRequired ? 'JA' : 'NEIN'}`,
+    `REVIEW_RECOMMENDED: ${state.reviewRecommended ? 'JA' : 'NEIN'}`,
     `REVIEWER: ${state.reviewer ?? '-'}`,
     `REVIEW_STATUS: ${state.reviewStatus}`,
     `EXTERNAL_BLOCK: ${state.externalBlock ?? '-'}`,
     `NEXT_AGENT: ${state.nextAgent ?? '-'}`,
     `LOCAL_RUNNER_REQUIRED: ${state.localRunnerRequired ? 'JA' : 'NEIN'}`,
+    `VALIDATION_SCOPE: ${state.requiredValidationScope ?? 'STATIC'}`,
     `SHOPIFY_WRITE_REQUIRED: ${state.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
+    `PROTECTED_ACTIONS: ${state.protectedActions?.length ? state.protectedActions.join(',') : '-'}`,
     `HUMAN_GATE: ${state.humanGate}`,
     `HUMAN_APPROVAL_STORED: NEIN`,
     `NEXT_ALLOWED_ACTION: ${state.nextAllowedAction}`,
@@ -187,7 +195,7 @@ async function main() {
         return state;
       }
       if (mode === 'continue') {
-        const decision = planContinue(state, { localRunner: args['local-runner'] === true, retryNow: args['retry-now'] === true });
+        const decision = planContinue(state, { localRunner: args['local-runner'] === true || process.platform === 'darwin', retryNow: args['retry-now'] === true });
         if (decision.kind === 'VALIDATE_STATIC') return validate({ staticOnly: true });
         if (decision.kind === 'VALIDATE_FULL') return validate();
         if (decision.kind === 'STOP' && decision.reason === 'NEEDS_LOCAL_RUNNER') console.log('NEEDS_LOCAL_RUNNER: Lokalen Mac-Runner verwenden; Storefront-Browserchecks nicht in der Cloud erzwingen.');
@@ -221,12 +229,15 @@ async function main() {
       const summary = createDryRunSummary('pr', { ...current, ...findings() });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
     }
-    const validation = validate();
+    // Draft PRs are collaboration artifacts, not deployment approvals. CI
+    // repeats the same safe static checks; Storefront/Full-QA stays governed
+    // by the routed task and is mandatory again before Preview or Live.
+    const validation = validate({ staticOnly: true });
     const title = String(args.title ?? current.branch.replace(/^(feature|fix|chore)\//, '').replaceAll('-', ' ')).trim();
     const existing = requireSuccess(run(commandName('gh'), ['pr', 'list', '--head', current.branch, '--base', OFFICIAL_BASE, '--state', 'open', '--json', 'number,url'], { timeoutMs: 60_000 }), 'gh pr list');
     const existingPr = JSON.parse(existing.stdout)[0];
     const pr = existingPr ?? (() => {
-      const created = requireSuccess(run(commandName('gh'), ['pr', 'create', '--draft', '--base', OFFICIAL_BASE, '--head', current.branch, '--title', title, '--body', 'Validated by npm run workflow:pr. Human approval is required before merge.'], { timeoutMs: 60_000 }), 'gh pr create');
+      const created = requireSuccess(run(commandName('gh'), ['pr', 'create', '--draft', '--base', OFFICIAL_BASE, '--head', current.branch, '--title', title, '--body', 'Static checks passed via npm run workflow:pr. Routed Storefront/Full-QA remains separate. Human approval is required before merge.'], { timeoutMs: 60_000 }), 'gh pr create');
       return { url: created.stdout.trim() };
     })();
     validation.workflow = 'pr'; validation.pr = pr; validation.readyForPr = true;

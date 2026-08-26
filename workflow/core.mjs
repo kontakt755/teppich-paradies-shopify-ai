@@ -280,8 +280,8 @@ export function writeRuntimeReport(root, name, value) {
 
 // Unlike writeRuntimeReport (.workflow/, gitignored, local-only), this writes
 // into qa/evidence/, which is tracked by git. A full non-static validation
-// PASS is copied here so it can be committed and reach CI, where the
-// local-verification-gate job checks it against the exact PR HEAD commit.
+// PASS can be committed for audits or protected release preparation. Draft PR
+// creation itself requires only reproducible static CI checks.
 export function writeTrackedEvidence(root, value) {
   return writeJsonAtomic(path.join(root, ...TRACKED_EVIDENCE_PATH.split('/').slice(0, -1)), path.basename(TRACKED_EVIDENCE_PATH), value);
 }

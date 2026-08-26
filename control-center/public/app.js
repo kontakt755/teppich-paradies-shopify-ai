@@ -68,7 +68,7 @@ function render(data) {
         <h2>Auftragsstatus</h2>
         <dl class="facts">
           ${fact('Task Class', s.taskClass)}${fact('Execution Mode', s.executionMode)}${fact('Primary Agent', s.primaryAgent)}${fact('Model Used', s.modelUsed)}
-          ${fact('Second Review Required', yesNo(s.secondReviewRequired))}${fact('Second Reviewer', s.secondReviewer)}${fact('Local Runner Required', yesNo(s.localRunnerRequired))}${fact('Validation Status', s.validationStatus)}
+          ${fact('Second Review Required', yesNo(s.secondReviewRequired))}${fact('Second Review Recommended', yesNo(s.secondReviewRecommended))}${fact('Second Reviewer', s.secondReviewer)}${fact('Local Runner Required', yesNo(s.localRunnerRequired))}${fact('Validation Scope', s.validationScope)}${fact('Validation Status', s.validationStatus)}
           ${fact('Script Steps', s.scriptSteps)}${fact('AI Steps', s.aiSteps)}${fact('External Blocks', s.externalBlocks)}${fact('Live Status', s.liveStatus)}
           ${fact('P0 / P1 / P2', `${s.p0} / ${s.p1} / ${s.p2}`)}${fact('Shopify Write Required', yesNo(s.shopifyWriteRequired))}${fact('Shopify Write Approved', 'NEIN · NICHT GESPEICHERT')}${fact('Human Gate', s.humanGate)}
         </dl>

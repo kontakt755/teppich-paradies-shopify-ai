@@ -259,17 +259,12 @@ test('local evidence gate requires every network-dependent step to be individual
   }
 });
 
-test('local-verification-gate CI job runs a real script bound to the PR head commit, not an echo placeholder', () => {
+test('draft PR CI stays static and cannot execute Storefront or Shopify writes', () => {
   const workflow = fs.readFileSync(new URL('../../.github/workflows/pr-validation.yml', import.meta.url), 'utf8');
-  const gateSection = workflow.split('local-verification-gate:')[1];
-  assert.ok(gateSection, 'local-verification-gate job must exist');
-  assert.doesNotMatch(gateSection, /run:\s*\|\s*\n\s*echo/, 'gate must not merely echo a message');
-  assert.match(gateSection, /run:\s*node workflow\/verify-local-checks\.mjs/);
-  assert.match(gateSection, /PR_HEAD_SHA:\s*\$\{\{\s*github\.event\.pull_request\.head\.sha\s*\}\}/);
-  // The gate diffs the evidence commit against PR HEAD to accept an
-  // unmodified ancestor; that requires full history, not the default shallow
-  // depth-1 checkout, or every ancestor lookup fails closed as unreachable.
-  assert.match(gateSection, /fetch-depth:\s*0/);
+  assert.match(workflow, /safe-static-checks:/);
+  assert.match(workflow, /npm run workflow:test/);
+  assert.match(workflow, /npm run secret:scan/);
+  assert.doesNotMatch(workflow, /local-verification-gate|verify-local-checks|run-(?:seo-check|qa|sales-readiness)|shopify theme (?:push|publish)/i);
 });
 
 test('tracked evidence directory is not blanket-gitignored (evidence must be able to reach CI)', () => {
