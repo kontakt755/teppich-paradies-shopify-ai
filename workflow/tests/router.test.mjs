@@ -8,7 +8,7 @@ import {
   assertProtectedAction, classifyFailure, classifyTask, deriveHandoffState, isSensitiveFile,
   normalizeTaskText, planContinue, routeTask, runWithExternalRetry,
 } from '../router.mjs';
-import { runValidation } from '../core.mjs';
+import { runValidation, APPROVAL_TEXT } from '../core.mjs';
 
 const repo = (overrides = {}) => ({
   branch: 'chore/router', head: 'head-1', originMain: 'main-1', clean: true, worktreeFingerprint: 'clean', ...overrides,
@@ -19,15 +19,16 @@ const latest = (overrides = {}) => ({
 
 test('CLASS A/B/C/D routing follows cost-aware defaults', () => {
   const cases = [
-    ['Dateien prüfen und Report erstellen', 'A', 'SCRIPT', false],
-    ['Kleinen CSS Theme-Fix umsetzen', 'B', 'CODEX_LIGHT', false],
-    ['Performance und größere Theme-Logik verbessern', 'C', 'CODEX_MEDIUM', true],
-    ['Checkout Payment und Shipping ändern', 'D', 'CLAUDE_STRONG', true],
+    ['Dateien prüfen und Report erstellen', 'A', 'SCRIPT', 'HUMAN', false],
+    ['Kleinen CSS Theme-Fix umsetzen', 'B', 'CLAUDE_HAIKU', 'CODEX_LIGHT', false],
+    ['Performance und größere Theme-Logik verbessern', 'C', 'CLAUDE_SONNET', 'CODEX_MEDIUM', true],
+    ['Checkout Payment und Shipping ändern', 'D', 'CLAUDE_STRONG', 'CODEX_MEDIUM', true],
   ];
-  for (const [text, taskClass, implementer, reviewRequired] of cases) {
+  for (const [text, taskClass, implementer, reviewer, reviewRequired] of cases) {
     const route = routeTask({ text, branch: 'chore/router', head: 'head-1' });
     assert.equal(route.taskClass, taskClass);
     assert.equal(route.implementer, implementer);
+    assert.equal(route.reviewer, reviewer);
     assert.equal(route.reviewRequired, reviewRequired);
   }
 });
@@ -37,11 +38,26 @@ test('CLASS B becomes review-required when actual sensitive files are touched', 
   assert.equal(route.reviewRequired, false);
   const state = deriveHandoffState({ route, repo: repo(), latest: latest(), changedFiles: ['sections/card.liquid'] });
   assert.equal(state.reviewRequired, true);
-  assert.equal(state.reviewer, 'CLAUDE_HAIKU');
+  assert.equal(state.reviewer, 'CODEX_LIGHT');
+  assert.notEqual(state.reviewer, route.implementer);
   assert.equal(state.nextAllowedAction, 'HANDOFF_REVIEWER');
   assert.ok(isSensitiveFile('docs/WORKFLOW.md'));
   assert.ok(isSensitiveFile('.github/workflows/pr-validation.yml'));
   assert.ok(isSensitiveFile('AGENTS.md'));
+});
+
+test('a mechanical task touching sensitive files is promoted from CLASS A to reviewed CLASS B', () => {
+  const route = routeTask({
+    text: 'Tests ausführen und Report erstellen',
+    files: ['workflow/providers/claude-code.mjs'],
+    branch: 'chore/router',
+    head: 'head-1',
+  });
+  assert.equal(route.taskClass, 'B');
+  assert.equal(route.implementer, 'CLAUDE_HAIKU');
+  assert.equal(route.reviewRequired, true);
+  assert.equal(route.reviewer, 'CODEX_LIGHT');
+  assert.notEqual(route.reviewer, route.implementer);
 });
 
 test('CLASS D always requires independent review and a human gate', () => {
@@ -87,6 +103,26 @@ test('external script retry is bounded to one and never changes agent', () => {
   const cors = runWithExternalRetry(() => ({ exitCode: 1, stderr: `CORS blocked https://error-analytics-sessions-production.shopifysvc.com/observeonly ${++calls}`, stdout: '', timedOut: false, spawnError: null }));
   assert.equal(calls, 1);
   assert.equal(cors.blocker, EXTERNAL_BLOCKS.UPSTREAM);
+});
+
+test('non-network steps never get misclassified as an external blocker just because their own (passing) test names mention 429 or rate limit', () => {
+  // Regression: real Vorfall - workflow:test enthaelt Tests wie "a 429 never
+  // authorises an automatic provider switch", die als Testnamen in stdout
+  // erscheinen (auch wenn sie PASS sind). Ohne networkCapable:false wurde ein
+  // unabhaengiger lokaler Fehlschlag (z. B. Ressourcen-Kontention) faelschlich
+  // als externes Rate Limit eingestuft - der Lauf wartete dann auf ein Limit,
+  // das nie existierte, statt den echten Fehler zu zeigen.
+  const output = { stderr: '', stdout: "✔ F) a 429 never authorises an automatic provider switch (1ms)\nAssertionError: expected true to be false", timedOut: false };
+  assert.equal(classifyFailure(output, { networkCapable: true }), EXTERNAL_BLOCKS.RATE_LIMIT, 'mit Netzwerkbezug bleibt der Text-Treffer massgeblich (Ausgangsverhalten)');
+  assert.equal(classifyFailure(output, { networkCapable: false }), EXTERNAL_BLOCKS.CODE_DEFECT, 'ohne Netzwerkbezug gewinnt der echte lokale Fehler, nie das Testnamen-Rauschen');
+
+  let calls = 0;
+  const local = runWithExternalRetry(
+    () => ({ exitCode: 1, stdout: `✔ a 429 test ${++calls}`, stderr: 'AssertionError: nope', timedOut: false, spawnError: null }),
+    { networkCapable: false },
+  );
+  assert.equal(calls, 1, 'ein als lokal markierter Schritt bekommt keinen Retry auf ein nie existierendes Rate Limit');
+  assert.equal(local.blocker, EXTERNAL_BLOCKS.CODE_DEFECT);
 });
 
 test('fresh structured 503 report triggers exactly one immediate script retry', t => {
@@ -145,6 +181,22 @@ test('Shopify writes and main merges are refused without commit-bound human appr
     assert.throws(() => assertProtectedAction({ action, currentCommit: 'head-1' }), /verweigert/);
     assert.throws(() => assertProtectedAction({ action, approved: true, approvalCommit: 'old', currentCommit: 'head-1' }), /aktuellen Commit/);
     assert.equal(assertProtectedAction({ action, approved: true, approvalCommit: 'head-1', currentCommit: 'head-1' }), true);
+  }
+});
+
+test('TP_STANDING_LIVE_APPROVAL only covers Shopify write / publish / bulk-create, never MERGE_MAIN or the highest-severity categories', () => {
+  const prior = process.env.TP_STANDING_LIVE_APPROVAL;
+  try {
+    process.env.TP_STANDING_LIVE_APPROVAL = APPROVAL_TEXT;
+    for (const action of ['SHOPIFY_WRITE', 'SHOPIFY_LIVE_PUBLISH', 'MASS_PRODUCT_CREATE']) {
+      assert.equal(assertProtectedAction({ action, currentCommit: 'head-1' }), true);
+    }
+    for (const action of ['MERGE_MAIN', 'CHECKOUT_CHANGE', 'PAYMENT_CHANGE', 'SHIPPING_CHANGE', 'DNS_CHANGE', 'IRREVERSIBLE_CHANGE']) {
+      assert.throws(() => assertProtectedAction({ action, currentCommit: 'head-1' }), /verweigert/);
+    }
+  } finally {
+    if (prior === undefined) delete process.env.TP_STANDING_LIVE_APPROVAL;
+    else process.env.TP_STANDING_LIVE_APPROVAL = prior;
   }
 });
 

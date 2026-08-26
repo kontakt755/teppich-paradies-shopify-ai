@@ -178,6 +178,14 @@
                 fetchpriority: hero_fetch_priority,
                 alt: section.settings.heading
             }}
+          {% elsif section.settings.image_asset_filename != blank %}
+            <img
+              class="{{ hero_image_class }}"
+              src="{{ section.settings.image_asset_filename | asset_url }}"
+              loading="{{ hero_loading }}"
+              fetchpriority="{{ hero_fetch_priority }}"
+              alt="{{ section.settings.heading }}"
+            >
           {% else %}
             <div class="hero-feature-split__placeholder-{{ hero_id }}">
               Bild
@@ -228,6 +236,12 @@
       "type": "image_picker",
       "id": "image",
       "label": "Bild"
+    },
+    {
+      "type": "text",
+      "id": "image_asset_filename",
+      "label": "Bild aus Theme-Assets (Dateiname)",
+      "info": "Nur genutzt, wenn oben kein Bild aus der Mediathek ausgewählt ist. Dateiname wie im /assets-Ordner, z. B. tp-vinyl-klickvinyl-kategorie-2026.jpg"
     },
     {
       "type": "text",

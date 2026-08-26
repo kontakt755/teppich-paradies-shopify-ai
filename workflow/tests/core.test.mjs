@@ -69,6 +69,25 @@ test('live gate refuses missing approval, dry execution and mismatched preview e
   assert.throws(() => assertLiveGate({ ...base, previewEvidence: null }), /Preview-Evidence/);
 });
 
+test('TP_STANDING_LIVE_APPROVAL stands in only for the human-typed approval, not the other live-gate checks', () => {
+  const base = { branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: false, approvalText: 'nope', execute: false, previewEvidence: { status: 'PASS', commit: 'abc', themeId: '22', settingsDataProtected: true, previewDiffCount: 0 }, theme: unpublished, liveTheme: live };
+  const prior = process.env.TP_STANDING_LIVE_APPROVAL;
+  try {
+    assert.throws(() => assertLiveGate(base), /Live bleibt gesperrt/);
+    process.env.TP_STANDING_LIVE_APPROVAL = 'wrong value';
+    assert.throws(() => assertLiveGate(base), /Live bleibt gesperrt/);
+    process.env.TP_STANDING_LIVE_APPROVAL = APPROVAL_TEXT;
+    assert.equal(assertLiveGate(base), true);
+    // still enforced even with standing approval set: dirty tree, findings, mismatched preview evidence
+    assert.throws(() => assertLiveGate({ ...base, clean: false }), /sauberen Working Tree/);
+    assert.throws(() => assertLiveGate({ ...base, p1: '1' }), /P0 und P1/);
+    assert.throws(() => assertLiveGate({ ...base, previewEvidence: { ...base.previewEvidence, commit: 'old' } }), /Preview-Evidence/);
+  } finally {
+    if (prior === undefined) delete process.env.TP_STANDING_LIVE_APPROVAL;
+    else process.env.TP_STANDING_LIVE_APPROVAL = prior;
+  }
+});
+
 test('live snapshot verification rejects theme and settings drift', () => {
   const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-workflow-test-'));
   const root = path.join(fixture, 'root');

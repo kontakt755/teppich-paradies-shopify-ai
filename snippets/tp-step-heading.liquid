@@ -1,0 +1,44 @@
+{% doc %}
+  Wiederverwendbare nummerierte Schritt-Überschrift für den Produktkonfigurator
+  (Farbe / Breite / Länge / ...). Zentral gehalten, damit alle Produkttypen
+  dieselbe Nummerierung, Typografie und Abstände verwenden.
+
+  @param {number} number - Schrittnummer (1, 2, 3, ...)
+  @param {string} label - Schritttext, z. B. "Wähle deine Farbe"
+{% enddoc %}
+
+<div class="tp-step-heading">
+  <span class="tp-step-heading__number">{{ number }}</span>
+  <span class="tp-step-heading__label">{{ label }}</span>
+</div>
+
+<style>
+  .tp-step-heading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+  }
+  .tp-step-heading__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 2px;
+    border-radius: 999px;
+    background: var(--color-foreground, #15171a);
+    color: var(--color-background, #fcfcfb);
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+  .tp-step-heading__label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-foreground, #15171a);
+  }
+</style>

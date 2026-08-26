@@ -112,6 +112,7 @@
     data-option-name="{{ color_option.name | escape }}"
     {{ block.shopify_attributes }}
   >
+    {% render 'tp-step-heading', number: 1, label: 'Wähle deine Farbe' %}
     {% comment %} <p class="color-swatch-picker__active-{{ color_picker_id }}"> {% endcomment %}
     <p data-active-color>{{ selected_color }}</p>
     {% comment %} </p> {% endcomment %}
