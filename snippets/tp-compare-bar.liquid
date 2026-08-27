@@ -171,15 +171,37 @@
 
   .tp-compare-header-cell {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
   }
 
-  .tp-compare-header-cell span {
+  .tp-compare-product {
+    display: flex;
     flex: 1;
     min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .tp-compare-product span {
     word-break: break-word;
+  }
+
+  .tp-compare-product:hover span,
+  .tp-compare-product:focus-visible span {
+    text-decoration: underline;
+  }
+
+  .tp-compare-product__img {
+    display: block;
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
   }
 
   .tp-compare-remove-btn {
@@ -245,18 +267,20 @@
     }
 
     .tp-compare-header-cell {
-      flex-direction: column;
-      align-items: flex-start;
       gap: 4px;
     }
 
-    .tp-compare-header-cell span {
+    .tp-compare-product span {
       font-size: 13px;
       font-weight: 700;
     }
 
+    .tp-compare-product__img {
+      width: 56px;
+      height: 56px;
+    }
+
     .tp-compare-remove-btn {
-      align-self: flex-end;
       width: 28px;
       height: 28px;
       min-width: 28px;

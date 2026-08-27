@@ -50,10 +50,16 @@
     assign tp_ca_heating_val = tp_ca_product.metafields.custom.fusbodenheizung.value
     assign tp_ca_heating = tp_ca_heating_val.fusbodenheizung.value | default: tp_ca_heating_val.fusbodenheizung | default: tp_ca_heating_val.name | default: tp_ca_heating_val
 
+    assign tp_ca_url = tp_ca_product.url
+    assign tp_ca_image = ''
+    if tp_ca_product.featured_image
+      assign tp_ca_image = tp_ca_product.featured_image | image_url: width: 200
+    endif
+
     assign tp_ca_paketinhalt = tp_ca_sqm_per_package | append: '' | replace: '.', ',' | append: ' m²'
   -%}
   {%- capture tp_ca_snapshot -%}
-{"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
+{"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"url":{{ tp_ca_url | json }},"image":{{ tp_ca_image | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
   {%- endcapture -%}
 
   <div class="tp-card-actions-{{ tp_ca_id }}" {{ block.shopify_attributes }}>
