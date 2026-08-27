@@ -123,7 +123,10 @@
 
     var html = '<table class="tp-compare-table"><thead><tr><th></th>';
     items.forEach(function (item) {
-      html += '<th>' + escapeHtml(item.title) + '</th>';
+      html += '<th><div class="tp-compare-header-cell">' +
+              '<span>' + escapeHtml(item.title) + '</span>' +
+              '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="Produkt entfernen">×</button>' +
+              '</div></th>';
     });
     html += '</tr></thead><tbody>';
 
