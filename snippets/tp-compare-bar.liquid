@@ -229,6 +229,39 @@
     .tp-compare-bar__full {
       justify-content: space-between;
     }
+
+    .tp-compare-dialog {
+      width: min(100vw - 24px, 100%);
+      max-height: calc(100vh - 48px);
+    }
+
+    .tp-compare-table {
+      font-size: 13px;
+    }
+
+    .tp-compare-table th,
+    .tp-compare-table td {
+      padding: 8px 10px;
+    }
+
+    .tp-compare-header-cell {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .tp-compare-header-cell span {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tp-compare-remove-btn {
+      align-self: flex-end;
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      min-height: 28px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
