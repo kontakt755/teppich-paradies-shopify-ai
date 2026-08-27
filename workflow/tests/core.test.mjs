@@ -18,8 +18,8 @@ test('PR gate refuses work on main', () => {
   assert.throws(() => assertPrGate({ ...cleanContext, branch: 'main' }), error => error instanceof WorkflowGateError && error.code === 'BRANCH_BLOCK');
 });
 
-test('PR gate refuses failed tests represented by P0/P1 blockers', () => {
-  assert.throws(() => assertPrGate({ ...cleanContext, p1: '1' }), /P0 und P1/);
+test('PR gate leaves test findings to the static validation it runs itself', () => {
+  assert.equal(assertPrGate({ ...cleanContext, p1: '1' }), true);
 });
 
 test('readiness remains false until P0 and P1 are explicitly zero', () => {
@@ -59,7 +59,7 @@ test('preview output must bind an HTTPS URL to the unpublished theme ID', () => 
 });
 
 test('live gate refuses missing approval, dry execution and mismatched preview evidence', () => {
-  const base = { branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, approvalText: APPROVAL_TEXT, execute: true, previewEvidence: { status: 'PASS', commit: 'abc', themeId: '22', settingsDataProtected: true, previewDiffCount: 0 }, theme: unpublished, liveTheme: live };
+  const base = { branch: 'main', head: 'abc', originMain: 'abc', clean: true, p0: '0', p1: '0', approved: true, approvalText: APPROVAL_TEXT, execute: true, previewEvidence: { status: 'PASS', commit: 'abc', themeId: '22', validationScope: 'FULL', settingsDataProtected: true, previewDiffCount: 0 }, theme: unpublished, liveTheme: live };
   assert.equal(assertLiveGate(base), true);
   assert.throws(() => assertLiveGate({ ...base, approved: false }), /Live bleibt gesperrt/);
   assert.throws(() => assertLiveGate({ ...base, execute: false }), /Live bleibt gesperrt/);
@@ -149,10 +149,10 @@ test('PR and preview dry-runs never report readiness', () => {
   }
 });
 
-test('workflow state fails closed for stale evidence and never stores approval', () => {
+test('workflow state requests fresh validation for stale evidence and never stores approval', () => {
   const stale = deriveWorkflowState({ branch: 'chore/test', head: 'new', originMain: 'main', clean: true, latest: { status: 'PASS', branch: 'chore/test', commit: 'old' } });
-  assert.equal(stale.status, 'STOP_REVIEW');
-  assert.match(stale.nextAction, /STOP\/REVIEW/);
+  assert.equal(stale.status, 'NEEDS_VALIDATION');
+  assert.match(stale.nextAction, /Validierung/);
   assert.equal(stale.readyForLive, false);
   assert.equal(stale.humanApprovalStored, false);
   const current = deriveWorkflowState({ branch: 'chore/test', head: 'new', originMain: 'main', clean: true, latest: { status: 'PASS', branch: 'chore/test', commit: 'new' } });

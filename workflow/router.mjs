@@ -8,7 +8,6 @@ export const EXTERNAL_BLOCKS = Object.freeze({
   CODE_DEFECT: 'CODE_DEFECT',
   UNKNOWN: 'UNKNOWN_BLOCKER',
 });
-export const MAX_AUTONOMOUS_REPAIR_ROUNDS = 3;
 export const MAX_IMMEDIATE_SCRIPT_RETRIES = 1;
 
 const CLASS_D = [
@@ -25,7 +24,7 @@ const CLASS_B = [
   /\b(css|theme[- ]?fix|bugfix|bug fix|komponente|component|liquid|layout[- ]?fix|kleiner? fix|code[- ]?änderung)\b/i,
 ];
 const CLASS_A = [
-  /\b(dateien? prüfen|format(?:ierung)?|docs?|dokumentation|tests? (?:ausführen|laufen lassen)|reports?|datenvalidierung|validieren|lint)\b/i,
+  /\b(?:analys(?:e|ieren)|prüfen|review|report|docs?|dokumentation|tests? (?:ausführen|laufen lassen)|datenvalidierung|validieren|lint)\b/i,
 ];
 
 const SENSITIVE_PATTERNS = [
@@ -84,6 +83,9 @@ export function protectedActionsForTask(text) {
 
 export function classifyTask(text, files = []) {
   const normalized = withoutNegatedActions(normalizeTaskText(text));
+  // Read-only work should stay lightweight even when it mentions a complex
+  // area such as architecture or the router.
+  if (CLASS_A.some(pattern => pattern.test(normalized)) && !/\b(?:ändern|umsetzen|implementieren|refactor(?:en|ing)?|bauen|erstellen)\b/i.test(normalized)) return 'A';
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
   if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';
@@ -136,7 +138,6 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     humanGateRequired,
     protectedActions,
     sensitiveFiles: files.filter(isSensitiveFile),
-    maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     maxImmediateScriptRetries: MAX_IMMEDIATE_SCRIPT_RETRIES,
     routedAt: now(),
   };
@@ -203,7 +204,7 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
   else if (externalBlock === EXTERNAL_BLOCKS.LOCAL_RUNNER) nextAllowedAction = 'USE_LOCAL_MAC_RUNNER';
   else if (externalBlock === EXTERNAL_BLOCKS.CODE_DEFECT) { nextAllowedAction = 'FIX_VALIDATION_FAILURE'; nextAgent = route.implementer; }
   else if (externalBlock) { nextAllowedAction = 'INSPECT_VALIDATION_FAILURE'; nextAgent = route.implementer; }
-  else if (!implementationObserved) { nextAllowedAction = 'HANDOFF_IMPLEMENTER'; nextAgent = route.implementer; }
+  else if (!implementationObserved) { nextAllowedAction = 'WORK_LOCAL'; nextAgent = route.implementer; }
   else if (!requiredValidationPassed) nextAllowedAction = requiredScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION';
   else if (!pr) nextAllowedAction = 'PREPARE_DRAFT_PR';
   else if (effectiveReviewRequired && !currentReview) { nextAllowedAction = 'HANDOFF_REVIEWER'; nextAgent = route.reviewer; }
@@ -235,7 +236,6 @@ export function deriveHandoffState({ route, repo, latest = null, review = null, 
     shopifyWriteRequired: route.shopifyWriteRequired,
     protectedActions: route.protectedActions ?? [],
     humanApprovalStored: false,
-    maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     nextAllowedAction,
     sensitiveFiles: [...new Set([...route.sensitiveFiles, ...actualSensitive])].sort(),
     updatedAt: now(),
@@ -255,6 +255,7 @@ export function planContinue(state, { localRunner = false, retryNow = false } = 
     case 'RUN_FULL_VALIDATION': return localRunner ? { kind: 'VALIDATE_FULL' } : { kind: 'STOP', reason: 'NEEDS_LOCAL_RUNNER' };
     case 'USE_LOCAL_MAC_RUNNER': return localRunner ? { kind: 'VALIDATE_FULL' } : { kind: 'STOP', reason: 'NEEDS_LOCAL_RUNNER' };
     case 'RETRY_SCRIPT_LATER': return retryNow ? { kind: state.localRunnerRequired ? 'VALIDATE_FULL' : 'VALIDATE_STATIC' } : { kind: 'STOP', reason: 'BLOCKED_EXTERNAL' };
+    case 'WORK_LOCAL': return { kind: 'WORK_LOCAL', target: state.nextAgent };
     default: return { kind: 'HANDOFF', target: state.nextAgent, action: state.nextAllowedAction };
   }
 }
@@ -274,6 +275,6 @@ export function formatRouterOutput(route, nextAllowedAction = null) {
     `SHOPIFY_WRITE_REQUIRED: ${route.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
     `HUMAN_GATE_REQUIRED: ${route.humanGateRequired ? 'JA' : 'NEIN'}`,
     `PROTECTED_ACTIONS: ${route.protectedActions.length ? route.protectedActions.join(',') : '-'}`,
-    `NEXT_ALLOWED_ACTION: ${nextAllowedAction ?? (route.implementer === 'SCRIPT' ? (route.requiredValidationScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION') : 'HANDOFF_IMPLEMENTER')}`,
+    `NEXT_ALLOWED_ACTION: ${nextAllowedAction ?? (route.implementer === 'SCRIPT' ? (route.requiredValidationScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION') : 'WORK_LOCAL')}`,
   ].join('\n');
 }

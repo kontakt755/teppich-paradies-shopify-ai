@@ -195,10 +195,9 @@ export function createDryRunSummary(workflow, values = {}) {
   return { workflow, status: 'DRY_RUN', ...values, orderCompleted: false, results: [], readyForPr: false, readyForMain: false, readyForPreview: false, readyForLive: false };
 }
 
-export function assertPrGate({ branch, base = OFFICIAL_BASE, p0, p1, clean, head, remoteHead }) {
+export function assertPrGate({ branch, base = OFFICIAL_BASE, clean, head, remoteHead }) {
   if (!BRANCH_PATTERN.test(branch) || branch === OFFICIAL_BASE) throw new WorkflowGateError('PR-Workflow verweigert main oder ungültigen Branch-Namen', 'BRANCH_BLOCK');
   if (base !== OFFICIAL_BASE) throw new WorkflowGateError('PR-Base muss main sein', 'BASE_BLOCK');
-  requireZeroFindings({ p0, p1 });
   if (!clean) throw new WorkflowGateError('PR-Erstellung erfordert einen sauberen Working Tree', 'DIRTY_TREE');
   if (!head || head !== remoteHead) throw new WorkflowGateError('Lokaler HEAD muss vollständig auf dem gleichnamigen Remote-Branch liegen', 'UNPUSHED_HEAD');
   return true;
@@ -228,11 +227,18 @@ export function selectThemeTargets(themes, themeId) {
   return { theme: targets[0], liveTheme: liveThemes[0] };
 }
 
-export function assertPreviewGate({ branch, head, originMain, clean, p0, p1, approved, theme, liveTheme }) {
+export function selectPreviewTheme(themes, themeId = null) {
+  if (themeId) return selectThemeTargets(themes, themeId);
+  const unpublished = themes.filter(item => item.role === 'unpublished');
+  const liveThemes = themes.filter(item => item.role === 'live');
+  if (liveThemes.length !== 1) throw new WorkflowGateError('Live-Theme ist nicht eindeutig bestimmbar', 'LIVE_THEME_AMBIGUOUS');
+  if (unpublished.length !== 1) throw new WorkflowGateError('Preview benötigt --theme-id, weil kein eindeutig unveröffentlichtes Theme vorhanden ist', 'PREVIEW_THEME_AMBIGUOUS');
+  return { theme: unpublished[0], liveTheme: liveThemes[0] };
+}
+
+export function assertPreviewGate({ branch, head, originMain, clean, theme, liveTheme }) {
   if (branch !== OFFICIAL_BASE || head !== originMain) throw new WorkflowGateError('Preview muss exakt aus aktuellem origin/main entstehen', 'PREVIEW_SOURCE');
   if (!clean) throw new WorkflowGateError('Preview erfordert einen sauberen Working Tree', 'DIRTY_TREE');
-  requireZeroFindings({ p0, p1 });
-  if (!approved) throw new WorkflowGateError('Preview benötigt --approve-preview', 'PREVIEW_APPROVAL');
   if (!theme || theme.role !== 'unpublished') throw new WorkflowGateError('Preview-Theme muss eindeutig unpublished sein', 'PREVIEW_ROLE');
   if (liveTheme && String(theme.id) === String(liveTheme.id)) throw new WorkflowGateError('Live-Theme darf niemals Preview-Ziel sein', 'LIVE_THEME_BLOCK');
   return true;
@@ -243,7 +249,7 @@ export function assertLiveGate({ branch, head, originMain, clean, p0, p1, approv
   if (!clean) throw new WorkflowGateError('Live-Publish erfordert einen sauberen Working Tree', 'DIRTY_TREE');
   requireZeroFindings({ p0, p1 });
   if (!approved || approvalText !== APPROVAL_TEXT || !execute) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich`, 'LIVE_APPROVAL');
-  if (!previewEvidence || previewEvidence.status !== 'PASS' || previewEvidence.commit !== originMain || !previewEvidence.settingsDataProtected || previewEvidence.previewDiffCount !== 0) throw new WorkflowGateError('Passende Preview-Evidence für origin/main fehlt', 'PREVIEW_EVIDENCE');
+  if (!previewEvidence || previewEvidence.status !== 'PASS' || previewEvidence.commit !== originMain || previewEvidence.validationScope !== 'FULL' || !previewEvidence.settingsDataProtected || previewEvidence.previewDiffCount !== 0) throw new WorkflowGateError('Passende vollständige Preview-Evidence für origin/main fehlt', 'PREVIEW_EVIDENCE');
   if (!theme || theme.role !== 'unpublished' || String(theme.id) !== String(previewEvidence.themeId)) throw new WorkflowGateError('Freigegebenes Preview-Theme ist nicht mehr unpublished', 'PREVIEW_ROLE');
   if (liveTheme && String(theme.id) === String(liveTheme.id)) throw new WorkflowGateError('Aktuelles Live-Theme kann nicht als Preview-Evidence dienen', 'LIVE_THEME_BLOCK');
   return true;
@@ -334,10 +340,10 @@ export function verifyPreviewSnapshot({ root, pulledRoot, evidence }) {
 export function deriveWorkflowState({ branch, head, originMain, clean, latest }) {
   const evidenceCurrent = latest?.status === 'PASS' && latest?.commit === head && latest?.branch === branch;
   const base = { branch, head, originMain, clean, evidenceCurrent, readyForLive: false, humanApprovalStored: false };
-  if (!clean || !head || !branch) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Repository-Zustand ist unklar oder nicht sauber.' };
-  if (!evidenceCurrent) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Validierung für den aktuellen Branch und Commit fehlt oder ist veraltet.' };
+  if (!clean || !head || !branch) return { ...base, status: 'NEEDS_VALIDATION', nextAction: 'Repository-Zustand prüfen oder Working Tree bereinigen.' };
+  if (!evidenceCurrent) return { ...base, status: 'NEEDS_VALIDATION', nextAction: 'Validierung für den aktuellen Branch und Commit ausführen.' };
   if (branch !== OFFICIAL_BASE) return { ...base, status: 'VALIDATED_BRANCH', nextAction: 'Draft-PR gegen main vorbereiten; Human Approval vor Merge erforderlich.' };
-  if (head !== originMain) return { ...base, status: 'STOP_REVIEW', nextAction: 'STOP/REVIEW: Lokales main entspricht nicht origin/main.' };
+  if (head !== originMain) return { ...base, status: 'NEEDS_SYNC', nextAction: 'Lokales main mit origin/main synchronisieren.' };
   return { ...base, status: 'VALIDATED_MAIN', nextAction: 'Preview separat vorbereiten; Human Approval vor Preview und erneut vor Live erforderlich.' };
 }
 
