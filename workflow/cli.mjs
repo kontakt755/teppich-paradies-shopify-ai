@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
 import {
   APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
-  previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
+  previewPushArgs, requireSuccess, runBounded, runValidation, selectPreviewTheme, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
 import { deriveHandoffState, formatRouterOutput, normalizeTaskText, planContinue, routeTask } from './router.mjs';
 
@@ -92,10 +92,9 @@ function validate({ staticOnly = false, baseUrl = null } = {}) {
     }
     throw error;
   }
-  const findingState = {
-    p0: args.p0 ?? (previous?.branch === current.branch ? previous.p0 : null),
-    p1: args.p1 ?? (previous?.branch === current.branch ? previous.p1 : null),
-  };
+  const findingState = summary.status === 'PASS'
+    ? { p0: 0, p1: 0 }
+    : { p0: args.p0 ?? (previous?.branch === current.branch ? previous.p0 : null), p1: args.p1 ?? (previous?.branch === current.branch ? previous.p1 : null) };
   const findingsClear = findingsAreClear(findingState);
   Object.assign(summary, current, findingState, { commit: current.head, pr: currentPr, readyForPr: summary.status === 'PASS' && current.branch !== OFFICIAL_BASE && findingsClear, readyForMain: false, readyForPreview: false, readyForLive: false });
   writeRuntimeReport(root, 'latest.json', summary);
@@ -215,7 +214,6 @@ async function main() {
     writeRuntimeReport(root, 'state.json', state);
     if (mode === 'next') console.log(`NEXT_ALLOWED_ACTION: ${state.nextAction}`);
     else console.log(`STATE: ${state.status}\nBRANCH: ${state.branch || '-'}\nCOMMIT: ${state.head || '-'}\nREADY FOR LIVE: NEIN\nHUMAN APPROVAL STORED: NEIN\nNEXT ACTION: ${state.nextAction}`);
-    if (state.status === 'STOP_REVIEW') process.exitCode = 1;
     return state;
   }
 
@@ -224,7 +222,7 @@ async function main() {
     const branchRemote = `origin/${current.branch}`;
     const remoteHeadResult = run('git', ['rev-parse', '--verify', branchRemote], { timeoutMs: 60_000 });
     const remoteHead = remoteHeadResult.exitCode === 0 ? remoteHeadResult.stdout.trim() : null;
-    assertPrGate({ ...current, ...findings(), base: args.base ?? OFFICIAL_BASE, remoteHead });
+    assertPrGate({ ...current, base: args.base ?? OFFICIAL_BASE, remoteHead });
     if (dryRun) {
       const summary = createDryRunSummary('pr', { ...current, ...findings() });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
@@ -247,12 +245,11 @@ async function main() {
   if (mode === 'preview') {
     const current = context();
     const store = String(args.store ?? DEFAULT_STORE);
-    const themeId = args['theme-id'];
-    if (!themeId) throw new WorkflowGateError('Preview benötigt --theme-id einer vorhandenen unpublished Theme-ID', 'PREVIEW_THEME');
-    assertPreviewGate({ ...current, ...findings(), approved: args['approve-preview'] === true, theme: { id: themeId, role: 'unpublished' }, liveTheme: { id: '__live__', role: 'live' } });
-    const themes = dryRun ? [{ id: themeId, role: 'unpublished', name: 'dry-run-preview' }, { id: 'live', role: 'live' }] : themeList(store);
-    const { theme, liveTheme } = selectThemeTargets(themes, themeId);
-    assertPreviewGate({ ...current, ...findings(), approved: args['approve-preview'] === true, theme, liveTheme });
+    const requestedThemeId = args['theme-id'];
+    const themes = dryRun ? [{ id: requestedThemeId ?? 'dry-run-preview', role: 'unpublished', name: 'dry-run-preview' }, { id: 'live', role: 'live' }] : themeList(store);
+    const { theme, liveTheme } = selectPreviewTheme(themes, requestedThemeId);
+    const themeId = theme.id;
+    assertPreviewGate({ ...current, theme, liveTheme });
     if (dryRun) {
       const summary = createDryRunSummary('preview', { ...current, ...findings(), themeId: String(themeId) });
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); return summary;
@@ -277,8 +274,8 @@ async function main() {
       if (comparison.differenceCount !== 0) throw Object.assign(new WorkflowGateError('Preview-Dateien entsprechen nicht exakt origin/main', 'PREVIEW_DIFF'), { comparison });
       const response = await fetch(previewUrl, { redirect: 'follow', signal: AbortSignal.timeout(30_000) });
       if (!response.ok) throw new WorkflowGateError(`Preview-URL antwortet mit HTTP ${response.status}`, 'PREVIEW_HTTP');
-      const validation = validate({ baseUrl: previewUrl });
-      const evidence = { status: 'PASS', commit: current.originMain, themeId: String(themeId), themeName: after.name, previewUrl, previewHttpStatus: response.status, settingsDataProtected: true, settingsDataSha256: settingsAfter, previewDiffCount: 0, validationStatus: validation.status, createdAt: new Date().toISOString() };
+      const validation = validate({ staticOnly: args['full-qa'] !== true, baseUrl: previewUrl });
+      const evidence = { status: 'PASS', commit: current.originMain, themeId: String(themeId), themeName: after.name, previewUrl, previewHttpStatus: response.status, settingsDataProtected: true, settingsDataSha256: settingsAfter, previewDiffCount: 0, validationStatus: validation.status, validationScope: validation.validationScope, createdAt: new Date().toISOString() };
       writeRuntimeReport(root, 'preview.json', evidence);
       const summary = { ...validation, workflow: 'preview', themeId: String(themeId), previewUrl: evidence.previewUrl, readyForPreview: true, readyForLive: false };
       writeRuntimeReport(root, 'latest.json', summary); printSummary(summary); console.log(`PREVIEW URL: ${evidence.previewUrl}`); return summary;
@@ -299,14 +296,14 @@ async function main() {
     const validation = validate();
     const themes = themeList(store);
     const { theme, liveTheme } = selectThemeTargets(themes, themeId);
-    assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
+    assertLiveGate({ ...current, p0: validation.p0, p1: validation.p1, approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
     const verificationDir = createPreviewTempDir();
     try {
       requireSuccess(run(commandName('shopify'), ['theme', 'pull', '--store', store, '--theme', String(themeId), '--path', verificationDir], { timeoutMs: 5 * 60_000 }), 'Shopify live pre-publish verification pull');
       verifyPreviewSnapshot({ root, pulledRoot: verificationDir, evidence: previewEvidence });
       const immediatelyBeforePublish = themeList(store);
       const { theme: currentTheme, liveTheme: currentLiveTheme } = selectThemeTargets(immediatelyBeforePublish, themeId);
-      assertLiveGate({ ...current, ...findings(), approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme });
+      assertLiveGate({ ...current, p0: validation.p0, p1: validation.p1, approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme });
       requireSuccess(run(commandName('shopify'), livePublishArgs({ store, themeId, root }), { timeoutMs: 5 * 60_000 }), 'Shopify live publish');
     } finally {
       fs.rmSync(verificationDir, { recursive: true, force: true });

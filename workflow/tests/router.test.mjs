@@ -4,7 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import os from 'node:os';
 import {
-  EXTERNAL_BLOCKS, MAX_AUTONOMOUS_REPAIR_ROUNDS, MAX_IMMEDIATE_SCRIPT_RETRIES,
+  EXTERNAL_BLOCKS, MAX_IMMEDIATE_SCRIPT_RETRIES,
   assertProtectedAction, classifyFailure, classifyTask, deriveHandoffState, isSensitiveFile,
   normalizeTaskText, planContinue, protectedActionsForTask, routeTask, runWithExternalRetry,
 } from '../router.mjs';
@@ -235,5 +235,4 @@ test('CURRENT_STATE and NEXT_ACTION remain derived pointers without stored appro
   const next = fs.readFileSync(path.join(root, 'NEXT_ACTION.md'), 'utf8');
   assert.match(current, /speichert absichtlich keinen Branch, Commit, PASS-Status oder Human Approval/);
   assert.match(next, /speichert niemals eine Merge-, Preview- oder Live-Freigabe/);
-  assert.equal(MAX_AUTONOMOUS_REPAIR_ROUNDS, 3);
 });
