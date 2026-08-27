@@ -123,8 +123,19 @@
 
     var html = '<table class="tp-compare-table"><thead><tr><th></th>';
     items.forEach(function (item) {
+      // Aeltere localStorage-Eintraege (vor Einfuehrung von url/image) haben
+      // diese Felder nicht. Die Produkt-URL laesst sich aus dem Handle
+      // rekonstruieren, das Bild nicht - dann entfaellt es ersatzlos.
+      var url = item.url || '/products/' + item.handle;
+      var image = item.image
+        ? '<img class="tp-compare-product__img" src="' + escapeHtml(item.image) + '" alt="" loading="lazy" width="72" height="72">'
+        : '';
+
       html += '<th><div class="tp-compare-header-cell">' +
+              '<a class="tp-compare-product" href="' + escapeHtml(url) + '">' +
+              image +
               '<span>' + escapeHtml(item.title) + '</span>' +
+              '</a>' +
               '<button type="button" class="tp-compare-remove-btn" data-tp-compare-remove data-tp-compare-handle="' + escapeHtml(item.handle) + '" aria-label="Produkt entfernen">×</button>' +
               '</div></th>';
     });
@@ -156,7 +167,10 @@
   function escapeHtml(str) {
     var div = document.createElement('div');
     div.textContent = String(str);
-    return div.innerHTML;
+    // textContent/innerHTML maskiert & < >, aber keine Anfuehrungszeichen.
+    // Der Rueckgabewert landet auch in Attributwerten (href/src/data-*),
+    // daher hier zusaetzlich maskieren.
+    return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
   function toggle(handle, snapshot) {

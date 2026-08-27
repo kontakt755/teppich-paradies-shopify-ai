@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import test from 'node:test';
-import { resolveBrowserExecutable, systemBrowserCandidates } from '../browser-resolver.mjs';
+import { browsersPathCandidates, resolveBrowserExecutable, systemBrowserCandidates } from '../browser-resolver.mjs';
 import { closeBrowserSafely, installHardProcessTimeout, OperationTimeoutError, withTimeout } from '../browser-lifecycle.mjs';
 
 test('explicit environment path has highest priority', () => {
@@ -17,6 +17,39 @@ test('available Playwright Chromium wins over system fallback', () => {
 test('system browser is used when bundled Chromium is absent', () => {
   const candidate = systemBrowserCandidates('linux')[1];
   const result = resolveBrowserExecutable({ environment: {}, platform: 'linux', existsSync: value => value === candidate, playwrightChromium: { executablePath: () => '/missing' } });
+  assert.deepEqual(result, { executablePath: candidate, source: 'system-browser' });
+});
+
+test('installed revision under PLAYWRIGHT_BROWSERS_PATH covers playwright revision drift', () => {
+  const installed = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+  const result = resolveBrowserExecutable({
+    environment: { PLAYWRIGHT_BROWSERS_PATH: '/opt/pw-browsers' },
+    platform: 'linux',
+    existsSync: value => value === installed,
+    readdirSync: () => ['chromium-1194', 'ffmpeg-1011'],
+    playwrightChromium: { executablePath: () => '/opt/pw-browsers/chromium-1181/chrome-linux/chrome' },
+  });
+  assert.deepEqual(result, { executablePath: installed, source: 'playwright-browsers-path' });
+});
+
+test('browsers path prefers the newest installed revision', () => {
+  const candidates = browsersPathCandidates('/opt/pw-browsers', 'linux', () => ['chromium-1181', 'chromium-1194']);
+  assert.equal(candidates[0], '/opt/pw-browsers/chromium-1194/chrome-linux/chrome');
+});
+
+test('browsers path stays empty without the environment variable', () => {
+  assert.deepEqual(browsersPathCandidates('', 'linux', () => []), []);
+});
+
+test('system browser still wins when no browsers path is configured', () => {
+  const candidate = systemBrowserCandidates('linux')[1];
+  const result = resolveBrowserExecutable({
+    environment: {},
+    platform: 'linux',
+    existsSync: value => value === candidate,
+    readdirSync: () => { throw new Error('kein Verzeichnis'); },
+    playwrightChromium: { executablePath: () => '/missing' },
+  });
   assert.deepEqual(result, { executablePath: candidate, source: 'system-browser' });
 });
 

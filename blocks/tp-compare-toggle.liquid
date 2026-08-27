@@ -45,6 +45,12 @@
   assign tp_cmp_heating_val = product.metafields.custom.fusbodenheizung.value
   assign tp_cmp_heating = tp_cmp_heating_val.fusbodenheizung.value | default: tp_cmp_heating_val.fusbodenheizung | default: tp_cmp_heating_val.name | default: tp_cmp_heating_val
 
+  assign tp_cmp_url = product.url
+  assign tp_cmp_image = ''
+  if product.featured_image
+    assign tp_cmp_image = product.featured_image | image_url: width: 200
+  endif
+
   assign tp_cmp_paketinhalt = ''
   if tp_cmp_sqm_per_package != blank
     # Deutsches Dezimalkomma, konsistent mit der Anzeige im Paket-Rechner
@@ -53,7 +59,7 @@
   endif
 -%}
 {%- capture tp_cmp_snapshot -%}
-{"handle":{{ product.handle | json }},"title":{{ product.title | json }},"pricePerSqm":{{ tp_cmp_price_per_sqm | json }},"belagsart":{{ tp_cmp_belagsart | json }},"staerke":{{ tp_cmp_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_cmp_nutzungsklasse | json }},"trittschall":{{ tp_cmp_trittschall | json }},"fussbodenheizung":{{ tp_cmp_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_cmp_paketinhalt | json }}}
+{"handle":{{ product.handle | json }},"title":{{ product.title | json }},"url":{{ tp_cmp_url | json }},"image":{{ tp_cmp_image | json }},"pricePerSqm":{{ tp_cmp_price_per_sqm | json }},"belagsart":{{ tp_cmp_belagsart | json }},"staerke":{{ tp_cmp_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_cmp_nutzungsklasse | json }},"trittschall":{{ tp_cmp_trittschall | json }},"fussbodenheizung":{{ tp_cmp_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_cmp_paketinhalt | json }}}
 {%- endcapture -%}
 
 <button
