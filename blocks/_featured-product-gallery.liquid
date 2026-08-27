@@ -12,7 +12,11 @@
   {% endunless %}
 {% endcapture %}
 
-{% render 'card-gallery', children: children %}
+{% # Einzelnes, hervorgehobenes Produkt statt Raster: die Position ist bekannt
+   # und ist 0. Ausdruecklich uebergeben, damit das Bild weiterhin eager laedt -
+   # frueher ergab sich das aus dem Rueckfallwert des Snippets, der jetzt lazy
+   # ist (siehe snippets/card-gallery.liquid). %}
+{% render 'card-gallery', children: children, card_index: 0 %}
 
 {% stylesheet %}
   .featured-product-section .card-gallery .quick-add__button {
