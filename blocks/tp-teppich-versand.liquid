@@ -1,0 +1,186 @@
+{% doc %}
+  Kaufservice-/Lieferzone fuer Teppiche - eigenstaendiger Block, NICHT
+  tp-service-links (Bodenbelag/Rollenware). Zeigt bewusst keine pauschale
+  "frei Bordsteinkante"-Aussage, da Teppiche in Standardgroessen ueblicherweise
+  per Paketdienst verschickt werden. Nur wenn ein Produkt ueber das optionale
+  Metafeld custom.versandart explizit als Speditionsware markiert ist (z.B.
+  sehr grosse Sonderformate), wird die Speditions-Formulierung inkl.
+  Bordsteinkante-Erklaerung angezeigt. Ohne dieses Metafeld gilt Paketversand
+  als Standardfall fuer Teppiche.
+{% enddoc %}
+
+{%- liquid
+  assign tp_tv2_id = block.id | replace: '_', '' | downcase
+  assign tp_tv2_handle = product.handle | url_encode
+  assign tp_tv2_delivery_time = block.settings.delivery_time | strip
+  assign tp_tv2_shipping_page = pages['versand-lieferung']
+  assign tp_tv2_versandart = product.metafields.custom.versandart.value | downcase | strip
+-%}
+
+<div class="tp-teppich-versand-{{ tp_tv2_id }}" {{ block.shopify_attributes }}>
+  <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="/pages/kontakt?thema=muster&produkt={{ tp_tv2_handle }}">
+    Kostenloses Muster anfragen
+  </a>
+
+  <div class="tp-teppich-versand__shipping-{{ tp_tv2_id }}" aria-label="Lieferung und Versand">
+    {%- if tp_tv2_delivery_time != blank -%}
+      <p><strong>Lieferzeit:</strong> {{ tp_tv2_delivery_time | escape }}</p>
+    {%- endif -%}
+
+    {%- if tp_tv2_versandart == 'spedition' -%}
+      <p><strong>Speditionsversand</strong></p>
+      <p>Aufgrund der Größe wird dieser Teppich per Spedition frei Bordsteinkante geliefert.</p>
+
+      <details class="tp-teppich-versand__shipping-details-{{ tp_tv2_id }}">
+        <summary>Was bedeutet „frei Bordsteinkante“?</summary>
+        <p>
+          Die Spedition bringt die Ware bis zur nächstmöglichen, für das Lieferfahrzeug erreichbaren Stelle an
+          Ihrer Lieferadresse. Der Weitertransport ins Gebäude oder in die Wohnung ist nicht Bestandteil der
+          Lieferung.
+        </p>
+        {%- if tp_tv2_shipping_page != blank -%}
+          <a href="{{ tp_tv2_shipping_page.url }}">Alle Versanddetails</a>
+        {%- endif -%}
+      </details>
+    {%- else -%}
+      <p><strong>Versand per Paketdienst</strong></p>
+      <p>Bequeme Lieferung direkt zu Ihrer Haus- bzw. Wohnungstür.</p>
+
+      <details class="tp-teppich-versand__shipping-details-{{ tp_tv2_id }}">
+        <summary>Wie läuft die Lieferung ab?</summary>
+        <p>
+          Ihr Teppich wird versandfertig verpackt und über einen gängigen Paketdienst zugestellt. Die konkreten
+          Versandkosten werden im Checkout vor Abschluss der Bestellung angezeigt.
+        </p>
+        {%- if tp_tv2_shipping_page != blank -%}
+          <a href="{{ tp_tv2_shipping_page.url }}">Alle Versanddetails</a>
+        {%- endif -%}
+      </details>
+    {%- endif -%}
+  </div>
+
+  <div class="tp-teppich-versand__secondary-{{ tp_tv2_id }}">
+    <a href="tel:+4933015733720">Beratung: 03301 5733720</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+  </div>
+</div>
+
+<style>
+  .tp-teppich-versand-{{ tp_tv2_id }} {
+    margin-top: 12px;
+  }
+
+  .tp-teppich-versand__sample-{{ tp_tv2_id }} {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 16px;
+    background: #b4976c;
+    border: 1px solid #b4976c;
+    border-radius: var(--style-border-radius-buttons-primary, 7px);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tp-teppich-versand__sample-{{ tp_tv2_id }}:hover {
+    opacity: 0.9;
+  }
+
+  .tp-teppich-versand__shipping-{{ tp_tv2_id }} {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.14);
+    border-radius: 8px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.025);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.76);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .tp-teppich-versand__shipping-{{ tp_tv2_id }} p {
+    margin: 0;
+  }
+
+  .tp-teppich-versand__shipping-{{ tp_tv2_id }} p + p {
+    margin-top: 3px;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} {
+    margin-top: 8px;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} summary {
+    width: fit-content;
+    cursor: pointer;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} p {
+    margin-top: 8px;
+    max-width: 64ch;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} a {
+    display: inline-block;
+    margin-top: 8px;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .tp-teppich-versand__secondary-{{ tp_tv2_id }} {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-teppich-versand__secondary-{{ tp_tv2_id }} a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-teppich-versand__sample-{{ tp_tv2_id }} {
+      font-size: 14px;
+    }
+
+    .tp-teppich-versand__shipping-{{ tp_tv2_id }},
+    .tp-teppich-versand__secondary-{{ tp_tv2_id }} {
+      font-size: 12.5px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Teppich Versand",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "delivery_time",
+      "label": "Lieferzeit",
+      "info": "Nur eine verifizierte Lieferzeit eintragen. Leer lassen, wenn keine Angabe vorliegt."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Teppich Versand"
+    }
+  ]
+}
+{% endschema %}

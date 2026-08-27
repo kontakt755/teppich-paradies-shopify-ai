@@ -227,9 +227,26 @@
     endif
   -%}
 
-  <p class="tp-cart-shipping-note">
-    <strong>Versandhinweis:</strong> Speditionsware wird frei Bordsteinkante geliefert.
-  </p>
+  {%- liquid
+    # Der Bordsteinkante-Hinweis gilt nur fuer Speditionsware (Rollenware/
+    # Paket-Bodenbelaege). Sobald der Warenkorb ausschliesslich Artikel ohne
+    # diese Merkmale enthaelt (z.B. Teppiche per Paketdienst), wird der
+    # Hinweis nicht angezeigt, um keine falsche Lieferart zu suggerieren.
+    assign tp_cart_has_spedition_item = false
+    for tp_cart_line_item in cart.items
+      assign tp_cart_line_roll_width = tp_cart_line_item.product.metafields.custom.rollenbreite.value | times: 1
+      assign tp_cart_line_qm_per_package = tp_cart_line_item.product.metafields.custom.qm_pro_paket.value
+      if tp_cart_line_roll_width > 0 or tp_cart_line_qm_per_package != blank
+        assign tp_cart_has_spedition_item = true
+        break
+      endif
+    endfor
+  -%}
+  {%- if tp_cart_has_spedition_item -%}
+    <p class="tp-cart-shipping-note">
+      <strong>Versandhinweis:</strong> Speditionsware wird frei Bordsteinkante geliefert.
+    </p>
+  {%- endif -%}
 
   <div class="cart-totals__container{% if settings.show_installments %} cart-totals__container--has-installments{% endif %}">
     <span

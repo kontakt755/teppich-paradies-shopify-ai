@@ -1,0 +1,103 @@
+{% doc %}
+  Kompakter Vorteilsbereich direkt nach Titel/Preis - nur fuer Teppiche
+  (eigenstaendig, nicht die Bodenbelag-Variante tp-vorteile). Zeigt
+  ausschliesslich Werte, die am Produkt tatsaechlich als Metafeld gesetzt
+  sind. Maximal 3 Eintraege, damit der Kaufbereich ruhig bleibt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_tv_id = block.id | replace: '_', '' | downcase
+  assign tp_tv_items = ''
+  assign tp_tv_count = 0
+  assign tp_tv_max = 3
+-%}
+
+{%- capture tp_tv_material -%}{{ product.metafields.custom.material.value }}{%- endcapture -%}
+{%- assign tp_tv_material = tp_tv_material | strip -%}
+{%- if tp_tv_material != blank and tp_tv_count < tp_tv_max -%}
+  {%- capture tp_tv_items -%}{{ tp_tv_items }}|{{ tp_tv_material }}{%- endcapture -%}
+  {%- assign tp_tv_count = tp_tv_count | plus: 1 -%}
+{%- endif -%}
+
+{%- capture tp_tv_florhohe -%}{{ product.metafields.custom.florhohe.value }}{%- endcapture -%}
+{%- assign tp_tv_florhohe = tp_tv_florhohe | strip -%}
+{%- if tp_tv_florhohe != blank and tp_tv_count < tp_tv_max -%}
+  {%- capture tp_tv_items -%}{{ tp_tv_items }}|Florhöhe {{ tp_tv_florhohe }}{%- endcapture -%}
+  {%- assign tp_tv_count = tp_tv_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_tv_heating_mf = product.metafields.custom.fusbodenheizung -%}
+{%- assign tp_tv_heating_val = tp_tv_heating_mf.value -%}
+{%- assign tp_tv_heating = tp_tv_heating_val.fusbodenheizung.value | default: tp_tv_heating_val.fusbodenheizung | default: tp_tv_heating_val.name | default: tp_tv_heating_val -%}
+{%- if tp_tv_heating == 'Ja' and tp_tv_count < tp_tv_max -%}
+  {%- capture tp_tv_items -%}{{ tp_tv_items }}|Fußbodenheizung geeignet{%- endcapture -%}
+  {%- assign tp_tv_count = tp_tv_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_tv_wunschmass_preis = product.metafields.custom.wunschmass_mindestbreite_cm.value -%}
+{%- if tp_tv_wunschmass_preis != blank and tp_tv_count < tp_tv_max -%}
+  {%- capture tp_tv_items -%}{{ tp_tv_items }}|Auch im Wunschmaß erhältlich{%- endcapture -%}
+  {%- assign tp_tv_count = tp_tv_count | plus: 1 -%}
+{%- endif -%}
+
+{%- assign tp_tv_list = tp_tv_items | split: '|' -%}
+
+{%- if tp_tv_count > 0 -%}
+  <ul class="tp-teppich-vorteile-{{ tp_tv_id }}" {{ block.shopify_attributes }}>
+    {%- for entry in tp_tv_list -%}
+      {%- if entry != blank -%}
+        <li>{{ entry | strip }}</li>
+      {%- endif -%}
+    {%- endfor -%}
+  </ul>
+
+  <style>
+    .tp-teppich-vorteile-{{ tp_tv_id }} {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .tp-teppich-vorteile-{{ tp_tv_id }} li {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--color-foreground);
+    }
+
+    .tp-teppich-vorteile-{{ tp_tv_id }} li::before {
+      content: '\2713';
+      color: #008a2e;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-teppich-vorteile-{{ tp_tv_id }} {
+        gap: 5px 12px;
+      }
+
+      .tp-teppich-vorteile-{{ tp_tv_id }} li {
+        font-size: 14.5px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich Vorteile",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Teppich Vorteile"
+    }
+  ]
+}
+{% endschema %}

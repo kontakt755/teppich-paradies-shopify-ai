@@ -6,7 +6,10 @@
   - a genuine (non-OPC) variant has custom.rollenbreite > 0, because its
     Shopify price is a non-purchasable square-metre base price; or
   - an opc-* calculator variant exists, because technical calculator variants
-    must never become Merchant offers.
+    must never become Merchant offers; or
+  - the product is a Wunschmaß-Teppich (custom.wunschmass_mindestbreite_cm
+    set), because its Shopify variant price is a technical price per 0,01 m²
+    (see blocks/tp-teppich-wunschmass.liquid), not a purchasable offer price.
 
   Product titles, tags and descriptions are deliberately not used for roll
   detection. Do not add a guessed minimum price here.
@@ -28,9 +31,15 @@
       endif
     endif
   endfor
+
+  assign tp_schema_is_wunschmass = false
+  assign tp_schema_wunschmass_width = product_resource.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1
+  if tp_schema_wunschmass_width > 0
+    assign tp_schema_is_wunschmass = true
+  endif
 -%}
 
-{%- unless tp_schema_is_roll or tp_schema_has_opc_variant -%}
+{%- unless tp_schema_is_roll or tp_schema_has_opc_variant or tp_schema_is_wunschmass -%}
   <script type="application/ld+json">
     {{ product_resource | structured_data }}
   </script>
