@@ -5,7 +5,14 @@
 -%}
 
 {% capture children %}
-  {% content_for 'blocks', closest.product: product, closest.card_index: closest.card_index %}
+  {% # Shopify erlaubt je content_for nur ein closest.-Argument, und closest.
+     # akzeptiert ausserdem nur Ressourcentypen (product, collection, article,
+     # blog, page, metaobject). Die frueher hier mitgereichte Rasterposition
+     # (card_index) laesst sich ueber content_for 'blocks' nicht weitergeben -
+     # freie Parameter gibt es nur beim einzahligen content_for 'block'.
+     # Verschachtelte Bloecke kennen ihre Position daher nicht mehr; siehe
+     # blocks/_product-card-gallery.liquid fuer die Folge beim Bildladen. %}
+  {% content_for 'blocks', closest.product: product %}
 {% endcapture %}
 
 {% render 'product-card', children: children, product: product %}
