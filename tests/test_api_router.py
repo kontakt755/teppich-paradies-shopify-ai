@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from api_cost_monitor import BudgetConfig, UsageTracker, cost_micro_usd
-from router_api_migration import BudgetExceeded, ClaudeExecutionAdapter, RouterConfig
+from router_api_migration import AuthenticationFailed, BudgetExceeded, ClaudeExecutionAdapter, ConfigurationError, RouterConfig
 
 
 class FakeMessages:
@@ -98,6 +98,23 @@ class ApiRouterTests(unittest.TestCase):
         self.assertTrue(ClaudeExecutionAdapter._retryable(StatusError(500)))
         self.assertTrue(ClaudeExecutionAdapter._retryable(TimeoutError("timeout")))
         self.assertFalse(ClaudeExecutionAdapter._retryable(StatusError(400)))
+
+    def test_401_is_logged_once_and_reported_as_authentication_failure(self):
+        messages = FakeMessages(error=StatusError(401))
+        adapter = ClaudeExecutionAdapter(
+            RouterConfig(usage_db=self.db), client=SimpleNamespace(messages=messages), tracker=self.tracker
+        )
+        with self.assertRaises(AuthenticationFailed):
+            adapter.route_request(user_query="implement", task_class="B", static_context="rules")
+        row = self.tracker.summary("monthly")["rows"][0]
+        self.assertEqual(row["requests"], 1)
+        self.assertEqual(row["successful_requests"], 0)
+
+    def test_malformed_key_is_rejected_before_any_http_request(self):
+        config = RouterConfig(api_key="$ ( pbpaste )", usage_db=self.db)
+        adapter = ClaudeExecutionAdapter(config, tracker=self.tracker)
+        with self.assertRaises(ConfigurationError):
+            adapter.route_request(user_query="implement", task_class="B", static_context="rules")
 
     def test_budget_hard_stop_blocks_request(self):
         budget = BudgetConfig(monthly_hard_limit_usd=__import__("decimal").Decimal("0.000001"))

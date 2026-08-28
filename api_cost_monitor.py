@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -76,7 +77,7 @@ class UsageTracker:
         return connection
 
     def _init_db(self) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS api_calls (
                     id INTEGER PRIMARY KEY,
@@ -113,7 +114,7 @@ class UsageTracker:
         amount = cost_micro_usd(model=model, input_tokens=input_tokens, output_tokens=output_tokens,
                                 cache_creation_tokens=cache_creation_tokens,
                                 cache_read_tokens=cache_read_tokens) if success else 0
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.execute("BEGIN IMMEDIATE")
             conn.execute("""
                 INSERT INTO api_calls (timestamp_utc, request_id, model, task_class, attempt,
@@ -130,7 +131,7 @@ class UsageTracker:
         if period not in {"daily", "monthly"}:
             raise ValueError("period must be daily or monthly")
         group = "substr(timestamp_utc, 1, 10)" if period == "daily" else "substr(timestamp_utc, 1, 7)"
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             rows = conn.execute(f"""
                 SELECT {group}, COUNT(*), SUM(success), SUM(input_tokens), SUM(output_tokens),
                        SUM(cache_creation_tokens), SUM(cache_read_tokens), SUM(cost_micro_usd)
@@ -145,14 +146,14 @@ class UsageTracker:
 
     def current_cost_micro_usd(self, period: str) -> int:
         prefix = datetime.now(timezone.utc).strftime("%Y-%m-%d" if period == "daily" else "%Y-%m")
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             return conn.execute("SELECT COALESCE(SUM(cost_micro_usd), 0) FROM api_calls WHERE timestamp_utc LIKE ?", (f"{prefix}%",)).fetchone()[0]
 
     def reserve_budget(self, budget: "BudgetConfig", estimated_micro_usd: int) -> tuple[Optional[int], list[str]]:
         """Atomically reserve a conservative request budget across processes."""
         now = datetime.now(timezone.utc).isoformat()
         day_prefix, month_prefix = now[:10], now[:7]
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.execute("BEGIN IMMEDIATE")
             def total(prefix: str) -> int:
                 calls = conn.execute("SELECT COALESCE(SUM(cost_micro_usd), 0) FROM api_calls WHERE timestamp_utc LIKE ?", (f"{prefix}%",)).fetchone()[0]
@@ -176,7 +177,7 @@ class UsageTracker:
     def release_budget_reservation(self, reservation_id: Optional[int]) -> None:
         if reservation_id is None:
             return
-        with self._connect() as conn:
+        with closing(self._connect()) as conn:
             conn.execute("DELETE FROM budget_reservations WHERE id = ?", (reservation_id,))
 
 

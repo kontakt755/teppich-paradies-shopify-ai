@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -49,6 +50,14 @@ class BudgetExceeded(RuntimeError):
     pass
 
 
+class ConfigurationError(RuntimeError):
+    """Raised for a local setup problem that should not show a traceback."""
+
+
+class AuthenticationFailed(RuntimeError):
+    """Raised when Anthropic rejects the configured API credential."""
+
+
 class ClaudeExecutionAdapter:
     def __init__(self, config: Optional[RouterConfig] = None, *, client: Any = None,
                  tracker: Optional[UsageTracker] = None, budget: Optional[BudgetConfig] = None):
@@ -60,11 +69,15 @@ class ClaudeExecutionAdapter:
     def _client(self) -> Any:
         if self.client is None:
             if not self.config.api_key:
-                raise RuntimeError("ANTHROPIC_API_KEY is required for LLM task classes")
+                raise ConfigurationError("ANTHROPIC_API_KEY is required for LLM task classes")
+            if not self.config.api_key.startswith("sk-ant-") or any(char.isspace() for char in self.config.api_key):
+                raise ConfigurationError(
+                    "ANTHROPIC_API_KEY is malformed. Set the key value itself, without spaces or shell syntax."
+                )
             try:
                 from anthropic import Anthropic
             except ImportError as error:
-                raise RuntimeError("Anthropic SDK missing; install with: pip install anthropic") from error
+                raise ConfigurationError("Anthropic SDK missing; install with: pip install anthropic") from error
             # Retries are deliberately disabled here: every retry must be orchestrated
             # and logged explicitly by the caller to keep cost accounting auditable.
             self.client = Anthropic(api_key=self.config.api_key, timeout=60.0, max_retries=0)
@@ -114,6 +127,11 @@ class ClaudeExecutionAdapter:
                 except Exception as error:
                     self.tracker.log_api_call(model=model, task_class=task_class, success=False,
                                               error_type=type(error).__name__, attempt=current_attempt)
+                    if getattr(error, "status_code", None) == 401:
+                        raise AuthenticationFailed(
+                            "Anthropic rejected ANTHROPIC_API_KEY (401). Create or copy a valid API key "
+                            "from the Anthropic Console; do not paste it into this terminal command."
+                        ) from error
                     if current_attempt >= attempt + self.config.max_attempts - 1 or not self._retryable(error):
                         raise
                     time.sleep(self.config.retry_backoff_seconds * (2 ** (current_attempt - attempt)))
@@ -148,9 +166,15 @@ def main() -> None:
     parser.add_argument("--context-file", type=Path)
     parser.add_argument("--opus", action="store_true", help="Explicitly escalate C/D to configured Opus model")
     args = parser.parse_args()
+    if args.context_file and not args.context_file.is_file():
+        parser.error(f"context file does not exist: {args.context_file}")
     context = args.context_file.read_text(encoding="utf-8") if args.context_file else ""
-    result = ClaudeExecutionAdapter().route_request(user_query=args.query, task_class=args.task_class,
-                                                     static_context=context, escalate_to_opus=args.opus)
+    try:
+        result = ClaudeExecutionAdapter().route_request(user_query=args.query, task_class=args.task_class,
+                                                         static_context=context, escalate_to_opus=args.opus)
+    except (AuthenticationFailed, ConfigurationError, BudgetExceeded) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(2) from None
     print(result)
 
 
