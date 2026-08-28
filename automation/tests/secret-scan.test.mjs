@@ -22,6 +22,22 @@ test('artificial secret BLOCK without exposing value', () => {
 
 test('explicit .env path BLOCK', () => assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE'));
 
+test('.env template with placeholders only PASSES', () => {
+  assert.deepEqual(scanText({ file: '.env.local.example', text: 'ANTHROPIC_API_KEY=sk-ant-YOUR_KEY_HERE' }), []);
+});
+
+test('a real key inside a template is still BLOCKED', () => {
+  const fake = ['sk-ant-api03', 'B'.repeat(28)].join('-');
+  const findings = scanText({ file: '.env.local.example', text: `ANTHROPIC_API_KEY=${fake}` });
+  const output = formatScanResult({ status: 'BLOCK', findings });
+  assert.ok(findings.some(finding => finding.rule === 'ANTHROPIC_KEY'));
+  assert.doesNotMatch(output, new RegExp(fake));
+});
+
+test('template exception does not apply to a plain .env path', () => {
+  assert.equal(scanText({ file: '.env.local', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE');
+});
+
 test('git ignored files are excluded from default discovery', t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-secret-git-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
