@@ -33,8 +33,8 @@ echo "📝 Creating .env.local..."
 cat > .env.local << DOTENV
 # Claude API Configuration - Teppich Paradies
 ANTHROPIC_API_KEY=$API_KEY
-CLAUDE_BUDGET_HARD_LIMIT_USD=50
-CLAUDE_BUDGET_SOFT_LIMIT_USD=30
+CLAUDE_MONTHLY_HARD_LIMIT_USD=50
+CLAUDE_MONTHLY_WARNING_USD=30
 CLAUDE_MAX_TOKENS=2048
 CLAUDE_USAGE_DB=.claude/api_usage.db
 DOTENV
@@ -45,7 +45,7 @@ echo ""
 # Load environment
 echo "🔧 Loading configuration..."
 export ANTHROPIC_API_KEY=$API_KEY
-export CLAUDE_BUDGET_HARD_LIMIT_USD=50
+export CLAUDE_MONTHLY_HARD_LIMIT_USD=50
 
 # Run validation
 echo ""

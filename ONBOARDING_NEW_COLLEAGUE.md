@@ -17,7 +17,7 @@ cp .env.local ~/your-repo/.env.local
 # Create .env.local yourself
 cat > .env.local << 'DOTENV'
 ANTHROPIC_API_KEY=sk-ant-xxxxx
-CLAUDE_BUDGET_HARD_LIMIT_USD=50
+CLAUDE_MONTHLY_HARD_LIMIT_USD=50
 DOTENV
 ```
 
@@ -36,7 +36,7 @@ Get-Content .env.local | foreach { $name, $value = $_ -split '='; [Environment]:
 Or just paste this in PowerShell:
 ```powershell
 $env:ANTHROPIC_API_KEY = "sk-ant-xxxxx"
-$env:CLAUDE_BUDGET_HARD_LIMIT_USD = "50"
+$env:CLAUDE_MONTHLY_HARD_LIMIT_USD = "50"
 ```
 
 ## Step 3: Verify Setup (2 min)

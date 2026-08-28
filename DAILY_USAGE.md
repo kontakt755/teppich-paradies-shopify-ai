@@ -123,7 +123,7 @@ python3 api_cost_monitor.py --report monthly
 ### Increase Budget (if needed)
 Edit `.env.local`:
 ```bash
-CLAUDE_BUDGET_HARD_LIMIT_USD=100  # Increase from 50 to 100
+CLAUDE_MONTHLY_HARD_LIMIT_USD=100  # Increase from 50 to 100
 ```
 
 Reload:
@@ -158,7 +158,7 @@ source .env.local
 python3 api_cost_monitor.py --report monthly
 
 # OK to increase? Edit .env.local:
-CLAUDE_BUDGET_HARD_LIMIT_USD=100
+CLAUDE_MONTHLY_HARD_LIMIT_USD=100
 source .env.local
 ```
 
