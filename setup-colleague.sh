@@ -28,6 +28,13 @@ if [[ ! $API_KEY =~ ^sk-ant- ]]; then
     exit 1
 fi
 
+# Never silently replace an existing key
+if [ -e .env.local ]; then
+    echo "❌ .env.local already exists - not overwriting it."
+    echo "   Delete or rename it first if you really want a fresh setup."
+    exit 1
+fi
+
 # Create .env.local
 echo "📝 Creating .env.local..."
 cat > .env.local << DOTENV
@@ -50,19 +57,17 @@ export CLAUDE_MONTHLY_HARD_LIMIT_USD=50
 # Run validation
 echo ""
 echo "🧪 Running validation checks..."
-./api_cost_check.sh
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ SETUP COMPLETE!"
-    echo ""
-    echo "You can now use:"
-    echo "  python3 router_api_migration.py --task-class B --query 'Your question'"
-    echo "  python3 api_cost_monitor.py --report monthly"
-    echo ""
-    echo "Next time you open terminal, just run: source .env.local"
-else
+if ! ./api_cost_check.sh; then
     echo ""
     echo "⚠️  Setup partially complete. Check errors above."
     exit 1
 fi
+
+echo ""
+echo "✅ SETUP COMPLETE!"
+echo ""
+echo "You can now use:"
+echo "  python3 router_api_migration.py --task-class B --query 'Your question' --context-file some-file.md"
+echo "  python3 api_cost_monitor.py --report monthly"
+echo ""
+echo "Next time you open terminal, just run: source .env.local"
