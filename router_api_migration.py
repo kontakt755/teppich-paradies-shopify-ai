@@ -1,407 +1,157 @@
 #!/usr/bin/env python3
-"""
-Codex + Claude Code Router → Claude API Migration
-Complete example with Prompt Caching for Teppich Paradies
+"""Claude API execution adapter for the existing deterministic A/B/C/D router.
 
-This shows how to migrate your existing router to use Claude API
-with automatic prompt caching for cost optimization.
-
-Usage:
-  python router_api_migration.py --demo              # Run demo
-  python router_api_migration.py --analyze repo.py  # Analyze file
-  python router_api_migration.py --test-cache       # Test caching
+Classification remains in workflow/router.mjs. Pass its task_class into this
+adapter; the adapter deliberately does not duplicate the router's rules.
 """
 
-import os
-import sys
-import json
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
+from __future__ import annotations
+
 import argparse
+import os
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Optional
 
-try:
-    from anthropic import Anthropic
-except ImportError:
-    print("❌ Anthropic SDK not installed. Install via: pip install anthropic")
-    sys.exit(1)
+from api_cost_monitor import BudgetConfig, UsageTracker, cost_micro_usd
 
 
-# ============================================================================
-# CONFIGURATION
-# ============================================================================
-
+@dataclass(frozen=True)
 class RouterConfig:
-    """Router configuration with API settings"""
+    api_key: Optional[str] = None
+    haiku_model: str = field(default_factory=lambda: os.getenv("CLAUDE_HAIKU_MODEL", "claude-haiku-4-5-20251001"))
+    sonnet_model: str = field(default_factory=lambda: os.getenv("CLAUDE_SONNET_MODEL", "claude-sonnet-5"))
+    opus_model: str = field(default_factory=lambda: os.getenv("CLAUDE_OPUS_MODEL", "claude-opus-5"))
+    max_tokens: int = field(default_factory=lambda: int(os.getenv("CLAUDE_MAX_TOKENS", "2048")))
+    max_attempts: int = field(default_factory=lambda: int(os.getenv("CLAUDE_MAX_ATTEMPTS", "2")))
+    retry_backoff_seconds: float = field(default_factory=lambda: float(os.getenv("CLAUDE_RETRY_BACKOFF_SECONDS", "0.5")))
+    usage_db: str = field(default_factory=lambda: os.getenv("CLAUDE_USAGE_DB", ".claude/api_usage.db"))
 
-    def __init__(self):
-        self.api_key = os.getenv("ANTHROPIC_API_KEY")
-        self.model = "claude-3-5-sonnet-20241022"
-        self.max_tokens = 2048
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "api_key", self.api_key or os.getenv("ANTHROPIC_API_KEY"))
+        if self.max_tokens <= 0:
+            raise ValueError("CLAUDE_MAX_TOKENS must be positive")
+        if self.max_attempts < 1:
+            raise ValueError("CLAUDE_MAX_ATTEMPTS must be at least one")
 
-        # Cache settings (ephemeral = 5 min default)
-        self.cache_ttl_seconds = 300
-        self.cache_type = "ephemeral"
-
-        # Usage tracking
-        self.track_usage = True
-        self.usage_log_file = Path("~/.claude/router_usage.jsonl").expanduser()
-
-    def validate(self) -> bool:
-        """Validate configuration"""
-        if not self.api_key:
-            print("❌ ANTHROPIC_API_KEY not set")
-            return False
-        if not self.api_key.startswith("sk-ant-"):
-            print("❌ Invalid API key format")
-            return False
-        return True
+    def model_for(self, task_class: str, *, escalate_to_opus: bool = False) -> Optional[str]:
+        if task_class == "A":
+            return None
+        if task_class == "B":
+            return self.haiku_model
+        if task_class in {"C", "D"}:
+            return self.opus_model if escalate_to_opus else self.sonnet_model
+        raise ValueError("task_class must be A, B, C or D")
 
 
-# ============================================================================
-# ROUTER WITH PROMPT CACHING
-# ============================================================================
+class BudgetExceeded(RuntimeError):
+    pass
 
-class CachedRouter:
-    """Codex + Claude Code Router with Prompt Caching optimizations"""
 
-    def __init__(self, config: RouterConfig):
-        self.config = config
-        self.client = Anthropic(api_key=config.api_key)
-        self.cache_stats = {
-            "total_requests": 0,
-            "cache_hits": 0,
-            "cache_creation": 0,
-            "total_tokens_saved": 0,
-            "total_cost": 0.0,
-        }
+class ClaudeExecutionAdapter:
+    def __init__(self, config: Optional[RouterConfig] = None, *, client: Any = None,
+                 tracker: Optional[UsageTracker] = None, budget: Optional[BudgetConfig] = None):
+        self.config = config or RouterConfig()
+        self.tracker = tracker or UsageTracker(self.config.usage_db)
+        self.budget = budget or BudgetConfig.from_environment()
+        self.client = client
 
-    def get_codebase_context(self, repo_path: str) -> str:
-        """Load codebase context for caching (e.g., Teppich Paradies repo)"""
-        # In production: read actual repo structure/README/docs
-        # This example uses mock data for demonstration
+    def _client(self) -> Any:
+        if self.client is None:
+            if not self.config.api_key:
+                raise RuntimeError("ANTHROPIC_API_KEY is required for LLM task classes")
+            try:
+                from anthropic import Anthropic
+            except ImportError as error:
+                raise RuntimeError("Anthropic SDK missing; install with: pip install anthropic") from error
+            # Retries are deliberately disabled here: every retry must be orchestrated
+            # and logged explicitly by the caller to keep cost accounting auditable.
+            self.client = Anthropic(api_key=self.config.api_key, timeout=60.0, max_retries=0)
+        return self.client
 
-        context = f"""
-# Repository: {repo_path}
-## Structure
-```
-teppich-paradies-shopify-ai/
-├── src/
-│   ├── api/
-│   │   ├── client.py
-│   │   ├── routes.py
-│   │   └── middleware.py
-│   ├── models/
-│   │   ├── product.py
-│   │   ├── order.py
-│   │   └── customer.py
-│   └── utils/
-│       ├── helpers.py
-│       └── validators.py
-├── tests/
-├── README.md
-└── requirements.txt
-```
+    @staticmethod
+    def _minimum_cache_chars(model: str) -> int:
+        # Conservative guardrails for the documented minimums: Haiku 4.5 needs
+        # 4,096 tokens; current Sonnet needs 1,024. Token Count API remains the
+        # authoritative check, so shorter context is simply sent uncached.
+        return 16_384 if "haiku" in model.lower() else 4_096
 
-## Key Components
-1. **Shopify Integration**: Handles product sync, inventory, orders
-2. **Claude Code Router**: Routes requests to optimal Claude model
-3. **Caching Layer**: Cache frequently accessed codebase data
-4. **API Server**: FastAPI + async handlers
+    @staticmethod
+    def _retryable(error: Exception) -> bool:
+        status_code = getattr(error, "status_code", None)
+        return isinstance(error, TimeoutError) or status_code in {429, 500, 502, 503, 504, 529}
 
-## Recent Changes
-- Added batch processing for product updates
-- Optimized database queries with indices
-- Implemented rate limiting
-
-## Known Patterns
-- All product operations use `/api/v1/products`
-- Customer queries need authentication
-- Orders support bulk updates via Batch API
-"""
-        return context
-
-    def route_request(self, user_query: str, repo_path: str = ".",
-                     use_cache: bool = True) -> dict:
-        """
-        Route a request through the cached analyzer
-
-        This replaces the old Codex + Claude Code Router with a
-        single Claude API call using prompt caching.
-
-        Args:
-            user_query: The user's question/task
-            repo_path: Path to repository for context
-            use_cache: Whether to use prompt caching
-
-        Returns:
-            Response dict with answer + usage metrics
-        """
-        self.config.track_usage and (self.cache_stats["total_requests"] += 1)
-
-        # Get codebase context (this will be cached)
-        codebase_context = self.get_codebase_context(repo_path)
-
-        # Build system prompt with caching
-        system_messages = [
-            {
-                "type": "text",
-                "text": "You are an expert code analyst for the Teppich Paradies Shopify AI project. "
-                       "Analyze code, suggest optimizations, and answer architecture questions.",
-            },
+    def route_request(self, *, user_query: str, task_class: str, static_context: str = "",
+                      escalate_to_opus: bool = False, attempt: int = 1) -> dict:
+        model = self.config.model_for(task_class, escalate_to_opus=escalate_to_opus)
+        if task_class == "A":
+            return {"answer": None, "executed_locally": True, "model": None, "task_class": "A", "cost_micro_usd": 0}
+        if not static_context.strip():
+            raise ValueError("static_context is required for LLM requests; do not send fabricated repository context")
+        cache_eligible = len(static_context) >= self._minimum_cache_chars(model)
+        estimate = cost_micro_usd(model=model, input_tokens=len(user_query), output_tokens=self.config.max_tokens,
+                                  cache_creation_tokens=len(static_context) if cache_eligible else 0)
+        reservation_id, events = self.tracker.reserve_budget(self.budget, estimate)
+        if "MONTHLY_HARD_LIMIT" in events:
+            raise BudgetExceeded("Configured monthly hard budget limit would be exceeded")
+        context_block = {"type": "text", "text": static_context}
+        if cache_eligible:
+            context_block["cache_control"] = {"type": "ephemeral"}
+        system = [
+            {"type": "text", "text": "Follow the repository rules in the provided static context."}, context_block,
         ]
-
-        # Add large context with cache control
-        if use_cache:
-            system_messages.append({
-                "type": "text",
-                "text": codebase_context,
-                "cache_control": {"type": self.config.cache_type}
-            })
-        else:
-            system_messages.append({
-                "type": "text",
-                "text": codebase_context,
-            })
-
-        # Send request to Claude API
-        response = self.client.messages.create(
-            model=self.config.model,
-            max_tokens=self.config.max_tokens,
-            system=system_messages,
-            messages=[
-                {"role": "user", "content": user_query}
-            ]
-        )
-
-        # Track usage metrics
-        usage = response.usage
-        if hasattr(usage, 'cache_creation_input_tokens') and usage.cache_creation_input_tokens:
-            self.cache_stats["cache_creation"] += usage.cache_creation_input_tokens
-        if hasattr(usage, 'cache_read_input_tokens') and usage.cache_read_input_tokens:
-            self.cache_stats["cache_hits"] += 1
-            self.cache_stats["total_tokens_saved"] += usage.cache_read_input_tokens
-
-        # Calculate cost
-        pricing = {
-            "input_uncached": 0.000003,     # $3/1M
-            "input_cached": 0.0000003,      # $0.30/1M
-            "output": 0.000015,              # $15/1M
-        }
-
-        uncached_cost = usage.input_tokens * pricing["input_uncached"]
-        output_cost = usage.output_tokens * pricing["output"]
-        cached_cost = (getattr(usage, 'cache_read_input_tokens', 0) or 0) * pricing["input_cached"]
-        total_cost = uncached_cost + output_cost + cached_cost
-
-        self.cache_stats["total_cost"] += total_cost
-
-        result = {
-            "answer": response.content[0].text,
-            "usage": {
-                "input_tokens": usage.input_tokens,
-                "output_tokens": usage.output_tokens,
-                "cache_creation_tokens": getattr(usage, 'cache_creation_input_tokens', 0),
-                "cache_read_tokens": getattr(usage, 'cache_read_input_tokens', 0),
-            },
-            "cost": {
-                "input": round(uncached_cost, 4),
-                "cached_input": round(cached_cost, 4),
-                "output": round(output_cost, 4),
-                "total": round(total_cost, 4),
-            },
-            "cached": bool(getattr(usage, 'cache_read_input_tokens', 0)),
-            "timestamp": datetime.now().isoformat(),
-        }
-
-        # Log usage
-        if self.config.track_usage:
-            self._log_usage(result)
-
-        return result
-
-    def _log_usage(self, result: dict):
-        """Log usage for cost tracking"""
-        self.config.usage_log_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.config.usage_log_file, "a") as f:
-            f.write(json.dumps(result) + "\n")
-
-    def get_stats(self) -> dict:
-        """Get router statistics"""
-        return {
-            **self.cache_stats,
-            "cache_hit_rate": (
-                self.cache_stats["cache_hits"] / self.cache_stats["total_requests"] * 100
-                if self.cache_stats["total_requests"] > 0 else 0
-            ),
-            "avg_cost_per_request": (
-                self.cache_stats["total_cost"] / self.cache_stats["total_requests"]
-                if self.cache_stats["total_requests"] > 0 else 0
-            ),
-        }
-
-
-# ============================================================================
-# DEMONSTRATION
-# ============================================================================
-
-def demo_router():
-    """Demonstrate router with and without caching"""
-    print("\n" + "=" * 70)
-    print("🚀 CLAUDE API ROUTER DEMO (with Prompt Caching)")
-    print("=" * 70 + "\n")
-
-    # Initialize router
-    config = RouterConfig()
-    if not config.validate():
-        print("❌ Configuration invalid. Set ANTHROPIC_API_KEY environment variable.")
-        return
-
-    router = CachedRouter(config)
-
-    # Test queries
-    queries = [
-        "What is the main purpose of the router in this codebase?",
-        "How would you optimize the database queries in the models/ directory?",
-        "Explain the API structure and suggest improvements.",
-    ]
-
-    print(f"📊 Testing {len(queries)} requests with caching...\n")
-
-    for i, query in enumerate(queries, 1):
-        print(f"Query {i}: {query}")
-        print("─" * 70)
-
         try:
-            result = router.route_request(query, repo_path="teppich-paradies-shopify-ai")
-
-            # Show response summary
-            answer = result["answer"][:200] + "..." if len(result["answer"]) > 200 else result["answer"]
-            print(f"Answer: {answer}\n")
-
-            # Show usage metrics
-            usage = result["usage"]
-            cost = result["cost"]
-            print(f"📊 Usage Metrics:")
-            print(f"   Input tokens: {usage['input_tokens']}")
-            print(f"   Output tokens: {usage['output_tokens']}")
-            print(f"   Cache creation: {usage['cache_creation_tokens']}")
-            print(f"   Cache read: {usage['cache_read_tokens']}")
-            print(f"   Cached: {'✅ Yes' if result['cached'] else '❌ No'}\n")
-
-            print(f"💰 Cost:")
-            print(f"   Input: ${cost['input']:.4f}")
-            print(f"   Cached input: ${cost['cached_input']:.4f}")
-            print(f"   Output: ${cost['output']:.4f}")
-            print(f"   Total: ${cost['total']:.4f}\n")
-
-        except Exception as e:
-            print(f"❌ Error: {e}\n")
-
-    # Show aggregate stats
-    stats = router.get_stats()
-    print("=" * 70)
-    print("📈 AGGREGATE STATISTICS")
-    print("=" * 70)
-    print(f"Total requests: {stats['total_requests']}")
-    print(f"Cache hit rate: {stats['cache_hit_rate']:.1f}%")
-    print(f"Tokens saved: {stats['total_tokens_saved']:,}")
-    print(f"Total cost: ${stats['total_cost']:.4f}")
-    print(f"Avg cost/request: ${stats['avg_cost_per_request']:.4f}\n")
-
-
-def test_cache_performance():
-    """Test cache hit rate with repeated requests"""
-    print("\n" + "=" * 70)
-    print("🧪 CACHE PERFORMANCE TEST")
-    print("=" * 70 + "\n")
-
-    config = RouterConfig()
-    if not config.validate():
-        return
-
-    router = CachedRouter(config)
-
-    # Same query repeated 5 times
-    query = "Analyze the Shopify integration patterns in this codebase."
-
-    print(f"Sending same query 5 times to test cache efficiency...\n")
-
-    for i in range(1, 6):
-        print(f"Request {i}:")
-        try:
-            result = router.route_request(query)
-            cached = result.get("cached", False)
-            cost = result["cost"]["total"]
-            print(f"  Cost: ${cost:.4f} | Cached: {'✅' if cached else '❌'}\n")
-        except Exception as e:
-            print(f"  ❌ Error: {e}\n")
-
-    stats = router.get_stats()
-    print("=" * 70)
-    print(f"Cache hits: {stats['cache_hits']}/{stats['total_requests']}")
-    print(f"Cache hit rate: {stats['cache_hit_rate']:.1f}%")
-    print(f"Total cost: ${stats['total_cost']:.4f}")
-    print(f"Savings: ${(stats['total_tokens_saved'] * 0.0000027):.4f} (vs. uncached)\n")
+            response = None
+            for current_attempt in range(attempt, attempt + self.config.max_attempts):
+                try:
+                    response = self._client().messages.create(
+                        model=model, max_tokens=self.config.max_tokens, system=system,
+                        messages=[{"role": "user", "content": user_query}],
+                    )
+                    attempt = current_attempt
+                    break
+                except Exception as error:
+                    self.tracker.log_api_call(model=model, task_class=task_class, success=False,
+                                              error_type=type(error).__name__, attempt=current_attempt)
+                    if current_attempt >= attempt + self.config.max_attempts - 1 or not self._retryable(error):
+                        raise
+                    time.sleep(self.config.retry_backoff_seconds * (2 ** (current_attempt - attempt)))
+            assert response is not None
+            usage = response.usage
+            input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
+            output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+            cache_creation = int(getattr(usage, "cache_creation_input_tokens", 0) or 0)
+            cache_read = int(getattr(usage, "cache_read_input_tokens", 0) or 0)
+            request_id = getattr(response, "_request_id", None)
+            logged = self.tracker.log_api_call(
+                model=model, task_class=task_class, input_tokens=input_tokens, output_tokens=output_tokens,
+                cache_creation_tokens=cache_creation, cache_read_tokens=cache_read,
+                request_id=request_id, attempt=attempt,
+            )
+            text = next((block.text for block in response.content if getattr(block, "type", None) == "text"), "")
+            return {
+                "answer": text, "executed_locally": False, "model": model, "task_class": task_class,
+                "request_id": request_id, "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens,
+                    "cache_creation_tokens": cache_creation, "cache_read_tokens": cache_read},
+                "cost_micro_usd": logged["cost_micro_usd"], "cost_usd": logged["cost_usd"],
+                "budget_events": events, "cache_eligible": cache_eligible,
+            }
+        finally:
+            self.tracker.release_budget_reservation(reservation_id)
 
 
-# ============================================================================
-# MAIN
-# ============================================================================
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Claude API Router with Prompt Caching"
-    )
-    parser.add_argument("--demo", action="store_true",
-                       help="Run demo with sample queries")
-    parser.add_argument("--test-cache", action="store_true",
-                       help="Test cache performance")
-    parser.add_argument("--analyze", type=str,
-                       help="Analyze specific file")
-    parser.add_argument("--query", type=str,
-                       help="Custom query to route")
-
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Claude API adapter for an already-classified task")
+    parser.add_argument("--task-class", choices=["A", "B", "C", "D"], required=True)
+    parser.add_argument("--query", required=True)
+    parser.add_argument("--context-file", type=Path)
+    parser.add_argument("--opus", action="store_true", help="Explicitly escalate C/D to configured Opus model")
     args = parser.parse_args()
-
-    if not args.demo and not args.test_cache and not args.analyze and not args.query:
-        print("""
-╔════════════════════════════════════════════════════════╗
-║    Claude API Router with Prompt Caching Examples      ║
-╚════════════════════════════════════════════════════════╝
-
-Usage:
-  python router_api_migration.py --demo              # Run demo
-  python router_api_migration.py --test-cache        # Test caching
-  python router_api_migration.py --query "Your Q?"   # Custom query
-  python router_api_migration.py --analyze file.py   # Analyze file
-
-Requirements:
-  export ANTHROPIC_API_KEY='sk-ant-...'
-  pip install anthropic
-
-""")
-        return
-
-    if args.demo:
-        demo_router()
-    elif args.test_cache:
-        test_cache_performance()
-    elif args.query:
-        config = RouterConfig()
-        if config.validate():
-            router = CachedRouter(config)
-            result = router.route_request(args.query)
-            print(f"\nAnswer:\n{result['answer']}\n")
-            print(f"Cost: ${result['cost']['total']:.4f}")
-    elif args.analyze:
-        config = RouterConfig()
-        if config.validate():
-            router = CachedRouter(config)
-            query = f"Analyze and suggest improvements for the code in {args.analyze}"
-            result = router.route_request(query)
-            print(f"\nAnalysis:\n{result['answer']}\n")
-            print(f"Cost: ${result['cost']['total']:.4f}")
+    context = args.context_file.read_text(encoding="utf-8") if args.context_file else ""
+    result = ClaudeExecutionAdapter().route_request(user_query=args.query, task_class=args.task_class,
+                                                     static_context=context, escalate_to_opus=args.opus)
+    print(result)
 
 
 if __name__ == "__main__":
