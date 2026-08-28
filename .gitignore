@@ -79,3 +79,5 @@ $RECYCLE.BIN/
 .idea/
 .vscode/
 *.code-workspace
+.env.local
+.env.local
