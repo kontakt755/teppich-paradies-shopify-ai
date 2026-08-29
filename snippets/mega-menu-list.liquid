@@ -129,7 +129,9 @@
             -%}
           {%- endcapture -%}
 
-          {% render 'link-featured-image', link: link, class: 'mega-menu__link-image', sizes: collection_image_sizes %}
+          <span class="mega-menu__link-image-wrapper">
+            {% render 'link-featured-image', link: link, class: 'mega-menu__link-image', sizes: collection_image_sizes %}
+          </span>
         {% endif %}
         <span class="wrap-text">
           {{- link.title -}}

@@ -685,6 +685,176 @@
     /* preserves the inherited grid layout when this submenu wrapper is used */
     display: contents;
   }
+
+  /* ==========================================================================
+     Mega menu polish
+     Reveal, hover and focus states layered on top of the base mega menu.
+     Everything is keyed off tokens from theme-styles-variables so the menu
+     keeps following the theme's design language (colors, radii, easings).
+     ========================================================================== */
+
+  /* Staggered reveal.
+     `--submenu-content-opacity` is already toggled between 0 and 1 by the
+     submenu open/close rules above and inherits down to the columns, so the
+     reveal cannot get out of sync with the panel itself. */
+  .mega-menu__column,
+  .mega-menu__content {
+    opacity: var(--submenu-content-opacity, 1);
+    translate: 0 calc((1 - var(--submenu-content-opacity, 1)) * 8px);
+    transition:
+      opacity var(--animation-speed-slow) var(--animation-easing) var(--mega-menu-stagger, 0s),
+      translate var(--animation-speed-slow) var(--ease-out-cubic) var(--mega-menu-stagger, 0s);
+  }
+
+  .mega-menu__column:nth-child(2) {
+    --mega-menu-stagger: 40ms;
+  }
+
+  .mega-menu__column:nth-child(3) {
+    --mega-menu-stagger: 80ms;
+  }
+
+  .mega-menu__column:nth-child(4) {
+    --mega-menu-stagger: 120ms;
+  }
+
+  .mega-menu__column:nth-child(n + 5) {
+    --mega-menu-stagger: 160ms;
+  }
+
+  .mega-menu__content {
+    --mega-menu-stagger: 120ms;
+  }
+
+  /* Column headings: hairline rule plus an accent bar that grows on hover.
+     Only for link-based menus - in collection image mode the parent link is
+     an image card and must keep its own layout. */
+  .mega-menu__grid:not(:has(.mega-menu__link-image)) {
+    .mega-menu__column > div > .mega-menu__link--parent {
+      position: relative;
+      display: flex;
+      width: 100%;
+      padding-block-end: var(--padding-xs);
+      margin-block-end: var(--margin-xs);
+      border-block-end: var(--style-border-width) solid rgb(var(--color-foreground-rgb) / var(--opacity-10));
+    }
+
+    .mega-menu__column > div > .mega-menu__link--parent::after {
+      content: '';
+      position: absolute;
+      inset-block-end: calc(-1 * var(--style-border-width));
+      inset-inline-start: 0;
+      width: 0;
+      height: 2px;
+      background-color: currentcolor;
+      transition: width var(--animation-speed-slow) var(--ease-out-cubic);
+    }
+
+    .mega-menu__column > div > .mega-menu__link--parent:hover::after,
+    .mega-menu__column > div > .mega-menu__link--parent:focus-visible::after {
+      width: 2rem;
+    }
+  }
+
+  /* Child links: accent marker in the gutter plus a small nudge on hover. */
+  .mega-menu__column ul .mega-menu__link {
+    position: relative;
+    transition:
+      color var(--animation-values),
+      translate var(--animation-speed-slow) var(--ease-out-cubic);
+  }
+
+  .mega-menu__column ul .mega-menu__link::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: -0.5rem;
+    inset-block: calc(var(--padding-2xs) + 0.15em);
+    width: 2px;
+    border-radius: var(--style-border-radius-xs);
+    background-color: currentcolor;
+    opacity: 0;
+    transition: opacity var(--animation-values);
+  }
+
+  .mega-menu__column ul .mega-menu__link:hover,
+  .mega-menu__column ul .mega-menu__link:focus-visible {
+    translate: 3px 0;
+  }
+
+  .mega-menu__column ul .mega-menu__link:hover::before,
+  .mega-menu__column ul .mega-menu__link:focus-visible::before {
+    opacity: 1;
+  }
+
+  /* Image cards: clip the image so it can scale on hover. */
+  .mega-menu__link-image-wrapper {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin-bottom: var(--padding-sm);
+    border-radius: var(--menu-image-border-radius);
+    background-color: rgb(var(--color-foreground-rgb) / var(--opacity-5));
+  }
+
+  /* Nothing to show when the linked resource has no image. */
+  .mega-menu__link-image-wrapper:not(:has(img)) {
+    display: none;
+  }
+
+  .mega-menu__link-image-wrapper .mega-menu__link-image {
+    height: 100%;
+    margin-bottom: 0;
+    border-radius: 0;
+    transition: scale var(--animation-speed-slow) var(--ease-out-cubic);
+  }
+
+  .mega-menu__link:hover .mega-menu__link-image,
+  .mega-menu__link:focus-visible .mega-menu__link-image {
+    scale: 1.04;
+  }
+
+  /* Separate the featured products/collections from the link columns. */
+  @media screen and (min-width: 990px) {
+    .mega-menu__grid:has(.mega-menu__content) .mega-menu__content {
+      padding-inline-start: var(--padding-xl);
+      border-inline-start: var(--style-border-width) solid
+        rgb(var(--color-foreground-rgb) / var(--opacity-10));
+    }
+  }
+
+  .mega-menu__link:focus-visible {
+    outline: var(--focus-outline-width) solid currentcolor;
+    outline-offset: var(--focus-outline-offset);
+    border-radius: var(--style-border-radius-xs);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mega-menu__column,
+    .mega-menu__content,
+    .mega-menu__column ul .mega-menu__link,
+    .mega-menu__link-image-wrapper .mega-menu__link-image,
+    .mega-menu__column > div > .mega-menu__link--parent::after {
+      transition-duration: 0.01ms;
+    }
+
+    .mega-menu__column,
+    .mega-menu__content {
+      translate: none;
+    }
+
+    .mega-menu__column ul .mega-menu__link:hover,
+    .mega-menu__column ul .mega-menu__link:focus-visible {
+      translate: none;
+    }
+
+    .mega-menu__link:hover .mega-menu__link-image,
+    .mega-menu__link:focus-visible .mega-menu__link-image {
+      scale: none;
+    }
+  }
+
 {% endstylesheet %}
 
 {% schema %}
