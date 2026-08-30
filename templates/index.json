@@ -203,7 +203,7 @@
       },
       "name": "Featured collection",
       "settings": {
-        "collection": "teppischboden",
+        "collection": "teppichboden",
         "layout_type": "grid",
         "carousel_on_mobile": false,
         "max_products": 4,
