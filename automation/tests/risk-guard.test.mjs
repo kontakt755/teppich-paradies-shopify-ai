@@ -58,6 +58,19 @@ test('protected live and fallback theme resources make otherwise safe task HIGH'
   assert.throws(() => guard.evaluate({ task: tasks.low, files: ['automation/fixtures/output.json'], operations: ['report_write'], resources: ['theme:201829679438'] }), /Effective risk HIGH exceeds/);
 });
 
+test('unknown resources never fail open as LOW', () => {
+  assert.throws(() => guard.evaluate({ task: tasks.low, files: ['automation/fixtures/output.json'], operations: ['report_write'], resources: ['theme:unclassified'] }), /Effective risk MEDIUM exceeds/);
+  const result = guard.evaluate({ task: tasks.medium, files: ['sections/fixture.liquid'], operations: ['multi_file_theme_edit'], resources: ['theme:unclassified'] });
+  assert.equal(result.resourceRisk, 'MEDIUM');
+});
+
+test('dynamic live and fallback theme labels always require HIGH', () => {
+  const task = { ...tasks.medium, allowedFiles: ['sections/**'], allowedOperations: ['multi_file_theme_edit'] };
+  for (const resource of ['theme:live:999', 'theme:published:999', 'theme:fallback:999']) {
+    assert.throws(() => guard.evaluate({ task, files: ['sections/fixture.liquid'], operations: ['multi_file_theme_edit'], resources: [resource] }), /Effective risk HIGH exceeds/, resource);
+  }
+});
+
 test('unpublished draft product operation is MEDIUM, not HIGH', () => {
   const task = { id: 'DRAFT-1', risk: 'MEDIUM', allowedFiles: ['automation/fixtures/**'], allowedOperations: ['draft_product_create_unpublished'] };
   const result = guard.evaluate({ task, files: ['automation/fixtures/draft.json'], operations: ['draft_product_create_unpublished'] });

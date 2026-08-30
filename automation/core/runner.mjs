@@ -3,7 +3,9 @@ import { validateManifest } from './manifest.mjs';
 import { RunLock } from './run-lock.mjs';
 import { StateStore, StateWriteError, TERMINAL_STATUSES } from './state-store.mjs';
 import { routeRiskDecision } from './risk-guard.mjs';
-import { DEFAULT_MAX_REVIEW_ROUNDS, runReviewCorrectionCycle } from './review-cycle.mjs';
+import { DEFAULT_MAX_REVIEW_ROUNDS, DEFAULT_PROVIDER_TIMEOUT_MS, runReviewCorrectionCycle } from './review-cycle.mjs';
+import { evaluateQualityGates } from './quality-gates.mjs';
+import { routeTaskPolicy, usesAutonomyPolicy } from './task-router.mjs';
 
 export class RunnerStoppedError extends Error {
   constructor(message, options) {
@@ -30,7 +32,7 @@ function requireActualOperations(result, task) {
 }
 
 export class ManifestRunner {
-  constructor({ manifest, stateDir, executeTask, reviewTask = null, correctTask = null, maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, riskGuard = null, diffBudgetGuard = null, needsAhmetPath = null, io, clock = () => new Date() }) {
+  constructor({ manifest, stateDir, executeTask, reviewTask = null, correctTask = null, maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, providerTimeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS, riskGuard = null, diffBudgetGuard = null, specGuard = null, taskRouter = routeTaskPolicy, qualityGateEvaluator = evaluateQualityGates, needsAhmetPath = null, io, clock = () => new Date() }) {
     this.manifest = validateManifest(manifest);
     this.store = new StateStore({ stateDir, io, clock });
     this.lock = new RunLock({ lockPath: path.join(stateDir, 'run.lock'), io, now: clock });
@@ -38,8 +40,12 @@ export class ManifestRunner {
     this.reviewTask = reviewTask;
     this.correctTask = correctTask;
     this.maxReviewRounds = maxReviewRounds;
+    this.providerTimeoutMs = providerTimeoutMs;
     this.riskGuard = riskGuard;
     this.diffBudgetGuard = diffBudgetGuard;
+    this.specGuard = specGuard;
+    this.taskRouter = taskRouter;
+    this.qualityGateEvaluator = qualityGateEvaluator;
     this.needsAhmetPath = needsAhmetPath ?? path.join(stateDir, 'needs-ahmet.md');
     this.clock = clock;
   }
@@ -76,6 +82,22 @@ export class ManifestRunner {
     );
   }
 
+  validateCandidate(task, candidate, { reviewRound }) {
+    if (this.diffBudgetGuard) return this.diffBudgetGuard.evaluate({
+      task,
+      entries: requireArray(candidate, 'diffEntries'),
+      actualOperations: reviewRound > 0 ? requireActualOperations(candidate, task) : (candidate?.actualOperations ?? task.allowedOperations),
+      resources: requireArray(candidate, 'resources')
+    });
+    if (this.riskGuard) return this.riskGuard.postflight({
+      task,
+      changedFiles: requireArray(candidate, 'changedFiles'),
+      actualOperations: reviewRound > 0 ? requireActualOperations(candidate, task) : (candidate?.actualOperations ?? task.allowedOperations),
+      resources: requireArray(candidate, 'resources')
+    });
+    return null;
+  }
+
   async run() {
     this.lock.acquire(this.manifest.runId);
     let runState = { runId: this.manifest.runId, status: 'RUNNING', startedAt: this.clock().toISOString(), heartbeatAt: this.clock().toISOString() };
@@ -90,6 +112,7 @@ export class ManifestRunner {
           const current = states.get(task.id);
           if (TERMINAL_STATUSES.has(current.status) || current.status === 'RUNNING') continue;
           const riskEvaluation = this.riskGuard ? this.riskGuard.evaluate({ task }) : { effectiveRisk: task.risk };
+          const routingPolicy = this.taskRouter(task);
           if (riskEvaluation.effectiveRisk === 'HIGH') {
             routeRiskDecision({ task, evaluation: riskEvaluation, statePath: this.store.taskPath(task.id), needsAhmetPath: this.needsAhmetPath, io: this.store.io, now: this.clock });
             this.updateTask(states, task, 'NEEDS_AHMET', { reason: 'HIGH tasks never run autonomously' });
@@ -103,34 +126,39 @@ export class ManifestRunner {
             continue;
           }
           if (!dependencies.every(dep => dep.status === 'PASS')) continue;
-          this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString() });
+          const specCheck = this.specGuard ? this.specGuard.evaluate({ task, policy: routingPolicy }) : null;
+          if (specCheck && specCheck.status !== 'PASS') {
+            this.updateTask(states, task, 'BLOCKED', { reason: `Spec check returned ${specCheck.status}`, routingPolicy, specCheck });
+            progress = true;
+            continue;
+          }
+          this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString(), routingPolicy, specCheck });
           const transitionHistory = [];
+          let postflight = null;
+          const review = usesAutonomyPolicy(task) && !routingPolicy.review.required ? null : this.reviewTask;
           const result = await runReviewCorrectionCycle({
             task,
             implement: this.executeTask,
-            review: this.reviewTask,
+            review,
             correct: this.correctTask,
+            validateCandidate: (validatedTask, candidate, metadata) => {
+              postflight = this.validateCandidate(validatedTask, candidate, metadata);
+              return postflight;
+            },
             maxReviewRounds: this.maxReviewRounds,
+            providerTimeoutMs: this.providerTimeoutMs,
             onState: transition => {
               transitionHistory.push({ ...transition, at: this.clock().toISOString() });
               this.updateTask(states, task, transition.status, { reviewRound: transition.reviewRound, maxReviewRounds: transition.maxReviewRounds, findings: transition.findings ?? null, transitionHistory });
             },
           });
-          if (this.diffBudgetGuard) this.diffBudgetGuard.evaluate({
-            task,
-            entries: requireArray(result, 'diffEntries'),
-            actualOperations: result?.reviewRound > 1 ? requireActualOperations(result, task) : (result?.actualOperations ?? task.allowedOperations),
-            resources: requireArray(result, 'resources')
-          });
-          else if (this.riskGuard) this.riskGuard.postflight({
-            task,
-            changedFiles: requireArray(result, 'changedFiles'),
-            actualOperations: result?.reviewRound > 1 ? requireActualOperations(result, task) : (result?.actualOperations ?? task.allowedOperations),
-            resources: requireArray(result, 'resources')
-          });
-          const status = result?.status ?? 'FAIL';
+          let status = result?.status ?? 'FAIL';
+          const qualityGates = usesAutonomyPolicy(task) && status === 'PASS'
+            ? this.qualityGateEvaluator({ policy: routingPolicy, result, postflight, specCheck })
+            : null;
+          if (qualityGates && !qualityGates.releaseReady) status = 'BLOCKED';
           if (!['PASS', 'FAIL', 'PARKED', 'BLOCKED', 'CORRECTION_REQUIRED', 'REVIEW_LIMIT_REACHED', 'HARD_FAIL', 'SECURITY_STOP'].includes(status)) throw new Error(`Executor returned invalid status ${status}`);
-          this.updateTask(states, task, status, { result: result?.result ?? null, reviewRound: result?.reviewRound ?? 0, maxReviewRounds: result?.maxReviewRounds ?? this.maxReviewRounds, findings: result?.findings ?? null, transitionHistory, finishedAt: this.clock().toISOString() });
+          this.updateTask(states, task, status, { result: result?.result ?? null, postflight, routingPolicy, specCheck, qualityGates, reviewRound: result?.reviewRound ?? 0, maxReviewRounds: result?.maxReviewRounds ?? this.maxReviewRounds, findings: result?.findings ?? null, transitionHistory, finishedAt: this.clock().toISOString() });
           progress = true;
         }
       }
