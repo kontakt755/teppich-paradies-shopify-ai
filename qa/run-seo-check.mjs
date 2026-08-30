@@ -478,7 +478,18 @@ function writeReports(internalLinkCount, merchantRows) {
   fs.writeFileSync(path.join(resultsDir, 'seo-latest.json'), JSON.stringify(json, null, 2) + '\n');
 
   const grouped = severity => findings.filter(item => item.severity === severity);
-  const rows = items => items.length ? items.map(item => `- [${item.code}] ${item.page}${item.viewport !== '-' ? ` / ${item.viewport}` : ''}: ${item.message}`).join('\n') : '- Keine';
+  // Bei diagnostischen Codes steckt die eigentlich verwertbare Information in
+  // item.data. Ohne sie steht im Bericht nur eine Anzahl, und die konkrete
+  // Datei muss bei jedem Lauf erneut von Hand gesucht werden.
+  const detailKeys = ['scripts', 'examples', 'targets'];
+  const detailLine = item => {
+    const source = detailKeys.map(key => item.data?.[key]).find(value => Array.isArray(value) && value.length);
+    if (!source) return '';
+    const entries = source.slice(0, 5).map(entry => (typeof entry === 'string' ? entry : JSON.stringify(entry)));
+    const rest = source.length > entries.length ? ` (+${source.length - entries.length} weitere)` : '';
+    return `\n  - ${entries.join('\n  - ')}${rest}`;
+  };
+  const rows = items => items.length ? items.map(item => `- [${item.code}] ${item.page}${item.viewport !== '-' ? ` / ${item.viewport}` : ''}: ${item.message}${detailLine(item)}`).join('\n') : '- Keine';
   const seoMarkdown = `# TEPPICH PARADIES – SEO CHECK\n\nStatus: **${status}**  \nZeitpunkt: ${startedAt.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}  \nLaufzeit: ${durationSeconds} s  \nExit-Code: ${exitCode}\n\n## Zusammenfassung\n\n- ${errors.length} ERROR\n- ${warnings.length} WARN\n- ${passes.length} PASS\n- ${pageResults.length} Seiten-/Viewport-Prüfungen\n- ${internalLinkCount} eindeutige interne Links geprüft\n\n## ERROR\n\n${rows(grouped('ERROR'))}\n\n## WARN\n\n${rows(grouped('WARN'))}\n\n## PASS\n\n${rows(grouped('PASS'))}\n\n## Bewertungslogik\n\nERROR sind technische, reproduzierbare SEO-/Accessibility-Fehler und führen zu Exit-Code 1. WARN sind redaktionelle, Performance- oder Admin-Hinweise und verändern den Exit-Code nicht.\n`;
   fs.writeFileSync(seoReportPath, seoMarkdown);
 
