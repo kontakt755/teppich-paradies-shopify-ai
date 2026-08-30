@@ -237,3 +237,29 @@ test('CURRENT_STATE and NEXT_ACTION remain derived pointers without stored appro
   assert.match(next, /speichert niemals eine Merge-, Preview- oder Live-Freigabe/);
   assert.equal(MAX_AUTONOMOUS_REPAIR_ROUNDS, 3);
 });
+
+test('removing a product from the shop is a protected Shopify write', () => {
+  for (const text of [
+    'Shopify Produkt Softiq Teppichboden loeschen und dauerhaft sperren',
+    'Produkt Softiq entfernen',
+    'lösche das Produkt Softiq aus dem Shop',
+    'Kollektion Restposten archivieren',
+    'Artikel deaktivieren und verbannen',
+  ]) {
+    assert.ok(protectedActionsForTask(text).includes('SHOPIFY_WRITE'), text);
+    assert.equal(routeTask({ text }).shopifyWriteRequired, true, text);
+    assert.equal(routeTask({ text }).humanGateRequired, true, text);
+  }
+});
+
+test('deleting a product is additionally flagged as irreversible', () => {
+  assert.ok(protectedActionsForTask('Produkt Softiq löschen').includes('IRREVERSIBLE_CHANGE'));
+  assert.equal(classifyTask('Produkt Softiq löschen'), 'D');
+  // Archivieren ist rückholbar und darf nur der Shopify-Write-Gate auslösen.
+  assert.ok(!protectedActionsForTask('Produkt Softiq archivieren').includes('IRREVERSIBLE_CHANGE'));
+});
+
+test('negated product removal stays unprotected', () => {
+  assert.deepEqual(protectedActionsForTask('Produktseiten prüfen ohne Produkte zu löschen'), []);
+  assert.deepEqual(protectedActionsForTask('Produkte nicht löschen, nur Alt-Texte zählen'), []);
+});

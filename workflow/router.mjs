@@ -11,12 +11,24 @@ export const EXTERNAL_BLOCKS = Object.freeze({
 export const MAX_AUTONOMOUS_REPAIR_ROUNDS = 3;
 export const MAX_IMMEDIATE_SCRIPT_RETRIES = 1;
 
+// Produkte/Kollektionen aus dem Shop nehmen ist ein Shopify-Write und nicht
+// zurückrollbar, sobald gelöscht wurde. Beide Leserichtungen abdecken, damit
+// weder "Produkt löschen" noch "lösche das Produkt" durchrutscht.
+const PRODUCT_REMOVAL_TARGET = 'produkt(?:e|s|en)?|product(?:s)?|artikel|kollektion(?:en)?|collection(?:s)?';
+const PRODUCT_REMOVAL_VERB = '(?:lösch|loesch|entfern|archivier|verbann|sperr|deaktivier|depublizier)(?:e|en|st|t)?|delete[dsn]?|unpublish(?:ed)?';
+const PRODUCT_REMOVAL_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_VERB})\\b`, 'i');
+const PRODUCT_REMOVAL_REVERSE = new RegExp(`\\b(?:${PRODUCT_REMOVAL_VERB})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'i');
+const PRODUCT_DELETE_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b`, 'i');
+const PRODUCT_DELETE_REVERSE = new RegExp(`\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'i');
+
 const CLASS_D = [
   /\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b.{0,50}(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren)/i,
   /(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren).{0,50}\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b/i,
   /\b(?:checkout|payment|zahlung|shipping|versand|dns)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i,
   /\b(?:shopify[- ]?write|theme publish|live publish|live schalten|in shopify (?:schreiben|anlegen|importieren))\b/i,
   /\b(?:massen(?:anlage|import)|bulk (?:product|import)|produkte? (?:anlegen|importieren|schreiben))\b/i,
+  PRODUCT_REMOVAL_FORWARD,
+  PRODUCT_REMOVAL_REVERSE,
 ];
 const CLASS_C = [
   /\b(performance|architektur|architecture|komplex|complex|größere? (?:theme[- ]?)?logik|datenlogik|produktlogik|refactor)\b/i,
@@ -53,6 +65,10 @@ const PROTECTED_ACTION_PATTERNS = Object.freeze([
   ['CHECKOUT_PAYMENT_SHIPPING_CHANGE', /\b(?:checkout|payment|zahlung|shipping|versand)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
   ['DNS_CHANGE', /\bdns\b.{0,40}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
   ['IRREVERSIBLE_CHANGE', /\b(?:irreversibel\w*|irreversible)\b.{0,40}(?:ausführen|ändern|löschen|überschreiben)/i],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_FORWARD],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_REVERSE],
+  ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_FORWARD],
+  ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_REVERSE],
 ]);
 
 const STOREFRONT_VALIDATION = /\b(?:storefront|browser[- ]?qa|sales readiness|compare[- ]?check|live[- ]?shop)\b.{0,50}\b(?:testen|prüfen|ausführen|validieren|check)\b|\b(?:testen|prüfen|ausführen|validieren|check)\b.{0,50}\b(?:storefront|browser[- ]?qa|sales readiness|live[- ]?shop)\b/i;
