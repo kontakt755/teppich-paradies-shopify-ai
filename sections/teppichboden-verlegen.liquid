@@ -126,10 +126,14 @@
     <p class="verlege-hero-sub">Ab 649 € Einkaufswert bieten wir Ihnen kostenlose Lieferung und lose Verlegung – im Umkreis von 15 km rund um unseren Showroom in Oranienburg. Persönlich. Fair. Transparent.</p>
   </div>
   <div class="verlege-hero-img">
-    <img 
-      src="{{ section.settings.image | img_url: '900x' }}" 
-      alt="{{ section.settings.image.alt | escape }}" 
-      loading="lazy"
+    {%- assign hero_ratio = section.settings.image.aspect_ratio | default: 1.5 -%}
+    <img
+      src="{{ section.settings.image | image_url: width: 900 }}"
+      alt="{{ section.settings.image.alt | escape }}"
+      width="900"
+      height="{{ 900 | divided_by: hero_ratio | round }}"
+      loading="eager"
+      fetchpriority="high"
     >
   </div>
 </section>

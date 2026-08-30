@@ -237,10 +237,14 @@
   </div>
 
   <div class="b2b-hero-img">
+    {%- assign hero_ratio = section.settings.image.aspect_ratio | default: 1.5 -%}
     <img
-      src="{{ section.settings.image | img_url: '900x' }}"
+      src="{{ section.settings.image | image_url: width: 900 }}"
       alt="{{ section.settings.image.alt | escape }}"
-      loading="lazy"
+      width="900"
+      height="{{ 900 | divided_by: hero_ratio | round }}"
+      loading="eager"
+      fetchpriority="high"
     >
   </div>
 </section>
