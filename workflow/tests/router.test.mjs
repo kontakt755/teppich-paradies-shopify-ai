@@ -263,3 +263,19 @@ test('negated product removal stays unprotected', () => {
   assert.deepEqual(protectedActionsForTask('Produktseiten prüfen ohne Produkte zu löschen'), []);
   assert.deepEqual(protectedActionsForTask('Produkte nicht löschen, nur Alt-Texte zählen'), []);
 });
+
+test('bulk product data changes are protected Shopify writes', () => {
+  for (const text of [
+    'vendor-Feld aller aktiven Produkte vereinheitlichen',
+    'Markenfeld auf die neue Hausmarke umstellen',
+    'Alt-Texte der Produktbilder nachziehen',
+    'Produktbeschreibungen aktualisieren',
+  ]) {
+    assert.ok(protectedActionsForTask(text).includes('SHOPIFY_WRITE'), text);
+    assert.equal(routeTask({ text }).humanGateRequired, true, text);
+  }
+  // Reines Nachdenken ueber einen Namen ist kein Write.
+  assert.deepEqual(protectedActionsForTask('Markennamen fuer unsere Hausmarke erfinden'), []);
+  // Verneinung bleibt ungeschuetzt.
+  assert.deepEqual(protectedActionsForTask('Produktdaten pruefen, ohne sie zu aktualisieren'), []);
+});

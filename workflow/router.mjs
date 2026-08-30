@@ -19,6 +19,17 @@ const PRODUCT_REMOVAL_VERB = '(?:lösch|loesch|entfern|archivier|verbann|sperr|d
 const PRODUCT_REMOVAL_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_VERB})\\b`, 'i');
 const PRODUCT_REMOVAL_REVERSE = new RegExp(`\\b(?:${PRODUCT_REMOVAL_VERB})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'i');
 const PRODUCT_DELETE_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b`, 'i');
+// Auch ohne Loeschung sind Massenaenderungen an Produktdaten Shopify-Writes.
+// Das SHOPIFY_WRITE-Muster kannte bisher nur anlegen/importieren/schreiben, das
+// PRICE_SKU_VARIANT_WRITE-Muster nur Preise, SKUs und Varianten. Marken-, Vendor-
+// und Beschreibungsfelder fielen durch beide Raster.
+const PRODUCT_DATA_TARGET = 'vendor|marke(?:n(?:name|feld))?|brand|hersteller|produktdaten|produkttitel|produktbeschreibung|metafeld(?:er)?|alt-?text(?:e)?';
+const PRODUCT_DATA_VERB = '(?:vereinheitlich|umbenenn|umstell|setz|pflege|aktualisier|nachzieh|ueberschreib|überschreib)(?:e|en|st|t)?|update[ns]?';
+// Deutsche Pluralendungen zulassen, sonst greift "Produktbeschreibungen" nicht.
+const PRODUCT_DATA_SUFFIX = '(?:en|er|e|n|s)?';
+const PRODUCT_DATA_FORWARD = new RegExp(`\\b(?:${PRODUCT_DATA_TARGET})${PRODUCT_DATA_SUFFIX}\\b.{0,60}\\b(?:${PRODUCT_DATA_VERB})\\b`, 'i');
+const PRODUCT_DATA_REVERSE = new RegExp(`\\b(?:${PRODUCT_DATA_VERB})\\b.{0,60}\\b(?:${PRODUCT_DATA_TARGET})${PRODUCT_DATA_SUFFIX}\\b`, 'i');
+
 const PRODUCT_DELETE_REVERSE = new RegExp(`\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'i');
 
 const CLASS_D = [
@@ -69,6 +80,8 @@ const PROTECTED_ACTION_PATTERNS = Object.freeze([
   ['SHOPIFY_WRITE', PRODUCT_REMOVAL_REVERSE],
   ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_FORWARD],
   ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_REVERSE],
+  ['SHOPIFY_WRITE', PRODUCT_DATA_FORWARD],
+  ['SHOPIFY_WRITE', PRODUCT_DATA_REVERSE],
 ]);
 
 const STOREFRONT_VALIDATION = /\b(?:storefront|browser[- ]?qa|sales readiness|compare[- ]?check|live[- ]?shop)\b.{0,50}\b(?:testen|prüfen|ausführen|validieren|check)\b|\b(?:testen|prüfen|ausführen|validieren|check)\b.{0,50}\b(?:storefront|browser[- ]?qa|sales readiness|live[- ]?shop)\b/i;
