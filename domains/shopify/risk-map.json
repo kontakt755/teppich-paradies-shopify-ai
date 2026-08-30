@@ -2,6 +2,7 @@
   "version": 1,
   "domain": "shopify",
   "defaultPathRisk": "MEDIUM",
+  "defaultResourceRisk": "MEDIUM",
   "risks": ["LOW", "MEDIUM", "HIGH"],
   "operations": {
     "read": "LOW",
@@ -86,5 +87,11 @@
     "data:customers": "HIGH",
     "settings:payment": "HIGH",
     "settings:shipping": "HIGH"
-  }
+  },
+  "resourcePatterns": [
+    { "pattern": "theme:live:*", "risk": "HIGH" },
+    { "pattern": "theme:published:*", "risk": "HIGH" },
+    { "pattern": "theme:fallback:*", "risk": "HIGH" },
+    { "pattern": "theme:*", "risk": "MEDIUM" }
+  ]
 }
