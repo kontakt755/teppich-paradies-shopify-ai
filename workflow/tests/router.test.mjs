@@ -279,3 +279,35 @@ test('bulk product data changes are protected Shopify writes', () => {
   // Verneinung bleibt ungeschuetzt.
   assert.deepEqual(protectedActionsForTask('Produktdaten pruefen, ohne sie zu aktualisieren'), []);
 });
+
+test('identifiers are names, not intentions', () => {
+  // Ein Branch, der eine geschuetzte Aktion im Namen traegt, ist kein Auftrag dazu.
+  assert.deepEqual(protectedActionsForTask('Selbstreview der Commits auf chore/router-produkt-loeschen-gate'), []);
+  assert.deepEqual(protectedActionsForTask('qa/run-seo-check.mjs anpassen'), []);
+  // Echte Absicht bleibt erkannt, auch mit Schraegstrich in der Aufzaehlung.
+  assert.ok(protectedActionsForTask('Produkte/Varianten loeschen').includes('SHOPIFY_WRITE'));
+  assert.ok(protectedActionsForTask('Produkt Softiq loeschen').includes('IRREVERSIBLE_CHANGE'));
+});
+
+test('review findings on the product gates stay fixed', () => {
+  const gated = text => routeTask({ text });
+  // Bezeichner-Filter darf keine echte Absicht mitloeschen.
+  assert.ok(gated('produkte/varianten-preise ändern').protectedActions.includes('PRICE_SKU_VARIANT_WRITE'));
+  assert.ok(gated('checkout/payment-flow ändern').protectedActions.includes('CHECKOUT_PAYMENT_SHIPPING_CHANGE'));
+  assert.ok(gated('preise.csv importieren').protectedActions.includes('PRICE_SKU_VARIANT_WRITE'));
+  // Geschuetzte Aktion und Klasse duerfen nicht auseinanderlaufen.
+  const data = gated('Produktbeschreibungen aktualisieren');
+  assert.equal(data.shopifyWriteRequired, true);
+  assert.equal(data.taskClass, 'D');
+  assert.equal(data.reviewer, 'INDEPENDENT_REVIEWER');
+  // "entfernen" greift im Zweifel, wird aber vom Oberflaechen-Bezug entschaerft.
+  assert.deepEqual(gated('Produkte direkt im Vergleichsfenster entfernen').protectedActions, []);
+  assert.deepEqual(gated('Entfernen-Button im Warenkorb ueberarbeiten').protectedActions, []);
+  assert.ok(gated('Produkte aus dem Shop entfernen').protectedActions.includes('SHOPIFY_WRITE'));
+  assert.ok(gated('Produkt Softiq entfernen').protectedActions.includes('SHOPIFY_WRITE'));
+  // Ein Zeilenumbruch zwischen Ziel und Verb darf kein Gate umgehen.
+  assert.ok(gated('Produkt Softiq\nlöschen').protectedActions.includes('IRREVERSIBLE_CHANGE'));
+  // Beschreibender Text ueber eine Marke ist kein Write.
+  assert.deepEqual(gated('Wir setzen im Bericht auf die Marke Softiq').protectedActions, []);
+  assert.ok(gated('Marke auf TeppichParadies setzen').protectedActions.includes('SHOPIFY_WRITE'));
+});
