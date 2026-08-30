@@ -34,12 +34,13 @@ drei handgepflegten Altprodukte:
 | Rohan Teppichboden 400cm 500cm | `rohan-teppichboden-400cm` | 10 |
 | Norway Teppichboden 400cm | `norway-teppichboden-400cm-und-500cm-kopie` | 6 |
 
-Summe: 30 Varianten. Diese drei sind zugleich die einzigen mit echtem Lagerbestand
-(9.990 / 13.986 / 5.994) und damit umsatzrelevant.
+Summe: 30 Varianten.
 
-SKUs setzen ist laut Router `PRICE_SKU_VARIANT_WRITE`, also Klasse D mit Human Gate.
-Es fehlt zusätzlich eine inhaltliche Entscheidung: Für diese drei gibt es kein
-Lieferantenschema, das Nummernformat müsste festgelegt werden.
+**Erledigt am 2026-08-30:** Alle drei Produkte wurden nach ausdrücklicher Freigabe
+gelöscht, ihre URLs leiten dauerhaft auf `/collections/teppichboden` um. Damit ist
+die SKU-Lücke geschlossen — jede verbleibende Variante im Katalog trägt eine SKU
+nach Lieferantenschema. Nebeneffekt: Es gibt keine Produkte mit `tracked: true`
+mehr, der Katalog folgt jetzt durchgängig einem Bestandsmodell (siehe Befund 3).
 
 ## Befund 3: Zwei unterschiedliche Bestandsmodelle
 
@@ -48,7 +49,7 @@ gelesen wird:
 
 | Gruppe | tracked | inventoryPolicy | Menge | verkäuflich |
 |---|---|---|---|---|
-| Altbestand (Saphir, Rohan, Norway) | true | CONTINUE | 999/Variante | ja |
+| Altbestand (Saphir, Rohan, Norway) — inzwischen gelöscht | true | CONTINUE | 999/Variante | ja |
 | Alle Importe ab 07/2026 | false | DENY | 0 | ja |
 
 Die Importe zeigen `inventoryQuantity: 0`, sind aber wegen `tracked: false`
@@ -58,6 +59,7 @@ Katalog für ausverkauft. Eine Vereinheitlichung ist optional; wichtig ist, dass
 
 ## Priorität
 
-1. GTIN-Beschaffung beim Lieferanten anstoßen — blockiert Google Shopping insgesamt.
-2. SKU-Schema für die drei Altprodukte festlegen, dann 30 Varianten nachziehen.
-3. Bestandsmodell bewusst vereinheitlichen oder bewusst so dokumentiert lassen.
+1. GTIN-Beschaffung beim Lieferanten anstoßen — blockiert Google Shopping insgesamt
+   und ist nach der Löschung der Altprodukte die einzige verbliebene Feed-Lücke.
+2. ~~SKU-Schema für die drei Altprodukte festlegen~~ — erledigt durch Löschung.
+3. Bestandsmodell ist seit der Löschung einheitlich (`tracked: false`); keine Aktion nötig.
