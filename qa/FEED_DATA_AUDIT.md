@@ -63,3 +63,38 @@ Katalog für ausverkauft. Eine Vereinheitlichung ist optional; wichtig ist, dass
    und ist nach der Löschung der Altprodukte die einzige verbliebene Feed-Lücke.
 2. ~~SKU-Schema für die drei Altprodukte festlegen~~ — erledigt durch Löschung.
 3. Bestandsmodell ist seit der Löschung einheitlich (`tracked: false`); keine Aktion nötig.
+
+## Nachtrag 2026-08-30: Alt-Texte der Produktbilder
+
+Alle 342 aktiven Produkte über die Admin API auf den Alt-Text ihres Hauptbildes
+geprüft und **172 korrigiert**. Zwei Fehlerbilder:
+
+**110 leere oder unbrauchbare Alt-Texte.** Betroffen war praktisch der komplette
+Klebevinyl-Import — Alvora, Fenora, Kiruna, Dornova, Verdon, Selvana, Amara,
+Solenta — dazu fünf Rollenvinyl-Produkte. Ein Bild trug den Platzhalter
+`test-resample` und wurde so live ausgeliefert.
+
+**62 veraltete Markennamen.** Die Alt-Texte trugen noch die Namen aus der Zeit
+vor der Umbenennung, während die Produkte längst anders heißen:
+
+| Alt-Text alt | Produktmarke heute |
+|---|---|
+| Livano | Landora |
+| Verdano | Eichwald |
+| Marano | Terracora |
+| Traxano | Granitera |
+| Corvano | Kontura |
+| Alvano | Amara |
+| Verano | Serena |
+| Velano | Velluna |
+| Solano | Practiva |
+
+Das war nicht nur ein SEO-Problem: Google und Screenreader bekamen einen
+Markennamen zu hören, den es im Shop nicht mehr gibt.
+
+Gesetztes Muster, angelehnt an die bereits korrekten Einträge:
+`<Marke> <Produktart> <Dekor bzw. Farbe>`, zum Beispiel
+`Terracora Vinylboden Eiche Braun` oder `Kontura Teppichboden Grün Dunkel (405)`.
+
+Geprüft wurden die Hauptbilder. Weitere Bilder je Produkt (Galerie, Detailfotos)
+sind in dieser Runde nicht erfasst.
