@@ -10,6 +10,18 @@ export const ROLE = Object.freeze({
   DETERMINISTIC_QA: 'DETERMINISTIC_QA',
 });
 
+export const MODEL_CLASS = Object.freeze({
+  LIGHT: 'LIGHT',
+  STANDARD: 'STANDARD',
+  PREMIUM: 'PREMIUM',
+});
+
+export const EFFORT_LEVEL = Object.freeze({
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+});
+
 const WRITE_TYPES = new Set(['IMPLEMENTATION', 'CORRECTION']);
 const UI_PATH = /^(assets|blocks|sections|snippets|templates|layout)\//i;
 const UI_OPERATION = /(theme|css|locale|accessibility|navigation|snippet|template)/i;
@@ -76,6 +88,8 @@ export function routeTaskPolicy(task) {
   const modelRoles = roles.filter(role => role.mode === 'MODEL');
   const fastPath = task.risk === 'LOW' && !reviewRequired && !architectureRequired && !securityRequired && modelRoles.every(role => role.id === ROLE.IMPLEMENTER);
   const autonomyLevel = task.risk === 'HIGH' ? 'HUMAN_GATE' : fastPath ? 'FULL' : 'GUARDED';
+  const modelClass = task.routing?.modelClass ?? (task.risk === 'HIGH' ? MODEL_CLASS.PREMIUM : fastPath ? MODEL_CLASS.LIGHT : MODEL_CLASS.STANDARD);
+  const effortLevel = task.routing?.effortLevel ?? (task.risk === 'HIGH' ? EFFORT_LEVEL.HIGH : fastPath ? EFFORT_LEVEL.LOW : EFFORT_LEVEL.MEDIUM);
   const gate = (id, required, reason) => ({ id, required, reason: required ? reason : 'Kein Trigger' });
 
   return {
@@ -87,6 +101,7 @@ export function routeTaskPolicy(task) {
     effects: [...effects].sort(),
     autonomyLevel,
     fastPath,
+    modelRequirement: { class: modelClass, effortLevel, sticky: true },
     roles,
     review: { required: reviewRequired, triggers: reviewTriggers },
     gates: [

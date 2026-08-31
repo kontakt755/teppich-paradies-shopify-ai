@@ -1,5 +1,7 @@
 const ALLOWED_RISKS = new Set(['LOW', 'MEDIUM', 'HIGH']);
 const ALLOWED_TASK_TYPES = new Set(['ANALYSIS', 'PLAN', 'IMPLEMENTATION', 'REVIEW', 'CORRECTION', 'TEST']);
+const ALLOWED_MODEL_CLASSES = new Set(['LIGHT', 'STANDARD', 'PREMIUM']);
+const ALLOWED_EFFORT_LEVELS = new Set(['low', 'medium', 'high']);
 
 function optionalStringArray(task, field) {
   if (task[field] !== undefined && (!Array.isArray(task[field]) || task[field].some(value => typeof value !== 'string' || !value.trim()))) {
@@ -24,6 +26,9 @@ export function validateManifest(manifest) {
     if (task.taskType !== undefined && !ALLOWED_TASK_TYPES.has(String(task.taskType).toUpperCase())) throw new Error(`Task ${task.id} has invalid taskType`);
     if (task.routing !== undefined && (!task.routing || typeof task.routing !== 'object' || Array.isArray(task.routing))) throw new Error(`Task ${task.id} routing must be an object`);
     if (task.routing?.policyVersion !== undefined && (!Number.isInteger(task.routing.policyVersion) || task.routing.policyVersion < 1)) throw new Error(`Task ${task.id} has invalid routing policyVersion`);
+    if (task.routing?.modelClass !== undefined && !ALLOWED_MODEL_CLASSES.has(task.routing.modelClass)) throw new Error(`Task ${task.id} has invalid routing modelClass`);
+    if (task.routing?.effortLevel !== undefined && !ALLOWED_EFFORT_LEVELS.has(task.routing.effortLevel)) throw new Error(`Task ${task.id} has invalid routing effortLevel`);
+    if (task.routing?.preferredProviders !== undefined && (!Array.isArray(task.routing.preferredProviders) || task.routing.preferredProviders.some(value => typeof value !== 'string' || !value.trim()))) throw new Error(`Task ${task.id} routing preferredProviders must be an array of non-empty strings`);
     optionalStringArray(task, 'effects');
     optionalStringArray(task, 'requirementIds');
     optionalStringArray(task, 'acceptanceCriteria');
