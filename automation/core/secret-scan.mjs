@@ -4,10 +4,6 @@ import { execFileSync } from 'node:child_process';
 import { findSensitiveUrlQueryNames } from './url-sanitizer.mjs';
 
 const SECRET_PATH = /(^|\/)(\.env(?:\..+)?|\.auth(?:\/|$)|\.sessions?(?:\/|$)|tokens?(?:\/|$)|secrets?(?:\/|$)|cookies?[^/]*\.json$|credentials?[^/]*\.json$)|\.(?:pem|key|p12|pfx)$/i;
-// Committed templates carry placeholders, not credentials. The path rule is
-// skipped for them; every content rule below still applies, so a real key
-// pasted into a template is still blocked.
-const TEMPLATE_PATH = /\.example$/i;
 const RULES = Object.freeze([
   ['PRIVATE_KEY', /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
   ['ANTHROPIC_KEY', /\bsk-ant-[A-Za-z0-9_-]{20,}\b/],

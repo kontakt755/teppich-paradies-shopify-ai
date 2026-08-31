@@ -22,11 +22,7 @@ test('artificial secret BLOCK without exposing value', () => {
 
 test('explicit .env path BLOCK', () => assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE'));
 
-test('.env template with placeholders only PASSES', () => {
-  assert.deepEqual(scanText({ file: '.env.local.example', text: 'ANTHROPIC_API_KEY=sk-ant-YOUR_KEY_HERE' }), []);
-});
-
-test('a real key inside a template is still BLOCKED', () => {
+test('a real Anthropic key inside a template is still BLOCKED', () => {
   const fake = ['sk-ant-api03', 'B'.repeat(28)].join('-');
   const findings = scanText({ file: '.env.local.example', text: `ANTHROPIC_API_KEY=${fake}` });
   const output = formatScanResult({ status: 'BLOCK', findings });
