@@ -67,14 +67,15 @@ export async function runReviewCorrectionCycle({
   validateCandidate = null,
   maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS,
   providerTimeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS,
+  phaseRouting = {},
   onState = null,
 }) {
   if (!Number.isInteger(maxReviewRounds) || maxReviewRounds < 1) throw new Error('maxReviewRounds must be a positive integer');
   if (!Number.isInteger(providerTimeoutMs) || providerTimeoutMs < 1) throw new Error('providerTimeoutMs must be a positive integer');
-  emit(onState, 'IMPLEMENT', { reviewRound: 0, maxReviewRounds });
+  emit(onState, 'IMPLEMENT', { reviewRound: 0, maxReviewRounds, route: phaseRouting.implement ?? null });
   let candidate;
   try {
-    candidate = await callProvider({ phase: 'IMPLEMENT', timeoutMs: providerTimeoutMs, invoke: signal => implement(task, { signal }) });
+    candidate = await callProvider({ phase: 'IMPLEMENT', timeoutMs: providerTimeoutMs, invoke: signal => implement(task, { signal, routing: phaseRouting.implement ?? null }) });
   } catch (error) {
     return parkedOnProviderTimeout(error, 0, maxReviewRounds);
   }
@@ -86,10 +87,10 @@ export async function runReviewCorrectionCycle({
   if (!review) return { ...candidate, reviewRound: 0, maxReviewRounds };
 
   for (let reviewRound = 1; reviewRound <= maxReviewRounds; reviewRound += 1) {
-    emit(onState, 'REVIEW', { reviewRound, maxReviewRounds });
+    emit(onState, 'REVIEW', { reviewRound, maxReviewRounds, route: phaseRouting.review ?? null });
     let reviewResult;
     try {
-      reviewResult = await callProvider({ phase: 'REVIEW', timeoutMs: providerTimeoutMs, invoke: signal => review(task, candidate, { reviewRound, maxReviewRounds, signal }) });
+      reviewResult = await callProvider({ phase: 'REVIEW', timeoutMs: providerTimeoutMs, invoke: signal => review(task, candidate, { reviewRound, maxReviewRounds, signal, routing: phaseRouting.review ?? null }) });
     } catch (error) {
       return { ...candidate, ...parkedOnProviderTimeout(error, reviewRound, maxReviewRounds) };
     }
@@ -111,10 +112,10 @@ export async function runReviewCorrectionCycle({
     }
     if (!correct) return { ...candidate, status: 'CORRECTION_REQUIRED', reviewRound, maxReviewRounds, findings: actionable };
 
-    emit(onState, 'CORRECT', { reviewRound, maxReviewRounds, findings: actionable });
+    emit(onState, 'CORRECT', { reviewRound, maxReviewRounds, findings: actionable, route: phaseRouting.correct ?? phaseRouting.implement ?? null });
     let correction;
     try {
-      correction = await callProvider({ phase: 'CORRECT', timeoutMs: providerTimeoutMs, invoke: signal => correct(task, candidate, actionable, { reviewRound, maxReviewRounds, signal }) });
+      correction = await callProvider({ phase: 'CORRECT', timeoutMs: providerTimeoutMs, invoke: signal => correct(task, candidate, actionable, { reviewRound, maxReviewRounds, signal, routing: phaseRouting.correct ?? phaseRouting.implement ?? null }) });
     } catch (error) {
       return { ...candidate, ...parkedOnProviderTimeout(error, reviewRound, maxReviewRounds), findings: actionable };
     }

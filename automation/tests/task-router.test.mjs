@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ROLE, routeTaskPolicy } from '../core/task-router.mjs';
+import { EFFORT_LEVEL, MODEL_CLASS, ROLE, routeTaskPolicy } from '../core/task-router.mjs';
 
 const base = { id: 'T', domain: 'shopify', taskType: 'IMPLEMENTATION', routing: { policyVersion: 2 }, dependencies: [], allowedFiles: ['automation/core/x.mjs'], allowedOperations: ['report_write'], risk: 'LOW' };
 
@@ -10,6 +10,7 @@ test('small LOW implementation keeps the autonomous fast path', () => {
   assert.equal(policy.autonomyLevel, 'FULL');
   assert.deepEqual(policy.roles.map(role => role.id), [ROLE.IMPLEMENTER, ROLE.DETERMINISTIC_QA]);
   assert.equal(policy.review.required, false);
+  assert.deepEqual(policy.modelRequirement, { class: MODEL_CLASS.LIGHT, effortLevel: EFFORT_LEVEL.LOW, sticky: true });
 });
 
 test('MEDIUM storefront feature adds only triggered specialist roles', () => {
@@ -20,6 +21,12 @@ test('MEDIUM storefront feature adds only triggered specialist roles', () => {
   assert.ok(roles.includes(ROLE.ARCHITECT));
   assert.ok(roles.includes(ROLE.REVIEWER));
   assert.ok(roles.includes(ROLE.VISUAL_REVIEWER));
+  assert.deepEqual(policy.modelRequirement, { class: MODEL_CLASS.STANDARD, effortLevel: EFFORT_LEVEL.MEDIUM, sticky: true });
+});
+
+test('explicit model class and effort are fixed in the task policy', () => {
+  const policy = routeTaskPolicy({ ...base, routing: { policyVersion: 2, modelClass: 'STANDARD', effortLevel: 'low' } });
+  assert.deepEqual(policy.modelRequirement, { class: MODEL_CLASS.STANDARD, effortLevel: EFFORT_LEVEL.LOW, sticky: true });
 });
 
 test('HIGH task never receives autonomous execution', () => {
