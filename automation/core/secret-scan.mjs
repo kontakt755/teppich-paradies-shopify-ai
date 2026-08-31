@@ -6,6 +6,7 @@ import { findSensitiveUrlQueryNames } from './url-sanitizer.mjs';
 const SECRET_PATH = /(^|\/)(\.env(?:\..+)?|\.auth(?:\/|$)|\.sessions?(?:\/|$)|tokens?(?:\/|$)|secrets?(?:\/|$)|cookies?[^/]*\.json$|credentials?[^/]*\.json$)|\.(?:pem|key|p12|pfx)$/i;
 const RULES = Object.freeze([
   ['PRIVATE_KEY', /-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],
+  ['ANTHROPIC_KEY', /\bsk-ant-[A-Za-z0-9_-]{20,}\b/],
   ['GITHUB_TOKEN', /\bgh[opurs]_[A-Za-z0-9]{20,}\b/],
   ['SHOPIFY_TOKEN', /\bshp(?:at|ca|cs|pa|ss)_[A-Za-z0-9]{20,}\b/i],
   ['GENERIC_API_KEY', /\b(?:api[_-]?key|access[_-]?token|secret[_-]?key)\s*[:=]\s*["']?[A-Za-z0-9_\-]{16,}/i],

@@ -18,7 +18,7 @@
     
     cat > .env.local << 'DOTENV'
     ANTHROPIC_API_KEY=sk-ant-xxxxx
-    CLAUDE_BUDGET_HARD_LIMIT_USD=50
+    CLAUDE_MONTHLY_HARD_LIMIT_USD=50
     DOTENV
   
   ☐ Load it: source .env.local
@@ -70,14 +70,14 @@ python3 api_cost_monitor.py --report monthly
 
 **Hard Limit** (in .env.local):
 ```bash
-CLAUDE_BUDGET_HARD_LIMIT_USD=50
+CLAUDE_MONTHLY_HARD_LIMIT_USD=50
 ```
 - If hit: All API calls STOP immediately
 - If you want more: Increase this number
 
 **Soft Limit** (optional warning):
 ```bash
-CLAUDE_BUDGET_SOFT_LIMIT_USD=30
+CLAUDE_MONTHLY_WARNING_USD=30
 ```
 - If hit: Warning printed, but calls continue
 - Good for early alerts
@@ -89,7 +89,7 @@ CLAUDE_BUDGET_SOFT_LIMIT_USD=30
 ### What's in .env.local
 ```bash
 ANTHROPIC_API_KEY=sk-ant-xxxxx  # YOUR KEY
-CLAUDE_BUDGET_HARD_LIMIT_USD=50  # BUDGET
+CLAUDE_MONTHLY_HARD_LIMIT_USD=50  # BUDGET
 ```
 
 ### What NOT to do
@@ -149,7 +149,7 @@ ls -la .env.local
 # If missing, recreate it:
 cat > .env.local << 'DOTENV'
 ANTHROPIC_API_KEY=sk-ant-xxxxx
-CLAUDE_BUDGET_HARD_LIMIT_USD=50
+CLAUDE_MONTHLY_HARD_LIMIT_USD=50
 DOTENV
 
 # Then load it
@@ -163,7 +163,7 @@ python3 api_cost_monitor.py --report monthly
 
 # Increase limit if needed
 # Edit .env.local:
-CLAUDE_BUDGET_HARD_LIMIT_USD=100
+CLAUDE_MONTHLY_HARD_LIMIT_USD=100
 
 # Reload
 source .env.local

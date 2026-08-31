@@ -28,6 +28,8 @@ class RouterConfig:
     max_attempts: int = field(default_factory=lambda: int(os.getenv("CLAUDE_MAX_ATTEMPTS", "2")))
     retry_backoff_seconds: float = field(default_factory=lambda: float(os.getenv("CLAUDE_RETRY_BACKOFF_SECONDS", "0.5")))
     usage_db: str = field(default_factory=lambda: os.getenv("CLAUDE_USAGE_DB", ".claude/api_usage.db"))
+    # Required by keys that span several workspaces; single-workspace keys ignore it.
+    workspace_id: Optional[str] = field(default_factory=lambda: os.getenv("ANTHROPIC_WORKSPACE_ID") or None)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "api_key", self.api_key or os.getenv("ANTHROPIC_API_KEY"))
@@ -80,7 +82,9 @@ class ClaudeExecutionAdapter:
                 raise ConfigurationError("Anthropic SDK missing; install with: pip install anthropic") from error
             # Retries are deliberately disabled here: every retry must be orchestrated
             # and logged explicitly by the caller to keep cost accounting auditable.
-            self.client = Anthropic(api_key=self.config.api_key, timeout=60.0, max_retries=0)
+            headers = {"anthropic-workspace-id": self.config.workspace_id} if self.config.workspace_id else None
+            self.client = Anthropic(api_key=self.config.api_key, timeout=60.0, max_retries=0,
+                                    default_headers=headers)
         return self.client
 
     @staticmethod
