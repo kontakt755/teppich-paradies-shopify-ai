@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "domain": "shopify",
+  "invariants": [
+    {
+      "id": "TP-FALLBACK-001",
+      "title": "Fallback-Theme bleibt unverändert erhalten",
+      "severity": "HARD",
+      "appliesWhen": { "operations": ["theme_delete", "theme_publish", "theme_overwrite"] },
+      "facts": { "fallbackThemeId": "196301750606", "fallbackThemeWritable": false },
+      "constraints": ["Theme 196301750606 niemals löschen oder überschreiben."]
+    },
+    {
+      "id": "TP-PACKAGE-PRICE-001",
+      "title": "Shopify-Preis bleibt bei Paketprodukten der Paketpreis",
+      "severity": "HARD",
+      "appliesWhen": { "effects": ["commerce"], "files": ["sections/main-product*.liquid", "snippets/*price*.liquid", "assets/*calculator*"] },
+      "facts": { "packagePriceIsShopifyPrice": true, "customerPrimaryPriceUnit": "EUR_PER_SQM" },
+      "constraints": ["€/m² ist die primäre Kundendarstellung.", "Der echte Paketpreis bleibt die interne Shopify-Preisgrundlage."]
+    },
+    {
+      "id": "TP-CART-001",
+      "title": "Warenkorb und Checkout arbeiten mit ganzen Paketen",
+      "severity": "HARD",
+      "appliesWhen": { "operations": ["cart_logic_edit", "price_logic_edit"], "files": ["assets/*cart*", "snippets/*cart*", "sections/*cart*"] },
+      "facts": { "wholePackagesRequired": true },
+      "constraints": ["Keine rechnerischen Teilpakete in Warenkorb oder Checkout."]
+    },
+    {
+      "id": "TP-COMPARE-001",
+      "title": "Produktvergleich bleibt auf drei Produkte begrenzt",
+      "severity": "HARD",
+      "appliesWhen": { "files": ["assets/*compare*", "snippets/*compare*", "sections/*compare*"] },
+      "facts": { "maxComparedProducts": 3 },
+      "constraints": ["Der Vergleich darf höchstens drei Produkte enthalten."]
+    },
+    {
+      "id": "TP-PRODUCTDATA-001",
+      "title": "Technische Produktdaten werden nicht erfunden",
+      "severity": "HARD",
+      "appliesWhen": { "operations": ["product_write", "product_update", "content_generation"], "effects": ["product-data"] },
+      "facts": { "inventedTechnicalPropertiesAllowed": false },
+      "constraints": ["Technische Eigenschaften nur aus belegten Produktdaten übernehmen."]
+    },
+    {
+      "id": "TP-SHIPPING-001",
+      "title": "Speditionsversand ist deutschlandweit kostenlos",
+      "severity": "HARD",
+      "appliesWhen": { "operations": ["shipping_copy_edit", "shipping_logic_edit"], "files": ["**/*shipping*", "**/*versand*"] },
+      "facts": { "freightShippingGermanyFree": true },
+      "constraints": ["Kostenlosen Speditionsversand nicht mit lokalen Serviceleistungen gleichsetzen."]
+    },
+    {
+      "id": "TP-SERVICE-001",
+      "title": "Lokaler Liefer- und Verlegeservice bleibt eine kostenpflichtige Zusatzleistung",
+      "severity": "HARD",
+      "appliesWhen": { "operations": ["shipping_copy_edit", "service_copy_edit"], "files": ["**/*service*", "**/*verleg*"] },
+      "facts": { "localDeliveryAndInstallationPaid": true, "localServiceRadiusKm": 50 },
+      "constraints": ["Lokalen Liefer- und Verlegeservice bis 50 km nicht als kostenlosen Versand darstellen."]
+    }
+  ]
+}

@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
-import { targetUrl as workflowTargetUrl } from './target-url.mjs';
+import { targetUrl as workflowTargetUrl, validatePreviewContext } from './target-url.mjs';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
+import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -19,8 +20,13 @@ const reportPath = workflowReportDir ? path.join(workflowReportDir, 'QA_REPORT.m
 const baselinePath = path.join(qaDir, 'theme-check-baseline.json');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'qa.config.json'), 'utf8'));
 if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
-const args = new Set(process.argv.slice(2));
-const takeAllScreenshots = args.has('--screenshots');
+const rawArgs = process.argv.slice(2);
+const args = new Set(rawArgs);
+const changedFiles = rawArgs.filter(argument => argument.startsWith('--changed-file=')).map(argument => argument.slice('--changed-file='.length)).filter(Boolean);
+const configuredPages = [...config.pages];
+config.pages = selectImpactedPages(configuredPages, changedFiles);
+const impact = qaImpactSummary(configuredPages, config.pages, changedFiles);
+const takeAllScreenshots = args.has('--screenshots') || args.has('--visual-evidence');
 const updateBaseline = args.has('--update-baseline');
 const startedAt = new Date();
 const started = Date.now();
@@ -259,7 +265,8 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   else {
     const status = response?.status() || 0;
     if (!response || status >= 400) add('Live Shop', pageConfig.name, viewportName, 'error', `HTTP ${status || 'ohne Antwort'} für ${targetUrl}`);
-    if (page.url().includes('preview_theme_id=')) add('Live Shop', pageConfig.name, viewportName, 'error', 'Unerwarteter Theme-Preview-Parameter');
+    const previewContext = validatePreviewContext(config.baseUrl, page.url());
+    if (previewContext.status === 'FAIL') add('Live Shop', pageConfig.name, viewportName, 'error', previewContext.reason, previewContext);
     if (!metrics.title) add('Live Shop', pageConfig.name, viewportName, 'error', 'Seitentitel fehlt');
     if (!metrics.hasHeader) add('Navigation', pageConfig.name, viewportName, 'error', 'Header fehlt');
     if (metrics.mainHeight < 100 || metrics.mainTextLength < 20) add('Live Shop', pageConfig.name, viewportName, 'error', 'Hauptbereich ist offensichtlich leer');
@@ -294,10 +301,10 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
 }
 
 let browserError;
-const browserResolution = resolveBrowserExecutable({ configuredPath: config.browserExecutable, playwrightChromium: chromium });
-const executablePath = browserResolution.executablePath;
-if (!executablePath) browserError = browserResolution.error;
-else {
+const browserResolution = config.pages.length ? resolveBrowserExecutable({ configuredPath: config.browserExecutable, playwrightChromium: chromium }) : null;
+const executablePath = browserResolution?.executablePath;
+if (config.pages.length && !executablePath) browserError = browserResolution.error;
+else if (config.pages.length) {
   let browser;
   try {
     browser = await chromium.launch({ executablePath, headless: true });
@@ -346,9 +353,10 @@ const knownConsoleWarnings = warnings.filter(x => x.scope === 'Known Baseline Co
 const thirdPartyWarnings = warnings.filter(x => x.scope === 'Drittanbieter');
 const knownConsoleLabels = [...new Set(knownConsoleWarnings.map(x => x.message))];
 const knownConsoleReport = knownConsoleLabels.length ? `⚠ bekannte Baseline-Console-Issues:\n${knownConsoleLabels.map(label => `  - ${label}`).join('\n')}` : '✓ keine bekannten Console-Baseline-Issues aktiv';
-const report = `# TEPPICH PARADIES – QA\n\nStatus: **${status}**\\\nZeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}\\\nLaufzeit: ${durationSeconds} s\n\n## Theme Check\n\n${tcLine}\n\n## Live Shop\n\n${pageRows.join('\n')}\n\n## Browser und Bilder\n\n${errors.some(x => x.scope === 'Browser') ? '✗' : '✓'} keine neuen kritischen Console-/Assetfehler\\\n${knownConsoleReport}\\\n${errors.some(x => x.message.includes('Overflow')) ? '✗' : '✓'} kein horizontaler Overflow\\\n${errors.some(x => x.scope === 'Bilder') ? '✗' : '✓'} sichtbare Bilder geladen\\\n${thirdPartyWarnings.length ? `⚠ ${thirdPartyWarnings.length} Drittanbieterhinweise (Details in qa/results/latest-details.json)` : '✓ keine Drittanbieterhinweise'}\n\n## Probleme\n\n${problemLines}\n`;
+const report = `# TEPPICH PARADIES – QA\n\nStatus: **${status}**\\\nZeitpunkt: ${new Date().toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })}\\\nLaufzeit: ${durationSeconds} s\\\nQA-Scope: ${impact.mode} (${config.pages.length}/${configuredPages.length} Seiten)\n\n## Theme Check\n\n${tcLine}\n\n## Live Shop\n\n${pageRows.join('\n') || 'Keine Storefront-Seite durch den Diff betroffen.'}\n\n## Browser und Bilder\n\n${errors.some(x => x.scope === 'Browser') ? '✗' : '✓'} keine neuen kritischen Console-/Assetfehler\\\n${knownConsoleReport}\\\n${errors.some(x => x.message.includes('Overflow')) ? '✗' : '✓'} kein horizontaler Overflow\\\n${errors.some(x => x.scope === 'Bilder') ? '✗' : '✓'} sichtbare Bilder geladen\\\n${thirdPartyWarnings.length ? `⚠ ${thirdPartyWarnings.length} Drittanbieterhinweise (Details in qa/results/latest-details.json)` : '✓ keine Drittanbieterhinweise'}\n\n## Probleme\n\n${problemLines}\n`;
 fs.writeFileSync(reportPath, report);
-const result = { status, exitCode: errors.length ? 1 : 0, startedAt: startedAt.toISOString(), durationSeconds, themeCheck: themeCheck.failed ? themeCheck : { baseline: { errors: baseline.errors, warnings: baseline.warnings }, current: { errors: themeCheck.errors, warnings: themeCheck.warnings }, newFindings: themeCheck.newFindings }, checks, pages: details.map(({ page, viewport, url, finalUrl, status }) => ({ page, viewport, url, finalUrl, status })) };
+const screenshotArtifacts = fs.readdirSync(artifactsDir).filter(file => file.endsWith('.png')).sort();
+const result = { status, exitCode: errors.length ? 1 : 0, startedAt: startedAt.toISOString(), durationSeconds, impact, visualEvidence: { requested: takeAllScreenshots, screenshots: screenshotArtifacts }, themeCheck: themeCheck.failed ? themeCheck : { baseline: { errors: baseline.errors, warnings: baseline.warnings }, current: { errors: themeCheck.errors, warnings: themeCheck.warnings }, newFindings: themeCheck.newFindings }, checks, pages: details.map(({ page, viewport, url, finalUrl, status }) => ({ page, viewport, url, finalUrl, status })) };
 fs.writeFileSync(path.join(resultsDir, 'latest.json'), JSON.stringify(result, null, 2) + '\n');
 fs.writeFileSync(path.join(resultsDir, 'latest-details.json'), JSON.stringify(details, null, 2) + '\n');
 const evidence = buildEvidence(result);

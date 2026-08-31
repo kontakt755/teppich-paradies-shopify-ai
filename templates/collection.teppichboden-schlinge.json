@@ -321,6 +321,7 @@
                   "name": "t:names.image",
                   "settings": {
                     "image": "shopify://shop_images/hochflor-teppich-in-einem-wohnzimmer-dargestellt-farbe-beige-das-ganze-zimmer-soll-den-teppich-haben.png",
+                    "alt": "Hochflor-Teppichboden in einem Wohnzimmer, Farbe Beige",
                     "link": "shopify://collections/teppichboden-hochflor",
                     "image_ratio": "adapt",
                     "width": "fill",
@@ -431,6 +432,7 @@
                   "name": "t:names.image",
                   "settings": {
                     "image": "shopify://shop_images/Teppichboden_Kurzflor.png",
+                    "alt": "Kurzflor-Teppichboden, Nahaufnahme der Oberfläche",
                     "link": "shopify://collections/teppichboden-kurzflor",
                     "image_ratio": "adapt",
                     "width": "fill",
@@ -541,6 +543,7 @@
                   "name": "t:names.image",
                   "settings": {
                     "image": "shopify://shop_images/Teppichboden_Velours.png",
+                    "alt": "Velours-Teppichboden, Nahaufnahme der Oberfläche",
                     "link": "shopify://collections/teppichboden-velours",
                     "image_ratio": "adapt",
                     "width": "fill",
@@ -651,6 +654,7 @@
                   "name": "t:names.image",
                   "settings": {
                     "image": "shopify://shop_images/Teppichboden_Wolle.png",
+                    "alt": "Wollteppichboden, Nahaufnahme der Oberfläche",
                     "link": "shopify://collections/teppichboden-wolle",
                     "image_ratio": "adapt",
                     "width": "fill",
@@ -761,7 +765,7 @@
                   "name": "t:names.image",
                   "settings": {
                     "image": "shopify://shop_images/Teppichboden_B_ro.png",
-                    "link": "shopify://collections/teppichboden-wolle-kopie",
+                    "link": "shopify://collections/teppichboden-nadelvlies",
                     "image_ratio": "adapt",
                     "width": "fill",
                     "custom_width": 100,

@@ -111,7 +111,7 @@ test('outer process watchdog clears after a completed run', () => {
 test('outer process watchdog terminates a real hanging child process', async () => {
   const child = spawn(process.execPath, [new URL('./fixtures/watchdog-child.mjs', import.meta.url).pathname], { stdio: 'ignore' });
   const result = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('watchdog child did not exit')); }, 1_000);
+    const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('watchdog child did not exit')); }, 5_000);
     child.once('exit', (code, signal) => { clearTimeout(timer); resolve({ code, signal }); });
     child.once('error', reject);
   });

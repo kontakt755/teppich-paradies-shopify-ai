@@ -11,12 +11,54 @@ export const EXTERNAL_BLOCKS = Object.freeze({
 export const MAX_AUTONOMOUS_REPAIR_ROUNDS = 3;
 export const MAX_IMMEDIATE_SCRIPT_RETRIES = 1;
 
+// Produkte/Kollektionen aus dem Shop nehmen ist ein Shopify-Write und nicht
+// zurückrollbar, sobald gelöscht wurde. Beide Leserichtungen abdecken, damit
+// weder "Produkt löschen" noch "lösche das Produkt" durchrutscht.
+const PRODUCT_REMOVAL_TARGET = 'produkt(?:e|s|en)?|product(?:s)?|artikel|kollektion(?:en)?|collection(?:s)?';
+// "loeschen" oder "archivieren" meint immer den Katalog. "entfernen" ist
+// zweideutig: "Produkte im Vergleichsfenster entfernen" war eine reine
+// Frontend-Aufgabe. Es greift deshalb im Zweifel trotzdem und wird nur von
+// einem ausdruecklichen Oberflaechen-Bezug entschaerft. Andersherum waere es
+// fail-open: ein blosses "Produkt Softiq entfernen" bliebe ungeschuetzt.
+const PRODUCT_REMOVAL_VERB = '(?:lösch|loesch|archivier|verbann|sperr|deaktivier|depublizier)(?:e|en|st|t)?|delete[dsn]?|unpublish(?:ed)?';
+const PRODUCT_REMOVAL_VERB_WEAK = '(?:entfern)(?:e|en|st|t)?';
+const NOT_UI_CONTEXT = '(?![\\s\\S]*\\b(?:vergleichsfenster|vergleichsliste|warenkorb|ansicht|menü|menue|navigation|filter|modal|dialog|overlay|frontend|oberfläche|oberflaeche)\\w*\\b)';
+// Die Suchfenster laufen mit s-Flag, sonst umgeht ein Zeilenumbruch zwischen
+// Ziel und Verb jedes Gate.
+const PRODUCT_REMOVAL_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_VERB})\\b`, 'is');
+const PRODUCT_REMOVAL_REVERSE = new RegExp(`\\b(?:${PRODUCT_REMOVAL_VERB})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'is');
+const PRODUCT_REMOVAL_WEAK_FORWARD = new RegExp(`${NOT_UI_CONTEXT}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_VERB_WEAK})\\b`, 'is');
+const PRODUCT_REMOVAL_WEAK_REVERSE = new RegExp(`${NOT_UI_CONTEXT}\\b(?:${PRODUCT_REMOVAL_VERB_WEAK})\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'is');
+const PRODUCT_DELETE_FORWARD = new RegExp(`\\b(?:${PRODUCT_REMOVAL_TARGET})\\b.{0,60}\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b`, 'is');
+// Auch ohne Loeschung sind Massenaenderungen an Produktdaten Shopify-Writes.
+// Das SHOPIFY_WRITE-Muster kannte bisher nur anlegen/importieren/schreiben, das
+// PRICE_SKU_VARIANT_WRITE-Muster nur Preise, SKUs und Varianten. Marken-, Vendor-
+// und Beschreibungsfelder fielen durch beide Raster.
+const PRODUCT_DATA_TARGET = 'vendor|marke(?:n(?:name|feld))?|brand|hersteller|produktdaten|produkttitel|produktbeschreibung|metafeld(?:er)?|alt-?text(?:e)?';
+const PRODUCT_DATA_VERB = '(?:vereinheitlich|umbenenn|umstell|setz|pflege|aktualisier|nachzieh|ueberschreib|überschreib)(?:e|en|st|t)?|update[ns]?';
+// "setzen" und "pflegen" sind nur als "Marke setzen" eine Anweisung. Voran-
+// gestellt stehen sie meist harmlos ("wir setzen auf die Marke X"), deshalb
+// fehlen sie in der Rueckwaertsrichtung.
+const PRODUCT_DATA_VERB_DIRECTED = '(?:vereinheitlich|umbenenn|umstell|aktualisier|nachzieh|ueberschreib|überschreib)(?:e|en|st|t)?|update[ns]?';
+// Deutsche Pluralendungen zulassen, sonst greift "Produktbeschreibungen" nicht.
+const PRODUCT_DATA_SUFFIX = '(?:en|er|e|n|s)?';
+const PRODUCT_DATA_FORWARD = new RegExp(`\\b(?:${PRODUCT_DATA_TARGET})${PRODUCT_DATA_SUFFIX}\\b.{0,60}\\b(?:${PRODUCT_DATA_VERB})\\b`, 'is');
+const PRODUCT_DATA_REVERSE = new RegExp(`\\b(?:${PRODUCT_DATA_VERB_DIRECTED})\\b.{0,60}\\b(?:${PRODUCT_DATA_TARGET})${PRODUCT_DATA_SUFFIX}\\b`, 'is');
+
+const PRODUCT_DELETE_REVERSE = new RegExp(`\\b(?:(?:lösch|loesch)(?:e|en|st|t)?|delete[dsn]?)\\b.{0,60}\\b(?:${PRODUCT_REMOVAL_TARGET})\\b`, 'is');
+
 const CLASS_D = [
   /\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b.{0,50}(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren)/i,
   /(?:ändern|schreiben|setzen|aktualisieren|update|löschen|importieren).{0,50}\b(?:preis(?:e|en)?|price|sku|variant(?:e|en|s)?)\b/i,
   /\b(?:checkout|payment|zahlung|shipping|versand|dns)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i,
   /\b(?:shopify[- ]?write|theme publish|live publish|live schalten|in shopify (?:schreiben|anlegen|importieren))\b/i,
   /\b(?:massen(?:anlage|import)|bulk (?:product|import)|produkte? (?:anlegen|importieren|schreiben))\b/i,
+  PRODUCT_REMOVAL_FORWARD,
+  PRODUCT_REMOVAL_REVERSE,
+  PRODUCT_REMOVAL_WEAK_FORWARD,
+  PRODUCT_REMOVAL_WEAK_REVERSE,
+  PRODUCT_DATA_FORWARD,
+  PRODUCT_DATA_REVERSE,
 ];
 const CLASS_C = [
   /\b(performance|architektur|architecture|komplex|complex|größere? (?:theme[- ]?)?logik|datenlogik|produktlogik|refactor)\b/i,
@@ -53,9 +95,33 @@ const PROTECTED_ACTION_PATTERNS = Object.freeze([
   ['CHECKOUT_PAYMENT_SHIPPING_CHANGE', /\b(?:checkout|payment|zahlung|shipping|versand)\b.{0,50}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
   ['DNS_CHANGE', /\bdns\b.{0,40}(?:ändern|schreiben|setzen|konfigurieren|umstellen|löschen)/i],
   ['IRREVERSIBLE_CHANGE', /\b(?:irreversibel\w*|irreversible)\b.{0,40}(?:ausführen|ändern|löschen|überschreiben)/i],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_FORWARD],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_REVERSE],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_WEAK_FORWARD],
+  ['SHOPIFY_WRITE', PRODUCT_REMOVAL_WEAK_REVERSE],
+  ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_FORWARD],
+  ['IRREVERSIBLE_CHANGE', PRODUCT_DELETE_REVERSE],
+  ['SHOPIFY_WRITE', PRODUCT_DATA_FORWARD],
+  ['SHOPIFY_WRITE', PRODUCT_DATA_REVERSE],
 ]);
 
 const STOREFRONT_VALIDATION = /\b(?:storefront|browser[- ]?qa|sales readiness|compare[- ]?check|live[- ]?shop)\b.{0,50}\b(?:testen|prüfen|ausführen|validieren|check)\b|\b(?:testen|prüfen|ausführen|validieren|check)\b.{0,50}\b(?:storefront|browser[- ]?qa|sales readiness|live[- ]?shop)\b/i;
+
+// Branch-, Pfad- und Dateinamen sind Bezeichner, keine Absichtserklaerung.
+// "chore/router-produkt-loeschen-gate" nennt eine geschuetzte Aktion nur im
+// Namen; wer den Branch erwaehnt, will damit nichts loeschen. Bewusst eng
+// gefasst: Nur Tokens mit Schraegstrich UND Bindestrich sowie Dateinamen mit
+// bekannter Endung fallen raus, damit "Produkte/Varianten loeschen" weiter
+// als echte Absicht erkannt wird.
+// Nur echte Repo-Bezeichner entfernen, erkennbar am bekannten Branch- oder
+// Verzeichnispraefix. Eine breitere Regel hat in der Pruefung echte Absichten
+// mitgeloescht ("produkte/varianten-preise aendern" verlor sein Gate), deshalb
+// ist die Liste bewusst geschlossen statt gemustert.
+const IDENTIFIER_PREFIX = /\b(?:chore|feat|feature|fix|hotfix|docs|refactor|test|release|merge|reconcile|claude|codex|windows|main|origin|qa|workflow|automation|domains|assets|sections|snippets|blocks|templates|layout|config|locales|control-center)\/\S+/giu;
+
+function withoutIdentifiers(text) {
+  return text.replace(IDENTIFIER_PREFIX, ' ');
+}
 
 function withoutNegatedActions(text) {
   return text
@@ -78,12 +144,12 @@ export function isSensitiveFile(file) {
 }
 
 export function protectedActionsForTask(text) {
-  const normalized = withoutNegatedActions(normalizeTaskText(text));
+  const normalized = withoutNegatedActions(withoutIdentifiers(normalizeTaskText(text)));
   return [...new Set(PROTECTED_ACTION_PATTERNS.filter(([, pattern]) => pattern.test(normalized)).map(([action]) => action))];
 }
 
 export function classifyTask(text, files = []) {
-  const normalized = withoutNegatedActions(normalizeTaskText(text));
+  const normalized = withoutNegatedActions(withoutIdentifiers(normalizeTaskText(text)));
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
   if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';

@@ -17,6 +17,10 @@ const RULES = Object.freeze([
   ['PASSWORD_ASSIGNMENT', /\b(?:password|passwd|pwd)\s*[:=]\s*["']?[^\s"']{8,}/i],
   ['SESSION_COOKIE', /\b(?:cookie|session[_-]?(?:id|token))\s*[:=]\s*["']?[^\s"']{12,}/i]
 ]);
+// Vorlagendateien wie .env.local.example gehoeren bewusst ins Repo. Nur die
+// Pfadregel wird fuer sie ausgesetzt; der Inhalt laeuft weiter durch alle
+// Muster, damit ein echter Key in einer .example-Datei trotzdem blockt.
+const TEMPLATE_PATH = /\.(?:example|sample|template|dist)$/i;
 const normalize = value => String(value).replaceAll('\\', '/').replace(/^\.\//, '');
 
 export function scanText({ file, text }) {

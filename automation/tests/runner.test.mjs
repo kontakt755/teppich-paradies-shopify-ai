@@ -6,6 +6,7 @@ import test from 'node:test';
 import { ManifestRunner, MissingPostflightDataError, RunnerStoppedError } from '../core/runner.mjs';
 import { RunLock, RunLockedError } from '../core/run-lock.mjs';
 import { atomicWriteJson } from '../core/state-store.mjs';
+import { SpecDriftGuard } from '../core/spec-drift.mjs';
 
 const manifest = JSON.parse(fs.readFileSync(new URL('../fixtures/manifest-basic.json', import.meta.url), 'utf8'));
 const temporary = testContext => {
@@ -100,15 +101,16 @@ test('runner persists review limit and does not mark roadmap complete', async t 
 });
 
 test('runner fails closed when a correction omits final postflight evidence', async t => {
-  const stateDir = temporary(t); let reviews = 0;
+  const stateDir = temporary(t); let reviews = 0; let guardCalls = 0;
   const finding = { priority: 'P1', file: 'qa/a.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
   const runner = new ManifestRunner({
-    manifest, stateDir, diffBudgetGuard: { evaluate: () => assert.fail('guard must not run') },
+    manifest, stateDir, diffBudgetGuard: { evaluate: () => { guardCalls += 1; } },
     executeTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/a.mjs', added: 1, deleted: 0 }], resources: ['storefront'], actualOperations: ['report_write'] }),
     reviewTask: async () => ({ findings: ++reviews === 1 ? [finding] : [] }),
     correctTask: async () => ({ status: 'PASS' }),
   });
   await assert.rejects(() => runner.run(), MissingPostflightDataError);
+  assert.equal(guardCalls, 1);
 });
 
 test('runner uses replacement post-correction postflight data', async t => {
@@ -120,9 +122,13 @@ test('runner uses replacement post-correction postflight data', async t => {
     reviewTask: async () => ({ findings: ++reviews === 1 ? [finding] : [] }),
     correctTask: async () => ({ status: 'PASS', diffEntries: [{ file: 'fixture/new.mjs', added: 2, deleted: 0 }], resources: ['new'], actualOperations: ['report_write'] }),
   }).run();
-  assert.deepEqual(calls[0].entries, [{ file: 'fixture/new.mjs', added: 2, deleted: 0 }]);
-  assert.deepEqual(calls[0].resources, ['new']);
-  assert.deepEqual(calls[0].actualOperations, ['report_write']);
+  const lowTaskCalls = calls.filter(call => call.task.id === 'LOW-1');
+  assert.deepEqual(lowTaskCalls.map(call => call.entries), [
+    [{ file: 'fixture/old.mjs', added: 1, deleted: 0 }],
+    [{ file: 'fixture/new.mjs', added: 2, deleted: 0 }],
+  ]);
+  assert.deepEqual(lowTaskCalls.at(-1).resources, ['new']);
+  assert.deepEqual(lowTaskCalls.at(-1).actualOperations, ['report_write']);
 });
 
 test('runner uses only the final correction evidence after multiple review rounds', async t => {
@@ -135,8 +141,9 @@ test('runner uses only the final correction evidence after multiple review round
     correctTask: async () => ({ status: 'PASS', diffEntries: [{ file: `fixture/correct-${++corrections}.mjs`, added: corrections, deleted: 0 }], resources: [`correct-${corrections}`], actualOperations: ['report_write'] }),
   }).run();
   assert.equal(corrections, 2);
-  assert.deepEqual(calls[0].entries, [{ file: 'fixture/correct-2.mjs', added: 2, deleted: 0 }]);
-  assert.deepEqual(calls[0].resources, ['correct-2']);
+  const lowTaskCalls = calls.filter(call => call.task.id === 'LOW-1');
+  assert.deepEqual(lowTaskCalls.map(call => call.entries[0].file), ['fixture/implement.mjs', 'fixture/correct-1.mjs', 'fixture/correct-2.mjs']);
+  assert.deepEqual(lowTaskCalls.at(-1).resources, ['correct-2']);
 });
 
 test('runner fails closed when a postflight guard lacks required evidence', async t => {
@@ -154,4 +161,81 @@ test('runner accepts implementation evidence when no correction ran', async t =>
   assert.deepEqual(calls[0].entries, [{ file: 'fixture/a.mjs', added: 1, deleted: 0 }]);
   assert.deepEqual(calls[0].resources, ['storefront']);
   assert.deepEqual(calls[0].actualOperations, manifest.tasks[0].allowedOperations);
+});
+
+test('policy v2 LOW fast path skips an available model reviewer', async t => {
+  const stateDir = temporary(t); let reviewCalls = 0;
+  const v2Manifest = { runId: 'v2-low', tasks: [{
+    id: 'LOW-V2', domain: 'automation', risk: 'LOW', taskType: 'IMPLEMENTATION', routing: { policyVersion: 2 },
+    dependencies: [], allowedFiles: ['automation/core/**'], allowedOperations: ['report_write'],
+  }] };
+  const result = await new ManifestRunner({
+    manifest: v2Manifest,
+    stateDir,
+    diffBudgetGuard: { evaluate: () => ({ status: 'PASS', changedLines: 5 }) },
+    executeTask: async () => ({
+      status: 'PASS', diffEntries: [{ file: 'automation/core/example.mjs', added: 5, deleted: 0 }],
+      resources: ['router'], tests: [{ id: 'unit', status: 'PASS' }],
+    }),
+    reviewTask: async () => { reviewCalls += 1; return { findings: [] }; },
+  }).run();
+  assert.equal(result.tasks['LOW-V2'].status, 'PASS');
+  assert.equal(result.tasks['LOW-V2'].routingPolicy.fastPath, true);
+  assert.equal(result.tasks['LOW-V2'].qualityGates.releaseReady, true);
+  assert.equal(reviewCalls, 0);
+});
+
+test('policy v2 blocks completion when triggered visual evidence is missing', async t => {
+  const stateDir = temporary(t);
+  const v2Manifest = { runId: 'v2-ui', tasks: [{
+    id: 'UI-V2', domain: 'shopify', risk: 'MEDIUM', taskType: 'IMPLEMENTATION', routing: { policyVersion: 2 },
+    dependencies: [], allowedFiles: ['sections/example.liquid'], allowedOperations: ['multi_file_theme_edit'],
+  }] };
+  const result = await new ManifestRunner({
+    manifest: v2Manifest,
+    stateDir,
+    diffBudgetGuard: { evaluate: () => ({ status: 'PASS', changedLines: 15 }) },
+    executeTask: async () => ({
+      status: 'PASS', changedFiles: ['sections/example.liquid'], diffEntries: [{ file: 'sections/example.liquid', added: 15, deleted: 0 }],
+      resources: ['draft-theme'], tests: [{ id: 'theme-check', status: 'PASS' }], gateEvidence: { architecture: { status: 'PASS', evidence: 'bounded change' } },
+    }),
+    reviewTask: async () => ({ findings: [] }),
+  }).run();
+  assert.equal(result.tasks['UI-V2'].status, 'BLOCKED');
+  assert.ok(result.tasks['UI-V2'].qualityGates.blocking.some(gate => gate.id === 'visualQa'));
+});
+
+test('policy v2 stops a conflicting shop fact before model execution', async t => {
+  const stateDir = temporary(t); let executeCalls = 0;
+  const v2Manifest = { runId: 'v2-spec', tasks: [{
+    id: 'SPEC-V2', domain: 'shopify', risk: 'LOW', taskType: 'IMPLEMENTATION', routing: { policyVersion: 2 },
+    dependencies: [], allowedFiles: ['assets/cart.js'], allowedOperations: ['report_write'],
+    requirementIds: ['CART-1'], proposedFacts: { wholePackagesRequired: false },
+  }] };
+  const specGuard = new SpecDriftGuard({ registry: { invariants: [{
+    id: 'CART-1', title: 'Ganze Pakete', severity: 'HARD', appliesWhen: { files: ['assets/*cart*'] }, facts: { wholePackagesRequired: true },
+  }] } });
+  const result = await new ManifestRunner({
+    manifest: v2Manifest, stateDir, specGuard,
+    executeTask: async () => { executeCalls += 1; return { status: 'PASS' }; },
+  }).run();
+  assert.equal(result.tasks['SPEC-V2'].status, 'BLOCKED');
+  assert.equal(result.tasks['SPEC-V2'].specCheck.conflicts[0].fact, 'wholePackagesRequired');
+  assert.equal(executeCalls, 0);
+});
+
+test('provider timeout parks one task while independent work continues', async t => {
+  const stateDir = temporary(t);
+  const timeoutManifest = { runId: 'provider-timeout', tasks: [
+    { id: 'HANG', domain: 'fixture', risk: 'LOW', dependencies: [], allowedFiles: ['fixture/**'], allowedOperations: ['report_write'] },
+    { id: 'CONTINUE', domain: 'fixture', risk: 'LOW', dependencies: [], allowedFiles: ['fixture/**'], allowedOperations: ['report_write'] },
+  ] };
+  const result = await new ManifestRunner({
+    manifest: timeoutManifest, stateDir, providerTimeoutMs: 10,
+    executeTask: async (task, { signal }) => task.id === 'HANG'
+      ? new Promise(() => signal.addEventListener('abort', () => {}))
+      : { status: 'PASS' },
+  }).run();
+  assert.equal(result.tasks.HANG.status, 'PARKED');
+  assert.equal(result.tasks.CONTINUE.status, 'PASS');
 });

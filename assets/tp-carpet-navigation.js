@@ -4,7 +4,7 @@ const TP_CARPET_URLS = {
   Velours: '/collections/teppichboden-velours',
   Schlinge: '/collections/teppichboden-schlinge',
   Wolle: '/collections/teppichboden-wolle',
-  'Nadelvlies & Objekt': '/collections/teppichboden-wolle-kopie',
+  'Nadelvlies & Objekt': '/collections/teppichboden-nadelvlies',
 };
 
 function enhanceCarpetMenu() {
@@ -13,7 +13,7 @@ function enhanceCarpetMenu() {
   carpetLinks.forEach((carpetLink) => {
     if (carpetLink.dataset.tpCarpetNavigation === 'true') return;
     carpetLink.dataset.tpCarpetNavigation = 'true';
-    carpetLink.href = '/collections/teppischboden';
+    carpetLink.href = '/collections/teppichboden';
 
     const carpetItem = carpetLink.closest('.gm-item.gm-level-0');
     const typeList = carpetItem?.querySelector('.gm-submenu .gm-grid-item:first-child .gm-links');
@@ -21,7 +21,7 @@ function enhanceCarpetMenu() {
 
     const allCarpetsLink = typeList.querySelector('.gm-heading .gm-target');
     if (allCarpetsLink) {
-      allCarpetsLink.href = '/collections/teppischboden';
+      allCarpetsLink.href = '/collections/teppichboden';
       allCarpetsLink.title = 'Alle Teppichböden ansehen';
       const text = allCarpetsLink.querySelector('.gm-text');
       if (text) text.textContent = 'Alle Teppichböden ansehen';
@@ -40,7 +40,7 @@ function enhanceCarpetMenu() {
         (event) => {
           event.preventDefault();
           event.stopImmediatePropagation();
-          window.location.assign('/collections/teppischboden');
+          window.location.assign('/collections/teppichboden');
         },
         true
       );
@@ -49,4 +49,17 @@ function enhanceCarpetMenu() {
 }
 
 enhanceCarpetMenu();
-new MutationObserver(enhanceCarpetMenu).observe(document.documentElement, { childList: true, subtree: true });
+
+// Der Beobachter haengt am gesamten Dokument, weil das Menue von einer App
+// nachgerendert wird. Ohne Buendelung liefe enhanceCarpetMenu bei jeder
+// einzelnen DOM-Mutation und damit waehrend des Renderns dutzendfach pro
+// Sekunde ueber das ganze Dokument. Ein Frame-Puffer fasst das zusammen.
+let scheduled = false;
+new MutationObserver(() => {
+  if (scheduled) return;
+  scheduled = true;
+  requestAnimationFrame(() => {
+    scheduled = false;
+    enhanceCarpetMenu();
+  });
+}).observe(document.documentElement, { childList: true, subtree: true });

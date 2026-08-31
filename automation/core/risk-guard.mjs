@@ -40,6 +40,7 @@ export function highestRisk(...risks) {
 export function loadRiskMap(filePath) {
   const map = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   if (!map.operations || !Array.isArray(map.paths) || !map.defaultPathRisk) throw new Error('Invalid risk map');
+  if (map.defaultResourceRisk && !(map.defaultResourceRisk in RANK)) throw new Error('Invalid default resource risk');
   return map;
 }
 
@@ -61,7 +62,13 @@ export class RiskGuard {
 
   resourceRisk(resource) {
     if (!resource) return 'LOW';
-    return this.map.protectedResources?.[resource] ?? 'LOW';
+    const explicit = this.map.protectedResources?.[resource];
+    if (explicit) return explicit;
+    const patternRisks = (this.map.resourcePatterns ?? [])
+      .filter(rule => globMatches(resource, rule.pattern))
+      .map(rule => rule.risk);
+    if (patternRisks.length) return highestRisk(...patternRisks);
+    return this.map.defaultResourceRisk ?? 'MEDIUM';
   }
 
   assertAllowlist(task, files, operations) {

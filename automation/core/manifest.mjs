@@ -1,4 +1,11 @@
 const ALLOWED_RISKS = new Set(['LOW', 'MEDIUM', 'HIGH']);
+const ALLOWED_TASK_TYPES = new Set(['ANALYSIS', 'PLAN', 'IMPLEMENTATION', 'REVIEW', 'CORRECTION', 'TEST']);
+
+function optionalStringArray(task, field) {
+  if (task[field] !== undefined && (!Array.isArray(task[field]) || task[field].some(value => typeof value !== 'string' || !value.trim()))) {
+    throw new Error(`Task ${task.id} ${field} must be an array of non-empty strings`);
+  }
+}
 
 export function validateManifest(manifest) {
   if (!manifest || typeof manifest !== 'object') throw new Error('Manifest must be an object');
@@ -14,6 +21,14 @@ export function validateManifest(manifest) {
     if (!Array.isArray(task.dependencies)) throw new Error(`Task ${task.id} requires dependencies array`);
     if (!Array.isArray(task.allowedFiles) || !task.allowedFiles.length) throw new Error(`Task ${task.id} requires allowedFiles`);
     if (!Array.isArray(task.allowedOperations) || !task.allowedOperations.length) throw new Error(`Task ${task.id} requires allowedOperations`);
+    if (task.taskType !== undefined && !ALLOWED_TASK_TYPES.has(String(task.taskType).toUpperCase())) throw new Error(`Task ${task.id} has invalid taskType`);
+    if (task.routing !== undefined && (!task.routing || typeof task.routing !== 'object' || Array.isArray(task.routing))) throw new Error(`Task ${task.id} routing must be an object`);
+    if (task.routing?.policyVersion !== undefined && (!Number.isInteger(task.routing.policyVersion) || task.routing.policyVersion < 1)) throw new Error(`Task ${task.id} has invalid routing policyVersion`);
+    optionalStringArray(task, 'effects');
+    optionalStringArray(task, 'requirementIds');
+    optionalStringArray(task, 'acceptanceCriteria');
+    optionalStringArray(task, 'qaCommands');
+    if (task.proposedFacts !== undefined && (!task.proposedFacts || typeof task.proposedFacts !== 'object' || Array.isArray(task.proposedFacts))) throw new Error(`Task ${task.id} proposedFacts must be an object`);
   }
   for (const task of manifest.tasks) for (const dependency of task.dependencies) {
     if (!ids.has(dependency)) throw new Error(`Task ${task.id} references missing dependency ${dependency}`);
