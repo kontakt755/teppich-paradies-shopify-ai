@@ -40,6 +40,10 @@
   assign widths = '240, 352, 832, 1200, 1600, 1920, 2560, 3840'
 %}
 
+{% liquid
+  assign image_alt_override = block_settings.alt | default: block_settings.image.alt
+%}
+
 {% capture image %}
   {%- if block_settings.image -%}
     {{
@@ -51,7 +55,8 @@
         height: block_settings.image.height,
         class: 'image-block__image border-style',
         style: image_border_style,
-        sizes: sizes
+        sizes: sizes,
+        alt: image_alt_override
     }}
   {%- else -%}
     <div class="placeholder-image border-style size-style" style="{{ image_border_style }}">
@@ -128,6 +133,11 @@
       "type": "image_picker",
       "id": "image",
       "label": "t:settings.image"
+    },
+    {
+      "type": "text",
+      "id": "alt",
+      "label": "Alt-Text (überschreibt den Alt-Text der Datei)"
     },
     {
       "type": "url",

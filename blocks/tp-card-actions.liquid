@@ -95,10 +95,11 @@
     .tp-card-actions__compare-{{ tp_ca_id }} {
       flex: 1 1 auto;
       min-width: 0;
+      min-height: 32px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      padding: 5px 8px;
+      padding: 8px;
       background: transparent;
       border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
       border-radius: 6px;
@@ -117,8 +118,11 @@
     }
 
     .tp-card-actions__sample-{{ tp_ca_id }} {
+      display: inline-flex;
+      align-items: center;
       flex: 0 0 auto;
-      padding: 5px 8px;
+      min-height: 32px;
+      padding: 8px;
       border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
       border-radius: 6px;
       color: var(--color-foreground);
