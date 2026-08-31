@@ -32,7 +32,7 @@
             class="resource-list__item"
           >
             {% # theme-check-disable UniqueStaticBlockId %}
-              {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: product, closest.card_index: forloop.index0 %}
+              {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: product, card_index: forloop.index0 %}
             {% # theme-check-enable UniqueStaticBlockId %}
           </div>
 
@@ -47,7 +47,7 @@
           class="resource-list__item"
         >
           {% # theme-check-disable UniqueStaticBlockId %}
-            {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: null, closest.card_index: forloop.index0 %}
+            {% content_for 'block', type: '_product-card', id: 'static-product-card', closest.product: null, card_index: forloop.index0 %}
           {% # theme-check-enable UniqueStaticBlockId %}
         </div>
 

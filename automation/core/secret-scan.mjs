@@ -12,12 +12,16 @@ const RULES = Object.freeze([
   ['PASSWORD_ASSIGNMENT', /\b(?:password|passwd|pwd)\s*[:=]\s*["']?[^\s"']{8,}/i],
   ['SESSION_COOKIE', /\b(?:cookie|session[_-]?(?:id|token))\s*[:=]\s*["']?[^\s"']{12,}/i]
 ]);
+// Vorlagendateien wie .env.local.example gehoeren bewusst ins Repo. Nur die
+// Pfadregel wird fuer sie ausgesetzt; der Inhalt laeuft weiter durch alle
+// Muster, damit ein echter Key in einer .example-Datei trotzdem blockt.
+const TEMPLATE_PATH = /\.(?:example|sample|template|dist)$/i;
 const normalize = value => String(value).replaceAll('\\', '/').replace(/^\.\//, '');
 
 export function scanText({ file, text }) {
   const normalized = normalize(file);
   const findings = [];
-  if (SECRET_PATH.test(normalized)) findings.push({ file: normalized, line: 1, rule: 'SECRET_FILE' });
+  if (SECRET_PATH.test(normalized) && !TEMPLATE_PATH.test(normalized)) findings.push({ file: normalized, line: 1, rule: 'SECRET_FILE' });
   String(text).split(/\r?\n/).forEach((line, index) => {
     for (const [rule, pattern] of RULES) if (pattern.test(line)) findings.push({ file: normalized, line: index + 1, rule });
     if (findSensitiveUrlQueryNames(line).length) findings.push({ file: normalized, line: index + 1, rule: 'URL_AUTH_QUERY' });

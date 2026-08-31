@@ -47,3 +47,14 @@ test('URL auth query is blocked without exposing its value', () => {
   assert.ok(findings.some(finding => finding.rule === 'URL_AUTH_QUERY'));
   assert.doesNotMatch(output, new RegExp(fakeValue));
 });
+
+test('template files are exempt from the path rule but not from content rules', () => {
+  // .env.local.example gehoert als Vorlage ins Repo und darf den Gate nicht blocken.
+  assert.deepEqual(scanText({ file: '.env.local.example', text: 'ANTHROPIC_API_KEY=sk-ant-xxxxx' }), []);
+  assert.deepEqual(scanText({ file: 'config/secrets.json.sample', text: 'PLACEHOLDER=true' }), []);
+  // Ein echtes Secret in derselben Datei muss weiterhin blocken.
+  const fake = ['ghp', 'B'.repeat(24)].join('_');
+  assert.equal(scanText({ file: '.env.local.example', text: `token=${fake}` })[0].rule, 'GITHUB_TOKEN');
+  // Die echte .env bleibt gesperrt.
+  assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE');
+});

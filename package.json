@@ -11,6 +11,7 @@
     "seo:check": "node qa/run-seo-check.mjs",
     "sales:check": "node qa/run-sales-readiness.mjs",
     "compare:check": "node qa/run-compare-check.mjs",
+    "compare:remove:check": "node qa/run-compare-remove-dialog.mjs",
     "workflow:validate": "node workflow/cli.mjs validate",
     "workflow:pr": "node workflow/cli.mjs pr",
     "workflow:preview": "node workflow/cli.mjs preview",

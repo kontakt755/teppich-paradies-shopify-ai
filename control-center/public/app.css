@@ -51,6 +51,7 @@ main { position: relative; max-width: 1500px; margin: 0 auto; padding: 24px 32px
 .s-running { color: var(--blue); background: #172a3d; }
 .s-waiting, .s-unknown { color: var(--slate); background: #1c2624; }
 .s-blocked_external, .s-needs_local_runner, .s-human_gate, .s-stale { color: var(--amber); background: #392a16; }
+.s-recommended { color: var(--blue); background: #172a3d; }
 .s-skipped { color: #77837f; background: #171e1c; }
 .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
 .span-4 { grid-column: span 4; } .span-5 { grid-column: span 5; } .span-7 { grid-column: span 7; } .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }

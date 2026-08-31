@@ -6,7 +6,7 @@ import os from 'node:os';
 import {
   EXTERNAL_BLOCKS, MAX_AUTONOMOUS_REPAIR_ROUNDS, MAX_IMMEDIATE_SCRIPT_RETRIES,
   assertProtectedAction, classifyFailure, classifyTask, deriveHandoffState, isSensitiveFile,
-  normalizeTaskText, planContinue, routeTask, runWithExternalRetry,
+  normalizeTaskText, planContinue, protectedActionsForTask, routeTask, runWithExternalRetry,
 } from '../router.mjs';
 import { runValidation } from '../core.mjs';
 
@@ -20,9 +20,9 @@ const latest = (overrides = {}) => ({
 test('CLASS A/B/C/D routing follows cost-aware defaults', () => {
   const cases = [
     ['Dateien prüfen und Report erstellen', 'A', 'SCRIPT', false],
-    ['Kleinen CSS Theme-Fix umsetzen', 'B', 'CODEX_LIGHT', false],
-    ['Performance und größere Theme-Logik verbessern', 'C', 'CODEX_MEDIUM', true],
-    ['Checkout Payment und Shipping ändern', 'D', 'CLAUDE_STRONG', true],
+    ['Kleinen CSS Theme-Fix umsetzen', 'B', 'AGENT', false],
+    ['Performance und größere Theme-Logik verbessern', 'C', 'STRONG_AGENT', false],
+    ['Checkout Payment und Shipping ändern', 'D', 'STRONG_AGENT', true],
   ];
   for (const [text, taskClass, implementer, reviewRequired] of cases) {
     const route = routeTask({ text, branch: 'chore/router', head: 'head-1' });
@@ -32,25 +32,63 @@ test('CLASS A/B/C/D routing follows cost-aware defaults', () => {
   }
 });
 
-test('CLASS B becomes review-required when actual sensitive files are touched', () => {
+test('ordinary Theme files stay open while workflow and protected files recommend review', () => {
   const route = routeTask({ text: 'Kleinen CSS Fix umsetzen', branch: 'chore/router', head: 'head-1' });
   assert.equal(route.reviewRequired, false);
   const state = deriveHandoffState({ route, repo: repo(), latest: latest(), changedFiles: ['sections/card.liquid'] });
-  assert.equal(state.reviewRequired, true);
-  assert.equal(state.reviewer, 'CLAUDE_HAIKU');
-  assert.equal(state.nextAllowedAction, 'HANDOFF_REVIEWER');
+  assert.equal(state.reviewRequired, false);
+  assert.equal(state.reviewRecommended, false);
+  assert.equal(state.nextAllowedAction, 'PREPARE_DRAFT_PR');
+  assert.equal(isSensitiveFile('sections/card.liquid'), false);
+  const workflowState = deriveHandoffState({ route, repo: repo(), latest: latest(), changedFiles: ['workflow/router.mjs'] });
+  assert.equal(workflowState.reviewRequired, false);
+  assert.equal(workflowState.reviewRecommended, true);
+  assert.equal(workflowState.reviewStatus, 'RECOMMENDED');
+  assert.equal(workflowState.nextAllowedAction, 'PREPARE_DRAFT_PR');
   assert.ok(isSensitiveFile('docs/WORKFLOW.md'));
   assert.ok(isSensitiveFile('.github/workflows/pr-validation.yml'));
   assert.ok(isSensitiveFile('AGENTS.md'));
 });
 
 test('CLASS D always requires independent review and a human gate', () => {
-  for (const text of ['SKU ändern', 'CI Security Gate ändern', 'Produkte in Shopify schreiben']) {
+  for (const text of ['SKU ändern', 'Checkout Payment und Shipping ändern', 'Produkte in Shopify schreiben']) {
     const route = routeTask({ text, branch: 'chore/router', head: 'head-1' });
     assert.equal(route.taskClass, 'D');
     assert.equal(route.reviewRequired, true);
     assert.equal(route.humanGateRequired, true);
   }
+});
+
+test('risk words without an action no longer escalate or create a human gate', () => {
+  const texts = [
+    'Preis-, SKU- und Variantenlogik nur analysieren und bestehendes Verhalten erhalten',
+    'Human-Gate-Fluss dokumentieren und irreversible Änderungen weiterhin schützen',
+    'Live-Shop Bericht lesen, aber nichts veröffentlichen',
+    'SKU nicht ändern, nur die Darstellung prüfen',
+    'Theme analysieren, ohne es live zu veröffentlichen',
+  ];
+  for (const text of texts) {
+    const route = routeTask({ text, branch: 'chore/router', head: 'head-1' });
+    assert.notEqual(route.taskClass, 'D');
+    assert.equal(route.humanGateRequired, false);
+    assert.deepEqual(route.protectedActions, []);
+  }
+});
+
+test('protected action detection is based on explicit action intent', () => {
+  assert.deepEqual(protectedActionsForTask('SKU ändern'), ['PRICE_SKU_VARIANT_WRITE']);
+  assert.deepEqual(protectedActionsForTask('Theme live veröffentlichen'), ['SHOPIFY_LIVE_PUBLISH']);
+  assert.deepEqual(protectedActionsForTask('Branch in main mergen'), ['MERGE_MAIN']);
+});
+
+test('complex local work recommends review but only needs static validation', () => {
+  const route = routeTask({ text: 'Router Architektur refactoren', branch: 'chore/router', head: 'head-1' });
+  assert.equal(route.taskClass, 'C');
+  assert.equal(route.reviewRequired, false);
+  assert.equal(route.reviewRecommended, true);
+  assert.equal(route.localRunnerRequired, false);
+  assert.equal(route.requiredValidationScope, 'STATIC');
+  assert.equal(route.humanGateRequired, false);
 });
 
 test('product bulk preparation starts with scripts and gates every future Shopify write', () => {
@@ -136,12 +174,13 @@ test('approval is never persisted in handoff state', () => {
   const review = { status: 'PASS', taskId: route.taskId, commit: 'head-1', p0: 0, p1: 0, approved: true };
   const state = deriveHandoffState({ route, repo: repo(), latest: latest(), review, changedFiles: ['checkout/change.mjs'] });
   assert.equal(state.humanApprovalStored, false);
-  assert.equal(state.nextAllowedAction, 'STOP_HUMAN_GATE');
-  assert.deepEqual(planContinue(state), { kind: 'STOP', reason: 'HUMAN_GATE' });
+  assert.equal(state.humanGate, 'REQUIRED_BEFORE_PROTECTED_ACTION');
+  assert.equal(state.nextAllowedAction, 'PREPARE_DRAFT_PR');
+  assert.deepEqual(planContinue(state), { kind: 'HANDOFF', target: null, action: 'PREPARE_DRAFT_PR' });
 });
 
-test('Shopify writes and main merges are refused without commit-bound human approval', () => {
-  for (const action of ['SHOPIFY_WRITE', 'MERGE_MAIN']) {
+test('protected actions are refused without commit-bound human approval', () => {
+  for (const action of ['SHOPIFY_WRITE', 'PRICE_SKU_VARIANT_WRITE', 'CHECKOUT_PAYMENT_SHIPPING_CHANGE', 'MERGE_MAIN']) {
     assert.throws(() => assertProtectedAction({ action, currentCommit: 'head-1' }), /verweigert/);
     assert.throws(() => assertProtectedAction({ action, approved: true, approvalCommit: 'old', currentCommit: 'head-1' }), /aktuellen Commit/);
     assert.equal(assertProtectedAction({ action, approved: true, approvalCommit: 'head-1', currentCommit: 'head-1' }), true);
@@ -158,11 +197,28 @@ test('external blocks hand off without AI retries and offer only a later script 
 });
 
 test('local runner handoff distinguishes cloud-safe code from Storefront QA', () => {
-  const route = routeTask({ text: 'Storefront Browser Compare durchführen', branch: 'chore/router', head: 'head-1' });
+  const route = routeTask({ text: 'Storefront testen und Browser-QA durchführen', branch: 'chore/router', head: 'head-1' });
+  assert.equal(route.requiredValidationScope, 'FULL');
   const state = deriveHandoffState({ route, repo: repo(), latest: latest({ status: 'FAIL', externalBlock: EXTERNAL_BLOCKS.LOCAL_RUNNER }) });
   assert.equal(state.nextAllowedAction, 'USE_LOCAL_MAC_RUNNER');
   assert.deepEqual(planContinue(state), { kind: 'STOP', reason: 'NEEDS_LOCAL_RUNNER' });
   assert.deepEqual(planContinue(state, { localRunner: true }), { kind: 'VALIDATE_FULL' });
+});
+
+test('unclassified validation failures return to the implementer instead of stopping at a human blocker', () => {
+  const route = routeTask({ text: 'CSS Theme-Fix', branch: 'chore/router', head: 'head-1' });
+  const state = deriveHandoffState({ route, repo: repo(), latest: latest({ status: 'FAIL', externalBlock: EXTERNAL_BLOCKS.UNKNOWN }) });
+  assert.equal(state.nextAllowedAction, 'INSPECT_VALIDATION_FAILURE');
+  assert.equal(state.nextAgent, 'AGENT');
+  assert.deepEqual(planContinue(state), { kind: 'HANDOFF', target: 'AGENT', action: 'INSPECT_VALIDATION_FAILURE' });
+});
+
+test('an existing draft PR advances to review instead of being prepared twice', () => {
+  const route = routeTask({ text: 'Router Architektur refactoren', branch: 'chore/router', head: 'head-1' });
+  const state = deriveHandoffState({ route, repo: repo(), latest: latest(), changedFiles: ['workflow/router.mjs'], pr: { number: 10, url: 'https://example.test/pr/10' } });
+  assert.equal(state.nextAllowedAction, 'REVIEW_DRAFT_PR');
+  assert.equal(state.nextAgent, 'INDEPENDENT_REVIEWER');
+  assert.deepEqual(state.pr, { number: 10, url: 'https://example.test/pr/10' });
 });
 
 test('task text is data, bounded, and never interpreted as a shell command', () => {
@@ -180,4 +236,78 @@ test('CURRENT_STATE and NEXT_ACTION remain derived pointers without stored appro
   assert.match(current, /speichert absichtlich keinen Branch, Commit, PASS-Status oder Human Approval/);
   assert.match(next, /speichert niemals eine Merge-, Preview- oder Live-Freigabe/);
   assert.equal(MAX_AUTONOMOUS_REPAIR_ROUNDS, 3);
+});
+
+test('removing a product from the shop is a protected Shopify write', () => {
+  for (const text of [
+    'Shopify Produkt Softiq Teppichboden loeschen und dauerhaft sperren',
+    'Produkt Softiq entfernen',
+    'lösche das Produkt Softiq aus dem Shop',
+    'Kollektion Restposten archivieren',
+    'Artikel deaktivieren und verbannen',
+  ]) {
+    assert.ok(protectedActionsForTask(text).includes('SHOPIFY_WRITE'), text);
+    assert.equal(routeTask({ text }).shopifyWriteRequired, true, text);
+    assert.equal(routeTask({ text }).humanGateRequired, true, text);
+  }
+});
+
+test('deleting a product is additionally flagged as irreversible', () => {
+  assert.ok(protectedActionsForTask('Produkt Softiq löschen').includes('IRREVERSIBLE_CHANGE'));
+  assert.equal(classifyTask('Produkt Softiq löschen'), 'D');
+  // Archivieren ist rückholbar und darf nur der Shopify-Write-Gate auslösen.
+  assert.ok(!protectedActionsForTask('Produkt Softiq archivieren').includes('IRREVERSIBLE_CHANGE'));
+});
+
+test('negated product removal stays unprotected', () => {
+  assert.deepEqual(protectedActionsForTask('Produktseiten prüfen ohne Produkte zu löschen'), []);
+  assert.deepEqual(protectedActionsForTask('Produkte nicht löschen, nur Alt-Texte zählen'), []);
+});
+
+test('bulk product data changes are protected Shopify writes', () => {
+  for (const text of [
+    'vendor-Feld aller aktiven Produkte vereinheitlichen',
+    'Markenfeld auf die neue Hausmarke umstellen',
+    'Alt-Texte der Produktbilder nachziehen',
+    'Produktbeschreibungen aktualisieren',
+  ]) {
+    assert.ok(protectedActionsForTask(text).includes('SHOPIFY_WRITE'), text);
+    assert.equal(routeTask({ text }).humanGateRequired, true, text);
+  }
+  // Reines Nachdenken ueber einen Namen ist kein Write.
+  assert.deepEqual(protectedActionsForTask('Markennamen fuer unsere Hausmarke erfinden'), []);
+  // Verneinung bleibt ungeschuetzt.
+  assert.deepEqual(protectedActionsForTask('Produktdaten pruefen, ohne sie zu aktualisieren'), []);
+});
+
+test('identifiers are names, not intentions', () => {
+  // Ein Branch, der eine geschuetzte Aktion im Namen traegt, ist kein Auftrag dazu.
+  assert.deepEqual(protectedActionsForTask('Selbstreview der Commits auf chore/router-produkt-loeschen-gate'), []);
+  assert.deepEqual(protectedActionsForTask('qa/run-seo-check.mjs anpassen'), []);
+  // Echte Absicht bleibt erkannt, auch mit Schraegstrich in der Aufzaehlung.
+  assert.ok(protectedActionsForTask('Produkte/Varianten loeschen').includes('SHOPIFY_WRITE'));
+  assert.ok(protectedActionsForTask('Produkt Softiq loeschen').includes('IRREVERSIBLE_CHANGE'));
+});
+
+test('review findings on the product gates stay fixed', () => {
+  const gated = text => routeTask({ text });
+  // Bezeichner-Filter darf keine echte Absicht mitloeschen.
+  assert.ok(gated('produkte/varianten-preise ändern').protectedActions.includes('PRICE_SKU_VARIANT_WRITE'));
+  assert.ok(gated('checkout/payment-flow ändern').protectedActions.includes('CHECKOUT_PAYMENT_SHIPPING_CHANGE'));
+  assert.ok(gated('preise.csv importieren').protectedActions.includes('PRICE_SKU_VARIANT_WRITE'));
+  // Geschuetzte Aktion und Klasse duerfen nicht auseinanderlaufen.
+  const data = gated('Produktbeschreibungen aktualisieren');
+  assert.equal(data.shopifyWriteRequired, true);
+  assert.equal(data.taskClass, 'D');
+  assert.equal(data.reviewer, 'INDEPENDENT_REVIEWER');
+  // "entfernen" greift im Zweifel, wird aber vom Oberflaechen-Bezug entschaerft.
+  assert.deepEqual(gated('Produkte direkt im Vergleichsfenster entfernen').protectedActions, []);
+  assert.deepEqual(gated('Entfernen-Button im Warenkorb ueberarbeiten').protectedActions, []);
+  assert.ok(gated('Produkte aus dem Shop entfernen').protectedActions.includes('SHOPIFY_WRITE'));
+  assert.ok(gated('Produkt Softiq entfernen').protectedActions.includes('SHOPIFY_WRITE'));
+  // Ein Zeilenumbruch zwischen Ziel und Verb darf kein Gate umgehen.
+  assert.ok(gated('Produkt Softiq\nlöschen').protectedActions.includes('IRREVERSIBLE_CHANGE'));
+  // Beschreibender Text ueber eine Marke ist kein Write.
+  assert.deepEqual(gated('Wir setzen im Bericht auf die Marke Softiq').protectedActions, []);
+  assert.ok(gated('Marke auf TeppichParadies setzen').protectedActions.includes('SHOPIFY_WRITE'));
 });
