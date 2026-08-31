@@ -1,0 +1,1602 @@
+[
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240813390",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"405\", \"color_name\": \"Gr\\u00fcn Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "405",
+      "color_name": "Gr\u00fcn Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240846158",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"406\", \"color_name\": \"Gr\\u00fcn Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "406",
+      "color_name": "Gr\u00fcn Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240878926",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"403\", \"color_name\": \"Gr\\u00fcn Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "403",
+      "color_name": "Gr\u00fcn Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240911694",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"304\", \"color_name\": \"Blau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "304",
+      "color_name": "Blau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240944462",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"307\", \"color_name\": \"Blau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "307",
+      "color_name": "Blau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326240977230",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"309\", \"color_name\": \"Blau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "309",
+      "color_name": "Blau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241009998",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"705\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "705",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241042766",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"407\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "407",
+      "color_name": "Beige Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241075534",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"704\", \"color_name\": \"Beige Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "704",
+      "color_name": "Beige Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241108302",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"508\", \"color_name\": \"Anthrazit Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "508",
+      "color_name": "Anthrazit Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241141070",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"904\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "904",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241173838",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"514\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "514",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241206606",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"516\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "516",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241239374",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"515\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "515",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241272142",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"902\", \"color_name\": \"Schwarz Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "902",
+      "color_name": "Schwarz Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241304910",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"706\", \"color_name\": \"Orange Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "706",
+      "color_name": "Orange Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241337678",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"106\", \"color_name\": \"Rot Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "106",
+      "color_name": "Rot Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241370446",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"107\", \"color_name\": \"Rot Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "107",
+      "color_name": "Rot Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326241403214",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"205\", \"color_name\": \"Gelb Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "205",
+      "color_name": "Gelb Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505251150",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"098\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "098",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505283918",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"098\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "098",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505316686",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"095\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "095",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505349454",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"095\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "095",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505382222",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"079\", \"color_name\": \"Blau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "079",
+      "color_name": "Blau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505414990",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"079\", \"color_name\": \"Blau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "079",
+      "color_name": "Blau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505447758",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"064\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "064",
+      "color_name": "Braun Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505480526",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"064\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "064",
+      "color_name": "Braun Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505513294",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"053\", \"color_name\": \"Braun Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "053",
+      "color_name": "Braun Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505546062",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"053\", \"color_name\": \"Braun Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "053",
+      "color_name": "Braun Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505578830",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"039\", \"color_name\": \"Beige Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "039",
+      "color_name": "Beige Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505611598",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"039\", \"color_name\": \"Beige Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "039",
+      "color_name": "Beige Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505644366",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"031\", \"color_name\": \"Beige Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "031",
+      "color_name": "Beige Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505677134",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"031\", \"color_name\": \"Beige Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "031",
+      "color_name": "Beige Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505709902",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"029\", \"color_name\": \"Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "029",
+      "color_name": "Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505742670",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"029\", \"color_name\": \"Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "029",
+      "color_name": "Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505775438",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"014\", \"color_name\": \"Rot Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "014",
+      "color_name": "Rot Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326505808206",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"014\", \"color_name\": \"Rot Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "014",
+      "color_name": "Rot Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661456206",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"083\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "083",
+      "color_name": "Beige Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661488974",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"083\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "083",
+      "color_name": "Beige Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661521742",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"079\", \"color_name\": \"Blau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "079",
+      "color_name": "Blau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661554510",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"079\", \"color_name\": \"Blau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "079",
+      "color_name": "Blau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661587278",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"077\", \"color_name\": \"Beige Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "077",
+      "color_name": "Beige Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661620046",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"077\", \"color_name\": \"Beige Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "077",
+      "color_name": "Beige Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661652814",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661685582",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661718350",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"071\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "071",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661751118",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"071\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "071",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661783886",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"068\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "068",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661816654",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"068\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "068",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661849422",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"065\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "065",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661882190",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"065\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "065",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661914958",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"062\", \"color_name\": \"Graphit Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "062",
+      "color_name": "Graphit Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661947726",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"062\", \"color_name\": \"Graphit Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "062",
+      "color_name": "Graphit Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326661980494",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326662013262",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326662046030",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"031\", \"color_name\": \"Beige Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "031",
+      "color_name": "Beige Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326662078798",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"031\", \"color_name\": \"Beige Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "031",
+      "color_name": "Beige Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737150286",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"832\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "832",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737183054",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"832\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "832",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737215822",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"462\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "462",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737248590",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"462\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "462",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737281358",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"332\", \"color_name\": \"Farbe 332\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "332",
+      "color_name": "Farbe 332",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737314126",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"332\", \"color_name\": \"Farbe 332\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "332",
+      "color_name": "Farbe 332",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737346894",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"820\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "820",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737379662",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"820\", \"color_name\": \"Grau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "820",
+      "color_name": "Grau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737412430",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"764\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "764",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737445198",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"764\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "764",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737477966",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"630\", \"color_name\": \"Rot Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "630",
+      "color_name": "Rot Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737510734",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"630\", \"color_name\": \"Rot Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "630",
+      "color_name": "Rot Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737543502",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"861\", \"color_name\": \"Anthrazit Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "861",
+      "color_name": "Anthrazit Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737576270",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"861\", \"color_name\": \"Anthrazit Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "861",
+      "color_name": "Anthrazit Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737609038",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"241\", \"color_name\": \"Rot Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "241",
+      "color_name": "Rot Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737641806",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"241\", \"color_name\": \"Rot Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "241",
+      "color_name": "Rot Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737674574",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"231\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "231",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737707342",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"231\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "231",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737740110",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"221\", \"color_name\": \"Braun Natur\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "221",
+      "color_name": "Braun Natur",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737772878",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"221\", \"color_name\": \"Braun Natur\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "221",
+      "color_name": "Braun Natur",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737805646",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"262\", \"color_name\": \"Taupe Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "262",
+      "color_name": "Taupe Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737838414",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"262\", \"color_name\": \"Taupe Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "262",
+      "color_name": "Taupe Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737871182",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"252\", \"color_name\": \"Beige Natur\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "252",
+      "color_name": "Beige Natur",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326737903950",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"252\", \"color_name\": \"Beige Natur\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"31\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "252",
+      "color_name": "Beige Natur",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "31",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887719246",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887752014",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887784782",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"082\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "082",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887817550",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"082\", \"color_name\": \"Grau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "082",
+      "color_name": "Grau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887850318",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"078\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "078",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887883086",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"078\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "078",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887915854",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"076\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "076",
+      "color_name": "Braun Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887948622",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"076\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "076",
+      "color_name": "Braun Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326887981390",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888014158",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888046926",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"070\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "070",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888079694",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"070\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "070",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888112462",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"282\", \"color_name\": \"Braun Natur\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "282",
+      "color_name": "Braun Natur",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888145230",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"282\", \"color_name\": \"Braun Natur\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "282",
+      "color_name": "Braun Natur",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888177998",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"178\", \"color_name\": \"Orange Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "178",
+      "color_name": "Orange Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888210766",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"178\", \"color_name\": \"Orange Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "178",
+      "color_name": "Orange Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888243534",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"170\", \"color_name\": \"Rot\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "170",
+      "color_name": "Rot",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60326888276302",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"170\", \"color_name\": \"Rot\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polypropylen\", \"usage_class\": \"32\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "170",
+      "color_name": "Rot",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polypropylen",
+      "usage_class": "32",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60327022494030",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"99\", \"color_name\": \"Farbe 99\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"33\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "99",
+      "color_name": "Farbe 99",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "33",
+      "product_type": "Teppichboden"
+    }
+  }
+]

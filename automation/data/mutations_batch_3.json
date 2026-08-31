@@ -1,0 +1,1602 @@
+[
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330686644558",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"273\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "273",
+      "color_name": "Beige Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330686677326",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"274\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "274",
+      "color_name": "Beige Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330686710094",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"274\", \"color_name\": \"Beige Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "274",
+      "color_name": "Beige Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330686742862",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"277\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "277",
+      "color_name": "Braun Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330686775630",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"277\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "277",
+      "color_name": "Braun Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687430990",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"003\", \"color_name\": \"Creme\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "003",
+      "color_name": "Creme",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687463758",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"003\", \"color_name\": \"Creme\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "003",
+      "color_name": "Creme",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687496526",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"009\", \"color_name\": \"Beige\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "009",
+      "color_name": "Beige",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687529294",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"009\", \"color_name\": \"Beige\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "009",
+      "color_name": "Beige",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687562062",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"018\", \"color_name\": \"Taupe\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "018",
+      "color_name": "Taupe",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687594830",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"018\", \"color_name\": \"Taupe\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "018",
+      "color_name": "Taupe",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687627598",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"029\", \"color_name\": \"Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "029",
+      "color_name": "Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687660366",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"029\", \"color_name\": \"Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "029",
+      "color_name": "Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687693134",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"030\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "030",
+      "color_name": "Braun Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687725902",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"030\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "030",
+      "color_name": "Braun Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687758670",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"032\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "032",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687791438",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"032\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "032",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687824206",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"033\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "033",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687856974",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"033\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "033",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687889742",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"044\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "044",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687922510",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"044\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "044",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687955278",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"045\", \"color_name\": \"Taupe Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "045",
+      "color_name": "Taupe Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330687988046",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"045\", \"color_name\": \"Taupe Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "045",
+      "color_name": "Taupe Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688020814",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"048\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "048",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688053582",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"048\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "048",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688086350",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688119118",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"074\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "074",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688151886",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688184654",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688217422",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"094\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "094",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688250190",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"094\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "094",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688282958",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"097\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "097",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688315726",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"097\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "097",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688348494",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"098\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "098",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330688381262",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"098\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyamid\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "098",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyamid",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689691982",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"003\", \"color_name\": \"Creme\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "003",
+      "color_name": "Creme",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689724750",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"003\", \"color_name\": \"Creme\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "003",
+      "color_name": "Creme",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689757518",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"005\", \"color_name\": \"Wei\\u00df\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "005",
+      "color_name": "Wei\u00df",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689790286",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"005\", \"color_name\": \"Wei\\u00df\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "005",
+      "color_name": "Wei\u00df",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689823054",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"024\", \"color_name\": \"Graphit\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "024",
+      "color_name": "Graphit",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689855822",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"024\", \"color_name\": \"Graphit\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "024",
+      "color_name": "Graphit",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689888590",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"034\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "034",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689921358",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"034\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "034",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689954126",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330689986894",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690019662",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"036\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "036",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690052430",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"036\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "036",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690085198",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"039\", \"color_name\": \"Beige Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "039",
+      "color_name": "Beige Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690117966",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"039\", \"color_name\": \"Beige Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "039",
+      "color_name": "Beige Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690150734",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"044\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "044",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690183502",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"044\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "044",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690216270",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"084\", \"color_name\": \"Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "084",
+      "color_name": "Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690249038",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"084\", \"color_name\": \"Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "084",
+      "color_name": "Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690281806",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690314574",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"090\", \"color_name\": \"Braun\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "090",
+      "color_name": "Braun",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690347342",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"095\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "095",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690380110",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"095\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "095",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690412878",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"096\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "096",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690445646",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"096\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "096",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690478414",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"097\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "097",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690511182",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"097\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "097",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690543950",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"099\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "099",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330690576718",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"099\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Recycled\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "099",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Recycled"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693067086",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"250\", \"color_name\": \"Warm Beige\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "250",
+      "color_name": "Warm Beige",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693099854",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"250\", \"color_name\": \"Warm Beige\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "250",
+      "color_name": "Warm Beige",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693132622",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"260\", \"color_name\": \"Taupe Natur\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "260",
+      "color_name": "Taupe Natur",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693165390",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"260\", \"color_name\": \"Taupe Natur\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "260",
+      "color_name": "Taupe Natur",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693198158",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"400\", \"color_name\": \"Graphit Grau\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "400",
+      "color_name": "Graphit Grau",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693230926",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"400\", \"color_name\": \"Graphit Grau\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "400",
+      "color_name": "Graphit Grau",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693263694",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"420\", \"color_name\": \"Gr\\u00fcn Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "420",
+      "color_name": "Gr\u00fcn Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693296462",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"420\", \"color_name\": \"Gr\\u00fcn Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "420",
+      "color_name": "Gr\u00fcn Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693329230",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"800\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "800",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693361998",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"800\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "800",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693394766",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"820\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "820",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693427534",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"820\", \"color_name\": \"Grau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "820",
+      "color_name": "Grau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693460302",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"830\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "830",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693493070",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"830\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "830",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693525838",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"840\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "840",
+      "color_name": "Grau Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693558606",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"840\", \"color_name\": \"Grau Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "840",
+      "color_name": "Grau Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693591374",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"850\", \"color_name\": \"Anthrazit\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "850",
+      "color_name": "Anthrazit",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330693624142",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"850\", \"color_name\": \"Anthrazit\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"23\", \"product_type\": \"Teppichboden\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "850",
+      "color_name": "Anthrazit",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "23",
+      "product_type": "Teppichboden"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695491918",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"004\", \"color_name\": \"Wei\\u00df\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "004",
+      "color_name": "Wei\u00df",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695524686",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"004\", \"color_name\": \"Wei\\u00df\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "004",
+      "color_name": "Wei\u00df",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695557454",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"027\", \"color_name\": \"Braun Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "027",
+      "color_name": "Braun Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695590222",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"027\", \"color_name\": \"Braun Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "027",
+      "color_name": "Braun Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695622990",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"030\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "030",
+      "color_name": "Braun Dunkel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695655758",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"030\", \"color_name\": \"Braun Dunkel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "030",
+      "color_name": "Braun Dunkel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695688526",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695721294",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"035\", \"color_name\": \"Grau Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "035",
+      "color_name": "Grau Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695754062",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"040\", \"color_name\": \"Beige\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "040",
+      "color_name": "Beige",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695786830",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"040\", \"color_name\": \"Beige\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "040",
+      "color_name": "Beige",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695819598",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"041\", \"color_name\": \"Beige Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "041",
+      "color_name": "Beige Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695852366",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"041\", \"color_name\": \"Beige Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "041",
+      "color_name": "Beige Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695885134",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"049\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "049",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695917902",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"049\", \"color_name\": \"Grau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "049",
+      "color_name": "Grau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695950670",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"077\", \"color_name\": \"Beige Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "077",
+      "color_name": "Beige Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330695983438",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"077\", \"color_name\": \"Beige Hell\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "077",
+      "color_name": "Beige Hell",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330696016206",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"081\", \"color_name\": \"Grau Mittel\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "081",
+      "color_name": "Grau Mittel",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330696048974",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"081\", \"color_name\": \"Grau Mittel\", \"width_cm\": 500, \"width_code\": \"5\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "081",
+      "color_name": "Grau Mittel",
+      "width_cm": 500,
+      "width_code": "5",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  },
+  {
+    "ownerId": "gid://shopify/ProductVariant/60330696081742",
+    "namespace": "color_data",
+    "key": "color_info",
+    "value": "{\"color_number\": \"091\", \"color_name\": \"Grau Hell\", \"width_cm\": 400, \"width_code\": \"4\", \"material_type\": \"polyester\", \"usage_class\": \"22\", \"product_type\": \"Hochflor\"}",
+    "type": "json",
+    "metafield_value": {
+      "color_number": "091",
+      "color_name": "Grau Hell",
+      "width_cm": 400,
+      "width_code": "4",
+      "material_type": "polyester",
+      "usage_class": "22",
+      "product_type": "Hochflor"
+    }
+  }
+]
