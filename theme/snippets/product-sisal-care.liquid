@@ -1,0 +1,51 @@
+{%- comment -%}
+  SHP-017: Product Sisal Care Instructions Snippet
+  Displays care instructions for Sisal products below product description
+  Used in: templates/product.liquid
+{%- endcomment -%}
+
+{% if product.collections | where: 'handle', 'sisal-natur' | size > 0 %}
+  <section class="product-sisal-care">
+    <h3>Sisal-Teppichboden — Pflege & Installation</h3>
+
+    <div class="sisal-care-grid">
+      <div class="sisal-care-block">
+        <h4>🧹 Reinigung</h4>
+        <p>
+          Regelmäßig absaugen (kein Nasssauger).
+          Verschüttungen sofort mit trocknem Tuch aufnehmen.
+        </p>
+      </div>
+
+      <div class="sisal-care-block">
+        <h4>💧 Wasserschutz</h4>
+        <p>
+          Nicht für feuchte Räume geeignet.
+          Flüssigkeiten sofort aufwischen.
+        </p>
+      </div>
+
+      <div class="sisal-care-block">
+        <h4>🔧 Verlegung</h4>
+        <p>
+          Fachgerechte Installation empfohlen.
+          48 Stunden Akklimation erforderlich.
+        </p>
+      </div>
+
+      <div class="sisal-care-block">
+        <h4>📅 Langzeitpflege</h4>
+        <p>
+          Professionelle Reinigung 1x pro Jahr.
+          Lebensdauer: 10–20 Jahre bei guter Pflege.
+        </p>
+      </div>
+    </div>
+
+    <div class="sisal-care__more">
+      <a href="/collections/sisal-natur" class="button button--secondary">
+        Weitere Sisal-Produkte entdecken
+      </a>
+    </div>
+  </section>
+{% endif %}
