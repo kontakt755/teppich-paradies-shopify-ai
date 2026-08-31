@@ -89,3 +89,29 @@ test('correction replacement postflight evidence wins over prior evidence', asyn
   assert.deepEqual(result.resources, ['new']);
   assert.deepEqual(result.actualOperations, ['report_write']);
 });
+
+test('candidate validation runs before every paid review', async () => {
+  const calls = [];
+  let reviews = 0;
+  await runReviewCorrectionCycle({
+    task: { id: 'T-7' },
+    implement: async () => ({ status: 'PASS', version: 'implement' }),
+    validateCandidate: async (_task, candidate, metadata) => calls.push(`validate:${metadata.phase}:${candidate.version}`),
+    review: async () => { calls.push('review'); return { findings: ++reviews === 1 ? [finding()] : [] }; },
+    correct: async () => ({ status: 'PASS', version: 'correct' }),
+  });
+  assert.deepEqual(calls, ['validate:IMPLEMENT:implement', 'review', 'validate:CORRECT:correct', 'review']);
+});
+
+test('provider timeout aborts the call and parks only the task', async () => {
+  let aborted = false;
+  const result = await runReviewCorrectionCycle({
+    task: { id: 'TIMEOUT' },
+    providerTimeoutMs: 10,
+    implement: async (task, { signal }) => new Promise(() => signal.addEventListener('abort', () => { aborted = true; })),
+  });
+  assert.equal(result.status, 'PARKED');
+  assert.equal(result.reason, 'PROVIDER_TIMEOUT');
+  assert.equal(result.timeout.phase, 'IMPLEMENT');
+  assert.equal(aborted, true);
+});
