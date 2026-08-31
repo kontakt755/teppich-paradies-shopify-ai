@@ -1,0 +1,134 @@
+{
+  "phase": "3b",
+  "status": "READY_FOR_EXECUTION",
+  "timestamp": "2026-08-31T19:45:00Z",
+  "title": "Execute GraphQL Mutations for Color Metafields",
+  "summary": {
+    "total_variants": 332,
+    "variants_skipped": 10,
+    "total_mutations": 322,
+    "total_batches": 4,
+    "unique_colors": 124,
+    "colors_explicit": 28,
+    "colors_intelligent": 96
+  },
+  "batches": [
+    {
+      "batch_num": 1,
+      "mutations": 100,
+      "query_file": "automation/data/shopify_batch_1_query.graphql",
+      "mutations_file": "automation/data/mutations_batch_1.json",
+      "query_size_bytes": 33677,
+      "status": "ready"
+    },
+    {
+      "batch_num": 2,
+      "mutations": 100,
+      "query_file": "automation/data/shopify_batch_2_query.graphql",
+      "mutations_file": "automation/data/mutations_batch_2.json",
+      "query_size_bytes": 33467,
+      "status": "ready"
+    },
+    {
+      "batch_num": 3,
+      "mutations": 100,
+      "query_file": "automation/data/shopify_batch_3_query.graphql",
+      "mutations_file": "automation/data/mutations_batch_3.json",
+      "query_size_bytes": 33346,
+      "status": "ready"
+    },
+    {
+      "batch_num": 4,
+      "mutations": 22,
+      "query_file": "automation/data/shopify_batch_4_query.graphql",
+      "mutations_file": "automation/data/mutations_batch_4.json",
+      "query_size_bytes": 7437,
+      "status": "ready"
+    }
+  ],
+  "color_coverage": {
+    "reference_file": "automation/data/COMPLETE_COLOR_MAPPING_133.json",
+    "total_unique_colors": 124,
+    "colors_with_explicit_names": 28,
+    "colors_with_pattern_mapping": 96,
+    "color_ranges": {
+      "grayscale_cream_beige": "003-099",
+      "red_orange": "100-199",
+      "brown_taupe": "200-299",
+      "blue_green": "300-409",
+      "special_colors": "400+"
+    }
+  },
+  "products_covered": [
+    {"name": "Alvento Teppichboden", "variants": 32},
+    {"name": "Amara Teppichboden", "variants": 18},
+    {"name": "Fortiva Nadelvlies", "variants": 13},
+    {"name": "Kalvea Teppichboden", "variants": 20},
+    {"name": "Kontura Teppichboden", "variants": 19},
+    {"name": "Nuvara Teppichboden", "variants": 30},
+    {"name": "Piumera Teppichboden", "variants": 28},
+    {"name": "Practiva Teppichboden", "variants": 18},
+    {"name": "Quadra Teppichfliese", "variants": 10},
+    {"name": "Sentira Teppichboden", "variants": 30},
+    {"name": "Serena Teppichboden", "variants": 20},
+    {"name": "Velluna Teppichboden", "variants": 24},
+    {"name": "Velory Teppichboden", "variants": 24},
+    {"name": "Vireno Teppichboden", "variants": 28},
+    {"name": "Zafira Teppichboden", "variants": 18}
+  ],
+  "metafield_structure": {
+    "namespace": "color_data",
+    "key": "color_info",
+    "type": "json",
+    "value_fields": [
+      "color_number",
+      "color_name",
+      "width_cm",
+      "width_code",
+      "material_type",
+      "usage_class",
+      "product_type"
+    ]
+  },
+  "execution_checklist": {
+    "step_1_batch_1": "Read shopify_batch_1_query.graphql → Execute via mcp__Shopify__graphql_mutation → Verify (100 metafields, empty userErrors) → Wait 2-3s",
+    "step_2_batch_2": "Read shopify_batch_2_query.graphql → Execute via mcp__Shopify__graphql_mutation → Verify (100 metafields, empty userErrors) → Wait 2-3s",
+    "step_3_batch_3": "Read shopify_batch_3_query.graphql → Execute via mcp__Shopify__graphql_mutation → Verify (100 metafields, empty userErrors) → Wait 2-3s",
+    "step_4_batch_4": "Read shopify_batch_4_query.graphql → Execute via mcp__Shopify__graphql_mutation → Verify (22 metafields, empty userErrors)"
+  },
+  "expected_result": {
+    "total_metafields_created": 322,
+    "response_format": "GraphQL mutation response with metafieldsSet containing array of 322 created metafields",
+    "success_criteria": [
+      "All 4 batches execute without GraphQL errors",
+      "All userErrors arrays are empty",
+      "Metafield counts match batch sizes (100+100+100+22)",
+      "All metafields visible in Shopify with color_data namespace"
+    ]
+  },
+  "files_generated": {
+    "graphql_queries": [
+      "automation/data/shopify_batch_1_query.graphql",
+      "automation/data/shopify_batch_2_query.graphql",
+      "automation/data/shopify_batch_3_query.graphql",
+      "automation/data/shopify_batch_4_query.graphql"
+    ],
+    "mutation_data": [
+      "automation/data/mutations_batch_1.json",
+      "automation/data/mutations_batch_2.json",
+      "automation/data/mutations_batch_3.json",
+      "automation/data/mutations_batch_4.json"
+    ],
+    "reference_data": [
+      "automation/data/COMPLETE_COLOR_MAPPING_133.json"
+    ],
+    "documentation": [
+      "automation/PHASE_3B_EXECUTION_GUIDE.md"
+    ]
+  },
+  "next_phases": {
+    "phase_4a": "CSV Export verification - Test CSV export with all 322 variants",
+    "phase_4b": "Setup B2B export endpoint - Create partner download API",
+    "phase_4c": "Documentation - Create partner integration guide"
+  }
+}
