@@ -212,6 +212,10 @@ async function sampleFlow({ page, context, result, setPhase }) {
   await page.waitForURL(url => url.pathname === '/pages/muster' && url.searchParams.get('produkt') === sourceHandle, { timeout: 15_000 });
   await page.locator('[data-sample-fieldset]').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForFunction(() => document.querySelector('[data-sample-product-name]')?.textContent?.trim(), null, { timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const image = document.querySelector('[data-sample-product-image]');
+    return image?.complete && image.naturalWidth > 0;
+  }, null, { timeout: 10_000 });
   const productName = (await page.locator('[data-sample-product-name]').textContent())?.trim();
   result.productImage = await page.locator('[data-sample-product-image]').evaluate(image => ({
     src: image.currentSrc || image.src,
