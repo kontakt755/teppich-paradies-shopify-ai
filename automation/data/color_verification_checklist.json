@@ -1,0 +1,294 @@
+[
+  {
+    "color_number": "03",
+    "products": [
+      "Sentira",
+      "Vireno"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "04",
+    "products": [
+      "Piumera"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "05",
+    "products": [
+      "Vireno"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "09",
+    "products": [
+      "Sentira"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "12",
+    "products": [
+      "Nuvara"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "15",
+    "products": [
+      "Nuvara"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "016",
+    "products": [
+      "Fortiva"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "18",
+    "products": [
+      "Sentira"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "20",
+    "products": [
+      "Velory"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "021",
+    "products": [
+      "Fortiva"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "024",
+    "products": [
+      "Fortiva",
+      "Quadra"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "24",
+    "products": [
+      "Vireno"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "27",
+    "products": [
+      "Piumera"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "30",
+    "products": [
+      "Piumera"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "039",
+    "products": [
+      "Quadra"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "40",
+    "products": [
+      "Nuvara",
+      "Velory"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "50",
+    "products": [
+      "Alvento",
+      "Velory"
+    ],
+    "variants_count": 3
+  },
+  {
+    "color_number": "050",
+    "products": [
+      "Quadra"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "69",
+    "products": [
+      "Alvento"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "72",
+    "products": [
+      "Alvento"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "77",
+    "products": [
+      "Serena"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "78",
+    "products": [
+      "Practiva"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "79",
+    "products": [
+      "Amara"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "82",
+    "products": [
+      "Practiva"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "83",
+    "products": [
+      "Serena"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "90",
+    "products": [
+      "Practiva"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "94",
+    "products": [
+      "Kalvea"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "95",
+    "products": [
+      "Amara"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "98",
+    "products": [
+      "Amara",
+      "Kalvea"
+    ],
+    "variants_count": 3
+  },
+  {
+    "color_number": "99",
+    "products": [
+      "Kalvea"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "250",
+    "products": [
+      "Zafira"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "260",
+    "products": [
+      "Zafira"
+    ],
+    "variants_count": 2
+  },
+  {
+    "color_number": "304",
+    "products": [
+      "Kontura"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "307",
+    "products": [
+      "Kontura"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "332",
+    "products": [
+      "Velluna"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "400",
+    "products": [
+      "Zafira"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "403",
+    "products": [
+      "Kontura"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "405",
+    "products": [
+      "Kontura"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "406",
+    "products": [
+      "Kontura"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "462",
+    "products": [
+      "Velluna"
+    ],
+    "variants_count": 1
+  },
+  {
+    "color_number": "832",
+    "products": [
+      "Velluna"
+    ],
+    "variants_count": 1
+  }
+]
