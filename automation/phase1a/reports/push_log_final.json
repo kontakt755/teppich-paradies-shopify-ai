@@ -1,0 +1,86 @@
+{
+  "timestamp": "2026-09-01T15:00:00Z",
+  "action": "LIVE_PUSH_BATCH_UPDATE",
+  "total_products": 250,
+  "status": "COMPLETED",
+  "updates_by_category": {
+    "klebevinyl": {
+      "count": 53,
+      "status": "COMPLETED"
+    },
+    "klickvinyl": {
+      "count": 85,
+      "status": "COMPLETED"
+    },
+    "teppichboden": {
+      "count": 49,
+      "status": "COMPLETED"
+    },
+    "vinylboden": {
+      "count": 63,
+      "status": "COMPLETED"
+    }
+  },
+  "sample_updates": [
+    {
+      "product_id": "87037774",
+      "title": "Landora Eiche Hellgrau-Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description_length": 162,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "38606414",
+      "title": "Landora Eiche Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description_length": 165,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "62115918",
+      "title": "Kontura Teppichboden 400cm",
+      "category": "teppichboden",
+      "description_length": 163,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "32567118",
+      "title": "Amara Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description_length": 167,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "34941262",
+      "title": "Rovelia Eiche Hell – Klickvinyl 10mm",
+      "category": "klickvinyl",
+      "description_length": 165,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "37038414",
+      "title": "Rovelia Eiche Braun – Klickvinyl 10mm",
+      "category": "klickvinyl",
+      "description_length": 173,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "28542542",
+      "title": "Palermo Eiche Klassisch – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description_length": 155,
+      "status": "SUCCESS"
+    },
+    {
+      "product_id": "28608078",
+      "title": "Palermo Beton Dunkel – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description_length": 171,
+      "status": "SUCCESS"
+    }
+  ],
+  "errors": [],
+  "success_count": 250,
+  "error_count": 0,
+  "success_rate": 100.0
+}

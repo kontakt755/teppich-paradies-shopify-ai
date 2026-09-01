@@ -1,0 +1,2511 @@
+{
+  "total_products": 250,
+  "by_category": {
+    "vinylboden": 63,
+    "teppichboden": 49,
+    "klickvinyl": 85,
+    "klebevinyl": 53
+  },
+  "products": {
+    "gid://shopify/Product/15965887037774": {
+      "title": "Landora Eiche Hellgrau-Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche hellgrau-beige für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15981938606414": {
+      "title": "Landora Eiche Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche beige. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982031667534": {
+      "title": "Landora Eiche Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche grau. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982037533006": {
+      "title": "Eichwald Eiche Hellgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche hellgrau. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982039793998": {
+      "title": "Terracora Eiche Hellbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche hellbeige für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982041858382": {
+      "title": "Granitera Eiche Mittelbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche mittelbraun. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982110507342": {
+      "title": "Landora Allover Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in allover grau. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982137737550": {
+      "title": "Landora Eiche Diele Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche diele beige. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982138360142": {
+      "title": "Landora Buche Schiffsboden – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit buche schiffsboden für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982139048270": {
+      "title": "Landora Honig-Eiche Schiffsboden – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit honig-eiche schiffsboden. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982139638094": {
+      "title": "Landora Walnuss Planke – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in walnuss planke. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982140195150": {
+      "title": "Landora Eiche Natur – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche natur. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982140883278": {
+      "title": "Landora Eiche Bernstein – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche bernstein für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982148878670": {
+      "title": "Eichwald Eiche Greige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche greige. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982149370190": {
+      "title": "Eichwald Eiche Honig – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche honig. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982149992782": {
+      "title": "Eichwald Eiche Taupe – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche taupe. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982150648142": {
+      "title": "Eichwald Eiche Dunkelbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche dunkelbraun für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982151270734": {
+      "title": "Eichwald Eiche Sandbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche sandbeige. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982151893326": {
+      "title": "Eichwald Eiche Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche beige. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982152515918": {
+      "title": "Eichwald Eiche Silbergrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche silbergrau. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982153105742": {
+      "title": "Eichwald Eiche Mittelbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche mittelbraun für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982153728334": {
+      "title": "Eichwald Eiche Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche grau. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982154383694": {
+      "title": "Eichwald Eiche Goldeiche – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche goldeiche. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982155137358": {
+      "title": "Eichwald Eiche Hellbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche hellbeige. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982367605070": {
+      "title": "Terracora Eiche Landhaus Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche landhaus grau für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982367670606": {
+      "title": "Terracora Eiche Planke – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche planke. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982367736142": {
+      "title": "Terracora Eiche Landhaus Natur – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche landhaus natur. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982367801678": {
+      "title": "Terracora Buche Gedämpft – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in buche gedämpft. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982368424270": {
+      "title": "Terracora Eiche Honig – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche honig für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982368489806": {
+      "title": "Terracora Stein Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit stein grau. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982368555342": {
+      "title": "Terracora Stein Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in stein beige. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982368653646": {
+      "title": "Terracora Stein Creme – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in stein creme. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982368719182": {
+      "title": "Terracora Eiche Mittelbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche mittelbraun für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369276238": {
+      "title": "Terracora Eiche Natur – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche natur. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369571150": {
+      "title": "Terracora Eiche Dunkelbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche dunkelbraun. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369767758": {
+      "title": "Terracora Eiche Sandbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche sandbeige. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369800526": {
+      "title": "Terracora Eiche Hell – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche hell für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369866062": {
+      "title": "Terracora Eiche Fischgrät – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche fischgrät. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982369931598": {
+      "title": "Terracora Eiche Fischgrät Hell – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche fischgrät hell. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370029902": {
+      "title": "Terracora Stein Hellgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in stein hellgrau. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370128206": {
+      "title": "Terracora Eiche Taupe – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche taupe für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370193742": {
+      "title": "Terracora Eiche Braun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche braun. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370226510": {
+      "title": "Terracora Eiche Nussbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche nussbraun. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370357582": {
+      "title": "Terracora Eiche Goldbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche goldbraun. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370390350": {
+      "title": "Terracora Eiche Weißgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche weißgrau für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370488654": {
+      "title": "Terracora Eiche Naturbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche naturbeige. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370521422": {
+      "title": "Terracora Eiche Weiß – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche weiß. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370586958": {
+      "title": "Terracora Eiche Grauweiß – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche grauweiß. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370718030": {
+      "title": "Terracora Eiche Rauchgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche rauchgrau für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370750798": {
+      "title": "Terracora Eiche Perlgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche perlgrau. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982370816334": {
+      "title": "Terracora Eiche Weiß Creme – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche weiß creme. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371406158": {
+      "title": "Granitera Eiche Honigbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in eiche honigbraun. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371602766": {
+      "title": "Granitera Eiche Naturbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit eiche naturbraun für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371668302": {
+      "title": "Granitera Eiche Sandbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche sandbraun. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371701070": {
+      "title": "Granitera Eiche Taupe – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche taupe. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371799374": {
+      "title": "Granitera Granit Beige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in granit beige. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371832142": {
+      "title": "Granitera Granit Taupe – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit granit taupe für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982371963214": {
+      "title": "Granitera Eiche Grau Hell – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche grau hell. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982372028750": {
+      "title": "Granitera Eiche Goldbraun – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in eiche goldbraun. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982372094286": {
+      "title": "Granitera Granit Sandbeige – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden von der Rolle in granit sandbeige. Große Flächen mit weniger Fugen – weniger Schmutz, weniger Verschleiß. Pflegeleicht für Wohn- und Nutzräume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982372159822": {
+      "title": "Granitera Granit Grau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware mit granit grau für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982372946254": {
+      "title": "Granitera Eiche Karamell – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Vinylboden-Bahnware mit eiche karamell. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982373044558": {
+      "title": "Granitera Granit Hellgrau – Vinylboden von der Rolle",
+      "category": "vinylboden",
+      "description": "Bahnware in granit hellgrau. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.",
+      "features": [
+        "Großformatig",
+        "Weniger Fugen",
+        "Pflegeleicht"
+      ]
+    },
+    "gid://shopify/Product/15982562115918": {
+      "title": "Kontura Teppichboden 400cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in kontura teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982632567118": {
+      "title": "Amara Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit amara teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982671167822": {
+      "title": "Serena Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in serena teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982691811662": {
+      "title": "Velluna Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit velluna teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982708293966": {
+      "title": "Practiva Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in practiva teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982735851854": {
+      "title": "Kalvea Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit kalvea teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982978367822": {
+      "title": "Solvana Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in solvana teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982981382478": {
+      "title": "Palura Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit palura teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982983119182": {
+      "title": "Ombra Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in ombra teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982984954190": {
+      "title": "Vallora Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit vallora teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982985707854": {
+      "title": "Savena Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in savena teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982986264910": {
+      "title": "Vivera Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit vivera teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982986821966": {
+      "title": "Corina Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in corina teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982987477326": {
+      "title": "Solera Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit solera teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982988624206": {
+      "title": "Kerova Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in kerova teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982989214030": {
+      "title": "Tamira Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit tamira teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982992228686": {
+      "title": "Verita Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in verita teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982992982350": {
+      "title": "Tarona Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit tarona teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15982994063694": {
+      "title": "Coralia Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in coralia teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983003304270": {
+      "title": "Rivena Teppichboden 400cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit rivena teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983006908750": {
+      "title": "Altessa Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in altessa teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983021621582": {
+      "title": "Wovena Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit wovena teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983022735694": {
+      "title": "Callista Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in callista teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983023456590": {
+      "title": "Merinda Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit merinda teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983024046414": {
+      "title": "Lanova Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in lanova teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983024669006": {
+      "title": "Lanetta Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit lanetta teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983031058766": {
+      "title": "Nordica Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in nordica teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983034532174": {
+      "title": "Vellana Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit vellana teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983035187534": {
+      "title": "Woolara Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in woolara teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983210234190": {
+      "title": "Sisara Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit sisara teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983210594638": {
+      "title": "Sisola Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in sisola teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983212167502": {
+      "title": "Regalia Teppichboden 400cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit regalia teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983212790094": {
+      "title": "Boucella Teppichboden 400cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in boucella teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983214559566": {
+      "title": "Fibrella Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit fibrella teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983214657870": {
+      "title": "Rubira Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in rubira teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983218557262": {
+      "title": "Vantana Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit vantana teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983219179854": {
+      "title": "Corvella Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in corvella teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983222161742": {
+      "title": "Torvana Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit torvana teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983222587726": {
+      "title": "Reganza Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in reganza teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983223472462": {
+      "title": "Solvana Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit solvana teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983224521038": {
+      "title": "Palenza Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in palenza teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983225012558": {
+      "title": "Novaris Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit novaris teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983226257742": {
+      "title": "Velory Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in velory teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983226716494": {
+      "title": "Nuvara Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit nuvara teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983227437390": {
+      "title": "Alvento Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in alvento teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983227863374": {
+      "title": "Sentira Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Warmer Teppichboden mit sentira teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983228485966": {
+      "title": "Vireno Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden in vireno teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983228879182": {
+      "title": "Zafira Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Teppichboden mit zafira teppichboden-Charakter. Komfortabel und strapazierfähig, mit natürlicher Wärmeisolation. Formstabil für lange Lebensdauer in allen Wohnbereichen.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983230681422": {
+      "title": "Piumera Teppichboden 400cm 500cm",
+      "category": "teppichboden",
+      "description": "Komfortabler Teppichboden in piumera teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.",
+      "features": [
+        "Komfortabel",
+        "Wärmeisoliert",
+        "Schallschutz"
+      ]
+    },
+    "gid://shopify/Product/15983234941262": {
+      "title": "Rovelia Eiche Hell – Klickvinyl 10mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche hell. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983237038414": {
+      "title": "Rovelia Eiche Braun – Klickvinyl 10mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche braun. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238578510": {
+      "title": "Bergen Eiche Hell – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche hell-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238611278": {
+      "title": "Bergen Eiche Natur – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche natur für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238709582": {
+      "title": "Bergen Kiefer Blond – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit kiefer blond. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238742350": {
+      "title": "Bergen Eiche Warmbraun – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche warmbraun. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238807886": {
+      "title": "Bergen Eiche Dunkel – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche dunkel-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238873422": {
+      "title": "Bergen Eiche Wild – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche wild für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983238938958": {
+      "title": "Bergen Eiche Grau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche grau. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239004494": {
+      "title": "Bergen Eiche Frühlingshell – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche frühlingshell. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239037262": {
+      "title": "Bergen Eiche Rustikalgrau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche rustikalgrau-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239168334": {
+      "title": "Bergen Eiche Zeitlos – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche zeitlos für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239266638": {
+      "title": "Bergen Eiche Rauchgrau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche rauchgrau. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239299406": {
+      "title": "Bergen Schiefer Schwarz – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit schiefer schwarz. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239364942": {
+      "title": "Bergen Beton Nachtgrau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit beton nachtgrau-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239397710": {
+      "title": "Bergen Beton Hellgrau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale beton hellgrau für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983239463246": {
+      "title": "Bergen Beton Patchwork – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit beton patchwork. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240511822": {
+      "title": "Porto Altholz – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit altholz 4,8mm. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240544590": {
+      "title": "Porto Fjordeiche – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit fjordeiche 4,8mm-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240577358": {
+      "title": "Porto Nebeleiche – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale nebeleiche 4,8mm für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240610126": {
+      "title": "Porto Betongrau – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit betongrau 4,8mm. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240642894": {
+      "title": "Porto Rüster – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit rüster 4,8mm. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240708430": {
+      "title": "Porto Eiche Gekalkt – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche gekalkt 4,8mm-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240741198": {
+      "title": "Porto Schiefer – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale schiefer 4,8mm für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240773966": {
+      "title": "Porto Risseiche – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit risseiche 4,8mm. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240806734": {
+      "title": "Porto Feldeiche Natur – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit feldeiche natur 4,8mm. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983240839502": {
+      "title": "Porto Steineiche – Klickvinyl 4,8mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit steineiche 4,8mm-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983284814158": {
+      "title": "Odense Beton Classic – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale beton classic für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983284846926": {
+      "title": "Odense Bergschiefer – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit bergschiefer. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983284977998": {
+      "title": "Odense Eiche Bernstein – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche bernstein. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983285141838": {
+      "title": "Odense Eiche Sanft – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche sanft-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983285240142": {
+      "title": "Odense Eiche Honigbraun – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche honigbraun für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983285371214": {
+      "title": "Odense Eiche Perlmutt – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche perlmutt. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286550862": {
+      "title": "Odense Chalet Eiche Weiß – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit chalet eiche weiß. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286583630": {
+      "title": "Odense Chalet Eiche Blond – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit chalet eiche blond-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286616398": {
+      "title": "Odense Waschbeton Hell – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale waschbeton hell für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286649166": {
+      "title": "Odense Beton Hell – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit beton hell. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286714702": {
+      "title": "Odense Kiefer Gold – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit kiefer gold. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983286845774": {
+      "title": "Odense Eiche Frisch – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche frisch-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287370062": {
+      "title": "Odense Esche Verwittert – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale esche verwittert für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287402830": {
+      "title": "Odense Kiefer Skandinavisch – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit kiefer skandinavisch. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287435598": {
+      "title": "Odense Beton Dunkel – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit beton dunkel. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287533902": {
+      "title": "Odense Eiche Altgrau – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche altgrau-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287566670": {
+      "title": "Odense Eiche Weißkalk – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche weißkalk für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287632206": {
+      "title": "Odense Kiefer Grau – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit kiefer grau. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983287992654": {
+      "title": "Odense Eiche Gewachst – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche gewachst. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983288123726": {
+      "title": "Odense Eiche Wurmstich Hell – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche wurmstich hell-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983288222030": {
+      "title": "Odense Eiche Vanille – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche vanille für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983288254798": {
+      "title": "Odense Eiche Pur – Klickvinyl 5mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche pur. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308243278": {
+      "title": "Turku Eiche Hell – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche hell. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308407118": {
+      "title": "Turku Eiche Creme – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche creme-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308439886": {
+      "title": "Turku Eiche Nordisch – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche nordisch für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308472654": {
+      "title": "Turku Eiche Blond – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche blond. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308505422": {
+      "title": "Turku Eiche Natur – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche natur. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308570958": {
+      "title": "Turku Eiche Chalet – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche chalet-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308603726": {
+      "title": "Turku Eiche Klassisch – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche klassisch für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983308636494": {
+      "title": "Turku Eiche Rustikal – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche rustikal. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983319187790": {
+      "title": "Marlow Eiche Hell – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche hell. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983319712078": {
+      "title": "Marlow Eiche Creme – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche creme-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983319875918": {
+      "title": "Marlow Eiche Nordisch – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche nordisch für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983319941454": {
+      "title": "Marlow Eiche Blond – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche blond. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983320039758": {
+      "title": "Marlow Eiche Natur – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche natur. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983320203598": {
+      "title": "Marlow Eiche Chalet – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche chalet-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983320564046": {
+      "title": "Marlow Eiche Klassisch – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche klassisch für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983320695118": {
+      "title": "Marlow Eiche Rustikal – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche rustikal. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983324299598": {
+      "title": "Nantes Eiche Hell Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche hell fischgrät. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983324561742": {
+      "title": "Nantes Eiche Creme Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche creme fischgrät-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983324987726": {
+      "title": "Nantes Eiche Nordisch Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche nordisch fischgrät für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983325282638": {
+      "title": "Nantes Eiche Blond Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche blond fischgrät. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983325479246": {
+      "title": "Nantes Eiche Natur Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche natur fischgrät. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983325708622": {
+      "title": "Nantes Eiche Chalet Fischgrät – Klickvinyl 7mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche chalet fischgrät-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983338619214": {
+      "title": "Verona Terrazzo Grau – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale terrazzo grau für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983339241806": {
+      "title": "Verona Terrazzo Schwarz – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit terrazzo schwarz. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983340093774": {
+      "title": "Verona Eiche Stein – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche stein. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983340880206": {
+      "title": "Verona Eiche Sommer – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche sommer-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983341371726": {
+      "title": "Verona Eiche Wald – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche wald für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983342321998": {
+      "title": "Verona Eiche Nebel – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche nebel. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983342584142": {
+      "title": "Verona Eiche Taupe – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche taupe. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983342715214": {
+      "title": "Verona Eiche Cognac – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche cognac-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983342879054": {
+      "title": "Verona Eiche Frost – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche frost für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983343042894": {
+      "title": "Verona Eiche Mandel – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche mandel. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983524806990": {
+      "title": "Lyon Eiche Taupe Fischgrät – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl für DIY-Installation mit eiche taupe fischgrät. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983525003598": {
+      "title": "Lyon Eiche Cognac Fischgrät – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche cognac fischgrät-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983525167438": {
+      "title": "Lyon Eiche Frost Fischgrät – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Einfach einclicken, schwimmend verlegt, sofort begehbar. Ideale eiche frost fischgrät für Heimwerker ohne Klebstoff. Formstabil, pflegeleicht und bestechend einfach zu installieren.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983525298510": {
+      "title": "Lyon Eiche Mandel Fischgrät – Klickvinyl 6mm",
+      "category": "klickvinyl",
+      "description": "Klickvinyl mit eiche mandel fischgrät. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.",
+      "features": [
+        "Einfach zu verlegen",
+        "Schwimmend",
+        "Sofort begehbar"
+      ]
+    },
+    "gid://shopify/Product/15983528542542": {
+      "title": "Palermo Eiche Klassisch – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche klassisch 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983528608078": {
+      "title": "Palermo Beton Dunkel – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit beton dunkel 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983528837454": {
+      "title": "Palermo Eiche Beige – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche beige 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983528935758": {
+      "title": "Palermo Eiche Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche grau 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983529099598": {
+      "title": "Palermo Eiche Dunkel – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche dunkel 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983529328974": {
+      "title": "Palermo Eiche Hell – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche hell 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983568126286": {
+      "title": "Alvora Marmor Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in marmor grau 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983568912718": {
+      "title": "Alvora Terrazzo Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit terrazzo grau 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983569830222": {
+      "title": "Alvora Terrazzo Schwarz – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit terrazzo schwarz 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983570682190": {
+      "title": "Alvora Graphit Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit graphit grau 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983571730766": {
+      "title": "Alvora Stein Taupe – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in stein taupe 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983572451662": {
+      "title": "Alvora Stein Mondgrau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit stein mondgrau 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983573238094": {
+      "title": "Alvora Eiche Kastanie – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche kastanie 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983573500238": {
+      "title": "Alvora Eiche Stein – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche stein 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983573664078": {
+      "title": "Alvora Eiche Sommer – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche sommer 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983573795150": {
+      "title": "Alvora Eiche Gold – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche gold 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983573958990": {
+      "title": "Alvora Eiche Kupfer – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche kupfer 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983574024526": {
+      "title": "Alvora Eiche Wald – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche wald 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983574352206": {
+      "title": "Alvora Eiche Wüste – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche wüste 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983575236942": {
+      "title": "Alvora Eiche Nebel – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche nebel 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983576023374": {
+      "title": "Alvora Eiche Landhaus – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche landhaus 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983576744270": {
+      "title": "Alvora Eiche Greige – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche greige 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983577465166": {
+      "title": "Alvora Eiche Taupe – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche taupe 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983578415438": {
+      "title": "Alvora Eiche Cognac – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche cognac 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983579070798": {
+      "title": "Alvora Eiche Palme – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche palme 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983579857230": {
+      "title": "Alvora Eiche Bernstein – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche bernstein 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983580709198": {
+      "title": "Alvora Eiche Frost – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche frost 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983581430094": {
+      "title": "Alvora Eiche Mandel – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche mandel 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983595684174": {
+      "title": "Fenora Eiche Taupe Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche taupe fischgrät 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983596470606": {
+      "title": "Fenora Eiche Cognac Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche cognac fischgrät 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983597715790": {
+      "title": "Fenora Eiche Palme Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche palme fischgrät 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983598567758": {
+      "title": "Fenora Eiche Bernstein Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche bernstein fischgrät 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983599550798": {
+      "title": "Fenora Eiche Frost Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche frost fischgrät 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983600402766": {
+      "title": "Fenora Eiche Mandel Fischgrät – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche mandel fischgrät 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983605907790": {
+      "title": "Kiruna Eiche Taupe Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche taupe chevron 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983606530382": {
+      "title": "Kiruna Eiche Cognac Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche cognac chevron 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983607349582": {
+      "title": "Kiruna Eiche Palme Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche palme chevron 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983608103246": {
+      "title": "Kiruna Eiche Bernstein Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche bernstein chevron 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983608889678": {
+      "title": "Kiruna Eiche Frost Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche frost chevron 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983609774414": {
+      "title": "Kiruna Eiche Mandel Chevron – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche mandel chevron 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983656960334": {
+      "title": "Dornova Eiche Frühling – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche frühling 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983657779534": {
+      "title": "Dornova Eiche Rustikal Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche rustikal grau 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983658598734": {
+      "title": "Dornova Eiche Honig – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche honig 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983659155790": {
+      "title": "Dornova Treibholz Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit treibholz grau 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983659876686": {
+      "title": "Dornova Hickory Braun – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit hickory braun 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983660499278": {
+      "title": "Dornova Eiche Perfekt Grau – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche perfekt grau 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983661351246": {
+      "title": "Dornova Eiche Perfekt Elfenbein – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche perfekt elfenbein 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983666528590": {
+      "title": "Dornova Eiche Perfekt Natur – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche perfekt natur 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983668035918": {
+      "title": "Dornova Eiche Perfekt Braun – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit eiche perfekt braun 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983669543246": {
+      "title": "Dornova Eiche Perfekt Beige – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Klebevinyl mit eiche perfekt beige 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983671476558": {
+      "title": "Dornova Eiche Perfekt Tannin – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl in eiche perfekt tannin 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983672426830": {
+      "title": "Dornova Eiche Perfekt Zucker – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Hochwertiges Klebevinyl mit eiche perfekt zucker 2,5mm. Extra flach, dauerhaft verklebt für maximale Stabilität. Für geringe Aufbauhöhen und einen besonders ruhigen, formstabilen Boden.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    },
+    "gid://shopify/Product/15983689761102": {
+      "title": "Dornova Travertin – Klebevinyl 2,5mm",
+      "category": "klebevinyl",
+      "description": "Premium Klebevinyl mit travertin 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.",
+      "features": [
+        "Extra flach",
+        "Premium",
+        "Vollverklebt"
+      ]
+    }
+  }
+}
