@@ -202,10 +202,6 @@
               "settings": {},
               "blocks": {}
             },
-            "options_price_calculator_product_calculator_EbfP8i": {
-              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
-              "settings": {}
-            },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
               "settings": {

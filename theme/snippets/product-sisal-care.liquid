@@ -4,7 +4,14 @@
   Used in: templates/product.liquid
 {%- endcomment -%}
 
-{% if product.collections | where: 'handle', 'sisal-natur' | size > 0 %}
+{% assign has_sisal = false %}
+{% for collection in product.collections %}
+  {% if collection.handle == 'sisal-natur' %}
+    {% assign has_sisal = true %}
+    {% break %}
+  {% endif %}
+{% endfor %}
+{% if has_sisal %}
   <section class="product-sisal-care">
     <h3>Sisal-Teppichboden — Pflege & Installation</h3>
 

@@ -1,0 +1,65 @@
+{%- doc -%}
+  Kundenfreundliche Farb-Label-Mapping für Filter.
+  Wandelt interne Farb-Codes/Nummern in verständliche Farbnamen um.
+
+  @param {string} filter_label - Der Original-Filter-Label (z.B. "Farbe", "Color")
+  @param {string} value_label - Der Original-Wert-Label (z.B. "84", "Rot", etc.)
+  @returns {string} Der kundenfreundliche Label
+{%- enddoc -%}
+
+# Nur für Farb-Filter: Wenn der Filter-Label "Farbe" oder "Color" enthält
+{%- liquid
+  assign tp_color_friendly_label = value_label
+  assign tp_value_lower = value_label | downcase | strip
+  if filter_label contains 'Farbe' or filter_label contains 'Color' or filter_label contains 'color' or filter_label contains 'Farben'
+    # Numerische Codes zu Farbnamen mappen + Case-Insensitive Matching
+    # Basierend auf häufigen Teppich-Paradies Produktdaten
+    # Codes die nicht hier aufgelistet sind, werden mit ihrer Original-Nummer angezeigt
+    case tp_value_lower
+      when '84'
+        assign tp_color_friendly_label = 'Rot'
+      when '97'
+        assign tp_color_friendly_label = 'Blau'
+      when '6330'
+        assign tp_color_friendly_label = 'Grau'
+      when 'rot'
+        assign tp_color_friendly_label = 'Rot'
+      when 'blau'
+        assign tp_color_friendly_label = 'Blau'
+      when 'grau'
+        assign tp_color_friendly_label = 'Grau'
+      when 'beige'
+        assign tp_color_friendly_label = 'Beige'
+      when 'braun'
+        assign tp_color_friendly_label = 'Braun'
+      when 'schwarz'
+        assign tp_color_friendly_label = 'Schwarz'
+      when 'weiß', 'weiss'
+        assign tp_color_friendly_label = 'Weiß'
+      when 'grün', 'gruen'
+        assign tp_color_friendly_label = 'Grün'
+      when 'anthrazit'
+        assign tp_color_friendly_label = 'Anthrazit'
+      when 'orange'
+        assign tp_color_friendly_label = 'Orange'
+      when 'gelb'
+        assign tp_color_friendly_label = 'Gelb'
+      when 'rosa', 'pink'
+        assign tp_color_friendly_label = 'Rosa'
+      when 'violett', 'lila'
+        assign tp_color_friendly_label = 'Violett'
+      when 'türkis', 'tuerkis', 'cyan'
+        assign tp_color_friendly_label = 'Türkis'
+      when 'navy', 'dunkelblau'
+        assign tp_color_friendly_label = 'Navy'
+      when 'ecru', 'creme'
+        assign tp_color_friendly_label = 'Ecru'
+      else
+        # Falls bereits verständlicher Name (z.B. "Rot", "Blau"), wird unverändert behalten
+        # Unbekannte Codes bleiben bei Original-Nummer für korrekte Filterung
+        assign tp_color_friendly_label = value_label
+    endcase
+  endif
+-%}
+
+{{- tp_color_friendly_label -}}
