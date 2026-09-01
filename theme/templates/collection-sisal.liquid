@@ -1,0 +1,234 @@
+{%- comment -%}
+  SHP-017: Sisal & Natur Collection Template
+  Specialized rendering for natural fiber product category
+  Features: Category-specific hero, care instructions, product messaging
+{%- endcomment -%}
+
+{% if collection.handle == 'sisal-natur' %}
+  {%- comment -%} Sisal & Natur Category - Hero Section {%- endcomment -%}
+  <section class="sisal-hero">
+    <div class="sisal-hero__container">
+      <div class="sisal-hero__content">
+        <h1 class="sisal-hero__title">{{ collection.title }}</h1>
+        <p class="sisal-hero__subtitle">
+          Natürliche Sisalfasern für robuste, langlebige Bodenbeläge.
+          Entdecken Sie Farben, Rollenbreiten und Verlegungsoptionen für Ihr Projekt.
+        </p>
+        <div class="sisal-hero__cta">
+          <a href="#sisal-care" class="button button--primary button--large">
+            Pflegeanleitung
+          </a>
+          <a href="#sisal-samples" class="button button--secondary button--large">
+            Muster bestellen
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Product Grid {%- endcomment -%}
+  <section class="collection-products" id="sisal-products">
+    <div class="collection-products__header">
+      <h2>{{ collection.title }} — {{ collection.products_count }} Produkte</h2>
+    </div>
+
+    <div class="collection-products__grid">
+      {%- for product in collection.products -%}
+        <div class="product-card">
+          <div class="product-card__image">
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 400 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                loading="lazy"
+              >
+            {%- endif -%}
+          </div>
+
+          <div class="product-card__content">
+            <h3 class="product-card__title">{{ product.title }}</h3>
+
+            <div class="product-card__badge">
+              🌿 Naturfaser — 100% Sisal
+            </div>
+
+            <div class="product-card__price">
+              {{ product.price | money }} pro m²
+            </div>
+
+            <div class="product-card__actions">
+              <a href="{{ product.url }}" class="button button--primary button--small">
+                Verfügbare Farben
+              </a>
+              <button class="button button--secondary button--small" id="sample-{{ product.id }}">
+                Muster bestellen
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </section>
+
+  {%- comment -%} Care Instructions Accordion {%- endcomment -%}
+  <section class="sisal-care" id="sisal-care">
+    <div class="sisal-care__container">
+      <h2>Sisal-Teppichboden richtig pflegen</h2>
+      <p class="sisal-care__intro">
+        Natürliche Sisalfasern erfordern spezielle Pflege. Hier finden Sie wichtige
+        Tipps zu Reinigung, Schutz und fachgerechter Installation.
+      </p>
+
+      <details class="sisal-care__item">
+        <summary class="sisal-care__summary">
+          <span class="sisal-care__icon">🧹</span>
+          Tägliche Reinigung
+        </summary>
+        <div class="sisal-care__content">
+          <ul>
+            <li>Regelmäßig absaugen (mindestens 2x pro Woche)</li>
+            <li><strong>Kein Nasssauger verwenden</strong> — Sisal ist nicht wasserdicht</li>
+            <li>Verschüttungen sofort mit trocknem Tuch aufnehmen</li>
+            <li>Flecken: Spezialisierte Trockenreiniger verwenden</li>
+            <li>Keine alkalischen Reinigungsmittel (pH-Wert ≤7)</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="sisal-care__item">
+        <summary class="sisal-care__summary">
+          <span class="sisal-care__icon">💧</span>
+          Wasserschutz & Feuchte
+        </summary>
+        <div class="sisal-care__content">
+          <ul>
+            <li><strong>Nicht für Badezimmer oder feuchte Räume geeignet</strong></li>
+            <li>Ideal für: Wohnzimmer, Schlafzimmer, Büros</li>
+            <li>Relative Luftfeuchte sollte 60–70% nicht überschreiten</li>
+            <li>Wasserschutz-Behandlung optional (erhöht Haltbarkeit)</li>
+            <li>Bei Wasserschaden: Schnell trocknen (Gebläse, offene Fenster)</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="sisal-care__item">
+        <summary class="sisal-care__summary">
+          <span class="sisal-care__icon">🔧</span>
+          Professionelle Verlegung
+        </summary>
+        <div class="sisal-care__content">
+          <ul>
+            <li><strong>Fachgerechte Installation erforderlich</strong> — Wir empfehlen unsere Verlegungspartner</li>
+            <li>Untergrund: Trocken, eben, frei von Rauheit</li>
+            <li>Akklimation vor Verlegung: Minimum 48 Stunden bei Raumtemperatur</li>
+            <li>Verlegemethode: Klebe- oder Dehnfixierung (je nach Untergrund)</li>
+            <li>Randabstand: 5–10mm zu Wänden/Türen (Quellung berücksichtigen)</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="sisal-care__item">
+        <summary class="sisal-care__summary">
+          <span class="sisal-care__icon">📅</span>
+          Langzeitpflege & Wartung
+        </summary>
+        <div class="sisal-care__content">
+          <ul>
+            <li>Professionelle Reinigung: Mindestens 1x pro Jahr</li>
+            <li>Regelmäßiges Wenden (falls möglich) für gleichmäßigen Verschleiß</li>
+            <li>Schutz vor direkter Sonneneinstrahlung (Farbverblassen vorbeugen)</li>
+            <li>Fußmatten an Eingängen reduzieren Verschmutzung</li>
+            <li>Möbelbeine: Unterlagen verwenden, um Dellen zu vermeiden</li>
+            <li>Lebensdauer bei guter Pflege: 10–20 Jahre</li>
+          </ul>
+        </div>
+      </details>
+
+      <div class="sisal-care__footer">
+        <p>
+          <strong>Fragen zur Pflege?</strong>
+          <a href="/pages/kontakt">Kontaktieren Sie unsere Fachberatung</a> —
+          wir helfen gerne weiter.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Sample Request Section {%- endcomment -%}
+  <section class="sisal-samples" id="sisal-samples">
+    <div class="sisal-samples__container">
+      <h2>Muster bestellen</h2>
+      <p>
+        Überzeugen Sie sich selbst von der Qualität unserer Sisal-Teppiche.
+        Kostenlos und unverbindlich Muster anfordern.
+      </p>
+
+      <div class="sisal-samples__form">
+        <form method="POST" action="/pages/muster-bestellen">
+          <div class="form-group">
+            <label for="sample-product">Produkt auswählen:</label>
+            <select id="sample-product" name="product" required>
+              <option value="">-- Wählen Sie ein Produkt --</option>
+              {%- for product in collection.products -%}
+                <option value="{{ product.handle }}">{{ product.title }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="sample-name">Name:</label>
+            <input type="text" id="sample-name" name="name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sample-email">E-Mail:</label>
+            <input type="email" id="sample-email" name="email" required>
+          </div>
+
+          <button type="submit" class="button button--primary button--large">
+            Muster anfordern
+          </button>
+        </form>
+      </div>
+
+      <p class="sisal-samples__info">
+        Versand: Kostenlos in Deutschland | Bearbeitungszeit: 2–3 Werktage
+      </p>
+    </div>
+  </section>
+
+{% else %}
+  {%- comment -%} Fallback: Standard Collection Template {%- endcomment -%}
+  <section class="collection-products">
+    <div class="collection-products__header">
+      <h1>{{ collection.title }}</h1>
+      <p>{{ collection.description }}</p>
+    </div>
+
+    <div class="collection-products__grid">
+      {%- for product in collection.products -%}
+        <div class="product-card">
+          <div class="product-card__image">
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 400 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                loading="lazy"
+              >
+            {%- endif -%}
+          </div>
+
+          <div class="product-card__content">
+            <h3 class="product-card__title">{{ product.title }}</h3>
+            <div class="product-card__price">
+              {{ product.price | money }}
+            </div>
+            <a href="{{ product.url }}" class="button button--primary button--small">
+              Ansehen
+            </a>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </section>
+{% endif %}

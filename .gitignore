@@ -24,6 +24,9 @@ cookies*.json
 
 # Local Claude Code permission/session overrides (personal, machine-specific)
 .claude/settings.local.json
+.claude/api_usage.db
+.claude/api_usage.db-shm
+.claude/api_usage.db-wal
 
 # Dependencies and package-manager noise
 node_modules/
@@ -76,3 +79,6 @@ $RECYCLE.BIN/
 .idea/
 .vscode/
 *.code-workspace
+.env.local
+.env.local
+__pycache__/

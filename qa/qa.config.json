@@ -22,7 +22,7 @@
   "pages": [
     { "name": "Startseite", "path": "/", "type": "home", "minVisibleImages": 1 },
     { "name": "Vinylboden", "path": "/collections/vinylboden-1", "type": "vinylCollection", "minVisibleImages": 1 },
-    { "name": "Teppichboden", "path": "/collections/teppischboden", "type": "carpetCollection", "minVisibleImages": 1 },
+    { "name": "Teppichboden", "path": "/collections/teppichboden", "type": "carpetCollection", "minVisibleImages": 1 },
     { "name": "Teppichboden Hochflor", "path": "/collections/teppichboden-hochflor", "type": "carpetCollection", "minVisibleImages": 1, "forbiddenText": ["14.000 Bewertungen", "Trusted Shops", "Trusted-Shops"] },
     { "name": "Teppichboden Schlinge", "path": "/collections/teppichboden-schlinge", "type": "carpetCollection", "minVisibleImages": 1 },
     { "name": "Klickvinyl Collection", "path": "/collections/vinylboden-klickvinyl", "type": "vinylCollection", "minVisibleImages": 1 },

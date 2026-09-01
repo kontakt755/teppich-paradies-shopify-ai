@@ -11,12 +11,19 @@
     "seo:check": "node qa/run-seo-check.mjs",
     "sales:check": "node qa/run-sales-readiness.mjs",
     "compare:check": "node qa/run-compare-check.mjs",
+    "compare:remove:check": "node qa/run-compare-remove-dialog.mjs",
     "workflow:validate": "node workflow/cli.mjs validate",
     "workflow:pr": "node workflow/cli.mjs pr",
     "workflow:preview": "node workflow/cli.mjs preview",
     "workflow:live": "node workflow/cli.mjs live",
     "workflow:state": "node workflow/cli.mjs state",
-    "workflow:test": "node --test workflow/tests/*.test.mjs"
+    "workflow:route": "node workflow/cli.mjs route",
+    "workflow:status": "node workflow/cli.mjs status",
+    "workflow:next": "node workflow/cli.mjs next",
+    "workflow:continue": "node workflow/cli.mjs continue",
+    "workflow:test": "node --test workflow/tests/*.test.mjs",
+    "control:center": "node control-center/server.mjs",
+    "control:center:test": "node --test control-center/tests/*.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"

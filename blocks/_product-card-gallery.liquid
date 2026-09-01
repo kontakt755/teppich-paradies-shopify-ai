@@ -32,6 +32,11 @@
   {% endunless %}
 {% endcapture %}
 
+{% # Ohne closest.card_index (siehe blocks/_product-card.liquid) ist die
+   # Rasterposition hier nicht mehr bekannt. card_index wird deshalb bewusst
+   # nicht uebergeben: card-gallery faellt dann auf "Position unbekannt" zurueck
+   # und laedt lazy, statt das gesamte Raster einer Kategorieseite vorab zu
+   # laden. %}
 {% render 'card-gallery', children: children %}
 
 {% # Title and price for the zoomed out grid view %}

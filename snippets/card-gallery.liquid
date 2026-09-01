@@ -6,12 +6,20 @@
   @param [children] - Additional content rendered below the card gallery
   @param [section] - The section object the snippet is rendered in
   @param [block] - The block object the snippet is rendered in
+  @param [card_index] - Zero-based position of this card within its grid/list, used to decide eager loading. Omit it when the position is genuinely unknown: the card then stays lazy instead of eager-loading a whole grid. Callers that know they render a single, above-the-fold card pass 0 explicitly.
 {%- enddoc -%}
 
 {% liquid
   assign product = closest.product
   assign block_settings = block.settings
   assign image_sizes = '(min-width: 750px) 50vw, 100vw'
+  # Schwelle und Rueckfallwert zusammen an einer Stelle: ohne bekannte Position
+  # liegt card_index bewusst auf der Schwelle und damit ausserhalb des
+  # Eager-Bereichs (lazy). Frueher war der Rueckfallwert 0, was jede Karte ohne
+  # Positionsangabe als "erste Karte" behandelt und ganze Raster eager geladen
+  # haette, sobald die Position nicht mehr durchgereicht werden kann.
+  assign eager_card_limit = 4
+  assign card_index = card_index | default: eager_card_limit
 
   # Check if product has badges and determine position
   assign has_badges = false
@@ -99,6 +107,14 @@
         assign max_visible_slide_count = 2
       endif
 
+      # Real above-the-fold check for the eager-loading decision below: the
+      # section itself must be near the top of the page (not just "one of
+      # the first five"), independent of the card's grid position.
+      assign section_is_near_top = false
+      if section.index == null or section.index <= 2
+        assign section_is_near_top = true
+      endif
+
       capture slides
         for media in media_list_to_show
           assign loading = 'lazy'
@@ -127,7 +143,11 @@
             continue
           endif
 
-          if forloop.first and section.index == null or section.index < 5
+          # Eager-load only the first image of cards that are both in the first
+          # row of a grid (real card position, not just section position) and
+          # in a section near the very top of the page. Everything else stays
+          # lazy so we don't over-fetch images below the fold.
+          if forloop.first and card_index < eager_card_limit and section_is_near_top
             assign loading = 'eager'
             assign sizes = image_sizes
           endif

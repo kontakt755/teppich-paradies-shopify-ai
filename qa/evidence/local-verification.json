@@ -1,0 +1,102 @@
+{
+  "workflow": "validate",
+  "status": "PASS",
+  "validationScope": "FULL",
+  "commit": "4c7f1b261b15173d050cd08f0953bbb5458e7ba7",
+  "branch": "feature/automation-control-center",
+  "orderCompleted": false,
+  "externalBlock": null,
+  "results": [
+    {
+      "id": "UNIT",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "AUTOMATION",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "WORKFLOW_TESTS",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "QA_EVIDENCE",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "SECRET_SCAN",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "COMPARE",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "SEO",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "FULL_QA",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "SALES",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    }
+  ],
+  "head": "4c7f1b261b15173d050cd08f0953bbb5458e7ba7",
+  "originMain": "cdb2a83c895ff5d12e83e45387f7b2f37e7a41d5",
+  "clean": false,
+  "worktreeFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "p0": "0",
+  "p1": "0",
+  "readyForPr": true,
+  "readyForMain": false,
+  "readyForPreview": false,
+  "readyForLive": false
+}

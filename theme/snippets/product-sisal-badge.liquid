@@ -1,0 +1,12 @@
+{%- comment -%}
+  SHP-017: Product Sisal Badge Snippet
+  Displays natural fiber badge on product pages for Sisal products
+  Used in: templates/product.liquid
+{%- endcomment -%}
+
+{% if product.collections | where: 'handle', 'sisal-natur' | size > 0 %}
+  <div class="product-badge product-badge--natural">
+    <span class="product-badge__icon">🌿</span>
+    <span class="product-badge__text">Naturfaser — 100% Sisal</span>
+  </div>
+{% endif %}

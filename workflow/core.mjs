@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { EXTERNAL_BLOCKS, runWithExternalRetry } from './router.mjs';
 
 export const OFFICIAL_BASE = 'main';
 export const BRANCH_PATTERN = /^(feature|fix|chore)\/[a-z0-9][a-z0-9._-]*$/;
@@ -71,11 +72,55 @@ export function validationSteps(root) {
     { id: 'WORKFLOW_TESTS', label: 'Workflow Tests', command: process.execPath, args: ['--test', ...testFiles(root, 'workflow/tests')] },
     { id: 'QA_EVIDENCE', label: 'QA Evidence', command: process.execPath, args: ['--test', 'qa/tests/evidence-filter.test.mjs', 'qa/tests/url-sanitizer.test.mjs', 'qa/tests/console-classification.test.mjs', 'qa/tests/browser-infra.test.mjs'] },
     { id: 'SECRET_SCAN', label: 'Secret Scan', command: process.execPath, args: ['automation/scripts/secret-scan.mjs'] },
-    { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true },
-    { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true },
-    { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true },
-    { id: 'SALES', label: 'Sales', command: process.execPath, args: ['qa/run-sales-readiness.mjs'], browser: true, sales: true },
+    { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true, report: 'qa/results/compare-readiness.json' },
+    { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true, report: 'qa/results/seo-latest.json' },
+    { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true, report: 'qa/results/latest.json' },
+    { id: 'SALES', label: 'Sales', command: process.execPath, args: ['qa/run-sales-readiness.mjs'], browser: true, sales: true, report: 'qa/results/sales-readiness.json' },
   ];
+}
+
+export const REQUIRED_LOCAL_EVIDENCE_STEPS = Object.freeze(['COMPARE', 'SEO', 'FULL_QA', 'SALES']);
+export const TRACKED_EVIDENCE_PATH = 'qa/evidence/local-verification.json';
+
+// The gate that blocks merge on missing local-only evidence (Compare/SEO/Full
+// QA/Sales require live-storefront network access CI does not have) must bind
+// evidence to the exact commit under review. Without this, one real local run
+// could be committed once and silently replayed as "proof" for every future
+// commit on the branch, including commits that never actually re-ran the
+// checks it claims to cover.
+//
+// evidence.commit is stamped with git HEAD at generation time, which is
+// necessarily *before* the evidence file itself is committed - committing it
+// always produces a new HEAD SHA one commit ahead of what got recorded. An
+// exact-match requirement can therefore never be satisfied by any normal
+// commit sequence (short of amending an already-pushed commit, which this
+// repo's workflow forbids), so the gate would block every PR forever. Accept
+// an ancestor commit instead, but only when nothing besides the tracked
+// evidence file itself changed since then - i.e. the code the evidence
+// actually covers is provably unchanged. changedFilesSinceEvidence is the
+// caller-computed `git diff --name-only <evidence.commit> <expectedCommit>`
+// file list; null means it could not be computed (commit unreachable, git
+// failure, shallow history) and is treated as stale, fail-closed.
+export function verifyLocalEvidence({ evidence, expectedCommit, expectedBranch = null, changedFilesSinceEvidence = null, requiredSteps = REQUIRED_LOCAL_EVIDENCE_STEPS }) {
+  if (!expectedCommit) throw new WorkflowGateError('Erwarteter Commit (PR HEAD SHA) fehlt für die Evidence-Prüfung', 'EVIDENCE_NO_TARGET');
+  if (!evidence || typeof evidence !== 'object') throw new WorkflowGateError('Evidence-Datei fehlt oder ist ungültig', 'EVIDENCE_MISSING');
+  if (evidence.commit !== expectedCommit) {
+    if (!Array.isArray(changedFilesSinceEvidence)) {
+      throw new WorkflowGateError(`Evidence-Commit (${evidence.commit ?? '-'}) stimmt nicht mit dem aktuellen HEAD (${expectedCommit}) überein und konnte nicht als unveränderter Vorgänger verifiziert werden`, 'EVIDENCE_STALE');
+    }
+    const unexpectedChanges = changedFilesSinceEvidence.filter(file => file !== TRACKED_EVIDENCE_PATH);
+    if (unexpectedChanges.length > 0) {
+      throw new WorkflowGateError(`Seit Evidence-Commit ${evidence.commit} wurden Dateien geändert, die nicht der Evidence-Commit selbst sind: ${unexpectedChanges.join(', ')} - Evidence ist veraltet`, 'EVIDENCE_STALE');
+    }
+  }
+  if (expectedBranch && evidence.branch !== expectedBranch) throw new WorkflowGateError(`Evidence-Branch (${evidence.branch ?? '-'}) stimmt nicht mit dem erwarteten Branch (${expectedBranch}) überein`, 'EVIDENCE_BRANCH_MISMATCH');
+  if (evidence.status !== 'PASS') throw new WorkflowGateError(`Evidence-Status ist nicht PASS: ${evidence.status ?? '-'}`, 'EVIDENCE_NOT_PASS');
+  if (String(evidence.p0) !== '0' || String(evidence.p1) !== '0') throw new WorkflowGateError(`Evidence P0/P1 sind nicht explizit 0 (P0=${evidence.p0 ?? '-'}, P1=${evidence.p1 ?? '-'})`, 'EVIDENCE_FINDINGS');
+  if (evidence.orderCompleted !== false) throw new WorkflowGateError('Evidence orderCompleted ist nicht false', 'EVIDENCE_ORDER_COMPLETED');
+  const byId = Object.fromEntries((Array.isArray(evidence.results) ? evidence.results : []).map(item => [item.id, item.status]));
+  const missing = requiredSteps.filter(id => byId[id] !== 'PASS');
+  if (missing.length > 0) throw new WorkflowGateError(`Evidence fehlt PASS für erforderliche Schritte: ${missing.join(', ')}`, 'EVIDENCE_STEP_MISSING');
+  return true;
 }
 
 export function verifySalesReport(report, expectedFlows = 6) {
@@ -87,28 +132,51 @@ export function verifySalesReport(report, expectedFlows = 6) {
   return true;
 }
 
+export function freshFailureEvidence(root, step, startedAt, maxBytes = 1024 * 1024) {
+  if (!step?.report) return '';
+  const reportPath = path.join(root, step.report);
+  try {
+    const stat = fs.statSync(reportPath);
+    if (stat.mtimeMs + 1000 < startedAt || stat.size > maxBytes) return '';
+    const text = fs.readFileSync(reportPath, 'utf8');
+    try {
+      const report = JSON.parse(text);
+      const errors = Array.isArray(report.findings) ? report.findings.filter(finding => finding?.severity === 'ERROR') : [];
+      return errors.length > 0 ? JSON.stringify({ status: report.status, findings: errors }) : text;
+    } catch { return text; }
+  } catch { return ''; }
+}
+
 export function runValidation({ root, dryRun = false, staticOnly = false, baseUrl = null, run = runBounded, now = () => Date.now() }) {
   const selected = validationSteps(root).filter(step => !staticOnly || !step.browser);
-  const summary = { workflow: 'validate', status: dryRun ? 'DRY_RUN' : 'PASS', commit: null, branch: null, orderCompleted: false, results: [] };
+  const summary = { workflow: 'validate', status: dryRun ? 'DRY_RUN' : 'PASS', validationScope: staticOnly ? 'STATIC' : 'FULL', commit: null, branch: null, orderCompleted: false, externalBlock: null, results: [] };
   for (const step of selected) {
     if (dryRun) {
       summary.results.push({ id: step.id, status: 'SKIPPED_DRY_RUN' });
       continue;
     }
     const salesPath = path.join(root, 'qa/results/sales-readiness.json');
-    const salesStarted = now();
+    const stepStarted = now();
     const env = { ...process.env, WORKFLOW_REPORT_DIR: path.join(root, '.workflow/reports') };
     if (baseUrl) env.WORKFLOW_BASE_URL = baseUrl;
-    const result = run(step.command, step.args, { cwd: root, env });
+    const execution = runWithExternalRetry(() => {
+      const result = run(step.command, step.args, { cwd: root, env });
+      if (result.exitCode !== 0 || result.spawnError || result.timedOut) result.message = freshFailureEvidence(root, step, stepStarted);
+      return result;
+    });
+    const { result } = execution;
     const status = result.exitCode === 0 && !result.spawnError && !result.timedOut ? 'PASS' : 'FAIL';
-    summary.results.push({ id: step.id, status, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null });
+    summary.results.push({ id: step.id, status, attempts: execution.attempts, exitCode: result.exitCode, timedOut: result.timedOut, errorClass: result.spawnError?.name ?? null, blocker: execution.blocker });
     if (status !== 'PASS') {
       summary.status = 'FAIL';
-      throw Object.assign(new WorkflowGateError(`${step.label} fehlgeschlagen`, 'VALIDATION_FAILED'), { summary, commandResult: result });
+      summary.externalBlock = execution.blocker;
+      const externalCodes = new Set([EXTERNAL_BLOCKS.RATE_LIMIT, EXTERNAL_BLOCKS.UPSTREAM, EXTERNAL_BLOCKS.LOCAL_RUNNER]);
+      const code = externalCodes.has(execution.blocker) ? execution.blocker : 'VALIDATION_FAILED';
+      throw Object.assign(new WorkflowGateError(`${step.label} fehlgeschlagen`, code), { summary, commandResult: result });
     }
     if (step.sales) {
       const stat = fs.existsSync(salesPath) ? fs.statSync(salesPath) : null;
-      if (!stat || stat.mtimeMs + 1000 < salesStarted) throw new WorkflowGateError('Sales-Evidence wurde nicht frisch erzeugt', 'SALES_EVIDENCE');
+      if (!stat || stat.mtimeMs + 1000 < stepStarted) throw new WorkflowGateError('Sales-Evidence wurde nicht frisch erzeugt', 'SALES_EVIDENCE');
       verifySalesReport(JSON.parse(fs.readFileSync(salesPath, 'utf8')));
     }
   }
@@ -197,14 +265,25 @@ export function livePublishArgs({ store, themeId, root }) {
   return ['theme', 'publish', '--store', store, '--theme', String(themeId), '--path', root, '--force'];
 }
 
-export function writeRuntimeReport(root, name, value) {
-  const directory = path.join(root, '.workflow');
+export function writeJsonAtomic(directory, name, value) {
   fs.mkdirSync(directory, { recursive: true });
   const target = path.join(directory, name);
   const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;
   fs.writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`, { flag: 'wx' });
   fs.renameSync(temporary, target);
   return target;
+}
+
+export function writeRuntimeReport(root, name, value) {
+  return writeJsonAtomic(path.join(root, '.workflow'), name, value);
+}
+
+// Unlike writeRuntimeReport (.workflow/, gitignored, local-only), this writes
+// into qa/evidence/, which is tracked by git. A full non-static validation
+// PASS can be committed for audits or protected release preparation. Draft PR
+// creation itself requires only reproducible static CI checks.
+export function writeTrackedEvidence(root, value) {
+  return writeJsonAtomic(path.join(root, ...TRACKED_EVIDENCE_PATH.split('/').slice(0, -1)), path.basename(TRACKED_EVIDENCE_PATH), value);
 }
 
 export function createPreviewTempDir() {

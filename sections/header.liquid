@@ -190,6 +190,8 @@
   endif
 %}
 
+{{ 'tp-mega-menu.css' | asset_url | stylesheet_tag }}
+
 {% capture localization_markup %}
   {% liquid
     assign localization_font = '--menu-localization-font: var(--font-[localization_font]--family); ' | replace: '[localization_font]', section.settings.localization_font

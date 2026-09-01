@@ -1,0 +1,14 @@
+{
+  "phase": "3b",
+  "status": "ready_for_execution",
+  "batches": 4,
+  "mutations_per_batch": [
+    100,
+    100,
+    100,
+    22
+  ],
+  "total_mutations": 322,
+  "next_step": "Execute each GraphQL query via Shopify API",
+  "instructions": "\nFor each batch in order:\n1. Read the GraphQL query from automation/data/shopify_batch_N_query.graphql\n2. Execute via mcp__Shopify__graphql_mutation tool\n3. Verify response (check userErrors array = empty)\n4. Wait ~2 seconds before next batch\n5. Repeat for batches 1-4\n"
+}
