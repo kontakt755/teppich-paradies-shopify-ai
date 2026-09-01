@@ -31,7 +31,7 @@
     { "name": "Klickvinyl PDP", "path": "/products/marlow-eiche-nordisch-klickvinyl-7mm", "type": "packageProduct", "expect": { "pricePerSquareMeter": true, "cart": true, "sample": true, "compare": true } },
     { "name": "Klebevinyl PDP", "path": "/products/alvora-eiche-bernstein-klebevinyl-2-5mm", "type": "packageProduct", "expect": { "pricePerSquareMeter": true, "cart": true, "sample": true, "compare": true } },
     { "name": "Rollen-Vinyl PDP", "path": "/products/marano-eiche-braun-vinylboden-von-der-rolle", "type": "rollProduct", "expect": { "pricePerSquareMeter": true, "cart": true, "sample": true, "compare": true } },
-    { "name": "Teppichboden PDP", "path": "/products/softiq-teppichboden", "type": "carpetProduct", "expect": { "cart": true, "sample": true, "compare": true } },
+    { "name": "Teppichboden PDP", "path": "/products/piumera-teppichboden-400cm-500cm", "type": "carpetProduct", "expect": { "cart": true, "sample": true, "compare": true } },
     { "name": "Suche", "path": "/search?q=teppichboden", "type": "search" },
     { "name": "Warenkorb", "path": "/cart", "type": "cart" },
     { "name": "Versand & Lieferung", "path": "/pages/versand-lieferung", "type": "page" }

@@ -10,6 +10,7 @@ import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { parseJsonProcessOutput, runProcess, shopifyInvocations } from './process-runner.mjs';
 import { qaImpactSummary, selectImpactedPages } from './impact-router.mjs';
+import { hasCartPurchasePath } from './cart-readiness.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const qaDir = path.join(root, 'qa');
@@ -279,7 +280,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
     for (const forbidden of pageConfig.forbiddenText || []) if (metrics.bodyText.toLowerCase().includes(forbidden.toLowerCase())) add('Shop-Smoke', pageConfig.name, viewportName, 'error', `Unerwünschter Text sichtbar: „${forbidden}“`);
     const exp = pageConfig.expect || {};
     if (exp.pricePerSquareMeter && !metrics.hasVisiblePricePerSquareMeter) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Sichtbarer „€/m²“-Preis im Produkt-Kaufbereich fehlt');
-    if (exp.cart && !/(in den warenkorb|zum warenkorb|add to cart)/i.test(metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Warenkorbbutton fehlt');
+    if (exp.cart && !hasCartPurchasePath(pageConfig.type, metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Kaufpfad zum Warenkorb fehlt');
     if (exp.sample && !/(muster|sample)/i.test(metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Muster-CTA fehlt');
     if (exp.compare && !/(vergleich|compare)/i.test(metrics.allInteractiveText)) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Vergleichsbutton fehlt');
     if (pageConfig.type === 'vinylCollection' && !metrics.bodyText.trim()) add('Shop-Smoke', pageConfig.name, viewportName, 'error', 'Vinylboden-Collection ist leer');
