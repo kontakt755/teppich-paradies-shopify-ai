@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "buildCommand": "npm install",
+  "devCommand": "npm run dev",
+  "functions": {
+    "index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "GOOGLE_PLACES_API_KEY": "@google_places_api_key",
+    "GOOGLE_BUSINESS_PLACE_ID": "@google_business_place_id",
+    "SHOPIFY_STORE_URL": "@shopify_store_url",
+    "NODE_ENV": "production"
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        }
+      ]
+    }
+  ]
+}
