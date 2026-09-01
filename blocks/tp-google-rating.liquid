@@ -1,0 +1,216 @@
+{% doc %}
+  Dynamische Google-Bewertung vom Google-Unternehmensprofil.
+  Lädt Rating und UserRatingCount über einen sicheren Backend-Endpunkt,
+  um den API-Key zu schützen. Zeigt keine Fallback-Werte bei Fehler.
+{% enddoc %}
+
+{%- liquid
+  assign tp_gr_id = block.id | replace: '_', '' | downcase
+-%}
+
+<div
+  class="tp-google-rating-{{ tp_gr_id }}"
+  id="tp-google-rating-{{ tp_gr_id }}"
+  data-block-id="{{ block.id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="tp-google-rating__container-{{ tp_gr_id }}">
+    <div class="tp-google-rating__loading-{{ tp_gr_id }}" aria-label="Lädt Google-Bewertung">
+      <div class="tp-google-rating__spinner"></div>
+    </div>
+    <div class="tp-google-rating__content-{{ tp_gr_id }}" style="display: none;">
+      <!-- Stars und Bewertung werden per JavaScript eingefügt -->
+    </div>
+    <div class="tp-google-rating__error-{{ tp_gr_id }}" style="display: none;" role="alert">
+      <!-- Fehler werden hier angezeigt, aber ohne Fallback-Werte -->
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const blockId = 'tp-google-rating-{{ tp_gr_id }}';
+  const container = document.getElementById(blockId);
+  if (!container) return;
+
+  const loadingEl = container.querySelector('.tp-google-rating__loading-{{ tp_gr_id }}');
+  const contentEl = container.querySelector('.tp-google-rating__content-{{ tp_gr_id }}');
+  const errorEl = container.querySelector('.tp-google-rating__error-{{ tp_gr_id }}');
+
+  async function fetchGoogleRating() {
+    try {
+      const response = await fetch('/api/store/google-rating', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (!data.rating || data.userRatingCount === undefined) {
+        throw new Error('Incomplete rating data');
+      }
+
+      renderRating(data.rating, data.userRatingCount);
+      if (loadingEl) loadingEl.style.display = 'none';
+      contentEl.style.display = 'block';
+
+    } catch (error) {
+      console.error('Failed to load Google rating:', error);
+      if (loadingEl) loadingEl.style.display = 'none';
+      errorEl.style.display = 'none';
+    }
+  }
+
+  function renderRating(rating, count) {
+    const starsHtml = '★★★★★';
+
+    const ratingText = rating.toLocaleString('de-DE', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    });
+
+    const countText = count.toLocaleString('de-DE');
+
+    const html = `
+      <div class="tp-google-rating__stars-{{ tp_gr_id }}">
+        ${starsHtml}
+      </div>
+      <div class="tp-google-rating__text-{{ tp_gr_id }}">
+        <span class="tp-google-rating__score-{{ tp_gr_id }}">${ratingText}/5</span>
+        <span class="tp-google-rating__count-{{ tp_gr_id }}">(${countText} Bewertungen)</span>
+        <span class="tp-google-rating__separator-{{ tp_gr_id }}">·</span>
+        <a
+          href="https://www.google.com/maps/place/Teppich+Paradies+Oranienburg+GmbH/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="tp-google-rating__link-{{ tp_gr_id }}"
+        >Auf Google lesen</a>
+      </div>
+    `;
+
+    contentEl.innerHTML = html;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fetchGoogleRating);
+  } else {
+    fetchGoogleRating();
+  }
+})();
+</script>
+
+<style>
+  .tp-google-rating-{{ tp_gr_id }} {
+    margin: 12px 0;
+  }
+
+  .tp-google-rating__container-{{ tp_gr_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .tp-google-rating__loading-{{ tp_gr_id }} {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+  }
+
+  .tp-google-rating__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top: 2px solid var(--color-foreground);
+    border-radius: 50%;
+    animation: tp-spin 0.8s linear infinite;
+  }
+
+  @keyframes tp-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .tp-google-rating__content-{{ tp_gr_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .tp-google-rating__stars-{{ tp_gr_id }} {
+    font-size: 14px;
+    color: #ffa500;
+    letter-spacing: -2px;
+    font-weight: bold;
+  }
+
+  .tp-google-rating__text-{{ tp_gr_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+    font-size: 14px;
+    color: var(--color-foreground);
+    line-height: 1.4;
+  }
+
+  .tp-google-rating__score-{{ tp_gr_id }} {
+    font-weight: 600;
+  }
+
+  .tp-google-rating__count-{{ tp_gr_id }} {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-google-rating__separator-{{ tp_gr_id }} {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+  }
+
+  .tp-google-rating__link-{{ tp_gr_id }} {
+    color: var(--color-link, #0066cc);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+  }
+
+  .tp-google-rating__link-{{ tp_gr_id }}:hover {
+    opacity: 0.8;
+  }
+
+  .tp-google-rating__error-{{ tp_gr_id }} {
+    font-size: 12px;
+    color: #d32f2f;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-google-rating__text-{{ tp_gr_id }} {
+      font-size: 13px;
+    }
+
+    .tp-google-rating__stars-{{ tp_gr_id }} {
+      font-size: 13px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Google-Bewertung",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Google-Bewertung"
+    }
+  ]
+}
+{% endschema %}
