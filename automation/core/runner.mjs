@@ -6,6 +6,7 @@ import { routeRiskDecision } from './risk-guard.mjs';
 import { DEFAULT_MAX_REVIEW_ROUNDS, DEFAULT_PROVIDER_TIMEOUT_MS, runReviewCorrectionCycle } from './review-cycle.mjs';
 import { evaluateQualityGates } from './quality-gates.mjs';
 import { routeTaskPolicy, usesAutonomyPolicy } from './task-router.mjs';
+import { buildTaskRoutingDecision, providerRouteForPhase } from './provider-router.mjs';
 
 export class RunnerStoppedError extends Error {
   constructor(message, options) {
@@ -32,7 +33,7 @@ function requireActualOperations(result, task) {
 }
 
 export class ManifestRunner {
-  constructor({ manifest, stateDir, executeTask, reviewTask = null, correctTask = null, maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, providerTimeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS, riskGuard = null, diffBudgetGuard = null, specGuard = null, taskRouter = routeTaskPolicy, qualityGateEvaluator = evaluateQualityGates, needsAhmetPath = null, io, clock = () => new Date() }) {
+  constructor({ manifest, stateDir, executeTask, reviewTask = null, correctTask = null, maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, providerTimeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS, riskGuard = null, diffBudgetGuard = null, specGuard = null, taskRouter = routeTaskPolicy, providerPlanner = buildTaskRoutingDecision, providers = [], preferredProviders = [], qualityGateEvaluator = evaluateQualityGates, needsAhmetPath = null, io, clock = () => new Date() }) {
     this.manifest = validateManifest(manifest);
     this.store = new StateStore({ stateDir, io, clock });
     this.lock = new RunLock({ lockPath: path.join(stateDir, 'run.lock'), io, now: clock });
@@ -45,6 +46,9 @@ export class ManifestRunner {
     this.diffBudgetGuard = diffBudgetGuard;
     this.specGuard = specGuard;
     this.taskRouter = taskRouter;
+    this.providerPlanner = providerPlanner;
+    this.providers = providers;
+    this.preferredProviders = preferredProviders;
     this.qualityGateEvaluator = qualityGateEvaluator;
     this.needsAhmetPath = needsAhmetPath ?? path.join(stateDir, 'needs-ahmet.md');
     this.clock = clock;
@@ -132,7 +136,26 @@ export class ManifestRunner {
             progress = true;
             continue;
           }
-          this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString(), routingPolicy, specCheck });
+          const routingDecision = this.providers.length
+            ? this.providerPlanner({
+              task,
+              policy: routingPolicy,
+              providers: this.providers,
+              preferredProviders: task.routing?.preferredProviders ?? this.preferredProviders,
+              existingDecision: current.routingDecision ?? null,
+            })
+            : current.routingDecision ?? null;
+          if (routingDecision?.status === 'UNAVAILABLE') {
+            this.updateTask(states, task, 'BLOCKED', { reason: 'PROVIDER_ROUTE_UNAVAILABLE', routingPolicy, routingDecision, specCheck });
+            progress = true;
+            continue;
+          }
+          const phaseRouting = routingDecision ? {
+            implement: providerRouteForPhase(routingDecision, 'IMPLEMENT'),
+            correct: providerRouteForPhase(routingDecision, 'CORRECT'),
+            review: providerRouteForPhase(routingDecision, 'REVIEW'),
+          } : {};
+          this.updateTask(states, task, 'RUNNING', { attempts: current.attempts + 1, startedAt: this.clock().toISOString(), routingPolicy, routingDecision, specCheck });
           const transitionHistory = [];
           let postflight = null;
           const review = usesAutonomyPolicy(task) && !routingPolicy.review.required ? null : this.reviewTask;
@@ -147,6 +170,7 @@ export class ManifestRunner {
             },
             maxReviewRounds: this.maxReviewRounds,
             providerTimeoutMs: this.providerTimeoutMs,
+            phaseRouting,
             onState: transition => {
               transitionHistory.push({ ...transition, at: this.clock().toISOString() });
               this.updateTask(states, task, transition.status, { reviewRound: transition.reviewRound, maxReviewRounds: transition.maxReviewRounds, findings: transition.findings ?? null, transitionHistory });
@@ -158,7 +182,7 @@ export class ManifestRunner {
             : null;
           if (qualityGates && !qualityGates.releaseReady) status = 'BLOCKED';
           if (!['PASS', 'FAIL', 'PARKED', 'BLOCKED', 'CORRECTION_REQUIRED', 'REVIEW_LIMIT_REACHED', 'HARD_FAIL', 'SECURITY_STOP'].includes(status)) throw new Error(`Executor returned invalid status ${status}`);
-          this.updateTask(states, task, status, { result: result?.result ?? null, postflight, routingPolicy, specCheck, qualityGates, reviewRound: result?.reviewRound ?? 0, maxReviewRounds: result?.maxReviewRounds ?? this.maxReviewRounds, findings: result?.findings ?? null, transitionHistory, finishedAt: this.clock().toISOString() });
+          this.updateTask(states, task, status, { result: result?.result ?? null, postflight, routingPolicy, routingDecision, specCheck, qualityGates, reviewRound: result?.reviewRound ?? 0, maxReviewRounds: result?.maxReviewRounds ?? this.maxReviewRounds, findings: result?.findings ?? null, transitionHistory, finishedAt: this.clock().toISOString() });
           progress = true;
         }
       }

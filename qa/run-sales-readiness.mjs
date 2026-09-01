@@ -158,33 +158,30 @@ async function rollFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
   await page.goto(targetUrl('/products/marano-eiche-braun-vinylboden-von-der-rolle', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
-  await page.locator('main input[type="radio"][value="400 cm"]').check({ timeout: 10_000 });
+  const width = page.locator('main input[type="radio"][value="400"]');
+  await width.check({ timeout: 10_000 });
   await page.waitForTimeout(1000);
-  const length = page.locator('main input[name="laenge"]');
+  const length = page.locator('main input[data-length-input]');
   await length.fill('250');
   await length.dispatchEvent('input');
   await length.dispatchEvent('change');
-  await page.waitForFunction(() => Number(document.querySelector('main input[name="properties[__ooCustomPrice]"]')?.value) === 259, null, { timeout: 12_000 });
-  const formValues = await page.locator('main product-form-component').evaluate(form => ({
-    variantId: form.querySelector('input[name="id"]')?.value,
-    width: form.querySelector('input[name="properties[Rollenbreite]"]')?.value,
-    customPrice: form.querySelector('input[name="properties[__ooCustomPrice]"]')?.value,
-  }));
-  formValues.length = await length.inputValue();
+  const calculator = page.locator('main [data-product-id]').filter({ has: page.locator('[data-cta]') }).first();
+  await calculator.locator('[data-cta]').filter({ hasText: '10 m² in den Warenkorb' }).waitFor({ state: 'visible', timeout: 12_000 });
+  const calculatorText = (await calculator.innerText()).replace(/\s+/g, ' ');
   result.health = await pageHealth(page);
   setPhase('add-to-cart');
   const addResponse = page.waitForResponse(response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
-  await page.locator('main product-form-component button[name="add"]').click({ timeout: 15_000 });
+  await calculator.locator('[data-cta]').click({ timeout: 15_000 });
   await addResponse;
   const cart = await getCart(context);
   const line = cart.items[0];
   result.calculator = {
-    selectedWidthMeters: formValues.width,
-    enteredLengthCm: formValues.length,
-    quotedPrice: formValues.customPrice,
+    selectedWidthCm: await width.inputValue(),
+    enteredLengthCm: await length.inputValue(),
     expectedPriceCents: 25900,
     formula: '2.50 m × 4 m × 25.90 €/m²',
-    plausible: formValues.width === '4' && formValues.length === '250' && Number(formValues.customPrice) === 259,
+    plausible: /400 cm × 250 cm = 10,00 m²/.test(calculatorText)
+      && /10,00 m² × 25,90 €\/m² = 259,00 €/.test(calculatorText),
   };
   result.cart = {
     itemCount: cart.item_count,
@@ -192,40 +189,76 @@ async function rollFlow({ page, context, result, setPhase }) {
     totalCents: cart.total_price,
     variantTitle: line?.variant_title,
     widthProperty: line?.properties?.Rollenbreite,
-    lengthProperty: line?.properties?.['Gewünschte Länge in cm'],
-    plausible: cart.item_count === 1 && line?.quantity === 1 && cart.total_price === 25900 && line?.properties?.Rollenbreite === '4' && line?.properties?.['Gewünschte Länge in cm'] === '250',
+    lengthProperty: line?.properties?.['Gewünschte Länge'],
+    areaProperty: line?.properties?.['Fläche (aufgerundet)'],
+    plausible: cart.item_count === 10
+      && line?.quantity === 10
+      && cart.total_price === 25900
+      && line?.variant_title === '400 cm'
+      && line?.properties?.Rollenbreite === '400 cm'
+      && line?.properties?.['Gewünschte Länge'] === '250 cm'
+      && line?.properties?.['Fläche (aufgerundet)'] === '10 m²',
   };
   result.checkout = await reachCheckout(page, setPhase);
   return result.calculator.plausible && result.cart.plausible && result.checkout.reachable && !result.health.overflow && result.health.brokenImages.length === 0;
 }
 
-async function sampleFlow({ page, result, setPhase }) {
+async function sampleFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
-  setPhase('sample-form');
+  const sourceHandle = 'piumera-teppichboden-400cm-500cm';
+  await page.goto(targetUrl(`/products/${sourceHandle}`, baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  setPhase('sample-configurator');
   await page.getByRole('link', { name: /Kostenloses Muster anfragen/i }).click({ timeout: 10_000 });
-  await page.waitForURL(/thema=muster/, { timeout: 15_000 });
-  await page.waitForFunction(() => document.querySelector('[data-tp-product-name]')?.textContent?.trim(), null, { timeout: 10_000 });
-  result.form = await page.locator('#ContactForm-sample').evaluate(element => ({
-    action: element.action,
-    product: element.querySelector('input[name="contact[Produkt]"]')?.value,
-    handle: element.querySelector('input[name="contact[Produkt-Handle]"]')?.value,
-    required: [...element.querySelectorAll('input[required], textarea[required], select[required]')].map(field => field.name),
-    submitted: false,
-  }));
-  result.productImage = await page.locator('[data-tp-product-image]').evaluate(image => ({
+  await page.waitForURL(url => url.pathname === '/pages/muster' && url.searchParams.get('produkt') === sourceHandle, { timeout: 15_000 });
+  await page.locator('[data-sample-fieldset]').waitFor({ state: 'visible', timeout: 15_000 });
+  await page.waitForFunction(() => document.querySelector('[data-sample-product-name]')?.textContent?.trim(), null, { timeout: 10_000 });
+  await page.waitForFunction(() => {
+    const image = document.querySelector('[data-sample-product-image]');
+    return image?.complete && image.naturalWidth > 0;
+  }, null, { timeout: 10_000 });
+  const productName = (await page.locator('[data-sample-product-name]').textContent())?.trim();
+  result.productImage = await page.locator('[data-sample-product-image]').evaluate(image => ({
     src: image.currentSrc || image.src,
-    alt: image.alt,
     visible: image.getBoundingClientRect().width > 0 && image.getBoundingClientRect().height > 0,
     loaded: image.complete && image.naturalWidth > 0,
   }));
+  const firstColor = page.locator('[data-sample-color]:not([aria-disabled="true"])').first();
+  const color = await firstColor.getAttribute('data-sample-color');
+  const checkbox = firstColor.locator('input[type="checkbox"]');
+  await checkbox.check({ timeout: 10_000 });
+  await page.locator('[data-sample-count]').filter({ hasText: /1 von 3 Mustern/ }).waitFor({ state: 'visible', timeout: 10_000 });
+  const submit = page.locator('[data-sample-submit]');
+  await submit.waitFor({ state: 'visible', timeout: 10_000 });
+  if (await submit.isDisabled()) throw new Error('Muster-Warenkorbbutton bleibt nach Farbauswahl deaktiviert');
   result.health = await pageHealth(page);
-  const requiredFields = ['contact[name]', 'contact[email]', 'contact[Straße und Hausnummer]', 'contact[PLZ]', 'contact[Ort]'];
-  return result.form.handle === 'marlow-eiche-nordisch-klickvinyl-7mm'
-    && requiredFields.every(name => result.form.required.includes(name))
-    && result.productImage.visible && result.productImage.loaded
-    && /Marlow Eiche Nordisch/.test(result.productImage.alt)
-    && !result.health.overflow && result.health.brokenImages.length === 0;
+  setPhase('sample-add-to-cart');
+  const addResponse = page.waitForResponse(response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
+  const cartNavigation = page.waitForURL(url => url.pathname === '/cart', { timeout: 15_000 });
+  await submit.click({ timeout: 10_000 });
+  await addResponse;
+  await cartNavigation;
+  const cart = await getCart(context);
+  const line = cart.items[0];
+  result.sample = { productName, selectedColor: color };
+  result.cart = {
+    itemCount: cart.item_count,
+    quantity: line?.quantity,
+    sourceProduct: line?.properties?._Quellprodukt,
+    color: line?.properties?.Farbe,
+    sampleKey: line?.properties?._Muster_ID,
+    plausible: cart.item_count === 1
+      && line?.quantity === 1
+      && line?.properties?._Quellprodukt === sourceHandle
+      && line?.properties?.Farbe === color
+      && Boolean(line?.properties?._Muster_ID),
+  };
+  return /Piumera Teppichboden/.test(productName || '')
+    && Boolean(color)
+    && result.productImage.visible
+    && result.productImage.loaded
+    && result.cart.plausible
+    && !result.health.overflow
+    && result.health.brokenImages.length === 0;
 }
 
 async function runFlow(browser, { flow, productType, viewportName, viewport, execute }) {

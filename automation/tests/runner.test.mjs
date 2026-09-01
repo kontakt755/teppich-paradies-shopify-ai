@@ -239,3 +239,47 @@ test('provider timeout parks one task while independent work continues', async t
   assert.equal(result.tasks.HANG.status, 'PARKED');
   assert.equal(result.tasks.CONTINUE.status, 'PASS');
 });
+
+test('runner persists one cache-stable route and passes it to implement, review and correction', async t => {
+  const stateDir = temporary(t);
+  const routingManifest = { runId: 'sticky-provider-route', tasks: [{
+    id: 'STICKY', domain: 'automation', risk: 'LOW', taskType: 'IMPLEMENTATION', reviewRequired: true,
+    routing: { policyVersion: 2 }, dependencies: [], allowedFiles: ['automation/core/**'], allowedOperations: ['report_write'],
+  }] };
+  const providers = [
+    { id: 'NVIDIA_NIM', upstreamProvider: 'NVIDIA', gateway: 'DIRECT', available: true, modelClass: 'STANDARD', model: 'configured-nvidia-model', costRank: 0, roles: ['IMPLEMENTER'] },
+    { id: 'OPENROUTER_REVIEW', upstreamProvider: 'ANTHROPIC', gateway: 'OPENROUTER', available: true, modelClass: 'STANDARD', model: 'configured-review-model', costRank: 1, roles: ['REVIEWER'] },
+  ];
+  let implementRoute;
+  let correctionRoute;
+  const reviewRoutes = [];
+  let reviews = 0;
+  const finding = { priority: 'P1', file: 'automation/core/example.mjs', problem: 'Problem', reason: 'Grund', recommendedFix: 'Fix' };
+  const candidate = version => ({
+    status: 'PASS', result: version, diffEntries: [{ file: 'automation/core/example.mjs', added: 2, deleted: 0 }],
+    resources: ['router'], actualOperations: ['report_write'], tests: [{ id: 'unit', status: 'PASS' }],
+  });
+  const result = await new ManifestRunner({
+    manifest: routingManifest,
+    stateDir,
+    providers,
+    diffBudgetGuard: { evaluate: () => ({ status: 'PASS', changedLines: 2 }) },
+    executeTask: async (_task, metadata) => { implementRoute = metadata.routing; return candidate('implemented'); },
+    reviewTask: async (_task, _candidate, metadata) => {
+      reviewRoutes.push(metadata.routing);
+      reviews += 1;
+      return { findings: reviews === 1 ? [finding] : [] };
+    },
+    correctTask: async (_task, _candidate, _findings, metadata) => { correctionRoute = metadata.routing; return candidate('corrected'); },
+  }).run();
+  assert.equal(result.tasks.STICKY.status, 'PASS');
+  assert.equal(result.tasks.STICKY.routingDecision.status, 'READY');
+  assert.equal(implementRoute.provider, 'NVIDIA_NIM');
+  assert.equal(correctionRoute.provider, implementRoute.provider);
+  assert.equal(correctionRoute.model, implementRoute.model);
+  assert.equal(correctionRoute.effortLevel, implementRoute.effortLevel);
+  assert.equal(correctionRoute.cacheSessionKey, implementRoute.cacheSessionKey);
+  assert.ok(reviewRoutes.every(route => route.provider === 'OPENROUTER_REVIEW'));
+  assert.ok(reviewRoutes.every(route => route.cacheSessionKey === reviewRoutes[0].cacheSessionKey));
+  assert.notEqual(reviewRoutes[0].provider, implementRoute.provider);
+});
