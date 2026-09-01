@@ -15,3 +15,14 @@ Der Adapter liest keine Repository-Dateien selbst und erzeugt keinen Mock-Kontex
 ## Nicht enthalten
 
 Der Adapter ersetzt weder Codex noch Claude Code als interaktive Entwicklungsumgebung und startet keine Tools, Shell-Kommandos oder Shopify-Aktionen. Diese Trennung ist absichtlich.
+
+## Messbarer OpenRouter-Betrieb
+
+Der JavaScript-Router hält eine Providerroute pro Task stabil. Sobald ein OpenRouter-Executor angeschlossen ist, muss er die echte API-Antwort über `extractOpenRouterUsage()` als JSONL in `OPENROUTER_USAGE_LEDGER` schreiben. Der Bericht bleibt lokal und enthält nur Provider, Modell, Token, Cache-Token und die von OpenRouter zurückgemeldeten Kosten – keine Prompts oder API-Keys.
+
+```bash
+source .env.local
+npm run openrouter:usage
+```
+
+Ein leerer Bericht bedeutet: keine API-Aufrufe, keine erfundenen Ersparnisse. Ein echter Vergleich wird erst nach mindestens einem kontrollierten Lauf mit festem Modell und derselben Aufgabe gegen eine Baseline ausgewertet.
