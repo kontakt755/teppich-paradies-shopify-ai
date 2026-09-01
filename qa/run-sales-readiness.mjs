@@ -161,7 +161,7 @@ async function rollFlow({ page, context, result, setPhase }) {
   const width = page.locator('main input[type="radio"][value="400"]');
   await width.check({ timeout: 10_000 });
   await page.waitForTimeout(1000);
-  const length = page.locator('main input[name="laenge"]');
+  const length = page.locator('main input[data-length-input]');
   await length.fill('250');
   await length.dispatchEvent('input');
   await length.dispatchEvent('change');
@@ -205,10 +205,11 @@ async function rollFlow({ page, context, result, setPhase }) {
 
 async function sampleFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
-  await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  const sourceHandle = 'piumera-teppichboden-400cm-500cm';
+  await page.goto(targetUrl(`/products/${sourceHandle}`, baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('sample-configurator');
   await page.getByRole('link', { name: /Kostenloses Muster anfragen/i }).click({ timeout: 10_000 });
-  await page.waitForURL(url => url.pathname === '/pages/muster' && url.searchParams.get('produkt') === 'marlow-eiche-nordisch-klickvinyl-7mm', { timeout: 15_000 });
+  await page.waitForURL(url => url.pathname === '/pages/muster' && url.searchParams.get('produkt') === sourceHandle, { timeout: 15_000 });
   await page.locator('[data-sample-fieldset]').waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForFunction(() => document.querySelector('[data-sample-product-name]')?.textContent?.trim(), null, { timeout: 10_000 });
   const productName = (await page.locator('[data-sample-product-name]').textContent())?.trim();
@@ -243,11 +244,11 @@ async function sampleFlow({ page, context, result, setPhase }) {
     sampleKey: line?.properties?._Muster_ID,
     plausible: cart.item_count === 1
       && line?.quantity === 1
-      && line?.properties?._Quellprodukt === 'marlow-eiche-nordisch-klickvinyl-7mm'
+      && line?.properties?._Quellprodukt === sourceHandle
       && line?.properties?.Farbe === color
       && Boolean(line?.properties?._Muster_ID),
   };
-  return /Marlow Eiche Nordisch/.test(productName || '')
+  return /Piumera Teppichboden/.test(productName || '')
     && Boolean(color)
     && result.productImage.visible
     && result.productImage.loaded
