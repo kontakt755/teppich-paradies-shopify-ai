@@ -16,16 +16,16 @@
           "type": "_product-media-gallery",
           "static": true,
           "settings": {
-              "media_presentation": "carousel",
+            "media_presentation": "carousel",
             "media_columns": "two",
-              "image_gap": 12,
+            "image_gap": 12,
             "large_first_image": false,
-              "icons_style": "arrow",
-              "slideshow_controls_style": "thumbnails",
-              "slideshow_mobile_controls_style": "counter",
-              "thumbnail_position": "bottom",
-              "thumbnail_width": 64,
-              "thumbnail_radius": 6,
+            "icons_style": "arrow",
+            "slideshow_controls_style": "thumbnails",
+            "slideshow_mobile_controls_style": "counter",
+            "thumbnail_position": "bottom",
+            "thumbnail_width": 64,
+            "thumbnail_radius": 6,
             "aspect_ratio": "1",
             "constrain_to_viewport": true,
             "media_fit": "contain",
@@ -298,10 +298,17 @@
                 "value_font_size": 14
               },
               "blocks": {}
+            },
+            "tp_google_rating_UdRxKh": {
+              "type": "tp-google-rating",
+              "name": "TP Google-Bewertung",
+              "settings": {},
+              "blocks": {}
             }
           },
           "block_order": [
             "group_icgrde",
+            "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "color_swatch_picker_f7EyBF",
             "variant_picker_R3rGDr",

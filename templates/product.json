@@ -194,6 +194,12 @@
               "settings": {},
               "blocks": {}
             },
+            "tp_google_rating_UdRxKh": {
+              "type": "tp-google-rating",
+              "name": "TP Google-Bewertung",
+              "settings": {},
+              "blocks": {}
+            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -316,6 +322,7 @@
             "tp_compare_toggle_night3",
             "group_icgrde",
             "tp_vorteile_night1",
+            "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "variant_picker_R3rGDr",
             "options_price_calculator_product_calculator_z3CEfy",
