@@ -11,15 +11,11 @@
   assign tp_color_friendly_label = value_label
   assign tp_value_lower = value_label | downcase | strip
 
-  {%- comment -%}
-    Nur für Farb-Filter: Wenn der Filter-Label "Farbe" oder "Color" enthält
-  {%- endcomment -%}
+  # Nur für Farb-Filter: Wenn der Filter-Label "Farbe" oder "Color" enthält
   if filter_label contains 'Farbe' or filter_label contains 'Color' or filter_label contains 'color' or filter_label contains 'Farben'
-    {%- comment -%}
-      Numerische Codes zu Farbnamen mappen + Case-Insensitive Matching.
-      Basierend auf häufigen Teppich-Paradies Produktdaten.
-      Codes die nicht hier aufgelistet sind, werden mit ihrer Original-Nummer angezeigt.
-    {%- endcomment -%}
+    # Numerische Codes zu Farbnamen mappen + Case-Insensitive Matching.
+    # Basierend auf häufigen Teppich-Paradies Produktdaten.
+    # Codes die nicht hier aufgelistet sind, werden mit ihrer Original-Nummer angezeigt.
     case tp_value_lower
       when '84'
         assign tp_color_friendly_label = 'Rot'
@@ -60,11 +56,9 @@
       when 'ecru', 'creme'
         assign tp_color_friendly_label = 'Ecru'
       else
-        {%- comment -%}
-          Falls der Label bereits ein verständlicher Name ist (z.B. "Rot", "Blau"),
-          wird er unverändert behalten. Nur unbekannte Codes bleiben auch bei der
-          Original-Nummer, damit die Filterung weiterhin funktioniert.
-        {%- endcomment -%}
+        # Falls der Label bereits ein verständlicher Name ist (z.B. "Rot", "Blau"),
+        # wird er unverändert behalten. Nur unbekannte Codes bleiben auch bei der
+        # Original-Nummer, damit die Filterung weiterhin funktioniert.
         assign tp_color_friendly_label = value_label
     endcase
   endif
