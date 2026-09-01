@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 1 A – Produktbeschreibungen Review</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            padding: 40px 20px;
+            color: #333;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; color: #222; }
+        .header p { font-size: 1.1em; color: #666; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card .number { font-size: 2.5em; font-weight: bold; color: #2196F3; margin-bottom: 10px; }
+        .stat-card .label { font-size: 0.9em; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .categories { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-bottom: 40px; }
+        .category-section { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .category-header { padding: 20px; color: white; font-weight: bold; font-size: 1.3em; }
+        .klickvinyl-header { background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%); }
+        .klebevinyl-header { background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%); }
+        .vinylboden-header { background: linear-gradient(135deg, #95E1D3 0%, #38ADA9 100%); }
+        .teppichboden-header { background: linear-gradient(135deg, #FFD93D 0%, #FFB700 100%); }
+        .category-content { padding: 30px; }
+        .product-example { margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid #eee; }
+        .product-example:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .product-title { font-weight: 600; font-size: 1.05em; margin-bottom: 12px; color: #222; }
+        .product-description { background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 12px; line-height: 1.6; font-size: 0.95em; color: #555; }
+        .product-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .badge { display: inline-block; background: #f0f0f0; padding: 6px 12px; border-radius: 20px; font-size: 0.85em; color: #555; }
+        .klickvinyl-badge { background: #FFE0E0; color: #C92A2A; }
+        .klebevinyl-badge { background: #E0F2F1; color: #00695C; }
+        .vinylboden-badge { background: #E0F2F1; color: #00695C; }
+        .teppichboden-badge { background: #FFF3E0; color: #E65100; }
+        .footer { text-align: center; margin-top: 40px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .footer p { color: #666; margin-bottom: 15px; }
+        .word-count { font-size: 0.9em; color: #999; margin-top: 8px; }
+        @media (max-width: 768px) { .stats, .categories { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Phase 1 A – Produktbeschreibungen Review</h1>
+            <p>250 kategoriebasierte Beschreibungen – vor dem Live-Push</p>
+        </div>
+        <div class="stats">
+            <div class="stat-card">
+                <div class="number">250</div>
+                <div class="label">Gesamt Produkte</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">4</div>
+                <div class="label">Kategorien</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">100%</div>
+                <div class="label">Neu geschrieben</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">✓</div>
+                <div class="label">Ready to Push</div>
+            </div>
+        </div>
+        <div class="categories">
+
+            <div class="category-section">
+                <div class="category-header klickvinyl-header">🔗 Klickvinyl (85 Produkte)</div>
+                <div class="category-content">
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Rovelia Eiche Hell – Klickvinyl 10mm</div>
+                        <div class="product-description">Klickvinyl mit eiche hell. Perfekt für schnelle Verlegung ohne Werkzeug oder Klebstoff. Schwimmend verlegt, sofort begehbar – ideal für Renovierung und Umgestaltung.</div>
+                        <div class="word-count">Länge: 22 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klickvinyl-badge">Einfach zu verlegen</span>
+                            <span class="badge klickvinyl-badge">Schwimmend</span>
+                            <span class="badge klickvinyl-badge">Sofort begehbar</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Rovelia Eiche Braun – Klickvinyl 10mm</div>
+                        <div class="product-description">Klickvinyl für DIY-Installation mit eiche braun. Keine Klebstoffe nötig, einfach einclicken. Stabil, pflegeleicht und sofort begehbar – die intelligente Wahl für Heimwerker.</div>
+                        <div class="word-count">Länge: 22 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klickvinyl-badge">Einfach zu verlegen</span>
+                            <span class="badge klickvinyl-badge">Schwimmend</span>
+                            <span class="badge klickvinyl-badge">Sofort begehbar</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Bergen Eiche Hell – Klickvinyl 6mm</div>
+                        <div class="product-description">Klickvinyl mit eiche hell-Optik. Schwimmende Verlegung ohne Klebstoff, fertig zum Betreten in Minuten. Robust und wartungsarm – perfekt für alle Wohnräume.</div>
+                        <div class="word-count">Länge: 21 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klickvinyl-badge">Einfach zu verlegen</span>
+                            <span class="badge klickvinyl-badge">Schwimmend</span>
+                            <span class="badge klickvinyl-badge">Sofort begehbar</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header klebevinyl-header">🧴 Klebevinyl (53 Produkte)</div>
+                <div class="category-content">
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Palermo Eiche Klassisch – Klebevinyl 2,5mm</div>
+                        <div class="product-description">Premium Klebevinyl mit eiche klassisch 2,5mm. Vollverklebung sorgt für absolute Stabilität und Langlebigkeit. Besonders flach und ideal für hohe Ansprüche.</div>
+                        <div class="word-count">Länge: 20 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klebevinyl-badge">Extra flach</span>
+                            <span class="badge klebevinyl-badge">Premium</span>
+                            <span class="badge klebevinyl-badge">Vollverklebt</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Palermo Beton Dunkel – Klebevinyl 2,5mm</div>
+                        <div class="product-description">Klebevinyl mit beton dunkel 2,5mm: Extra flach, dauerhaft verklebt. Perfekt für geringe Aufbauhöhen und Räume mit hohem Anspruch. Maximale Stabilität durch Vollverklebung.</div>
+                        <div class="word-count">Länge: 22 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klebevinyl-badge">Extra flach</span>
+                            <span class="badge klebevinyl-badge">Premium</span>
+                            <span class="badge klebevinyl-badge">Vollverklebt</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Palermo Eiche Beige – Klebevinyl 2,5mm</div>
+                        <div class="product-description">Premium Klebevinyl in eiche beige 2,5mm. Dank Vollverklebung extrem stabil und langlebig. Flaches Profil für moderne, diskrete Übergänge in anspruchsvollen Räumen.</div>
+                        <div class="word-count">Länge: 21 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge klebevinyl-badge">Extra flach</span>
+                            <span class="badge klebevinyl-badge">Premium</span>
+                            <span class="badge klebevinyl-badge">Vollverklebt</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header vinylboden-header">📏 Vinylboden (Rolle) (63 Produkte)</div>
+                <div class="category-content">
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Landora Eiche Hellgrau-Beige – Vinylboden von der Rolle</div>
+                        <div class="product-description">Bahnware mit eiche hellgrau-beige für großflächige Verlegung. Robuste CV-Oberfläche, weniger Fugenpflege. Flexible Breiten für wirtschaftliche, nahtlose Lösungen.</div>
+                        <div class="word-count">Länge: 17 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge vinylboden-badge">Großformatig</span>
+                            <span class="badge vinylboden-badge">Weniger Fugen</span>
+                            <span class="badge vinylboden-badge">Pflegeleicht</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Landora Eiche Beige – Vinylboden von der Rolle</div>
+                        <div class="product-description">Vinylboden-Bahnware mit eiche beige. Perfekt für großflächige Räume: weniger Fugen, weniger Verschleiß, leichte Reinigung. Flexible Breiten, robust und pflegeleicht.</div>
+                        <div class="word-count">Länge: 19 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge vinylboden-badge">Großformatig</span>
+                            <span class="badge vinylboden-badge">Weniger Fugen</span>
+                            <span class="badge vinylboden-badge">Pflegeleicht</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Landora Eiche Grau – Vinylboden von der Rolle</div>
+                        <div class="product-description">Bahnware in eiche grau. Großflächig verlegt, weniger Übergänge, weniger Wartung. Robuste CV-Oberfläche für alle Wohnbereiche und Gewerberäume.</div>
+                        <div class="word-count">Länge: 17 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge vinylboden-badge">Großformatig</span>
+                            <span class="badge vinylboden-badge">Weniger Fugen</span>
+                            <span class="badge vinylboden-badge">Pflegeleicht</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="category-section">
+                <div class="category-header teppichboden-header">🏠 Teppichboden (49 Produkte)</div>
+                <div class="category-content">
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Kontura Teppichboden 400cm</div>
+                        <div class="product-description">Komfortabler Teppichboden in kontura teppichboden. Strapazierfähig und pflegeleicht, mit ausgezeichneter Wärmeisolation und Akustik. Ideal für Wohnräume und Flure.</div>
+                        <div class="word-count">Länge: 18 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge teppichboden-badge">Komfortabel</span>
+                            <span class="badge teppichboden-badge">Wärmeisoliert</span>
+                            <span class="badge teppichboden-badge">Schallschutz</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Amara Teppichboden 400cm 500cm</div>
+                        <div class="product-description">Warmer Teppichboden mit amara teppichboden-Struktur. Schalldämmend, formstabil und strapazierfähig. Perfekt für gemütliche, langlebige Räume mit hohem Komfortanspruch.</div>
+                        <div class="word-count">Länge: 17 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge teppichboden-badge">Komfortabel</span>
+                            <span class="badge teppichboden-badge">Wärmeisoliert</span>
+                            <span class="badge teppichboden-badge">Schallschutz</span>
+                        </div>
+                    </div>
+
+                    <div class="product-example">
+                        <div class="product-title">📦 Serena Teppichboden 400cm 500cm</div>
+                        <div class="product-description">Teppichboden in serena teppichboden für warme Räume. Hervorragende Akustik und Wärmeisolation. Strapazierfähig und pflegeleicht – Komfort und Langlebigkeit in einem.</div>
+                        <div class="word-count">Länge: 20 Wörter</div>
+                        <div class="product-badges">
+
+                            <span class="badge teppichboden-badge">Komfortabel</span>
+                            <span class="badge teppichboden-badge">Wärmeisoliert</span>
+                            <span class="badge teppichboden-badge">Schallschutz</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+        <div class="footer">
+            <p><strong>✅ Status:</strong> Alle 250 Beschreibungen kategoriebasiert & SEO-optimiert</p>
+            <p style="font-size: 0.9em; color: #999;">
+                Klickvinyl (85): DIY Focus | Klebevinyl (53): Premium Focus | Vinylboden (63): Großflächen | Teppichboden (49): Komfort
+            </p>
+        </div>
+    </div>
+</body>
+</html>
