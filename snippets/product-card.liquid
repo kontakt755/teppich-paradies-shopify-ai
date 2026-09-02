@@ -39,7 +39,59 @@
   }
 
   .product-card__content:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Improve price visibility and styling */
+  .text-block .price,
+  .price-item__group {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .price-item--sale {
+    color: #c4392c;
+  }
+
+  .compare-at-price {
+    font-size: 0.95rem;
+    opacity: 0.6;
+    margin-right: 8px;
+  }
+
+  /* Improve title styling */
+  product-title h3,
+  [role="heading"] {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--color-foreground);
+    margin: 0;
+  }
+
+  /* Better spacing between card sections */
+  .product-card__content > h3 {
+    margin-top: 8px;
+    margin-bottom: 0;
+  }
+
+  .product-card__content > .text-block {
+    margin: 4px 0;
+  }
+
+  /* Improve card touch targets on mobile */
+  @media screen and (max-width: 749px) {
+    product-swatches button,
+    swatch-element button {
+      min-height: 36px;
+      min-width: 36px;
+    }
+
+    .quick-add-component button {
+      min-height: 44px;
+      padding: 12px 18px;
+    }
   }
 
   .card-gallery {
@@ -92,16 +144,59 @@
     flex-direction: column;
   }
 
+  /* Ensure product swatches are always visible and properly styled */
+  product-swatches,
+  .product-swatches {
+    display: flex !important;
+    visibility: visible !important;
+    width: 100%;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 4px 0;
+  }
+
+  /* Ensure swatch elements are clickable and visible */
+  swatch-element {
+    display: inline-flex !important;
+    margin: 0 !important;
+  }
+
+  swatch-element button {
+    min-width: 32px;
+    min-height: 32px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 2px;
+  }
+
+  swatch-element button:hover {
+    border-color: var(--color-foreground);
+    transform: scale(1.08);
+  }
+
+  swatch-element button[aria-pressed="true"] {
+    border-color: var(--color-foreground);
+    box-shadow: 0 0 0 2px var(--color-background);
+  }
+
   @supports (display: grid) {
     .product-card__content {
       display: grid;
-      grid-template-rows: auto auto 1fr auto auto;
-      gap: 8px;
+      grid-template-rows: auto auto auto 1fr auto auto;
+      gap: 10px;
     }
 
     .card-gallery {
       grid-row: 1;
       margin-bottom: 0;
+    }
+
+    product-swatches,
+    .product-swatches {
+      grid-row: auto;
+      margin: 4px 0;
     }
 
     .quick-add-component {
@@ -111,7 +206,12 @@
 
     @media screen and (max-width: 749px) {
       .product-card__content {
-        gap: 6px;
+        gap: 8px;
+      }
+
+      swatch-element button {
+        min-width: 28px;
+        min-height: 28px;
       }
     }
   }

@@ -83,19 +83,6 @@
   data-image-ratio="{{ block_settings.image_ratio }}"
   {{ block.shopify_attributes }}
 >
-  {% # Prominent Price Display %}
-  {% unless product == blank %}
-    <div class="card-gallery__price-banner">
-      <div class="card-gallery__price">
-        {% if product.compare_at_price > product.price %}
-          <span class="card-gallery__price-original">{{ product.compare_at_price | money }}</span>
-          <span class="card-gallery__price-current">{{ product.price | money }}</span>
-        {% else %}
-          <span class="card-gallery__price-current">{{ product.price | money }}</span>
-        {% endif %}
-      </div>
-    </div>
-  {% endunless %}
   {%- if product.media.size > 0 -%}
     {% liquid
       # Check if there are generic media that are not variant images
@@ -440,48 +427,4 @@
     }
   }
 
-  .card-gallery__price-banner {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.3) 100%);
-    padding: 8px 12px;
-    z-index: 10;
-    backdrop-filter: blur(4px);
-  }
-
-  .card-gallery__price {
-    display: flex;
-    gap: 6px;
-    align-items: baseline;
-    font-weight: 600;
-    line-height: 1.2;
-  }
-
-  .card-gallery__price-current {
-    font-size: 1.25rem;
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .card-gallery__price-original {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: line-through;
-  }
-
-  @media screen and (max-width: 749px) {
-    .card-gallery__price-banner {
-      padding: 6px 10px;
-    }
-
-    .card-gallery__price-current {
-      font-size: 1.125rem;
-    }
-
-    .card-gallery__price-original {
-      font-size: 0.8125rem;
-    }
-  }
 {% endstylesheet %}
