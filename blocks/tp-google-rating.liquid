@@ -61,7 +61,7 @@
       contentEl.style.display = 'block';
 
     } catch (error) {
-      console.error('Failed to load Google rating:', error);
+      console.warn('Failed to load Google rating:', error);
       if (loadingEl) loadingEl.style.display = 'none';
       errorEl.style.display = 'none';
     }
