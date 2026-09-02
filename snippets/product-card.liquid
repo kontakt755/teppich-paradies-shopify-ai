@@ -81,6 +81,40 @@
     margin-top: auto;
     padding-top: 8px;
   }
+
+  .product-card__content > * {
+    word-break: break-word;
+  }
+
+  .card-gallery + * {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  @supports (display: grid) {
+    .product-card__content {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto auto;
+      gap: 8px;
+    }
+
+    .card-gallery {
+      grid-row: 1;
+      margin-bottom: 0;
+    }
+
+    .quick-add-component {
+      grid-row: auto;
+      margin-top: 0;
+    }
+
+    @media screen and (max-width: 749px) {
+      .product-card__content {
+        gap: 6px;
+      }
+    }
+  }
 {% endstyle %}
 
 {% liquid
