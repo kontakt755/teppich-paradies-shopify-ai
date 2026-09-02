@@ -11,6 +11,8 @@
   blocks/product-title.liquid, das aber auch im Warenkorb und anderen
   Bereichen genutzt wird und deshalb hier bewusst NICHT global veraendert
   wurde.
+
+  Enhanced for product gallery redesign: Improved visual prominence and styling.
 {% enddoc %}
 
 {% if closest.product == blank %}
@@ -29,6 +31,30 @@
   </a>
   {% render 'tp-card-roll-widths', product_resource: closest.product %}
 {% endif %}
+
+{% style %}
+  .tp-card-title-link {
+    color: var(--color-foreground);
+    text-decoration: none;
+    display: block;
+    transition: color 0.2s ease;
+  }
+
+  .tp-card-title-link:hover {
+    color: var(--color-primary);
+  }
+
+  [role="heading"] {
+    margin: 0;
+    line-height: 1.4;
+    word-break: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+{% endstyle %}
 
 {% schema %}
 {
