@@ -1,0 +1,157 @@
+{% doc %}
+  Farbvarianten als kleine Bild-Thumbnails auf der Produktkarte.
+
+  Hintergrund: Die Farben sind bei TeppichParadies als Varianten modelliert
+  ("Farbe 016", "Farbe 021", ...) und haben eigene Produktbilder. Shopify-
+  Option-Swatches sind NICHT gepflegt, deshalb rendert blocks/swatches.liquid
+  bei diesen Produkten nichts. Dieser Block nutzt stattdessen die vorhandenen
+  Variantenbilder.
+
+  Zwei Wege, in dieser Reihenfolge:
+  1. Varianten mit eigenem Bild (featured_media) - Thumbnail verlinkt direkt
+     auf die Variante, damit der Kunde in der gewaehlten Farbe landet.
+  2. Fallback: hat keine Variante ein eigenes Bild, werden die Produktbilder
+     ab dem zweiten gezeigt und auf das Produkt verlinkt. Ohne diesen Fallback
+     bliebe die Karte bei unvollstaendig gepflegten Varianten leer.
+
+  Zeigt nichts an, wenn es nur eine Farbe gibt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ct_product = closest.product
+  assign tp_ct_id = block.id | replace: '_', '' | downcase
+  assign tp_ct_max = block.settings.max_thumbs
+
+  assign tp_ct_variants = tp_ct_product.variants | where: 'featured_media'
+  assign tp_ct_source = 'variant'
+  assign tp_ct_total = tp_ct_variants.size
+
+  unless tp_ct_total > 1
+    assign tp_ct_source = 'image'
+    assign tp_ct_total = tp_ct_product.images.size
+  endunless
+-%}
+
+{%- if tp_ct_total > 1 -%}
+  <div class="tp-color-thumbs-{{ tp_ct_id }}" {{ block.shopify_attributes }}>
+    {%- if tp_ct_source == 'variant' -%}
+      {%- for tp_ct_variant in tp_ct_variants limit: tp_ct_max -%}
+        <a
+          class="tp-color-thumb"
+          href="{{ tp_ct_variant.url }}"
+          aria-label="{{ tp_ct_variant.title | escape }}"
+          title="{{ tp_ct_variant.title | escape }}"
+        >
+          <img
+            src="{{ tp_ct_variant.featured_media.preview_image | image_url: width: 96 }}"
+            alt="{{ tp_ct_variant.title | escape }}"
+            width="48"
+            height="48"
+            loading="lazy"
+          >
+        </a>
+      {%- endfor -%}
+    {%- else -%}
+      {%- for tp_ct_image in tp_ct_product.images limit: tp_ct_max -%}
+        <a
+          class="tp-color-thumb"
+          href="{{ tp_ct_product.url }}"
+          aria-label="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
+          title="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
+        >
+          <img
+            src="{{ tp_ct_image | image_url: width: 96 }}"
+            alt="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
+            width="48"
+            height="48"
+            loading="lazy"
+          >
+        </a>
+      {%- endfor -%}
+    {%- endif -%}
+
+    {%- if tp_ct_total > tp_ct_max -%}
+      {%- assign tp_ct_rest = tp_ct_total | minus: tp_ct_max -%}
+      <a
+        class="tp-color-thumb tp-color-thumb--more"
+        href="{{ tp_ct_product.url }}"
+        aria-label="{{ tp_ct_rest }} weitere Farben ansehen"
+        title="{{ tp_ct_rest }} weitere Farben"
+      >+{{ tp_ct_rest }}</a>
+    {%- endif -%}
+  </div>
+
+  <style>
+    .tp-color-thumbs-{{ tp_ct_id }} {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0 0;
+    }
+
+    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb {
+      display: block;
+      width: 34px;
+      height: 34px;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.15);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb:hover {
+      border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+      transform: scale(1.08);
+    }
+
+    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb--more {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
+      text-decoration: none;
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.05);
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb {
+        width: 30px;
+        height: 30px;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Farb-Varianten",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "max_thumbs",
+      "label": "Maximal sichtbare Farben",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "default": 6,
+      "info": "Weitere Farben werden als \"+N\" angezeigt."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Farb-Varianten",
+      "category": "t:categories.product"
+    }
+  ]
+}
+{% endschema %}

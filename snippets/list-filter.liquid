@@ -212,7 +212,7 @@
               {%- if tp_is_roll_width_filter -%}
                 {%- assign tp_filter_value_label = value.value | times: 100 | round | append: ' cm' -%}
               {%- else -%}
-                {%- render 'tp-color-label-mapping', filter_label: filter.label, value_label: value.label as tp_filter_value_label -%}
+                {%- capture tp_filter_value_label -%}{%- render 'tp-color-label-mapping', filter_label: filter.label, value_label: value.label -%}{%- endcapture -%}
               {%- endif -%}
               {% liquid
                 assign input_id = 'Filter-' | append: filter.param_name | escape | append: '-' | append: forloop.index | replace: '.', '-' | append: '-' | append: filter_style | append: '-' | append: in_drawer

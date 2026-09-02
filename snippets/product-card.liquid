@@ -60,14 +60,24 @@
     margin-right: 8px;
   }
 
-  /* Improve title styling */
-  product-title h3,
-  [role="heading"] {
-    font-size: 1.1rem;
+  /* Improve title styling.
+     Scoped to the card: an unscoped [role="heading"] rule styled every
+     heading on the page, including sections that have nothing to do with
+     product cards. */
+  .product-card product-title h3,
+  .product-card [role="heading"] {
+    font-size: 1.35rem;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.35;
     color: var(--color-foreground);
     margin: 0;
+  }
+
+  @media screen and (max-width: 749px) {
+    .product-card product-title h3,
+    .product-card [role="heading"] {
+      font-size: 1.25rem;
+    }
   }
 
   /* Better spacing between card sections */

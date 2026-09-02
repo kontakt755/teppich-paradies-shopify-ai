@@ -72,6 +72,10 @@ export function validationSteps(root) {
     { id: 'WORKFLOW_TESTS', label: 'Workflow Tests', command: process.execPath, args: ['--test', ...testFiles(root, 'workflow/tests')] },
     { id: 'QA_EVIDENCE', label: 'QA Evidence', command: process.execPath, args: ['--test', 'qa/tests/evidence-filter.test.mjs', 'qa/tests/url-sanitizer.test.mjs', 'qa/tests/console-classification.test.mjs', 'qa/tests/browser-infra.test.mjs'] },
     { id: 'SECRET_SCAN', label: 'Secret Scan', command: process.execPath, args: ['automation/scripts/secret-scan.mjs'] },
+    // Faengt ungueltige Liquid-Konstrukte, die `shopify theme check` nicht
+    // meldet und die Shopify beim Push still verwirft - die Datei fehlt dann
+    // im Shop ("Could not find asset ..."), obwohl Push und Check gruen waren.
+    { id: 'LIQUID_GUARD', label: 'Liquid Guard', command: process.execPath, args: ['qa/run-liquid-guard.mjs'] },
     { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true, report: 'qa/results/compare-readiness.json' },
     { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true, report: 'qa/results/seo-latest.json' },
     { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true, report: 'qa/results/latest.json' },
