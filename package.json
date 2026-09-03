@@ -6,6 +6,7 @@
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
     "qa:evidence:test": "node --test qa/tests/evidence-filter.test.mjs qa/tests/url-sanitizer.test.mjs qa/tests/console-classification.test.mjs qa/tests/browser-infra.test.mjs",
+    "qa:filter": "node qa/log-filter.mjs",
     "automation:test": "node --test automation/tests/*.test.mjs",
     "openrouter:usage": "node automation/scripts/openrouter-usage-report.mjs",
     "secret:scan": "node automation/scripts/secret-scan.mjs",
