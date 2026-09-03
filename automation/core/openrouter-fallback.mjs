@@ -1,6 +1,6 @@
 import { executeOpenRouterTask, OpenRouterExecutorError } from './openrouter-executor.mjs';
 
-const DEFAULT_LIGHT_MODELS = ['cohere/north-mini-code:free', 'inclusionai/ling-3.0-flash-fin:free'];
+const DEFAULT_LIGHT_MODELS = ['dots-studio/dots-3-note-preview:free', 'cohere/north-mini-code:free', 'inclusionai/ling-3.0-flash-fin:free'];
 const DEFAULT_STANDARD_MODELS = ['poolside/laguna-s-2.1:free', 'cohere/north-mini-code:free'];
 
 function configuredModels(variable, defaults) {
