@@ -70,10 +70,11 @@ Models are configurable via env vars: `CLAUDE_HAIKU_MODEL`, `CLAUDE_SONNET_MODEL
 - `qa/tests/` — unit tests for evidence filtering, URL sanitization, browser infra
 
 **Dashboard (Localhost):**
-- `docs/ai-dashboard/` or `setup-dashboard.sh` sets up GitHub Labels
-- Dashboard runs on `localhost:8001` (Python SimpleHTTP)
-- Reads GitHub Issues with status/type/priority labels and displays Kanban board, list view, metrics
-- Auto-refreshes every 2 minutes
+- `setup-dashboard.sh` creates the GitHub labels the dashboard relies on
+- `npm run dashboard` builds `issues.json` and serves on `localhost:8001`
+- Displays Kanban board, list view and metrics from status/type/priority labels
+- Browser re-reads `issues.json` every 2 minutes; the data itself is refreshed by
+  the `dashboard-data` workflow on each issue event
 
 ---
 
@@ -257,9 +258,19 @@ Alternative terminal states: `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`, `HAR
 **Goal:** All project metrics, tasks, and progress visible on the Dashboard.
 
 **How it works:**
-1. Dashboard reads GitHub Issues from `tobiaski737-coder/teppich-paradies-shopify-ai`
-2. Issues tagged with status/type/priority labels appear in Kanban columns, metrics, and list views
-3. Each task/issue can include "Nächster Schritt" (next step) in the body
+1. The `dashboard-data` workflow (`.github/workflows/dashboard-data.yml`) runs on
+   every issue event and hourly, calling `scripts/build-dashboard-data.mjs`
+2. That script writes `docs/ai-dashboard/issues.json` and commits it
+3. `docs/ai-dashboard/index.html` reads only that JSON file — it never calls the
+   GitHub API, so no token is needed in the browser
+4. Issues tagged with status/type/priority labels appear in Kanban columns,
+   metrics, and list views
+5. Each task/issue can include "Nächster Schritt" (next step) in the body; the
+   generator extracts it into the JSON
+
+Run locally with `npm run dashboard` (builds data, serves on :8001). Do not
+re-add a browser-side GitHub API call — it fails without a token and a token in
+frontend JS would be public.
 
 **To add an issue to the dashboard:**
 ```bash

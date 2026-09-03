@@ -4,13 +4,12 @@ Schnelleinstieg für die Nutzung des Online-Shop Dashboards.
 
 ## 1️⃣ Dashboard öffnen
 
-**Live:** https://github.com/tobiaski737-coder/teppich-paradies-shopify-ai/docs/ai-dashboard/
+**Live:** https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/
 
-Oder lokal:
+Oder lokal (im Repo-Wurzelverzeichnis):
 ```bash
-cd docs/ai-dashboard/
-python -m http.server 8000
-# Öffne: http://localhost:8000
+npm run dashboard
+# Öffne: http://localhost:8001
 ```
 
 ## 2️⃣ Erste Aufgabe erstellen

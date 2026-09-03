@@ -2,7 +2,7 @@
 
 Zentrales Echtzeit-Dashboard für die Verwaltung aller Aufgaben des Teppich Paradies Shopify Stores.
 
-**Live anschauen:** https://tobiaski737-coder.github.io/teppich-paradies-shopify-ai/docs/ai-dashboard/
+**Live anschauen:** https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/
 
 ## Was ist das Dashboard?
 
@@ -171,7 +171,7 @@ Das Dashboard liest aus:
 
 Alle offenen und geschlossenen Issues mit relevanten Labels.
 
-**Keine Token nötig!** Dashboard nutzt öffentliche GitHub API.
+**Keine Token nötig!** Das Dashboard liest die statische `issues.json`, die der Workflow `dashboard-data` erzeugt — nicht die GitHub API.
 
 **Rate Limit:** 60 Anfragen/Stunde pro IP (für anon users).
 Bei 2 Min Refresh = 30 Anfragen/Stunde → Sicher im Limit.
@@ -192,25 +192,40 @@ Alternative: Issues ohne Labels erscheinen in "Eingang".
 
 ### Architektur
 
+Das Dashboard fragt die GitHub API **nicht** selbst ab. Stattdessen erzeugt
+ein Workflow eine statische Datendatei, die das Dashboard einfach lädt:
+
 ```
-index.html
-├── CSS (eingebettet)
-├── JavaScript (eingebettet)
-│   ├── GitHub API Fetcher
-│   ├── Label Parser
-│   ├── Status Updater
-│   └── Renderer
-└── HTML Template
+GitHub Issues  (Quelle der Wahrheit)
+      │
+      │  Workflow ".github/workflows/dashboard-data.yml"
+      │  Auslöser: jedes Issue-Event (sofort) + stündlich als Netz
+      ▼
+scripts/build-dashboard-data.mjs
+      │  liest Issues, zieht "Nächster Schritt" aus dem Body
+      ▼
+docs/ai-dashboard/issues.json   (wird ins Repo committet)
+      │
+      │  fetch() - gleiche Domain, kein Token
+      ▼
+index.html   (Metriken, Kanban, Liste)
 ```
 
-**Alles in einer Datei:** Keine externe Dependencies, kein Build-Prozess.
+**Warum so?** Der frühere Ansatz las die GitHub API direkt im Browser. Bei
+einem privaten Repo schlägt das ohne Token immer fehl, und ein Token im
+Frontend wäre öffentlich einsehbar. Über die statische `issues.json`
+funktioniert das Dashboard unabhängig von der Repo-Sichtbarkeit.
+
+**Alles in einer Datei:** `index.html` hat kein Build-Schritt und keine
+Dependencies. Einzige Datenquelle ist `issues.json` daneben.
 
 ### Sicherheit
 
-- ✅ Keine GitHub Token hartcodiert
-- ✅ Nur öffentliche API-Calls (read-only)
-- ✅ Keine Secrets werden übertragen
-- ✅ HTTPS nur
+- ✅ Kein GitHub Token im Frontend — der Browser braucht keinen
+- ✅ Der Workflow nutzt den kurzlebigen `GITHUB_TOKEN` (nur `issues: read`)
+- ✅ `issues.json` enthält keine Issue-Bodies, nur Titel, Labels, Zuweisung
+  und den extrahierten nächsten Schritt
+- ✅ Alle Ausgaben im Dashboard sind HTML-escaped
 
 ### Browser-Kompatibilität
 
@@ -224,15 +239,20 @@ index.html
 Möchtest du das Dashboard lokal testen?
 
 ```bash
-cd docs/ai-dashboard/
-# Python 3
-python -m http.server 8000
+# Daten frisch erzeugen UND Server starten
+npm run dashboard
+# → http://localhost:8001
 
-# Oder Node.js
-npx http-server
+# Nur die Daten neu erzeugen (schreibt issues.json)
+npm run dashboard:data
 
-# Dann öffne: http://localhost:8000
+# Nur den Server starten (nutzt vorhandene issues.json)
+npm run dashboard:serve
 ```
+
+Ein Server ist nötig: beim Öffnen per `file://` blockiert der Browser das
+Laden von `issues.json`. `npm run dashboard:data` braucht die `gh` CLI in
+eingeloggtem Zustand (`gh auth status`).
 
 ## Fehlerbehandlung
 
@@ -336,7 +356,7 @@ Mehr Info: [AI_WORKFLOW.md](../AI_WORKFLOW.md)
 - 🏷️ **Label-System:** [LABELS_SYSTEM.md](../LABELS_SYSTEM.md)
 - 🤖 **AI-Workflow:** [AI_WORKFLOW.md](../AI_WORKFLOW.md)
 - 📝 **Issue Templates:** [.github/ISSUE_TEMPLATE/](./.github/ISSUE_TEMPLATE/)
-- 🛒 **Shop Repo:** [GitHub](https://github.com/tobiaski737-coder/teppich-paradies-shopify-ai)
+- 🛒 **Shop Repo:** [GitHub](https://github.com/kontakt755/teppich-paradies-shopify-ai)
 
 ## Häufige Fragen
 
@@ -373,12 +393,13 @@ Bearbeite `index.html`:
 
 ### "Wird mein GitHub-Token gespeichert?"
 
-**Nein!** Es wird **kein Token verwendet**. Das Dashboard nutzt:
-- Public GitHub API (kostenlos, anonym)
-- Read-Only Operationen
-- Keine Authentifizierung
+**Nein.** Der Browser braucht überhaupt keinen Token:
+- Das Dashboard lädt nur `issues.json` von derselben Domain
+- Die Datei wird vom Workflow `dashboard-data` erzeugt, der GitHubs
+  kurzlebigen `GITHUB_TOKEN` mit `issues: read` nutzt
+- Dieser Token verlässt die Actions-Umgebung nie
 
-Dein Dashboard bleibt privat/sicher.
+Es gibt also keinen Token, der gespeichert werden könnte.
 
 ## Troubleshooting für Entwickler
 
