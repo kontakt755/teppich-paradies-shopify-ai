@@ -3,7 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online-Shop Dashboard - Teppich Paradies</title>
+    <title>Teppich Dashboard</title>
+
+    <!-- Als App installierbar auf Windows (Edge/Chrome), macOS (Safari "Zum Dock
+         hinzufuegen") und iOS/Android ("Zum Home-Bildschirm"). Bewusst OHNE
+         Service Worker: der wuerde issues.json cachen und veraltete Staende
+         anzeigen - genau das Problem, das das Dashboard vermeiden soll. -->
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="description" content="Offene Aufgaben, Blocker und naechste Schritte fuer den Online-Shop">
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Teppich Dashboard">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
         * {
             margin: 0;
