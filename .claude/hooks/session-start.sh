@@ -21,7 +21,7 @@ echo "── Projektzustand ─────────────────�
 
 # Die drei Guards fangen genau die Fehler ab, die hier mehrfach bis in den
 # Shop gelangt sind. Der Hook meldet nur die Zusammenfassungszeile.
-for guard in liquid schema template; do
+for guard in liquid schema template live-theme; do
   if out=$(node "qa/run-${guard}-guard.mjs" 2>&1); then
     echo "  ${out##*$'\n'}"
   else

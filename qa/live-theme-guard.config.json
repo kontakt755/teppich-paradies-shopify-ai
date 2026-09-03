@@ -1,0 +1,14 @@
+{
+  "_comment": "sources sind Dateien, die als aktueller Stand gelesen werden. Historische Reports stehen bewusst NICHT hier: sie beschreiben korrekt, was zu ihrer Zeit galt, und duerfen alte Theme-IDs behalten.",
+  "sources": [
+    "CLAUDE.md",
+    "AGENTS.md",
+    "SHOPIFY_MASTER_ROADMAP.md",
+    "README.md",
+    ".claude/README.md",
+    "QUICK_START.md",
+    "RISK_MODEL_SPEC.md"
+  ],
+  "registry": "domains/shopify/live-theme.json",
+  "riskMap": "domains/shopify/risk-map.json"
+}

@@ -13,10 +13,12 @@ Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codi
 
 Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
 
-Stand beim Erstellen dieser Datei:
+Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hier bewusst nicht, weil genau diese Doppelung schon einmal schiefging: Als das Live-Theme wechselte, blieb die alte ID in dieser Datei stehen, und Agenten nannten monatelang ein Theme als Live-Stand, das in der Admin API gar nicht mehr existierte.
 
-- Live-Theme: `theme-productpage-v2-night`, ID `201829679438`
-- Fallback-Theme: `Horizon`, ID `196301750606`
+- Aktueller Stand: `domains/shopify/live-theme.json` lesen
+- Nachprüfen über den Shopify-MCP: `query { themes(first: 20) { nodes { id name role updatedAt } } }` — live ist der Knoten mit `role: MAIN`
+- Nach einem Theme-Wechsel `live-theme.json` aktualisieren und `npm run theme:guard` laufen lassen
+- Das Fallback-Theme `Horizon` wird nie gelöscht oder überschrieben
 
 ## Grundsätzliche Arbeitsweise
 
