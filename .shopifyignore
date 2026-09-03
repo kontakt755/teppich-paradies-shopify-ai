@@ -1,0 +1,7 @@
+# Nicht ins Shopify-Theme hochladen.
+
+# Sisal-Prototyp (Commit 39029ac). Liegt bewusst unter theme/ und ist damit
+# kein ausliefbares Template - Shopify erwartet templates/, snippets/ und
+# assets/ direkt im Root. Ohne diesen Eintrag scannt der Push den Prototyp mit
+# und bricht mit --strict am Theme-Check ab.
+theme/

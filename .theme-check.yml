@@ -1,0 +1,22 @@
+extends: :default
+
+ignore:
+  # Sisal-Prototyp, wird nicht ausgeliefert (siehe .shopifyignore).
+  - theme/**
+
+JSONMissingBlock:
+  # Lokal grundsaetzlich nicht aufloesbar, zwei Ursachen:
+  # 1. Der Options-Price-Calculator ist ein App-Block. Er existiert nur im
+  #    installierten Shop, nie im Repository - betrifft die Rollenware-Seite.
+  # 2. tp-card-color-thumbs in blocks/_product-card.liquid: Theme-Check
+  #    erkennt verschachtelte private Bloecke (_-Praefix) nicht.
+  # Drift in Templates und Bloecken deckt stattdessen
+  # "npm run template:guard" und "npm run schema:guard" ab.
+  enabled: false
+
+AppBlockValidTags:
+  # Bekanntes False-Positive: trifft rund 145 Dateien inklusive Horizon-Kern
+  # und meldet stylesheet-/javascript-Tags in Dateien, die gar keine
+  # Theme-App-Extension-Bloecke sind. Siehe CLAUDE.md. Ohne dieses Aus
+  # scheitert jeder "shopify theme push --strict" am Theme-Check.
+  enabled: false

@@ -1,15 +1,21 @@
-{% # Live Chat Widget Snippet
-  Include live customer support chat on product and collection pages
-%}
+{% comment %}
+  Live-Chat-Widget.
+
+  ACHTUNG - NICHT AKTIVIEREN, SOLANGE KEIN ECHTES BACKEND EXISTIERT:
+  assets/live-chat-widget.js beantwortet Kundennachrichten ueber
+  simulateAgentResponse() mit zufaelligen Textbausteinen. Es gibt keinen
+  Serverdienst dahinter - Nachrichten landen ausschliesslich im localStorage
+  des Besuchers und werden von niemandem gelesen. Im Livebetrieb wuerde das
+  Kunden vortaeuschen, sie haetten den Kundenservice erreicht.
+
+  Dieses Snippet wird deshalb aktuell nirgends gerendert. Vor einer
+  Aktivierung muss simulateAgentResponse durch eine echte Anbindung
+  ersetzt werden.
+{% endcomment %}
 
 {%- unless snippet.live_chat_disabled -%}
   <div id="live-chat-widget"></div>
 
-  <style>
-    {% include 'live-chat-widget.css' %}
-  </style>
-
-  <script type="module">
-    {% include 'live-chat-widget-init.js' %}
-  </script>
+  {{ 'live-chat-widget.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'live-chat-widget.js' | asset_url }}" type="module"></script>
 {%- endunless -%}

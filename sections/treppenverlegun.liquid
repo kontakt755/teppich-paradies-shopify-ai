@@ -8,7 +8,7 @@
       {% for block in section.blocks %}
         {% if block.type == 'belagsart' %}
         <div class="belagsart">
-          <img src="{{ block.settings.image | image_url: width: 600 }}" alt="{{ block.settings.title | escape }}" loading="lazy">
+          <img src="{{ block.settings.image | image_url: width: 600 }}" alt="{{ block.settings.title | escape }}" width="{{ block.settings.image.width | default: 600 }}" height="{{ block.settings.image.height | default: 450 }}" loading="lazy">
           <h3>{{ block.settings.title }}</h3>
           <p>{{ block.settings.text }}</p>
         </div>
