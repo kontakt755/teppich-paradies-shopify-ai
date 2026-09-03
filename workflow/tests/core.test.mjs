@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  APPROVAL_TEXT, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, commandName, compareThemeMaps, createDryRunSummary,
+  APPROVAL_TEXT, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
   deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyLocalEvidence, verifyPreviewPayload,
   verifyPreviewSnapshot, verifySalesReport,
 } from '../core.mjs';
@@ -276,4 +276,25 @@ test('Windows command selection is portable without absolute tool paths', () => 
   assert.equal(commandName('shopify', 'win32'), 'shopify.cmd');
   assert.equal(commandName('gh', 'win32'), 'gh.cmd');
   assert.equal(commandName('shopify', 'darwin'), 'shopify');
+});
+
+test('Scratch-Gate: laesst WIP zu, schuetzt aber Live und Preview-Evidence', () => {
+  const scratch = { id: '999', role: 'unpublished', name: 'Scratch' };
+  const live = { id: 'live', role: 'live' };
+
+  // Kern der Lane: kein origin/main, kein sauberer Tree, keine Null-Findings -
+  // genau deshalb ist sie zum Ausprobieren brauchbar.
+  assert.equal(assertScratchGate({ themeId: '999', theme: scratch, liveTheme: live, previewEvidence: null }), true);
+  assert.equal(assertScratchGate({ themeId: '999', theme: scratch, liveTheme: live, previewEvidence: { themeId: '203558781262' } }), true);
+
+  assert.throws(() => assertScratchGate({ themeId: null, theme: scratch, liveTheme: live }), /--theme-id/);
+  assert.throws(() => assertScratchGate({ themeId: 'live', theme: live, liveTheme: live }), /unpublished/);
+  assert.throws(() => assertScratchGate({ themeId: '999', theme: { id: '999', role: 'live' }, liveTheme: live }), /unpublished/);
+
+  // Ein Scratch-Push auf das Preview-Theme wuerde genau die Drift erzeugen,
+  // die PREVIEW_DRIFT abfangen soll.
+  assert.throws(
+    () => assertScratchGate({ themeId: '777', theme: { id: '777', role: 'unpublished' }, liveTheme: live, previewEvidence: { themeId: '777' } }),
+    /Preview-Evidence/,
+  );
 });

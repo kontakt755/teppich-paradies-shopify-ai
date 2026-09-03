@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { createHash } from 'node:crypto';
 import {
-  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate,
+  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
@@ -13,6 +13,23 @@ const root = path.resolve(import.meta.dirname, '..');
 const [mode = 'validate', ...rawArgs] = process.argv.slice(2);
 const args = parseArgs(rawArgs);
 const dryRun = args['dry-run'] === true;
+
+/**
+ * Unbekannte Flags wurden bisher stillschweigend verworfen. Ein Tippfehler wie
+ * --static-only (statt --static) liess damit die vollstaendige Validierung
+ * inklusive Browser-Schritten laufen, obwohl erkennbar der schnelle Lauf
+ * gemeint war - der Fehlschlag sah dann nach einem echten Problem aus.
+ */
+const KNOWN_FLAGS = new Set([
+  'approval-text', 'approve-live', 'approve-preview', 'base', 'dry-run', 'execute',
+  'local-runner', 'p0', 'p1', 'retry-now', 'static', 'store', 'theme-id', 'title',
+]);
+const unknownFlags = Object.keys(args).filter(flag => !KNOWN_FLAGS.has(flag));
+if (unknownFlags.length > 0) {
+  console.error(`Unbekannte Flags: ${unknownFlags.map(flag => `--${flag}`).join(', ')}`);
+  console.error(`Bekannt sind: ${[...KNOWN_FLAGS].sort().map(flag => `--${flag}`).join(', ')}`);
+  process.exit(2);
+}
 
 function run(command, commandArgs, options = {}) {
   return runBounded(command, commandArgs, { cwd: root, ...options });
@@ -64,6 +81,11 @@ function printSummary(summary) {
     `UNIT/AUTOMATION: ${byId.UNIT === 'PASS' && byId.AUTOMATION === 'PASS' ? 'PASS' : summary.status === 'DRY_RUN' ? 'DRY_RUN' : 'FAIL'}`,
     `QA EVIDENCE: ${byId.QA_EVIDENCE ?? '-'}`,
     `SECRET SCAN: ${byId.SECRET_SCAN ?? '-'}`,
+    // Beide Guards standen bisher in keiner Zeile: sie liefen zwar, aber ein
+    // Fehlschlag zeigte sich nur als "WORKFLOW: FAIL" ohne erkennbare Ursache.
+    `LIQUID GUARD: ${byId.LIQUID_GUARD ?? '-'}`,
+    `SCHEMA GUARD: ${byId.SCHEMA_GUARD ?? '-'}`,
+    `TEMPLATE GUARD: ${byId.TEMPLATE_GUARD ?? '-'}`,
     `COMPARE: ${byId.COMPARE ?? '-'}`,
     `SEO: ${byId.SEO ?? '-'}`,
     `FULL QA: ${byId.FULL_QA ?? '-'}`,
@@ -242,6 +264,48 @@ async function main() {
     })();
     validation.workflow = 'pr'; validation.pr = pr; validation.readyForPr = true;
     writeRuntimeReport(root, 'latest.json', validation); printSummary(validation); console.log(`PR: ${pr.url}`); return validation;
+  }
+
+  if (mode === 'scratch') {
+    // Wegwerf-Lane zum Ausprobieren: laeuft aus jedem Branch und auch mit
+    // uncommitteten Aenderungen, schreibt dafuer keine Evidence. Siehe
+    // assertScratchGate fuer die drei Bedingungen, die trotzdem gelten.
+    const store = String(args.store ?? DEFAULT_STORE);
+    const themeId = args['theme-id'];
+    const previewEvidence = readRuntimeJson('preview.json');
+    const themes = dryRun ? [{ id: themeId, role: 'unpublished', name: 'dry-run-scratch' }, { id: 'live', role: 'live' }] : themeList(store);
+    const { theme, liveTheme } = selectThemeTargets(themes, themeId);
+    assertScratchGate({ themeId, theme, liveTheme, previewEvidence });
+
+    if (dryRun) {
+      const summary = createDryRunSummary('scratch', { themeId: String(themeId), themeName: theme.name });
+      printSummary(summary);
+      return summary;
+    }
+
+    // Der eine Check, der auch hier laufen muss: ungueltiges Liquid verwirft
+    // Shopify beim Push still, danach fehlt die Datei im Theme.
+    requireSuccess(run(process.execPath, ['qa/run-liquid-guard.mjs']), 'Liquid Guard');
+    requireSuccess(run(process.execPath, ['qa/run-schema-guard.mjs']), 'Schema Guard');
+
+    const pushed = requireSuccess(
+      run(commandName('shopify'), previewPushArgs({ store, themeId, root }), { timeoutMs: 5 * 60_000 }),
+      'Shopify scratch push',
+    );
+    let payload;
+    try { payload = JSON.parse(pushed.stdout); } catch { throw new WorkflowGateError('Shopify Scratch Push lieferte ungültiges JSON', 'SCRATCH_OUTPUT'); }
+    if (payload?.theme?.role !== 'unpublished') throw new WorkflowGateError('Scratch-Theme ist nach Push nicht unpublished', 'SCRATCH_ROLE');
+
+    const current = context();
+    console.log([
+      `WORKFLOW: SCRATCH`,
+      `BRANCH: ${current.branch}`,
+      `COMMIT: ${current.head}${current.clean ? '' : ' (+ uncommittete Aenderungen)'}`,
+      `THEME: ${theme.name} (${themeId})`,
+      `PREVIEW URL: ${payload?.theme?.preview_url ?? '-'}`,
+      `EVIDENCE: KEINE - diese Lane taugt nicht fuer Preview oder Live`,
+    ].join('\n'));
+    return { workflow: 'scratch', themeId: String(themeId), status: 'PASS' };
   }
 
   if (mode === 'preview') {

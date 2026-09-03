@@ -32,3 +32,11 @@ jobs:
       - run: npm run workflow:test
       - run: npm run qa:evidence:test
       - run: npm run secret:scan
+      # Beide Guards liefen bisher nur in `workflow:validate`, also nur wenn
+      # jemand sie lokal aufrief. Genau die Fehler, die sie abfangen, sind
+      # mehrfach ueber PRs bis in main gelangt: ungueltiges Liquid, das Shopify
+      # beim Push still verwirft, und Block-Schemata, die zwar deployen, aber
+      # im Theme-Editor unsichtbar bleiben.
+      - run: npm run liquid:guard
+      - run: npm run schema:guard
+      - run: npm run template:guard

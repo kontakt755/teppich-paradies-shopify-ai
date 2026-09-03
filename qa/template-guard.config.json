@@ -1,0 +1,14 @@
+{
+  "parent": "_product-card",
+  "pattern": "^collection.*\\.json$",
+  "required": [
+    "_product-card-gallery",
+    "price",
+    "tp-card-color-thumbs"
+  ],
+  "optional": [
+    "tp-card-title",
+    "product-title"
+  ],
+  "note": "required = muss auf jeder Kategorieseite stehen. optional = Titelblock, den es in zwei Varianten gibt (tp-card-title bzw. product-title); dass nicht ueberall derselbe steckt, ist bekannt und kein Drift-Fund."
+}
