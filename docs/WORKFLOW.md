@@ -36,9 +36,23 @@ Live ist nur möglich, wenn alle Nachweise zum aktuellen `origin/main` passen, d
 Dieser Befehl ist absichtlich unbequem. Er darf erst nach Prüfung der Preview-URL benutzt werden. Shopify Live bleibt ein vom GitHub-Merge getrennter Human Gate.
 Unmittelbar vor Publish werden Preview-Rolle, vollständiger Theme-Dateistand und der geschützte `settings_data.json`-Hash erneut verifiziert. Preview-Browserchecks laufen nach dem Push über die Theme-ID-gebundene Preview-URL.
 
+## Guards
+
+Das System führt vier spezialisierte Prüfungen durch, die Fehler abfangen, die anderen Tools übersehen:
+
+- **Liquid-Guard** (`npm run liquid:guard`): Findet ungültiges Liquid-Syntax, das `shopify theme check` nicht meldet und das Shopify beim Push still verwirft. Betroffen sind z.B. kaputte Filterverkettungen, ungültige Variablennamen.
+  
+- **Schema-Guard** (`npm run schema:guard`): Findet fehlerhafte `{% schema %}`-Blöcke in Blocks. Diese deployen zwar, erscheinen aber nicht in der Block-Auswahl des Theme-Editors (wegen unbekannter Keys oder fehlender `presets`).
+
+- **Template-Guard** (`npm run template:guard`): Meldet Kollektions-Templates, deren Produktkarten nicht dieselben Blöcke tragen wie die übrigen (häufig aus blockweisem Einklicken im Editor entstanden, führt zu Drift).
+
+- **Live-Theme-Guard** (`npm run theme:guard`): Findet veraltete Theme-IDs in Anweisungsdateien (CLAUDE.md, AGENTS.md, Roadmaps). Verhindert, dass eine alte Theme-ID wieder als aktuell angenommen wird. Historische Reports behalten ihre alten IDs mit Absicht.
+
+Alle Guards laufen in der PR-Validierung und im SessionStart-Hook für Remote-Sessions. Ein fehlgeschlagener Guard setzt die Validierung auf FAIL und verhindert den Merge.
+
 ## GitHub Actions
 
-PRs gegen `main` führen ohne Shopify-Secrets sichere statische Checks aus: Unit, Automation, Workflow-Tests, QA Evidence und Secret Scan. Compare, SEO, Full QA und Sales werden vom Router nur für passende Storefront-Aufgaben verlangt und laufen spätestens bei Preview-/Live-Vorbereitung lokal, weil sie Browser, öffentliche Storefront und stabile Netzwerkbedingungen benötigen.
+PRs gegen `main` führen ohne Shopify-Secrets sichere statische Checks aus: Unit, Automation, Workflow-Tests, QA Evidence, Secret Scan und alle vier Guards. Compare, SEO, Full QA und Sales werden vom Router nur für passende Storefront-Aufgaben verlangt und laufen spätestens bei Preview-/Live-Vorbereitung lokal, weil sie Browser, öffentliche Storefront und stabile Netzwerkbedingungen benötigen.
 
 ## iPhone / Remote
 
