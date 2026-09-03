@@ -73,6 +73,8 @@
     "card_corner_radius": 4,
     "show_variant_image": false,
     "mobile_product_card_size": "large",
+    "product_card_carousel": false,
+    "show_second_image_on_hover": false,
     "variant_swatch_width": 34,
     "variant_swatch_height": 34,
     "variant_swatch_radius": 32,
