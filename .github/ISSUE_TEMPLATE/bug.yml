@@ -1,0 +1,100 @@
+name: 🐛 Bug Report
+description: Einen Fehler im Shopify-Store melden
+title: "[BUG] "
+labels: ["type:bug", "status:eingang"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du einen Bug meldest! Bitte fülle alle relevanten Felder aus.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🔴 Was ist das Problem?
+      description: Beschreibe den Fehler oder das falsche Verhalten so genau wie möglich
+      placeholder: "Beispiel: Produktgalerie lädt nicht auf Mobilgeräten..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Was sollte stattdessen passieren?
+      description: Wie sollte sich die Anwendung verhalten?
+      placeholder: "Beispiel: Die Bilder sollten responsive sein und auf allen Geräten geladen werden..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 📋 Schritte zum Reproduzieren
+      description: Wie man den Fehler reproduziert
+      placeholder: |
+        1. Öffne die Produktseite
+        2. Auf Mobilgerät anschauen
+        3. Beobachte das fehlerhafte Verhalten
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 🎯 Bereich
+      options:
+        - Produktseite
+        - Kategorie
+        - Navigation
+        - Filter
+        - Warenkorb
+        - Checkout
+        - SEO
+        - Google
+        - Versand
+        - Design
+        - Backend
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚨 Priorität
+      options:
+        - P0 (Kritisch - Stoppt den Shop)
+        - P1 (Hoch - Großes Problem)
+        - P2 (Normal - Mittleres Problem)
+        - P3 (Niedrig - Kleines Ärgernis)
+      default: 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 📸 Screenshots/Videos (optional)
+      description: Füge Screenshots oder Links zu Videos ein
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ Umgebung
+      description: Browser, Gerät, etc.
+      placeholder: |
+        - Browser: Chrome/Firefox/Safari
+        - Gerät: iPhone 12 / Desktop
+        - OS: iOS/Android/Windows/Mac
+    validations:
+      required: true
+
+  - type: textarea
+    id: next_steps
+    attributes:
+      label: 📝 Nächster Schritt
+      description: Was sollte als nächstes passieren?
+      placeholder: "Beispiel: Claude analysiert das Problem und erstellt einen Fix"
+    validations:
+      required: false

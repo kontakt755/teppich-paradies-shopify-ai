@@ -1,0 +1,96 @@
+name: ✨ Feature Request
+description: Eine neue Funktion oder Verbesserung vorschlagen
+title: "[FEATURE] "
+labels: ["type:verbesserung", "status:eingang"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Schlag eine neue Funktion oder Verbesserung vor!
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 💡 Beschreibe die Idee
+      description: Was soll verbessert oder hinzugefügt werden?
+      placeholder: "Beispiel: Produktgalerie sollte Zoom-Funktion haben..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: 🎯 Nutzen
+      description: Warum ist das wichtig? Was bringt es Kunden oder dem Business?
+      placeholder: "Beispiel: Bessere Produktansicht erhöht Conversion Rate..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: ✅ Akzeptanzkriterien
+      description: Woran erkennt man, dass die Funktion fertig ist?
+      placeholder: |
+        - [ ] Zoom funktioniert auf Desktop
+        - [ ] Zoom funktioniert auf Mobile
+        - [ ] Performance ist OK
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 🎯 Bereich
+      options:
+        - Produktseite
+        - Kategorie
+        - Navigation
+        - Filter
+        - Warenkorb
+        - Checkout
+        - SEO
+        - Google
+        - Versand
+        - Design
+        - Backend
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: 📌 Typ
+      options:
+        - UX Verbesserung
+        - Performance
+        - SEO
+        - Content
+        - Technik
+      default: 0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚨 Priorität
+      options:
+        - P0 (Kritisch - Must-Have)
+        - P1 (Hoch - Wichtig)
+        - P2 (Normal - Schön zu haben)
+        - P3 (Niedrig - Später)
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: next_steps
+    attributes:
+      label: 📝 Nächster Schritt
+      description: Was ist der erste Schritt?
+      placeholder: "Beispiel: Codex reviews die Anforderungen und gibt Feedback"
+    validations:
+      required: false

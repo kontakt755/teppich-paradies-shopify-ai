@@ -1,0 +1,59 @@
+name: 🧠 Idee
+description: Eine neue Idee oder Brainstorming-Gedanke
+title: "[IDEE] "
+labels: ["type:idee", "status:eingang"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Eine Idee gehört hierher - auch wenn sie noch nicht ausgereift ist!
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: 💭 Die Idee
+      description: Was ist die grobe Idee?
+      placeholder: "Beispiel: Wir könnten einen Live-Chat für Kundenunterstützung integrieren..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: 🤔 Warum?
+      description: Was ist der Hintergrund?
+      placeholder: "Beispiel: Viele Kunden fragen während des Einkaufs nach Produktdetails..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 🎯 Bereich
+      options:
+        - Produktseite
+        - Kategorie
+        - Navigation
+        - Filter
+        - Warenkorb
+        - Checkout
+        - Kundenservice
+        - SEO
+        - Google
+        - Versand
+        - Design
+        - Marketing
+        - Analytics
+        - Sonstiges
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 📝 Zusätzliche Informationen
+      description: Links, Referenzen, Notizen?
+      placeholder: "Beispiel: Ähnlich wie auf Zalando oder Shein..."
+    validations:
+      required: false
