@@ -80,6 +80,9 @@ export function validationSteps(root) {
     // nicht in der Block-Auswahl des Theme-Editors auftauchen (unbekannte Keys,
     // fehlendes presets). theme check und Liquid-Guard sehen das nicht.
     { id: 'SCHEMA_GUARD', label: 'Schema Guard', command: process.execPath, args: ['qa/run-schema-guard.mjs'] },
+    // Meldet Kollektions-Templates, deren Produktkarte nicht dieselben Bloecke
+    // traegt wie die uebrigen - Folge des blockweisen Einklickens im Editor.
+    { id: 'TEMPLATE_GUARD', label: 'Template Guard', command: process.execPath, args: ['qa/run-template-guard.mjs'] },
     { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true, report: 'qa/results/compare-readiness.json' },
     { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true, report: 'qa/results/seo-latest.json' },
     { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true, report: 'qa/results/latest.json' },
@@ -243,6 +246,32 @@ export function assertPreviewGate({ branch, head, originMain, clean, p0, p1, app
   if (!approved) throw new WorkflowGateError('Preview benötigt --approve-preview', 'PREVIEW_APPROVAL');
   if (!theme || theme.role !== 'unpublished') throw new WorkflowGateError('Preview-Theme muss eindeutig unpublished sein', 'PREVIEW_ROLE');
   if (liveTheme && String(theme.id) === String(liveTheme.id)) throw new WorkflowGateError('Live-Theme darf niemals Preview-Ziel sein', 'LIVE_THEME_BLOCK');
+  return true;
+}
+
+/**
+ * Gate fuer die Scratch-Lane: ein Wegwerf-Theme zum Ausprobieren.
+ *
+ * Bewusst OHNE die Bedingungen der Preview-Lane - kein origin/main, kein
+ * sauberer Working Tree, keine Null-Findings. Genau das ist der Zweck: etwas
+ * ausprobieren zu koennen, ohne vorher committen und mergen zu muessen. Die
+ * Lane schreibt im Gegenzug KEINE Evidence und taugt damit nie als Grundlage
+ * fuer einen Live-Publish.
+ *
+ * Drei Bedingungen bleiben und sind nicht verhandelbar:
+ *   - das Ziel ist unpublished (nie das Live-Theme),
+ *   - das Ziel ist nicht das Theme, auf dem die Preview-Evidence beruht -
+ *     sonst wuerde ein Scratch-Push genau die Drift erzeugen, die
+ *     PREVIEW_DRIFT abfangen soll,
+ *   - eine Theme-ID muss ausdruecklich genannt werden.
+ */
+export function assertScratchGate({ themeId, theme, liveTheme, previewEvidence }) {
+  if (!themeId) throw new WorkflowGateError('Scratch benötigt --theme-id eines Wegwerf-Themes', 'SCRATCH_THEME');
+  if (!theme || theme.role !== 'unpublished') throw new WorkflowGateError('Scratch-Theme muss eindeutig unpublished sein', 'SCRATCH_ROLE');
+  if (liveTheme && String(theme.id) === String(liveTheme.id)) throw new WorkflowGateError('Live-Theme darf niemals Scratch-Ziel sein', 'LIVE_THEME_BLOCK');
+  if (previewEvidence?.themeId && String(theme.id) === String(previewEvidence.themeId)) {
+    throw new WorkflowGateError('Scratch darf nicht auf das Preview-Theme zeigen: das wuerde die Preview-Evidence entwerten', 'SCRATCH_PREVIEW_COLLISION');
+  }
   return true;
 }
 

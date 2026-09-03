@@ -35,12 +35,41 @@ Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
 ## Vor jedem Commit
 
 ```
-npm run liquid:guard && npm run schema:guard
+npm run liquid:guard && npm run schema:guard && npm run template:guard
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
 
 Der volle Lauf (`validate` ohne `--static`) braucht die Storefront und läuft nur
-lokal auf dem Mac.
+lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
+
+## Werkzeuge
+
+| Befehl | Zweck |
+|---|---|
+| `npm run theme:block list\|add\|remove` | Blöcke in Templates setzen, statt im Editor zu klicken |
+| `npm run liquid:guard` | ungültiges Liquid, das Shopify still verwirft |
+| `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
+| `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
+| `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
+| `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
+
+**`theme:diff`** braucht ein Manifest aus der Admin API. Über den Shopify-MCP:
+
+```graphql
+query { theme(id: "gid://shopify/OnlineStoreTheme/<id>") {
+  name files(first: 250) { pageInfo { hasNextPage endCursor }
+  nodes { filename checksumMd5 } } } }
+```
+
+`checksumMd5` ist die MD5-Summe der Rohbytes und damit direkt mit lokalen
+Dateien vergleichbar. Bei `hasNextPage` mit `after: "<endCursor>"` weiterblättern
+(das Theme hat rund 500 Dateien, also zwei Seiten). Ergebnis als
+`{themeId, themeName, files:[{filename, checksumMd5}]}` ablegen.
+
+**`workflow:scratch`** ist die Lane zum Ausprobieren: läuft aus jedem Branch,
+auch mit uncommitteten Änderungen, und schreibt bewusst **keine** Evidence.
+Sie verweigert das Live-Theme und das Theme, auf dem die Preview-Evidence
+beruht. Zum Deployen bleibt es bei `preview` → `live`.
 
 ## In Remote-Sessions (claude.ai/code)
 

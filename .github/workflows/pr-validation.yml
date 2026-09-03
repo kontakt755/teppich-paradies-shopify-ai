@@ -39,3 +39,4 @@ jobs:
       # im Theme-Editor unsichtbar bleiben.
       - run: npm run liquid:guard
       - run: npm run schema:guard
+      - run: npm run template:guard
