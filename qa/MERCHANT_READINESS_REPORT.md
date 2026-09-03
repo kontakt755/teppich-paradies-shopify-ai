@@ -8,57 +8,53 @@
 
 ## NEEDS ATTENTION
 
+- Keine
+
+## BLOCKER
+
 ### Teppichboden PDP
 
-- URL: https://www.teppich-paradies.net/products/softiq-teppichboden
+- URL: https://www.teppich-paradies.net/products/piumera-teppichboden-400cm-500cm
 - Typ: roll
-- Produkt: Softiq Teppichboden
-- Vendor: TeppichParadies
-- Produkttyp: Teppichboden
-- Varianten: 15; mit SKU: 0; mit GTIN/EAN: 0
-- Hinweis: SKU öffentlich nicht gepflegt
-- Hinweis: GTIN/EAN öffentlich nicht gepflegt
-- Hinweis: OPC-generierte Variante im öffentlichen Produkt-JSON
-- Hinweis: Rollenware: Varianten-/Rollenbreitenzuordnung im Feed manuell gegenprüfen
+- Produkt: nicht lesbar
+- Vendor: fehlt
+- Produkttyp: fehlt
+- Varianten: —; mit SKU: —; mit GTIN/EAN: —
+- Hinweis: Produktdaten nicht öffentlich lesbar: HTTP 403
+- Hinweis: Landingpage HTTP nicht geprüft
 
 ### Rollen-Vinyl PDP
 
 - URL: https://www.teppich-paradies.net/products/marano-eiche-braun-vinylboden-von-der-rolle
 - Typ: roll
-- Produkt: Terracora Eiche Braun – Vinylboden von der Rolle
-- Vendor: TeppichParadies
-- Produkttyp: Vinyl von der Rolle
-- Varianten: 2; mit SKU: 2; mit GTIN/EAN: 0
-- Hinweis: GTIN/EAN öffentlich nicht gepflegt
-- Hinweis: Rollenware: Varianten-/Rollenbreitenzuordnung im Feed manuell gegenprüfen
+- Produkt: nicht lesbar
+- Vendor: fehlt
+- Produkttyp: fehlt
+- Varianten: —; mit SKU: —; mit GTIN/EAN: —
+- Hinweis: Produktdaten nicht öffentlich lesbar: HTTP 403
+- Hinweis: Landingpage HTTP nicht geprüft
 
 ### Klickvinyl PDP
 
 - URL: https://www.teppich-paradies.net/products/marlow-eiche-nordisch-klickvinyl-7mm
 - Typ: package
-- Produkt: Marlow Eiche Nordisch – Klickvinyl 7mm
-- Vendor: Marlow
-- Produkttyp: Klickvinyl
-- Varianten: 1; mit SKU: 1; mit GTIN/EAN: 0
-- Hinweis: GTIN/EAN öffentlich nicht gepflegt
-- Hinweis: Paketware: Feed-/Landingpage-Abgleich muss Paketpreis vs. sichtbaren €/m²-Preis berücksichtigen
+- Produkt: nicht lesbar
+- Vendor: fehlt
+- Produkttyp: fehlt
+- Varianten: —; mit SKU: —; mit GTIN/EAN: —
+- Hinweis: Produktdaten nicht öffentlich lesbar: HTTP 403
+- Hinweis: Landingpage HTTP nicht geprüft
 
 ### Klebevinyl PDP
 
 - URL: https://www.teppich-paradies.net/products/alvora-eiche-bernstein-klebevinyl-2-5mm
 - Typ: package
-- Produkt: Alvora Eiche Bernstein – Klebevinyl 2,5mm
-- Vendor: Alvora
+- Produkt: nicht lesbar
+- Vendor: fehlt
 - Produkttyp: fehlt
-- Varianten: 1; mit SKU: 0; mit GTIN/EAN: 0
-- Hinweis: Produkttyp fehlt
-- Hinweis: SKU öffentlich nicht gepflegt
-- Hinweis: GTIN/EAN öffentlich nicht gepflegt
-- Hinweis: Paketware: Feed-/Landingpage-Abgleich muss Paketpreis vs. sichtbaren €/m²-Preis berücksichtigen
-
-## BLOCKER
-
-- Keine
+- Varianten: —; mit SKU: —; mit GTIN/EAN: —
+- Hinweis: Produktdaten nicht öffentlich lesbar: HTTP 403
+- Hinweis: Landingpage HTTP nicht geprüft
 
 ## Nächster manueller Schritt
 
