@@ -1,0 +1,504 @@
+{
+  "generated_at": "2026-09-03T09:44:22.430Z",
+  "repo": "kontakt755/teppich-paradies-shopify-ai",
+  "count": 29,
+  "issues": [
+    {
+      "number": 58,
+      "title": "[Google Ads] Phase 5.4 – Skalierungs-Phase (Monat 2–3)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/58",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p2",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:45Z",
+      "updated_at": "2026-09-03T09:40:45Z",
+      "closed_at": null
+    },
+    {
+      "number": 57,
+      "title": "[Google Ads] Phase 5.3 – Optimierungs-Cycle (Woche 3–4)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/57",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:44Z",
+      "updated_at": "2026-09-03T09:40:44Z",
+      "closed_at": null
+    },
+    {
+      "number": 56,
+      "title": "[Google Ads] Phase 5.2 – Wochenliches Monitoring (Woche 1–2)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/56",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:42Z",
+      "updated_at": "2026-09-03T09:40:42Z",
+      "closed_at": null
+    },
+    {
+      "number": 55,
+      "title": "[Google Ads] Phase 5.1 – Kampagnen Live schalten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/55",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p0",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:41Z",
+      "updated_at": "2026-09-03T09:40:41Z",
+      "closed_at": null
+    },
+    {
+      "number": 54,
+      "title": "[Google Ads] Phase 4.3 – Dashboard einrichten (localhost:8001)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/54",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:40Z",
+      "updated_at": "2026-09-03T09:40:40Z",
+      "closed_at": null
+    },
+    {
+      "number": 53,
+      "title": "[Google Ads] Phase 4.2 – UTM Parameter einrichten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/53",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p2",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:38Z",
+      "updated_at": "2026-09-03T09:40:38Z",
+      "closed_at": null
+    },
+    {
+      "number": 52,
+      "title": "[Google Ads] Phase 4.1 – Conversion Tracking konfigurieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/52",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:36Z",
+      "updated_at": "2026-09-03T09:40:36Z",
+      "closed_at": null
+    },
+    {
+      "number": 51,
+      "title": "[Google Ads] Phase 3.3 – Vinylboden Seite optimieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/51",
+      "labels": [
+        "status:geplant",
+        "type:ux",
+        "priority:p1",
+        "area:kategorie"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:35Z",
+      "updated_at": "2026-09-03T09:40:35Z",
+      "closed_at": null
+    },
+    {
+      "number": 50,
+      "title": "[Google Ads] Phase 3.2 – Teppiche Seite optimieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/50",
+      "labels": [
+        "status:geplant",
+        "type:ux",
+        "priority:p1",
+        "area:kategorie"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:34Z",
+      "updated_at": "2026-09-03T09:40:34Z",
+      "closed_at": null
+    },
+    {
+      "number": 49,
+      "title": "[Google Ads] Phase 3.1 – Teppichboden Seite optimieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/49",
+      "labels": [
+        "status:geplant",
+        "type:ux",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:32Z",
+      "updated_at": "2026-09-03T09:40:32Z",
+      "closed_at": null
+    },
+    {
+      "number": 48,
+      "title": "[Google Ads] Phase 2.3 – Search Campaign: Vinylboden",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/48",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:29Z",
+      "updated_at": "2026-09-03T09:40:29Z",
+      "closed_at": null
+    },
+    {
+      "number": 47,
+      "title": "[Google Ads] Phase 2.2 – Search Campaign: Teppiche",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/47",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:28Z",
+      "updated_at": "2026-09-03T09:40:28Z",
+      "closed_at": null
+    },
+    {
+      "number": 46,
+      "title": "[Google Ads] Phase 2.1 – Search Campaign: Teppichboden",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/46",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:26Z",
+      "updated_at": "2026-09-03T09:40:26Z",
+      "closed_at": null
+    },
+    {
+      "number": 45,
+      "title": "[Google Ads] Phase 1.3 – Remarketing Listen einrichten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/45",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p2",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:25Z",
+      "updated_at": "2026-09-03T09:40:25Z",
+      "closed_at": null
+    },
+    {
+      "number": 44,
+      "title": "[Google Ads] Phase 1.2 – Google Analytics 4 Setup",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/44",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:23Z",
+      "updated_at": "2026-09-03T09:40:23Z",
+      "closed_at": null
+    },
+    {
+      "number": 43,
+      "title": "[Google Ads] Phase 1.1 – Merchant Center überprüfen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/43",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p1",
+        "area:google"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:40:22Z",
+      "updated_at": "2026-09-03T09:40:22Z",
+      "closed_at": null
+    },
+    {
+      "number": 42,
+      "title": "[SHP-023] Google-Kanalausschluss Rollenware",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/42",
+      "labels": [
+        "status:blockiert",
+        "type:verbesserung",
+        "priority:p0",
+        "area:google",
+        "reviewer:mensch"
+      ],
+      "assignee": null,
+      "nextStep": "Ahmet: Bitte Freigabe erteilen",
+      "created_at": "2026-09-03T09:24:34Z",
+      "updated_at": "2026-09-03T09:24:34Z",
+      "closed_at": null
+    },
+    {
+      "number": 41,
+      "title": "[SHP-015] Live-Collection-Zuordnungen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/41",
+      "labels": [
+        "status:blockiert",
+        "type:verbesserung",
+        "priority:p1",
+        "area:produktseite",
+        "reviewer:mensch"
+      ],
+      "assignee": null,
+      "nextStep": "Ahmet: Bitte freigegebene Produkt-IDs genehmigen",
+      "created_at": "2026-09-03T09:24:32Z",
+      "updated_at": "2026-09-03T09:24:32Z",
+      "closed_at": null
+    },
+    {
+      "number": 40,
+      "title": "[SHP-014] Florhöhen-/ecoVella-Evidenzaudit",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/40",
+      "labels": [
+        "status:geplant",
+        "type:content",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": null,
+      "nextStep": "ChatGPT: Bitte Produktdaten auditieren",
+      "created_at": "2026-09-03T09:24:30Z",
+      "updated_at": "2026-09-03T09:24:30Z",
+      "closed_at": null
+    },
+    {
+      "number": 39,
+      "title": "[SHP-012] Teppichboden-Menü-Audit",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/39",
+      "labels": [
+        "status:geplant",
+        "type:ux",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": null,
+      "nextStep": "ChatGPT: Bitte Menü-Struktur auditieren",
+      "created_at": "2026-09-03T09:24:29Z",
+      "updated_at": "2026-09-03T09:24:29Z",
+      "closed_at": null
+    },
+    {
+      "number": 38,
+      "title": "[SHP-013] Teppichboden-Menü korrigieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/38",
+      "labels": [
+        "status:blockiert",
+        "type:verbesserung",
+        "priority:p1",
+        "area:navigation",
+        "reviewer:mensch"
+      ],
+      "assignee": null,
+      "nextStep": "Ahmet: Bitte Menüressourcen genehmigen",
+      "created_at": "2026-09-03T09:24:27Z",
+      "updated_at": "2026-09-03T09:24:27Z",
+      "closed_at": null
+    },
+    {
+      "number": 37,
+      "title": "[SHP-010] Windows-SEO-Tooling angleichen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/37",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:24:26Z",
+      "updated_at": "2026-09-03T09:24:26Z",
+      "closed_at": null
+    },
+    {
+      "number": 36,
+      "title": "[SHP-003] QA-Logfilter",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/36",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:24:25Z",
+      "updated_at": "2026-09-03T09:24:25Z",
+      "closed_at": null
+    },
+    {
+      "number": 35,
+      "title": "[SHP-001] Repository-Portabilität",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/35",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p1",
+        "area:backend"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T09:24:23Z",
+      "updated_at": "2026-09-03T09:24:23Z",
+      "closed_at": null
+    },
+    {
+      "number": 34,
+      "title": "🚧 Shopify Admin API Integration",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
+      "labels": [
+        "status:blockiert",
+        "type:technik",
+        "priority:p0",
+        "area:backend"
+      ],
+      "assignee": null,
+      "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
+      "created_at": "2026-09-03T09:16:54Z",
+      "updated_at": "2026-09-03T09:16:54Z",
+      "closed_at": null
+    },
+    {
+      "number": 33,
+      "title": "📈 SEO: Meta-Titles optimieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/33",
+      "labels": [
+        "status:review",
+        "type:seo",
+        "priority:p2",
+        "area:seo",
+        "reviewer:codex"
+      ],
+      "assignee": null,
+      "nextStep": "Codex prüft die SEO-Änderungen",
+      "created_at": "2026-09-03T09:16:52Z",
+      "updated_at": "2026-09-03T09:16:52Z",
+      "closed_at": null
+    },
+    {
+      "number": 32,
+      "title": "💡 KI-basierte Produktempfehlungen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/32",
+      "labels": [
+        "status:eingang",
+        "type:idee",
+        "priority:p3",
+        "area:sonstiges"
+      ],
+      "assignee": null,
+      "nextStep": "ChatGPT und Mensch discussen ob sinnvoll",
+      "created_at": "2026-09-03T09:16:51Z",
+      "updated_at": "2026-09-03T09:16:51Z",
+      "closed_at": null
+    },
+    {
+      "number": 31,
+      "title": "✨ Live-Chat Feature implementieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/31",
+      "labels": [
+        "status:geplant",
+        "type:verbesserung",
+        "priority:p2",
+        "area:sonstiges"
+      ],
+      "assignee": null,
+      "nextStep": "Claude implementiert das Widget",
+      "created_at": "2026-09-03T09:16:49Z",
+      "updated_at": "2026-09-03T09:16:49Z",
+      "closed_at": null
+    },
+    {
+      "number": 30,
+      "title": "🐛 Produktgalerie responsive machen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/30",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": null,
+      "nextStep": "Claude analysiert und implementiert den Fix",
+      "created_at": "2026-09-03T09:16:48Z",
+      "updated_at": "2026-09-03T09:16:48Z",
+      "closed_at": null
+    }
+  ]
+}

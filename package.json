@@ -30,7 +30,10 @@
     "workflow:continue": "node workflow/cli.mjs continue",
     "workflow:test": "node --test workflow/tests/*.test.mjs",
     "control:center": "node control-center/server.mjs",
-    "control:center:test": "node --test control-center/tests/*.test.mjs"
+    "control:center:test": "node --test control-center/tests/*.test.mjs",
+    "dashboard:data": "node scripts/build-dashboard-data.mjs",
+    "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
+    "dashboard:serve": "node scripts/serve-dashboard.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2"

@@ -723,30 +723,29 @@
         <span>Daten werden aktualisiert...</span>
     </div>
 
-    <script src="./mock-data.js"></script>
     <script>
         // Konfiguration
+        //
+        // Das Dashboard liest ausschliesslich issues.json - eine statische
+        // Datei, die der GitHub-Actions-Workflow "dashboard-data" bei jedem
+        // Issue-Event und alle 10 Minuten neu erzeugt. Der Browser spricht
+        // NICHT mit der GitHub API: das funktionierte bei diesem privaten
+        // Repo grundsaetzlich nicht (403/404 ohne Token) und ein Token im
+        // Frontend waere ein Leak.
         const CONFIG = {
             owner: 'kontakt755',
             repo: 'teppich-paradies-shopify-ai',
-            apiBase: 'https://api.github.com',
+            dataUrl: './issues.json',
             refreshInterval: 120000, // 2 Minuten
-            statusLabels: {
-                'status:eingang': 'eingang',
-                'status:geplant': 'geplant',
-                'status:in-arbeit': 'in-arbeit',
-                'status:review': 'review',
-                'status:korrektur': 'korrektur',
-                'status:blockiert': 'blockiert',
-                'status:fertig': 'fertig'
-            }
+            kanbanColumns: ['eingang', 'geplant', 'in-arbeit', 'review', 'korrektur', 'blockiert', 'fertig']
         };
 
         let allIssues = [];
         let filteredIssues = [];
+        let dataGeneratedAt = null;
         let autoRefreshInterval;
+        let currentView = 'kanban';
 
-        // Initialisierung
         document.addEventListener('DOMContentLoaded', () => {
             initDashboard();
             setupAutoRefresh();
@@ -773,20 +772,13 @@
                 showLoadingState(true);
                 showErrorBox(false);
 
-                allIssues = await fetchGitHubIssues();
+                const data = await fetchIssueData();
+                allIssues = data.issues;
+                dataGeneratedAt = data.generated_at;
 
-                // Fallback zu Mock-Daten wenn GitHub privat ist
-                if (!allIssues || allIssues.length === 0) {
-                    console.log("GitHub API nicht erreichbar - nutze Mock-Daten");
-                    allIssues = typeof useMockData !== 'undefined' ? useMockData() : [];
-                }
-
-                filteredIssues = allIssues;
-
+                applyFilters();
                 updateMetrics();
                 renderNextSteps();
-                renderKanbanBoard();
-                renderListView();
                 updateLastUpdate();
 
                 showLoadingState(false);
@@ -795,65 +787,71 @@
                 console.error('Dashboard Error:', error);
                 showErrorBox(true, error.message);
                 showLoadingState(false);
+                showStatusBadge(false);
             }
         }
 
-        async function fetchGitHubIssues() {
+        async function fetchIssueData() {
+            // Cache-Buster: sonst liefert der Browser/CDN die alte Datei aus
+            // und das Dashboard zeigt veraltete Staende an.
+            const url = `${CONFIG.dataUrl}?t=${Date.now()}`;
+            let response;
             try {
-                const url = `${CONFIG.apiBase}/repos/${CONFIG.owner}/${CONFIG.repo}/issues?state=all&per_page=100&sort=updated&direction=desc`;
-
-                const headers = {
-                    'Accept': 'application/vnd.github.v3+json'
-                };
-
-                // Optional: GitHub Token für private Repos
-                const token = localStorage.getItem('gh_token');
-                if (token) {
-                    headers['Authorization'] = `token ${token}`;
-                }
-
-                const response = await fetch(url, { headers });
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Repository nicht gefunden');
-                    } else if (response.status === 403) {
-                        throw new Error('GitHub API Rate Limit erreicht. Bitte später versuchen.');
-                    }
-                    throw new Error(`GitHub API Fehler: ${response.status}`);
-                }
-
-                const issues = await response.json();
-
-                // Filter nur Dashboard-relevante Issues (mit bestimmten Labels)
-                return issues.filter(issue => {
-                    if (issue.pull_request) return false; // PRs ausschließen
-                    const hasRelevantLabel = issue.labels.some(l =>
-                        l.name.startsWith('status:') ||
-                        l.name.startsWith('type:') ||
-                        l.name.startsWith('priority:') ||
-                        l.name.startsWith('area:')
-                    );
-                    return hasRelevantLabel || issue.labels.length === 0;
-                });
-            } catch (error) {
-                throw new Error(`GitHub-Daten konnten nicht geladen werden: ${error.message}`);
+                response = await fetch(url, { cache: 'no-store' });
+            } catch (e) {
+                throw new Error(
+                    'issues.json nicht erreichbar. Beim lokalen Aufruf per file:// ' +
+                    'blockiert der Browser das Laden - starte stattdessen: ' +
+                    'npm run dashboard'
+                );
             }
+
+            if (!response.ok) {
+                throw new Error(
+                    `issues.json konnte nicht geladen werden (HTTP ${response.status}). ` +
+                    'Laeuft der Workflow "dashboard-data"? Manuell erzeugen: ' +
+                    'node scripts/build-dashboard-data.mjs'
+                );
+            }
+
+            const data = await response.json();
+            if (!data || !Array.isArray(data.issues)) {
+                throw new Error('issues.json hat ein unerwartetes Format.');
+            }
+            return data;
         }
+
+        // --- Ableitungen ------------------------------------------------
+
+        function labelValue(issue, prefix) {
+            const hit = issue.labels.find(l => l.startsWith(prefix));
+            return hit ? hit.slice(prefix.length) : null;
+        }
+
+        /** Kanban-Spalte: explizites status:-Label gewinnt. Ohne Label gilt ein
+         *  geschlossenes Issue als fertig, ein offenes als Eingang. */
+        function statusOf(issue) {
+            const explicit = labelValue(issue, 'status:');
+            if (explicit && CONFIG.kanbanColumns.includes(explicit)) return explicit;
+            return issue.state === 'closed' ? 'fertig' : 'eingang';
+        }
+
+        function isOpen(issue) {
+            return issue.state === 'open';
+        }
+
+        // --- Rendering --------------------------------------------------
 
         function updateMetrics() {
-            const open = allIssues.filter(i => !i.labels.some(l => l.name === 'status:fertig')).length;
-            const critical = allIssues.filter(i => i.labels.some(l => l.name === 'priority:p0')).length;
-            const inProgress = allIssues.filter(i => i.labels.some(l => l.name === 'status:in-arbeit')).length;
-            const review = allIssues.filter(i => i.labels.some(l => l.name === 'status:review')).length;
-            const blocked = allIssues.filter(i => i.labels.some(l => l.name === 'status:blockiert')).length;
-            const completed = allIssues.filter(i => {
-                if (!i.closed_at) return false;
-                const closedDate = new Date(i.closed_at);
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                return closedDate > weekAgo;
-            }).length;
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+
+            const open = allIssues.filter(isOpen).length;
+            const critical = allIssues.filter(i => isOpen(i) && i.labels.includes('priority:p0')).length;
+            const inProgress = allIssues.filter(i => statusOf(i) === 'in-arbeit').length;
+            const review = allIssues.filter(i => statusOf(i) === 'review').length;
+            const blocked = allIssues.filter(i => statusOf(i) === 'blockiert').length;
+            const completed = allIssues.filter(i => i.closed_at && new Date(i.closed_at) > weekAgo).length;
 
             document.getElementById('metricOpen').textContent = open;
             document.getElementById('metricCritical').textContent = critical;
@@ -864,11 +862,16 @@
         }
 
         function renderNextSteps() {
-            const nextSteps = allIssues.filter(i => {
-                const hasStatus = i.labels.some(l => l.name.startsWith('status:') && l.name !== 'status:fertig');
-                const body = i.body || '';
-                return hasStatus && (body.includes('Nächster Schritt') || i.labels.some(l => l.name === 'status:in-arbeit'));
-            }).slice(0, 5);
+            // Wichtigste offene Aufgaben mit konkretem naechsten Schritt.
+            const prio = { 'priority:p0': 0, 'priority:p1': 1, 'priority:p2': 2, 'priority:p3': 3 };
+            const nextSteps = allIssues
+                .filter(i => isOpen(i) && (i.nextStep || statusOf(i) === 'in-arbeit'))
+                .sort((a, b) => {
+                    const pa = Math.min(...a.labels.map(l => prio[l] ?? 9), 9);
+                    const pb = Math.min(...b.labels.map(l => prio[l] ?? 9), 9);
+                    return pa - pb;
+                })
+                .slice(0, 5);
 
             const container = document.getElementById('nextStepsContainer');
             const content = document.getElementById('nextStepsContent');
@@ -880,97 +883,86 @@
 
             container.style.display = 'block';
             content.innerHTML = nextSteps.map(issue => {
-                const nextStepMatch = issue.body?.match(/Nächster Schritt:?\s*\n?\s*(.+?)(?:\n|$)/i);
-                const nextStep = nextStepMatch ? nextStepMatch[1].trim() : 'Siehe Issue für Details';
-                const status = issue.labels.find(l => l.name.startsWith('status:'))?.name.split(':')[1] || 'unbekannt';
-
+                const nextStep = issue.nextStep || 'Siehe Issue fuer Details';
+                const status = statusOf(issue);
                 return `
                     <div class="next-step-item">
-                        <strong>${issue.title}</strong><br>
-                        Status: <span style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">${status}</span><br>
-                        <span class="next-step-action">→ ${nextStep}</span>
-                        <a href="${issue.html_url}" target="_blank" style="margin-left: 10px; font-size: 11px;">GitHub ↗</a>
+                        <strong>#${issue.number} ${escapeHtml(issue.title)}</strong><br>
+                        Status: <span style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">${escapeHtml(status)}</span><br>
+                        <span class="next-step-action">&rarr; ${escapeHtml(nextStep)}</span>
+                        <a href="${encodeURI(issue.html_url)}" target="_blank" rel="noopener" style="margin-left: 10px; font-size: 11px;">GitHub &nearr;</a>
                     </div>
                 `;
             }).join('');
         }
 
         function renderKanbanBoard() {
-            const statusCounts = {};
-            const columns = ['eingang', 'geplant', 'in-arbeit', 'review', 'korrektur', 'blockiert', 'fertig'];
-
-            columns.forEach(col => {
-                const container = document.getElementById(`column-${col}`);
-                const issues = allIssues.filter(i => {
-                    const statusLabel = i.labels.find(l => l.name.startsWith('status:'));
-                    const status = statusLabel ? statusLabel.name.split(':')[1] : 'eingang';
-                    return status === col;
-                });
-
-                statusCounts[col] = issues.length;
-                container.innerHTML = issues.map(issue => createTaskCard(issue)).join('');
-            });
-
-            Object.entries(statusCounts).forEach(([col, count]) => {
-                document.getElementById(`count-${col}`).textContent = count;
+            CONFIG.kanbanColumns.forEach(col => {
+                const issues = filteredIssues.filter(i => statusOf(i) === col);
+                document.getElementById(`column-${col}`).innerHTML =
+                    issues.map(createTaskCard).join('') ||
+                    '<div style="color:#999;font-size:12px;padding:8px;">&ndash;</div>';
+                document.getElementById(`count-${col}`).textContent = issues.length;
             });
         }
 
         function createTaskCard(issue) {
-            const typeLabel = issue.labels.find(l => l.name.startsWith('type:'));
-            const priorityLabel = issue.labels.find(l => l.name.startsWith('priority:'));
-            const type = typeLabel ? typeLabel.name.split(':')[1] : 'task';
-            const priority = priorityLabel ? priorityLabel.name : 'priority:p2';
-
-            const assignee = issue.assignee ? issue.assignee.login : '-';
+            const type = labelValue(issue, 'type:') || 'task';
+            const priority = labelValue(issue, 'priority:') || 'p2';
+            const assignee = issue.assignee || '-';
 
             return `
-                <div class="task-card ${type}" onclick="openIssue('${issue.html_url}')">
-                    <div class="task-title">${escapeHtml(issue.title)}</div>
+                <div class="task-card ${escapeHtml(type)}" onclick="openIssue('${encodeURI(issue.html_url)}')">
+                    <div class="task-title">#${issue.number} ${escapeHtml(issue.title)}</div>
                     <div class="task-meta">
-                        <span class="badge type">${type}</span>
-                        <span class="badge ${priority.replace(':', '-')}">${priority.split(':')[1]?.toUpperCase() || 'P2'}</span>
+                        <span class="badge type">${escapeHtml(type)}</span>
+                        <span class="badge priority-${escapeHtml(priority)}">${escapeHtml(priority.toUpperCase())}</span>
                     </div>
-                    <div class="task-assignee">👤 ${assignee}</div>
+                    <div class="task-assignee">&#128100; ${escapeHtml(assignee)}</div>
                 </div>
             `;
         }
 
         function renderListView() {
             const tbody = document.getElementById('taskTableBody');
-            tbody.innerHTML = allIssues.map(issue => {
-                const typeLabel = issue.labels.find(l => l.name.startsWith('type:'));
-                const statusLabel = issue.labels.find(l => l.name.startsWith('status:'));
-                const priorityLabel = issue.labels.find(l => l.name.startsWith('priority:'));
 
-                const type = typeLabel ? typeLabel.name.split(':')[1] : '-';
-                const status = statusLabel ? statusLabel.name.split(':')[1] : 'offen';
-                const priority = priorityLabel ? priorityLabel.name.split(':')[1].toUpperCase() : 'P2';
+            if (filteredIssues.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;padding:20px;">Keine Aufgaben fuer diesen Filter.</td></tr>';
+                return;
+            }
 
-                const assignee = issue.assignee ? issue.assignee.login : '-';
-                const body = issue.body || '';
-                const nextStepMatch = body.match(/Nächster Schritt:?\s*\n?\s*(.+?)(?:\n|$)/i);
-                const nextStep = nextStepMatch ? nextStepMatch[1].trim().substring(0, 50) : '-';
+            tbody.innerHTML = filteredIssues.map(issue => {
+                const type = labelValue(issue, 'type:') || '-';
+                const status = statusOf(issue);
+                const priority = (labelValue(issue, 'priority:') || 'p2').toUpperCase();
+                const reviewer = labelValue(issue, 'reviewer:') || '-';
+                const assignee = issue.assignee || '-';
+                const nextStepFull = issue.nextStep || '-';
+                const nextStep = nextStepFull.length > 50
+                    ? nextStepFull.slice(0, 50) + '…'
+                    : nextStepFull;
 
                 return `
                     <tr>
-                        <td><strong><a href="${issue.html_url}" target="_blank">${escapeHtml(issue.title)}</a></strong></td>
-                        <td><span class="badge type">${type}</span></td>
-                        <td>${status}</td>
-                        <td>${priority}</td>
-                        <td>${assignee}</td>
-                        <td>-</td>
-                        <td title="${escapeHtml(nextStep)}">${nextStep}...</td>
-                        <td><a href="${issue.html_url}" target="_blank">↗</a></td>
+                        <td><strong><a href="${encodeURI(issue.html_url)}" target="_blank" rel="noopener">#${issue.number} ${escapeHtml(issue.title)}</a></strong></td>
+                        <td><span class="badge type">${escapeHtml(type)}</span></td>
+                        <td>${escapeHtml(status)}</td>
+                        <td>${escapeHtml(priority)}</td>
+                        <td>${escapeHtml(assignee)}</td>
+                        <td>${escapeHtml(reviewer)}</td>
+                        <td title="${escapeHtml(nextStepFull)}">${escapeHtml(nextStep)}</td>
+                        <td><a href="${encodeURI(issue.html_url)}" target="_blank" rel="noopener">&nearr;</a></td>
                     </tr>
                 `;
             }).join('');
         }
 
         function switchView(view) {
-            document.querySelectorAll('.view-toggle .btn-toggle').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-
+            currentView = view;
+            document.querySelectorAll('.view-toggle .btn-toggle').forEach(btn => {
+                const attr = btn.getAttribute('onclick') || '';
+                btn.classList.toggle('active', attr.includes(`'${view}'`));
+            });
             document.getElementById('boardContainer').classList.toggle('active', view === 'kanban');
             document.getElementById('listContainer').classList.toggle('active', view === 'list');
         }
@@ -979,27 +971,48 @@
             const statusFilter = document.getElementById('filterStatus').value;
             const priorityFilter = document.getElementById('filterPriority').value;
             const typeFilter = document.getElementById('filterType').value;
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const searchText = document.getElementById('searchInput').value.trim().toLowerCase();
 
             filteredIssues = allIssues.filter(issue => {
-                if (statusFilter && !issue.labels.some(l => l.name === statusFilter)) return false;
-                if (priorityFilter && !issue.labels.some(l => l.name === priorityFilter)) return false;
-                if (typeFilter && !issue.labels.some(l => l.name === typeFilter)) return false;
-                if (searchText && !issue.title.toLowerCase().includes(searchText)) return false;
+                if (statusFilter && `status:${statusOf(issue)}` !== statusFilter) return false;
+                if (priorityFilter && !issue.labels.includes(priorityFilter)) return false;
+                if (typeFilter && !issue.labels.includes(typeFilter)) return false;
+                if (searchText) {
+                    const haystack = `#${issue.number} ${issue.title} ${issue.nextStep || ''} ${issue.labels.join(' ')}`.toLowerCase();
+                    if (!haystack.includes(searchText)) return false;
+                }
                 return true;
             });
 
+            // Beide Ansichten aktualisieren - vorher wirkten die Filter nur
+            // scheinbar, weil hier ausschliesslich die Listenansicht neu
+            // gezeichnet wurde und beide Views ungefiltert lasen.
+            renderKanbanBoard();
             renderListView();
         }
 
         function updateLastUpdate() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('de-DE', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+            // Zeigt an, wann die DATEN erzeugt wurden - nicht wann der Browser
+            // gerendert hat. Nur das sagt etwas ueber die Aktualitaet aus.
+            const el = document.getElementById('lastUpdate');
+            if (!dataGeneratedAt) {
+                el.textContent = 'unbekannt';
+                return;
+            }
+            const generated = new Date(dataGeneratedAt);
+            const ageMin = Math.round((Date.now() - generated.getTime()) / 60000);
+            const time = generated.toLocaleString('de-DE', {
+                day: '2-digit', month: '2-digit',
+                hour: '2-digit', minute: '2-digit'
             });
-            document.getElementById('lastUpdate').textContent = time;
+            let age;
+            if (ageMin < 1) age = 'gerade eben';
+            else if (ageMin < 60) age = `vor ${ageMin} Min`;
+            else if (ageMin < 1440) age = `vor ${Math.round(ageMin / 60)} Std`;
+            else age = `vor ${Math.round(ageMin / 1440)} Tagen`;
+
+            el.textContent = `${time} (${age}) - ${allIssues.length} Aufgaben`;
+            el.style.color = ageMin > 180 ? '#dc3545' : '';
         }
 
         function showLoadingState(show) {
@@ -1017,23 +1030,22 @@
 
         function showStatusBadge(online) {
             const badge = document.getElementById('statusBadge');
-            if (online) {
-                badge.classList.remove('loading', 'error');
-                badge.textContent = '✓ Live';
-            }
+            badge.classList.toggle('error', !online);
+            badge.classList.remove('loading');
+            badge.textContent = online ? '✓ Live' : '⚠ Fehler';
         }
 
         function openIssue(url) {
-            window.open(url, '_blank');
+            window.open(url, '_blank', 'noopener');
         }
 
         function openGitHub() {
-            window.open(`https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues`, '_blank');
+            window.open(`https://github.com/${CONFIG.owner}/${CONFIG.repo}/issues`, '_blank', 'noopener');
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = text == null ? '' : String(text);
             return div.innerHTML;
         }
     </script>

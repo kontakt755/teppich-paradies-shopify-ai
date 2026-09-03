@@ -1,0 +1,55 @@
+name: dashboard-data
+
+# Haelt docs/ai-dashboard/issues.json aktuell. Das Dashboard liest nur
+# diese Datei, damit der Browser keinen GitHub-Token braucht.
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
+  schedule:
+    # Stuendlich als Sicherheitsnetz. Die eigentliche Aktualisierung laeuft
+    # ueber die issues-Events oben (sofort). Ein 10-Minuten-Cron wuerde bei
+    # einem privaten Repo das Free-Kontingent von 2000 Actions-Minuten/Monat
+    # sprengen (~2160 Min), stuendlich braucht ca. 300 Min.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-dashboard-data.mjs'
+      - '.github/workflows/dashboard-data.yml'
+
+concurrency:
+  group: dashboard-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: issues.json erzeugen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DASHBOARD_REPO: ${{ github.repository }}
+        run: node scripts/build-dashboard-data.mjs
+
+      - name: Committen wenn geaendert
+        run: |
+          if git diff --quiet -- docs/ai-dashboard/issues.json; then
+            echo "Keine Aenderung an issues.json"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ai-dashboard/issues.json
+          git commit -m "chore(dashboard): issues.json aktualisieren [skip ci]"
+          git push
