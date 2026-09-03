@@ -72,6 +72,26 @@ function findings() {
   return { p0: args.p0, p1: args.p1 };
 }
 
+// "shopify theme push --strict --json" schreibt ZWEI JSON-Dokumente
+// hintereinander auf stdout: zuerst den Theme-Check-Bericht als Array, danach
+// erst das eigentliche Push-Ergebnis als Objekt. Ein JSON.parse ueber die
+// gesamte Ausgabe scheitert daran. Deshalb das letzte Objekt herausloesen.
+function parsePushPayload(stdout) {
+  const text = String(stdout ?? '').trim();
+  try {
+    return JSON.parse(text);
+  } catch {
+    for (let index = text.lastIndexOf('{'); index >= 0; index = text.lastIndexOf('{', index - 1)) {
+      try {
+        return JSON.parse(text.slice(index));
+      } catch {
+        // Weiter nach vorne suchen, bis ein vollstaendiges Objekt passt.
+      }
+    }
+    return null;
+  }
+}
+
 function printSummary(summary) {
   const byId = Object.fromEntries((summary.results ?? []).map(item => [item.id, item.status]));
   console.log([
@@ -293,7 +313,8 @@ async function main() {
       'Shopify scratch push',
     );
     let payload;
-    try { payload = JSON.parse(pushed.stdout); } catch { throw new WorkflowGateError('Shopify Scratch Push lieferte ungültiges JSON', 'SCRATCH_OUTPUT'); }
+    payload = parsePushPayload(pushed.stdout);
+    if (!payload) throw new WorkflowGateError('Shopify Scratch Push lieferte ungültiges JSON', 'SCRATCH_OUTPUT');
     if (payload?.theme?.role !== 'unpublished') throw new WorkflowGateError('Scratch-Theme ist nach Push nicht unpublished', 'SCRATCH_ROLE');
 
     const current = context();
@@ -329,7 +350,8 @@ async function main() {
       const settingsBefore = fileSha256(path.join(beforeDir, 'config/settings_data.json'));
       const pushed = requireSuccess(run(commandName('shopify'), previewPushArgs({ store, themeId, root })), 'Shopify unpublished preview push');
       let payload;
-      try { payload = JSON.parse(pushed.stdout); } catch { throw new WorkflowGateError('Shopify Preview Push lieferte ungültiges JSON', 'PREVIEW_OUTPUT'); }
+      payload = parsePushPayload(pushed.stdout);
+      if (!payload) throw new WorkflowGateError('Shopify Preview Push lieferte ungültiges JSON', 'PREVIEW_OUTPUT');
       const previewUrl = verifyPreviewPayload(payload, themeId);
       const after = themeList(store).find(item => String(item.id) === String(themeId));
       if (after?.role !== 'unpublished' || payload?.theme?.role !== 'unpublished') throw new WorkflowGateError('Preview ist nach Push nicht eindeutig unpublished', 'PREVIEW_ROLE');

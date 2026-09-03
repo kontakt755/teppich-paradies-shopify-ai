@@ -35,6 +35,26 @@ const RULES = [
     pattern: /\{%-?\s*include\s+[^%]*?\sas\s+[a-z_][a-z0-9_]*\s*-?%\}/gi,
     message: "Ungueltige Syntax: 'include ... as variable'.",
   },
+  {
+    id: 'HASH_COMMENT_UNPREFIXED_LINE',
+    // {% # ... %} ist ein Inline-Kommentar. Jede weitere Zeile im selben Tag
+    // muss ebenfalls mit '#' beginnen. Fehlt das, meldet Shopify beim Push
+    // "Syntax error in tag '#'" und verwirft die Datei - im Shop fehlt die
+    // Section dann komplett. Genau so sind carpet-style-guide,
+    // shipping-info-bar und vinyl-installation-guide nie im Theme gelandet.
+    pattern: /\{%-?\s*#[\s\S]*?-?%\}/g,
+    // Tag-Klammern abziehen und den reinen Inhalt pruefen: jede nicht leere
+    // Zeile muss mit '#' beginnen. Die Klammern stehen in Horizon-Dateien
+    // teils auf eigenen Zeilen - die duerfen nicht mitgezaehlt werden.
+    reject: block => block
+      .replace(/^\{%-?/, '')
+      .replace(/-?%\}$/, '')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .some(line => !line.startsWith('#')),
+    message: "Mehrzeiliger {% # %}-Kommentar: jede Zeile muss mit '#' beginnen. Sonst verwirft Shopify die Datei beim Push. Besser {% comment %} ... {% endcomment %} verwenden.",
+  },
 ];
 
 function walk(dir, files = []) {
@@ -72,7 +92,7 @@ for (const file of files) {
           const finding = { file: relative, line: lineOf(text, blockStart + inner.index), rule: rule.id, message: rule.message };
           (rule.severity === 'warn' ? warnings : errors).push(finding);
         }
-      } else {
+      } else if (!rule.reject || rule.reject(match[0])) {
         const finding = { file: relative, line: lineOf(text, match.index), rule: rule.id, message: rule.message, snippet: match[0].slice(0, 120) };
         (rule.severity === 'warn' ? warnings : errors).push(finding);
       }
