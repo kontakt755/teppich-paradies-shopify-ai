@@ -115,6 +115,22 @@
     z-index: 15;
   }
 
+  /* Der Volltitel in .product-grid-view-zoom-out--details gehoert
+     ausschliesslich zur Zoom-Out-Rasteransicht (blocks/_product-card-gallery
+     .liquid rendert ihn dort zusaetzlich). In der normalen Ansicht stand er
+     dadurch ueber dem eigentlichen Kartentitel - der Titel erschien doppelt,
+     einmal vollstaendig und grau, einmal gekuerzt.
+
+     base.css und die Regel darunter setzen bereits display:none, im
+     ausgelieferten DOM wird das aber von einer Regel ueberstimmt, die sich
+     in dieser Codebasis nicht auffinden liess (nur drei Dateien nennen die
+     Klasse ueberhaupt, zwei davon verbergen sie). Deshalb hier bewusst mit
+     !important - eingeschraenkt auf Raster, die NICHT in der Zoom-Out-
+     Ansicht sind, damit die Funktion beim Wiedereinschalten intakt bleibt. */
+  .product-grid:not([product-grid-view='zoom-out']) .product-grid-view-zoom-out--details {
+    display: none !important;
+  }
+
   .product-grid-view-zoom-out--details {
     display: none;
   }
