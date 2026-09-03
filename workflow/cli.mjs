@@ -58,7 +58,15 @@ function worktreeFingerprint() {
 }
 
 function context() {
-  const porcelain = git('status', '--porcelain=v1', '-z');
+  // qa/evidence/local-verification.json (TRACKED_EVIDENCE_PATH) wird von
+  // jedem vollstaendigen validate()-Lauf automatisch neu geschrieben -
+  // zuletzt vom eigenen "preview"-Lauf. Ohne diesen Ausschluss ergibt sich
+  // ein Zirkel: preview schreibt die Datei, das macht den Tree dirty, ein
+  // Commit dafuer verschiebt HEAD, wodurch previewEvidence.commit nicht mehr
+  // zu origin/main passt und das Live-Gate erneut blockiert. Die Datei traegt
+  // selbst keinen Theme-Inhalt, also gehoert sie hier ausgeschlossen -
+  // genau wie worktreeFingerprint() es bereits fuer denselben Zweck tut.
+  const porcelain = git('status', '--porcelain=v1', '-z', '--', '.', `:(exclude)${TRACKED_EVIDENCE_PATH}`);
   return {
     branch: git('branch', '--show-current'),
     head: git('rev-parse', 'HEAD'),
