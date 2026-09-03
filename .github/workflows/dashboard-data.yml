@@ -30,9 +30,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
 
@@ -44,12 +44,36 @@ jobs:
 
       - name: Committen wenn geaendert
         run: |
+          set -euo pipefail
+
           if git diff --quiet -- docs/ai-dashboard/issues.json; then
             echo "Keine Aenderung an issues.json"
             exit 0
           fi
+
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/ai-dashboard/issues.json
           git commit -m "chore(dashboard): issues.json aktualisieren [skip ci]"
-          git push
+
+          # Zwischen checkout und push kann ein anderer Commit auf main
+          # gelandet sein (paralleler Lauf oder lokaler Push). Dann wird der
+          # Push abgelehnt - also rebasen und erneut versuchen. issues.json
+          # ist generiert, bei Konflikt gewinnt immer unsere neue Version.
+          for versuch in 1 2 3 4 5; do
+            if git push; then
+              echo "Push erfolgreich (Versuch $versuch)"
+              exit 0
+            fi
+            echo "Push abgelehnt, rebase und neuer Versuch ($versuch/5)"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git checkout --ours docs/ai-dashboard/issues.json 2>/dev/null || true
+              git add docs/ai-dashboard/issues.json
+              GIT_EDITOR=true git rebase --continue || git rebase --abort
+            fi
+            sleep $((versuch * 3))
+          done
+
+          echo "::error::Push nach 5 Versuchen fehlgeschlagen"
+          exit 1
