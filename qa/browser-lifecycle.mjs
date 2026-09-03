@@ -59,3 +59,22 @@ export async function closeBrowserSafely(browser, timeoutMs = 10_000) {
     };
   }
 }
+
+/**
+ * Entfernt Shopifys Theme-Vorschauleiste.
+ *
+ * Auf unpublished Preview-Themes blendet Shopify eine Leiste als eigenen
+ * iframe (#PBarNextFrame in #PBarNextFrameWrapper) ueber die Seite. Der
+ * Wrapper liegt als popover ueber dem Inhalt und faengt Klicks ab - der
+ * Compare-Lauf scheiterte dadurch auf Desktop reproduzierbar daran, den
+ * Cookie-Banner wegzuklicken ("subtree intercepts pointer events").
+ *
+ * Im Livebetrieb existiert die Leiste nicht. Sie zu entfernen stellt fuer den
+ * Test also den Zustand her, den echte Besucher sehen.
+ */
+export async function dismissPreviewBar(page) {
+  await page.evaluate(() => {
+    document.querySelector('#PBarNextFrameWrapper')?.remove();
+    document.querySelector('#PBarNextFrame')?.remove();
+  }).catch(() => {});
+}

@@ -2,7 +2,7 @@ import { chromium } from 'playwright-core';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
-import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
+import { closeBrowserSafely, closeContextSafely, dismissPreviewBar, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
 import { sanitizeDeep, sanitizeText } from '../automation/core/url-sanitizer.mjs';
 import { configuredBaseUrl, targetUrl } from './target-url.mjs';
 
@@ -31,6 +31,7 @@ async function runViewport(browser, name, viewport) {
 
     await page.goto(collectionUrl, { waitUntil: 'domcontentloaded', timeout: 45_000 });
     await page.waitForTimeout(800);
+    await dismissPreviewBar(page);
 
     const declineConsent = page.locator('#shopify-pc__banner__btn-decline');
     if (await declineConsent.isVisible().catch(() => false)) {
