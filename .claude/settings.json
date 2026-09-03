@@ -1,0 +1,13 @@
+{
+  "network": {
+    "egressAllowlist": [
+      "teppich-paradies.net",
+      "*.myshopify.com",
+      "admin.shopify.com"
+    ],
+    "description": "Allowed domains for outbound network access in Claude Code on the web"
+  },
+  "permissions": {
+    "default": ["read", "edit"]
+  }
+}
