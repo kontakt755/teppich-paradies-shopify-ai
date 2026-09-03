@@ -2,8 +2,8 @@
   "workflow": "validate",
   "status": "PASS",
   "validationScope": "FULL",
-  "commit": "4c7f1b261b15173d050cd08f0953bbb5458e7ba7",
-  "branch": "feature/automation-control-center",
+  "commit": "8b4e14af91d061239bb0225dd33030fa53bfed7d",
+  "branch": "main",
   "orderCompleted": false,
   "externalBlock": null,
   "results": [
@@ -53,6 +53,33 @@
       "blocker": null
     },
     {
+      "id": "LIQUID_GUARD",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "SCHEMA_GUARD",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
+      "id": "TEMPLATE_GUARD",
+      "status": "PASS",
+      "attempts": 1,
+      "exitCode": 0,
+      "timedOut": false,
+      "errorClass": null,
+      "blocker": null
+    },
+    {
       "id": "COMPARE",
       "status": "PASS",
       "attempts": 1,
@@ -89,13 +116,14 @@
       "blocker": null
     }
   ],
-  "head": "4c7f1b261b15173d050cd08f0953bbb5458e7ba7",
-  "originMain": "cdb2a83c895ff5d12e83e45387f7b2f37e7a41d5",
-  "clean": false,
+  "head": "8b4e14af91d061239bb0225dd33030fa53bfed7d",
+  "originMain": "8b4e14af91d061239bb0225dd33030fa53bfed7d",
+  "clean": true,
   "worktreeFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "p0": "0",
   "p1": "0",
-  "readyForPr": true,
+  "pr": null,
+  "readyForPr": false,
   "readyForMain": false,
   "readyForPreview": false,
   "readyForLive": false
