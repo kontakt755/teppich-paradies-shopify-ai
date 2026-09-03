@@ -112,4 +112,39 @@
       object-fit: contain;
     }
   }
+
+  /* Mobile-specific image sizing and responsiveness */
+  @media screen and (max-width: 749px) {
+    media-gallery .product-media-container {
+      display: block;
+      width: 100%;
+      overflow: visible;
+    }
+
+    media-gallery slideshow-slide {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .product-media {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: auto;
+      min-height: 300px;
+    }
+
+    .product-media__image {
+      max-width: 100%;
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    media-gallery.media-gallery--grid .media-gallery__grid {
+      grid-template-columns: 1fr !important;
+      gap: 0.5rem;
+    }
+  }
 {% endstylesheet %}
