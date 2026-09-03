@@ -40,3 +40,7 @@ jobs:
       - run: npm run liquid:guard
       - run: npm run schema:guard
       - run: npm run template:guard
+      # Faengt ab, dass eine Theme-ID als Prosa-Fakt in CLAUDE.md/AGENTS.md
+      # veraltet, ohne dass es jemand merkt - genau so wurde monatelang ein
+      # Theme als Live-Stand genannt, das es in der Admin API nicht mehr gab.
+      - run: npm run theme:guard

@@ -46,9 +46,15 @@ Produktdaten abfragen, in unpublished Themes schreiben).
 Läuft nur in Remote-Sessions (`$CLAUDE_CODE_REMOTE`); lokal ist die Umgebung
 ohnehin eingerichtet. Er installiert fehlende npm-Abhängigkeiten und gibt aus:
 
-- die Ergebnisse von Liquid-, Schema- und Template-Guard,
+- die Ergebnisse von Liquid-, Schema-, Template- und Live-Theme-Guard,
+- welches Theme laut `domains/shopify/live-theme.json` live ist (samt Prüfdatum),
 - die Produktkarten-Blöcke je Kollektions-Template (macht Drift sichtbar),
 - den Hinweis auf die gesperrte Storefront.
+
+Der Live-Theme-Guard steht in dieser Liste, weil eine veraltete Theme-ID in
+CLAUDE.md dazu geführt hat, dass Sessions monatelang ein längst gelöschtes
+Theme als Live-Stand nannten. Jetzt steht der geprüfte Stand in jeder Session
+oben im Log.
 
 Der Hook greift für alle Sessions, sobald er auf `main` liegt.
 

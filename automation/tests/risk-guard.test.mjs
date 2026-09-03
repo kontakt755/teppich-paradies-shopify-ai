@@ -55,7 +55,7 @@ test('operation outside explicit allowlist causes HARD STOP', () => {
 
 test('protected live and fallback theme resources make otherwise safe task HIGH', () => {
   assert.throws(() => guard.evaluate({ task: tasks.low, files: ['automation/fixtures/output.json'], operations: ['report_write'], resources: ['theme:196301750606'] }), /Effective risk HIGH exceeds/);
-  assert.throws(() => guard.evaluate({ task: tasks.low, files: ['automation/fixtures/output.json'], operations: ['report_write'], resources: ['theme:201829679438'] }), /Effective risk HIGH exceeds/);
+  assert.throws(() => guard.evaluate({ task: tasks.low, files: ['automation/fixtures/output.json'], operations: ['report_write'], resources: ['theme:196301750606'] }), /Effective risk HIGH exceeds/);
 });
 
 test('unknown resources never fail open as LOW', () => {

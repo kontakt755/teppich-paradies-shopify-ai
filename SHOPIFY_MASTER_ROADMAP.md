@@ -2,7 +2,7 @@
 
 Version: 1.0  
 Pilot-Shop: Teppich Paradies  
-Bekannter Live-Stand: Theme `201829679438`; Fallback `196301750606` ist dauerhaft geschützt.
+Live- und Fallback-Theme: siehe `domains/shopify/live-theme.json` (einzige Quelle). Das Fallback-Theme ist dauerhaft geschützt.
 
 ## 1. Planungsbasis
 

@@ -1,449 +1,33 @@
-# CLAUDE.md
+# TeppichParadies — Shopify Horizon Theme
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Shop: `www.teppich-paradies.net` · Store: `sjjyq1-6w.myshopify.com` · Theme: Horizon (Shopify 2.0, Blocks/Sections)
 
-## Project Overview
+## Welches Theme ist live?
 
-**Teppich Paradies – AI-Orchestrated Shopify Store**
+**Nicht raten und keine ID aus einer Doku uebernehmen.** Die einzige Quelle ist
+`domains/shopify/live-theme.json`; `npm run theme:guard` haelt sie mit dem
+Repository konsistent. Steht eine Theme-ID irgendwo sonst als Fakt in Prosa,
+ist das der Fehler, nicht die Quelle.
 
-- **Public Shop:** https://www.teppich-paradies.net
-- **Shopify Store:** sjjyq1-6w.myshopify.com
-- **Live Theme:** `theme-productpage-v2-night` (ID: 201829679438)
-- **Fallback Theme:** `Horizon` (ID: 196301750606) — **never delete or overwrite**
+Zum Nachpruefen ueber den Shopify-MCP — live ist der Knoten mit `role: MAIN`:
 
-This is a specialized Shopify theme with AI-driven automation for a carpet/flooring shop (Teppichboden, Teppiche, Vinylboden, Klick-und-Klebe, Rollenware, Teppich auf Maß). Product features like €/m², package calculators, truncated cards, and category carousels are already built and extensively tested.
-
----
-
-## Core Architecture
-
-### 1. AI Orchestrator + Provider Router
-
-**Core Components:**
-- `workflow/router.mjs` — **single source of truth** for deterministic task classification (A/B/C/D)
-- `workflow/core.mjs` — orchestrator state machine, manifest loading, risk engine
-- `router_api_migration.py` — Python adapter for Claude API calls (Haiku/Sonnet/Opus)
-- `api_cost_monitor.py` — budget tracking and rate-limit management
-
-**Task Classification:**
-- **Class A:** Local/deterministic, no LLM
-- **Class B:** Haiku (fast, cheap)
-- **Class C:** Sonnet (balanced)
-- **Class D:** Opus (complex reasoning; requires explicit escalation)
-
-Models are configurable via env vars: `CLAUDE_HAIKU_MODEL`, `CLAUDE_SONNET_MODEL`, `CLAUDE_OPUS_MODEL`. Do not hardcode model IDs.
-
-**Risk Management:**
-- Deterministic risk checks block unsafe operations (product deletion, price changes, checkout modifications, DNS changes, etc.)
-- `RISK_MODEL_SPEC.md` defines gates; `RISK_MAP.yaml` has priority/category rules
-- Every diff is audit-logged; actual risk exceeding allowed risk triggers `HARD_STOP`
-- Review loops: up to 3 rounds for correction; failure = `REVIEW_LIMIT_REACHED` → human gate
-
-### 2. Shopify Theme Structure
-
-**Key Directories:**
-- `theme/` — Liquid template root
-- `blocks/` — Shopify block definitions (product cards, carousels, filters, etc.)
-- `sections/` — Shopify section definitions (full page components)
-- `snippets/` — reusable Liquid partials
-- `templates/` — page-level templates (product, collection, etc.)
-- `locales/` — multilingual strings (German primary)
-
-**Important Pre-Built Features** (do not reinvent):
-- €/m² pricing display for package products
-- Package/waste calculator + cart logic (fully tested)
-- Comparison dialog (max 3 products)
-- Sample orders
-- Product benefits/technical data
-- Predictive search
-- Globo Mega Menu
-- Mobile peek and carousel navigation
-- Truncated card titles
-- Breadcrumbs
-
-### 3. Automation & QA Pipeline
-
-**Automation Layers:**
-- `automation/core/` — modular components (API handlers, data processors, validators)
-- `automation/scripts/` — standalone runners (secret scan, OpenRouter usage reports)
-- `qa/` — visual, SEO, sales readiness, and comparison checks
-- `qa/tests/` — unit tests for evidence filtering, URL sanitization, browser infra
-
-**Dashboard (Localhost):**
-- `setup-dashboard.sh` creates the GitHub labels the dashboard relies on
-- `npm run dashboard` builds `issues.json` and serves on `localhost:8001`
-- Displays Kanban board, list view and metrics from status/type/priority labels
-- Browser re-reads `issues.json` every 2 minutes; the data itself is refreshed by
-  the `dashboard-data` workflow on each issue event
-
----
-
-## Development Commands
-
-### Setup & Validation
-
-```bash
-# Install dependencies
-npm install
-python3 -m pip install anthropic
-
-# Read-only preflight (budget check)
-./api_cost_check.sh
-
-# Offline demo (no API call)
-python3 demo_run.py
-
-# Run all unit tests
-npm test
-
-# Specific test suites
-npm run qa:unit:test
-npm run automation:test
-npm run workflow:test
-npm run control:center:test
+```graphql
+query { themes(first: 20) { nodes { id name role updatedAt } } }
 ```
 
-### Workflow & State Management
-
-```bash
-# Validate manifest syntax
-npm run workflow:validate
-
-# Check current state (task classifications, blockers)
-npm run workflow:state
-
-# View next eligible task
-npm run workflow:next
-
-# Continue after human intervention
-npm run workflow:continue
-
-# Preview a change (dry-run without commit)
-npm run workflow:preview
-
-# Publish to live theme
-npm run workflow:live
-```
-
-### Quality Assurance
-
-```bash
-# Full QA suite (unit + integration + visual)
-npm run qa
-
-# Generate visual evidence screenshots
-npm run qa:visual
-
-# SEO-specific checks
-npm run seo:check
-
-# Sales readiness (checkout, cart, pricing)
-npm run sales:check
-
-# Product comparison dialog checks
-npm run compare:check
-
-# Budget monitoring
-node api_cost_monitor.py
-npm run openrouter:usage
-```
-
-### GitHub Labels Setup
-
-```bash
-# Create all dashboard labels (status, type, priority, area, reviewer)
-./setup-dashboard.sh
-```
-
-### Control Center (Live Monitoring)
-
-```bash
-# Start monitoring server
-npm run control:center
-
-# Test control center endpoints
-npm run control:center:test
-```
-
----
-
-## Project Structure
-
-```
-.
-├── .ai/                          # AI config & secrets (git-ignored)
-├── .claude/                       # Claude Code local config
-├── .github/                       # GitHub workflows
-├── automation/                    # Automation scripts & tests
-│   ├── core/                      # API handlers, data processors
-│   ├── scripts/                   # Standalone runners
-│   ├── data/                      # Test fixtures, CSV exports
-│   └── tests/
-├── blocks/                        # Shopify block definitions (~120 blocks)
-├── config/                        # App config (Shopify Admin API settings)
-├── control-center/                # Live monitoring dashboard
-├── docs/                          # Documentation
-│   └── ai-dashboard/              # Dashboard setup guide
-├── qa/                            # QA runners & tests
-│   ├── tests/
-│   └── run-*.mjs                  # Visual, SEO, sales, compare checks
-├── sections/                      # Shopify section definitions
-├── server/                        # Backend services
-├── snippets/                      # Reusable Liquid partials
-├── templates/                     # Page-level templates
-├── theme/                         # Theme root (Liquid)
-├── workflow/                      # Orchestrator core
-│   ├── router.mjs                 # Task classification (deterministic)
-│   ├── core.mjs                   # State machine & risk engine
-│   └── cli.mjs                    # Workflow CLI
-├── AI_ORCHESTRATOR_MASTER_SPEC.md # Architecture & state definitions
-├── AGENTS.md                      # Central rule source for all agents
-├── QUICK_START.md                 # Claude API Router setup
-└── RISK_MODEL_SPEC.md             # Risk classification rules
-```
-
----
-
-## Key Concepts
-
-### Task State Lifecycle
-
-```
-PENDING → RUNNING → IMPLEMENT → REVIEW → PASS
-                         ↓
-                    REVIEW_FINDINGS
-                         ↓
-                   CORRECTION_REQUIRED → CORRECT → REVIEW
-                   (max 3 cycles)
-                         ↓
-                   REVIEW_LIMIT_REACHED / HUMAN_GATE
-```
-
-Alternative terminal states: `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`, `HARD_FAIL`, `SECURITY_STOP`
-
-### Shopify Product Data
-
-**Rules:**
-- Do not invent product metadata or properties
-- Only modify metafields/collections if explicitly authorized or backed by reliable existing data
-- When unsure: document as open case, do not guess
-- €/m² is the primary customer-facing metric; Shopify list price remains the internal package price
-- Never show package price prominently on collection cards; product detail page may show it secondarily
-
-### Theme Safety
-
-**Never (without explicit approval):**
-- Delete products/variants or modify SKUs
-- Change prices, checkout, payment, tax, or shipping settings
-- Change DNS or domains
-- Delete the Fallback Theme (Horizon, ID 196301750606)
-- Migrate Horizon version
-- Perform large irreversible Shopify data changes
-
-**Safe to do independently:**
-- Small, tested theme optimizations → may publish live directly
-- Large architectural changes → analyze and report first
-- Irreversible or business-critical changes → ask before proceeding
-
-**Testing & Rollout:**
-- Use Shopify Theme Check when relevant
-- Test on mobile and desktop
-- Check for regressions in existing features
-- Verify real public shop (without ?preview parameters) before sign-off
-
----
-
-## Integration with Dashboard
-
-**Goal:** All project metrics, tasks, and progress visible on the Dashboard.
-
-**How it works:**
-1. The `dashboard-data` workflow (`.github/workflows/dashboard-data.yml`) runs on
-   every issue event and hourly, calling `scripts/build-dashboard-data.mjs`
-2. That script writes `docs/ai-dashboard/issues.json` and commits it
-3. `docs/ai-dashboard/index.html` reads only that JSON file — it never calls the
-   GitHub API, so no token is needed in the browser
-4. Issues tagged with status/type/priority labels appear in Kanban columns,
-   metrics, and list views
-5. Each task/issue can include "Nächster Schritt" (next step) in the body; the
-   generator extracts it into the JSON
-
-Run locally with `npm run dashboard` (builds data, serves on :8001). Do not
-re-add a browser-side GitHub API call — it fails without a token and a token in
-frontend JS would be public.
-
-**To add an issue to the dashboard:**
-```bash
-gh issue create \
-  --title "Your Task Title" \
-  --body "Description here" \
-  --label "status:eingang,type:feature,priority:p1,area:produktseite"
-```
-
-**Label Categories:**
-- Status: `status:eingang`, `status:geplant`, `status:in-arbeit`, `status:review`, `status:korrektur`, `status:blockiert`, `status:fertig`
-- Type: `type:bug`, `type:verbesserung`, `type:idee`, `type:ux`, `type:seo`, `type:content`, `type:technik`
-- Priority: `priority:p0`, `priority:p1`, `priority:p2`, `priority:p3`
-- Area: `area:produktseite`, `area:kategorie`, `area:navigation`, `area:filter`, `area:warenkorb`, `area:checkout`, `area:seo`, `area:google`, `area:versand`, `area:design`, `area:backend`, `area:sonstiges`
-
----
-
-## Claude API Integration
-
-**Before First API Call:**
-
-1. Install SDK: `python3 -m pip install anthropic`
-2. Set API key **only** via env var or secret manager, never as CLI argument
-3. (Optional) Configure budget warnings:
-   - `CLAUDE_DAILY_WARNING_USD`
-   - `CLAUDE_MONTHLY_WARNING_USD`
-   - `CLAUDE_MONTHLY_HARD_LIMIT_USD`
-4. Run read-only preflight: `./api_cost_check.sh`
-5. Run offline demo: `python3 demo_run.py`
-6. Run tests: `python3 -m unittest tests/test_api_router.py`
-
-**Prompt Caching:**
-- Cache only stable, reusable context (project rules, tool schemas, versioned context packs)
-- Keep user task, git diffs, timestamps, and dynamic tool results **after** the cache breakpoint
-- Uses 5-minute TTL (safe, pricing tracked)
-- Validate cache hits via actual API usage fields, not markers alone
-
-**Production Rollout (Staging First):**
-1. Simulate errors, budget stops, and cache write→read scenarios
-2. Test limited staging sample with console spend limit
-3. Keep existing router as rollback path until documented Go/No-Go decision
-
----
-
-## Agent Rules (from AGENTS.md)
-
-### General Approach
-
-- Understand existing code first; don't reinvent working solutions
-- Complete small, clearly scoped tasks independently
-- Don't ask for every terminal, browser, Playwright, or Shopify CLI step
-- Find a safe alternative if blocked
-- Don't deviate unnecessarily due to GitHub, auth, or side infrastructure
-- Avoid large unnecessary refactorings; small robust changes are better
-- Test on mobile and desktop; regression-check existing features
-- Use Shopify Theme Check when applicable
-- Test risky functionality before going live
-- After going live, verify the real public shop (no ?preview params)
-
-### Critical Safety Gates
-
-**NEVER without explicit approval:**
-- Delete products/variants or change SKUs
-- Change prices, checkout, payment, tax, shipping
-- Change DNS/domains
-- Modify legal texts
-- Install paid apps
-- Trigger purchases/subscriptions
-- Delete/overwrite Fallback Theme (ID 196301750606)
-- Migrate Horizon
-- Large irreversible Shopify data changes
-
-**Product Data:**
-- Only modify metafields/collections if explicitly authorized or backed by reliable existing product/manufacturer data
-- Do not invent properties or infer from images alone
-- When unsure, document as open case and move on
-
-### Theme Features (Don't Rebuild)
-
-These are already built, tested, and functional:
-- €/m² display for package products
-- Package/waste calculator
-- German package/order quantity display
-- Product comparison (max 3)
-- Sample orders
-- Breadcrumb
-- Product benefits
-- Technical data
-- New product card logic
-- Truncated card titles
-- Predictive search
-- Home page structure
-- Vinyl flooring category carousel
-- Mobile peek / carousel navigation
-
----
-
-## Common Development Patterns
-
-### Creating a Workflow Task
-
-1. Create a GitHub Issue with a descriptive title and label it with status/type/priority
-2. The issue appears in the Dashboard within 2 minutes
-3. Use `npm run workflow:next` to fetch the next eligible task
-4. Make changes, test on mobile/desktop, verify live shop
-5. Close the issue or update its status label when complete
-
-### Auditing Risk
-
-1. Check `RISK_MAP.yaml` for category/priority rules
-2. Review `RISK_MODEL_SPEC.md` for gate logic
-3. Run workflow state check: `npm run workflow:state`
-4. The router will flag actual risk exceeding allowed risk with `HARD_STOP`
-
-### Monitoring Costs
-
-```bash
-# Check spending against budget limits
-./api_cost_check.sh
-
-# Detailed cost report
-node api_cost_monitor.py
-
-# OpenRouter usage (if applicable)
-npm run openrouter:usage
-```
-
-### Preview vs. Live
-
-- `npm run workflow:preview` — dry-run, no commit
-- `npm run workflow:live` — publish to live theme (after testing)
-- Always test the real public shop after live publish
-
----
-
-## Docs & References
-
-**Essential Files:**
-- `AGENTS.md` — Central rule source for all agents (**read first**)
-- `AI_ORCHESTRATOR_MASTER_SPEC.md` — Architecture, state definitions, risk engine
-- `QUICK_START.md` — Claude API Router setup and safety checklist
-- `RISK_MODEL_SPEC.md` — Risk classification gates and rules
-- `RISK_MAP.yaml` — Operational priorities and category weights
-- `SHOPIFY_MASTER_ROADMAP.md` — Feature roadmap and priorities
-- `GOOGLE_SHOPPING_SAFETY_REPORT.md` — Google Shopping feed rules (if integrating Ads)
-
-**Shopify-Specific:**
-- `GOOGLE_SHOPPING_PRICE_STRATEGY.md` — Pricing rules for product feeds
-- `GOOGLE_ROLLENWARE_EXCLUSION_LIST.csv` — Rollenware SKU list (do not include in some feeds)
-- `SEO_REPORT.md` / `SEO_META_MANUAL.md` — SEO rules and metadata
-
-**Dashboard & Monitoring:**
-- `docs/ai-dashboard/` — Dashboard setup and usage guide
-- `setup-dashboard.sh` — Auto-creates GitHub Labels for dashboard
-
----
-
----
-
-# Hart erarbeitete Projektregeln (nicht entfernen)
-
-Dieser Abschnitt stammt aus der deutschen CLAUDE.md (Commit `7c534a1`). Er
-wurde beim Aufloesen eines Merge-Konflikts versehentlich geloescht und ist
-hier vollstaendig wieder eingefuegt. Jeder Punkt darin hat real eine
-Arbeitssitzung gekostet - insbesondere Punkt 4: **nie von Hand ins Theme
-pushen**, auch nicht mit `shopify theme push --live`. Dafuer existiert die
-Kette `workflow:preview` -> `workflow:live`.
-
-Shop: `www.teppich-paradies.net` · Theme: Horizon (Shopify 2.0, Blocks/Sections)
+Danach `live-theme.json` aktualisieren (inklusive `verifiedAt`), das alte Theme
+unter `retired` eintragen und `npm run theme:guard` laufen lassen.
+
+> Warum das eine eigene Regel ist: Bis 2026-09-03 nannten CLAUDE.md, AGENTS.md
+> und die Roadmap `theme-productpage-v2-night` als Live-Theme. Dieses Theme
+> existierte in der Admin API da schon nicht mehr. Agenten haben die ID
+> trotzdem weiter als gesicherten Stand weitergegeben. Die stillgelegte ID
+> steht jetzt unter `retired` in `live-theme.json` — bewusst nicht hier, denn
+> `npm run theme:guard` verbietet Theme-IDs in Anweisungsdateien.
 
 ## Was hier immer wieder schiefging
 
-Diese vier Punkte haben je eine komplette Sitzung gekostet. Vor dem Loslegen lesen.
+Diese Punkte haben je eine komplette Sitzung gekostet. Vor dem Loslegen lesen.
 
 **1. Der Theme-Editor ist nur eine Oberfläche über `templates/*.json`.**
 Ein Block ist dort ein Eintrag in `blocks` plus einer in `block_order`. Blöcke
@@ -471,10 +55,13 @@ Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
 `origin/main`. Ein Direktpush über die Admin API erzeugt genau die Drift, die
 `PREVIEW_DRIFT` abfangen soll, und macht die Live-Evidence wertlos.
 
+**5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.**
+Siehe oben. Deshalb `domains/shopify/live-theme.json` plus `npm run theme:guard`.
+
 ## Vor jedem Commit
 
 ```
-npm run liquid:guard && npm run schema:guard && npm run template:guard
+npm run liquid:guard && npm run schema:guard && npm run template:guard && npm run theme:guard
 node workflow/cli.mjs validate --static      # Flag heisst --static, nicht --static-only
 ```
 
@@ -489,6 +76,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run liquid:guard` | ungültiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
+| `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschütztes Live-Theme |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
 
@@ -533,6 +121,18 @@ deshalb `--static`. Deploys laufen lokal.
   Blöcke müssen dort **still nichts rendern**, kein Fallback auf `product.images` —
   das zeigt sonst Detailfotos als vermeintliche Farben.
 - Paketprodukte erkennt man am Metafeld `custom.qm_pro_paket`.
+- €/m² ist die kundenseitige Leitgröße; der Shopify-Listenpreis bleibt der
+  interne Paketpreis und gehört nicht prominent auf die Kollektionskarte.
+- Produkteigenschaften nicht erfinden und nicht aus Bildern ableiten. Im Zweifel
+  als offenen Fall dokumentieren.
+
+## Fertige Features — nicht neu bauen
+
+€/m²-Anzeige, Paket-/Verschnittrechner samt Warenkorb-Logik, deutsche Paket- und
+Bestellmengen-Anzeige, Produktvergleich (max. 3), Musterbestellung, Breadcrumb,
+Produktvorteile, technische Daten, Produktkarten-Logik mit gekürzten Titeln,
+Predictive Search, Startseitenstruktur, Vinyl-Kategorie-Karussell, Mobile-Peek
+und Karussell-Navigation. Alles getestet und in Benutzung.
 
 ## Deploy-Kette
 
@@ -545,6 +145,84 @@ einen sauberen Working Tree. Live zusätzlich passende Preview-Evidence und
 explizite Freigabe. Die Gates sind Absicht — nicht umgehen, sondern die Kette
 durchlaufen.
 
+## Sicherheitsgrenzen
+
+Ohne ausdrückliche Freigabe **nie**: Produkte/Varianten löschen, SKUs ändern,
+Preise, Checkout, Zahlung, Steuern oder Versand ändern, DNS/Domains ändern,
+Rechtstexte ändern, kostenpflichtige Apps installieren, Käufe oder Abos
+auslösen, das Fallback-Theme (`Horizon`) löschen oder überschreiben, Horizon
+migrieren, große irreversible Shopify-Datenänderungen ausführen.
+
+Kleine, getestete Theme-Optimierungen dürfen eigenständig laufen. Große
+architektonische Änderungen erst analysieren und berichten.
+
+`RISK_MODEL_SPEC.md` definiert die Gates, `RISK_MAP.yaml` und
+`domains/shopify/risk-map.json` die Kategorien. Übersteigt das tatsächliche
+Risiko das erlaubte, greift `HARD_STOP`. Review-Schleifen laufen maximal
+dreimal, danach `REVIEW_LIMIT_REACHED` → menschliches Gate.
+
+## AI-Orchestrator
+
+- `workflow/router.mjs` — einzige Quelle für die deterministische Klassifikation A/B/C/D
+- `workflow/core.mjs` — Zustandsautomat, Manifest-Laden, Risk-Engine
+- `router_api_migration.py` — Python-Adapter für Claude-API-Aufrufe
+- `api_cost_monitor.py` — Budget und Rate-Limits
+
+Klassen: **A** lokal/deterministisch ohne LLM · **B** Haiku · **C** Sonnet ·
+**D** Opus (nur mit ausdrücklicher Eskalation). Modelle kommen aus
+`CLAUDE_HAIKU_MODEL`, `CLAUDE_SONNET_MODEL`, `CLAUDE_OPUS_MODEL` — keine
+Modell-IDs hart verdrahten.
+
+Zustände: `PENDING → RUNNING → IMPLEMENT → REVIEW → PASS`, daneben
+`CORRECTION_REQUIRED`, `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`,
+`HARD_FAIL`, `SECURITY_STOP`.
+
+```
+npm run workflow:state     # Klassifikationen und Blocker
+npm run workflow:next      # nächste zulässige Aufgabe
+npm run workflow:continue  # nach menschlichem Eingriff weiter
+```
+
+Blocker-Typen aus `workflow:state`: `RATE_LIMIT`, `UPSTREAM`, `CODE_DEFECT`,
+`UNKNOWN_BLOCKER`.
+
+### Prompt-Caching
+
+Nur stabilen, wiederverwendbaren Kontext cachen (Projektregeln, Tool-Schemata,
+versionierte Context-Packs). Aufgabe, Diffs, Zeitstempel und dynamische
+Tool-Ergebnisse gehören **hinter** den Cache-Breakpoint. Cache-Treffer über die
+tatsächlichen `usage`-Felder prüfen, nicht über Marker.
+
+API-Key ausschließlich über Umgebungsvariable oder Secret-Manager, nie als
+CLI-Argument. Vor dem ersten Aufruf `./api_cost_check.sh` (read-only) und
+`python3 demo_run.py` (offline).
+
+## Dashboard
+
+Die Metriken laufen ohne Token im Browser:
+
+1. `.github/workflows/dashboard-data.yml` läuft bei jedem Issue-Event und stündlich
+2. `scripts/build-dashboard-data.mjs` schreibt `docs/ai-dashboard/issues.json`
+3. `docs/ai-dashboard/index.html` liest **nur** diese JSON-Datei
+
+Lokal: `npm run dashboard` (baut die Daten, serviert auf `:8001`). Keinen
+GitHub-API-Aufruf ins Frontend zurückbauen — ohne Token schlägt er fehl, und ein
+Token in Frontend-JS wäre öffentlich.
+
+Label-Gruppen: `status:*` (eingang, geplant, in-arbeit, review, korrektur,
+blockiert, fertig), `type:*`, `priority:p0`–`p3`, `area:*`.
+`./setup-dashboard.sh` legt sie an.
+
+## Tests
+
+```
+npm test                    # qa:unit:test
+npm run automation:test
+npm run workflow:test
+npm run control:center:test
+npm run qa                  # volle Suite inkl. visuell (nur lokal)
+```
+
 ## Konventionen
 
 - Eigene Blöcke/Snippets tragen das Präfix `tp-`.
@@ -552,50 +230,13 @@ durchlaufen.
 - CSS gehört in `{% stylesheet %}`, nicht in ein inline `<style>` pro Karte —
   letzteres dupliziert die Regeln für jede Produktkarte im Raster.
 - Kommentare und Commit-Messages auf Deutsch, ohne Umlaute in Liquid-Kommentaren.
+- Immer im aktuellen Repository-Root arbeiten; keine absoluten Pfade wie
+  `/Users/tristan/...` — das Repo liegt auf Windows, macOS und Linux.
 - `AppBlockValidTags` aus `theme check` trifft ~140 Dateien inklusive
   Horizon-Kern — bekanntes False-Positive, kein Handlungsbedarf.
 
----
+## Weiterführend
 
-## Troubleshooting
-
-### Repository Path Handling
-
-The repo is cloned on multiple machines (Windows, macOS, Linux). **Always work in the current repo root.** Do not hardcode absolute paths like `/Users/tristan/...` — use relative paths or env vars.
-
-### Theme ID Verification
-
-Before modifying the live theme, **always verify which theme is actually live**:
-```bash
-# Current live-theme when this file was last updated:
-# - theme-productpage-v2-night (ID: 201829679438)
-# - Fallback: Horizon (ID: 196301750606)
-```
-Do not trust stored theme IDs; check Shopify Admin if you're unsure.
-
-### API Call Failures
-
-1. Check env var: `echo $ANTHROPIC_API_KEY` (should not be empty)
-2. Run `./api_cost_check.sh` to verify credentials and budget
-3. Check for rate limits: `npm run openrouter:usage` (if using OpenRouter)
-4. Review API cost reports in `automation/reports/`
-
-### Workflow Blockers
-
-If a task is blocked, `npm run workflow:state` will show the blocker type:
-- `RATE_LIMIT` — throttled by external service
-- `UPSTREAM` — dependency not ready
-- `CODE_DEFECT` — local code issue
-- `UNKNOWN_BLOCKER` — investigate router logs
-
----
-
-## Next Steps for New Contributors
-
-1. Read `AGENTS.md` (central rules)
-2. Run `npm run workflow:test` and `npm run qa:unit:test` to verify setup
-3. Run `./api_cost_check.sh` to confirm API access
-4. Visit the Dashboard: `localhost:8001` (after `npm install`)
-5. Pick a small task from the Dashboard and follow the workflow pattern above
-6. Use `npm run workflow:preview` to dry-run changes, `npm run workflow:live` to publish
->>>>>>> 59b7f00 (🚀 Add Online-Shop Dashboard: Live issue tracking system)
+`AGENTS.md` (zentrale Regeln, zuerst lesen) · `AI_ORCHESTRATOR_MASTER_SPEC.md` ·
+`RISK_MODEL_SPEC.md` · `SHOPIFY_MASTER_ROADMAP.md` · `QUICK_START.md` ·
+`docs/ai-dashboard/`

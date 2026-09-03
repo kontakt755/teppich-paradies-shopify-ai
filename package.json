@@ -13,6 +13,7 @@
     "liquid:guard": "node qa/run-liquid-guard.mjs",
     "schema:guard": "node qa/run-schema-guard.mjs",
     "template:guard": "node qa/run-template-guard.mjs",
+    "theme:guard": "node qa/run-live-theme-guard.mjs",
     "theme:block": "node automation/scripts/theme-block.mjs",
     "theme:diff": "node automation/scripts/theme-diff.mjs",
     "seo:check": "node qa/run-seo-check.mjs",

@@ -1,0 +1,24 @@
+{
+  "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
+  "live": {
+    "themeId": "202917118286",
+    "name": "TP-10-TP-08-Arbeitskopie-2026-08-26",
+    "verifiedAt": "2026-09-03",
+    "verifiedBy": "Shopify Admin API, role MAIN"
+  },
+  "fallback": {
+    "themeId": "196301750606",
+    "name": "Horizon",
+    "note": "Niemals loeschen oder ueberschreiben."
+  },
+  "retired": [
+    {
+      "themeId": "201829679438",
+      "name": "theme-productpage-v2-night",
+      "retiredNoticedAt": "2026-09-03",
+      "note": "Existiert in der Admin API nicht mehr. Stand bis dahin faelschlich als Live-Theme in CLAUDE.md, AGENTS.md und der Roadmap und wurde von Agenten als Fakt weitergegeben. Historische Reports duerfen die ID behalten - sie beschreiben korrekt, was damals galt."
+    }
+  ],
+  "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
+  "verifyHint": "Ueber den Shopify-MCP ausfuehren. Live ist der Knoten mit role MAIN; role UNPUBLISHED sind Preview- und Altthemes."
+}
