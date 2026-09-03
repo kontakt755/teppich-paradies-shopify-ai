@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildEvidence, evidenceLimits, formatEvidenceForConsole } from '../evidence-filter.mjs';
+import { buildEvidence, evidenceLimits, formatEvidenceForConsole, MAX_LOG_LINES } from '../evidence-filter.mjs';
 
 test('A: PASS produces compact PASS evidence', () => {
   const evidence = buildEvidence({ status: 'PASS', exitCode: 0, checks: [], pages: [] });
@@ -22,6 +22,20 @@ test('B: simple FAIL retains the relevant fields', () => {
   assert.equal(evidence.primaryFailure.url, 'https://example.test/products/a');
   assert.equal(evidence.primaryFailure.viewport, 'Mobile');
   assert.equal(evidence.primaryFailure.errorClass, 'assertion');
+});
+
+test('B2: console output is ≤30 lines and includes artifact paths', () => {
+  const evidence = buildEvidence({
+    exitCode: 1,
+    checks: [{ scope: 'Shop-Smoke', page: 'Produkt', viewport: 'Mobile', severity: 'error', message: 'Warenkorbbutton fehlt' }],
+    pages: [{ page: 'Produkt', viewport: 'Mobile', url: 'https://example.test/products/a', finalUrl: 'https://example.test/products/a' }]
+  });
+  const consoleOutput = formatEvidenceForConsole(evidence);
+  const lines = consoleOutput.split('\n');
+  assert.ok(lines.length <= MAX_LOG_LINES, `Expected ≤${MAX_LOG_LINES} lines but got ${lines.length}`);
+  assert.match(consoleOutput, /Rohartefakte lokal:/);
+  assert.match(consoleOutput, /qa\/results\/latest\.json/);
+  assert.match(consoleOutput, /qa\/evidence\/latest-failure\.json/);
 });
 
 test('C: very large logs are sanitized and truncated', () => {
