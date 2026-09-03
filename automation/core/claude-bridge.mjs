@@ -51,5 +51,5 @@ export async function prepareClaudeBridge({ taskId, task, execute = executeOpenR
   });
   const content = buildClaudeContextPack({ classified, policy, analysis: result.text });
   const handoffPath = writeClaudeHandoff({ taskId: classified.id, content, outputDir });
-  return { status: 'READY', classified, policy, handoffPath, route: result.route, usage: result.usage, attempts: result.attempts };
+  return { status: 'READY', classified, policy, analysis: result.text, handoffPath, route: result.route, usage: result.usage, attempts: result.attempts };
 }

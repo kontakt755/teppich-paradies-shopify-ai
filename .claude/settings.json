@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/openrouter-user-prompt.mjs"
+            ],
+            "timeout": 45,
+            "statusMessage": "Router erstellt kompakten Kontext …"
+          }
+        ]
+      }
+    ]
+  }
+}
