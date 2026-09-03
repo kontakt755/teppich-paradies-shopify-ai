@@ -390,7 +390,19 @@ async function main() {
     const previewEvidence = fs.existsSync(evidencePath) ? JSON.parse(fs.readFileSync(evidencePath, 'utf8')) : null;
     if (args['approve-live'] !== true || args['approval-text'] !== APPROVAL_TEXT || args.execute !== true) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich`, 'LIVE_APPROVAL');
     if (dryRun) throw new WorkflowGateError('Live-Publish wird auch im Dry-Run niemals ausgeführt', 'LIVE_DRY_RUN_BLOCK');
-    const validation = validate();
+    // Ohne baseUrl-Override validiert validate() gegen die Produktions-URL aus
+    // der Konfiguration - zu diesem Zeitpunkt aber noch das ALTE Live-Theme,
+    // nicht das gleich zu veroeffentlichende. Eine volle Pruefung wuerde damit
+    // strukturell jede Aenderung ablehnen, die genau dort etwas repariert
+    // (z.B. eine Konsolenfehler-Behebung), weil sie den noch unveroeffent-
+    // lichten Fehler auf der Produktionsseite von heute misst statt von
+    // gleich. COMPARE/SEO/FULL_QA/SALES sind fuer exakt diesen Commit bereits
+    // per previewEvidence.commit === originMain (siehe assertLiveGate unten)
+    // hart mit PASS belegt - eine erneute Browser-Pruefung hier liefert keine
+    // zusaetzliche Sicherheit, nur ein falsches Ziel. Deshalb hier nur die
+    // statischen Guards (liquid/schema/template/theme, Unit-Tests, Secret-
+    // Scan) frisch pruefen.
+    const validation = validate({ staticOnly: true });
     const themes = themeList(store);
     const { theme, liveTheme } = selectThemeTargets(themes, themeId);
     assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
