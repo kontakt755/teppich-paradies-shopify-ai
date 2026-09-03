@@ -38,33 +38,12 @@
   const errorEl = container.querySelector('.tp-google-rating__error-{{ tp_gr_id }}');
 
   async function fetchGoogleRating() {
-    try {
-      const response = await fetch('/api/store/google-rating', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.rating || data.userRatingCount === undefined) {
-        throw new Error('Incomplete rating data');
-      }
-
-      renderRating(data.rating, data.userRatingCount);
-      if (loadingEl) loadingEl.style.display = 'none';
-      contentEl.style.display = 'block';
-
-    } catch (error) {
-      console.warn('Failed to load Google rating:', error);
-      if (loadingEl) loadingEl.style.display = 'none';
-      errorEl.style.display = 'none';
-    }
+    // Backend-Endpunkt /api/store/google-rating ist noch nicht implementiert.
+    // Ein Fetch dorthin würde immer 404 liefern und dabei einen Browser-Konsolenfehler
+    // erzeugen, der sich per try/catch nicht unterdrücken lässt. Widget bleibt bis
+    // zur Implementierung des Endpunkts inaktiv.
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
   }
 
   function renderRating(rating, count) {
