@@ -1,8 +1,8 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "202917118286",
-    "name": "TP-10-TP-08-Arbeitskopie-2026-08-26",
+    "themeId": "203639456078",
+    "name": "Bodenleisten-Preview-2026-09-03",
     "verifiedAt": "2026-09-03",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
@@ -17,6 +17,12 @@
       "name": "theme-productpage-v2-night",
       "retiredNoticedAt": "2026-09-03",
       "note": "Existiert in der Admin API nicht mehr. Stand bis dahin faelschlich als Live-Theme in CLAUDE.md, AGENTS.md und der Roadmap und wurde von Agenten als Fakt weitergegeben. Historische Reports duerfen die ID behalten - sie beschreiben korrekt, was damals galt."
+    },
+    {
+      "themeId": "202917118286",
+      "name": "TP-10-TP-08-Arbeitskopie-2026-08-26",
+      "retiredNoticedAt": "2026-09-03",
+      "note": "Per workflow:live abgeloest durch 203639456078 (npm run workflow:live --theme-id 203639456078 --execute). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
