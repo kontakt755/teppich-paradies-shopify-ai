@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T18:17:43.511Z",
+  "generated_at": "2026-09-03T18:40:56.282Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 29,
   "issues": [
@@ -486,7 +486,7 @@
     {
       "number": 30,
       "title": "🐛 Produktgalerie responsive machen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/30",
       "labels": [
         "status:eingang",
@@ -497,8 +497,8 @@
       "assignee": null,
       "nextStep": "Claude analysiert und implementiert den Fix",
       "created_at": "2026-09-03T09:16:48Z",
-      "updated_at": "2026-09-03T13:44:01Z",
-      "closed_at": null
+      "updated_at": "2026-09-03T18:40:39Z",
+      "closed_at": "2026-09-03T18:40:39Z"
     }
   ]
 }
