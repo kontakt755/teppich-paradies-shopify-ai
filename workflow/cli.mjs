@@ -14,6 +14,23 @@ const [mode = 'validate', ...rawArgs] = process.argv.slice(2);
 const args = parseArgs(rawArgs);
 const dryRun = args['dry-run'] === true;
 
+/**
+ * Unbekannte Flags wurden bisher stillschweigend verworfen. Ein Tippfehler wie
+ * --static-only (statt --static) liess damit die vollstaendige Validierung
+ * inklusive Browser-Schritten laufen, obwohl erkennbar der schnelle Lauf
+ * gemeint war - der Fehlschlag sah dann nach einem echten Problem aus.
+ */
+const KNOWN_FLAGS = new Set([
+  'approval-text', 'approve-live', 'approve-preview', 'base', 'dry-run', 'execute',
+  'local-runner', 'p0', 'p1', 'retry-now', 'static', 'store', 'theme-id', 'title',
+]);
+const unknownFlags = Object.keys(args).filter(flag => !KNOWN_FLAGS.has(flag));
+if (unknownFlags.length > 0) {
+  console.error(`Unbekannte Flags: ${unknownFlags.map(flag => `--${flag}`).join(', ')}`);
+  console.error(`Bekannt sind: ${[...KNOWN_FLAGS].sort().map(flag => `--${flag}`).join(', ')}`);
+  process.exit(2);
+}
+
 function run(command, commandArgs, options = {}) {
   return runBounded(command, commandArgs, { cwd: root, ...options });
 }
@@ -64,6 +81,10 @@ function printSummary(summary) {
     `UNIT/AUTOMATION: ${byId.UNIT === 'PASS' && byId.AUTOMATION === 'PASS' ? 'PASS' : summary.status === 'DRY_RUN' ? 'DRY_RUN' : 'FAIL'}`,
     `QA EVIDENCE: ${byId.QA_EVIDENCE ?? '-'}`,
     `SECRET SCAN: ${byId.SECRET_SCAN ?? '-'}`,
+    // Beide Guards standen bisher in keiner Zeile: sie liefen zwar, aber ein
+    // Fehlschlag zeigte sich nur als "WORKFLOW: FAIL" ohne erkennbare Ursache.
+    `LIQUID GUARD: ${byId.LIQUID_GUARD ?? '-'}`,
+    `SCHEMA GUARD: ${byId.SCHEMA_GUARD ?? '-'}`,
     `COMPARE: ${byId.COMPARE ?? '-'}`,
     `SEO: ${byId.SEO ?? '-'}`,
     `FULL QA: ${byId.FULL_QA ?? '-'}`,

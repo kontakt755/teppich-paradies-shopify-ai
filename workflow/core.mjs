@@ -76,6 +76,10 @@ export function validationSteps(root) {
     // meldet und die Shopify beim Push still verwirft - die Datei fehlt dann
     // im Shop ("Could not find asset ..."), obwohl Push und Check gruen waren.
     { id: 'LIQUID_GUARD', label: 'Liquid Guard', command: process.execPath, args: ['qa/run-liquid-guard.mjs'] },
+    // Faengt Bloecke, die zwar deployen, aber wegen eines kaputten {% schema %}
+    // nicht in der Block-Auswahl des Theme-Editors auftauchen (unbekannte Keys,
+    // fehlendes presets). theme check und Liquid-Guard sehen das nicht.
+    { id: 'SCHEMA_GUARD', label: 'Schema Guard', command: process.execPath, args: ['qa/run-schema-guard.mjs'] },
     { id: 'COMPARE', label: 'Compare', command: process.execPath, args: ['qa/run-compare-check.mjs'], browser: true, report: 'qa/results/compare-readiness.json' },
     { id: 'SEO', label: 'SEO', command: process.execPath, args: ['qa/run-seo-check.mjs'], browser: true, report: 'qa/results/seo-latest.json' },
     { id: 'FULL_QA', label: 'Full QA', command: process.execPath, args: ['qa/run-qa.mjs'], browser: true, report: 'qa/results/latest.json' },

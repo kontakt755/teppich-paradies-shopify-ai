@@ -10,6 +10,7 @@
     "openrouter:usage": "node automation/scripts/openrouter-usage-report.mjs",
     "secret:scan": "node automation/scripts/secret-scan.mjs",
     "liquid:guard": "node qa/run-liquid-guard.mjs",
+    "schema:guard": "node qa/run-schema-guard.mjs",
     "theme:block": "node automation/scripts/theme-block.mjs",
     "seo:check": "node qa/run-seo-check.mjs",
     "sales:check": "node qa/run-sales-readiness.mjs",
