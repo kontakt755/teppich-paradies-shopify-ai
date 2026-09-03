@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T18:40:56.282Z",
+  "generated_at": "2026-09-03T18:45:00.070Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 29,
   "issues": [
@@ -125,7 +125,7 @@
     {
       "number": 51,
       "title": "[Google Ads] Phase 3.3 – Vinylboden Seite optimieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/51",
       "labels": [
         "status:geplant",
@@ -136,8 +136,8 @@
       "assignee": null,
       "nextStep": null,
       "created_at": "2026-09-03T09:40:35Z",
-      "updated_at": "2026-09-03T09:40:35Z",
-      "closed_at": null
+      "updated_at": "2026-09-03T18:44:49Z",
+      "closed_at": "2026-09-03T18:44:49Z"
     },
     {
       "number": 50,
