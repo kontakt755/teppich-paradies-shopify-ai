@@ -1,15 +1,16 @@
 # TEPPICH PARADIES – QA
 
 Status: **WARN**\
-Zeitpunkt: 13.8.2026, 22:01:47\
-Laufzeit: 87.4 s
+Zeitpunkt: 3.9.2026, 22:22:02\
+Laufzeit: 77.8 s\
+QA-Scope: FULL (15/15 Seiten)
 
 ## Theme Check
 
 ✓ 0 neue Errors
 ✓ 0 neue Warnings
-Baseline: 9 Errors / 35 Warnings
-Aktuell: 9 Errors / 35 Warnings
+Baseline: 0 Errors / 32 Warnings
+Aktuell: 0 Errors / 32 Warnings
 
 ## Live Shop
 
@@ -47,8 +48,7 @@ Aktuell: 9 Errors / 35 Warnings
 ## Browser und Bilder
 
 ✓ keine neuen kritischen Console-/Assetfehler\
-⚠ bekannte Baseline-Console-Issues:
-  - header-menu / overflowMenu\
+✓ keine bekannten Console-Baseline-Issues aktiv\
 ✓ kein horizontaler Overflow\
 ✓ sichtbare Bilder geladen\
 ⚠ 30 Drittanbieterhinweise (Details in qa/results/latest-details.json)

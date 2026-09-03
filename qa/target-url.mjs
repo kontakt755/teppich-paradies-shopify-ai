@@ -13,6 +13,30 @@ export function targetUrl(pathname, baseUrl) {
   return target.href;
 }
 
+/**
+ * Prueft anhand der tatsaechlich rendernden Theme-ID, ob die Evidence vom
+ * freigegebenen Preview-Theme stammt.
+ *
+ * Warum nicht ueber die URL: Shopify leitet eine Preview-URL auf die
+ * Hauptdomain um und verwirft dabei den Parameter preview_theme_id - die
+ * Vorschau haengt danach am Cookie. Der Parameter "geht verloren", obwohl
+ * alles korrekt laeuft. window.Shopify.theme.id sagt dagegen direkt, welches
+ * Theme die Seite gerendert hat, und ist damit das belastbarere Signal.
+ *
+ * Die Pruefung bleibt streng: ohne passende Theme-ID gibt es kein PASS.
+ */
+export function validatePreviewTheme(baseUrl, actualThemeId) {
+  const expected = new URL(baseUrl).searchParams.get('preview_theme_id');
+  if (!expected) return { status: 'PASS', expected: null, actual: actualThemeId ?? null };
+  if (actualThemeId === null || actualThemeId === undefined || actualThemeId === '') {
+    return { status: 'FAIL', expected, actual: null, reason: 'Rendernde Theme-ID war nicht auslesbar' };
+  }
+  if (String(actualThemeId) !== String(expected)) {
+    return { status: 'FAIL', expected, actual: String(actualThemeId), reason: 'Gerendert hat ein anderes Theme als das freigegebene Preview-Theme' };
+  }
+  return { status: 'PASS', expected, actual: String(actualThemeId) };
+}
+
 export function validatePreviewContext(baseUrl, finalUrl) {
   const expected = new URL(baseUrl).searchParams.get('preview_theme_id');
   const actual = new URL(finalUrl).searchParams.get('preview_theme_id');

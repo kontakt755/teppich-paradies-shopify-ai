@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { buildEvidence, formatEvidenceForConsole, writeEvidence } from './evidence-filter.mjs';
-import { targetUrl as workflowTargetUrl, validatePreviewContext } from './target-url.mjs';
+import { targetUrl as workflowTargetUrl, validatePreviewContext, validatePreviewTheme } from './target-url.mjs';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
 import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
@@ -256,7 +256,9 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
         bodyText, interactiveText, allInteractiveText, visibleImageCount: visibleImages.length,
         hasVisiblePricePerSquareMeter: pricePerSquareMeterMatches.length > 0,
         pricePerSquareMeterMatches: pricePerSquareMeterMatches.filter((value, index, values) => values.indexOf(value) === index).slice(0, 5),
-        brokenImages, unloadedVisibleImages, emptyPlaceholders
+        brokenImages, unloadedVisibleImages, emptyPlaceholders,
+        // Sagt aus, welches Theme diese Seite tatsaechlich gerendert hat.
+        renderedThemeId: window.Shopify?.theme?.id ?? null
       };
     });
   }
@@ -266,8 +268,14 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   else {
     const status = response?.status() || 0;
     if (!response || status >= 400) add('Live Shop', pageConfig.name, viewportName, 'error', `HTTP ${status || 'ohne Antwort'} für ${targetUrl}`);
+    // Preview wird ueber die gerenderte Theme-ID belegt, nicht ueber die URL:
+    // Shopify verwirft preview_theme_id beim Redirect auf die Hauptdomain und
+    // haelt die Vorschau per Cookie. Die URL-Pruefung bleibt fuer den
+    // umgekehrten Fall - ein Preview-Parameter, den niemand freigegeben hat.
+    const previewTheme = validatePreviewTheme(config.baseUrl, metrics.renderedThemeId);
+    if (previewTheme.status === 'FAIL') add('Live Shop', pageConfig.name, viewportName, 'error', previewTheme.reason, previewTheme);
     const previewContext = validatePreviewContext(config.baseUrl, page.url());
-    if (previewContext.status === 'FAIL') add('Live Shop', pageConfig.name, viewportName, 'error', previewContext.reason, previewContext);
+    if (previewContext.status === 'FAIL' && !/ging verloren/.test(previewContext.reason)) add('Live Shop', pageConfig.name, viewportName, 'error', previewContext.reason, previewContext);
     if (!metrics.title) add('Live Shop', pageConfig.name, viewportName, 'error', 'Seitentitel fehlt');
     if (!metrics.hasHeader) add('Navigation', pageConfig.name, viewportName, 'error', 'Header fehlt');
     if (metrics.mainHeight < 100 || metrics.mainTextLength < 20) add('Live Shop', pageConfig.name, viewportName, 'error', 'Hauptbereich ist offensichtlich leer');
