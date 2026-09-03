@@ -98,19 +98,32 @@ export function writeEvidence(evidence, outputPath) {
 export function formatEvidenceForConsole(evidence) {
   if (evidence.status === 'PASS') return 'QA evidence: PASS – keine relevanten Fehler.';
   const failure = evidence.primaryFailure;
-  return [
+  const metaLines = [
     `QA evidence: FAIL – ${evidence.failureCount} relevante Fehler`,
-    `Check: ${failure.checkName}`, `Fehlerklasse: ${failure.errorClass}`,
+    `Check: ${failure.checkName}`,
     `Assertion: ${failure.firstRelevantAssertion}`,
     failure.url ? `URL: ${failure.url}` : null,
     failure.viewport ? `Viewport: ${failure.viewport}` : null,
     failure.file ? `Datei: ${failure.file}` : null,
-    failure.line ? `Zeile: ${failure.line}` : null,
-    ...failure.relevantLog.map(line => `> ${line}`)
-  ].filter(Boolean).slice(0, 38).join('\n');
+    failure.line ? `Zeile: ${failure.line}` : null
+  ].filter(Boolean);
+  const availableForLog = Math.max(0, MAX_LOG_LINES - metaLines.length);
+  const logLines = failure.relevantLog.slice(0, availableForLog).map(line => `> ${line}`);
+  const result = [
+    ...metaLines,
+    ...(logLines.length ? logLines : []),
+    '',
+    'Rohartefakte lokal:',
+    '  - qa/results/latest.json (QA-Status)',
+    '  - qa/results/latest-details.json (ausführliche Ergebnisse)',
+    '  - qa/evidence/latest-failure.json (strukturierte Evidenz)'
+  ];
+  return result.slice(0, MAX_LOG_LINES).join('\n');
 }
 
 export const evidenceLimits = Object.freeze({
   maxLogLines: MAX_LOG_LINES, maxLineLength: MAX_LINE_LENGTH,
   maxAssertionLength: MAX_ASSERTION_LENGTH, maxAdditionalFailures: 4
 });
+
+export { MAX_LOG_LINES };
