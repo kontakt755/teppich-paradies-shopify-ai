@@ -1,0 +1,188 @@
+{% # Shipping Information Bar Section
+  Display shipping and delivery information for customers
+%}
+
+<style>
+  .shipping-info-bar {
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 2rem;
+    margin: 2rem 0;
+  }
+
+  .shipping-info-bar h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+
+  .shipping-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .shipping-item {
+    text-align: center;
+  }
+
+  .shipping-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .shipping-item h4 {
+    font-size: 0.95rem;
+    margin: 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .shipping-item p {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .shipping-links {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .shipping-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #333;
+    border-radius: 4px;
+    transition: background 0.3s ease;
+  }
+
+  .shipping-link:hover {
+    background: #333;
+    color: white;
+  }
+
+  @media (max-width: 640px) {
+    .shipping-info-bar {
+      padding: 1.5rem 1rem;
+    }
+
+    .shipping-info-bar h3 {
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+
+    .shipping-items {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .shipping-item h4 {
+      font-size: 0.9rem;
+    }
+
+    .shipping-item p {
+      font-size: 0.8rem;
+    }
+
+    .shipping-links {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .shipping-link {
+      display: block;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="shipping-info-bar">
+  <h3>📦 Versand & Lieferung</h3>
+
+  <div class="shipping-items">
+    <div class="shipping-item">
+      <div class="shipping-icon">💳</div>
+      <h4>Versandkosten</h4>
+      <p>Ab 50€ versandkostenfrei</p>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">🚚</div>
+      <h4>Lieferzeit</h4>
+      <p>2–5 Werktage</p>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">🛡️</div>
+      <h4>Versicherung</h4>
+      <p>Kostenlose Versicherung</p>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">↩️</div>
+      <h4>Rückgabe</h4>
+      <p>30 Tage Rückgaberecht</p>
+    </div>
+  </div>
+
+  <div class="shipping-links">
+    <a href="/pages/versand-lieferung" class="shipping-link">Versandrichtlinien</a>
+    <a href="/pages/rueckgaberecht" class="shipping-link">Rückgaberecht</a>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Shipping Information Bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Überschrift",
+      "default": "📦 Versand & Lieferung"
+    },
+    {
+      "type": "text",
+      "id": "shipping_cost",
+      "label": "Versandkosten Text",
+      "default": "Ab 50€ versandkostenfrei"
+    },
+    {
+      "type": "text",
+      "id": "delivery_time",
+      "label": "Lieferzeit Text",
+      "default": "2–5 Werktage"
+    },
+    {
+      "type": "text",
+      "id": "insurance_text",
+      "label": "Versicherung Text",
+      "default": "Kostenlose Versicherung"
+    },
+    {
+      "type": "text",
+      "id": "returns_text",
+      "label": "Rückgabe Text",
+      "default": "30 Tage Rückgaberecht"
+    },
+    {
+      "type": "url",
+      "id": "shipping_policy_link",
+      "label": "Versandrichtlinien Link"
+    },
+    {
+      "type": "url",
+      "id": "returns_policy_link",
+      "label": "Rückgaberecht Link"
+    }
+  ]
+}
+{% endschema %}
