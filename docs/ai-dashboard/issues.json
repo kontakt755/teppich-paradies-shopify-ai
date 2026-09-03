@@ -1,8 +1,24 @@
 {
-  "generated_at": "2026-09-03T19:12:35.671Z",
+  "generated_at": "2026-09-03T19:43:03.249Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 29,
+  "count": 30,
   "issues": [
+    {
+      "number": 92,
+      "title": "🤖 Gestalte das Mega Menu optisch ansprechender vor allem für mobile Ansicht",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/92",
+      "labels": [
+        "type:ux",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": null,
+      "nextStep": null,
+      "created_at": "2026-09-03T19:42:46Z",
+      "updated_at": "2026-09-03T19:42:49Z",
+      "closed_at": null
+    },
     {
       "number": 58,
       "title": "[Google Ads] Phase 5.4 – Skalierungs-Phase (Monat 2–3)",
