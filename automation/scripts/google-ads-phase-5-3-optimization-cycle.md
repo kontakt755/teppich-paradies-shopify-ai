@@ -7,6 +7,10 @@
 **Date:** 2026-09-03  
 **Depends On:** Phase 5.2 (2 weeks monitoring complete), 500+ conversions collected  
 
+**Vertiefendes Referenzmaterial:** Detaillierte Bid-Anpassungslogik und
+Budget-Reallokationsregeln siehe
+`automation/scripts/google-ads-bid-optimization-budget-reallocation.md`.
+
 ---
 
 ## Overview
