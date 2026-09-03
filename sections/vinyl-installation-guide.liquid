@@ -1,0 +1,276 @@
+{% # Vinyl Installation Guide Section
+  Display vinyl flooring installation information and system explanation
+%}
+
+<style>
+  .vinyl-installation {
+    background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+    padding: 3rem 2rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+  }
+
+  .vinyl-installation h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+
+  .vinyl-installation p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .vinyl-systems {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .system-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .system-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: #333;
+  }
+
+  .system-card p {
+    font-size: 0.95rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .installation-steps {
+    background: white;
+    padding: 2rem;
+    border-radius: 6px;
+    margin: 2rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .installation-steps h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #333;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  .step-item:last-child {
+    border-bottom: none;
+  }
+
+  .step-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    background: #333;
+    color: white;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+
+  .step-content h4 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem 0;
+    color: #333;
+  }
+
+  .step-content p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #666;
+  }
+
+  .installation-link {
+    background: #333;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 1rem;
+    transition: background 0.3s ease;
+  }
+
+  .installation-link:hover {
+    background: #555;
+  }
+
+  @media (max-width: 640px) {
+    .vinyl-installation {
+      padding: 2rem 1rem;
+    }
+
+    .vinyl-installation h2 {
+      font-size: 1.5rem;
+    }
+
+    .vinyl-systems {
+      grid-template-columns: 1fr;
+    }
+
+    .installation-steps {
+      padding: 1.5rem;
+    }
+
+    .step-item {
+      gap: 1rem;
+    }
+
+    .installation-link {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="vinyl-installation">
+  <h2>🏗️ Verlegung & Installation</h2>
+  <p>
+    Vinylboden ist einfach zu verlegen und pflegeleicht. Hier finden Sie alles
+    Wichtige über die verschiedenen Verlegesysteme und Installationsschritte.
+  </p>
+
+  <div class="vinyl-systems">
+    <div class="system-card">
+      <h3>🔗 Klick-Vinyl</h3>
+      <p>
+        Schwellenloses Klicksystem für schnelle und einfache Verlegung ohne
+        Kleber oder Schrauben. Ideal für Heimwerker.
+      </p>
+    </div>
+
+    <div class="system-card">
+      <h3>🧴 Klebe-Vinyl</h3>
+      <p>
+        Robuste Verklebung für maximale Stabilität. Besonders geeignet für
+        Feuchträume und hohe Belastung.
+      </p>
+    </div>
+
+    <div class="system-card">
+      <h3>📏 Rollenware</h3>
+      <p>
+        Große Formate zur nahtlosen Verlegung. Bestens für großflächige Räume
+        und Gewerbebereiche.
+      </p>
+    </div>
+  </div>
+
+  <div class="installation-steps">
+    <h3>📋 Verlegungsschritte</h3>
+
+    <div class="step-item">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h4>Untergrund prüfen</h4>
+        <p>
+          Untergrund muss eben, trocken und sauber sein. Bei Unebenheiten
+          (> 2mm) bitte ausgleichen.
+        </p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h4>Akklimatisierung</h4>
+        <p>
+          Material mindestens 24 Stunden bei Raumtemperatur lagern, damit es
+          sich an die Gegebenheiten anpasst.
+        </p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <h4>Verlegung</h4>
+        <p>
+          Je nach System: Klicksystem zusammenstecken oder mit Kleber fixieren.
+          Von einer Ecke diagonal zur anderen verlegen.
+        </p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <h4>Abschlüsse</h4>
+        <p>
+          Übergangsprofile an Türen und Übergängen anbringen. Pflasterleisten
+          verwenden für saubere Raumübergänge.
+        </p>
+      </div>
+    </div>
+
+    <div class="step-item">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <h4>Pflege & Wartung</h4>
+        <p>
+          Regelmäßiges Absaugen und feuchtwischen mit Vinylreiniger. Kratzer
+          sind minimiert durch hohe Verschleißklasse.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <a href="/pages/verlegungsanleitung-vinyl" class="installation-link">
+    → Ausführliche Verlegungsanleitung
+  </a>
+</div>
+
+{% schema %}
+{
+  "name": "Vinyl Installation Guide",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Überschrift",
+      "default": "🏗️ Verlegung & Installation"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Beschreibung",
+      "default": "Vinylboden ist einfach zu verlegen und pflegeleicht."
+    },
+    {
+      "type": "url",
+      "id": "installation_link",
+      "label": "Verlegungsanleitung Link"
+    },
+    {
+      "type": "text",
+      "id": "installation_text",
+      "label": "Link Text",
+      "default": "Ausführliche Verlegungsanleitung"
+    }
+  ]
+}
+{% endschema %}
