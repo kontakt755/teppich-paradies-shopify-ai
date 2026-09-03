@@ -1,135 +1,138 @@
 {% doc %}
-  Farbvarianten als kleine Bild-Thumbnails auf der Produktkarte.
+  Farbvarianten als kleine Vorschaubilder auf der Produktkarte.
 
-  Hintergrund: Die Farben sind bei TeppichParadies als Varianten modelliert
-  ("Farbe 016", "Farbe 021", ...) und haben eigene Produktbilder. Shopify-
-  Option-Swatches sind NICHT gepflegt, deshalb rendert blocks/swatches.liquid
-  bei diesen Produkten nichts. Dieser Block nutzt stattdessen die vorhandenen
-  Variantenbilder.
+  Zeigt pro Farbwert genau EIN Thumbnail (nicht pro Variante) - bei
+  Teppichboden hat dieselbe Farbe oft mehrere Breiten-/Laengenvarianten,
+  die sonst alle dasselbe Bild doppelt anzeigen wuerden.
 
-  Zwei Wege, in dieser Reihenfolge:
-  1. Varianten mit eigenem Bild (featured_media) - Thumbnail verlinkt direkt
-     auf die Variante, damit der Kunde in der gewaehlten Farbe landet.
-  2. Fallback: hat keine Variante ein eigenes Bild, werden die Produktbilder
-     ab dem zweiten gezeigt und auf das Produkt verlinkt. Ohne diesen Fallback
-     bliebe die Karte bei unvollstaendig gepflegten Varianten leer.
-
-  Zeigt nichts an, wenn es nur eine Farbe gibt.
+  Faellt still aus, wenn das Produkt keine Farboption hat: Fixpreis- und
+  Rollenware-Karten ohne Farbauswahl bleiben damit unveraendert.
 {% enddoc %}
 
 {%- liquid
   assign tp_ct_product = closest.product
-  assign tp_ct_id = block.id | replace: '_', '' | downcase
-  assign tp_ct_max = block.settings.max_thumbs
+  assign tp_ct_max = block.settings.max_thumbs | default: 6
 
-  assign tp_ct_variants = tp_ct_product.variants | where: 'featured_media'
-  assign tp_ct_source = 'variant'
-  assign tp_ct_total = tp_ct_variants.size
-
-  unless tp_ct_total > 1
-    assign tp_ct_source = 'image'
-    assign tp_ct_total = tp_ct_product.images.size
-  endunless
+  # Farboption suchen. Shopify erlaubt frei benannte Optionen, deshalb
+  # beide gaengigen Schreibweisen pruefen statt auf "Farbe" zu bestehen.
+  assign tp_ct_position = 0
+  for tp_ct_option in tp_ct_product.options_with_values
+    assign tp_ct_name = tp_ct_option.name | downcase
+    if tp_ct_name contains 'farbe' or tp_ct_name contains 'color' or tp_ct_name contains 'dekor'
+      assign tp_ct_position = tp_ct_option.position
+      assign tp_ct_values = tp_ct_option.values
+      break
+    endif
+  endfor
 -%}
 
-{%- if tp_ct_total > 1 -%}
-  <div class="tp-color-thumbs-{{ tp_ct_id }}" {{ block.shopify_attributes }}>
-    {%- if tp_ct_source == 'variant' -%}
-      {%- for tp_ct_variant in tp_ct_variants limit: tp_ct_max -%}
-        <a
-          class="tp-color-thumb"
-          href="{{ tp_ct_variant.url }}"
-          aria-label="{{ tp_ct_variant.title | escape }}"
-          title="{{ tp_ct_variant.title | escape }}"
-        >
-          <img
-            src="{{ tp_ct_variant.featured_media.preview_image | image_url: width: 96 }}"
-            alt="{{ tp_ct_variant.title | escape }}"
-            width="48"
-            height="48"
-            loading="lazy"
-          >
-        </a>
-      {%- endfor -%}
-    {%- else -%}
-      {%- for tp_ct_image in tp_ct_product.images limit: tp_ct_max -%}
-        <a
-          class="tp-color-thumb"
-          href="{{ tp_ct_product.url }}"
-          aria-label="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
-          title="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
-        >
-          <img
-            src="{{ tp_ct_image | image_url: width: 96 }}"
-            alt="{{ tp_ct_image.alt | default: tp_ct_product.title | escape }}"
-            width="48"
-            height="48"
-            loading="lazy"
-          >
-        </a>
-      {%- endfor -%}
-    {%- endif -%}
+{%- if tp_ct_position > 0 and tp_ct_values.size > 1 -%}
+  {%- liquid
+    assign tp_ct_index = tp_ct_position | minus: 1
+    assign tp_ct_shown = 0
+  -%}
 
-    {%- if tp_ct_total > tp_ct_max -%}
-      {%- assign tp_ct_rest = tp_ct_total | minus: tp_ct_max -%}
-      <a
-        class="tp-color-thumb tp-color-thumb--more"
-        href="{{ tp_ct_product.url }}"
-        aria-label="{{ tp_ct_rest }} weitere Farben ansehen"
-        title="{{ tp_ct_rest }} weitere Farben"
-      >+{{ tp_ct_rest }}</a>
+  <div class="tp-card-color-thumbs" {{ block.shopify_attributes }}>
+    {%- for tp_ct_value in tp_ct_values -%}
+      {%- if tp_ct_shown >= tp_ct_max -%}
+        {%- break -%}
+      {%- endif -%}
+
+      {%- liquid
+        # Erste Variante mit diesem Farbwert suchen, die auch ein Bild hat.
+        assign tp_ct_match = null
+        for tp_ct_variant in tp_ct_product.variants
+          if tp_ct_variant.options[tp_ct_index] == tp_ct_value and tp_ct_variant.featured_media != blank
+            assign tp_ct_match = tp_ct_variant
+            break
+          endif
+        endfor
+      -%}
+
+      {%- if tp_ct_match -%}
+        {%- assign tp_ct_shown = tp_ct_shown | plus: 1 -%}
+        <a
+          class="tp-card-color-thumbs__item"
+          href="{{ tp_ct_match.url }}"
+          title="{{ tp_ct_value | escape }}"
+          aria-label="{{ tp_ct_value | escape }}"
+        >
+          {{
+            tp_ct_match.featured_media
+            | image_url: width: 80
+            | image_tag:
+              loading: 'lazy',
+              width: 40,
+              height: 40,
+              class: 'tp-card-color-thumbs__image',
+              alt: tp_ct_value
+          }}
+        </a>
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- assign tp_ct_rest = tp_ct_values.size | minus: tp_ct_shown -%}
+    {%- if tp_ct_rest > 0 and tp_ct_shown > 0 -%}
+      <span class="tp-card-color-thumbs__more">+{{ tp_ct_rest }}</span>
     {%- endif -%}
   </div>
-
-  <style>
-    .tp-color-thumbs-{{ tp_ct_id }} {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin: 8px 0 0;
-    }
-
-    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb {
-      display: block;
-      width: 34px;
-      height: 34px;
-      border-radius: 5px;
-      overflow: hidden;
-      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.15);
-      transition: border-color 0.15s ease, transform 0.15s ease;
-    }
-
-    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb:hover {
-      border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
-      transform: scale(1.08);
-    }
-
-    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb--more {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
-      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
-      text-decoration: none;
-      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.05);
-    }
-
-    @media screen and (max-width: 749px) {
-      .tp-color-thumbs-{{ tp_ct_id }} .tp-color-thumb {
-        width: 30px;
-        height: 30px;
-      }
-    }
-  </style>
 {%- endif -%}
+
+{% stylesheet %}
+  .tp-card-color-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin: 4px 0 0;
+  }
+
+  .tp-card-color-thumbs__item {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .tp-card-color-thumbs__item:hover,
+  .tp-card-color-thumbs__item:focus-visible {
+    border-color: var(--color-foreground);
+    transform: scale(1.08);
+  }
+
+  .tp-card-color-thumbs__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tp-card-color-thumbs__more {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding-inline: 6px;
+    border-radius: 6px;
+    background-color: rgb(var(--color-foreground-rgb) / var(--opacity-5));
+    font-size: var(--font-size--xs);
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-color-thumbs__item,
+    .tp-card-color-thumbs__more {
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
@@ -139,18 +142,16 @@
     {
       "type": "range",
       "id": "max_thumbs",
-      "label": "Maximal sichtbare Farben",
-      "min": 3,
-      "max": 10,
+      "label": "Maximale Anzahl Farben",
+      "min": 2,
+      "max": 12,
       "step": 1,
-      "default": 6,
-      "info": "Weitere Farben werden als \"+N\" angezeigt."
+      "default": 6
     }
   ],
   "presets": [
     {
-      "name": "TP Farb-Varianten",
-      "category": "t:categories.product"
+      "name": "TP Farb-Varianten"
     }
   ]
 }

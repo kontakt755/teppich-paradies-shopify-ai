@@ -179,12 +179,17 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
             "price_EzJzMm",
+            "tp_card_color_thumbs",
             "tp_card_specs_v1",
             "tp_card_actions_v1"
           ]

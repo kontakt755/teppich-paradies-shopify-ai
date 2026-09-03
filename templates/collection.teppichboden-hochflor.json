@@ -182,12 +182,17 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
-            "price_EzJzMm"
+            "price_EzJzMm",
+            "tp_card_color_thumbs"
           ]
         }
       },
