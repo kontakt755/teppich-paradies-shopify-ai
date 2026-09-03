@@ -183,17 +183,29 @@
 
 .categories {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 28px auto 64px;
   padding: 0 20px;
   box-sizing: border-box;
 }
 
-/* auto-fit/minmax kann bei sehr schmalen Viewports die Spalte nicht unter
-   260px zusammenziehen und dadurch die Seite horizontal aufreissen - hier
-   deshalb eine feste einspaltige Ansicht statt sich auf auto-fit zu verlassen. */
+/* Desktop: 3 Spalten für 3 Kategorien */
+@media (min-width: 900px) {
+  .categories {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Tablet: 2 Spalten */
+@media (min-width: 641px) and (max-width: 899px) {
+  .categories {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile: 1 Spalte */
 @media (max-width: 640px) {
   .categories {
     grid-template-columns: 1fr;
@@ -296,6 +308,21 @@
     <h3>Teppichboden</h3>
     <p>Weich, wohnlich und in vielen Qualitäten – von Velours bis Schlinge.</p>
     <a href="{{ collections['teppichboden'].url }}" class="category-cta">Teppichboden entdecken</a>
+  </div>
+
+  <div class="category-box">
+    <a href="{{ collections['bodenleisten'].url }}">
+      <img
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1158969-8FXC-prod.jpg?width=800"
+        alt="Bodenleisten"
+        loading="lazy"
+        width="800"
+        height="600"
+      >
+    </a>
+    <h3>Bodenleisten</h3>
+    <p>Echtholz, MDF und Kunststoff – hochwertige Bodenleisten für jeden Stil.</p>
+    <a href="{{ collections['bodenleisten'].url }}" class="category-cta">Bodenleisten entdecken</a>
   </div>
 </div>
 
