@@ -83,7 +83,7 @@
               "type": "text",
               "name": "Beschreibung",
               "settings": {
-                "text": "<p>Hochwertige Bodenleisten für jeden Stil - Perfekt abgestimmt auf Ihre Fußböden</p>",
+                "text": "<p>Der perfekte Abschluss für Ihren neuen Boden – in Echtholz, MDF und Kunststoff, passend zu jedem Wohnstil</p>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "center",
@@ -104,11 +104,38 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "hero_materials": {
+              "type": "text",
+              "name": "Materialien",
+              "settings": {
+                "text": "<p>✓ Kostenlose Musterbestellung &nbsp;·&nbsp; ✓ Schnelle Lieferung &nbsp;·&nbsp; ✓ Passend zu allen Bodenbelägen</p>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "center",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "0.9375rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "#FFFFFF",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 8,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
             }
           },
           "block_order": [
             "hero_title",
-            "hero_description"
+            "hero_description",
+            "hero_materials"
           ]
         }
       },
