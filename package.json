@@ -8,6 +8,7 @@
     "qa:evidence:test": "node --test qa/tests/evidence-filter.test.mjs qa/tests/url-sanitizer.test.mjs qa/tests/console-classification.test.mjs qa/tests/browser-infra.test.mjs",
     "automation:test": "node --test automation/tests/*.test.mjs",
     "openrouter:task": "node automation/scripts/openrouter-task.mjs",
+    "claude:route": "node automation/scripts/claude-router.mjs",
     "openrouter:usage": "node automation/scripts/openrouter-usage-report.mjs",
     "secret:scan": "node automation/scripts/secret-scan.mjs",
     "seo:check": "node qa/run-seo-check.mjs",

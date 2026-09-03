@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { executeOpenRouterTask, DEFAULT_MAX_OUTPUT_TOKENS, MAX_OUTPUT_TOKENS } from '../core/openrouter-executor.mjs';
 import { MODEL_CLASS, ROLE, routeTaskPolicy } from '../core/task-router.mjs';
+import { loadLocalOpenRouterEnvironment } from '../core/local-openrouter-env.mjs';
 
 const MODEL_BY_CLASS = Object.freeze({
   [MODEL_CLASS.LIGHT]: process.env.OPENROUTER_LIGHT_MODEL ?? 'cohere/north-mini-code:free',
@@ -30,6 +31,7 @@ function positiveInteger(value, fallback) {
 }
 
 try {
+  loadLocalOpenRouterEnvironment();
   const taskId = requiredArgument('--task-id');
   const risk = requiredArgument('--risk').toUpperCase();
   const taskType = requiredArgument('--task-type').toUpperCase();

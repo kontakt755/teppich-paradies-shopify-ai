@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { callOpenRouterAnthropic } from './openrouter-gateway.mjs';
+import { callOpenRouterAnthropic, callOpenRouterChat } from './openrouter-gateway.mjs';
 
 export const DEFAULT_OPENROUTER_USAGE_LEDGER = '.router/openrouter-usage.jsonl';
 export const DEFAULT_MAX_OUTPUT_TOKENS = 256;
@@ -28,6 +28,21 @@ function responseText(content) {
   return content.filter(block => block?.type === 'text' && typeof block.text === 'string').map(block => block.text).join('');
 }
 
+function normalizedChatResponse(response) {
+  const message = response?.choices?.[0]?.message ?? {};
+  const content = typeof message.content === 'string' ? message.content : '';
+  return {
+    content: content ? [{ type: 'text', text: content }] : [],
+    stop_reason: response?.choices?.[0]?.finish_reason ?? null,
+    usage: {
+      input_tokens: response?.usage?.prompt_tokens,
+      output_tokens: response?.usage?.completion_tokens,
+      cache_read_input_tokens: response?.usage?.prompt_tokens_details?.cached_tokens,
+      cost: response?.usage?.cost,
+    },
+  };
+}
+
 export function normalizeOpenRouterUsage(usage = {}) {
   return {
     inputTokens: finiteNumber(usage.input_tokens) ?? 0,
@@ -52,6 +67,7 @@ export function usageRecord({ taskId, role, route, response, startedAt, finished
     finishedAt,
     durationMs: new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
     stopReason: response.stop_reason ?? null,
+    responseContentTypes: Array.isArray(response.content) ? response.content.map(block => block?.type ?? 'unknown') : [],
     usage: normalizeOpenRouterUsage(response.usage),
   };
 }
@@ -63,15 +79,20 @@ export function appendUsageRecord(record, { ledgerPath = process.env.OPENROUTER_
   return absolutePath;
 }
 
-export async function executeOpenRouterTask({ taskId, role, route, messages, system = undefined, maxTokens = DEFAULT_MAX_OUTPUT_TOKENS, apiKey = process.env.OPENROUTER_API_KEY, call = callOpenRouterAnthropic, recordUsage = appendUsageRecord, now = () => new Date() }) {
+export async function executeOpenRouterTask({ taskId, role, route, messages, system = undefined, reasoning = { enabled: false, exclude: true }, protocol = 'ANTHROPIC', maxTokens = DEFAULT_MAX_OUTPUT_TOKENS, apiKey = process.env.OPENROUTER_API_KEY, call = null, recordUsage = appendUsageRecord, now = () => new Date() }) {
   if (typeof taskId !== 'string' || !taskId.trim()) throw new OpenRouterExecutorError('taskId is required');
   if (typeof role !== 'string' || !role.trim()) throw new OpenRouterExecutorError('role is required');
   if (!Array.isArray(messages) || messages.length === 0) throw new OpenRouterExecutorError('At least one message is required');
   const boundedMaxTokens = integerInRange(maxTokens, 'maxTokens', 16, MAX_OUTPUT_TOKENS);
+  if (!['ANTHROPIC', 'CHAT'].includes(protocol)) throw new OpenRouterExecutorError('protocol must be ANTHROPIC or CHAT');
   const startedAt = now().toISOString();
   let httpResponse;
   try {
-    httpResponse = await call({ route, apiKey, body: { ...(system ? { system } : {}), max_tokens: boundedMaxTokens, messages } });
+    const invoke = call ?? (protocol === 'CHAT' ? callOpenRouterChat : callOpenRouterAnthropic);
+    const body = protocol === 'CHAT'
+      ? { ...(reasoning ? { reasoning } : {}), max_tokens: boundedMaxTokens, messages: [...(system ? [{ role: 'system', content: system }] : []), ...messages] }
+      : { ...(system ? { system } : {}), ...(reasoning ? { reasoning } : {}), max_tokens: boundedMaxTokens, messages };
+    httpResponse = await invoke({ route, apiKey, body });
   } catch (error) {
     throw new OpenRouterExecutorError('OpenRouter task invocation failed', { status: error?.status ?? null, cause: error });
   }
@@ -82,6 +103,7 @@ export async function executeOpenRouterTask({ taskId, role, route, messages, sys
   } catch (error) {
     throw new OpenRouterExecutorError('OpenRouter returned invalid JSON', { cause: error });
   }
+  if (protocol === 'CHAT') response = normalizedChatResponse(response);
   const finishedAt = now().toISOString();
   const record = usageRecord({ taskId, role, route, response, startedAt, finishedAt });
   const ledgerPath = recordUsage(record);

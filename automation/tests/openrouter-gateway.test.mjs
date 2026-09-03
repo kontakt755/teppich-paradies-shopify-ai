@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildOpenRouterAnthropicRequest, callOpenRouterAnthropic, OpenRouterGatewayError } from '../core/openrouter-gateway.mjs';
+import { buildOpenRouterAnthropicRequest, buildOpenRouterChatRequest, callOpenRouterAnthropic, OpenRouterGatewayError } from '../core/openrouter-gateway.mjs';
 
 const route = {
   gateway: 'OPENROUTER', provider: 'OPENROUTER_REVIEW', model: 'anthropic/configured-review-model',
@@ -28,6 +28,13 @@ test('nested OpenRouter model routers and non-sticky routes fail closed', () => 
   }
   assert.throws(() => buildOpenRouterAnthropicRequest({ route: { ...route, sticky: false }, apiKey: 'fixture-key', body: {} }), /sticky cache key/);
   assert.throws(() => buildOpenRouterAnthropicRequest({ route, apiKey: 'fixture-key', body: {}, baseUrl: 'https://example.invalid/api' }), /official HTTPS host/);
+});
+
+test('OpenRouter chat request also pins the exact model and session', () => {
+  const request = buildOpenRouterChatRequest({ route, apiKey: 'fixture-key', body: { messages: [] } });
+  assert.equal(request.url, 'https://openrouter.ai/api/v1/chat/completions');
+  assert.equal(JSON.parse(request.init.body).model, route.model);
+  assert.equal(request.init.headers['x-session-id'], route.cacheSessionKey);
 });
 
 test('gateway returns the raw response for streaming callers without exposing provider error bodies', async () => {

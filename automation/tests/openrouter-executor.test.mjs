@@ -18,14 +18,28 @@ test('executor bounds output, returns text, and records actual reported usage wi
     recordUsage: value => { record = value; return '/tmp/usage.jsonl'; },
   });
   assert.equal(received.body.max_tokens, 32);
+  assert.deepEqual(received.body.reasoning, { enabled: false, exclude: true });
   assert.equal(result.text, 'Erledigt.');
   assert.deepEqual(result.usage, { inputTokens: 11, outputTokens: 7, cacheReadInputTokens: 0, cacheCreationInputTokens: 0, costUsd: 0 });
   assert.equal(record.durationMs, 250);
+  assert.deepEqual(record.responseContentTypes, ['text']);
   assert.equal(JSON.stringify(record).includes('secret prompt'), false);
 });
 
 test('executor fails before a request for invalid token limits', async () => {
   await assert.rejects(() => executeOpenRouterTask({ taskId: 'ROUTE-2', role: 'IMPLEMENTER', route, messages: [{ role: 'user', content: 'x' }], maxTokens: 15, call: async () => { throw new Error('must not call'); } }), OpenRouterExecutorError);
+});
+
+test('chat protocol normalizes an OpenRouter chat completion into visible text and usage', async () => {
+  const result = await executeOpenRouterTask({
+    taskId: 'ROUTE-CHAT', role: 'ANALYST', route, protocol: 'CHAT', messages: [{ role: 'user', content: 'x' }], maxTokens: 32,
+    call: async ({ body }) => {
+      assert.equal(body.messages[0].role, 'user');
+      return { json: async () => ({ choices: [{ finish_reason: 'stop', message: { content: 'Chat OK' } }], usage: { prompt_tokens: 4, completion_tokens: 2, cost: 0 } }) };
+    }, recordUsage: () => '/tmp/usage.jsonl',
+  });
+  assert.equal(result.text, 'Chat OK');
+  assert.equal(result.usage.inputTokens, 4);
 });
 
 test('executor logs but rejects an answer without visible text', async () => {
