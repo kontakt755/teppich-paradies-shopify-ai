@@ -1,0 +1,15 @@
+{% # Live Chat Widget Snippet
+  Include live customer support chat on product and collection pages
+%}
+
+{%- unless snippet.live_chat_disabled -%}
+  <div id="live-chat-widget"></div>
+
+  <style>
+    {% include 'live-chat-widget.css' %}
+  </style>
+
+  <script type="module">
+    {% include 'live-chat-widget-init.js' %}
+  </script>
+{%- endunless -%}
