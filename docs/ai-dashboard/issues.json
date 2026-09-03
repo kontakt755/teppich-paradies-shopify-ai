@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T10:16:24.629Z",
+  "generated_at": "2026-09-03T10:41:06.558Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 29,
   "issues": [
@@ -492,12 +492,13 @@
         "status:eingang",
         "type:bug",
         "priority:p1",
-        "area:produktseite"
+        "area:produktseite",
+        "area:design"
       ],
       "assignee": null,
       "nextStep": "Claude analysiert und implementiert den Fix",
       "created_at": "2026-09-03T09:16:48Z",
-      "updated_at": "2026-09-03T09:16:48Z",
+      "updated_at": "2026-09-03T10:40:53Z",
       "closed_at": null
     }
   ]
