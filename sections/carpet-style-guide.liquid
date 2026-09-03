@@ -1,0 +1,165 @@
+{% # Carpet Style Guide Section
+  Display carpet styling tips and consultation CTA
+%}
+
+<style>
+  .carpet-style-guide {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    padding: 3rem 2rem;
+    border-radius: 8px;
+    margin: 2rem 0;
+  }
+
+  .carpet-style-guide h2 {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+    color: #333;
+  }
+
+  .carpet-style-guide p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .carpet-tips {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .tip-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .tip-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: #333;
+  }
+
+  .tip-card p {
+    font-size: 0.95rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .consultation-cta {
+    background: #333;
+    color: white;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    margin-top: 1rem;
+    transition: background 0.3s ease;
+  }
+
+  .consultation-cta:hover {
+    background: #555;
+  }
+
+  @media (max-width: 640px) {
+    .carpet-style-guide {
+      padding: 2rem 1rem;
+    }
+
+    .carpet-style-guide h2 {
+      font-size: 1.5rem;
+    }
+
+    .carpet-tips {
+      grid-template-columns: 1fr;
+    }
+
+    .consultation-cta {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="carpet-style-guide">
+  <h2>🎨 Stilberatung für Ihren Teppich</h2>
+  <p>
+    Finden Sie den perfekten Teppich für Ihren Einrichtungsstil. Unsere
+    Stilexperten helfen Ihnen, die beste Wahl zu treffen.
+  </p>
+
+  <div class="carpet-tips">
+    <div class="tip-card">
+      <h3>💡 Modern & Minimalistisch</h3>
+      <p>
+        Schlichte Farben, geometrische Muster und hochwertige
+        Materialien. Perfekt für moderne Wohnräume.
+      </p>
+    </div>
+
+    <div class="tip-card">
+      <h3>🏛️ Klassisch & Elegant</h3>
+      <p>
+        Traditionsreiche Designs mit warmen Farbtönen. Zeitlose
+        Eleganz für gehobene Einrichtung.
+      </p>
+    </div>
+
+    <div class="tip-card">
+      <h3>🌍 Orient & Ethno</h3>
+      <p>
+        Authentische Orientteppiche mit kulturellem Reichtum.
+        Bringt Exotik und Wärme in jeden Raum.
+      </p>
+    </div>
+
+    <div class="tip-card">
+      <h3>👨‍👩‍👧‍👦 Familie & Praktisch</h3>
+      <p>
+        Strapazierfähige Materialien und pflegeleichte Designs.
+        Ideal für Haushalte mit Kindern und Haustieren.
+      </p>
+    </div>
+  </div>
+
+  <a href="/pages/stilberatung" class="consultation-cta">
+    → Kostenlose Stilberatung anfragen
+  </a>
+</div>
+
+{% schema %}
+{
+  "name": "Carpet Style Guide",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Überschrift",
+      "default": "🎨 Stilberatung für Ihren Teppich"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Beschreibung",
+      "default": "Finden Sie den perfekten Teppich für Ihren Einrichtungsstil."
+    },
+    {
+      "type": "url",
+      "id": "consultation_link",
+      "label": "Stilberatung Link"
+    },
+    {
+      "type": "text",
+      "id": "consultation_text",
+      "label": "Button Text",
+      "default": "Kostenlose Stilberatung anfragen"
+    }
+  ]
+}
+{% endschema %}

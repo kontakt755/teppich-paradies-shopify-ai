@@ -1,0 +1,160 @@
+{% # Shipping Information Bar
+  Display shipping costs and delivery information prominently
+%}
+
+<style>
+  .shipping-info-bar {
+    background: #f0f0f0;
+    border-left: 4px solid #333;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+  }
+
+  .shipping-info-bar h3 {
+    font-size: 1.1rem;
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .shipping-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .shipping-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .shipping-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    width: 2rem;
+    text-align: center;
+  }
+
+  .shipping-content {
+    flex: 1;
+  }
+
+  .shipping-content strong {
+    display: block;
+    color: #333;
+    margin-bottom: 0.25rem;
+  }
+
+  .shipping-content span {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .shipping-info-bar a {
+    color: #0066cc;
+    text-decoration: none;
+  }
+
+  .shipping-info-bar a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 640px) {
+    .shipping-info-bar {
+      padding: 1rem;
+    }
+
+    .shipping-info-bar h3 {
+      font-size: 1rem;
+    }
+
+    .shipping-items {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+</style>
+
+<div class="shipping-info-bar">
+  <h3>📦 Versand & Lieferung</h3>
+  <div class="shipping-items">
+    <div class="shipping-item">
+      <div class="shipping-icon">🚚</div>
+      <div class="shipping-content">
+        <strong>Versandkosten</strong>
+        <span>Ab €49 versandkostenfrei (D)</span>
+      </div>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">⏱️</div>
+      <div class="shipping-content">
+        <strong>Lieferzeit</strong>
+        <span>3–7 Arbeitstage nach Zahlungseingang</span>
+      </div>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">✅</div>
+      <div class="shipping-content">
+        <strong>Versicherung</strong>
+        <span>Kostenlose Lieferversicherung inkl.</span>
+      </div>
+    </div>
+
+    <div class="shipping-item">
+      <div class="shipping-icon">🔄</div>
+      <div class="shipping-content">
+        <strong>Umtausch & Rückgabe</strong>
+        <span>30 Tage Rückgaberecht</span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size: 0.9rem; color: #666; margin-top: 1rem;">
+    Weitere Informationen finden Sie in unseren
+    <a href="/policies/shipping-policy">Versandbedingungen</a> und
+    <a href="/policies/refund-policy">Rückgabebedingungen</a>.
+  </p>
+</div>
+
+{% schema %}
+{
+  "name": "Shipping Information Bar",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Überschrift",
+      "default": "📦 Versand & Lieferung"
+    },
+    {
+      "type": "textarea",
+      "id": "shipping_costs",
+      "label": "Versandkosten Text",
+      "default": "Ab €49 versandkostenfrei (D)"
+    },
+    {
+      "type": "textarea",
+      "id": "delivery_time",
+      "label": "Lieferzeit Text",
+      "default": "3–7 Arbeitstage nach Zahlungseingang"
+    },
+    {
+      "type": "textarea",
+      "id": "insurance",
+      "label": "Versicherung Text",
+      "default": "Kostenlose Lieferversicherung inkl."
+    },
+    {
+      "type": "textarea",
+      "id": "returns",
+      "label": "Rückgabe Text",
+      "default": "30 Tage Rückgaberecht"
+    }
+  ]
+}
+{% endschema %}
