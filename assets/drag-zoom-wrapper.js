@@ -58,9 +58,11 @@ export class DragZoomWrapper extends Component {
     this.#initResizeListener();
     window.addEventListener(DialogCloseEvent.eventName, this.#resetZoom);
 
-    if (!isMobileBreakpoint()) return;
+    // Always initialize event listeners on mobile, even if viewport might change
+    if (isMobileBreakpoint()) {
+      this.#initEventListeners();
+    }
 
-    this.#initEventListeners();
     this.#updateTransform();
   }
 
