@@ -18,6 +18,12 @@ const seoAdminPath = workflowReportDir ? path.join(workflowReportDir, 'SEO_ADMIN
 const merchantReportPath = workflowReportDir ? path.join(workflowReportDir, 'MERCHANT_READINESS_REPORT.md') : path.join(qaDir, 'MERCHANT_READINESS_REPORT.md');
 const trackingReportPath = workflowReportDir ? path.join(workflowReportDir, 'TRACKING_READINESS.md') : path.join(qaDir, 'TRACKING_READINESS.md');
 const config = JSON.parse(fs.readFileSync(path.join(qaDir, 'seo.config.json'), 'utf8'));
+// Die Hauptdomain aus der Konfiguration festhalten, BEVOR WORKFLOW_BASE_URL
+// sie ueberschreibt. Ein Preview-Lauf zielt auf *.myshopify.com, die
+// Canonicals zeigen dort aber weiterhin korrekt auf die Hauptdomain - genau so
+// gehoert es sich. Ohne diese Trennung meldete der Canonical-Check jede
+// einzelne Seite als "fremder Origin".
+const canonicalOrigin = new URL(config.baseUrl).origin;
 if (process.env.WORKFLOW_BASE_URL) config.baseUrl = process.env.WORKFLOW_BASE_URL;
 const startedAt = new Date();
 const started = Date.now();
@@ -280,7 +286,8 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
   else if (viewportName === 'Desktop') {
     try {
       const canonical = new URL(data.canonical);
-      if (canonical.origin !== new URL(config.baseUrl).origin) add('ERROR', 'CANONICAL_ORIGIN', pageConfig.name, viewportName, `Canonical verweist auf fremden Origin: ${data.canonical}`);
+      const allowedCanonicalOrigins = new Set([canonicalOrigin, new URL(config.baseUrl).origin]);
+      if (!allowedCanonicalOrigins.has(canonical.origin)) add('ERROR', 'CANONICAL_ORIGIN', pageConfig.name, viewportName, `Canonical verweist auf fremden Origin: ${data.canonical}`);
       const finalPath = new URL(page.url()).pathname.replace(/\/$/, '') || '/';
       const canonicalPath = canonical.pathname.replace(/\/$/, '') || '/';
       if (finalPath !== canonicalPath) add('WARN', 'CANONICAL_PATH', pageConfig.name, viewportName, `Canonical-Pfad weicht ab: ${canonicalPath} statt ${finalPath}`);
