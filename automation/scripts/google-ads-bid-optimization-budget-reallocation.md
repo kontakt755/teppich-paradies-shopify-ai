@@ -1,17 +1,29 @@
-# Google Ads Phase 4.2 – Bid Optimization & Budget Reallocation
-## Performance Tuning & ROAS-Based Bidding Guide
+# Google Ads – Bid Optimization & Budget Reallocation
+## Performance Tuning & ROAS-Based Bidding Guide (Supplementary)
 
-**Issue:** #53  
-**Status:** In Development  
-**Priority:** P1  
-**Date:** 2026-09-03  
-**Depends On:** Phase 4.1 (#52) conversion tracking active, 100+ conversions collected  
+**Issue:** Nicht an eine einzelne Issue gebunden – Referenzmaterial für Phase 5.3 (#57)
+**Status:** In Development
+**Priority:** P1
+**Date:** 2026-09-03
+**Depends On:** Phase 4.1 (#52) conversion tracking active, 100+ conversions collected
+
+---
+
+## Hinweis zur Einordnung
+
+Dieses Dokument wurde ursprünglich fälschlich als "Phase 4.2" unter Issue #53
+angelegt. Issue #53 ("UTM Parameter einrichten") wird tatsächlich von
+`automation/scripts/google-ads-phase-4-2-utm-parameters.md` abgedeckt. Der
+Inhalt hier bleibt gültig und wertvoll, ist aber **kein eigenständiger
+Phasen-Schritt** mit zugehöriger Issue – er dient als vertiefendes
+Referenzmaterial für die Bid-Anpassungen, die in Phase 5.3
+("Optimierungs-Cycle", Issue #57) wöchentlich durchgeführt werden.
 
 ---
 
 ## Overview
 
-Phase 4.2 optimizes bids and reallocates budget across Phase 2 campaigns (Teppichboden, Teppiche, Vinylboden) based on actual conversion data and ROAS performance to maximize campaign efficiency and ROI.
+Dieser Guide optimiert Gebote und verteilt Budget über die Phase-2-Kampagnen (Teppichboden, Teppiche, Vinylboden) neu, basierend auf realen Conversion-Daten und ROAS-Performance, um Kampagneneffizienz und ROI zu maximieren.
 
 ### Objectives
 
@@ -459,6 +471,6 @@ Friday Update:
 
 ---
 
-**Status:** Ready for Implementation  
-**Version:** 1.0  
-**Next:** Phase 4.3 (#54) Dashboard, Phase 5 Monitoring & Analysis
+**Status:** Ready for Implementation
+**Version:** 1.0
+**Referenziert von:** Phase 5.3 (#57) Optimierungs-Cycle – dort werden diese Bid-Regeln wöchentlich angewendet
