@@ -57,21 +57,3 @@ jobs:
           path: .sync-reports/
           retention-days: 30
 
-      - name: 💬 Notify on Slack (Optional)
-        if: always() && secrets.SLACK_WEBHOOK
-        uses: slackapi/slack-github-action@v1
-        with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
-          payload: |
-            {
-              "text": "JordanShop Sync Report",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "📊 *JordanShop Sync*\n*Status:* ${{ job.status }}\n*Approved:* ${{ github.event.inputs.approve_sync == 'true' && '✅' || '❌' }}"
-                  }
-                }
-              ]
-            }
