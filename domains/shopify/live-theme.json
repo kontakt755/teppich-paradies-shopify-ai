@@ -1,8 +1,8 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203556880718",
-    "name": "Preview Gallery V2",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
     "verifiedAt": "2026-09-04",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
@@ -10,11 +10,6 @@
     "themeId": "196301750606",
     "name": "Horizon",
     "note": "Niemals loeschen oder ueberschreiben."
-  },
-  "preview": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "note": "Sauberes Preview-Ziel fuer workflow:preview, leer angelegt und damit ohne Altdateien. Wichtig: ein Preview-Push laeuft mit --nodelete, deshalb erreicht previewDiffCount nur auf einem Theme ohne Fremddateien 0. Aeltere Themes als Preview-Ziel scheitern an PREVIEW_DIFF."
   },
   "retired": [
     {
@@ -34,6 +29,12 @@
       "name": "Bodenleisten-Preview-2026-09-03",
       "retiredNoticedAt": "2026-09-04",
       "note": "Per workflow:live abgeloest durch 203556880718 (npm run workflow:live --theme-id 203556880718 --execute, PR #94: gleiche Kartenhoehe + Muster-Button fuer alle Produkte). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203556880718",
+      "name": "Preview Gallery V2",
+      "retiredNoticedAt": "2026-09-04",
+      "note": "Per workflow:live abgeloest durch 203690246478 (npm run workflow:live --theme-id 203690246478 --execute, commits 0e58949 + 072bd8d: gleiche Kartenhoehe + doppelte Preiszeilen fix). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
