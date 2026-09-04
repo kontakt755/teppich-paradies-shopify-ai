@@ -54,6 +54,12 @@ export function publicRun(run) {
     startedAt: run.startedAt,
     finishedAt: run.finishedAt,
     message: run.message,
+    // Die Router-Entscheidung wird schon beim ROUTED-Ereignis festgehalten, nicht
+    // erst im Endergebnis. Sonst geht sie bei einem Dashboard-Neustart mitten im
+    // Lauf verloren - und ein "Erneut ausführen" müsste den Typ neu raten.
+    taskType: ['IMPLEMENTATION', 'ANALYSIS'].includes(run.taskType) ? run.taskType : null,
+    taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'HEURISTIC'].includes(run.taskTypeSource) ? run.taskTypeSource : null,
+    risk: ['HIGH', 'LOW'].includes(run.risk) ? run.risk : null,
     progress: run.progress ? {
       phase: redact(run.progress.phase, 40),
       provider: redact(run.progress.provider, 80),
@@ -72,7 +78,17 @@ export function publicRun(run) {
       // Preserved so a follow-up or a review-only retry never has to re-guess the
       // original task type / risk level / task text from a short new prompt.
       taskType: ['IMPLEMENTATION', 'ANALYSIS'].includes(run.result.taskType) ? run.result.taskType : null,
+      taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'HEURISTIC'].includes(run.result.taskTypeSource) ? run.result.taskTypeSource : null,
       risk: ['HIGH', 'LOW'].includes(run.result.risk) ? run.result.risk : null,
+      // Schutzprüfung: nur bekannte Felder, Dateipfade gekappt.
+      guard: run.result.guard ? {
+        status: redact(run.result.guard.status, 40),
+        message: redact(run.result.guard.message, 600),
+        effectiveRisk: redact(run.result.guard.effectiveRisk, 12),
+        files: Number.isFinite(run.result.guard.files) ? run.result.guard.files : null,
+        changedLines: Number.isFinite(run.result.guard.changedLines) ? run.result.guard.changedLines : null,
+        changedFiles: Array.isArray(run.result.guard.changedFiles) ? run.result.guard.changedFiles.slice(0, 20).map(file => redact(file, 240)) : [],
+      } : null,
       taskText: redact(run.result.taskText, 6_000),
       summary: redact(run.result.result),
       reviewRound: Number.isInteger(run.result.reviewRound) ? run.result.reviewRound : null,
