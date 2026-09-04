@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "description": "JordanShop Kategorien für automatische Synchronisation",
+  "categories": [
+    {
+      "id": "kernsockelleisten",
+      "name": "Kernsockelleisten",
+      "description": "Sockelleisten aus Kunststoff",
+      "active": true,
+      "examples": [
+        {
+          "name": "Döllken CUBU flex life 100",
+          "url_pattern": "jordanshop.de/de-DE/product/",
+          "search_term": "CUBU flex life"
+        }
+      ]
+    },
+    {
+      "id": "vinylboden",
+      "name": "Vinylboden",
+      "description": "Vinyl-Bodenbeläge von der Rolle",
+      "active": false,
+      "note": "Aktivieren wenn bereit",
+      "examples": []
+    },
+    {
+      "id": "teppichboden",
+      "name": "Teppichboden von der Rolle",
+      "description": "Teppichboden verschiedener Hersteller",
+      "active": false,
+      "note": "Aktivieren wenn bereit",
+      "examples": []
+    },
+    {
+      "id": "zubehör",
+      "name": "Zubehör & Befestigung",
+      "description": "Kleber, Unterlage, Profile, etc.",
+      "active": false,
+      "note": "Optional später",
+      "examples": []
+    }
+  ],
+  "sync_settings": {
+    "dry_run_default": true,
+    "require_approval_for_live_sync": true,
+    "max_new_products_without_approval": 10,
+    "report_location": ".sync-reports"
+  }
+}
