@@ -188,7 +188,11 @@ node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLI
 
 Bricht ein Gate ab, ist das ein echter Befund (dreckiger Tree, fehlende
 Evidence, P0/P1-Finding) — dann die Ursache beheben und die Kette erneut
-durchlaufen, niemals das Gate ausbauen. Screenshots und visuelle Pruefung laufen
+durchlaufen, niemals das Gate ausbauen.
+
+`dashboard-data.yml` committet stuendlich `docs/ai-dashboard/issues.json` nach
+`main`. Ein abgelehnter Push mit „fetch first" ist deshalb meist nur dieser Bot
+und kein Konflikt: `git pull --rebase origin main`, dann erneut pushen. Screenshots und visuelle Pruefung laufen
 lokal auf dem Mac ueber die Browser-Tools; nur in Remote-Sessions blockt die
 Egress-Policy die Storefront.
 

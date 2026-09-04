@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // empty' | grep -qE 'workflow:(preview|live)|theme (push|publish)' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Shopify-Deploy-Befehl erkannt: vor dem Ausfuehren .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, falls in dieser Session noch nicht geschehen - dort stehen bereits geloeste Fehler mit funktionierendem Fix.\"}}' || true"
+            "command": "jq -r '.tool_input.command // empty' | grep -qE 'workflow:(preview|live)|theme (push|publish)' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Shopify-Deploy-Befehl erkannt: zuerst npm run workflow:doctor laufen lassen - der meldet alle Blocker in einem Durchlauf statt sechsmal nacheinander. Bei Fehlern zusaetzlich .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, dort stehen bereits geloeste Faelle mit funktionierendem Fix.\"}}' || true"
           }
         ]
       }
