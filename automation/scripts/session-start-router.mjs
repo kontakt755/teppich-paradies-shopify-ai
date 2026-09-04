@@ -21,7 +21,16 @@ function ensureDir(dir) {
 
 function classifyIssues() {
   try {
-    const issues = listOpenIssues();
+    let issues;
+    try {
+      issues = listOpenIssues();
+    } catch (ghError) {
+      if (ghError.message.includes('ENOENT') || ghError.message.includes('gh')) {
+        console.warn('GitHub CLI (gh) nicht verfügbar — Router-Klassifizierung übersprungen.');
+        return;
+      }
+      throw ghError;
+    }
     const classified = issues.map(issue => {
       const routing = routeTask({
         text: `${issue.title}\n\n${issue.url}`,
