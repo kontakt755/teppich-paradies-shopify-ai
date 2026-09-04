@@ -3,8 +3,28 @@ import path from 'node:path';
 import { routeTaskPolicy } from './task-router.mjs';
 import { executeBriefWithFallback } from './brief-provider.mjs';
 
-const HIGH_RISK_TERMS = /\b(preis|price|checkout|zahlung|payment|versand|shipping|produkt.*lösch|delete.*product|dns|domain|live[- ]?theme|veröffentl|publish)\b/i;
-const IMPLEMENTATION_TERMS = /\b(ändere|anpass|fix|reparier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|verschöner|mach)\w*/i;
+// JS-`\b` ist ASCII-basiert und greift vor einem Umlaut nicht: /\bänder/ findet
+// "Ändere" am Satzanfang nicht. Deshalb eine unicode-feste Wortgrenze. Zusammen
+// mit den doppelt geschriebenen Umlauten ("ä" und "ae") deckt das reale
+// Auftraege ab, die haeufig ohne Umlaute hereinkommen ("Aendere die SKU") -
+// genau dort kippte sonst die Sicherheitsstufe.
+const W = '(?<![\\p{L}\\p{N}])';
+const term = body => new RegExp(`${W}(?:${body})[\\p{L}\\p{N}]*`, 'iu');
+
+const HIGH_RISK_TERMS = term('preis|price|checkout|zahlung|payment|versand|shipping|dns|domain|live[- ]?theme|ver(ö|oe)ffentl|publish|sku|variant|steuer|tax|rechtstext|impressum|agb|datenschutz');
+// Loeschen ist nur zusammen mit einem Geschaeftsobjekt HIGH ("Produkt loeschen"),
+// nicht bei "loesche die tote CSS-Regel". Beide Wortstellungen zaehlen.
+const DESTRUCTIVE_TERMS = /(?<![\p{L}\p{N}])(?:(?:lösch|loesch|delete|entfern|remove)[\p{L}]*[\s\S]{0,40}(?:produkt|product|variant|kollektion|collection|kunde|customer|bestellung|order|theme)|(?:produkt|product|variant|kollektion|collection|kunde|customer|bestellung|order|theme)[\p{L}]*[\s\S]{0,40}(?:lösch|loesch|delete|entfern|remove))/iu;
+// Git-Schreibvorgaenge sind laut AGENTS.md und risk-map immer ein Human Gate:
+// sie verlassen die Arbeitskopie und sind nicht mehr lokal zuruecknehmbar.
+const GIT_WRITE_TERMS = term('merge|rebase|force[- ]?push|push|commit|cherry[- ]?pick|revert');
+const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
+// Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
+// Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
+// und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts
+// aendern" stand - der Prompt kam zu spaet, die Permission-Entscheidung faellt
+// vorher.
+const READ_ONLY_INTENT = /(?<![\p{L}\p{N}])(?:nur lesen|rein lesend|read[- ]?only|nur analysier|nur untersuch|nur pr(ü|ue)f|nur berichte|nur bewert|(?:nichts|nicht|keine[a-z]*|ohne)[\s\S]{0,30}(?:(ä|ae)nder|anpass|schreib|implementier|umsetz)|(?:(ä|ae)nder|anpass|schreib|implementier|umsetz)[\p{L}]*[\s\S]{0,20}(?:nichts|keine)|ver(ä|ae)ndere? (?:keine|nichts)|nichts (?:ver)?(ä|ae)ndern)/iu;
 
 export class ClaudeBridgeError extends Error {
   constructor(message, options = {}) {
@@ -20,16 +40,38 @@ function compactTaskId(value) {
 
 const TASK_TYPES = new Set(['IMPLEMENTATION', 'ANALYSIS']);
 
-export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, forceTaskType = null, previousRisk = null }) {
+// Reihenfolge der Wahrheit fuer "darf dieser Lauf schreiben?":
+//   1. declaredTaskType - der Mensch hat es im Dashboard/CLI ausdruecklich gesagt
+//   2. READ_ONLY_INTENT - der aktuelle Auftrag sagt ausdruecklich "nur lesen"
+//   3. forceTaskType    - uebernommener Typ eines frueheren Laufs (Wiederholung)
+//   4. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
+// Das Veto steht bewusst VOR dem geerbten Typ: ein Folgebefehl "Nur lesen,
+// nichts aendern" nach einem Implementierungs-Lauf haette sonst den alten
+// IMPLEMENTATION-Typ geerbt und trotzdem schreibend ausgefuehrt.
+// Nur eine ausdrueckliche Deklaration darf das Veto ueberstimmen.
+export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTaskType = null, forceTaskType = null, previousRisk = null }) {
   if (typeof task !== 'string' || !task.trim()) throw new ClaudeBridgeError('task is required');
-  // Risk can only ever escalate on a repeat/follow-up run: a short retry prompt
-  // ("Versuch es erneut") must never accidentally downgrade a HIGH-risk task to
-  // LOW just because its own text carries none of the risky terms.
-  const risk = HIGH_RISK_TERMS.test(task) || previousRisk === 'HIGH' ? 'HIGH' : 'LOW';
-  // A repeat run keeps the original task type by default; classifying only the
-  // short follow-up text from scratch previously lost IMPLEMENTATION context.
-  const taskType = TASK_TYPES.has(forceTaskType) ? forceTaskType : (IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS');
-  return { id: compactTaskId(taskId), task: task.trim(), risk, taskType };
+  // Risiko eskaliert nur, es sinkt nie: ein kurzer Wiederholungs-Prompt
+  // ("Versuch es erneut") darf einen HIGH-Auftrag nicht auf LOW zurueckstufen,
+  // nur weil sein eigener Text keine riskanten Begriffe enthaelt.
+  const riskyText = HIGH_RISK_TERMS.test(task) || GIT_WRITE_TERMS.test(task) || DESTRUCTIVE_TERMS.test(task);
+  const risk = riskyText || previousRisk === 'HIGH' ? 'HIGH' : 'LOW';
+  let taskType;
+  let taskTypeSource;
+  if (TASK_TYPES.has(declaredTaskType)) {
+    taskType = declaredTaskType;
+    taskTypeSource = 'DECLARED';
+  } else if (READ_ONLY_INTENT.test(task)) {
+    taskType = 'ANALYSIS';
+    taskTypeSource = 'READ_ONLY_INTENT';
+  } else if (TASK_TYPES.has(forceTaskType)) {
+    taskType = forceTaskType;
+    taskTypeSource = 'INHERITED';
+  } else {
+    taskType = IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
+    taskTypeSource = 'HEURISTIC';
+  }
+  return { id: compactTaskId(taskId), task: task.trim(), risk, taskType, taskTypeSource };
 }
 
 export function buildClaudeContextPack({ classified, policy, analysis }) {

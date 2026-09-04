@@ -56,7 +56,16 @@ function readPersistedState() {
     const saved = JSON.parse(fs.readFileSync(dashboardStatePath, 'utf8'));
     const history = Array.isArray(saved.history) ? saved.history.slice(0, MAX_HISTORY) : [];
     if (saved.current) {
-      const interrupted = { ...saved.current, state: 'ERROR', finishedAt: new Date().toISOString(), message: 'Dashboard wurde während dieses Auftrags neu gestartet. Der Auftrag kann unten erneut gestartet werden.' };
+      // Aufgabentext, Router-Entscheidung und die bis dahin sichtbaren
+      // Aktivitaeten bleiben erhalten (sie stecken in saved.current), damit ein
+      // Neustart des Auftrags nicht bei null anfaengt.
+      const activityCount = Array.isArray(saved.current.activities) ? saved.current.activities.length : 0;
+      const interrupted = {
+        ...saved.current,
+        state: 'ERROR',
+        finishedAt: new Date().toISOString(),
+        message: `Dashboard wurde während dieses Auftrags neu gestartet. Auftrag und Einstufung${activityCount ? ` sowie ${activityCount} protokollierte Schritte sind` : ' sind'} erhalten; der Auftrag kann unten erneut gestartet werden.`,
+      };
       history.unshift(interrupted);
     }
     return createDashboardState({ latest: history[0] ?? null, history });
@@ -157,6 +166,7 @@ function progressMessage(event) {
     HARD_FAIL: 'Die unabhängige Prüfung hat einen schweren Fehler erkannt.',
     HUMAN_GATE: 'Diese Änderung benötigt eine ausdrückliche Freigabe.',
     REVIEW_INFRA_FAILED: 'Claude abgeschlossen – unabhängige Prüfung technisch fehlgeschlagen.',
+    GUARD_BLOCKED: 'Eine Schutzprüfung hat den Lauf angehalten.',
   };
   return messages[event.status] || 'Der Auftrag wird weiterverarbeitet.';
 }
@@ -171,6 +181,17 @@ function applyProgress(run, event) {
   }
   run.state = event.status === 'HUMAN_GATE' ? 'HUMAN_GATE' : 'WORKING';
   run.message = progressMessage(event);
+  if (event.status === 'ROUTED') {
+    run.taskType = event.taskType ?? null;
+    run.taskTypeSource = event.taskTypeSource ?? null;
+    run.risk = event.risk ?? null;
+    // Erst jetzt steht fest, ob der Lauf ueberhaupt etwas veraendert. Nur dann
+    // ist ein "in Arbeit"-Kommentar auf GitHub gerechtfertigt.
+    if (event.taskType === 'IMPLEMENTATION' && !run.startSynced) {
+      run.startSynced = true;
+      syncIssue(run, 'WORKING');
+    }
+  }
   run.progress = {
     phase: event.status,
     provider: event.provider ?? run.progress?.provider ?? null,
@@ -200,7 +221,11 @@ function executeRun(run, extraArgs = [], previousWorkerResult = null) {
   run.startedAt = state.startedAt;
   run.message = 'Router prüft Aufgabe und Sicherheitsstufe.';
   persistState();
-  syncIssue(run, 'WORKING');
+  // Bewusst KEIN GitHub-Schreibvorgang vor der Router-Entscheidung: frueher
+  // wurde hier sofort ein "in Arbeit"-Kommentar gepostet, auch fuer rein
+  // lesende Auftraege und fuer solche, die gleich darauf im Human Gate landen.
+  // Der Start-Abgleich passiert jetzt in applyProgress beim ROUTED-Event, und
+  // nur fuer Laeufe, die tatsaechlich etwas veraendern.
   const child = spawn(process.execPath, [agentLoopScript, '--task', run.task, '--task-id', run.id, ...extraArgs], {
     cwd: root,
     env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' },
@@ -233,9 +258,10 @@ function executeRun(run, extraArgs = [], previousWorkerResult = null) {
       result = { ...previousWorkerResult, ...result, reviewRetry: true };
     }
     if (result?.status === 'HUMAN_GATE') finish('HUMAN_GATE', 'Angehalten: Diese Aufgabe braucht eine ausdrückliche Freigabe.', result);
+    else if (result?.status === 'BLOCKED') finish('BLOCKED', result.guard?.message || 'Angehalten: Eine Schutzprüfung hat den Lauf gestoppt. Die Änderungen stehen unverändert in der Arbeitskopie.', result);
     else if (result?.status === 'REVIEW_INFRA_FAILED') finish('REVIEW_INFRA_FAILED', 'Claude abgeschlossen – unabhängige Prüfung technisch fehlgeschlagen. Nur die Prüfung kann unten erneut gestartet werden.', result);
     else if (result?.status === 'REVIEW_FINDINGS') finish('HUMAN_GATE', 'Die erneute Prüfung fand Befunde. Bitte manuell entscheiden oder einen Folgebefehl zur Korrektur starten.', result);
-    else if (result?.status === 'PARKED') finish('ERROR', result.reason === 'MAX_TURNS' ? 'Arbeitsschritt-Limit erreicht. Das Teilresultat und die Kosten stehen unten.' : result.reason === 'MAX_BUDGET' ? 'Analysebudget erreicht. Teilresultat und Kosten stehen unten.' : 'Aufgabe wurde sicher geparkt.', result);
+    else if (result?.status === 'PARKED') finish('ERROR', result.reason === 'MAX_TURNS' ? 'Arbeitsschritt-Limit erreicht. Das Teilresultat und die Kosten stehen unten.' : result.reason === 'MAX_BUDGET' ? 'Analysebudget erreicht. Teilresultat und Kosten stehen unten.' : result.reason === 'API_CORRECTION_LIMIT' ? 'Angehalten zum Kostenschutz: Die Korrektur lief bereits über das kostenpflichtige API-Backup. Die Befunde stehen unten – entscheide selbst, ob eine weitere Runde nötig ist.' : 'Aufgabe wurde sicher geparkt.', result);
     else if (code === 0 && result?.status === 'PASS') finish('PASS', 'Erledigt und durch den Review-Zyklus bestätigt.', result);
     else finish('ERROR', `Nicht abgeschlossen. ${String(errors || output || `Prozessstatus ${code}`).replace(/sk-[A-Za-z0-9_-]+/g, '[geschützt]').slice(-800)}`, result);
   });
@@ -286,11 +312,15 @@ const server = http.createServer(async (request, response) => {
     try {
       const body = JSON.parse(await readBody(request));
       const supplement = sanitizeTask(body.task);
+      const declaredTaskType = TASK_TYPES.has(body.taskType) ? body.taskType : null;
       const isExistingIssue = body.issueNumber !== 'new' && body.issueNumber !== '' && body.issueNumber !== undefined && body.issueNumber !== null;
       let issue = null;
       let task = supplement;
       if (body.issueNumber === 'new') {
-        issue = createOrReuseIssue(supplement);
+        // Ein reiner Analyse-Auftrag veraendert nichts und bekommt deshalb auch
+        // kein neues oeffentliches GitHub-Issue. Frueher wurde hier immer eines
+        // angelegt - noch bevor der Router ueberhaupt entschieden hatte.
+        if (declaredTaskType !== 'ANALYSIS') issue = createOrReuseIssue(supplement);
       } else if (isExistingIssue) {
         const number = parseIssueNumber(body.issueNumber);
         const fullIssue = number ? getIssue(number) : null;
@@ -304,14 +334,16 @@ const server = http.createServer(async (request, response) => {
         }
       }
       const run = makeRun(task, { displayTask: supplement, issue });
-      executeRun(run);
+      executeRun(run, declaredTaskType ? ['--declare-type', declaredTaskType] : []);
       return json(response, 202, { run: publicRun(run) });
     } catch (error) { return json(response, 400, { error: error.message }); }
   }
   if (url.pathname === '/api/follow-ups' && request.method === 'POST') {
     if (state.current) return json(response, 409, { error: 'Eine Aufgabe läuft bereits. Warte auf das Ergebnis.' });
     try {
-      const command = JSON.parse(await readBody(request)).command;
+      const followUpBody = JSON.parse(await readBody(request));
+      const command = followUpBody.command;
+      const declaredFollowUpType = TASK_TYPES.has(followUpBody.taskType) ? followUpBody.taskType : null;
       const previous = publicRun(state.latest);
       const task = buildFollowUpTask(previous, command);
       const run = makeRun(task, { displayTask: command, parentRunId: previous.id, issue: previous.issue ?? null });
@@ -319,8 +351,14 @@ const server = http.createServer(async (request, response) => {
       // from scratch: it inherits the original task's type and risk level so it
       // cannot be silently downgraded to ANALYSIS or LOW-risk.
       const extraArgs = [];
-      if (TASK_TYPES.has(previous?.result?.taskType)) extraArgs.push('--task-type', previous.result.taskType);
-      if (previous?.result?.risk) extraArgs.push('--previous-risk', previous.result.risk);
+      // Eine ausdrueckliche Wahl beim Folgebefehl schlaegt den geerbten Typ.
+      if (declaredFollowUpType) extraArgs.push('--declare-type', declaredFollowUpType);
+      // Ein abgebrochener Lauf hat kein Endergebnis - dann zaehlt die beim
+      // ROUTED-Ereignis festgehaltene Entscheidung des Laufs selbst.
+      const inheritedType = previous?.result?.taskType ?? previous?.taskType;
+      const inheritedRisk = previous?.result?.risk ?? previous?.risk;
+      if (TASK_TYPES.has(inheritedType)) extraArgs.push('--task-type', inheritedType);
+      if (inheritedRisk) extraArgs.push('--previous-risk', inheritedRisk);
       executeRun(run, extraArgs);
       return json(response, 202, { run: publicRun(run) });
     } catch (error) { return json(response, 400, { error: error.message }); }

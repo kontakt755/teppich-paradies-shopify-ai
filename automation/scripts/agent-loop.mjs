@@ -24,10 +24,16 @@ try {
     const task = argument('--task');
     if (!task) throw new Error('Missing --task');
     const maxReviewRounds = Number(argument('--max-review-rounds') ?? 3);
+    // --declare-type ist die ausdrueckliche Absicht des Menschen und schlaegt
+    // jede Worterkennung. --analyze-only ist die Kurzform fuer "nur lesen":
+    // damit kann ein Analyse-Auftrag nicht mehr an einem Substantiv in einen
+    // schreibenden Lauf kippen.
+    const declaredTaskType = process.argv.includes('--analyze-only') ? 'ANALYSIS' : argument('--declare-type');
     result = await runCliAgentCycle({
       task,
       taskId: argument('--task-id') ?? `AGENT-${Date.now()}`,
       maxReviewRounds,
+      declaredTaskType,
       forceTaskType: argument('--task-type'),
       previousRisk: argument('--previous-risk'),
       onState,

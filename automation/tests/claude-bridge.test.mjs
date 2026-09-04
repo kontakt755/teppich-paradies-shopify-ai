@@ -43,6 +43,69 @@ test('an invalid or missing forceTaskType falls back to text classification', ()
   assert.equal(result.taskType, 'ANALYSIS');
 });
 
+// Realer Vorfall (Lauf ROUTER-SELF-CHECK-1, 2026-09-04): Der Auftrag lautete
+// "Analysiere ... Verbesserungsmoeglichkeiten ... Nur lesen, nichts aendern".
+// Das Substantiv "Verbesserungsmoeglichkeiten" traf die Verb-Wortliste, der
+// Lauf startete mit --permission-mode auto und veraenderte Dateien.
+test('a noun that merely contains an action verb never turns a read-only task into a writing run', () => {
+  const result = classifyClaudeRequest({ task: 'Analysiere den Code auf konkrete Verbesserungsmoeglichkeiten. Nur lesen, nichts aendern.' });
+  assert.equal(result.taskType, 'ANALYSIS');
+  assert.equal(result.taskTypeSource, 'READ_ONLY_INTENT');
+});
+
+test('an explicitly declared task type always beats the word list', () => {
+  const declaredRead = classifyClaudeRequest({ task: 'Gestalte das Mega Menu schöner und optimiere die Titel.', declaredTaskType: 'ANALYSIS' });
+  assert.equal(declaredRead.taskType, 'ANALYSIS');
+  assert.equal(declaredRead.taskTypeSource, 'DECLARED');
+  const declaredWrite = classifyClaudeRequest({ task: 'Sieh dir die Navigation an.', declaredTaskType: 'IMPLEMENTATION' });
+  assert.equal(declaredWrite.taskType, 'IMPLEMENTATION');
+  // Die Deklaration schlaegt auch einen uebernommenen Typ aus einem Vorlauf.
+  const declaredBeatsInherited = classifyClaudeRequest({ task: 'Versuch es erneut.', declaredTaskType: 'ANALYSIS', forceTaskType: 'IMPLEMENTATION' });
+  assert.equal(declaredBeatsInherited.taskType, 'ANALYSIS');
+});
+
+// Von der unabhaengigen Codex-Pruefung gefunden: der geerbte Typ eines
+// Implementierungs-Laufs schlug frueher das Lese-Veto. Ein Folgebefehl
+// "Nur lesen, nichts aendern" waere damit trotzdem schreibend ausgefuehrt worden.
+test('an explicitly read-only follow-up beats the inherited implementation type', () => {
+  const result = classifyClaudeRequest({ task: 'Nur lesen und berichten, nichts ändern.', forceTaskType: 'IMPLEMENTATION' });
+  assert.equal(result.taskType, 'ANALYSIS');
+  assert.equal(result.taskTypeSource, 'READ_ONLY_INTENT');
+  // Eine ausdrueckliche Deklaration darf das Veto weiterhin ueberstimmen.
+  const declared = classifyClaudeRequest({ task: 'Nur lesen und berichten, nichts ändern.', declaredTaskType: 'IMPLEMENTATION', forceTaskType: 'IMPLEMENTATION' });
+  assert.equal(declared.taskType, 'IMPLEMENTATION');
+  assert.equal(declared.taskTypeSource, 'DECLARED');
+});
+
+test('read-only intent is recognized in several natural German phrasings', () => {
+  for (const task of [
+    'Pruefe die Filteransicht, aendere nichts.',
+    'Analysiere die Navigation und veraendere keine Dateien.',
+    'Sieh dir das an, ohne Aenderungen vorzunehmen.',
+    'Nur pruefen bitte.',
+  ]) {
+    assert.equal(classifyClaudeRequest({ task }).taskType, 'ANALYSIS', task);
+  }
+});
+
+// JS-\b ist ASCII-basiert und greift vor einem Umlaut nicht; reale Auftraege
+// kommen ausserdem oft ohne Umlaute herein.
+test('protected operations stay HIGH with and without German umlauts', () => {
+  for (const task of [
+    'Ändere die SKU von Produkt X', 'Aendere die SKU von Produkt X',
+    'Ändere die Varianten des Teppichs', 'Aendere die Varianten des Teppichs',
+    'Passe die Steuer-Einstellungen an', 'Veroeffentliche das Theme',
+    'Loesche das Produkt', 'Lösche das Produkt',
+    'Merge den Branch nach main', 'Pushe die Aenderung',
+  ]) {
+    assert.equal(classifyClaudeRequest({ task }).risk, 'HIGH', task);
+  }
+});
+
+test('deleting ordinary code is not a protected business deletion', () => {
+  assert.equal(classifyClaudeRequest({ task: 'Loesche die tote CSS-Regel im Snippet.' }).risk, 'LOW');
+});
+
 test('risk can only escalate on a repeat run, never be silently downgraded', () => {
   const stillHigh = classifyClaudeRequest({ task: 'Versuch es erneut.', previousRisk: 'HIGH' });
   assert.equal(stillHigh.risk, 'HIGH');

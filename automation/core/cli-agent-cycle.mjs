@@ -4,6 +4,7 @@ import { spawn as spawnProcess, spawnSync } from 'node:child_process';
 import { classifyClaudeRequest } from './claude-bridge.mjs';
 import { appendUsageRecord } from './openrouter-executor.mjs';
 import { runReviewCorrectionCycle } from './review-cycle.mjs';
+import { diffSinceSnapshot, evaluateDashboardGuards, loadDashboardRiskMap, snapshotWorkingTree } from './dashboard-guards.mjs';
 
 const REVIEW_SCHEMA = path.resolve('automation/schemas/review-result.schema.json');
 
@@ -266,19 +267,36 @@ export function runReviewOnly({ taskText, taskType = 'IMPLEMENTATION', candidate
   }
 }
 
-export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, forceTaskType = null, previousRisk = null }) {
-  const classified = classifyClaudeRequest({ taskId, task, forceTaskType, previousRisk });
-  onState?.({ status: 'ROUTED', risk: classified.risk, taskType: classified.taskType });
+export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
+  const classified = classifyClaudeRequest({ taskId, task, declaredTaskType, forceTaskType, previousRisk });
+  onState?.({ status: 'ROUTED', risk: classified.risk, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource });
   if (classified.risk === 'HIGH') {
     onState?.({ status: 'HUMAN_GATE', risk: classified.risk });
     return { status: 'HUMAN_GATE', reason: 'HIGH-risk task is not executed by the unattended CLI loop', classified };
   }
   let phase = 'IMPLEMENT';
+  let apiCorrections = 0;
+  const maxApiCorrections = Number(process.env.AGENT_LOOP_API_MAX_CORRECTIONS ?? 1);
+  // Bezugspunkt vor dem ersten Worker-Lauf: nur was DIESER Lauf zusaetzlich
+  // veraendert, darf ihm angelastet werden.
+  const riskMap = guardsEnabled ? loadDashboardRiskMap({ cwd }) : null;
+  const baseline = riskMap ? snapshotWorkingTree({ cwd }) : null;
+  // Prueft den tatsaechlichen Diff gegen Risiko-Karte und Umfang. `BLOCKED` ist
+  // in review-cycle bereits ein Terminal-Status, der das Worker-Ergebnis behaelt
+  // - es geht also nichts verloren, es wird nur nicht als fertig ausgegeben.
+  const guardCandidate = candidate => {
+    if (!riskMap || !baseline) return candidate;
+    const changes = diffSinceSnapshot(baseline, snapshotWorkingTree({ cwd }));
+    const verdict = evaluateDashboardGuards({ taskType: classified.taskType, risk: classified.risk, changes, riskMap });
+    if (verdict.status === 'PASS') return { ...candidate, guard: verdict };
+    onState?.({ status: 'GUARD_BLOCKED', guardStatus: verdict.status, message: verdict.message });
+    return { ...candidate, status: 'BLOCKED', guard: verdict, reason: verdict.status };
+  };
   const result = await runReviewCorrectionCycle({
     task: classified,
     maxReviewRounds,
     providerTimeoutMs: timeoutMs,
-    implement: async () => runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState }),
+    implement: async () => guardCandidate(await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState })),
     review: async (_task, candidate, metadata) => {
       let result;
       try {
@@ -293,11 +311,23 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
       if (result.status === 'HUMAN_GATE') return { status: 'SECURITY_STOP' };
       return { status: result.status === 'PASS' ? 'PASS' : 'REVIEW_FINDINGS', findings: result.findings };
     },
-    correct: async (_task, _candidate, findings) => {
+    correct: async (_task, candidate, findings) => {
+      // Kostenbremse: Solange Claude Code Pro laeuft, sind Korrekturrunden
+      // gratis und duerfen bis maxReviewRounds gehen. Sobald der Worker auf die
+      // kostenpflichtige API ausgewichen ist, kostet jede weitere Runde echtes
+      // Geld - und ein Reviewbefund ist nicht zwingend richtig. Deshalb dort
+      // nur eine automatische Korrektur; danach entscheidet der Mensch.
+      if (candidate?.authMode === 'API') {
+        if (apiCorrections >= maxApiCorrections) {
+          onState?.({ status: 'API_CORRECTION_LIMIT', corrections: apiCorrections });
+          return { ...candidate, status: 'PARKED', reason: 'API_CORRECTION_LIMIT', findings };
+        }
+        apiCorrections += 1;
+      }
       phase = 'CORRECT';
-      return runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState });
+      return guardCandidate(await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState }));
     },
     onState,
   });
-  return { ...result, taskId: classified.id, taskText: classified.task, taskType: classified.taskType, risk: classified.risk, lastWorkerPhase: phase };
+  return { ...result, taskId: classified.id, taskText: classified.task, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource, risk: classified.risk, lastWorkerPhase: phase };
 }

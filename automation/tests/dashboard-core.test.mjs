@@ -27,6 +27,36 @@ test('follow-up task carries bounded previous context without exposing it as dis
   assert.throws(() => buildFollowUpTask(null, 'Weiter'), /noch kein Ergebnis/);
 });
 
+// Von der unabhaengigen Codex-Pruefung gefunden: waehrend eines laufenden
+// Auftrags gibt es noch kein Endergebnis. Wurde das Dashboard in dem Moment
+// neu gestartet, war die Router-Entscheidung weg und ein Neustart des Auftrags
+// haette Typ und Sicherheitsstufe neu raten muessen.
+test('the router decision survives a dashboard restart even without a final result', () => {
+  const run = makeRun('Gestalte das Mega Menu schöner');
+  run.state = 'WORKING';
+  run.taskType = 'IMPLEMENTATION';
+  run.taskTypeSource = 'DECLARED';
+  run.risk = 'LOW';
+  run.activities = [{ at: new Date().toISOString(), kind: 'Read', message: 'Liest Datei: AGENTS.md' }];
+  const persisted = publicRun(run);
+  assert.equal(persisted.result, null);
+  assert.equal(persisted.taskType, 'IMPLEMENTATION');
+  assert.equal(persisted.taskTypeSource, 'DECLARED');
+  assert.equal(persisted.risk, 'LOW');
+  assert.equal(persisted.activities.length, 1);
+  // Und der Wert übersteht auch das erneute Durchreichen beim Neuladen.
+  assert.equal(publicRun(persisted).taskType, 'IMPLEMENTATION');
+});
+
+test('an invalid persisted task type is dropped instead of trusted', () => {
+  const run = makeRun('Irgendwas');
+  run.taskType = 'SOMETHING_ELSE';
+  run.risk = 'MAYBE';
+  const persisted = publicRun(run);
+  assert.equal(persisted.taskType, null);
+  assert.equal(persisted.risk, null);
+});
+
 test('dashboard usage totals provider records', () => {
   assert.deepEqual(summarizeUsage([{ provider: 'GOOGLE', inputTokens: 4, outputTokens: 2, costUsd: 0 }, { provider: 'OPENROUTER', inputTokens: 3, outputTokens: 1, costUsd: 0.01 }]), {
     requests: 2, inputTokens: 7, outputTokens: 3, costUsd: 0.01,

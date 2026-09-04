@@ -9,7 +9,13 @@ let lastIssueAttempt = 0;
 // At least 3 decimals so a 0.135 USD API-backup cost is never rounded away.
 function money(value) { return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'USD', minimumFractionDigits: 3, maximumFractionDigits: 6 }).format(Number(value || 0)); }
 function number(value) { return new Intl.NumberFormat('de-DE').format(Number(value || 0)); }
-function label(state) { return ({ QUEUED: 'Eingeplant', ROUTING: 'Router entscheidet …', WORKING: 'Ausführung läuft …', PASS: 'Fertig', HUMAN_GATE: 'Freigabe nötig', ERROR: 'Nicht abgeschlossen', REVIEW_INFRA_FAILED: 'Claude erfolgreich – Prüfung technisch fehlgeschlagen' })[state] || state; }
+function label(state) { return ({ QUEUED: 'Eingeplant', ROUTING: 'Router entscheidet …', WORKING: 'Ausführung läuft …', PASS: 'Fertig', HUMAN_GATE: 'Freigabe nötig', ERROR: 'Nicht abgeschlossen', REVIEW_INFRA_FAILED: 'Claude erfolgreich – Prüfung technisch fehlgeschlagen', BLOCKED: 'Angehalten – bitte selbst ansehen' })[state] || state; }
+function intentLabel(taskType, source) {
+  if (!taskType) return null;
+  const mode = taskType === 'ANALYSIS' ? 'Nur ansehen' : 'Umsetzen';
+  const why = { DECLARED: 'von dir festgelegt', INHERITED: 'aus dem vorherigen Auftrag übernommen', READ_ONLY_INTENT: 'im Auftragstext ausdrücklich als lesend formuliert', HEURISTIC: 'automatisch aus dem Text erkannt' }[source];
+  return why ? `${mode} (${why})` : mode;
+}
 function phaseLabel(phase) { return ({ ROUTED: 'Aufgabe klassifiziert', IMPLEMENT: 'Umsetzung & Tests', PROVIDER: 'KI arbeitet', FALLBACK: 'API-Backup aktiv', REVIEW: 'Codex-Review', REVIEW_FINDINGS: 'Befunde erkannt', CORRECTION_REQUIRED: 'Korrektur beauftragt', CORRECT: 'Korrektur & neuer Test', REVIEW_LIMIT_REACHED: 'Review-Limit', HARD_FAIL: 'Schwerer Befund', HUMAN_GATE: 'Freigabe nötig' })[phase] || phase; }
 async function request(url, options) {
   const response = await fetch(url, { headers: { 'content-type': 'application/json', ...(options?.headers || {}) }, ...options });
@@ -66,8 +72,18 @@ function renderResult(run) {
   target.replaceChildren();
   const status = document.createElement('strong'); status.textContent = `Abschluss: ${result.status}`; target.append(status);
   if (run.issue?.url) { const issue = document.createElement('a'); issue.href = run.issue.url; issue.target = '_blank'; issue.rel = 'noreferrer'; issue.className = 'issue-link'; issue.textContent = `Online-Shop-Aufgabe #${run.issue.number} öffnen`; target.append(issue); }
-  const facts = [result.provider, result.reviewRound ? `Review-Runde ${result.reviewRound}` : null, Number.isFinite(result.costUsd) && result.costUsd > 0 ? `Kosten: ${money(result.costUsd)}` : null].filter(Boolean);
+  const facts = [intentLabel(result.taskType, result.taskTypeSource), result.provider, result.reviewRound ? `Review-Runde ${result.reviewRound}` : null, Number.isFinite(result.costUsd) && result.costUsd > 0 ? `Kosten: ${money(result.costUsd)}` : null].filter(Boolean);
   if (facts.length) { const meta = document.createElement('p'); meta.className = 'result-meta'; meta.textContent = facts.join(' · '); target.append(meta); }
+  if (result.guard && result.guard.status !== 'PASS') {
+    const guard = document.createElement('p'); guard.className = 'guard-warning';
+    guard.textContent = result.guard.message || 'Der Lauf wurde von einer Schutzprüfung angehalten.';
+    target.append(guard);
+    if (result.guard.changedFiles?.length) {
+      const list = document.createElement('ul'); list.className = 'guard-files';
+      for (const file of result.guard.changedFiles.slice(0, 20)) { const item = document.createElement('li'); item.textContent = file; list.append(item); }
+      target.append(list);
+    }
+  }
   if (result.reason) { const reason = document.createElement('p'); reason.textContent = result.reason; target.append(reason); }
   if (result.reviewError) { const reviewError = document.createElement('p'); reviewError.className = 'sync-error'; reviewError.textContent = `Technischer Prüf-Fehler: ${result.reviewError}`; target.append(reviewError); }
   if (result.summary) { const summary = document.createElement('pre'); summary.textContent = result.summary; target.append(summary); }
@@ -150,7 +166,7 @@ $('#login-form').addEventListener('submit', async event => {
 $('#task-form').addEventListener('submit', async event => {
   event.preventDefault();
   const button = $('#submit'); button.disabled = true;
-  try { await request('/api/tasks', { method: 'POST', body: JSON.stringify({ task: $('#task').value, issueNumber: $('#issue-number').value || null }) }); $('#task').value = ''; await refresh(); }
+  try { await request('/api/tasks', { method: 'POST', body: JSON.stringify({ task: $('#task').value, issueNumber: $('#issue-number').value || null, taskType: document.querySelector('input[name="task-type"]:checked')?.value || null }) }); $('#task').value = ''; await refresh(); }
   catch (error) { alert(error.message); }
   finally { button.disabled = false; }
 });

@@ -122,6 +122,55 @@ test('a technical Codex review failure never discards a completed Claude result 
   assert.equal(claudeCalls, 1);
 });
 
+// Von der unabhaengigen Codex-Pruefung gefunden: jeder P1/P2-Befund loeste
+// automatisch eine weitere Claude-Runde aus - auch ueber das kostenpflichtige
+// API-Backup und auch dann, wenn der Befund gar nicht zwingend richtig ist.
+test('automatic correction rounds stop after one paid API round instead of spending three', async () => {
+  const previous = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'fixture-api-key';
+  let apiWorkerCalls = 0;
+  const finding = () => ({ priority: 'P1', file: 'automation/x.mjs', problem: 'Ein Problem', reason: 'Ein Grund', recommendedFix: 'Ein Fix' });
+  const spawn = (_command, args, options) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    if (!options.env.ANTHROPIC_API_KEY) return { status: 1, stdout: '', stderr: 'Usage limit reached; resets later' };
+    apiWorkerCalls += 1;
+    return { status: 0, stdout: JSON.stringify({ result: 'ueber API erledigt', usage: {}, total_cost_usd: 0.13 }), stderr: '' };
+  };
+  try {
+    const result = await runCliAgentCycle({
+      task: 'Repariere einen kleinen lokalen Testfehler',
+      spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
+      review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
+    });
+    assert.equal(result.status, 'PARKED');
+    assert.equal(result.reason, 'API_CORRECTION_LIMIT');
+    // Erster Lauf plus genau eine bezahlte Korrektur - nicht drei.
+    assert.equal(apiWorkerCalls, 2);
+    // Das bereits Erarbeitete bleibt erhalten.
+    assert.equal(result.result, 'ueber API erledigt');
+  } finally {
+    if (previous === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = previous;
+  }
+});
+
+test('correction rounds stay unlimited while the free Pro subscription is doing the work', async () => {
+  let workerCalls = 0;
+  let reviews = 0;
+  const finding = () => ({ priority: 'P1', file: 'automation/x.mjs', problem: 'Ein Problem', reason: 'Ein Grund', recommendedFix: 'Ein Fix' });
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    workerCalls += 1;
+    return { status: 0, stdout: JSON.stringify({ result: 'Pro erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const result = await runCliAgentCycle({
+    task: 'Repariere einen kleinen lokalen Testfehler',
+    spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
+    review: () => (++reviews >= 3 ? { status: 'PASS', findings: [] } : { status: 'CHANGES_REQUIRED', findings: [finding()] }),
+  });
+  assert.equal(result.status, 'PASS');
+  assert.equal(workerCalls, 3);
+});
+
 test('unattended loop refuses API spending when Pro is not logged in', async () => {
   const previous = process.env.ANTHROPIC_API_KEY;
   process.env.ANTHROPIC_API_KEY = 'fixture-api-key';
