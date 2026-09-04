@@ -78,6 +78,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschütztes Live-Theme |
+| `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
 
@@ -155,6 +156,12 @@ deshalb `--static`. Deploys laufen lokal.
   interne Paketpreis und gehört nicht prominent auf die Kollektionskarte.
 - Produkteigenschaften nicht erfinden und nicht aus Bildern ableiten. Im Zweifel
   als offenen Fall dokumentieren.
+- **Farbcodes werden abgeschrieben, nie fortgesetzt.** Am 2026-09-04 führte
+  „Elastium Linoleumboden" 24 Farbvarianten, von denen 21 erfunden waren: ab
+  4290 war lückenlos hochgezählt worden. Die Anzahl stimmte damit, der Inhalt
+  nicht — **24 = 24 ist keine Prüfung**, verglichen werden die Codes selbst.
+  Echte Lieferantenlisten haben Lücken, weil sie gewachsen sind.
+  `npm run farbcode:guard` findet das Zählmuster.
 
 ## Fertige Features — nicht neu bauen
 

@@ -1,0 +1,26 @@
+[
+  {
+    "titel": "Elastium Linoleumboden 200cm",
+    "status": "ACTIVE",
+    "produktId": "gid://shopify/Product/16045140771150",
+    "codes": ["Farbe 4276", "Farbe 4289", "Farbe 4290", "Farbe 4291", "Farbe 4292", "Farbe 4293", "Farbe 4294", "Farbe 4295", "Farbe 4296", "Farbe 4297", "Farbe 4298", "Farbe 4299", "Farbe 4300", "Farbe 4301", "Farbe 4302", "Farbe 4303", "Farbe 4304", "Farbe 4305", "Farbe 4306", "Farbe 4307", "Farbe 4308", "Farbe 4309", "Farbe 4310", "Farbe 4311"]
+  },
+  {
+    "titel": "Quadra Nadelvlies Teppichfliese 50x50cm",
+    "status": "ACTIVE",
+    "produktId": "gid://shopify/Product/16020510277966",
+    "codes": ["Farbe 024", "Farbe 039", "Farbe 050", "Farbe 070", "Farbe 072", "Farbe 080", "Farbe 085", "Farbe 089", "Farbe 141", "Farbe 181"]
+  },
+  {
+    "titel": "Fortiva Nadelvlies Teppichboden 200cm",
+    "status": "ACTIVE",
+    "produktId": "gid://shopify/Product/16020483440974",
+    "codes": ["Farbe 016", "Farbe 021", "Farbe 024", "Farbe 044", "Farbe 054", "Farbe 056", "Farbe 085", "Farbe 088", "Farbe 089", "Farbe 120", "Farbe 142", "Farbe 180", "Farbe 181"]
+  },
+  {
+    "titel": "Cortessa Sockelleiste",
+    "status": "ACTIVE",
+    "produktId": "gid://shopify/Product/16020510802254",
+    "codes": ["L600", "L601", "L603", "L604", "L605", "L606", "L607", "L608", "L609", "L610", "L611", "L612", "L613", "L614", "L615"]
+  }
+]
