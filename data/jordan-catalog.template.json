@@ -1,0 +1,43 @@
+[
+  {
+    "externe_id": "ZUBDÖLK100_0004",
+    "sku": "ZUBDÖLK100_0004",
+    "titel": "Döllken CUBU flex life 100 Kernsockelleisten - weiß RAL 9010",
+    "hersteller": "Döllken",
+    "produkttyp": "Kernsockelleisten",
+    "beschreibung": "Die CUBU flex life 100 Kernsockelleiste von Döllken ist eine hochwertige Kunststoffsockelleiste mit 100mm Höhe.",
+    "preis_eur": 8.50,
+    "farbe": "weiß RAL 9010",
+    "hoehe_mm": 100,
+    "material": "Kunststoff",
+    "verfuegbare_farben": 6,
+    "varianten": [
+      {
+        "titel": "weiß RAL 9010",
+        "sku": "ZUBDÖLK100_0004",
+        "externe_id": "ZUBDÖLK100_0004",
+        "preis_eur": 8.50
+      },
+      {
+        "titel": "anthrazit",
+        "sku": "ZUBDÖLK100_0005",
+        "externe_id": "ZUBDÖLK100_0005",
+        "preis_eur": 8.50
+      }
+    ],
+    "quelle": "jordanshop.de",
+    "last_sync": "2026-09-04T10:00:00Z"
+  },
+  {
+    "externe_id": "ZUBDÖLK80_0004",
+    "sku": "ZUBDÖLK80_0004",
+    "titel": "Döllken CUBU flex life 80 Kernsockelleisten - weiß RAL 9010",
+    "hersteller": "Döllken",
+    "produkttyp": "Kernsockelleisten",
+    "preis_eur": 8.50,
+    "hoehe_mm": 80,
+    "material": "Kunststoff",
+    "verfuegbare_farben": 2,
+    "quelle": "jordanshop.de"
+  }
+]

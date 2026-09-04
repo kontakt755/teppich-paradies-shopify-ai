@@ -32,6 +32,9 @@
     "workflow:next": "node workflow/cli.mjs next",
     "workflow:continue": "node workflow/cli.mjs continue",
     "workflow:test": "node --test workflow/tests/*.test.mjs",
+    "syncpath:guard": "node qa/run-syncpath-guard.mjs",
+    "sync:jordanshop": "node workflow/sync-jordanshop.mjs",
+    "sync:jordanshop:live": "SYNC_APPROVED=true node workflow/sync-jordanshop.mjs",
     "control:center": "node control-center/server.mjs",
     "control:center:test": "node --test control-center/tests/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
@@ -39,6 +42,7 @@
     "dashboard:serve": "node scripts/serve-dashboard.mjs"
   },
   "devDependencies": {
-    "playwright-core": "1.54.2"
+    "playwright-core": "1.54.2",
+    "puppeteer": "^25.10.0"
   }
 }
