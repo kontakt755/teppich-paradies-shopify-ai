@@ -32,6 +32,7 @@
     "workflow:status": "node workflow/cli.mjs status",
     "workflow:next": "node workflow/cli.mjs next",
     "workflow:continue": "node workflow/cli.mjs continue",
+    "workflow:router": "node automation/scripts/session-start-router.mjs",
     "workflow:test": "node --test workflow/tests/*.test.mjs",
     "sync:jordanshop": "node workflow/sync-jordanshop.mjs",
     "sync:jordanshop:live": "SYNC_APPROVED=true node workflow/sync-jordanshop.mjs",

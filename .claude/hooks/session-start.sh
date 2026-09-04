@@ -49,6 +49,10 @@ echo "  Produktkarten-Bloecke je Template:"
 node automation/scripts/theme-block.mjs list 2>/dev/null | sed 's/^/    /' || true
 
 echo ""
+echo "  Router-Klassifizierung (Fehler-Datenbank):"
+node automation/scripts/session-start-router.mjs 2>/dev/null | sed 's/^/    /' || true
+
+echo ""
 echo "  Storefront ist aus Remote-Sessions per Egress-Policy gesperrt:"
 echo "  Browser-Schritte schlagen fehl, daher 'validate --static' nutzen."
 echo "────────────────────────────────────────────────────────────"
