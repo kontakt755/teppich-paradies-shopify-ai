@@ -70,3 +70,23 @@ test('template files are exempt from the path rule but not from content rules', 
   // Die echte .env bleibt gesperrt.
   assert.equal(scanText({ file: '.env', text: 'SAFE_PLACEHOLDER=true' })[0].rule, 'SECRET_FILE');
 });
+
+// SESSION_COOKIE matchte frueher auch Code-Referenzen. Neun Fehlalarme im
+// eigenen Repo hielten den Secret-Scan dauerhaft auf BLOCK - und weil
+// validate() den Scan als Schritt fuehrt, blockierte das jede Validierung und
+// damit jeden Deploy. Beide Richtungen bleiben deshalb testgesichert.
+test('SESSION_COOKIE ignoriert Code-Referenzen', () => {
+  for (const line of [
+    'const current = readClaudeSessionState({ sessionId: input.session_id, projectDir });',
+    "const cookie = request.headers.cookie || '';",
+    'sessionId: input.session_id,',
+  ]) assert.deepEqual(scanText({ file: 'hook.mjs', text: line }), [], `sollte kein Fund sein: ${line}`);
+});
+
+test('SESSION_COOKIE findet echte Literale weiterhin', () => {
+  const fake = 'C'.repeat(24);
+  for (const line of [`session_token = "${fake}"`, `SESSION_ID=${fake}`, `cookie: '${fake}'`]) {
+    const findings = scanText({ file: 'fixture.txt', text: line });
+    assert.ok(findings.some(finding => finding.rule === 'SESSION_COOKIE'), `sollte blocken: ${line}`);
+  }
+});

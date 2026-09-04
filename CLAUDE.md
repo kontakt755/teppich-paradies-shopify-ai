@@ -72,6 +72,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 
 | Befehl | Zweck |
 |---|---|
+| `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf, statt sechsmal nacheinander an je einem Gate zu scheitern |
 | `npm run theme:block list\|add\|remove` | Blöcke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungültiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
@@ -97,6 +98,35 @@ Dateien vergleichbar. Bei `hasNextPage` mit `after: "<endCursor>"` weiterblätte
 auch mit uncommitteten Änderungen, und schreibt bewusst **keine** Evidence.
 Sie verweigert das Live-Theme und das Theme, auf dem die Preview-Evidence
 beruht. Zum Deployen bleibt es bei `preview` → `live`.
+
+## Shopify-Schreibzugriff — nicht nach einem Token suchen
+
+**Der Shopify-MCP-Server ist bereits authentifiziert.** Produkte, Varianten,
+Metafelder und Preise laufen ueber `graphql_query` / `graphql_mutation` des
+MCP-Servers. Es wird **kein** `SHOPIFY_ADMIN_TOKEN` gebraucht, weder als
+Umgebungsvariable noch aus einer Datei. Wer in einer Sitzung anfaengt, einen
+`shpat_`-Token zu suchen, verliert Zeit an einem Problem, das nicht existiert.
+
+Der einzige Ort, der einen echten Token braucht, ist der **GitHub-Actions-Job**
+(`.github/workflows/jordanshop-sync.yml`) — dort laeuft kein MCP-Server, deshalb
+liegt der Token als Repository-Secret `SHOPIFY_ADMIN_TOKEN`.
+
+Token-Typen nicht verwechseln:
+
+| Praefix | Wofuer | GraphQL Admin API? |
+|---|---|---|
+| `atkn_` | App-Automatisierungstoken, CI/CD und Webhooks | **nein** — liefert „Invalid API key or access token" |
+| `shpat_` | Admin API access token einer Store-App | ja |
+
+Variantenpreis und SKU setzt `productVariantsBulkUpdate` (SKU im verschachtelten
+`inventoryItem: { sku }`). `productVariantUpdate`, `productVariantCreate` und
+`productVariantsUpdate` existieren nicht — wer die probiert und aufgibt, kommt
+faelschlich zu dem Schluss, Varianten gingen nur ueber den Browser.
+
+> Warum das hier steht: Am 2026-09-04 ist eine komplette Sitzung dafuer
+> draufgegangen, einen `shpat_`-Token zu suchen und Variantenpreise ueber
+> Chrome-Automation zu setzen — beides unnoetig. Der MCP-Server konnte die
+> Schreibzugriffe die ganze Zeit.
 
 ## In Remote-Sessions (claude.ai/code)
 
@@ -144,6 +174,23 @@ Preview und Live verlangen beide `branch === main && head === origin/main` und
 einen sauberen Working Tree. Live zusätzlich passende Preview-Evidence und
 explizite Freigabe. Die Gates sind Absicht — nicht umgehen, sondern die Kette
 durchlaufen.
+
+**Die Kette darf der Agent eigenständig durchlaufen**, sobald der Nutzer einen
+Deploy verlangt („deploy", „live stellen", „push das raus"). Es ist keine
+Rueckfrage noetig, ob er das wirklich will — die Freigabe-Flags sind Teil des
+Befehls, nicht eine zweite Bestaetigung:
+
+```
+npm run workflow:doctor                     # zuerst - meldet alle Blocker auf einmal
+node workflow/cli.mjs preview --theme-id <id> --approve-preview
+node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute
+```
+
+Bricht ein Gate ab, ist das ein echter Befund (dreckiger Tree, fehlende
+Evidence, P0/P1-Finding) — dann die Ursache beheben und die Kette erneut
+durchlaufen, niemals das Gate ausbauen. Screenshots und visuelle Pruefung laufen
+lokal auf dem Mac ueber die Browser-Tools; nur in Remote-Sessions blockt die
+Egress-Policy die Storefront.
 
 ## Sicherheitsgrenzen
 

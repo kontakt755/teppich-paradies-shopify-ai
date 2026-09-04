@@ -80,6 +80,73 @@ function findings() {
   return { p0: args.p0, p1: args.p1 };
 }
 
+/**
+ * Sammel-Preflight: prueft alle Deploy-Voraussetzungen in EINEM Durchlauf und
+ * meldet jeden Befund, statt beim ersten Gate abzubrechen.
+ *
+ * Am 2026-09-03 brauchte ein zweizeiliger Deploy rund zwei Stunden, weil sechs
+ * Gates nacheinander fehlschlugen und jeder Befund erst sichtbar wurde, nachdem
+ * der vorige behoben war (.ai/DEPLOYMENT-TROUBLESHOOTING.md). Der Doctor bricht
+ * deshalb bewusst nie ab - er sammelt.
+ */
+function doctor() {
+  const checks = [];
+  const add = (ok, label, hint = null) => { checks.push({ ok, label, hint }); return ok; };
+  // Im Doctor darf kein einzelner Fehlschlag den Lauf beenden, deshalb tolerant.
+  const safeGit = (...gitArgs) => {
+    const result = run('git', gitArgs, { timeoutMs: 60_000 });
+    return result.exitCode === 0 ? String(result.stdout).trim() : null;
+  };
+  const nodeScript = (script) => run(commandName('node'), [script], { timeoutMs: 5 * 60_000 }).exitCode === 0;
+
+  add(run(commandName('node'), ['qa/run-sync-path-guard.mjs'], { timeoutMs: 60_000 }).exitCode === 0,
+    'Checkout liegt ausserhalb eines Cloud-Sync-Ordners',
+    'Checkout verschieben - iCloud/Dropbox beschaedigen die Git-Objektdatenbank.');
+
+  const branch = safeGit('branch', '--show-current');
+  add(branch === OFFICIAL_BASE, `Branch ist ${OFFICIAL_BASE} (aktuell: ${branch ?? 'unbekannt'})`, remediationFor('LIVE_SOURCE')?.fix);
+
+  const fetched = run('git', ['fetch', 'origin', OFFICIAL_BASE], { timeoutMs: 60_000 }).exitCode === 0;
+  add(fetched, `origin/${OFFICIAL_BASE} erreichbar`, 'Netzwerk oder Remote pruefen: git fetch origin main');
+
+  const head = safeGit('rev-parse', 'HEAD');
+  const originMain = safeGit('rev-parse', `origin/${OFFICIAL_BASE}`);
+  add(head !== null && head === originMain, `HEAD identisch mit origin/${OFFICIAL_BASE}`, remediationFor('LIVE_SOURCE')?.fix);
+
+  const porcelain = safeGit('status', '--porcelain=v1', '-z', '--', '.', `:(exclude)${TRACKED_EVIDENCE_PATH}`);
+  add(porcelain === '', 'Working Tree ist sauber', remediationFor('DIRTY_TREE')?.fix);
+
+  for (const [script, label] of [
+    ['qa/run-liquid-guard.mjs', 'liquid:guard'],
+    ['qa/run-schema-guard.mjs', 'schema:guard'],
+    ['qa/run-template-guard.mjs', 'template:guard'],
+    ['qa/run-live-theme-guard.mjs', 'theme:guard'],
+  ]) add(nodeScript(script), label, `Details: node ${script}`);
+
+  const evidencePath = path.join(root, '.workflow/preview.json');
+  let previewEvidence = null;
+  try { previewEvidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8')); } catch { /* fehlt oder unlesbar */ }
+  add(previewEvidence?.status === 'PASS' && previewEvidence.commit === originMain && previewEvidence.previewDiffCount === 0,
+    'Preview-Evidence passt zum aktuellen origin/main',
+    remediationFor('PREVIEW_EVIDENCE')?.fix);
+
+  add(run(commandName('shopify'), ['version'], { timeoutMs: 60_000 }).exitCode === 0,
+    'Shopify CLI im PATH',
+    remediationFor('MISSING_SHOPIFY')?.fix);
+
+  const failed = checks.filter(check => !check.ok);
+  console.log('── Deploy-Preflight ────────────────────────────────────────');
+  for (const check of checks) console.log(`  ${check.ok ? 'OK  ' : 'FEHLT'} ${check.label}`);
+  if (failed.length > 0) {
+    console.log('\n  Offene Punkte:');
+    for (const check of failed) if (check.hint) console.log(`  - ${check.label}\n      ${check.hint}`);
+  }
+  console.log('────────────────────────────────────────────────────────────');
+  console.log(failed.length === 0 ? 'PREFLIGHT: BEREIT' : `PREFLIGHT: ${failed.length} offen`);
+  process.exitCode = failed.length === 0 ? 0 : 1;
+  return { checks, failed: failed.length };
+}
+
 // "shopify theme push --strict --json" schreibt ZWEI JSON-Dokumente
 // hintereinander auf stdout: zuerst den Theme-Check-Bericht als Array, danach
 // erst das eigentliche Push-Ergebnis als Objekt. Ein JSON.parse ueber die
@@ -224,6 +291,7 @@ function themeList(store) {
 }
 
 async function main() {
+  if (mode === 'doctor') return doctor();
   if (mode === 'validate') return validate({ staticOnly: args.static === true });
 
   if (mode === 'route') {

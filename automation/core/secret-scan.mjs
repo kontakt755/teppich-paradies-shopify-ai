@@ -11,7 +11,13 @@ const RULES = Object.freeze([
   ['SHOPIFY_TOKEN', /\bshp(?:at|ca|cs|pa|ss)_[A-Za-z0-9]{20,}\b/i],
   ['GENERIC_API_KEY', /\b(?:api[_-]?key|access[_-]?token|secret[_-]?key)\s*[:=]\s*["']?[A-Za-z0-9_\-]{16,}/i],
   ['PASSWORD_ASSIGNMENT', /\b(?:password|passwd|pwd)\s*[:=]\s*["']?[^\s"']{8,}/i],
-  ['SESSION_COOKIE', /\b(?:cookie|session[_-]?(?:id|token))\s*[:=]\s*["']?[^\s"']{12,}/i]
+  // Der Wert muss wie ein Secret-Literal aussehen, nicht wie ein Ausdruck.
+  // Mit [^\s"']{12,} matchte die Regel auch `sessionId: input.session_id` und
+  // `const cookie = request.headers.cookie` - neun Fehlalarme in eigenem Code,
+  // die den Secret-Scan dauerhaft auf BLOCK hielten und damit jede Validierung
+  // und jeden Deploy blockierten. Punkt und Klammer sind hier deshalb nicht
+  // erlaubt: Code-Referenzen brechen dadurch vor der Mindestlaenge ab.
+  ['SESSION_COOKIE', /\b(?:cookie|session[_-]?(?:id|token))\s*[:=]\s*["']?[A-Za-z0-9_\-+/=]{12,}/i]
 ]);
 // Vorlagendateien wie .env.local.example gehoeren bewusst ins Repo. Nur die
 // Pfadregel wird fuer sie ausgesetzt; der Inhalt laeuft weiter durch alle

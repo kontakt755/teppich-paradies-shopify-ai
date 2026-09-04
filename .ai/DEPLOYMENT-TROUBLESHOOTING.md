@@ -26,6 +26,18 @@ Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle
 ### Merge-in-Progress beim Session-Start
 Eine vorherige Sitzung kann einen offenen Merge hinterlassen. `git status` gehört als allererster Schritt in jede Deploy-Sitzung. Bei offenem Merge ohne Konflikte erst mit dem Menschen klären, ob `git merge --abort` sicher ist.
 
+### Shopify-Schreibzugriff: kein Token suchen, kein Chrome bemuehen
+Zwei Sitzungen am 2026-09-04 gingen dafuer drauf, einen `shpat_`-Token zu
+beschaffen und Variantenpreise ueber Chrome-Automation zu setzen. Beides war
+unnoetig — der Shopify-MCP-Server ist bereits authentifiziert und konnte die
+Schreibzugriffe die ganze Zeit. Die geltende Regel steht in `CLAUDE.md` unter
+„Shopify-Schreibzugriff"; sie wird hier bewusst **nicht** wiederholt.
+
+Merkmal, an dem man die Sackgasse frueh erkennt: ein Token mit Praefix `atkn_`
+(App-Automatisierung) an der GraphQL Admin API liefert „Invalid API key or
+access token". Wer daraufhin nach dem „richtigen" Token sucht, loest das
+falsche Problem — der MCP-Server braucht gar keinen.
+
 ### Theme-IDs altern schneller als Notizen
 Eine Theme-ID aus einem älteren Chat, Report oder Commit kann inzwischen eine andere Rolle haben. `domains/shopify/live-theme.json` ist die einzige Quelle; bei Zweifel die Rollen direkt per Admin-API prüfen (`themes(first: 20) { nodes { id name role } }`) und die Datei angleichen.
 
@@ -55,4 +67,6 @@ Schlägt ein Gate fehl, druckt das CLI seit 2026-09-04 unter der Fehlermeldung d
 
 Ein Deploy einer zweizeiligen Änderung an `config/settings_data.json` brauchte rund zwei Stunden. Nicht wegen der Änderung, sondern weil sechs Gates **nacheinander** fehlschlugen und jeder Fehler erst sichtbar wurde, nachdem der vorige behoben war: `PREVIEW_SOURCE` → SEO → `THEME_ID_AMBIGUOUS` → `FINDINGS_BLOCK` → `PREVIEW_EVIDENCE` → `PREVIEW_ROLE`. Keine dieser Meldungen nannte damals eine Lösung.
 
-Die Konsequenz daraus war nicht mehr Dokumentation, sondern die Remediation direkt im Code (`GATE_REMEDIATION`). Der nächste sinnvolle Schritt wäre ein Sammel-Preflight (`workflow:doctor`), der alle Voraussetzungen in einem Durchlauf meldet statt sechsmal nacheinander – bislang nicht gebaut.
+Die Konsequenz daraus war nicht mehr Dokumentation, sondern die Remediation direkt im Code (`GATE_REMEDIATION`). Der Sammel-Preflight `npm run workflow:doctor` existiert seit 2026-09-04 und schliesst die Luecke: Er prüft alle Voraussetzungen in **einem** Durchlauf und meldet jeden offenen Punkt samt Fix, statt sechsmal nacheinander an je einem Gate zu scheitern.
+
+**Vor jedem Deploy zuerst `npm run workflow:doctor` laufen lassen.** Erst wenn dort `PREFLIGHT: BEREIT` steht, `workflow:preview` starten.

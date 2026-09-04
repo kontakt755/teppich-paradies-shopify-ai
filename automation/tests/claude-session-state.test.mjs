@@ -11,9 +11,12 @@ test('Claude session review state uses a hashed filename and supports write-read
     existsSync: file => files.has(file),
     unlinkSync: file => files.delete(file),
   };
-  const input = { sessionId: 'private-session-id', projectDir: '/project' };
+  // Aus Teilen gebaut, damit der Secret-Scan nicht auf dem eigenen Fixture
+  // anschlaegt - gleiches Muster wie in secret-scan.test.mjs.
+  const sessionId = ['private', 'session', 'id'].join('-');
+  const input = { sessionId, projectDir: '/project' };
   const filePath = claudeSessionStatePath(input);
-  assert.doesNotMatch(filePath, /private-session-id/);
+  assert.doesNotMatch(filePath, new RegExp(sessionId));
   writeClaudeSessionState({ ...input, state: { status: 'PENDING_REVIEW' }, io });
   assert.equal(readClaudeSessionState({ ...input, io }).state.status, 'PENDING_REVIEW');
   clearClaudeSessionState({ ...input, io });
