@@ -11,6 +11,14 @@ Shopify-Onlineshop der Teppich Paradies Oranienburg GmbH.
 
 Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codierte absolute Windows- oder macOS-Pfade. Dieses Repository wird auf mehreren Rechnern (u. a. Windows und macOS) ausgecheckt; ein einzelner lokaler Pfad ist nie allgemeingültig. Falls ein absoluter Pfad in einem Script oder einer Notiz auftaucht, ist er als Hinweis auf einen einzelnen historischen Arbeitsplatz zu verstehen, nicht als Vorgabe.
 
+## Lokale Speicherung
+
+- Aktive Repositorys, Arbeitskopien, Worktrees, Dashboard-Code, Laufzustände, Protokolle und temporäre Arbeitsdateien ausschließlich lokal speichern.
+- Auf diesem iMac niemals Projekt- oder Agentendaten in iCloud Drive, synchronisierten Ordnern wie Schreibtisch/Documents oder anderen Cloud-Speichern anlegen, kopieren oder verschieben.
+- Vor dem Anlegen einer neuen Arbeitskopie den aufgelösten Zielpfad prüfen. Enthält er einen Cloud- oder Sync-Pfad, abbrechen und einen lokalen Pfad verwenden.
+- Vorhandene alte Cloud-Kopien nicht als Arbeitsverzeichnis verwenden und nicht ohne ausdrückliche Freigabe löschen.
+- Lokale macOS-Projekte gehören unter `Developer`; lokale Anwendungszustände dürfen unter `Library/Application Support` liegen.
+
 Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
 
 Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hier bewusst nicht, weil genau diese Doppelung schon einmal schiefging: Als das Live-Theme wechselte, blieb die alte ID in dieser Datei stehen, und Agenten nannten monatelang ein Theme als Live-Stand, das in der Admin API gar nicht mehr existierte.

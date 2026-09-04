@@ -47,6 +47,16 @@
     ]
   },
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -n '{hookSpecificOutput:{hookEventName:\"UserPromptSubmit\",additionalContext:\"Vor neuer, eigenstaendiger Aufgabe zuerst npm run workflow:route -- <Kurzbeschreibung> ausfuehren (Klasse A-D). Nicht bei Rueckfragen, Bestaetigungen oder Fortsetzungen derselben Aufgabe.\"}}' 2>/dev/null || echo '{}'"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "hooks": [

@@ -14,6 +14,9 @@ const stateDir = path.join(os.homedir(), 'Library/Application Support/TP AI Dash
 fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
 const serverPath = path.join(root, 'automation/dashboard/server.mjs');
 const pidPath = path.join(stateDir, 'server.pid');
+// Preserve the launcher PATH because screen login shells may replace it.
+// This keeps locally installed tools such as gh available in the background.
+const inheritedPath = process.env.PATH || '/usr/bin:/bin:/usr/sbin:/sbin';
 if (fs.existsSync(pidPath)) {
   const previousPid = Number(fs.readFileSync(pidPath, 'utf8').trim());
   if (Number.isInteger(previousPid) && previousPid > 1) {
@@ -25,7 +28,7 @@ if (fs.existsSync(pidPath)) {
 }
 try { execFileSync('screen', ['-S', 'tp-ai-dashboard', '-X', 'quit'], { stdio: 'ignore' }); } catch { /* not running */ }
 await new Promise(resolve => setTimeout(resolve, 500));
-const command = `cd /private/tmp && exec env DASHBOARD_HOST=${ip} DASHBOARD_PORT=4310 DASHBOARD_STATE_DIR=${JSON.stringify(stateDir)} ${JSON.stringify(process.execPath)} ${JSON.stringify(serverPath)}`;
+const command = `cd /private/tmp && exec env PATH=${JSON.stringify(inheritedPath)} DASHBOARD_HOST=${ip} DASHBOARD_PORT=4310 DASHBOARD_STATE_DIR=${JSON.stringify(stateDir)} ${JSON.stringify(process.execPath)} ${JSON.stringify(serverPath)}`;
 execFileSync('screen', ['-dmS', 'tp-ai-dashboard', '/bin/sh', '-lc', command]);
 let ready = false;
 for (let attempt = 0; attempt < 80; attempt += 1) {
