@@ -1,8 +1,8 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203639456078",
-    "name": "Bodenleisten-Preview-2026-09-03",
+    "themeId": "203556880718",
+    "name": "Preview Gallery V2",
     "verifiedAt": "2026-09-04",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
@@ -23,6 +23,12 @@
       "name": "TP-10-TP-08-Arbeitskopie-2026-08-26",
       "retiredNoticedAt": "2026-09-03",
       "note": "Per workflow:live abgeloest durch 203639456078 (npm run workflow:live --theme-id 203639456078 --execute). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203639456078",
+      "name": "Bodenleisten-Preview-2026-09-03",
+      "retiredNoticedAt": "2026-09-04",
+      "note": "Per workflow:live abgeloest durch 203556880718 (npm run workflow:live --theme-id 203556880718 --execute, PR #94: gleiche Kartenhoehe + Muster-Button fuer alle Produkte). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
