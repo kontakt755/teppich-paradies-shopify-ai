@@ -19,8 +19,8 @@
       "id": "vinylboden",
       "name": "Vinylboden",
       "description": "Vinyl-Bodenbeläge von der Rolle",
-      "active": false,
-      "note": "Aktivieren wenn bereit",
+      "active": true,
+      "note": "Aktiviert 2026-09-04",
       "examples": []
     },
     {

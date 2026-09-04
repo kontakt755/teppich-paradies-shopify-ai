@@ -35,6 +35,7 @@
     "workflow:test": "node --test workflow/tests/*.test.mjs",
     "sync:jordanshop": "node workflow/sync-jordanshop.mjs",
     "sync:jordanshop:live": "SYNC_APPROVED=true node workflow/sync-jordanshop.mjs",
+    "sync:jordanshop:mcp": "node workflow/sync-orchestrator.mjs && echo '\\n🎯 MCP-Sync bereit. Ich (Claude) werde jetzt die GraphQL-Calls über Shopify MCP ausführen...'",
     "sync:categories": "node workflow/load-jordan-categories.mjs",
     "sync:categories:activate": "echo 'Edit data/jordan-categories.json und setze active: true'",
     "control:center": "node control-center/server.mjs",

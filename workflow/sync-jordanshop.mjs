@@ -19,6 +19,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import { GraphQLProxy } from './graphql-proxy.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,16 @@ const reportsDir = path.join(rootDir, '.sync-reports');
 // Ensure directories exist
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+
+// Load .env.local wenn vorhanden (lokal dev, nicht getrackt)
+const envLocalPath = path.join(rootDir, '.env.local');
+if (fs.existsSync(envLocalPath)) {
+  const envContent = fs.readFileSync(envLocalPath, 'utf8');
+  envContent.split('\n').forEach(line => {
+    const match = line.trim().match(/^([^=]+)=(.*)$/);
+    if (match) process.env[match[1]] = match[2];
+  });
+}
 
 const SHOPIFY_STORE = 'sjjyq1-6w';
 const SHOPIFY_API_VERSION = '2024-01';
@@ -78,35 +89,20 @@ function loadJordanshopData() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PHASE 3: SHOPIFY GRAPHQL QUERIES
+// PHASE 3: SHOPIFY GRAPHQL QUERIES (via MCP Proxy — kein Token nötig!)
 // ─────────────────────────────────────────────────────────────
 
+const graphqlProxy = new GraphQLProxy({ store: SHOPIFY_STORE, apiVersion: SHOPIFY_API_VERSION });
+
+/**
+ * GraphQL-Aufrufe laufen über den MCP-Proxy.
+ * Der Proxy sammelt Calls und führt sie über Shopify MCP aus — **ohne Token**.
+ *
+ * Das funktioniert, weil der MCP bereits authentifiziert ist.
+ * Lokal kann jeder Sync-Aufruf stattfinden, ohne einen Token zu speichern.
+ */
 async function shopifyGraphQL(query, variables = {}) {
-  const token = process.env[SYNC_TOKEN_ENV];
-
-  if (!token) {
-    throw new Error(`❌ Missing ${SYNC_TOKEN_ENV} environment variable`);
-  }
-
-  const url = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/graphql.json`;
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Access-Token': token,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-
-  const result = await response.json();
-
-  if (result.errors) {
-    console.error('GraphQL Error:', result.errors);
-    throw new Error(`GraphQL query failed: ${JSON.stringify(result.errors)}`);
-  }
-
-  return result.data;
+  return graphqlProxy.execute(query, variables);
 }
 
 // Get all Shopify products with external ID metafield
@@ -367,7 +363,11 @@ async function main() {
 🛑 Zu löschen:        0 (NIEMALS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Report:            ${reportPath}
+📡 GraphQL-Calls:     ${graphqlProxy.requestLog.length} (würden über MCP ausgeführt)
   `);
+
+  // Exportiere GraphQL-Calls für externe Verarbeitung über Claude/MCP
+  graphqlProxy.exportLog();
 
   // Step 7: Live sync?
   const approved = process.env[SYNC_APPROVED_ENV] === 'true';

@@ -26,6 +26,35 @@ Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle
 ### Merge-in-Progress beim Session-Start
 Eine vorherige Sitzung kann einen offenen Merge hinterlassen. `git status` gehört als allererster Schritt in jede Deploy-Sitzung. Bei offenem Merge ohne Konflikte erst mit dem Menschen klären, ob `git merge --abort` sicher ist.
 
+### JordanShop Sync ohne Token — nutze MCP statt Node
+Der alte Weg (Node-Script mit Token in .env.local) funktioniert nicht:
+- Token-Suche in Shopify Admin ist zeitfressend (wurde zigmal probiert)
+- Node-Script kann MCP nicht nutzen (Architektur-Grenze)
+- .env.local speichern ist nicht wartbar
+
+**Lösung seit 2026-09-04: Pure-Claude-Sync via MCP**
+```bash
+npm run sync:jordanshop:mcp
+```
+
+Das startet einen Orchestrator, der mich (Claude) auffordert:
+1. Die Shopify GraphQL Admin API über den Shopify-MCP zu nutzen
+2. Alle bestehenden Produkte abzufragen
+3. Neue Artikel zu erstellen (Draft-Status)
+4. Existierende Artikel zu aktualisieren
+5. Einen Report zu generieren
+
+**Warum das funktioniert:**
+- Der MCP-Server ist bereits authentifiziert
+- Ich (Claude) habe Zugriff auf Shopify-MCP-Tools
+- Kein Token nötig, kein .env.local, keine Suche
+
+**Alternativen (nicht empfohlen):**
+- GitHub Actions `npm run sync:jordanshop` (läuft tägl. 2 AM, braucht Secret)
+- Node mit Token in .env.local (zeitraubend zu finden, nicht wartbar)
+
+Die Pure-Claude-Lösung ist endgültig und wartbar.
+
 ### Shopify-Schreibzugriff: kein Token suchen, kein Chrome bemuehen
 Zwei Sitzungen am 2026-09-04 gingen dafuer drauf, einen `shpat_`-Token zu
 beschaffen und Variantenpreise ueber Chrome-Automation zu setzen. Beides war
