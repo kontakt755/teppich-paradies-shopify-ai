@@ -53,6 +53,16 @@ echo "  Router-Klassifizierung (Fehler-Datenbank):"
 node automation/scripts/session-start-router.mjs 2>/dev/null | sed 's/^/    /' || true
 
 echo ""
-echo "  Storefront ist aus Remote-Sessions per Egress-Policy gesperrt:"
-echo "  Browser-Schritte schlagen fehl, daher 'validate --static' nutzen."
+echo "  Remote-Session Fehler-Check:"
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
+  node automation/scripts/create-remote-session-issue.mjs 2>/dev/null | sed 's/^/    /' || true
+
+  echo ""
+  echo "  ⚠️  WARNUNG:"
+  echo "  Storefront (teppich-paradies.net) ist aus Remote-Sessions per Egress-Policy gesperrt."
+  echo "  jordanshop.de Import braucht Browser-Zugriff — funktioniert nur lokal."
+  echo "  Browser-Schritte nutze '--static' flag, oder arbeite lokal mit npm run."
+else
+  echo "  ✓ Lokale Session erkannt — jordanshop.de Import funktioniert"
+fi
 echo "────────────────────────────────────────────────────────────"
