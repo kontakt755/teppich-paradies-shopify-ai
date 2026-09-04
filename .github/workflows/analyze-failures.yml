@@ -1,0 +1,65 @@
+name: Analyze PR Failures
+
+# Triggert wenn PR-Validierung fehlgeschlagen ist
+on:
+  workflow_run:
+    workflows: ["PR validation"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: analyze-failures-${{ github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    if: failure  # Nur wenn upstream workflow fehlgeschlagen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Analysiere PR-Fehler
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node automation/scripts/analyze-pr-failures.mjs
+
+      - name: Commit Auto-Fixes
+        if: success()
+        run: |
+          if git diff --quiet; then
+            echo "Keine Auto-Fixes angewendet"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Auto-Fix: Fehler aus PR-Validierung behoben
+
+- Analyse durch Failure Analyzer
+- Automatische Korrekturen angewendet
+- Fehlerdatenbank aktualisiert [skip ci]"
+
+          # Rebase wenn nötig
+          git fetch origin ${{ github.event.workflow_run.head_branch }}
+          if ! git push origin HEAD:${{ github.event.workflow_run.head_branch }}; then
+            echo "Push fehlgeschlagen, versuche rebase..."
+            git rebase origin/${{ github.event.workflow_run.head_branch }}
+            git push origin HEAD:${{ github.event.workflow_run.head_branch }}
+          fi
