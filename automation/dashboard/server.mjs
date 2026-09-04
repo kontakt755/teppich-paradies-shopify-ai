@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { buildFollowUpTask, createDashboardState, makeRun, publicRun, sanitizeTask, summarizeUsage } from './dashboard-core.mjs';
 import { buildIssueTaskContext, createOrReuseIssue, getIssue, listOpenIssues, parseIssueNumber, synchronizeIssue } from './github-issues.mjs';
+import { classifyClaudeRequest } from '../core/claude-bridge.mjs';
 
 const root = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 const dashboardDir = path.join(root, 'automation/dashboard/public');
@@ -320,7 +321,12 @@ const server = http.createServer(async (request, response) => {
         // Ein reiner Analyse-Auftrag veraendert nichts und bekommt deshalb auch
         // kein neues oeffentliches GitHub-Issue. Frueher wurde hier immer eines
         // angelegt - noch bevor der Router ueberhaupt entschieden hatte.
-        if (declaredTaskType !== 'ANALYSIS') issue = createOrReuseIssue(supplement);
+        //
+        // Gefragt wird dieselbe Klassifikation, die gleich auch der Lauf nutzt:
+        // nur auf die Deklaration zu schauen liess Clients ohne `taskType`
+        // ("Analysiere den Code, nur lesen") weiterhin ein Issue anlegen.
+        const preview = classifyClaudeRequest({ taskId: 'ISSUE-PREVIEW', task: supplement, declaredTaskType });
+        if (preview.taskType !== 'ANALYSIS') issue = createOrReuseIssue(supplement);
       } else if (isExistingIssue) {
         const number = parseIssueNumber(body.issueNumber);
         const fullIssue = number ? getIssue(number) : null;

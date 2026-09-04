@@ -153,6 +153,39 @@ test('automatic correction rounds stop after one paid API round instead of spend
   }
 });
 
+// Von der unabhaengigen Codex-Pruefung gefunden: faellt erst die Korrektur
+// selbst auf die API zurueck, trug der uebergebene Kandidat noch SUBSCRIPTION.
+// Die Bremse griff dadurch eine Runde zu spaet - zwei bezahlte statt einer.
+test('a mid-cycle switch from Pro to the paid API still allows only one paid correction', async () => {
+  const previous = process.env.ANTHROPIC_API_KEY;
+  process.env.ANTHROPIC_API_KEY = 'fixture-api-key';
+  let workerRuns = 0;
+  let apiWorkerCalls = 0;
+  const finding = () => ({ priority: 'P1', file: 'automation/x.mjs', problem: 'Ein Problem', reason: 'Ein Grund', recommendedFix: 'Ein Fix' });
+  const spawn = (_command, args, options) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    if (!options.env.ANTHROPIC_API_KEY) {
+      // Der erste Lauf gelingt noch ueber Pro; danach ist das Limit erreicht.
+      if (workerRuns++ === 0) return { status: 0, stdout: JSON.stringify({ result: 'Pro erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
+      return { status: 1, stdout: '', stderr: 'Usage limit reached; resets later' };
+    }
+    apiWorkerCalls += 1;
+    return { status: 0, stdout: JSON.stringify({ result: 'ueber API erledigt', usage: {}, total_cost_usd: 0.13 }), stderr: '' };
+  };
+  try {
+    const result = await runCliAgentCycle({
+      task: 'Repariere einen kleinen lokalen Testfehler',
+      spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
+      review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
+    });
+    assert.equal(result.status, 'PARKED');
+    assert.equal(result.reason, 'API_CORRECTION_LIMIT');
+    assert.equal(apiWorkerCalls, 1);
+  } finally {
+    if (previous === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = previous;
+  }
+});
+
 test('correction rounds stay unlimited while the free Pro subscription is doing the work', async () => {
   let workerCalls = 0;
   let reviews = 0;
