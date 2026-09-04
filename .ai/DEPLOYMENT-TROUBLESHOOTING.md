@@ -1,6 +1,10 @@
 # Deployment-Fehlerdatenbank
 
-Gesammelte, tatsächlich aufgetretene Fehler bei `workflow:preview` / `workflow:live` / `shopify theme push` – mit Ursache und funktionierendem Fix. Ziel: nicht erneut Zeit mit denselben Sackgassen verlieren. Neue Einträge unten anhängen, Format beibehalten.
+Erfahrungen aus echten Deploy-Sitzungen, die das CLI selbst nicht ausgeben kann.
+
+**Die Lösung je Fehlercode steht nicht mehr hier, sondern im Code:** `GATE_REMEDIATION` in `workflow/core.mjs`. Jeder Gate-Fehlschlag druckt seither seine eigene Remediation direkt im Terminal, und ein Test erzwingt, dass jeder geworfene Code dort einen Eintrag hat. Diese Datei darf das bewusst **nicht** duplizieren – eine zweite Liste würde vom Code wegdriften und dann falsche Fixes vorschlagen.
+
+Hier steht nur, was aus einem einzelnen Fehlercode nicht hervorgeht: Reihenfolge, Umgebungsgrenzen, Vorfälle.
 
 Lesereihenfolge laut `.ai/README.md`: erst `AGENTS.md`, dann bei Deploy-Aufgaben diese Datei.
 
@@ -11,39 +15,19 @@ Lesereihenfolge laut `.ai/README.md`: erst `AGENTS.md`, dann bei Deploy-Aufgaben
 3. `.ai/../domains/shopify/live-theme.json` lesen – das ist die einzige Quelle für Theme-IDs, nicht raten oder aus Prosa/altem Chat übernehmen.
 4. Erst `workflow:preview`, dann erst `workflow:live` – Live verlangt existierende Preview-Evidence für exakt den aktuellen `origin/main`-Commit.
 
-## Bekannte Fehler
-
-### `PREVIEW_SOURCE: Preview muss exakt aus aktuellem origin/main entstehen`
-- **Ursache:** Feature-Branch ist nicht auf `origin/main` rebased/aktuell.
-- **Fix:** `git fetch origin main && git rebase origin/main` auf der Feature-Branch, dann erneut versuchen.
+## Was das CLI nicht selbst sagen kann
 
 ### `shopify theme push` hängt / fragt "Push theme files to the live theme...?"
-- **Ursache:** Shopify CLI verlangt eine interaktive Bestätigung. Piping (`echo "y" | ...`) und `--force` lösen das NICHT – die CLI erkennt Non-TTY-Kontext und bricht bewusst ab.
-- **Fix:** Es gibt keinen non-interaktiven Workaround. Der Nutzer muss den Befehl selbst im eigenen Terminal ausführen und die Bestätigung geben. Immer mit `--only <datei>` scopen, nie ungezielt das ganze Theme pushen (siehe `[[feedback_theme_push_workflow]]` in der persönlichen Memory).
+Shopify CLI verlangt eine interaktive Bestätigung. Piping (`echo "y" | ...`) und `--force` lösen das **nicht** – die CLI erkennt den Non-TTY-Kontext und bricht bewusst ab. Es gibt keinen non-interaktiven Workaround: Der Mensch muss den Befehl im eigenen Terminal ausführen. Immer mit `--only <datei>` scopen, nie ungezielt das ganze Theme pushen.
 
-### `SEO: FAIL` / `VALIDATION_FAILED: SEO fehlgeschlagen`
-- **Ursache:** Nicht zwangsläufig durch die eigene Änderung verursacht. In der Praxis war es ein vorbestehender Fehler: Google-Rating-API liefert 404 auf allen PDPs (Desktop + Mobile), unabhängig vom aktuellen Diff.
-- **Fix:** `npm run seo:check` laufen lassen, `SEO_REPORT.md` lesen, ERROR-Sektion mit dem eigenen Diff abgleichen. Wenn die Fehler nichts mit der eigenen Änderung zu tun haben: Nutzer informieren, nicht blind versuchen zu umgehen. Es gibt kein `--force-seo-override`-Flag (existiert nicht, wurde ausprobiert). Es gibt aktuell keinen sauberen Weg, den Gate bei bekannten Altfehlern zu übergehen außer den Fehler selbst zu fixen – falls der Nutzer trotzdem deployen will, das explizit als bewusste Ausnahme behandeln, nicht automatisieren.
-
-### `THEME_ID_AMBIGUOUS: Theme-ID ist nicht eindeutig vorhanden`
-- **Ursache:** Keine oder mehrdeutige `--theme-id` beim `workflow:live`-Aufruf.
-- **Fix:** Immer explizit `--theme-id <ID>` übergeben, Wert aus `domains/shopify/live-theme.json` (Feld `live.themeId`).
-
-### `FINDINGS_BLOCK: P0 und P1 müssen explizit 0 sein`
-- **Ursache:** `--p0` / `--p1` Flags fehlen; der Workflow akzeptiert keinen impliziten Default.
-- **Fix:** Immer `--p0 0 --p1 0` explizit mitgeben (nur wenn tatsächlich keine offenen P0/P1-Findings existieren).
-
-### `PREVIEW_EVIDENCE: Passende Preview-Evidence für origin/main fehlt`
-- **Ursache:** Für den aktuellen `origin/main`-Commit wurde noch keine erfolgreiche `workflow:preview`-Runde mit Evidence hinterlegt. Live-Gate verlangt das zwingend vorher.
-- **Fix:** Erst `workflow:preview` für exakt diesen Commit erfolgreich durchlaufen lassen (inkl. `--approve-preview`), erst danach `workflow:live`. Kein Shortcut bekannt – `--local-runner` umgeht das NICHT.
-
-### `PREVIEW_ROLE: Preview-Theme muss eindeutig unpublished sein`
-- **Ursache:** Die für `workflow:preview --theme-id X` übergebene Theme-ID ist laut Shopify Admin API nicht (mehr) unpublished – z. B. weil sie inzwischen live ist oder umbenannt/gelöscht wurde.
-- **Fix:** Aktuelle Theme-Rollen direkt per Shopify Admin API prüfen (`themes(first: 20) { nodes { id name role } }`), nicht auf veraltete IDs aus Doku/Chat-Verlauf verlassen. `domains/shopify/live-theme.json` danach aktualisieren.
+### SEO-Fehlschlag ist oft nicht der eigene Diff
+Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle vorbestanden: Die Google-Rating-API lieferte 404 auf allen PDPs (Desktop + Mobile), völlig unabhängig von der Änderung. `npm run seo:check` laufen lassen, `SEO_REPORT.md` öffnen und die ERROR-Sektion gegen den eigenen Diff halten, bevor Zeit in die falsche Ursache fließt. Ein Override existiert bewusst nicht (`--force-seo-override` wurde ausprobiert, gibt es nicht) – Altfehler müssen behoben werden, und ob trotzdem deployt wird, entscheidet der Mensch, nicht der Agent.
 
 ### Merge-in-Progress beim Session-Start
-- **Ursache:** Vorherige Session/Branch-Wechsel hat einen Merge offen gelassen.
-- **Fix:** `git status` als allerersten Schritt jeder Deploy-Session. Bei offenem Merge ohne Konflikte: mit dem Nutzer klären, ob `git merge --abort` sicher ist (nur wenn es klar der falsche/verwaiste Merge ist), dann erst weiterarbeiten.
+Eine vorherige Sitzung kann einen offenen Merge hinterlassen. `git status` gehört als allererster Schritt in jede Deploy-Sitzung. Bei offenem Merge ohne Konflikte erst mit dem Menschen klären, ob `git merge --abort` sicher ist.
+
+### Theme-IDs altern schneller als Notizen
+Eine Theme-ID aus einem älteren Chat, Report oder Commit kann inzwischen eine andere Rolle haben. `domains/shopify/live-theme.json` ist die einzige Quelle; bei Zweifel die Rollen direkt per Admin-API prüfen (`themes(first: 20) { nodes { id name role } }`) und die Datei angleichen.
 
 ## Funktionierender Ablauf (Stand 2026-09-04)
 
@@ -65,4 +49,10 @@ npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-prev
 npm run workflow:live -- --theme-id <LIVE_ID> --p0 0 --p1 0 --approve-live --approval-text "PUBLISH LIVE" --execute
 ```
 
-Jeder Fehler-Exit-Code hier ist informativ, kein Grund, Flags zu raten – der jeweilige `*_BLOCK`/`*_SOURCE`/`*_ROLE`-Text im Output benennt exakt die fehlende Voraussetzung.
+Schlägt ein Gate fehl, druckt das CLI seit 2026-09-04 unter der Fehlermeldung direkt `Fix:` und, wo sinnvoll, `Befehl:`. Diesen Hinweis lesen und befolgen, statt Flags zu raten oder Overrides zu suchen.
+
+## Vorfall 2026-09-03: warum es diese Datei gibt
+
+Ein Deploy einer zweizeiligen Änderung an `config/settings_data.json` brauchte rund zwei Stunden. Nicht wegen der Änderung, sondern weil sechs Gates **nacheinander** fehlschlugen und jeder Fehler erst sichtbar wurde, nachdem der vorige behoben war: `PREVIEW_SOURCE` → SEO → `THEME_ID_AMBIGUOUS` → `FINDINGS_BLOCK` → `PREVIEW_EVIDENCE` → `PREVIEW_ROLE`. Keine dieser Meldungen nannte damals eine Lösung.
+
+Die Konsequenz daraus war nicht mehr Dokumentation, sondern die Remediation direkt im Code (`GATE_REMEDIATION`). Der nächste sinnvolle Schritt wäre ein Sammel-Preflight (`workflow:doctor`), der alle Voraussetzungen in einem Durchlauf meldet statt sechsmal nacheinander – bislang nicht gebaut.

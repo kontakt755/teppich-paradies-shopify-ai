@@ -206,6 +206,71 @@ export function createDryRunSummary(workflow, values = {}) {
   return { workflow, status: 'DRY_RUN', ...values, orderCompleted: false, results: [], readyForPr: false, readyForMain: false, readyForPreview: false, readyForLive: false };
 }
 
+/**
+ * Loesung je Fehlercode. Die Gates benennen bisher nur das Problem; ein realer
+ * Deploy lief deshalb durch sechs Fehlschlaege nacheinander, weil nach jeder
+ * Meldung erst herausgefunden werden musste, was zu tun ist.
+ *
+ * Diese Tabelle ist die einzige Quelle fuer Remediationstexte. Sie wird an
+ * genau einer Stelle ausgegeben (cli.mjs, zentraler catch), und ein Test in
+ * workflow/tests/core.test.mjs erzwingt, dass jeder geworfene Code hier einen
+ * Eintrag hat - ein neuer Gate ohne Loesungstext laesst die Tests fehlschlagen.
+ * Damit kann die Tabelle nicht vom Code wegdriften.
+ */
+export const GATE_REMEDIATION = {
+  BASE_BLOCK: { fix: 'PR-Base auf main setzen, andere Basis ist nicht vorgesehen.' },
+  BRANCH_BLOCK: { fix: 'Von main auf eine Feature-Branch wechseln; ein PR aus main heraus ist nicht vorgesehen.', command: 'git checkout -b feature/<name>' },
+  COMMAND_FAILED: { fix: 'Den genannten Schritt einzeln ausfuehren und dessen eigene Ausgabe lesen - der Workflow reicht hier nur den Exit-Code durch.' },
+  DIRTY_TREE: { fix: 'Offene Aenderungen committen oder stashen; Preview und Live verlangen einen sauberen Working Tree.', command: 'git status --short' },
+  EVIDENCE_BRANCH_MISMATCH: { fix: 'Die vorhandene Evidence stammt von einer anderen Branch. Validierung auf der aktuellen Branch neu laufen lassen.', command: 'npm run workflow:validate' },
+  EVIDENCE_MISSING: { fix: 'Es liegt noch keine Evidence vor. Validierung ausfuehren, bevor PR, Preview oder Live moeglich sind.', command: 'npm run workflow:validate' },
+  EVIDENCE_NOT_PASS: { fix: 'Die letzte Validierung war kein PASS. Erst die darin gemeldeten Fehler beheben, dann erneut validieren.', command: 'npm run workflow:validate' },
+  EVIDENCE_NO_TARGET: { fix: 'Der Evidence fehlt das Ziel, gegen das geprueft wurde. Validierung mit explizitem Ziel wiederholen.' },
+  EVIDENCE_ORDER_COMPLETED: { fix: 'Die Evidence behauptet einen abgeschlossenen Bestellvorgang, der nicht bestaetigt ist. Sales-Check erneut laufen lassen.', command: 'npm run sales:check' },
+  EVIDENCE_STALE: { fix: 'Die Evidence gehoert zu einem aelteren Commit. Nach jedem neuen Commit neu validieren.', command: 'npm run workflow:validate' },
+  FINDINGS_BLOCK: { fix: 'P0 und P1 muessen ausdruecklich als 0 uebergeben werden - ein Default gibt es bewusst nicht.', command: '--p0 0 --p1 0' },
+  LIVE_APPROVAL: { fix: 'Live verlangt drei getrennte Bestaetigungen in einem Aufruf.', command: `--approve-live --approval-text "${APPROVAL_TEXT}" --execute` },
+  LIVE_DRY_RUN_BLOCK: { fix: 'Live-Publish ist im Dry-Run grundsaetzlich gesperrt. --dry-run weglassen, wenn wirklich veroeffentlicht werden soll.' },
+  LIVE_SOURCE: { fix: 'Auf main wechseln und exakt auf origin/main bringen; Live wird nie aus einer Feature-Branch veroeffentlicht.', command: 'git checkout main && git fetch origin main && git reset --hard origin/main' },
+  LIVE_THEME_AMBIGUOUS: { fix: 'Shopify meldet nicht genau ein Theme mit role MAIN. Theme-Rollen im Admin pruefen und domains/shopify/live-theme.json angleichen.' },
+  LIVE_THEME_BLOCK: { fix: 'Das gewaehlte Ziel ist das aktuelle Live-Theme. Eine unpublished Theme-ID als Ziel verwenden.' },
+  LIVE_VERIFY: { fix: 'Shopify bestaetigt das Theme nach dem Publish nicht als live. Rolle im Admin pruefen, bevor erneut publiziert wird.' },
+  MISSING_COMMAND: { fix: 'Das benoetigte Programm fehlt im PATH. Projektabhaengigkeiten installieren.', command: 'npm install' },
+  MISSING_SHOPIFY: { fix: 'Shopify CLI ist nicht installiert oder nicht im PATH.', command: 'npm install' },
+  MISSING_SHOPIFY_AUTH: { fix: 'Shopify-Login fehlt. Anmeldung im eigenen Terminal durchfuehren - das ist interaktiv und nicht automatisierbar.', command: 'npx shopify auth login' },
+  ORDER_COMPLETED: { fix: 'Ein abgeschlossener Bestellvorgang wird behauptet, aber nicht belegt. Sales-Evidence frisch erzeugen.', command: 'npm run sales:check' },
+  PREVIEW_APPROVAL: { fix: 'Preview verlangt eine ausdrueckliche Freigabe im Aufruf.', command: '--approve-preview' },
+  PREVIEW_DIFF: { fix: 'Die Dateien auf dem Preview-Theme weichen von origin/main ab. Preview erneut pushen, statt den Unterschied zu ignorieren.' },
+  PREVIEW_DRIFT: { fix: 'Das Preview-Theme wurde seit der Evidence veraendert - vermutlich durch einen Scratch- oder Handpush. Preview neu erzeugen.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },
+  PREVIEW_EVIDENCE: { fix: 'Live verlangt eine bestandene Preview fuer exakt diesen origin/main-Commit. Erst Preview laufen lassen, dann Live. --local-runner umgeht das nicht.', command: 'npm run workflow:preview -- --theme-id <PREVIEW_ID> --p0 0 --p1 0 --approve-preview' },
+  PREVIEW_HTTP: { fix: 'Die Preview-URL antwortet nicht mit 200. Theme im Admin oeffnen und pruefen, ob es fehlerfrei rendert.' },
+  PREVIEW_OUTPUT: { fix: 'Die Push-Ausgabe von Shopify passt nicht zur angeforderten Theme-ID. Theme-ID gegen domains/shopify/live-theme.json pruefen.' },
+  PREVIEW_ROLE: { fix: 'Das Ziel-Theme ist laut Shopify nicht (mehr) unpublished. Rollen per Admin-API pruefen und domains/shopify/live-theme.json aktualisieren - nie eine Theme-ID aus aelteren Notizen uebernehmen.' },
+  PREVIEW_SETTINGS: { fix: 'config/settings_data.json wurde beim Push veraendert, obwohl sie geschuetzt ist. Aenderung zurueckrollen und Theme-Einstellungen im Admin pflegen.' },
+  PREVIEW_SETTINGS_DRIFT: { fix: 'Die Theme-Einstellungen auf Shopify weichen vom Repo ab. Bewusst entscheiden, welche Seite gilt, statt blind zu pushen.' },
+  PREVIEW_SOURCE: { fix: 'Preview entsteht nur aus aktuellem origin/main. Feature-Branch erst rebasen, dann nach main mergen und pushen.', command: 'git fetch origin main && git rebase origin/main' },
+  PREVIEW_THEME: { fix: 'Eine unpublished Theme-ID muss ausdruecklich genannt werden; die Quelle dafuer ist domains/shopify/live-theme.json.', command: '--theme-id <PREVIEW_ID>' },
+  SALES_EVIDENCE: { fix: 'Die Sales-Evidence ist nicht frisch. Sales-Check unmittelbar vor dem Gate erneut ausfuehren.', command: 'npm run sales:check' },
+  SALES_FAILED: { fix: 'Der Sales-Readiness-Check meldet echte Fehler. Bericht in qa/results/sales-readiness.json lesen und die Ursachen beheben.' },
+  SCRATCH_OUTPUT: { fix: 'Shopify lieferte beim Scratch-Push kein verwertbares JSON. Aufruf einzeln wiederholen und die Rohausgabe pruefen.' },
+  SCRATCH_PREVIEW_COLLISION: { fix: 'Scratch darf nicht auf das Preview-Theme zeigen, sonst wird die Preview-Evidence entwertet. Ein separates Wegwerf-Theme waehlen.' },
+  SCRATCH_ROLE: { fix: 'Das Scratch-Ziel ist nicht unpublished. Ein echtes Wegwerf-Theme anlegen statt ein produktives zu verwenden.' },
+  SCRATCH_THEME: { fix: 'Scratch verlangt die ID eines Wegwerf-Themes.', command: '--theme-id <SCRATCH_ID>' },
+  SHOPIFY_LIST_FAILED: { fix: 'Die Theme-Liste konnte nicht gelesen werden. Netz und Shopify-Login pruefen, dann erneut versuchen.' },
+  SHOPIFY_OUTPUT: { fix: 'Shopify lieferte kein gueltiges JSON. Denselben Befehl einzeln ausfuehren und die Rohausgabe ansehen.' },
+  THEME_ID_AMBIGUOUS: { fix: 'Die Theme-ID fehlt oder trifft nicht genau ein Theme. Wert aus domains/shopify/live-theme.json nehmen und explizit uebergeben.', command: '--theme-id <ID aus domains/shopify/live-theme.json>' },
+  TIMEOUT: { fix: 'Der Schritt lief in die Zeitgrenze. Einzeln ausfuehren, um zu sehen, ob er haengt oder nur langsam ist.' },
+  UNPUSHED_HEAD: { fix: 'Der lokale HEAD liegt noch nicht auf dem Remote-Branch.', command: 'git push' },
+  USAGE: { fix: 'Unbekannter Workflow-Name. Verfuegbare Lanes: route, validate, pr, preview, scratch, live, status, next, continue.' },
+  VALIDATION_FAILED: { fix: 'Ein Validierungsschritt ist fehlgeschlagen. Den betroffenen Check einzeln laufen lassen und pruefen, ob die Fehler ueberhaupt vom eigenen Diff stammen - SEO meldet zum Beispiel auch vorbestehende Altfehler. Einen Override gibt es bewusst nicht; der Fehler muss behoben werden.', command: 'npm run seo:check  # bzw. der im Bericht genannte Schritt' },
+  WORKTREE_TOO_LARGE: { fix: 'Der Worktree ueberschreitet 20 MB fuer den Fingerprint. Grosse Dateien entfernen oder ignorieren.' },
+};
+
+/** Liefert den Loesungshinweis zu einem Gate-Code, oder null wenn keiner hinterlegt ist. */
+export function remediationFor(code) {
+  return GATE_REMEDIATION[code] ?? null;
+}
+
 export function assertPrGate({ branch, base = OFFICIAL_BASE, p0, p1, clean, head, remoteHead }) {
   if (!BRANCH_PATTERN.test(branch) || branch === OFFICIAL_BASE) throw new WorkflowGateError('PR-Workflow verweigert main oder ungültigen Branch-Namen', 'BRANCH_BLOCK');
   if (base !== OFFICIAL_BASE) throw new WorkflowGateError('PR-Base muss main sein', 'BASE_BLOCK');

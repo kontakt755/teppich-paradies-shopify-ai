@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  APPROVAL_TEXT, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
+  APPROVAL_TEXT, GATE_REMEDIATION, REQUIRED_LOCAL_EVIDENCE_STEPS, TRACKED_EVIDENCE_PATH, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, commandName, compareThemeMaps, createDryRunSummary,
   deriveWorkflowState, fileSha256, findingsAreClear, parseThemeList, previewPushArgs, runValidation, selectThemeTargets, verifyLocalEvidence, verifyPreviewPayload,
-  verifyPreviewSnapshot, verifySalesReport,
+  remediationFor, verifyPreviewSnapshot, verifySalesReport,
 } from '../core.mjs';
 import { targetUrl } from '../../qa/target-url.mjs';
 
@@ -297,4 +297,33 @@ test('Scratch-Gate: laesst WIP zu, schuetzt aber Live und Preview-Evidence', () 
     () => assertScratchGate({ themeId: '777', theme: { id: '777', role: 'unpublished' }, liveTheme: live, previewEvidence: { themeId: '777' } }),
     /Preview-Evidence/,
   );
+});
+
+test('jeder geworfene Gate-Code hat einen Loesungshinweis', () => {
+  // Ein Gate, das nur das Problem nennt, hat in der Praxis sechs Fehlschlaege
+  // nacheinander erzeugt. Dieser Test liest die tatsaechlich geworfenen Codes
+  // aus dem Quelltext und erzwingt fuer jeden einen Eintrag - eine neue
+  // WorkflowGateError ohne Loesungstext laesst die Suite fehlschlagen. Damit
+  // kann die Tabelle nicht vom Code wegdriften.
+  const workflowDir = path.join(import.meta.dirname, '..');
+  const sources = fs.readdirSync(workflowDir)
+    .filter(name => name.endsWith('.mjs'))
+    .map(name => fs.readFileSync(path.join(workflowDir, name), 'utf8'))
+    .join('\n');
+
+  const thrown = new Set();
+  for (const match of sources.matchAll(/WorkflowGateError\([^)]*?,\s*'([A-Z_]+)'/g)) thrown.add(match[1]);
+  // Wird nicht direkt geworfen, sondern in runValidation aus dem Blocker abgeleitet.
+  thrown.add('VALIDATION_FAILED');
+
+  assert.ok(thrown.size > 20, `Codes wurden nicht erkannt, gefunden: ${thrown.size}`);
+
+  const ohneHinweis = [...thrown].filter(code => !remediationFor(code)).sort();
+  assert.deepEqual(ohneHinweis, [], `Gate-Codes ohne Eintrag in GATE_REMEDIATION: ${ohneHinweis.join(', ')}`);
+
+  // Jeder Hinweis muss auch etwas sagen - ein leerer String wuerde den Test
+  // oben bestehen, aber niemandem helfen.
+  for (const [code, hint] of Object.entries(GATE_REMEDIATION)) {
+    assert.ok(hint.fix && hint.fix.length > 20, `Loesungstext zu ${code} ist zu duenn`);
+  }
 });

@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { createHash } from 'node:crypto';
 import {
-  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate,
+  APPROVAL_TEXT, DEFAULT_STORE, OFFICIAL_BASE, WorkflowGateError, assertLiveGate, assertPreviewGate, assertPrGate, assertScratchGate, remediationFor,
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
@@ -431,5 +431,12 @@ main().catch(error => {
   try { writeRuntimeReport(root, 'latest.json', summary); } catch {}
   printSummary(summary);
   console.error(`${error.code ?? error.name}: ${error.message}`);
+  // Das Problem allein hat in der Praxis nicht gereicht - ohne Loesungshinweis
+  // wurde nach jedem Gate-Fehlschlag erst gesucht, was zu tun ist.
+  const hint = remediationFor(error.code);
+  if (hint) {
+    console.error(`  Fix: ${hint.fix}`);
+    if (hint.command) console.error(`  Befehl: ${hint.command}`);
+  }
   process.exitCode = 1;
 });
