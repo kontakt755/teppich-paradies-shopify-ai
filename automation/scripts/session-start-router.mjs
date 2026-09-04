@@ -21,19 +21,34 @@ function ensureDir(dir) {
 
 function classifyIssues() {
   try {
-    let issues;
+    let issues = [];
+
+    // Versuche GitHub-Issues zu lesen
     try {
       issues = listOpenIssues();
     } catch (ghError) {
-      if (ghError.message.includes('ENOENT') || ghError.message.includes('gh')) {
-        console.warn('GitHub CLI (gh) nicht verfügbar — Router-Klassifizierung übersprungen.');
+      // gh CLI ist nicht verfügbar oder andere Fehler
+      if (
+        ghError.code === 'ENOENT' ||
+        ghError.message.includes('ENOENT') ||
+        ghError.message.includes('gh: not found') ||
+        ghError.message.includes('gh CLI') ||
+        ghError.message.includes('Timeout')
+      ) {
+        console.warn('GitHub CLI nicht verfügbar oder Timeout — Router-Klassifizierung übersprungen.');
         return;
       }
       throw ghError;
     }
+
+    if (!Array.isArray(issues) || issues.length === 0) {
+      console.log('Keine offenen Issues gefunden.');
+      return;
+    }
+
     const classified = issues.map(issue => {
       const routing = routeTask({
-        text: `${issue.title}\n\n${issue.url}`,
+        text: `${issue.title || ''}\n\n${issue.url || ''}`,
         branch: null,
         head: null,
       });
@@ -41,7 +56,7 @@ function classifyIssues() {
         number: issue.number,
         title: issue.title,
         url: issue.url,
-        labels: issue.labels,
+        labels: issue.labels || [],
         routing: {
           taskClass: routing.taskClass,
           executionMode: routing.executionMode,
@@ -76,15 +91,12 @@ function classifyIssues() {
     console.log(`  B: ${classified.filter(i => i.routing.taskClass === 'B').length}`);
     console.log(`  C: ${classified.filter(i => i.routing.taskClass === 'C').length}`);
     console.log(`  D: ${classified.filter(i => i.routing.taskClass === 'D').length}`);
-    if (classified.filter(i => i.routing.humanGateRequired).length > 0) {
-      console.log(`  ⚠️  ${classified.filter(i => i.routing.humanGateRequired).length} braucht Human-Gate`);
+    const needsGate = classified.filter(i => i.routing.humanGateRequired).length;
+    if (needsGate > 0) {
+      console.log(`  ⚠️  ${needsGate} braucht Human-Gate`);
     }
 
   } catch (error) {
-    if (error.code === 'ENOENT' && error.message.includes('gh')) {
-      console.warn('gh CLI nicht verfügbar, Router-Klassifizierung übersprungen.');
-      return;
-    }
     console.error(`Router-Fehler: ${error.message}`);
     process.exitCode = 1;
   }
