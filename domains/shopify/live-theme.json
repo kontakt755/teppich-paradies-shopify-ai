@@ -11,6 +11,11 @@
     "name": "Horizon",
     "note": "Niemals loeschen oder ueberschreiben."
   },
+  "preview": {
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "note": "Sauberes Preview-Ziel fuer workflow:preview, leer angelegt und damit ohne Altdateien. Wichtig: ein Preview-Push laeuft mit --nodelete, deshalb erreicht previewDiffCount nur auf einem Theme ohne Fremddateien 0. Aeltere Themes als Preview-Ziel scheitern an PREVIEW_DIFF."
+  },
   "retired": [
     {
       "themeId": "201829679438",
