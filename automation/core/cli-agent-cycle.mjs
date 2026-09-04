@@ -317,15 +317,19 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
       // kostenpflichtige API ausgewichen ist, kostet jede weitere Runde echtes
       // Geld - und ein Reviewbefund ist nicht zwingend richtig. Deshalb dort
       // nur eine automatische Korrektur; danach entscheidet der Mensch.
-      if (candidate?.authMode === 'API') {
-        if (apiCorrections >= maxApiCorrections) {
-          onState?.({ status: 'API_CORRECTION_LIMIT', corrections: apiCorrections });
-          return { ...candidate, status: 'PARKED', reason: 'API_CORRECTION_LIMIT', findings };
-        }
-        apiCorrections += 1;
+      //
+      // Gezaehlt wird NACH dem Lauf anhand des tatsaechlich benutzten Modus.
+      // Vorher am uebergebenen Kandidaten zu pruefen reichte nicht: faellt erst
+      // die Korrektur selbst auf die API zurueck, trug der Kandidat noch
+      // SUBSCRIPTION - und es liefen zwei bezahlte Runden statt einer.
+      if (apiCorrections >= maxApiCorrections) {
+        onState?.({ status: 'API_CORRECTION_LIMIT', corrections: apiCorrections });
+        return { ...candidate, status: 'PARKED', reason: 'API_CORRECTION_LIMIT', findings };
       }
       phase = 'CORRECT';
-      return guardCandidate(await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState }));
+      const corrected = await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState });
+      if (corrected?.authMode === 'API') apiCorrections += 1;
+      return guardCandidate(corrected);
     },
     onState,
   });
