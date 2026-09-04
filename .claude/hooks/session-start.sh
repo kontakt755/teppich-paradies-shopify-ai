@@ -3,12 +3,24 @@
 # den Projektzustand, statt ihn jede Sitzung neu herleiten zu lassen.
 set -euo pipefail
 
-# Lokal laeuft die Umgebung ohnehin; der Hook ist fuer Claude Code on the web.
+cd "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}"
+
+# Laeuft IMMER, auch lokal: am 2026-09-04 lag ein Checkout unter iCloud-
+# synchronisiertem ~/Documents, was Git-Sperren mit der Cloud-Synchronisation
+# kollidieren liess (minutenlange Haenger, am Ende eine beschaedigte
+# Git-Objektdatenbank). Warnt frueh, bevor irgendein Git-Befehl laeuft.
+if ! node qa/run-sync-path-guard.mjs; then
+  echo ""
+  echo "  Diese Sitzung arbeitet trotzdem weiter, aber Git-Befehle koennen"
+  echo "  haengen oder die Objektdatenbank beschaedigen. Checkout verschieben,"
+  echo "  sobald moeglich."
+  echo ""
+fi
+
+# Lokal laeuft die Umgebung ohnehin; der Rest des Hooks ist fuer Claude Code on the web.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0
 fi
-
-cd "${CLAUDE_PROJECT_DIR:-$(dirname "$0")/../..}"
 
 # npm install statt ci: der Containerzustand wird nach dem Hook zwischen-
 # gespeichert, und install nutzt einen vorhandenen node_modules-Stand.

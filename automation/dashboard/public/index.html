@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="theme-color" content="#123b42">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/manifest.webmanifest?v=20260903-4">
+    <link rel="stylesheet" href="/styles.css?v=20260903-4">
+    <title>TP AI Steuerzentrale</title>
+  </head>
+  <body>
+    <main>
+      <header><p class="eyebrow">TEPPICH PARADIES</p><h1>AI Steuerzentrale</h1><p class="sub">Auftrag eingeben. Router, Tests und Review laufen automatisch.</p></header>
+      <section id="login" class="card"><h2>Privater Zugang</h2><p>Gib den Zugangscode ein, den das Dashboard beim Start im Terminal zeigt.</p><form id="login-form"><input id="access-token" type="password" autocomplete="current-password" placeholder="Zugangscode" required><button>Anmelden</button></form><p class="error" id="login-error"></p></section>
+      <section id="workspace" hidden>
+        <section class="card compose"><h2>Neuer Auftrag</h2><form id="task-form"><div class="field-row"><label class="field-label" for="issue-number">Online-Shop-Aufgabe</label><button id="reload-issues" class="text-button" type="button">Neu laden</button></div><select id="issue-number"><option value="new">Neue Online-Shop-Aufgabe automatisch erstellen</option><option value="">Nur lokal – keine GitHub-Aufgabe</option></select><small id="issues-status" class="issues-status">GitHub-Aufgaben werden geladen …</small><p class="public-note">GitHub ist öffentlich: keine Kundendaten oder Zugangsdaten eingeben. Erkannte Schlüssel und E-Mail-Adressen werden zusätzlich entfernt.</p><textarea id="task" maxlength="8000" placeholder="Zum Beispiel: Prüfe die Filteransicht auf Mobilgeräten, behebe echte Fehler und teste erneut." required></textarea><button id="submit">Router starten</button></form><p class="hint">Standardmäßig wird ein neues Problem automatisch im Online-Shop-Dashboard angelegt. Für eine Fortsetzung kannst du stattdessen eine vorhandene Aufgabe auswählen.</p></section>
+        <section class="card"><div class="row"><h2>Aktueller Stand</h2><span id="network" class="pill"></span></div><div id="run" class="status">Bereit für deinen Auftrag.</div><div id="progress" class="progress-details" hidden></div></section>
+        <section id="activity-card" class="card" hidden><div class="row"><h2>Was gerade passiert</h2><span class="live-dot">LIVE</span></div><div id="activities" class="activities"></div></section>
+        <section id="result-card" class="card" hidden><h2>Ergebnis</h2><div id="result" class="result"></div></section>
+        <section id="follow-up-card" class="card" hidden><h2>Direkt weitermachen</h2><p class="section-copy">Der Router übernimmt den vorherigen Auftrag und sein Ergebnis automatisch. Du schreibst nur noch, was als Nächstes passieren soll.</p><div class="quick-actions"><button type="button" class="secondary quick" data-command="Prüfe das Ergebnis noch einmal genauer und nenne nur belegbare offene Punkte.">Genauer prüfen</button><button type="button" class="secondary quick" data-command="Behebe die gefundenen Probleme, teste erneut und liefere erst dann das Ergebnis.">Befunde beheben</button><button type="button" class="secondary quick" data-command="Führe den Auftrag erneut vollständig aus.">Erneut ausführen</button></div><form id="follow-up-form"><textarea id="follow-up" maxlength="8000" placeholder="Zum Beispiel: Behebe die zwei offenen Befunde und teste danach Mobil und Desktop." required></textarea><button id="follow-up-submit">Folgebefehl starten</button></form></section>
+        <section id="history-card" class="card" hidden><h2>Letzte Aufträge</h2><div id="history" class="history"></div></section>
+        <section class="grid"><article class="card metric"><span>Anfragen</span><strong id="requests">0</strong></article><article class="card metric"><span>Tokens</span><strong id="tokens">0</strong></article><article class="card metric"><span>Kosten</span><strong id="cost">$0.00</strong></article></section>
+        <section class="card"><h2>Verwendete Anbieter</h2><div id="providers" class="providers">Noch keine gemessenen Anfragen.</div></section>
+      </section>
+      <footer class="version">Dashboard-Version 2026.09.03.4</footer>
+    </main>
+    <script type="module" src="/app.js?v=20260903-4"></script>
+  </body>
+</html>

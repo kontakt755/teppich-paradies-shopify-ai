@@ -239,4 +239,5 @@ npm run qa                  # volle Suite inkl. visuell (nur lokal)
 
 `AGENTS.md` (zentrale Regeln, zuerst lesen) · `AI_ORCHESTRATOR_MASTER_SPEC.md` ·
 `RISK_MODEL_SPEC.md` · `SHOPIFY_MASTER_ROADMAP.md` · `QUICK_START.md` ·
+`docs/MULTI_MAC_WORKFLOW.md` (Regeln fuer mehrere Rechner, Cloud-Sync-Fallen) ·
 `docs/ai-dashboard/`

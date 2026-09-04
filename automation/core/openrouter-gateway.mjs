@@ -50,6 +50,20 @@ export function buildOpenRouterAnthropicRequest({
   };
 }
 
+export function buildOpenRouterChatRequest({ route, body, apiKey, baseUrl = OPENROUTER_ANTHROPIC_BASE_URL, signal = undefined }) {
+  validateRoute(route);
+  if (!body || typeof body !== 'object' || Array.isArray(body)) throw new OpenRouterGatewayError('Chat request body must be an object');
+  if (typeof apiKey !== 'string' || !apiKey.trim()) throw new OpenRouterGatewayError('OPENROUTER_API_KEY is required');
+  return {
+    url: `${normalizedBaseUrl(baseUrl)}/v1/chat/completions`,
+    init: {
+      method: 'POST', signal,
+      headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json', 'x-session-id': route.cacheSessionKey },
+      body: JSON.stringify({ ...body, model: route.model }),
+    },
+  };
+}
+
 export async function callOpenRouterAnthropic({ route, body, apiKey = process.env.OPENROUTER_API_KEY, baseUrl, signal, fetchImpl = globalThis.fetch }) {
   if (typeof fetchImpl !== 'function') throw new OpenRouterGatewayError('A fetch implementation is required');
   const request = buildOpenRouterAnthropicRequest({ route, body, apiKey, baseUrl, signal });
@@ -59,6 +73,15 @@ export async function callOpenRouterAnthropic({ route, body, apiKey = process.en
   } catch (error) {
     throw new OpenRouterGatewayError('OpenRouter request failed before a response was received', { cause: error });
   }
+  if (!response?.ok) throw new OpenRouterGatewayError('OpenRouter returned a non-success response', { status: response?.status ?? null });
+  return response;
+}
+
+export async function callOpenRouterChat({ route, body, apiKey = process.env.OPENROUTER_API_KEY, baseUrl, signal, fetchImpl = globalThis.fetch }) {
+  if (typeof fetchImpl !== 'function') throw new OpenRouterGatewayError('A fetch implementation is required');
+  const request = buildOpenRouterChatRequest({ route, body, apiKey, baseUrl, signal });
+  let response;
+  try { response = await fetchImpl(request.url, request.init); } catch (error) { throw new OpenRouterGatewayError('OpenRouter request failed before a response was received', { cause: error }); }
   if (!response?.ok) throw new OpenRouterGatewayError('OpenRouter returned a non-success response', { status: response?.status ?? null });
   return response;
 }

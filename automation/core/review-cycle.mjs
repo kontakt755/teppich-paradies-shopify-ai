@@ -95,6 +95,10 @@ export async function runReviewCorrectionCycle({
       return { ...candidate, ...parkedOnProviderTimeout(error, reviewRound, maxReviewRounds) };
     }
     if (reviewResult?.status === 'SECURITY_STOP') return { ...candidate, status: 'SECURITY_STOP', reviewRound, maxReviewRounds, review: reviewResult };
+    if (reviewResult?.status === 'REVIEW_INFRA_FAILED') {
+      emit(onState, 'REVIEW_INFRA_FAILED', { reviewRound, maxReviewRounds, reviewError: reviewResult.reviewError ?? null });
+      return { ...candidate, status: 'REVIEW_INFRA_FAILED', reviewRound, maxReviewRounds, reviewError: reviewResult.reviewError ?? null };
+    }
     const findings = validateReviewFindings(reviewResult?.findings ?? []);
     if (reviewResult?.status === 'FAIL' && !findings.length) return { ...candidate, status: 'HARD_FAIL', reviewRound, maxReviewRounds, review: reviewResult };
     if (findings.some(finding => finding.priority === 'P0')) {

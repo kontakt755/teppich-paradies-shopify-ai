@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "findings"],
+  "properties": {
+    "status": { "enum": ["PASS", "CHANGES_REQUIRED", "HUMAN_GATE"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["priority", "file", "problem", "reason", "recommendedFix"],
+        "properties": {
+          "priority": { "enum": ["P0", "P1", "P2", "P3"] },
+          "file": { "type": "string" },
+          "problem": { "type": "string" },
+          "reason": { "type": "string" },
+          "recommendedFix": { "type": "string" }
+        }
+      }
+    }
+  }
+}
