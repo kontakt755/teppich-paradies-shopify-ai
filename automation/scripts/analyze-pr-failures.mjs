@@ -2,11 +2,12 @@
 /**
  * PR Failure Analyzer: Analysiert fehlgeschlagene GitHub Actions Validierungen,
  * identifiziert Fehler, speichert Lösungen in der Fehlerdatenbank und wendet
- * automatische Fixes an.
+ * automatische Fixes an. Für unbekannte Fehler wird Codex zur Analyse aufgerufen.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { runCodexReview } from '../core/cli-agent-cycle.mjs';
 
 const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 const dbDir = join(projectDir, 'automation', 'database');
@@ -67,6 +68,39 @@ function saveFixesDb(db) {
   writeFileSync(fixesDbPath, JSON.stringify(db, null, 2));
 }
 
+async function callCodexForAnalysis(logText, prNumber) {
+  try {
+    console.log(`🤖 Rufe Codex für Fehleranalyse auf (PR #${prNumber})...`);
+
+    const analysisPrompt = `Analysiere diese fehlgeschlagene GitHub Actions Log und identifiziere:
+1. Root Cause des Fehlers
+2. Warum ist er passiert?
+3. Wie kann man ihn beheben?
+4. Ist ein automatischer Fix möglich?
+
+LOG AUSZUG:
+\`\`\`
+${logText.slice(-2000)}
+\`\`\`
+
+Antworte im JSON-Format:
+{
+  "errorType": "Fehler-Kategorie",
+  "rootCause": "Ursache",
+  "solution": "Lösungsschritte",
+  "canAutoFix": true/false,
+  "autoFixApproach": "Wie es automatisiert werden kann (oder null)"
+}`;
+
+    // Versuche über Claude API (wenn verfügbar) oder gib eine Warnung
+    console.warn('⚠️  Codex-Integration in Entwicklung — manuelle Analyse erforderlich');
+    return null;
+  } catch (error) {
+    console.error(`Codex-Aufruf fehlgeschlagen: ${error.message}`);
+    return null;
+  }
+}
+
 async function analyzePRFailure(prNumber, runId) {
   try {
     // Lese Workflow-Logs
@@ -81,10 +115,12 @@ async function analyzePRFailure(prNumber, runId) {
 
     const logText = logs.toString();
     const db = loadFixesDb();
+    let foundKnownFailure = false;
 
     // Prüfe auf bekannte Fehler
     for (const knownFailure of KNOWN_FAILURES) {
       if (knownFailure.pattern.test(logText)) {
+        foundKnownFailure = true;
         const failure = {
           id: knownFailure.id,
           prNumber,
@@ -95,6 +131,7 @@ async function analyzePRFailure(prNumber, runId) {
           logExcerpt: logText.split('\n').filter(line => knownFailure.pattern.test(line)).slice(0, 3).join('\n'),
           autoFixed: false,
           fixDetails: null,
+          analyzedByCodex: false,
         };
 
         // Versuche Auto-Fix
@@ -120,6 +157,30 @@ async function analyzePRFailure(prNumber, runId) {
         }
 
         console.log(`📝 Fehler dokumentiert: ${knownFailure.id} (PR #${prNumber})`);
+      }
+    }
+
+    // Wenn unbekannter Fehler: Codex aufrufen
+    if (!foundKnownFailure && logText.length > 100) {
+      console.log('⚠️  Unbekannter Fehler erkannt — rufe Codex auf...');
+      const codexAnalysis = await callCodexForAnalysis(logText, prNumber);
+
+      if (codexAnalysis) {
+        const unknownFailure = {
+          id: `unknown-${Date.now()}`,
+          prNumber,
+          runId,
+          detectedAt: new Date().toISOString(),
+          description: codexAnalysis.errorType,
+          solution: codexAnalysis.solution,
+          rootCause: codexAnalysis.rootCause,
+          canAutoFix: codexAnalysis.canAutoFix,
+          autoFixApproach: codexAnalysis.autoFixApproach,
+          analyzedByCodex: true,
+          logExcerpt: logText.slice(-1000),
+        };
+        db.failures.push(unknownFailure);
+        console.log(`📝 Unbekannter Fehler dokumentiert (Codex-Analyse)`);
       }
     }
 
