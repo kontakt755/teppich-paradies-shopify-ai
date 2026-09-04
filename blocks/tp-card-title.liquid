@@ -47,6 +47,10 @@
   [role="heading"] {
     margin: 0;
     line-height: 1.4;
+    /* Feste Hoehe fuer 2 Zeilen, damit Karten mit ein- und zweizeiligen
+       Titeln in derselben Reihe gleich hoch bleiben (sonst laufen die
+       Kartenkanten in der Collection-Ansicht auseinander). */
+    min-height: calc(1.4em * 2);
     word-break: break-word;
     overflow: hidden;
     text-overflow: ellipsis;
