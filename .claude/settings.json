@@ -9,6 +9,28 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | grep -qE 'workflow:(preview|live)|theme (push|publish)' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Shopify-Deploy-Befehl erkannt: vor dem Ausfuehren .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, falls in dieser Session noch nicht geschehen - dort stehen bereits geloeste Fehler mit funktionierendem Fix.\"}}' || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command // empty' | grep -qE 'workflow:(preview|live)|theme (push|publish)' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUseFailure\",\"additionalContext\":\"Dieser Shopify-Deploy-Befehl ist fehlgeschlagen. Zuerst .ai/DEPLOYMENT-TROUBLESHOOTING.md pruefen, ob der Fehler dort schon dokumentiert ist. Falls nicht: nach dem Beheben dort als neuen Eintrag ergaenzen (Fehlercode, Ursache, funktionierender Fix) - Format wie die bestehenden Eintraege.\"}}' || true"
+          }
+        ]
+      }
     ]
   }
 }
