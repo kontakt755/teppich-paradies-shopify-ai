@@ -84,3 +84,10 @@ $RECYCLE.BIN/
 __pycache__/
 venv/
 .venv/
+
+# Sync-Reports entstehen bei jedem sync:jordanshop-Lauf neu. Ungeignored
+# machen sie den Working Tree dirty und blockieren damit workflow:doctor,
+# Preview und Live - obwohl sie reine Laufzeit-Artefakte sind. Das
+# Verzeichnis selbst bleibt ueber .gitkeep getrackt, weil syncpath:guard
+# seine Existenz prueft.
+.sync-reports/*.json

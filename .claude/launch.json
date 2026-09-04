@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "control-center",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "control:center"],
+      "port": 4177
+    },
+    {
+      "name": "dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dashboard"],
+      "port": 8001
+    }
+  ]
+}
