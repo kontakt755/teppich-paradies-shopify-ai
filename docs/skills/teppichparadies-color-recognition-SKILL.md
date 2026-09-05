@@ -283,8 +283,19 @@ anschliessendes `productVariantsBulkCreate` in Frage.
 | 4289 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
 | 4296 | ❌ | – | Keine Bild-URL bei Jordan |
 
-**Status 2026-09-05:** Elastium führt noch 21 Varianten — 4153, 4259 und 4296
-wurden entfernt, weil Jordan für sie kein Bild führt (die Codes selbst sind
-echt, nur bebildert sind sie nicht). Alle 21 tragen die Option `Breite: 200cm`
-und stehen auf `inventoryPolicy: CONTINUE`, sind also verkäuflich. Fortiva
-ebenso, mit 13 Varianten.
+**Status 2026-09-05:** Elastium und Fortiva vollständig aufgebaut.
+
+**Elastium Linoleumboden (21 Varianten):**
+- Codes: 4276, 4289, 4200, 4215, 4217, 4218, 4222, 4223, 4226, 4229, 4232, 4236, 4240, 4245, 4252, 4253, 4254, 4255, 4270, 4272, 4273
+- Entfernte Codes: 4153, 4259, 4296 (keine Bilder bei Jordan)
+- Titel: `Grün Gelb / 200cm`, `Beige Grau Hell Meliert / 200cm`, etc.
+- Metafelder: `color_name`, `supplier_color_code`
+- Policy: CONTINUE (verkäuflich)
+
+**Fortiva Nadelvlies Teppichboden (13 Varianten):**
+- Codes: 016, 021, 024, 044, 054, 056, 085, 088, 089, 120, 142, 180, 181
+- Titel: `Schwarz / 200cm`, `Silbergrau / 200cm`, `Hellblau / 200cm`, etc.
+- Metafelder: `color_name`, `supplier_color_code`
+- Policy: CONTINUE (verkäuflich)
+
+Beide Produkte laufen live und sind mit dem Universal-Rollenware-Rechner kompatibel.
