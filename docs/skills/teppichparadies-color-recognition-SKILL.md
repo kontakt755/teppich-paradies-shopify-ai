@@ -174,6 +174,11 @@ Drei Fallen dabei:
 - **Metafield MUST use custom.color_code** (not custom.colorCode or global.*)
 - **No image upload if variant already has media** — skip step 3, just return metafield
 - **Neue Produkte: Immer mit Lager anlegen.** Varianten dürfen nicht mit `inventory: 0` live gehen — das bedeutet Ausverkauftheit. Mindestens `inventory: 5–10` pro Variante, so dass das Produkt kaufbar ist. Bei Rollenware mindestens 10m², bei Fliesen mindestens eine Palette. Inventar-Manager passt die Mengen später an; der Importa-Prozess ist nicht der richtige Ort, um Lager zu erzeugen, sondern um Produkte **kaufbar** zu machen.
+- **Rollenware-Produkte MÜSSEN Breiten/Längenvarianten haben.** Der Universal-Rollenware-Rechner (Option Calculator Shopify App) greift auf diese Varianten zu. Beispiele:
+  - ❌ **Falsch (Elastium, Fortiva):** Nur Farbvarianten, keine Breite
+  - ✅ **Richtig:** Farbe × Breite (z.B. "Farbe 4200 / 200cm", "Farbe 4200 / 300cm", "Farbe 4200 / 400cm")
+  - **Auswirkung:** Ohne Breiten-Varianten zeigt der Rechner im Frontend nicht die richtige Preisberechnung an
+  - **Betroffen:** Elastium Linoleumboden, Fortiva Nadelvlies Teppichboden (müssen nachgearbeitet werden)
 
 ## Examples
 
