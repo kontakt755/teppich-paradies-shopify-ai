@@ -247,6 +247,20 @@ anschliessendes `productVariantsBulkCreate` in Frage.
 - **Gray tones**: Use "Grau Hell" (light), "Grau Mittel" (medium), "Grau Dunkel" (dark)
 - **Multiple tones in image**: Name after dominant color, note secondary in comment if needed
 
+## Vor der Fertigmeldung
+
+Bevor ein Produkt als "alle Farben benannt" markiert wird:
+
+1. **Alle Varianten durchgehen**: `graphql_query` mit `product(id: "...")` auf alle Varianten checken
+   - Sind alle Titel im Format `{Farbe} / {Breite}`?
+   - Oder noch alte generische Titel wie `Farbe 4276`?
+2. **Metafelder-Vollständigkeit**: Auf jedem Variant `custom.color_name` + `custom.supplier_color_code`?
+3. **Duplikat-Check**: Gibt es zwei Varianten mit identischem `color_name`?
+   - Wenn ja: Farbnamen nochmal prüfen (Vision kann sich täuschen)
+4. **Reihenfolge**: Die Codes in der Referenztabelle (z. B. oben) sollten alle Varianten abdecken
+
+**Fehler vermeiden:** Nicht annehmen, dass „live gestellt" = „komplett benannt" (2026-09-05: 2 von 21 Codes übersehen)
+
 ---
 
 ## Elastium Linoleumboden — Farbcode-Referenz

@@ -139,11 +139,16 @@ Wert, ohne dass eine einzige neu angelegt wird.
 
 **Bevor „die API kann das nicht" faellt, das Schema fragen.** Ein Aufruf von
 `graphql_schema` mit dem vermuteten Input-Typ (`OptionCreateInput`,
-`ProductVariantsBulkInput`, …) beantwortet die Frage; ein `Mutation`-Aufruf
-listet alles. Das gilt auch fuer Subagenten: Ihnen den Mutationsnamen im Prompt
-vorzugeben ist die Ursache, nicht die Hilfe — sie sollen ihn im Schema
-nachschlagen. Der Browser ist hier nie der Ausweichweg, sondern der teuerste
-Irrweg.
+`ProductVariantsBulkInput`, …) beantwortet die Frage in 1 Aufruf:
+
+```
+graphql_schema(types: ["OptionCreateInput"])  # Welche Mutations nutzen diesen Input?
+graphql_schema(types: ["Query", "Mutation"]) # Alles verfügbar?
+```
+
+Das gilt auch fuer Subagenten: Ihnen den Mutationsnamen im Prompt vorzugeben ist
+die Ursache, nicht die Hilfe — sie sollen ihn im Schema nachschlagen. Der
+Browser ist hier nie der Ausweichweg, sondern der teuerste Irrweg.
 
 > Warum das hier steht: Am 2026-09-04 ist eine komplette Sitzung dafuer
 > draufgegangen, einen `shpat_`-Token zu suchen und Variantenpreise ueber
