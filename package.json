@@ -16,6 +16,7 @@
     "template:guard": "node qa/run-template-guard.mjs",
     "theme:guard": "node qa/run-live-theme-guard.mjs",
     "farbcode:guard": "node scripts/farbcode-guard.mjs",
+    "unmerged:guard": "node qa/unmerged-changes-guard.mjs",
     "theme:block": "node automation/scripts/theme-block.mjs",
     "theme:diff": "node automation/scripts/theme-diff.mjs",
     "seo:check": "node qa/run-seo-check.mjs",

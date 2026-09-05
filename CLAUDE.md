@@ -58,6 +58,14 @@ Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
 **5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.**
 Siehe oben. Deshalb `domains/shopify/live-theme.json` plus `npm run theme:guard`.
 
+**6. Änderungen auf Feature-Branches, die nicht in main gemergt werden, sind "verloren".**
+Commits auf `origin/claude/teppich-produktseite-redesign-ru2sis` (Wunschmaß, Produktdetails)
+wurden mehrfach gemacht, aber der Branch wurde nie nach main gemergt. Die Dateien erscheinen
+deshalb nicht im Live-Theme, obwohl die Commits im Repo existieren. 
+  - **Pre-Commit Hook** warnt wenn du auf einem Branch älter als 7 Tage committst, der nicht in main ist.
+  - **Pre-Deploy Gate** (`unmerged-changes:guard`) blockiert Deploys von ungemergten Branches.
+  - Immer nach dem Commit in main mergen und pushen, nicht auf Feature-Branches sitzen bleiben.
+
 ## Vor jedem Commit
 
 ```
@@ -78,6 +86,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschütztes Live-Theme |
+| `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
