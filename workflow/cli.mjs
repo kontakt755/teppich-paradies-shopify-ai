@@ -122,6 +122,7 @@ function doctor() {
     ['qa/run-template-guard.mjs', 'template:guard'],
     ['qa/run-live-theme-guard.mjs', 'theme:guard'],
     ['qa/unmerged-changes-guard.mjs', 'unmerged-changes:guard'],
+    ['qa/essential-files-guard.mjs', 'essential-files:guard'],
   ]) add(nodeScript(script), label, `Details: node ${script}`);
 
   const evidencePath = path.join(root, '.workflow/preview.json');
