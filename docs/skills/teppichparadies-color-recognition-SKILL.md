@@ -173,7 +173,22 @@ Drei Fallen dabei:
 - **Consistency**: For same product line at different widths, use same color name across all variants
 - **Metafield MUST use custom.color_code** (not custom.colorCode or global.*)
 - **No image upload if variant already has media** — skip step 3, just return metafield
-- **Neue Produkte: Immer mit Lager anlegen.** Varianten dürfen nicht mit `inventory: 0` live gehen — das bedeutet Ausverkauftheit. Mindestens `inventory: 5–10` pro Variante, so dass das Produkt kaufbar ist. Bei Rollenware mindestens 10m², bei Fliesen mindestens eine Palette. Inventar-Manager passt die Mengen später an; der Importa-Prozess ist nicht der richtige Ort, um Lager zu erzeugen, sondern um Produkte **kaufbar** zu machen.
+- **Kein Produkt geht mit `DENY` und Bestand 0 live.** Beides zusammen heisst
+  „ausverkauft", und der Import erzeugt genau diese Kombination: Shopify legt
+  neue Varianten mit `inventoryPolicy: DENY` und Menge 0 an. Am 2026-09-05
+  standen Elastium und Fortiva so live — sichtbar, aber unverkäuflich.
+
+  Der richtige Hebel ist die **Policy, nicht eine erfundene Menge**:
+
+  ```graphql
+  productVariantsBulkUpdate(productId: …, variants: [{ id: …, inventoryPolicy: CONTINUE }])
+  ```
+
+  Warum nicht einfach eine Menge eintragen: Rollenware liegt nicht im Lager,
+  sie wird bei Jordan bestellt. Eine ausgedachte Zahl ist eine Behauptung mit
+  Verfallsdatum — nach ein paar Bestellungen steht das Produkt wieder auf
+  ausverkauft. `CONTINUE` gilt dauerhaft. Echte Mengen setzt der Betreiber
+  dort, wo er sie tatsächlich führt.
 - **Rollenware-Produkte brauchen eine zweite Option `Breite`.** Der Universal-Rollenware-Rechner (Option Calculator) liest die Optionen, nicht die Titel. Ohne die Option bleibt er stumm.
   - Linoleum: immer nur `200cm`. Nadelvlies: je Produkt verschieden, oft `200cm`, manchmal zusätzlich `400cm`.
   - Betroffen und noch offen: Elastium Linoleumboden, Fortiva Nadelvlies (Stand 2026-09-05).
@@ -268,4 +283,8 @@ anschliessendes `productVariantsBulkCreate` in Frage.
 | 4289 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
 | 4296 | ❌ | – | Keine Bild-URL bei Jordan |
 
-**Status 2026-09-05:** Elastium Linoleumboden vollständig katalogisiert. 19 von 24 Varianten mit Bildern und Farbnamen. 3 Varianten ohne Bilder (4153, 4259, 4296) bleiben als Platzhalter.
+**Status 2026-09-05:** Elastium führt noch 21 Varianten — 4153, 4259 und 4296
+wurden entfernt, weil Jordan für sie kein Bild führt (die Codes selbst sind
+echt, nur bebildert sind sie nicht). Alle 21 tragen die Option `Breite: 200cm`
+und stehen auf `inventoryPolicy: CONTINUE`, sind also verkäuflich. Fortiva
+ebenso, mit 13 Varianten.
