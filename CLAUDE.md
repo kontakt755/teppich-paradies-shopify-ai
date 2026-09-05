@@ -124,10 +124,28 @@ Variantenpreis und SKU setzt `productVariantsBulkUpdate` (SKU im verschachtelten
 `productVariantsUpdate` existieren nicht — wer die probiert und aufgibt, kommt
 faelschlich zu dem Schluss, Varianten gingen nur ueber den Browser.
 
+Eine neue Produktoption setzt `productOptionsCreate` (nicht `productUpdate`).
+Mit `variantStrategy: LEAVE_AS_IS` tragen alle vorhandenen Varianten den neuen
+Wert, ohne dass eine einzige neu angelegt wird.
+
+**Bevor „die API kann das nicht" faellt, das Schema fragen.** Ein Aufruf von
+`graphql_schema` mit dem vermuteten Input-Typ (`OptionCreateInput`,
+`ProductVariantsBulkInput`, …) beantwortet die Frage; ein `Mutation`-Aufruf
+listet alles. Das gilt auch fuer Subagenten: Ihnen den Mutationsnamen im Prompt
+vorzugeben ist die Ursache, nicht die Hilfe — sie sollen ihn im Schema
+nachschlagen. Der Browser ist hier nie der Ausweichweg, sondern der teuerste
+Irrweg.
+
 > Warum das hier steht: Am 2026-09-04 ist eine komplette Sitzung dafuer
 > draufgegangen, einen `shpat_`-Token zu suchen und Variantenpreise ueber
 > Chrome-Automation zu setzen — beides unnoetig. Der MCP-Server konnte die
 > Schreibzugriffe die ganze Zeit.
+>
+> Am 2026-09-05 dasselbe Muster eine Ebene hoeher: Ein Subagent bekam von mir
+> den erfundenen Namen `productCreateVariant` vorgesetzt, suchte 31 Aufrufe
+> lang, scheiterte an `productUpdate` und meldete, Optionen gingen nur von
+> Hand. Danach acht Runden Browser-Auswahl und Login — alles auf einer falschen
+> Praemisse. Eine Schema-Abfrage haette es in einem Aufruf geklaert.
 
 ## In Remote-Sessions (claude.ai/code)
 

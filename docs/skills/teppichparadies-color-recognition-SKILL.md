@@ -174,11 +174,48 @@ Drei Fallen dabei:
 - **Metafield MUST use custom.color_code** (not custom.colorCode or global.*)
 - **No image upload if variant already has media** — skip step 3, just return metafield
 - **Neue Produkte: Immer mit Lager anlegen.** Varianten dürfen nicht mit `inventory: 0` live gehen — das bedeutet Ausverkauftheit. Mindestens `inventory: 5–10` pro Variante, so dass das Produkt kaufbar ist. Bei Rollenware mindestens 10m², bei Fliesen mindestens eine Palette. Inventar-Manager passt die Mengen später an; der Importa-Prozess ist nicht der richtige Ort, um Lager zu erzeugen, sondern um Produkte **kaufbar** zu machen.
-- **Rollenware-Produkte MÜSSEN Breiten/Längenvarianten haben.** Der Universal-Rollenware-Rechner (Option Calculator Shopify App) greift auf diese Varianten zu. Beispiele:
-  - ❌ **Falsch (Elastium, Fortiva):** Nur Farbvarianten, keine Breite
-  - ✅ **Richtig:** Farbe × Breite (z.B. "Farbe 4200 / 200cm", "Farbe 4200 / 300cm", "Farbe 4200 / 400cm")
-  - **Auswirkung:** Ohne Breiten-Varianten zeigt der Rechner im Frontend nicht die richtige Preisberechnung an
-  - **Betroffen:** Elastium Linoleumboden, Fortiva Nadelvlies Teppichboden (müssen nachgearbeitet werden)
+- **Rollenware-Produkte brauchen eine zweite Option `Breite`.** Der Universal-Rollenware-Rechner (Option Calculator) liest die Optionen, nicht die Titel. Ohne die Option bleibt er stumm.
+  - Linoleum: immer nur `200cm`. Nadelvlies: je Produkt verschieden, oft `200cm`, manchmal zusätzlich `400cm`.
+  - Betroffen und noch offen: Elastium Linoleumboden, Fortiva Nadelvlies (Stand 2026-09-05).
+
+### Eine Option zu einem bestehenden Produkt hinzufuegen
+
+`productUpdate` kann das nicht — dafuer gibt es eine eigene Mutation. Wer nur
+`productUpdate` probiert, kommt faelschlich zu dem Schluss, Optionen gingen nur
+ueber die Admin-Oberflaeche.
+
+```graphql
+mutation ($productId: ID!, $options: [OptionCreateInput!]!) {
+  productOptionsCreate(
+    productId: $productId
+    options: $options
+    variantStrategy: LEAVE_AS_IS
+  ) {
+    product { id options { name optionValues { name } } }
+    userErrors { field message code }
+  }
+}
+# options: [{ name: "Breite", values: [{ name: "200cm" }] }]
+```
+
+`variantStrategy` entscheidet ueber die Menge der Arbeit:
+
+| Strategie | Wirkung |
+|---|---|
+| `LEAVE_AS_IS` | Bestehende Varianten bekommen den **ersten** Wert der neuen Option. Keine neuen Varianten. |
+| `CREATE` | Zusaetzlich jede Kombination aus bestehenden und neuen Werten. |
+
+Bei genau einer Breite ist `LEAVE_AS_IS` richtig: Ein Aufruf je Produkt, und alle
+vorhandenen Farbvarianten tragen die Breite. Erst wenn ein Produkt mehrere
+Breiten hat (Nadelvlies mit 200 und 400), kommt `CREATE` oder ein
+anschliessendes `productVariantsBulkCreate` in Frage.
+
+> Warum das hier steht: Am 2026-09-05 hat ein Subagent 31 Aufrufe darauf
+> verwendet, die Option ueber `productUpdate` zu setzen, und daraus geschlossen,
+> es gehe nur von Hand. Danach gingen weitere acht Runden fuer Browser-Auswahl
+> und Login drauf. Der Befund war falsch, und der geplante Umweg — 32 neue
+> Varianten mit kopierten Preisen — waere selbst dann unnoetig gewesen:
+> `LEAVE_AS_IS` erledigt beide Produkte in zwei Aufrufen.
 
 ## Examples
 
