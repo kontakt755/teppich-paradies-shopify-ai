@@ -279,8 +279,8 @@ anschliessendes `productVariantsBulkCreate` in Frage.
 | 4270 | ✅ | Beige Warm | ✓ |
 | 4272 | ✅ | Gelb Warm | ✓ |
 | 4273 | ✅ | Beige Gelb | ✓ |
-| 4276 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
-| 4289 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
+| 4276 | ✅ | Gelb Beige | ✓ |
+| 4289 | ✅ | Braun Dunkel | ✓ |
 | 4296 | ❌ | – | Keine Bild-URL bei Jordan |
 
 **Status 2026-09-05:** Elastium und Fortiva vollständig aufgebaut.
