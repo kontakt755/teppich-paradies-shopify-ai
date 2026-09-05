@@ -1,0 +1,345 @@
+{% doc %}
+  Maßskizze und Rechenweg für Rollenware - reine Anzeige.
+
+  Übernimmt die Darstellung des früheren eigenen Rollenware-Rechners
+  (Skizze mit B/L-Bemaßung, Fläche, Preis pro m², Gesamtpreis), ohne dessen
+  Warenkorb-Logik. Preisbildung und Warenkorb gehören der Options-Price-
+  Calculator-App; genau dort war der eigene Rechner seinerzeit gescheitert.
+
+  Dieser Baustein schreibt nichts und legt nichts ab. Er liest mit:
+    Breite - aus der gewählten Variante (Warenkorb-Formular)
+    Länge  - aus dem Zahlenfeld des App-Rechners
+
+  Der gezeigte Betrag ist eine Vorschau. Abgerechnet wird immer, was die App
+  und Shopify berechnen - eine Abweichung wäre ein Fehler dieses Bausteins,
+  niemals eine Preisänderung.
+
+  Gehört im Template hinter den App-Rechner.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ra_id = block.id | replace: '_', '' | downcase
+-%}
+
+<div class="tp-ra-{{ tp_ra_id }}" id="tp-ra-{{ tp_ra_id }}" hidden {{ block.shopify_attributes }}>
+
+  <figure class="tp-ra-draw" aria-hidden="true">
+    <div class="tp-ra-stage" data-stage>
+      <div class="tp-ra-piece" data-piece>
+        <span class="tp-ra-tag tp-ra-tag-w" data-tag-width>–</span>
+        <span class="tp-ra-tag tp-ra-tag-l" data-tag-length>–</span>
+      </div>
+    </div>
+  </figure>
+
+  <div class="tp-ra-calc" aria-live="polite">
+    <div class="tp-ra-calc-formula">
+      <div class="tp-ra-calc-step" data-formula-area>– cm × – cm = –</div>
+      <div class="tp-ra-calc-step" data-formula-price>–</div>
+    </div>
+    <div class="tp-ra-calc-total">
+      <span class="tp-ra-calc-total-label">Gesamtpreis</span>
+      <span class="tp-ra-calc-total-value" data-total>–</span>
+    </div>
+  </div>
+
+  <p class="tp-ra-hint">
+    Räume sind selten exakt im Winkel. Türnischen und Vorsprünge mitmessen und
+    10–15 cm Zugabe einplanen.
+  </p>
+
+</div>
+
+<script type="application/json" data-ra-{{ tp_ra_id }}>
+{
+  "variants": [
+    {%- for variant in product.variants -%}
+      {%- assign tp_ra_title = variant.title | downcase -%}
+      {%- unless tp_ra_title contains 'opc-' -%}
+        {
+          "id": {{ variant.id | json }},
+          "price": {{ variant.price | json }},
+          "options": {{ variant.options | json }}
+        },
+      {%- endunless -%}
+    {%- endfor -%}
+    null
+  ]
+}
+</script>
+
+{% stylesheet %}
+  .tp-ra-draw {
+    margin: 18px 0;
+    padding: 20px 14px 14px;
+    border-top: 1px solid var(--tp-line, #d6d3d1);
+  }
+
+  .tp-ra-stage {
+    display: flex;
+    justify-content: center;
+    /* Platz für die Maßbeschriftungen, die außerhalb der Rechteckkanten
+       sitzen (oben mittig, links vertikal) - siehe .tp-ra-tag-w/-l. */
+    padding: 30px 4px 4px 36px;
+    box-sizing: border-box;
+  }
+
+  .tp-ra-piece {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    max-width: 100%;
+    border: 2px solid var(--tp-primary, #1c1917);
+    border-radius: 4px;
+    background: linear-gradient(135deg, rgb(28 25 23 / 0.08), rgb(28 25 23 / 0.04));
+    box-shadow: var(--tp-shadow-sm, 0 1px 2px rgb(0 0 0 / 0.05));
+    transition: width 0.2s ease, height 0.2s ease;
+  }
+
+  .tp-ra-tag {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--tp-primary, #1c1917);
+    white-space: nowrap;
+  }
+
+  .tp-ra-tag-w {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 6px;
+  }
+
+  .tp-ra-tag-l {
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 8px;
+    writing-mode: vertical-rl;
+  }
+
+  .tp-ra-calc {
+    margin: 20px 0;
+  }
+
+  .tp-ra-calc-formula {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: var(--tp-surface, #fafaf9);
+    border: 1px solid var(--tp-line, #d6d3d1);
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tp-ra-calc-step {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--tp-ink, #0c0a09);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.3px;
+  }
+
+  .tp-ra-calc-total {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--tp-surface, #fafaf9);
+    border: 1px solid var(--tp-line, #d6d3d1);
+    border-radius: 8px;
+  }
+
+  .tp-ra-calc-total-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tp-muted-ink, #475569);
+  }
+
+  .tp-ra-calc-total-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--tp-primary, #1c1917);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .tp-ra-hint {
+    margin: 0 0 14px;
+    padding-left: 11px;
+    border-left: 2px solid var(--tp-line, #d6d3d1);
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--tp-muted-ink, #475569);
+  }
+{% endstylesheet %}
+
+<script>
+  (function () {
+    var root = document.getElementById('tp-ra-{{ tp_ra_id }}');
+    var dataEl = document.querySelector('[data-ra-{{ tp_ra_id }}]');
+    if (!root || !dataEl) return;
+
+    var variants;
+    try {
+      variants = (JSON.parse(dataEl.textContent).variants || []).filter(Boolean);
+    } catch (e) {
+      return;
+    }
+    if (!variants.length) return;
+
+    var piece = root.querySelector('[data-piece]');
+    var stage = root.querySelector('[data-stage]');
+    var tagW = root.querySelector('[data-tag-width]');
+    var tagL = root.querySelector('[data-tag-length]');
+    var fArea = root.querySelector('[data-formula-area]');
+    var fPrice = root.querySelector('[data-formula-price]');
+    var outTotal = root.querySelector('[data-total]');
+
+    var WIDTH_RE = /^(\d+([.,]\d+)?)\s*cm$/i;
+
+    function fmt(n) {
+      return n.toLocaleString('de-DE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    // Die gewählte Variante steht im Warenkorb-Formular - damit stimmen
+    // Breite und Preis immer mit dem überein, was tatsächlich gekauft wird.
+    function currentVariant() {
+      var field =
+        document.querySelector('form[action*="/cart/add"] [name="id"]');
+      if (field && field.value) {
+        var hit = variants.filter(function (v) {
+          return String(v.id) === String(field.value);
+        })[0];
+        if (hit) return hit;
+      }
+      return variants[0];
+    }
+
+    function widthCm(variant) {
+      for (var i = 0; i < variant.options.length; i++) {
+        var m = WIDTH_RE.exec(String(variant.options[i]).trim());
+        if (m) return parseFloat(m[1].replace(',', '.'));
+      }
+      return 0;
+    }
+
+    function lengthCm() {
+      var input = document.querySelector(
+        '#calc-form-preview input[type="number"]'
+      );
+      if (!input) return 0;
+      var n = parseFloat(String(input.value).replace(',', '.'));
+      return isNaN(n) ? 0 : n;
+    }
+
+    var DRAW_MAX_PX = 280;
+    var DRAW_MIN_PX = 40;
+    var maxWidth = 0;
+    variants.forEach(function (v) {
+      maxWidth = Math.max(maxWidth, widthCm(v));
+    });
+    // Fester Bezugswert statt "längste gerade gewählte Seite": so bleibt 1 cm
+    // immer gleich viele Pixel. Sonst verschiebt eine Breitenänderung auch die
+    // gezeichnete Länge, und die Skizze lügt über das Seitenverhältnis.
+    var REFERENCE_CM = Math.max(maxWidth, 600);
+
+    function stageWidthPx() {
+      if (!stage) return DRAW_MAX_PX;
+      var cs = getComputedStyle(stage);
+      var raw =
+        stage.clientWidth -
+        (parseFloat(cs.paddingLeft) || 0) -
+        (parseFloat(cs.paddingRight) || 0);
+      return raw > 0 ? raw : DRAW_MAX_PX;
+    }
+
+    function draw(w, len) {
+      var stageW = Math.min(DRAW_MAX_PX, stageWidthPx());
+      var pxPerCm = stageW / REFERENCE_CM;
+
+      piece.style.width =
+        Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm))) + 'px';
+      tagW.textContent = 'B: ' + w + ' cm';
+
+      if (!len) {
+        piece.style.height = '120px';
+        tagL.textContent = 'L: – cm';
+        return;
+      }
+
+      tagL.textContent = 'L: ' + len + ' cm';
+      piece.style.height =
+        Math.max(
+          DRAW_MIN_PX,
+          Math.min(DRAW_MAX_PX, Math.round(len * pxPerCm))
+        ) + 'px';
+    }
+
+    function update() {
+      var variant = currentVariant();
+      var w = widthCm(variant);
+      var len = lengthCm();
+
+      if (!w) {
+        root.hidden = true;
+        return;
+      }
+      root.hidden = false;
+
+      draw(w, len);
+
+      if (!len) {
+        fArea.textContent = '– cm × – cm = –';
+        fPrice.textContent = '–';
+        outTotal.textContent = '–';
+        return;
+      }
+
+      var area = (w * len) / 10000;
+      var rate = parseFloat(variant.price) / 100;
+      var total = area * rate;
+
+      fArea.textContent =
+        w + ' cm × ' + len + ' cm = ' + fmt(area) + ' m²';
+      fPrice.textContent =
+        fmt(area) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
+      outTotal.textContent = fmt(total) + ' €';
+    }
+
+    document.addEventListener('input', update);
+    document.addEventListener('change', update);
+    window.addEventListener('resize', update);
+
+    // Variantenwechsel tauscht Teile des Formulars aus; ein kurzer Nachlauf
+    // greift den neuen Zustand ab, statt den alten zu zeichnen.
+    document.addEventListener('change', function () {
+      setTimeout(update, 120);
+    });
+
+    update();
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "TP Rollenware-Anzeige",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Rollenware-Anzeige"
+    }
+  ]
+}
+{% endschema %}
