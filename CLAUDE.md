@@ -58,13 +58,39 @@ Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
 **5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.**
 Siehe oben. Deshalb `domains/shopify/live-theme.json` plus `npm run theme:guard`.
 
-**6. Änderungen auf Feature-Branches, die nicht in main gemergt werden, sind "verloren".**
-Commits auf `origin/claude/teppich-produktseite-redesign-ru2sis` (Wunschmaß, Produktdetails)
-wurden mehrfach gemacht, aber der Branch wurde nie nach main gemergt. Die Dateien erscheinen
-deshalb nicht im Live-Theme, obwohl die Commits im Repo existieren. 
-  - **Pre-Commit Hook** warnt wenn du auf einem Branch älter als 7 Tage committst, der nicht in main ist.
-  - **Pre-Deploy Gate** (`unmerged-changes:guard`) blockiert Deploys von ungemergten Branches.
-  - Immer nach dem Commit in main mergen und pushen, nicht auf Feature-Branches sitzen bleiben.
+**6. Fertige Arbeit liegt auf Branches, die nie gemergt wurden — sie ist nicht weg, nur nie live.**
+Zwei Fälle am 2026-09-05, beide über Wochen unbemerkt:
+
+| Branch | Was darauf lag |
+|---|---|
+| `claude/teppich-produktseite-redesign-ru2sis` | Wunschmaß-Rechner, Produktdetails, 5 Blöcke + Template |
+| `feature/design-analyse-quickfixes` | grüner Rollenware-Konfigurator, Schrittführung, Design-System, Musterbestellung — 49 Commits |
+
+Der Shop zeigt nur, was in `main` ist. Ein Branch ohne Merge ist für den Kunden nicht existent.
+Wer sucht, sucht deshalb im **Git-Verlauf**, nicht in der Erinnerung:
+
+```
+git log --all --oneline --diff-filter=A -- <pfad>   # wo entstand die Datei
+git branch -a --contains <commit>                   # auf welchem Branch liegt sie
+git branch -r --no-merged main                      # was ist sonst noch ungemergt
+```
+
+**Beim Zurückholen die ganze Gruppe nehmen, nie die eine Datei.** Am 2026-09-05 wurden
+`tp-step` und `tp-rollware-anzeige` einzeln gepickt — ihre Abhängigkeiten `tp-vertrauen`
+und `tp-bewertungsbeleg` blieben zurück, und Shopify lehnte daraufhin den **gesamten**
+Template-Push ab. Die Meldung nannte nur den Block, nicht die Ursache; das kostete eine
+Stunde. `npm run essential:guard` findet genau diesen Zustand vorher.
+
+Beim Übernehmen eines alten Branches gilt: **Theme-Dateien vom Branch, Infrastruktur von
+main.** `workflow/`, `qa/`, `package.json` und `AGENTS.md` sind auf main fast immer
+neuer — ein Branchstand von vor Wochen dreht dort stillschweigend Fixes zurück.
+
+Drei Gates halten das jetzt:
+- `npm run essential:guard` — Pflichtdateien aus `domains/shopify/essential-files.json`
+  und jeder Template-Verweis müssen existieren. Greift auch bei einem frisch angelegten
+  Theme, weil er das Repository prüft und nicht das Theme.
+- `npm run unmerged:guard` — blockiert Deploys aus einem ungemergten Branch.
+- Pre-Commit-Hook — warnt ab 7 Tagen, blockiert ab 30 Tagen auf ungemergtem Branch.
 
 ## Vor jedem Commit
 
@@ -87,6 +113,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschütztes Live-Theme |
 | `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
+| `npm run essential:guard` | Pflichtdateien und Template-Verweise — findet verlorene Bausteine vor dem Push |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |

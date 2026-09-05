@@ -1,0 +1,65 @@
+{
+  "_comment": "Dateien, ohne die der Shop Funktionen verliert, die Kunden sehen. qa/essential-files-guard.mjs prueft vor jedem Deploy, dass sie existieren. Einen Eintrag hier zu loeschen ist eine bewusste Produktentscheidung - eine Datei still zu verlieren ist es nicht. Verlaesst eine Funktion den Shop wirklich, erst hier austragen, dann die Datei entfernen.",
+  "groups": [
+    {
+      "name": "Rollenware-Konfigurator",
+      "reason": "Gruener Rechner mit Schrittfuehrung und Massskizze. Lag 49 Commits lang auf feature/design-analyse-quickfixes und war deshalb nie live - der Verlust faellt erst auf, wenn ein Kunde die Seite oeffnet.",
+      "files": [
+        "blocks/tp-rollware-rechner.liquid",
+        "blocks/tp-rollware-anzeige.liquid",
+        "blocks/tp-step.liquid",
+        "snippets/tp-step-heading.liquid",
+        "blocks/tp-roll-order-help.liquid",
+        "templates/product.rolle.json"
+      ]
+    },
+    {
+      "name": "Vertrauens-Elemente",
+      "reason": "Von product.rolle.json referenziert. Fehlen sie, lehnt Shopify den ganzen Template-Push ab - der Fehler nennt nur den Block, nicht die Ursache.",
+      "files": [
+        "blocks/tp-vertrauen.liquid",
+        "blocks/tp-bewertungsbeleg.liquid",
+        "blocks/tp-vorteile.liquid",
+        "blocks/tp-service-links.liquid"
+      ]
+    },
+    {
+      "name": "Design-System",
+      "reason": "Farben, Schrift, Bewegung und Formulare als eine Einheit. Einzeln geholt ergeben sie ein halbes Design, das schlechter aussieht als gar keines.",
+      "files": [
+        "snippets/tp-design-tokens.liquid",
+        "snippets/tp-farbwelt.liquid",
+        "snippets/tp-schrift.liquid",
+        "snippets/tp-bewegung.liquid",
+        "snippets/tp-formular.liquid",
+        "snippets/tp-mobil.liquid",
+        "snippets/tp-megamenu.liquid",
+        "snippets/tp-verlegeseite.liquid"
+      ]
+    },
+    {
+      "name": "Musterbestellung",
+      "reason": "Kompletter Bestellweg fuer kostenlose Muster, inklusive Dreierbegrenzung.",
+      "files": [
+        "sections/tp-sample-checkout.liquid",
+        "assets/tp-sample-checkout.js",
+        "assets/tp-sample-checkout-core.js",
+        "assets/tp-sample-checkout.css",
+        "assets/tp-sample-request.js",
+        "templates/page.muster.json"
+      ]
+    },
+    {
+      "name": "Teppich-Produktseite",
+      "reason": "Wunschmass-Rechner und Produktdetails. Lag auf claude/teppich-produktseite-redesign-ru2sis und war aus demselben Grund nie live.",
+      "files": [
+        "blocks/tp-teppich-wunschmass.liquid",
+        "blocks/tp-teppich-produktdetails.liquid",
+        "blocks/tp-teppich-auf-einen-blick.liquid",
+        "blocks/tp-teppich-vorteile.liquid",
+        "blocks/tp-teppich-versand.liquid",
+        "templates/product.teppich.json"
+      ]
+    }
+  ]
+}
