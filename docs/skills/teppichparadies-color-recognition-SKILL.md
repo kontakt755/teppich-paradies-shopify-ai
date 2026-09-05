@@ -188,3 +188,41 @@ Drei Fallen dabei:
 - **Brown spectrum**: Distinguish "Braun Warm", "Braun Hell", "Braun Dunkel"
 - **Gray tones**: Use "Grau Hell" (light), "Grau Mittel" (medium), "Grau Dunkel" (dark)
 - **Multiple tones in image**: Name after dominant color, note secondary in comment if needed
+
+---
+
+## Elastium Linoleumboden — Farbcode-Referenz
+
+**Produkt:** Linoleum-Boden Jokaleum Neocare 2,5mm Elastic/Linoleum Bahnen 200cm  
+**Lieferant:** Jordan (PVCJOKANEO)  
+**Quelle:** jordanshop.de, erfasst 2026-09-04/05  
+**Status:** 21 von 24 Codes haben Bilder bei Jordan; 3 fehlen
+
+| Code | Bild | Quell-URL | Farbe (erkannt) | Notiz |
+|---|---|---|---|---|
+| 4153 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
+| 4200 | ✅ | media.jordanshop.de/…/1160122-8FXC-prod.JPG | *ausstehend* | |
+| 4215 | ✅ | media.jordanshop.de/…/1127876-8FXC-prod.JPG | *ausstehend* | |
+| 4217 | ✅ | media.jordanshop.de/…/1127874-8FXC-prod.JPG | *ausstehend* | |
+| 4218 | ✅ | media.jordanshop.de/…/1127872-8FXC-prod.JPG | *ausstehend* | |
+| 4222 | ✅ | media.jordanshop.de/…/1127870-8FXC-prod.JPG | *ausstehend* | |
+| 4223 | ✅ | media.jordanshop.de/…/1127868-8FXC-prod.JPG | *ausstehend* | |
+| 4226 | ✅ | media.jordanshop.de/…/1127866-8FXC-prod.JPG | *ausstehend* | |
+| 4229 | ✅ | media.jordanshop.de/…/1127864-8FXC-prod.JPG | *ausstehend* | |
+| 4232 | ✅ | media.jordanshop.de/…/1127862-8FXC-prod.JPG | *ausstehend* | |
+| 4236 | ✅ | media.jordanshop.de/…/1127860-8FXC-prod.JPG | *ausstehend* | |
+| 4240 | ✅ | media.jordanshop.de/…/1127858-8FXC-prod.JPG | *ausstehend* | |
+| 4245 | ✅ | media.jordanshop.de/…/1127856-8FXC-prod.JPG | *ausstehend* | |
+| 4252 | ✅ | media.jordanshop.de/…/1127854-8FXC-prod.JPG | *ausstehend* | |
+| 4253 | ✅ | media.jordanshop.de/…/1127852-8FXC-prod.JPG | *ausstehend* | |
+| 4254 | ✅ | media.jordanshop.de/…/1127850-8FXC-prod.JPG | *ausstehend* | |
+| 4255 | ✅ | media.jordanshop.de/…/1127848-8FXC-prod.JPG | *ausstehend* | |
+| 4259 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
+| 4270 | ✅ | media.jordanshop.de/…/1127846-8FXC-prod.JPG | *ausstehend* | |
+| 4272 | ✅ | media.jordanshop.de/…/1127844-8FXC-prod.JPG | *ausstehend* | |
+| 4273 | ✅ | media.jordanshop.de/…/1127842-8FXC-prod.JPG | *ausstehend* | |
+| 4276 | ✅ | media.jordanshop.de/…/1127840-8FXC-prod.JPG | *ausstehend* | Bereits hochgeladen in Shopify |
+| 4289 | ✅ | media.jordanshop.de/…/1127838-8FXC-prod.JPG | *ausstehend* | Bereits hochgeladen in Shopify |
+| 4296 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
+
+**Nächster Schritt**: Farbwerte (Grau Warm, Beige Hell, etc.) aus den Bildern erkennen und eintragen. Die Bilder sind in Shopify bereits als Media angelegt.
