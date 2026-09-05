@@ -118,7 +118,7 @@
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
-  <figure class="tp-rwc-draw" aria-hidden="true">
+  <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden>
     <div class="tp-rwc-stage" data-stage>
       <div class="tp-rwc-piece" data-piece>
         <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
@@ -442,6 +442,7 @@
   var tagW = root.querySelector('[data-tag-width]');
   var tagL = root.querySelector('[data-tag-length]');
   var calcBox = root.querySelector('[data-calc]');
+  var drawFigure = root.querySelector('[data-draw]');
   var formulaArea = root.querySelector('[data-formula-area]');
   var formulaPrice = root.querySelector('[data-formula-price]');
   var outTotal = root.querySelector('[data-total]');
@@ -581,7 +582,13 @@
 
     draw(w, valid ? len : 0);
 
-    calcBox.hidden = !(len > 0);
+    // Vor der ersten Laengeneingabe zeigten Skizze und Rechenbox nur
+    // Platzhalter ("L: - cm", "-"), was wie ein defekter Rechner aussah.
+    // Beide bleiben deshalb verborgen, bis eine Laenge eingegeben ist -
+    // dann erscheinen sie gemeinsam mit echten Werten.
+    var hasLength = len > 0;
+    calcBox.hidden = !hasLength;
+    drawFigure.hidden = !hasLength;
 
     if (valid && target && ok) {
       var area = (w * len) / 10000;

@@ -1,15 +1,17 @@
 {% doc %}
-  Bewertungsbeleg unter den Kauf-Buttons: Sternebewertung + Anzahl + Link zu
+  Bewertungsbeleg unter den Kauf-Buttons: Sternebewertung + Link zu
   Google-Bewertungen. Ergaenzt tp-vertrauen.liquid (das nur Fliesstext zeigt)
-  um eine konkrete, glaubwuerdige Zahl. Wert aktuell als Block-Setting
-  pflegbar (Admin -> Theme-Editor), bis eine Elfsight/Reviews-API-Anbindung
-  den Wert automatisch liefert.
+  um eine konkrete, glaubwuerdige Zahl.
+
+  Zeigt bewusst KEINE Bewertungsanzahl. "1.200+" stand hier als Platzhalter-
+  Default und wurde nie durch eine echte Zahl ersetzt - am 2026-09-05 als
+  falsche Angabe erkannt und entfernt. Erst nach echter Elfsight/Reviews-
+  API-Anbindung wieder mit echtem Wert ergaenzen, nie mit einer Schaetzung.
 {% enddoc %}
 
 {%- liquid
   assign tp_bb_id = block.id | replace: '_', '' | downcase
   assign tp_bb_rating = block.settings.rating
-  assign tp_bb_count = block.settings.review_count
   assign tp_bb_link = block.settings.review_link
 -%}
 
@@ -21,7 +23,6 @@
     {%- endfor -%}
   </span>
   <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
-  <span class="tp-bewertungsbeleg__count-{{ tp_bb_id }}">({{ tp_bb_count }} Bewertungen)</span>
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">Auf Google lesen</a>
   {%- endif -%}
@@ -45,10 +46,6 @@
 
   .tp-bewertungsbeleg__score-{{ tp_bb_id }} {
     font-weight: 650;
-  }
-
-  .tp-bewertungsbeleg__count-{{ tp_bb_id }} {
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
   }
 
   .tp-bewertungsbeleg__link-{{ tp_bb_id }} {
@@ -75,12 +72,6 @@
       "id": "rating",
       "label": "Sternebewertung (z.B. 4.8)",
       "default": "4.8"
-    },
-    {
-      "type": "text",
-      "id": "review_count",
-      "label": "Anzahl Bewertungen",
-      "default": "1.200+"
     },
     {
       "type": "url",
