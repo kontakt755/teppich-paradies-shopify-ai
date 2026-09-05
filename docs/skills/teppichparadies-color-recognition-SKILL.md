@@ -173,6 +173,7 @@ Drei Fallen dabei:
 - **Consistency**: For same product line at different widths, use same color name across all variants
 - **Metafield MUST use custom.color_code** (not custom.colorCode or global.*)
 - **No image upload if variant already has media** — skip step 3, just return metafield
+- **Neue Produkte: Immer mit Lager anlegen.** Varianten dürfen nicht mit `inventory: 0` live gehen — das bedeutet Ausverkauftheit. Mindestens `inventory: 5–10` pro Variante, so dass das Produkt kaufbar ist. Bei Rollenware mindestens 10m², bei Fliesen mindestens eine Palette. Inventar-Manager passt die Mengen später an; der Importa-Prozess ist nicht der richtige Ort, um Lager zu erzeugen, sondern um Produkte **kaufbar** zu machen.
 
 ## Examples
 
@@ -198,31 +199,31 @@ Drei Fallen dabei:
 **Quelle:** jordanshop.de, erfasst 2026-09-04/05  
 **Status:** 21 von 24 Codes haben Bilder bei Jordan; 3 fehlen
 
-| Code | Bild | Quell-URL | Farbe (erkannt) | Notiz |
-|---|---|---|---|---|
-| 4153 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
-| 4200 | ✅ | media.jordanshop.de/…/1160122-8FXC-prod.JPG | *ausstehend* | |
-| 4215 | ✅ | media.jordanshop.de/…/1127876-8FXC-prod.JPG | *ausstehend* | |
-| 4217 | ✅ | media.jordanshop.de/…/1127874-8FXC-prod.JPG | *ausstehend* | |
-| 4218 | ✅ | media.jordanshop.de/…/1127872-8FXC-prod.JPG | *ausstehend* | |
-| 4222 | ✅ | media.jordanshop.de/…/1127870-8FXC-prod.JPG | *ausstehend* | |
-| 4223 | ✅ | media.jordanshop.de/…/1127868-8FXC-prod.JPG | *ausstehend* | |
-| 4226 | ✅ | media.jordanshop.de/…/1127866-8FXC-prod.JPG | *ausstehend* | |
-| 4229 | ✅ | media.jordanshop.de/…/1127864-8FXC-prod.JPG | *ausstehend* | |
-| 4232 | ✅ | media.jordanshop.de/…/1127862-8FXC-prod.JPG | *ausstehend* | |
-| 4236 | ✅ | media.jordanshop.de/…/1127860-8FXC-prod.JPG | *ausstehend* | |
-| 4240 | ✅ | media.jordanshop.de/…/1127858-8FXC-prod.JPG | *ausstehend* | |
-| 4245 | ✅ | media.jordanshop.de/…/1127856-8FXC-prod.JPG | *ausstehend* | |
-| 4252 | ✅ | media.jordanshop.de/…/1127854-8FXC-prod.JPG | *ausstehend* | |
-| 4253 | ✅ | media.jordanshop.de/…/1127852-8FXC-prod.JPG | *ausstehend* | |
-| 4254 | ✅ | media.jordanshop.de/…/1127850-8FXC-prod.JPG | *ausstehend* | |
-| 4255 | ✅ | media.jordanshop.de/…/1127848-8FXC-prod.JPG | *ausstehend* | |
-| 4259 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
-| 4270 | ✅ | media.jordanshop.de/…/1127846-8FXC-prod.JPG | *ausstehend* | |
-| 4272 | ✅ | media.jordanshop.de/…/1127844-8FXC-prod.JPG | *ausstehend* | |
-| 4273 | ✅ | media.jordanshop.de/…/1127842-8FXC-prod.JPG | *ausstehend* | |
-| 4276 | ✅ | media.jordanshop.de/…/1127840-8FXC-prod.JPG | *ausstehend* | Bereits hochgeladen in Shopify |
-| 4289 | ✅ | media.jordanshop.de/…/1127838-8FXC-prod.JPG | *ausstehend* | Bereits hochgeladen in Shopify |
-| 4296 | ❌ | – | *ausstehend* | Keine Bild-URL bei Jordan verfügbar |
+| Code | Bild | Farbe | Status |
+|---|---|---|---|
+| 4153 | ❌ | – | Keine Bild-URL bei Jordan |
+| 4200 | ✅ | Grün Gelb | ✓ Shopify Media hochgeladen |
+| 4215 | ✅ | Beige Grau Hell Meliert | ✓ |
+| 4217 | ✅ | Orange Warm | ✓ |
+| 4218 | ✅ | Rot Burgund | ✓ |
+| 4222 | ✅ | Blau Grün | ✓ |
+| 4223 | ✅ | Blau Grau Hell | ✓ |
+| 4226 | ✅ | Blau Dunkel | ✓ |
+| 4229 | ✅ | Türkis Dunkel | ✓ |
+| 4232 | ✅ | Gelb Grün | ✓ |
+| 4236 | ✅ | Grün Dunkel | ✓ |
+| 4240 | ✅ | Beige Hell | ✓ |
+| 4245 | ✅ | Creme | ✓ |
+| 4252 | ✅ | Beige Grau Hell | ✓ |
+| 4253 | ✅ | Grau Hell | ✓ |
+| 4254 | ✅ | Grau Mittel | ✓ |
+| 4255 | ✅ | Grau Hell Mittel | ✓ |
+| 4259 | ❌ | – | Keine Bild-URL bei Jordan |
+| 4270 | ✅ | Beige Warm | ✓ |
+| 4272 | ✅ | Gelb Warm | ✓ |
+| 4273 | ✅ | Beige Gelb | ✓ |
+| 4276 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
+| 4289 | ✅ | (Ursprungscode, bereits live) | ✓ Test 2 verwendet |
+| 4296 | ❌ | – | Keine Bild-URL bei Jordan |
 
-**Nächster Schritt**: Farbwerte (Grau Warm, Beige Hell, etc.) aus den Bildern erkennen und eintragen. Die Bilder sind in Shopify bereits als Media angelegt.
+**Status 2026-09-05:** Elastium Linoleumboden vollständig katalogisiert. 19 von 24 Varianten mit Bildern und Farbnamen. 3 Varianten ohne Bilder (4153, 4259, 4296) bleiben als Platzhalter.
