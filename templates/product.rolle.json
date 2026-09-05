@@ -1,10 +1,6 @@
 /*
  * ------------------------------------------------------------
  * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
  * ------------------------------------------------------------
  */
 {
@@ -16,16 +12,16 @@
           "type": "_product-media-gallery",
           "static": true,
           "settings": {
-              "media_presentation": "carousel",
+            "media_presentation": "carousel",
             "media_columns": "two",
-              "image_gap": 12,
+            "image_gap": 12,
             "large_first_image": false,
-              "icons_style": "arrow",
-              "slideshow_controls_style": "thumbnails",
-              "slideshow_mobile_controls_style": "counter",
-              "thumbnail_position": "bottom",
-              "thumbnail_width": 64,
-              "thumbnail_radius": 6,
+            "icons_style": "arrow",
+            "slideshow_controls_style": "thumbnails",
+            "slideshow_mobile_controls_style": "counter",
+            "thumbnail_position": "bottom",
+            "thumbnail_width": 64,
+            "thumbnail_radius": 6,
             "aspect_ratio": "1",
             "constrain_to_viewport": true,
             "media_fit": "contain",
@@ -165,6 +161,28 @@
                 "price_custom_Cp66p6"
               ]
             },
+            "tp_vorteile_sales1": {
+              "type": "tp-vorteile",
+              "name": "TP Vorteile",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_vertrauen_sales1": {
+              "type": "tp-vertrauen",
+              "name": "TP Vertrauen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_bewertungsbeleg_night1": {
+              "type": "tp-bewertungsbeleg",
+              "name": "TP Bewertungsbeleg",
+              "settings": {
+                "rating": "4.8",
+                "review_count": "1.200+",
+                "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen"
+              },
+              "blocks": {}
+            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -201,10 +219,6 @@
               "name": "TP Rollenware-Hilfe",
               "settings": {},
               "blocks": {}
-            },
-            "options_price_calculator_product_calculator_EbfP8i": {
-              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
-              "settings": {}
             },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
@@ -250,11 +264,6 @@
               },
               "blocks": {}
             },
-            "ai_gen_block_72e444a_tkq6gk": {
-              "type": "ai_gen_block_72e444a",
-              "settings": {},
-              "blocks": {}
-            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
@@ -298,18 +307,45 @@
                 "value_font_size": 14
               },
               "blocks": {}
+            },
+            "options_price_calculator_rolle": {
+              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
+              "settings": {}
+            },
+            "tp_step_breite": {
+              "type": "tp-step",
+              "settings": {
+                "number": 2,
+                "label": "Wähle deine Breite"
+              }
+            },
+            "tp_step_laenge": {
+              "type": "tp-step",
+              "settings": {
+                "number": 3,
+                "label": "Gib deine Länge an"
+              }
+            },
+            "tp_rollware_anzeige": {
+              "type": "tp-rollware-anzeige",
+              "settings": {}
             }
           },
           "block_order": [
             "group_icgrde",
+            "tp_vorteile_sales1",
+            "tp_vertrauen_sales1",
+            "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "color_swatch_picker_f7EyBF",
-            "variant_picker_R3rGDr",
             "tp_roll_order_help_sales1",
-            "options_price_calculator_product_calculator_EbfP8i",
+            "tp_step_breite",
+            "variant_picker_R3rGDr",
+            "tp_step_laenge",
+            "options_price_calculator_rolle",
+            "tp_rollware_anzeige",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
-            "ai_gen_block_72e444a_tkq6gk",
             "text_aEtTtq",
             "ai_gen_block_b888d9b_CJbJ8X"
           ]

@@ -1,0 +1,55 @@
+{% doc %}
+  Eigenständige nummerierte Schritt-Überschrift für den Produktkonfigurator.
+
+  Gedacht für Konfigurator-Schritte, deren Bedienelement wir nicht selbst
+  rendern - etwa die Variantenauswahl oder den Preisrechner der App. Dort lässt
+  sich keine Überschrift von innen einsetzen, also steht sie als eigener Block
+  davor. Farbauswahl und andere eigene Bausteine rufen 'tp-step-heading'
+  weiterhin direkt auf.
+
+  Nummer und Text sind im Theme-Editor pflegbar, damit sich die Reihenfolge
+  ohne Code-Änderung umstellen lässt.
+{% enddoc %}
+
+<div class="tp-step" {{ block.shopify_attributes }}>
+  {% render 'tp-step-heading', number: block.settings.number, label: block.settings.label %}
+</div>
+
+{% stylesheet %}
+  .tp-step {
+    margin-block-start: var(--margin-lg, 24px);
+  }
+
+  .tp-step:first-child {
+    margin-block-start: 0;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Schritt-Überschrift",
+  "tag": null,
+  "settings": [
+    {
+      "type": "range",
+      "id": "number",
+      "label": "Schrittnummer",
+      "min": 1,
+      "max": 9,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Text",
+      "default": "Wähle deine Breite"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Schritt-Überschrift"
+    }
+  ]
+}
+{% endschema %}
