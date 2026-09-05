@@ -1,0 +1,147 @@
+{% doc %}
+  Gestaltungsebene aus dem generierten Design-System
+  (design-system/teppich-paradies/MASTER.md, erzeugt mit ui-ux-pro-max).
+
+  Bewusst als einzelnes Snippet gehalten und in layout/theme.liquid mit einer
+  Zeile eingebunden: So lässt sich die gesamte Optik in einem Schritt wieder
+  entfernen, solange sie noch zur Ansicht steht.
+
+  Setzt die Tokens als CSS-Variablen und wendet sie gezielt dort an, wo sie
+  Wirkung zeigen: Überschriften, Kauf-CTA, Konfigurator-Schritte und
+  Fokus-Ringe. Die Farbschemata des Themes bleiben unangetastet - diese Ebene
+  legt sich darüber und nimmt ihnen nichts weg.
+{% enddoc %}
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+>
+
+<style>
+  :root {
+    /* Farben - MASTER.md, Kategorie "E-commerce Luxury" */
+    --tp-primary: #1c1917;
+    --tp-on-primary: #ffffff;
+    --tp-secondary: #44403c;
+    --tp-accent: #a16207;
+    --tp-on-accent: #ffffff;
+    --tp-surface: #fafaf9;
+    --tp-ink: #0c0a09;
+    --tp-card: #ffffff;
+    --tp-muted: #e8ecf0;
+    --tp-muted-ink: #475569;
+    --tp-line: #d6d3d1;
+    --tp-ring: #1c1917;
+
+    /* Schrift */
+    --tp-font-heading: 'Cormorant', Georgia, serif;
+    --tp-font-body: 'Montserrat', system-ui, -apple-system, sans-serif;
+
+    /* Das Theme steuert Schriften ausschliesslich ueber diese Variablen.
+       Sie hier umzusetzen ist verlaesslicher, als gegen die Selektoren des
+       Themes anzuschreiben - die Aenderung fliesst durch das gesamte System,
+       auch durch Bausteine, die wir gar nicht kennen. */
+    --font-heading--family: var(--tp-font-heading);
+    --font-h1--family: var(--tp-font-heading);
+    --font-h2--family: var(--tp-font-heading);
+    --font-h3--family: var(--tp-font-heading);
+    --font-subheading--family: var(--tp-font-heading);
+    --font-accent--family: var(--tp-font-heading);
+
+    --font-body--family: var(--tp-font-body);
+    --font-paragraph--family: var(--tp-font-body);
+    --font-h4--family: var(--tp-font-body);
+    --font-h5--family: var(--tp-font-body);
+    --font-h6--family: var(--tp-font-body);
+    --button-font-family-primary: var(--tp-font-body);
+    --button-font-family-secondary: var(--tp-font-body);
+    --cart-primary-font-family: var(--tp-font-body);
+    --font-heading--weight: 600;
+    --font-h1--weight: 600;
+    --font-h2--weight: 600;
+
+    /* Abstände - Density 4/10 */
+    --tp-space-xs: 4px;
+    --tp-space-sm: 8px;
+    --tp-space-md: 16px;
+    --tp-space-lg: 24px;
+    --tp-space-xl: 32px;
+    --tp-space-2xl: 48px;
+
+    /* Schatten */
+    --tp-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+    --tp-shadow-md: 0 4px 6px rgb(0 0 0 / 0.1);
+    --tp-shadow-lg: 0 10px 15px rgb(0 0 0 / 0.1);
+  }
+
+  /* Größen bewusst nicht angefasst: die Typoskala des Themes ist bereits
+     gestuft (h1 clamp 3-3.5rem). Cormorant trägt sie, braucht aber etwas
+     weniger Fettung als eine Grotesk, sonst wirken Überschriften klobig. */
+
+  /* Kauf-CTA in der Akzentfarbe - der einzige Gold-Einsatz auf der Seite,
+     damit er die Hierarchie anführt statt mit anderen Flächen zu konkurrieren. */
+  .button:not(.button-secondary):not(.button-unstyled),
+  button[name='add'],
+  .shopify-payment-button__button--unbranded {
+    background-color: var(--tp-accent);
+    color: var(--tp-on-accent);
+    border-color: var(--tp-accent);
+    font-family: var(--tp-font-body);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: background-color 200ms ease, box-shadow 200ms ease;
+  }
+
+  .button:not(.button-secondary):not(.button-unstyled):hover,
+  button[name='add']:hover,
+  .shopify-payment-button__button--unbranded:hover {
+    background-color: #8a5306;
+    box-shadow: var(--tp-shadow-md);
+  }
+
+  /* Schrittnummern führen den Konfigurator - dunkel statt bunt, damit die
+     Nummerierung ruhig bleibt und das Gold dem CTA gehört. */
+  .tp-step-heading__number {
+    background: var(--tp-primary);
+    color: var(--tp-on-primary);
+    font-family: var(--tp-font-body);
+    font-weight: 600;
+  }
+
+  .tp-step-heading__label {
+    font-family: var(--tp-font-body);
+    letter-spacing: 0.06em;
+  }
+
+  /* Variantenauswahl: ruhige Flächen, deutliche Auswahl. */
+  .variant-option__button-label {
+    border-radius: 8px;
+    transition: border-color 200ms ease, background-color 200ms ease;
+  }
+
+  .variant-option__select-wrapper {
+    border-radius: 8px;
+  }
+
+  /* Sichtbarer Fokus auf allem Bedienbaren - Pflicht laut Regelsatz,
+     Kategorie Interaction/Focus States. */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--tp-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

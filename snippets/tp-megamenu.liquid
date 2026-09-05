@@ -1,0 +1,65 @@
+{% doc %}
+  Feinschliff für das Mega-Menü im Bildmodus.
+
+  Das Menü stand auf 'featured_products', wofür je Menüpunkt Produkte
+  hinterlegt sein müssten. Da keine gepflegt waren, fiel das Theme auf reinen
+  Text zurück - eine nackte Liste am linken Rand über die volle Breite.
+
+  Die Menüpunkte sind jetzt echte Kategorie-Verknüpfungen, und der Modus steht
+  auf 'collection_images'. Das Theme zeigt damit für jede Kategorie ein Bild;
+  wo kein Kategoriebild gepflegt ist, nimmt es das erste Produktbild. Keine App
+  nötig - die Funktion war die ganze Zeit vorhanden, nur falsch eingestellt.
+
+  Was hier korrigiert wird: Einträge ohne Bild - die gefilterten Ansichten wie
+  "Fliesendekore" oder "Sockelleisten", die keine eigene Kategorie sind -
+  belegten trotzdem eine volle Kachelhöhe und wirkten wie kaputte Bildplätze.
+  Sie stehen jetzt kompakt am oberen Rand ihrer Spalte.
+
+  Rücknahme: die Zeile 'tp-megamenu' aus layout/theme.liquid entfernen.
+{% enddoc %}
+
+<style>
+  /* Nur Einträge ohne Bild. :has ist hier der passende Weg, weil die
+     Unterscheidung erst im gerenderten Markup entsteht - Liquid weiss beim
+     Bauen nicht, ob 'link-featured-image' etwas ausgegeben hat. */
+  body .mega-menu .mega-menu__link:not(:has(img)) {
+    align-self: start;
+    padding-block: 6px;
+  }
+
+  /* Die leere Kachel ist ein ::before mit leerem Inhalt - das Theme reserviert
+     dort den Bildplatz. Ohne Bild bleibt eine graue Fläche stehen, die wie ein
+     Ladefehler aussieht.
+
+     Das Theme setzt den Platzhalter bewusst: sobald EIN Eintrag im Raster ein
+     Bild hat, bekommen alle einen gleich grossen Bildplatz, damit die Zeile
+     ausgerichtet bleibt. Bei gefilterten Ansichten, die nie ein Bild bekommen
+     koennen, ist das Ergebnis aber eine leere Flaeche - die liest sich als
+     Fehler, nicht als Ordnung. Die Spezifitaet der Theme-Regel liegt bei
+     (0,4,3) - und meine lag exakt
+     gleichauf, weil :not(:has(img)) die Spezifitaet seines spezifischsten
+     Arguments erbt: img ist ein Element und zaehlt (0,0,1), nicht (0,1,0).
+     Bei Gleichstand gewinnt die spaetere Regel, und Theme-Bausteine laden nach
+     den Snippets im Kopfbereich. Die doppelte Klasse hebt sie sauber darueber,
+     ohne !important. */
+  body .mega-menu__grid.mega-menu__grid .mega-menu__column .mega-menu__link:not(:has(img)):not(:has(.mega-menu__link-image))::before {
+    display: none;
+  }
+
+  /* Etwas Luft zwischen den Kacheln, damit die Bilder nicht aneinanderkleben
+     und die Beschriftung klar zu ihrem Bild gehört. */
+  .mega-menu__link img {
+    border-radius: 6px;
+  }
+
+  .mega-menu__link .wrap-text {
+    display: inline-block;
+    margin-block-start: 6px;
+  }
+
+  /* Die Reihe der Bildkacheln bekommt oben etwas Abstand zum Kopfbereich -
+     sonst beginnt sie unmittelbar unter der Menüleiste. */
+  .mega-menu {
+    padding-block-start: 12px;
+  }
+</style>

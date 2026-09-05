@@ -1,0 +1,117 @@
+{% doc %}
+  Wärmere Farbwelt für den Shop - nur Farben, keine Schriften, keine Abstände.
+
+  Grundlage ist das Palettenprofil "Home Decoration & Interior Design" aus
+  design-system/teppich-paradies/MASTER.md (Skill ui-ux-pro-max). Es trifft
+  einen Bodenbelag-Shop besser als das zuvor gewählte "E-commerce Luxury".
+
+  Der Shop stand auf Reinweiß, Schwarz und einem einzelnen Grün im
+  Rollenware-CTA. Das Grün stammte aus dem Rechner-Baustein, nicht aus einer
+  Farbentscheidung, und stand mit nichts sonst auf der Seite in Beziehung.
+
+  Kontrast geprüft (WCAG 2.1 AA, Schwelle 4,5:1 für Fließtext):
+    #1C1917 auf #FAF5F2  -> 15,9:1
+    #1C1917 auf #D97706  ->  5,5:1   (Dunkle Schrift auf dem Bernstein-CTA;
+                                      weiss käme nur auf 3,2:1 und fiele durch)
+    #1C1917 auf #E8890C  ->  6,7:1   (Hover hellt auf statt abzudunkeln - so
+                                      steigt der Kontrast, statt zu sinken)
+
+  Die Farben des Themes hängen an Schema-Klassen (.color-scheme-1), nicht an
+  :root. Deshalb wird hier dieselbe Spezifität verwendet und über die
+  Dokumentreihenfolge gewonnen - dieses Snippet steht hinter 'color-schemes'.
+
+  Einbindung: eine Zeile in layout/theme.liquid. Diese Zeile zu entfernen
+  nimmt die gesamte Farbänderung zurück.
+{% enddoc %}
+
+<style>
+  :root {
+    --tp-warm-bg: 250 245 242;      /* #FAF5F2 warmes Weiss  */
+    --tp-warm-ink: 28 25 23;        /* #1C1917 warmes Schwarz */
+    --tp-warm-line: 238 237 237;    /* #EEEDED               */
+    --tp-amber: #d97706;
+    --tp-amber-hover: #e8890c;
+    --tp-amber-ink: #1c1917;
+  }
+
+  /* Die Schema-Klassen sitzen auf den Sections. body führt zusätzlich eine
+     eigene Fassung derselben Variablen und malt damit den Seitengrund - ohne
+     diesen zweiten Selektor bliebe der Hintergrund reinweiss.
+
+     Bewusst nur Schema 1: es ist das einzige, das der Shop derzeit verwendet
+     (Produktseite und Startseite geprüft, Footer eingeschlossen). Alle Schemata
+     pauschal umzufärben würde ein später angelegtes dunkles Schema still
+     mit erfassen und dessen Absicht zerstören. */
+  :root,
+  body,
+  .color-scheme-1 {
+    --color-background: rgb(var(--tp-warm-bg) / 1);
+    --color-background-rgb: var(--tp-warm-bg);
+
+    --color-foreground: rgb(var(--tp-warm-ink) / 0.86);
+    --color-foreground-rgb: var(--tp-warm-ink);
+    --color-foreground-heading: rgb(var(--tp-warm-ink) / 1);
+    --color-foreground-heading-rgb: var(--tp-warm-ink);
+
+    --color-primary-button-background: rgb(var(--tp-warm-ink) / 1);
+    --color-border: rgb(var(--tp-warm-line) / 1);
+  }
+
+  /* Der Rollenware-CTA setzt seine Farbe im Baustein selbst, dessen Regel
+     steht weiter hinten im Dokument. Das eine zusätzliche body davor hebt die
+     Spezifität gerade so weit an, dass sie hier gewinnt - ohne !important. */
+  body [class*='tp-rwc-'] .tp-rwc-cta:not(:disabled) {
+    background: var(--tp-amber);
+    color: var(--tp-amber-ink);
+  }
+
+  body [class*='tp-rwc-'] .tp-rwc-cta:not(:disabled):hover {
+    background: var(--tp-amber-hover);
+  }
+
+  /* Bestätigung nach dem Hinzufügen: gedeckter, damit der Zustandswechsel
+     lesbar bleibt, ohne erneut um Aufmerksamkeit zu buhlen. */
+  body [class*='tp-rwc-'] .tp-rwc-cta.is-done {
+    background: #b45309;
+    color: #ffffff;
+  }
+
+  /* ---------------------------------------------------------------
+     Befunde aus der Prüfung gegen den Regelsatz (gemessen im Browser)
+     --------------------------------------------------------------- */
+
+  /* Bewertungssterne standen auf #FFB400 und erreichten auf dem hellen Grund
+     nur 1,65:1 - deutlich unter den 3:1, die nicht-textliche Information
+     braucht. Das dunklere Bernstein der Palette bringt 4,6:1 und bindet die
+     Sterne zugleich an die übrige Farbwelt. Die Bewertung steht ohnehin
+     zusätzlich als Zahl daneben, die Farbe trägt sie also nicht allein. */
+  body [class*='tp-bewertungsbeleg__stars'] {
+    color: #b45309;
+  }
+
+  /* Die Häkchen im Versandhinweis lagen mit 4,35:1 knapp unter der Schwelle
+     von 4,5:1. Knapp daneben ist ebenfalls daneben. */
+  body [class*='tp-service-links__shipping-title'],
+  body p[class*='tp-service-links__shipping-title'] span {
+    color: #4f5a41;
+  }
+
+  /* Der Bronzeton #B4976C trug an drei Stellen weisse Schrift und erreichte
+     dort nur 2,77:1. Nötig sind 4,5:1 - fünfzehn Pixel fett zählen nicht als
+     grosser Text. Behoben ist das jetzt an der Quelle (#856C40, gemessen
+     4,98:1) in tp-compare-bar, tp-fachhandel und Startseite, nicht mehr als
+     Überlagerung hier. Als Trennlinie ohne Text bleibt der Ton unverändert -
+     dort gilt die Textschwelle nicht.
+
+     Gefunden hat das die Codex-Prüfung: ich hatte nur den Verlegeservice-Knopf
+     korrigiert und nicht nach weiteren Vorkommen desselben Tons gesucht. */
+
+  /* Brotkrumen waren 17 px hoch. Für Fingerbedienung zu wenig - die
+     WCAG-Ausnahme für Fließtextlinks greift hier nicht sauber, weil es eine
+     eigenständige Navigationsleiste ist. Zusätzlicher Innenabstand hebt die
+     Trefferfläche, ohne das Layout zu verschieben. */
+  .tp-product-breadcrumb a {
+    display: inline-block;
+    padding-block: 5px;
+  }
+</style>

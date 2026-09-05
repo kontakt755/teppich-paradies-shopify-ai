@@ -1,0 +1,77 @@
+{% doc %}
+  Statischer Vertrauensbereich mit den Fachhandel-Vorteilen (Muster, Beratung,
+  Wunschmaß, Verlegeservice). Im Gegensatz zu tp-vorteile.liquid nicht von
+  Produkt-Metafeldern abhängig - die Liste ist immer gleich.
+{% enddoc %}
+
+{%- liquid
+  assign tp_t_id = block.id | replace: '_', '' | downcase
+-%}
+
+<ul class="tp-vertrauen-{{ tp_t_id }}" {{ block.shopify_attributes }}>
+  <li>Muster vor dem Kauf möglich</li>
+  <li>Persönliche Fachberatung</li>
+  <li>Google-Bewertungen und echte Projekterfahrungen</li>
+  <li>Wunschmaß möglich</li>
+  <li>Liefer- & Verlegeservice in Oranienburg, Berlin & Umgebung</li>
+</ul>
+<a class="tp-vertrauen__beratung-{{ tp_t_id }}" href="tel:+4933015733720">Fachberatung: 03301 5733720</a>
+
+<style>
+  .tp-vertrauen-{{ tp_t_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vertrauen-{{ tp_t_id }} li {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--color-foreground);
+  }
+
+  .tp-vertrauen-{{ tp_t_id }} li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .tp-vertrauen__beratung-{{ tp_t_id }} {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--color-foreground);
+    font-weight: 650;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-vertrauen-{{ tp_t_id }} {
+      gap: 5px 12px;
+    }
+
+    .tp-vertrauen-{{ tp_t_id }} li {
+      font-size: 14.5px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Vertrauen",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Vertrauen"
+    }
+  ]
+}
+{% endschema %}

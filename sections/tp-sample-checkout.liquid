@@ -1,0 +1,43 @@
+{% doc %}
+  Mobiler Musterkonfigurator: laedt Quellprodukt, kostenlosen Musterartikel
+  und Warenkorb ueber die Shopify Ajax APIs und baut bis zu drei eindeutige
+  Farbauswahlen als getrennte Warenkorbpositionen. Reine Domainlogik lebt in
+  assets/tp-sample-checkout-core.js.
+{% enddoc %}
+
+{{ 'tp-sample-checkout.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'tp-sample-checkout-core.js' | asset_url }}" defer></script>
+<script src="{{ 'tp-sample-checkout.js' | asset_url }}" defer></script>
+
+<section class="tp-sample" data-tp-sample-checkout>
+  <header class="tp-sample__header">
+    <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
+    <h1>Bis zu 3 Farben zu Hause vergleichen</h1>
+    <p>Wählen Sie Ihre Wunschfarben aus. Die Farbnummer wird automatisch übernommen.</p>
+  </header>
+  <div class="tp-sample__product" data-sample-product hidden>
+    <img data-sample-product-image alt="" width="72" height="72">
+    <strong data-sample-product-name></strong>
+  </div>
+  <div class="tp-sample__loading" data-sample-loading aria-live="polite">Farben werden geladen …</div>
+  <div class="tp-sample__error" data-sample-error role="alert" hidden></div>
+  <fieldset class="tp-sample__fieldset" data-sample-fieldset hidden>
+    <legend>Farben auswählen</legend>
+    <p class="tp-sample__count" data-sample-count aria-live="polite">0 von 3 Mustern ausgewählt</p>
+    <div class="tp-sample__grid" data-sample-grid></div>
+  </fieldset>
+  <button class="tp-sample__submit" type="button" data-sample-submit disabled>Auswahl in den Warenkorb</button>
+  <a class="tp-sample__cart-link" href="{{ routes.cart_url }}" data-sample-cart-link hidden>Zum Warenkorb</a>
+</section>
+
+{% schema %}
+{
+  "name": "TP Musterkonfigurator",
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Musterkonfigurator"
+    }
+  ]
+}
+{% endschema %}

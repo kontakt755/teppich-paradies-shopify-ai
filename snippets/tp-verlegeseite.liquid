@@ -1,0 +1,112 @@
+{% doc %}
+  Korrekturen für die Seite Liefer- & Verlegeservice am Telefon.
+
+  Die Seite war dort 8.323 px hoch - über zehn Bildschirmlängen - und wirkte
+  auseinandergezogen. Ursache war überwiegend ein Fehler, keine Geschmacksfrage.
+
+  Der Umbruchpunkt ist hier 768 px statt der 749 px der übrigen Mobilregeln:
+  die Seite schaltet ihr Layout bei 768 px auf eine Spalte um. Ein anderer Wert
+  würde den Bereich dazwischen defekt lassen.
+
+  Rücknahme: die Zeile 'tp-verlegeseite' aus layout/theme.liquid entfernen.
+{% enddoc %}
+
+<style>
+  /* Der eigentliche Fehler.
+
+     .b2b-box trägt 'flex: 1 1 450px'. Gemeint war eine Mindestbreite von
+     450 px für das Nebeneinander am Desktop. Unterhalb von 768 px steht der
+     Container aber auf flex-direction: column - und in einer Spalte wirkt
+     flex-basis auf die HÖHE. Jede Karte wurde dadurch auf 450 px gezwungen,
+     obwohl ihr Inhalt nur 199 beziehungsweise 168 px braucht.
+
+     Das sind rund 380 px tote Fläche in zwei Karten. Genau die grossen leeren
+     Bereiche unter den Aufzählungen.
+
+     flex-basis: auto lässt die Karten wieder ihrem Inhalt folgen. Am Desktop
+     ändert sich nichts, dort greift die Regel nicht. */
+  @media screen and (max-width: 768px) {
+    body .b2b-box {
+      flex-basis: auto;
+    }
+  }
+
+  /* Derselbe Fehler beim Aufmacherbild: 'flex: 1 1 520px' wird in der Spalte
+     zur Höhe. Das Bild belegte dadurch 520 px - vierundsechzig Prozent des
+     Bildschirms, bevor ein Wort über die Leistung gelesen wird - und wurde
+     dabei beschnitten, weil das Motiv quadratisch ist (900 x 900).
+
+     Mit flex-basis: auto folgt der Rahmen dem Seitenverhältnis des Bildes:
+     bei 375 px Breite rund 375 px hoch. Weniger Fläche und das Motiv ist
+     vollständig zu sehen statt angeschnitten. Deshalb keine feste Höhe -
+     die würde erneut beschneiden. */
+  @media screen and (max-width: 768px) {
+    body .b2b-hero-img {
+      flex-basis: auto;
+    }
+  }
+
+  /* Abstände zwischen den Blöcken: 40 px sind am Desktop richtig, wo sie
+     nebeneinander stehen und die Lücke waagerecht wirkt. Untereinander
+     addieren sie sich zu einer sehr langen Seite. */
+  @media screen and (max-width: 768px) {
+    body .b2b-grid {
+      gap: 24px;
+      margin-top: 24px;
+    }
+  }
+
+  /* Die Abstände zwischen den Bereichen lagen bei 80 px und 100 px - oben wie
+     unten. In Flex-Containern kollabieren senkrechte Ränder nicht, benachbarte
+     Bereiche summieren sich also auf 160 bis 200 px. Am Telefon sind das ein
+     Viertel Bildschirm zwischen zwei Absätzen.
+
+     48 px ist die zweitgrösste Stufe des Design-Systems (--space-2xl) und
+     bleibt als Trennung deutlich erkennbar. Das System kennt oberhalb von
+     64 px ohnehin keinen Wert - 100 px waren nie Teil davon. */
+  @media screen and (max-width: 768px) {
+    body .b2b-hero-section {
+      margin-top: 32px;
+      margin-bottom: 32px;
+    }
+
+    body .b2b-bereich,
+    body .b2b-struktur-section {
+      margin-top: 48px;
+      margin-bottom: 48px;
+    }
+
+    body .b2b-struktur-grid,
+    body .b2b-steps {
+      margin-top: 24px;
+    }
+  }
+
+  /* Die Blöcke selbst: 30 px Innenpolster und 18 px Schriftgrösse sind für
+     eine Spalte auf 375 px Breite grosszügig bemessen. 20 px Polster lassen
+     den Text weiterhin atmen, und 16 px ist die übliche Lesegrösse - sie
+     wirkt gesetzter als 18 px, das im Kartenformat schnell nach Grossdruck
+     aussieht. Die Überschriften folgen im gleichen Verhältnis. */
+  @media screen and (max-width: 768px) {
+    body .b2b-box,
+    body .b2b-struktur-box {
+      padding: 20px;
+    }
+
+    body .b2b-step {
+      padding: 18px;
+    }
+
+    body .b2b-box ul,
+    body .b2b-struktur-box p,
+    body .b2b-struktur-box li {
+      font-size: 16px;
+    }
+
+    body .b2b-box h3,
+    body .b2b-struktur-box h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+  }
+</style>

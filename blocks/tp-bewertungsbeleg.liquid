@@ -1,0 +1,97 @@
+{% doc %}
+  Bewertungsbeleg unter den Kauf-Buttons: Sternebewertung + Anzahl + Link zu
+  Google-Bewertungen. Ergaenzt tp-vertrauen.liquid (das nur Fliesstext zeigt)
+  um eine konkrete, glaubwuerdige Zahl. Wert aktuell als Block-Setting
+  pflegbar (Admin -> Theme-Editor), bis eine Elfsight/Reviews-API-Anbindung
+  den Wert automatisch liefert.
+{% enddoc %}
+
+{%- liquid
+  assign tp_bb_id = block.id | replace: '_', '' | downcase
+  assign tp_bb_rating = block.settings.rating
+  assign tp_bb_count = block.settings.review_count
+  assign tp_bb_link = block.settings.review_link
+-%}
+
+<div class="tp-bewertungsbeleg-{{ tp_bb_id }}" {{ block.shopify_attributes }}>
+  <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
+    {%- assign tp_bb_full = tp_bb_rating | floor -%}
+    {%- for i in (1..5) -%}
+      {%- if i <= tp_bb_full -%}★{%- else -%}☆{%- endif -%}
+    {%- endfor -%}
+  </span>
+  <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
+  <span class="tp-bewertungsbeleg__count-{{ tp_bb_id }}">({{ tp_bb_count }} Bewertungen)</span>
+  {%- if tp_bb_link != blank -%}
+    <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">Auf Google lesen</a>
+  {%- endif -%}
+</div>
+
+<style>
+  .tp-bewertungsbeleg-{{ tp_bb_id }} {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 13.5px;
+    color: var(--color-foreground);
+  }
+
+  .tp-bewertungsbeleg__stars-{{ tp_bb_id }} {
+    color: #ffb400;
+    letter-spacing: 1px;
+  }
+
+  .tp-bewertungsbeleg__score-{{ tp_bb_id }} {
+    font-weight: 650;
+  }
+
+  .tp-bewertungsbeleg__count-{{ tp_bb_id }} {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+  }
+
+  .tp-bewertungsbeleg__link-{{ tp_bb_id }} {
+    color: var(--color-foreground);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-bewertungsbeleg-{{ tp_bb_id }} {
+      font-size: 13px;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Bewertungsbeleg",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "rating",
+      "label": "Sternebewertung (z.B. 4.8)",
+      "default": "4.8"
+    },
+    {
+      "type": "text",
+      "id": "review_count",
+      "label": "Anzahl Bewertungen",
+      "default": "1.200+"
+    },
+    {
+      "type": "url",
+      "id": "review_link",
+      "label": "Link zu Google-Bewertungen"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Bewertungsbeleg"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,154 @@
+{% doc %}
+  Korrekturen für die Bedienung am Telefon.
+
+  Befunde aus der Prüfung gegen den Regelsatz von ui-ux-pro-max
+  (references/quick-reference.md, Kategorien 1 und 2), gemessen bei 375 x 812.
+
+  Bewusst getrennt von 'tp-farbwelt' gehalten: das eine ändert Farben, das
+  andere Trefferflächen und Schriftgrößen. Beide lassen sich einzeln über je
+  eine Zeile in layout/theme.liquid zurücknehmen.
+{% enddoc %}
+
+<style>
+  /* Das Längenfeld des Rollenware-Rechners stand auf 0,92rem = 14,72px.
+     Unterhalb von 16px zoomt iOS beim Fokussieren automatisch in die Seite
+     hinein - der Kunde landet in einer vergrösserten Ansicht und muss sich
+     zurückorientieren, ausgerechnet an der wichtigsten Eingabe der Seite.
+     16px verhindert das. Der Platzhalter darf kleiner bleiben, er löst
+     kein Zoomen aus. */
+  @media screen and (max-width: 749px) {
+    body [class*='tp-rwc-'] .tp-rwc-input,
+    body [class*='tp-rwc-'] .tp-rwc-input--length {
+      font-size: 16px;
+    }
+
+    body [class*='tp-rwc-'] .tp-rwc-input--length::placeholder {
+      font-size: 14px;
+    }
+  }
+
+  /* Zweite Zoom-Falle, im Warenkorb: das Rabattcode-Feld stand auf 14px. Wer
+     dort tippt, hat den Kauf fast abgeschlossen - ein Zoomsprung an dieser
+     Stelle ist besonders ärgerlich. Das Feld ist bereits 44px hoch, es ging
+     nur um die Schriftgrösse. */
+  @media screen and (max-width: 749px) {
+    body input.cart-discount__input {
+      font-size: 16px;
+    }
+  }
+
+  /* Telefon- und WhatsApp-Links sind am Telefon Abschlusswege, keine Fussnote.
+     Sie waren 20-22px hoch; Apple und Material nennen 44px als Mindestmass für
+     Fingerbedienung. Der Innenabstand vergrössert nur die Trefferfläche, die
+     Schrift bleibt unverändert. */
+  @media screen and (max-width: 749px) {
+    /* Bewusst auf die eigenen Bausteine begrenzt. Ein globales
+       a[href^='tel:'] wuerde auch Telefonnummern mitten im Fliesstext auf
+       44 px aufblasen und dort den Zeilenfall zerreissen - auf Kontakt- und
+       Inhaltsseiten stehen solche Links in Saetzen. Gefunden in der
+       Codex-Pruefung. */
+    [class*='tp-bewertungsbeleg'] a[href^='tel:'],
+    [class*='tp-service-links'] a[href^='tel:'],
+    [class*='tp-service-links'] a[href*='wa.me'],
+    [class*='tp-service-links'] a[href*='whatsapp'],
+    .hero-contact a[href^='tel:'],
+    .hero-contact a[href*='wa.me'] {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+
+  /* Produktkarten: "Muster" (29px) und "Vergleichen" (25px) sind Verkaufswege,
+     keine Nebensache - die Musterbestellung ist oft der erste Schritt. Sie
+     standen ausserdem nur 6px auseinander; die Regel verlangt 8px zwischen
+     Tippzielen, sonst trifft man am Telefon den Nachbarn. */
+  @media screen and (max-width: 749px) {
+    [class*='tp-card-actions__sample'],
+    [class*='tp-card-actions__compare'] {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    body [class*='tp-card-actions'] {
+      gap: 8px;
+    }
+
+    /* "Alle ansehen" am Ende der Abschnitte lag bei 22px. Auf der Startseite
+       trägt nur dieser eine Linktyp die Klasse .link, und kein Vorkommen sitzt
+       im Fliesstext - geprüft, sonst würde die Vergrösserung den Zeilenfall
+       zerreissen. */
+    body .group-block-content > a.link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+
+  /* Die Einstiegsknöpfe der Startseite lagen bei 42px - zwei Pixel unter dem
+     Mass. Kein dramatischer Fehler, aber kostenlos zu beheben. */
+  @media screen and (max-width: 749px) {
+    .category-cta {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  /* Weiterführende Links lagen bei 18-21px. Sie stehen jeweils allein in einer
+     Zeile, zusätzlicher Innenabstand verschiebt daher kein Layout. Kein
+     min-height auf dem Element selbst, weil inline-block sonst die Grundlinie
+     im umgebenden Text verzieht - der Abstand kommt über padding. */
+  @media screen and (max-width: 749px) {
+    [class*='tp-bewertungsbeleg__link'],
+    [class*='tp-service-links__shipping-details'] > a,
+    [class*='tp-service-links__comfort-body'] > a,
+    [class*='tp-service-links'] summary,
+    [class*='tp-roll-order-help'] summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+
+  /* Der Verlegeservice-Abschnitt hatte am Telefon drei verschiedene Achsen
+     übereinander: Überschrift und Text zentriert, die drei Schritte
+     linksbündig, der Knopf wieder zentriert. Das Auge findet keine
+     durchgehende Kante und der Abschnitt wirkt unruhig.
+
+     Nur am Telefon korrigiert: am Desktop stehen die Schritte nebeneinander
+     in Spalten, dort ist linksbündig richtig und bleibt unangetastet. */
+  @media screen and (max-width: 749px) {
+    body .tp-fachhandel__steps,
+    body .tp-fachhandel__steps li,
+    body .tp-fachhandel__step-title {
+      text-align: center;
+    }
+
+    body .tp-fachhandel__steps li {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  /* Der Knopf "Filtern" ist am Telefon das Eingangstor zu allen Filtern -
+     ohne ihn sind sie unerreichbar, weil das Filterformular dort eingeklappt
+     ist. Er war 22 px hoch und 66 px breit, also deutlich unter dem Mass fuer
+     Fingerbedienung. Ausgerechnet der wichtigste Bedienpunkt der
+     Kategorieseite war der am schwersten zu treffende.
+
+     Der Innenabstand vergroessert nur die Trefferflaeche; Schriftgroesse und
+     Erscheinungsbild bleiben. */
+  @media screen and (max-width: 749px) {
+    body .facets-toggle__button {
+      min-height: 44px;
+      padding-inline: 12px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+</style>

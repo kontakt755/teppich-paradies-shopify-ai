@@ -1,0 +1,118 @@
+{% doc %}
+  Formular-Feinschliff für den Rollenware-Rechner.
+
+  Befunde aus der Prüfung gegen ui-ux-pro-max, Kategorie 8 (Forms & Feedback):
+  error-placement, aria-live-errors, inline-validation, input-helper-text.
+
+  Bewusst als nachträgliche Ergänzung per JavaScript, nicht als Änderung an
+  blocks/tp-rollware-rechner.liquid. Die Rechner-Datei bleibt damit
+  zeichengleich mit dem Live-Theme, und diese Ebene lässt sich durch Entfernen
+  einer Zeile in layout/theme.liquid vollständig zurücknehmen. Am Rechenweg
+  und am Warenkorb wird nichts angefasst.
+
+  Was sich ändert:
+
+  1. Der Hinweis "Mindestens 100 cm" steht dauerhaft unter dem Feld, statt
+     erst als Fehler aufzutauchen, wenn man dagegenläuft. Eine Regel, die man
+     vorher kennt, ist keine Fehlermeldung wert.
+
+  2. Der Fehler erscheint erst beim Verlassen des Feldes. Vorher blitzte er
+     beim Tippen von "500" zweimal auf - nach der "5" und nach der "50".
+     Das liest sich wie Tadel für eine Eingabe, die gerade erst entsteht.
+
+  3. Fehler sind jetzt mit dem Feld verknüpft (aria-describedby) und werden
+     angesagt (role=status). Ohne das erfährt ein Screenreader-Nutzer nie,
+     warum der Knopf nicht reagiert.
+{% enddoc %}
+
+<script>
+  (function () {
+    function init() {
+      document.querySelectorAll('[id^="tp-rwc-"]').forEach(function (wurzel) {
+        if (wurzel.dataset.tpFormularBereit) return;
+
+        var feld = wurzel.querySelector('input[data-length-input]');
+        var fehlerMin = wurzel.querySelector('[data-error-min]');
+        var fehlerLager = wurzel.querySelector('[data-error-stock]');
+        if (!feld || !fehlerMin) return;
+
+        wurzel.dataset.tpFormularBereit = '1';
+
+        // --- Fehler ansagbar und mit dem Feld verknüpft machen ---
+        var ids = [];
+        [fehlerMin, fehlerLager].forEach(function (el, i) {
+          if (!el) return;
+          if (!el.id) el.id = wurzel.id + '-fehler-' + i;
+          el.setAttribute('role', 'status');
+          el.setAttribute('aria-live', 'polite');
+          ids.push(el.id);
+        });
+
+        // --- Dauerhafter Hinweis statt Fehler im Nachhinein ---
+        var hinweis = document.createElement('p');
+        hinweis.className = 'tp-formular-hinweis';
+        hinweis.id = wurzel.id + '-hinweis';
+        hinweis.textContent = 'Mindestens 100 cm';
+        fehlerMin.parentNode.insertBefore(hinweis, fehlerMin);
+        ids.unshift(hinweis.id);
+
+        feld.setAttribute('aria-describedby', ids.join(' '));
+
+        // --- Fehler erst nach dem Verlassen des Feldes ---
+        // Der Baustein blendet ihn bei jedem Tastendruck ein. Dieser Zuhörer
+        // wird später registriert und läuft deshalb danach; er nimmt die
+        // Einblendung zurück, solange das Feld den Fokus hat.
+        var wurdeVerlassen = false;
+
+        function zuKurz() {
+          var n = parseInt(feld.value, 10);
+          return !isNaN(n) && n > 0 && n < 100;
+        }
+
+        function abgleichen() {
+          var zeigen = wurdeVerlassen && zuKurz();
+          fehlerMin.hidden = !zeigen;
+          if (zeigen) {
+            feld.setAttribute('aria-invalid', 'true');
+          } else {
+            feld.removeAttribute('aria-invalid');
+          }
+        }
+
+        feld.addEventListener('input', abgleichen);
+
+        feld.addEventListener('blur', function () {
+          wurdeVerlassen = true;
+          abgleichen();
+        });
+
+        feld.addEventListener('focus', function () {
+          // Neue Eingabe verdient einen unbelasteten Anfang.
+          wurdeVerlassen = false;
+          abgleichen();
+        });
+
+        abgleichen();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Der Rechner wird bei Variantenwechsel neu aufgebaut.
+    document.addEventListener('change', function () {
+      window.setTimeout(init, 200);
+    });
+  })();
+</script>
+
+<style>
+  .tp-formular-hinweis {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.62);
+  }
+</style>
