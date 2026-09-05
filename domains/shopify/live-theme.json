@@ -6,6 +6,12 @@
     "verifiedAt": "2026-09-04",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
+  "preview": {
+    "themeId": "203556880718",
+    "name": "Preview Gallery V2",
+    "verifiedAt": "2026-09-05",
+    "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
+  },
   "fallback": {
     "themeId": "196301750606",
     "name": "Horizon",
