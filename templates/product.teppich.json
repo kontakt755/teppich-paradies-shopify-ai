@@ -15,7 +15,7 @@
             "slideshow_controls_style": "thumbnails",
             "slideshow_mobile_controls_style": "counter",
             "thumbnail_position": "bottom",
-            "thumbnail_width": 76,
+            "thumbnail_width": 72,
             "thumbnail_radius": 6,
             "aspect_ratio": "1",
             "constrain_to_viewport": true,
