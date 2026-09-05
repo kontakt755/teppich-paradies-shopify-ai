@@ -1,0 +1,814 @@
+{%- comment -%}
+  Linoleumboden Collection Template
+  Specialized rendering for natural linoleum product category
+  Features: Hero section, USP blocks, product grid, care instructions, FAQ
+{%- endcomment -%}
+
+{% if collection.handle == 'linoleumboden' %}
+  {%- comment -%} Linoleumboden Category - Hero Section {%- endcomment -%}
+  <section class="linoleum-hero">
+    <div class="linoleum-hero__container">
+      <div class="linoleum-hero__content">
+        <h1 class="linoleum-hero__title">{{ collection.title }}</h1>
+        <p class="linoleum-hero__subtitle">
+          Naturboden mit Elastizität — robust, umweltfreundlich und pflegeleicht.
+          Elastische Linoleumböden aus Naturmaterialien für jeden Raum.
+        </p>
+        <div class="linoleum-hero__cta">
+          <a href="#linoleum-features" class="button button--primary button--large">
+            Eigenschaften entdecken
+          </a>
+          <a href="#linoleum-samples" class="button button--secondary button--large">
+            Muster bestellen
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} USP Features Section {%- endcomment -%}
+  <section class="linoleum-features" id="linoleum-features">
+    <div class="linoleum-features__container">
+      <h2>Warum Linoleumboden?</h2>
+      <div class="linoleum-features__grid">
+
+        <div class="linoleum-feature-box">
+          <div class="linoleum-feature-box__icon">🌿</div>
+          <h3>Aus Naturmaterialien</h3>
+          <p>
+            Elastische Linoleumböden bestehen aus natürlichen Rohstoffen wie Leinöl,
+            Korkmehl, Holzmehl und Jute. Vollständig biologisch abbaubar und
+            nachhaltig produziert.
+          </p>
+        </div>
+
+        <div class="linoleum-feature-box">
+          <div class="linoleum-feature-box__icon">✨</div>
+          <h3>Elastisch & Rutschfest</h3>
+          <p>
+            Die elastische Oberfläche sorgt für Trittsicherheit und reduziert
+            Stolpergefahr. Ideal für Haushalte mit Kindern oder älteren Menschen.
+          </p>
+        </div>
+
+        <div class="linoleum-feature-box">
+          <div class="linoleum-feature-box__icon">🛡️</div>
+          <h3>Langlebig & Pflegeleicht</h3>
+          <p>
+            Robuste Oberflächenstruktur für lange Haltbarkeit. Einfache Reinigung
+            mit Staubsauger und feuchtem Tuch. Keine speziellen Chemikalien nötig.
+          </p>
+        </div>
+
+        <div class="linoleum-feature-box">
+          <div class="linoleum-feature-box__icon">♻️</div>
+          <h3>Umweltfreundlich & Nachhaltig</h3>
+          <p>
+            Keine synthetischen Kunststoffe. Geringe CO₂-Bilanz und vollständig
+            recyclebar. Die perfekte Wahl für bewusste Käufer.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Product Grid {%- endcomment -%}
+  <section class="collection-products" id="linoleum-products">
+    <div class="collection-products__header">
+      <h2>{{ collection.title }} — {{ collection.products_count }} Produkte</h2>
+    </div>
+
+    <div class="collection-products__grid">
+      {%- for product in collection.products -%}
+        <div class="product-card">
+          <div class="product-card__image">
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 400 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                loading="lazy"
+              >
+            {%- endif -%}
+          </div>
+
+          <div class="product-card__content">
+            <h3 class="product-card__title">{{ product.title }}</h3>
+
+            <div class="product-card__badge">
+              🌿 Naturmaterial — Elastisches Linoleum
+            </div>
+
+            <div class="product-card__price">
+              {{ product.price | money }} pro m²
+            </div>
+
+            <div class="product-card__actions">
+              <a href="{{ product.url }}" class="button button--primary button--small">
+                Verfügbare Farben
+              </a>
+              <button class="button button--secondary button--small" id="sample-{{ product.id }}">
+                Muster bestellen
+              </button>
+            </div>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </section>
+
+  {%- comment -%} Care Instructions & FAQ Accordion {%- endcomment -%}
+  <section class="linoleum-care" id="linoleum-care">
+    <div class="linoleum-care__container">
+      <h2>Linoleumboden richtig pflegen</h2>
+      <p class="linoleum-care__intro">
+        Elastische Linoleumböden sind pflegeleicht und robust. Hier finden Sie wichtige
+        Tipps zu Reinigung, Schutz und fachgerechter Installation.
+      </p>
+
+      <details class="linoleum-care__item">
+        <summary class="linoleum-care__summary">
+          <span class="linoleum-care__icon">🧹</span>
+          Tägliche Reinigung
+        </summary>
+        <div class="linoleum-care__content">
+          <ul>
+            <li>Regelmäßig absaugen oder mit Besen kehren</li>
+            <li>Mit feuchtem, nicht nassem Tuch wischen</li>
+            <li>Verschüttungen sofort mit trocknem Tuch aufnehmen</li>
+            <li>Milde Reinigungsmittel (pH-neutral) verwenden</li>
+            <li>Keine aggressiven Chemikalien oder Scheuermittel</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="linoleum-care__item">
+        <summary class="linoleum-care__summary">
+          <span class="linoleum-care__icon">💧</span>
+          Wasserschutz & Feuchte
+        </summary>
+        <div class="linoleum-care__content">
+          <ul>
+            <li>Linoleumböden sind wasserdicht und für feuchte Räume geeignet</li>
+            <li>Geeignet für: Küchen, Bäder, Flure, Wohnzimmer</li>
+            <li>Bei Wasserschaden: Schnell trocken wischen, Belüftung</li>
+            <li>Optionale Versiegelung erhöht die Langlebigkeit</li>
+            <li>Keine Staunässe — regelmäßige Lüftung wichtig</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="linoleum-care__item">
+        <summary class="linoleum-care__summary">
+          <span class="linoleum-care__icon">🔧</span>
+          Professionelle Verlegung
+        </summary>
+        <div class="linoleum-care__content">
+          <ul>
+            <li>Fachgerechte Installation empfohlen — Wir vermitteln Verlegungspartner</li>
+            <li>Untergrund: Trocken, eben, frei von Rauhheit</li>
+            <li>Akklimation vor Verlegung: Minimum 48 Stunden bei Raumtemperatur</li>
+            <li>Verlegemethoden: Klebe- oder Schwimmverlegung möglich</li>
+            <li>Randabstand: 5–10mm zu Wänden/Türen</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="linoleum-care__item">
+        <summary class="linoleum-care__summary">
+          <span class="linoleum-care__icon">📅</span>
+          Langzeitpflege & Wartung
+        </summary>
+        <div class="linoleum-care__content">
+          <ul>
+            <li>Regelmäßige Reinigung: 1–2x wöchentlich absaugen</li>
+            <li>Monatliche Grundreinigung mit pH-neutralem Reiniger</li>
+            <li>Schutz vor direkter Sonneneinstrahlung (Farbverblassen vorbeugen)</li>
+            <li>Fußmatten an Eingängen reduzieren Verschmutzung</li>
+            <li>Möbelbeine: Unterlagen verwenden, um Kratzer zu vermeiden</li>
+            <li>Lebensdauer bei guter Pflege: 20–30 Jahre</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="linoleum-care__item">
+        <summary class="linoleum-care__summary">
+          <span class="linoleum-care__icon">❓</span>
+          Häufig gestellte Fragen
+        </summary>
+        <div class="linoleum-care__content">
+          <div class="linoleum-faq">
+            <div class="linoleum-faq__item">
+              <strong>Ist Linoleum das gleiche wie Vinyl?</strong>
+              <p>
+                Nein. Linoleum ist eine Naturprodukt aus Leinöl, Korkmehl und anderen
+                Naturmaterialien. Vinyl ist synthetisch. Linoleum ist nachhaltiger und
+                biologisch abbaubar.
+              </p>
+            </div>
+
+            <div class="linoleum-faq__item">
+              <strong>Kann ich Linoleumboden selbst verlegen?</strong>
+              <p>
+                Ja, aber professionelle Verlegung ist zu empfehlen. Bei kleineren Flächen
+                ist Schwimmverlegung möglich. Größere Projekte sollten Profis übernehmen.
+              </p>
+            </div>
+
+            <div class="linoleum-faq__item">
+              <strong>Wie lange hält Linoleumboden?</strong>
+              <p>
+                Bei guter Pflege 20–30 Jahre. Linoleumböden werden mit der Zeit noch
+                schöner, da die natürlichen Öle eine edle Patina entwickeln.
+              </p>
+            </div>
+
+            <div class="linoleum-faq__item">
+              <strong>Ist Linoleum für Allergiker geeignet?</strong>
+              <p>
+                Ja. Linoleumböden sind frei von Weichmachern und Lösungsmitteln. Sie
+                geben keine VOC (flüchtige Stoffe) ab — ideal für empfindliche Personen.
+              </p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="linoleum-care__footer">
+        <p>
+          <strong>Fragen zur Pflege oder Installation?</strong>
+          <a href="/pages/kontakt">Kontaktieren Sie unsere Fachberatung</a> —
+          wir helfen gerne weiter.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {%- comment -%} Sample Request Section {%- endcomment -%}
+  <section class="linoleum-samples" id="linoleum-samples">
+    <div class="linoleum-samples__container">
+      <h2>Muster bestellen</h2>
+      <p>
+        Überzeugen Sie sich selbst von der Qualität unserer elastischen Linoleumböden.
+        Kostenlos und unverbindlich Muster anfordern.
+      </p>
+
+      <div class="linoleum-samples__form">
+        <form method="POST" action="/pages/muster-bestellen">
+          <div class="form-group">
+            <label for="sample-product">Produkt auswählen:</label>
+            <select id="sample-product" name="product" required>
+              <option value="">-- Wählen Sie ein Produkt --</option>
+              {%- for product in collection.products -%}
+                <option value="{{ product.handle }}">{{ product.title }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="sample-name">Name:</label>
+            <input type="text" id="sample-name" name="name" required>
+          </div>
+
+          <div class="form-group">
+            <label for="sample-email">E-Mail:</label>
+            <input type="email" id="sample-email" name="email" required>
+          </div>
+
+          <button type="submit" class="button button--primary button--large">
+            Muster anfordern
+          </button>
+        </form>
+      </div>
+
+      <p class="linoleum-samples__info">
+        Versand: Kostenlos in Deutschland | Bearbeitungszeit: 2–3 Werktage
+      </p>
+    </div>
+  </section>
+
+{% else %}
+  {%- comment -%} Fallback: Standard Collection Template {%- endcomment -%}
+  <section class="collection-products">
+    <div class="collection-products__header">
+      <h1>{{ collection.title }}</h1>
+      <p>{{ collection.description }}</p>
+    </div>
+
+    <div class="collection-products__grid">
+      {%- for product in collection.products -%}
+        <div class="product-card">
+          <div class="product-card__image">
+            {%- if product.featured_image -%}
+              <img
+                src="{{ product.featured_image | image_url: width: 400 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                loading="lazy"
+              >
+            {%- endif -%}
+          </div>
+
+          <div class="product-card__content">
+            <h3 class="product-card__title">{{ product.title }}</h3>
+            <div class="product-card__price">
+              {{ product.price | money }}
+            </div>
+            <a href="{{ product.url }}" class="button button--primary button--small">
+              Ansehen
+            </a>
+          </div>
+        </div>
+      {%- endfor -%}
+    </div>
+  </section>
+{% endif %}
+
+<style>
+  /* Linoleumboden Hero Section */
+  .linoleum-hero {
+    background: linear-gradient(135deg, #f5f1e8 0%, #e8dcc8 100%);
+    padding: 80px 20px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .linoleum-hero__container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .linoleum-hero__title {
+    font-size: 48px;
+    margin: 0 0 16px;
+    color: #1a1a1a;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .linoleum-hero__subtitle {
+    font-size: 18px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0 0 32px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .linoleum-hero__cta {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Features Section */
+  .linoleum-features {
+    padding: 80px 20px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+  }
+
+  .linoleum-features__container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .linoleum-features__container h2 {
+    text-align: center;
+    font-size: 36px;
+    margin: 0 0 48px;
+    color: #1a1a1a;
+  }
+
+  .linoleum-features__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 32px;
+  }
+
+  .linoleum-feature-box {
+    text-align: center;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    transition: all 0.3s ease;
+  }
+
+  .linoleum-feature-box:hover {
+    border-color: #b4976c;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .linoleum-feature-box__icon {
+    font-size: 48px;
+    display: block;
+    margin: 0 0 16px;
+  }
+
+  .linoleum-feature-box h3 {
+    font-size: 20px;
+    margin: 0 0 12px;
+    color: #1a1a1a;
+  }
+
+  .linoleum-feature-box p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+  }
+
+  /* Care Section */
+  .linoleum-care {
+    padding: 80px 20px;
+    background: #fafaf8;
+    border-bottom: 1px solid #eee;
+  }
+
+  .linoleum-care__container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .linoleum-care__container h2 {
+    font-size: 36px;
+    margin: 0 0 12px;
+    color: #1a1a1a;
+  }
+
+  .linoleum-care__intro {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0 0 32px;
+  }
+
+  .linoleum-care__item {
+    margin: 0 0 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .linoleum-care__summary {
+    padding: 16px 20px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #1a1a1a;
+    transition: background 0.2s ease;
+    user-select: none;
+  }
+
+  .linoleum-care__summary:hover {
+    background: #f5f5f5;
+  }
+
+  .linoleum-care__icon {
+    display: inline-block;
+    font-size: 24px;
+  }
+
+  .linoleum-care__content {
+    padding: 20px;
+    background: #fafaf8;
+    border-top: 1px solid #eee;
+  }
+
+  .linoleum-care__content ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: disc;
+  }
+
+  .linoleum-care__content li {
+    margin: 8px 0;
+    line-height: 1.6;
+    color: #555;
+  }
+
+  .linoleum-care__content strong {
+    color: #1a1a1a;
+  }
+
+  /* FAQ Grid */
+  .linoleum-faq {
+    display: grid;
+    gap: 24px;
+  }
+
+  .linoleum-faq__item {
+    padding-bottom: 16px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .linoleum-faq__item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .linoleum-faq__item strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #1a1a1a;
+    font-size: 16px;
+  }
+
+  .linoleum-faq__item p {
+    margin: 0;
+    line-height: 1.6;
+    color: #666;
+    font-size: 14px;
+  }
+
+  .linoleum-care__footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+    color: #666;
+  }
+
+  .linoleum-care__footer a {
+    color: #b4976c;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .linoleum-care__footer a:hover {
+    text-decoration: underline;
+  }
+
+  /* Sample Request Section */
+  .linoleum-samples {
+    padding: 80px 20px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+  }
+
+  .linoleum-samples__container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .linoleum-samples__container h2 {
+    text-align: center;
+    font-size: 36px;
+    margin: 0 0 12px;
+    color: #1a1a1a;
+  }
+
+  .linoleum-samples__container > p {
+    text-align: center;
+    font-size: 16px;
+    color: #666;
+    margin: 0 0 32px;
+    line-height: 1.6;
+  }
+
+  .linoleum-samples__form {
+    background: #f9f9f9;
+    padding: 32px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1a1a1a;
+    font-size: 14px;
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #b4976c;
+    box-shadow: 0 0 0 2px rgba(180, 151, 108, 0.1);
+  }
+
+  .linoleum-samples__info {
+    text-align: center;
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+  }
+
+  /* Product Grid & Cards */
+  .collection-products {
+    padding: 60px 20px;
+  }
+
+  .collection-products__header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .collection-products__header h2 {
+    font-size: 32px;
+    margin: 0;
+    color: #1a1a1a;
+  }
+
+  .collection-products__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .product-card {
+    border: 1px solid #eee;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  .product-card:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+  }
+
+  .product-card__image {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #f5f5f5;
+  }
+
+  .product-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+
+  .product-card:hover .product-card__image img {
+    transform: scale(1.05);
+  }
+
+  .product-card__content {
+    padding: 20px;
+  }
+
+  .product-card__title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #1a1a1a;
+    line-height: 1.4;
+  }
+
+  .product-card__badge {
+    display: inline-block;
+    background: #f5f1e8;
+    color: #1a1a1a;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+
+  .product-card__price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #b4976c;
+    margin-bottom: 16px;
+  }
+
+  .product-card__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .product-card__actions .button {
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+  }
+
+  /* Button Styles */
+  .button {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .button--primary {
+    background: #1a1a1a;
+    color: #fff;
+  }
+
+  .button--primary:hover {
+    background: #b4976c;
+  }
+
+  .button--secondary {
+    background: transparent;
+    color: #1a1a1a;
+    border: 1px solid #ddd;
+  }
+
+  .button--secondary:hover {
+    border-color: #b4976c;
+    color: #b4976c;
+  }
+
+  .button--large {
+    padding: 14px 32px;
+    font-size: 16px;
+  }
+
+  .button--small {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  /* Mobile Responsive */
+  @media (max-width: 768px) {
+    .linoleum-hero {
+      padding: 60px 20px;
+    }
+
+    .linoleum-hero__title {
+      font-size: 32px;
+    }
+
+    .linoleum-hero__subtitle {
+      font-size: 16px;
+    }
+
+    .linoleum-hero__cta {
+      flex-direction: column;
+    }
+
+    .linoleum-hero__cta .button {
+      width: 100%;
+    }
+
+    .linoleum-features__grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .linoleum-samples__form {
+      padding: 24px;
+    }
+
+    .collection-products__grid {
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .linoleum-hero__title {
+      font-size: 24px;
+    }
+
+    .linoleum-features__container h2 {
+      font-size: 28px;
+    }
+  }
+</style>

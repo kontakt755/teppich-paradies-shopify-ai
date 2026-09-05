@@ -222,8 +222,15 @@
   box-sizing: border-box;
 }
 
-/* Desktop: 3 Spalten für 3 Kategorien */
-@media (min-width: 900px) {
+/* Desktop: 4 Spalten für 4 Kategorien */
+@media (min-width: 1200px) {
+  .categories {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Desktop: 3 Spalten für 3 Kategorien (Fallback) */
+@media (min-width: 900px) and (max-width: 1199px) {
   .categories {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -437,6 +444,27 @@
       <p>Der perfekte Abschluss für Ihren neuen Boden – passend zu jedem Stil und jeder Raumhöhe.</p>
       <a href="{{ collections['bodenleisten'].url }}" class="category-cta">
         Bodenleisten entdecken
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="category-box">
+    <a href="{{ collections['linoleumboden'].url }}" class="category-media">
+      <span class="category-badge">Naturboden</span>
+      <img
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/placeholder-linoleumboden.jpg?width=800"
+        alt="Linoleumboden"
+        loading="lazy"
+        width="800"
+        height="600"
+      >
+    </a>
+    <div class="category-body">
+      <h3>Linoleumboden</h3>
+      <p>Elastische Linoleumböden aus Naturmaterialien – strapazierfähig, pflegeleicht und nachhaltig für jeden Raum.</p>
+      <a href="{{ collections['linoleumboden'].url }}" class="category-cta">
+        Linoleumboden entdecken
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
