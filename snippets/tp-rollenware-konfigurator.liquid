@@ -1,0 +1,535 @@
+{%- comment -%}
+Rollenware-Konfigurator: 3-Schritte-Workflow
+- Schritt 1: Breite wählen (200/300/400 cm)
+- Schritt 2: Länge eingeben (m)
+- Schritt 3: Preis berechnen & kaufen
+
+Wird in product-template aufgerufen wenn custom.rollenbreite Metafeld existiert.
+{%- endcomment -%}
+
+{%- if product.metafields.custom.rollenbreite -%}
+  <div class="rollenware-konfigurator" data-product-id="{{ product.id }}" data-price-per-meter="{{ product.price | divided_by: 100.0 }}">
+
+    {%- comment -%} Step Indicator {%- endcomment -%}
+    <div class="step-indicator">
+      <div class="step active" id="step-1-indicator">
+        <div class="step-circle">1</div>
+        <div class="step-label">Breite</div>
+      </div>
+      <div class="step" id="step-2-indicator">
+        <div class="step-circle">2</div>
+        <div class="step-label">Länge</div>
+      </div>
+      <div class="step" id="step-3-indicator">
+        <div class="step-circle">3</div>
+        <div class="step-label">Kaufen</div>
+      </div>
+    </div>
+
+    {%- comment -%} Step 1: Width Selection {%- endcomment -%}
+    <div class="form-section active" id="step-1">
+      <h2 class="section-title">Welche Breite passt zu dir?</h2>
+      <div class="width-grid">
+        {%- assign widths = "" | split: "," -%}
+        {%- for variant in product.variants -%}
+          {%- if variant.metafields.custom.rollenbreite -%}
+            {%- assign width = variant.metafields.custom.rollenbreite | append: "," -%}
+            {%- assign widths = widths | append: width -%}
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- comment -%} Unique widths (simplified – would need better dedup) {%- endcomment -%}
+        {%- for variant in product.variants -%}
+          {%- if variant.metafields.custom.rollenbreite -%}
+            <button
+              class="width-btn"
+              data-width="{{ variant.metafields.custom.rollenbreite }}"
+              data-sku="{{ variant.sku }}"
+              data-variant-id="{{ variant.id }}"
+              type="button"
+            >
+              <div class="width-main">{{ variant.metafields.custom.rollenbreite }} cm</div>
+              <div class="width-hint">
+                {%- if variant.metafields.custom.rollenbreite == 200 -%}
+                  Flure, schmale Räume
+                {%- elsif variant.metafields.custom.rollenbreite == 300 -%}
+                  Optimal für die meisten Zimmer
+                {%- elsif variant.metafields.custom.rollenbreite == 400 -%}
+                  Große Räume, wenig Fugen
+                {%- else -%}
+                  Verfügbare Breite
+                {%- endif -%}
+              </div>
+            </button>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+      <div class="info-box">
+        💡 Die Breite bestimmt, wie viele Übergänge es gibt. Größere Breiten = weniger Nähte.
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-primary" id="step1-next" disabled type="button">
+          Weiter
+        </button>
+      </div>
+    </div>
+
+    {%- comment -%} Step 2: Length Input {%- endcomment -%}
+    <div class="form-section" id="step-2">
+      <h2 class="section-title">Wie viele Meter brauchst du?</h2>
+      <div class="length-input-group">
+        <label class="input-label">Länge eingeben</label>
+        <div class="length-input-wrapper">
+          <input
+            type="number"
+            id="lengthInput"
+            placeholder="z.B. 5"
+            min="1"
+            max="100"
+            step="0.5"
+            inputmode="decimal"
+          />
+          <span class="length-unit">m</span>
+        </div>
+        <div class="hint-text">
+          💡 Typischerweise 3–10 m für Wohnzimmer/Flur. Der Bodenbelag wird auf Maß zugeschnitten.
+        </div>
+        <div class="warning-box" id="warning-length"></div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" id="step2-back" type="button">Zurück</button>
+        <button class="btn btn-primary" id="step2-next" disabled type="button">Zum Kauf</button>
+      </div>
+    </div>
+
+    {%- comment -%} Step 3: Summary & Purchase {%- endcomment -%}
+    <div class="form-section" id="step-3">
+      <h2 class="section-title">Deine Bestellung</h2>
+      <div class="summary-box">
+        <div class="summary-row">
+          <span class="summary-label">Breite:</span>
+          <span class="summary-value" id="summary-width">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Länge:</span>
+          <span class="summary-value" id="summary-length">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Preis pro Meter:</span>
+          <span class="summary-value">{{ product.price | money }}</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Gesamtpreis:</span>
+          <span class="price-display" id="summary-price">0,00 €</span>
+        </div>
+        <div class="price-calculation" id="price-calc-display"></div>
+      </div>
+
+      <form action="/cart/add" method="post" id="konfigurator-form" class="konfigurator-cart-form">
+        <input type="hidden" name="id" id="selected-variant-id" value="" />
+        <button type="submit" class="btn-cart" id="addToCartBtn">In den Warenkorb</button>
+      </form>
+
+      <div class="nav-buttons" style="margin-top: 12px;">
+        <button class="btn btn-secondary" id="step3-back" type="button">Ändern</button>
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%} Styling {%- endcomment -%}
+  <style>
+    .rollenware-konfigurator {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .step-indicator::before {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: #e0e0e0;
+      z-index: 0;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+
+    .step.active .step-circle {
+      background: #2d7a3a;
+      color: white;
+    }
+
+    .step.completed .step-circle {
+      background: #4caf50;
+      color: white;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+    }
+
+    .form-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .width-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .width-btn {
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .width-btn:hover {
+      border-color: #2d7a3a;
+      background: #f0f7f3;
+    }
+
+    .width-btn.selected {
+      border-color: #2d7a3a;
+      background: #2d7a3a;
+      color: white;
+      font-weight: 600;
+    }
+
+    .width-main {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .width-hint {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    .info-box {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #2e7d32;
+      margin-top: 16px;
+    }
+
+    .length-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    #lengthInput {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    #lengthInput:focus {
+      outline: none;
+      border-color: #2d7a3a;
+      background: #f9fff9;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .summary-box {
+      background: #f5f5f5;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .summary-label {
+      color: #666;
+    }
+
+    .summary-value {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .price-display {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2d7a3a;
+      margin-top: 8px;
+    }
+
+    .btn,
+    .btn-cart {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #2d7a3a;
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1f5828;
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+      flex: 1;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-cart {
+      width: 100%;
+      background: #2d7a3a;
+      color: white;
+      padding: 16px;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+
+    .btn-cart:hover {
+      background: #1f5828;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #856404;
+      display: none;
+    }
+
+    .warning-box.show {
+      display: block;
+    }
+
+    @media (max-width: 480px) {
+      .width-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .section-title {
+        font-size: 16px;
+      }
+    }
+  </style>
+
+  {%- comment -%} JavaScript {%- endcomment -%}
+  <script>
+    (function() {
+      const konfigurator = document.querySelector('.rollenware-konfigurator');
+      if (!konfigurator) return;
+
+      const PRICE_PER_METER = parseFloat(konfigurator.dataset.pricePerMeter);
+      const MIN_LENGTH = 2;
+      const MAX_LENGTH = 50;
+      const WARN_LENGTH = 20;
+
+      let selectedWidth = null;
+      let selectedVariantId = null;
+      let selectedLength = null;
+
+      // Step 1: Width Selection
+      document.querySelectorAll('.width-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.width-btn').forEach((b) => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          selectedWidth = btn.dataset.width;
+          selectedVariantId = btn.dataset.variantId;
+          document.getElementById('step1-next').disabled = false;
+        });
+      });
+
+      // Step 2: Length Input
+      document.getElementById('lengthInput').addEventListener('input', (e) => {
+        selectedLength = parseFloat(e.target.value) || null;
+        updatePriceDisplay();
+        validateLength();
+        updateNavigationButtons();
+      });
+
+      function validateLength() {
+        const warning = document.getElementById('warning-length');
+        if (!selectedLength) {
+          warning.classList.remove('show');
+          return;
+        }
+
+        warning.classList.remove('show');
+        if (selectedLength < MIN_LENGTH) {
+          warning.textContent = `⚠️ Mindestens ${MIN_LENGTH} m empfohlen (für Verschnitt).`;
+          warning.classList.add('show');
+        } else if (selectedLength > MAX_LENGTH) {
+          warning.textContent = `⚠️ ${selectedLength} m ist sehr lang. Bist du sicher?`;
+          warning.classList.add('show');
+        } else if (selectedLength > WARN_LENGTH) {
+          warning.textContent = `ℹ️ ${selectedLength} m = große Fläche. Verschnitt wird auf Maß zugeschnitten.`;
+          warning.classList.add('show');
+        }
+      }
+
+      function updatePriceDisplay() {
+        if (!selectedLength) {
+          document.getElementById('summary-price').textContent = '0,00 €';
+          document.getElementById('price-calc-display').textContent = '';
+          return;
+        }
+
+        const total = (selectedLength * PRICE_PER_METER).toFixed(2);
+        document.getElementById('summary-price').textContent = total + ' €';
+        document.getElementById('price-calc-display').textContent =
+          `${PRICE_PER_METER.toFixed(2)} € × ${selectedLength} m = ${total} €`;
+      }
+
+      function updateNavigationButtons() {
+        document.getElementById('step2-next').disabled = !selectedLength || selectedLength < MIN_LENGTH;
+      }
+
+      // Navigation
+      function goToStep(step) {
+        document.querySelectorAll('.form-section').forEach((s) => s.classList.remove('active'));
+        document.getElementById('step-' + step).classList.add('active');
+
+        document.querySelectorAll('.step').forEach((s) => s.classList.remove('active', 'completed'));
+        for (let i = 1; i < step; i++) {
+          document.getElementById('step-' + i + '-indicator').classList.add('completed');
+        }
+        document.getElementById('step-' + step + '-indicator').classList.add('active');
+
+        if (step === 3) {
+          document.getElementById('summary-width').textContent = selectedWidth + ' cm';
+          document.getElementById('summary-length').textContent = selectedLength + ' m';
+          document.getElementById('selected-variant-id').value = selectedVariantId;
+          updatePriceDisplay();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // Button Event Listeners
+      document.getElementById('step1-next').addEventListener('click', () => goToStep(2));
+      document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
+      document.getElementById('step2-next').addEventListener('click', () => goToStep(3));
+      document.getElementById('step3-back').addEventListener('click', () => goToStep(2));
+
+      // Cart Form Submit
+      document.getElementById('konfigurator-form').addEventListener('submit', (e) => {
+        if (!selectedVariantId || !selectedLength) {
+          e.preventDefault();
+          alert('Bitte wähle Breite und Länge aus.');
+          return;
+        }
+        // Form submits normally to Shopify /cart/add
+      });
+    })();
+  </script>
+{%- endif -%}
