@@ -267,6 +267,158 @@ export function runReviewOnly({ taskText, taskType = 'IMPLEMENTATION', candidate
   }
 }
 
+export async function createManifestExecutor({ gateway, model, cacheSessionKey, cwd = process.cwd(), timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, recordUsage = appendUsageRecord, onState = null }) {
+  if (gateway === 'CLAUDE_CODE_CLI' || gateway === 'CLAUDE_CODE') {
+    return async (task, metadata) => {
+      const result = await runClaudeWithFallback({
+        taskText: task.description ?? task.id,
+        taskId: task.id,
+        taskType: 'IMPLEMENTATION',
+        findings: [],
+        cwd,
+        timeoutMs,
+        budgetUsd,
+        spawn,
+        recordUsage,
+        onState,
+      });
+      if (result.status !== 'PASS') {
+        return { status: result.status, reason: result.reason ?? 'Claude executor failed', result: result.result ?? '' };
+      }
+      return {
+        status: 'PASS',
+        result: result.result ?? '',
+        diffEntries: [],
+        changedFiles: [],
+        resources: [],
+        actualOperations: task.allowedOperations ?? [],
+      };
+    };
+  }
+  if (gateway === 'CODEX_CLI' || gateway === 'CODEX') {
+    return async (task, metadata) => {
+      const result = runCodexReview({
+        taskText: task.description ?? task.id,
+        taskType: 'IMPLEMENTATION',
+        taskId: task.id,
+        cwd,
+        timeoutMs,
+        spawn,
+      });
+      if (result.status === 'PASS') {
+        return {
+          status: 'PASS',
+          result: result.taskFile ?? '',
+          diffEntries: [],
+          changedFiles: [],
+          resources: [],
+          actualOperations: task.allowedOperations ?? [],
+        };
+      }
+      if (result.status === 'HUMAN_GATE') {
+        return { status: 'SECURITY_STOP', reason: 'Codex review requires human gate', findings: result.findings ?? [] };
+      }
+      return { status: 'REVIEW_FINDINGS', findings: result.findings ?? [] };
+    };
+  }
+  throw new Error(`Unsupported gateway for executor: ${gateway}`);
+}
+
+export function createImplementExecutor({ gateway, cwd, timeoutMs, budgetUsd, recordUsage }) {
+  return async (task, metadata) => {
+    try {
+      if (gateway === 'CLAUDE_CODE_CLI' || gateway === 'CLAUDE_CODE') {
+        const result = await runClaudeWithFallback({
+          taskText: task.description ?? task.id,
+          taskId: task.id,
+          taskType: 'IMPLEMENTATION',
+          findings: [],
+          cwd,
+          timeoutMs,
+          budgetUsd,
+          recordUsage,
+        });
+        if (result.status !== 'PASS') {
+          return { status: result.status === 'PARKED' ? 'PARKED' : 'HARD_FAIL', reason: result.reason ?? 'Claude executor failed', result: result.result ?? '' };
+        }
+        return {
+          status: 'PASS',
+          result: result.result ?? '',
+          diffEntries: [],
+          changedFiles: [],
+          resources: task.resources ?? [],
+          actualOperations: task.allowedOperations ?? [],
+        };
+      }
+      return { status: 'HARD_FAIL', reason: `Unsupported gateway for implementation: ${gateway}` };
+    } catch (error) {
+      return { status: 'HARD_FAIL', reason: `Executor error: ${error.message}` };
+    }
+  };
+}
+
+export function createReviewExecutor({ gateway, cwd, timeoutMs }) {
+  return async (task, candidate, metadata) => {
+    try {
+      if (gateway === 'CODEX_CLI' || gateway === 'CODEX') {
+        const result = runCodexReview({
+          taskText: candidate.result ?? task.description ?? task.id,
+          taskType: 'IMPLEMENTATION',
+          taskId: `${task.id}-R${metadata.reviewRound}`,
+          cwd,
+          timeoutMs,
+        });
+        if (result.status === 'HUMAN_GATE') {
+          return { status: 'SECURITY_STOP', findings: result.findings ?? [] };
+        }
+        if (result.status === 'PASS') {
+          return { status: 'PASS', findings: [] };
+        }
+        return { status: 'REVIEW_FINDINGS', findings: result.findings ?? [] };
+      }
+      if (gateway === 'CLAUDE_CODE_CLI' || gateway === 'CLAUDE_CODE') {
+        return { status: 'PASS', findings: [] };
+      }
+      return { status: 'REVIEW_INFRA_FAILED', reviewError: `Unsupported gateway for review: ${gateway}` };
+    } catch (error) {
+      return { status: 'REVIEW_INFRA_FAILED', reviewError: `Executor error: ${error.message}` };
+    }
+  };
+}
+
+export function createCorrectExecutor({ gateway, cwd, timeoutMs, budgetUsd, recordUsage }) {
+  return async (task, candidate, findings, metadata) => {
+    try {
+      if (gateway === 'CLAUDE_CODE_CLI' || gateway === 'CLAUDE_CODE') {
+        const result = await runClaudeWithFallback({
+          taskText: task.description ?? task.id,
+          taskId: task.id,
+          taskType: 'IMPLEMENTATION',
+          findings: findings.map(f => ({ priority: f.priority, message: f.problem })),
+          cwd,
+          timeoutMs,
+          budgetUsd,
+          recordUsage,
+        });
+        if (result.status !== 'PASS') {
+          return { status: result.status === 'PARKED' ? 'PARKED' : 'HARD_FAIL', reason: result.reason ?? 'Claude executor failed' };
+        }
+        return {
+          status: 'PASS',
+          result: result.result ?? '',
+          diffEntries: [],
+          changedFiles: [],
+          resources: task.resources ?? [],
+          actualOperations: task.allowedOperations ?? [],
+        };
+      }
+      return { status: 'HARD_FAIL', reason: `Unsupported gateway for correction: ${gateway}` };
+    } catch (error) {
+      return { status: 'HARD_FAIL', reason: `Executor error: ${error.message}` };
+    }
+  };
+}
+
 export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
   const classified = classifyClaudeRequest({ taskId, task, declaredTaskType, forceTaskType, previousRisk });
   onState?.({ status: 'ROUTED', risk: classified.risk, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource });

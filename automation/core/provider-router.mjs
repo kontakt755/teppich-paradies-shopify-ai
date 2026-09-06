@@ -7,6 +7,33 @@ const MODEL_CLASS_RANK = new Map([
   [MODEL_CLASS.PREMIUM, 3],
 ]);
 
+export const DEFAULT_PROVIDERS = Object.freeze([
+  {
+    id: 'CLAUDE_CODE',
+    roles: [ROLE.IMPLEMENTER, ROLE.REQUIREMENTS_CHALLENGER, ROLE.ARCHITECT, ROLE.REVIEWER, ROLE.SECURITY_REVIEWER, ROLE.VISUAL_REVIEWER],
+    modelClass: MODEL_CLASS.STANDARD,
+    model: 'claude-code-pro',
+    gateway: 'CLAUDE_CODE_CLI',
+    upstreamProvider: 'ANTHROPIC',
+    available: true,
+    costRank: 0,
+    sampleCount: 0,
+    successRate: 1.0,
+  },
+  {
+    id: 'CODEX',
+    roles: [ROLE.SECURITY_REVIEWER, ROLE.REVIEWER],
+    modelClass: MODEL_CLASS.LIGHT,
+    model: 'codex-base',
+    gateway: 'CODEX_CLI',
+    upstreamProvider: 'ANTHROPIC',
+    available: true,
+    costRank: 10,
+    sampleCount: 0,
+    successRate: 1.0,
+  },
+]);
+
 function providerSupportsModelClass(provider, requiredModelClass) {
   if (!requiredModelClass || !provider.modelClass) return true;
   return (MODEL_CLASS_RANK.get(provider.modelClass) ?? 0) >= (MODEL_CLASS_RANK.get(requiredModelClass) ?? Number.POSITIVE_INFINITY);
