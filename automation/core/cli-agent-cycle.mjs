@@ -47,9 +47,15 @@ function readTaskSource(taskFile, io = fs) {
   return { text: io.readFileSync(absolutePath, 'utf8'), absolutePath };
 }
 
+// Die read-only Sandbox blockiert den confstr()-Syscall, mit dem Apples git-Shim sein
+// Temp-Verzeichnis sucht. git schreibt daraufhin zwei Zeilen auf stderr und liefert
+// trotzdem korrekte Ergebnisse. Am 2026-09-06 las ein Reviewer das als Abbruch und
+// meldete P1 "Diff nicht ermittelbar", obwohl der Diff im selben Lauf ausgegeben wurde.
+const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git auf stderr "confstr() failed ... DARWIN_USER_TEMP_DIR" und "couldn\'t create cache file \'/tmp/xcrun_db-...\'". Das ist bekanntes Rauschen des macOS-git-Shims; git liefert trotzdem vollstaendige, korrekte Ausgaben. Diese Zeilen sind kein Befund und kein Grund, die Pruefung abzubrechen. Nur wenn ein git-Befehl tatsaechlich keine Ausgabe liefert, ist das ein echtes Problem.';
+
 export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', candidateText = '' } = {}) {
-  if (taskType === 'ANALYSIS') return `Prüfe die folgende technische Analyse unabhängig gegen den Auftrag. Lies AGENTS.md und untersuche das Repository mit ausschließlich lesenden Prüfungen. Bewerte sachliche Richtigkeit, wichtige Auslassungen, Sicherheit und ob Behauptungen belegt sind. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS.\n\nAUFTRAG:\n${taskText}\n\nZU PRÜFENDE ANALYSE:\n${candidateText}`;
-  return `Prüfe die aktuell uncommitteten Änderungen in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\nAUFTRAG:\n${taskText}`;
+  if (taskType === 'ANALYSIS') return `Prüfe die folgende technische Analyse unabhängig gegen den Auftrag. Lies AGENTS.md und untersuche das Repository mit ausschließlich lesenden Prüfungen. Bewerte sachliche Richtigkeit, wichtige Auslassungen, Sicherheit und ob Behauptungen belegt sind. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}\n\nZU PRÜFENDE ANALYSE:\n${candidateText}`;
+  return `Prüfe die aktuell uncommitteten Änderungen in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}`;
 }
 
 export function buildClaudeWorkPrompt(taskText, findings = [], taskType = 'IMPLEMENTATION') {
