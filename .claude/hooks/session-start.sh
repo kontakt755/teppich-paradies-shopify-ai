@@ -17,6 +17,12 @@ if ! node qa/run-sync-path-guard.mjs; then
   echo ""
 fi
 
+# Laeuft IMMER: In einer Remote- oder Worktree-Kopie fehlen .env.local und .router/
+# (beide bewusst nicht im Git), damit auch die Voranalyse. Ohne diese Zeile faellt
+# das niemandem auf - am 2026-09-06 wurde daraus der falsche Schluss, der Router
+# sei defekt, waehrend er lokal einwandfrei lief.
+node automation/scripts/router-status.mjs --kurz 2>/dev/null | sed 's/^/  /' || true
+
 # Lokal laeuft die Umgebung ohnehin; der Rest des Hooks ist fuer Claude Code on the web.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0

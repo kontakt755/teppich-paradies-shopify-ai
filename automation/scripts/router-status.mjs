@@ -9,13 +9,14 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../');
 const at = p => path.join(root, p);
+const kurz = process.argv.includes('--kurz');
 const lines = [];
 const problems = [];
 const say = (ok, label, detail) => lines.push(`${ok ? '+' : 'x'} ${label}${detail ? ` — ${detail}` : ''}`);
 
 function git(...args) {
   try {
-    return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+    return execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
     return '';
   }
@@ -74,9 +75,11 @@ lines.push('');
 
 // 4. Belege: was der Router zuletzt tatsaechlich getan hat.
 const ledger = at('.router/ai-usage.jsonl');
+let letzterAufruf = null;
 if (fs.existsSync(ledger)) {
   const rows = fs.readFileSync(ledger, 'utf8').split('\n').filter(Boolean);
   const last = rows.length ? JSON.parse(rows[rows.length - 1]) : null;
+  letzterAufruf = last ? `${String(last.timestamp ?? '?').slice(0, 16).replace('T', ' ')}, ${last.model ?? '?'}` : null;
   say(true, '.router/ai-usage.jsonl', `${rows.length} Aufrufe, zuletzt ${last?.timestamp ?? '?'} (${last?.provider ?? '?'} / ${last?.model ?? '?'})`);
 } else {
   say(false, '.router/ai-usage.jsonl', 'noch kein Aufruf protokolliert');
@@ -85,6 +88,22 @@ if (fs.existsSync(ledger)) {
 
 const runState = at('.router/manifest-run/run-state.json');
 say(fs.existsSync(runState), '.router/manifest-run/run-state.json', fs.existsSync(runState) ? 'ManifestRunner-Lauf vorhanden' : 'noch kein Lauf');
+
+// Kurzmodus fuer den SessionStart-Hook: eine Zeile, damit in jeder Sitzung ohne
+// Zutun sichtbar ist, ob die Voranalyse ueberhaupt laufen kann.
+if (kurz) {
+  if (!problems.length) {
+    console.log(`Router aktiv — Voranalyse laeuft${letzterAufruf ? ` (zuletzt ${letzterAufruf})` : ''}.`);
+    process.exit(0);
+  }
+  const fehlenKeys = problems.some(p => p.includes('.env.local') || p.includes('API_KEY'));
+  const fehlenHooks = problems.some(p => p.includes('settings.json') || p.includes('hooks/'));
+  console.log('Router INAKTIV in dieser Arbeitskopie — keine Gemini-Voranalyse, kein Codex-Review.');
+  if (fehlenKeys) console.log('  Grund: .env.local mit den Provider-Keys fehlt (liegt nur lokal, wird nie synchronisiert).');
+  if (fehlenHooks) console.log('  Grund: die Hook-Verdrahtung unter .claude/ fehlt in dieser Kopie.');
+  console.log('  Details: npm run router:status');
+  process.exit(0);
+}
 
 console.log(lines.join('\n'));
 
