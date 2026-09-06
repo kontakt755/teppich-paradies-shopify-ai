@@ -36,8 +36,17 @@ Sitzung ueber `.claude/hooks/session-start.sh`).
 3. `npm run syncpath:guard` laeuft grün, bevor mit Git gearbeitet wird.
 4. `git pull --ff-only` vor Arbeitsbeginn - kein stiller Merge-Commit, der
    Abweichungen verschleiert.
-5. `.env.local` wird auf jedem Mac lokal neu angelegt (siehe `.env.example`,
-   falls vorhanden), nie kopiert, nie synchronisiert, nie committet.
+5. `npm run router:setup` legt `.env.local` aus `.env.example` an und nennt die
+   Werte, die noch fehlen. Alle Einstellungen (Modelle, Budgets, Ledger-Pfad)
+   kommen aus dem Repository — von Hand einzutragen sind nur die beiden
+   Provider-Keys. Sie gehoeren in einen Passwortmanager: `.env.local` wird nie
+   kopiert, nie synchronisiert, nie committet. Danach `npm run router:status`,
+   das den ersten echten Provider-Aufruf belegt.
+
+   > Warum die Keys nicht ins Repository duerfen: Git behaelt sie in der History,
+   > auch nach dem Loeschen. Jeder Repo-Zugriff und jeder Fork haette sie, und
+   > GitHub sperrt automatisch erkannte Keys. Der Rest der Konfiguration ist
+   > bewusst versioniert, damit ein neuer Rechner genau zwei Werte braucht.
 6. `npm run secret:scan` vor jedem Commit, wenn neue Config-Dateien dazukommen.
 7. Gleiche Node-Version (`.nvmrc` falls vorhanden, sonst in der README
    dokumentieren).

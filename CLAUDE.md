@@ -108,6 +108,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 |---|---|
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf, statt sechsmal nacheinander an je einem Gate zu scheitern |
 | `npm run router:status` | **bevor jemand behauptet, der Router laufe nicht**: Hooks, Keys und letzter Provider-Aufruf in einem Lauf |
+| `npm run router:setup` | **auf einem neuen Rechner**: legt `.env.local` aus `.env.example` an und nennt die zwei fehlenden Keys |
 | `npm run theme:block list\|add\|remove` | Blöcke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungültiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
