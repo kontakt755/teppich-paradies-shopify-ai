@@ -5,8 +5,13 @@ Die lokale Steuerzentrale startet den vorhandenen sicheren Agenten-Zyklus: Route
 ## Start
 
 ```bash
-npm run dashboard
+npm run automation:dashboard
 ```
+
+(Nicht `npm run dashboard` — das ist ein anderes, bereits bestehendes Script:
+das statische GitHub-Issues-Dashboard aus `scripts/build-dashboard-data.mjs`,
+siehe `CLAUDE.md` → „Dashboard". Reiner Namenskollisions-Zufall; beide
+Dashboards existieren unabhängig voneinander.)
 
 Danach zeigt das Terminal die lokale Adresse und einen einmaligen Zugangscode. Die Steuerzentrale akzeptiert immer nur einen Auftrag gleichzeitig und speichert keine Prompts in der Token-/Kostenübersicht. Der Zugangscode liegt geschützt im macOS-Benutzerbereich, nicht im Repository.
 
@@ -28,7 +33,7 @@ Für neue Probleme ist „Neue Online-Shop-Aufgabe automatisch erstellen“ vore
 Standardmäßig ist die Seite nur auf diesem Mac erreichbar. Für sicheren Zugriff vom iPhone/Android aus wird später der Dashboard-Prozess ausschließlich über das private Tailscale-Netz gestartet:
 
 ```bash
-npm run dashboard:install
+npm run automation:dashboard:install
 ```
 
 Der Dienst läuft danach in einer privaten Benutzer-Sitzung und bindet sich nur an dessen Tailscale-Adresse. Nach einem Mac-Neustart denselben Startbefehl erneut ausführen. Den Zugangscode weiterhin nicht weitergeben. Tailscale muss auf Mac und Handy angemeldet sein; keine Ports im Router öffnen und keinen öffentlichen Tunnel verwenden.
