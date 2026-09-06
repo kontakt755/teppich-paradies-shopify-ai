@@ -207,7 +207,7 @@ Neue Aufgaben zuerst mit `npm run workflow:route -- "Neue Aufgabe: ..."` routen.
 - Externe 429/503/Timeouts wechseln keinen Agenten und erhalten höchstens einen unmittelbaren Script-Retry. Cloud-/Proxy-403 bei Storefront-Zugriff geht an den lokalen Mac-Runner.
 - Maximal drei autonome Reparaturrunden pro identischem Fehler; ein unklassifizierter Testfehler geht zunächst zur Diagnose zurück an den Implementer statt sofort zum Menschen. Reviewer erhalten bevorzugt nur Diff, Testreport und Findings.
 - Human Approval wird nie gespeichert und gilt nur für den konkret geprüften Commit. Lokale Implementierung, Tests, Commit und Draft-PR dürfen bis zur prüfbaren Übergabe weiterlaufen. Merge nach `main`, Live-Publish, Shopify Writes an Preisen/SKUs/Varianten, Massenanlage, Checkout/Payment/Shipping, DNS und irreversible Änderungen bleiben bis zu ihrer konkreten Freigabe gesperrt.
-- Der Router empfiehlt Rollen, startet aber keine externen Agenten und ruft keine Modell-API auf.
+- Der Router orchestriert Provider-Routing mit realen Session-Starts (Claude Code, Codex) über Executor-Adapters. Externe API-Aufrufe laufen über OpenRouter und Gemini. Governance: ACTIVE (freigegeben 2026-09-06).
 
 ## Aktueller wichtiger Backlog
 
