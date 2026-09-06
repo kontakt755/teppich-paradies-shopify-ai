@@ -90,3 +90,9 @@ venv/
 # Verzeichnis selbst bleibt ueber .gitkeep getrackt, weil syncpath:guard
 # seine Existenz prueft.
 .sync-reports/*.json
+
+# Laufzeit-Artefakte des Provider-Routers: Usage-Ledger, Claude-Handoffs und
+# Agent-Runs entstehen bei jedem Lauf neu. Ungeignored machen sie den Working
+# Tree dirty und blockieren workflow:doctor, Preview und Live. Die Handoffs
+# enthalten ausserdem den vollen Auftragstext.
+.router/
