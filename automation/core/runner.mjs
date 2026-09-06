@@ -7,6 +7,8 @@ import { DEFAULT_MAX_REVIEW_ROUNDS, DEFAULT_PROVIDER_TIMEOUT_MS, runReviewCorrec
 import { evaluateQualityGates } from './quality-gates.mjs';
 import { routeTaskPolicy, usesAutonomyPolicy } from './task-router.mjs';
 import { buildTaskRoutingDecision, providerRouteForPhase } from './provider-router.mjs';
+import { createImplementExecutor, createReviewExecutor, createCorrectExecutor } from './cli-agent-cycle.mjs';
+import { appendUsageRecord } from './openrouter-executor.mjs';
 
 export class RunnerStoppedError extends Error {
   constructor(message, options) {
@@ -202,4 +204,36 @@ export class ManifestRunner {
       this.lock.release();
     }
   }
+}
+
+export function createProductiveManifestRunner({ manifest, stateDir, providers = [], preferredProviders = [], cwd = process.cwd(), timeoutMs = DEFAULT_PROVIDER_TIMEOUT_MS, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), maxReviewRounds = DEFAULT_MAX_REVIEW_ROUNDS, riskGuard = null, diffBudgetGuard = null, specGuard = null, taskRouter = routeTaskPolicy, providerPlanner = buildTaskRoutingDecision, qualityGateEvaluator = evaluateQualityGates, needsAhmetPath = null, io, clock = () => new Date() }) {
+  const createExecutors = (routing) => {
+    const gateway = routing?.gateway ?? 'CLAUDE_CODE_CLI';
+    return {
+      executeTask: createImplementExecutor({ gateway, cwd, timeoutMs, budgetUsd, recordUsage: appendUsageRecord }),
+      reviewTask: createReviewExecutor({ gateway, cwd, timeoutMs }),
+      correctTask: createCorrectExecutor({ gateway, cwd, timeoutMs, budgetUsd, recordUsage: appendUsageRecord }),
+    };
+  };
+  const { executeTask, reviewTask, correctTask } = createExecutors(null);
+  return new ManifestRunner({
+    manifest,
+    stateDir,
+    executeTask,
+    reviewTask,
+    correctTask,
+    maxReviewRounds,
+    providerTimeoutMs: timeoutMs,
+    riskGuard,
+    diffBudgetGuard,
+    specGuard,
+    taskRouter,
+    providerPlanner,
+    providers,
+    preferredProviders,
+    qualityGateEvaluator,
+    needsAhmetPath,
+    io,
+    clock,
+  });
 }
