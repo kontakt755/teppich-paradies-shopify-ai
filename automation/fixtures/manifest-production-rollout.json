@@ -1,0 +1,36 @@
+{
+  "runId": "ROLLOUT-2026-09-06",
+  "description": "Step 8 Production Rollout: Test full provider-router pipeline with real manifests",
+  "tasks": [
+    {
+      "id": "ROUTER-ROLLOUT-LIGHT",
+      "domain": "router",
+      "risk": "LOW",
+      "dependencies": [],
+      "allowedFiles": ["automation/**", "docs/**"],
+      "allowedOperations": ["report_write"],
+      "taskType": "analysis",
+      "routing": {
+        "policyVersion": 2,
+        "modelClass": "LIGHT",
+        "effortLevel": "low"
+      },
+      "description": "Lightweight analysis task — should route to CODEX or OpenRouter"
+    },
+    {
+      "id": "ROUTER-ROLLOUT-STANDARD",
+      "domain": "router",
+      "risk": "MEDIUM",
+      "dependencies": ["ROUTER-ROLLOUT-LIGHT"],
+      "allowedFiles": ["automation/**", "theme/**"],
+      "allowedOperations": ["multi_file_feature_edit"],
+      "taskType": "implementation",
+      "routing": {
+        "policyVersion": 2,
+        "modelClass": "STANDARD",
+        "effortLevel": "medium"
+      },
+      "description": "Standard implementation task — should route to CLAUDE_CODE"
+    }
+  ]
+}
