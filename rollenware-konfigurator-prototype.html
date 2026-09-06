@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eichwald Eiche Hellgrau – Konfigurator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+
+    /* Step Indicator */
+    .step-indicator {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .step-indicator::before {
+      content: "";
+      position: absolute;
+      top: 20px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: #e0e0e0;
+      z-index: 0;
+    }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: #666;
+      transition: all 0.3s ease;
+    }
+
+    .step.active .step-circle {
+      background: #2d7a3a;
+      color: white;
+      border-color: #2d7a3a;
+    }
+
+    .step.completed .step-circle {
+      background: #4caf50;
+      color: white;
+      border-color: #4caf50;
+    }
+
+    .step.completed .step-circle::after {
+      content: "✓";
+      font-size: 20px;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: #999;
+      font-weight: 500;
+    }
+
+    .step.active .step-label,
+    .step.completed .step-label {
+      color: #333;
+    }
+
+    /* Form Sections */
+    .form-section {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Section Title */
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+    }
+
+    /* Step 1: Width Buttons */
+    .width-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .width-btn {
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .width-btn:hover:not(:disabled) {
+      border-color: #2d7a3a;
+      background: #f0f7f3;
+    }
+
+    .width-btn.selected {
+      border-color: #2d7a3a;
+      background: #2d7a3a;
+      color: white;
+      font-weight: 600;
+    }
+
+    .width-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .width-main {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .width-hint {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    /* Step 2: Length Input */
+    .length-input-group {
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .length-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #lengthInput {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    #lengthInput:focus {
+      outline: none;
+      border-color: #2d7a3a;
+      background: #f9fff9;
+    }
+
+    .length-unit {
+      font-weight: 600;
+      font-size: 16px;
+      color: #666;
+    }
+
+    .hint-text {
+      font-size: 13px;
+      color: #666;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .warning-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #856404;
+      display: none;
+    }
+
+    .warning-box.show {
+      display: block;
+    }
+
+    /* Step 3: Summary & Price */
+    .summary-box {
+      background: #f5f5f5;
+      border-radius: 6px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .summary-row:last-child {
+      margin-bottom: 0;
+      padding-top: 12px;
+      border-top: 1px solid #ddd;
+    }
+
+    .summary-label {
+      color: #666;
+    }
+
+    .summary-value {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .price-display {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2d7a3a;
+      margin-top: 8px;
+    }
+
+    .price-calculation {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    /* Buttons */
+    .button-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: #2d7a3a;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1f5828;
+    }
+
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-cart {
+      width: 100%;
+      background: #2d7a3a;
+      color: white;
+      padding: 16px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      margin-top: 20px;
+    }
+
+    .btn-cart:hover {
+      background: #1f5828;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .nav-buttons button {
+      flex: 1;
+    }
+
+    /* Info Box */
+    .info-box {
+      background: #e8f5e9;
+      border-left: 4px solid #4caf50;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #2e7d32;
+      margin-top: 16px;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+
+      .width-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .section-title {
+        font-size: 16px;
+      }
+
+      .btn {
+        padding: 12px 16px;
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+      <div class="step active" id="step-1-indicator">
+        <div class="step-circle">1</div>
+        <div class="step-label">Breite</div>
+      </div>
+      <div class="step" id="step-2-indicator">
+        <div class="step-circle">2</div>
+        <div class="step-label">Länge</div>
+      </div>
+      <div class="step" id="step-3-indicator">
+        <div class="step-circle">3</div>
+        <div class="step-label">Kaufen</div>
+      </div>
+    </div>
+
+    <!-- Step 1: Width Selection -->
+    <div class="form-section active" id="step-1">
+      <h2 class="section-title">Welche Breite passt zu dir?</h2>
+      <div class="width-grid">
+        <button class="width-btn" data-width="200" data-sku="CVEXPGR02_130">
+          <div class="width-main">200 cm</div>
+          <div class="width-hint">Flure, schmale Räume</div>
+        </button>
+        <button class="width-btn" data-width="300" data-sku="CVEXPGR03_130">
+          <div class="width-main">300 cm</div>
+          <div class="width-hint">Optimal für die meisten Zimmer</div>
+        </button>
+        <button class="width-btn" data-width="400" data-sku="CVEXPGR04_130">
+          <div class="width-main">400 cm</div>
+          <div class="width-hint">Große Räume, wenig Fugen</div>
+        </button>
+      </div>
+      <div class="info-box">
+        💡 Die Breite bestimmt, wie viele Übergänge es gibt. Größere Breiten = weniger Nähte.
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-primary" onclick="goToStep(2)" disabled id="step1-next">
+          Weiter
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Length Input -->
+    <div class="form-section" id="step-2">
+      <h2 class="section-title">Wie viele Meter brauchst du?</h2>
+      <div class="length-input-group">
+        <label class="input-label">Länge eingeben</label>
+        <div class="length-input-wrapper">
+          <input type="number" id="lengthInput" placeholder="z.B. 5" min="1" max="100" step="0.5" />
+          <span class="length-unit">m</span>
+        </div>
+        <div class="hint-text">
+          💡 Typischerweise 3–10 m für Wohnzimmer/Flur. Der Bodenbelag wird auf Maß zugeschnitten.
+        </div>
+        <div class="warning-box" id="warning-length"></div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(1)">Zurück</button>
+        <button class="btn btn-primary" onclick="goToStep(3)" disabled id="step2-next">
+          Zum Kauf
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Summary & Purchase -->
+    <div class="form-section" id="step-3">
+      <h2 class="section-title">Deine Bestellung</h2>
+      <div class="summary-box">
+        <div class="summary-row">
+          <span class="summary-label">Breite:</span>
+          <span class="summary-value" id="summary-width">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Länge:</span>
+          <span class="summary-value" id="summary-length">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Preis pro Meter:</span>
+          <span class="summary-value">23,90 €</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Gesamtpreis:</span>
+          <span class="price-display" id="summary-price">0,00 €</span>
+        </div>
+        <div class="price-calculation" id="price-calc-display">
+          23,90 € × 5 m = 119,50 €
+        </div>
+      </div>
+
+      <button class="btn-cart" onclick="addToCart()">In den Warenkorb</button>
+
+      <div class="nav-buttons" style="margin-top: 12px;">
+        <button class="btn btn-secondary" onclick="goToStep(2)">Ändern</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRICE_PER_METER = 23.90;
+    const MIN_LENGTH = 2;
+    const MAX_LENGTH = 50;
+    const WARN_LENGTH = 20;
+
+    let selectedWidth = null;
+    let selectedSku = null;
+    let selectedLength = null;
+
+    // Step 1: Width Selection
+    document.querySelectorAll(".width-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".width-btn").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedWidth = btn.dataset.width;
+        selectedSku = btn.dataset.sku;
+        document.getElementById("step1-next").disabled = false;
+      });
+    });
+
+    // Step 2: Length Input
+    document.getElementById("lengthInput").addEventListener("input", (e) => {
+      selectedLength = parseFloat(e.target.value) || null;
+      updatePriceDisplay();
+      validateLength();
+      updateNavigationButtons();
+    });
+
+    function validateLength() {
+      const warning = document.getElementById("warning-length");
+      if (!selectedLength) {
+        warning.classList.remove("show");
+        return;
+      }
+
+      warning.classList.remove("show");
+      if (selectedLength < MIN_LENGTH) {
+        warning.textContent = `⚠️ Mindestens ${MIN_LENGTH} m empfohlen (für Verschnitt).`;
+        warning.classList.add("show");
+      } else if (selectedLength > MAX_LENGTH) {
+        warning.textContent = `⚠️ ${selectedLength} m ist sehr lang. Bist du sicher?`;
+        warning.classList.add("show");
+      } else if (selectedLength > WARN_LENGTH) {
+        warning.textContent = `ℹ️ ${selectedLength} m = große Fläche. Verschnitt wird auf Maß zugeschnitten.`;
+        warning.classList.add("show");
+      }
+    }
+
+    function updatePriceDisplay() {
+      if (!selectedLength) {
+        document.getElementById("summary-price").textContent = "0,00 €";
+        document.getElementById("price-calc-display").textContent = "";
+        return;
+      }
+
+      const total = (selectedLength * PRICE_PER_METER).toFixed(2);
+      document.getElementById("summary-price").textContent = total + " €";
+      document.getElementById("price-calc-display").textContent =
+        `${PRICE_PER_METER.toFixed(2)} € × ${selectedLength} m = ${total} €`;
+    }
+
+    function updateNavigationButtons() {
+      document.getElementById("step2-next").disabled = !selectedLength || selectedLength < MIN_LENGTH;
+    }
+
+    // Navigation
+    function goToStep(step) {
+      document.querySelectorAll(".form-section").forEach((s) => s.classList.remove("active"));
+      document.getElementById("step-" + step).classList.add("active");
+
+      // Update step indicators
+      document.querySelectorAll(".step").forEach((s) => s.classList.remove("active", "completed"));
+      for (let i = 1; i < step; i++) {
+        document.getElementById("step-" + i + "-indicator").classList.add("completed");
+      }
+      document.getElementById("step-" + step + "-indicator").classList.add("active");
+
+      // Update summary
+      if (step === 3) {
+        document.getElementById("summary-width").textContent = selectedWidth + " cm";
+        document.getElementById("summary-length").textContent = selectedLength + " m";
+        updatePriceDisplay();
+      }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Add to Cart (Simulation)
+    function addToCart() {
+      const quantity = 1; // In Shopify würde dies die Variantenauswahl basierend auf SKU sein
+      alert(`✓ ${selectedWidth}cm × ${selectedLength}m\n${(selectedLength * PRICE_PER_METER).toFixed(2)} € zum Warenkorb hinzugefügt!\n\nIn der echten Implementierung würde dies zu Shopify gehen.`);
+      console.log({
+        sku: selectedSku,
+        width: selectedWidth,
+        length: selectedLength,
+        price: (selectedLength * PRICE_PER_METER).toFixed(2),
+      });
+    }
+  </script>
+</body>
+</html>
