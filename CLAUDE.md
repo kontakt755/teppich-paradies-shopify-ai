@@ -107,6 +107,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | Befehl | Zweck |
 |---|---|
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf, statt sechsmal nacheinander an je einem Gate zu scheitern |
+| `npm run router:status` | **bevor jemand behauptet, der Router laufe nicht**: Hooks, Keys und letzter Provider-Aufruf in einem Lauf |
 | `npm run theme:block list\|add\|remove` | Blöcke in Templates setzen, statt im Editor zu klicken |
 | `npm run liquid:guard` | ungültiges Liquid, das Shopify still verwirft |
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
@@ -302,6 +303,29 @@ npm run workflow:continue  # nach menschlichem Eingriff weiter
 
 Blocker-Typen aus `workflow:state`: `RATE_LIMIT`, `UPSTREAM`, `CODE_DEFECT`,
 `UNKNOWN_BLOCKER`.
+
+### Läuft der Router gerade?
+
+`npm run router:status` beantwortet das mit Belegen statt mit Vermutung. Die
+Voranalyse hängt am `UserPromptSubmit`-Hook
+(`.claude/hooks/openrouter-user-prompt.mjs`), das Codex-Review am `Stop`-Hook;
+beide sind in `.claude/settings.json` verdrahtet und laufen automatisch.
+
+Es gibt genau zwei Laufzeit-Belege — keine weiteren, auch wenn Namen wie
+`ai-routing-decisions.jsonl` plausibel klingen:
+
+- `.router/ai-usage.jsonl` — jeder Provider-Aufruf mit Modell und Kosten
+- `.router/manifest-run/` — Zustand eines ManifestRunner-Laufs
+
+**In einem Worktree fehlt das alles.** `.router/` ist gitignored, und ein Worktree
+auf altem Stand kennt die Hooks noch nicht. Eine Dispatch-Session dort meldet
+wahrheitsgemäß „existiert nicht", während der Router im Hauptverzeichnis
+längst läuft. Nur `router:status` unterscheidet die beiden Fälle.
+
+> Warum das hier steht: Am 2026-09-06 nannte ich einem anderen Chat drei
+> Prüfpfade, von denen ich zwei erfunden hatte. Er meldete korrekt „existiert
+> nicht", und daraus wurde der falsche Schluss, der Router sei nie gestartet —
+> obwohl das Ledger im selben Moment 23 Gemini-Aufrufe auswies.
 
 ### Prompt-Caching
 

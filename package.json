@@ -37,6 +37,7 @@
     "workflow:preview": "node workflow/cli.mjs preview",
     "workflow:live": "node workflow/cli.mjs live",
     "workflow:state": "node workflow/cli.mjs state",
+    "router:status": "node automation/scripts/router-status.mjs",
     "workflow:route": "node workflow/cli.mjs route",
     "workflow:status": "node workflow/cli.mjs status",
     "workflow:next": "node workflow/cli.mjs next",
