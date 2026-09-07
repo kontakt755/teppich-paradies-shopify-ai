@@ -1,0 +1,108 @@
+{% doc %}
+  Zeigt die Längenvarianten einer Rollenware-Produktkarte (dedupliziert und sortiert).
+  Längenvarianten werden aus den Varianten-Titeln extrahiert (z.B. "200 cm").
+  Sortierung: numerisch aufsteigend.
+
+  Nur für Rollenware-Produkte sichtbar, für Fixpreis-Produkte leer.
+
+  @param {product} product_resource - Das Produkt der Karte
+{% enddoc %}
+
+{%- liquid
+  assign tp_rl_seen = '|'
+  assign tp_rl_entries = ''
+  assign tp_rl_count = 0
+
+  if product_resource != blank
+    for tp_rl_variant in product_resource.variants
+      assign tp_rl_variant_title = tp_rl_variant.title | downcase
+
+      # OPC-Konfiguratorvarianten ignorieren
+      unless tp_rl_variant_title contains 'opc-'
+        # Längenvarianten aus Titel extrahieren (z.B. "300 cm", "300cm", "300")
+        # Pattern: Zahl + optionales "cm" am Anfang/Ende des Titels
+        assign tp_rl_match = tp_rl_variant.title | match: '^\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?'
+        assign tp_rl_centimetres_str = ''
+
+        if tp_rl_match
+          assign tp_rl_centimetres_str = tp_rl_match
+        endif
+
+        if tp_rl_centimetres_str != blank
+          # Komma in Punkt konvertieren für Shopify-Math
+          assign tp_rl_centimetres_float = tp_rl_centimetres_str | replace: ',' | times: 1.0
+          assign tp_rl_centimetres = tp_rl_centimetres_float | round
+          assign tp_rl_token = '|' | append: tp_rl_centimetres | append: '|'
+
+          if tp_rl_centimetres > 0
+            unless tp_rl_seen contains tp_rl_token
+              assign tp_rl_seen = tp_rl_seen | append: tp_rl_centimetres | append: '|'
+              assign tp_rl_sort_key = tp_rl_centimetres | prepend: '000000'
+              assign tp_rl_sort_key_size = tp_rl_sort_key | size
+              assign tp_rl_sort_key_start = tp_rl_sort_key_size | minus: 6
+              assign tp_rl_sort_key = tp_rl_sort_key | slice: tp_rl_sort_key_start, 6
+
+              if tp_rl_entries != blank
+                assign tp_rl_entries = tp_rl_entries | append: ','
+              endif
+              assign tp_rl_entries = tp_rl_entries | append: tp_rl_sort_key | append: ':' | append: tp_rl_centimetres
+              assign tp_rl_count = tp_rl_count | plus: 1
+            endunless
+          endif
+        endif
+      endunless
+    endfor
+  endif
+
+  assign tp_rl_sorted_entries = tp_rl_entries | split: ',' | sort
+-%}
+
+{%- if tp_rl_count > 0 -%}
+  <p class="tp-card-roll-lengths" data-tp-roll-length-count="{{ tp_rl_count }}">
+    <span class="tp-card-roll-lengths__label">Länge</span>
+    <span class="tp-card-roll-lengths__values">
+      {%- for tp_rl_entry in tp_rl_sorted_entries -%}
+        {%- assign tp_rl_value = tp_rl_entry | split: ':' | last -%}
+        {%- if tp_rl_count == 2 and forloop.index == 2 -%}
+          &nbsp;&amp;&nbsp;
+        {%- elsif tp_rl_count > 2 and forloop.index > 1 -%}
+          &nbsp;·&nbsp;
+        {%- endif -%}
+        {{- tp_rl_value -}}
+      {%- endfor -%}
+      &nbsp;cm
+    </span>
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-roll-lengths {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    font-family: var(--font-body--family);
+    font-size: clamp(0.72rem, 0.69rem + 0.1vw, 0.78rem);
+    font-weight: 500;
+    line-height: 1.35;
+    letter-spacing: -0.003em;
+    white-space: nowrap;
+  }
+
+  .tp-card-roll-lengths__label {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+    font-weight: 600;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-roll-lengths {
+      letter-spacing: -0.008em;
+    }
+  }
+
+  @media screen and (max-width: 359px) {
+    .tp-card-roll-lengths {
+      white-space: normal;
+    }
+  }
+{% endstylesheet %}

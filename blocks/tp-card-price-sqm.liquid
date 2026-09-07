@@ -1,0 +1,129 @@
+{% doc %}
+  Zeigt den Preis pro m² für Rollenware auf Produktkarten.
+
+  Berechnung für Rollenware:
+  - Breite: aus Tags (breite_boden) oder Metafeld custom.rollenbreite
+  - Länge: aus Varianten-Titel (z.B. "300 cm")
+  - €/m² = Variantenpreis / (Breite_m × Länge_m)
+
+  Fällt still aus wenn:
+  - Keine Breite gefunden wird
+  - Keine Länge im Varianten-Titel erkannt wird
+  - Oder wenn Paketprodukt (dort wird €/m² anders berechnet)
+{% enddoc %}
+
+{%- liquid
+  assign tp_cps_product = closest.product
+  assign tp_cps_variant = tp_cps_product.selected_or_first_available_variant
+  assign tp_cps_id = block.id | replace: '_', '' | downcase
+
+  # Prüfe ob Paketprodukt (nutzt anderen Block)
+  assign tp_cps_sqm_per_package = tp_cps_product.metafields.custom.qm_pro_paket.value
+  assign tp_cps_is_package = false
+  if tp_cps_sqm_per_package != blank and tp_cps_sqm_per_package > 0
+    assign tp_cps_is_package = true
+  endif
+-%}
+
+{%- if tp_cps_is_package == false and tp_cps_product != blank and tp_cps_variant != blank -%}
+  {%- liquid
+    # Breite extrahieren aus Tags oder Metafeld
+    assign tp_cps_width_m = 0
+    assign tp_cps_width_found = false
+
+    # Versuche zuerst aus Tags zu nehmen (neue Produkte)
+    for tp_cps_tag in tp_cps_product.tags
+      assign tp_cps_tag_lower = tp_cps_tag | downcase
+      if tp_cps_tag_lower contains 'breite_boden'
+        # Format: "breite_boden: 300cm" oder "breite_boden:300cm"
+        assign tp_cps_width_match = tp_cps_tag | match: '(\d+(?:[.,]\d+)?)'
+        if tp_cps_width_match
+          assign tp_cps_width_cm = tp_cps_width_match | times: 1.0
+          assign tp_cps_width_m = tp_cps_width_cm | divided_by: 100.0
+          assign tp_cps_width_found = true
+          break
+        endif
+      endif
+    endfor
+
+    # Fallback: Metafeld custom.rollenbreite
+    if tp_cps_width_found == false
+      assign tp_cps_width_mf = tp_cps_product.metafields.custom.rollenbreite.value
+      if tp_cps_width_mf != blank and tp_cps_width_mf > 0
+        assign tp_cps_width_m = tp_cps_width_mf | times: 1.0
+        assign tp_cps_width_found = true
+      endif
+    endif
+
+    # Länge extrahieren aus Varianten-Titel
+    assign tp_cps_length_m = 0
+    assign tp_cps_length_found = false
+    assign tp_cps_variant_title = tp_cps_variant.title
+    assign tp_cps_length_match = tp_cps_variant_title | match: '(\d+(?:[.,]\d+)?)'
+
+    if tp_cps_length_match
+      assign tp_cps_length_cm = tp_cps_length_match | times: 1.0
+      assign tp_cps_length_m = tp_cps_length_cm | divided_by: 100.0
+      assign tp_cps_length_found = true
+    endif
+
+    # Berechne €/m²
+    assign tp_cps_price_per_sqm = ''
+    if tp_cps_width_found and tp_cps_length_found and tp_cps_width_m > 0 and tp_cps_length_m > 0
+      assign tp_cps_area = tp_cps_width_m | times: tp_cps_length_m
+      if tp_cps_area > 0
+        assign tp_cps_price_raw = tp_cps_variant.price | times: 1.0 | divided_by: tp_cps_area | round: 2
+        assign tp_cps_price_per_sqm = tp_cps_price_raw | money | strip_html
+      endif
+    endif
+  -%}
+
+  {%- if tp_cps_price_per_sqm != blank and tp_cps_price_per_sqm != '' -%}
+    <div class="tp-card-price-sqm-{{ tp_cps_id }}" {{ block.shopify_attributes }}>
+      <span class="tp-card-price-sqm__label">€/m²:</span>
+      <span class="tp-card-price-sqm__value">{{ tp_cps_price_per_sqm }}</span>
+    </div>
+
+    <style>
+      .tp-card-price-sqm-{{ tp_cps_id }} {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-top: 2px;
+        font-family: var(--font-body--family);
+        font-size: 0.82rem;
+        line-height: 1.3;
+        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+      }
+
+      .tp-card-price-sqm__label {
+        font-weight: 600;
+        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+      }
+
+      .tp-card-price-sqm__value {
+        font-weight: 700;
+        color: var(--color-foreground);
+      }
+
+      @media screen and (max-width: 749px) {
+        .tp-card-price-sqm-{{ tp_cps_id }} {
+          font-size: 0.75rem;
+        }
+      }
+    </style>
+  {%- endif -%}
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Card-€/m² (Rollenware)",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Card-€/m² (Rollenware)"
+    }
+  ]
+}
+{% endschema %}
