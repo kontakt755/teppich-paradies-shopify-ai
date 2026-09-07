@@ -10,7 +10,7 @@
 
 ### Teppichboden PDP
 
-- URL: https://sjjyq1-6w.myshopify.com/products/piumera-teppichboden-400cm-500cm
+- URL: https://www.teppich-paradies.net/products/piumera-teppichboden-400cm-500cm
 - Typ: roll
 - Produkt: Piumera Teppichboden 400cm 500cm
 - Vendor: TeppichParadies
@@ -21,7 +21,7 @@
 
 ### Rollen-Vinyl PDP
 
-- URL: https://sjjyq1-6w.myshopify.com/products/marano-eiche-braun-vinylboden-von-der-rolle
+- URL: https://www.teppich-paradies.net/products/marano-eiche-braun-vinylboden-von-der-rolle
 - Typ: roll
 - Produkt: Terracora Eiche Braun – Vinylboden von der Rolle
 - Vendor: TeppichParadies
@@ -32,7 +32,7 @@
 
 ### Klickvinyl PDP
 
-- URL: https://sjjyq1-6w.myshopify.com/products/marlow-eiche-nordisch-klickvinyl-7mm
+- URL: https://www.teppich-paradies.net/products/marlow-eiche-nordisch-klickvinyl-7mm
 - Typ: package
 - Produkt: Marlow Eiche Nordisch – Klickvinyl 7mm
 - Vendor: Marlow
@@ -43,7 +43,7 @@
 
 ### Klebevinyl PDP
 
-- URL: https://sjjyq1-6w.myshopify.com/products/alvora-eiche-bernstein-klebevinyl-2-5mm
+- URL: https://www.teppich-paradies.net/products/alvora-eiche-bernstein-klebevinyl-2-5mm
 - Typ: package
 - Produkt: Alvora Eiche Bernstein – Klebevinyl 2,5mm
 - Vendor: Alvora

@@ -4,7 +4,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Startseite
 
-- URL: https://sjjyq1-6w.myshopify.com/
+- URL: https://www.teppich-paradies.net/
 - Aktueller Title: TeppichParadies
 - Empfohlener Title: Bodenbeläge online kaufen | Teppichboden & Vinyl | Teppich Paradies
 - Aktuelle Description: Teppichboden, Klickvinyl, Klebevinyl und Vinylboden von der Rolle online kaufen. Kostenlose Muster, persönliche Fachberatung und Verlegeservice.
@@ -12,7 +12,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden
+- URL: https://www.teppich-paradies.net/collections/teppichboden
 - Aktueller Title: Teppichboden – TeppichParadies
 - Empfohlener Title: Teppichboden Meterware online kaufen | Teppich Paradies
 - Aktuelle Description: Teppichboden als Meterware für Wohn- und Objektbereiche entdecken. Rollenbreiten vergleichen, Muster bestellen und persönlich beraten lassen.
@@ -20,7 +20,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Vinylboden
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/vinylboden-1
+- URL: https://www.teppich-paradies.net/collections/vinylboden-1
 - Aktueller Title: Vinylboden – TeppichParadies
 - Empfohlener Title: Vinylboden online kaufen | Klick-, Klebe- & Rollenware
 - Aktuelle Description: Vinylboden als Klickvinyl, Klebevinyl oder Rollenware entdecken. Dekore und Aufbauarten vergleichen, Muster bestellen und beraten lassen.
@@ -28,7 +28,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Klickvinyl
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/vinylboden-klickvinyl
+- URL: https://www.teppich-paradies.net/collections/vinylboden-klickvinyl
 - Aktueller Title: Vinylboden - Klickvinyl – TeppichParadies
 - Empfohlener Title: Klickvinyl online kaufen | Muster & Fachberatung
 - Aktuelle Description: Klickvinyl in authentischen Holz- und Steindekoren online entdecken. Muster bestellen, technische Eigenschaften vergleichen und beraten lassen.
@@ -36,7 +36,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Klebevinyl
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/vinylboden-klebevinyl
+- URL: https://www.teppich-paradies.net/collections/vinylboden-klebevinyl
 - Aktueller Title: Vinylboden - Klebevinyl – TeppichParadies
 - Empfohlener Title: Klebevinyl online kaufen | Designboden vom Fachhandel
 - Aktuelle Description: Klebevinyl mit geringer Aufbauhöhe online entdecken. Dekore vergleichen, kostenlose Muster bestellen und persönliche Fachberatung nutzen.
@@ -44,7 +44,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Vinyl von der Rolle
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/vinylboden-vinyl-von-der-rolle
+- URL: https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle
 - Aktueller Title: Vinylboden - Vinyl von der Rolle – TeppichParadies
 - Empfohlener Title: Vinylboden von der Rolle | Meterware online kaufen
 - Aktuelle Description: Vinylboden von der Rolle als passgenaue Meterware online kaufen. Rollenbreiten und Dekore vergleichen, Muster bestellen und beraten lassen.
@@ -52,7 +52,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden Hochflor
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden-hochflor
+- URL: https://www.teppich-paradies.net/collections/teppichboden-hochflor
 - Aktueller Title: Teppichboden Hochflor – TeppichParadies
 - Empfohlener Title: Hochflor Teppichboden als Meterware online kaufen
 - Aktuelle Description: Hochflor-Teppichboden mit weicher, voluminöser Oberfläche entdecken. Rollenbreiten vergleichen, Muster bestellen und fachlich beraten lassen.
@@ -60,7 +60,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden Kurzflor
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden-kurzflor
+- URL: https://www.teppich-paradies.net/collections/teppichboden-kurzflor
 - Aktueller Title: Teppichboden Kurzflor – TeppichParadies
 - Empfohlener Title: Kurzflor Teppichboden als Meterware online kaufen
 - Aktuelle Description: Kurzflor-Teppichboden für vielseitige Wohnbereiche entdecken. Farben und Rollenbreiten vergleichen, Muster bestellen und beraten lassen.
@@ -68,7 +68,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden Velours
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden-velours
+- URL: https://www.teppich-paradies.net/collections/teppichboden-velours
 - Aktueller Title: Teppichboden Velours – TeppichParadies
 - Empfohlener Title: Velours Teppichboden als Meterware online kaufen
 - Aktuelle Description: Velours-Teppichboden mit dichter, weicher Oberfläche entdecken. Qualitäten und Rollenbreiten vergleichen, Muster bestellen und beraten lassen.
@@ -76,7 +76,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden Schlinge
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden-schlinge
+- URL: https://www.teppich-paradies.net/collections/teppichboden-schlinge
 - Aktueller Title: Teppichboden Schlinge – TeppichParadies
 - Empfohlener Title: Schlingen Teppichboden als Meterware online kaufen
 - Aktuelle Description: Schlingen-Teppichboden für Wohn- und Objektbereiche entdecken. Ausführungen und Rollenbreiten vergleichen, Muster bestellen und beraten lassen.
@@ -84,7 +84,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Teppichboden Wolle
 
-- URL: https://sjjyq1-6w.myshopify.com/collections/teppichboden-wolle
+- URL: https://www.teppich-paradies.net/collections/teppichboden-wolle
 - Aktueller Title: Teppichboden Wolle – TeppichParadies
 - Empfohlener Title: Wollteppichboden als Meterware online kaufen
 - Aktuelle Description: Teppichboden aus hochwertigen Wollqualitäten entdecken. Farben, Oberflächen und Rollenbreiten vergleichen, Muster bestellen und beraten lassen.
@@ -92,7 +92,7 @@ Diese Resource-Daten wurden nicht automatisch verändert. Empfohlene Titel und B
 
 ## Versand & Lieferung
 
-- URL: https://sjjyq1-6w.myshopify.com/pages/versand-lieferung
+- URL: https://www.teppich-paradies.net/pages/versand-lieferung
 - Aktueller Title: Versand & Lieferung – TeppichParadies
 - Empfohlener Title: Versand & Lieferung | Teppich Paradies
 - Aktuelle Description: Informationen zu deutschlandweitem Versand, Lieferzeiten und Speditionslieferung von Teppichboden, Vinylboden, Rollenware und Paketware.
