@@ -1,0 +1,36 @@
+{
+  "description": "Linoleum Product Import Configuration",
+  "instructions": "Copy this file to products.json and fill in your product details, then run: npm run import:linoleum",
+  "products": [
+    {
+      "name": "Product Name",
+      "shopifyId": "123456789",
+      "jordanshopUrl": "https://www.jordanshop.de/de-DE/product/XXXXXX",
+      "colorCount": 6,
+      "vendor": "Brand Name"
+    }
+  ],
+  "examples": {
+    "jokalino_concrete": {
+      "name": "Jokalino Concrete Linoleumboden 200cm",
+      "shopifyId": "16049267441998",
+      "jordanshopUrl": "https://www.jordanshop.de/de-DE/product/452953",
+      "colorCount": 6,
+      "vendor": "Jokalino"
+    },
+    "linoflex": {
+      "name": "LINOFLEX Linoleumboden 200cm",
+      "shopifyId": "16049246077262",
+      "jordanshopUrl": "https://www.jordanshop.de/de-DE/product/466570",
+      "colorCount": 5,
+      "vendor": "LINOFLEX"
+    },
+    "jokalino": {
+      "name": "Jokalino Linoleumboden 200cm",
+      "shopifyId": "16049267441998",
+      "jordanshopUrl": "https://www.jordanshop.de/de-DE/product/452843",
+      "colorCount": 16,
+      "vendor": "Jokalino"
+    }
+  }
+}
