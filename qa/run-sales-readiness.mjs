@@ -155,14 +155,13 @@ async function packageFlow({ page, context, result, setPhase }) {
 }
 
 async function rollFlow({ page, context, result, setPhase }) {
-  // Der Rechner fuer Rollenware kommt aus dem Options-Price-Calculator
-  // App-Block (shopify://apps/options-price-calculator/...), nicht aus
-  // eigenem Theme-Code. Markup und Beschriftung liegen ausserhalb unserer
-  // Kontrolle - u.a. zeigt der App-Block "Final price" und "Add to cart" auf
-  // Englisch, mitten in einer sonst komplett deutschen Seite. Der Flow prueft
-  // deshalb nur, was wir tatsaechlich beeinflussen koennen: dass der Rechner
-  // ueberhaupt funktioniert und der korrekte Preis im Warenkorb ankommt -
-  // nicht die Wortwahl der App.
+  // Der Rechner fuer Rollenware ist blocks/tp-rollware-rechner.liquid -
+  // eigener Theme-Code, der den frueheren Options-Price-Calculator App-Block
+  // ersetzt hat (siehe Doc-Kommentar dort: "ersetzt den App-Preisrechner").
+  // Der Kauf-Button ist [data-cta] (.tp-rwc-cta), nicht der generische
+  // Shopify-Add-to-cart-Block - der eigene Rechner ruft /cart/add.js selbst
+  // mit der berechneten Menge (m², aufgerundet) auf, abgerechnet wird der
+  // echte Shopify-Variantenpreis mal dieser Menge.
   setPhase('navigation');
   await page.goto(targetUrl('/products/marano-eiche-braun-vinylboden-von-der-rolle', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
@@ -176,7 +175,7 @@ async function rollFlow({ page, context, result, setPhase }) {
   await length.fill('250');
   await length.dispatchEvent('input');
   await length.dispatchEvent('change');
-  const addToCart = page.locator('main button[data-testid="standalone-add-to-cart"]');
+  const addToCart = page.locator('main button[data-cta]');
   await addToCart.waitFor({ state: 'visible', timeout: 12_000 });
   await page.waitForFunction(() => /€\s*259,00|259,00\s*€/.test(document.querySelector('main')?.innerText || ''), null, { timeout: 10_000 });
   const calculatorText = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
@@ -194,29 +193,26 @@ async function rollFlow({ page, context, result, setPhase }) {
     formula: '2.50 m × 4 m × 25.90 €/m²',
     plausible: /€\s*259,00|259,00\s*€/.test(calculatorText),
   };
-  // Die properties-Keys und -Werte stammen vollstaendig aus dem App-Block
-  // (options-price-calculator), nicht aus unserem Theme-Code - die App
-  // entscheidet ueber Benennung und Format. Deshalb pruefen wir nur, was
-  // theme-seitig belegt und stabil ist: Menge, Gesamtpreis, Variante und dass
-  // ueberhaupt eine Laengen-Angabe im Warenkorb ankommt.
-  //
-  // Auffaellig: line.properties.Rollenbreite kommt als "4" statt "400 cm" an
-  // (vermutlich ein Bug der App - "400" wird zu "4" verstuemmelt statt korrekt
-  // formatiert). Fuer den Kunden auf der Bestellbestaetigung ist "4" ohne
-  // Einheit missverstaendlich. Wert wird hier nur protokolliert, nicht
-  // erzwungen - das ist ausserhalb dessen, was das Theme reparieren kann.
+  // Menge ist die tatsaechliche Flaeche in m² (aufgerundet), nicht 1 - der
+  // Rechner uebergibt quantity: qty an /cart/add.js, damit Shopify selbst
+  // variant.price * quantity abrechnet (siehe tp-rollware-rechner.liquid).
+  // item_count summiert Mengen ueber alle Zeilen, ist bei einer Zeile also
+  // identisch mit deren quantity. Property-Keys kommen jetzt aus dem eigenen
+  // Theme-Code, nicht mehr aus einer App - "Rollenbreite" und
+  // "Gewünschte Länge" tragen beide die Einheit im Wert (z.B. "400 cm").
   result.cart = {
     itemCount: cart.item_count,
     quantity: line?.quantity,
     totalCents: cart.total_price,
     variantTitle: line?.variant_title,
     widthProperty: line?.properties?.Rollenbreite,
-    lengthProperty: line?.properties?.['Gewünschte Länge in cm'],
-    plausible: cart.item_count === 1
-      && line?.quantity === 1
+    lengthProperty: line?.properties?.['Gewünschte Länge'],
+    plausible: cart.item_count === 10
+      && line?.quantity === 10
       && cart.total_price === 25900
       && line?.variant_title === '400 cm'
-      && line?.properties?.['Gewünschte Länge in cm'] === '250',
+      && line?.properties?.Rollenbreite === '400 cm'
+      && line?.properties?.['Gewünschte Länge'] === '250 cm',
   };
   result.checkout = await reachCheckout(page, setPhase);
   return result.calculator.plausible && result.cart.plausible && result.checkout.reachable && !result.health.overflow && result.health.brokenImages.length === 0;
