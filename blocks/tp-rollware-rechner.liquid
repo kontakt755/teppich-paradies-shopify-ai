@@ -138,6 +138,13 @@
   <div class="tp-rwc-calc" aria-live="polite" data-calc hidden>
     <div class="tp-rwc-calc-formula">
       <div class="tp-rwc-calc-step" data-formula-area>– cm × – cm = –</div>
+      {%- comment -%}
+        Aufrundungshinweis steht zwischen Flaeche und Preiszeile, weil genau
+        dort der Sprung passiert. Ohne ihn zeigte die Preiszeile die
+        ungerundete Flaeche mal dem Quadratmeterpreis, nannte aber die
+        gerundete Summe - die Gleichung ging fuer den Kunden nicht auf.
+      {%- endcomment -%}
+      <div class="tp-rwc-calc-round" data-formula-round hidden></div>
       <div class="tp-rwc-calc-step" data-formula-price>–</div>
     </div>
     <div class="tp-rwc-calc-total">
@@ -265,6 +272,13 @@
     position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
     font-size: .82rem; color: var(--tp-rwc-muted); pointer-events: none;
   }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round {
+    font-size: .82rem;
+    line-height: 1.4;
+    color: var(--tp-rwc-muted);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round[hidden] { display: none; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width {
     margin: 0 0 16px;
@@ -477,6 +491,7 @@
   var calcBox = root.querySelector('[data-calc]');
   var drawFigure = root.querySelector('[data-draw]');
   var formulaArea = root.querySelector('[data-formula-area]');
+  var formulaRound = root.querySelector('[data-formula-round]');
   var formulaPrice = root.querySelector('[data-formula-price]');
   var outTotal = root.querySelector('[data-total]');
   var cta = root.querySelector('[data-cta]');
@@ -630,13 +645,23 @@
       var total = qty * rate;
 
       formulaArea.textContent = w + ' cm × ' + len + ' cm = ' + fmt(area) + ' m²';
-      formulaPrice.textContent = fmt(area) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
+
+      // Abgerechnet werden volle Quadratmeter. Die Preiszeile muss deshalb mit
+      // der aufgerundeten Menge rechnen, sonst steht dort eine Gleichung, die
+      // nicht aufgeht (2,60 m² x 27,90 EUR/m² = 83,70 EUR statt 72,54 EUR).
+      var isRounded = qty > area + 0.0001;
+      if (formulaRound) {
+        formulaRound.textContent = 'Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf ' + qty + ' m².';
+        formulaRound.hidden = !isRounded;
+      }
+      formulaPrice.textContent = qty + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
       outTotal.textContent = fmt(total) + ' €';
       cta.textContent = qty + ' m² in den Warenkorb';
     } else {
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
+      if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
       cta.textContent = blocked ? 'Bitte beraten lassen' : 'Länge eingeben';
     }
