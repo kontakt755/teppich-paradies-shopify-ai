@@ -1,8 +1,33 @@
 # 🌙 Handoff: Nachts-Vorbereitung → Morgen früh Prüfung
 
-**Erstellt:** 2026-09-06 22:10  
-**Status:** ✅ Vollständig vorbereitet (Read-Only, KEIN Live-Go)  
-**Nächster Schritt:** DEINE Prüfung morgen früh + Human Gate vor Preview
+**Erstellt:** 2026-09-06 22:10
+**Update 2026-09-07:** Gate 1 wurde geprüft — Ergebnis unten unter "⛔→✅ Gate 1: Ergebnis der Prüfung".
+**Status:** Theme-Integration NICHT durchgeführt — Prototyp verworfen, siehe Begründung.
+**Nächster Schritt:** keiner offen für diesen Strang. Die urspruengliche UX-Analyse fliesst stattdessen in Verbesserungen am bestehenden `tp-rollware-rechner.liquid` ein, falls gewuenscht.
+
+---
+
+## ⛔→✅ Gate 1: Ergebnis der Prüfung (2026-09-07)
+
+Die Guards (`liquid:guard`, `schema:guard`, `template:guard`, `essential:guard`, `unmerged:guard`, `workflow:validate --static`) liefen alle fehlerfrei — das Snippet war syntaktisch sauber. Der inhaltliche Abgleich mit den echten Produktdaten zeigte aber, dass es das falsche Problem löst:
+
+1. **Dupliziert ein bereits lebendes, getestetes System.** `blocks/tp-rollware-rechner.liquid` + `blocks/tp-roll-order-help.liquid` sind der aktuelle, produktive Rollenware-Rechner (genau das, was auf Fortiva/Piumera live zu sehen ist: "WÄHLE DEINE BREITE" / "GIB DEINE LÄNGE AN").
+2. **Falsches Datenmodell.** Das Prototyp-Snippet prüfte nur `product.metafields.custom.rollenbreite` (Produkt-Ebene). Das echte Metafeld sitzt primär auf der Variante; bei realen Produkten wie Fortiva wäre die Bedingung immer `false` gewesen — der Konfigurator wäre nie erschienen, ohne sichtbaren Fehler.
+3. **Einheiten-Verwechslung.** Das Metafeld speichert die Breite in Metern (bestehender Code rechnet explizit `× 100` auf cm um). Das Prototyp-Snippet behandelte denselben Wert als cm ("2 cm" statt "200 cm") und erfasste die Länge in Metern statt der im bestehenden System durchgängig genutzten cm.
+4. **Kaputter Warenkorb-Flow.** Das `/cart/add`-Formular übergab nur die Varianten-ID, keine Menge. Unabhängig von der eingegebenen Länge wäre immer nur 1 Einheit in den Warenkorb gelangt — der Kaufprozess war nicht funktionsfähig, nicht nur unschön.
+5. Keine Ausnahme für Muster-/Zusatzvarianten (`opc-`-Präfix), die der bestehende Rechner bewusst ausschließt.
+
+**Entscheidung:** Snippet entfernt (`snippets/tp-rollenware-konfigurator.liquid`), nicht "repariert" — es hätte ein zweites, abweichendes Rollenware-System parallel zum bestehenden bedeutet, was AGENTS.md ausdrücklich vermeiden will ("Bestehenden Code zuerst verstehen und funktionierende Lösungen nicht unnötig neu schreiben"). Die Analyse- und Recherche-Dokumente bleiben als Referenz erhalten:
+- `ROLLENWARE_PRODUKTSEITE_ANALYSE.md`
+- `ROLLENWARE_REDESIGN_BERICHT.md`
+- `rollenware-konfigurator-prototype.html`
+- `THEME-INTEGRATION-PLANUNG.md`
+
+**Gate 2 und Gate 3** entfallen damit — es gibt nichts, das in Preview oder Live geht.
+
+---
+
+## Ursprüngliches Handoff (unverändert, zur Nachvollziehbarkeit)
 
 ---
 
