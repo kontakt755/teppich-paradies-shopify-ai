@@ -49,6 +49,13 @@
     <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
   </div>
 
+  {%- comment -%}
+    Gibt es nur eine Breite, ist die Auswahl oben keine Entscheidung, sondern
+    eine Scheinfrage. Sie wird dann ausgeblendet und die Breite hier nur noch
+    genannt - der JS-Teil entscheidet das, weil nur er die Breiten kennt.
+  {%- endcomment -%}
+  <p class="tp-rwc-fixed-width" data-width-fixed hidden></p>
+
   {%- if tp_rc_room_mode_enabled -%}
   <div class="tp-rwc-mode-toggle">
     <button type="button" class="tp-rwc-mode-btn is-active" data-mode-btn="length" aria-pressed="true">Gewünschte Länge</button>
@@ -58,7 +65,7 @@
 
   <div class="tp-rwc-mode-panel" data-mode-panel="length">
     <div class="tp-rwc-field">
-      {% render 'tp-step-heading', number: 3, label: 'Gib deine Länge an' %}
+      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Gib deine Länge an' %}</span>
       <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
       <div class="tp-rwc-input-wrap">
         <input
@@ -259,6 +266,14 @@
     font-size: .82rem; color: var(--tp-rwc-muted); pointer-events: none;
   }
 
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width {
+    margin: 0 0 16px;
+    font-size: .9rem;
+    color: var(--tp-rwc-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width[hidden] { display: none; }
+
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note[hidden] { display: none; }
@@ -407,7 +422,13 @@
 
   root.style.display = '';
 
-  if (wIdx !== -1) {
+  // Eine einzige Breite ist keine Auswahl. Frueher wurde sie trotzdem als
+  // Schritt 2 mit genau einem Knopf angeboten - eine Frage, die nichts
+  // entscheidet. Ohne Breitenoption (wIdx === -1) blieb ausserdem die
+  // Nummerierung als "1, 3" stehen, weil nur das Feld verschwand.
+  var hasWidthChoice = wIdx !== -1 && widths.length > 1;
+
+  if (hasWidthChoice) {
     var seg = root.querySelector('[data-width-seg]');
     widths.forEach(function (w, i) {
       var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
@@ -427,6 +448,17 @@
   } else {
     var widthField = root.querySelector('[data-width-field]');
     if (widthField) widthField.hidden = true;
+
+    // Breite bleibt sichtbar, nur als Angabe statt als Frage.
+    var fixedWidth = root.querySelector('[data-width-fixed]');
+    if (fixedWidth) {
+      fixedWidth.textContent = 'Rollenbreite: ' + widths[0] + ' cm';
+      fixedWidth.hidden = false;
+    }
+
+    // Ohne Breiten-Schritt ist die Laenge Schritt 2, nicht 3.
+    var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
+    if (lengthNumber) lengthNumber.textContent = '2';
   }
 
   var modeBtns = root.querySelectorAll('[data-mode-btn]');
