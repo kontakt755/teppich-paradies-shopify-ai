@@ -1,9 +1,12 @@
-{% doc %}
+{% comment %}
   Mobiler Musterkonfigurator: laedt Quellprodukt, kostenlosen Musterartikel
   und Warenkorb ueber die Shopify Ajax APIs und baut bis zu drei eindeutige
   Farbauswahlen als getrennte Warenkorbpositionen. Reine Domainlogik lebt in
   assets/tp-sample-checkout-core.js.
-{% enddoc %}
+
+  doc-Tag ist nur in Snippets/Blocks erlaubt, nicht in Sections - deshalb
+  hier comment statt doc.
+{% endcomment %}
 
 {{ 'tp-sample-checkout.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'tp-sample-checkout-core.js' | asset_url }}" defer></script>
