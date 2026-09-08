@@ -68,6 +68,12 @@ Nächster Schritt: Ahmet bitte Admin API Key + Scopes geben`);
   assert.equal(f.nextStep, 'Ahmet bitte Admin API Key + Scopes geben');
 });
 
+test('parseBody nimmt Checklisten ohne Ueberschrift als Checkliste', () => {
+  const f = parseBody('Verknüpfe GA4\n- [x] Property erstellt\n- [ ] Purchase Event\n\nNächster Schritt: Events testen');
+  assert.deepEqual({ total: f.acceptance.total, done: f.acceptance.done, source: f.acceptance.source }, { total: 2, done: 1, source: 'checkliste' });
+  assert.equal(f.nextStep, 'Events testen');
+});
+
 test('parseBody liest Entscheidungsvorlagen', () => {
   const f = parseBody(`## Frage
 Sollen wir die Admin-API-Scopes write_products freigeben?

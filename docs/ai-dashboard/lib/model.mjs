@@ -123,7 +123,8 @@ export function parseDate(text) {
 /** Ueberschrift-Synonyme (klein, ohne Umlaute) -> Feldname. */
 const HEADINGS = [
   ['ziel', 'goal'], ['warum', 'goal'], ['problem', 'goal'], ['beschreibung', 'description'],
-  ['akzeptanzkriterien', 'acceptance'], ['definition of done', 'acceptance'], ['checkliste', 'acceptance'],
+  ['akzeptanzkriterien', 'acceptance'], ['definition of done', 'acceptance'], ['checkliste', 'acceptance'], ['soll-zustand', 'acceptance'], ['soll zustand', 'acceptance'],
+  ['aufgabe', 'goal'], ['auftrag', 'goal'], ['auftrag aus der ai-steuerzentrale', 'goal'],
   ['naechster schritt', 'nextStep'], ['nachster schritt', 'nextStep'], ['next step', 'nextStep'],
   ['worker', 'executor'], ['ausfuehrender', 'executor'], ['ausfuhrender', 'executor'], ['bearbeiter', 'executor'],
   ['owner', 'owner'], ['verantwortlich', 'owner'], ['verantwortlicher', 'owner'], ['verantwortliche', 'owner'],
@@ -250,11 +251,17 @@ export function parseBody(body) {
   out.dependencies = parseRefs(sections.dependencies || '');
   out.escalation = Boolean(sections.escalation && firstLine(sections.escalation)) || /\beskalation\b|\bESKALIERT\b/i.test(clean(body).split('\n')[0] || '');
 
-  const acceptanceItems = parseChecklist(sections.acceptance || '');
+  let acceptanceItems = parseChecklist(sections.acceptance || '');
+  let acceptanceSource = 'abschnitt';
+  if (!acceptanceItems.length) {
+    // Checklisten ohne eigene Ueberschrift (haeufig in aelteren Issues) gelten als Checkliste.
+    acceptanceItems = parseChecklist(body);
+    acceptanceSource = 'checkliste';
+  }
   if (acceptanceItems.length) {
-    out.acceptance = { total: acceptanceItems.length, done: acceptanceItems.filter(i => i.done).length, items: acceptanceItems };
+    out.acceptance = { total: acceptanceItems.length, done: acceptanceItems.filter(i => i.done).length, items: acceptanceItems, source: acceptanceSource };
   } else if (sections.acceptance && firstLine(sections.acceptance)) {
-    out.acceptance = { total: 0, done: 0, items: [], text: clean(sections.acceptance) };
+    out.acceptance = { total: 0, done: 0, items: [], text: clean(sections.acceptance), source: 'abschnitt' };
   }
 
   // Blocker: eigener Abschnitt oder "BLOCKIERT - Warte auf X" im Status-Abschnitt.
