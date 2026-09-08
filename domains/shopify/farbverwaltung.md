@@ -145,6 +145,7 @@ Dieser Lauf ändert Produktdaten und braucht eine ausdrückliche Freigabe.
 
 - Farbregister: 729 Einträge (`tp_farbe`), Handle = `<lieferantenkürzel>-<farbnummer>`, z. B. `tepriva-098`.
 - 78 Produkte / 1204 Varianten: `custom.farbcode` aus dem SKU-Suffix gesetzt und `custom.farbe` verknüpft. Gegengeprüft: 729 Metaobjekte, 1204/1204 Varianten, 5 Stichproben ohne Abweichung.
-- 459 Registereinträge tragen den Hinweis „Farbname offen“ (Optionswert `Farbe NN`). Dort fehlt weiterhin der echte Farbname.
+- Farbnamen für 452 von 459 offenen Einträgen am 2026-09-08 aus den Variantenbildern gemessen und ins Register geschrieben (farbname, bezeichnung, swatch, hinweis mit altem Optionswert). Vorschlagsliste: `domains/shopify/farbnamen-vorschlag-2026-09-08.md`. 7 Novaris-Farben ohne Variantenbild bleiben offen.
+- **Optionswerte noch nicht umbenannt**: Kunden sehen weiterhin `Farbe 83`, bis die 452 vorbereiteten `productOptionUpdate`-Umbenennungen laufen (wirken sofort im Live-Shop, brauchen Freigabe).
 - Nicht verarbeitet (keine SKU): AW Ganges, Eichenhain, Döllken-Kernsockelleisten (40 Varianten).
 - Kein Eingriff in Benachrichtigungs-Templates: Shopify zeigt sichtbare Line-Item-Properties in der Bestellbestätigung von selbst an.
