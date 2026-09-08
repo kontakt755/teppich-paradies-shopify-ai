@@ -1,0 +1,22 @@
+{%- comment -%}
+  tp-laufband: Einzeiliger Text in einem festen Feld. Ist der Text breiter als
+  das Feld, laeuft er wie eine U-Bahn-Anzeige ruhig und endlos von rechts nach
+  links (Startschaltung in assets/tp-laufband.js). Kurze Texte bleiben statisch.
+
+  Parameter:
+    text   - Pflicht. Der anzuzeigende Text, Begriffe getrennt durch " · ".
+    class  - Optional. Zusaetzliche Klassen fuer das aeussere Feld (z. B. category-badge).
+    speed  - Optional. Pixel pro Sekunde, Standard 28.
+
+  Aufruf:
+    {% render 'tp-laufband', text: 'Klick · Kleben · Rolle', class: 'category-badge' %}
+{%- endcomment -%}
+{%- liquid
+  assign lb_text = text | strip
+  assign lb_speed = speed | default: 28
+-%}
+<span class="tp-laufband {{ class }}" data-tp-laufband data-tp-laufband-speed="{{ lb_speed }}" title="{{ lb_text | escape }}">
+  <span class="tp-laufband__track">
+    <span class="tp-laufband__item">{{ lb_text | escape }}</span>
+  </span>
+</span>

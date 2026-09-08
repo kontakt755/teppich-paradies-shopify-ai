@@ -314,6 +314,43 @@
   padding: 6px 12px;
   border-radius: 999px;
   letter-spacing: 0.02em;
+  /* Laufband: Feld behaelt Groesse und Form, laengerer Text laeuft innen durch */
+  max-width: calc(100% - 28px);
+  white-space: nowrap;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* tp-laufband: Grundzustand statisch, Lauf nur mit .is-scrolling (setzt assets/tp-laufband.js) */
+.tp-laufband{
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: top;
+}
+.tp-laufband__track{
+  display: inline-flex;
+  gap: 32px; /* Abstand zwischen Textende und Wiederholung, identisch zu GAP in tp-laufband.js */
+  white-space: nowrap;
+  will-change: transform;
+}
+.tp-laufband__item{ flex: 0 0 auto; }
+.tp-laufband.is-scrolling .tp-laufband__track{
+  animation: tp-laufband-run var(--tp-laufband-duration, 12s) linear infinite;
+}
+@keyframes tp-laufband-run{
+  from{ transform: translate3d(0,0,0); }
+  to{ transform: translate3d(calc(-1 * var(--tp-laufband-distance, 100%)),0,0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .tp-laufband .tp-laufband__track{ animation: none !important; transform: none !important; }
+  /* Ohne Bewegung muss der ganze Text lesbar bleiben: Feld darf dann umbrechen */
+  .tp-laufband,
+  .tp-laufband__track,
+  .tp-laufband__item{ white-space: normal; }
+  .tp-laufband__track{ display: block; }
+  .tp-laufband__item--clone{ display: none; }
 }
 
 .category-box .category-body{
@@ -407,7 +444,7 @@
 <div class="categories">
   <div class="category-box">
     <a href="{{ collections['vinylboden-1'].url }}" class="category-media">
-      <span class="category-badge">Klick · Kleben · Rolle</span>
+      {% render 'tp-laufband', text: 'Klick · Kleben · Rolle · Holzdekor · Fliesendekor · Steindekor', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1165354-8FXC-prod.jpg?width=800"
         alt="Vinylboden"
@@ -428,7 +465,7 @@
 
   <div class="category-box">
     <a href="{{ collections['teppichboden'].url }}" class="category-media">
-      <span class="category-badge">Velours · Schlinge</span>
+      {% render 'tp-laufband', text: 'Velours · Schlinge · Hochflor · Kurzflor · Wolle · Nadelvlies & Objekt', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1196472-8FXC-prod.jpg?width=800"
         alt="Teppichboden"
@@ -449,7 +486,7 @@
 
   <div class="category-box">
     <a href="{{ collections['bodenleisten'].url }}" class="category-media">
-      <span class="category-badge">Echtholz · MDF · Kunststoff</span>
+      {% render 'tp-laufband', text: 'Echtholz · MDF · Kunststoff · Sockelleisten · Übergangsprofile · Abschlussprofile · Kleber & Fixierung', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1310680-8FXC-prod.jpg?width=800"
         alt="Bodenleisten"
@@ -470,7 +507,7 @@
 
   <div class="category-box">
     <a href="{{ collections['linoleumboden-1'].url }}" class="category-media">
-      <span class="category-badge">Naturboden</span>
+      {% render 'tp-laufband', text: 'Naturboden · Rollenware · 200 cm Breite · Wohnen & Gewerbe', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1127866-8FXC-prod.jpg?v=1788621455&width=800"
         alt="Linoleumboden"
@@ -491,7 +528,7 @@
 
   <div class="category-box category-box--zubehoer">
     <a href="{{ collections['zubehoer'].url }}" class="category-media category-media--icon" aria-label="Zubehör">
-      <span class="category-badge">Profile · Kleber · Pflege</span>
+      {% render 'tp-laufband', text: 'Profile · Kleber & Fixierung · Bauchemie · Verlegeunterlagen · Reinigung · Verlegeband · Sauberlauf', class: 'category-badge' %}
       <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 46h52"/><path d="M6 54h52"/><path d="M14 46V26h36v20"/><path d="M14 26l18-10 18 10"/></svg>
     </a>
     <div class="category-body">
@@ -504,6 +541,8 @@
     </div>
   </div>
 </div>
+
+<script src="{{ 'tp-laufband.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
