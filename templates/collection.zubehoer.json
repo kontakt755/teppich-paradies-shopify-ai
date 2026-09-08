@@ -1,0 +1,435 @@
+{
+  "sections": {
+    "hero": {
+      "type": "section",
+      "name": "Zubehoer Hero",
+      "blocks": {
+        "hero_content": {
+          "type": "group",
+          "name": "Hero Content",
+          "settings": {
+            "content_direction": "column",
+            "vertical_on_mobile": true,
+            "horizontal_alignment": "center",
+            "vertical_alignment": "center",
+            "align_baseline": false,
+            "horizontal_alignment_flex_direction_column": "center",
+            "vertical_alignment_flex_direction_column": "center",
+            "gap": 16,
+            "width": "fill",
+            "custom_width": 100,
+            "width_mobile": "fill",
+            "custom_width_mobile": 100,
+            "height": "fit",
+            "custom_height": 100,
+            "inherit_color_scheme": false,
+            "color_scheme": "scheme-5",
+            "background_media": "none",
+            "video_position": "cover",
+            "background_image_position": "cover",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "toggle_overlay": true,
+            "overlay_color": "#00000052",
+            "overlay_style": "solid",
+            "gradient_direction": "to top",
+            "link": "",
+            "open_in_new_tab": false,
+            "placeholder": "",
+            "padding-block-start": 56,
+            "padding-block-end": 56,
+            "padding-inline-start": 16,
+            "padding-inline-end": 16
+          },
+          "blocks": {
+            "hero_title": {
+              "type": "text",
+              "name": "Titel",
+              "settings": {
+                "text": "<h1>{{ closest.collection.title }}</h1>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "center",
+                "type_preset": "h1",
+                "font": "var(--font-primary--family)",
+                "font_size": "",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "#FFFFFF",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "hero_description": {
+              "type": "text",
+              "name": "Beschreibung",
+              "settings": {
+                "text": "<p>{{ closest.collection.description }}</p>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "center",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1.125rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "#E8E8E8",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "hero_materials": {
+              "type": "text",
+              "name": "Materialien",
+              "settings": {
+                "text": "<p>✓ Passend zu unseren Bodenbelägen &nbsp;·&nbsp; ✓ Persönliche Fachberatung &nbsp;·&nbsp; ✓ Deutschlandweiter Versand</p>",
+                "width": "fit-content",
+                "max_width": "normal",
+                "alignment": "center",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "0.9375rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "#FFFFFF",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 8,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "hero_title",
+            "hero_description",
+            "hero_materials"
+          ]
+        }
+      },
+      "block_order": [
+        "hero_content"
+      ],
+      "settings": {
+        "content_direction": "row",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "center",
+        "vertical_alignment": "center",
+        "align_baseline": false,
+        "horizontal_alignment_flex_direction_column": "center",
+        "vertical_alignment_flex_direction_column": "center",
+        "gap": 12,
+        "section_width": "full",
+        "section_height": "",
+        "section_height_custom": 50,
+        "color_scheme": "scheme-1",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 0,
+        "padding-block-end": 0
+      }
+    },
+    "kacheln": {
+      "type": "tp-zubehoer-kacheln",
+      "blocks": {
+        "kachel_profile": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-profile",
+            "title": "",
+            "text": "",
+            "icon": "profil",
+            "cta": "Ansehen",
+            "sub_collection_1": "zubehoer-uebergangsprofile",
+            "sub_collection_2": "zubehoer-abschlussprofile"
+          }
+        },
+        "kachel_kleber_fixierung": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-kleber-fixierung",
+            "title": "",
+            "text": "",
+            "icon": "kleber",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_bauchemie": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-bauchemie",
+            "title": "",
+            "text": "",
+            "icon": "bauchemie",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_verlegeunterlagen": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-verlegeunterlagen",
+            "title": "",
+            "text": "",
+            "icon": "unterlage",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_reinigungsmittel": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-reinigungsmittel",
+            "title": "",
+            "text": "",
+            "icon": "reinigung",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_verlegeband": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-verlegeband",
+            "title": "",
+            "text": "",
+            "icon": "band",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_sauberlauf": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-sauberlauf",
+            "title": "",
+            "text": "",
+            "icon": "matte",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        }
+      },
+      "block_order": [
+        "kachel_profile",
+        "kachel_kleber_fixierung",
+        "kachel_bauchemie",
+        "kachel_verlegeunterlagen",
+        "kachel_reinigungsmittel",
+        "kachel_verlegeband",
+        "kachel_sauberlauf"
+      ],
+      "settings": {
+        "layout": "kacheln",
+        "heading": "Zubehör nach Bereich",
+        "intro": "Wählen Sie den Bereich, den Sie brauchen. Jede Kachel führt direkt zu den passenden Produkten.",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 40,
+        "padding-block-end": 16
+      }
+    },
+    "alle": {
+      "type": "tp-zubehoer-kacheln",
+      "blocks": {},
+      "block_order": [],
+      "settings": {
+        "layout": "chips",
+        "heading": "Alle Zubehörprodukte",
+        "intro": "Oder nutzen Sie die Filter, um gezielt nach Art, Material oder Einsatzort zu suchen.",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 0
+      }
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "product-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_actions": {
+              "type": "tp-card-actions",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_color_thumbs",
+            "tp_card_specs",
+            "tp_card_actions"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "large",
+        "mobile_product_card_size": "large",
+        "enable_infinite_scroll": true,
+        "products_per_page": 24,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": true,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "kacheln",
+    "alle",
+    "main"
+  ]
+}

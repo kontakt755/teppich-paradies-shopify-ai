@@ -222,10 +222,11 @@
   box-sizing: border-box;
 }
 
-/* Desktop: 4 Spalten für 4 Kategorien */
+/* Desktop: 5 Spalten - vier Bodenbelaege plus Zubehoer als letzter Punkt */
 @media (min-width: 1200px) {
   .categories {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
   }
 }
 
@@ -282,6 +283,24 @@
 
 .category-box:hover .category-media img{
   transform: scale(1.06);
+}
+
+/* Zubehoer-Kachel ohne Foto: Liniensymbol auf ruhigem Grund, gleiche Kachelhoehe */
+.category-box .category-media--icon{
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #f5efe9 0%, #e9e1d8 100%);
+  color: #1a1a1a;
+}
+
+.category-box .category-media--icon svg{
+  width: 38%;
+  height: auto;
+  transition: transform .5s ease;
+}
+
+.category-box:hover .category-media--icon svg{
+  transform: scale(1.08);
 }
 
 .category-box .category-badge{
@@ -450,10 +469,10 @@
   </div>
 
   <div class="category-box">
-    <a href="{{ collections['linoleumboden'].url }}" class="category-media">
+    <a href="{{ collections['linoleumboden-1'].url }}" class="category-media">
       <span class="category-badge">Naturboden</span>
       <img
-        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1127838-8FXC-prod.jpg?v=1788554945&width=800"
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1127866-8FXC-prod.jpg?v=1788621455&width=800"
         alt="Linoleumboden"
         loading="lazy"
         width="800"
@@ -463,8 +482,23 @@
     <div class="category-body">
       <h3>Linoleumboden</h3>
       <p>Elastische Linoleumböden aus Naturmaterialien – strapazierfähig, pflegeleicht und nachhaltig für jeden Raum.</p>
-      <a href="{{ collections['linoleumboden'].url }}" class="category-cta">
+      <a href="{{ collections['linoleumboden-1'].url }}" class="category-cta">
         Linoleumboden entdecken
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="category-box category-box--zubehoer">
+    <a href="{{ collections['zubehoer'].url }}" class="category-media category-media--icon" aria-label="Zubehör">
+      <span class="category-badge">Profile · Kleber · Pflege</span>
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 46h52"/><path d="M6 54h52"/><path d="M14 46V26h36v20"/><path d="M14 26l18-10 18 10"/></svg>
+    </a>
+    <div class="category-body">
+      <h3>Zubehör</h3>
+      <p>Profile, Kleber, Bauchemie, Unterlagen, Reinigung, Verlegeband und Sauberlauf – alles für Verlegung und Pflege.</p>
+      <a href="{{ collections['zubehoer'].url }}" class="category-cta">
+        Zubehör entdecken
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
