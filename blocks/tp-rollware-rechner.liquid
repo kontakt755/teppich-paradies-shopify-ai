@@ -773,14 +773,21 @@
 
         // Der native Cart-Update-Event fehlt bei diesem eigenen fetch-Aufruf
         // (kein product-form-component) - ohne ihn bleibt die Warenkorb-Bubble
-        // im Header bis zum naechsten Seitenwechsel auf dem alten Stand. Bubble
-        // braucht nur data.itemCount, kein extra /cart.js-Request noetig.
+        // im Header bis zum naechsten Seitenwechsel auf dem alten Stand.
+        //
+        // itemCount muss die tatsaechlich hinzugefuegte Menge sein: cart-icon.js
+        // rechnet bei source 'product-form-component' currentCartCount + itemCount
+        // und legt das Ergebnis in sessionStorage ab. Mit der frueher fest
+        // verdrahteten 1 zaehlte der Header pro Kauf nur um eins hoch, waehrend
+        // der Warenkorb um qty Quadratmeter wuchs - nach 8 m² stand dort 9 statt
+        // 8, und der Wert driftete mit jedem weiteren Kauf weiter auseinander.
+        // Die Theme-eigene product-form.js uebergibt hier ebenfalls die Menge.
         document.dispatchEvent(new CustomEvent('cart:update', {
           bubbles: true,
           detail: {
             resource: addedItem,
             sourceId: 'tp-rwc-{{ tp_rc_id }}',
-            data: { itemCount: 1, source: 'product-form-component' }
+            data: { itemCount: qty, source: 'product-form-component' }
           }
         }));
 
