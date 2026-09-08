@@ -21,7 +21,8 @@
 
     if (reduceMotion.matches) return;
 
-    var inner = el.clientWidth - (parseFloat(getComputedStyle(el).paddingLeft) || 0) - (parseFloat(getComputedStyle(el).paddingRight) || 0);
+    var viewport = el.querySelector(".tp-laufband__viewport") || el;
+    var inner = viewport.clientWidth;
     var textWidth = item.scrollWidth;
     if (textWidth <= inner + 1) return;
 

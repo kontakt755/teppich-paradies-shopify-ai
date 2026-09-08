@@ -16,7 +16,9 @@
   assign lb_speed = speed | default: 28
 -%}
 <span class="tp-laufband {{ class }}" data-tp-laufband data-tp-laufband-speed="{{ lb_speed }}" title="{{ lb_text | escape }}">
-  <span class="tp-laufband__track">
-    <span class="tp-laufband__item">{{ lb_text | escape }}</span>
+  <span class="tp-laufband__viewport">
+    <span class="tp-laufband__track">
+      <span class="tp-laufband__item">{{ lb_text | escape }}</span>
+    </span>
   </span>
 </span>

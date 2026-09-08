@@ -329,6 +329,20 @@
   overflow: hidden;
   vertical-align: top;
 }
+.tp-laufband__viewport{
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* Beim Lauf blendet nur der Text an beiden Enden weich ein und aus, das weisse Feld bleibt voll */
+.tp-laufband.is-scrolling .tp-laufband__viewport{
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+}
+/* Hover auf der Kachel haelt das Band an, damit man in Ruhe lesen kann */
+.category-box:hover .tp-laufband.is-scrolling .tp-laufband__track{
+  animation-play-state: paused;
+}
 .tp-laufband__track{
   display: inline-flex;
   gap: 32px; /* Abstand zwischen Textende und Wiederholung, identisch zu GAP in tp-laufband.js */
@@ -349,7 +363,8 @@
   .tp-laufband,
   .tp-laufband__track,
   .tp-laufband__item{ white-space: normal; }
-  .tp-laufband__track{ display: block; }
+  .tp-laufband__viewport,
+  .tp-laufband__track{ display: block; white-space: normal; }
   .tp-laufband__item--clone{ display: none; }
 }
 
