@@ -41,7 +41,7 @@
           "type": "text",
           "name": "t:names.text",
           "settings": {
-            "text": "<p>The link may be incorrect, or the page has been removed. </p>",
+            "text": "<p>Der Link ist vielleicht veraltet oder die Seite wurde verschoben. Über das Menü oder die Suche finden Sie den passenden Boden.</p>",
             "width": "100%",
             "max_width": "normal",
             "alignment": "center",
