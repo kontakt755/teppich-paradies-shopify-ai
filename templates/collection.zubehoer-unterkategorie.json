@@ -1,10 +1,17 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "hero": {
       "type": "tp-zubehoer-hero",
       "name": "TP Zubehoer-Hero",
-      "blocks": {},
-      "block_order": [],
       "settings": {
         "eyebrow": "Zubehör",
         "heading": "",
@@ -149,10 +156,10 @@
         "layout": "chips",
         "heading": "",
         "intro": "",
+        "anchor": "",
         "color_scheme": "scheme-1",
         "padding-block-start": 20,
-        "padding-block-end": 0,
-        "anchor": ""
+        "padding-block-end": 0
       }
     },
     "main": {
