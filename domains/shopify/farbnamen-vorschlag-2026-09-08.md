@@ -1,4 +1,4 @@
-# Farbnamen-Vorschlag (aus Variantenbildern gemessen, 2026-09-08)
+# Farbnamen (aus Produktbildern gemessen, 2026-09-08 umgesetzt)
 
 Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben eines Produkts im selben Ton, trennt Warm/Kühl, dann Meliert (Streuung), dann Heller/Dunkler, zuletzt eine Ziffer. Diese Zusaetze markieren die Faelle, die man sich am Bild ansehen sollte. Die Nummer bleibt in SKU, custom.farbcode und Farbregister.
 
@@ -203,13 +203,13 @@ Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben ei
 | 078 | Farbe 78 | #49433d | Schwarz Warm Heller |
 | 079 | Farbe 79 | #7b7168 | Grau Dunkel |
 | 082 | Farbe 82 | #415259 | Petrol |
-| 085 | Farbe 85 | - | (kein Bild) |
-| 086 | Farbe 86 | - | (kein Bild) |
-| 095 | Farbe 95 | - | (kein Bild) |
-| 096 | Farbe 96 | - | (kein Bild) |
-| 097 | Farbe 97 | - | (kein Bild) |
-| 178 | Farbe 178 | - | (kein Bild) |
-| 179 | Farbe 179 | - | (kein Bild) |
+| 085 | Farbe 85 | #2a3137 | Blau Tief Heller |
+| 086 | Farbe 86 | #22292e | Blau Tief Dunkler |
+| 095 | Farbe 95 | #654534 | Braun Tief |
+| 096 | Farbe 96 | #3e3228 | Taupe Tief Dunkler |
+| 097 | Farbe 97 | #61564b | Taupe Tief Heller |
+| 178 | Farbe 178 | #353533 | Schwarz Heller |
+| 179 | Farbe 179 | #1a1a18 | Schwarz Dunkler |
 
 ## Nuvara Teppichboden 400cm 500cm
 

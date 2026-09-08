@@ -1974,6 +1974,41 @@
      "id": "gid://shopify/ProductOptionValue/14018939158862",
      "alt": "Farbe 82",
      "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939191630",
+     "alt": "Farbe 85",
+     "neu": "Blau Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939224398",
+     "alt": "Farbe 86",
+     "neu": "Blau Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939257166",
+     "alt": "Farbe 95",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939289934",
+     "alt": "Farbe 96",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939322702",
+     "alt": "Farbe 97",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939355470",
+     "alt": "Farbe 178",
+     "neu": "Schwarz Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939388238",
+     "alt": "Farbe 179",
+     "neu": "Schwarz Dunkler"
     }
    ]
   },
