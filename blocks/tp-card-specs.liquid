@@ -7,7 +7,6 @@
 
 {%- liquid
   assign tp_cs_product = closest.product
-  assign tp_cs_id = block.id | replace: '_', '' | downcase
   assign tp_cs_sqm_per_package = tp_cs_product.metafields.custom.qm_pro_paket.value
 -%}
 
