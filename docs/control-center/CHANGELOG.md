@@ -95,3 +95,17 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Offen:** Owner (Assignee) für die aktiven Aufgaben setzen – das ist eine fachliche Zuordnung, keine
   technische; Freigabe-Issues mit Optionen und Empfehlung nachtragen (Template „Entscheidung");
   Sichtbarkeitsentscheidung vor Kennzahlen-Integrationen.
+
+## 2026-09-08 · Inkrement 6: Owner, Selbstaktualisierung, Task-Automation
+
+- **Geändert:** Alle 24 offenen Aufgaben haben Ahmet (`kontakt755`) als Owner. Sync-Cron auf 30 Minuten
+  (Events bleiben sofort). Neu: `.github/workflows/task-automation.yml` + `scripts/task-automation.mjs`
+  (Eingang bei neuen Issues mit Typ/Bereich-Vorschlag, In Arbeit bei referenzierendem PR, Review bei Merge,
+  Erledigt beim Schließen; jede Änderung als Kommentar mit Marker `tp-automation`, Bot-Ereignisse lösen
+  keinen zweiten Lauf aus). Neu: `npm run task` (create/start/review/done/block/approve-request/comment/list)
+  über dieselbe validierte Aktions-API; CLAUDE.md verpflichtet KI-Sessions dazu.
+- **Getestet:** 33 Tests grün (Planung je Ereignis, Idempotenz, kein Zurücksetzen aus Review, Draft-PRs
+  ignoriert, CLI-Argumente). Live: `npm run task -- list` zeigt 24 Aufgaben, `done 92` wird mit Klartext
+  abgelehnt (Owner vorhanden, aber keine Bestätigung der Akzeptanzkriterien).
+- **Risiken/Annahmen:** Automatik setzt nie Priorität, Owner oder schließt Issues; Typ/Bereich sind
+  Vorschläge. Bei 30-Minuten-Cron ca. 600 Actions-Minuten/Monat (Free-Kontingent 2000).

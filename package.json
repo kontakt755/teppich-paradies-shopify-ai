@@ -56,7 +56,8 @@
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
-    "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs"
+    "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
+    "task": "node scripts/task.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2",

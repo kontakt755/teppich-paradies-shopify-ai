@@ -359,7 +359,26 @@ blockiert, beobachten, fertig, abgebrochen), `type:*`, `priority:p0`–`p3`, `ar
 `./setup-dashboard.sh` legt sie an. Solange `status:freigabe` fehlt, gilt
 `status:blockiert` + `reviewer:mensch` als „Warten auf Freigabe" (Übergangsregel im Modell).
 
-Tests: `npm run dashboard:test` (Modell, Export, API, Server), Teil von `npm test`.
+Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation), Teil von `npm test`.
+
+**Aufgaben pflegen sich über Ereignisse selbst** (`.github/workflows/task-automation.yml`,
+`scripts/task-automation.mjs`): neues Issue → Eingang mit Typ/Bereich-Vorschlag, PR referenziert
+`#n` → In Arbeit, PR gemergt → Review, Issue geschlossen → Erledigt. Prioritäten und Owner werden
+nie automatisch gesetzt.
+
+**KI-Sessions legen ihre Arbeit als Aufgabe an und führen den Status nach** – das ist die
+Sichtbarkeit im Control Center, keine Formalie:
+
+```
+npm run task -- create "Titel" --area google --type technik --prio p2 --owner kontakt755
+npm run task -- start 92 --owner kontakt755 --note "Beginne mit …"
+npm run task -- review 92 --note "PR #101, Tests gruen"
+npm run task -- done 92 --confirm --note "gemergt"
+npm run task -- block 92 --reason "Warte auf … von Ahmet"
+```
+
+Der Owner ist Ahmet = GitHub-Login `kontakt755`. Ein PR, der `#n` im Titel oder Text nennt,
+setzt die Aufgabe automatisch auf In Arbeit; `Closes #n` im PR-Text schließt sie beim Merge.
 
 ## Tests
 
