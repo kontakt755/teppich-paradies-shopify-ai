@@ -277,7 +277,7 @@ function attentionItem({ task: t, reasons }, i) {
     <div>
       <div class="title">${prioBadge(t)} ${taskLink(t)}</div>
       <div class="why">${reasons.map((r, k) => k === 0 ? `<b>${esc(r)}</b>` : esc(r)).join(' · ')}</div>
-      <div class="meta"><span>${statusBadge(t)}</span><span>Owner ${ownerText(t)}</span>${t.executor ? `<span>Ausführung ${execBadge(t)}</span>` : ''}<span>${t.due ? dueText(t) : `Alter ${plural(t.ageDays ?? 0, 'Tag', 'Tage')}`}</span></div>
+      <div class="meta"><span>${statusBadge(t)}</span><span>${t.owner ? `Owner @${esc(t.owner)}` : ownerText(t)}</span>${t.executor ? `<span>Ausführung ${execBadge(t)}</span>` : ''}<span>${t.due ? dueText(t) : `Alter ${plural(t.ageDays ?? 0, 'Tag', 'Tage')}`}</span></div>
       ${t.nextStep ? `<div class="next">${esc(t.nextStep)}</div>` : `<div class="next" style="color:var(--warn)">Nächster Schritt fehlt – in der Aufgabe festlegen</div>`}
     </div>
     <div class="actions"><button class="btn btn-sm btn-primary" data-open="${t.number}" data-primary="1">${esc(primary.label)}</button></div>
@@ -288,7 +288,7 @@ function blockedRow(t) {
   return `<div class="row" data-open="${t.number}" tabindex="0" role="button">
     <div><div class="t">${prioBadge(t)} ${esc(t.title)}</div>
       <div class="m"><span style="color:var(--crit)">${esc(t.blocker || 'Grund fehlt – bitte im Issue nachtragen')}</span></div>
-      <div class="m"><span>${since(t.updatedAt)}</span><span>Owner ${ownerText(t)}</span>${t.dependencies.length ? `<span>hängt an ${esc(t.dependencies.join(', '))}</span>` : ''}</div></div>
+      <div class="m"><span>${since(t.updatedAt)}</span><span>${t.owner ? `Owner @${esc(t.owner)}` : ownerText(t)}</span>${t.dependencies.length ? `<span>hängt an ${esc(t.dependencies.join(', '))}</span>` : ''}</div></div>
     <div class="r"><button class="btn btn-sm" data-open="${t.number}" data-primary="1">Eskalieren / lösen</button></div>
   </div>`;
 }
