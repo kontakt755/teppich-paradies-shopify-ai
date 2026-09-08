@@ -354,7 +354,7 @@ export function normalizeTask(raw, { now = new Date() } = {}) {
     goal: fields.goal,
     acceptance: fields.acceptance,
     blocker: st.key === 'blockiert' || st.key === 'freigabe' ? (fields.blocker || null) : (fields.blocker || null),
-    dependencies: fields.dependencies,
+    dependencies: fields.dependencies || [],
     risk: fields.risk,
     size: fields.size,
     due, daysToDue,
@@ -363,7 +363,7 @@ export function normalizeTask(raw, { now = new Date() } = {}) {
     isDecision,
     decision: isDecision ? {
       question: fields.question || raw.title,
-      options: fields.options,
+      options: fields.options || [],
       recommendation: fields.recommendation,
       impact: fields.impact,
       context: fields.context || fields.description,
