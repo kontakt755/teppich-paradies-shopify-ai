@@ -307,10 +307,17 @@ dreimal, danach `REVIEW_LIMIT_REACHED` → menschliches Gate.
 - `router_api_migration.py` — Python-Adapter für Claude-API-Aufrufe
 - `api_cost_monitor.py` — Budget und Rate-Limits
 
-Klassen: **A** lokal/deterministisch ohne LLM · **B** Haiku · **C** Sonnet ·
-**D** Opus (nur mit ausdrücklicher Eskalation). Modelle kommen aus
-`CLAUDE_HAIKU_MODEL`, `CLAUDE_SONNET_MODEL`, `CLAUDE_OPUS_MODEL` — keine
-Modell-IDs hart verdrahten.
+Klassen und Modelle kommen aus **einer** Quelle, `workflow/model-matrix.mjs`
+(Routing-Strategie seit 2026-09-08, Prioritaet Qualitaet vor Kosten):
+**A** trivial/deterministisch → `haiku` low, kein Modell-Review ·
+**B** normale Entwicklung → `fable` medium, Review Codex `gpt-5.6-sol` ·
+**C** komplex → `fable` high, Review Codex `gpt-6-astra`, Zweitblick `gpt-5.6-sol` ·
+**D** kritisch → `opus` high, Review Codex `gpt-6-astra` xhigh, Security-Review `fable`.
+Corrector ist immer das Implementer-Modell; die Eskalationsleiter geht nur nach
+oben (Effort → Peer-Modell opus/fable → Codex astra → Human Gate). Haiku ist ein
+Werkzeug fuer Klasse A und Voranalysen, nie Hauptentwickler. Rollback:
+`TP_ROUTING_STRATEGY=legacy`. Der Python-Adapter liest `CLAUDE_HAIKU_MODEL`,
+`CLAUDE_FABLE_MODEL`, `CLAUDE_OPUS_MODEL` — keine Modell-IDs hart verdrahten.
 
 Zustände: `PENDING → RUNNING → IMPLEMENT → REVIEW → PASS`, daneben
 `CORRECTION_REQUIRED`, `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`,

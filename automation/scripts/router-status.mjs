@@ -86,6 +86,21 @@ if (fs.existsSync(ledger)) {
   problems.push('Kein Usage-Ledger: der Router hat in dieser Arbeitskopie noch nie einen Provider aufgerufen.');
 }
 
+// Stop-Hook-Reviews: bis 2026-09-08 verschwand jeder Infrastrukturfehler still.
+// Jetzt hinterlaesst er review-error.txt; ohne ein einziges codex-review.json ist
+// der Review-Zweig nachweislich nie gelaufen.
+const runsDir = at('.router/agent-runs');
+if (fs.existsSync(runsDir)) {
+  const runs = fs.readdirSync(runsDir);
+  const reviewed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'codex-review.json')) || fs.existsSync(path.join(runsDir, run, 'claude-review.json'))).length;
+  const failed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'review-error.txt'))).length;
+  say(reviewed > 0 || runs.length === 0, '.router/agent-runs', `${runs.length} Laeufe, ${reviewed} mit Review, ${failed} mit protokolliertem Review-Fehler`);
+  if (runs.length && !reviewed) problems.push('Kein einziger Stop-Hook-Lauf hat ein Review-Ergebnis: Codex-Binary pruefen (CODEX_CLI_PATH) und review-error.txt lesen.');
+}
+const codexBinary = ['CODEX_CLI_PATH' in process.env ? process.env.CODEX_CLI_PATH : null, '/Applications/ChatGPT.app/Contents/Resources/codex'].filter(Boolean).find(candidate => fs.existsSync(candidate));
+say(Boolean(codexBinary), 'codex-Binary', codexBinary ?? 'nicht gefunden (CODEX_CLI_PATH setzen)');
+if (!codexBinary) problems.push('codex-Binary nicht gefunden: der unabhaengige Review kann nicht laufen.');
+
 const runState = at('.router/manifest-run/run-state.json');
 say(fs.existsSync(runState), '.router/manifest-run/run-state.json', fs.existsSync(runState) ? 'ManifestRunner-Lauf vorhanden' : 'noch kein Lauf');
 

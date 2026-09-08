@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaudeWorkPrompt, buildCodexReviewPrompt, describeClaudeActivities, parseReviewResult, runCliAgentCycle, runCodexReview } from '../core/cli-agent-cycle.mjs';
+import { buildClaudeWorkPrompt, buildCodexReviewPrompt, describeClaudeActivities, parseReviewResult, runCliAgentCycle, runCodexReview, runReviewStep } from '../core/cli-agent-cycle.mjs';
 
 test('worker and reviewer prompts require the complete test-review-correct cycle', () => {
   assert.match(buildClaudeWorkPrompt('Fix'), /teste erneut/i);
@@ -19,7 +19,7 @@ test('runCodexReview stays strictly read-only and never routes through workspace
     capturedArgs = args;
     return { status: 0, stdout: '', stderr: '' };
   };
-  const result = runCodexReview({ taskText: 'Fix', io, spawn });
+  const result = runCodexReview({ taskText: 'Fix', io, spawn, recordUsage: () => {} });
   assert.equal(capturedArgs.includes('--sandbox'), true);
   assert.equal(capturedArgs[capturedArgs.indexOf('--sandbox') + 1], 'read-only');
   assert.equal(capturedArgs.includes('--approve-for-me'), false);
@@ -248,4 +248,116 @@ test('subscription analysis uses read-only Haiku with more turns and no artifici
   } finally {
     if (previousFallback === undefined) delete process.env.ANTHROPIC_FALLBACK_API_KEY; else process.env.ANTHROPIC_FALLBACK_API_KEY = previousFallback;
   }
+});
+
+// Routing-Strategie 2026-09-08: Modell und Effort kommen aus workflow/model-matrix.mjs.
+const memoryIo = () => ({ mkdirSync: () => {}, existsSync: () => false, readFileSync: () => '', writeFileSync: () => {} });
+test('worker runs with the matrix model for its class and the corrector escalates instead of repeating', async () => {
+  const claudeArgs = [];
+  const codexArgs = [];
+  let reviews = 0;
+  const finding = () => ({ priority: 'P1', file: 'automation/x.mjs', problem: 'Ein Problem', reason: 'Ein Grund', recommendedFix: 'Ein Fix' });
+  const spawn = (command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    if (args[0] === 'exec') { codexArgs.push(args); return { status: 0, stdout: '', stderr: '' }; }
+    claudeArgs.push(args);
+    return { status: 0, stdout: JSON.stringify({ result: 'Pro erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const events = [];
+  const result = await runCliAgentCycle({
+    task: 'Bug: Produktkarte zeigt auf Mobile keine Bewertung, bitte beheben',
+    spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 4, io: memoryIo(),
+    // Jede Runde ein anderer Befund: die Leiter geht stufenweise. Identische
+    // Befunde ueberspringen bewusst eine Stufe (eigener Test unten).
+    review: () => (++reviews >= 4 ? { status: 'PASS', findings: [] } : { status: 'CHANGES_REQUIRED', findings: [{ ...finding(), problem: `Problem ${reviews}` }] }),
+    onState: event => events.push(event),
+  });
+  assert.equal(result.status, 'PASS');
+  assert.equal(result.taskClass, 'B');
+  const modelOf = args => args[args.indexOf('--model') + 1];
+  const effortOf = args => args[args.indexOf('--effort') + 1];
+  assert.deepEqual(claudeArgs.map(args => `${modelOf(args)}/${effortOf(args)}`), ['fable/medium', 'fable/high', 'opus/high']);
+  // Dritte Ablehnung: Provider-Wechsel zu Codex statt viertem Claude-Lauf.
+  assert.equal(codexArgs.length, 1);
+  assert.equal(codexArgs[0][codexArgs[0].indexOf('-m') + 1], 'gpt-6-astra');
+  assert.equal(codexArgs[0][codexArgs[0].indexOf('--sandbox') + 1], 'workspace-write');
+  assert.deepEqual(result.escalations.map(item => item.to), ['claude:fable/high', 'claude:opus/high', 'codex:gpt-6-astra/high']);
+  assert.ok(events.some(event => event.status === 'ESCALATED'));
+});
+
+test('a class A task runs one Haiku call and no model review', async () => {
+  const claudeArgs = [];
+  let reviewCalls = 0;
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    claudeArgs.push(args);
+    return { status: 0, stdout: JSON.stringify({ result: 'erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const result = await runCliAgentCycle({ task: 'Tippfehler im Footer korrigieren', spawn, recordUsage: () => {}, guardsEnabled: false, review: () => { reviewCalls += 1; return { status: 'PASS', findings: [] }; } });
+  assert.equal(result.status, 'PASS');
+  assert.equal(result.taskClass, 'A');
+  assert.equal(claudeArgs.length, 1);
+  assert.equal(claudeArgs[0][claudeArgs[0].indexOf('--model') + 1], 'haiku');
+  assert.equal(reviewCalls, 0);
+});
+
+test('a Codex rate limit falls back to an independent Claude review model, other Codex errors stay infra failures', () => {
+  const calls = [];
+  const claudeReview = ({ reviewStep }) => { calls.push(reviewStep); return { status: 'PASS', findings: [], reviewer: 'CLAUDE', model: reviewStep.model }; };
+  const rateLimited = () => { throw new Error('codex exited with status 1: HTTP 429 Too Many Requests'); };
+  const result = runReviewStep({ review: rateLimited, claudeReview, reviewStep: { provider: 'CODEX', model: 'gpt-5.6-sol', effort: 'medium' }, authorModel: 'fable', taskText: 'x' });
+  assert.equal(result.reviewer, 'CLAUDE');
+  assert.equal(calls[0].model, 'opus');
+  assert.throws(() => runReviewStep({ review: () => { throw new Error('codex exited with status 2: bad flag'); }, claudeReview, reviewStep: { provider: 'CODEX', model: 'gpt-5.6-sol', effort: 'medium' }, taskText: 'x' }), /bad flag/);
+});
+
+test('a Claude rate limit without API backup hands the same step to Codex instead of failing', async () => {
+  const previous = { api: process.env.ANTHROPIC_API_KEY, fallback: process.env.ANTHROPIC_FALLBACK_API_KEY };
+  delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_FALLBACK_API_KEY;
+  const codexArgs = [];
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    if (args[0] === 'exec') { codexArgs.push(args); return { status: 0, stdout: '', stderr: '' }; }
+    return { status: 1, stdout: '', stderr: 'Usage limit reached; resets later' };
+  };
+  try {
+    const events = [];
+    const result = await runCliAgentCycle({ task: 'Komplexes Refactoring des Konfigurators über mehrere Dateien', spawn, recordUsage: () => {}, guardsEnabled: false, io: memoryIo(), review: () => ({ status: 'PASS', findings: [] }), onState: event => events.push(event) });
+    assert.equal(result.status, 'PASS');
+    assert.equal(result.taskClass, 'C');
+    assert.equal(codexArgs[0][codexArgs[0].indexOf('-m') + 1], 'gpt-6-astra');
+    assert.ok(events.some(event => event.status === 'PROVIDER_FALLBACK' && /CLAUDE_RATE_LIMIT/.test(event.reason)));
+  } finally {
+    if (previous.api !== undefined) process.env.ANTHROPIC_API_KEY = previous.api;
+    if (previous.fallback !== undefined) process.env.ANTHROPIC_FALLBACK_API_KEY = previous.fallback;
+  }
+});
+
+test('the Codex reviewer receives the matrix model and effort', () => {
+  let capturedArgs = null;
+  const io = { mkdirSync: () => {}, readFileSync: () => JSON.stringify({ status: 'PASS', summary: 'ok', findings: [] }) };
+  const spawn = (_command, args) => { capturedArgs = args; return { status: 0, stdout: '', stderr: '' }; };
+  const result = runCodexReview({ taskText: 'Fix', io, spawn, reviewStep: { provider: 'CODEX', model: 'gpt-5.6-sol', effort: 'medium' }, recordUsage: () => {} });
+  assert.equal(capturedArgs[capturedArgs.indexOf('-m') + 1], 'gpt-5.6-sol');
+  assert.equal(capturedArgs[capturedArgs.indexOf('-c') + 1], 'model_reasoning_effort="medium"');
+  assert.equal(result.model, 'gpt-5.6-sol');
+});
+
+test('the same finding twice skips a ladder step and exhausts escalation into PARKED instead of looping', async () => {
+  const steps = [];
+  const finding = () => ({ priority: 'P1', file: 'automation/x.mjs', problem: 'Immer dasselbe', reason: 'r', recommendedFix: 'f' });
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    steps.push(args[0] === 'exec' ? `codex:${args[args.indexOf('-m') + 1]}` : `claude:${args[args.indexOf('--model') + 1]}/${args[args.indexOf('--effort') + 1]}`);
+    return { status: 0, stdout: JSON.stringify({ result: 'erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const result = await runCliAgentCycle({
+    task: 'Bug: Produktkarte zeigt auf Mobile keine Bewertung, bitte beheben',
+    spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 6, io: memoryIo(),
+    review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
+  });
+  assert.equal(result.status, 'PARKED');
+  assert.equal(result.reason, 'ESCALATION_EXHAUSTED');
+  assert.deepEqual(steps, ['claude:fable/medium', 'claude:fable/high', 'codex:gpt-6-astra']);
 });

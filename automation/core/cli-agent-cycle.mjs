@@ -5,8 +5,11 @@ import { classifyClaudeRequest } from './claude-bridge.mjs';
 import { appendUsageRecord } from './openrouter-executor.mjs';
 import { runReviewCorrectionCycle } from './review-cycle.mjs';
 import { diffSinceSnapshot, evaluateDashboardGuards, loadDashboardRiskMap, snapshotWorkingTree } from './dashboard-guards.mjs';
+import { classifyTask } from '../../workflow/router.mjs';
+import { buildModelPlan, claudeArgsForStep, codexArgsForStep, describeStep, escalateStep, failureSignature, isRateLimitError, rateLimitFallback, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
 const REVIEW_SCHEMA = path.resolve('automation/schemas/review-result.schema.json');
+const REVIEW_SCHEMA_TEXT = fs.existsSync(REVIEW_SCHEMA) ? fs.readFileSync(REVIEW_SCHEMA, 'utf8') : '{"status":"PASS|CHANGES_REQUIRED|HUMAN_GATE","summary":"","findings":[]}';
 
 export class CliAgentError extends Error {
   constructor(message, options = {}) {
@@ -71,23 +74,87 @@ export function parseReviewResult(text) {
   return parsed;
 }
 
-export function runCodexReview({ taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync }) {
+function recordReviewUsage({ recordUsage, taskId, provider, model, effort, startedAt, reviewStatus }) {
+  const finishedAt = new Date().toISOString();
+  try {
+    recordUsage({
+      timestamp: finishedAt, taskId, role: 'REVIEWER', provider, upstreamProvider: provider === 'CODEX_SUBSCRIPTION' ? 'OPENAI' : 'ANTHROPIC',
+      gateway: provider === 'CODEX_SUBSCRIPTION' ? 'CODEX_CLI' : 'CLAUDE_CODE', model, effort: effort ?? null, startedAt, finishedAt,
+      durationMs: new Date(finishedAt).getTime() - new Date(startedAt).getTime(), stopReason: reviewStatus, responseContentTypes: ['json'],
+      // Abo-Aufrufe liefern keine Tokenzahlen; der Eintrag zaehlt den Aufruf, nicht die Tokens.
+      usage: { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0, costUsd: 0 },
+    });
+  } catch { /* Ledger darf ein Review nie verhindern. */ }
+}
+
+// `reviewStep` kommt aus workflow/model-matrix.mjs (Provider, Modell, Effort).
+// Ohne Angabe laeuft Codex mit seinem Konfig-Default - das ist der Legacy-Pfad.
+export function runCodexReview({ taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
   const source = taskFile ? readTaskSource(taskFile, io) : { text: taskText, absolutePath: null };
   if (!source.text?.trim()) throw new CliAgentError('A task or task file is required');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'codex-review.json');
-  execute('codex', [
-    'exec', '--ephemeral', '--sandbox', 'read-only',
+  // Absoluter Pfad statt blossem "codex": das Desktop-Bundle liegt nicht im PATH.
+  const binary = resolveCodexBinary() ?? 'codex';
+  const startedAt = new Date().toISOString();
+  execute(binary, [
+    'exec', '--ephemeral', '--sandbox', 'read-only', ...codexArgsForStep(reviewStep),
     '--output-schema', REVIEW_SCHEMA, '--output-last-message', outputPath,
     buildCodexReviewPrompt(source.text, { taskType, candidateText }),
   ], { cwd, env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' }, timeoutMs, spawn });
   const review = parseReviewResult(io.readFileSync(outputPath, 'utf8'));
-  return { ...review, reviewer: 'CODEX', taskFile: source.absolutePath, outputPath };
+  recordReviewUsage({ recordUsage, taskId: id, provider: 'CODEX_SUBSCRIPTION', model: reviewStep?.model ?? null, effort: reviewStep?.effort, startedAt, reviewStatus: review.status });
+  return { ...review, reviewer: 'CODEX', model: reviewStep?.model ?? null, effort: reviewStep?.effort ?? null, taskFile: source.absolutePath, outputPath };
 }
 
-function recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, finishedAt, recordUsage }) {
+function extractJsonObject(text) {
+  const value = String(text ?? '');
+  const start = value.indexOf('{');
+  const end = value.lastIndexOf('}');
+  if (start === -1 || end <= start) throw new CliAgentError('Claude review did not return a JSON object');
+  return value.slice(start, end + 1);
+}
+
+// Cross-Provider-Fallback des Reviews: faellt Codex wegen Rate Limit oder
+// erschoepftem Kontingent aus, prueft ein anderes Claude-Modell als der Autor.
+// Read-only ueber --permission-mode plan; Ergebnis im selben Review-Schema.
+export function runClaudeReview({ taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
+  if (!taskText?.trim()) throw new CliAgentError('A task is required');
+  if (!reviewStep?.model) throw new CliAgentError('Claude review requires an explicit model that differs from the author');
+  const id = compactId(taskId);
+  const outputDir = path.resolve(cwd, runDir, id);
+  io.mkdirSync(outputDir, { recursive: true });
+  const outputPath = path.join(outputDir, 'claude-review.json');
+  const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
+  const env = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
+  delete env.ANTHROPIC_API_KEY;
+  const startedAt = new Date().toISOString();
+  const result = execute('claude', ['--print', '--output-format', 'json', '--permission-mode', 'plan', ...claudeArgsForStep(reviewStep), '--max-turns', '16', prompt], { cwd, env, timeoutMs, spawn });
+  let response;
+  try { response = JSON.parse(result.stdout); } catch (error) { throw new CliAgentError('Claude review did not return valid JSON', { cause: error }); }
+  const review = parseReviewResult(extractJsonObject(response?.result));
+  io.writeFileSync(outputPath, JSON.stringify(review, null, 2), 'utf8');
+  recordReviewUsage({ recordUsage, taskId: id, provider: 'CLAUDE_SUBSCRIPTION', model: reviewStep.model, effort: reviewStep.effort, startedAt, reviewStatus: review.status });
+  return { ...review, reviewer: 'CLAUDE', model: reviewStep.model, effort: reviewStep.effort ?? null, taskFile: null, outputPath };
+}
+
+// Ein Review-Schritt mit Fallback bei Rate Limit: Codex -> unabhaengiges
+// Claude-Modell (nie das des Autors). Andere Fehler bleiben Infrastrukturfehler.
+export function runReviewStep({ reviewStep, authorModel = null, review = runCodexReview, claudeReview = runClaudeReview, onState = null, ...options }) {
+  try {
+    return review({ ...options, reviewStep });
+  } catch (error) {
+    if (!isRateLimitError(error)) throw error;
+    const fallback = rateLimitFallback(reviewStep, { authorModel });
+    if (!fallback) throw error;
+    onState?.({ status: 'REVIEW_FALLBACK', from: describeStep(reviewStep), to: describeStep(fallback), reason: fallback.reason });
+    return claudeReview({ ...options, reviewStep: fallback });
+  }
+}
+
+function recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, finishedAt, recordUsage, implementStep = null, taskClass = null, escalation = null }) {
   if (!response || typeof response !== 'object') return;
   const usage = response.usage ?? {};
   recordUsage({
@@ -98,6 +165,10 @@ function recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, fi
     upstreamProvider: 'ANTHROPIC',
     gateway: 'CLAUDE_CODE',
     model: Object.keys(response.modelUsage ?? {})[0] ?? null,
+    requestedModel: implementStep?.model ?? null,
+    effort: implementStep?.effort ?? null,
+    taskClass,
+    escalation,
     startedAt,
     finishedAt,
     durationMs: new Date(finishedAt).getTime() - new Date(startedAt).getTime(),
@@ -187,7 +258,7 @@ function runClaudeStreaming(args, { cwd, env, timeoutMs, onState }) {
   });
 }
 
-async function runClaude({ taskText, taskId, taskType = 'IMPLEMENTATION', findings = [], cwd, timeoutMs, budgetUsd, maxTurns = Number(process.env.AGENT_LOOP_CLAUDE_MAX_TURNS ?? 24), authMode, apiKey = null, spawn = null, recordUsage = appendUsageRecord, onState = null }) {
+async function runClaude({ taskText, taskId, taskType = 'IMPLEMENTATION', findings = [], cwd, timeoutMs, budgetUsd, maxTurns = Number(process.env.AGENT_LOOP_CLAUDE_MAX_TURNS ?? 24), authMode, apiKey = null, spawn = null, recordUsage = appendUsageRecord, onState = null, implementStep = null, taskClass = null, escalation = null }) {
   const childEnv = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
   if (authMode === 'SUBSCRIPTION') delete childEnv.ANTHROPIC_API_KEY;
   if (authMode === 'API') {
@@ -200,10 +271,15 @@ async function runClaude({ taskText, taskId, taskType = 'IMPLEMENTATION', findin
     : authMode === 'API' ? Math.min(maxTurns, Number(process.env.AGENT_LOOP_API_MAX_TURNS ?? 12)) : maxTurns;
   const effectiveBudgetUsd = analysisMode ? Math.min(budgetUsd, Number(process.env.AGENT_LOOP_ANALYSIS_MAX_BUDGET_USD ?? 0.50)) : budgetUsd;
   const streaming = !spawn;
+  // Analyse (reine Voranalyse ohne Entscheidung) bleibt bei Haiku/low. Alles
+  // Schreibende bekommt Modell und Effort aus der Matrix; ohne Schritt bleibt
+  // das alte Verhalten (Account-Default, effort medium) als Rollback erhalten.
+  const modelArgs = analysisMode
+    ? ['--effort', 'low', '--model', process.env.AGENT_LOOP_ANALYSIS_MODEL ?? 'haiku']
+    : (implementStep ? claudeArgsForStep(implementStep) : ['--effort', 'medium']);
   const args = [
-    '--print', '--output-format', streaming ? 'stream-json' : 'json', ...(streaming ? ['--verbose'] : []), '--permission-mode', analysisMode ? 'plan' : 'auto', '--effort', analysisMode ? 'low' : 'medium',
+    '--print', '--output-format', streaming ? 'stream-json' : 'json', ...(streaming ? ['--verbose'] : []), '--permission-mode', analysisMode ? 'plan' : 'auto', ...modelArgs,
     '--max-turns', String(effectiveMaxTurns), ...(authMode === 'API' ? ['--max-budget-usd', String(effectiveBudgetUsd)] : []),
-    ...(analysisMode ? ['--model', process.env.AGENT_LOOP_ANALYSIS_MODEL ?? 'haiku'] : []),
     buildClaudeWorkPrompt(taskText, findings, taskType),
   ];
   const startedAt = new Date().toISOString();
@@ -217,7 +293,7 @@ async function runClaude({ taskText, taskId, taskType = 'IMPLEMENTATION', findin
     throw new CliAgentError(result.status === 0 ? 'Claude did not return valid JSON' : `claude exited with status ${result.status}: ${commandOutput.slice(-1200)}`, { cause: error, commandOutput });
   }
   const finishedAt = new Date().toISOString();
-  recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, finishedAt, recordUsage });
+  recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, finishedAt, recordUsage, implementStep, taskClass, escalation });
   if (response?.is_error || result.status !== 0) {
     if (response?.subtype === 'error_max_turns' || response?.terminal_reason === 'max_turns') {
       return { status: 'PARKED', reason: 'MAX_TURNS', result: response.result || `Claude erreichte das Arbeitsschritt-Limit (${effectiveMaxTurns}). Bitte den Auftrag enger formulieren.`, usage: response.usage ?? null, costUsd: response.total_cost_usd ?? null, authMode };
@@ -227,7 +303,26 @@ async function runClaude({ taskText, taskId, taskType = 'IMPLEMENTATION', findin
     }
     throw new CliAgentError(`Claude reported an error: ${response.result ?? response?.errors?.join('; ') ?? 'unknown error'}`, { commandOutput: (result.stderr || '').slice(-1200) });
   }
-  return { status: 'PASS', result: response?.result ?? '', usage: response?.usage ?? null, costUsd: response?.total_cost_usd ?? null, authMode };
+  return { status: 'PASS', result: response?.result ?? '', usage: response?.usage ?? null, costUsd: response?.total_cost_usd ?? null, authMode, model: implementStep?.model ?? null, effort: implementStep?.effort ?? null };
+}
+
+// Codex als Implementer/Corrector: nur ueber die Eskalationsleiter oder als
+// Rate-Limit-Fallback von Claude. Schreibt im Arbeitsbereich, nie darueber
+// hinaus; das Ergebnis laeuft durch dieselben Diff-Guards wie ein Claude-Lauf.
+function runCodexWork({ taskText, taskId, findings = [], cwd, timeoutMs, implementStep, runDir = '.router/agent-runs', io = fs, spawn = spawnSync, recordUsage = appendUsageRecord, taskClass = null, escalation = null }) {
+  const id = compactId(taskId);
+  const outputDir = path.resolve(cwd, runDir, id);
+  io.mkdirSync(outputDir, { recursive: true });
+  const outputPath = path.join(outputDir, `codex-work-${Date.now()}.md`);
+  const binary = resolveCodexBinary() ?? 'codex';
+  const startedAt = new Date().toISOString();
+  execute(binary, ['exec', '--ephemeral', '--sandbox', 'workspace-write', ...codexArgsForStep(implementStep), '--output-last-message', outputPath, buildClaudeWorkPrompt(taskText, findings, 'IMPLEMENTATION')],
+    { cwd, env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' }, timeoutMs, spawn });
+  const finishedAt = new Date().toISOString();
+  try {
+    recordUsage({ timestamp: finishedAt, taskId: id, role: 'WORKER', provider: 'CODEX_SUBSCRIPTION', upstreamProvider: 'OPENAI', gateway: 'CODEX_CLI', model: implementStep.model, requestedModel: implementStep.model, effort: implementStep.effort ?? null, taskClass, escalation, startedAt, finishedAt, durationMs: new Date(finishedAt).getTime() - new Date(startedAt).getTime(), stopReason: 'end_turn', responseContentTypes: ['text'], usage: { inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, cacheCreationInputTokens: 0, costUsd: 0 } });
+  } catch { /* Ledger darf die Arbeit nicht verhindern. */ }
+  return { status: 'PASS', result: io.existsSync(outputPath) ? io.readFileSync(outputPath, 'utf8') : '', authMode: 'CODEX', model: implementStep.model, effort: implementStep.effort ?? null };
 }
 
 function permitsApiFallback(error) {
@@ -255,6 +350,22 @@ async function runClaudeWithFallback(options) {
     options.onState?.({ status: 'PROVIDER', provider: 'Claude API Backup' });
     const result = await runClaude({ ...options, authMode: 'API', apiKey });
     return { ...result, fallbackReason, authAttempts: [...attempts, { mode: 'API', status: 'PASS' }] };
+  }
+}
+
+// Fuehrt einen Implementer-/Corrector-Schritt aus und wechselt bei Rate Limit
+// ohne API-Backup einmal den Provider (Claude -> Codex), nie das Faehigkeits-
+// niveau. Codex-Schritte kommen nur aus der Eskalationsleiter.
+async function runWorkStep({ implementStep, onState = null, ...options }) {
+  if (implementStep?.provider === 'CODEX') return runCodexWork({ ...options, implementStep });
+  try {
+    return await runClaudeWithFallback({ ...options, implementStep, onState });
+  } catch (error) {
+    if (!isRateLimitError(error)) throw error;
+    const fallback = rateLimitFallback(implementStep ?? { provider: 'CLAUDE', model: 'fable', effort: 'medium' });
+    if (!fallback) throw error;
+    onState?.({ status: 'PROVIDER_FALLBACK', from: describeStep(implementStep), to: describeStep(fallback), reason: fallback.reason });
+    return { ...runCodexWork({ ...options, implementStep: fallback, escalation: fallback.reason }), fallbackReason: fallback.reason };
   }
 }
 
@@ -425,15 +536,24 @@ export function createCorrectExecutor({ gateway, cwd, timeoutMs, budgetUsd, reco
   };
 }
 
-export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
+export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, cwd = process.cwd(), maxReviewRounds = 3, timeoutMs = 30 * 60_000, budgetUsd = Number(process.env.AGENT_LOOP_CLAUDE_MAX_BUDGET_USD ?? 1), spawn = null, review = runCodexReview, recordUsage = appendUsageRecord, onState = null, io = fs, declaredTaskType = null, forceTaskType = null, previousRisk = null, guardsEnabled = process.env.DASHBOARD_GUARDS !== 'off' }) {
   const classified = classifyClaudeRequest({ taskId, task, declaredTaskType, forceTaskType, previousRisk });
-  onState?.({ status: 'ROUTED', risk: classified.risk, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource });
+  // Modellwahl je Klasse aus einer Quelle (workflow/model-matrix.mjs). Vorher
+  // lief jeder Worker mit dem Account-Default und jede Korrektur mit demselben
+  // Modell, egal wie oft sie scheiterte.
+  const taskClass = classifyTask(classified.task);
+  const plan = buildModelPlan(taskClass);
+  onState?.({ status: 'ROUTED', risk: classified.risk, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource, taskClass, primary: describeStep(plan.primary), reviewer: describeStep(plan.reviewer), strategy: plan.strategy });
   if (classified.risk === 'HIGH') {
     onState?.({ status: 'HUMAN_GATE', risk: classified.risk });
-    return { status: 'HUMAN_GATE', reason: 'HIGH-risk task is not executed by the unattended CLI loop', classified };
+    return { status: 'HUMAN_GATE', reason: 'HIGH-risk task is not executed by the unattended CLI loop', classified, taskClass, plan };
   }
   let phase = 'IMPLEMENT';
   let apiCorrections = 0;
+  let currentStep = classified.taskType === 'ANALYSIS' ? null : plan.primary;
+  let lastSignature = null;
+  let repeatedFailures = 0;
+  const escalations = [];
   const maxApiCorrections = Number(process.env.AGENT_LOOP_API_MAX_CORRECTIONS ?? 1);
   // Bezugspunkt vor dem ersten Worker-Lauf: nur was DIESER Lauf zusaetzlich
   // veraendert, darf ihm angelastet werden.
@@ -454,11 +574,12 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
     task: classified,
     maxReviewRounds,
     providerTimeoutMs: timeoutMs,
-    implement: async () => guardCandidate(await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState })),
-    review: async (_task, candidate, metadata) => {
+    implement: async () => guardCandidate(await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass })),
+    // Klasse A: deterministische Pruefung reicht, kein Modell-Review.
+    review: plan.reviewer === null ? null : async (_task, candidate, metadata) => {
       let result;
       try {
-        result = await review({ taskText: classified.task, taskType: classified.taskType, candidateText: candidate.result ?? '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, timeoutMs, spawn: spawn ?? spawnSync });
+        result = runReviewStep({ review, reviewStep: plan.reviewer, authorModel: currentStep?.model ?? plan.primary.model, onState, taskText: classified.task, taskType: classified.taskType, candidateText: candidate.result ?? '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, timeoutMs, spawn: spawn ?? spawnSync, recordUsage });
       } catch (error) {
         // A technical reviewer failure (e.g. a broken codex CLI invocation) is not a
         // review finding: Claude's already-completed work must not be discarded, and
@@ -469,7 +590,7 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
       if (result.status === 'HUMAN_GATE') return { status: 'SECURITY_STOP' };
       return { status: result.status === 'PASS' ? 'PASS' : 'REVIEW_FINDINGS', findings: result.findings };
     },
-    correct: async (_task, candidate, findings) => {
+    correct: async (_task, candidate, findings, metadata) => {
       // Kostenbremse: Solange Claude Code Pro laeuft, sind Korrekturrunden
       // gratis und duerfen bis maxReviewRounds gehen. Sobald der Worker auf die
       // kostenpflichtige API ausgewichen ist, kostet jede weitere Runde echtes
@@ -485,11 +606,30 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
         return { ...candidate, status: 'PARKED', reason: 'API_CORRECTION_LIMIT', findings };
       }
       phase = 'CORRECT';
-      const corrected = await runClaudeWithFallback({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState });
+      // Eskalation statt Wiederholung: derselbe Befund ein zweites Mal oder
+      // eine zweite Ablehnung heben den Corrector an (Effort -> Peer-Modell ->
+      // anderer Provider). Ein Corrector unter dem Niveau des Implementers
+      // entsteht dabei nie; die Leiter kennt nur Schritte nach oben.
+      const signature = failureSignature(findings);
+      const sameFailureAgain = signature === lastSignature;
+      lastSignature = signature;
+      if (sameFailureAgain) repeatedFailures += 1;
+      const failureRound = metadata.reviewRound + (sameFailureAgain ? repeatedFailures : 0);
+      const escalated = escalateStep(currentStep ?? plan.corrector, { round: failureRound, reason: sameFailureAgain ? 'SAME_FINDINGS_AGAIN' : 'REVIEW_REJECTED' });
+      if (!escalated) {
+        onState?.({ status: 'ESCALATION_EXHAUSTED', from: describeStep(currentStep), findings });
+        return { ...candidate, status: 'PARKED', reason: 'ESCALATION_EXHAUSTED', findings };
+      }
+      if (describeStep(escalated) !== describeStep(currentStep)) {
+        escalations.push({ round: metadata.reviewRound, from: describeStep(currentStep), to: describeStep(escalated), reason: escalated.reason });
+        onState?.({ status: 'ESCALATED', ...escalations.at(-1) });
+        currentStep = escalated;
+      }
+      const corrected = await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass, escalation: escalated.reason ?? null });
       if (corrected?.authMode === 'API') apiCorrections += 1;
       return guardCandidate(corrected);
     },
     onState,
   });
-  return { ...result, taskId: classified.id, taskText: classified.task, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource, risk: classified.risk, lastWorkerPhase: phase };
+  return { ...result, taskId: classified.id, taskText: classified.task, taskType: classified.taskType, taskTypeSource: classified.taskTypeSource, risk: classified.risk, taskClass, plan, escalations, finalStep: describeStep(currentStep), lastWorkerPhase: phase };
 }

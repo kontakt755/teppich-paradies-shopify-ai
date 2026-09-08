@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { buildModelPlan, formatModelPlan } from './model-matrix.mjs';
 
 export const TASK_CLASSES = Object.freeze(['A', 'B', 'C', 'D']);
 export const EXTERNAL_BLOCKS = Object.freeze({
@@ -60,11 +61,24 @@ const CLASS_D = [
   PRODUCT_DATA_FORWARD,
   PRODUCT_DATA_REVERSE,
 ];
+// Klasse D zusaetzlich fuer sicherheits-, auth-, deployment- und infrastruktur-
+// nahe Arbeit: dort sollen laut Routing-Strategie 2026-09-08 bewusst mehrere
+// starke Modelle pruefen, auch wenn keine geschuetzte externe Aktion vorliegt.
+const CLASS_D_SCOPE = [
+  /\b(?:security|sicherheits?(?:lücke|luecke|relevant|kritisch)\w*|authentifizierung|authentication|auth[- ]?(?:flow|logik|token)|login[- ]?(?:flow|logik)|secrets?|api[- ]?keys?|tokens?|zugangsdaten|credentials?)\b/i,
+  /\b(?:deployment|deploy[- ]?(?:kette|pipeline|workflow)|infrastruktur|infrastructure|ci\/cd|github[- ]?actions?|produktionskritisch\w*|datenverlust|data[- ]?loss)\b/i,
+];
 const CLASS_C = [
-  /\b(performance|architektur|architecture|komplex|complex|größere? (?:theme[- ]?)?logik|datenlogik|produktlogik|refactor)\b/i,
+  /\b(performance|architektur|architecture|komplex|complex|größere?s? (?:theme[- ]?)?(?:logik|feature|umbau|änderung|aenderung)|datenlogik|produktlogik|refactor(?:ing)?|refaktor\w*)\b/i,
+  /\b(?:api[- ]?(?:integration|anbindung|schnittstelle)|integration (?:einer|der|von) api|datenmodell\w*|data ?model|migration|datenmigration|debug\w*|komplexe[rn]? (?:fehler|bug)|mehrere (?:dateien|systeme|komponenten)|multi[- ]?file|dateiübergreifend|dateiuebergreifend|theme \+ backend|ux[- ]?(?:umbau|konzept|logik)|frontend[- ]?umbau)\b/i,
 ];
 const CLASS_B = [
-  /\b(css|theme[- ]?fix|bugfix|bug fix|komponente|component|liquid|layout[- ]?fix|kleiner? fix|code[- ]?änderung)\b/i,
+  /\b(css|theme[- ]?fix|bugfix|bug fix|bug|komponente|component|liquid|layout[- ]?fix|kleiner? fix|code[- ]?änderung|feature|block|section|snippet|shopify[- ]?anpassung)\b/i,
+];
+// Trivial und (nahezu) deterministisch: hier darf Haiku bleiben. Wird vor B
+// geprueft, damit "kleine CSS-Anpassung" nicht am Wort "css" zu B wird.
+const CLASS_A_TRIVIAL = [
+  /\b(?:tippfehler|typo|rechtschreib\w*|schreibfehler|formatier\w*|einrück\w*|einrueck\w*|umbenenn\w*|rename|kleine[rsn]? (?:text|css|style|wort)[- ]?(?:änderung|aenderung|anpassung|korrektur)|einzeiler|konfigurationswert\w*|config[- ]?wert\w*|kommentar (?:ergänzen|ergaenzen|anpassen))\b/i,
 ];
 const CLASS_A = [
   /\b(dateien? prüfen|format(?:ierung)?|docs?|dokumentation|tests? (?:ausführen|laufen lassen)|reports?|datenvalidierung|validieren|lint)\b/i,
@@ -151,7 +165,9 @@ export function protectedActionsForTask(text) {
 export function classifyTask(text, files = []) {
   const normalized = withoutNegatedActions(withoutIdentifiers(normalizeTaskText(text)));
   if (CLASS_D.some(pattern => pattern.test(normalized))) return 'D';
+  if (CLASS_D_SCOPE.some(pattern => pattern.test(normalized))) return 'D';
   if (CLASS_C.some(pattern => pattern.test(normalized))) return 'C';
+  if (CLASS_A_TRIVIAL.some(pattern => pattern.test(normalized))) return 'A';
   if (CLASS_B.some(pattern => pattern.test(normalized))) return 'B';
   if (CLASS_A.some(pattern => pattern.test(normalized))) return 'A';
   if (files.some(isSensitiveFile)) return 'B';
@@ -202,6 +218,7 @@ export function routeTask({ text, files = [], branch = null, head = null, now = 
     humanGateRequired,
     protectedActions,
     sensitiveFiles: files.filter(isSensitiveFile),
+    modelPlan: buildModelPlan(taskClass),
     maxAutonomousRepairRounds: MAX_AUTONOMOUS_REPAIR_ROUNDS,
     maxImmediateScriptRetries: MAX_IMMEDIATE_SCRIPT_RETRIES,
     routedAt: now(),
@@ -340,6 +357,7 @@ export function formatRouterOutput(route, nextAllowedAction = null) {
     `SHOPIFY_WRITE_REQUIRED: ${route.shopifyWriteRequired ? 'JA' : 'NEIN'}`,
     `HUMAN_GATE_REQUIRED: ${route.humanGateRequired ? 'JA' : 'NEIN'}`,
     `PROTECTED_ACTIONS: ${route.protectedActions.length ? route.protectedActions.join(',') : '-'}`,
+    formatModelPlan(route.modelPlan ?? buildModelPlan(route.taskClass)),
     `NEXT_ALLOWED_ACTION: ${nextAllowedAction ?? (route.implementer === 'SCRIPT' ? (route.requiredValidationScope === 'FULL' ? 'RUN_FULL_VALIDATION' : 'RUN_STATIC_VALIDATION') : 'HANDOFF_IMPLEMENTER')}`,
   ].join('\n');
 }
