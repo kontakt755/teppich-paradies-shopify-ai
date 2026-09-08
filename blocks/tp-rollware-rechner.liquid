@@ -81,6 +81,14 @@
         <span class="tp-rwc-unit">cm</span>
       </div>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
+      {%- comment -%}
+        Der Bestand wird bei Rollenware nicht getrackt, Shopify nimmt also jede
+        Menge an. Ohne Obergrenze landete ein Vertipper (4000 statt 400)
+        kommentarlos als Bestellung ueber mehrere hundert Quadratmeter im
+        Warenkorb. Die Grenze ist bewusst grosszuegig und keine Produktaussage -
+        darueber wird beraten statt blockiert.
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-max hidden></p>
     </div>
   </div>
 
@@ -483,6 +491,8 @@
   var roomLengthInput = root.querySelector('[data-room-length-input]');
   var roomWidthInput = root.querySelector('[data-room-width-input]');
   var errMin = root.querySelector('[data-error-min]');
+  var errMax = root.querySelector('[data-error-max]');
+  var MAX_LENGTH_CM = 5000;
   var errRoomTooWide = root.querySelector('[data-error-room-too-wide]');
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
@@ -609,9 +619,14 @@
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
     var blocked = (len === -1);
-    var valid = !blocked && len >= 100;
+    var tooLong = len > MAX_LENGTH_CM;
+    var valid = !blocked && !tooLong && len >= 100;
 
-    errMin.hidden = blocked || !(len > 0 && !valid);
+    errMin.hidden = blocked || tooLong || !(len > 0 && len < 100);
+    if (errMax) {
+      errMax.textContent = 'Ab ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
+      errMax.hidden = !tooLong;
+    }
 
     target = findVariant(w);
     var ok = !!(target && target.available);
@@ -663,7 +678,7 @@
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
-      cta.textContent = blocked ? 'Bitte beraten lassen' : 'Länge eingeben';
+      cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
     }
 
     cta.disabled = !(valid && ok);
