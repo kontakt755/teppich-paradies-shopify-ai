@@ -48,6 +48,7 @@
       <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
     {%- endif -%}
 
+    {%- if tp_sl_is_flooring -%}
     <details class="tp-service-links__shipping-details-{{ tp_sl_id }}">
       <summary>Was bedeutet „frei Bordsteinkante“?</summary>
       <p>
@@ -59,6 +60,7 @@
         <a href="{{ tp_sl_shipping_page.url }}">Alle Versanddetails</a>
       {%- endif -%}
     </details>
+    {%- endif -%}
   </div>
 
   <div class="tp-service-links__secondary-{{ tp_sl_id }}">
