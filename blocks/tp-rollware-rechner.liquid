@@ -204,8 +204,12 @@
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
       {%- unless tp_rc_v_title contains 'opc-' -%}
+        {%- capture tp_rc_v_farbnummer -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'nummer' %}{%- endcapture -%}
+        {%- capture tp_rc_v_farbe_intern -%}{% render 'tp-farbe-daten', variant: variant, product: product, feld: 'intern' %}{%- endcapture -%}
         {
           "id": {{ variant.id | json }},
+          "farbnummer": {{ tp_rc_v_farbnummer | strip | json }},
+          "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
           "available": {{ variant.available | json }},
           "options": {{ variant.options | json }}
@@ -804,6 +808,10 @@
       'Gewünschte Länge': len + ' cm'
     };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
+    // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
+    // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
+    if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;
+    if (target.farbe_intern) properties['_Farbe intern'] = target.farbe_intern;
     if (currentMode === 'room') {
       properties['Berechnet aus Raummaß'] =
         (roomLengthInput.value || '').replace('.', ',') + ' × ' +

@@ -416,6 +416,9 @@
         updateUrl(variant.id);
         updateProductMedia(variant);
         setNativeColorValue(input.value);
+        // Farbanzeige und Farbnummer-Properties nachziehen (assets/tp-farbe.js).
+        // Auf Rollenware-Seiten gibt es keinen nativen Variantenwaehler, also kein variant:update.
+        document.dispatchEvent(new CustomEvent('tp:farbe-wechsel', { detail: { variantId: String(variant.id) } }));
       });
 
       syncSwatchUI({{ selected_color | json }});

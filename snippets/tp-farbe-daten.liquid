@@ -1,0 +1,84 @@
+{%- doc -%}
+  Loest Farbname und Farbnummer einer Variante auf - die eine Stelle, an der
+  das Theme entscheidet, was "die Farbe" einer Variante ist.
+
+  Farbname (Kunde)  = Wert der Produktoption Farbe/Color/Dekor. Fallback: Farbregister.
+  Farbnummer (intern), in dieser Reihenfolge:
+    1. Varianten-Metafeld custom.farbe  -> Metaobjekt tp_farbe, Feld farbnummer
+    2. Varianten-Metafeld custom.farbcode (Farbnummer als Text)
+    3. Teil der SKU hinter dem letzten Unterstrich (PVCJOKANEC_4381 -> 4381)
+
+  @param {object} variant - Die Variante
+  @param {object} product - Das Produkt (fuer die Optionsposition)
+  @param {string} feld - 'name' | 'nummer' | 'intern' | 'swatch'
+
+  @example
+  {% capture nummer %}{% render 'tp-farbe-daten', variant: v, product: product, feld: 'nummer' %}{% endcapture %}
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_fd_name = ''
+  assign tp_fd_nummer = ''
+  assign tp_fd_swatch = ''
+  assign tp_fd_register = variant.metafields.custom.farbe.value
+
+  for tp_fd_option in product.options_with_values
+    assign tp_fd_oname = tp_fd_option.name | downcase
+    if tp_fd_oname contains 'farbe' or tp_fd_oname contains 'color' or tp_fd_oname contains 'dekor'
+      assign tp_fd_idx = tp_fd_option.position | minus: 1
+      assign tp_fd_name = variant.options[tp_fd_idx]
+      break
+    endif
+  endfor
+
+  if tp_fd_name == blank and tp_fd_register
+    assign tp_fd_name = tp_fd_register.farbname.value
+  endif
+
+  # Altbestand: "Grau Dunkel (98)" - die Nummer steckt im Optionswert.
+  # Fuer die Anzeige abschneiden und als letzte Reserve fuer die Nummer merken.
+  # Sauber wird das erst durch Umbenennen der Optionswerte (farbverwaltung.md).
+  assign tp_fd_klammer_nummer = ''
+  assign tp_fd_name_last = tp_fd_name | split: ' ' | last
+  if tp_fd_name_last contains '(' and tp_fd_name_last contains ')'
+    assign tp_fd_klammer_nummer = tp_fd_name_last | remove: '(' | remove: ')' | strip
+    assign tp_fd_name = tp_fd_name | remove: tp_fd_name_last | strip
+  endif
+
+  if tp_fd_register and tp_fd_register.farbnummer.value != blank
+    assign tp_fd_nummer = tp_fd_register.farbnummer.value
+  elsif variant.metafields.custom.farbcode.value != blank
+    assign tp_fd_nummer = variant.metafields.custom.farbcode.value
+  elsif variant.sku contains '_'
+    assign tp_fd_sku_suffix = variant.sku | split: '_' | last | strip
+    if tp_fd_sku_suffix.size > 0 and tp_fd_sku_suffix.size <= 10
+      assign tp_fd_nummer = tp_fd_sku_suffix
+    endif
+  endif
+  if tp_fd_nummer == blank and tp_fd_klammer_nummer != blank
+    assign tp_fd_nummer = tp_fd_klammer_nummer
+  endif
+
+  if tp_fd_register and tp_fd_register.swatch.value != blank
+    assign tp_fd_swatch = tp_fd_register.swatch.value
+  endif
+
+  assign tp_fd_name = tp_fd_name | strip
+  assign tp_fd_nummer = tp_fd_nummer | strip
+-%}
+{%- case feld -%}
+  {%- when 'name' -%}
+    {{- tp_fd_name -}}
+  {%- when 'nummer' -%}
+    {{- tp_fd_nummer -}}
+  {%- when 'swatch' -%}
+    {{- tp_fd_swatch -}}
+  {%- when 'intern' -%}
+    {%- if tp_fd_name != blank and tp_fd_nummer != blank -%}
+      {{- tp_fd_name }} – {{ tp_fd_nummer -}}
+    {%- elsif tp_fd_name != blank -%}
+      {{- tp_fd_name -}}
+    {%- else -%}
+      {{- tp_fd_nummer -}}
+    {%- endif -%}
+{%- endcase -%}

@@ -230,6 +230,12 @@
               "disabled": true,
               "settings": {}
             },
+            "tp_farbanzeige_tp1": {
+              "type": "tp-farbanzeige",
+              "name": "TP Farbanzeige",
+              "settings": { "label": "Farbe", "groesse": "normal", "show_nummer": false },
+              "blocks": {}
+            },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
               "settings": {
@@ -325,6 +331,7 @@
             "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "variant_picker_R3rGDr",
+            "tp_farbanzeige_tp1",
             "options_price_calculator_product_calculator_z3CEfy",
             "buy_buttons_eYQEYi",
             "ai_gen_block_72e444a_tkq6gk",

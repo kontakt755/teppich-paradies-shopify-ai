@@ -213,6 +213,12 @@
               "disabled": true,
               "settings": {}
             },
+            "tp_farbanzeige_tp1": {
+              "type": "tp-farbanzeige",
+              "name": "TP Farbanzeige",
+              "settings": { "label": "Farbe", "groesse": "normal", "show_nummer": false },
+              "blocks": {}
+            },
             "buy_buttons_teppich_main": {
               "type": "buy-buttons",
               "settings": {
@@ -295,6 +301,7 @@
             "divider_teppich_main",
             "color_swatch_picker_teppich_main",
             "variant_picker_teppich_main",
+            "tp_farbanzeige_tp1",
             "tp_teppich_wunschmass_main",
             "options_price_calculator_teppich_main",
             "buy_buttons_teppich_main",

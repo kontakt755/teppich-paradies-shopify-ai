@@ -217,6 +217,12 @@
               "disabled": true,
               "settings": {}
             },
+            "tp_farbanzeige_tp1": {
+              "type": "tp-farbanzeige",
+              "name": "TP Farbanzeige",
+              "settings": { "label": "Farbe", "groesse": "normal", "show_nummer": false },
+              "blocks": {}
+            },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
               "disabled": true,
@@ -293,6 +299,7 @@
             "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "variant_picker_R3rGDr",
+            "tp_farbanzeige_tp1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
             "tp_compare_toggle_night3",
