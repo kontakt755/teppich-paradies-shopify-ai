@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:23:05.699Z",
+  "generated_at": "2026-09-08T14:23:27.539Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 30,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:23:05.699Z",
+    "fetchedAt": "2026-09-08T14:23:27.539Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -401,8 +401,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Tracking Daten validieren",
       "fields": {
@@ -436,7 +438,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:36Z",
-      "updated_at": "2026-09-03T09:40:36Z",
+      "updated_at": "2026-09-08T14:23:05Z",
       "closed_at": null
     },
     {
@@ -499,8 +501,10 @@
         "priority:p1",
         "area:kategorie"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "QA-Test & Performance Check",
       "fields": {
@@ -534,7 +538,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:34Z",
-      "updated_at": "2026-09-03T09:40:34Z",
+      "updated_at": "2026-09-08T14:23:07Z",
       "closed_at": null
     },
     {
@@ -548,8 +552,10 @@
         "priority:p1",
         "area:produktseite"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "QA-Test & Screenshot vergleich",
       "fields": {
@@ -583,7 +589,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:32Z",
-      "updated_at": "2026-09-03T09:40:32Z",
+      "updated_at": "2026-09-08T14:23:08Z",
       "closed_at": null
     },
     {
@@ -666,8 +672,10 @@
         "priority:p2",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Audiences in Google Ads aktivieren",
       "fields": {
@@ -697,7 +705,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:25Z",
-      "updated_at": "2026-09-03T09:40:25Z",
+      "updated_at": "2026-09-08T14:23:10Z",
       "closed_at": null
     },
     {
@@ -711,8 +719,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Events testen mit Tag Assistant",
       "fields": {
@@ -746,7 +756,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:23Z",
-      "updated_at": "2026-09-03T09:40:23Z",
+      "updated_at": "2026-09-08T14:23:12Z",
       "closed_at": null
     },
     {
@@ -760,8 +770,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Validierungsbericht dokumentieren",
       "fields": {
@@ -791,7 +803,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:22Z",
-      "updated_at": "2026-09-03T12:51:27Z",
+      "updated_at": "2026-09-08T14:23:14Z",
       "closed_at": null
     },
     {
@@ -806,8 +818,10 @@
         "reviewer:mensch",
         "status:freigabe"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Ahmet: Bitte Freigabe erteilen",
       "fields": {
@@ -836,7 +850,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:34Z",
-      "updated_at": "2026-09-08T14:18:19Z",
+      "updated_at": "2026-09-08T14:23:16Z",
       "closed_at": null
     },
     {
@@ -851,8 +865,10 @@
         "reviewer:mensch",
         "status:freigabe"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Ahmet: Bitte freigegebene Produkt-IDs genehmigen",
       "fields": {
@@ -880,7 +896,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:32Z",
-      "updated_at": "2026-09-08T14:18:21Z",
+      "updated_at": "2026-09-08T14:23:18Z",
       "closed_at": null
     },
     {
@@ -894,8 +910,10 @@
         "priority:p2",
         "area:produktseite"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "ChatGPT: Bitte Produktdaten auditieren",
       "fields": {
@@ -924,7 +942,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:30Z",
-      "updated_at": "2026-09-03T09:24:30Z",
+      "updated_at": "2026-09-08T14:23:19Z",
       "closed_at": null
     },
     {
@@ -938,8 +956,10 @@
         "priority:p2",
         "area:navigation"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "ChatGPT: Bitte Menü-Struktur auditieren",
       "fields": {
@@ -964,7 +984,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:29Z",
-      "updated_at": "2026-09-03T09:24:29Z",
+      "updated_at": "2026-09-08T14:23:21Z",
       "closed_at": null
     },
     {
@@ -979,8 +999,10 @@
         "reviewer:mensch",
         "status:freigabe"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Ahmet: Bitte Menüressourcen genehmigen",
       "fields": {
@@ -1008,7 +1030,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:27Z",
-      "updated_at": "2026-09-08T14:18:23Z",
+      "updated_at": "2026-09-08T14:23:23Z",
       "closed_at": null
     },
     {
@@ -1022,8 +1044,10 @@
         "priority:p2",
         "area:backend"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": null,
       "fields": {
@@ -1051,7 +1075,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:26Z",
-      "updated_at": "2026-09-03T09:24:26Z",
+      "updated_at": "2026-09-08T14:23:25Z",
       "closed_at": null
     },
     {
