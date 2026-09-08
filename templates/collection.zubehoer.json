@@ -1,164 +1,67 @@
 {
   "sections": {
     "hero": {
-      "type": "section",
-      "name": "Zubehoer Hero",
+      "type": "tp-zubehoer-hero",
+      "name": "TP Zubehoer-Hero",
       "blocks": {
-        "hero_content": {
-          "type": "group",
-          "name": "Hero Content",
+        "motiv_profil": {
+          "type": "motiv",
           "settings": {
-            "content_direction": "column",
-            "vertical_on_mobile": true,
-            "horizontal_alignment": "center",
-            "vertical_alignment": "center",
-            "align_baseline": false,
-            "horizontal_alignment_flex_direction_column": "center",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 16,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": false,
-            "color_scheme": "scheme-5",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "toggle_overlay": true,
-            "overlay_color": "#00000052",
-            "overlay_style": "solid",
-            "gradient_direction": "to top",
-            "link": "",
-            "open_in_new_tab": false,
-            "placeholder": "",
-            "padding-block-start": 56,
-            "padding-block-end": 56,
-            "padding-inline-start": 16,
-            "padding-inline-end": 16
-          },
-          "blocks": {
-            "hero_title": {
-              "type": "text",
-              "name": "Titel",
-              "settings": {
-                "text": "<h1>{{ closest.collection.title }}</h1>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "h1",
-                "font": "var(--font-primary--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_description": {
-              "type": "text",
-              "name": "Beschreibung",
-              "settings": {
-                "text": "<p>{{ closest.collection.description }}</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1.125rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#E8E8E8",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_materials": {
-              "type": "text",
-              "name": "Materialien",
-              "settings": {
-                "text": "<p>✓ Passend zu unseren Bodenbelägen &nbsp;·&nbsp; ✓ Persönliche Fachberatung &nbsp;·&nbsp; ✓ Deutschlandweiter Versand</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "0.9375rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 8,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "hero_title",
-            "hero_description",
-            "hero_materials"
-          ]
+            "product": "abschlussprofil-aluminium-schraubbar-7-15-mm",
+            "collection": "",
+            "alt": "Abschlussprofil aus Aluminium",
+            "link": ""
+          }
+        },
+        "motiv_kleber": {
+          "type": "motiv",
+          "settings": {
+            "product": "nass-und-haftklebstoff-fuer-elastische-belaege",
+            "collection": "",
+            "alt": "Klebstoff für elastische Beläge",
+            "link": ""
+          }
+        },
+        "motiv_unterlage": {
+          "type": "motiv",
+          "settings": {
+            "product": "unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche",
+            "collection": "",
+            "alt": "Verlegeunterlage für Designböden",
+            "link": ""
+          }
+        },
+        "motiv_matte": {
+          "type": "motiv",
+          "settings": {
+            "product": "sauberlaufmatte-135-205-cm",
+            "collection": "",
+            "alt": "Sauberlaufmatte",
+            "link": ""
+          }
         }
       },
       "block_order": [
-        "hero_content"
+        "motiv_profil",
+        "motiv_kleber",
+        "motiv_unterlage",
+        "motiv_matte"
       ],
       "settings": {
-        "content_direction": "row",
-        "vertical_on_mobile": true,
-        "horizontal_alignment": "center",
-        "vertical_alignment": "center",
-        "align_baseline": false,
-        "horizontal_alignment_flex_direction_column": "center",
-        "vertical_alignment_flex_direction_column": "center",
-        "gap": 12,
-        "section_width": "full",
-        "section_height": "",
-        "section_height_custom": 50,
-        "color_scheme": "scheme-1",
-        "background_media": "none",
-        "video_position": "cover",
-        "background_image_position": "cover",
-        "border": "none",
-        "border_width": 1,
-        "border_opacity": 100,
-        "border_radius": 0,
-        "toggle_overlay": false,
-        "overlay_color": "#00000026",
-        "overlay_style": "solid",
-        "gradient_direction": "to top",
-        "padding-block-start": 0,
-        "padding-block-end": 0
+        "eyebrow": "Zubehör für Teppich, Vinyl & Linoleum",
+        "heading": "",
+        "text": "Profile, Kleber, Unterlagen und Pflege – abgestimmt auf die Böden aus unserem Sortiment. Damit die Verlegung sauber gelingt und der Boden lange schön bleibt.",
+        "usp_1": "Passend zu unseren Bodenbelägen",
+        "usp_2": "Persönliche Fachberatung",
+        "usp_3": "Deutschlandweiter Versand",
+        "cta_1_label": "Zubehör nach Bereich",
+        "cta_1_link": "#bereiche",
+        "cta_2_label": "Beliebtes Zubehör",
+        "cta_2_link": "#beliebt",
+        "image_alt": "",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 48,
+        "padding-block-end": 48
       }
     },
     "kacheln": {
@@ -169,11 +72,14 @@
           "settings": {
             "collection": "zubehoer-profile",
             "title": "",
-            "text": "",
+            "text": "Übergangs-, Abschluss- und Treppenkantenprofile aus Aluminium – schraubbar oder selbstklebend.",
             "icon": "profil",
             "cta": "Ansehen",
             "sub_collection_1": "zubehoer-uebergangsprofile",
-            "sub_collection_2": "zubehoer-abschlussprofile"
+            "sub_collection_2": "zubehoer-abschlussprofile",
+            "benefit": "Saubere Kanten, sichere Übergänge.",
+            "product": "abschlussprofil-aluminium-schraubbar-7-15-mm",
+            "image": ""
           }
         },
         "kachel_kleber_fixierung": {
@@ -181,11 +87,14 @@
           "settings": {
             "collection": "zubehoer-kleber-fixierung",
             "title": "",
-            "text": "",
+            "text": "Klebstoffe und Fixierungen für Teppich, Vinyl, Linoleum und Designböden.",
             "icon": "kleber",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Hält, was es soll.",
+            "product": "nass-und-haftklebstoff-fuer-elastische-belaege",
+            "image": ""
           }
         },
         "kachel_bauchemie": {
@@ -193,11 +102,14 @@
           "settings": {
             "collection": "zubehoer-bauchemie",
             "title": "",
-            "text": "",
+            "text": "Grundierung, Spachtelmasse und Dichtstoffe für einen ebenen, tragfähigen Boden.",
             "icon": "bauchemie",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Der Untergrund entscheidet.",
+            "product": "spachtelmasse-zementaer-selbstverlaufend",
+            "image": ""
           }
         },
         "kachel_verlegeunterlagen": {
@@ -205,11 +117,14 @@
           "settings": {
             "collection": "zubehoer-verlegeunterlagen",
             "title": "",
-            "text": "",
+            "text": "Trittschall- und Verlegeunterlagen für Laminat, Designboden und Teppich.",
             "icon": "unterlage",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Leiser gehen, länger Freude.",
+            "product": "unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche",
+            "image": ""
           }
         },
         "kachel_reinigungsmittel": {
@@ -217,11 +132,14 @@
           "settings": {
             "collection": "zubehoer-reinigungsmittel",
             "title": "",
-            "text": "",
+            "text": "Reiniger und Pflege, abgestimmt auf Teppich, Laminat und Designböden.",
             "icon": "reinigung",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Gepflegt bleibt schön.",
+            "product": "teppichreiniger-konzentrat",
+            "image": ""
           }
         },
         "kachel_verlegeband": {
@@ -229,11 +147,14 @@
           "settings": {
             "collection": "zubehoer-verlegeband",
             "title": "",
-            "text": "",
+            "text": "Verlegebänder und Trockenklebstoffe für Bahnenware und Sockelleisten.",
             "icon": "band",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Schnell fixiert, ohne Kleberauftrag.",
+            "product": "sockelklebeband-doppelseitig",
+            "image": ""
           }
         },
         "kachel_sauberlauf": {
@@ -241,11 +162,14 @@
           "settings": {
             "collection": "zubehoer-sauberlauf",
             "title": "",
-            "text": "",
+            "text": "Sauberlaufmatten in drei Größen für Eingang und Flur.",
             "icon": "matte",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Schmutz bleibt an der Tür.",
+            "product": "sauberlaufmatte-135-205-cm",
+            "image": ""
           }
         }
       },
@@ -261,10 +185,11 @@
       "settings": {
         "layout": "kacheln",
         "heading": "Zubehör nach Bereich",
-        "intro": "Wählen Sie den Bereich, den Sie brauchen. Jede Kachel führt direkt zu den passenden Produkten.",
+        "intro": "Vom Untergrund bis zur Pflege: Jeder Bereich führt direkt zu den passenden Produkten.",
         "color_scheme": "scheme-1",
-        "padding-block-start": 40,
-        "padding-block-end": 16
+        "padding-block-start": 48,
+        "padding-block-end": 16,
+        "anchor": "bereiche"
       }
     },
     "alle": {
@@ -274,9 +199,9 @@
       "settings": {
         "layout": "chips",
         "heading": "Alle Zubehörprodukte",
-        "intro": "Oder nutzen Sie die Filter, um gezielt nach Art, Material oder Einsatzort zu suchen.",
+        "intro": "Nutzen Sie die Filter, um gezielt nach Art, Material oder Einsatzort zu suchen.",
         "color_scheme": "scheme-1",
-        "padding-block-start": 24,
+        "padding-block-start": 40,
         "padding-block-end": 0
       }
     },
@@ -548,11 +473,12 @@
         "mode": "beliebt",
         "collection": "zubehoer",
         "heading": "Beliebtes Zubehör",
-        "intro": "Was andere Kundinnen und Kunden am häufigsten bestellen.",
+        "intro": "Was Kundinnen und Kunden zu ihrem neuen Boden am häufigsten mitbestellen.",
         "link_text": "Alle ansehen",
         "max_products": 8,
-        "padding-block-start": 32,
-        "padding-block-end": 8
+        "padding-block-start": 40,
+        "padding-block-end": 8,
+        "anchor": "beliebt"
       }
     },
     "neu": {
@@ -678,11 +604,12 @@
         "mode": "neu",
         "collection": "zubehoer",
         "heading": "Neu eingetroffen",
-        "intro": "Die neuesten Ergänzungen im Zubehör-Sortiment.",
+        "intro": "Zuletzt ins Sortiment aufgenommen.",
         "link_text": "",
         "max_products": 8,
-        "padding-block-start": 16,
-        "padding-block-end": 8
+        "padding-block-start": 24,
+        "padding-block-end": 8,
+        "anchor": "neu"
       }
     }
   },

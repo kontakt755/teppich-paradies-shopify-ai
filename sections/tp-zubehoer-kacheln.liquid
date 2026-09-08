@@ -9,8 +9,10 @@
 
   Jede Kachel zeigt auf eine echte Kollektion. Titel und Erklaertext kommen
   aus der Kollektion (Titel, Beschreibung) und lassen sich je Kachel im Editor
-  ueberschreiben. Bilder sind optional: ohne Bild traegt ein Liniensymbol die
-  Kachel, damit der Bereich auch ohne Produktfotos vollstaendig wirkt.
+  ueberschreiben. Das Bild wird in dieser Reihenfolge gesucht: eigenes Bild,
+  Foto eines gewaehlten Produkts, Kollektionsbild, erstes Produktfoto der
+  Kollektion. Produktfotos (Freisteller auf Weiss) werden eingepasst statt
+  beschnitten. Erst ganz ohne Foto traegt ein Liniensymbol die Kachel.
 
   Farben, Schrift, Radien und Buttons kommen ausschliesslich aus den
   Theme-Variablen (color-scheme, --font-*, --style-border-radius-*).
@@ -23,6 +25,7 @@
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
+  {% if section.settings.anchor != blank %}id="{{ section.settings.anchor | handleize }}"{% endif %}
   class="tp-zubehoer section section--page-width color-{{ section.settings.color_scheme }} spacing-style tp-zubehoer--{{ layout }}"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-zubehoer-kacheln-{{ section.id }}"
@@ -30,7 +33,7 @@
   {%- if section.settings.heading != blank or section.settings.intro != blank -%}
     <header class="tp-zubehoer__head">
       {%- if section.settings.heading != blank -%}
-        <h2 class="tp-zubehoer__heading h2">{{ section.settings.heading | escape }}</h2>
+        <h2 class="tp-zubehoer__heading h3">{{ section.settings.heading | escape }}</h2>
       {%- endif -%}
       {%- if section.settings.intro != blank -%}
         <p class="tp-zubehoer__intro">{{ section.settings.intro | escape }}</p>
@@ -73,19 +76,39 @@
             continue
           endif
           assign label = block.settings.title | default: target.title
+          assign benefit = block.settings.benefit
           assign text = block.settings.text | default: target.description | strip_html
-          assign image = block.settings.image | default: target.image
           assign sub_1 = block.settings.sub_collection_1
           assign sub_2 = block.settings.sub_collection_2
+
+          assign image = block.settings.image
+          assign fit = 'cover'
+          if image == blank and block.settings.product != blank
+            assign image = block.settings.product.featured_image
+            assign fit = 'contain'
+          endif
+          if image == blank and target.image != blank
+            assign image = target.image
+            assign fit = 'cover'
+          endif
+          if image == blank
+            for p in target.products limit: 12
+              if p.featured_image != blank
+                assign image = p.featured_image
+                assign fit = 'contain'
+                break
+              endif
+            endfor
+          endif
         -%}
         <li class="tp-zubehoer__item" {{ block.shopify_attributes }}>
           <article class="tp-zubehoer__card">
-            <div class="tp-zubehoer__media">
+            <div class="tp-zubehoer__media tp-zubehoer__media--{{ fit }}">
               {%- if image != blank -%}
                 {{
                   image
                   | image_url: width: 900
-                  | image_tag: loading: 'lazy', widths: '360, 540, 720, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 50vw, 100vw', alt: label
+                  | image_tag: loading: 'lazy', widths: '360, 540, 720, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 50vw, 40vw', alt: label
                 }}
               {%- else -%}
                 <span class="tp-zubehoer__icon" aria-hidden="true">
@@ -94,9 +117,12 @@
               {%- endif -%}
             </div>
             <div class="tp-zubehoer__body">
-              <h3 class="tp-zubehoer__title h4">
+              <h3 class="tp-zubehoer__title">
                 <a class="tp-zubehoer__link" href="{{ target.url }}">{{ label | escape }}</a>
               </h3>
+              {%- if benefit != blank -%}
+                <p class="tp-zubehoer__benefit">{{ benefit | escape }}</p>
+              {%- endif -%}
               {%- if text != blank -%}
                 <p class="tp-zubehoer__text">{{ text | escape }}</p>
               {%- endif -%}
@@ -123,19 +149,23 @@
 </div>
 
 {% stylesheet %}
+  .tp-zubehoer {
+    scroll-margin-top: 96px;
+  }
+
   .tp-zubehoer__head {
     max-width: 52rem;
     margin-block-end: 24px;
   }
 
   .tp-zubehoer__heading {
-    margin: 0 0 8px;
+    margin: 0 0 6px;
   }
 
   .tp-zubehoer__intro {
     margin: 0;
-    color: rgb(var(--color-foreground-rgb) / 0.75);
-    font-size: 1.0625rem;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+    font-size: 1rem;
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -143,7 +173,7 @@
   /* Kacheln */
   .tp-zubehoer__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
     gap: 20px;
     margin: 0;
     padding: 0;
@@ -157,7 +187,7 @@
     height: 100%;
     overflow: hidden;
     background: var(--color-background);
-    border: 1px solid var(--color-border);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.1);
     border-radius: var(--style-border-radius-md);
     transition:
       box-shadow var(--animation-speed, 0.2s) var(--animation-easing, ease),
@@ -168,8 +198,8 @@
   .tp-zubehoer__card:hover,
   .tp-zubehoer__card:focus-within {
     border-color: rgb(var(--color-foreground-rgb) / 0.35);
-    box-shadow: 0 10px 24px rgb(0 0 0 / 0.08);
-    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgb(0 0 0 / 0.09);
+    transform: translateY(-3px);
   }
 
   /* Die ganze Karte ist ueber den Titel-Link anklickbar; Unterlinks liegen
@@ -196,17 +226,34 @@
   }
 
   .tp-zubehoer__media {
-    aspect-ratio: 3 / 2;
+    position: relative;
+    aspect-ratio: 4 / 3;
     display: grid;
     place-items: center;
+    overflow: hidden;
     background: rgb(var(--color-foreground-rgb) / 0.04);
-    border-block-end: 1px solid var(--color-border);
+    border-block-end: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
   }
 
   .tp-zubehoer__media img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform var(--animation-speed, 0.3s) var(--animation-easing, ease);
+  }
+
+  .tp-zubehoer__media--contain {
+    background: #fff;
+  }
+
+  .tp-zubehoer__media--contain img {
+    padding: 9%;
+    object-fit: contain;
+  }
+
+  .tp-zubehoer__card:hover .tp-zubehoer__media img,
+  .tp-zubehoer__card:focus-within .tp-zubehoer__media img {
+    transform: scale(1.04);
   }
 
   .tp-zubehoer__icon {
@@ -223,22 +270,33 @@
   .tp-zubehoer__body {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     flex: 1;
     padding: 18px 20px 20px;
   }
 
   .tp-zubehoer__title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
+    font-weight: 700;
     line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .tp-zubehoer__benefit {
+    margin: 0;
+    color: var(--color-foreground);
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.35;
     text-wrap: balance;
   }
 
   .tp-zubehoer__text {
     margin: 0;
-    color: rgb(var(--color-foreground-rgb) / 0.75);
-    font-size: 0.95rem;
+    color: rgb(var(--color-foreground-rgb) / 0.7);
+    font-size: 0.92rem;
     line-height: 1.5;
     text-wrap: pretty;
   }
@@ -249,7 +307,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     padding: 0;
     list-style: none;
   }
@@ -258,10 +316,10 @@
     display: inline-block;
     padding: 6px 12px;
     color: var(--color-foreground);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     text-decoration: none;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
     border-radius: var(--style-border-radius-pills);
     background: var(--color-background);
   }
@@ -276,18 +334,18 @@
     align-items: center;
     gap: 6px;
     margin-block-start: auto;
-    padding-block-start: 8px;
+    padding-block-start: 10px;
     color: var(--color-foreground);
     font-size: 0.9rem;
     font-weight: 650;
   }
 
-  .tp-zubehoer__card:hover .tp-zubehoer__cta svg {
-    transform: translateX(3px);
-  }
-
   .tp-zubehoer__cta svg {
     transition: transform var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-zubehoer__card:hover .tp-zubehoer__cta svg {
+    transform: translateX(3px);
   }
 
   /* Chips */
@@ -313,7 +371,7 @@
     line-height: 1;
     text-decoration: none;
     white-space: nowrap;
-    border: 1px solid var(--color-border);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
     border-radius: var(--style-border-radius-pills);
     background: var(--color-background);
   }
@@ -330,9 +388,13 @@
   }
 
   @media screen and (max-width: 749px) {
+    .tp-zubehoer__head {
+      margin-block-end: 18px;
+    }
+
     .tp-zubehoer__grid {
       grid-template-columns: 1fr;
-      gap: 14px;
+      gap: 12px;
     }
 
     .tp-zubehoer__card {
@@ -340,12 +402,21 @@
       align-items: stretch;
     }
 
+    .tp-zubehoer__card:hover,
+    .tp-zubehoer__card:focus-within {
+      transform: none;
+    }
+
     .tp-zubehoer__media {
-      flex: 0 0 34%;
+      flex: 0 0 36%;
       aspect-ratio: auto;
-      min-height: 7.5rem;
+      min-height: 8rem;
       border-block-end: 0;
-      border-inline-end: 1px solid var(--color-border);
+      border-inline-end: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    }
+
+    .tp-zubehoer__media--contain img {
+      padding: 10%;
     }
 
     .tp-zubehoer__icon {
@@ -353,19 +424,33 @@
     }
 
     .tp-zubehoer__body {
+      gap: 4px;
       padding: 14px 16px;
     }
 
     .tp-zubehoer__title {
-      font-size: 1.1rem;
+      font-size: 1.08rem;
+    }
+
+    .tp-zubehoer__benefit {
+      font-size: 0.92rem;
     }
 
     .tp-zubehoer__text {
-      font-size: 0.9rem;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      font-size: 0.86rem;
+    }
+
+    .tp-zubehoer__cta {
+      padding-block-start: 6px;
+      font-size: 0.85rem;
     }
 
     .tp-zubehoer__intro {
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
   }
 {% endstylesheet %}
@@ -398,6 +483,11 @@
       "type": "textarea",
       "id": "intro",
       "label": "Einleitung"
+    },
+    {
+      "type": "text",
+      "id": "anchor",
+      "label": "Sprungmarke (z. B. bereiche, fuer Links mit #)"
     },
     {
       "type": "color_scheme",
@@ -442,6 +532,11 @@
           "label": "Titel (leer = Kollektionstitel)"
         },
         {
+          "type": "text",
+          "id": "benefit",
+          "label": "Nutzenzeile"
+        },
+        {
           "type": "textarea",
           "id": "text",
           "label": "Erklaerung (leer = Kollektionsbeschreibung)"
@@ -449,7 +544,12 @@
         {
           "type": "image_picker",
           "id": "image",
-          "label": "Bild (leer = Kollektionsbild oder Symbol)"
+          "label": "Bild (leer = Produktfoto, Kollektionsbild oder Symbol)"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Produkt fuer das Foto (ohne eigenes Bild)"
         },
         {
           "type": "select",

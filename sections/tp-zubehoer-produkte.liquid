@@ -68,6 +68,7 @@
   {%- assign list_items_array = list_items | split: '<!--@list/split-->' -%}
   <div class="section-background color-{{ section.settings.color_scheme }}"></div>
   <div
+    {% if section.settings.anchor != blank %}id="{{ section.settings.anchor | handleize }}"{% endif %}
     class="tp-zubehoer-produkte section section--{{ section.settings.section_width }} color-{{ section.settings.color_scheme }} section-resource-list spacing-style gap-style"
     style="{% render 'spacing-style', settings: section.settings %} {% render 'gap-style', value: section.settings.gap %}"
     data-testid="tp-zubehoer-produkte-{{ section.id }}"
@@ -101,6 +102,10 @@
 {%- endif -%}
 
 {% stylesheet %}
+  .tp-zubehoer-produkte {
+    scroll-margin-top: 96px;
+  }
+
   .tp-zubehoer-produkte__head {
     display: flex;
     align-items: flex-end;
@@ -158,7 +163,7 @@
       "options": [
         { "value": "beliebt", "label": "Beliebt (Reihenfolge der Kollektion)" },
         { "value": "neu", "label": "Neu eingetroffen (nach Anlagedatum)" },
-        { "value": "passend", "label": "Passend dazu (gleiche Unterkategorie, nur Produktseite)" }
+        { "value": "passend", "label": "Passend dazu (gleiche Unterkategorie)" }
       ],
       "default": "beliebt"
     },
@@ -183,6 +188,11 @@
       "id": "link_text",
       "label": "Link zur Kollektion (leer = kein Link)",
       "default": "Alle ansehen"
+    },
+    {
+      "type": "text",
+      "id": "anchor",
+      "label": "Sprungmarke (z. B. beliebt, fuer Links mit #)"
     },
     {
       "type": "range",

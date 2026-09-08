@@ -13,7 +13,7 @@
 
 <div class="tp-service-links-{{ tp_sl_id }}" {{ block.shopify_attributes }}>
   {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster {%- endcomment -%}
-  {%- unless closest.product.tags contains 'zubehoer' -%}
+  {%- unless product.tags contains 'zubehoer' -%}
     <a class="tp-service-links__sample-{{ tp_sl_id }}" href="/pages/kontakt?thema=muster&produkt={{ tp_sl_handle }}">
       Kostenloses Muster anfragen
     </a>

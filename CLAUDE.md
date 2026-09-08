@@ -92,6 +92,26 @@ Drei Gates halten das jetzt:
 - `npm run unmerged:guard` — blockiert Deploys aus einem ungemergten Branch.
 - Pre-Commit-Hook — warnt ab 7 Tagen, blockiert ab 30 Tagen auf ungemergtem Branch.
 
+**7. Ein Produktimport, der ohne geklärte Namensregeln startet, wird zweimal gebaut.**
+Am 2026-09-07 entstanden sieben Linoleum-Produkte mit Lieferantennamen im Titel
+(`Jokalino Vivace`) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
+musste vollständig zurückgebaut werden, obwohl die Regel im jordanshop-Skill stand und die
+zwei fertigen Produkte im Shop (Coloria, Elastium) sie vormachten. **Das nächstliegende
+fertige Produkt abfragen und daran entlangbauen** — eine Query gegen eine Sitzung.
+
+Ebenfalls dort: warum Lieferantenseiten mit `curl` statt Browser gelesen werden,
+warum `productSet` nur für **neue** Produkte taugt (auf bestehenden bricht es an doppelten
+Metafeldern ab und lässt die alte Variantenstruktur stehen), und warum nach jedem
+Schreibvorgang gegengeprüft wird — `userErrors: []` ist kein Beleg, dass das Ergebnis stimmt.
+→ `domains/shopify/produktimport-arbeitsweise.md`
+
+Dieselben Korrekturen stecken im Skill `teppichparadies-jordanshop-import`. Der liegt in einem
+**synchronisierten** Bundle unter `~/Library/Application Support/Claude/…/skills-plugin/` — ein
+Sync von claude.ai setzt ihn zurück. Sicherung und Wiederherstellung:
+`domains/shopify/jordanshop-import-SKILL.md` (der gepatchte Volltext) und
+`domains/shopify/skill-patch.py` (spielt die Patches erneut ein; bricht sauber ab, wenn der
+Skill bereits gepatcht ist oder sich geändert hat).
+
 ## Vor jedem Commit
 
 ```
@@ -382,4 +402,6 @@ npm run qa                  # volle Suite inkl. visuell (nur lokal)
 `AGENTS.md` (zentrale Regeln, zuerst lesen) · `AI_ORCHESTRATOR_MASTER_SPEC.md` ·
 `RISK_MODEL_SPEC.md` · `SHOPIFY_MASTER_ROADMAP.md` · `QUICK_START.md` ·
 `docs/MULTI_MAC_WORKFLOW.md` (Regeln fuer mehrere Rechner, Cloud-Sync-Fallen) ·
-`docs/ai-dashboard/` · `domains/shopify/linoleum-rollenware-template.md` (feste Struktur für Linoleum/Rollenware-Import)
+`docs/ai-dashboard/` · `domains/shopify/linoleum-rollenware-template.md` (feste Struktur für Linoleum/Rollenware-Import) ·
+`domains/shopify/produktimport-arbeitsweise.md` (**vor jedem Lieferantenimport lesen** — Namensregeln,
+Datenerhebung per curl, welche Mutation wofür, Gegenprüfung)

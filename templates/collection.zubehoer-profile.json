@@ -1,164 +1,25 @@
 {
   "sections": {
     "hero": {
-      "type": "section",
-      "name": "Zubehoer Hero",
-      "blocks": {
-        "hero_content": {
-          "type": "group",
-          "name": "Hero Content",
-          "settings": {
-            "content_direction": "column",
-            "vertical_on_mobile": true,
-            "horizontal_alignment": "center",
-            "vertical_alignment": "center",
-            "align_baseline": false,
-            "horizontal_alignment_flex_direction_column": "center",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 16,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": false,
-            "color_scheme": "scheme-5",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "toggle_overlay": true,
-            "overlay_color": "#00000052",
-            "overlay_style": "solid",
-            "gradient_direction": "to top",
-            "link": "",
-            "open_in_new_tab": false,
-            "placeholder": "",
-            "padding-block-start": 56,
-            "padding-block-end": 56,
-            "padding-inline-start": 16,
-            "padding-inline-end": 16
-          },
-          "blocks": {
-            "hero_title": {
-              "type": "text",
-              "name": "Titel",
-              "settings": {
-                "text": "<h1>{{ closest.collection.title }}</h1>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "h1",
-                "font": "var(--font-primary--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_description": {
-              "type": "text",
-              "name": "Beschreibung",
-              "settings": {
-                "text": "<p>{{ closest.collection.description }}</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1.125rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#E8E8E8",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_materials": {
-              "type": "text",
-              "name": "Materialien",
-              "settings": {
-                "text": "<p>✓ Passend zu unseren Bodenbelägen &nbsp;·&nbsp; ✓ Persönliche Fachberatung &nbsp;·&nbsp; ✓ Deutschlandweiter Versand</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "0.9375rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 8,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "hero_title",
-            "hero_description",
-            "hero_materials"
-          ]
-        }
-      },
-      "block_order": [
-        "hero_content"
-      ],
+      "type": "tp-zubehoer-hero",
+      "name": "TP Zubehoer-Hero",
+      "blocks": {},
+      "block_order": [],
       "settings": {
-        "content_direction": "row",
-        "vertical_on_mobile": true,
-        "horizontal_alignment": "center",
-        "vertical_alignment": "center",
-        "align_baseline": false,
-        "horizontal_alignment_flex_direction_column": "center",
-        "vertical_alignment_flex_direction_column": "center",
-        "gap": 12,
-        "section_width": "full",
-        "section_height": "",
-        "section_height_custom": 50,
-        "color_scheme": "scheme-1",
-        "background_media": "none",
-        "video_position": "cover",
-        "background_image_position": "cover",
-        "border": "none",
-        "border_width": 1,
-        "border_opacity": 100,
-        "border_radius": 0,
-        "toggle_overlay": false,
-        "overlay_color": "#00000026",
-        "overlay_style": "solid",
-        "gradient_direction": "to top",
-        "padding-block-start": 0,
-        "padding-block-end": 0
+        "eyebrow": "Zubehör",
+        "heading": "",
+        "text": "",
+        "usp_1": "Passend zu unseren Bodenbelägen",
+        "usp_2": "Persönliche Fachberatung",
+        "usp_3": "Deutschlandweiter Versand",
+        "cta_1_label": "",
+        "cta_1_link": "",
+        "cta_2_label": "",
+        "cta_2_link": "",
+        "image_alt": "",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 48,
+        "padding-block-end": 48
       }
     },
     "kacheln": {
@@ -169,11 +30,14 @@
           "settings": {
             "collection": "zubehoer-uebergangsprofile",
             "title": "",
-            "text": "",
+            "text": "Für den Wechsel zwischen zwei Belägen oder kleine Höhenunterschiede.",
             "icon": "uebergang",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Verbindet Böden, gleicht Höhen aus.",
+            "product": "uebergangsprofil-aluminium-schraubbar-7-15-mm",
+            "image": ""
           }
         },
         "kachel_abschlussprofile": {
@@ -181,11 +45,14 @@
           "settings": {
             "collection": "zubehoer-abschlussprofile",
             "title": "",
-            "text": "",
+            "text": "Für Wandkanten, Türen, Treppenstufen und offene Bodenenden.",
             "icon": "abschluss",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": ""
+            "sub_collection_2": "",
+            "benefit": "Schützt offene Kanten.",
+            "product": "abschlussprofil-aluminium-gebohrt-47-mm",
+            "image": ""
           }
         }
       },
@@ -196,10 +63,11 @@
       "settings": {
         "layout": "kacheln",
         "heading": "Welches Profil brauchen Sie?",
-        "intro": "",
+        "intro": "Übergang zwischen zwei Böden oder Abschluss an einer Kante – beides in Aluminium, schraubbar oder selbstklebend.",
         "color_scheme": "scheme-1",
         "padding-block-start": 40,
-        "padding-block-end": 8
+        "padding-block-end": 8,
+        "anchor": ""
       }
     },
     "chips": {
@@ -304,8 +172,9 @@
         "heading": "Weitere Zubehör-Bereiche",
         "intro": "",
         "color_scheme": "scheme-1",
-        "padding-block-start": 16,
-        "padding-block-end": 0
+        "padding-block-start": 24,
+        "padding-block-end": 0,
+        "anchor": ""
       }
     },
     "main": {
