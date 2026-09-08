@@ -81,6 +81,7 @@
         <span class="tp-rwc-unit">cm</span>
       </div>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.</p>
       {%- comment -%}
         Der Bestand wird bei Rollenware nicht getrackt, Shopify nimmt also jede
         Menge an. Ohne Obergrenze landete ein Vertipper (4000 statt 400)
@@ -492,6 +493,7 @@
   var roomWidthInput = root.querySelector('[data-room-width-input]');
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
+  var errComma = root.querySelector('[data-error-comma]');
   var MAX_LENGTH_CM = 5000;
   var errRoomTooWide = root.querySelector('[data-error-room-too-wide]');
   var errStock = root.querySelector('[data-error-stock]');
@@ -612,7 +614,11 @@
     }
 
     setRoomTooWideHidden(true);
-    return parseInt(lengthInput.value, 10) || 0;
+    // Nachkommastellen aufrunden statt abschneiden: 150.7 wurde vorher still
+    // zu 150, das Stueck waere also kuerzer als gemessen geworden. Aufrunden
+    // ist die fuer den Kunden sichere Richtung.
+    var raw = parseFloat(lengthInput.value) || 0;
+    return raw > 0 ? Math.ceil(raw) : 0;
   }
 
   function calculate() {
@@ -622,7 +628,13 @@
     var tooLong = len > MAX_LENGTH_CM;
     var valid = !blocked && !tooLong && len >= 100;
 
-    errMin.hidden = blocked || tooLong || !(len > 0 && len < 100);
+    // Ein number-Feld liefert bei "150,7" einen leeren Wert - die Seite reagierte
+    // dann gar nicht, ohne zu sagen warum. Das Komma ist in Deutschland die
+    // normale Schreibweise, der Fall trifft also echte Kunden.
+    var badInput = !!(lengthInput.validity && lengthInput.validity.badInput);
+    if (errComma) errComma.hidden = !badInput;
+
+    errMin.hidden = badInput || blocked || tooLong || !(len > 0 && len < 100);
     if (errMax) {
       errMax.textContent = 'Ab ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
       errMax.hidden = !tooLong;
