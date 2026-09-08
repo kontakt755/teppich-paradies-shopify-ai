@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:18:51.620Z",
+  "generated_at": "2026-09-08T14:23:05.699Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 30,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:18:51.620Z",
+    "fetchedAt": "2026-09-08T14:23:05.699Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -62,8 +62,10 @@
         "priority:p2",
         "area:navigation"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 5,
       "nextStep": null,
       "fields": {
@@ -71,7 +73,7 @@
         "fingerprint": "b15831787a8afe13"
       },
       "created_at": "2026-09-03T19:42:46Z",
-      "updated_at": "2026-09-04T05:06:46Z",
+      "updated_at": "2026-09-08T14:22:50Z",
       "closed_at": null
     },
     {
@@ -85,8 +87,10 @@
         "priority:p2",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Langfristiges Growth Model",
       "fields": {
@@ -121,7 +125,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:45Z",
-      "updated_at": "2026-09-03T10:55:22Z",
+      "updated_at": "2026-09-08T14:22:53Z",
       "closed_at": null
     },
     {
@@ -135,8 +139,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Skalierungs-Plan für Monat 2",
       "fields": {
@@ -171,7 +177,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:44Z",
-      "updated_at": "2026-09-03T09:40:44Z",
+      "updated_at": "2026-09-08T14:22:55Z",
       "closed_at": null
     },
     {
@@ -185,8 +191,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Wöchentlicher Report",
       "fields": {
@@ -221,7 +229,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:42Z",
-      "updated_at": "2026-09-03T09:40:42Z",
+      "updated_at": "2026-09-08T14:22:57Z",
       "closed_at": null
     },
     {
@@ -235,8 +243,10 @@
         "priority:p0",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Tägliches Monitoring (erste 7 Tage)",
       "fields": {
@@ -275,7 +285,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:41Z",
-      "updated_at": "2026-09-03T09:40:41Z",
+      "updated_at": "2026-09-08T14:22:59Z",
       "closed_at": null
     },
     {
@@ -289,8 +299,10 @@
         "priority:p1",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "GitHub Issues automatisch synchronisieren",
       "fields": {
@@ -328,7 +340,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:40Z",
-      "updated_at": "2026-09-03T09:40:40Z",
+      "updated_at": "2026-09-08T14:23:01Z",
       "closed_at": null
     },
     {
@@ -342,8 +354,10 @@
         "priority:p2",
         "area:google"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "GA4 Custom Reports erstellen",
       "fields": {
@@ -373,7 +387,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:38Z",
-      "updated_at": "2026-09-03T09:40:38Z",
+      "updated_at": "2026-09-08T14:23:03Z",
       "closed_at": null
     },
     {
