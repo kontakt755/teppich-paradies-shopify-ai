@@ -123,3 +123,27 @@ RAL 9010 = `#F1ECE1`) — kein Fantasieprodukt, nur die Farbfläche selbst. Holz
 Skarven (z. B. „Eiche Classic", „Vintage Oak Grey") bekamen **keine** Farbkachel, weil eine
 flache Fläche eine Holzmaserung falsch darstellen würde — die behalten das
 Döllken-Übersichtsfoto.
+
+## Korrektur 2026-09-08 (Teil 2): falsche Collection + Hauptbild-Regression
+
+Nach der Aktivierung fielen zwei Probleme auf, die vorher unsichtbar waren:
+
+**Falsche Collection.** Alle 7 umbenannten Produkte hingen zusätzlich in der Collection
+„Teppichboden" (`gid://shopify/Collection/688863674702`) — ein Datenfehler von vor dieser
+Sitzung (nie `collectionsToJoin` aufgerufen), der erst durch die Veröffentlichung sichtbar
+wurde, weil die Produkte vorher DRAFT waren. Behoben mit `collectionRemoveProducts` — alle
+7 sind jetzt ausschließlich in „Bodenleisten".
+
+**Hauptbild-Regression.** Beim Ersetzen der jordanshop-Konstruktionszeichnungen durch
+Döllken-Fotos (siehe oben) wurde für die CUBU-Familie ein einziges Foto
+(`Cubu60-offen-fern-1132-lo.png`) allen vier Höhen (40/60/80/100mm) als **Hauptbild**
+zugewiesen, ebenso ein Foto für beide XL-Varianten — dadurch sahen unterschiedliche Produkte
+im Kollektionsraster identisch aus. Die ursprünglichen, je Höhe unterschiedlichen
+jordanshop-Fotos (459897/459899/459901/459903 für 40/60/80/100mm,
+645223/459905 für XL 60/80mm) wurden erneut hochgeladen und als Hauptbild (Position 1)
+gesetzt; das Döllken-Foto bleibt als zweites Bild in der Galerie. Damit sind alle 6 Produkte
+im Kollektionsraster wieder visuell unterscheidbar, ohne die schöneren Fotos zu verlieren.
+
+**Wichtig zur Einordnung:** Beide Punkte waren Shopify-**Produktdaten**-Fehler (Bilder,
+Collection-Zuordnung), keine Theme-Dateien. Sie hätten sich unabhängig davon gezeigt,
+welches Theme gerade live ist — es gibt für Produktdaten keine „Entwurf"-Version.
