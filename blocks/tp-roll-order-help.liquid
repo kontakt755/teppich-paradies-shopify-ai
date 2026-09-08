@@ -1,7 +1,7 @@
 {% doc %}
-  Kurze, rein erklärende Hilfe für Rollenware. Die OPC-Konfiguration und
-  Warenkorblogik werden nicht verändert. Rendering nur bei belegter
-  custom.rollenbreite an Produkt oder echter Variante.
+  Kurze, rein erklärende Hilfe für Rollenware. Ergänzt den Rechner in
+  tp-rollware-rechner.liquid, ohne dessen Logik zu berühren. Rendering nur
+  bei belegter custom.rollenbreite an Produkt oder echter Variante.
 {% enddoc %}
 
 {%- liquid
@@ -29,7 +29,7 @@
 {%- if tp_roh_is_roll -%}
   <div class="tp-roll-order-help" {{ block.shopify_attributes }}>
     <p><strong>So bestellen Sie Rollenware</strong></p>
-    <p>Rollenbreite auswählen und gewünschte Länge in cm eingeben. Der Gesamtpreis wird automatisch berechnet.</p>
+    <p>Gewünschte Länge in cm eingeben – der Gesamtpreis wird automatisch berechnet. Stehen mehrere Rollenbreiten zur Wahl, wählen Sie zuerst die Breite.</p>
     <p>Die Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.</p>
     <p class="tp-roll-order-help__measure-note">Bitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.</p>
   </div>

@@ -32,7 +32,26 @@
   if request.page_type == 'product'
     assign og_type = 'product'
     if product
-      assign product_title = product.title | strip_html | truncate: 45, ''
+      # truncate schnitt hart nach 45 Zeichen ab, auch mitten im Wort: aus
+      # "... Vinylboden von der Rolle" wurde "... Vinylboden von der Ro".
+      # Das stand so im Browser-Tab und im Google-Ergebnis. Deshalb wortweise
+      # aufbauen und abbrechen, bevor die Grenze ueberschritten wird.
+      assign tp_raw_title = product.title | strip_html
+      assign product_title = tp_raw_title
+      if tp_raw_title.size > 45
+        assign product_title = ''
+        assign tp_title_words = tp_raw_title | split: ' '
+        for tp_title_word in tp_title_words
+          assign tp_title_candidate = product_title | append: ' ' | append: tp_title_word | strip
+          if tp_title_candidate.size > 45
+            break
+          endif
+          assign product_title = tp_title_candidate
+        endfor
+        if product_title == blank
+          assign product_title = tp_raw_title | truncate: 45, ''
+        endif
+      endif
       assign optimized_page_title = product_title | append: ' online kaufen | ' | append: shop.name
       assign og_title = optimized_page_title
     endif
