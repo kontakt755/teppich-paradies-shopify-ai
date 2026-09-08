@@ -339,21 +339,27 @@ API-Key ausschließlich über Umgebungsvariable oder Secret-Manager, nie als
 CLI-Argument. Vor dem ersten Aufruf `./api_cost_check.sh` (read-only) und
 `python3 demo_run.py` (offline).
 
-## Dashboard
+## Dashboard (Control Center)
 
-Die Metriken laufen ohne Token im Browser:
+`docs/ai-dashboard/` ist das Control Center (Heute, Arbeit, Freigaben, Bereiche, Insights,
+Aktivität). Konzept und Statusmodell: `docs/control-center/` (Bestandsaufnahme, Architektur,
+Changelog — **vor Änderungen am Dashboard lesen**).
 
 1. `.github/workflows/dashboard-data.yml` läuft bei jedem Issue-Event und stündlich
-2. `scripts/build-dashboard-data.mjs` schreibt `docs/ai-dashboard/issues.json`
-3. `docs/ai-dashboard/index.html` liest **nur** diese JSON-Datei
+2. `scripts/build-dashboard-data.mjs` schreibt `docs/ai-dashboard/issues.json` (Schema 2, ohne Bodies)
+3. Das Frontend liest statisch **nur** diese Datei; lokal (`npm run dashboard`, `:8001`) kommt
+   `/api/*` aus `scripts/dashboard-api.mjs` dazu: Statuswechsel, Owner, Kommentare über `gh`,
+   serverseitig validiert mit denselben Regeln wie im Browser (`docs/ai-dashboard/lib/model.mjs`).
 
-Lokal: `npm run dashboard` (baut die Daten, serviert auf `:8001`). Keinen
-GitHub-API-Aufruf ins Frontend zurückbauen — ohne Token schlägt er fehl, und ein
-Token in Frontend-JS wäre öffentlich.
+Keinen GitHub-API-Aufruf mit Token ins Frontend bauen — ein Token in Frontend-JS wäre öffentlich.
+GitHub Issues bleiben die einzige Aufgabenquelle; kein zweiter Aufgabenspeicher.
 
-Label-Gruppen: `status:*` (eingang, geplant, in-arbeit, review, korrektur,
-blockiert, fertig), `type:*`, `priority:p0`–`p3`, `area:*`.
-`./setup-dashboard.sh` legt sie an.
+Label-Gruppen: `status:*` (eingang, triage, geplant, bereit, in-arbeit, korrektur, review, freigabe,
+blockiert, beobachten, fertig, abgebrochen), `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`.
+`./setup-dashboard.sh` legt sie an. Solange `status:freigabe` fehlt, gilt
+`status:blockiert` + `reviewer:mensch` als „Warten auf Freigabe" (Übergangsregel im Modell).
+
+Tests: `npm run dashboard:test` (Modell, Export, API, Server), Teil von `npm test`.
 
 ## Tests
 
