@@ -141,10 +141,10 @@ Der saubere Weg ist ein Datenlauf, kein Theme-Code:
 
 Dieser Lauf ändert Produktdaten und braucht eine ausdrückliche Freigabe.
 
-## Was bewusst nicht gemacht wurde
+## Datenlauf 2026-09-08 (erledigt)
 
-- Keine Produktdaten verändert: keine Metafelder auf Varianten geschrieben, kein
-  Registereintrag angelegt. Das Theme läuft über den SKU-Fallback sofort; die
-  Befüllung des Registers ist ein separater, freigabepflichtiger Datenlauf.
-- Kein Eingriff in Benachrichtigungs-Templates: Shopify zeigt sichtbare
-  Line-Item-Properties in der Bestellbestätigung von selbst an.
+- Farbregister: 729 Einträge (`tp_farbe`), Handle = `<lieferantenkürzel>-<farbnummer>`, z. B. `tepriva-098`.
+- 78 Produkte / 1204 Varianten: `custom.farbcode` aus dem SKU-Suffix gesetzt und `custom.farbe` verknüpft. Gegengeprüft: 729 Metaobjekte, 1204/1204 Varianten, 5 Stichproben ohne Abweichung.
+- 459 Registereinträge tragen den Hinweis „Farbname offen“ (Optionswert `Farbe NN`). Dort fehlt weiterhin der echte Farbname.
+- Nicht verarbeitet (keine SKU): AW Ganges, Eichenhain, Döllken-Kernsockelleisten (40 Varianten).
+- Kein Eingriff in Benachrichtigungs-Templates: Shopify zeigt sichtbare Line-Item-Properties in der Bestellbestätigung von selbst an.
