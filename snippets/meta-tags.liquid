@@ -51,6 +51,24 @@
         if product_title == blank
           assign product_title = tp_raw_title | truncate: 45, ''
         endif
+        # Ein an der Wortgrenze abgeschnittener Titel endet sonst auf einem
+        # Fuellwort oder Trennzeichen ("Vinylboden von der online kaufen").
+        # Mehrfach, weil am Ende auch zwei Fuellwoerter stehen koennen
+        # ("... Vinylboden von der").
+        assign tp_title_fillers = 'von,der,die,das,den,dem,und,mit,aus,fuer,für,im,in,am,zum,zur,-,–,|' | split: ','
+        for tp_title_pass in (1..3)
+          assign tp_title_last = product_title | split: ' ' | last | downcase
+          unless tp_title_fillers contains tp_title_last
+            break
+          endunless
+          assign tp_title_rest = product_title | split: ' '
+          assign tp_title_keep = tp_title_rest.size | minus: 1
+          assign product_title = ''
+          for tp_title_word in tp_title_rest limit: tp_title_keep
+            assign product_title = product_title | append: ' ' | append: tp_title_word
+          endfor
+          assign product_title = product_title | strip
+        endfor
       endif
       assign optimized_page_title = product_title | append: ' online kaufen | ' | append: shop.name
       assign og_title = optimized_page_title
