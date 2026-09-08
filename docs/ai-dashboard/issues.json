@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:43:13.778Z",
+  "generated_at": "2026-09-08T14:50:10.704Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 32,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:43:13.778Z",
+    "fetchedAt": "2026-09-08T14:50:10.704Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -54,10 +54,10 @@
     {
       "number": 103,
       "title": "Teppichboden-Art (custom.arten) für Rubira, Nordica, Callista, Wovena mit Herstellerbeleg nachtragen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/103",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:content",
         "priority:p2",
         "area:kategorie"
@@ -66,15 +66,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen",
       "fields": {
         "description": "Folgeaufgabe aus #41 (Option 1). Die Unterkategorien Teppichboden werden automatisch über das Metafeld custom.arten (Metaobjekt teppich_art: Hochflor, Kurzflor, Velours, Schlinge, Wolle, Nadelvlies) befüllt. Vier aktive Teppichböden haben keinen Wert und erscheinen nur unter 'Alle Teppichböden': Rubira (Florhöhe 5–8 mm), Nordica (5–8 mm), Callista (bis 4 mm), Wovena (bis 4 mm). Der Wert darf nur mit Beleg aus dem Lieferantendatenblatt gesetzt werden – keine Ableitung aus Bildern (CLAUDE.md, Produktdaten).",
         "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen"
       },
       "created_at": "2026-09-08T14:39:21Z",
-      "updated_at": "2026-09-08T14:43:01Z",
-      "closed_at": null
+      "updated_at": "2026-09-08T14:50:01Z",
+      "closed_at": "2026-09-08T14:50:01Z"
     },
     {
       "number": 102,
