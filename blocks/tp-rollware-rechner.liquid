@@ -538,6 +538,9 @@
 
   function norm(s) { return String(s).toLowerCase().replace(/\s/g, ''); }
   function fmt(n) { return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  // Flaeche im Button: ganze Quadratmeter ohne Nachkommastellen ("7 m²"),
+  // krumme mit zwei ("6,66 m²") - sonst stuende dort "7,00 m²".
+  function fmtArea(n) { return Number.isInteger(n) ? String(n) : fmt(n); }
 
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
@@ -725,7 +728,7 @@
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
       outTotal.textContent = fmt(total) + ' €';
-      cta.textContent = fmt(billedArea) + ' m² in den Warenkorb';
+      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb';
     } else {
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
