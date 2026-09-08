@@ -148,6 +148,19 @@
       endif
     endif
 
+    # Rollenware mit zentimetergenauer Abrechnung fuehrt den Variantenpreis als
+    # Preis pro 0,01 m² (siehe blocks/tp-rollware-rechner.liquid). Fuer die
+    # Anzeige muss daraus wieder ein Quadratmeterpreis werden, sonst stuende
+    # hier 0,28 € statt 28,00 €/m².
+    if product_resource.metafields.custom.preis_pro_001_qm.value == true
+      assign price = price | times: 100
+      assign sqm_price_min = sqm_price_min | times: 100
+      assign sqm_price_max = sqm_price_max | times: 100
+      if compare_at_price != blank
+        assign compare_at_price = compare_at_price | times: 100
+      endif
+    endif
+
     if sqm_price_max > sqm_price_min
       assign show_from_price = true
     endif

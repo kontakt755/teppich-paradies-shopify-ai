@@ -21,6 +21,28 @@
   # wieder zu aktivieren - Markup/JS bleiben dafür erhalten.
   assign tp_rc_room_mode_enabled = false
 
+  # Zentimetergenaue Abrechnung.
+  #
+  # Shopify laesst ohne Plus keinen frei berechneten Preis im Warenkorb zu -
+  # die Zeile ist immer ganze Menge mal Variantenpreis. Solange der
+  # Variantenpreis der Preis pro m² ist, muss die Menge eine ganze Zahl von
+  # Quadratmetern sein, und 6,66 m² lassen sich gar nicht ausdruecken: es wird
+  # aufgerundet und der Kunde zahlt mehr, als er bestellt hat.
+  #
+  # Mit custom.preis_pro_001_qm ist der Variantenpreis stattdessen der Preis
+  # pro 0,01 m². Die Menge ist dann die Flaeche in 0,01-m²-Einheiten, und weil
+  # alle Rollenbreiten volle Meter sind (200/300/400/500 cm), geht das fuer
+  # jede ganze Zentimeterlaenge exakt auf. Dasselbe Muster nutzt bereits
+  # blocks/tp-teppich-wunschmass.liquid.
+  #
+  # Ohne das Metafeld bleibt alles beim alten Verhalten - so laesst sich
+  # Produkt fuer Produkt umstellen, ohne dass ein nicht umgestelltes Produkt
+  # falsche Preise zeigt.
+  assign tp_rc_cm_exact = false
+  if product.metafields.custom.preis_pro_001_qm.value == true
+    assign tp_rc_cm_exact = true
+  endif
+
   for tp_rc_variant in product.variants
     assign tp_rc_variant_title = tp_rc_variant.title | downcase
     unless tp_rc_variant_title contains 'opc-'
@@ -177,6 +199,7 @@
   "options": {{ product.options_with_values | json }},
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
+  "cm_exact": {{ tp_rc_cm_exact | json }},
   "variants": [
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
@@ -425,6 +448,8 @@
   if (!variants.length) return;
 
   var fallbackWidthCm = parseFloat(data.fallback_width_cm) || 0;
+  // true = Variantenpreis ist der Preis pro 0,01 m², Menge in 0,01-m²-Einheiten
+  var cmExact = data.cm_exact === true;
   if (wIdx === -1 && fallbackWidthCm <= 0) return;
 
   var widths;
@@ -677,24 +702,30 @@
 
     if (valid && target && ok) {
       var area = (w * len) / 10000;
-      var rate = parseFloat(target.price) / 100;
-      var qty = Math.ceil(area);
-      var total = qty * rate;
+      // Im cm-genauen Modus ist target.price der Preis pro 0,01 m² in Cent,
+      // sonst der Preis pro m² in Cent.
+      var rate = cmExact ? parseFloat(target.price) : parseFloat(target.price) / 100;
+      // Menge fuer den Warenkorb: 0,01-m²-Einheiten (exakt, da alle
+      // Rollenbreiten volle Meter sind) oder volle Quadratmeter (aufgerundet).
+      var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
+      var billedArea = cmExact ? qty / 100 : qty;
+      var total = billedArea * rate;
 
       formulaArea.textContent = w + ' cm × ' + len + ' cm = ' + fmt(area) + ' m²';
 
-      // Abgerechnet werden volle Quadratmeter. Die Preiszeile muss deshalb mit
-      // der aufgerundeten Menge rechnen, sonst steht dort eine Gleichung, die
-      // nicht aufgeht (2,60 m² x 27,90 EUR/m² = 83,70 EUR statt 72,54 EUR).
-      var isRounded = qty > area + 0.0001;
+      // Nur der aufrundende Modus braucht einen Hinweis - sonst stuende dort
+      // eine Gleichung, die fuer den Kunden nicht aufgeht.
       if (formulaRound) {
-        formulaRound.textContent = 'Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf ' + qty + ' m².';
+        var isRounded = !cmExact && qty > area + 0.0001;
+        if (isRounded) {
+          formulaRound.textContent = 'Rollenware wird in vollen m² zugeschnitten und berechnet – aufgerundet auf ' + qty + ' m².';
+        }
         formulaRound.hidden = !isRounded;
       }
-      formulaPrice.textContent = qty + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
+      formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
       outTotal.textContent = fmt(total) + ' €';
-      cta.textContent = qty + ' m² in den Warenkorb';
+      cta.textContent = fmt(billedArea) + ' m² in den Warenkorb';
     } else {
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
@@ -757,14 +788,19 @@
     var len = getEffectiveLengthCm();
     if (len < 100) return;
 
-    var qty = Math.ceil((w * len) / 10000);
+    var area = (w * len) / 10000;
+    var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
+    var billedArea = cmExact ? qty / 100 : qty;
     var original = cta.textContent;
 
+    // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
+    // (z.B. 666 statt 6,66 m²) mit sehr kleinem Stueckpreis. Die Flaeche
+    // gehoert deshalb lesbar in die Zeileneigenschaften.
     var properties = {
       'Rollenbreite': w + ' cm',
-      'Gewünschte Länge': len + ' cm',
-      'Fläche (aufgerundet)': qty + ' m²'
+      'Gewünschte Länge': len + ' cm'
     };
+    properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
     if (currentMode === 'room') {
       properties['Berechnet aus Raummaß'] =
         (roomLengthInput.value || '').replace('.', ',') + ' × ' +
