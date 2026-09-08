@@ -1,0 +1,68 @@
+name: "Entscheidung / Freigabe"
+description: "Eine Entscheidung oder Freigabe, die ein Mensch treffen muss (Scopes, Budget, Go-live, Veröffentlichung, KI-Ergebnis)."
+title: "[Entscheidung] "
+labels: ["type:entscheidung", "status:blockiert", "reviewer:mensch", "priority:p1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Das Control Center zeigt diese Vorlage unter **Freigaben** mit Optionen, Empfehlung und Frist.
+        Die Überschriften bitte unverändert lassen – sie werden maschinell gelesen.
+        Bis das Label `status:freigabe` angelegt ist, bedeutet `status:blockiert` + `reviewer:mensch` „Warten auf Freigabe".
+  - type: textarea
+    id: frage
+    attributes:
+      label: "Frage"
+      description: "Was genau soll entschieden werden? Ein Satz."
+      placeholder: "Sollen für die Admin-API die Scopes write_products und write_inventory freigegeben werden?"
+    validations:
+      required: true
+  - type: textarea
+    id: kontext
+    attributes:
+      label: "Kontext"
+      description: "Betroffene Aufgabe/Projekt (#Nummer), warum die Entscheidung jetzt nötig ist."
+      placeholder: "Betrifft #34. Ohne die Scopes bleibt der Produktimport manuell."
+  - type: textarea
+    id: optionen
+    attributes:
+      label: "Optionen"
+      description: "1–3 Optionen als nummerierte Liste."
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: empfehlung
+    attributes:
+      label: "Empfehlung"
+      description: "Welche Option und warum."
+    validations:
+      required: true
+  - type: textarea
+    id: auswirkungen
+    attributes:
+      label: "Auswirkungen"
+      description: "Risiken, Aufwand, Kosten, Reversibilität."
+  - type: input
+    id: entscheider
+    attributes:
+      label: "Entscheider"
+      description: "Wer entscheidet? Zusätzlich als Assignee setzen."
+      placeholder: "Ahmet"
+    validations:
+      required: true
+  - type: input
+    id: frist
+    attributes:
+      label: "Frist"
+      description: "Datum als 2026-09-30 oder 30.09.2026."
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        **Ergebnis** wird als Kommentar festgehalten (Control Center: „Freigabe erteilt/abgelehnt/vertagt") und
+        der Status auf *Bereit* bzw. *Abgebrochen* gesetzt. Der Verlauf bleibt unveränderbar im Issue.

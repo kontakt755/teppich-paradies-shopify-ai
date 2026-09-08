@@ -26,6 +26,14 @@ gh label create "status:review" --color 0075ca --description "👀 Review" --for
 gh label create "status:korrektur" --color 0075ca --description "🔨 Korrektur" --force 2>/dev/null
 gh label create "status:blockiert" --color 0075ca --description "🚧 Blockiert" --force 2>/dev/null
 gh label create "status:fertig" --color 28a745 --description "✅ Fertig" --force 2>/dev/null
+# Control-Center-Workflow (docs/control-center/ARCHITEKTUR.md): Triage, Bereit,
+# Warten auf Freigabe, Beobachten, Abgebrochen. Bis diese Labels existieren,
+# gilt "status:blockiert + reviewer:mensch" als Warten auf Freigabe.
+gh label create "status:triage" --color 0075ca --description "🔍 Triage – Angaben fehlen" --force 2>/dev/null
+gh label create "status:bereit" --color 0075ca --description "🟢 Bereit – startbar" --force 2>/dev/null
+gh label create "status:freigabe" --color e83e8c --description "✋ Warten auf Freigabe" --force 2>/dev/null
+gh label create "status:beobachten" --color 6c757d --description "👁 Beobachten – keine Aktion" --force 2>/dev/null
+gh label create "status:abgebrochen" --color 6c757d --description "⛔ Abgebrochen mit Begründung" --force 2>/dev/null
 echo "✅ Status-Labels erstellt"
 
 # Type Labels
@@ -33,6 +41,7 @@ echo "📝 Erstelle Type-Labels..."
 gh label create "type:bug" --color dc3545 --description "🐛 Bug" --force 2>/dev/null
 gh label create "type:verbesserung" --color fd7e14 --description "✨ Feature" --force 2>/dev/null
 gh label create "type:idee" --color 6f42c1 --description "🧠 Idee" --force 2>/dev/null
+gh label create "type:entscheidung" --color e83e8c --description "⚖️ Entscheidung / Freigabe" --force 2>/dev/null
 gh label create "type:ux" --color 17a2b8 --description "🎨 UX" --force 2>/dev/null
 gh label create "type:seo" --color 20c997 --description "📈 SEO" --force 2>/dev/null
 gh label create "type:content" --color ffc107 --description "📝 Content" --force 2>/dev/null
