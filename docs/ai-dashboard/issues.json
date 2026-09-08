@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:28:30.997Z",
+  "generated_at": "2026-09-08T14:31:22.760Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 31,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:28:30.997Z",
+    "fetchedAt": "2026-09-08T14:31:22.760Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -54,10 +54,10 @@
     {
       "number": 102,
       "title": "Freigabe-Issues #42, #41, #38 mit Optionen, Empfehlung und Frist ergänzen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/102",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:content",
         "priority:p2",
         "area:backend"
@@ -66,15 +66,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Abschnitte Frage, Optionen, Empfehlung, Entscheider, Frist in die drei Issues eintragen",
       "fields": {
         "description": "Die drei offenen Freigaben im Control Center haben weder Optionen noch Empfehlung noch Frist. Bitte nach dem Template Entscheidung nachtragen, damit Ahmet entscheiden kann.",
         "nextStep": "Abschnitte Frage, Optionen, Empfehlung, Entscheider, Frist in die drei Issues eintragen"
       },
       "created_at": "2026-09-08T14:25:44Z",
-      "updated_at": "2026-09-08T14:28:13Z",
-      "closed_at": null
+      "updated_at": "2026-09-08T14:31:14Z",
+      "closed_at": "2026-09-08T14:31:14Z"
     },
     {
       "number": 92,
@@ -853,6 +853,7 @@
         "goal": "118 Produkte nur aus Google & YouTube entfernen",
         "nextStep": "Ahmet: Bitte Freigabe erteilen",
         "executor": "Ahmet + beaufsichtigter Worker",
+        "due": "2026-09-15",
         "risk": "HIGH ⚠️ (Human Gate erforderlich)",
         "size": "M (Medium)",
         "acceptance": {
@@ -872,10 +873,20 @@
               "text": "118 Produkte bestätigt"
             }
           ]
-        }
+        },
+        "question": "Ist der Google-Kanalausschluss der Rollenware erledigt und kann SHP-023 geschlossen werden, oder soll Rollenware gezielt zurück in Google & YouTube?",
+        "options": [
+          "Als erledigt bestätigen: Akzeptanzkriterien abhaken, Issue schließen. Merchant-Center-Gegencheck läuft ohnehin in #43 (Phase 1.1).",
+          "Zusätzlich im Merchant Center prüfen, ob alte Rollenware-Angebote noch im Feed hängen (Feed-Sync kann Kanal-Änderungen mit Verzögerung abbilden), erst danach schließen.",
+          "Rollenware bewusst wieder in Google aufnehmen – nur mit kaufbaren Standardmaßen bzw. eigenem Feed (das ist SHP-024 Merchant-Zielarchitektur, nicht dieses Issue)."
+        ],
+        "recommendation": "Option 2: Ergebnis ist erreicht, ein Blick ins Merchant Center (Produkte → Filter „Rolle\"/„Teppichboden\") kostet fünf Minuten und schließt den Fall belastbar. Option 3 bleibt als eigenes Vorhaben in SHP-024.",
+        "impact": "Keine Änderung am Shop nötig. Risiko null bei Option 1/2. Option 3 wäre HIGH (Preisgenauigkeit im Feed) und braucht eine eigene Entscheidungsvorlage.",
+        "context": "Read-back am 2026-09-08 über die Admin API (Vertriebskanal-Verfügbarkeit je Produkt):\n- Kanal „Google & YouTube\" enthält 225 aktive Produkte, ausschließlich Vinyl (84 Klickvinyl, 37 Klebevinyl, 104 ohne Produkttyp, alle Vinyl-Titel).\n- Rollenware ist dort **nicht** enthalten: Teppichboden-Kollektion 58 Produkte, „Vinyl von der Rolle\" 63, Linoleumboden 9 – alle nur in Onlineshop, Shop bzw. Point of Sale. Die Zielzahl 118 aus der Roadmap ist inzwischen durch neue Importe auf 130 gewachsen.\n- Onlineshop-Verfügbarkeit ist überall aktiv.",
+        "decider": "Ahmet"
       },
       "created_at": "2026-09-03T09:24:34Z",
-      "updated_at": "2026-09-08T14:23:16Z",
+      "updated_at": "2026-09-08T14:31:04Z",
       "closed_at": null
     },
     {
@@ -900,6 +911,7 @@
         "goal": "Freigegebene Hoch-/Mittelflor- und ecoVella-Korrektionen anwenden",
         "nextStep": "Ahmet: Bitte freigegebene Produkt-IDs genehmigen",
         "executor": "Codex",
+        "due": "2026-09-15",
         "dependencies": [
           "SHP-014"
         ],
@@ -918,10 +930,20 @@
               "text": "Preise/SKUs unverändert"
             }
           ]
-        }
+        },
+        "question": "Wie werden die Teppichboden-Unterkategorien vollständig und belegt befüllt: Flortyp-Metafeld nachpflegen (automatische Kollektionen) oder manuelle Zuordnung nach dem SHP-015-Bericht?",
+        "options": [
+          "Flortyp für die 9 Produkte nachtragen – nur mit Beleg aus Lieferantendatenblatt oder vorhandener Florhöhen-Klasse (Nadelvlies ist eindeutig; die 7 übrigen brauchen die Herstellerangabe). Sockelleisten aus der Teppichboden-Kollektion entfernen. Preise und SKUs bleiben unberührt.",
+          "Manuelle Zuordnung nach dem alten SHP-015-Bericht (16 Produkte) – widerspricht den automatischen Regeln und wäre bei der nächsten Metafeld-Änderung wieder weg.",
+          "Erst SHP-014 (Florhöhen-Evidenzaudit, #40) vollständig abschließen, dann Option 1 in einem Lauf."
+        ],
+        "recommendation": "Option 1 für die zwei eindeutigen Nadelvlies-Produkte und die Sockelleisten sofort; die 7 offenen Teppichböden erhalten den Flortyp nur mit Quelle, bis dahin bleiben sie in „Alle Teppichböden\" sichtbar. #40 liefert die Belege, muss aber nicht die schnellen Korrekturen blockieren.",
+        "impact": "Sichtbarkeit in Unterkategorien ändert sich für maximal 9 Produkte; Kollektionsregeln, Preise, SKUs und Google-Kanal unverändert. Reversibel (Metafeld leeren). Aufwand S.",
+        "context": "Stand 2026-09-08 (Admin API): Die Unterkollektionen sind **automatisch** über das Produkt-Metafeld „Flortyp\" (shopify.pile-type) befüllt – Hochflor 9, Kurzflor 1, Velours 21, Schlinge 23, Wolle 7, Nadelvlies & Objekt 2. Eine manuelle Produkt-zu-Kollektion-Zuordnung ist damit nicht mehr das Mittel; entscheidend ist der Metafeld-Wert.\nLücken in der Teppichboden-Kollektion (58 Produkte):\n- 9 Teppichböden ohne Flortyp und damit in keiner Unterkategorie: Rubira, Nordica, Callista, Wovena, Tarona, Vivera, Ombra, Fortiva Nadelvlies 200cm, Quadra Nadelvlies Teppichfliese. Bei allen ist die Florhöhen-Klasse (custom.florhohe_klasse) gepflegt, der Flortyp fehlt.\n- 7 Sockelleisten (Feldwin/Skarven) liegen fälschlich in der Teppichboden-Kollektion und gehören nach Bodenleisten.\nDer Bericht automation/reports/SHP-015.md (31.08.) nennt 16 Produkte und zwei Drafts (AW Ganges, Floresta) – er ist durch die automatischen Kollektionen überholt.",
+        "decider": "Ahmet"
       },
       "created_at": "2026-09-03T09:24:32Z",
-      "updated_at": "2026-09-08T14:23:18Z",
+      "updated_at": "2026-09-08T14:31:06Z",
       "closed_at": null
     },
     {
@@ -1034,6 +1056,7 @@
         "goal": "Hauptlink und \"Alle Teppichböden\" minimal umsetzen",
         "nextStep": "Ahmet: Bitte Menüressourcen genehmigen",
         "executor": "Codex",
+        "due": "2026-09-15",
         "dependencies": [
           "SHP-012"
         ],
@@ -1052,10 +1075,20 @@
               "text": "Desktop unverändert"
             }
           ]
-        }
+        },
+        "question": "Welche Menüänderung wird freigegeben: keine (Hauptmenü ist korrekt), Zubehör-Eintrag ergänzen, oder alte Menüs aufräumen?",
+        "options": [
+          "Keine Änderung am Live-Menü, Issue als erledigt schließen; „Zubehör\" kommt mit der Zubehör-Kategorie als eigener Vorgang.",
+          "Zusätzlich aufräumen: „Hauptnavigation 2026\" und „main-menu-preview-v3\" löschen, damit niemand versehentlich das Menü mit dem falschen Hochflor-Link aktiviert. Reversibel nur über Neuanlage – vorher Export der Struktur als Notiz im Issue.",
+          "Jetzt auf „Hauptmenü mit Zubehör\" umstellen – erst sinnvoll, wenn dort die Untereinträge übernommen sind und die Zubehör-Kollektion veröffentlicht ist; heute würde das Mega-Menü seine Unterpunkte verlieren."
+        ],
+        "recommendation": "Option 1 + 2: Live-Menü unverändert lassen (Akzeptanzkriterien erfüllt), die beiden Alt-Menüs löschen. Umstellung auf das Zubehör-Menü als eigene Aufgabe, sobald die Zubehör-Kategorie live ist.",
+        "impact": "Option 1 ohne Risiko. Option 2: kein Effekt auf die Storefront, da die Menüs nicht referenziert sind; Aufwand S. Option 3 HIGH (Navigation der Live-Seite).",
+        "context": "Prüfung 2026-09-08 (Admin API + Theme):\n- Das Theme nutzt das Menü `main-menu` („Hauptmenü\", sections/header-group.json). Dort sind Hauptlink „Teppichboden\" → /collections/teppichboden, „Alle Teppichböden\" und alle sechs Unterkategorien (Hochflor, Kurzflor, Velours, Schlinge, Wolle, Nadelvlies & Objekt) mit korrekten Pfaden hinterlegt. Linoleum und Bodenleisten sind vorhanden. Das Ziel aus SHP-013 („Hauptlink und Alle Teppichböden minimal umsetzen\") ist damit im Live-Menü bereits erfüllt.\n- Zwei weitere Menüs liegen ungenutzt im Admin: „Hauptnavigation 2026\" (Hochflor zeigt fälschlich auf /collections/teppichboden, kein Linoleum) und „Hauptmenü\" (Handle main-menu-preview-v3, Duplikat). Ein drittes, „Hauptmenü mit Zubehör\" (main-menu-zubehoer), ist flach ohne Untereinträge vorbereitet.\n- Die Zubehör-Kategorie entsteht gerade auf dem Branch feature/zubehoer-kategorie; ein Menüpunkt „Zubehör\" fehlt im Live-Menü noch.\n- Mobile Zielpfade: identisch mit Desktop, weil das Theme dasselbe Menü im Drawer rendert; Prüfung im Browser nach jeder Menüänderung nötig (#39 Audit).",
+        "decider": "Ahmet"
       },
       "created_at": "2026-09-03T09:24:27Z",
-      "updated_at": "2026-09-08T14:23:23Z",
+      "updated_at": "2026-09-08T14:31:08Z",
       "closed_at": null
     },
     {
