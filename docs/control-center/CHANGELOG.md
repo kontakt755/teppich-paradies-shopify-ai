@@ -122,3 +122,11 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   225 = Shopify-Kanal 225, Suchen ohne Rollenware-Treffer.
 - **Befund zur Vorlage:** Unterkategorien laufen über `custom.arten`, nicht `shopify.pile-type` – in #41
   korrigiert protokolliert.
+
+## 2026-09-08 · #103 Teppichboden-Art mit Herstellerbeleg
+
+- **Geändert (Shopify):** `custom.arten` = [Schlinge, Wolle] für Rubira, Nordica, Callista, Wovena; Beleg sind
+  die JOKA-Datenblätter (TTD_WOOL-030-*.PDF, 01|2026) von jordanshop.de. Datenblatt-Polhöhen decken sich mit den
+  vorhandenen Florhöhen-Klassen. Vorgehen in der Memory-Notiz „Jordan-Datenblätter lesen" festgehalten.
+- **Getestet:** Read-back der Metafelder; Rubira sofort in Schlinge + Wolle, restliche folgen mit der
+  asynchronen Neuberechnung der automatischen Kollektionen.
