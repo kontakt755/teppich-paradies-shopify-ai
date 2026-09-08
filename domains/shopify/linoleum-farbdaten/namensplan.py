@@ -22,7 +22,11 @@ MARKEN = {
 # Farbnummer -> deutscher Name. Reihenfolge im dict = Sortierung hell -> dunkel.
 FARBEN = {
  'jokalino': {
-   '1413': 'Sand Hell',        '1007': 'Sand Hell Warm',  '1001': 'Sand Mittel',
+   # 1413 und 1007 haben denselben Farbwert (#d9c8ad / #d8c7ad). Der Unterschied
+   # liegt in der Oberflaeche: 1413 ist nahezu uniform (Streuung 4-6), 1007 ist
+   # kraeftig meliert (Streuung 11-14). Deshalb "Meliert" statt einer erfundenen
+   # Helligkeitsstufe - das sieht der Kunde auf dem Bild.
+   '1413': 'Sand Hell',        '1007': 'Sand Hell Meliert', '1001': 'Sand Mittel',
    '1005': 'Sand Gold',        '1003': 'Sand Warm',       '1014': 'Gelb Hell',
    '1018': 'Gelb Grün',        '1002': 'Grau Hell',       '1015': 'Grau Warm',
    '1019': 'Grau Mittel',      '1022': 'Grau Dunkel',     '1017': 'Grau Oliv',

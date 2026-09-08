@@ -35,12 +35,20 @@ Zweiteilig: **Grundton + Stufe**, wie bei Elastium.
 
 - Grundtöne: Creme · Sand · Beige · Ocker · Taupe · Braun · Gelb · Oliv · Grün · Blau · Grau
 - Stufen/Qualifizierer: Hell · Mittel · Dunkel · Warm · Gold · Silber · Anthrazit ·
-  Oliv · Grün · Braun · Blau · Grau · Rot
+  Oliv · Grün · Braun · Blau · Grau · Rot · Meliert
 
 Innerhalb eines Produkts sind alle Werte eindeutig — Shopify lehnt Dubletten ab.
 Bei Gleichstand trennt eine dritte Stufe (`Grau Hell` / `Grau Warm` /
 `Grau Mittel` / `Grau Dunkel` / `Grau Oliv` / `Grau Braun` / `Grau Anthrazit`
 bei Marenta, wo sieben Grautöne nebeneinander liegen).
+
+**Wenn der Farbwert nicht mehr trennt, trennt die Oberfläche.** Marenta `1413`
+und `1007` messen identisch (`#d9c8ad` / `#d8c7ad`), sehen aber verschieden aus:
+`1413` ist nahezu uniform (Streuung 4–6), `1007` kräftig meliert (Streuung
+11–14, graue und rostfarbene Adern). Deshalb `Sand Hell` und `Sand Hell Meliert`
+— kein erfundener Helligkeitsunterschied, sondern das, was der Kunde auf dem
+Bild sieht. Der Median allein sieht das nicht; erst die Standardabweichung
+über dem Bildkern macht es sichtbar.
 
 ## Was am Klassifikator gefixt wurde (`colors.py`)
 
