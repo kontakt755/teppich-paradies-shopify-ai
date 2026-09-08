@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:40:15.146Z",
+  "generated_at": "2026-09-08T14:41:16.434Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 32,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:40:15.146Z",
+    "fetchedAt": "2026-09-08T14:41:16.434Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -859,10 +859,10 @@
     {
       "number": 42,
       "title": "[SHP-023] Google-Kanalausschluss Rollenware",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/42",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:verbesserung",
         "priority:p0",
         "area:google",
@@ -872,7 +872,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Ahmet: Bitte Freigabe erteilen",
       "fields": {
         "goal": "118 Produkte nur aus Google & YouTube entfernen",
@@ -911,8 +911,8 @@
         "decider": "Ahmet"
       },
       "created_at": "2026-09-03T09:24:34Z",
-      "updated_at": "2026-09-08T14:37:19Z",
-      "closed_at": null
+      "updated_at": "2026-09-08T14:41:06Z",
+      "closed_at": "2026-09-08T14:41:06Z"
     },
     {
       "number": 41,
