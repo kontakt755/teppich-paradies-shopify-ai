@@ -81,7 +81,7 @@ def marke(supplier_title):
 CORAL_FARBEN = {"racing green": "Dunkelgrün", "olive green": "Olivgrün", "whisper grey": "Hellgrau",
     "hurricane grey": "Sturmgrau", "vintage red": "Weinrot", "sandy beige": "Sandbeige", "black": "Schwarz",
     "anthracite": "Anthrazit", "dark brown": "Dunkelbraun", "charcoal": "Kohlegrau", "navy": "Marineblau",
-    "moss green": "Moosgrün", "stone grey": "Steingrau", "ash grey": "Aschgrau", "cocoa": "Kakaobraun"}
+    "moss green": "Moosgrün", "asphalt grey": "Asphaltgrau", "charcoal grey": "Anthrazit", "fossil grey": "Steingrau", "glacier blue": "Gletscherblau", "granite brown": "Granitbraun", "stratos blue": "Stahlblau", "vulcan black": "Schwarz", "stone grey": "Steingrau", "ash grey": "Aschgrau", "cocoa": "Kakaobraun"}
 
 
 def parse_label(label, cat):
