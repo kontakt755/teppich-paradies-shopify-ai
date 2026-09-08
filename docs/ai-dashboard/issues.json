@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:42:03.103Z",
+  "generated_at": "2026-09-08T14:43:13.778Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 32,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:42:03.103Z",
+    "fetchedAt": "2026-09-08T14:43:13.778Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -57,7 +57,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/103",
       "labels": [
-        "status:eingang",
+        "status:in-arbeit",
         "type:content",
         "priority:p2",
         "area:kategorie"
@@ -66,14 +66,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen",
       "fields": {
         "description": "Folgeaufgabe aus #41 (Option 1). Die Unterkategorien Teppichboden werden automatisch über das Metafeld custom.arten (Metaobjekt teppich_art: Hochflor, Kurzflor, Velours, Schlinge, Wolle, Nadelvlies) befüllt. Vier aktive Teppichböden haben keinen Wert und erscheinen nur unter 'Alle Teppichböden': Rubira (Florhöhe 5–8 mm), Nordica (5–8 mm), Callista (bis 4 mm), Wovena (bis 4 mm). Der Wert darf nur mit Beleg aus dem Lieferantendatenblatt gesetzt werden – keine Ableitung aus Bildern (CLAUDE.md, Produktdaten).",
         "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen"
       },
       "created_at": "2026-09-08T14:39:21Z",
-      "updated_at": "2026-09-08T14:39:22Z",
+      "updated_at": "2026-09-08T14:43:01Z",
       "closed_at": null
     },
     {
