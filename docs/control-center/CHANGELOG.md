@@ -109,3 +109,5 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
   abgelehnt (Owner vorhanden, aber keine Bestätigung der Akzeptanzkriterien).
 - **Risiken/Annahmen:** Automatik setzt nie Priorität, Owner oder schließt Issues; Typ/Bereich sind
   Vorschläge. Bei 30-Minuten-Cron ca. 600 Actions-Minuten/Monat (Free-Kontingent 2000).
+- **Live-Nachweis:** PR #101 gemergt; `npm run task -- create` legte #102 an (Owner kontakt755, Eingang);
+  Workflow `task-automation` lief für das Issue-Event und das PR-Event erfolgreich.
