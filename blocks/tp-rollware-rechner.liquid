@@ -527,6 +527,16 @@
       var cur = variants.filter(function (v) { return String(v.id) === String(f.value); })[0];
       if (cur) return cur.options.slice();
     }
+    // Auf Rollenware-Seiten gibt es kein /cart/add-Formular. Die Farbauswahl
+    // meldet ihre Wahl deshalb nur ueber ?variant= in der URL. Ohne diese
+    // Abfrage blieb hier immer die beim Seitenaufruf gerenderte Variante
+    // stehen - der Kunde konnte eine Farbe waehlen und bekam trotzdem die
+    // zuerst geladene in den Warenkorb.
+    var fromUrl = new URLSearchParams(window.location.search).get('variant');
+    if (fromUrl) {
+      var byUrl = variants.filter(function (v) { return String(v.id) === String(fromUrl); })[0];
+      if (byUrl) return byUrl.options.slice();
+    }
     if (data.selected_options && data.selected_options.length) {
       return data.selected_options.slice();
     }
@@ -731,6 +741,14 @@
   document.addEventListener('change', function (e) {
     var form = e.target.closest && e.target.closest('form[action*="/cart/add"]');
     if (form) setTimeout(calculate, 100);
+
+    // Farbwechsel: die Swatch-Auswahl schreibt ihre Variante in die URL, das
+    // laeuft ohne Neuladen. Ohne dieses Nachrechnen bliebe der Rechner auf der
+    // vorherigen Variante stehen - inklusive deren Preis.
+    var swatch = e.target;
+    if (swatch && swatch.name && swatch.name.indexOf('color-swatch') === 0) {
+      setTimeout(calculate, 120);
+    }
   });
 
   cta.addEventListener('click', function () {

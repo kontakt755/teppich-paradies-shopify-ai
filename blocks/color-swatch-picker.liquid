@@ -245,6 +245,14 @@
       const colorOptionName = {{ color_option.name | json }};
       const colorOptionIndex = {{ color_option_index }};
       const productUrl = {{ product.url | json }};
+      // Letzter Rueckfall fuer die aktuellen Optionswerte. Auf Rollenware-
+      // Seiten gibt es weder native Optionsfelder noch ein /cart/add-Formular
+      // (der Rollenware-Rechner ersetzt es) und beim ersten Aufruf auch kein
+      // ?variant= in der URL. Ohne diesen Wert lieferte getCurrentOptionValues
+      // fuer jede Option null, findMatchingVariant fand nie eine Variante und
+      // der Change-Handler brach ab: Die Farbe liess sich sichtbar anklicken,
+      // bestellt wurde aber weiter die zuerst geladene.
+      const initialOptions = {{ selected_variant.options | json }};
 
       function getNativeOptionInputs(optionName) {
         const radioInputs = Array.from(
@@ -277,7 +285,8 @@
               return String(variant.id) === String(currentVariantId);
             });
 
-            return currentVariant ? currentVariant.options[index] : null;
+            if (currentVariant) return currentVariant.options[index];
+            return initialOptions && initialOptions[index] != null ? initialOptions[index] : null;
           }
 
           const firstInput = nativeInputs[0];
