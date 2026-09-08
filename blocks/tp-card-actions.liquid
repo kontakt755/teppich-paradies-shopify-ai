@@ -80,12 +80,15 @@
     >
       Vergleichen
     </button>
-    <a
-      class="tp-card-actions__sample-{{ tp_ca_id }}"
-      href="/pages/kontakt?thema=muster&produkt={{ tp_ca_product.handle | url_encode }}"
-    >
-      Muster
-    </a>
+    {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
+    {%- unless tp_ca_product.tags contains 'zubehoer' -%}
+      <a
+        class="tp-card-actions__sample-{{ tp_ca_id }}"
+        href="/pages/kontakt?thema=muster&produkt={{ tp_ca_product.handle | url_encode }}"
+      >
+        Muster
+      </a>
+    {%- endunless -%}
   </div>
 
   <style>

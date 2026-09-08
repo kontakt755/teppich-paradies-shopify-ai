@@ -97,8 +97,6 @@ def specs_for(p):
     v0 = r["variants"][0]
     a = v0.get("attrs", {})
     rows = [("Eignung", EIGNUNG[p["kategorie"]])]
-    if p["marke"]:
-        rows.append(("Hersteller", p["marke"]))
     if p["option_names"]:
         rows.append(("Varianten", f"{len(p['variants'])} ({', '.join(p['option_names'])})"))
     verbrauch = a.get("Ca.-Verbrauch")
@@ -197,8 +195,6 @@ def build():
                     "bauchemie": "bauchemie", "unterlagen": "verlege-und-daemmunterlagen", "reinigung": "reinigungsmittel",
                     "verlegeband": "verlegeband", "sauberlauf": "sauberlauf"}[cat]
         tags = ["zubehoer", f"art: {art_slug}"]
-        if p["marke"]:
-            tags.append(f"marke: {p['marke'].lower()}")
         seo_title = f"{title} | TeppichParadies"
         seo_desc = SEO_DESC[cat].format(t=title)
         mfs = [
@@ -207,8 +203,6 @@ def build():
             {"namespace": "global", "key": "title_tag", "type": "string", "value": seo_title},
             {"namespace": "global", "key": "description_tag", "type": "string", "value": seo_desc},
         ]
-        if p["marke"]:
-            mfs.append({"namespace": "custom", "key": "marke", "type": "single_line_text_field", "value": p["marke"]})
         inputs.append({
             "title": title, "handle": p["handle"], "vendor": "TeppichParadies", "productType": p["arten_label"],
             "status": "ACTIVE", "templateSuffix": "zubehoer", "tags": tags,
