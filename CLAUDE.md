@@ -361,6 +361,10 @@ blockiert, beobachten, fertig, abgebrochen), `type:*`, `priority:p0`–`p3`, `ar
 
 Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation), Teil von `npm test`.
 
+`docs/ai-dashboard/issues.json` gehört dem Bot: lokal wird sie von `npm run task` und `npm run dashboard`
+neu erzeugt, aber **nicht mitcommitten** (`git add -A` vermeiden, Datei vor dem Commit mit `git checkout --
+docs/ai-dashboard/issues.json` zurücksetzen) — sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
+
 **Aufgaben pflegen sich über Ereignisse selbst** (`.github/workflows/task-automation.yml`,
 `scripts/task-automation.mjs`): neues Issue → Eingang mit Typ/Bereich-Vorschlag, PR referenziert
 `#n` → In Arbeit, PR gemergt → Review, Issue geschlossen → Erledigt. Prioritäten und Owner werden
