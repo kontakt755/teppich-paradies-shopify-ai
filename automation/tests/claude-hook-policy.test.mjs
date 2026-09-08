@@ -24,3 +24,17 @@ test('hook context does not repeat the original prompt and requires independent 
 test('high-risk result injects a human gate instead of an autonomous plan', () => {
   assert.match(buildClaudeHookContext({ status: 'HUMAN_GATE' }), /HIGH-Risk/);
 });
+
+test('list fragments of a multi-line brief do not trigger a pre-analysis each', () => {
+  for (const prompt of ['* Formatierungen', '- kleine Änderungen', 'Haiku soll NICHT mehr das Standardmodell für:', 'Meine verfügbaren Modelle / Accounts:']) {
+    assert.equal(shouldRouteClaudePrompt(prompt), false, prompt);
+  }
+  assert.equal(shouldRouteClaudePrompt('* Preise aller Produkte ändern'), true, 'geschuetzte Absicht bleibt sichtbar');
+});
+
+test('hook context names the matrix routing and skips the brief for class A', () => {
+  const plan = { primary: { provider: 'CLAUDE', model: 'haiku', effort: 'low' }, reviewer: null, expectedModelCalls: [1, 1], haikuAllowed: 'YES' };
+  const context = buildClaudeHookContext({ status: 'READY_NO_BRIEF', routing: { taskClass: 'A', plan } });
+  assert.match(context, /Klasse A → Implementer claude:haiku\/low, Review -/);
+  assert.doesNotMatch(context, /Codex-Prüfung/);
+});

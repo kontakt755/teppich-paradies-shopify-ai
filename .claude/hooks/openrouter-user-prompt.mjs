@@ -4,6 +4,8 @@ import { prepareClaudeBridge } from '../../automation/core/claude-bridge.mjs';
 import { buildClaudeHookContext, shouldRouteClaudePrompt } from '../../automation/core/claude-hook-policy.mjs';
 import { loadLocalOpenRouterEnvironment } from '../../automation/core/local-openrouter-env.mjs';
 import { clearClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
+import { classifyTask } from '../../workflow/router.mjs';
+import { buildModelPlan } from '../../workflow/model-matrix.mjs';
 
 async function stdinJson() {
   let input = '';
@@ -24,6 +26,19 @@ try {
   const projectDir = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
   loadLocalOpenRouterEnvironment({ filePath: path.join(projectDir, '.env.local') });
   const digest = crypto.createHash('sha256').update(`${input.session_id ?? 'session'}\0${prompt}`).digest('hex').slice(0, 12);
+  // Klasse und Modellplan aus der einen Quelle (workflow/model-matrix.mjs). Der
+  // Stop-Hook liest den Plan spaeter aus dem Session-Zustand, damit Review-
+  // Modell und Effort zur Klasse passen und Klasse A kein Modell-Review bekommt.
+  const taskClass = classifyTask(prompt);
+  const plan = buildModelPlan(taskClass);
+  const routing = { taskClass, plan };
+  if (taskClass === 'A') {
+    // Trivial/deterministisch: keine Voranalyse durch ein Drittmodell, kein
+    // Review-Zyklus. Ein Modell, eine deterministische Pruefung.
+    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
+    printContext(buildClaudeHookContext({ status: 'READY_NO_BRIEF', routing }));
+    process.exit(0);
+  }
   // Vorher hart auf 256 codiert und ignorierte damit OPENROUTER_MAX_OUTPUT_TOKENS
   // aus .env.local vollstaendig - fast jede Vorabanalyse wurde deshalb mitten im
   // Satz abgeschnitten (stopReason max_tokens/length in .router/*.jsonl).
@@ -33,12 +48,12 @@ try {
     writeClaudeSessionState({
       sessionId: input.session_id,
       projectDir,
-      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW' },
+      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan },
     });
   } else {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
   }
-  printContext(buildClaudeHookContext(result));
+  printContext(buildClaudeHookContext({ ...result, routing }));
 } catch {
   process.exit(0);
 }

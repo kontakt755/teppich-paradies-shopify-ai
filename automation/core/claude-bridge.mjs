@@ -18,7 +18,9 @@ const DESTRUCTIVE_TERMS = /(?<![\p{L}\p{N}])(?:(?:lösch|loesch|delete|entfern|r
 // Git-Schreibvorgaenge sind laut AGENTS.md und risk-map immer ein Human Gate:
 // sie verlassen die Arbeitskopie und sind nicht mehr lokal zuruecknehmbar.
 const GIT_WRITE_TERMS = term('merge|rebase|force[- ]?push|push|commit|cherry[- ]?pick|revert');
-const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
+// "beheben" und "korrigieren" fehlten: "Bug beheben" lief dadurch als ANALYSIS mit
+// Haiku statt als Implementierung mit dem Matrix-Modell.
+const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
 // Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
 // Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
 // und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts

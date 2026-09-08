@@ -7,12 +7,18 @@ const MODEL_CLASS_RANK = new Map([
   [MODEL_CLASS.PREMIUM, 3],
 ]);
 
+// Modelle sind belegte Aliasse/Slugs (claude --help, ~/.codex/models_cache.json),
+// keine Platzhalter. Beide Provider gelten als PREMIUM, damit ein unabhaengiges
+// Review auch fuer STANDARD/PREMIUM-Tasks waehlbar ist; vorher war Codex als
+// LIGHT eingetragen und damit fuer jedes Review ueber LIGHT ausgeschlossen.
+// costRank 10 fuer Codex haelt das knappere ChatGPT-Plus-Kontingent aus
+// Rollen heraus, die Claude (Max 20x) genauso gut besetzt.
 export const DEFAULT_PROVIDERS = Object.freeze([
   {
     id: 'CLAUDE_CODE',
     roles: [ROLE.IMPLEMENTER, ROLE.REQUIREMENTS_CHALLENGER, ROLE.ARCHITECT, ROLE.REVIEWER, ROLE.SECURITY_REVIEWER, ROLE.VISUAL_REVIEWER],
-    modelClass: MODEL_CLASS.STANDARD,
-    model: 'claude-code-pro',
+    modelClass: MODEL_CLASS.PREMIUM,
+    model: 'fable',
     gateway: 'CLAUDE_CODE_CLI',
     upstreamProvider: 'ANTHROPIC',
     available: true,
@@ -23,10 +29,10 @@ export const DEFAULT_PROVIDERS = Object.freeze([
   {
     id: 'CODEX',
     roles: [ROLE.SECURITY_REVIEWER, ROLE.REVIEWER],
-    modelClass: MODEL_CLASS.LIGHT,
-    model: 'codex-base',
+    modelClass: MODEL_CLASS.PREMIUM,
+    model: 'gpt-6-astra',
     gateway: 'CODEX_CLI',
-    upstreamProvider: 'ANTHROPIC',
+    upstreamProvider: 'OPENAI',
     available: true,
     costRank: 10,
     sampleCount: 0,

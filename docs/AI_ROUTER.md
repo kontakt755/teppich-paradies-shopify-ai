@@ -31,6 +31,35 @@ Der Router leitet nicht mehr alle Regeln aus einer einzigen Task-Klasse ab:
 
 Risikowörter allein eskalieren nicht. „Preislogik analysieren“, „Live-Shop prüfen“ oder „irreversible Änderungen verhindern“ sind keine geschützten Aktionen. Erst ein eindeutiger Änderungsauftrag wie „SKU ändern“, „Produkte in Shopify schreiben“ oder „Theme live veröffentlichen“ erzeugt Klasse D und einen Protected Action Marker.
 
+## Modellmatrix (seit 2026-09-08)
+
+Quelle: `workflow/model-matrix.mjs`. Prioritäten: Qualität, Zuverlässigkeit, keine wiederholten Fehler, Architektur, Cross-Provider-Review, Geschwindigkeit, Kosten. Claude Max 20x trägt die Hauptlast; ChatGPT Plus (Codex) nur dort, wo ein unabhängiger Gegencheck Mehrwert hat.
+
+| Klasse | Primary | Reviewer | Zweitblick | Corrector | Final Check | Haiku erlaubt? | Modellaufrufe |
+|---|---|---|---|---|---|---|---|
+| A trivial | claude `haiku` low | – | – | = Primary | deterministisch | ja | 1 |
+| B normal | claude `fable` medium | codex `gpt-5.6-sol` medium | – | = Primary | deterministisch | nur wenn trivial (dann A) | 2–3 |
+| C komplex | claude `fable` high | codex `gpt-6-astra` high | codex `gpt-5.6-sol` medium | = Primary | Reviewer, dann deterministisch | nein | 3–5 |
+| D kritisch | claude `opus` high | codex `gpt-6-astra` xhigh | codex `gpt-5.6-sol` high, Security-Review claude `fable` high | = Primary | Reviewer, dann deterministisch | nur Hilfsaufgaben | 5–7 |
+
+| Rolle | bevorzugt | Alternative | Fallback |
+|---|---|---|---|
+| Requirements Challenger | claude opus high | codex gpt-6-astra high | claude fable high |
+| Architect | claude opus xhigh | claude fable xhigh | codex gpt-6-astra high |
+| Implementer | claude fable high | claude opus high | codex gpt-6-astra high |
+| Debugger | claude opus xhigh | claude fable xhigh | codex gpt-6-astra xhigh |
+| Reviewer | codex gpt-6-astra high | codex gpt-5.6-sol medium | claude opus high (nie das Autor-Modell) |
+| Corrector | = Implementer | claude opus high | codex gpt-6-astra high |
+| Security Reviewer | codex gpt-6-astra xhigh | claude fable high | claude opus high |
+| Visual Reviewer | claude fable medium | claude sonnet medium | `npm run qa` |
+| Deterministic QA | `npm test` / Guards | claude haiku low | – |
+
+**Eskalation** (`escalateStep`): 1. Fehlschlag → Effort eine Stufe höher, 2. → Peer-Modell (fable ↔ opus) high, 3. → codex gpt-6-astra high, danach Human Gate. Derselbe Befund ein zweites Mal (`failureSignature`) überspringt eine Stufe. Haiku scheitert → Aufgabe wird als B behandelt.
+
+**Rate Limit / Kontingent** (`rateLimitFallback`): Claude-Abo → API-Backup (nur mit `ANTHROPIC_FALLBACK_API_KEY`), sonst Codex auf gleichem Niveau. Codex → Claude-Review durch ein anderes Modell als der Autor.
+
+**Rollback:** `TP_ROUTING_STRATEGY=legacy` in `.env.local` stellt das Verhalten vor der Matrix her (kein `--model`, Effort medium, Codex-Konfig-Default). **Belege:** jeder Aufruf steht mit `requestedModel`, `effort`, `taskClass` und `escalation` in `.router/ai-usage.jsonl`; `npm run router:status` zeigt, ob Stop-Hook-Reviews tatsächlich Ergebnisse liefern.
+
 ## Reviews und sensible Dateien
 
 Normale Theme-Dateien in `assets/`, `sections/`, `snippets/`, `templates/` und `layout/` gelten nicht pauschal als sensibel. Review wird empfohlen für komplexe Aufgaben und Änderungen an Workflow-/CI-/Import-/Write-Logik, `settings_data.json`, `AGENTS.md` und den Workflow-Regeln.

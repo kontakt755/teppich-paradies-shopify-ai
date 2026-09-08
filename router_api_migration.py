@@ -24,6 +24,7 @@ class RouterConfig:
     haiku_model: str = field(default_factory=lambda: os.getenv("CLAUDE_HAIKU_MODEL", "claude-haiku-4-5-20251001"))
     sonnet_model: str = field(default_factory=lambda: os.getenv("CLAUDE_SONNET_MODEL", "claude-sonnet-5"))
     opus_model: str = field(default_factory=lambda: os.getenv("CLAUDE_OPUS_MODEL", "claude-opus-5"))
+    fable_model: str = field(default_factory=lambda: os.getenv("CLAUDE_FABLE_MODEL", "claude-fable-5-1"))
     max_tokens: int = field(default_factory=lambda: int(os.getenv("CLAUDE_MAX_TOKENS", "2048")))
     max_attempts: int = field(default_factory=lambda: int(os.getenv("CLAUDE_MAX_ATTEMPTS", "2")))
     retry_backoff_seconds: float = field(default_factory=lambda: float(os.getenv("CLAUDE_RETRY_BACKOFF_SECONDS", "0.5")))
@@ -39,12 +40,14 @@ class RouterConfig:
             raise ValueError("CLAUDE_MAX_ATTEMPTS must be at least one")
 
     def model_for(self, task_class: str, *, escalate_to_opus: bool = False) -> Optional[str]:
+        # Spiegelt workflow/model-matrix.mjs (Routing-Strategie 2026-09-08):
+        # Haiku nur fuer Klasse A, B/C Fable, D Opus; --opus hebt B/C auf Opus.
         if task_class == "A":
-            return None
-        if task_class == "B":
-            return self.haiku_model
-        if task_class in {"C", "D"}:
-            return self.opus_model if escalate_to_opus else self.sonnet_model
+            return None if not escalate_to_opus else self.haiku_model
+        if task_class in {"B", "C"}:
+            return self.opus_model if escalate_to_opus else self.fable_model
+        if task_class == "D":
+            return self.opus_model
         raise ValueError("task_class must be A, B, C or D")
 
 
