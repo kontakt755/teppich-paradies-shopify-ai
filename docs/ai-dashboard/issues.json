@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T13:57:49.870Z",
+  "generated_at": "2026-09-08T14:18:51.620Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 30,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T13:57:49.870Z",
+    "fetchedAt": "2026-09-08T14:18:51.620Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -27,15 +27,21 @@
       "reviewer:claude",
       "reviewer:codex",
       "reviewer:mensch",
+      "status:abgebrochen",
+      "status:beobachten",
+      "status:bereit",
       "status:blockiert",
       "status:eingang",
       "status:fertig",
+      "status:freigabe",
       "status:geplant",
       "status:in-arbeit",
       "status:korrektur",
       "status:review",
+      "status:triage",
       "type:bug",
       "type:content",
+      "type:entscheidung",
       "type:idee",
       "type:seo",
       "type:technik",
@@ -780,11 +786,11 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/42",
       "labels": [
-        "status:blockiert",
         "type:verbesserung",
         "priority:p0",
         "area:google",
-        "reviewer:mensch"
+        "reviewer:mensch",
+        "status:freigabe"
       ],
       "assignee": null,
       "assignees": [],
@@ -816,7 +822,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:34Z",
-      "updated_at": "2026-09-03T09:24:34Z",
+      "updated_at": "2026-09-08T14:18:19Z",
       "closed_at": null
     },
     {
@@ -825,11 +831,11 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/41",
       "labels": [
-        "status:blockiert",
         "type:verbesserung",
         "priority:p1",
         "area:produktseite",
-        "reviewer:mensch"
+        "reviewer:mensch",
+        "status:freigabe"
       ],
       "assignee": null,
       "assignees": [],
@@ -860,7 +866,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:32Z",
-      "updated_at": "2026-09-03T09:24:32Z",
+      "updated_at": "2026-09-08T14:18:21Z",
       "closed_at": null
     },
     {
@@ -953,11 +959,11 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/38",
       "labels": [
-        "status:blockiert",
         "type:verbesserung",
         "priority:p1",
         "area:navigation",
-        "reviewer:mensch"
+        "reviewer:mensch",
+        "status:freigabe"
       ],
       "assignee": null,
       "assignees": [],
@@ -988,7 +994,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:27Z",
-      "updated_at": "2026-09-03T09:24:27Z",
+      "updated_at": "2026-09-08T14:18:23Z",
       "closed_at": null
     },
     {
