@@ -75,3 +75,51 @@ mit anderem Profil, in Shopify bisher nicht angelegt und außerhalb des Auftrags
   teilen sich jetzt das Döllken-Übersichtsfoto (`S60.jpg`) statt einer Konstruktionszeichnung.
   Bessere, farbspezifische Fotos wären nur mit Gewerbekunden-Login oder direkter
   Döllken-Anfrage zu bekommen.
+
+## Umbenennung 2026-09-08: erfundene Markennamen statt Lieferantennamen
+
+Auf Nutzerwunsch („nicht wieder auffindbar außer auf unserer Seite") wurden die 7
+Döllken-Produkte umbenannt — Titel, Handle (mit Redirect), Vendor, SEO-Felder und
+Beschreibung enthalten „Döllken"/„CUBU"/„S 60 TOP" nicht mehr:
+
+| Alt | Neu | Handle |
+|---|---|---|
+| Döllken S 60 TOP Kernsockelleisten | **Skarven Sockelleiste 60mm** | `skarven-sockelleiste-60mm` |
+| Döllken CUBU flex life 40 Kernsockelleisten | **Feldwin Sockelleiste 40mm** | `feldwin-sockelleiste-40mm` |
+| Döllken CUBU flex life 60 Kernsockelleisten | **Feldwin Sockelleiste 60mm** | `feldwin-sockelleiste-60mm` |
+| Döllken CUBU flex life 80 Kernsockelleisten | **Feldwin Sockelleiste 80mm** | `feldwin-sockelleiste-80mm` |
+| Döllken CUBU flex life 100 Kernsockelleisten | **Feldwin Sockelleiste 100mm** | `feldwin-sockelleiste-100mm` |
+| Döllken CUBU flex life XL 60/19 Kernsockelleisten | **Feldwin Sockelleiste XL 60mm** | `feldwin-sockelleiste-xl-60mm` |
+| Döllken CUBU flex life XL 80/19 Kernsockelleisten | **Feldwin Sockelleiste XL 80mm** | `feldwin-sockelleiste-xl-80mm` |
+
+Vendor bei allen 7 auf `TeppichParadies` gesetzt (war `Döllken`). Die echte Lieferantenlinie
+steht jetzt ausschließlich im internen Metafeld `grosshandel.sku` (z. B.
+„ZUBSCHS60 (Döllken S 60 flex life TOP)"), analog zu Cortessa/Basira. Alte Produkt-URLs
+leiten per `redirectNewHandle: true` automatisch auf die neuen um.
+
+Cortessa/Basira trugen bereits erfundene Namen ohne Lieferantenbezug — unverändert.
+
+## Farbnamen ohne Zahlen + sichtbare Farbunterschiede
+
+Zwei zusätzliche Probleme kamen im Gespräch auf: (1) einzelne Farboptionen trugen noch
+Zahlencodes im Namen, (2) mehrere Produkte zeigten für **alle** Farben dasselbe Foto — der
+Kunde konnte Farben nicht unterscheiden.
+
+**Zahlen entfernt:**
+- Skarven (S 60 TOP): „Weiß (5012)" → **Weiß Standard**, „Weiß (1408)" → **Weiß RAL 9016**
+  (real, da Code 1408 in der CUBU-60-Linie als RAL 9016 belegt ist).
+- Cortessa Sockelleiste: alle 15 Farben hießen nur `L600`–`L615` (Lieferanten-Artikelcodes
+  als Kundennamen). Jede Farbe hat bei jordanshop.de ein eigenes echtes Foto — daraus
+  Median-RGB gemessen, nach HLS klassifiziert und in deutsche Grundton+Stufe-Namen
+  übersetzt (Methode wie im jordanshop-Skill vorgeschrieben): Ocker Hell, Taupe Hell, Sand
+  Sehr Hell, Braun Mittel, Grau Hell, Sand Mittel, Braun Mittel Hell, Ocker Dunkel, Braun
+  Dunkel, Sand Dunkel, Braun Hell, Sand Hell, Grau Dunkel, Taupe Dunkel, Grau Mittel.
+
+**Sichtbare Farbunterschiede:** Für alle unifarbenen Varianten ohne eigenes Lieferantenfoto
+(Basira: 4, Feldwin-Familie: alle unifarbenen Werte, Skarven: 13 unifarbene von 62) wurde
+eine reine Farbkachel in der echten RAL-/Herstellerfarbe erzeugt und als Variantenbild
+gesetzt (über `singlecolorimage.com`, dynamisch generierte Flächen in Hex-Werten wie
+RAL 9010 = `#F1ECE1`) — kein Fantasieprodukt, nur die Farbfläche selbst. Holzdekor-Farben bei
+Skarven (z. B. „Eiche Classic", „Vintage Oak Grey") bekamen **keine** Farbkachel, weil eine
+flache Fläche eine Holzmaserung falsch darstellen würde — die behalten das
+Döllken-Übersichtsfoto.
