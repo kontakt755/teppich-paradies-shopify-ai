@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:25:51.890Z",
+  "generated_at": "2026-09-08T14:28:30.997Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 30,
+  "count": 31,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:25:51.890Z",
+    "fetchedAt": "2026-09-08T14:28:30.997Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -51,6 +51,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 102,
+      "title": "Freigabe-Issues #42, #41, #38 mit Optionen, Empfehlung und Frist ergänzen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/102",
+      "labels": [
+        "status:in-arbeit",
+        "type:content",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Abschnitte Frage, Optionen, Empfehlung, Entscheider, Frist in die drei Issues eintragen",
+      "fields": {
+        "description": "Die drei offenen Freigaben im Control Center haben weder Optionen noch Empfehlung noch Frist. Bitte nach dem Template Entscheidung nachtragen, damit Ahmet entscheiden kann.",
+        "nextStep": "Abschnitte Frage, Optionen, Empfehlung, Entscheider, Frist in die drei Issues eintragen"
+      },
+      "created_at": "2026-09-08T14:25:44Z",
+      "updated_at": "2026-09-08T14:28:13Z",
+      "closed_at": null
+    },
     {
       "number": 92,
       "title": "🤖 Gestalte das Mega Menu optisch ansprechender vor allem für mobile Ansicht",
