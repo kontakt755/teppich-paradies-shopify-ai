@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:23:27.539Z",
+  "generated_at": "2026-09-08T14:23:43.049Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 30,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:23:27.539Z",
+    "fetchedAt": "2026-09-08T14:23:43.049Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -1089,8 +1089,10 @@
         "priority:p2",
         "area:backend"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": null,
       "fields": {
@@ -1117,7 +1119,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:25Z",
-      "updated_at": "2026-09-03T09:24:25Z",
+      "updated_at": "2026-09-08T14:23:27Z",
       "closed_at": null
     },
     {
@@ -1131,8 +1133,10 @@
         "priority:p1",
         "area:backend"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": null,
       "fields": {
@@ -1160,7 +1164,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:23Z",
-      "updated_at": "2026-09-03T09:24:23Z",
+      "updated_at": "2026-09-08T14:23:29Z",
       "closed_at": null
     },
     {
@@ -1174,8 +1178,10 @@
         "priority:p0",
         "area:backend"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
@@ -1185,7 +1191,7 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-03T09:16:54Z",
+      "updated_at": "2026-09-08T14:23:31Z",
       "closed_at": null
     },
     {
@@ -1224,8 +1230,10 @@
         "priority:p3",
         "area:sonstiges"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "ChatGPT und Mensch discussen ob sinnvoll",
       "fields": {
@@ -1233,7 +1241,7 @@
         "nextStep": "ChatGPT und Mensch discussen ob sinnvoll"
       },
       "created_at": "2026-09-03T09:16:51Z",
-      "updated_at": "2026-09-03T09:16:51Z",
+      "updated_at": "2026-09-08T14:23:33Z",
       "closed_at": null
     },
     {
@@ -1247,8 +1255,10 @@
         "priority:p2",
         "area:sonstiges"
       ],
-      "assignee": null,
-      "assignees": [],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
       "comments": 0,
       "nextStep": "Claude implementiert das Widget",
       "fields": {
@@ -1274,7 +1284,7 @@
         }
       },
       "created_at": "2026-09-03T09:16:49Z",
-      "updated_at": "2026-09-03T09:16:49Z",
+      "updated_at": "2026-09-08T14:23:34Z",
       "closed_at": null
     },
     {
