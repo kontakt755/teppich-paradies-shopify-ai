@@ -71,6 +71,8 @@ test('task-CLI: parseArgs und Uebergaenge laufen ueber die Aktions-API', async (
   assert.equal(seen[0][2].owner, 'kontakt755');
   await run(['done', '92', '--confirm'], { api, gh, out: l => lines.push(l) });
   assert.equal(seen[1][2].confirmAcceptance, true);
+  await run(['approve', '42', '--note', 'Option 2'], { api, gh, out: l => lines.push(l) });
+  assert.deepEqual([seen[2][2].target, seen[2][2].decision], ['bereit', 'approve']);
   await run(['create', 'Neue Aufgabe', '--area', 'google', '--prio', 'p1', '--owner', 'kontakt755'], { api, gh, out: l => lines.push(l) });
   const create = seen.find(s => s[0] === 'gh' && s[1][1] === 'create')[1];
   assert.ok(create.includes('status:eingang') && create.includes('area:google') && create.includes('priority:p1') && create.includes('--assignee'));

@@ -49,13 +49,15 @@ const COMMANDS = {
   ready: { target: 'bereit' },
   plan: { target: 'geplant' },
   cancel: { target: 'abgebrochen' },
+  approve: { target: 'bereit', decision: 'approve' },
+  reject: { target: 'abgebrochen', decision: 'reject' },
 };
 
 export async function run(argv, { api, gh, repo = DEFAULT_REPO, out = console.log } = {}) {
   const { positional, flags } = parseArgs(argv);
   const [cmd, arg] = positional;
   if (!cmd || flags.help) {
-    out(`Befehle: create "Titel" | start N | review N | done N | block N | approve-request N | ready N | plan N | cancel N | comment N | list\nFlags: --owner --note --reason --confirm --area --type --prio --body --mine`);
+    out(`Befehle: create "Titel" | start N | review N | done N | block N | approve-request N | approve N | reject N | ready N | plan N | cancel N | comment N | list\nFlags: --owner --note --reason --confirm --area --type --prio --body --mine`);
     return 0;
   }
   if (cmd === 'create') {
@@ -92,7 +94,7 @@ export async function run(argv, { api, gh, repo = DEFAULT_REPO, out = console.lo
   }
   const spec = COMMANDS[cmd];
   if (!spec) throw new ApiError(400, `Unbekannter Befehl „${cmd}"`);
-  const result = await api.transition(n, { target: spec.target, owner: flags.owner ? String(flags.owner).replace(/^@/, '') : null, comment: note, reason: note, confirmAcceptance: Boolean(flags.confirm) });
+  const result = await api.transition(n, { target: spec.target, owner: flags.owner ? String(flags.owner).replace(/^@/, '') : null, comment: note, reason: note, confirmAcceptance: Boolean(flags.confirm), decision: spec.decision });
   out(`#${n}: ${result.from} → ${result.to}${result.note ? ` (${result.note})` : ''}`);
   return 0;
 }
