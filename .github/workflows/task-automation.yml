@@ -1,0 +1,36 @@
+name: task-automation
+
+# Haelt Status-Labels anhand belegbarer Ereignisse aktuell (scripts/task-automation.mjs):
+# neue Issues -> Eingang (+ Typ/Bereich als Vorschlag), geschlossen -> Erledigt,
+# PR referenziert Issue -> In Arbeit, PR gemergt -> Review. Jede Aenderung wird
+# als Kommentar protokolliert. Keine Prioritaeten, keine Owner, kein Schliessen.
+on:
+  issues:
+    types: [opened, closed, reopened]
+  pull_request:
+    types: [opened, ready_for_review, reopened, closed]
+
+concurrency:
+  group: task-automation-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    # Das Bot-Konto loest ueber seine eigenen Kommentare keine weiteren Laeufe aus
+    # (nur labeled-Events, die hier nicht abonniert sind) - keine Schleife.
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Status-Labels anwenden
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/task-automation.mjs

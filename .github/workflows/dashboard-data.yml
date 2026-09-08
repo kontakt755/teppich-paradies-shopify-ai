@@ -6,11 +6,11 @@ on:
   issues:
     types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
   schedule:
-    # Stuendlich als Sicherheitsnetz. Die eigentliche Aktualisierung laeuft
+    # Alle 30 Minuten als Sicherheitsnetz. Die eigentliche Aktualisierung laeuft
     # ueber die issues-Events oben (sofort). Ein 10-Minuten-Cron wuerde bei
     # einem privaten Repo das Free-Kontingent von 2000 Actions-Minuten/Monat
-    # sprengen (~2160 Min), stuendlich braucht ca. 300 Min.
-    - cron: '0 * * * *'
+    # sprengen (~2160 Min); alle 30 Minuten braucht ca. 600 Min und bleibt darunter.
+    - cron: '*/30 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
