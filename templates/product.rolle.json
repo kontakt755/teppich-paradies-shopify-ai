@@ -24,7 +24,7 @@
             },
             "tp_vorteile_sales1": { "type": "tp-vorteile", "name": "TP Vorteile", "settings": {}, "blocks": {} },
             "tp_vertrauen_sales1": { "type": "tp-vertrauen", "name": "TP Vertrauen", "settings": {}, "blocks": {} },
-            "tp_bewertungsbeleg_night1": { "type": "tp-bewertungsbeleg", "name": "TP Bewertungsbeleg", "settings": { "rating": "4.8", "review_count": "1.200+", "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen" }, "blocks": {} },
+            "tp_bewertungsbeleg_night1": { "type": "tp-bewertungsbeleg", "name": "TP Bewertungsbeleg", "settings": { "rating": "4.8", "review_count": "220+", "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen" }, "blocks": {} },
             "divider_VJhene": { "type": "_divider", "name": "t:names.divider", "settings": { "thickness": 1, "corner_radius": "square", "width_percent": 100, "padding-block-start": 0, "padding-block-end": 0 }, "blocks": {} },
             "tp_step_farbe_sales1": { "type": "tp-step", "name": "TP Schritt-Überschrift", "settings": { "number": 1, "label": "Wähle deine Farbe" }, "blocks": {} },
             "color_swatch_picker_f7EyBF": { "type": "color-swatch-picker", "name": "Farb-Swatches", "settings": {}, "blocks": {} },

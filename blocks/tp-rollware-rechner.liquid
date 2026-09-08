@@ -856,6 +856,9 @@
           }
         }));
 
+        var tpRwcDrawer = document.querySelector('cart-drawer-component');
+        if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') tpRwcDrawer.open();
+
         setTimeout(function () {
           cta.textContent = original;
           cta.classList.remove('is-done');

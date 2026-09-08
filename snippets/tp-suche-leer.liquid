@@ -1,0 +1,71 @@
+{% doc %}
+  Leerzustand der Suche: statt des kompletten Katalogs (400 Produkte, rund
+  800 KB HTML) die fuenf Kategorien, Telefon und Musterweg anbieten.
+  Audit 2026-09-08, Befund 16.
+
+  @param {string} terms - Der Suchbegriff
+{% enddoc %}
+
+<div class="tp-suche-leer">
+  <h2 class="tp-suche-leer__titel">Dazu haben wir nichts gefunden.</h2>
+  <p>
+    Zu „{{ terms | escape }}“ gibt es kein Ergebnis. Versuchen Sie es mit „Klickvinyl“, „Teppichboden grau“
+    oder einer Farbnummer. Oder stöbern Sie direkt in unseren Bereichen:
+  </p>
+  <ul class="tp-suche-leer__liste">
+    {%- assign tp_sl_handles = 'teppichboden,vinylboden-1,linoleumboden-1,bodenleisten,zubehoer' | split: ',' -%}
+    {%- for tp_sl_handle in tp_sl_handles -%}
+      {%- assign tp_sl_coll = collections[tp_sl_handle] -%}
+      {%- if tp_sl_coll != blank -%}
+        <li><a href="{{ tp_sl_coll.url }}">{{ tp_sl_coll.title }}</a></li>
+      {%- endif -%}
+    {%- endfor -%}
+  </ul>
+  <p class="tp-suche-leer__hilfe">
+    Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 5733720</a>
+    oder per <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>.
+  </p>
+</div>
+
+{% stylesheet %}
+  .tp-suche-leer {
+    max-width: 44rem;
+    margin: 24px auto 48px;
+    padding: 0 var(--padding-lg, 20px);
+    text-align: center;
+  }
+
+  .tp-suche-leer__titel {
+    margin: 0 0 12px;
+  }
+
+  .tp-suche-leer__liste {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-suche-leer__liste a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.25);
+    border-radius: 6px;
+    color: var(--color-foreground);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-suche-leer__liste a:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+
+  .tp-suche-leer__hilfe a {
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}

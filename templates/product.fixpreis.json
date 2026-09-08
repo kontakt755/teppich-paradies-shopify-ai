@@ -195,7 +195,11 @@
             "tp_farbanzeige_tp1": {
               "type": "tp-farbanzeige",
               "name": "TP Farbanzeige",
-              "settings": { "label": "Farbe", "groesse": "normal", "show_nummer": false },
+              "settings": {
+                "label": "Farbe",
+                "groesse": "normal",
+                "show_nummer": false
+              },
               "blocks": {}
             },
             "buy_buttons_eYQEYi": {
@@ -285,17 +289,10 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
-            },
-            "tp_google_rating_UdRxKh": {
-              "type": "tp-google-rating",
-              "name": "TP Google-Bewertung",
-              "settings": {},
-              "blocks": {}
             }
           },
           "block_order": [
             "group_icgrde",
-            "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",

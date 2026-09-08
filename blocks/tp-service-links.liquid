@@ -23,8 +23,30 @@
     {%- if tp_sl_delivery_time != blank -%}
       <p><strong>Lieferzeit:</strong> {{ tp_sl_delivery_time | escape }}</p>
     {%- endif -%}
-    <p><strong>Deutschlandweiter Versand</strong></p>
-    <p>Speditionsware: frei Bordsteinkante</p>
+    {%- comment -%}
+      Versandprofil "Bodenbelaege & Teppiche - kostenlos" (Deutschland): Rollen- und
+      Paketware sind versandkostenfrei. Zubehoer laeuft ueber das allgemeine Profil:
+      4,99 EUR, ab 50 EUR Warenwert kostenlos. Erkennung ueber Rollenbreite/qm-Paket,
+      damit hier nie etwas Falsches versprochen wird.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_sl_is_flooring = false
+      if product.metafields.custom.qm_pro_paket.value != blank or product.metafields.custom.rollenbreite.value != blank or product.metafields.custom.wunschmass_mindestbreite_cm.value != blank
+        assign tp_sl_is_flooring = true
+      endif
+      for tp_sl_variant in product.variants
+        if tp_sl_variant.metafields.custom.rollenbreite.value != blank
+          assign tp_sl_is_flooring = true
+          break
+        endif
+      endfor
+    -%}
+    {%- if tp_sl_is_flooring -%}
+      <p><strong>Versandkostenfrei in Deutschland</strong></p>
+      <p>Rollen und große Pakete bringt die Spedition bis vor die Haustür. Wir rufen vorher an.</p>
+    {%- else -%}
+      <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
+    {%- endif -%}
 
     <details class="tp-service-links__shipping-details-{{ tp_sl_id }}">
       <summary>Was bedeutet „frei Bordsteinkante“?</summary>
@@ -42,9 +64,9 @@
   <div class="tp-service-links__secondary-{{ tp_sl_id }}">
     <a href="tel:+4933015733720">Beratung: 03301 5733720</a>
     <span aria-hidden="true">·</span>
-    <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+    <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
     <span aria-hidden="true">·</span>
-    <a href="/pages/liefer-verlegeservice">Verlegeservice</a>
+    <a href="/pages/boden-malerarbeiten">Verlegeservice</a>
   </div>
 </div>
 

@@ -68,10 +68,10 @@
 {"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"url":{{ tp_ca_url | json }},"image":{{ tp_ca_image | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
   {%- endcapture -%}
 
-  <div class="tp-card-actions-{{ tp_ca_id }}" {{ block.shopify_attributes }}>
+  <div class="tp-card-actions" {{ block.shopify_attributes }}>
     <button
       type="button"
-      class="tp-card-actions__compare-{{ tp_ca_id }}"
+      class="tp-card-actions__compare"
       data-tp-compare-toggle
       data-tp-compare-handle="{{ tp_ca_product.handle }}"
       data-tp-compare-snapshot="{{ tp_ca_snapshot | strip | escape }}"
@@ -83,7 +83,7 @@
     {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
     {%- unless tp_ca_product.tags contains 'zubehoer' -%}
       <a
-        class="tp-card-actions__sample-{{ tp_ca_id }}"
+        class="tp-card-actions__sample"
         href="/pages/kontakt?thema=muster&produkt={{ tp_ca_product.handle | url_encode }}"
       >
         Muster
@@ -91,61 +91,63 @@
     {%- endunless -%}
   </div>
 
-  <style>
-    .tp-card-actions-{{ tp_ca_id }} {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 6px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .tp-card-actions__compare-{{ tp_ca_id }} {
-      flex: 1 1 auto;
-      min-width: 0;
-      min-height: 32px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding: 8px;
-      background: transparent;
-      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
-      border-radius: 6px;
-      color: var(--color-foreground);
-      font: inherit;
-      font-size: 10.5px;
-      font-weight: 600;
-      line-height: 1.2;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .tp-card-actions__compare-{{ tp_ca_id }}[aria-pressed='true'] {
-      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
-      border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
-    }
-
-    .tp-card-actions__sample-{{ tp_ca_id }} {
-      display: inline-flex;
-      align-items: center;
-      flex: 0 0 auto;
-      min-height: 32px;
-      padding: 8px;
-      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
-      border-radius: 6px;
-      color: var(--color-foreground);
-      font-size: 10.5px;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .tp-card-actions__sample-{{ tp_ca_id }}:hover {
-      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
-    }
-  </style>
 {%- endif -%}
+
+{% stylesheet %}
+  /* Feste Klassen statt Block-ID: die Regeln stehen einmal pro Seite, nicht einmal pro Karte (Audit 2026-09-08). */
+  .tp-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .tp-card-actions__compare {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 36px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 6px;
+    color: var(--color-foreground);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .tp-card-actions__compare[aria-pressed='true'] {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
+  }
+
+  .tp-card-actions__sample {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 6px;
+    color: var(--color-foreground);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .tp-card-actions__sample:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

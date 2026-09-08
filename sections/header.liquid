@@ -286,15 +286,38 @@
   {% endif %}
 {% endcapture %}
 
+{%- comment -%}
+  LocalBusiness statt nur Organization: Adresse und Telefon kommen aus den
+  Shop-Einstellungen (shop.address, shop.phone), damit nichts doppelt gepflegt
+  wird. Oeffnungszeiten entsprechen der Kontaktseite (Mo-Fr 8:30-18:00,
+  Sa 8:30-14:30). Audit 2026-09-08, Befund 19.
+{%- endcomment -%}
 <script type="application/ld+json">
   {
     "@context": "http://schema.org",
-    "@type": "Organization",
+    "@type": ["Organization", "HomeAndConstructionBusiness", "Store"],
     "name": {{ shop.name | json }},
     {% if settings.logo %}
       "logo": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
+      "image": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
     {% endif %}
-    "url": {{ request.origin | append: page.url | json }}
+    "url": {{ request.origin | json }},
+    {% if shop.phone != blank %}"telephone": {{ shop.phone | json }},{% endif %}
+    {% if shop.email != blank %}"email": {{ shop.email | json }},{% endif %}
+    {% if shop.address.street != blank %}
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": {{ shop.address.street | json }},
+        "postalCode": {{ shop.address.zip | json }},
+        "addressLocality": {{ shop.address.city | json }},
+        "addressCountry": {{ shop.address.country_code | json }}
+      },
+    {% endif %}
+    "openingHoursSpecification": [
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:30", "closes": "18:00" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "08:30", "closes": "14:30" }
+    ],
+    "priceRange": "€€"
   }
 </script>
 
