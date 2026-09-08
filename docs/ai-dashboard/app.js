@@ -359,6 +359,8 @@ function viewArbeit() {
 }
 
 function tableView(list) {
+  // Schmale Bildschirme: Karten statt Tabelle, damit nichts seitlich scrollen muss.
+  if (list.length && window.matchMedia('(max-width: 760px)').matches) return `<div class="rows">${list.map(t => taskRow(t)).join('')}</div>`;
   if (!list.length) return emptyState('Keine Aufgaben in dieser Ansicht.', 'Filter anpassen oder eine neue Aufgabe anlegen.', { href: newIssueUrl({ template: 'feature.yml' }), text: 'Neue Aufgabe ↗' });
   return `<div class="table-wrap"><table class="tasks"><thead><tr>
     <th>Aufgabe</th><th>Bereich</th><th>Status</th><th>Prio</th><th>Owner</th><th>Ausführung</th><th>Nächster Schritt</th><th>Fällig</th><th>Blocker / Lücken</th><th>Update</th></tr></thead>
