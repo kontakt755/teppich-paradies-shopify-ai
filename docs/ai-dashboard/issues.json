@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-08T14:39:00.061Z",
+  "generated_at": "2026-09-08T14:40:15.146Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 31,
+  "count": 32,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-08T14:39:00.061Z",
+    "fetchedAt": "2026-09-08T14:40:15.146Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -51,6 +51,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 103,
+      "title": "Teppichboden-Art (custom.arten) für Rubira, Nordica, Callista, Wovena mit Herstellerbeleg nachtragen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/103",
+      "labels": [
+        "status:eingang",
+        "type:content",
+        "priority:p2",
+        "area:kategorie"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen",
+      "fields": {
+        "description": "Folgeaufgabe aus #41 (Option 1). Die Unterkategorien Teppichboden werden automatisch über das Metafeld custom.arten (Metaobjekt teppich_art: Hochflor, Kurzflor, Velours, Schlinge, Wolle, Nadelvlies) befüllt. Vier aktive Teppichböden haben keinen Wert und erscheinen nur unter 'Alle Teppichböden': Rubira (Florhöhe 5–8 mm), Nordica (5–8 mm), Callista (bis 4 mm), Wovena (bis 4 mm). Der Wert darf nur mit Beleg aus dem Lieferantendatenblatt gesetzt werden – keine Ableitung aus Bildern (CLAUDE.md, Produktdaten).",
+        "nextStep": "Datenblätter der vier Qualitäten bei Jordan prüfen und die Art per metafieldsSet setzen"
+      },
+      "created_at": "2026-09-08T14:39:21Z",
+      "updated_at": "2026-09-08T14:39:22Z",
+      "closed_at": null
+    },
     {
       "number": 102,
       "title": "Freigabe-Issues #42, #41, #38 mit Optionen, Empfehlung und Frist ergänzen",
@@ -892,10 +917,10 @@
     {
       "number": 41,
       "title": "[SHP-015] Live-Collection-Zuordnungen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/41",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:verbesserung",
         "priority:p1",
         "area:produktseite",
@@ -905,7 +930,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Ahmet: Bitte freigegebene Produkt-IDs genehmigen",
       "fields": {
         "goal": "Freigegebene Hoch-/Mittelflor- und ecoVella-Korrektionen anwenden",
@@ -943,8 +968,8 @@
         "decider": "Ahmet"
       },
       "created_at": "2026-09-03T09:24:32Z",
-      "updated_at": "2026-09-08T14:37:26Z",
-      "closed_at": null
+      "updated_at": "2026-09-08T14:39:46Z",
+      "closed_at": "2026-09-08T14:39:46Z"
     },
     {
       "number": 40,
