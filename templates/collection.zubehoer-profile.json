@@ -1,10 +1,17 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "hero": {
       "type": "tp-zubehoer-hero",
       "name": "TP Zubehoer-Hero",
-      "blocks": {},
-      "block_order": [],
       "settings": {
         "eyebrow": "Zubehör",
         "heading": "",
@@ -30,14 +37,14 @@
           "settings": {
             "collection": "zubehoer-uebergangsprofile",
             "title": "",
+            "benefit": "Verbindet Böden, gleicht Höhen aus.",
             "text": "Für den Wechsel zwischen zwei Belägen oder kleine Höhenunterschiede.",
+            "image": "",
+            "product": "uebergangsprofil-aluminium-gebohrt-28-mm",
             "icon": "uebergang",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Verbindet Böden, gleicht Höhen aus.",
-            "product": "uebergangsprofil-aluminium-gebohrt-28-mm",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_abschlussprofile": {
@@ -45,14 +52,14 @@
           "settings": {
             "collection": "zubehoer-abschlussprofile",
             "title": "",
+            "benefit": "Schützt offene Kanten.",
             "text": "Für Wandkanten, Türen, Treppenstufen und offene Bodenenden.",
+            "image": "",
+            "product": "abschlussprofil-aluminium-selbstklebend-34-mm",
             "icon": "abschluss",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Schützt offene Kanten.",
-            "product": "abschlussprofil-aluminium-selbstklebend-34-mm",
-            "image": ""
+            "sub_collection_2": ""
           }
         }
       },
@@ -64,10 +71,10 @@
         "layout": "kacheln",
         "heading": "Welches Profil brauchen Sie?",
         "intro": "Übergang zwischen zwei Böden oder Abschluss an einer Kante – beides in Aluminium, schraubbar oder selbstklebend.",
+        "anchor": "",
         "color_scheme": "scheme-1",
         "padding-block-start": 40,
-        "padding-block-end": 8,
-        "anchor": ""
+        "padding-block-end": 8
       }
     },
     "chips": {
@@ -171,10 +178,10 @@
         "layout": "chips",
         "heading": "Weitere Zubehör-Bereiche",
         "intro": "",
+        "anchor": "",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 0,
-        "anchor": ""
+        "padding-block-end": 0
       }
     },
     "main": {

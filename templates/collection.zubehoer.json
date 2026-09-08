@@ -1,8 +1,16 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "hero": {
       "type": "tp-zubehoer-hero",
-      "name": "TP Zubehoer-Hero",
       "blocks": {
         "motiv_unterlage": {
           "type": "motiv",
@@ -47,6 +55,7 @@
         "motiv_trittschall",
         "motiv_pflege"
       ],
+      "name": "TP Zubehoer-Hero",
       "settings": {
         "eyebrow": "Zubehör für Teppich, Vinyl & Linoleum",
         "heading": "",
@@ -72,14 +81,14 @@
           "settings": {
             "collection": "zubehoer-profile",
             "title": "",
+            "benefit": "Saubere Kanten, sichere Übergänge.",
             "text": "Übergangs-, Abschluss- und Treppenkantenprofile aus Aluminium – schraubbar oder selbstklebend.",
+            "image": "",
+            "product": "uebergangsprofil-aluminium-gebohrt-28-mm",
             "icon": "profil",
             "cta": "Ansehen",
             "sub_collection_1": "zubehoer-uebergangsprofile",
-            "sub_collection_2": "zubehoer-abschlussprofile",
-            "benefit": "Saubere Kanten, sichere Übergänge.",
-            "product": "uebergangsprofil-aluminium-gebohrt-28-mm",
-            "image": ""
+            "sub_collection_2": "zubehoer-abschlussprofile"
           }
         },
         "kachel_kleber_fixierung": {
@@ -87,14 +96,14 @@
           "settings": {
             "collection": "zubehoer-kleber-fixierung",
             "title": "",
+            "benefit": "Hält, was es soll.",
             "text": "Klebstoffe und Fixierungen für Teppich, Vinyl, Linoleum und Designböden.",
+            "image": "",
+            "product": "nass-und-haftklebstoff-fuer-elastische-belaege",
             "icon": "kleber",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Hält, was es soll.",
-            "product": "nass-und-haftklebstoff-fuer-elastische-belaege",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_bauchemie": {
@@ -102,14 +111,14 @@
           "settings": {
             "collection": "zubehoer-bauchemie",
             "title": "",
+            "benefit": "Der Untergrund entscheidet.",
             "text": "Grundierung, Spachtelmasse und Dichtstoffe für einen ebenen, tragfähigen Boden.",
+            "image": "",
+            "product": "spachtelmasse-zementaer-selbstverlaufend",
             "icon": "bauchemie",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Der Untergrund entscheidet.",
-            "product": "spachtelmasse-zementaer-selbstverlaufend",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_verlegeunterlagen": {
@@ -117,14 +126,14 @@
           "settings": {
             "collection": "zubehoer-verlegeunterlagen",
             "title": "",
+            "benefit": "Leiser gehen, länger Freude.",
             "text": "Trittschall- und Verlegeunterlagen für Laminat, Designboden und Teppich.",
+            "image": "",
+            "product": "unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche",
             "icon": "unterlage",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Leiser gehen, länger Freude.",
-            "product": "unterlage-fuer-designboeden-1-5-mm-mit-antirutsch-oberflaeche",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_reinigungsmittel": {
@@ -132,14 +141,14 @@
           "settings": {
             "collection": "zubehoer-reinigungsmittel",
             "title": "",
+            "benefit": "Gepflegt bleibt schön.",
             "text": "Reiniger und Pflege, abgestimmt auf Teppich, Laminat und Designböden.",
+            "image": "",
+            "product": "designbodenpflege-matt",
             "icon": "reinigung",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Gepflegt bleibt schön.",
-            "product": "designbodenpflege-matt",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_verlegeband": {
@@ -147,14 +156,14 @@
           "settings": {
             "collection": "zubehoer-verlegeband",
             "title": "",
+            "benefit": "Schnell fixiert, ohne Kleberauftrag.",
             "text": "Verlegebänder und Trockenklebstoffe für Bahnenware und Sockelleisten.",
+            "image": "",
+            "product": "verlegeband-fuer-textil-und-elastische-belaege",
             "icon": "band",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Schnell fixiert, ohne Kleberauftrag.",
-            "product": "verlegeband-fuer-textil-und-elastische-belaege",
-            "image": ""
+            "sub_collection_2": ""
           }
         },
         "kachel_sauberlauf": {
@@ -162,14 +171,14 @@
           "settings": {
             "collection": "zubehoer-sauberlauf",
             "title": "",
+            "benefit": "Schmutz bleibt an der Tür.",
             "text": "Sauberlaufmatten in drei Größen für Eingang und Flur.",
+            "image": "",
+            "product": "sauberlaufmatte-135-205-cm",
             "icon": "matte",
             "cta": "Ansehen",
             "sub_collection_1": "",
-            "sub_collection_2": "",
-            "benefit": "Schmutz bleibt an der Tür.",
-            "product": "sauberlaufmatte-135-205-cm",
-            "image": ""
+            "sub_collection_2": ""
           }
         }
       },
@@ -186,16 +195,14 @@
         "layout": "kacheln",
         "heading": "Zubehör nach Bereich",
         "intro": "Vom Untergrund bis zur Pflege: Jeder Bereich führt direkt zu den passenden Produkten.",
+        "anchor": "bereiche",
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
-        "padding-block-end": 16,
-        "anchor": "bereiche"
+        "padding-block-end": 16
       }
     },
     "alle": {
       "type": "tp-zubehoer-kacheln",
-      "blocks": {},
-      "block_order": [],
       "settings": {
         "layout": "chips",
         "heading": "Alle Zubehörprodukte",
@@ -352,10 +359,10 @@
     },
     "beliebt": {
       "type": "tp-zubehoer-produkte",
-      "name": "Beliebtes Zubehoer",
       "blocks": {
         "static-product-card": {
           "type": "_product-card",
+          "name": "t:names.product_card",
           "static": true,
           "settings": {
             "product_card_gap": 4,
@@ -453,40 +460,40 @@
             "tp_card_color_thumbs",
             "tp_card_specs",
             "tp_card_actions"
-          ],
-          "name": "t:names.product_card"
+          ]
         }
       },
+      "name": "Beliebtes Zubehoer",
       "settings": {
-        "layout_type": "carousel",
-        "carousel_on_mobile": true,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "44cqw",
-        "columns_gap": 16,
-        "rows_gap": 24,
-        "icons_style": "chevron",
-        "icons_shape": "circle",
-        "section_width": "page-width",
-        "gap": 12,
-        "color_scheme": "scheme-1",
         "mode": "beliebt",
         "collection": "zubehoer",
         "heading": "Beliebtes Zubehör",
         "intro": "Was Kundinnen und Kunden zu ihrem neuen Boden am häufigsten mitbestellen.",
         "link_text": "Alle ansehen",
+        "anchor": "beliebt",
         "max_products": 8,
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "columns_gap": 16,
+        "rows_gap": 24,
+        "icons_style": "chevron",
+        "icons_shape": "circle",
+        "section_width": "page-width",
+        "gap": 12,
+        "color_scheme": "scheme-1",
         "padding-block-start": 40,
-        "padding-block-end": 8,
-        "anchor": "beliebt"
+        "padding-block-end": 8
       }
     },
     "neu": {
       "type": "tp-zubehoer-produkte",
-      "name": "Neu eingetroffen",
       "blocks": {
         "static-product-card": {
           "type": "_product-card",
+          "name": "t:names.product_card",
           "static": true,
           "settings": {
             "product_card_gap": 4,
@@ -584,11 +591,18 @@
             "tp_card_color_thumbs",
             "tp_card_specs",
             "tp_card_actions"
-          ],
-          "name": "t:names.product_card"
+          ]
         }
       },
+      "name": "Neu eingetroffen",
       "settings": {
+        "mode": "neu",
+        "collection": "zubehoer",
+        "heading": "Neu eingetroffen",
+        "intro": "Zuletzt ins Sortiment aufgenommen.",
+        "link_text": "",
+        "anchor": "neu",
+        "max_products": 8,
         "layout_type": "carousel",
         "carousel_on_mobile": true,
         "columns": 4,
@@ -601,15 +615,8 @@
         "section_width": "page-width",
         "gap": 12,
         "color_scheme": "scheme-1",
-        "mode": "neu",
-        "collection": "zubehoer",
-        "heading": "Neu eingetroffen",
-        "intro": "Zuletzt ins Sortiment aufgenommen.",
-        "link_text": "",
-        "max_products": 8,
         "padding-block-start": 24,
-        "padding-block-end": 8,
-        "anchor": "neu"
+        "padding-block-end": 8
       }
     }
   },

@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "main": {
@@ -234,7 +243,6 @@
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
-              "disabled": false,
               "settings": {
                 "text": "{{ closest.product.description }}",
                 "width": "100%",
@@ -284,7 +292,6 @@
     },
     "passend": {
       "type": "tp-zubehoer-produkte",
-      "name": "Passend dazu",
       "blocks": {
         "static-product-card": {
           "type": "_product-card",
@@ -389,7 +396,14 @@
           ]
         }
       },
+      "name": "Passend dazu",
       "settings": {
+        "mode": "passend",
+        "collection": "",
+        "heading": "Passend dazu",
+        "intro": "Weitere Produkte aus derselben Zubehör-Kategorie.",
+        "link_text": "Zur Kategorie",
+        "max_products": 8,
         "layout_type": "carousel",
         "carousel_on_mobile": true,
         "columns": 4,
@@ -402,12 +416,6 @@
         "section_width": "page-width",
         "gap": 12,
         "color_scheme": "scheme-1",
-        "mode": "passend",
-        "collection": "",
-        "heading": "Passend dazu",
-        "intro": "Weitere Produkte aus derselben Zubehör-Kategorie.",
-        "link_text": "Zur Kategorie",
-        "max_products": 8,
         "padding-block-start": 48,
         "padding-block-end": 16
       }
