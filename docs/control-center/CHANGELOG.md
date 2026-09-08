@@ -82,3 +82,16 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Bis zur Label-Anlage werden Freigaben über die Übergangsregel erkannt.
 - **Nächste Stufe:** Labels anlegen (Freigabe), GitHub Pages prüfen, dann Rollenmodell und erste
   read-only-Integration (Shopify) nach Sichtbarkeitsentscheidung.
+
+## 2026-09-08 · Inbetriebnahme
+
+- **Geändert:** PR #100 nach `main` gemergt. Labels `status:triage|bereit|freigabe|beobachten|abgebrochen`
+  und `type:entscheidung` im Repository angelegt; #42, #41, #38 von der Übergangsregel auf `status:freigabe`
+  umgestellt. `docs/.nojekyll` beendet den hängenden Jekyll-Build von GitHub Pages; Manifest auf das
+  Control Center angepasst.
+- **Getestet:** Workflow `dashboard-data` nach dem Merge: success, `issues.json` mit Schema 2 und allen
+  Labels; Pages-Build: built; Live-URL liefert `index.html`, `app.js`, `lib/model.mjs` (JavaScript-MIME)
+  und `issues.json`; Live-Screenshots ohne JS-Fehler (`screenshots/live-*.png`).
+- **Offen:** Owner (Assignee) für die aktiven Aufgaben setzen – das ist eine fachliche Zuordnung, keine
+  technische; Freigabe-Issues mit Optionen und Empfehlung nachtragen (Template „Entscheidung");
+  Sichtbarkeitsentscheidung vor Kennzahlen-Integrationen.
