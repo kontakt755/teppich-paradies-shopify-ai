@@ -4,14 +4,30 @@
     {
       "name": "control-center",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "control:center"],
+      "runtimeArgs": [
+        "run",
+        "control:center"
+      ],
       "port": 4177
     },
     {
       "name": "dashboard",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dashboard"],
+      "runtimeArgs": [
+        "run",
+        "dashboard"
+      ],
       "port": 8001
+    },
+    {
+      "name": "dashboard-static",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dashboard:serve"
+      ],
+      "port": 8002,
+      "autoPort": true
     }
   ]
 }
