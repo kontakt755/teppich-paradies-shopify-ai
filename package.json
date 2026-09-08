@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test",
+    "test": "npm run qa:unit:test && npm run dashboard:test",
     "qa": "node qa/run-qa.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
@@ -55,7 +55,8 @@
     "control:center:test": "node --test control-center/tests/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
-    "dashboard:serve": "node scripts/serve-dashboard.mjs"
+    "dashboard:serve": "node scripts/serve-dashboard.mjs",
+    "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2",
