@@ -63,6 +63,7 @@
         name="quantity"
         value="{% if variant.quantity_rule.min %}{{ variant.quantity_rule.min }}{% else %}1{% endif %}"
       >
+      {%- render 'tp-farbe-properties', product: product, variant: variant -%}
       {% comment %}
         Both Add and Choose buttons are rendered in the DOM, but only one is shown based on the data-quick-add-button attribute.
 

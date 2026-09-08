@@ -1,0 +1,179 @@
+{% doc %}
+  Zeigt die gewaehlte Farbe der Variante als ruhige Zeile mit Swatch:
+  "Farbe  [Bild]  Grau Anthrazit". Die interne Farbnummer ist standardmaessig
+  aus - Kunden sehen nur den Farbnamen. Fuer Beratung am Telefon laesst sie
+  sich per Einstellung als kleine, graue Nummer dazuschalten.
+
+  Faellt still aus, wenn das Produkt keine Farboption hat (Fixpreis, Rollenware
+  ohne Farbauswahl). Aktualisiert sich beim Variantenwechsel ueber assets/tp-farbe.js.
+{% enddoc %}
+
+{%- liquid
+  assign tp_fa_product = product
+  assign tp_fa_variant = tp_fa_product.selected_or_first_available_variant
+  assign tp_fa_has_farbe = false
+
+  for tp_fa_option in tp_fa_product.options_with_values
+    assign tp_fa_oname = tp_fa_option.name | downcase
+    if tp_fa_oname contains 'farbe' or tp_fa_oname contains 'color' or tp_fa_oname contains 'dekor'
+      assign tp_fa_has_farbe = true
+      break
+    endif
+  endfor
+-%}
+
+{%- if tp_fa_has_farbe -%}
+  {%- capture tp_fa_name -%}{% render 'tp-farbe-daten', variant: tp_fa_variant, product: tp_fa_product, feld: 'name' %}{%- endcapture -%}
+  {%- capture tp_fa_nummer -%}{% render 'tp-farbe-daten', variant: tp_fa_variant, product: tp_fa_product, feld: 'nummer' %}{%- endcapture -%}
+  {%- capture tp_fa_swatch -%}{% render 'tp-farbe-daten', variant: tp_fa_variant, product: tp_fa_product, feld: 'swatch' %}{%- endcapture -%}
+  {%- assign tp_fa_name = tp_fa_name | strip -%}
+  {%- assign tp_fa_nummer = tp_fa_nummer | strip -%}
+  {%- assign tp_fa_swatch = tp_fa_swatch | strip -%}
+
+  {%- liquid
+    assign tp_fa_swatch_style = ''
+    if tp_fa_variant.featured_media != blank
+      assign tp_fa_bild = tp_fa_variant.featured_media | image_url: width: 96
+      assign tp_fa_swatch_style = '--tp-farbe-swatch: url(' | append: tp_fa_bild | append: ')'
+    elsif tp_fa_swatch != blank
+      assign tp_fa_swatch_style = '--tp-farbe-swatch: ' | append: tp_fa_swatch
+    endif
+  -%}
+
+  {%- capture tp_fa_map -%}
+    {%- for tp_fa_v in tp_fa_product.variants -%}
+      {%- capture tp_fa_v_name -%}{% render 'tp-farbe-daten', variant: tp_fa_v, product: tp_fa_product, feld: 'name' %}{%- endcapture -%}
+      {%- capture tp_fa_v_nummer -%}{% render 'tp-farbe-daten', variant: tp_fa_v, product: tp_fa_product, feld: 'nummer' %}{%- endcapture -%}
+      {%- capture tp_fa_v_swatch -%}{% render 'tp-farbe-daten', variant: tp_fa_v, product: tp_fa_product, feld: 'swatch' %}{%- endcapture -%}
+      {%- assign tp_fa_v_bild = '' -%}
+      {%- if tp_fa_v.featured_media != blank -%}
+        {%- assign tp_fa_v_bild = tp_fa_v.featured_media | image_url: width: 96 -%}
+      {%- endif -%}
+      {{ tp_fa_v.id | append: '' | json }}: {"name": {{ tp_fa_v_name | strip | json }}, "nummer": {{ tp_fa_v_nummer | strip | json }}, "bild": {{ tp_fa_v_bild | json }}, "swatch": {{ tp_fa_v_swatch | strip | json }}}
+      {%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+
+  <tp-farbe-anzeige
+    class="tp-farbanzeige tp-farbanzeige--{{ block.settings.groesse }}"
+    data-product-id="{{ tp_fa_product.id }}"
+    {{ block.shopify_attributes }}
+  >
+    <span
+      class="tp-farbanzeige__swatch{% if tp_fa_swatch_style == blank %} tp-farbanzeige__swatch--leer{% endif %}"
+      style="{{ tp_fa_swatch_style | escape }}"
+      data-tp-farbe-swatch
+      aria-hidden="true"
+    ></span>
+    <span class="tp-farbanzeige__label">{{ block.settings.label | default: 'Farbe' | escape }}</span>
+    <span class="tp-farbanzeige__name" data-tp-farbe-name>{{ tp_fa_name | escape }}</span>
+    {%- if block.settings.show_nummer -%}
+      <span
+        class="tp-farbanzeige__nummer"
+        data-tp-farbe-nummer
+        title="Interne Farbnummer"
+        {% if tp_fa_nummer == blank %}hidden{% endif %}
+      >
+        {{- tp_fa_nummer | escape -}}
+      </span>
+    {%- endif -%}
+    <script type="application/json" data-tp-farbe-map>{ {{ tp_fa_map | strip }} }</script>
+  </tp-farbe-anzeige>
+  <script src="{{ 'tp-farbe.js' | asset_url }}" type="module"></script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-farbanzeige {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding-block: 0.35rem;
+    line-height: 1.3;
+  }
+
+  .tp-farbanzeige__swatch {
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 28 25 23) / 0.18);
+    background: var(--tp-farbe-swatch, transparent) center / cover no-repeat;
+    box-shadow: inset 0 0 0 2px rgb(var(--color-background-rgb, 255 255 255));
+  }
+
+  .tp-farbanzeige__swatch--leer {
+    display: none;
+  }
+
+  .tp-farbanzeige__label {
+    font-size: 0.8125rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.6);
+  }
+
+  .tp-farbanzeige__name {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .tp-farbanzeige--klein .tp-farbanzeige__name {
+    font-size: 0.9rem;
+  }
+
+  .tp-farbanzeige--gross .tp-farbanzeige__name {
+    font-size: 1.125rem;
+  }
+
+  .tp-farbanzeige__nummer {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.5);
+    border: 1px solid rgb(var(--color-foreground-rgb, 28 25 23) / 0.15);
+    border-radius: 4px;
+    padding: 0.05rem 0.4rem;
+  }
+
+  .tp-farbanzeige__nummer::before {
+    content: 'Nr. ';
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Farbanzeige",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Beschriftung",
+      "default": "Farbe"
+    },
+    {
+      "type": "select",
+      "id": "groesse",
+      "label": "Groesse",
+      "options": [
+        { "value": "klein", "label": "Klein" },
+        { "value": "normal", "label": "Normal" },
+        { "value": "gross", "label": "Gross" }
+      ],
+      "default": "normal"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_nummer",
+      "label": "Interne Farbnummer klein anzeigen",
+      "info": "Standard aus: Kunden sehen nur den Farbnamen. Die Nummer wandert ueber das Produktformular trotzdem in Warenkorb und Bestellung.",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Farbanzeige"
+    }
+  ]
+}
+{% endschema %}

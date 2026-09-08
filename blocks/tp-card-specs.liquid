@@ -61,7 +61,7 @@
   {%- assign tp_cs_list = tp_cs_items | split: '|' -%}
 
   {%- if tp_cs_count > 0 -%}
-    <ul class="tp-card-specs-{{ tp_cs_id }}" {{ block.shopify_attributes }}>
+    <ul class="tp-card-specs" {{ block.shopify_attributes }}>
       {%- for entry in tp_cs_list -%}
         {%- if entry != blank -%}
           <li>{{ entry | strip }}</li>
@@ -69,36 +69,37 @@
       {%- endfor -%}
     </ul>
 
-    <style>
-      .tp-card-specs-{{ tp_cs_id }} {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 3px 8px;
-        margin: 4px 0 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      .tp-card-specs-{{ tp_cs_id }} li {
-        font-size: 13.5px;
-        line-height: 1.4;
-        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
-      }
-
-      .tp-card-specs-{{ tp_cs_id }} li:not(:last-child)::after {
-        content: '·';
-        margin-left: 8px;
-        opacity: 0.6;
-      }
-
-      @media screen and (max-width: 749px) {
-        .tp-card-specs-{{ tp_cs_id }} li {
-          font-size: 13px;
-        }
-      }
-    </style>
   {%- endif -%}
 {%- endif -%}
+
+{% stylesheet %}
+  .tp-card-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-card-specs li {
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
+  }
+
+  .tp-card-specs li:not(:last-child)::after {
+    content: '·';
+    margin-left: 8px;
+    opacity: 0.6;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-specs li {
+      font-size: 13px;
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

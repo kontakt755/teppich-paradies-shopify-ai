@@ -1,0 +1,64 @@
+{%- doc -%}
+  Haengt Farbnummer und interne Farbbezeichnung als Line-Item-Properties an
+  das Produktformular. Damit stehen sie im Warenkorb, im Checkout, in der
+  Bestellbestaetigung und in der Bestellung im Admin - ohne dass der Kunde im
+  Shop selbst die Nummer sieht.
+
+    properties[Farbnummer]      sichtbar   -> "Farbnummer: 4381"
+    properties[_Farbe intern]   verborgen  -> "Grau Anthrazit – 4381"
+                                  (Unterstrich: nur Admin, Packzettel, Export)
+
+  Beim Variantenwechsel rendert Horizon nur den Variantenwaehler neu, nicht das
+  Formular. Deshalb liegt hier eine Karte aller Varianten als JSON bei und
+  assets/tp-farbe.js schreibt die Inputs auf das Event variant:update um.
+
+  Rendert nichts, wenn keine Variante des Produkts eine Farbnummer hat -
+  Fixpreis- und Rollenware-Produkte bleiben unveraendert.
+
+  @param {object} product - Das Produkt
+  @param {object} [variant] - Startvariante, sonst selected_or_first_available_variant
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_fp_variant = variant | default: product.selected_or_first_available_variant
+  assign tp_fp_any = false
+-%}
+
+{%- capture tp_fp_map -%}
+  {%- for tp_fp_v in product.variants -%}
+    {%- capture tp_fp_v_name -%}{% render 'tp-farbe-daten', variant: tp_fp_v, product: product, feld: 'name' %}{%- endcapture -%}
+    {%- capture tp_fp_v_nummer -%}{% render 'tp-farbe-daten', variant: tp_fp_v, product: product, feld: 'nummer' %}{%- endcapture -%}
+    {%- capture tp_fp_v_intern -%}{% render 'tp-farbe-daten', variant: tp_fp_v, product: product, feld: 'intern' %}{%- endcapture -%}
+    {%- if tp_fp_v_nummer != blank -%}
+      {%- assign tp_fp_any = true -%}
+    {%- endif -%}
+    {{ tp_fp_v.id | append: '' | json }}: {"name": {{ tp_fp_v_name | strip | json }}, "nummer": {{ tp_fp_v_nummer | strip | json }}, "intern": {{ tp_fp_v_intern | strip | json }}}
+    {%- unless forloop.last -%},{%- endunless -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if tp_fp_any -%}
+  {%- capture tp_fp_nummer -%}{% render 'tp-farbe-daten', variant: tp_fp_variant, product: product, feld: 'nummer' %}{%- endcapture -%}
+  {%- capture tp_fp_intern -%}{% render 'tp-farbe-daten', variant: tp_fp_variant, product: product, feld: 'intern' %}{%- endcapture -%}
+  {%- assign tp_fp_nummer = tp_fp_nummer | strip -%}
+  {%- assign tp_fp_intern = tp_fp_intern | strip -%}
+
+  <tp-farbe-properties data-product-id="{{ product.id }}">
+    <input
+      type="hidden"
+      name="properties[Farbnummer]"
+      value="{{ tp_fp_nummer | escape }}"
+      data-tp-farbe-nummer
+      {% if tp_fp_nummer == blank %}disabled{% endif %}
+    >
+    <input
+      type="hidden"
+      name="properties[_Farbe intern]"
+      value="{{ tp_fp_intern | escape }}"
+      data-tp-farbe-intern
+      {% if tp_fp_intern == blank %}disabled{% endif %}
+    >
+    <script type="application/json" data-tp-farbe-map>{ {{ tp_fp_map | strip }} }</script>
+  </tp-farbe-properties>
+  <script src="{{ 'tp-farbe.js' | asset_url }}" type="module"></script>
+{%- endif -%}

@@ -8,8 +8,14 @@
 
 {% assign package_selector_id = block.id | replace: '_', '' | downcase %}
 {% assign selected_variant = product.selected_or_first_available_variant %}
-{% assign sqm_per_package = product.metafields.custom.qm_pro_paket.value | default: 2.05 | times: 1.0 %}
+{% comment %}
+  Ohne custom.qm_pro_paket rendert der Block nichts. Der fruehere Standardwert
+  2,05 m2 hat Sockelleisten und anderes Zubehoer ohne Metafeld als Paketware
+  mit erfundener Flaeche angezeigt (Audit 2026-09-08).
+{% endcomment %}
+{% assign sqm_per_package = product.metafields.custom.qm_pro_paket.value | times: 1.0 %}
 {% assign initial_packages = 1 %}
+{% if sqm_per_package > 0 %}
 
 {% style %}
   .carpet-package__message-{{ package_selector_id }} {
@@ -503,7 +509,31 @@
           throw new Error(error.description || error.message || 'Produkt konnte nicht hinzugefügt werden.');
         }
 
-        window.location.href = '/cart';
+        // Rueckmeldung am Ort des Klicks: Warenkorb-Drawer oeffnen (Horizon
+        // hoert auf cart:update und oeffnet bei auto-open). Header-Bubble
+        // bekommt die Paketzahl. Ohne Drawer bleibt die Weiterleitung.
+        const added = await response.json();
+        document.dispatchEvent(
+          new CustomEvent('cart:update', {
+            bubbles: true,
+            detail: {
+              resource: added,
+              sourceId: component.id || 'paket-auswahl',
+              data: { itemCount: packages, source: 'product-form-component' },
+            },
+          })
+        );
+        const drawer = document.querySelector('cart-drawer-component');
+        if (drawer && typeof drawer.open === 'function') {
+          drawer.open();
+          addToCartButton.textContent = 'Im Warenkorb';
+          setTimeout(function () {
+            addToCartButton.disabled = false;
+            addToCartButton.textContent = 'In den Warenkorb';
+          }, 2500);
+        } else {
+          window.location.href = '/cart';
+        }
       } catch (error) {
         setMessage(error.message, true);
         addToCartButton.disabled = false;
@@ -573,6 +603,7 @@
     renderResults();
   })();
 </script>
+{% endif %}
 
 {% schema %}
 {

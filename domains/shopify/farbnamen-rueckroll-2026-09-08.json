@@ -1,0 +1,2589 @@
+{
+ "_comment": "Rueckroll-Daten fuer die Farbnamen-Umbenennung vom 2026-09-08. Je Produkt: optionId und die Optionswert-IDs mit ihrem ALTEN Namen. Zurueck geht es mit productOptionUpdate(productId, option:{id: optionId}, optionValuesToUpdate:[{id, name: alt}], variantStrategy: LEAVE_AS_IS).",
+ "stand": "2026-09-08",
+ "produkte": {
+  "gid://shopify/Product/15982671167822": {
+   "titel": "Serena Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18830747337038",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840518478",
+     "alt": "Farbe 83",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840551246",
+     "alt": "Farbe 79",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840584014",
+     "alt": "Farbe 77",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840616782",
+     "alt": "Farbe 74",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840649550",
+     "alt": "Farbe 71",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840682318",
+     "alt": "Farbe 68",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840715086",
+     "alt": "Farbe 65",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840747854",
+     "alt": "Farbe 62",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840780622",
+     "alt": "Farbe 35",
+     "neu": "Bordeaux"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015840813390",
+     "alt": "Farbe 31",
+     "neu": "Ocker Tief"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982691811662": {
+   "titel": "Velluna Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18830772339022",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928533326",
+     "alt": "Farbe 832",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928566094",
+     "alt": "Farbe 462",
+     "neu": "Sand Hell Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928598862",
+     "alt": "Farbe 332",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928631630",
+     "alt": "Farbe 820",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928664398",
+     "alt": "Farbe 764",
+     "neu": "Blau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928697166",
+     "alt": "Farbe 630",
+     "neu": "Grün Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928729934",
+     "alt": "Farbe 861",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928762702",
+     "alt": "Farbe 241",
+     "neu": "Sand Hell Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928795470",
+     "alt": "Farbe 231",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928828238",
+     "alt": "Farbe 221",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928861006",
+     "alt": "Farbe 262",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14015928893774",
+     "alt": "Farbe 252",
+     "neu": "Beige Mittel Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982708293966": {
+   "titel": "Practiva Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18830797308238",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14016051970382",
+     "alt": "Farbe 90",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052003150",
+     "alt": "Farbe 82",
+     "neu": "Blau Tief Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052035918",
+     "alt": "Farbe 78",
+     "neu": "Schwarz Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052068686",
+     "alt": "Farbe 76",
+     "neu": "Anthrazit Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052101454",
+     "alt": "Farbe 74",
+     "neu": "Anthrazit Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052134222",
+     "alt": "Farbe 70",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052166990",
+     "alt": "Farbe 282",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052199758",
+     "alt": "Farbe 178",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016052232526",
+     "alt": "Farbe 170",
+     "neu": "Taupe Dunkel Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982735851854": {
+   "titel": "Kalvea Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18830837940558",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196641102",
+     "alt": "Farbe 99",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196673870",
+     "alt": "Farbe 98",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196706638",
+     "alt": "Farbe 94",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196739406",
+     "alt": "Farbe 90",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196772174",
+     "alt": "Farbe 84",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196804942",
+     "alt": "Farbe 77",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196837710",
+     "alt": "Farbe 43",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196870478",
+     "alt": "Farbe 40",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196903246",
+     "alt": "Farbe 33",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14016196936014",
+     "alt": "Farbe 21",
+     "neu": "Grün Tief"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982978367822": {
+   "titel": "Solvana Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831131312462",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146585422",
+     "alt": "Farbe 08",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146618190",
+     "alt": "Farbe 10",
+     "neu": "Taupe Tief Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146650958",
+     "alt": "Farbe 13",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146683726",
+     "alt": "Farbe 18",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146716494",
+     "alt": "Farbe 23",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146749262",
+     "alt": "Farbe 28",
+     "neu": "Anthrazit Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146782030",
+     "alt": "Farbe 29",
+     "neu": "Anthrazit Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146814798",
+     "alt": "Farbe 35",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017146847566",
+     "alt": "Farbe 85",
+     "neu": "Anthrazit Warm Meliert"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982981382478": {
+   "titel": "Palura Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831135703374",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169654094",
+     "alt": "Farbe 77",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169686862",
+     "alt": "Farbe 94",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169719630",
+     "alt": "Farbe 93",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169752398",
+     "alt": "Farbe 92",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169785166",
+     "alt": "Farbe 91",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169817934",
+     "alt": "Farbe 90",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169850702",
+     "alt": "Farbe 75",
+     "neu": "Anthrazit Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169883470",
+     "alt": "Farbe 72",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169916238",
+     "alt": "Farbe 176",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169949006",
+     "alt": "Farbe 190",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017169981774",
+     "alt": "Farbe 177",
+     "neu": "Anthrazit Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982983119182": {
+   "titel": "Ombra Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831138128206",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017180827982",
+     "alt": "Farbe 710",
+     "neu": "Beige Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017180860750",
+     "alt": "Farbe 712",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017180893518",
+     "alt": "Farbe 714",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017180926286",
+     "alt": "Farbe 715",
+     "neu": "Taupe Dunkel Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982984954190": {
+   "titel": "Vallora Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831140913486",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196294478",
+     "alt": "Farbe 75",
+     "neu": "Anthrazit Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196327246",
+     "alt": "Farbe 74",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196360014",
+     "alt": "Farbe 73",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196392782",
+     "alt": "Farbe 72",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196425550",
+     "alt": "Farbe 70",
+     "neu": "Creme Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196458318",
+     "alt": "Farbe 69",
+     "neu": "Creme Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196491086",
+     "alt": "Farbe 55",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196523854",
+     "alt": "Farbe 50",
+     "neu": "Beige Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196556622",
+     "alt": "Farbe 40",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196589390",
+     "alt": "Farbe 20",
+     "neu": "Rot Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196622158",
+     "alt": "Farbe 15",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196654926",
+     "alt": "Farbe 10",
+     "neu": "Beige Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196687694",
+     "alt": "Farbe 174",
+     "neu": "Grau Mittel Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196720462",
+     "alt": "Farbe 173",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196753230",
+     "alt": "Farbe 92",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196785998",
+     "alt": "Farbe 91",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196818766",
+     "alt": "Farbe 81",
+     "neu": "Grau Mittel Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196851534",
+     "alt": "Farbe 78",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196884302",
+     "alt": "Farbe 77",
+     "neu": "Schwarz Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017196917070",
+     "alt": "Farbe 76",
+     "neu": "Anthrazit Kühl"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982985707854": {
+   "titel": "Savena Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831142289742",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203241294",
+     "alt": "Farbe 72",
+     "neu": "Beige Mittel 3"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203274062",
+     "alt": "Farbe 176",
+     "neu": "Grau Dunkel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203306830",
+     "alt": "Farbe 175",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203339598",
+     "alt": "Farbe 92",
+     "neu": "Beige Mittel 4"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203372366",
+     "alt": "Farbe 83",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203405134",
+     "alt": "Farbe 78",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203437902",
+     "alt": "Farbe 75",
+     "neu": "Beige Mittel 1"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017203470670",
+     "alt": "Farbe 73",
+     "neu": "Beige Mittel 2"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982986264910": {
+   "titel": "Vivera Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831143207246",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017207337294",
+     "alt": "Farbe 810",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017207370062",
+     "alt": "Farbe 815",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017207402830",
+     "alt": "Farbe 814",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017207435598",
+     "alt": "Farbe 812",
+     "neu": "Taupe Dunkel Meliert"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982986821966": {
+   "titel": "Corina Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831144124750",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212023118",
+     "alt": "Farbe 33",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212055886",
+     "alt": "Farbe 98",
+     "neu": "Anthrazit Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212088654",
+     "alt": "Farbe 97",
+     "neu": "Anthrazit Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212121422",
+     "alt": "Farbe 92",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212154190",
+     "alt": "Farbe 74",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212186958",
+     "alt": "Farbe 65",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212219726",
+     "alt": "Farbe 52",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017212252494",
+     "alt": "Farbe 43",
+     "neu": "Taupe Dunkel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982987477326": {
+   "titel": "Solera Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831145238862",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017217331534",
+     "alt": "Farbe 11",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017217364302",
+     "alt": "Farbe 13",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017217397070",
+     "alt": "Farbe 14",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017217429838",
+     "alt": "Farbe 17",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017217462606",
+     "alt": "Farbe 24",
+     "neu": "Grau Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982988624206": {
+   "titel": "Kerova Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831146746190",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222574414",
+     "alt": "Farbe 21",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222607182",
+     "alt": "Farbe 99",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222639950",
+     "alt": "Farbe 98",
+     "neu": "Grau Dunkel Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222672718",
+     "alt": "Farbe 95",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222705486",
+     "alt": "Farbe 80",
+     "neu": "Beige Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222738254",
+     "alt": "Farbe 74",
+     "neu": "Grau Dunkel Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222771022",
+     "alt": "Farbe 54",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222803790",
+     "alt": "Farbe 49",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222836558",
+     "alt": "Farbe 36",
+     "neu": "Sand Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017222869326",
+     "alt": "Farbe 33",
+     "neu": "Sand Hell"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982989214030": {
+   "titel": "Tamira Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831147729230",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017226932558",
+     "alt": "Farbe 180",
+     "neu": "Rot Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017226965326",
+     "alt": "Farbe 850",
+     "neu": "Grau Dunkel Warm Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017226998094",
+     "alt": "Farbe 840",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227030862",
+     "alt": "Farbe 830",
+     "neu": "Grau Dunkel Warm Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227063630",
+     "alt": "Farbe 820",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227096398",
+     "alt": "Farbe 800",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227129166",
+     "alt": "Farbe 780",
+     "neu": "Grau Dunkel Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227161934",
+     "alt": "Farbe 420",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227194702",
+     "alt": "Farbe 260",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017227227470",
+     "alt": "Farbe 250",
+     "neu": "Sand Hell"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982992228686": {
+   "titel": "Verita Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831152513358",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250656590",
+     "alt": "Farbe 27",
+     "neu": "Grau Dunkel Warm Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250689358",
+     "alt": "Farbe 34",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250722126",
+     "alt": "Farbe 39",
+     "neu": "Grau Dunkel Warm Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250754894",
+     "alt": "Farbe 77",
+     "neu": "Grau Dunkel Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250787662",
+     "alt": "Farbe 84",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250820430",
+     "alt": "Farbe 90",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017250853198",
+     "alt": "Farbe 97",
+     "neu": "Grau Dunkel Warm"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982992982350": {
+   "titel": "Tarona Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831153594702",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017256653134",
+     "alt": "Farbe 410",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017256685902",
+     "alt": "Farbe 412",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017256718670",
+     "alt": "Farbe 414",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017256751438",
+     "alt": "Farbe 415",
+     "neu": "Taupe Dunkel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15982994063694": {
+   "titel": "Coralia Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831155265870",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263337806",
+     "alt": "Farbe 24",
+     "neu": "Grün Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263370574",
+     "alt": "Farbe 95",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263403342",
+     "alt": "Farbe 90",
+     "neu": "Grau Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263436110",
+     "alt": "Farbe 60",
+     "neu": "Rot Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263468878",
+     "alt": "Farbe 40",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263501646",
+     "alt": "Farbe 39",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263534414",
+     "alt": "Farbe 34",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017263567182",
+     "alt": "Farbe 33",
+     "neu": "Sand Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983003304270": {
+   "titel": "Rivena Teppichboden 400cm",
+   "optionId": "gid://shopify/ProductOption/18831169519950",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332379982",
+     "alt": "Farbe 26",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332412750",
+     "alt": "Farbe 97",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332445518",
+     "alt": "Farbe 95",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332478286",
+     "alt": "Farbe 94",
+     "neu": "Anthrazit Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332511054",
+     "alt": "Farbe 74",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332543822",
+     "alt": "Farbe 49",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332576590",
+     "alt": "Farbe 45",
+     "neu": "Taupe Dunkel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332609358",
+     "alt": "Farbe 36",
+     "neu": "Beige Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017332642126",
+     "alt": "Farbe 31",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983006908750": {
+   "titel": "Altessa Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831176433998",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395425614",
+     "alt": "Farbe 22",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395458382",
+     "alt": "Farbe 91",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395491150",
+     "alt": "Farbe 81",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395523918",
+     "alt": "Farbe 77",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395556686",
+     "alt": "Farbe 73",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395589454",
+     "alt": "Farbe 71",
+     "neu": "Grau Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017395622222",
+     "alt": "Farbe 63",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983021621582": {
+   "titel": "Wovena Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831204155726",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644659022",
+     "alt": "Farbe 121",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644691790",
+     "alt": "Farbe 329",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644724558",
+     "alt": "Farbe 137",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644757326",
+     "alt": "Farbe 136",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644790094",
+     "alt": "Farbe 132",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644822862",
+     "alt": "Farbe 753",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644855630",
+     "alt": "Farbe 751",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644888398",
+     "alt": "Farbe 725",
+     "neu": "Sand Hell Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644921166",
+     "alt": "Farbe 724",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017644953934",
+     "alt": "Farbe 439",
+     "neu": "Beige Hell"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983022735694": {
+   "titel": "Callista Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831206416718",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665204558",
+     "alt": "Farbe 139",
+     "neu": "Grau Mittel 2"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665237326",
+     "alt": "Farbe 233",
+     "neu": "Beige Mittel 2"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665270094",
+     "alt": "Farbe 229",
+     "neu": "Grau Mittel 3"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665302862",
+     "alt": "Farbe 212",
+     "neu": "Beige Mittel 1"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665335630",
+     "alt": "Farbe 159",
+     "neu": "Grau Mittel 4"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665368398",
+     "alt": "Farbe 149",
+     "neu": "Beige Mittel 4"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665401166",
+     "alt": "Farbe 148",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665433934",
+     "alt": "Farbe 143",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665466702",
+     "alt": "Farbe 145",
+     "neu": "Beige Mittel 3"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017665499470",
+     "alt": "Farbe 121",
+     "neu": "Grau Mittel 1"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983023456590": {
+   "titel": "Merinda Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831207629134",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670185294",
+     "alt": "Farbe 119",
+     "neu": "Beige Mittel 2"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670218062",
+     "alt": "Farbe 179",
+     "neu": "Grau Dunkel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670250830",
+     "alt": "Farbe 132",
+     "neu": "Beige Mittel 3"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670283598",
+     "alt": "Farbe 149",
+     "neu": "Beige Mittel 4"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670316366",
+     "alt": "Farbe 189",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670349134",
+     "alt": "Farbe 122",
+     "neu": "Beige Mittel 1"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670381902",
+     "alt": "Farbe 163",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017670414670",
+     "alt": "Farbe 123",
+     "neu": "Beige Mittel 5"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983024046414": {
+   "titel": "Lanova Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831208415566",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673003342",
+     "alt": "Farbe 109",
+     "neu": "Beige Hell Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673036110",
+     "alt": "Farbe 132",
+     "neu": "Beige Hell Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673068878",
+     "alt": "Farbe 119",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673101646",
+     "alt": "Farbe 112",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673134414",
+     "alt": "Farbe 113",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673167182",
+     "alt": "Farbe 139",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017673199950",
+     "alt": "Farbe 129",
+     "neu": "Beige Mittel Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983024669006": {
+   "titel": "Lanetta Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831209234766",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017674936654",
+     "alt": "Farbe 129",
+     "neu": "Beige Hell Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017674969422",
+     "alt": "Farbe 133",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017675002190",
+     "alt": "Farbe 112",
+     "neu": "Beige Hell Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017675034958",
+     "alt": "Farbe 139",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017675067726",
+     "alt": "Farbe 169",
+     "neu": "Grau Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017675100494",
+     "alt": "Farbe 159",
+     "neu": "Grau Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017675133262",
+     "alt": "Farbe 132",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983031058766": {
+   "titel": "Nordica Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831215952206",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683358030",
+     "alt": "Farbe 102",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683390798",
+     "alt": "Farbe 122",
+     "neu": "Beige Mittel 2"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683423566",
+     "alt": "Farbe 159",
+     "neu": "Beige Mittel 4"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683456334",
+     "alt": "Farbe 153",
+     "neu": "Beige Mittel 5"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683489102",
+     "alt": "Farbe 119",
+     "neu": "Beige Mittel 3"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017683521870",
+     "alt": "Farbe 109",
+     "neu": "Beige Mittel 1"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983034532174": {
+   "titel": "Vellana Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831220539726",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707245902",
+     "alt": "Farbe 102",
+     "neu": "Sand Hell Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707278670",
+     "alt": "Farbe 159",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707311438",
+     "alt": "Farbe 109",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707344206",
+     "alt": "Farbe 119",
+     "neu": "Sand Hell Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707376974",
+     "alt": "Farbe 122",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017707409742",
+     "alt": "Farbe 153",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983035187534": {
+   "titel": "Woolara Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831221391694",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14017709736270",
+     "alt": "Farbe 132",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017709769038",
+     "alt": "Farbe 112",
+     "neu": "Creme Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017709801806",
+     "alt": "Farbe 119",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017709834574",
+     "alt": "Farbe 126",
+     "neu": "Sand Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14017709867342",
+     "alt": "Farbe 139",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983210234190": {
+   "titel": "Sisara Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831477506382",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018859270478",
+     "alt": "Farbe 513",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018859303246",
+     "alt": "Farbe 514",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018859336014",
+     "alt": "Farbe 515",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018859368782",
+     "alt": "Farbe 522",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018859401550",
+     "alt": "Farbe 518",
+     "neu": "Braun Dunkel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983210594638": {
+   "titel": "Sisola Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831478096206",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018861662542",
+     "alt": "Farbe 513",
+     "neu": "Beige Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018861695310",
+     "alt": "Farbe 522",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018861728078",
+     "alt": "Farbe 515",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018861760846",
+     "alt": "Farbe 518",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018861793614",
+     "alt": "Farbe 514",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983212167502": {
+   "titel": "Regalia Teppichboden 400cm",
+   "optionId": "gid://shopify/ProductOption/18831481143630",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018869657934",
+     "alt": "Farbe 523",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018869690702",
+     "alt": "Farbe 511",
+     "neu": "Creme Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018869723470",
+     "alt": "Farbe 513",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018869756238",
+     "alt": "Farbe 525",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018869789006",
+     "alt": "Farbe 515",
+     "neu": "Beige Mittel Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983212790094": {
+   "titel": "Boucella Teppichboden 400cm",
+   "optionId": "gid://shopify/ProductOption/18831482159438",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018874212686",
+     "alt": "Farbe 510",
+     "neu": "Creme Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018874245454",
+     "alt": "Farbe 520",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018874278222",
+     "alt": "Farbe 516",
+     "neu": "Sand Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018874310990",
+     "alt": "Farbe 514",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018874343758",
+     "alt": "Farbe 522",
+     "neu": "Anthrazit"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983214559566": {
+   "titel": "Fibrella Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831484354894",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878112078",
+     "alt": "Farbe 518",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878144846",
+     "alt": "Farbe 515",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878177614",
+     "alt": "Farbe 514",
+     "neu": "Beige Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878210382",
+     "alt": "Farbe 522",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878243150",
+     "alt": "Farbe 513",
+     "neu": "Beige Mittel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983214657870": {
+   "titel": "Rubira Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831484518734",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018878406990",
+     "alt": "Farbe 126",
+     "neu": "Sand Hell"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983218557262": {
+   "titel": "Vantana Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831489565006",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918220110",
+     "alt": "Farbe 22",
+     "neu": "Bordeaux"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918252878",
+     "alt": "Farbe 42",
+     "neu": "Gelb Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918285646",
+     "alt": "Farbe 70",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918318414",
+     "alt": "Farbe 72",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918351182",
+     "alt": "Farbe 75",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918383950",
+     "alt": "Farbe 76",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918416718",
+     "alt": "Farbe 77",
+     "neu": "Anthrazit Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918449486",
+     "alt": "Farbe 78",
+     "neu": "Schwarz Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918482254",
+     "alt": "Farbe 79",
+     "neu": "Anthrazit Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918515022",
+     "alt": "Farbe 80",
+     "neu": "Blau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918547790",
+     "alt": "Farbe 83",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918580558",
+     "alt": "Farbe 85",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918613326",
+     "alt": "Farbe 86",
+     "neu": "Petrol Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918646094",
+     "alt": "Farbe 90",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918678862",
+     "alt": "Farbe 92",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918711630",
+     "alt": "Farbe 93",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918744398",
+     "alt": "Farbe 94",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018918777166",
+     "alt": "Farbe 178",
+     "neu": "Schwarz Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983219179854": {
+   "titel": "Corvella Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831490416974",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919596366",
+     "alt": "Farbe 24",
+     "neu": "Grün Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919629134",
+     "alt": "Farbe 30",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919661902",
+     "alt": "Farbe 34",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919694670",
+     "alt": "Farbe 45",
+     "neu": "Braun Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919727438",
+     "alt": "Farbe 48",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919760206",
+     "alt": "Farbe 49",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919792974",
+     "alt": "Farbe 78",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919825742",
+     "alt": "Farbe 85",
+     "neu": "Braun Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919858510",
+     "alt": "Farbe 93",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919891278",
+     "alt": "Farbe 95",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919924046",
+     "alt": "Farbe 97",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018919956814",
+     "alt": "Farbe 99",
+     "neu": "Schwarz"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983222161742": {
+   "titel": "Torvana Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831494512974",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930278734",
+     "alt": "Farbe 15",
+     "neu": "Bordeaux"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930311502",
+     "alt": "Farbe 24",
+     "neu": "Oliv Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930344270",
+     "alt": "Farbe 28",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930377038",
+     "alt": "Farbe 36",
+     "neu": "Beige Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930409806",
+     "alt": "Farbe 38",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930442574",
+     "alt": "Farbe 39",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930475342",
+     "alt": "Farbe 40",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930508110",
+     "alt": "Farbe 43",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930540878",
+     "alt": "Farbe 49",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930573646",
+     "alt": "Farbe 66",
+     "neu": "Bordeaux Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930606414",
+     "alt": "Farbe 75",
+     "neu": "Anthrazit Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930639182",
+     "alt": "Farbe 77",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930671950",
+     "alt": "Farbe 92",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930704718",
+     "alt": "Farbe 93",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930737486",
+     "alt": "Farbe 94",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930770254",
+     "alt": "Farbe 97",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930803022",
+     "alt": "Farbe 98",
+     "neu": "Anthrazit Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018930835790",
+     "alt": "Farbe 99",
+     "neu": "Schwarz"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983222587726": {
+   "titel": "Reganza Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831495102798",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018931949902",
+     "alt": "Farbe 28",
+     "neu": "Grün Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018931982670",
+     "alt": "Farbe 30",
+     "neu": "Creme"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932015438",
+     "alt": "Farbe 33",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932048206",
+     "alt": "Farbe 34",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932080974",
+     "alt": "Farbe 48",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932113742",
+     "alt": "Farbe 55",
+     "neu": "Ocker Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932146510",
+     "alt": "Farbe 62",
+     "neu": "Rot Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932179278",
+     "alt": "Farbe 68",
+     "neu": "Bordeaux Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932212046",
+     "alt": "Farbe 71",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932244814",
+     "alt": "Farbe 93",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932277582",
+     "alt": "Farbe 95",
+     "neu": "Grau Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932310350",
+     "alt": "Farbe 97",
+     "neu": "Grau Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932343118",
+     "alt": "Farbe 141",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932375886",
+     "alt": "Farbe 297",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018932408654",
+     "alt": "Farbe 298",
+     "neu": "Schwarz"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983223472462": {
+   "titel": "Solvana Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831496282446",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018934866254",
+     "alt": "Farbe 21",
+     "neu": "Braun Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018934899022",
+     "alt": "Farbe 29",
+     "neu": "Oliv Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018934931790",
+     "alt": "Farbe 31",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018934964558",
+     "alt": "Farbe 32",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018934997326",
+     "alt": "Farbe 34",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935030094",
+     "alt": "Farbe 38",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935062862",
+     "alt": "Farbe 39",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935095630",
+     "alt": "Farbe 49",
+     "neu": "Anthrazit Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935128398",
+     "alt": "Farbe 52",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935161166",
+     "alt": "Farbe 57",
+     "neu": "Ocker Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935193934",
+     "alt": "Farbe 65",
+     "neu": "Ocker Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935226702",
+     "alt": "Farbe 90",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935259470",
+     "alt": "Farbe 93",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935292238",
+     "alt": "Farbe 96",
+     "neu": "Anthrazit Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018935325006",
+     "alt": "Farbe 98",
+     "neu": "Taupe Tief"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983224521038": {
+   "titel": "Palenza Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831497560398",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937356622",
+     "alt": "Farbe 21",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937389390",
+     "alt": "Farbe 36",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937422158",
+     "alt": "Farbe 44",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937454926",
+     "alt": "Farbe 46",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937487694",
+     "alt": "Farbe 48",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937520462",
+     "alt": "Farbe 49",
+     "neu": "Beige Mittel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937553230",
+     "alt": "Farbe 51",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937585998",
+     "alt": "Farbe 56",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937618766",
+     "alt": "Farbe 65",
+     "neu": "Rot Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937651534",
+     "alt": "Farbe 73",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937684302",
+     "alt": "Farbe 91",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018937717070",
+     "alt": "Farbe 92",
+     "neu": "Grau Hell"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983225012558": {
+   "titel": "Novaris Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831498248526",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018938962254",
+     "alt": "Farbe 45",
+     "neu": "Schwarz Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018938995022",
+     "alt": "Farbe 71",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939027790",
+     "alt": "Farbe 74",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939060558",
+     "alt": "Farbe 77",
+     "neu": "Schwarz Warm Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939093326",
+     "alt": "Farbe 78",
+     "neu": "Schwarz Warm Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939126094",
+     "alt": "Farbe 79",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939158862",
+     "alt": "Farbe 82",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939191630",
+     "alt": "Farbe 85",
+     "neu": "Blau Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939224398",
+     "alt": "Farbe 86",
+     "neu": "Blau Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939257166",
+     "alt": "Farbe 95",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939289934",
+     "alt": "Farbe 96",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939322702",
+     "alt": "Farbe 97",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939355470",
+     "alt": "Farbe 178",
+     "neu": "Schwarz Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018939388238",
+     "alt": "Farbe 179",
+     "neu": "Schwarz Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983226257742": {
+   "titel": "Velory Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831500509518",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018946859342",
+     "alt": "Farbe 20",
+     "neu": "Bordeaux"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018946892110",
+     "alt": "Farbe 40",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018946924878",
+     "alt": "Farbe 50",
+     "neu": "Braun Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018946957646",
+     "alt": "Farbe 78",
+     "neu": "Schwarz Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018946990414",
+     "alt": "Farbe 81",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947023182",
+     "alt": "Farbe 90",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947055950",
+     "alt": "Farbe 94",
+     "neu": "Braun Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947088718",
+     "alt": "Farbe 175",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947121486",
+     "alt": "Farbe 176",
+     "neu": "Schwarz Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947154254",
+     "alt": "Farbe 177",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947187022",
+     "alt": "Farbe 182",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018947219790",
+     "alt": "Farbe 274",
+     "neu": "Grau Dunkel"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983226716494": {
+   "titel": "Nuvara Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831501132110",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018948923726",
+     "alt": "Farbe 12",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018948956494",
+     "alt": "Farbe 15",
+     "neu": "Schwarz Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018948989262",
+     "alt": "Farbe 40",
+     "neu": "Petrol Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949022030",
+     "alt": "Farbe 50",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949054798",
+     "alt": "Farbe 72",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949087566",
+     "alt": "Farbe 75",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949120334",
+     "alt": "Farbe 77",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949153102",
+     "alt": "Farbe 78",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949185870",
+     "alt": "Farbe 79",
+     "neu": "Schwarz Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949218638",
+     "alt": "Farbe 85",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949251406",
+     "alt": "Farbe 97",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949284174",
+     "alt": "Farbe 474",
+     "neu": "Grau Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949316942",
+     "alt": "Farbe 476",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949349710",
+     "alt": "Farbe 482",
+     "neu": "Grau Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018949382478",
+     "alt": "Farbe 492",
+     "neu": "Taupe Tief Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983227437390": {
+   "titel": "Alvento Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831502082382",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952134990",
+     "alt": "Farbe 50",
+     "neu": "Ocker Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952167758",
+     "alt": "Farbe 69",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952200526",
+     "alt": "Farbe 72",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952233294",
+     "alt": "Farbe 73",
+     "neu": "Grau Dunkel Meliert"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952266062",
+     "alt": "Farbe 74",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952298830",
+     "alt": "Farbe 75",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952331598",
+     "alt": "Farbe 76",
+     "neu": "Anthrazit Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952364366",
+     "alt": "Farbe 78",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952397134",
+     "alt": "Farbe 79",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952429902",
+     "alt": "Farbe 81",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952462670",
+     "alt": "Farbe 82",
+     "neu": "Petrol Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952495438",
+     "alt": "Farbe 96",
+     "neu": "Ocker Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952528206",
+     "alt": "Farbe 240",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952560974",
+     "alt": "Farbe 273",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952593742",
+     "alt": "Farbe 274",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018952626510",
+     "alt": "Farbe 277",
+     "neu": "Anthrazit Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983227863374": {
+   "titel": "Sentira Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831502672206",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953380174",
+     "alt": "Farbe 03",
+     "neu": "Beige Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953412942",
+     "alt": "Farbe 09",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953445710",
+     "alt": "Farbe 18",
+     "neu": "Bordeaux"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953478478",
+     "alt": "Farbe 29",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953511246",
+     "alt": "Farbe 30",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953544014",
+     "alt": "Farbe 32",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953576782",
+     "alt": "Farbe 33",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953609550",
+     "alt": "Farbe 44",
+     "neu": "Taupe Tief Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953642318",
+     "alt": "Farbe 45",
+     "neu": "Taupe Tief Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953675086",
+     "alt": "Farbe 48",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953707854",
+     "alt": "Farbe 74",
+     "neu": "Petrol"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953740622",
+     "alt": "Farbe 90",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953773390",
+     "alt": "Farbe 94",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953806158",
+     "alt": "Farbe 97",
+     "neu": "Anthrazit Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018953838926",
+     "alt": "Farbe 98",
+     "neu": "Anthrazit Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983228485966": {
+   "titel": "Vireno Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831503458638",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955215182",
+     "alt": "Farbe 03",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955247950",
+     "alt": "Farbe 05",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955280718",
+     "alt": "Farbe 24",
+     "neu": "Taupe Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955313486",
+     "alt": "Farbe 34",
+     "neu": "Taupe Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955346254",
+     "alt": "Farbe 35",
+     "neu": "Braun Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955379022",
+     "alt": "Farbe 36",
+     "neu": "Beige Mittel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955411790",
+     "alt": "Farbe 39",
+     "neu": "Beige Mittel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955444558",
+     "alt": "Farbe 44",
+     "neu": "Braun Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955477326",
+     "alt": "Farbe 84",
+     "neu": "Braun Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955510094",
+     "alt": "Farbe 90",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955542862",
+     "alt": "Farbe 95",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955575630",
+     "alt": "Farbe 96",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955608398",
+     "alt": "Farbe 97",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018955641166",
+     "alt": "Farbe 99",
+     "neu": "Schwarz"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983228879182": {
+   "titel": "Zafira Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831504113998",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957181262",
+     "alt": "Farbe 250",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957214030",
+     "alt": "Farbe 260",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957246798",
+     "alt": "Farbe 400",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957279566",
+     "alt": "Farbe 420",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957312334",
+     "alt": "Farbe 800",
+     "neu": "Schwarz"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957345102",
+     "alt": "Farbe 820",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957377870",
+     "alt": "Farbe 830",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957410638",
+     "alt": "Farbe 840",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018957443406",
+     "alt": "Farbe 850",
+     "neu": "Grau Dunkel Heller"
+    }
+   ]
+  },
+  "gid://shopify/Product/15983230681422": {
+   "titel": "Piumera Teppichboden 400cm 500cm",
+   "optionId": "gid://shopify/ProductOption/18831506080078",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982510926",
+     "alt": "Farbe 04",
+     "neu": "Sand Hell"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982543694",
+     "alt": "Farbe 27",
+     "neu": "Grün Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982576462",
+     "alt": "Farbe 30",
+     "neu": "Beige Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982609230",
+     "alt": "Farbe 35",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982641998",
+     "alt": "Farbe 40",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982674766",
+     "alt": "Farbe 41",
+     "neu": "Bordeaux Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982707534",
+     "alt": "Farbe 49",
+     "neu": "Grau Dunkel Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982740302",
+     "alt": "Farbe 77",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982773070",
+     "alt": "Farbe 81",
+     "neu": "Bordeaux Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982805838",
+     "alt": "Farbe 91",
+     "neu": "Grau Mittel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982838606",
+     "alt": "Farbe 92",
+     "neu": "Grau Dunkel Dunkler"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982871374",
+     "alt": "Farbe 95",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982904142",
+     "alt": "Farbe 98",
+     "neu": "Schwarz Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14018982936910",
+     "alt": "Farbe 99",
+     "neu": "Schwarz Dunkler"
+    }
+   ]
+  },
+  "gid://shopify/Product/16020510277966": {
+   "titel": "Quadra Nadelvlies Teppichfliese 50x50cm",
+   "optionId": "gid://shopify/ProductOption/18876943860046",
+   "werte": [
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413041998",
+     "alt": "Farbe 024",
+     "neu": "Blau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413074766",
+     "alt": "Farbe 039",
+     "neu": "Blau Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413107534",
+     "alt": "Farbe 050",
+     "neu": "Schwarz Warm"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413140302",
+     "alt": "Farbe 070",
+     "neu": "Grau Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413173070",
+     "alt": "Farbe 072",
+     "neu": "Anthrazit"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413205838",
+     "alt": "Farbe 080",
+     "neu": "Taupe Tief"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413238606",
+     "alt": "Farbe 085",
+     "neu": "Schwarz Warm Heller"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413271374",
+     "alt": "Farbe 089",
+     "neu": "Schwarz Kühl"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413304142",
+     "alt": "Farbe 141",
+     "neu": "Taupe Dunkel"
+    },
+    {
+     "id": "gid://shopify/ProductOptionValue/14182413336910",
+     "alt": "Farbe 181",
+     "neu": "Schwarz Warm Dunkler"
+    }
+   ]
+  }
+ }
+}

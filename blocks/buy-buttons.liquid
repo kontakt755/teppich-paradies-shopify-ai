@@ -63,6 +63,8 @@
           ref="variantId"
           value="{{ product.selected_or_first_available_variant.id }}"
         >
+        {%- comment -%} Farbnummer + interne Farbbezeichnung als Line-Item-Properties (snippets/tp-farbe-properties.liquid) {%- endcomment -%}
+        {%- render 'tp-farbe-properties', product: product -%}
         {%- if block_settings.gift_card_form and product.gift_card? -%}
           {%- render 'gift-card-recipient-form', product: product, form: form, section: section, block: block -%}
           <span class="buy-buttons-block__bar">

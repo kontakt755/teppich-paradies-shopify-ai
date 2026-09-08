@@ -60,6 +60,16 @@
         "blocks/tp-teppich-versand.liquid",
         "templates/product.teppich.json"
       ]
+    },
+    {
+      "name": "Farbverwaltung",
+      "reason": "Farbname (Kunde) und Farbnummer (intern) je Variante; Farbnummer wandert als Line-Item-Property in Warenkorb und Bestellung. Alle sechs Produkt-Templates und buy-buttons/quick-add referenzieren diese Dateien - fehlt eine, lehnt Shopify den Template-Push ab. Siehe domains/shopify/farbverwaltung.md.",
+      "files": [
+        "snippets/tp-farbe-daten.liquid",
+        "snippets/tp-farbe-properties.liquid",
+        "blocks/tp-farbanzeige.liquid",
+        "assets/tp-farbe.js"
+      ]
     }
   ]
 }

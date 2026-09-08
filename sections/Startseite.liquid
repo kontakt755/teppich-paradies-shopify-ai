@@ -222,10 +222,11 @@
   box-sizing: border-box;
 }
 
-/* Desktop: 4 Spalten für 4 Kategorien */
+/* Desktop: 5 Spalten - vier Bodenbelaege plus Zubehoer als letzter Punkt */
 @media (min-width: 1200px) {
   .categories {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
+    gap: 20px;
   }
 }
 
@@ -284,6 +285,24 @@
   transform: scale(1.06);
 }
 
+/* Zubehoer-Kachel ohne Foto: Liniensymbol auf ruhigem Grund, gleiche Kachelhoehe */
+.category-box .category-media--icon{
+  display: grid;
+  place-items: center;
+  background: linear-gradient(160deg, #f5efe9 0%, #e9e1d8 100%);
+  color: #1a1a1a;
+}
+
+.category-box .category-media--icon svg{
+  width: 38%;
+  height: auto;
+  transition: transform .5s ease;
+}
+
+.category-box:hover .category-media--icon svg{
+  transform: scale(1.08);
+}
+
 .category-box .category-badge{
   position: absolute;
   top: 14px;
@@ -295,6 +314,58 @@
   padding: 6px 12px;
   border-radius: 999px;
   letter-spacing: 0.02em;
+  /* Laufband: Feld behaelt Groesse und Form, laengerer Text laeuft innen durch */
+  max-width: calc(100% - 28px);
+  white-space: nowrap;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* tp-laufband: Grundzustand statisch, Lauf nur mit .is-scrolling (setzt assets/tp-laufband.js) */
+.tp-laufband{
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: top;
+}
+.tp-laufband__viewport{
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* Beim Lauf blendet nur der Text an beiden Enden weich ein und aus, das weisse Feld bleibt voll */
+.tp-laufband.is-scrolling .tp-laufband__viewport{
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+}
+/* Hover auf der Kachel haelt das Band an, damit man in Ruhe lesen kann */
+.category-box:hover .tp-laufband.is-scrolling .tp-laufband__track{
+  animation-play-state: paused;
+}
+.tp-laufband__track{
+  display: inline-flex;
+  gap: 32px; /* Abstand zwischen Textende und Wiederholung, identisch zu GAP in tp-laufband.js */
+  white-space: nowrap;
+  will-change: transform;
+}
+.tp-laufband__item{ flex: 0 0 auto; }
+.tp-laufband.is-scrolling .tp-laufband__track{
+  animation: tp-laufband-run var(--tp-laufband-duration, 12s) linear infinite;
+}
+@keyframes tp-laufband-run{
+  from{ transform: translate3d(0,0,0); }
+  to{ transform: translate3d(calc(-1 * var(--tp-laufband-distance, 100%)),0,0); }
+}
+@media (prefers-reduced-motion: reduce){
+  .tp-laufband .tp-laufband__track{ animation: none !important; transform: none !important; }
+  /* Ohne Bewegung muss der ganze Text lesbar bleiben: Feld darf dann umbrechen */
+  .tp-laufband,
+  .tp-laufband__track,
+  .tp-laufband__item{ white-space: normal; }
+  .tp-laufband__viewport,
+  .tp-laufband__track{ display: block; white-space: normal; }
+  .tp-laufband__item--clone{ display: none; }
 }
 
 .category-box .category-body{
@@ -354,13 +425,13 @@
 
     <div class="hero-actions">
       <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
-      <a href="/pages/liefer-verlegeservice" class="btn-secondary">Beratung & Verlegeservice</a>
+      <a href="/pages/boden-malerarbeiten" class="btn-secondary">Beratung & Verlegeservice</a>
     </div>
 
     <div class="hero-contact">
       <a href="tel:+4933015733720">Anrufen: 03301 5733720</a>
       <span aria-hidden="true">·</span>
-      <a href="https://wa.me/491792612211" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
     </div>
   </div>
 </section>
@@ -388,7 +459,7 @@
 <div class="categories">
   <div class="category-box">
     <a href="{{ collections['vinylboden-1'].url }}" class="category-media">
-      <span class="category-badge">Klick · Kleben · Rolle</span>
+      {% render 'tp-laufband', text: 'Klick · Kleben · Rolle · Holzdekor · Fliesendekor · Steindekor', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1165354-8FXC-prod.jpg?width=800"
         alt="Vinylboden"
@@ -409,7 +480,7 @@
 
   <div class="category-box">
     <a href="{{ collections['teppichboden'].url }}" class="category-media">
-      <span class="category-badge">Velours · Schlinge</span>
+      {% render 'tp-laufband', text: 'Velours · Schlinge · Hochflor · Kurzflor · Wolle · Nadelvlies & Objekt', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1196472-8FXC-prod.jpg?width=800"
         alt="Teppichboden"
@@ -429,8 +500,29 @@
   </div>
 
   <div class="category-box">
+    <a href="{{ collections['linoleumboden-1'].url }}" class="category-media">
+      {% render 'tp-laufband', text: 'Naturboden · Rollenware · 200 cm Breite · Wohnen & Gewerbe', class: 'category-badge' %}
+      <img
+        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1127866-8FXC-prod.jpg?v=1788621455&width=800"
+        alt="Linoleumboden"
+        loading="lazy"
+        width="800"
+        height="600"
+      >
+    </a>
+    <div class="category-body">
+      <h3>Linoleumboden</h3>
+      <p>Elastische Linoleumböden aus Naturmaterialien – strapazierfähig, pflegeleicht und nachhaltig für jeden Raum.</p>
+      <a href="{{ collections['linoleumboden-1'].url }}" class="category-cta">
+        Linoleumboden entdecken
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <div class="category-box">
     <a href="{{ collections['bodenleisten'].url }}" class="category-media">
-      <span class="category-badge">Echtholz · MDF · Kunststoff</span>
+      {% render 'tp-laufband', text: 'Echtholz · MDF · Kunststoff · Sockelleisten · Übergangsprofile · Abschlussprofile · Kleber & Fixierung', class: 'category-badge' %}
       <img
         src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1310680-8FXC-prod.jpg?width=800"
         alt="Bodenleisten"
@@ -449,27 +541,23 @@
     </div>
   </div>
 
-  <div class="category-box">
-    <a href="{{ collections['linoleumboden'].url }}" class="category-media">
-      <span class="category-badge">Naturboden</span>
-      <img
-        src="https://cdn.shopify.com/s/files/1/0875/4852/6926/files/1127838-8FXC-prod.jpg?v=1788554945&width=800"
-        alt="Linoleumboden"
-        loading="lazy"
-        width="800"
-        height="600"
-      >
+  <div class="category-box category-box--zubehoer">
+    <a href="{{ collections['zubehoer'].url }}" class="category-media category-media--icon" aria-label="Zubehör">
+      {% render 'tp-laufband', text: 'Profile · Kleber & Fixierung · Bauchemie · Verlegeunterlagen · Reinigung · Verlegeband · Sauberlauf', class: 'category-badge' %}
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 46h52"/><path d="M6 54h52"/><path d="M14 46V26h36v20"/><path d="M14 26l18-10 18 10"/></svg>
     </a>
     <div class="category-body">
-      <h3>Linoleumboden</h3>
-      <p>Elastische Linoleumböden aus Naturmaterialien – strapazierfähig, pflegeleicht und nachhaltig für jeden Raum.</p>
-      <a href="{{ collections['linoleumboden'].url }}" class="category-cta">
-        Linoleumboden entdecken
+      <h3>Zubehör</h3>
+      <p>Profile, Kleber, Bauchemie, Unterlagen, Reinigung, Verlegeband und Sauberlauf – alles für Verlegung und Pflege.</p>
+      <a href="{{ collections['zubehoer'].url }}" class="category-cta">
+        Zubehör entdecken
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
     </div>
   </div>
 </div>
+
+<script src="{{ 'tp-laufband.js' | asset_url }}" defer></script>
 
 {% schema %}
 {

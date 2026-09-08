@@ -1,0 +1,309 @@
+{
+  "sections": {
+    "hero": {
+      "type": "tp-zubehoer-hero",
+      "name": "TP Zubehoer-Hero",
+      "blocks": {},
+      "block_order": [],
+      "settings": {
+        "eyebrow": "Zubehör",
+        "heading": "",
+        "text": "",
+        "usp_1": "Passend zu unseren Bodenbelägen",
+        "usp_2": "Persönliche Fachberatung",
+        "usp_3": "Deutschlandweiter Versand",
+        "cta_1_label": "",
+        "cta_1_link": "",
+        "cta_2_label": "",
+        "cta_2_link": "",
+        "image_alt": "",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
+    },
+    "chips": {
+      "type": "tp-zubehoer-kacheln",
+      "blocks": {
+        "kachel_zubehoer": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer",
+            "title": "Alles Zubehör",
+            "text": "",
+            "icon": "profil",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_uebergangsprofile": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-uebergangsprofile",
+            "title": "",
+            "text": "",
+            "icon": "uebergang",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_abschlussprofile": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-abschlussprofile",
+            "title": "",
+            "text": "",
+            "icon": "abschluss",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_kleber_fixierung": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-kleber-fixierung",
+            "title": "",
+            "text": "",
+            "icon": "kleber",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_bauchemie": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-bauchemie",
+            "title": "",
+            "text": "",
+            "icon": "bauchemie",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_verlegeunterlagen": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-verlegeunterlagen",
+            "title": "",
+            "text": "",
+            "icon": "unterlage",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_reinigungsmittel": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-reinigungsmittel",
+            "title": "",
+            "text": "",
+            "icon": "reinigung",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_verlegeband": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-verlegeband",
+            "title": "",
+            "text": "",
+            "icon": "band",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        },
+        "kachel_sauberlauf": {
+          "type": "kachel",
+          "settings": {
+            "collection": "zubehoer-sauberlauf",
+            "title": "",
+            "text": "",
+            "icon": "matte",
+            "cta": "Ansehen",
+            "sub_collection_1": "",
+            "sub_collection_2": ""
+          }
+        }
+      },
+      "block_order": [
+        "kachel_zubehoer",
+        "kachel_uebergangsprofile",
+        "kachel_abschlussprofile",
+        "kachel_kleber_fixierung",
+        "kachel_bauchemie",
+        "kachel_verlegeunterlagen",
+        "kachel_reinigungsmittel",
+        "kachel_verlegeband",
+        "kachel_sauberlauf"
+      ],
+      "settings": {
+        "layout": "chips",
+        "heading": "",
+        "intro": "",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 20,
+        "padding-block-end": 0,
+        "anchor": ""
+      }
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "product-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_actions": {
+              "type": "tp-card-actions",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_color_thumbs",
+            "tp_card_specs",
+            "tp_card_actions"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "large",
+        "mobile_product_card_size": "large",
+        "enable_infinite_scroll": true,
+        "products_per_page": 24,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": true,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "chips",
+    "main"
+  ]
+}
