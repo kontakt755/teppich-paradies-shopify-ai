@@ -52,6 +52,10 @@
     {%- if mode == 'passend' and item.id == product.id -%}
       {%- continue -%}
     {%- endif -%}
+    {%- comment -%} Ohne Foto wirkt eine Karte in der Empfehlungsleiste kaputt; im Raster bleibt sie sichtbar. {%- endcomment -%}
+    {%- if item.featured_image == blank -%}
+      {%- continue -%}
+    {%- endif -%}
     {%- if rendered > 0 -%}<!--@list/split-->{%- endif -%}
     <div class="resource-list__item">
       {% # theme-check-disable UniqueStaticBlockId %}

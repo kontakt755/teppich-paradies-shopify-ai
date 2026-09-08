@@ -1,0 +1,488 @@
+{% comment %}
+  Hero fuer die Zubehoer-Kollektionen: heller Panel-Bereich mit Titel,
+  Nutzenversprechen, belegbaren Leistungen und zwei Einstiegen (Bereiche,
+  Beliebtes). Rechts entweder ein hochgeladenes Stimmungsbild oder - solange
+  keins vorliegt - ein Mosaik aus echten Produktfotos, damit der Bereich nie
+  als reiner Textblock steht.
+
+  Motive kommen aus "Motiv"-Bloecken (Bild, Produkt oder Kollektion). Ohne
+  Bloecke nimmt die Sektion die ersten Produkte der aktuellen Kollektion mit
+  Foto, so passt derselbe Baustein auch auf Unterkategorie-Seiten.
+
+  Titel und Einleitung fallen auf Kollektionstitel und -beschreibung zurueck.
+{% endcomment %}
+
+{%- liquid
+  assign heading = section.settings.heading | default: collection.title
+  assign lead = section.settings.text
+  if lead == blank and collection.description != blank
+    assign lead = collection.description | strip_html
+  endif
+  assign hero_image = section.settings.image
+  assign max_motive = 4
+-%}
+
+{%- capture motive -%}
+  {%- if hero_image == blank -%}
+    {%- assign shown = 0 -%}
+    {%- if section.blocks.size > 0 -%}
+      {%- for block in section.blocks -%}
+        {%- liquid
+          if shown >= max_motive
+            break
+          endif
+          assign img = block.settings.image
+          assign url = block.settings.link
+          assign alt = block.settings.alt
+          if img == blank and block.settings.product != blank
+            assign img = block.settings.product.featured_image
+            if url == blank
+              assign url = block.settings.product.url
+            endif
+            if alt == blank
+              assign alt = block.settings.product.title
+            endif
+          endif
+          if img == blank and block.settings.collection != blank
+            for p in block.settings.collection.products limit: 12
+              if p.featured_image != blank
+                assign img = p.featured_image
+                if alt == blank
+                  assign alt = p.title
+                endif
+                break
+              endif
+            endfor
+            if url == blank
+              assign url = block.settings.collection.url
+            endif
+          endif
+          if img == blank
+            continue
+          endif
+        -%}
+        <li class="tp-zh__tile" {{ block.shopify_attributes }}>
+          {%- if url != blank -%}<a class="tp-zh__tile-link" href="{{ url }}" aria-label="{{ alt | escape }}">{%- endif -%}
+          {{ img | image_url: width: 600 | image_tag: loading: 'eager', widths: '300, 450, 600', sizes: '(min-width: 990px) 14vw, (min-width: 750px) 22vw, 42vw', alt: alt }}
+          {%- if url != blank -%}</a>{%- endif -%}
+        </li>
+        {%- assign shown = shown | plus: 1 -%}
+      {%- endfor -%}
+    {%- elsif collection != blank -%}
+      {%- for p in collection.products limit: 24 -%}
+        {%- if shown >= max_motive -%}{%- break -%}{%- endif -%}
+        {%- if p.featured_image == blank -%}{%- continue -%}{%- endif -%}
+        <li class="tp-zh__tile">
+          <a class="tp-zh__tile-link" href="{{ p.url }}" aria-label="{{ p.title | escape }}">
+            {{ p.featured_image | image_url: width: 600 | image_tag: loading: 'eager', widths: '300, 450, 600', sizes: '(min-width: 990px) 14vw, (min-width: 750px) 22vw, 42vw', alt: p.title }}
+          </a>
+        </li>
+        {%- assign shown = shown | plus: 1 -%}
+      {%- endfor -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- assign motive = motive | strip -%}
+
+{%- liquid
+  assign has_media = false
+  if hero_image != blank or motive != blank
+    assign has_media = true
+  endif
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-zh section section--page-width color-{{ section.settings.color_scheme }} spacing-style{% unless has_media %} tp-zh--text-only{% endunless %}"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-testid="tp-zubehoer-hero-{{ section.id }}"
+>
+  <div class="tp-zh__grid">
+    <div class="tp-zh__content">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-zh__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h1 class="tp-zh__title">{{ heading | escape }}</h1>
+      {%- if lead != blank -%}
+        <p class="tp-zh__lead">{{ lead | escape }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.usp_1 != blank or section.settings.usp_2 != blank or section.settings.usp_3 != blank -%}
+        <ul class="tp-zh__usps" role="list">
+          {%- if section.settings.usp_1 != blank -%}<li>{{ section.settings.usp_1 | escape }}</li>{%- endif -%}
+          {%- if section.settings.usp_2 != blank -%}<li>{{ section.settings.usp_2 | escape }}</li>{%- endif -%}
+          {%- if section.settings.usp_3 != blank -%}<li>{{ section.settings.usp_3 | escape }}</li>{%- endif -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if section.settings.cta_1_label != blank or section.settings.cta_2_label != blank -%}
+        <div class="tp-zh__ctas">
+          {%- if section.settings.cta_1_label != blank and section.settings.cta_1_link != blank -%}
+            <a class="button" href="{{ section.settings.cta_1_link }}">{{ section.settings.cta_1_label | escape }}</a>
+          {%- endif -%}
+          {%- if section.settings.cta_2_label != blank and section.settings.cta_2_link != blank -%}
+            <a class="button button-secondary" href="{{ section.settings.cta_2_link }}">{{ section.settings.cta_2_label | escape }}</a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if hero_image != blank -%}
+      <div class="tp-zh__media tp-zh__media--image">
+        {{
+          hero_image
+          | image_url: width: 1400
+          | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 50vw, 100vw', alt: section.settings.image_alt
+        }}
+      </div>
+    {%- elsif motive != blank -%}
+      <div class="tp-zh__media tp-zh__media--mosaic">
+        <ul class="tp-zh__mosaic" role="list" aria-label="Produkte aus diesem Bereich">
+          {{ motive }}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-zh__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+  }
+
+  .tp-zh--text-only .tp-zh__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tp-zh__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    max-width: 38rem;
+  }
+
+  .tp-zh__eyebrow {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .tp-zh__title {
+    margin: 0;
+    font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .tp-zh__lead {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.78);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  .tp-zh__usps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-zh__usps li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  .tp-zh__usps li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+  }
+
+  .tp-zh__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-block-start: 10px;
+  }
+
+  .tp-zh__media--image {
+    overflow: hidden;
+    border-radius: var(--style-border-radius-md);
+  }
+
+  .tp-zh__media--image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 5 / 4;
+    object-fit: cover;
+  }
+
+  .tp-zh__mosaic {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-zh__tile {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    border-radius: var(--style-border-radius-md);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.05);
+  }
+
+  .tp-zh__tile:nth-child(2) {
+    transform: translateY(18px);
+  }
+
+  .tp-zh__tile:nth-child(4) {
+    transform: translateY(18px);
+  }
+
+  .tp-zh__tile-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tp-zh__tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 11%;
+    object-fit: contain;
+    transition: transform var(--animation-speed, 0.25s) var(--animation-easing, ease);
+  }
+
+  .tp-zh__tile:hover img,
+  .tp-zh__tile:focus-within img {
+    transform: scale(1.04);
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-zh__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 28px;
+    }
+
+    .tp-zh__content {
+      max-width: none;
+    }
+
+    .tp-zh__mosaic {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tp-zh__tile:nth-child(2),
+    .tp-zh__tile:nth-child(4) {
+      transform: none;
+    }
+
+    .tp-zh__tile img {
+      padding: 9%;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-zh__lead {
+      font-size: 1rem;
+    }
+
+    .tp-zh__usps {
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tp-zh__ctas {
+      width: 100%;
+    }
+
+    .tp-zh__ctas .button {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Zubehoer-Hero",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Dachzeile"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift (leer = Kollektionstitel)"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Einleitung (leer = Kollektionsbeschreibung)"
+    },
+    {
+      "type": "header",
+      "content": "Leistungen"
+    },
+    {
+      "type": "text",
+      "id": "usp_1",
+      "label": "Leistung 1",
+      "default": "Passend zu unseren Bodenbelägen"
+    },
+    {
+      "type": "text",
+      "id": "usp_2",
+      "label": "Leistung 2",
+      "default": "Persönliche Fachberatung"
+    },
+    {
+      "type": "text",
+      "id": "usp_3",
+      "label": "Leistung 3",
+      "default": "Deutschlandweiter Versand"
+    },
+    {
+      "type": "header",
+      "content": "Einstiege"
+    },
+    {
+      "type": "text",
+      "id": "cta_1_label",
+      "label": "Button 1 Text"
+    },
+    {
+      "type": "text",
+      "id": "cta_1_link",
+      "label": "Button 1 Ziel (URL oder #anker)"
+    },
+    {
+      "type": "text",
+      "id": "cta_2_label",
+      "label": "Button 2 Text"
+    },
+    {
+      "type": "text",
+      "id": "cta_2_link",
+      "label": "Button 2 Ziel (URL oder #anker)"
+    },
+    {
+      "type": "header",
+      "content": "Bild"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Stimmungsbild (ersetzt das Produkt-Mosaik)"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Alternativtext zum Stimmungsbild"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "blocks": [
+    {
+      "type": "motiv",
+      "name": "Motiv",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Bild"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Produkt (leer = Bild oben; sonst Produktfoto)"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Kollektion (erstes Produktfoto, falls kein Produkt)"
+        },
+        {
+          "type": "text",
+          "id": "alt",
+          "label": "Alternativtext"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link (leer = Produkt bzw. Kollektion)"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "TP Zubehoer-Hero",
+      "blocks": [
+        { "type": "motiv" },
+        { "type": "motiv" },
+        { "type": "motiv" },
+        { "type": "motiv" }
+      ]
+    }
+  ]
+}
+{% endschema %}
