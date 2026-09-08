@@ -59,32 +59,6 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "paket_auswahl_xLTafR": {
-              "type": "paket-auswahl",
-              "name": "Paket-Auswahl",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_service_links_night1": {
-              "type": "tp-service-links",
-              "name": "TP Service-Links",
-              "settings": {
-                "delivery_time": "5–7 Werktage"
-              },
-              "blocks": {}
-            },
-            "tp_compare_toggle_night3": {
-              "type": "tp-compare-toggle",
-              "name": "TP Vergleichen-Button",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_verkaufstext_night2": {
-              "type": "tp-verkaufstext",
-              "name": "TP Verkaufstext",
-              "settings": {},
-              "blocks": {}
-            },
             "group_icgrde": {
               "type": "group",
               "name": "Header",
@@ -179,18 +153,6 @@
                 "price_tVjtKg"
               ]
             },
-            "tp_vorteile_night1": {
-              "type": "tp-vorteile",
-              "name": "TP Vorteile",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_google_rating_UdRxKh": {
-              "type": "tp-google-rating",
-              "name": "TP Google-Bewertung",
-              "settings": {},
-              "blocks": {}
-            },
             "divider_VJhene": {
               "type": "_divider",
               "name": "t:names.divider",
@@ -215,11 +177,6 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
-            },
-            "options_price_calculator_product_calculator_z3CEfy": {
-              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
-              "disabled": true,
-              "settings": {}
             },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
@@ -256,26 +213,11 @@
               },
               "block_order": []
             },
-            "ai_gen_block_72e444a_tkq6gk": {
-              "type": "ai_gen_block_72e444a",
-              "settings": {},
-              "blocks": {}
-            },
-            "ai_gen_block_b888d9b_CJbJ8X": {
-              "type": "ai_gen_block_b888d9b",
+            "tp_service_links_sales1": {
+              "type": "tp-service-links",
+              "name": "TP Service-Links",
               "settings": {
-                "desktop_width_percent": 100,
-                "key_column_width": 35,
-                "cell_padding": 16,
-                "border_radius": 8,
-                "row_border_width": 1,
-                "background_color": "#ffffff",
-                "border_color": "#e6e6e6",
-                "key_text_color": "#000000",
-                "value_text_color": "#000000",
-                "key_font_size": 14,
-                "key_font_weight": "600",
-                "value_font_size": 14
+                "delivery_time": "5–7 Werktage"
               },
               "blocks": {}
             },
@@ -305,22 +247,21 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_google_rating_UdRxKh": {
+              "type": "tp-google-rating",
+              "name": "TP Google-Bewertung",
+              "settings": {},
+              "blocks": {}
             }
           },
           "block_order": [
-            "paket_auswahl_xLTafR",
-            "tp_service_links_night1",
-            "tp_compare_toggle_night3",
             "group_icgrde",
-            "tp_vorteile_night1",
             "tp_google_rating_UdRxKh",
             "divider_VJhene",
             "variant_picker_R3rGDr",
-            "options_price_calculator_product_calculator_z3CEfy",
             "buy_buttons_eYQEYi",
-            "ai_gen_block_72e444a_tkq6gk",
-            "tp_verkaufstext_night2",
-            "ai_gen_block_b888d9b_CJbJ8X",
+            "tp_service_links_sales1",
             "text_aEtTtq"
           ]
         }
@@ -335,6 +276,136 @@
         "color_scheme": "",
         "padding-block-start": 0,
         "padding-block-end": 0
+      }
+    },
+    "passend": {
+      "type": "tp-zubehoer-produkte",
+      "name": "Passend dazu",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "name": "t:names.product_card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 8,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "product_card_gallery_DNizbJ": {
+              "type": "_product-card-gallery",
+              "name": "t:names.product_card_media",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_M7MJkb": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_gLWgA6": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_specs_pricegLWgA6": {
+              "type": "tp-card-specs",
+              "name": "TP Card-Merkmale",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_actions_pricegLWgA6": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            }
+          },
+          "block_order": [
+            "product_card_gallery_DNizbJ",
+            "product_title_M7MJkb",
+            "price_gLWgA6",
+            "tp_card_specs_pricegLWgA6",
+            "tp_card_actions_pricegLWgA6"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "carousel",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "columns_gap": 16,
+        "rows_gap": 24,
+        "icons_style": "chevron",
+        "icons_shape": "circle",
+        "section_width": "page-width",
+        "gap": 12,
+        "color_scheme": "scheme-1",
+        "mode": "passend",
+        "collection": "",
+        "heading": "Passend dazu",
+        "intro": "Weitere Produkte aus derselben Zubehör-Kategorie.",
+        "link_text": "Zur Kategorie",
+        "max_products": 8,
+        "padding-block-start": 48,
+        "padding-block-end": 16
       }
     },
     "product_recommendations_qggXJq": {
@@ -490,136 +561,6 @@
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
         "padding-block-end": 48
-      }
-    },
-    "passend": {
-      "type": "tp-zubehoer-produkte",
-      "name": "Passend dazu",
-      "blocks": {
-        "static-product-card": {
-          "type": "_product-card",
-          "name": "t:names.product_card",
-          "static": true,
-          "settings": {
-            "product_card_gap": 8,
-            "inherit_color_scheme": true,
-            "color_scheme": "",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 8,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {
-            "product_card_gallery_DNizbJ": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "adapt",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "product_title_M7MJkb": {
-              "type": "tp-card-title",
-              "name": "t:names.product_title",
-              "settings": {
-                "width": "100%",
-                "max_width": "normal",
-                "alignment": "left",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "var(--color-foreground)",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 4,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "price_gLWgA6": {
-              "type": "price",
-              "settings": {
-                "show_sale_price_first": true,
-                "show_installments": false,
-                "show_tax_info": false,
-                "type_preset": "h6",
-                "width": "100%",
-                "alignment": "left",
-                "font": "var(--font-body--family)",
-                "font_size": "1rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "color": "var(--color-foreground)",
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "tp_card_specs_pricegLWgA6": {
-              "type": "tp-card-specs",
-              "name": "TP Card-Merkmale",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_card_actions_pricegLWgA6": {
-              "type": "tp-card-actions",
-              "name": "TP Card-Aktionen",
-              "settings": {},
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "product_card_gallery_DNizbJ",
-            "product_title_M7MJkb",
-            "price_gLWgA6",
-            "tp_card_specs_pricegLWgA6",
-            "tp_card_actions_pricegLWgA6"
-          ]
-        }
-      },
-      "settings": {
-        "layout_type": "carousel",
-        "carousel_on_mobile": true,
-        "columns": 4,
-        "mobile_columns": "2",
-        "mobile_card_size": "44cqw",
-        "columns_gap": 16,
-        "rows_gap": 24,
-        "icons_style": "chevron",
-        "icons_shape": "circle",
-        "section_width": "page-width",
-        "gap": 12,
-        "color_scheme": "scheme-1",
-        "mode": "passend",
-        "collection": "",
-        "heading": "Passend dazu",
-        "intro": "Weitere Produkte aus derselben Zubehör-Kategorie.",
-        "link_text": "Zur Kategorie",
-        "max_products": 8,
-        "padding-block-start": 48,
-        "padding-block-end": 16
       }
     }
   },

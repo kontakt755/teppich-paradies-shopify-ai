@@ -90,9 +90,10 @@ als Textspalte – das ist Absicht, kein Fehler.
   Alt-Texten, Tags oder Metafeldern. Beschreibungen neu formulieren, nicht kopieren.
   Bilder vor dem Upload auf eingebrannte Logos prüfen.
 - `vendor` = „Teppich Paradies" (kein Lieferant).
-- **Keine Herstellermarken und keine Eigennamen bei Zubehör** – weder im Titel noch in
-  Beschreibung, Tags oder einem Metafeld (`custom.marke` bleibt leer). Die Lieferantenlinie
-  steht nur intern in `grosshandel.sku`. (Vorgabe vom 2026-09-08.)
+- **Echte Herstellernamen bei Zubehör** (Vorgabe 2026-09-08): Titel = `<Hersteller> <Produktbezeichnung>`
+  (z. B. „JOKA JK 27 Universalklebstoff“), Hersteller in Beschreibung, Tag `marke: …` und
+  Metafeld `custom.marke`. Keine erfundenen Eigennamen – die gelten nur für Bodenbeläge.
+  Generische Profile ohne Hersteller bleiben neutral benannt.
 - Technische Daten nur aus dem Lieferantendatenblatt, nie aus Bildern ableiten.
 - Pflicht je Produkt: `custom.arten` mit genau einem Wert aus der Tabelle oben.
   Optional für Filter: `custom.material`, Tags `material: …`, `raum: …` wie bei
