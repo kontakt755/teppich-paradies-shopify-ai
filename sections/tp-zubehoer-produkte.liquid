@@ -47,13 +47,24 @@
   {%- assign rendered = 0 -%}
   {%- comment -%}
     Traeger der Gruppe: die kleinste hier vorhandene Groesse, damit die Karte
-    den Einstiegspreis zeigt. Bestimmt im Vorlauf, damit die Gruppe auch dann
-    eine Karte behaelt, wenn die kleineren Groessen in dieser Liste fehlen.
+    den Einstiegspreis zeigt.
+
+    Der Vorlauf muss dieselben Ausschluesse anwenden wie die Schleife darunter,
+    sonst faellt die Wahl auf ein Produkt, das gar nicht gerendert wird - und
+    die Gruppe verschwindet ganz. Genau das passierte auf der Produktseite der
+    55x90: die kleinste Groesse ist dort das aktuelle Produkt und damit aus der
+    Empfehlungsliste ausgeschlossen, wodurch "Passend dazu" leer blieb.
   {%- endcomment -%}
   {%- liquid
     assign tp_gruppe_traeger = ''
     assign tp_gruppe_beste = 999
     for tp_gruppe_p in items
+      if mode == 'passend' and tp_gruppe_p.id == product.id
+        continue
+      endif
+      if tp_gruppe_p.featured_image == blank
+        continue
+      endif
       capture tp_gruppe_pos
         render 'tp-produktgruppe', product: tp_gruppe_p
       endcapture
