@@ -465,6 +465,18 @@
     font-weight: 500;
   }
 
+  /* Gesperrte Werte lesbar halten - auf allen Breiten, nicht nur mobil. Die
+     Ausgrauung kommt aus .checkbox--disabled bzw. .facets__pill-input:disabled,
+     nicht vom Listenelement; deshalb gezielt Textfarbe und Durchstreichung
+     statt einer Deckkraft-Regel, die auf dem <li> nichts zu ueberschreiben
+     haette. Die Durchstreichung war zuvor an die Mobil-Abfrage gebunden, am
+     Desktop blieb der Wert dadurch nur blass. */
+  .facets__inputs-list-item--disabled .checkbox__label-text,
+  .facets__inputs-list-item--disabled .facets__pill-label {
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-40-60));
+    text-decoration: line-through;
+  }
+
   /* Auf dem Handy muessen Filterzeilen und Pills sicher treffbar sein (min. 44px). */
   @media screen and (max-width: 749px) {
     .facets__inputs-list-item .checkbox {
@@ -483,16 +495,6 @@
       min-height: 44px;
       display: inline-flex;
       align-items: center;
-    }
-
-    /* Gesperrte Werte lesbar halten. Die Ausgrauung kommt aus .checkbox--disabled
-       bzw. .facets__pill-input:disabled, nicht vom Listenelement - deshalb hier
-       gezielt Textfarbe und Durchstreichung statt einer Deckkraft-Regel, die auf
-       dem <li> nichts zu ueberschreiben haette. */
-    .facets__inputs-list-item--disabled .checkbox__label-text,
-    .facets__inputs-list-item--disabled .facets__pill-label {
-      color: rgb(var(--color-foreground-rgb) / var(--opacity-40-60));
-      text-decoration: line-through;
     }
   }
 

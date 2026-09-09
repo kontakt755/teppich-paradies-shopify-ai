@@ -1,92 +1,135 @@
 {%- doc -%}
-  Eine Kachel der Leisten-Farbwahl (blocks/tp-leisten-farbwahl.liquid).
+  Eine Kachel der Leisten-Farbwahl (blocks/tp-leisten-farbwahl.liquid):
+  quadratische Flaeche plus Farbname darunter. Jede Farbe bekommt genau eine
+  Kachel, alle Kacheln sind gleich gross - so bleibt das Raster auch bei 62
+  Farben ruhig, und der Name steht immer dabei.
 
-  Entscheidet fuer einen Optionswert, ob ein echtes Farbmuster vorliegt, und
-  rendert die Kachel nur im passenden Modus. So laeuft dieselbe Pruefung fuer
-  Bildraster und Textliste genau einmal je Wert.
+  Was die Flaeche zeigt, entscheidet sich in dieser Reihenfolge:
 
-  @param {string} value - Roher Optionswert (Klick-Ziel, nie veraendert)
+    bild    Das Variantenbild - aber nur, wenn keine andere Farbe dasselbe
+            Bild traegt. Teilen sich mehrere Farben ein Bild, ist es ein
+            Serienfoto und kein Farbmuster; es darf dann keine Farbe
+            behaupten. Ob das Bild zugleich Hauptbild des Produkts ist,
+            spielt keine Rolle: Bei Cortessa ist das Foto der ersten Farbe
+            auch das Hauptbild, und die Farbe hat trotzdem ihr eigenes Bild.
+    swatch  Ein Shopify-Optionswert-Swatch (Bild oder Farbe), falls gepflegt.
+    farbe   Der Hex-Wert aus dem Farbregister (tp-farbe-daten, feld 'swatch').
+    ohne    Neutrale Flaeche. Kein fremdes Bild, keine geratene Farbe -
+            der Name unter der Kachel traegt die Auswahl.
+
+  Der Klick trifft den Horizon-Radio-Button ueber die Optionswert-ID
+  (data-option-value-id), der rohe Optionswert bleibt als zweiter Schluessel.
+
+  @param {object} value - Optionswert (product_option_value)
   @param {object} product - Das Produkt
   @param {number} index - Nullbasierte Position der Farboption
   @param {string} selected - Aktuell gewaehlter Optionswert
-  @param {string} media_ids - Alle Varianten-Bild-IDs als "[id][id]..."
-  @param {string} modus - 'bild' oder 'text'
+  @param {number} position - Nullbasierte Position im Raster
+  @param {number} limit - Ab dieser Position ist die Kachel eingeklappt
+  @param {boolean} aufgeklappt - true, wenn das Raster komplett sichtbar ist
 {%- enddoc -%}
 
 {%- liquid
+  assign tp_fk_wert = value.name | default: value
   assign tp_fk_variante = null
   assign tp_fk_media = null
+
   for tp_fk_v in product.variants
-    if tp_fk_v.options[index] == value
+    if tp_fk_v.options[index] == tp_fk_wert
       unless tp_fk_variante
         assign tp_fk_variante = tp_fk_v
       endunless
-      if tp_fk_v.featured_media != blank and tp_fk_media == null
-        assign tp_fk_media = tp_fk_v.featured_media
+      if tp_fk_v.featured_media != blank
+        unless tp_fk_media
+          assign tp_fk_media = tp_fk_v.featured_media
+        endunless
       endif
     endif
   endfor
 
-  # Zwei Pruefungen, beide muessen halten - sonst gilt das Bild als
-  # Produktfoto und die Farbe bekommt eine Textkachel.
-  #
-  # 1) Das Hauptbild des Produkts (Raumfoto) ist nie ein Farbmuster. Diese
-  #    Regel traegt allein, weil Shopify Varianten ohne eigenes Bild genau
-  #    dieses Hauptbild als featured_media liefert.
-  # 2) Zusaetzlich faellt ein Bild durch, das sich mehrere Farben teilen.
-  #    Die Zaehlung wird nur ausgewertet, wenn media_ids gefuellt ist -
-  #    eine leere Liste darf nicht zu "ist ein Muster" fuehren.
-  assign tp_fk_hat_muster = false
+  # Eigenes Bild nur, wenn keine andere Farbe dieselbe Media-ID traegt.
+  # Varianten derselben Farbe (z. B. zwei Breiten) duerfen es teilen.
+  assign tp_fk_eigen = false
   if tp_fk_media
-    assign tp_fk_hat_muster = true
-    if product.featured_media != blank and tp_fk_media.id == product.featured_media.id
-      assign tp_fk_hat_muster = false
-    endif
-    if media_ids != blank
-      assign tp_fk_token = '[' | append: tp_fk_media.id | append: ']'
-      assign tp_fk_vorkommen = media_ids | split: tp_fk_token | size | minus: 1
-      if tp_fk_vorkommen > 1
-        assign tp_fk_hat_muster = false
+    assign tp_fk_eigen = true
+    for tp_fk_v in product.variants
+      if tp_fk_v.featured_media != blank and tp_fk_v.featured_media.id == tp_fk_media.id and tp_fk_v.options[index] != tp_fk_wert
+        assign tp_fk_eigen = false
+        break
       endif
+    endfor
+  endif
+
+  assign tp_fk_art = 'ohne'
+  assign tp_fk_farbe = ''
+  if tp_fk_eigen
+    assign tp_fk_art = 'bild'
+  elsif value.swatch.image
+    assign tp_fk_art = 'swatch'
+    assign tp_fk_media = value.swatch.image
+  elsif value.swatch.color
+    assign tp_fk_art = 'farbe'
+    assign tp_fk_farbe = value.swatch.color | append: ''
+  elsif tp_fk_variante
+    capture tp_fk_register
+      render 'tp-farbe-daten', variant: tp_fk_variante, product: product, feld: 'swatch'
+    endcapture
+    assign tp_fk_register = tp_fk_register | strip
+    if tp_fk_register != blank
+      assign tp_fk_art = 'farbe'
+      assign tp_fk_farbe = tp_fk_register
     endif
   endif
 
-  assign tp_fk_modus = 'text'
-  if tp_fk_hat_muster
-    assign tp_fk_modus = 'bild'
+  capture tp_fk_name
+    if tp_fk_variante
+      render 'tp-farbe-daten', variant: tp_fk_variante, product: product, feld: 'name'
+    endif
+  endcapture
+  assign tp_fk_name = tp_fk_name | strip | default: tp_fk_wert
+
+  assign tp_fk_aktiv = false
+  if tp_fk_wert == selected
+    assign tp_fk_aktiv = true
+  endif
+
+  assign tp_fk_versteckt = false
+  if aufgeklappt != true and position >= limit
+    assign tp_fk_versteckt = true
+  endif
+
+  assign tp_fk_titel = tp_fk_name
+  if tp_fk_art == 'ohne'
+    assign tp_fk_titel = tp_fk_name | append: ' – noch kein Musterbild, kostenloses Muster unten anfragen'
+  endif
+  if value.available == false
+    assign tp_fk_titel = tp_fk_titel | append: ' – zurzeit nicht verfügbar'
   endif
 -%}
 
-{%- if tp_fk_modus == modus -%}
-  {%- capture tp_fk_name -%}
-    {%- if tp_fk_variante -%}
-      {%- render 'tp-farbe-daten', variant: tp_fk_variante, product: product, feld: 'name' -%}
-    {%- endif -%}
-  {%- endcapture -%}
-  {%- assign tp_fk_name = tp_fk_name | strip | default: value -%}
-
-  {%- assign tp_fk_aktiv = false -%}
-  {%- if value == selected -%}
-    {%- assign tp_fk_aktiv = true -%}
-  {%- endif -%}
-
-  <button
-    type="button"
-    class="tp-lfw__tile tp-lfw__tile--{{ modus }}"
-    data-tp-farbwahl-value="{{ value | escape }}"
-    data-tp-farbwahl-name="{{ tp_fk_name | escape }}"
-    aria-pressed="{{ tp_fk_aktiv }}"
-    title="{{ tp_fk_name | escape }}"
-  >
-    {%- if modus == 'bild' -%}
-      {{
-        tp_fk_media
-        | image_url: width: 120
-        | image_tag: loading: 'lazy', width: 56, height: 56, class: 'tp-lfw__img', alt: ''
-      }}
-      <span class="visually-hidden">{{ tp_fk_name | escape }}</span>
-    {%- else -%}
-      <span class="tp-lfw__text">{{ tp_fk_name | escape }}</span>
-    {%- endif -%}
-  </button>
-{%- endif -%}
+<button
+  type="button"
+  class="tp-lfw__tile tp-lfw__tile--{{ tp_fk_art }}{% if value.available == false %} tp-lfw__tile--aus{% endif %}"
+  data-tp-farbwahl-id="{{ value.id }}"
+  data-tp-farbwahl-value="{{ tp_fk_wert | escape }}"
+  data-tp-farbwahl-name="{{ tp_fk_name | escape }}"
+  aria-pressed="{{ tp_fk_aktiv }}"
+  title="{{ tp_fk_titel | escape }}"
+  {% if tp_fk_versteckt %}hidden{% endif %}
+>
+  <span class="tp-lfw__bild">
+    {%- case tp_fk_art -%}
+      {%- when 'bild' or 'swatch' -%}
+        {{
+          tp_fk_media
+          | image_url: width: 160
+          | image_tag: loading: 'lazy', width: 72, height: 72, class: 'tp-lfw__img', alt: ''
+        }}
+      {%- when 'farbe' -%}
+        <span class="tp-lfw__farbe" style="--tp-lfw-farbe: {{ tp_fk_farbe | escape }}" aria-hidden="true"></span>
+      {%- else -%}
+        <span class="tp-lfw__leer" aria-hidden="true"></span>
+    {%- endcase -%}
+  </span>
+  <span class="tp-lfw__name">{{ tp_fk_name | escape }}</span>
+</button>
