@@ -193,7 +193,8 @@
               "settings": {
                 "label": "Farbe",
                 "groesse": "normal",
-                "show_nummer": false
+                "show_nummer": false,
+                "hinweis_ohne_variantenbild": true
               },
               "blocks": {}
             },

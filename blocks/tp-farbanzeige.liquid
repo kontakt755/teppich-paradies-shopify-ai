@@ -20,6 +20,20 @@
       break
     endif
   endfor
+
+  # Manche Sortimente fuehren echte Farbvarianten, ohne dass je Farbe ein
+  # eigenes Foto vorliegt (Sauberlauf: 12 Farben, aber nur Serienaufnahmen).
+  # Die Galerie zeigt dann beim Farbwechsel weiter dasselbe Bild - der Kunde
+  # waehlt Weinrot und sieht Dunkelgruen. Statt das stehen zu lassen, sagt der
+  # Hinweis unten offen, was die Bilder zeigen. Sobald je Variante ein Bild
+  # gepflegt ist, faellt er von selbst wieder weg.
+  assign tp_fa_hat_variantenbild = false
+  for tp_fa_v in tp_fa_product.variants
+    if tp_fa_v.featured_media != blank
+      assign tp_fa_hat_variantenbild = true
+      break
+    endif
+  endfor
 -%}
 
 {%- if tp_fa_has_farbe -%}
@@ -79,6 +93,11 @@
     {%- endif -%}
     <script type="application/json" data-tp-farbe-map>{ {{ tp_fa_map | strip }} }</script>
   </tp-farbe-anzeige>
+  {%- if block.settings.hinweis_ohne_variantenbild and tp_fa_hat_variantenbild == false -%}
+    <p class="tp-farbanzeige__hinweis">
+      {{ block.settings.hinweis_text | default: 'Die Abbildungen zeigen die Serie, nicht die gewählte Farbe.' | escape }}
+    </p>
+  {%- endif -%}
   <script src="{{ 'tp-farbe.js' | asset_url }}" type="module"></script>
 {%- endif -%}
 
@@ -138,6 +157,15 @@
   .tp-farbanzeige__nummer::before {
     content: 'Nr. ';
   }
+
+  .tp-farbanzeige__hinweis {
+    margin: 0.1rem 0 0;
+    max-width: 44ch;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.6);
+    text-wrap: pretty;
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -161,6 +189,19 @@
         { "value": "gross", "label": "Gross" }
       ],
       "default": "normal"
+    },
+    {
+      "type": "checkbox",
+      "id": "hinweis_ohne_variantenbild",
+      "label": "Hinweis, wenn keine Farbe ein eigenes Foto hat",
+      "info": "Erscheint nur, solange keine einzige Variante ein Variantenbild traegt. Sobald Fotos je Farbe gepflegt sind, verschwindet der Hinweis automatisch.",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "hinweis_text",
+      "label": "Text des Hinweises",
+      "default": "Die Abbildungen zeigen die Serie, nicht die gewählte Farbe."
     },
     {
       "type": "checkbox",
