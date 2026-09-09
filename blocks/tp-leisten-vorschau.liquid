@@ -125,7 +125,7 @@
   <figure class="tp-lv" data-tp-vorschau {{ block.shopify_attributes }}>
     <script type="application/json" data-tp-vorschau-map>{ {{ tp_lv_map | strip }} }</script>
     <div class="tp-lv__frame{% if tp_lv_start == blank %} tp-lv--ohne{% endif %}{% if tp_lv_start_foto %} tp-lv--foto{% endif %}" data-tp-vorschau-frame>
-      <img class="tp-lv__foto" data-tp-vorschau-foto src="{% if tp_lv_start_foto %}{{ tp_lv_start }}{% endif %}" alt="" loading="lazy">
+      <img class="tp-lv__foto" data-tp-vorschau-foto src="{% if tp_lv_start_foto %}{{ tp_lv_start }}{% endif %}" alt="" loading="lazy" width="600" height="330">
       <svg class="tp-lv__svg" viewBox="0 0 600 330" role="img" aria-labelledby="tp-lv-title-{{ tp_lv_id }}">
         <title id="tp-lv-title-{{ tp_lv_id }}">Schematische Ansicht der Sockelleiste in der gewählten Farbe</title>
         <defs>
