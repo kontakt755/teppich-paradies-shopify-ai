@@ -64,9 +64,18 @@
         assign tp_lv_src = ''
         assign tp_lv_foto = false
         if tp_lv_media
-          assign tp_lv_token = '[' | append: tp_lv_media.id | append: ']'
-          assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
-          if tp_lv_count < 2
+          assign tp_lv_eigen = true
+          if tp_lv_product.featured_media != blank and tp_lv_media.id == tp_lv_product.featured_media.id
+            assign tp_lv_eigen = false
+          endif
+          if tp_lv_media_ids != blank
+            assign tp_lv_token = '[' | append: tp_lv_media.id | append: ']'
+            assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
+            if tp_lv_count > 1
+              assign tp_lv_eigen = false
+            endif
+          endif
+          if tp_lv_eigen
             if tp_lv_media.aspect_ratio > 1.15 or tp_lv_media.aspect_ratio < 0.87
               # Kein quadratisches Farbmuster, sondern ein Foto dieser Farbe
               assign tp_lv_foto = true
@@ -87,9 +96,18 @@
     assign tp_lv_start_foto = false
     for tp_lv_v in tp_lv_product.variants
       if tp_lv_v.options[tp_lv_index] == tp_lv_selected and tp_lv_v.featured_media != blank
-        assign tp_lv_token = '[' | append: tp_lv_v.featured_media.id | append: ']'
-        assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
-        if tp_lv_count < 2
+        assign tp_lv_eigen = true
+        if tp_lv_product.featured_media != blank and tp_lv_v.featured_media.id == tp_lv_product.featured_media.id
+          assign tp_lv_eigen = false
+        endif
+        if tp_lv_media_ids != blank
+          assign tp_lv_token = '[' | append: tp_lv_v.featured_media.id | append: ']'
+          assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
+          if tp_lv_count > 1
+            assign tp_lv_eigen = false
+          endif
+        endif
+        if tp_lv_eigen
           if tp_lv_v.featured_media.aspect_ratio > 1.15 or tp_lv_v.featured_media.aspect_ratio < 0.87
             assign tp_lv_start_foto = true
             assign tp_lv_start = tp_lv_v.featured_media | image_url: width: 800

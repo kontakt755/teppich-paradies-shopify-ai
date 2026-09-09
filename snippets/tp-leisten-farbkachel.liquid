@@ -27,14 +27,27 @@
     endif
   endfor
 
-  # Ein Bild, das mehrere Varianten teilen, ist ein Produktfoto und kein
-  # Farbmuster - es darf die Farbe nicht bebildern.
+  # Zwei Pruefungen, beide muessen halten - sonst gilt das Bild als
+  # Produktfoto und die Farbe bekommt eine Textkachel.
+  #
+  # 1) Das Hauptbild des Produkts (Raumfoto) ist nie ein Farbmuster. Diese
+  #    Regel traegt allein, weil Shopify Varianten ohne eigenes Bild genau
+  #    dieses Hauptbild als featured_media liefert.
+  # 2) Zusaetzlich faellt ein Bild durch, das sich mehrere Farben teilen.
+  #    Die Zaehlung wird nur ausgewertet, wenn media_ids gefuellt ist -
+  #    eine leere Liste darf nicht zu "ist ein Muster" fuehren.
   assign tp_fk_hat_muster = false
   if tp_fk_media
-    assign tp_fk_token = '[' | append: tp_fk_media.id | append: ']'
-    assign tp_fk_vorkommen = media_ids | split: tp_fk_token | size | minus: 1
-    if tp_fk_vorkommen < 2
-      assign tp_fk_hat_muster = true
+    assign tp_fk_hat_muster = true
+    if product.featured_media != blank and tp_fk_media.id == product.featured_media.id
+      assign tp_fk_hat_muster = false
+    endif
+    if media_ids != blank
+      assign tp_fk_token = '[' | append: tp_fk_media.id | append: ']'
+      assign tp_fk_vorkommen = media_ids | split: tp_fk_token | size | minus: 1
+      if tp_fk_vorkommen > 1
+        assign tp_fk_hat_muster = false
+      endif
     endif
   endif
 
