@@ -1,0 +1,559 @@
+{% comment %}
+  Kompakter Einstieg fuer die Kategorie Bodenleisten: Breadcrumb, H1,
+  kurze Einleitung, belegbare Fakten aus dem Sortiment und ein Button zur
+  Produktauswahl. Rechts ein hochgeladenes Raum-/Produktbild oder - solange
+  keins vorliegt - ein Mosaik aus echten Produktfotos der Kollektion.
+
+  Alle Texte sind im Theme-Editor bearbeitbar. Titel und Einleitung fallen
+  auf Kollektionstitel und -beschreibung zurueck. Es werden keine Service-
+  Versprechen (Lieferzeit, Muster) vorbelegt - nur Fakten zum Sortiment.
+{% endcomment %}
+
+{%- liquid
+  assign heading = section.settings.heading | default: collection.title
+  assign lead = section.settings.text
+  if lead == blank and collection.description != blank
+    assign lead = collection.description | strip_html
+  endif
+  assign hero_image = section.settings.image
+  assign hero_image_alt = section.settings.image_alt
+  if hero_image == blank and section.settings.image_product != blank
+    assign hero_image = section.settings.image_product.featured_image
+    if hero_image_alt == blank
+      assign hero_image_alt = section.settings.image_product.title
+    endif
+  endif
+  assign cta_link = section.settings.cta_link | default: '#bodenleisten-produkte'
+  assign max_motive = 4
+-%}
+
+{%- capture motive -%}
+  {%- if hero_image == blank and collection != blank -%}
+    {%- assign shown = 0 -%}
+    {%- for p in collection.products limit: 24 -%}
+      {%- if shown >= max_motive -%}{%- break -%}{%- endif -%}
+      {%- if p.featured_image == blank -%}{%- continue -%}{%- endif -%}
+      <li class="tp-lh__tile">
+        <a class="tp-lh__tile-link" href="{{ p.url }}" aria-label="{{ p.title | escape }}">
+          {{ p.featured_image | image_url: width: 600 | image_tag: loading: 'eager', widths: '300, 450, 600', sizes: '(min-width: 990px) 14vw, (min-width: 750px) 22vw, 42vw', alt: p.title }}
+        </a>
+      </li>
+      {%- assign shown = shown | plus: 1 -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endcapture -%}
+{%- assign motive = motive | strip -%}
+
+{%- liquid
+  assign has_media = false
+  if hero_image != blank or motive != blank
+    assign has_media = true
+  endif
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-lh section section--page-width color-{{ section.settings.color_scheme }} spacing-style{% unless has_media %} tp-lh--text-only{% endunless %}"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-testid="tp-leisten-hero-{{ section.id }}"
+>
+  {%- if section.settings.show_breadcrumb -%}
+    <nav class="tp-lh__breadcrumb" aria-label="Brotkrumen-Navigation">
+      <ol>
+        <li><a href="{{ routes.root_url }}">Startseite</a></li>
+        {%- if section.settings.breadcrumb_parent != blank -%}
+          <li><a href="{{ section.settings.breadcrumb_parent.url }}">{{ section.settings.breadcrumb_parent.title | escape }}</a></li>
+        {%- endif -%}
+        <li aria-current="page">{{ heading | escape }}</li>
+      </ol>
+    </nav>
+  {%- endif -%}
+
+  <div class="tp-lh__grid">
+    <div class="tp-lh__content">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-lh__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h1 class="tp-lh__title">{{ heading | escape }}</h1>
+      {%- if lead != blank -%}
+        <p class="tp-lh__lead">{{ lead | escape }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.fact_1 != blank or section.settings.fact_2 != blank or section.settings.fact_3 != blank -%}
+        <ul class="tp-lh__facts" role="list">
+          {%- if section.settings.fact_1 != blank -%}<li>{{ section.settings.fact_1 | escape }}</li>{%- endif -%}
+          {%- if section.settings.fact_2 != blank -%}<li>{{ section.settings.fact_2 | escape }}</li>{%- endif -%}
+          {%- if section.settings.fact_3 != blank -%}<li>{{ section.settings.fact_3 | escape }}</li>{%- endif -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if section.settings.cta_label != blank -%}
+        <div class="tp-lh__ctas">
+          <a class="button tp-lh__cta" href="{{ cta_link }}">{{ section.settings.cta_label | escape }}</a>
+          {%- if section.settings.cta_2_label != blank and section.settings.cta_2_link != blank -%}
+            <a class="button button-secondary tp-lh__cta" href="{{ section.settings.cta_2_link }}">{{ section.settings.cta_2_label | escape }}</a>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if hero_image != blank -%}
+      <div class="tp-lh__media tp-lh__media--image">
+        {{
+          hero_image
+          | image_url: width: 1400
+          | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 46vw, 100vw', alt: hero_image_alt
+        }}
+      </div>
+    {%- elsif motive != blank -%}
+      <div class="tp-lh__media tp-lh__media--mosaic">
+        <ul class="tp-lh__mosaic" role="list" aria-label="Bodenleisten aus dem Sortiment">
+          {{ motive }}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{%- comment -%}
+  Seitenspezifische Anpassung des Produktrasters: Leistenfotos sind
+  Freisteller mit sehr unterschiedlichen Seitenverhaeltnissen (hoch, quer).
+  Damit sie im quadratischen Kartenformat nicht angeschnitten werden, werden
+  sie eingepasst statt beschnitten. Steht bewusst als <style> im Abschnitt
+  (einmal pro Seite), weil {% stylesheet %} theme-weit gebuendelt wird und
+  andere Kategorien nicht betroffen sein sollen.
+{%- endcomment -%}
+<style>
+  .product-grid .card-gallery .product-media__image {
+    object-fit: contain;
+    padding: 6%;
+    background: #fff;
+  }
+  .product-grid .card-gallery {
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    border-radius: var(--style-border-radius-md, 6px);
+  }
+  .product-grid .product-grid__item:hover .card-gallery,
+  .product-grid .product-grid__item:focus-within .card-gallery {
+    border-color: rgb(var(--color-foreground-rgb) / 0.2);
+  }
+  .product-grid .product-grid__item[hidden] {
+    display: none;
+  }
+  /* Hoechstens vier Spalten, auch auf sehr breiten Bildschirmen */
+  @media screen and (min-width: 990px) {
+    .product-grid.product-grid--grid:not([product-grid-view='zoom-out']) {
+      --product-grid-columns-desktop: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .product-grid.product-grid--grid:not([product-grid-view='zoom-out']) {
+      --product-grid-columns-desktop: repeat(3, minmax(0, 1fr));
+    }
+  }
+  /* "+N"-Chip der Farbfelder darf bei zwei Spalten nicht umbrechen */
+  .product-grid .tp-card-color-thumbs__more {
+    width: auto;
+    min-width: 34px;
+    padding-inline: 6px;
+    white-space: nowrap;
+  }
+  /* Kartentitel auf schmalen Geraeten eine Stufe kleiner, damit zwei Spalten lesbar bleiben */
+  @media screen and (max-width: 749px) {
+    .product-grid product-title h3,
+    .product-grid product-title [role='heading'] {
+      font-size: 1rem;
+      line-height: 1.3;
+    }
+  }
+  /* Mobiler Filter-Button: Touchflaeche mindestens 44 px */
+  .facets-toggle__button {
+    min-height: 44px;
+    padding-block: 10px;
+  }
+</style>
+
+{% stylesheet %}
+  .tp-lh__breadcrumb {
+    margin-block-end: 18px;
+    font-size: 0.8125rem;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+  }
+
+  .tp-lh__breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-lh__breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .tp-lh__breadcrumb li + li::before {
+    content: '/';
+    margin: 0 8px;
+    opacity: 0.5;
+  }
+
+  .tp-lh__breadcrumb a {
+    display: inline-block;
+    padding-block: 6px;
+    color: inherit;
+    text-decoration: none;
+    text-underline-offset: 3px;
+  }
+
+  .tp-lh__breadcrumb a:hover,
+  .tp-lh__breadcrumb a:focus-visible {
+    color: var(--color-foreground);
+    text-decoration: underline;
+  }
+
+  .tp-lh__breadcrumb [aria-current='page'] {
+    color: var(--color-foreground);
+    font-weight: 600;
+  }
+
+  .tp-lh__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+  }
+
+  .tp-lh--text-only .tp-lh__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tp-lh__content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    max-width: 38rem;
+  }
+
+  .tp-lh__eyebrow {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .tp-lh__title {
+    margin: 0;
+    font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .tp-lh__lead {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.78);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  .tp-lh__facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-lh__facts li {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  .tp-lh__facts li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+  }
+
+  .tp-lh__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-block-start: 10px;
+  }
+
+  .tp-lh__cta {
+    min-height: 44px;
+  }
+
+  .tp-lh__media--image {
+    overflow: hidden;
+    border-radius: var(--style-border-radius-md);
+  }
+
+  .tp-lh__media--image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 5 / 4;
+    object-fit: cover;
+  }
+
+  .tp-lh__mosaic {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-lh__tile {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    border-radius: var(--style-border-radius-md);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.05);
+  }
+
+  .tp-lh__tile:nth-child(2),
+  .tp-lh__tile:nth-child(4) {
+    transform: translateY(18px);
+  }
+
+  .tp-lh__tile-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tp-lh__tile-link:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: -3px;
+  }
+
+  .tp-lh__tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 11%;
+    object-fit: contain;
+    transition: transform var(--animation-speed, 0.25s) var(--animation-easing, ease);
+  }
+
+  .tp-lh__tile:hover img,
+  .tp-lh__tile:focus-within img {
+    transform: scale(1.04);
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-lh__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    .tp-lh__content {
+      max-width: none;
+    }
+
+    .tp-lh__mosaic {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .tp-lh__tile:nth-child(2),
+    .tp-lh__tile:nth-child(4) {
+      transform: none;
+    }
+
+    .tp-lh__tile img {
+      padding: 9%;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-lh__breadcrumb {
+      margin-block-end: 12px;
+    }
+
+    .tp-lh__lead {
+      font-size: 1rem;
+    }
+
+    .tp-lh__facts {
+      gap: 6px 16px;
+    }
+
+    .tp-lh__facts li {
+      font-size: 0.875rem;
+    }
+
+    .tp-lh__ctas {
+      width: 100%;
+    }
+
+    .tp-lh__cta {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+
+    .tp-lh__media--mosaic {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Hero",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_breadcrumb",
+      "label": "Breadcrumb anzeigen",
+      "default": true
+    },
+    {
+      "type": "collection",
+      "id": "breadcrumb_parent",
+      "label": "Uebergeordnete Kategorie im Breadcrumb (optional)"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Dachzeile",
+      "default": "Sockelleisten für Teppich, Vinyl und Linoleum"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift (leer = Kollektionstitel)"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Einleitung (leer = Kollektionsbeschreibung)",
+      "default": "Der saubere Abschluss zwischen Boden und Wand: Sockelleisten aus Kunststoff, MDF mit Holzdekor und Hartschaum in Höhen von 40 bis 100 mm."
+    },
+    {
+      "type": "header",
+      "content": "Fakten (nur belegbare Angaben aus dem Sortiment)"
+    },
+    {
+      "type": "text",
+      "id": "fact_1",
+      "label": "Fakt 1",
+      "default": "Kunststoff, MDF-Holzdekor und Hartschaum"
+    },
+    {
+      "type": "text",
+      "id": "fact_2",
+      "label": "Fakt 2",
+      "default": "Höhen von 40 bis 100 mm"
+    },
+    {
+      "type": "text",
+      "id": "fact_3",
+      "label": "Fakt 3",
+      "default": "Bis zu 62 Farben und Dekore je Modell"
+    },
+    {
+      "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button Text",
+      "default": "Bodenleisten entdecken"
+    },
+    {
+      "type": "text",
+      "id": "cta_link",
+      "label": "Button Ziel (leer = Sprung zur Produktauswahl)",
+      "default": "#bodenleisten-produkte"
+    },
+    {
+      "type": "text",
+      "id": "cta_2_label",
+      "label": "Zweiter Button Text (optional)"
+    },
+    {
+      "type": "text",
+      "id": "cta_2_link",
+      "label": "Zweiter Button Ziel"
+    },
+    {
+      "type": "header",
+      "content": "Bild"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Raum- oder Produktbild (ersetzt das Produkt-Mosaik)"
+    },
+    {
+      "type": "product",
+      "id": "image_product",
+      "label": "Oder: Produkt, dessen Hauptbild als Hero-Bild dient"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Alternativtext zum Bild"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Hero"
+    }
+  ]
+}
+{% endschema %}
