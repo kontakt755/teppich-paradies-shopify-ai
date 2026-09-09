@@ -56,9 +56,13 @@ function readTaskSource(taskFile, io = fs) {
 // meldete P1 "Diff nicht ermittelbar", obwohl der Diff im selben Lauf ausgegeben wurde.
 const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git auf stderr "confstr() failed ... DARWIN_USER_TEMP_DIR" und "couldn\'t create cache file \'/tmp/xcrun_db-...\'". Das ist bekanntes Rauschen des macOS-git-Shims; git liefert trotzdem vollstaendige, korrekte Ausgaben. Diese Zeilen sind kein Befund und kein Grund, die Pruefung abzubrechen. Nur wenn ein git-Befehl tatsaechlich keine Ausgabe liefert, ist das ein echtes Problem.';
 
-export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', candidateText = '' } = {}) {
+// reviewScope: Text aus describeReviewScope(). Ohne Angabe bleibt der bisherige
+// Wortlaut (uncommittete Aenderungen); mit Angabe weiss der Reviewer auch nach
+// einem Commit, welchen Diff er pruefen soll.
+export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', candidateText = '', reviewScope = '' } = {}) {
   if (taskType === 'ANALYSIS') return `Prüfe die folgende technische Analyse unabhängig gegen den Auftrag. Lies AGENTS.md und untersuche das Repository mit ausschließlich lesenden Prüfungen. Bewerte sachliche Richtigkeit, wichtige Auslassungen, Sicherheit und ob Behauptungen belegt sind. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}\n\nZU PRÜFENDE ANALYSE:\n${candidateText}`;
-  return `Prüfe die aktuell uncommitteten Änderungen in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}`;
+  const scope = String(reviewScope ?? '').trim() || 'die aktuell uncommitteten Änderungen';
+  return `Prüfe ${scope} in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}`;
 }
 
 export function buildClaudeWorkPrompt(taskText, findings = [], taskType = 'IMPLEMENTATION') {
@@ -89,7 +93,7 @@ function recordReviewUsage({ recordUsage, taskId, provider, model, effort, start
 
 // `reviewStep` kommt aus workflow/model-matrix.mjs (Provider, Modell, Effort).
 // Ohne Angabe laeuft Codex mit seinem Konfig-Default - das ist der Legacy-Pfad.
-export function runCodexReview({ taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
+export function runCodexReview({ reviewScope = '', taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
   const source = taskFile ? readTaskSource(taskFile, io) : { text: taskText, absolutePath: null };
   if (!source.text?.trim()) throw new CliAgentError('A task or task file is required');
   const id = compactId(taskId);
@@ -102,7 +106,7 @@ export function runCodexReview({ taskText = null, taskFile = null, taskType = 'I
   execute(binary, [
     'exec', '--ephemeral', '--sandbox', 'read-only', ...codexArgsForStep(reviewStep),
     '--output-schema', REVIEW_SCHEMA, '--output-last-message', outputPath,
-    buildCodexReviewPrompt(source.text, { taskType, candidateText }),
+    buildCodexReviewPrompt(source.text, { taskType, candidateText, reviewScope }),
   ], { cwd, env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' }, timeoutMs, spawn });
   const review = parseReviewResult(io.readFileSync(outputPath, 'utf8'));
   recordReviewUsage({ recordUsage, taskId: id, provider: 'CODEX_SUBSCRIPTION', model: reviewStep?.model ?? null, effort: reviewStep?.effort, startedAt, reviewStatus: review.status });
@@ -120,14 +124,14 @@ function extractJsonObject(text) {
 // Cross-Provider-Fallback des Reviews: faellt Codex wegen Rate Limit oder
 // erschoepftem Kontingent aus, prueft ein anderes Claude-Modell als der Autor.
 // Read-only ueber --permission-mode plan; Ergebnis im selben Review-Schema.
-export function runClaudeReview({ taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
+export function runClaudeReview({ reviewScope = '', taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
   if (!taskText?.trim()) throw new CliAgentError('A task is required');
   if (!reviewStep?.model) throw new CliAgentError('Claude review requires an explicit model that differs from the author');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'claude-review.json');
-  const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
+  const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText, reviewScope })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
   const env = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
   delete env.ANTHROPIC_API_KEY;
   const startedAt = new Date().toISOString();

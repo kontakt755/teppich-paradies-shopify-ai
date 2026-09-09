@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
+import { detectReviewScope, REVIEW_SCOPE_NONE } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
@@ -58,7 +59,16 @@ try {
   // dieselben Befunde wiederholt.
   const reviewStep = reviews >= 2 && plan.secondReviewer ? plan.secondReviewer : plan.reviewer;
   const taskId = `${current.state.taskId}-AUTO-R${reviews + 1}`;
+  // Nach einem Commit ist "git diff" leer; der Reviewer bekommt deshalb den
+  // tatsaechlichen Pruefbereich (uncommittet oder Commit-Range gegen origin/main).
+  const scope = detectReviewScope({ cwd: projectDir });
+  if (scope.kind === REVIEW_SCOPE_NONE) {
+    // Sauberer Tree auf origin/main-Stand: nichts zu pruefen, keine Schleife.
+    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
+    process.exit(0);
+  }
   const result = runReviewStep({
+    reviewScope: scope.text,
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
