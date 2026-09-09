@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:29:44.609Z",
+  "generated_at": "2026-09-09T11:30:19.548Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 42,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:29:44.609Z",
+    "fetchedAt": "2026-09-09T11:30:19.548Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -1541,7 +1541,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
       "labels": [
-        "status:in-arbeit",
+        "status:blockiert",
         "type:technik",
         "priority:p0",
         "area:backend"
@@ -1550,7 +1550,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -1559,7 +1559,7 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-09T11:29:17Z",
+      "updated_at": "2026-09-09T11:30:08Z",
       "closed_at": null
     },
     {
