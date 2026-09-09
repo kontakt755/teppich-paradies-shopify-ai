@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+// Laeufe ohne cwd legten .router/agent-runs/AGENT-* im echten Repo an (2026-09-09).
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-agent-cycle-'));
 import { buildClaudeWorkPrompt, buildCodexReviewPrompt, describeClaudeActivities, parseReviewResult, runCliAgentCycle, runCodexReview, runReviewStep } from '../core/cli-agent-cycle.mjs';
 
 test('worker and reviewer prompts require the complete test-review-correct cycle', () => {
@@ -41,7 +46,7 @@ test('Claude stream events become compact safe dashboard activities', () => {
 
 test('unattended loop stops high-risk work before spawning an agent', async () => {
   let spawned = false;
-  const result = await runCliAgentCycle({ task: 'Veröffentliche das Live-Theme', spawn: () => { spawned = true; } });
+  const result = await runCliAgentCycle({ cwd: scratch, task: 'Veröffentliche das Live-Theme', spawn: () => { spawned = true; } });
   assert.equal(result.status, 'HUMAN_GATE');
   assert.equal(spawned, false);
 });
@@ -61,7 +66,7 @@ test('unattended loop retries with bounded API auth after subscription limit', a
     return { status: 0, stdout: JSON.stringify({ result: 'implemented', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.01 }), stderr: '' };
   };
   try {
-    const result = await runCliAgentCycle({
+    const result = await runCliAgentCycle({ cwd: scratch,
       task: 'Repariere einen kleinen lokalen Testfehler',
       spawn,
       review: () => ({ status: 'PASS', findings: [] }),
@@ -96,7 +101,7 @@ test('a generic program/config error (e.g. api_error) never triggers the paid AP
     return { status: 1, stdout: JSON.stringify({ is_error: true, subtype: 'api_error', terminal_reason: 'api_error', result: 'Ein interner Fehler ist aufgetreten.' }), stderr: '' };
   };
   try {
-    await assert.rejects(() => runCliAgentCycle({ task: 'Repariere einen kleinen lokalen Testfehler', spawn, review: () => ({ status: 'PASS', findings: [] }), recordUsage: () => {} }));
+    await assert.rejects(() => runCliAgentCycle({ cwd: scratch, task: 'Repariere einen kleinen lokalen Testfehler', spawn, review: () => ({ status: 'PASS', findings: [] }), recordUsage: () => {} }));
     assert.deepEqual(authModes, ['SUBSCRIPTION']);
   } finally {
     if (previous === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = previous;
@@ -110,7 +115,7 @@ test('a technical Codex review failure never discards a completed Claude result 
     claudeCalls += 1;
     return { status: 0, stdout: JSON.stringify({ result: 'Fertig implementiert', usage: {}, total_cost_usd: 0 }), stderr: '' };
   };
-  const result = await runCliAgentCycle({
+  const result = await runCliAgentCycle({ cwd: scratch,
     task: 'Repariere einen kleinen lokalen Testfehler',
     spawn,
     review: () => { throw new Error("codex exited with status 2: the argument '--sandbox <SANDBOX_MODE>' cannot be used with '--approve-for-me'"); },
@@ -137,7 +142,7 @@ test('automatic correction rounds stop after one paid API round instead of spend
     return { status: 0, stdout: JSON.stringify({ result: 'ueber API erledigt', usage: {}, total_cost_usd: 0.13 }), stderr: '' };
   };
   try {
-    const result = await runCliAgentCycle({
+    const result = await runCliAgentCycle({ cwd: scratch,
       task: 'Repariere einen kleinen lokalen Testfehler',
       spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
       review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
@@ -173,7 +178,7 @@ test('a mid-cycle switch from Pro to the paid API still allows only one paid cor
     return { status: 0, stdout: JSON.stringify({ result: 'ueber API erledigt', usage: {}, total_cost_usd: 0.13 }), stderr: '' };
   };
   try {
-    const result = await runCliAgentCycle({
+    const result = await runCliAgentCycle({ cwd: scratch,
       task: 'Repariere einen kleinen lokalen Testfehler',
       spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
       review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
@@ -195,7 +200,7 @@ test('correction rounds stay unlimited while the free Pro subscription is doing 
     workerCalls += 1;
     return { status: 0, stdout: JSON.stringify({ result: 'Pro erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
   };
-  const result = await runCliAgentCycle({
+  const result = await runCliAgentCycle({ cwd: scratch,
     task: 'Repariere einen kleinen lokalen Testfehler',
     spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 3,
     review: () => (++reviews >= 3 ? { status: 'PASS', findings: [] } : { status: 'CHANGES_REQUIRED', findings: [finding()] }),
@@ -214,7 +219,7 @@ test('unattended loop refuses API spending when Pro is not logged in', async () 
     return { status: 0, stdout: JSON.stringify({ result: 'implemented', usage: {}, total_cost_usd: 0.01 }), stderr: '' };
   };
   try {
-    await assert.rejects(() => runCliAgentCycle({ task: 'Repariere einen kleinen lokalen Testfehler', spawn, review: () => ({ status: 'PASS', findings: [] }), recordUsage: () => {} }), /Pro ist nicht angemeldet/);
+    await assert.rejects(() => runCliAgentCycle({ cwd: scratch, task: 'Repariere einen kleinen lokalen Testfehler', spawn, review: () => ({ status: 'PASS', findings: [] }), recordUsage: () => {} }), /Pro ist nicht angemeldet/);
     assert.deepEqual(calls, ['AUTH_STATUS']);
   } finally {
     if (previous === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = previous;
@@ -236,7 +241,7 @@ test('subscription analysis uses read-only Haiku with more turns and no artifici
     };
   };
   try {
-    const result = await runCliAgentCycle({ task: 'Analysiere die Webseite auf Fehler', spawn, review: () => { throw new Error('must not review a parked result'); }, recordUsage: record => records.push(record) });
+    const result = await runCliAgentCycle({ cwd: scratch, task: 'Analysiere die Webseite auf Fehler', spawn, review: () => { throw new Error('must not review a parked result'); }, recordUsage: record => records.push(record) });
     assert.equal(result.status, 'PARKED');
     assert.equal(result.reason, 'MAX_TURNS');
     assert.equal(result.result, 'Teilbericht');
@@ -264,7 +269,7 @@ test('worker runs with the matrix model for its class and the corrector escalate
     return { status: 0, stdout: JSON.stringify({ result: 'Pro erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
   };
   const events = [];
-  const result = await runCliAgentCycle({
+  const result = await runCliAgentCycle({ cwd: scratch,
     task: 'Bug: Produktkarte zeigt auf Mobile keine Bewertung, bitte beheben',
     spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 4, io: memoryIo(),
     // Jede Runde ein anderer Befund: die Leiter geht stufenweise. Identische
@@ -293,7 +298,7 @@ test('a class A task runs one Haiku call and no model review', async () => {
     claudeArgs.push(args);
     return { status: 0, stdout: JSON.stringify({ result: 'erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
   };
-  const result = await runCliAgentCycle({ task: 'Tippfehler im Footer korrigieren', spawn, recordUsage: () => {}, guardsEnabled: false, review: () => { reviewCalls += 1; return { status: 'PASS', findings: [] }; } });
+  const result = await runCliAgentCycle({ cwd: scratch, task: 'Tippfehler im Footer korrigieren', spawn, recordUsage: () => {}, guardsEnabled: false, review: () => { reviewCalls += 1; return { status: 'PASS', findings: [] }; } });
   assert.equal(result.status, 'PASS');
   assert.equal(result.taskClass, 'A');
   assert.equal(claudeArgs.length, 1);
@@ -323,7 +328,7 @@ test('a Claude rate limit without API backup hands the same step to Codex instea
   };
   try {
     const events = [];
-    const result = await runCliAgentCycle({ task: 'Komplexes Refactoring des Konfigurators über mehrere Dateien', spawn, recordUsage: () => {}, guardsEnabled: false, io: memoryIo(), review: () => ({ status: 'PASS', findings: [] }), onState: event => events.push(event) });
+    const result = await runCliAgentCycle({ cwd: scratch, task: 'Komplexes Refactoring des Konfigurators über mehrere Dateien', spawn, recordUsage: () => {}, guardsEnabled: false, io: memoryIo(), review: () => ({ status: 'PASS', findings: [] }), onState: event => events.push(event) });
     assert.equal(result.status, 'PASS');
     assert.equal(result.taskClass, 'C');
     assert.equal(codexArgs[0][codexArgs[0].indexOf('-m') + 1], 'gpt-6-astra');
@@ -352,7 +357,7 @@ test('the same finding twice skips a ladder step and exhausts escalation into PA
     steps.push(args[0] === 'exec' ? `codex:${args[args.indexOf('-m') + 1]}` : `claude:${args[args.indexOf('--model') + 1]}/${args[args.indexOf('--effort') + 1]}`);
     return { status: 0, stdout: JSON.stringify({ result: 'erledigt', usage: {}, total_cost_usd: 0 }), stderr: '' };
   };
-  const result = await runCliAgentCycle({
+  const result = await runCliAgentCycle({ cwd: scratch,
     task: 'Bug: Produktkarte zeigt auf Mobile keine Bewertung, bitte beheben',
     spawn, recordUsage: () => {}, guardsEnabled: false, maxReviewRounds: 6, io: memoryIo(),
     review: () => ({ status: 'CHANGES_REQUIRED', findings: [finding()] }),
