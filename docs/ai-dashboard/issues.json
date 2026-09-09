@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T19:56:20.896Z",
+  "generated_at": "2026-09-09T20:09:38.943Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 49,
+  "count": 52,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T19:56:20.896Z",
+    "fetchedAt": "2026-09-09T20:09:38.943Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,78 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 163,
+      "title": "Zweiter Weg neben dem Warenkorb: Angebot anfordern und Beratungstermin",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/163",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:33Z",
+      "updated_at": "2026-09-09T20:09:34Z",
+      "closed_at": null
+    },
+    {
+      "number": 162,
+      "title": "Kaufbox Rollenware: Live-Gesamtpreis, Rechenbeispiel und Eingabegrenzen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/162",
+      "labels": [
+        "status:eingang",
+        "type:ux",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:31Z",
+      "updated_at": "2026-09-09T20:09:32Z",
+      "closed_at": null
+    },
+    {
+      "number": 161,
+      "title": "Wettbewerbsanalyse Kaufpfad: Scheune, LaminatDEPOT, planeo, Kibek",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/161",
+      "labels": [
+        "status:eingang",
+        "type:idee",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:23Z",
+      "updated_at": "2026-09-09T20:09:24Z",
+      "closed_at": null
+    },
     {
       "number": 160,
       "title": "Git-Guard: Regeln griffen nicht hinter xargs, sudo oder find -exec",
