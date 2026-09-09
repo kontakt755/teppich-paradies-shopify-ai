@@ -40,17 +40,36 @@
   # Einmal pro Filterblock pruefen, ob irgendein Wert gesperrt ist. Der Hinweis
   # dazu stand vorher in jeder Filtergruppe und erschien dadurch mehrfach
   # untereinander. Er gehoert einmal an den Filterbereich, nicht an die Gruppe.
+  #
+  # Zusaetzlich zaehlen, ob ueberhaupt ein Filter aktiv ist: Ein Wert kann auch
+  # ohne jede Auswahl count 0 haben (z. B. "Nicht vorraetig", oder eine Datenluecke
+  # wie das fehlende custom.optik). Der Hinweis empfahl dann "Filter zuruecksetzen",
+  # obwohl nichts gesetzt war. Die Typunterscheidung entspricht der Zaehlung von
+  # total_active_values weiter unten; eigene Variable, weil jene spaeter im
+  # Rendering auf 0 zurueckgesetzt wird.
   assign tp_gesperrte_werte = false
+  assign tp_aktive_filter = false
   for filter in filters
+    case filter.type
+      when 'price_range'
+        if filter.min_value.value != null or filter.max_value.value != null
+          assign tp_aktive_filter = true
+        endif
+      when 'boolean'
+        if filter.active_values[0].value
+          assign tp_aktive_filter = true
+        endif
+      else
+        if filter.active_values.size > 0
+          assign tp_aktive_filter = true
+        endif
+    endcase
     for value in filter.values
       if value.count == 0 and value.active == false
         assign tp_gesperrte_werte = true
         break
       endif
     endfor
-    if tp_gesperrte_werte
-      break
-    endif
   endfor
 
   for filter in filters
@@ -179,8 +198,12 @@
 
               {%- if tp_gesperrte_werte -%}
                 <p class="facets__disabled-hint" role="note">
-                  Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                  Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                  {%- if tp_aktive_filter -%}
+                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                  {%- else -%}
+                    Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                  {%- endif -%}
                 </p>
               {%- endif -%}
 
@@ -465,8 +488,12 @@
 
                 {%- if tp_gesperrte_werte -%}
                   <p class="facets__disabled-hint" role="note">
-                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                    {%- if tp_aktive_filter -%}
+                      Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                      Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                    {%- else -%}
+                      Ausgegraute Optionen gibt es in dieser Kategorie nicht.
+                    {%- endif -%}
                   </p>
                 {%- endif -%}
 
