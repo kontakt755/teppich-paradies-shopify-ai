@@ -71,15 +71,22 @@ Blöcken, `npm run template:guard` hält das gleich).
 
 ## Navigation
 
-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör", `gid://shopify/Menu/346703298894`)
-ist eine Kopie von `main-menu` plus dem Punkt „Zubehör" nach Bodenleisten und vor
-Service & Verlegung. Das Live-Theme nutzt weiter `main-menu`; beim Live-Gang entweder
-das Theme mit `main-menu-zubehoer` veröffentlichen (passiert über das Repo) oder
-den Punkt in `main-menu` nachziehen und den Handle zurückstellen.
+**Der Punkt „Zubehör" steht im Live-Menü `main-menu`** (nach Bodenleisten, vor
+Service & Verlegung, mit acht Unterpunkten). Von den beiden Wegen, die hier früher
+zur Wahl standen, ist der zweite gegangen worden: der Punkt wurde in `main-menu`
+nachgezogen, statt ein Theme mit einem anderen Menü-Handle zu veröffentlichen.
+Das Live-Theme referenziert unverändert `"menu": "main-menu"` in
+`sections/header-group.json` – nachgeprüft am Theme mit `role: MAIN`, nicht am Repo.
 
-Das Mega-Menü steht auf `featured_products` und zeigt Kollektionsbilder erst, wenn
-die Zubehör-Kollektionen Bilder oder Produkte haben. Bis dahin erscheint der Punkt
-als Textspalte – das ist Absicht, kein Fehler.
+Das Kopie-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör",
+`gid://shopify/Menu/346703298894`) existiert dadurch ohne Aufgabe weiter. Es ist
+kein Fallback: es wird von keinem Theme referenziert und läuft bei jeder Änderung
+an `main-menu` weiter auseinander. Vor dem Löschen prüfen, ob wirklich kein Theme
+darauf zeigt; Menüs sind storeweit.
+
+Das Mega-Menü steht auf `menu_style: collection_images` und zeigt Kollektionsbilder
+erst, wenn die Zubehör-Kollektionen Bilder haben. Bis dahin erscheint der Punkt als
+Textspalte – das ist Absicht, kein Fehler.
 
 ## Regeln für den Import von Jordan / M-Plus
 
