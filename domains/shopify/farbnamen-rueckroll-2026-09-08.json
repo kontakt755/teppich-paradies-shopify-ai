@@ -482,7 +482,8 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017203241294",
      "alt": "Farbe 72",
-     "neu": "Beige Mittel 3"
+     "neu": "Sand Warm",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017203274062",
@@ -497,7 +498,8 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017203339598",
      "alt": "Farbe 92",
-     "neu": "Beige Mittel 4"
+     "neu": "Taupe Meliert",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017203372366",
@@ -512,12 +514,14 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017203437902",
      "alt": "Farbe 75",
-     "neu": "Beige Mittel 1"
+     "neu": "Greige Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017203470670",
      "alt": "Farbe 73",
-     "neu": "Beige Mittel 2"
+     "neu": "Beige Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     }
    ]
   },
@@ -1004,32 +1008,38 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017665204558",
      "alt": "Farbe 139",
-     "neu": "Grau Mittel 2"
+     "neu": "Grau Oliv",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665237326",
      "alt": "Farbe 233",
-     "neu": "Beige Mittel 2"
+     "neu": "Greige Mittel",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665270094",
      "alt": "Farbe 229",
-     "neu": "Grau Mittel 3"
+     "neu": "Grau Mittel",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665302862",
      "alt": "Farbe 212",
-     "neu": "Beige Mittel 1"
+     "neu": "Sand Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665335630",
      "alt": "Farbe 159",
-     "neu": "Grau Mittel 4"
+     "neu": "Taupe Mittel",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665368398",
      "alt": "Farbe 149",
-     "neu": "Beige Mittel 4"
+     "neu": "Taupe Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665401166",
@@ -1044,12 +1054,14 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017665466702",
      "alt": "Farbe 145",
-     "neu": "Beige Mittel 3"
+     "neu": "Sand Warm",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017665499470",
      "alt": "Farbe 121",
-     "neu": "Grau Mittel 1"
+     "neu": "Grau Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     }
    ]
   },
@@ -1060,7 +1072,8 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017670185294",
      "alt": "Farbe 119",
-     "neu": "Beige Mittel 2"
+     "neu": "Greige Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017670218062",
@@ -1070,12 +1083,14 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017670250830",
      "alt": "Farbe 132",
-     "neu": "Beige Mittel 3"
+     "neu": "Beige Mittel",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017670283598",
      "alt": "Farbe 149",
-     "neu": "Beige Mittel 4"
+     "neu": "Taupe Warm",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017670316366",
@@ -1085,7 +1100,8 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017670349134",
      "alt": "Farbe 122",
-     "neu": "Beige Mittel 1"
+     "neu": "Sand Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017670381902",
@@ -1095,7 +1111,8 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017670414670",
      "alt": "Farbe 123",
-     "neu": "Beige Mittel 5"
+     "neu": "Beige Oliv",
+     "nachbenannt": "2026-09-09 am Bild"
     }
    ]
   },
@@ -1193,27 +1210,32 @@
     {
      "id": "gid://shopify/ProductOptionValue/14017683390798",
      "alt": "Farbe 122",
-     "neu": "Beige Mittel 2"
+     "neu": "Beige Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017683423566",
      "alt": "Farbe 159",
-     "neu": "Beige Mittel 4"
+     "neu": "Greige Mittel",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017683456334",
      "alt": "Farbe 153",
-     "neu": "Beige Mittel 5"
+     "neu": "Sand Warm",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017683489102",
      "alt": "Farbe 119",
-     "neu": "Beige Mittel 3"
+     "neu": "Beige Warm",
+     "nachbenannt": "2026-09-09 am Bild"
     },
     {
      "id": "gid://shopify/ProductOptionValue/14017683521870",
      "alt": "Farbe 109",
-     "neu": "Beige Mittel 1"
+     "neu": "Greige Hell",
+     "nachbenannt": "2026-09-09 am Bild"
     }
    ]
   },
