@@ -20,6 +20,7 @@
   var sampleVariantId = null;
   var product = null;
   var colors = [];
+  var optionName = 'Farbe';
   var existingKeys = new Set();
   var cartSampleCount = 0;
   var remaining = window.TPSampleCheckoutCore ? window.TPSampleCheckoutCore.MAX_SAMPLES : 3;
@@ -162,6 +163,7 @@
         items: core.buildCartItems({
           product: product,
           colors: chosenColors,
+          optionName: optionName,
           sampleVariantId: sampleVariantId,
           origin: window.location.origin,
         }),
@@ -181,7 +183,7 @@
     var handle = getParam('produkt');
     if (!handle || !HANDLE_PATTERN.test(handle)) {
       loadingEl.hidden = true;
-      showError('Für dieses Produkt sind aktuell keine Musterfarben hinterlegt.');
+      showError('Für dieses Produkt sind aktuell keine Muster hinterlegt.');
       return;
     }
 
@@ -203,6 +205,12 @@
       colors = core.getUniqueColors(product);
       if (colors.length === 0) throw new Error('no-colors');
 
+      // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
+      optionName = core.getOptionName(product);
+      root.querySelectorAll('[data-sample-term]').forEach(function (el) {
+        el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
+      });
+
       var state = core.getSampleState(cart, sampleVariantId);
       existingKeys = state.keys;
       cartSampleCount = state.count;
@@ -217,7 +225,7 @@
       renderColors();
     }).catch(function () {
       loadingEl.hidden = true;
-      showError('Für dieses Produkt sind aktuell keine Musterfarben hinterlegt.');
+      showError('Für dieses Produkt sind aktuell keine Muster hinterlegt.');
     });
   }
 
