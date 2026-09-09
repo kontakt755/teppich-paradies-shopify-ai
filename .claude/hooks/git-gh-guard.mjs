@@ -19,6 +19,33 @@
 // Ist einer dieser Befehle wirklich noetig, hebt der Nutzer die Regel hier
 // bewusst auf - nicht der Agent.
 
+// Genau eine Ausnahme: die Bot-Datei docs/ai-dashboard/issues.json.
+//
+// Sie gehoert dem Sync-Workflow (dashboard-data.yml committet sie stuendlich)
+// und wird lokal von "npm run task" und "npm run dashboard" neu erzeugt. Sie
+// enthaelt nie Handarbeit - was hier verworfen wird, erzeugt der naechste Lauf
+// identisch neu. Ohne die Ausnahme standen sich Hook und CLAUDE.md gegenueber.
+//
+// Bewusst eng: nur dieser eine Pfad, exakt am Segmentende verankert. Damit
+// bleiben "git checkout -- ." und ein zweiter Pfad hinter der Datei blockiert.
+// Eingefuehrt in b6cf711, von fe8631f (Branch-Loeschen) versehentlich
+// ueberschrieben - qa/tests/git-gh-guard.test.mjs haelt sie seitdem fest und
+// hat den Verlust auch gefunden: vier Tests fielen und blockierten die
+// Deploy-Kette, bis 83931e4 die Ausnahme wiederherstellte.
+//
+// Angehaengte Umleitungen sind erlaubt, aber nur nach /dev/null oder als 2>&1.
+// Nicht Umleitungen allgemein: "git checkout -- <botdatei> > wichtig.txt"
+// wuerde wichtig.txt ueberschreiben - dann haette die Ausnahme fuer eine
+// harmlose Datei ein Werkzeug freigegeben, das eine beliebige andere
+// zerstoert.
+const UMLEITUNG = '(\\s*(?:[12]?>{1,2}\\s*\\/dev\\/null|&>{1,2}\\s*\\/dev\\/null|2>&1))*\\s*$';
+const BOTDATEI = '(?:\\.\\/)?docs\\/ai-dashboard\\/issues\\.json';
+
+const AUSNAHMEN = [
+  new RegExp(`^git\\s+checkout\\s+--\\s+${BOTDATEI}${UMLEITUNG}`),
+  new RegExp(`^git\\s+restore\\s+(?:--worktree\\s+|--\\s+)?${BOTDATEI}${UMLEITUNG}`),
+];
+
 const VERBOTEN = [
   // --- git: verwirft Arbeit oder ueberschreibt fremde Commits ---
   [/^git\s+(.*\s)?push\b.*(--force\b|--force-with-lease\b|\s-f\b)/, 'git push --force ueberschreibt Commits auf dem Remote'],
@@ -77,6 +104,7 @@ async function stdinJson() {
 const command = (await stdinJson())?.tool_input?.command ?? '';
 
 for (const teil of segmente(command)) {
+  if (AUSNAHMEN.some((muster) => muster.test(teil))) continue;
   for (const [muster, grund] of VERBOTEN) {
     if (muster.test(teil)) {
       process.stdout.write(`${JSON.stringify({

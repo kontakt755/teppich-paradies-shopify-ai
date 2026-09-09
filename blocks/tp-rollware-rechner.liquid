@@ -67,7 +67,7 @@
 <div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
 
   <div class="tp-rwc-field" data-width-field>
-    {% render 'tp-step-heading', number: 2, label: 'Wähle deine Breite' %}
+    {% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}
     <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
   </div>
 
@@ -87,7 +87,7 @@
 
   <div class="tp-rwc-mode-panel" data-mode-panel="length">
     <div class="tp-rwc-field">
-      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Gib deine Länge an' %}</span>
+      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Geben Sie Ihre Länge an' %}</span>
       <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
       <div class="tp-rwc-input-wrap">
         <input
@@ -832,7 +832,9 @@
         return r.json();
       })
       .then(function (addedItem) {
-        cta.textContent = qty + ' m² hinzugefügt';
+        // billedArea statt qty: im cm-genauen Modus ist qty die Menge in
+        // 0,01-m2-Einheiten und wuerde "666 m2" statt "6,66 m2" melden.
+        cta.textContent = fmtArea(billedArea) + ' m² hinzugefügt';
         cta.classList.add('is-done');
         cartLink.hidden = false;
 

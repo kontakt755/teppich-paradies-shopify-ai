@@ -214,9 +214,24 @@ dessen, was der Befund versprach.
 
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
-Das Produkt-Metafeld `grosshandel.sku` nennt nur die Kollektion
-(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Ohne Nummer kein Registereintrag -
-das holt der Farb-Nachzug nach, sobald die Produkte SKUs bekommen.
+Ohne Nummer kein Registereintrag - das holt der Farb-Nachzug nach, sobald die Produkte
+SKUs bekommen.
+
+**AW Ganges: Farbnummern nicht auffindbar (geprueft 2026-09-09).** Die sieben Farbnamen sind
+bereits sauber deutsch (`Rot Bordeaux`, `Weiß Creme`); nur `Grau dunkel` wurde auf
+`Grau Dunkel` angeglichen. Eine Farbnummer liess sich nirgends abschreiben:
+
+- keine SKU, kein Barcode, kein Variantenbild
+- `grosshandel.sku` nennt `M-Plus Ambiente 2025 1312 Ambiance` - eine Kollektion, keine Farbe
+- der Grosshaendler jordanshop.de fuehrt weder `Ganges` noch `Ambiance` Teppichboden;
+  das Produkt stammt von M-Plus, nicht von Jordan
+- die Herstellerseite von Associated Weavers fuehrt `Ganges` nicht oeffentlich
+
+Ein Hinweis fuer den naechsten Anlauf: Die drei Produktbilder heissen `GGESTA_21.jpg`,
+`GGESTA_21_LIVING.jpg` und `GGESTA_33_LIVING.jpg`. Die 21 und die 33 **koennten**
+Farbnummern sein, es gibt aber nur drei Bilder fuer sieben Farben und keine Zuordnung zu
+einer Variante. Daraus eine Nummer abzuleiten waere geraten - deshalb steht es hier als
+Spur und nicht im Farbregister. Die Farbnummern muessen aus der M-Plus-Preisliste kommen.
 
 **Eichenhain: Farbnamen eingedeutscht (2026-09-09).** Die sechs Werte hiessen
 `Prestige Oak Honey Braun` und `Infinity Oak Naturel` - Lieferanten-Dekornamen mit
@@ -294,20 +309,30 @@ sowohl in der Sofortsuche als auch in der Volltextsuche. Der Bodenleisten-Filter
 weiterhin nur Arten, Verfuegbarkeit und Preis - `dekor:` taucht dort nicht als neue
 Filtergruppe auf, weil die Filter fest konfiguriert sind.
 
-### Offener Befund: JOKA-Farbnummern
+### JOKA-Farbnummern geklaert (2026-09-09)
 
-Bei `JOKA JK 34 Silikon-Dichtstoff` widersprechen sich Name und Nummer:
+Der Widerspruch zwischen Name und Nummer bei `JOKA JK 34` ist aufgeloest. JOKA ist die
+Eigenmarke desselben Lieferanten; der Farbwaehler des Artikels nennt Farbnummer und
+Bezeichnung, die Attributtabelle die Artikelnummer. Rohdaten:
+`domains/shopify/joka-jk34-farbnummern-2026-09-09.json`.
 
-| Farbe | Nummer im alten Namen | `custom.farbcode` aus der SKU |
-|---|---|---|
-| Nussbraun | 26 | 26B |
-| Gelb | 25 | 25G |
-| Reinweiß | keine | 26 |
-| Transparent | keine | 25 |
+Zwei Farben tragen beim Hersteller **gar keine Zahlennummer**, und daran hing der ganze
+scheinbare Konflikt:
 
-Die Buchstaben-Suffixe sehen aus wie eine Notloesung, um doppelte SKUs zu vermeiden.
-Welche Nummer der Hersteller fuehrt, ist damit unklar - das klaert nur die JOKA-Preisliste.
-Nicht geraten, deshalb steht es hier.
+| Farbe | JOKA fuehrt sie als | Artikelnummer | `custom.farbcode` jetzt |
+|---|---|---|---|
+| Nussbraun | `26 nussbraun` | `ZUBSARHAVS_26B` | `26` |
+| Reinweiss | `N-Weiss, reinweiss` | `ZUBSARHAVS_26` | `N-Weiss` |
+| Gelb | `25 gelb` | `ZUBSARHAVS_25G` | `25` |
+| Transparent | `transparent` | `ZUBSARHAVS_25` | `transparent` |
+
+Die Buchstaben `B` und `G` in der Artikelnummer sind keine Notloesung des Shops, sondern
+stehen so beim Lieferanten: `_26` und `_25` waren fuer die beiden namenlosen Farben
+vergeben, also bekamen die nummerierten ein Kuerzel angehaengt. Farbnummer und
+Artikelnummer sind hier verschiedene Dinge - genau wie bei den Doellken-Leisten.
+
+Alle 26 Shop-SKUs stimmen mit den Jordan-Artikelnummern ueberein. Vier `farbcode`-Werte
+wurden korrigiert, die uebrigen 22 waren schon richtig.
 
 **Feldwin nachgezogen (2026-09-09):** Die sechs Feldwin-Sockelleisten schrieben ihre Farben
 klein (`anthrazit`, `weiß RAL 9010`). 37 Optionswerte und die 11 Registereintraege stehen jetzt

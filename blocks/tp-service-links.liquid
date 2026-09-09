@@ -6,7 +6,6 @@
 
 {%- liquid
   assign tp_sl_id = block.id | replace: '_', '' | downcase
-  assign tp_sl_handle = product.handle | url_encode
   # Ziel des Muster-Links entscheidet snippets/tp-musteroption: der
   # Konfigurator, wenn das Produkt eine Farb- oder Dekoroption hat, sonst das
   # Kontaktformular (z. B. Klick-/Klebevinyl als Einzeldekor).

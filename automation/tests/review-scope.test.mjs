@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { describeReviewScope, detectReviewScope, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+import { currentCommit, describeReviewScope, detectReviewScope, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
 
 test('dirty working tree reviews the uncommitted changes', () => {
   const scope = describeReviewScope({ porcelain: ' M a.js', aheadCommits: '' });
@@ -83,4 +83,71 @@ test('detectReviewScope asks git for status, merge-base and the commit range', (
   assert.equal(scope.kind, REVIEW_SCOPE_COMMITTED);
   assert.ok(calls.includes('log --format=%h %s abcdef0123456789..HEAD'));
   assert.match(scope.text, /abcdef012345\.\.HEAD/);
+});
+
+// Geteilter Checkout mit mehreren parallelen Sitzungen (gefunden 2026-09-09):
+// origin/main als Basis zieht jeden fremden, zwischenzeitlich committeten
+// Commit einer anderen Sitzung in den Pruefbereich. sinceRef (HEAD bei
+// Task-Start) ersetzt origin/main vollstaendig, sobald es sich aufloest.
+
+test('describeReviewScope: taskScoped nennt den Task-Start statt origin/main und schliesst fremde Commits explizit aus', () => {
+  const scope = describeReviewScope({ porcelain: '', aheadCommits: 'abc1 mein fix', mergeBase: 'deadbee', taskScoped: true });
+  assert.equal(scope.kind, REVIEW_SCOPE_COMMITTED);
+  assert.match(scope.text, /seit Beginn dieses Tasks \(Commit deadbee\)/);
+  assert.match(scope.text, /NICHT zu diesem Auftrag/);
+  assert.doesNotMatch(scope.text, /origin\/main/);
+});
+
+test('describeReviewScope: taskScoped ohne Commits erklaert No-op explizit gegen Task-Start, nicht origin/main', () => {
+  const scope = describeReviewScope({ porcelain: '', aheadCommits: '', mergeBase: 'deadbee', taskScoped: true });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.match(scope.text, /seit Beginn dieses Tasks \(Commit deadbee\)/);
+  assert.match(scope.text, /parallel laufenden Sitzung/);
+});
+
+test('detectReviewScope: sinceRef loest sich auf und ersetzt origin\\/main vollstaendig - fremde Commits vor sinceRef zaehlen nicht', () => {
+  const calls = [];
+  const exec = (cmd, args) => {
+    calls.push(args.join(' '));
+    if (args[0] === 'status') return '';
+    if (args[0] === 'rev-parse') return 'task-start-sha\n';
+    if (args[0] === 'log') return 'abc1 mein fix\n';
+    throw new Error('merge-base/origin darf bei aufgeloestem sinceRef nicht mehr abgefragt werden');
+  };
+  const scope = detectReviewScope({ cwd: '/repo', sinceRef: 'HEAD-bei-task-start', exec });
+  assert.equal(scope.kind, REVIEW_SCOPE_COMMITTED);
+  assert.deepEqual(scope.commits, ['abc1 mein fix']);
+  assert.ok(calls.some(c => c.includes('rev-parse --verify --quiet HEAD-bei-task-start^{commit}')));
+  assert.ok(!calls.some(c => c.startsWith('merge-base')), 'origin/main-Pfad wurde nicht mehr betreten');
+});
+
+test('detectReviewScope: unloesbares sinceRef faellt auf origin/main zurueck statt UNKNOWN zu melden', () => {
+  const exec = (cmd, args) => {
+    if (args[0] === 'status') return '';
+    if (args[0] === 'rev-parse' && args.includes('unbekannter-commit^{commit}')) throw new Error('unknown revision');
+    if (args[0] === 'rev-parse') return 'origin-main-sha\n';
+    if (args[0] === 'merge-base') return 'origin-main-sha\n';
+    if (args[0] === 'log') return 'abc1 fix\n';
+    return '';
+  };
+  const scope = detectReviewScope({ cwd: '/repo', sinceRef: 'unbekannter-commit', exec });
+  assert.equal(scope.kind, REVIEW_SCOPE_COMMITTED);
+  assert.match(scope.text, /origin-main-\.\.HEAD/);
+  assert.match(scope.text, /noch nicht in origin\/main/);
+});
+
+test('detectReviewScope: kein sinceRef verhaelt sich unveraendert wie vor dem Fix', () => {
+  const exec = (cmd, args) => {
+    if (args[0] === 'status') return '';
+    if (args[0] === 'rev-parse') return 'abc\n';
+    if (args[0] === 'merge-base') return 'abc\n';
+    if (args[0] === 'log') return '';
+    return '';
+  };
+  assert.equal(detectReviewScope({ cwd: '/repo', exec }).kind, REVIEW_SCOPE_NONE);
+});
+
+test('currentCommit liefert den HEAD-Commit oder null bei einem git-Fehler, nie eine Exception', () => {
+  assert.equal(currentCommit({ cwd: '/repo', exec: () => 'deadbeefcafe\n' }), 'deadbeefcafe');
+  assert.equal(currentCommit({ cwd: '/repo', exec: () => { throw new Error('not a git repository'); } }), null);
 });

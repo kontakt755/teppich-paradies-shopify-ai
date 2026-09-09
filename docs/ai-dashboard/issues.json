@@ -1,23 +1,34 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T08:18:54.114Z",
+  "generated_at": "2026-09-09T12:45:29.699Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 33,
+  "count": 49,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T08:18:54.114Z",
+    "fetchedAt": "2026-09-09T12:45:29.699Z",
     "labelsAvailable": [
+      "area:ads",
+      "area:analytics",
       "area:backend",
       "area:checkout",
+      "area:collections",
+      "area:content",
       "area:design",
       "area:filter",
       "area:google",
+      "area:katalog",
       "area:kategorie",
       "area:navigation",
+      "area:operations",
+      "area:produktdaten",
       "area:produktseite",
       "area:seo",
+      "area:service",
+      "area:sicherheit",
       "area:sonstiges",
+      "area:technik",
+      "area:tracking",
       "area:versand",
       "area:warenkorb",
       "priority:p0",
@@ -52,6 +63,400 @@
   },
   "issues": [
     {
+      "number": 160,
+      "title": "Git-Guard: Regeln griffen nicht hinter xargs, sudo oder find -exec",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/160",
+      "labels": [
+        "status:review",
+        "type:bug",
+        "priority:p2",
+        "area:sicherheit"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Jede Regel in .claude/hooks/git-gh-guard.mjs war mit ^git verankert und griff nur am Segmentanfang. Hinter einem Vorspann lief dieselbe Operation durch: die direkte Loeschung einer Referenz war blockiert, dieselbe hinter xargs erlaubt. Betroffen war jede Regel, auch das harte Zuruecksetzen, der erzwungene Push, das Loeschen unversionierter Dateien und das Leeren des Stash-Stacks.\n\nAufgefallen beim Aufraeumen der Stash-Archiv-Refs.\n\nFix: keine Liste erlaubter Vorspaenne, sondern jede Stelle im Segment pruefen, an der ein git/gh-Aufruf beginnt. Fail-closed, das Heredoc bleibt der Weg fuer Fliesstext, der solche Befehle nur erwaehnt - diese Beschreibung ist selbst so entstanden.\n\nDie Ausnahme fuer die Bot-Datei gilt auch hinter einem Vorspann. Zehn neue Tests, per Mutation gegengeprueft: ohne die Erkennung fallen acht.\n\nPR #158.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T12:44:35Z",
+      "updated_at": "2026-09-09T12:44:52Z",
+      "closed_at": null
+    },
+    {
+      "number": 152,
+      "title": "Hook-Ausnahme blockierte die Schreibweise mit 2>/dev/null",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/152",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p3",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Die Ausnahme fuer docs/ai-dashboard/issues.json war am Segmentende verankert und blockierte deshalb 'git checkout -- <botdatei> 2>/dev/null' - dieselbe harmlose Operation mit unterdrueckter Fehlerausgabe, in der Praxis die haeufigere Schreibweise.\n\nErweitert, aber bewusst nicht auf Umleitungen allgemein: '> wichtig.txt' wuerde diese Datei ueberschreiben. Dann haette eine Ausnahme fuer eine harmlose Bot-Datei ein Werkzeug freigegeben, das eine beliebige andere zerstoert. Erlaubt sind nur /dev/null als Ziel und 2>&1.\n\nAcht neue Tests, per Mutation gegengeprueft: werden Umleitungen pauschal erlaubt, fallen drei.\n\nPR #151.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T12:12:45Z",
+      "updated_at": "2026-09-09T12:35:04Z",
+      "closed_at": "2026-09-09T12:34:47Z"
+    },
+    {
+      "number": 147,
+      "title": "Bodenleisten-Produktkarte: fuenf BLOCK_DRIFT-Warnungen nach dem Umbau",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/147",
+      "labels": [
+        "status:fertig",
+        "type:verbesserung",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Die Bodenleisten-Kategorieseite wurde parallel auf eine eigene Produktkarte umgebaut (tp-card-leisten statt tp-card-specs/dimensions/price-sqm). template:guard meldete fuenf BLOCK_DRIFT-Warnungen.\n\nGeprueft: alle 9 Produkte haben qm_pro_paket = null, keine Variante traegt rollenbreite, Varianten sind Farben statt Breiten. Leisten werden nach Stueck verkauft, tp-card-specs rendert nur fuer Paketprodukte. Die Bloecke wuerden nichts rendern - Absicht, keine Luecke.\n\nNeuer Konfigurationsschluessel nurIn fuer Bloecke, die nur in ein Template gehoeren. Meldet weiterhin, wenn so ein Block in einem fremden Template auftaucht oder aus seinem eigenen faellt. Letzterer Fall fehlte im ersten Entwurf und wurde von der Negativkontrolle gefunden.\n\nPR #146.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T12:02:58Z",
+      "updated_at": "2026-09-09T12:07:36Z",
+      "closed_at": "2026-09-09T12:07:19Z"
+    },
+    {
+      "number": 142,
+      "title": "template:guard meldete zwei Dauerwarnungen zu den Zubehoer-Templates",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/142",
+      "labels": [
+        "status:fertig",
+        "type:verbesserung",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "tp-card-price-sqm und tp-card-dimensions fehlen in den drei Zubehoer-Templates, der Guard meldete das bei jedem Lauf. Eine Warnung, die immer steht, wird ueberlesen und verdeckt die naechste echte.\n\nGeprueft statt angenommen: alle 43 Produkte der Kollektion zubehoer haben custom.rollenbreite = null und custom.qm_pro_paket = null, kein breite_boden-Tag. Beide Bloecke wuerden dort nichts rendern - das Weglassen ist richtig.\n\nFix: neuer Konfigurationsschluessel bewusstAbwesend, der Block und Template gemeinsam nennt. Nicht ueber optional, das haette die Bloecke ueberall stummgeschaltet und echten Drift in Bodenbelag-Templates verdeckt. Drei Tests, per Mutation gegengeprueft.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:45:36Z",
+      "updated_at": "2026-09-09T11:58:05Z",
+      "closed_at": "2026-09-09T11:57:52Z"
+    },
+    {
+      "number": 140,
+      "title": "Laengen- und Breiten-Extraktion in Produktkarten ohne match-Filter umsetzen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/140",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Extraktion ohne match implementieren und auf einer Rollenware-Kollektion im Preview-Theme pruefen",
+      "fields": {
+        "description": "Befund beim Deploy 2026-09-09: In blocks/tp-card-price-sqm.liquid, blocks/tp-card-dimensions.liquid und snippets/tp-card-roll-lengths.liquid (aus PR 98, Commit 115ac4d) wird der Filter 'match' benutzt. Den gibt es in Liquid nicht: Theme Check meldet UnknownFilter (Fehler, blockiert den strikten Push), Shopify liefert zur Laufzeit nil. Die Laengen-Extraktion aus Variantentiteln und die Breite aus Tags haben also nie funktioniert; EUR/m2 auf der Karte kommt heute nur ueber den Metafeld-Fallback custom.rollenbreite. Zum Entsperren des Deploys wurden die vier Stellen verhaltenserhaltend auf nil gesetzt (Kommentar im Code). Offen: Extraktion mit echten Liquid-Mitteln (z. B. split/plus: 0 auf den fuehrenden Zahlenwert) umsetzen, mit Karten-QA fuer Rollenware pruefen. tp-card-roll-lengths.liquid ist derzeit nirgends eingebunden (OrphanedSnippet) - entweder anbinden oder entfernen.",
+        "nextStep": "Extraktion ohne match implementieren und auf einer Rollenware-Kollektion im Preview-Theme pruefen"
+      },
+      "created_at": "2026-09-09T11:44:45Z",
+      "updated_at": "2026-09-09T11:44:46Z",
+      "closed_at": null
+    },
+    {
+      "number": 139,
+      "title": "Area-Labels: setup-dashboard.sh lief elf Bereiche hinter model.mjs",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/139",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "setup-dashboard.sh fuehrte eine eigene fest verdrahtete Bereichsliste, elf Bereiche hinter docs/ai-dashboard/lib/model.mjs: ads, analytics, collections, content, katalog, operations, produktdaten, service, sicherheit, technik, tracking.\n\nFolge: npm run task --area technik bricht mit 'could not add label' ab, obwohl technik im Modell gueltig ist. Die Meldung nennt das Label, nicht die Ursache.\n\nFix: Skript liest die Bereiche aus model.mjs und bricht ab, wenn das nicht geht. Die elf Labels sind angelegt, 23 von 23 vorhanden.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:41:37Z",
+      "updated_at": "2026-09-09T11:58:06Z",
+      "closed_at": "2026-09-09T11:57:51Z"
+    },
+    {
+      "number": 136,
+      "title": "Verwaistes Menue main-menu-zubehoer geloescht",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/136",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Kopie von main-menu, die kein Theme referenzierte. Nur 7 Punkte ohne Untermenues gegenueber 40 Items in main-menu - kein Fallback, sondern veralteter Teilstand.\n\nVor dem Loeschen frisch geprueft: 18 Themes gegen header-group.json und settings_data.json, dazu das Repository. Kein Treffer. Baum vorher gesichert und versioniert abgelegt.\n\nGegenprobe: menus() listet nur noch main-menu, footer, customer-account-main-menu. main-menu unveraendert mit allen 40 MenuItem-IDs. menu:guard 35 Links 0 Fehler.\n\nStoreweit und sofort live, nach ausdruecklicher Freigabe. PR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:37:28Z",
+      "updated_at": "2026-09-09T11:58:08Z",
+      "closed_at": "2026-09-09T11:57:51Z"
+    },
+    {
+      "number": 134,
+      "title": "git-gh-guard und CLAUDE.md widersprachen sich bei issues.json",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/134",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p3",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "CLAUDE.md verlangt, docs/ai-dashboard/issues.json vor dem Commit mit 'git checkout --' zurueckzusetzen, sonst kollidiert jeder Push mit dem Sync-Workflow. Der Hook .claude/hooks/git-gh-guard.mjs blockierte genau diesen Befehl.\n\nDer Ausweg war ein Stash pro Sitzung. Der Stash-Stack ist zwischen allen Worktrees geteilt, jede Sitzung hinterliess dort einen Eintrag, den eine andere faelschlich poppen konnte - der Umweg war riskanter als der Befehl.\n\nFix: enge Ausnahme fuer genau diesen Pfad, am Segmentende verankert. Blockiert bleiben 'git checkout -- .', jede andere Datei, ein zweiter Pfad dahinter, Praefix-Treffer und alles hinter der Ausnahme in derselben Zeile. qa/tests/git-gh-guard.test.mjs haelt die Grenze mit 19 Faellen fest, per Mutation gegengeprueft.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:29:12Z",
+      "updated_at": "2026-09-09T11:58:06Z",
+      "closed_at": "2026-09-09T11:57:50Z"
+    },
+    {
+      "number": 131,
+      "title": "Sortimentsabgleich Teppichboden Jordan/JOKA vs M-Plus (Analyse Phase 1-3)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/131",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:sonstiges"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:27:58Z",
+      "updated_at": "2026-09-09T11:38:49Z",
+      "closed_at": null
+    },
+    {
+      "number": 130,
+      "title": "Rollenware-Rechner: Warenkorb-Button erst nach Laengeneingabe, Messhinweis entfernt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/130",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:27:56Z",
+      "updated_at": "2026-09-09T11:34:03Z",
+      "closed_at": null
+    },
+    {
+      "number": 129,
+      "title": "menu:guard - tote Menuelinks automatisch finden",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/129",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Folgearbeit zu #123. Dieselbe Fehlerklasse stand zweimal wochenlang live (Vinyl 108467d, Bodenleisten #123): ein Menuepunkt filtert auf einen Metaobjekt-Wert und liefert ein leeres Produktraster, im Editor nicht von einem gesunden Link zu unterscheiden.\n\nVollpruefung des Hauptmenues: alle 34 Links gesund.\n\nNeu: npm run menu:guard liest das gerenderte Menue aus der Storefront und ruft jeden Link ab. Meldet MENU_LINK_TOT (HTTP-Fehler) und MENU_LINK_LEER (200 mit leerem Raster). Gegen beide bekannten Faelle verifiziert. Kein Token noetig, ohne Netz SKIP.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:25:25Z",
+      "updated_at": "2026-09-09T11:58:04Z",
+      "closed_at": "2026-09-09T11:57:50Z"
+    },
+    {
+      "number": 123,
+      "title": "Bodenleisten-Menue: drei Filterlinks zeigten auf leeres Produktraster",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/123",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Drei der vier Filterlinks im Menuezweig Bodenleisten (Uebergangsprofile, Abschlussprofile, Kleber & Fixierung) filterten auf /collections/bodenleisten?filter.p.m.custom.arten=... und lieferten ein leeres Produktraster.\n\nUrsache: nicht fehlende Metafelder (anders als beim Vinyl-Fall in 108467d). Per Admin API gezaehlt tragen alle 9 Produkte der Kollektion bodenleisten ausschliesslich den Wert sockelleisten. Die Profil- und Kleberprodukte existieren, sind korrekt ausgezeichnet und liegen in den Zubehoer-Smart-Collections. Falsch war der Scope des Filters, nicht die Produktdaten.\n\nFix: die drei Punkte per menuUpdate von HTTP-Filterlink auf COLLECTION umgehaengt, auf zubehoer-uebergangsprofile (5 Produkte), zubehoer-abschlussprofile (5) und zubehoer-kleber-fixierung (7). Sockelleisten bleibt Filterlink. Alle 40 MenuItem-IDs vorher = nachher.\n\nMenue-Aenderung ist bereits live (storeweit, nach Freigabe). PR #122 traegt die Doku nach.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T10:18:01Z",
+      "updated_at": "2026-09-09T11:40:01Z",
+      "closed_at": "2026-09-09T11:40:01Z"
+    },
+    {
+      "number": 121,
+      "title": "Zubehoer: Mengenhilfe je lfm/m2/Gebinde statt Belagsrechner",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/121",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T10:11:18Z",
+      "updated_at": "2026-09-09T10:19:41Z",
+      "closed_at": null
+    },
+    {
+      "number": 120,
+      "title": "Vinyl von der Rolle: Dekorfilter Holz/Stein reparieren",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/120",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:filter"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 9,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T09:27:53Z",
+      "updated_at": "2026-09-09T12:36:11Z",
+      "closed_at": "2026-09-09T12:36:11Z"
+    },
+    {
+      "number": 119,
+      "title": "Zubehoer: Uebersicht umbenannt, Sauberlauf als eine Karte mit Groessenauswahl",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/119",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:kategorie"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T08:58:54Z",
+      "updated_at": "2026-09-09T08:59:20Z",
+      "closed_at": null
+    },
+    {
+      "number": 117,
+      "title": "Bodenleisten-Kategorieseite: Hero, Einstiege, Kaufberatung (Theme 203946459470)",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/117",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:kategorie"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T08:29:39Z",
+      "updated_at": "2026-09-09T09:38:23Z",
+      "closed_at": "2026-09-09T09:38:23Z"
+    },
+    {
       "number": 112,
       "title": "Shop-Analyse 2026-09-09: 0 Verkäufe bei 5.100 Sitzungen — Messung, Service-Funnel, Musterpfad",
       "state": "open",
@@ -66,7 +471,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 10,
       "nextStep": null,
       "fields": {
         "description": "Gesamtanalyse des Shops aus Admin-API, ShopifyQL und 30 bisherigen Berichten. Bericht liegt im PR-Branch `claude/shop-analysis-router-skqvaa` unter `docs/analyse/SHOP_ANALYSE_2026-09-09.md` (plus Produkt-Audit über 434 Produkte und Theme-Code-Review).\n\n**Kernbefund:** 5.136 Sitzungen in 90 Tagen, 22 mit Warenkorb, 6 im Checkout, 0 abgeschlossen. 37 % des Traffics landet auf Verlegeservice-Seiten ohne messbares Ziel. Kein GA4/Ads/Meta-Tag im Theme, Shopify-Pixel nie per Testkauf verifiziert.\n\n**P0**\n- [ ] Customer Events prüfen, genehmigter Testkauf, Anruf-/Formular-Ziele (Ahmet)\n- [ ] Serviceseiten: Anfrage-CTA und `tel:`-Events (Agent, nach Zieldefinition)\n- [ ] Muster-CTAs auf `/pages/muster` statt Kontaktformular umstellen (Agent, 3 Dateien)\n\n**P1**\n- [ ] 152 Produkte ohne `productType` (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten) setzen\n- [ ] Mobiler Kaufpfad: 8 nicht gerenderte `tp-`-Snippets, Touch-Targets\n- [ ] Warenkorb „Geschätzter Gesamtbetrag\", Sie/Du, USP-Band, Länderwähler\n- [ ] 118 Rollenware-Produkte vom Google-Kanal ausschließen (Liste neu erzeugen, Human Gate)\n- [ ] 12 Redirect-Ziele korrigieren/anlegen (fertige Liste im Bericht, Abschnitt 7)\n- [ ] Fotos für …",
@@ -114,7 +519,7 @@
         }
       },
       "created_at": "2026-09-09T06:33:34Z",
-      "updated_at": "2026-09-09T07:18:45Z",
+      "updated_at": "2026-09-09T09:43:15Z",
       "closed_at": null
     },
     {
@@ -354,7 +759,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/55",
       "labels": [
-        "status:geplant",
+        "status:review",
         "type:technik",
         "priority:p0",
         "area:google"
@@ -363,7 +768,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Tägliches Monitoring (erste 7 Tage)",
       "fields": {
         "description": "Starte alle Google Ads Kampagnen",
@@ -401,7 +806,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:41Z",
-      "updated_at": "2026-09-08T14:22:59Z",
+      "updated_at": "2026-09-09T11:21:05Z",
       "closed_at": null
     },
     {
@@ -1331,7 +1736,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 4,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -1340,7 +1745,7 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-08T14:23:31Z",
+      "updated_at": "2026-09-09T11:30:08Z",
       "closed_at": null
     },
     {

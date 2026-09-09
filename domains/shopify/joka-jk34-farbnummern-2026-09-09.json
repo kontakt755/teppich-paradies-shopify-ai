@@ -1,0 +1,158 @@
+[
+ {
+  "label": "09 betongrau",
+  "pid": "468223",
+  "artnr": "ZUBSARHAVS_09",
+  "ean": "4260071820075"
+ },
+ {
+  "label": "06 distelgrau",
+  "pid": "468239",
+  "artnr": "ZUBSARHAVS_06",
+  "ean": "4260071820051"
+ },
+ {
+  "label": "05 taubenblau",
+  "pid": "468245",
+  "artnr": "ZUBSARHAVS_05",
+  "ean": "4260071820044"
+ },
+ {
+  "label": "04 hellbeige",
+  "pid": "468251",
+  "artnr": "ZUBSARHAVS_04",
+  "ean": "4260071820037"
+ },
+ {
+  "label": "03 sandbeige",
+  "pid": "468260",
+  "artnr": "ZUBSARHAVS_03",
+  "ean": "4260071820020"
+ },
+ {
+  "label": "34 grauweiß",
+  "pid": "469722",
+  "artnr": "ZUBSARHAVS_34",
+  "ean": "4260071820235"
+ },
+ {
+  "label": "32 dunkelbeige",
+  "pid": "470702",
+  "artnr": "ZUBSARHAVS_32",
+  "ean": "4260071820211"
+ },
+ {
+  "label": "30 signalschwarz",
+  "pid": "470722",
+  "artnr": "ZUBSARHAVS_30",
+  "ean": "4260071820204"
+ },
+ {
+  "label": "29 terrabraun",
+  "pid": "470734",
+  "artnr": "ZUBSARHAVS_29",
+  "ean": "4260071820198"
+ },
+ {
+  "label": "26 nußbraun",
+  "pid": "470769",
+  "artnr": "ZUBSARHAVS_26B",
+  "ean": "4260071820181"
+ },
+ {
+  "label": "N-Weiß, reinweiß",
+  "pid": "470777",
+  "artnr": "ZUBSARHAVS_26",
+  "ean": "4260071820280"
+ },
+ {
+  "label": "25 gelb",
+  "pid": "470786",
+  "artnr": "ZUBSARHAVS_25G",
+  "ean": "4048215124896"
+ },
+ {
+  "label": "transparent",
+  "pid": "470794",
+  "artnr": "ZUBSARHAVS_25",
+  "ean": "4260071820273"
+ },
+ {
+  "label": "24 cremeweiß",
+  "pid": "470803",
+  "artnr": "ZUBSARHAVS_24",
+  "ean": "4260071820167"
+ },
+ {
+  "label": "22 tiefschwarz",
+  "pid": "470824",
+  "artnr": "ZUBSARHAVS_22",
+  "ean": "4260071820143"
+ },
+ {
+  "label": "21 caramel",
+  "pid": "470834",
+  "artnr": "ZUBSARHAVS_21",
+  "ean": "4260071820136"
+ },
+ {
+  "label": "17 curry",
+  "pid": "470870",
+  "artnr": "ZUBSARHAVS_17",
+  "ean": "4260071820112"
+ },
+ {
+  "label": "16 dunkelgrau",
+  "pid": "470884",
+  "artnr": "ZUBSARHAVS_16",
+  "ean": "4260071820105"
+ },
+ {
+  "label": "45 Eiche dunkel",
+  "pid": "526272",
+  "artnr": "ZUBSARHAVS_45",
+  "ean": "4260071820761"
+ },
+ {
+  "label": "44 Eiche - Artic",
+  "pid": "526281",
+  "artnr": "ZUBSARHAVS_44",
+  "ean": "4260071820754"
+ },
+ {
+  "label": "43 Eiche - Hellbeige",
+  "pid": "526291",
+  "artnr": "ZUBSARHAVS_43",
+  "ean": "4260071820747"
+ },
+ {
+  "label": "42 Eiche - Hellgrau",
+  "pid": "526301",
+  "artnr": "ZUBSARHAVS_42",
+  "ean": "4260071820723"
+ },
+ {
+  "label": "41 Orange",
+  "pid": "526313",
+  "artnr": "ZUBSARHAVS_41",
+  "ean": "4260071820716"
+ },
+ {
+  "label": "40 Bläuliches Rot",
+  "pid": "526323",
+  "artnr": "ZUBSARHAVS_40",
+  "ean": "4260071820709"
+ },
+ {
+  "label": "39 Marineblau",
+  "pid": "526334",
+  "artnr": "ZUBSARHAVS_39",
+  "ean": "4260071820693"
+ },
+ {
+  "label": "38 gelb-grün",
+  "pid": "526344",
+  "artnr": "ZUBSARHAVS_38",
+  "ean": "4260071820686"
+ }
+]

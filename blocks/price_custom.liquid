@@ -5,6 +5,16 @@
   assign unit_label = block_settings.unit_label | default: 'm²'
   assign current_price = selected_variant.price
   assign compare_at_price = selected_variant.compare_at_price
+  # Rollenware mit zentimetergenauer Abrechnung fuehrt den Variantenpreis als
+  # Preis pro 0,01 m2 (siehe blocks/tp-rollware-rechner.liquid). Ohne die
+  # Umrechnung stuende hier 0,29 statt 29,00 EUR/m2 - snippets/price.liquid
+  # macht dasselbe, dieser Block hatte den Zweig bisher nicht.
+  if product_resource.metafields.custom.preis_pro_001_qm.value == true
+    assign current_price = current_price | times: 100
+    if compare_at_price != blank
+      assign compare_at_price = compare_at_price | times: 100
+    endif
+  endif
   assign show_compare_price = false
   if compare_at_price != blank and compare_at_price > current_price
     assign show_compare_price = true

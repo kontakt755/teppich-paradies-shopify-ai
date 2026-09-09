@@ -30,9 +30,17 @@ export const MARKER = '<!-- tp-automation -->';
 function heading(text) { return `## Automatik: ${text}`; }
 
 /** Referenzierte Issue-Nummern aus PR-Titel/Body (#12, "closes #12", URL). */
+// Code-Bloecke und Inline-Code zaehlen nicht: Am 2026-09-09 zitierte die
+// PR-Beschreibung von #126 die Ausgabe des Sessionstart-Briefs mit "#34" und
+// "#120" - beide Issues wurden daraufhin faelschlich auf In Arbeit und Review
+// gesetzt, obwohl der PR nichts damit zu tun hatte.
+export function stripCode(text) {
+  return String(text || '').replace(/```[\s\S]*?```/g, ' ').replace(/`[^`\n]*`/g, ' ');
+}
+
 export function referencedIssues(text, repo) {
   const out = new Set();
-  const s = String(text || '');
+  const s = stripCode(text);
   for (const m of s.matchAll(/(?<![\w/])#(\d+)\b/g)) out.add(Number(m[1]));
   if (repo) for (const m of s.matchAll(new RegExp(`github\\.com/${repo.replace('/', '\\/')}/issues/(\\d+)`, 'g'))) out.add(Number(m[1]));
   return [...out].sort((a, b) => a - b);
@@ -41,7 +49,7 @@ export function referencedIssues(text, repo) {
 /** Schliesst-Schluesselwoerter, bei denen GitHub das Issue beim Merge selbst schliesst. */
 export function closingIssues(text) {
   const out = new Set();
-  for (const m of String(text || '').matchAll(/\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)/gi)) out.add(Number(m[1]));
+  for (const m of stripCode(text).matchAll(/\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)/gi)) out.add(Number(m[1]));
   return [...out];
 }
 

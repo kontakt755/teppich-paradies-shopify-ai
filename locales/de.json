@@ -14,7 +14,7 @@
     "email_signup": {
       "label": "E-Mail",
       "placeholder": "E-Mail-Adresse",
-      "success": "Danke für deine Anmeldung!"
+      "success": "Danke für Ihre Anmeldung!"
     },
     "filter": "Filtern",
     "payment_methods": "Zahlungsmethoden",
@@ -23,8 +23,8 @@
       "email": "E-Mail-Adresse",
       "phone": "Telefonnummer",
       "comment": "Kommentar",
-      "post_success": "Danke, dass du uns kontaktiert hast. Wir werden uns so schnell wie möglich bei dir melden.",
-      "error_heading": "Bitte passe Folgendes an:"
+      "post_success": "Danke für Ihre Nachricht. Wir melden uns so schnell wie möglich bei Ihnen.",
+      "error_heading": "Bitte passen Sie Folgendes an:"
     },
     "slider_label": "Slider"
   },
@@ -88,11 +88,11 @@
     "add_to_cart": "In den Warenkorb legen",
     "clear_all": "Alles löschen",
     "remove": "Entfernen",
-    "view_in_your_space": "In deinem Bereich anzeigen",
+    "view_in_your_space": "In Ihrem Raum anzeigen",
     "show_filters": "Filtern",
     "clear": "Löschen",
     "continue_shopping": "Weiter einkaufen",
-    "log_in_html": "Hast du ein Konto? <a href=\"{{ link }}\">Logge dich ein</a>, damit es beim Checkout schneller geht.",
+    "log_in_html": "Haben Sie ein Konto? <a href=\"{{ link }}\">Melden Sie sich an</a>, damit es an der Kasse schneller geht.",
     "see_items": {
       "one": "{{ count }} Artikel anzeigen",
       "other": "{{ count }} Artikel anzeigen"
@@ -132,12 +132,12 @@
     "localization_region_and_language": "Region und Sprache",
     "no_results_found": "Keine Ergebnisse gefunden",
     "cart_total": "Gesamtbetrag im Warenkorb",
-    "your_cart_is_empty": "Dein Warenkorb ist leer",
+    "your_cart_is_empty": "Ihr Warenkorb ist leer",
     "product_image": "Produktbild",
     "product_information": "Produktinformationen",
     "quantity": "Anzahl",
     "product_total": "Produkt insgesamt",
-    "cart_estimated_total": "Geschätzter Gesamtbetrag",
+    "cart_estimated_total": "Gesamtbetrag",
     "seller_note": "Besondere Anweisungen",
     "cart_subtotal": "Zwischensumme",
     "discounts": "Rabatte",
@@ -235,7 +235,7 @@
       "other": "{{ count }} übrig"
     },
     "powered_by": "Dieser Shop wird unterstützt werden von",
-    "store_owner_link_html": "Bist du der Shop-Inhaber? <a href=\"{{ link }}\">Hier einloggen</a>",
+    "store_owner_link_html": "Sind Sie der Shop-Inhaber? <a href=\"{{ link }}\">Hier anmelden</a>",
     "shipping_discount_error": "Versandrabatte werden beim Checkout angezeigt, nachdem die Adresse hinzugefügt wurde",
     "discount_code_error": "Rabattcode kann nicht auf den Warenkorb angewendet werden",
     "recipient_form_send_to": "Senden an",
@@ -270,13 +270,13 @@
     "product_subtotal": "Produktzwischensumme",
     "quantity_per_item": "/Stk.",
     "remove_all": "Alle entfernen",
-    "remove_all_items_confirmation": "Alle {{ count }} Artikel aus deinem Warenkorb entfernen?",
+    "remove_all_items_confirmation": "Alle {{ count }} Artikel aus Ihrem Warenkorb entfernen?",
     "remove_one_item_confirmation": "1 Artikel aus dem Warenkorb entfernen?",
     "total_items": "Artikel gesamt",
     "variant": "Variante",
     "variant_total": "Varianten insgesamt",
     "view_cart": "Warenkorb ansehen",
-    "your_cart": "Dein Warenkorb",
+    "your_cart": "Ihr Warenkorb",
     "items_added_to_cart": {
       "one": "1 Artikel zum Warenkorb hinzugefügt",
       "other": "{{ count }} Artikel zum Warenkorb hinzugefügt"
@@ -286,8 +286,8 @@
   "gift_cards": {
     "issued": {
       "how_to_use_gift_card": "Verwende diesen Geschenkgutscheincode online oder verwende den QR-Code im Shop",
-      "title": "Hier ist dein {{ value }}-Gutschein für {{ shop }}!",
-      "subtext": "Dein Gutschein",
+      "title": "Hier ist Ihr {{ value }}-Gutschein für {{ shop }}!",
+      "subtext": "Ihr Gutschein",
       "shop_link": "Onlineshop besuchen",
       "add_to_apple_wallet": "Zu Apple Wallet hinzufügen",
       "qr_image_alt": "QR-Code – Scannen, um Gutschein einzulösen",
@@ -306,7 +306,7 @@
     "blog_post_title": "Titel",
     "blog_post_author": "Autor",
     "blog_post_date": "Datum",
-    "blog_post_description": "Ein Auszug aus dem Inhalt deines Blog-Beitrags"
+    "blog_post_description": "Ein Auszug aus dem Inhalt Ihres Blog-Beitrags"
   },
   "products": {
     "product": {

@@ -21,6 +21,7 @@
     "schema:guard": "node qa/run-schema-guard.mjs",
     "template:guard": "node qa/run-template-guard.mjs",
     "theme:guard": "node qa/run-live-theme-guard.mjs",
+    "menu:guard": "node qa/run-menu-link-guard.mjs",
     "farbcode:guard": "node scripts/farbcode-guard.mjs",
     "unmerged:guard": "node qa/unmerged-changes-guard.mjs",
     "essential:guard": "node qa/essential-files-guard.mjs",
@@ -57,7 +58,8 @@
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
-    "task": "node scripts/task.mjs"
+    "task": "node scripts/task.mjs",
+    "dashboard:brief": "node scripts/dashboard-brief.mjs"
   },
   "devDependencies": {
     "playwright-core": "1.54.2",
