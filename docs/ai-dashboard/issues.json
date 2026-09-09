@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T20:09:54.264Z",
+  "generated_at": "2026-09-09T20:20:04.547Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 55,
+  "count": 56,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T20:09:54.264Z",
+    "fetchedAt": "2026-09-09T20:20:04.547Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
   },
   "issues": [
     {
+      "number": 167,
+      "title": "Startseite: zwei Einstiege - Online kaufen und Verlegeservice Oranienburg",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/167",
+      "labels": [
+        "status:eingang",
+        "priority:p1",
+        "area:design",
+        "type:entscheidung"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:19:47Z",
+      "updated_at": "2026-09-09T20:19:48Z",
+      "closed_at": null
+    },
+    {
       "number": 166,
       "title": "Entscheidung: Kauf auf Rechnung und Ratenzahlung fuer Bodenbelaege",
       "state": "open",
@@ -77,13 +101,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:42Z",
-      "updated_at": "2026-09-09T20:09:42Z",
+      "updated_at": "2026-09-09T20:10:29Z",
       "closed_at": null
     },
     {
@@ -101,13 +125,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:39Z",
-      "updated_at": "2026-09-09T20:09:40Z",
+      "updated_at": "2026-09-09T20:19:42Z",
       "closed_at": null
     },
     {
@@ -125,13 +149,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:36Z",
-      "updated_at": "2026-09-09T20:09:37Z",
+      "updated_at": "2026-09-09T20:19:41Z",
       "closed_at": null
     },
     {
@@ -149,13 +173,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:33Z",
-      "updated_at": "2026-09-09T20:09:34Z",
+      "updated_at": "2026-09-09T20:10:26Z",
       "closed_at": null
     },
     {
@@ -173,13 +197,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:31Z",
-      "updated_at": "2026-09-09T20:09:32Z",
+      "updated_at": "2026-09-09T20:19:40Z",
       "closed_at": null
     },
     {
@@ -197,13 +221,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:23Z",
-      "updated_at": "2026-09-09T20:09:24Z",
+      "updated_at": "2026-09-09T20:10:24Z",
       "closed_at": null
     },
     {
