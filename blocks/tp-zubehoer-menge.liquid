@@ -1,0 +1,298 @@
+{% doc %}
+  Mengenhilfe fuer Zubehoer-Produkte.
+
+  Zubehoer wird nicht einheitlich in Stueck verkauft: einige Artikel sind je
+  laufendem Meter kalkuliert, einige je Quadratmeter, andere als Gebinde mit
+  bekanntem Flaecheninhalt (Rolle, Faltplatte). Der Kunde denkt in allen drei
+  Faellen in Quadratmetern, die Warenkorbmenge ist aber die jeweilige Einheit.
+  Genau diese Umrechnung leistet der Block - und nur sie.
+
+  Die Einheit steht bereits in der Variantenbezeichnung ("... 80 cm breit
+  (je lfm)", "... (je m2)", "Rolle 30,14 m2", "Faltplatte 15 m2",
+  "Rolle 50 m x 100 cm"). Es wird deshalb kein neues Metafeld eingefuehrt; der
+  Block liest die vorhandene Datenstruktur.
+
+  Ehrlichkeitsregel: Faellt keine Variante in eines der drei Muster - Kleber,
+  Reinigungsmittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten,
+  Sockelleisten - rendert der Block still nichts. Es gibt keinen Fallback und
+  keine Pauschalannahme; ein Zubehoerteil ohne Mengeneinheit bekommt keinen
+  Rechner.
+
+  Der Block legt nichts selbst in den Warenkorb. Er schreibt ausschliesslich in
+  das vorhandene Mengenfeld der Kaufbuttons, damit es genau einen Kaufweg und
+  genau einen Preis gibt - den echten Variantenpreis mal Menge.
+{% enddoc %}
+
+{%- liquid
+  assign tp_zm_id = block.id | replace: '_', '' | downcase
+  assign tp_zm_product = closest.product | default: product
+  assign tp_zm_any = false
+  assign tp_zm_rows = ''
+
+  for tp_zm_v in tp_zm_product.variants
+    assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2'
+    assign tp_zm_mode = ''
+    assign tp_zm_width = 0
+    assign tp_zm_area = 0
+
+    if tp_zm_t contains 'je lfm'
+      assign tp_zm_mode = 'lfm'
+      if tp_zm_t contains 'cm breit'
+        assign tp_zm_w = tp_zm_t | split: 'cm breit' | first | split: ',' | last | strip | replace: ',', '.'
+        assign tp_zm_width = tp_zm_w | times: 1.0
+      endif
+    elsif tp_zm_t contains 'je m2'
+      assign tp_zm_mode = 'qm'
+    elsif tp_zm_t contains 'm2'
+      assign tp_zm_mode = 'gebinde'
+      assign tp_zm_a = tp_zm_t | split: 'm2' | first | split: '(' | last | strip | split: ' ' | last | replace: ',', '.'
+      assign tp_zm_area = tp_zm_a | times: 1.0
+    elsif tp_zm_t contains ' m x ' or tp_zm_t contains ' m × '
+      assign tp_zm_norm = tp_zm_t | replace: ' × ', ' x '
+      if tp_zm_norm contains 'cm x ' or tp_zm_norm contains 'x 100 cm' or tp_zm_norm contains 'cm'
+        assign tp_zm_len = tp_zm_norm | split: ' m x' | first | split: ' ' | last | replace: ',', '.' | times: 1.0
+        assign tp_zm_wcm = tp_zm_norm | split: ' x ' | last | split: 'cm' | first | strip | replace: ',', '.' | times: 1.0
+        if tp_zm_len > 0 and tp_zm_wcm > 0
+          assign tp_zm_mode = 'gebinde'
+          assign tp_zm_area = tp_zm_wcm | divided_by: 100.0 | times: tp_zm_len
+        endif
+      endif
+    endif
+
+    unless tp_zm_mode == ''
+      assign tp_zm_any = true
+      capture tp_zm_row
+        echo '"'
+        echo tp_zm_v.id
+        echo '":{"m":"'
+        echo tp_zm_mode
+        echo '","w":'
+        echo tp_zm_width
+        echo ',"a":'
+        echo tp_zm_area
+        echo '}'
+      endcapture
+      if tp_zm_rows == ''
+        assign tp_zm_rows = tp_zm_row
+      else
+        assign tp_zm_rows = tp_zm_rows | append: ',' | append: tp_zm_row
+      endif
+    endunless
+  endfor
+-%}
+
+{%- if tp_zm_any -%}
+  <tp-zubehoer-menge
+    class="tp-zm"
+    id="tp-zm-{{ tp_zm_id }}"
+    data-map='{ {{ tp_zm_rows }} }'
+    data-selected="{{ tp_zm_product.selected_or_first_available_variant.id }}"
+    {{ block.shopify_attributes }}
+  >
+    <div class="tp-zm__box" data-box hidden>
+      <label class="tp-zm__label" for="tp-zm-input-{{ tp_zm_id }}" data-label>Benötigte Fläche</label>
+      <div class="tp-zm__row">
+        <input
+          class="tp-zm__input"
+          id="tp-zm-input-{{ tp_zm_id }}"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.1"
+          placeholder="0"
+          data-input
+        >
+        <span class="tp-zm__unit">m&sup2;</span>
+      </div>
+      <p class="tp-zm__result" data-result role="status" aria-live="polite"></p>
+      <p class="tp-zm__hint" data-hint></p>
+    </div>
+  </tp-zubehoer-menge>
+
+  <script>
+    (() => {
+      const host = document.getElementById('tp-zm-{{ tp_zm_id }}');
+      if (!host || host.dataset.ready === '1') return;
+      host.dataset.ready = '1';
+
+      let map = {};
+      try {
+        map = JSON.parse(host.dataset.map || '{}');
+      } catch (e) {
+        return;
+      }
+
+      const box = host.querySelector('[data-box]');
+      const label = host.querySelector('[data-label]');
+      const input = host.querySelector('[data-input]');
+      const result = host.querySelector('[data-result]');
+      const hint = host.querySelector('[data-hint]');
+
+      const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+
+      // Die aktuelle Variante steht im Formular selbst - so bleibt der Block
+      // mit der Variantenauswahl des Themes synchron, ohne sie nachzubauen.
+      const currentVariantId = () => {
+        const form = host.closest('.shopify-section, main') || document;
+        const field = form.querySelector('input[name="id"], select[name="id"]');
+        return field && field.value ? String(field.value) : String(host.dataset.selected || '');
+      };
+
+      const quantityInput = () => {
+        const scope = host.closest('.shopify-section, main') || document;
+        return scope.querySelector('input[name="quantity"]');
+      };
+
+      const setQuantity = (value) => {
+        const field = quantityInput();
+        if (!field) return false;
+        field.value = String(value);
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      };
+
+      const render = () => {
+        const info = map[currentVariantId()];
+        if (!info) {
+          box.hidden = true;
+          return;
+        }
+        box.hidden = false;
+
+        if (info.m === 'lfm') {
+          const w = Number(info.w) || 0;
+          label.textContent = 'Benötigte Fläche';
+          hint.textContent = w > 0
+            ? 'Abgerechnet wird je laufendem Meter, Bahnenbreite ' + nf.format(w) + ' cm.'
+            : 'Abgerechnet wird je laufendem Meter.';
+        } else if (info.m === 'qm') {
+          label.textContent = 'Benötigte Fläche';
+          hint.textContent = 'Abgerechnet wird je Quadratmeter.';
+        } else {
+          label.textContent = 'Benötigte Fläche';
+          hint.textContent = 'Ein Gebinde reicht für ' + nf.format(Number(info.a) || 0) + ' m².';
+        }
+        compute();
+      };
+
+      const compute = () => {
+        const info = map[currentVariantId()];
+        const area = parseFloat(String(input.value).replace(',', '.'));
+        if (!info || !(area > 0)) {
+          result.textContent = '';
+          return;
+        }
+
+        let need = 0;
+        let text = '';
+
+        if (info.m === 'lfm') {
+          const w = Number(info.w) || 0;
+          if (!(w > 0)) {
+            result.textContent = '';
+            return;
+          }
+          need = Math.ceil(area / (w / 100));
+          text = need + ' lfd. Meter bestellen (deckt ' + nf.format(need * (w / 100)) + ' m²).';
+        } else if (info.m === 'qm') {
+          need = Math.ceil(area);
+          text = need + ' m² bestellen.';
+        } else {
+          const a = Number(info.a) || 0;
+          if (!(a > 0)) {
+            result.textContent = '';
+            return;
+          }
+          need = Math.ceil(area / a);
+          text = need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
+        }
+
+        result.textContent = setQuantity(need)
+          ? text + ' Die Menge ist eingetragen.'
+          : text;
+      };
+
+      input.addEventListener('input', compute);
+
+      // Variantenwechsel: Horizon tauscht Teile der Seite aus, deshalb wird der
+      // Zustand nach jeder Aenderung im Abschnitt neu gelesen.
+      const scope = host.closest('.shopify-section, main') || document;
+      scope.addEventListener('change', (event) => {
+        if (event.target && event.target.name === 'quantity') return;
+        setTimeout(render, 60);
+      });
+
+      render();
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-zm__box {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    border-radius: 10px;
+  }
+
+  .tp-zm__label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .tp-zm__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tp-zm__input {
+    width: 7.5rem;
+    max-width: 100%;
+    padding: 8px 10px;
+    font-size: 15px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+    border-radius: 6px;
+    background: var(--color-background, #fff);
+    color: var(--color-foreground, #222);
+  }
+
+  .tp-zm__unit {
+    font-size: 14px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-zm__result:not(:empty) {
+    margin: 8px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tp-zm__hint:not(:empty) {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68);
+  }
+
+  @media (max-width: 749px) {
+    .tp-zm__input {
+      width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Zubehoer Mengenhilfe",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Zubehoer Mengenhilfe"
+    }
+  ]
+}
+{% endschema %}
