@@ -1,22 +1,29 @@
 {% doc %}
   Mengenhilfe fuer Zubehoer-Produkte.
 
-  Zubehoer wird nicht einheitlich in Stueck verkauft: einige Artikel sind je
-  laufendem Meter kalkuliert, einige je Quadratmeter, andere als Gebinde mit
-  bekanntem Flaecheninhalt (Rolle, Faltplatte). Der Kunde denkt in allen drei
-  Faellen in Quadratmetern, die Warenkorbmenge ist aber die jeweilige Einheit.
-  Genau diese Umrechnung leistet der Block - und nur sie.
+  Zubehoer wird nicht einheitlich in Stueck verkauft. Vier Faelle, vier
+  Umrechnungen - mehr macht der Block nicht:
 
-  Die Einheit steht bereits in der Variantenbezeichnung ("... 80 cm breit
+    lfm     Preis je laufendem Meter, Bahnenbreite bekannt. Eingabe m2.
+    qm      Preis je Quadratmeter. Eingabe m2.
+    gebinde Rolle/Faltplatte mit bekanntem Flaecheninhalt. Eingabe m2.
+    stange  Sockelleiste, Preis je Stange bekannter Laenge. Eingabe Meter.
+
+  Die ersten drei stehen bereits in der Variantenbezeichnung ("... 80 cm breit
   (je lfm)", "... (je m2)", "Rolle 30,14 m2", "Faltplatte 15 m2",
-  "Rolle 50 m x 100 cm"). Es wird deshalb kein neues Metafeld eingefuehrt; der
-  Block liest die vorhandene Datenstruktur.
+  "Rolle 50 m x 100 cm") - dafuer wurde kein Metafeld gebraucht.
 
-  Ehrlichkeitsregel: Faellt keine Variante in eines der drei Muster - Kleber,
-  Reinigungsmittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten,
-  Sockelleisten - rendert der Block still nichts. Es gibt keinen Fallback und
-  keine Pauschalannahme; ein Zubehoerteil ohne Mengeneinheit bekommt keinen
-  Rechner.
+  Der vierte Fall braucht eines: Die Stangenlaenge steht in keiner Bezeichnung
+  und in keinem Tag, sondern hoechstens im Beschreibungstext. Sie liegt deshalb
+  seit 2026-09-09 in custom.stangenlaenge (Meter, je Produkt, nicht je
+  Variante). Belegte Quelle je Produkt:
+  domains/shopify/leisten-stangenlaenge/stangenlaenge.json - nichts geschaetzt.
+
+  Ehrlichkeitsregel: Trifft keiner der vier Faelle zu - Kleber, Reinigungs-
+  mittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten - rendert der
+  Block still nichts. Es gibt keinen Fallback und keine Pauschalannahme; ohne
+  belegte Mengeneinheit gibt es keinen Rechner. Insbesondere wird eine fehlende
+  Stangenlaenge nie durch einen Standardwert ersetzt.
 
   Der Block legt nichts selbst in den Warenkorb. Er schreibt ausschliesslich in
   das vorhandene Mengenfeld der Kaufbuttons, damit es genau einen Kaufweg und
@@ -29,13 +36,22 @@
   assign tp_zm_any = false
   assign tp_zm_rows = ''
 
+  # Die Stangenlaenge gilt fuer das ganze Produkt, nicht je Variante: eine
+  # Sockelleiste hat in jeder Farbe dieselbe Stangenlaenge. Ohne belegtes
+  # Metafeld bleibt der Stangenmodus aus, und das Produkt faellt auf die
+  # Variantenerkennung darunter zurueck - die bei Leisten nichts findet.
+  assign tp_zm_stange = tp_zm_product.metafields.custom.stangenlaenge.value | times: 1.0
+
   for tp_zm_v in tp_zm_product.variants
     assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2'
     assign tp_zm_mode = ''
     assign tp_zm_width = 0
     assign tp_zm_area = 0
 
-    if tp_zm_t contains 'je lfm'
+    if tp_zm_stange > 0
+      assign tp_zm_mode = 'stange'
+      assign tp_zm_area = tp_zm_stange
+    elsif tp_zm_t contains 'je lfm'
       assign tp_zm_mode = 'lfm'
       if tp_zm_t contains 'cm breit'
         assign tp_zm_w = tp_zm_t | split: 'cm breit' | first | split: ',' | last | strip | replace: ',', '.'
@@ -102,7 +118,7 @@
           placeholder="0"
           data-input
         >
-        <span class="tp-zm__unit">m&sup2;</span>
+        <span class="tp-zm__unit" data-unit>m&sup2;</span>
       </div>
       <p class="tp-zm__result" data-result role="status" aria-live="polite"></p>
       <p class="tp-zm__hint" data-hint></p>
@@ -127,6 +143,7 @@
       const input = host.querySelector('[data-input]');
       const result = host.querySelector('[data-result]');
       const hint = host.querySelector('[data-hint]');
+      const unit = host.querySelector('[data-unit]');
 
       const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
 
@@ -160,6 +177,17 @@
         }
         box.hidden = false;
 
+        if (info.m === 'stange') {
+          label.textContent = 'Benötigte Wandlänge';
+          unit.textContent = 'm';
+          hint.textContent = 'Eine Stange ist ' + nf.format(Number(info.a) || 0)
+            + ' m lang. Türen und Durchgänge bitte selbst abziehen.';
+          compute();
+          return;
+        }
+
+        unit.textContent = 'm²';
+
         if (info.m === 'lfm') {
           const w = Number(info.w) || 0;
           label.textContent = 'Benötigte Fläche';
@@ -186,6 +214,21 @@
 
         let need = 0;
         let text = '';
+
+        if (info.m === 'stange') {
+          const len = Number(info.a) || 0;
+          if (!(len > 0)) {
+            result.textContent = '';
+            return;
+          }
+          need = Math.ceil(area / len);
+          text = need + (need === 1 ? ' Stange' : ' Stangen')
+            + ' bestellen (ergibt ' + nf.format(need * len) + ' m).';
+          result.textContent = setQuantity(need)
+            ? text + ' Die Menge ist eingetragen.'
+            : text;
+          return;
+        }
 
         if (info.m === 'lfm') {
           const w = Number(info.w) || 0;
