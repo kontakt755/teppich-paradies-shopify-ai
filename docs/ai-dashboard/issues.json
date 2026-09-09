@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T20:09:38.943Z",
+  "generated_at": "2026-09-09T20:09:54.264Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 52,
+  "count": 55,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T20:09:38.943Z",
+    "fetchedAt": "2026-09-09T20:09:54.264Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,78 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 166,
+      "title": "Entscheidung: Kauf auf Rechnung und Ratenzahlung fuer Bodenbelaege",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/166",
+      "labels": [
+        "status:eingang",
+        "priority:p1",
+        "area:checkout",
+        "type:entscheidung"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:42Z",
+      "updated_at": "2026-09-09T20:09:42Z",
+      "closed_at": null
+    },
+    {
+      "number": 165,
+      "title": "Konkretes Lieferdatum statt Werktage-Spanne",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/165",
+      "labels": [
+        "status:eingang",
+        "type:ux",
+        "priority:p2",
+        "area:versand"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:39Z",
+      "updated_at": "2026-09-09T20:09:40Z",
+      "closed_at": null
+    },
+    {
+      "number": 164,
+      "title": "Verschnitt-Option mit Erklaerung im Rollenware-Rechner",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/164",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:36Z",
+      "updated_at": "2026-09-09T20:09:37Z",
+      "closed_at": null
+    },
     {
       "number": 163,
       "title": "Zweiter Weg neben dem Warenkorb: Angebot anfordern und Beratungstermin",
