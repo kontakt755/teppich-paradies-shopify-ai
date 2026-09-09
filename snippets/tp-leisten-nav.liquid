@@ -115,7 +115,7 @@
       <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:material={{ m_key | url_encode }}">
         <span class="tp-lnav__link-text">{{ m_label | escape }}</span>
         <span class="tp-lnav__count" aria-hidden="true">{{ m_count }}</span>
-        <span class="visually-hidden">{{ m_count }} Produkte</span>
+        <span class="visually-hidden">{{ m_count }} {% if m_count == 1 %}Produkt{% else %}Produkte{% endif %}</span>
       </a>
     </li>
   {%- endfor -%}
@@ -147,7 +147,7 @@
       <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:hoehe={{ h_key | url_encode }}">
         <span class="tp-lnav__link-text">{{ h_label | escape }}</span>
         <span class="tp-lnav__count" aria-hidden="true">{{ h_count }}</span>
-        <span class="visually-hidden">{{ h_count }} Produkte</span>
+        <span class="visually-hidden">{{ h_count }} {% if h_count == 1 %}Produkt{% else %}Produkte{% endif %}</span>
       </a>
     </li>
   {%- endfor -%}

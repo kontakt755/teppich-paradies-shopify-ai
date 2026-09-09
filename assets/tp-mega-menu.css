@@ -297,3 +297,62 @@
 .tp-lnav-drawer__all .tp-lnav__count {
   margin-inline-start: 0.4rem;
 }
+
+/* ------------------------------------------------------------------
+   Menuepunkte ohne Bild im Bildmodus (menu_style: collection_images)
+
+   Das Theme reserviert im Bildmodus fuer jeden Eintrag einen Bildplatz,
+   damit die Zeile ausgerichtet bleibt: ein leeres ::before mit
+   background-color. Bei gefilterten Ansichten - "Holzdekore",
+   "Fliesen- und Steindekore" - gibt es kein Kategoriebild und kann auch
+   keines geben. Uebrig bleibt eine graue Flaeche, die wie ein Ladefehler
+   aussieht. Diese Eintraege stehen deshalb kompakt als Textlink am oberen
+   Rand ihrer Spalte.
+
+   Zur Spezifitaet: die Theme-Regel liegt bei (0,4,3), und eine gleich
+   spezifische Regel wuerde hier verlieren, weil die Bausteine ihre
+   {% stylesheet %} nach dieser Datei ausliefern. :not(:has(img)) erbt die
+   Spezifitaet seines spezifischsten Arguments - img ist ein Element und
+   zaehlt (0,0,1), nicht (0,1,0). Die doppelte Klasse hebt die Regel sauber
+   darueber, ohne !important.
+
+   Diese Regeln standen bis 2026-09-09 in snippets/tp-megamenu.liquid. Das
+   Snippet war verwaist - aus layout/theme.liquid entfernt, aber nie geloescht -
+   und wurde nirgends gerendert. Deshalb waren die grauen Flaechen zurueck.
+   ------------------------------------------------------------------ */
+.mega-menu__grid.mega-menu__grid
+  .mega-menu__column
+  > div
+  > .mega-menu__link:not(:has(img)):not(:has(.mega-menu__link-image))::before {
+  display: none;
+}
+
+.mega-menu__grid.mega-menu__grid .mega-menu__column > div > .mega-menu__link:not(:has(img)) {
+  align-self: start;
+  padding-block: 0.15rem 0.5rem;
+}
+
+/* Bildkacheln: etwas Luft und weiche Ecken, damit Bild und Beschriftung
+   als eine Einheit lesbar bleiben. */
+.mega-menu__link img {
+  border-radius: 6px;
+}
+
+.mega-menu__link:has(.mega-menu__link-image) .wrap-text {
+  display: inline-block;
+  margin-block-start: 6px;
+}
+
+/* Derselbe leere Bildplatz im mobilen Drawer: dort reserviert
+   .menu-drawer__menu--grid ein ::before im gleichen Seitenverhaeltnis.
+   Auch hier stehen die Eintraege ohne Kategoriebild besser als Textzeile. */
+.menu-drawer__menu--grid.menu-drawer__menu--grid
+  .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image))::before {
+  display: none;
+}
+
+.menu-drawer__menu--grid.menu-drawer__menu--grid
+  .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image)) {
+  row-gap: 0;
+  padding-block: 0.35rem;
+}
