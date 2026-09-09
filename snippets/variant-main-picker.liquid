@@ -164,6 +164,28 @@
                       data-key="variant-option-pill"
                     ></span>
                   {% endif %}
+                  {%- comment -%}
+                    Farbfeld aus dem Farbregister (tp_farbe), wenn Shopifys
+                    eigener Swatch fehlt. Sortimente wie Sauberlauf fuehren
+                    echte Farbvarianten ohne Foto je Farbe - der Kunde sah
+                    dort nur Wortknoepfe. Faellt still weg, wo kein Swatch
+                    hinterlegt ist, also aendert sich sonst nichts.
+                  {%- endcomment -%}
+                  {%- capture tp_vp_swatch -%}
+                    {%- render 'tp-farbe-daten',
+                      variant: product_option_value.variant,
+                      product: product_resource,
+                      feld: 'swatch'
+                    -%}
+                  {%- endcapture -%}
+                  {%- assign tp_vp_swatch = tp_vp_swatch | strip -%}
+                  {%- if tp_vp_swatch != blank and product_option_value.swatch == blank -%}
+                    <span
+                      class="variant-option__button-label__farbe"
+                      style="--tp-vp-farbe: {{ tp_vp_swatch }}"
+                      aria-hidden="true"
+                    ></span>
+                  {%- endif -%}
                   <span
                     class="variant-option__button-label__text"
                     data-key="variant-option-text"
@@ -252,6 +274,38 @@
 {% endunless %}
 
 {% stylesheet %}
+  /* Farbfeld aus dem Farbregister im Wortknopf. Erscheint nur, wo ein Swatch
+     hinterlegt ist - ohne Register bleibt der Knopf unveraendert. */
+  .variant-option__button-label__farbe {
+    display: inline-block;
+    /* Die Pille des gewaehlten Knopfes ist absolut positioniert und liegt
+       sonst ueber dem Farbfeld - dann sieht man beim aktiven Knopf nichts. */
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    width: 1.05em;
+    height: 1.05em;
+    margin-inline-end: 0.5em;
+    vertical-align: -0.15em;
+    border-radius: 50%;
+    background: var(--tp-vp-farbe, transparent);
+    /* Zwei Ringe, weil der Knopf hell oder dunkel sein kann: der helle
+       Innenring traegt das Feld auf dem aktiven schwarzen Knopf, der dunkle
+       Aussenring auf dem weissen. Mit nur einem verschwindet eine dunkle
+       Farbe wie Dunkelgruen auf dem aktiven Knopf. */
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.4),
+      0 0 0 1px rgb(0 0 0 / 0.25);
+  }
+
+  /* Der gewaehlte Knopf ist dunkel eingefaerbt. Eine dunkle Farbe wie
+     Dunkelgruen verschwindet darauf, deshalb hier ein klar heller Rahmen. */
+  .variant-option__button-label:has(input:checked) .variant-option__button-label__farbe {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.5),
+      0 0 0 1.5px rgb(255 255 255 / 0.75);
+  }
+
   /* Variant picker container styles - unique to main variant picker */
   .variant-picker {
     width: 100%;

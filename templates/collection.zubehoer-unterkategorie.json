@@ -36,7 +36,7 @@
           "type": "kachel",
           "settings": {
             "collection": "zubehoer",
-            "title": "Alles Zubehör",
+            "title": "Zubehör im Überblick",
             "text": "",
             "icon": "profil",
             "cta": "Ansehen",
@@ -278,12 +278,17 @@
             "tp_card_actions": {
               "type": "tp-card-actions",
               "settings": {}
+            },
+            "tp_card_groessen": {
+              "type": "tp-card-groessen",
+              "settings": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
             "price_EzJzMm",
+            "tp_card_groessen",
             "tp_card_color_thumbs",
             "tp_card_specs",
             "tp_card_actions"

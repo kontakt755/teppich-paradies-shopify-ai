@@ -20,6 +20,12 @@
       break
     endif
   endfor
+
+  # Fehlt einer Farbe das eigene Foto, zeigt die Galerie das Hauptbild des
+  # Produkts - der Kunde waehlt Sturmgrau und sieht Dunkelgruen. Der Hinweis
+  # unten sagt das offen, und zwar je Farbe: er haengt an der gewaehlten
+  # Variante, nicht am Produkt. Sobald ein Foto gepflegt ist, verschwindet er
+  # fuer diese Farbe von selbst. tp-farbe.js schaltet ihn beim Farbwechsel.
 -%}
 
 {%- if tp_fa_has_farbe -%}
@@ -78,6 +84,15 @@
       </span>
     {%- endif -%}
     <script type="application/json" data-tp-farbe-map>{ {{ tp_fa_map | strip }} }</script>
+    {%- if block.settings.hinweis_ohne_variantenbild -%}
+      <p
+        class="tp-farbanzeige__hinweis"
+        data-tp-farbe-hinweis
+        {% if tp_fa_variant.featured_media != blank %}hidden{% endif %}
+      >
+        {{ block.settings.hinweis_text | default: 'Für diese Farbe liegt noch kein Foto vor.' | escape }}
+      </p>
+    {%- endif -%}
   </tp-farbe-anzeige>
   <script src="{{ 'tp-farbe.js' | asset_url }}" type="module"></script>
 {%- endif -%}
@@ -138,6 +153,15 @@
   .tp-farbanzeige__nummer::before {
     content: 'Nr. ';
   }
+
+  .tp-farbanzeige__hinweis {
+    margin: 0.1rem 0 0;
+    max-width: 44ch;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb, 28 25 23) / 0.6);
+    text-wrap: pretty;
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -161,6 +185,19 @@
         { "value": "gross", "label": "Gross" }
       ],
       "default": "normal"
+    },
+    {
+      "type": "checkbox",
+      "id": "hinweis_ohne_variantenbild",
+      "label": "Hinweis, wenn keine Farbe ein eigenes Foto hat",
+      "info": "Erscheint nur bei Farben ohne eigenes Foto. Sobald ein Foto gepflegt ist, verschwindet der Hinweis fuer diese Farbe automatisch.",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "hinweis_text",
+      "label": "Text des Hinweises",
+      "default": "Für diese Farbe liegt noch kein Foto vor."
     },
     {
       "type": "checkbox",

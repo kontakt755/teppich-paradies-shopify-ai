@@ -1,0 +1,141 @@
+{% doc %}
+  Groessenauswahl auf der Produktkarte fuer Produkte, die zu einer
+  Darstellungs-Gruppe gehoeren (siehe snippets/tp-produktgruppe.liquid).
+
+  Die Liste zeigt je Gruppe nur eine Karte; welches Mitglied sie traegt, haengt
+  vom Filter ab. Deshalb rendert der Block auf jedem Mitglied - nicht auf einer
+  festen Groesse. Produkte ohne Gruppe zeigt er still nichts.
+{% enddoc %}
+
+{%- liquid
+  assign tp_cg_product = closest.product
+  capture tp_cg_role
+    render 'tp-produktgruppe', product: tp_cg_product
+  endcapture
+  assign tp_cg_role = tp_cg_role | strip
+-%}
+
+{%- if tp_cg_role != blank -%}
+  <div {{ block.shopify_attributes }}>
+    {% render 'tp-produktgruppe-liste', product: tp_cg_product, style: 'card' %}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-groessen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    margin: 6px 0 0;
+  }
+
+  .tp-groessen__label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.75);
+  }
+
+  .tp-groessen__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-groessen__option {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px 10px;
+    color: var(--color-foreground);
+    font-size: 13.5px;
+    line-height: 1.3;
+    text-decoration: none;
+    white-space: nowrap;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: var(--style-border-radius-pills, 999px);
+    background: var(--color-background);
+  }
+
+  .tp-groessen__option:hover,
+  .tp-groessen__option:focus-visible {
+    border-color: var(--color-foreground);
+  }
+
+  .tp-groessen__option--current {
+    color: var(--color-primary-button-text);
+    background: var(--color-primary-button-background);
+    border-color: var(--color-primary-button-background);
+  }
+
+  .tp-groessen__option--soldout .tp-groessen__size {
+    text-decoration: line-through;
+    opacity: 0.65;
+  }
+
+  .tp-groessen__price {
+    font-size: 12.5px;
+    opacity: 0.8;
+  }
+
+  .tp-groessen__hint {
+    font-size: 12px;
+    opacity: 0.75;
+  }
+
+  /* Auf der Produktseite traegt die Auswahl mehr Gewicht als auf der Karte. */
+  .tp-groessen--pdp {
+    display: block;
+    margin: 0 0 4px;
+  }
+
+  .tp-groessen--pdp .tp-groessen__label {
+    display: block;
+    margin-block-end: 8px;
+    font-size: 1rem;
+  }
+
+  .tp-groessen--pdp .tp-groessen__list {
+    gap: 8px;
+  }
+
+  .tp-groessen--pdp .tp-groessen__option {
+    align-items: flex-start;
+    padding: 10px 16px;
+    font-size: 1rem;
+    border-radius: var(--style-border-radius-md, 8px);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-groessen__option {
+      font-size: 13px;
+    }
+
+    .tp-groessen--pdp .tp-groessen__list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    }
+
+    .tp-groessen--pdp .tp-groessen__option {
+      white-space: normal;
+      padding: 9px 12px;
+      font-size: 0.95rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Card-Groessen",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Card-Groessen"
+    }
+  ]
+}
+{% endschema %}

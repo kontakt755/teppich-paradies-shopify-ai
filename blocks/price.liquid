@@ -96,6 +96,23 @@
   {%- endif -%}
 </product-price>
 
+{% stylesheet %}
+  /*
+   * Preis-Typografie fuer Produktkarte und Produktseite.
+   *
+   * Sie stand frueher im Snippet der Produktkarte und wurde damit nur
+   * geladen, wenn eine Seite serverseitig Karten rendert. Eine Produktseite
+   * ohne "Passend dazu" zeigte den Preis deshalb in 14px statt in der
+   * Preisgroesse. Hier haengt sie am Preis selbst und gilt ueberall gleich.
+   */
+  .text-block .price,
+  .price-item__group {
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+{% endstylesheet %}
+
 {% schema %}
 {
   "name": "t:names.product_price",
