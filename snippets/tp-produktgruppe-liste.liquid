@@ -1,0 +1,106 @@
+{%- doc -%}
+  Rendert die Groessenauswahl einer Darstellungs-Gruppe (siehe tp-produktgruppe).
+
+  Jede Groesse ist ein eigenstaendiges Shopify-Produkt. Der Link zeigt deshalb
+  auf das echte Produkt und - wenn eine Farbe gewaehlt ist und dort existiert -
+  direkt auf dessen echte Variante (?variant=<id>). Damit stimmen Bild, Preis,
+  Verfuegbarkeit und die Varianten-ID im Warenkorb ohne Zutun des Themes.
+
+  Auf der Produktseite ('pdp') liegt zusaetzlich eine Farbtabelle je Groesse
+  im Markup: der Variantenwaehler tauscht die Farbe ohne Seitenwechsel aus,
+  und tp-groessen.js zieht die Groessenlinks nach. Ohne das Skript bleiben die
+  serverseitig gesetzten Links stehen - sie sind gueltig, nur nicht mehr auf
+  die zuletzt geklickte Farbe aktualisiert.
+
+  Die Groessenangabe steht als Konstante in tp_pgl_labels und wird gegen den
+  Produkttitel geprueft. Steht sie nicht mehr im Titel, zeigt die Auswahl den
+  Produkttitel - lieber unhandlich als falsch.
+
+  @param {object} product - Aktuelles Produkt (eine Groesse der Gruppe).
+  @param {string} style - 'card' fuer die Produktkarte, 'pdp' fuer die Produktseite.
+  @param {string} [selected_color] - Aktuell gewaehlter Farbwert (nur 'pdp').
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_pgl_handles = 'sauberlaufmatte-55-90-cm,sauberlaufmatte-90-155-cm,sauberlaufmatte-135-205-cm' | split: ','
+  assign tp_pgl_labels = '55 × 90 cm,90 × 155 cm,135 × 205 cm' | split: ','
+  assign tp_pgl_style = style | default: 'card'
+-%}
+
+{%- if tp_pgl_style == 'pdp' -%}
+  {{ 'tp-groessen.js' | asset_url | script_tag }}
+{%- endif -%}
+
+<div class="tp-groessen tp-groessen--{{ tp_pgl_style }}" data-tp-groessen>
+  <span class="tp-groessen__label" id="tp-groessen-label-{{ product.id }}">Größe</span>
+  <ul class="tp-groessen__list" role="list" aria-labelledby="tp-groessen-label-{{ product.id }}">
+    {%- for tp_pgl_handle in tp_pgl_handles -%}
+      {%- liquid
+        assign tp_pgl_target = all_products[tp_pgl_handle]
+        if tp_pgl_target == blank or tp_pgl_target.handle == blank
+          continue
+        endif
+
+        assign tp_pgl_label = tp_pgl_labels[forloop.index0]
+        unless tp_pgl_target.title contains tp_pgl_label
+          assign tp_pgl_label = tp_pgl_target.title
+        endunless
+
+        assign tp_pgl_variant = blank
+        if selected_color != blank
+          for tp_pgl_v in tp_pgl_target.variants
+            if tp_pgl_v.option1 == selected_color
+              assign tp_pgl_variant = tp_pgl_v
+              break
+            endif
+          endfor
+        endif
+
+        assign tp_pgl_url = tp_pgl_target.url
+        assign tp_pgl_price = tp_pgl_target.price_min
+        assign tp_pgl_available = tp_pgl_target.available
+        if tp_pgl_variant != blank
+          assign tp_pgl_url = tp_pgl_target.url | append: '?variant=' | append: tp_pgl_variant.id
+          assign tp_pgl_price = tp_pgl_variant.price
+          assign tp_pgl_available = tp_pgl_variant.available
+        endif
+
+        assign tp_pgl_current = false
+        if tp_pgl_target.id == product.id
+          assign tp_pgl_current = true
+        endif
+      -%}
+      <li class="tp-groessen__item">
+        <a
+          class="tp-groessen__option{% if tp_pgl_current %} tp-groessen__option--current{% endif %}{% unless tp_pgl_available %} tp-groessen__option--soldout{% endunless %}"
+          href="{{ tp_pgl_url }}"
+          data-tp-groesse
+          {% if tp_pgl_current %}aria-current="true"{% endif %}
+        >
+          <span class="tp-groessen__size">{{ tp_pgl_label | escape }}</span>
+          {%- if tp_pgl_style == 'pdp' -%}
+            <span class="tp-groessen__price">{{ tp_pgl_price | money }}</span>
+            <span class="tp-groessen__hint"{% if tp_pgl_available %} hidden{% endif %}>Nicht verfügbar</span>
+          {%- endif -%}
+        </a>
+        {%- if tp_pgl_style == 'pdp' -%}
+          <script type="application/json" class="tp-groessen__daten">
+            {
+              "url": {{ tp_pgl_target.url | json }},
+              "farben": {
+                {%- for tp_pgl_v in tp_pgl_target.variants -%}
+                  {%- unless forloop.first %},{% endunless -%}
+                  {{ tp_pgl_v.option1 | json }}: {
+                    "url": {{ tp_pgl_target.url | append: '?variant=' | append: tp_pgl_v.id | json }},
+                    "preis": {{ tp_pgl_v.price | money | strip_html | strip | json }},
+                    "verfuegbar": {{ tp_pgl_v.available | json }}
+                  }
+                {%- endfor -%}
+              }
+            }
+          </script>
+        {%- endif -%}
+      </li>
+    {%- endfor -%}
+  </ul>
+</div>

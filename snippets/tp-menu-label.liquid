@@ -1,0 +1,25 @@
+{%- doc -%}
+  Beschriftung eines Navigationspunktes fuer die Anzeige.
+
+  Die Menuestruktur liegt in der Shopify-Navigation und ist shopweit geteilt.
+  Damit ein Entwurf eine Beschriftung anpassen kann, ohne die Navigation selbst
+  zu aendern, wird der Titel hier durchgereicht und nur fuer bekannte
+  Bezeichnungen ersetzt.
+
+  Aktuell: Die vollstaendige Zubehoer-Uebersicht heisst "Zubehör im Überblick".
+  Der uebergeordnete Punkt "Zubehör" bleibt unveraendert - ersetzt wird
+  ausschliesslich anhand des Titels, nie anhand des Ziels.
+
+  @param {object} link - Der Navigationspunkt (linklist item).
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_ml_title = link.title | strip
+  assign tp_ml_alt = 'Alles Zubehör,Alle Zubehörprodukte,Zubehör – Alle Produkte,Zubehör - Alle Produkte' | split: ','
+
+  if tp_ml_alt contains tp_ml_title
+    echo 'Zubehör im Überblick' | escape
+  else
+    echo link.title | escape
+  endif
+-%}

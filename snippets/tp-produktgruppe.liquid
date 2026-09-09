@@ -1,0 +1,35 @@
+{%- doc -%}
+  Loest auf, ob ein Produkt zu einer Darstellungs-Gruppe gehoert.
+
+  Eine Gruppe fasst eigenstaendige Shopify-Produkte, die sich nur in einer
+  Groesse unterscheiden, auf DARSTELLUNGSEBENE zu einer Karte zusammen.
+  Im Katalog bleibt alles unveraendert: eigene Produkte, eigene Varianten,
+  eigene Varianten-IDs. Gekauft wird immer die echte Variante des jeweiligen
+  Produkts - diese Gruppierung legt nur zusammen, was der Kunde sieht.
+
+  Die Gruppe ist bewusst hier als Konstante hinterlegt und nicht aus Titeln
+  geraten: Handles und Groessenangaben sind am 2026-09-09 gegen den Katalog
+  geprueft. Die Groessenangabe wird zusaetzlich gegen den Produkttitel
+  gegengeprueft (siehe tp-produktgruppe-liste) - passt sie nicht mehr, faellt
+  die Anzeige auf den Produkttitel zurueck statt eine falsche Groesse zu zeigen.
+
+  @param {object} product - Das zu pruefende Produkt.
+
+  Ausgabe (per capture einzulesen, Liquid kennt keine Rueckgabewerte):
+    ''        - gehoert zu keiner Gruppe
+    'primary' - traegt die gemeinsame Karte
+    'member'  - gehoert dazu, wird in Listen unterdrueckt
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_pg_handles = 'sauberlaufmatte-55-90-cm,sauberlaufmatte-90-155-cm,sauberlaufmatte-135-205-cm' | split: ','
+  assign tp_pg_handle = product.handle
+
+  if tp_pg_handle != blank and tp_pg_handles contains tp_pg_handle
+    if tp_pg_handle == tp_pg_handles.first
+      echo 'primary'
+    else
+      echo 'member'
+    endif
+  endif
+-%}

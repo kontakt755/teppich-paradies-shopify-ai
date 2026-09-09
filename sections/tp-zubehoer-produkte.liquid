@@ -56,6 +56,12 @@
     {%- if item.featured_image == blank -%}
       {%- continue -%}
     {%- endif -%}
+    {%- comment -%} Groessen-Gruppen erscheinen als eine Karte, siehe snippets/tp-produktgruppe.liquid. {%- endcomment -%}
+    {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: item -%}{%- endcapture -%}
+    {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+    {%- if tp_gruppe_rolle == 'member' -%}
+      {%- continue -%}
+    {%- endif -%}
     {%- if rendered > 0 -%}<!--@list/split-->{%- endif -%}
     <div class="resource-list__item">
       {% # theme-check-disable UniqueStaticBlockId %}

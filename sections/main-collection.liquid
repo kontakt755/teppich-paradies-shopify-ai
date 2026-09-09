@@ -51,6 +51,16 @@
     {% paginate collection.products by products_per_page %}
       {% capture children %}
         {% for product in collection.products %}
+          {%- comment -%}
+            Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte:
+            nur die fuehrende Groesse wird gerendert, siehe
+            snippets/tp-produktgruppe.liquid.
+          {%- endcomment -%}
+          {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
+          {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+          {%- if tp_gruppe_rolle == 'member' -%}
+            {%- continue -%}
+          {%- endif -%}
           <li
             id="{{ section.id }}-{{ product.id }}"
             class="product-grid__item product-grid__item--{{ forloop.index0 }}"
