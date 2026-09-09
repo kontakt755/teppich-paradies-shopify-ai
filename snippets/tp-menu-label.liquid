@@ -6,20 +6,62 @@
   zu aendern, wird der Titel hier durchgereicht und nur fuer bekannte
   Bezeichnungen ersetzt.
 
-  Aktuell: Die vollstaendige Zubehoer-Uebersicht heisst "Zubehör im Überblick".
-  Der uebergeordnete Punkt "Zubehör" bleibt unveraendert - ersetzt wird
-  ausschliesslich anhand des Titels, nie anhand des Ziels.
+  Zwei Regeln, in dieser Reihenfolge:
+
+  1. Die vollstaendige Zubehoer-Uebersicht heisst "Zubehör im Überblick".
+     Der uebergeordnete Punkt "Zubehör" bleibt unveraendert - ersetzt wird
+     ausschliesslich anhand des Titels, nie anhand des Ziels.
+
+  2. Die Dekor-Einstiege im Vinyl-Menue bekommen ihren Geltungsbereich in den
+     Namen. Hier reicht der Titel bewusst NICHT aus: "Holzdekore" und "Alle
+     Holzdekore" tragen denselben Filter, zeigen aber unterschiedliche
+     Sortimente - einmal nur Rollenware, einmal alle Vinylboeden. Genau diese
+     Doppeldeutigkeit soll die Umbenennung aufloesen, deshalb entscheidet hier
+     zusaetzlich die Zielkollektion. Die Nomen ("Holzdekore", "Steindekore")
+     sind die Anzeigenamen der optik-Metaobjekte und werden nicht ersetzt,
+     nur ergaenzt.
+
+     Bewusst exakter Titelvergleich statt "contains": Ein zusammengesetzter
+     Titel wie "Fliesen- und Steindekore" wuerde sonst zu "Steindekore von der
+     Rolle" verkuerzt und verlore die Fliesen. Passt ein Titel nicht exakt,
+     bleibt die Beschriftung aus der Navigation stehen - das ist der
+     unschaedliche Ausgang.
 
   @param {object} link - Der Navigationspunkt (linklist item).
 {%- enddoc -%}
 
 {%- liquid
   assign tp_ml_title = link.title | strip
-  assign tp_ml_alt = 'Alles Zubehör,Alle Zubehörprodukte,Zubehör – Alle Produkte,Zubehör - Alle Produkte' | split: ','
+  assign tp_ml_url = link.url | default: ''
+  assign tp_ml_out = ''
 
+  # Regel 1: Zubehoer-Uebersicht
+  assign tp_ml_alt = 'Alles Zubehör,Alle Zubehörprodukte,Zubehör – Alle Produkte,Zubehör - Alle Produkte' | split: ','
   if tp_ml_alt contains tp_ml_title
-    echo 'Zubehör im Überblick' | escape
-  else
-    echo link.title | escape
+    assign tp_ml_out = 'Zubehör im Überblick'
   endif
+
+  # Regel 2: Dekor-Einstiege im Vinyl-Menue
+  if tp_ml_out == blank
+    assign tp_ml_dekor = ''
+    if tp_ml_title == 'Holzdekore' or tp_ml_title == 'Alle Holzdekore'
+      assign tp_ml_dekor = 'Holzdekore'
+    elsif tp_ml_title == 'Steindekore' or tp_ml_title == 'Alle Steindekore'
+      assign tp_ml_dekor = 'Steindekore'
+    endif
+
+    if tp_ml_dekor != blank
+      if tp_ml_url contains '/collections/vinylboden-vinyl-von-der-rolle'
+        assign tp_ml_out = tp_ml_dekor | append: ' von der Rolle'
+      elsif tp_ml_url contains '/collections/vinylboden-1'
+        assign tp_ml_out = tp_ml_dekor | append: ' – alle Vinylböden'
+      endif
+    endif
+  endif
+
+  if tp_ml_out == blank
+    assign tp_ml_out = link.title
+  endif
+
+  echo tp_ml_out | escape
 -%}
