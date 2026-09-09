@@ -1,0 +1,215 @@
+{% doc %}
+  Kuratierte Navigation fuer "Bodenleisten" - Desktop-Megamenue und mobiler
+  Drawer teilen sich hier dieselbe Struktur.
+
+  Warum eigenes Snippet statt Menuepflege in Shopify: Das Hauptmenue ist
+  shopweit und wird von allen Themes benutzt. Die Auswahl wird deshalb im
+  Theme getroffen, das globale Menue bleibt unangetastet.
+
+  Was gezeigt wird, kommt vollstaendig aus dem Sortiment
+  (collections.bodenleisten, Tags "material:" und "hoehe:"), gelesen ueber
+  'tp-leisten-merkmale' - dieselbe Quelle wie die Einstiege auf der
+  Kategorieseite. Es entstehen nur Gruppen, die es wirklich gibt, jeweils mit
+  Trefferzahl. Nichts ist fest verdrahtet.
+
+  Die Ziele sind belegte, funktionierende Adressen:
+  - /collections/bodenleisten
+  - /collections/bodenleisten#leisten:material=<key> bzw. #leisten:hoehe=<key>
+    Diese Hashes wertet assets/tp-leisten-filter.js aus (beim Laden und bei
+    hashchange). Search & Discovery kennt fuer diese Kategorie nur Preis und
+    Verfuegbarkeit, echte Filter-URLs gibt es fuer Material und Hoehe also
+    nicht.
+
+  Bewusst nicht enthalten: Uebergangsprofile, Abschlussprofile, Kleber &
+  Fixierung. Diese Filteransichten treffen in der Kategorie kein einziges
+  Produkt - sie gehoeren unter "Zubehoer". Ebenso entfaellt der doppelte
+  Einstieg "Alle Bodenleisten" + "Sockelleisten": beide fuehren zum selben
+  Sortiment.
+
+  @param {string} variant - 'megamenu' (Desktop) oder 'drawer' (mobil)
+  @param {object} [parent_link] - Menuepunkt, liefert Titel und Ziel
+{% enddoc %}
+
+{%- liquid
+  assign tp_ln_collection = collections.bodenleisten
+  assign tp_ln_url = parent_link.url | default: '/collections/bodenleisten'
+  assign tp_ln_title = parent_link.title | default: 'Bodenleisten'
+
+  assign tp_ln_m_keys = ''
+  assign tp_ln_m_labels = ''
+  assign tp_ln_h_keys = ''
+  assign tp_ln_h_labels = ''
+
+  for p in tp_ln_collection.products
+    capture tp_ln_raw
+      render 'tp-leisten-merkmale', product: p
+    endcapture
+    assign tp_ln_parts = tp_ln_raw | strip | split: '|'
+    assign tp_ln_m_key = tp_ln_parts[3] | strip
+    assign tp_ln_h_key = tp_ln_parts[4] | strip
+
+    if tp_ln_m_key != blank
+      assign tp_ln_probe = '|' | append: tp_ln_m_key | append: '|'
+      assign tp_ln_hay = '|' | append: tp_ln_m_keys | append: '|'
+      unless tp_ln_hay contains tp_ln_probe
+        assign tp_ln_m_keys = tp_ln_m_keys | append: tp_ln_m_key | append: '|'
+        assign tp_ln_m_labels = tp_ln_m_labels | append: tp_ln_parts[0] | strip | append: '|'
+      endunless
+    endif
+    if tp_ln_h_key != blank
+      assign tp_ln_probe = '|' | append: tp_ln_h_key | append: '|'
+      assign tp_ln_hay = '|' | append: tp_ln_h_keys | append: '|'
+      unless tp_ln_hay contains tp_ln_probe
+        assign tp_ln_h_keys = tp_ln_h_keys | append: tp_ln_h_key | append: '|'
+        assign tp_ln_h_labels = tp_ln_h_labels | append: tp_ln_parts[1] | strip | append: '|'
+      endunless
+    endif
+  endfor
+
+  assign tp_ln_m_key_list = tp_ln_m_keys | split: '|'
+  assign tp_ln_m_label_list = tp_ln_m_labels | split: '|'
+  assign tp_ln_h_key_list = tp_ln_h_keys | split: '|'
+  assign tp_ln_h_label_list = tp_ln_h_labels | split: '|'
+
+  comment
+    Hoehen numerisch sortieren, damit die Reihe nicht der zufaelligen
+    Produktreihenfolge folgt. Unbekannte Werte haengen hinten an.
+  endcomment
+  assign tp_ln_h_order = '40mm|60mm|60mm-xl|80mm|80mm-xl|100mm|120mm' | split: '|'
+  assign tp_ln_h_sorted_str = ''
+  for o in tp_ln_h_order
+    for k in tp_ln_h_key_list
+      if k == o
+        assign tp_ln_h_sorted_str = tp_ln_h_sorted_str | append: k | append: '|'
+      endif
+    endfor
+  endfor
+  for k in tp_ln_h_key_list
+    assign tp_ln_probe = '|' | append: k | append: '|'
+    assign tp_ln_hay = '|' | append: tp_ln_h_sorted_str | append: '|'
+    unless tp_ln_hay contains tp_ln_probe
+      assign tp_ln_h_sorted_str = tp_ln_h_sorted_str | append: k | append: '|'
+    endunless
+  endfor
+  assign tp_ln_h_sorted = tp_ln_h_sorted_str | split: '|'
+-%}
+
+{%- capture tp_ln_materials -%}
+  {%- for m_key in tp_ln_m_key_list -%}
+    {%- liquid
+      assign m_label = tp_ln_m_label_list[forloop.index0]
+      assign m_count = 0
+      for p in tp_ln_collection.products
+        for tag in p.tags
+          assign tag_down = tag | downcase
+          if tag_down contains 'material:'
+            assign v = tag_down | remove: 'material:' | strip
+            if v == m_key
+              assign m_count = m_count | plus: 1
+            endif
+          endif
+        endfor
+      endfor
+    -%}
+    <li>
+      <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:material={{ m_key | url_encode }}">
+        <span class="tp-lnav__link-text">{{ m_label | escape }}</span>
+        <span class="tp-lnav__count" aria-hidden="true">{{ m_count }}</span>
+        <span class="visually-hidden">{{ m_count }} Produkte</span>
+      </a>
+    </li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_ln_hoehen -%}
+  {%- for h_key in tp_ln_h_sorted -%}
+    {%- liquid
+      assign h_label = ''
+      for k in tp_ln_h_key_list
+        if k == h_key
+          assign h_label = tp_ln_h_label_list[forloop.index0]
+        endif
+      endfor
+      assign h_count = 0
+      for p in tp_ln_collection.products
+        for tag in p.tags
+          assign tag_down = tag | downcase
+          if tag_down contains 'hoehe:'
+            assign v = tag_down | remove: 'hoehe:' | strip
+            if v == h_key
+              assign h_count = h_count | plus: 1
+            endif
+          endif
+        endfor
+      endfor
+    -%}
+    <li>
+      <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:hoehe={{ h_key | url_encode }}">
+        <span class="tp-lnav__link-text">{{ h_label | escape }}</span>
+        <span class="tp-lnav__count" aria-hidden="true">{{ h_count }}</span>
+        <span class="visually-hidden">{{ h_count }} Produkte</span>
+      </a>
+    </li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if variant == 'drawer' -%}
+  <li class="menu-drawer__list-item tp-lnav-drawer__item">
+    <a
+      href="{{ tp_ln_url }}"
+      class="menu-drawer__menu-item menu-drawer__menu-item--child menu-drawer__animated-element focus-inset tp-lnav-drawer__all"
+    >
+      <span class="menu-drawer__menu-item-text wrap-text">
+        Alle Sockelleisten
+        {%- if tp_ln_collection.all_products_count > 0 %}
+          <span class="tp-lnav__count" aria-hidden="true">{{ tp_ln_collection.all_products_count }}</span>
+        {%- endif -%}
+      </span>
+    </a>
+  </li>
+  {%- if tp_ln_m_key_list.size > 0 -%}
+    <li class="tp-lnav-drawer__group">
+      <p class="tp-lnav__label" id="tp-lnav-drawer-material">Nach Material</p>
+      <ul class="tp-lnav__list list-unstyled" role="list" aria-labelledby="tp-lnav-drawer-material">
+        {{ tp_ln_materials }}
+      </ul>
+    </li>
+  {%- endif -%}
+  {%- if tp_ln_h_sorted.size > 0 -%}
+    <li class="tp-lnav-drawer__group">
+      <p class="tp-lnav__label" id="tp-lnav-drawer-hoehe">Nach Höhe</p>
+      <ul class="tp-lnav__list tp-lnav__list--chips list-unstyled" role="list" aria-labelledby="tp-lnav-drawer-hoehe">
+        {{ tp_ln_hoehen }}
+      </ul>
+    </li>
+  {%- endif -%}
+{%- else -%}
+  <div class="tp-lnav" data-testid="tp-leisten-nav">
+    <div class="tp-lnav__col tp-lnav__col--lead">
+      <a class="tp-lnav__all" href="{{ tp_ln_url }}">
+        <span class="tp-lnav__all-title">Alle {{ tp_ln_title | escape }}</span>
+        {%- if tp_ln_collection.all_products_count > 0 -%}
+          <span class="tp-lnav__all-meta">{{ tp_ln_collection.all_products_count }} Sockelleisten im Sortiment</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    {%- if tp_ln_m_key_list.size > 0 -%}
+      <div class="tp-lnav__col">
+        <p class="tp-lnav__label" id="tp-lnav-material">Nach Material</p>
+        <ul class="tp-lnav__list list-unstyled" role="list" aria-labelledby="tp-lnav-material">
+          {{ tp_ln_materials }}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if tp_ln_h_sorted.size > 0 -%}
+      <div class="tp-lnav__col tp-lnav__col--wide">
+        <p class="tp-lnav__label" id="tp-lnav-hoehe">Nach Höhe</p>
+        <ul class="tp-lnav__list tp-lnav__list--chips list-unstyled" role="list" aria-labelledby="tp-lnav-hoehe">
+          {{ tp_ln_hoehen }}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+{%- endif -%}

@@ -140,6 +140,23 @@
   });
   observer.observe(list, { childList: true, subtree: true });
 
-  readHash();
-  apply();
+  function applyFromHash(scroll) {
+    active.material = '';
+    active.hoehe = '';
+    var had = readHash();
+    apply();
+    if (had && scroll) {
+      var grid = document.getElementById('bodenleisten-produkte') || root;
+      if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // Die Navigation im Kopfbereich verlinkt auf "#leisten:material=..." bzw.
+  // "#leisten:hoehe=...". Ist die Kategorieseite schon offen, laedt der Browser
+  // nichts nach - dann muss hashchange die Auswahl uebernehmen.
+  window.addEventListener('hashchange', function () {
+    applyFromHash(true);
+  });
+
+  applyFromHash(false);
 })();

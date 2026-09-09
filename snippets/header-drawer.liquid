@@ -103,6 +103,13 @@
             {% assign animation_index = 0 %}
             {%- for link in linklist.links -%}
               {% assign animation_index = animation_index | plus: 1 %}
+              {%- liquid
+                # Bodenleisten bekommen im Drawer eine kuratierte Auswahl
+                assign tp_leisten_drawer = false
+                if link.type == 'collection_link' and link.object.handle == 'bodenleisten'
+                  assign tp_leisten_drawer = true
+                endif
+              -%}
               <li
                 style="--menu-drawer-animation-index: {{ animation_index }};"
                 class="{%- if block_settings.drawer_accordion -%}menu-drawer__list-item--deep{%- else -%}menu-drawer__list-item--flat{%- endif -%}{% if block_settings.drawer_dividers %} menu-drawer__list-item--divider{% endif %}"
@@ -143,10 +150,18 @@
                         endif
                       %}
                       <ul
-                        class="menu-drawer__menu menu-drawer__menu--childlist menu-drawer__animated-element details-content{% if render_link_image %} menu-drawer__menu--grid{% endif %}"
+                        class="menu-drawer__menu menu-drawer__menu--childlist menu-drawer__animated-element details-content{% if render_link_image and tp_leisten_drawer != true %} menu-drawer__menu--grid{% endif %}"
                         role="list"
                         tabindex="-1"
                       >
+                        {%- comment -%}
+                          Bodenleisten: kuratierte Auswahl statt der globalen Menuekinder,
+                          dieselbe Gliederung wie im Desktop-Megamenue.
+                          Siehe snippets/tp-leisten-nav.liquid.
+                        {%- endcomment -%}
+                        {%- if tp_leisten_drawer -%}
+                          {% render 'tp-leisten-nav', variant: 'drawer', parent_link: link %}
+                        {%- else -%}
                         {%- for childlink in link.links -%}
                           <li
                             class="menu-drawer__list-item"
@@ -171,6 +186,7 @@
                             </a>
                           </li>
                         {%- endfor -%}
+                        {%- endif -%}
                       </ul>
                     </details>
                   {% endcapture %}
@@ -204,10 +220,18 @@
                     endif
                   %}
                   <ul
-                    class="menu-drawer__menu menu-drawer__menu--childlist{% if render_link_image %} menu-drawer__menu--grid{% endif %}"
+                    class="menu-drawer__menu menu-drawer__menu--childlist{% if render_link_image and tp_leisten_drawer != true %} menu-drawer__menu--grid{% endif %}"
                     role="list"
                     tabindex="-1"
                   >
+                    {%- comment -%}
+                      Bodenleisten: kuratierte Auswahl statt der globalen Menuekinder,
+                      dieselbe Gliederung wie im Desktop-Megamenue.
+                      Siehe snippets/tp-leisten-nav.liquid.
+                    {%- endcomment -%}
+                    {%- if tp_leisten_drawer -%}
+                      {% render 'tp-leisten-nav', variant: 'drawer', parent_link: link %}
+                    {%- else -%}
                     {%- for childlink in link.links -%}
                       <li
                         class="menu-drawer__list-item"
@@ -231,6 +255,7 @@
                         </a>
                       </li>
                     {%- endfor -%}
+                    {%- endif -%}
                   </ul>
                 {% else %}
                   {%- comment -%}
