@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:45:02.236Z",
+  "generated_at": "2026-09-09T11:45:53.655Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 45,
+  "count": 46,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:45:02.236Z",
+    "fetchedAt": "2026-09-09T11:45:53.655Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 142,
+      "title": "template:guard meldete zwei Dauerwarnungen zu den Zubehoer-Templates",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/142",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "tp-card-price-sqm und tp-card-dimensions fehlen in den drei Zubehoer-Templates, der Guard meldete das bei jedem Lauf. Eine Warnung, die immer steht, wird ueberlesen und verdeckt die naechste echte.\n\nGeprueft statt angenommen: alle 43 Produkte der Kollektion zubehoer haben custom.rollenbreite = null und custom.qm_pro_paket = null, kein breite_boden-Tag. Beide Bloecke wuerden dort nichts rendern - das Weglassen ist richtig.\n\nFix: neuer Konfigurationsschluessel bewusstAbwesend, der Block und Template gemeinsam nennt. Nicht ueber optional, das haette die Bloecke ueberall stummgeschaltet und echten Drift in Bodenbelag-Templates verdeckt. Drei Tests, per Mutation gegengeprueft.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:45:36Z",
+      "updated_at": "2026-09-09T11:45:37Z",
+      "closed_at": null
+    },
     {
       "number": 140,
       "title": "Laengen- und Breiten-Extraktion in Produktkarten ohne match-Filter umsetzen",
