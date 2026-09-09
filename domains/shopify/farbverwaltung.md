@@ -211,3 +211,50 @@ ein eigener Fall fuer die Namensregeln.
 **Pflegehinweis:** Nach jedem Produktimport gehoert der Farb-Nachzug dazu - Registereintrag,
 `custom.farbcode`, `custom.farbe`. Sonst zeigt die Bestellung fuer neue Produkte keine
 Farbnummer, und die Farbanzeige faellt auf den Optionswert zurueck.
+
+## Nachbesserung 2026-09-09: Kontura, Amara, JOKA, Skarven
+
+**Kontura (19), Amara (9), JOKA (24 von 26): Nummer aus dem Optionswert entfernt.**
+`Grau Dunkel (98)` wurde zu `Grau Dunkel`, `09 Betongrau` zu `Betongrau`. Die Nummer
+steht weiterhin in `custom.farbcode`, im Register und in der SKU - sie war im Namen
+nur doppelt. `Reinweiß` und `Transparent` bei JOKA trugen keine Nummer und blieben.
+
+Drei Kontura-Werte waeren nach dem Entfernen doppelt gewesen. Am Bild sind sie klar
+verschieden, deshalb tragen sie einen eigenen Namen statt einer Ziffer:
+
+| Nr. | vorher | Messwert | jetzt |
+|---|---|---|---|
+| 405 | Grün Dunkel | `#35322a` olivbraun | Oliv Dunkel |
+| 406 | Grün Dunkel | `#333e3f` blaugruen | Petrol Dunkel |
+| 514 | Grau Mittel | `#8f8b83` warmgrau, so hell wie 515 | Grau Warm |
+
+**Skarven: die englischen Namen bleiben - bewusst.**
+`Fashion Oak`, `Calistoga Grey`, `Wild Oak` sind keine schlecht gepflegten Farbnamen,
+sondern die Dekornamen von Doellken. Beim Lieferanten stehen sie identisch
+(jordanshop.de, Farbwaehler des Artikels "Doellken S 60 TOP", 62 Werte). Eine Sockelleiste
+wird passend zum Bodendekor gekauft; wer `Wild Oak` als Boden hat, sucht die Leiste unter
+diesem Namen. Uebersetzt waere sie nicht mehr auffindbar, und ohne Farbfoto liesse sich die
+Optik ohnehin nicht pruefen - 45 der 62 Dekore haben beim Grosshaendler kein Farbbild.
+
+Geaendert wurde deshalb nur die Schreibweise: 26 Werte von `fashion oak` auf `Fashion Oak`,
+damit nicht `anthrazit` neben `Weiß Standard` steht. Register nachgezogen, Gegenpruefung
+62 von 62.
+
+### Offener Befund: JOKA-Farbnummern
+
+Bei `JOKA JK 34 Silikon-Dichtstoff` widersprechen sich Name und Nummer:
+
+| Farbe | Nummer im alten Namen | `custom.farbcode` aus der SKU |
+|---|---|---|
+| Nussbraun | 26 | 26B |
+| Gelb | 25 | 25G |
+| Reinweiß | keine | 26 |
+| Transparent | keine | 25 |
+
+Die Buchstaben-Suffixe sehen aus wie eine Notloesung, um doppelte SKUs zu vermeiden.
+Welche Nummer der Hersteller fuehrt, ist damit unklar - das klaert nur die JOKA-Preisliste.
+Nicht geraten, deshalb steht es hier.
+
+**Hinweis zur Einheitlichkeit:** Die sechs Feldwin-Sockelleisten schreiben ihre Farben
+weiterhin klein (`anthrazit`, `weiß RAL 9010`). Das ist derselbe Fall wie bei Skarven,
+war aber nicht beauftragt.
