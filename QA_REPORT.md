@@ -1,16 +1,16 @@
 # TEPPICH PARADIES – QA
 
 Status: **WARN**\
-Zeitpunkt: 7.9.2026, 11:42:17\
-Laufzeit: 76.2 s\
+Zeitpunkt: 9.9.2026, 18:07:41\
+Laufzeit: 55.1 s\
 QA-Scope: FULL (15/15 Seiten)
 
 ## Theme Check
 
 ✓ 0 neue Errors
 ✓ 0 neue Warnings
-Baseline: 0 Errors / 46 Warnings
-Aktuell: 0 Errors / 46 Warnings
+Baseline: 0 Errors / 41 Warnings
+Aktuell: 0 Errors / 41 Warnings
 
 ## Live Shop
 
