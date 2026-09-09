@@ -190,16 +190,27 @@ Doppelnummern wie `1013/5012` stehen so beim Lieferanten und wurden unveraendert
 Die Linie XL 60/19 fuehrt die Nummer 1246 als `platin, Sonder-FB.MM 200m`; im Shop heisst
 die Variante `platin (Sonderfarbe)`. Das steht im Hinweis des Registereintrags.
 
-### Offener Befund: die Shop-SKUs weichen von den Lieferanten-Artikelnummern ab
+### Zurueckgezogen: die Shop-SKUs sind korrekt
 
-**32 der 37 SKU-Suffixe stimmen nicht.** Beispiel: `anthrazit` in der 60er-Leiste liegt im Shop
-unter `ZUBDÖLK60_0004`, beim Lieferanten unter `ZUBDÖLK60_1209`. Das Muster `_0001` bis `_0009`
-ist eine laufende Nummer, die es beim Lieferanten nicht gibt.
+Hier stand bis zum 2026-09-09 der Befund, 32 der 37 Feldwin-SKUs wichen von den
+Lieferanten-Artikelnummern ab. **Das war ein Fehlschluss.** Nachgeprueft an jeder
+einzelnen Farbseite bei jordanshop.de: **37 von 37 Shop-SKUs stimmen exakt mit der
+Jordan-Artikelnummer ueberein.** Rohdaten: `domains/shopify/doellken-artikelnummern-2026-09-09.json`.
 
-Das ist ein Bestellrisiko, kein Anzeigefehler: Wer nach der Shop-SKU beim Lieferanten bestellt,
-findet den Artikel nicht. `custom.farbcode` traegt jetzt die richtige Nummer, die SKU nicht.
-SKUs zu aendern ist eine geschuetzte Aktion und braucht eine ausdrueckliche Freigabe -
-deshalb steht das hier und wurde nicht nebenbei erledigt.
+Der Fehler war, zwei verschiedene Nummernsysteme zu vergleichen:
+
+| System | Beispiel 60mm anthrazit | wo es steht |
+|---|---|---|
+| Jordan-Artikelnummer | `ZUBDÖLK60_0004` | SKU im Shop, Bestellung beim Grosshaendler |
+| Doellken-Farbnummer | `1209` | `custom.farbcode`, Farbregister, Herstellerkatalog |
+
+Beide sind richtig und stehen nebeneinander. Der Suffix `_0004` ist Jordans laufende
+Position innerhalb der Linie, nicht die Farbnummer. Dass dieselbe Farbe je Leistenhoehe
+eine andere Positionsnummer hat, ist deshalb kein Datenfehler, sondern Jordans Systematik.
+
+**Die SKUs duerfen nicht auf die Doellken-Farbnummern gezogen werden.** Genau dann waere
+die Bestellung beim Grosshaendler nicht mehr moeglich - die Wirkung waere das Gegenteil
+dessen, was der Befund versprach.
 
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
