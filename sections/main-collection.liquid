@@ -35,22 +35,106 @@
   <div
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
   >
-    {% content_for 'block',
-      type: 'filters',
-      id: 'filters',
-      results: collection,
-      results_size: collection.products_count
-    %}
+    {%- comment -%}
+      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte je Seite.
 
+      Fuer die Trefferzahl reicht es nicht, die zusammengelegten Groessen
+      einfach abzuziehen: verteilt die Paginierung sie auf zwei Seiten, traegt
+      jede Seite eine Karte. Abgezogen wird deshalb
+        Mitglieder - Anzahl der Seiten, auf denen Mitglieder vorkommen.
+
+      Bei bis zu 50 Produkten liefert collection.products die vollstaendige
+      Reihenfolge, damit ist diese Verteilung exakt berechenbar. Darueber
+      hinaus bleibt die Originalzahl stehen - lieber unveraendert als geraten.
+      Aktive Filter sind beruecksichtigt, weil collection.products ihnen folgt.
+    {%- endcomment -%}
     {% assign products_per_page = 24 %}
 
     {% if section.settings.enable_infinite_scroll == false %}
       {% assign products_per_page = section.settings.products_per_page %}
     {% endif %}
 
+    {%- liquid
+      assign tp_gruppe_aktiv = false
+      if collection.handle contains 'zubehoer'
+        assign tp_gruppe_aktiv = true
+      endif
+
+      assign tp_gruppe_abzug = 0
+      if tp_gruppe_aktiv and collection.products_count <= 50
+        assign tp_gruppe_mitglieder = 0
+        assign tp_gruppe_seiten = ''
+        assign tp_gruppe_index = 0
+        for tp_gruppe_p in collection.products
+          capture tp_gruppe_pos
+            render 'tp-produktgruppe', product: tp_gruppe_p
+          endcapture
+          assign tp_gruppe_pos = tp_gruppe_pos | strip
+          if tp_gruppe_pos != blank
+            assign tp_gruppe_mitglieder = tp_gruppe_mitglieder | plus: 1
+            assign tp_gruppe_seite = tp_gruppe_index | divided_by: products_per_page
+            assign tp_gruppe_marke = '|' | append: tp_gruppe_seite | append: '|'
+            unless tp_gruppe_seiten contains tp_gruppe_marke
+              assign tp_gruppe_seiten = tp_gruppe_seiten | append: tp_gruppe_marke
+            endunless
+          endif
+          assign tp_gruppe_index = tp_gruppe_index | plus: 1
+        endfor
+        if tp_gruppe_mitglieder > 0
+          assign tp_gruppe_seitenzahl = tp_gruppe_seiten | split: '||' | size
+          assign tp_gruppe_abzug = tp_gruppe_mitglieder | minus: tp_gruppe_seitenzahl
+        endif
+      endif
+      assign tp_results_size = collection.products_count | minus: tp_gruppe_abzug
+    -%}
+
+    {% content_for 'block',
+      type: 'filters',
+      id: 'filters',
+      results: collection,
+      results_size: tp_results_size
+    %}
+
     {% paginate collection.products by products_per_page %}
+      {%- comment -%}
+        Traeger dieser Seite ist die kleinste hier vorhandene Groesse (kleinste
+        Position). Ein Vorlauf ueber dieselbe Seitenmenge bestimmt sie, damit
+        die Karte den Einstiegspreis zeigt und trotzdem nie eine Seite mit
+        Mitgliedern ohne Karte bleibt - auch wenn ein Filter die kleineren
+        Groessen ausschliesst.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_gruppe_traeger = ''
+        assign tp_gruppe_beste = 999
+        if tp_gruppe_aktiv
+          for tp_gruppe_p in collection.products
+            capture tp_gruppe_pos
+              render 'tp-produktgruppe', product: tp_gruppe_p
+            endcapture
+            assign tp_gruppe_pos = tp_gruppe_pos | strip | plus: 0
+            if tp_gruppe_pos > 0 and tp_gruppe_pos < tp_gruppe_beste
+              assign tp_gruppe_beste = tp_gruppe_pos
+              assign tp_gruppe_traeger = tp_gruppe_p.handle
+            endif
+          endfor
+        endif
+      -%}
       {% capture children %}
         {% for product in collection.products %}
+          {%- comment -%}
+            Nur der oben bestimmte Traeger der Gruppe wird gerendert.
+            Bewusst nur im Zubehoerbereich: diese Sektion ist der Horizon-Kern
+            aller Kategorien und soll sich sonst unveraendert verhalten - in
+            der Suche und auf anderen Kollektionen bleiben alle Groessen
+            einzeln sichtbar.
+          {%- endcomment -%}
+          {%- if tp_gruppe_aktiv -%}
+            {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
+            {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+            {%- if tp_gruppe_rolle != blank and product.handle != tp_gruppe_traeger -%}
+              {%- continue -%}
+            {%- endif -%}
+          {%- endif -%}
           <li
             id="{{ section.id }}-{{ product.id }}"
             class="product-grid__item product-grid__item--{{ forloop.index0 }}"

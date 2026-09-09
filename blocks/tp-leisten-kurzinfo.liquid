@@ -6,9 +6,11 @@
   der Block nichts.
 
   Enthaelt zusaetzlich die seitenspezifische Anpassung der Galerie: Das
-  Variantenbild einer Leiste ist ein reines Farbmuster (800x800-Kachel). Horizon
-  stellt es immer an den Anfang der Galerie; damit es nicht wie ein leerer
-  Bildschirm wirkt, wird es als gerahmtes Farbmuster mit Beschriftung gezeigt.
+  Variantenbild einer Leiste ist oft ein reines Farbmuster - eine 800x800-
+  RAL-Kachel oder ein Hersteller-Dekorstreifen (Alt-Text "... (Dekor NNNN)").
+  Horizon stellt es immer an den Anfang der Galerie; damit es nicht wie ein
+  leerer Bildschirm wirkt, wird es als gerahmtes Farbmuster mit Beschriftung
+  gezeigt.
 {% enddoc %}
 
 {%- liquid
@@ -55,14 +57,17 @@
 
   <style>
     /* Farbmuster-Kachel in der Galerie als gerahmtes Muster statt Vollflaeche */
-    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media {
+    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media,
+    slideshow-slide.product-media-container:has(img[alt*='(Dekor ']) .product-media {
       background: #f5f5f4;
     }
-    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media__image {
+    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media__image,
+    slideshow-slide.product-media-container:has(img[alt*='(Dekor ']) .product-media__image {
       object-fit: contain;
       padding: 18%;
     }
-    slideshow-slide.product-media-container:has(img[src*='800x800'])::after {
+    slideshow-slide.product-media-container:has(img[src*='800x800'])::after,
+    slideshow-slide.product-media-container:has(img[alt*='(Dekor '])::after {
       content: 'Farbmuster der gewählten Farbe';
       position: absolute;
       inset-inline: 0;
@@ -72,7 +77,8 @@
       color: rgb(var(--color-foreground-rgb) / 0.7);
       pointer-events: none;
     }
-    .slideshow-controls__thumbnails-container img[src*='800x800'] {
+    .slideshow-controls__thumbnails-container img[src*='800x800'],
+    .slideshow-controls__thumbnails-container img[alt*='(Dekor '] {
       padding: 6px;
       background: #f5f5f4;
       object-fit: contain;

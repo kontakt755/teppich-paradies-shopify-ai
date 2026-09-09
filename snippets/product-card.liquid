@@ -49,13 +49,10 @@
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
   }
 
-  /* Improve price visibility and styling */
-  .text-block .price,
-  .price-item__group {
-    font-size: 1.3rem;
-    font-weight: 700;
-    line-height: 1.2;
-  }
+  /* Preis-Typografie liegt bewusst in blocks/price.liquid: sie gilt fuer
+     Produktkarte UND Produktseite. Hier stand sie nur, solange Karten
+     gerendert wurden - eine Produktseite ohne Karten bekam den Preis dann
+     in Grundschrift statt in der Preisgroesse. */
 
   .price-item--sale {
     color: #c4392c;

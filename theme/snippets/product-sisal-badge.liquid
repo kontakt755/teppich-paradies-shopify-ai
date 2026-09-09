@@ -4,7 +4,8 @@
   Used in: templates/product.liquid
 {%- endcomment -%}
 
-{% if product.collections | where: 'handle', 'sisal-natur' | size > 0 %}
+{%- assign tp_sisal_collections = product.collections | where: 'handle', 'sisal-natur' -%}
+{% if tp_sisal_collections.size > 0 %}
   <div class="product-badge product-badge--natural">
     <span class="product-badge__icon">🌿</span>
     <span class="product-badge__text">Naturfaser — 100% Sisal</span>

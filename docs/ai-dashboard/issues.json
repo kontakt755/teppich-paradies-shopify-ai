@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:49:23.203Z",
+  "generated_at": "2026-09-09T21:24:27.785Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 49,
+  "count": 57,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:49:23.203Z",
+    "fetchedAt": "2026-09-09T21:24:27.785Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,196 @@
   },
   "issues": [
     {
+      "number": 170,
+      "title": "Google-Bewertung: Backend betreiben oder Block entfernen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/170",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T21:24:11Z",
+      "updated_at": "2026-09-09T21:24:11Z",
+      "closed_at": null
+    },
+    {
+      "number": 167,
+      "title": "Startseite: zwei Einstiege - Online kaufen und Verlegeservice Oranienburg",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/167",
+      "labels": [
+        "status:review",
+        "priority:p1",
+        "area:design",
+        "type:entscheidung"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 8,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:19:47Z",
+      "updated_at": "2026-09-09T21:11:47Z",
+      "closed_at": null
+    },
+    {
+      "number": 166,
+      "title": "Entscheidung: Kauf auf Rechnung und Ratenzahlung fuer Bodenbelaege",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/166",
+      "labels": [
+        "status:review",
+        "priority:p1",
+        "area:checkout",
+        "type:entscheidung"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:42Z",
+      "updated_at": "2026-09-09T20:35:11Z",
+      "closed_at": null
+    },
+    {
+      "number": 165,
+      "title": "Konkretes Lieferdatum statt Werktage-Spanne",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/165",
+      "labels": [
+        "status:review",
+        "type:ux",
+        "priority:p2",
+        "area:versand"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:39Z",
+      "updated_at": "2026-09-09T20:35:09Z",
+      "closed_at": null
+    },
+    {
+      "number": 164,
+      "title": "Verschnitt-Option mit Erklaerung im Rollenware-Rechner",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/164",
+      "labels": [
+        "status:review",
+        "type:verbesserung",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:36Z",
+      "updated_at": "2026-09-09T20:35:07Z",
+      "closed_at": null
+    },
+    {
+      "number": 163,
+      "title": "Zweiter Weg neben dem Warenkorb: Angebot anfordern und Beratungstermin",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/163",
+      "labels": [
+        "status:review",
+        "type:verbesserung",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:33Z",
+      "updated_at": "2026-09-09T20:35:04Z",
+      "closed_at": null
+    },
+    {
+      "number": 162,
+      "title": "Kaufbox Rollenware: Live-Gesamtpreis, Rechenbeispiel und Eingabegrenzen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/162",
+      "labels": [
+        "status:review",
+        "type:ux",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:31Z",
+      "updated_at": "2026-09-09T20:35:02Z",
+      "closed_at": null
+    },
+    {
+      "number": 161,
+      "title": "Wettbewerbsanalyse Kaufpfad: Scheune, LaminatDEPOT, planeo, Kibek",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/161",
+      "labels": [
+        "status:fertig",
+        "type:idee",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T20:09:23Z",
+      "updated_at": "2026-09-09T20:35:02Z",
+      "closed_at": "2026-09-09T20:34:49Z"
+    },
+    {
       "number": 160,
       "title": "Git-Guard: Regeln griffen nicht hinter xargs, sudo oder find -exec",
       "state": "closed",
@@ -77,14 +267,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Jede Regel in .claude/hooks/git-gh-guard.mjs war mit ^git verankert und griff nur am Segmentanfang. Hinter einem Vorspann lief dieselbe Operation durch: die direkte Loeschung einer Referenz war blockiert, dieselbe hinter xargs erlaubt. Betroffen war jede Regel, auch das harte Zuruecksetzen, der erzwungene Push, das Loeschen unversionierter Dateien und das Leeren des Stash-Stacks.\n\nAufgefallen beim Aufraeumen der Stash-Archiv-Refs.\n\nFix: keine Liste erlaubter Vorspaenne, sondern jede Stelle im Segment pruefen, an der ein git/gh-Aufruf beginnt. Fail-closed, das Heredoc bleibt der Weg fuer Fliesstext, der solche Befehle nur erwaehnt - diese Beschreibung ist selbst so entstanden.\n\nDie Ausnahme fuer die Bot-Datei gilt auch hinter einem Vorspann. Zehn neue Tests, per Mutation gegengeprueft: ohne die Erkennung fallen acht.\n\nPR #158.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:44:35Z",
-      "updated_at": "2026-09-09T12:49:21Z",
+      "updated_at": "2026-09-09T12:49:22Z",
       "closed_at": "2026-09-09T12:49:08Z"
     },
     {
@@ -265,10 +455,10 @@
     {
       "number": 131,
       "title": "Sortimentsabgleich Teppichboden Jordan/JOKA vs M-Plus (Analyse Phase 1-3)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/131",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:sonstiges"
@@ -277,22 +467,22 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:27:58Z",
-      "updated_at": "2026-09-09T11:38:49Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T17:29:56Z",
+      "closed_at": "2026-09-09T17:29:56Z"
     },
     {
       "number": 130,
       "title": "Rollenware-Rechner: Warenkorb-Button erst nach Laengeneingabe, Messhinweis entfernt",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/130",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -301,14 +491,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:27:56Z",
-      "updated_at": "2026-09-09T11:34:03Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T17:29:48Z",
+      "closed_at": "2026-09-09T17:29:48Z"
     },
     {
       "number": 129,

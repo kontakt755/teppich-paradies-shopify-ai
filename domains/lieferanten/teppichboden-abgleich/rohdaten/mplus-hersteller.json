@@ -1,0 +1,957 @@
+{
+ "M-Plus-Akzente-2029-2401-DB": {
+  "le_files": [
+   "LE_Akzente_29_2401.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2402-SB": {
+  "le_files": [
+   "LE_Akzente_29_2402.pdf"
+  ],
+  "hersteller": "LANO N.V. - Venetiëlaan 33 - B - 8530 Harelbeke",
+  "hersteller_raw": [
+   "LANO N.V. - Venetiëlaan 33 - B - 8530 Harelbeke"
+  ],
+  "hersteller_canonical": "Lano NV (B-Harelbeke)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2403-TR": {
+  "le_files": [
+   "LE_Akzente_29_2403.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2404-TR": {
+  "le_files": [
+   "LE_Akzente_29_2404.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung als Scan in Fragmenten - nicht auswertbar"
+ },
+ "M-Plus-Akzente-2029-2405-VR": {
+  "le_files": [
+   "LE_Akzente_29_2405.pdf"
+  ],
+  "hersteller": "TIMZO Tufting Ind. B.V. - Postbus 7 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "TIMZO Tufting Ind. B.V. - Postbus 7 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2406-TR": {
+  "le_files": [
+   "LE_Akzente_29_2406.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2407-TR": {
+  "le_files": [
+   "LE_Akzente_29_2407.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2408-TR": {
+  "le_files": [
+   "LE_Akzente_29_2408.pdf"
+  ],
+  "hersteller": "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2409-FB": {
+  "le_files": [
+   "LE_Akzente_29_2409.pdf"
+  ],
+  "hersteller": "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+  "hersteller_raw": [
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse"
+  ],
+  "hersteller_canonical": "Associated Weavers Europe NV (B-Ronse)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2410-TR": {
+  "le_files": [
+   "LE_Akzente_29_2410.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2411-VR": {
+  "le_files": [
+   "LE_Akzente_29_2411.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2412-VR": {
+  "le_files": [
+   "LE_Akzente_29_2412.pdf"
+  ],
+  "hersteller": "LANO N.V. - Venetiëlaan 33 - B - 8530 Harelbeke",
+  "hersteller_raw": [
+   "LANO N.V. - Venetiëlaan 33 - B - 8530 Harelbeke"
+  ],
+  "hersteller_canonical": "Lano NV (B-Harelbeke)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2413-TB": {
+  "le_files": [
+   "LE_Akzente_29_2413.pdf"
+  ],
+  "hersteller": "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2414-FB": {
+  "le_files": [
+   "LE_Akzente_29_2414.pdf"
+  ],
+  "hersteller": "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+  "hersteller_raw": [
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse"
+  ],
+  "hersteller_canonical": "Associated Weavers Europe NV (B-Ronse)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2415-VR": {
+  "le_files": [
+   "LE_Akzente_29_2415.pdf"
+  ],
+  "hersteller": "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "Balta Industries NV/Division ITC - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2416-FB": {
+  "le_files": [
+   "LE_Akzente_29_2416.pdf"
+  ],
+  "hersteller": "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+  "hersteller_raw": [
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse"
+  ],
+  "hersteller_canonical": "Associated Weavers Europe NV (B-Ronse)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2417-TR": {
+  "le_files": [
+   "LE_Akzente_29_2417.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2418-TR": {
+  "le_files": [
+   "LE_Akzente_29_2418.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2419-TR": {
+  "le_files": [
+   "LE_Akzente_29_2419.pdf"
+  ],
+  "hersteller": "TIMZO Tufting Ind. B.V. - Postbus 7 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "TIMZO Tufting Ind. B.V. - Postbus 7 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Akzente-2029-2420-TR": {
+  "le_files": [
+   "LE_Akzente_29_2420.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "M-Plus-Ambiente-2025-1301": {
+  "le_files": [
+   "LE_Ambiente_2025_1301_Ventura.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1302": {
+  "le_files": [
+   "LE_Ambiente_2025_1302_Soft.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1303": {
+  "le_files": [
+   "LE_Ambiente_2025_1303_Starlight.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1304": {
+  "le_files": [
+   "LE_Ambiente_2025_1304_Cloud.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1305": {
+  "le_files": [
+   "LE_Ambiente_2025_1305_Velvet.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1306": {
+  "le_files": [
+   "LE_Ambiente_2025_1306_Pacific.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1307": {
+  "le_files": [
+   "LE_Ambiente_2025_1307_Summit.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1308": {
+  "le_files": [
+   "LE_Ambiente_2025_1308_Mix.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1309": {
+  "le_files": [
+   "LE_Ambiente_2025_1309_City.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1310": {
+  "le_files": [
+   "LE_Ambiente_2025_1310_Voyage.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1311": {
+  "le_files": [
+   "LE_Ambiente_2025_1311_Miracle.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Ambiente-2025-1312": {
+  "le_files": [
+   "LE_Ambiente_2025_1312_Ambiance.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen) nennt M-Plus Einkauf & Logistik GmbH selbst als Hersteller - Eigenmarke, Produzent nicht belegt"
+ },
+ "M-Plus-Avantiles-2026-Tile-201": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-202": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-203": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-204": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-205": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-206": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-207": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-208": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-209": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-210": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-211": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-212": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-213": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-214": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-215": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-216": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-217": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-218": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-219": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "M-Plus-Avantiles-2026-Tile-220": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "MPlus-Ambiente-2029-4401": {
+  "le_files": [
+   "LE_Ambiente_29_4401.pdf"
+  ],
+  "hersteller": "DAS TEPPICHWERK GmbH & Co. KG",
+  "hersteller_raw": [
+   "DAS TEPPICHWERK GmbH & Co. KG"
+  ],
+  "hersteller_canonical": "Das Teppichwerk GmbH & Co. KG (D)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Ambiente-2029-4402": {
+  "le_files": [
+   "LE_Ambiente_29_4402.pdf"
+  ],
+  "hersteller": "DAS TEPPICHWERK GmbH & Co. KG",
+  "hersteller_raw": [
+   "DAS TEPPICHWERK GmbH & Co. KG"
+  ],
+  "hersteller_canonical": "Das Teppichwerk GmbH & Co. KG (D)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Ambiente-2029-4403": {
+  "le_files": [
+   "LE_Ambiente_29_4403.pdf"
+  ],
+  "hersteller": "DAS TEPPICHWERK GmbH & Co. KG",
+  "hersteller_raw": [
+   "DAS TEPPICHWERK GmbH & Co. KG"
+  ],
+  "hersteller_canonical": "Das Teppichwerk GmbH & Co. KG (D)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Ambiente-2029-4404": {
+  "le_files": [
+   "LE_Ambiente_29_4404.pdf"
+  ],
+  "hersteller": "DAS TEPPICHWERK GmbH & Co. KG",
+  "hersteller_raw": [
+   "DAS TEPPICHWERK GmbH & Co. KG"
+  ],
+  "hersteller_canonical": "Das Teppichwerk GmbH & Co. KG (D)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Ambiente-2029-4405": {
+  "le_files": [
+   "LE_Ambiente_29_4405.pdf"
+  ],
+  "hersteller": "DAS TEPPICHWERK GmbH & Co. KG",
+  "hersteller_raw": [
+   "DAS TEPPICHWERK GmbH & Co. KG"
+  ],
+  "hersteller_canonical": "Das Teppichwerk GmbH & Co. KG (D)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-733": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Strong_733.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-910": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Kreta_910.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-911": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Rhodos_911.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-916": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Santorin_916.pdf"
+  ],
+  "hersteller": "9",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-930": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Kastos_930.pdf"
+  ],
+  "hersteller": "9",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-932": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Tilos_932.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-933": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Limnos_933.pdf"
+  ],
+  "hersteller": "9",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-956": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Kastos_930.pdf"
+  ],
+  "hersteller": "9",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Analog-2029-966": {
+  "le_files": [
+   "Leistungserklaerung_MPlus_Analog_29_Strong_966.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2201": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2202": {
+  "le_files": [
+   "LE_Avantgarde_29_2202_2206_2207_2211_2213_DOP1011IE0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2203": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2204": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2205": {
+  "le_files": [
+   "LE_Avantgarde_29_2205_DOP1011IE0ABV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2206": {
+  "le_files": [
+   "LE_Avantgarde_29_2202_2206_2207_2211_2213_DOP1011IE0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2207": {
+  "le_files": [
+   "LE_Avantgarde_29_2202_2206_2207_2211_2213_DOP1011IE0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2208": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2209": {
+  "le_files": [
+   "LE_Avantgarde_29_2209_2210_DOP1011IF0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2210": {
+  "le_files": [
+   "LE_Avantgarde_29_2209_2210_DOP1011IF0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2211": {
+  "le_files": [
+   "LE_Avantgarde_29_2202_2206_2207_2211_2213_DOP1011IE0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2212": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2213": {
+  "le_files": [
+   "LE_Avantgarde_29_2202_2206_2207_2211_2213_DOP1011IE0ACV.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Avantgarde-2029-2214": {
+  "le_files": [
+   "LE_Avantgarde_29_2201_2203_2204_2208_2212_2214_DOP1011IE0ACL.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-TB-1153": {
+  "le_files": [
+   "LE_Extrem_29_1153.pdf",
+   "LE_Extrem_29_2153.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv",
+   "BD JKLI F MEDNI BK JKLI F MEB HBO P Q I BG RF O O BKG = F G I S BG EDT KAUV E I BK BKMC PKEBG WBADEF G H G XUV RF O O BK Y?",
+   "Condor Carpets bv",
+   "KDEBCCF G H I ABDBK WBADEF G HBKMCPKF G H ADE XCCBAG I BK _BKDEBCCBK LI BK I BK `BaLCCO PUV EAHEB HBO P Q RF O O BK b LI B"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-TB-1155": {
+  "le_files": [
+   "LE_Extrem_29_1155.pdf",
+   "LE_Extrem_29_2155.pdf"
+  ],
+  "hersteller": "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt",
+  "hersteller_raw": [
+   "ITC Co BV - Kanegemstraat 15 - B - 8700 Tielt"
+  ],
+  "hersteller_canonical": "ITC Co BV / Balta Group (B-Tielt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-TB-1157": {
+  "le_files": [
+   "LE_Extrem_29_1157.pdf",
+   "LE_Extrem_29_2157.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv",
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-TB-1158": {
+  "le_files": [
+   "LE_Extrem_29_1158.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-TB-1160": {
+  "le_files": [
+   "LE_Extrem_29_1160.pdf",
+   "LE_Extrem_29_2160.pdf"
+  ],
+  "hersteller": "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+  "hersteller_raw": [
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+   "MEDUSA - Textiler Bodenbelag - Polteppich gem. EN 1307:2014",
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+   "MEDUSA TILE - Textiler Bodenbelag - Polteppich gem. EN 1307:2014"
+  ],
+  "hersteller_canonical": "Associated Weavers Europe NV (B-Ronse)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-Tiles-2153": {
+  "le_files": [
+   "LE_Extrem_29_2153.pdf"
+  ],
+  "hersteller": "BD JKLI F MEDNI BK JKLI F MEB HBO P Q I BG RF O O BKG = F G I S BG EDT KAUV E I BK BKMC PKEBG WBADEF G H G XUV RF O O BK Y?",
+  "hersteller_raw": [
+   "BD JKLI F MEDNI BK JKLI F MEB HBO P Q I BG RF O O BKG = F G I S BG EDT KAUV E I BK BKMC PKEBG WBADEF G H G XUV RF O O BK Y?",
+   "Condor Carpets bv",
+   "KDEBCCF G H I ABDBK WBADEF G HBKMCPKF G H ADE XCCBAG I BK _BKDEBCCBK LI BK I BK `BaLCCO PUV EAHEB HBO P Q RF O O BK b LI B"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-Tiles-2155": {
+  "le_files": [
+   "LE_Extrem_29_2155.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": "modulyss (Beaulieu) (B-Zele)",
+  "hersteller_quelle": "Leistungserklaerung (Adresse/Unterschrift)"
+ },
+ "MPlus-Extrem-2029-Tiles-2157": {
+  "le_files": [
+   "LE_Extrem_29_2157.pdf"
+  ],
+  "hersteller": "Condor Carpets bv",
+  "hersteller_raw": [
+   "Condor Carpets bv"
+  ],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Extrem-2029-Tiles-2158": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "MPlus-Extrem-2029-Tiles-2160": {
+  "le_files": [
+   "LE_Extrem_29_2160.pdf"
+  ],
+  "hersteller": "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+  "hersteller_raw": [
+   "Associated Weavers Europe NV - Weverijstraat 1 - B - 9600 Ronse",
+   "MEDUSA TILE - Textiler Bodenbelag - Polteppich gem. EN 1307:2014"
+  ],
+  "hersteller_canonical": "Associated Weavers Europe NV (B-Ronse)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Outdoor-2030-10117": {
+  "le_files": [
+   "LE_Outdoor_30_101.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Outdoor-2030-20123": {
+  "le_files": [
+   "LE_Outdoor_30_201.pdf"
+  ],
+  "hersteller": "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden",
+  "hersteller_raw": [
+   "Vebe Floorcoverings bv, - P.O. Box 11 - NL - 8280 AA Genemuiden"
+  ],
+  "hersteller_canonical": "Vebe Floorcoverings bv (NL-Genemuiden)",
+  "hersteller_quelle": "Leistungserklaerung"
+ },
+ "MPlus-Outdoor-2030-328": {
+  "le_files": [
+   "LE_Outdoor_30_328.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung (Adresse/Unterschrift)"
+ },
+ "MPlus-Outdoor-2030-330": {
+  "le_files": [
+   "LE_Outdoor_30_330.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": "Lano NV (B-Harelbeke)",
+  "hersteller_quelle": "Leistungserklaerung (Scan, per Bild gelesen): LANO N.V., Produkt VINCA"
+ },
+ "MPlus-Outdoor-2030-335": {
+  "le_files": [
+   "LE_Outdoor_30_335.pdf"
+  ],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": "Condor Carpets bv / Condor Group (NL-Hasselt)",
+  "hersteller_quelle": "Leistungserklaerung (Adresse/Unterschrift)"
+ },
+ "MPlus-Outdoor-2030-401583": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ },
+ "MPlus-Outdoor-2030-402583": {
+  "le_files": [],
+  "hersteller": null,
+  "hersteller_raw": [],
+  "hersteller_canonical": null,
+  "hersteller_quelle": "keine Leistungserklaerung verlinkt"
+ }
+}

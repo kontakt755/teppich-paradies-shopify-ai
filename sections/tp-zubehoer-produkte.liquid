@@ -45,6 +45,36 @@
 
 {%- capture list_items -%}
   {%- assign rendered = 0 -%}
+  {%- comment -%}
+    Traeger der Gruppe: die kleinste hier vorhandene Groesse, damit die Karte
+    den Einstiegspreis zeigt.
+
+    Der Vorlauf muss dieselben Ausschluesse anwenden wie die Schleife darunter,
+    sonst faellt die Wahl auf ein Produkt, das gar nicht gerendert wird - und
+    die Gruppe verschwindet ganz. Genau das passierte auf der Produktseite der
+    55x90: die kleinste Groesse ist dort das aktuelle Produkt und damit aus der
+    Empfehlungsliste ausgeschlossen, wodurch "Passend dazu" leer blieb.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_gruppe_traeger = ''
+    assign tp_gruppe_beste = 999
+    for tp_gruppe_p in items
+      if mode == 'passend' and tp_gruppe_p.id == product.id
+        continue
+      endif
+      if tp_gruppe_p.featured_image == blank
+        continue
+      endif
+      capture tp_gruppe_pos
+        render 'tp-produktgruppe', product: tp_gruppe_p
+      endcapture
+      assign tp_gruppe_pos = tp_gruppe_pos | strip | plus: 0
+      if tp_gruppe_pos > 0 and tp_gruppe_pos < tp_gruppe_beste
+        assign tp_gruppe_beste = tp_gruppe_pos
+        assign tp_gruppe_traeger = tp_gruppe_p.handle
+      endif
+    endfor
+  -%}
   {%- for item in items -%}
     {%- if rendered >= max_items -%}
       {%- break -%}
@@ -54,6 +84,12 @@
     {%- endif -%}
     {%- comment -%} Ohne Foto wirkt eine Karte in der Empfehlungsleiste kaputt; im Raster bleibt sie sichtbar. {%- endcomment -%}
     {%- if item.featured_image == blank -%}
+      {%- continue -%}
+    {%- endif -%}
+    {%- comment -%} Von einer Groessen-Gruppe traegt nur die kleinste vorhandene Groesse die Karte. {%- endcomment -%}
+    {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: item -%}{%- endcapture -%}
+    {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+    {%- if tp_gruppe_rolle != blank and item.handle != tp_gruppe_traeger -%}
       {%- continue -%}
     {%- endif -%}
     {%- if rendered > 0 -%}<!--@list/split-->{%- endif -%}

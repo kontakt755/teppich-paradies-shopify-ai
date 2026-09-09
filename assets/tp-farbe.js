@@ -115,6 +115,12 @@ class TpFarbeAnzeige extends HTMLElement {
       nummer.hidden = !entry.nummer;
     }
 
+    // Nicht jede Farbe hat ein eigenes Foto. Ohne Foto zeigt die Galerie das
+    // Hauptbild des Produkts, also eine andere Farbe - dann muss der Hinweis
+    // sichtbar sein.
+    const hinweis = /** @type {HTMLElement | null} */ (this.querySelector('[data-tp-farbe-hinweis]'));
+    if (hinweis) hinweis.hidden = Boolean(entry.bild);
+
     const swatch = /** @type {HTMLElement | null} */ (this.querySelector('[data-tp-farbe-swatch]'));
     if (swatch) {
       if (entry.bild) {

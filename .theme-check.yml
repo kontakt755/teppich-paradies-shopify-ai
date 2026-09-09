@@ -3,6 +3,8 @@ extends: :default
 ignore:
   # Sisal-Prototyp, wird nicht ausgeliefert (siehe .shopifyignore).
   - theme/**
+  - theme/*
+  - theme/**/*
 
 JSONMissingBlock:
   # Lokal grundsaetzlich nicht aufloesbar, zwei Ursachen:

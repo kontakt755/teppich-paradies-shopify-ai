@@ -1,29 +1,24 @@
 {% doc %}
-  Bildbasierte Farbwahl fuer Leisten-Produktseiten. Statt bis zu 62 Textknoepfen
-  zeigt der Block je Farbwert das Variantenbild als Kachel. Die Auswahl laeuft
-  weiter ueber den Horizon-Variantenwaehler: ein Klick auf eine Kachel setzt
-  den zugehoerigen Radio-Button (assets/tp-leisten-farbwahl.js). Warenkorb,
-  Preis, Galerie und Farbanzeige reagieren also wie bisher.
+  Bildbasierte Farbwahl fuer Leisten-Produktseiten: ein Raster gleich grosser
+  Kacheln, je Farbe eine, mit dem Farbnamen darunter. Was eine Kachel zeigt,
+  entscheidet snippets/tp-leisten-farbkachel.liquid (Variantenbild nur, wenn
+  es genau dieser einen Farbe gehoert; sonst Swatch, Registerfarbe oder
+  neutrale Flaeche). Es gibt keine zweite Liste "ohne Musterbild" mehr - alle
+  Farben stehen gleichberechtigt im Raster, jede mit ihrem Namen.
 
-  Zwei Regeln halten Bild und Bezeichnung ehrlich:
+  Ab 29 Farben klappt das Raster ein: serverseitig sind die ersten 21 Kacheln
+  sichtbar, "Alle N Farben anzeigen" zeigt den Rest. Mit JavaScript wird die
+  Grenze auf drei volle Reihen der tatsaechlichen Spaltenzahl gesetzt, damit
+  keine angerissene Reihe stehen bleibt. Liegt die gewaehlte Farbe hinter der
+  Grenze, wird schon serverseitig aufgeklappt gerendert, damit nichts springt.
 
-  1. Eine Bildkachel entsteht nur, wenn das Variantenbild genau zu dieser
-     einen Farbe gehoert. Teilen sich mehrere Farben dasselbe Bild, ist das
-     ein generisches Produktfoto und kein Farbmuster - diese Farben landen in
-     der Textliste "Weitere Farben". Ein geteiltes Foto als Farbkachel zu
-     zeigen behauptet eine Zuordnung, die die Daten nicht hergeben.
-  2. Die sichtbare Bezeichnung kommt aus 'tp-farbe-daten' (feld: 'name'), also
-     der einen Stelle, die interne Farbnummern vom Kundennamen trennt. Der
-     Wert im data-Attribut bleibt der rohe Optionswert - nur so trifft der
-     Klick weiterhin exakt den richtigen Radio-Button.
-
-  Ohne JavaScript bleibt der Block verborgen und der normale Variantenwaehler
-  sichtbar; mit JavaScript wird der Variantenwaehler nur visuell versteckt,
-  bleibt aber im DOM und fuer Screenreader erreichbar.
-
-  Hinweis fuer Produkte mit mehreren Optionen (Farbe + Breite): dort teilen
-  sich Varianten derselben Farbe legitim ein Bild und rutschen in die
-  Textliste. Das ist die sichere Richtung - lieber kein Bild als ein falsches.
+  Die Auswahl laeuft weiter ueber den Horizon-Variantenwaehler: ein Klick auf
+  eine Kachel setzt den zugehoerigen Radio-Button (assets/tp-leisten-farbwahl.js);
+  Preis, Galerie, Warenkorb-Formular und URL erledigt Horizon wie bisher.
+  Ohne JavaScript bleibt dieser Block verborgen und der Variantenwaehler
+  sichtbar. Mit JavaScript wird der Variantenwaehler nur visuell versteckt
+  (CSS :has auf dem gemeinsamen Elternelement) und bleibt fuer Screenreader
+  erreichbar.
 {% enddoc %}
 
 {%- liquid
@@ -42,79 +37,84 @@
 -%}
 
 {%- if tp_fw_position > 0 and tp_fw_values.size > 1 -%}
-  {%- assign tp_fw_index = tp_fw_position | minus: 1 -%}
+  {%- liquid
+    assign tp_fw_index = tp_fw_position | minus: 1
+    assign tp_fw_id = block.id | replace: '_', '' | downcase
 
-  {%- comment -%}
-    Ein Durchlauf ueber die Varianten sammelt alle Bild-IDs. Kommt eine ID
-    mehrfach vor, ist das Bild nicht farbspezifisch.
-  {%- endcomment -%}
-  {%- capture tp_fw_media_ids -%}
-    {%- for tp_fw_v in tp_fw_product.variants -%}
-      {%- if tp_fw_v.featured_media != blank -%}[{{ tp_fw_v.featured_media.id }}]{%- endif -%}
-    {%- endfor -%}
-  {%- endcapture -%}
+    # Einklappen erst, wenn es sich lohnt: unter 29 Farben passt alles hin.
+    assign tp_fw_limit = 21
+    assign tp_fw_klappbar = false
+    if tp_fw_values.size > 28
+      assign tp_fw_klappbar = true
+    endif
+    assign tp_fw_aufgeklappt = true
+    if tp_fw_klappbar
+      assign tp_fw_aufgeklappt = false
+      for tp_fw_value in tp_fw_values
+        if tp_fw_value == tp_fw_selected and forloop.index0 >= tp_fw_limit
+          assign tp_fw_aufgeklappt = true
+        endif
+      endfor
+    endif
+
+    case tp_fw_name
+      when 'dekor'
+        assign tp_fw_plural = 'Dekore'
+      when 'farbe'
+        assign tp_fw_plural = 'Farben'
+      else
+        assign tp_fw_plural = tp_fw_label
+    endcase
+
+    capture tp_fw_aktueller_name
+      render 'tp-farbe-daten', variant: tp_fw_product.selected_or_first_available_variant, product: tp_fw_product, feld: 'name'
+    endcapture
+    assign tp_fw_aktueller_name = tp_fw_aktueller_name | strip | default: tp_fw_selected
+  -%}
 
   <script src="{{ 'tp-leisten-farbwahl.js' | asset_url }}" defer></script>
-  <div
-    class="tp-lfw"
+  <tp-leisten-farbwahl
+    class="tp-lfw{% if tp_fw_aufgeklappt %} tp-lfw--auf{% endif %}"
+    id="tp-lfw-{{ tp_fw_id }}"
     data-tp-farbwahl
     data-tp-farbwahl-option="{{ tp_fw_label | escape }}"
+    data-tp-farbwahl-limit="{{ tp_fw_limit }}"
     hidden
     {{ block.shopify_attributes }}
   >
     <p class="tp-lfw__label">
       {{ tp_fw_label | escape }}:
-      <span class="tp-lfw__current" data-tp-farbwahl-current>{{ tp_fw_selected | escape }}</span>
+      <span class="tp-lfw__current" data-tp-farbwahl-current>{{ tp_fw_aktueller_name | escape }}</span>
       <span class="tp-lfw__count">{{ tp_fw_values.size }} zur Auswahl</span>
     </p>
 
-    {%- capture tp_fw_bildkacheln -%}
+    <div class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} wählen">
       {%- for tp_fw_value in tp_fw_values -%}
         {%- render 'tp-leisten-farbkachel',
           value: tp_fw_value,
           product: tp_fw_product,
           index: tp_fw_index,
           selected: tp_fw_selected,
-          media_ids: tp_fw_media_ids,
-          modus: 'bild'
+          position: forloop.index0,
+          limit: tp_fw_limit,
+          aufgeklappt: tp_fw_aufgeklappt
         -%}
       {%- endfor -%}
-    {%- endcapture -%}
+    </div>
 
-    {%- capture tp_fw_textkacheln -%}
-      {%- for tp_fw_value in tp_fw_values -%}
-        {%- render 'tp-leisten-farbkachel',
-          value: tp_fw_value,
-          product: tp_fw_product,
-          index: tp_fw_index,
-          selected: tp_fw_selected,
-          media_ids: tp_fw_media_ids,
-          modus: 'text'
-        -%}
-      {%- endfor -%}
-    {%- endcapture -%}
-
-    {%- assign tp_fw_hat_bilder = tp_fw_bildkacheln | strip -%}
-    {%- assign tp_fw_hat_texte = tp_fw_textkacheln | strip -%}
-
-    {%- if tp_fw_hat_bilder != blank -%}
-      <div class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} nach Musterbild wählen">
-        {{ tp_fw_bildkacheln }}
-      </div>
+    {%- if tp_fw_klappbar -%}
+      <button
+        type="button"
+        class="tp-lfw__mehr"
+        data-tp-farbwahl-mehr
+        aria-expanded="{{ tp_fw_aufgeklappt }}"
+        aria-controls="tp-lfw-{{ tp_fw_id }}"
+      >
+        <span data-tp-farbwahl-zu>Alle {{ tp_fw_values.size }} {{ tp_fw_plural | escape }} anzeigen</span>
+        <span data-tp-farbwahl-auf>Weniger {{ tp_fw_plural | escape }} anzeigen</span>
+      </button>
     {%- endif -%}
-
-    {%- if tp_fw_hat_texte != blank -%}
-      {%- if tp_fw_hat_bilder != blank -%}
-        <p class="tp-lfw__hinweis">
-          Für die folgenden Farben liegt uns noch kein Musterbild vor. Ein
-          kostenloses Muster können Sie unten anfragen.
-        </p>
-      {%- endif -%}
-      <div class="tp-lfw__liste" role="group" aria-label="Weitere {{ tp_fw_label | escape }}n wählen">
-        {{ tp_fw_textkacheln }}
-      </div>
-    {%- endif -%}
-  </div>
+  </tp-leisten-farbwahl>
 {%- endif -%}
 
 {% stylesheet %}
@@ -142,100 +142,137 @@
   }
 
   .tp-lfw__grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 12px 8px;
   }
 
   .tp-lfw__tile {
-    position: relative;
-    display: block;
-    width: 52px;
-    height: 52px;
+    display: grid;
+    gap: 5px;
+    width: 100%;
     min-width: 44px;
-    min-height: 44px;
+    margin: 0;
     padding: 0;
-    overflow: hidden;
-    background: #fff;
-    border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
+    background: none;
+    border: 0;
     border-radius: 8px;
+    font: inherit;
+    color: inherit;
+    text-align: center;
     cursor: pointer;
-    transition: border-color var(--animation-speed, 0.15s) var(--animation-easing, ease);
   }
 
-  .tp-lfw__tile:hover {
-    border-color: rgb(var(--color-foreground-rgb) / 0.5);
+  /* Eingeklappte Kacheln: das Grid-Display darf das hidden-Attribut nicht ueberstimmen */
+  .tp-lfw__tile[hidden] {
+    display: none;
   }
 
   .tp-lfw__tile:focus-visible {
     outline: 2px solid var(--color-foreground);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
-  .tp-lfw__tile[aria-pressed='true'] {
+  .tp-lfw__bild {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
+    border-radius: 8px;
+    transition:
+      border-color var(--animation-speed, 0.15s) var(--animation-easing, ease),
+      box-shadow var(--animation-speed, 0.15s) var(--animation-easing, ease);
+  }
+
+  .tp-lfw__tile:hover .tp-lfw__bild {
+    border-color: rgb(var(--color-foreground-rgb) / 0.5);
+  }
+
+  .tp-lfw__tile[aria-pressed='true'] .tp-lfw__bild {
     border-color: var(--color-foreground);
-    box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3px var(--color-foreground);
+    box-shadow:
+      inset 0 0 0 2px #fff,
+      inset 0 0 0 3px var(--color-foreground);
   }
 
-  .tp-lfw__liste {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .tp-lfw__hinweis {
-    margin: 4px 0 0;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    color: rgb(var(--color-foreground-rgb) / 0.6);
-  }
-
-  /* Farben ohne eigenes Musterbild: der Name traegt die Kachel */
-  .tp-lfw__tile--text {
-    display: inline-flex;
-    align-items: center;
-    width: auto;
-    height: auto;
-    min-height: 44px;
-    padding: 8px 12px;
-    background: rgb(var(--color-foreground-rgb) / 0.03);
-  }
-
-  .tp-lfw__text {
-    font-size: 0.8125rem;
-    line-height: 1.3;
-    color: var(--color-foreground);
-    text-align: start;
-  }
-
-  .tp-lfw__img {
+  .tp-lfw__img,
+  .tp-lfw__farbe,
+  .tp-lfw__leer {
     display: block;
     width: 100%;
     height: 100%;
+  }
+
+  .tp-lfw__img {
     object-fit: cover;
   }
 
-  .tp-lfw__tile--text {
-    display: inline-flex;
-    align-items: center;
-    width: auto;
-    height: 44px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: rgb(var(--color-foreground-rgb) / 0.04);
+  .tp-lfw__farbe {
+    background: var(--tp-lfw-farbe, transparent);
+  }
+
+  /* Farbe ohne belegtes Muster: neutrale Flaeche, keine geratene Farbe */
+  .tp-lfw__leer {
+    background:
+      repeating-linear-gradient(135deg, transparent 0 7px, rgb(var(--color-foreground-rgb) / 0.035) 7px 8px),
+      #f4f2ef;
   }
 
   .tp-lfw__name {
-    font: inherit;
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1;
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    font-size: 0.6875rem;
+    line-height: 1.25;
+    color: rgb(var(--color-foreground-rgb) / 0.75);
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  .tp-lfw__tile[aria-pressed='true'] .tp-lfw__name {
+    font-weight: 650;
     color: var(--color-foreground);
   }
 
-  /* Horizon-Variantenwaehler nur visuell verstecken, sobald die Kacheln aktiv sind */
-  .tp-lfw-picker-hidden {
+  .tp-lfw__tile--aus .tp-lfw__bild {
+    opacity: 0.45;
+  }
+
+  .tp-lfw__tile--aus .tp-lfw__name {
+    text-decoration: line-through;
+  }
+
+  .tp-lfw__mehr {
+    justify-self: start;
+    min-height: 44px;
+    padding: 0 16px;
+    background: none;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.25);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-foreground);
+    cursor: pointer;
+  }
+
+  .tp-lfw__mehr:hover {
+    border-color: var(--color-foreground);
+  }
+
+  .tp-lfw__mehr[aria-expanded='true'] [data-tp-farbwahl-zu],
+  .tp-lfw__mehr[aria-expanded='false'] [data-tp-farbwahl-auf] {
+    display: none;
+  }
+
+  /* Sobald die Kacheln aktiv sind, den Horizon-Variantenwaehler nur visuell
+     verstecken. Er bleibt im DOM und fuer Screenreader erreichbar; der
+     Selektor ueberlebt das Neu-Rendern des Waehlers beim Variantenwechsel. */
+  :where(*):has(> tp-leisten-farbwahl:not([hidden])) > variant-picker {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -248,17 +285,12 @@
 
   @media screen and (max-width: 749px) {
     .tp-lfw__grid {
-      gap: 6px;
+      grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+      gap: 10px 6px;
     }
 
-    .tp-lfw__tile {
-      width: 46px;
-      height: 46px;
-    }
-
-    .tp-lfw__tile--text {
-      width: auto;
-      height: 44px;
+    .tp-lfw__name {
+      font-size: 0.65rem;
     }
   }
 {% endstylesheet %}
