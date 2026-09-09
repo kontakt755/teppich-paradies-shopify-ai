@@ -39,6 +39,8 @@
             {%- if product.featured_image -%}
               <img
                 src="{{ product.featured_image | image_url: width: 400 }}"
+                width="400"
+                height="400"
                 alt="{{ product.featured_image.alt | escape }}"
                 loading="lazy"
               >
@@ -212,6 +214,8 @@
             {%- if product.featured_image -%}
               <img
                 src="{{ product.featured_image | image_url: width: 400 }}"
+                width="400"
+                height="400"
                 alt="{{ product.featured_image.alt | escape }}"
                 loading="lazy"
               >
