@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:29:27.966Z",
+  "generated_at": "2026-09-09T11:29:44.609Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 42,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:29:27.966Z",
+    "fetchedAt": "2026-09-09T11:29:44.609Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -57,7 +57,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/134",
       "labels": [
-        "status:eingang",
+        "status:review",
         "type:bug",
         "priority:p3",
         "area:backend"
@@ -66,14 +66,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "CLAUDE.md verlangt, docs/ai-dashboard/issues.json vor dem Commit mit 'git checkout --' zurueckzusetzen, sonst kollidiert jeder Push mit dem Sync-Workflow. Der Hook .claude/hooks/git-gh-guard.mjs blockierte genau diesen Befehl.\n\nDer Ausweg war ein Stash pro Sitzung. Der Stash-Stack ist zwischen allen Worktrees geteilt, jede Sitzung hinterliess dort einen Eintrag, den eine andere faelschlich poppen konnte - der Umweg war riskanter als der Befehl.\n\nFix: enge Ausnahme fuer genau diesen Pfad, am Segmentende verankert. Blockiert bleiben 'git checkout -- .', jede andere Datei, ein zweiter Pfad dahinter, Praefix-Treffer und alles hinter der Ausnahme in derselben Zeile. qa/tests/git-gh-guard.test.mjs haelt die Grenze mit 19 Faellen fest, per Mutation gegengeprueft.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:29:12Z",
-      "updated_at": "2026-09-09T11:29:13Z",
+      "updated_at": "2026-09-09T11:29:38Z",
       "closed_at": null
     },
     {
