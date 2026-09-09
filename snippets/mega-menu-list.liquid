@@ -10,6 +10,7 @@
   @param {number} [content_aspect_ratio] - Aspect ratio for content images.
   @param {number} [image_border_radius] - Border radius for content images.
   @param {object} [section] - The section object.
+  @param {object} [kacheln] - block.blocks des Header-Menue-Blocks (Bildkacheln, siehe blocks/_tp-menu-kachel.liquid).
 
   @example
   {% render 'mega-menu-list', parent_link: link, id: 'MegaMenuList-1', grid_columns_count: 6, menu_content_type: 'featured_products' %}
@@ -44,7 +45,24 @@
     assign collection_links = parent_link.links | where: 'type', 'collection_link'
     assign catalog_links = parent_link.links | where: 'type', 'catalog_link'
     assign collection_list_links = parent_link.links | where: 'type', 'collections_link'
-    if collection_links.size == 0 and catalog_links.size == 0 and collection_list_links.size == 0
+
+    # Bildkacheln (Block _tp-menu-kachel) liefern auch fuer Seiten- und Filterlinks ein
+    # Bild. Ein Menue wie "Service & Verlegung" ohne einen einzigen Kollektionslink
+    # bleibt damit im Bildmodus, statt zu reinen Textleisten zu werden.
+    assign tp_kachel_hits = 0
+    if kacheln != blank
+      for tp_kl in parent_link.links
+        capture tp_kl_idx
+          render 'tp-menu-kachel-index', link: tp_kl, kacheln: kacheln
+        endcapture
+        assign tp_kl_idx = tp_kl_idx | strip | plus: 0
+        if tp_kl_idx > 0
+          assign tp_kachel_hits = tp_kachel_hits | plus: 1
+        endif
+      endfor
+    endif
+
+    if collection_links.size == 0 and catalog_links.size == 0 and collection_list_links.size == 0 and tp_kachel_hits == 0
       assign menu_content_type = 'text'
     endif
   endif
@@ -82,11 +100,31 @@
     assign tp_leisten_nav = true
   endif
 -%}
+{%- liquid
+  assign tp_linoleum_nav = false
+  if parent_link.type == 'collection_link' and parent_link.object.handle == 'linoleumboden-1'
+    assign tp_linoleum_nav = true
+  endif
+  assign tp_kontakt_nav = false
+  if parent_link.title == 'Kontakt'
+    assign tp_kontakt_nav = true
+  endif
+-%}
 {%- if tp_leisten_nav -%}
   <div class="mega-menu__intro">
     <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
   </div>
-  {% render 'tp-leisten-nav', variant: 'megamenu', parent_link: parent_link %}
+  {% render 'tp-leisten-nav', variant: 'megamenu', parent_link: parent_link, kacheln: kacheln %}
+{%- elsif tp_linoleum_nav -%}
+  <div class="mega-menu__intro">
+    <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
+  </div>
+  {% render 'tp-linoleum-nav', parent_link: parent_link, kacheln: kacheln, id: id, settings: settings %}
+{%- elsif tp_kontakt_nav -%}
+  <div class="mega-menu__intro">
+    <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
+  </div>
+  {% render 'tp-kontakt-nav', parent_link: parent_link, kacheln: kacheln, id: id %}
 {%- else -%}
 <div class="mega-menu__intro">
   <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
@@ -126,10 +164,38 @@
         echo '<li class="mega-menu__column ' | append: span_class | append: '">'
       endif
     %}
-    <div>
+    {%- comment -%}
+      Karte eines Menuepunkts. Im Bildmodus ist die ganze Karte (Bild, Titel, Freiflaeche)
+      ein Link; nur die Unterpunkte darunter sind eigene Links. Kurztext: aus der Bildkachel,
+      sonst die Produktanzahl der Kollektion. Gestaltung: assets/tp-mega-menu.css.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_card_sub = ''
+      if menu_content_type == 'collection_images'
+        capture tp_card_idx
+          render 'tp-menu-kachel-index', link: link, kacheln: kacheln
+        endcapture
+        assign tp_card_idx = tp_card_idx | strip | plus: 0
+        if tp_card_idx > 0
+          assign tp_card_i = tp_card_idx | minus: 1
+          assign tp_card_records = kacheln | split: '~~'
+          assign tp_card_fields = tp_card_records[tp_card_i] | split: '|~|'
+          assign tp_card_sub = tp_card_fields[2] | default: '' | strip
+        endif
+        if tp_card_sub == blank and link.type == 'collection_link'
+          assign tp_card_count = link.object.all_products_count | default: 0
+          if tp_card_count == 1
+            assign tp_card_sub = '1 Produkt'
+          elsif tp_card_count > 1
+            assign tp_card_sub = tp_card_count | append: ' Produkte'
+          endif
+        endif
+      endif
+    -%}
+    <div class="tp-mm-card{% if menu_content_type == 'collection_images' %} tp-mm-card--media{% endif %}">
       <a
         href="{{ link.url }}"
-        class="mega-menu__link {% if link.links != blank %}mega-menu__link--parent{% endif %}"
+        class="mega-menu__link tp-mm-card__link {% if link.links != blank %}mega-menu__link--parent{% endif %}"
       >
         {% if menu_content_type == 'collection_images' %}
           {%- capture collection_image_sizes -%}
@@ -148,16 +214,31 @@
               columns_per_item: columns_per_item
             -%}
           {%- endcapture -%}
-
-          {% render 'link-featured-image', link: link, class: 'mega-menu__link-image', sizes: collection_image_sizes %}
+          {%- capture tp_card_img -%}
+            {%- render 'tp-menu-bild', link: link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: collection_image_sizes -%}
+          {%- endcapture -%}
+          <span class="tp-mm-card__media">
+            {%- if tp_card_img contains '<img' -%}
+              {{ tp_card_img }}
+            {%- else -%}
+              {%- comment -%} Kein Bild aus keiner Quelle: farbige Kachel mit Initiale statt grauer Flaeche. {%- endcomment -%}
+              <span class="tp-mm-card__placeholder mega-menu__link-image" aria-hidden="true">{{ link.title | strip | slice: 0, 1 | upcase }}</span>
+            {%- endif -%}
+          </span>
         {% endif %}
-        <span class="wrap-text">
-          {{- link.title -}}
+        <span class="tp-mm-card__body">
+          <span class="tp-mm-card__title wrap-text">
+            {%- render 'tp-menu-label', link: link -%}
+          </span>
+          {%- if tp_card_sub != blank -%}
+            <span class="tp-mm-card__sub">{{ tp_card_sub | escape }}</span>
+          {%- endif -%}
         </span>
+        <span class="tp-mm-card__arrow" aria-hidden="true"></span>
       </a>
       {% if link.links != blank %}
         <ul
-          class="list-unstyled"
+          class="list-unstyled tp-mm-card__sublist"
           {% if should_break_columns %}
             style="column-count: {{ column_span }};"
           {% endif %}
@@ -171,9 +252,9 @@
             >
               <a
                 href="{{ childLink.url }}"
-                class="mega-menu__link"
+                class="mega-menu__link tp-mm-card__sublink"
               >
-                <span class="wrap-text">{{- childLink.title -}}</span>
+                <span class="wrap-text">{%- render 'tp-menu-label', link: childLink -%}</span>
               </a>
             </li>
           {% endfor %}
@@ -286,6 +367,32 @@
       --menu-columns-tablet: {{ max_menu_columns_tablet }};
     {% endif %}
   }
+
+  {%- if menu_content_type == 'collection_images' -%}
+    {%- liquid
+      # Bildkarten: Spaltenzahl nach Anzahl der Punkte, damit keine Reihe aus einer
+      # einzelnen schmalen Karte neben leerer Flaeche besteht. Bis sechs Punkte stehen
+      # in einer Reihe, ab sieben in Vierergruppen (7 = 4 + 3, 8 = 4 + 4). Bei bis zu
+      # drei Punkten begrenzt --tp-mm-col die Kartenbreite, sonst wuerde eine Karte
+      # die halbe Seite fuellen.
+      assign tp_mm_n = parent_link.links.size | at_least: 1
+      if tp_mm_n <= 6
+        assign tp_mm_cols = tp_mm_n
+      else
+        assign tp_mm_cols = 4
+      endif
+      assign tp_mm_cols_tablet = tp_mm_cols | at_most: 4
+      assign tp_mm_col = 'minmax(0, 1fr)'
+      if tp_mm_n <= 3
+        assign tp_mm_col = 'minmax(0, 22rem)'
+      endif
+    -%}
+    .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
+      --tp-mm-cols: {{ tp_mm_cols }};
+      --tp-mm-cols-tablet: {{ tp_mm_cols_tablet }};
+      --tp-mm-col: {{ tp_mm_col }};
+    }
+  {%- endif -%}
 {% endstyle %}
 
 {% case menu_content_type %}

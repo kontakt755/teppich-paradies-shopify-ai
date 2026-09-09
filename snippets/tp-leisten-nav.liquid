@@ -28,6 +28,7 @@
 
   @param {string} variant - 'megamenu' (Desktop) oder 'drawer' (mobil)
   @param {object} [parent_link] - Menuepunkt, liefert Titel und Ziel
+  @param {object} [kacheln] - block.blocks des Header-Menue-Blocks (Bildkachel fuer die Einstiegskarte)
 {% enddoc %}
 
 {%- liquid
@@ -186,7 +187,17 @@
 {%- else -%}
   <div class="tp-lnav" data-testid="tp-leisten-nav">
     <div class="tp-lnav__col tp-lnav__col--lead">
-      <a class="tp-lnav__all" href="{{ tp_ln_url }}">
+      {%- comment -%}
+        Einstiegskarte mit Bild: Bildkachel (Block _tp-menu-kachel) fuer den Menuepunkt,
+        sonst Kollektions- bzw. erstes Produktbild. Ohne Bild bleibt die Karte Text.
+      {%- endcomment -%}
+      {%- capture tp_ln_img -%}
+        {%- render 'tp-menu-bild', link: parent_link, kacheln: kacheln, class: 'tp-lnav__all-image', sizes: '(min-width: 990px) 20rem, 50vw' -%}
+      {%- endcapture -%}
+      <a class="tp-lnav__all{% if tp_ln_img contains '<img' %} tp-lnav__all--media{% endif %}" href="{{ tp_ln_url }}">
+        {%- if tp_ln_img contains '<img' -%}
+          <span class="tp-lnav__all-media">{{ tp_ln_img }}</span>
+        {%- endif -%}
         <span class="tp-lnav__all-title">Alle {{ tp_ln_title | escape }}</span>
         {%- if tp_ln_collection.all_products_count > 0 -%}
           <span class="tp-lnav__all-meta">{{ tp_ln_collection.all_products_count }} Sockelleisten im Sortiment</span>

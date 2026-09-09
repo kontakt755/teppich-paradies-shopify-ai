@@ -1,0 +1,52 @@
+{%- doc -%}
+  Bild eines Navigationspunkts fuer Megamenue und Drawer.
+
+  Reihenfolge der Quellen:
+    1. Bildkachel-Block (_tp-menu-kachel) im Header - bewusst kuratiert, theme-lokal
+    2. Kollektionsbild, dann erstes Produktbild der Kollektion (snippets/link-featured-image)
+
+  Gibt nichts aus, wenn keine Quelle ein Bild liefert. Der Aufrufer prueft die Ausgabe
+  und rendert dann seinen eigenen Ersatz - nie eine leere graue Flaeche.
+
+  Die Kachel liefert eine CDN-URL mit width=800 (siehe blocks/_tp-menu-kachel.liquid).
+  Das srcset entsteht durch Austausch des width-Parameters; die Shopify-CDN skaliert
+  jede Stufe selbst. Die Kacheln werden zwischen rund 160 px (Handy, zwei Spalten) und
+  700 px (Desktop, breite Karte auf Retina) dargestellt.
+
+  @param {object} link - Navigationspunkt (linklist item)
+  @param {string} [kacheln] - Datensaetze aus content_for 'blocks' (siehe tp-menu-kachel-index)
+  @param {string} [class] - CSS-Klasse fuer das img
+  @param {string} [sizes] - sizes-Attribut
+  @param {string} [match_title] - Kacheltitel statt link.title (siehe tp-menu-kachel-index)
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_mb_sizes = sizes | default: 'auto'
+  assign tp_mb_src = ''
+
+  capture tp_mb_idx
+    render 'tp-menu-kachel-index', link: link, kacheln: kacheln, match_title: match_title
+  endcapture
+  assign tp_mb_idx = tp_mb_idx | strip | plus: 0
+  if tp_mb_idx > 0
+    assign tp_mb_i = tp_mb_idx | minus: 1
+    assign tp_mb_records = kacheln | split: '~~'
+    assign tp_mb_fields = tp_mb_records[tp_mb_i] | split: '|~|'
+    assign tp_mb_src = tp_mb_fields[1] | strip
+  endif
+
+  if tp_mb_src != blank
+    assign tp_mb_widths = '200,300,400,600,800' | split: ','
+    assign tp_mb_srcset = ''
+    for tp_mb_w in tp_mb_widths
+      assign tp_mb_url = tp_mb_src | replace: 'width=800', 'width=' | append: tp_mb_w
+      assign tp_mb_srcset = tp_mb_srcset | append: tp_mb_url | append: ' ' | append: tp_mb_w | append: 'w'
+      unless forloop.last
+        assign tp_mb_srcset = tp_mb_srcset | append: ', '
+      endunless
+    endfor
+    echo '<img src="' | append: tp_mb_src | append: '" srcset="' | append: tp_mb_srcset | append: '" sizes="' | append: tp_mb_sizes | append: '" alt="" loading="lazy" fetchpriority="low" class="' | append: class | append: '">'
+  else
+    render 'link-featured-image', link: link, class: class, sizes: tp_mb_sizes
+  endif
+-%}
