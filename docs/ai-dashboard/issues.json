@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:49:23.203Z",
+  "generated_at": "2026-09-09T13:04:23.884Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 49,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:49:23.203Z",
+    "fetchedAt": "2026-09-09T13:04:23.884Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Jede Regel in .claude/hooks/git-gh-guard.mjs war mit ^git verankert und griff nur am Segmentanfang. Hinter einem Vorspann lief dieselbe Operation durch: die direkte Loeschung einer Referenz war blockiert, dieselbe hinter xargs erlaubt. Betroffen war jede Regel, auch das harte Zuruecksetzen, der erzwungene Push, das Loeschen unversionierter Dateien und das Leeren des Stash-Stacks.\n\nAufgefallen beim Aufraeumen der Stash-Archiv-Refs.\n\nFix: keine Liste erlaubter Vorspaenne, sondern jede Stelle im Segment pruefen, an der ein git/gh-Aufruf beginnt. Fail-closed, das Heredoc bleibt der Weg fuer Fliesstext, der solche Befehle nur erwaehnt - diese Beschreibung ist selbst so entstanden.\n\nDie Ausnahme fuer die Bot-Datei gilt auch hinter einem Vorspann. Zehn neue Tests, per Mutation gegengeprueft: ohne die Erkennung fallen acht.\n\nPR #158.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:44:35Z",
-      "updated_at": "2026-09-09T12:49:21Z",
+      "updated_at": "2026-09-09T12:49:22Z",
       "closed_at": "2026-09-09T12:49:08Z"
     },
     {
