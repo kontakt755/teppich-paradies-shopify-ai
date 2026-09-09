@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:25:39.786Z",
+  "generated_at": "2026-09-09T11:28:08.401Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 39,
+  "count": 41,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:25:39.786Z",
+    "fetchedAt": "2026-09-09T11:28:08.401Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -52,12 +52,60 @@
   },
   "issues": [
     {
+      "number": 131,
+      "title": "Sortimentsabgleich Teppichboden Jordan/JOKA vs M-Plus (Analyse Phase 1-3)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/131",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:sonstiges"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:27:58Z",
+      "updated_at": "2026-09-09T11:27:59Z",
+      "closed_at": null
+    },
+    {
+      "number": 130,
+      "title": "Rollenware-Rechner: Warenkorb-Button erst nach Laengeneingabe, Messhinweis entfernt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/130",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:27:56Z",
+      "updated_at": "2026-09-09T11:27:56Z",
+      "closed_at": null
+    },
+    {
       "number": 129,
       "title": "menu:guard - tote Menuelinks automatisch finden",
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/129",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:navigation"
@@ -66,14 +114,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Folgearbeit zu #123. Dieselbe Fehlerklasse stand zweimal wochenlang live (Vinyl 108467d, Bodenleisten #123): ein Menuepunkt filtert auf einen Metaobjekt-Wert und liefert ein leeres Produktraster, im Editor nicht von einem gesunden Link zu unterscheiden.\n\nVollpruefung des Hauptmenues: alle 34 Links gesund.\n\nNeu: npm run menu:guard liest das gerenderte Menue aus der Storefront und ruft jeden Link ab. Meldet MENU_LINK_TOT (HTTP-Fehler) und MENU_LINK_LEER (200 mit leerem Raster). Gegen beide bekannten Faelle verifiziert. Kein Token noetig, ohne Netz SKIP.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:25:25Z",
-      "updated_at": "2026-09-09T11:25:35Z",
+      "updated_at": "2026-09-09T11:25:41Z",
       "closed_at": null
     },
     {
