@@ -202,12 +202,53 @@
         "phone_number": "+4933015733720",
         "phone_display": "03301 / 573 37 20"
       }
+    },
+    "tp_service_einstieg": {
+      "type": "tp-service-einstieg",
+      "settings": {
+        "titel": "Boden aussuchen – wir verlegen ihn",
+        "text": "Suchen Sie in Ruhe aus. Aufmaß, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis.",
+        "anfrage_cta": "Aufmaß-Termin anfragen",
+        "anfrage_link": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "z1": {
+          "type": "ziel",
+          "settings": {
+            "label": "Teppichboden ansehen",
+            "ziel": "/collections/teppichboden?modus=service"
+          }
+        },
+        "z2": {
+          "type": "ziel",
+          "settings": {
+            "label": "Vinylboden ansehen",
+            "ziel": "/collections/vinylboden-1?modus=service"
+          }
+        },
+        "z3": {
+          "type": "ziel",
+          "settings": {
+            "label": "Alle Böden",
+            "ziel": "/collections/all?modus=service"
+          }
+        }
+      },
+      "block_order": [
+        "z1",
+        "z2",
+        "z3"
+      ]
     }
   },
   "order": [
     "treppenverlegun_jXADaz",
     "main",
     "final_cta_service",
+    "tp_service_einstieg",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"
   ]

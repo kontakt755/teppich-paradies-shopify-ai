@@ -1,0 +1,218 @@
+{% comment %}
+  Einstieg ins Sortiment am Fuss der bestehenden Serviceseiten (Phase 4,
+  Issue #167).
+
+  Warum gerade hier: `teppichboden-verlegen-lassen`, `vinylboden-verlegen` und
+  `treppenverlegung` sind nach der Startseite die meistbesuchten Seiten. Wer
+  dort liest, will verlegen lassen - und findet am Ende der Seite bisher keinen
+  Weg zum Boden selbst. Diese Section schliesst genau diese Luecke.
+
+  Die Links tragen ?modus=service, damit der Verlegeservice-Modus mitkommt
+  (siehe snippets/tp-modus.liquid). Der Modus wird bewusst NICHT automatisch
+  beim Aufruf der Seite gesetzt: er soll aus einem Klick entstehen, nicht aus
+  einem Seitenaufruf. Sonst traegt jemand einen Modus mit sich, den er nie
+  gewaehlt hat.
+
+  Kein zweiter Katalog: die Links zeigen auf dieselben Kollektionen wie der
+  Shop.
+{% endcomment %}
+
+<div class="tp-se color-{{ section.settings.color_scheme }}">
+  <div class="tp-se__inner">
+    <h2 class="tp-se__titel">{{ section.settings.titel }}</h2>
+    <p class="tp-se__text">{{ section.settings.text }}</p>
+
+    {%- if section.blocks.size > 0 -%}
+      <ul class="tp-se__links">
+        {%- for block in section.blocks -%}
+          <li {{ block.shopify_attributes }}>
+            <a href="{{ block.settings.ziel | default: '/collections/all' }}">{{ block.settings.label }}</a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <div class="tp-se__actions">
+      <a href="{{ section.settings.anfrage_link | default: '/pages/kontakt' }}" class="tp-se__cta">
+        {{ section.settings.anfrage_cta }}
+      </a>
+      {%- if section.settings.telefon != blank -%}
+        <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="tp-se__tel">
+          {{ section.settings.telefon_label | default: section.settings.telefon }}
+        </a>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-se {
+    padding: 32px 20px;
+  }
+
+  .tp-se__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+  }
+
+  .tp-se__titel {
+    margin: 0 0 6px;
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .tp-se__text {
+    margin: 0 0 16px;
+    font-size: 16px;
+    line-height: 1.5;
+    max-width: 640px;
+  }
+
+  .tp-se__links {
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tp-se__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font-size: 15px;
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+
+  .tp-se__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+  }
+
+  .tp-se__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-se__tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-se {
+      padding: 24px 16px;
+    }
+
+    .tp-se__inner {
+      padding: 18px;
+    }
+
+    .tp-se__titel {
+      font-size: 19px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Service-Einstieg",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Boden aussuchen – wir verlegen ihn"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "default": "Suchen Sie in Ruhe aus. Aufmaß, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis."
+    },
+    {
+      "type": "text",
+      "id": "anfrage_cta",
+      "label": "Button",
+      "default": "Aufmaß-Termin anfragen"
+    },
+    {
+      "type": "url",
+      "id": "anfrage_link",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "ziel",
+      "name": "Sortiments-Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Beschriftung",
+          "default": "Teppichboden ansehen"
+        },
+        {
+          "type": "url",
+          "id": "ziel",
+          "label": "Ziel",
+          "info": "?modus=service anhängen, damit der Verlegeservice-Weg mitkommt."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Service-Einstieg",
+      "blocks": [
+        { "type": "ziel", "settings": { "label": "Teppichboden ansehen", "ziel": "/collections/teppichboden?modus=service" } },
+        { "type": "ziel", "settings": { "label": "Vinylboden ansehen", "ziel": "/collections/vinylboden-1?modus=service" } },
+        { "type": "ziel", "settings": { "label": "Alle Böden", "ziel": "/collections/all?modus=service" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
