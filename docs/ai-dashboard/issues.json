@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:34:14.740Z",
+  "generated_at": "2026-09-09T11:37:45.977Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 42,
+  "count": 43,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:34:14.740Z",
+    "fetchedAt": "2026-09-09T11:37:45.977Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -51,6 +51,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 136,
+      "title": "Verwaistes Menue main-menu-zubehoer geloescht",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/136",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p3",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Kopie von main-menu, die kein Theme referenzierte. Nur 7 Punkte ohne Untermenues gegenueber 40 Items in main-menu - kein Fallback, sondern veralteter Teilstand.\n\nVor dem Loeschen frisch geprueft: 18 Themes gegen header-group.json und settings_data.json, dazu das Repository. Kein Treffer. Baum vorher gesichert und versioniert abgelegt.\n\nGegenprobe: menus() listet nur noch main-menu, footer, customer-account-main-menu. main-menu unveraendert mit allen 40 MenuItem-IDs. menu:guard 35 Links 0 Fehler.\n\nStoreweit und sofort live, nach ausdruecklicher Freigabe. PR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:37:28Z",
+      "updated_at": "2026-09-09T11:37:44Z",
+      "closed_at": null
+    },
     {
       "number": 134,
       "title": "git-gh-guard und CLAUDE.md widersprachen sich bei issues.json",
