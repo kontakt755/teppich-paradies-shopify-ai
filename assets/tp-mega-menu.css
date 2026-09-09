@@ -56,14 +56,6 @@
     align-content: stretch;
   }
 
-  /* Karten ohne Bild (gefilterte Einstiege) haben nun volle Hoehe, ihr Text
-     klebte dadurch oben und die Karte wirkte leer. Mittig gesetzt liest sie
-     sich als bewusster Einstieg. Karten mit Bild bleiben oben ausgerichtet. */
-  .mega-menu__column > div:not(:has(img)) {
-    display: grid;
-    align-content: center;
-  }
-
   .mega-menu__list > .mega-menu__column:has(> div:nth-child(4)):not(:has(ul)) {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
