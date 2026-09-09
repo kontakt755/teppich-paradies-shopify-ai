@@ -58,22 +58,22 @@ In dieser Reihenfolge, weil jeder Punkt den nächsten erst bewertbar macht:
 | # | Maßnahme | Status | Wer |
 |---|---|---|---|
 | 1 | **Messen**: Customer Events prüfen, Testkauf, Anruf- und Formular-Ziele anlegen | offen | Ahmet |
-| 2 | **Service-Funnel monetarisieren**: Anfrage-CTA und `tel:`-Events auf den Verlegeseiten | offen, wartet auf Zieldefinition | Agent + Ahmet |
+| 2 | **Service-Funnel monetarisieren**: Anfrage-CTA und `tel:`-Events auf den Verlegeseiten | **Theme fertig** (PR #118); Pixel und Ziele bei Ahmet, Anleitung `service-funnel-events.md` | Agent → Ahmet |
 | 3 | **Musterpfad**: Muster-CTAs auf den Konfigurator | **erledigt** (PR #114) | — |
 | 4 | **Produkttypen** bei 147 Produkten | **erledigt** (Admin API) | — |
 | 5 | **Redirects**: 6 Ziele korrigiert, 7 neu angelegt | **erledigt** (Admin API) | — |
-| 6 | **Vertrauen mobil**: Warenkorb-Text, Sie-Form, USP-Band, Länderwähler aus, Elfsight hinter Consent | offen | Agent |
-| 7 | **Tote Snippets** einbinden oder löschen, Touch-Targets auf 44 px | offen | Agent |
-| 8 | **Latente cm-Modus-Fehler** in `price_custom` und Rechner schließen | offen | Agent |
-| 9 | **Kollektions-SEO**, Startseiten-Title, Linoleum-Platzhalterbild | offen | Agent |
-| 10 | **Google Shopping**: Rollenware-Ausschlussliste neu erzeugen, dann Kanalausschluss | offen, Human Gate | Agent → Ahmet |
-| 11 | **Fotos** für die 20 meistbesuchten Produkte, Alt-Texte | offen | Ahmet → Agent |
-| 12 | **Datenhygiene**: Tags, Zubehör-Kategorien, Solvana-Duplikat, Marlow veröffentlichen | offen | Agent |
-| 13 | **Entscheidungen**: `shipping-weight` löschen, 26 Supplier-Drafts, Markenname | offen | Ahmet |
+| 6 | **Vertrauen mobil**: Warenkorb-Text, Sie-Form, USP-Band, Länderwähler aus, Elfsight hinter Consent | **erledigt** (PR #118) | — |
+| 7 | **Tote Snippets** einbinden oder löschen, Touch-Targets auf 44 px | **erledigt** (PR #118) | — |
+| 8 | **Latente cm-Modus-Fehler** in `price_custom` und Rechner schließen | **erledigt** (PR #118); Warenkorb-Mengenanzeige im cm-Modus offen | — |
+| 9 | **Kollektions-SEO**, Startseiten-Title, Linoleum-Platzhalterbild | **erledigt** (22 Kollektionen per API, Title-Fallback PR #118); Platzhalterbild lokal gegenprüfen | — |
+| 10 | **Google Shopping**: Rollenware-Ausschlussliste neu erzeugen, dann Kanalausschluss | **erledigt**: 122 Produkte, keines auf dem Kanal | — |
+| 11 | **Fotos** für die 20 meistbesuchten Produkte, Alt-Texte | **vorbereitet**: `foto-prioritaeten-2026-09-09.md`; Shooting bei Ahmet | Ahmet → Agent |
+| 12 | **Datenhygiene**: Tags, Zubehör-Kategorien, Solvana-Duplikat, Marlow veröffentlichen | **erledigt** (Admin API; Solvana-Polyamid heißt jetzt Tessara) | — |
+| 13 | **Entscheidungen**: `shipping-weight` löschen, 26 Supplier-Drafts, Markenname | Drafts **archiviert**; `shipping-weight` wartet auf App-Prüfung; Markenname: BODIVA in Registerprüfung | Ahmet |
 
-Punkte 6 bis 9 und 12 kann ein Agent ohne Freigabe umsetzen. Punkte 1, 10, 11 und 13
-brauchen Admin-Zugang, Fotograf oder eine Entscheidung. Ohne Punkt 1 bleibt jede weitere
-Theme-Arbeit unbewertbar.
+Stand 2026-09-09 abends: Alles, was ein Agent ohne Freigabe umsetzen kann, ist umgesetzt.
+Offen bleiben Punkt 1 (Messung, Testkauf), der Pixel für Punkt 2, das Foto-Shooting (11) und
+die Entscheidungen aus Punkt 13. Ohne Punkt 1 bleibt jede weitere Theme-Arbeit unbewertbar.
 
 ## 2. Kennzahlen
 
