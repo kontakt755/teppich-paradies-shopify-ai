@@ -1,0 +1,45 @@
+{% doc %}
+  Liest die Kurzmerkmale einer Bodenleiste aus den Produkt-Tags und gibt sie
+  als eine Zeile mit "|" als Trenner aus: material|hoehe|farbenanzahl|material_key|hoehe_key.
+
+  Tags im Sortiment (Stand 2026-09-09): "material: kunststoff|mdf|hartschaum",
+  "hoehe: 40mm|60mm|60mm-xl|80mm|80mm-xl|100mm". Nur vorhandene Werte werden
+  ausgegeben, nichts wird erfunden. Die Farbenanzahl kommt aus der Option
+  "Farbe" bzw. "Dekor".
+
+  @param {object} product - Produkt
+{% enddoc %}
+{%- liquid
+  assign tp_lm_material = ''
+  assign tp_lm_material_key = ''
+  assign tp_lm_hoehe = ''
+  assign tp_lm_hoehe_key = ''
+
+  for tag in product.tags
+    assign tag_down = tag | downcase
+    if tag_down contains 'material:'
+      assign tp_lm_material_key = tag_down | remove: 'material:' | strip
+      case tp_lm_material_key
+        when 'kunststoff'
+          assign tp_lm_material = 'Kunststoff'
+        when 'mdf'
+          assign tp_lm_material = 'MDF Holzdekor'
+        when 'hartschaum'
+          assign tp_lm_material = 'Hartschaum'
+        else
+          assign tp_lm_material = tp_lm_material_key | capitalize
+      endcase
+    elsif tag_down contains 'hoehe:'
+      assign tp_lm_hoehe_key = tag_down | remove: 'hoehe:' | strip
+      assign tp_lm_hoehe = tp_lm_hoehe_key | replace: 'mm-xl', ' mm XL' | replace: 'mm', ' mm'
+    endif
+  endfor
+
+  assign tp_lm_farben = 0
+  for option in product.options_with_values
+    if option.name == 'Farbe' or option.name == 'Dekor'
+      assign tp_lm_farben = option.values | size
+    endif
+  endfor
+-%}
+{{ tp_lm_material }}|{{ tp_lm_hoehe }}|{{ tp_lm_farben }}|{{ tp_lm_material_key }}|{{ tp_lm_hoehe_key }}

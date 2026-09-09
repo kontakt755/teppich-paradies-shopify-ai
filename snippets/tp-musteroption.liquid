@@ -1,0 +1,31 @@
+{%- doc -%}
+  Entscheidet, ob der Musterkonfigurator (/pages/muster) fuer ein Produkt
+  funktioniert, und liefert das passende Ziel fuer den Muster-Link.
+
+  Der Konfigurator listet die Werte EINER Produktoption als bestellbare Muster.
+  Er kann das nur, wenn es diese Option gibt. Die Liste der akzeptierten
+  Optionsnamen steht hier und in assets/tp-sample-checkout-core.js - beide
+  muessen gleich bleiben, sonst schickt ein Link Kunden auf eine Seite, die
+  ihnen "keine Muster hinterlegt" meldet.
+
+  Ausgabe: die fertige URL, sonst nichts.
+
+  @param {object} product - Produkt
+{%- enddoc -%}
+{%- liquid
+  assign tp_mo_namen = 'farbe,dekor,color' | split: ','
+  assign tp_mo_moeglich = false
+  for tp_mo_option in product.options
+    assign tp_mo_name = tp_mo_option | downcase | strip
+    if tp_mo_namen contains tp_mo_name
+      assign tp_mo_moeglich = true
+      break
+    endif
+  endfor
+  assign tp_mo_handle = product.handle | url_encode
+  if tp_mo_moeglich
+    echo '/pages/muster?produkt=' | append: tp_mo_handle
+  else
+    echo '/pages/kontakt?thema=muster&produkt=' | append: tp_mo_handle
+  endif
+-%}

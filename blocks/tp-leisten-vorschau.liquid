@@ -1,0 +1,263 @@
+{% doc %}
+  Schematische Farbvorschau fuer Leisten-Produktseiten: Eine Sockelleiste im
+  Querschnitt-Schema (Wand, Leiste, Boden), deren Sichtflaeche mit dem echten
+  Farbmuster der gewaehlten Variante gefuellt wird. Die Hoehe der Leiste kommt
+  aus dem Tag "hoehe:". Beim Farbwechsel tauscht assets/tp-leisten-vorschau.js
+  nur das Musterbild aus.
+
+  Ehrlichkeitsregel: Ein Farbmuster gilt nur, wenn das Variantenbild genau zu
+  dieser einen Farbe gehoert. Teilen sich mehrere Farben ein Bild (generisches
+  Produktfoto), zeigt die Vorschau "Kein Musterbild hinterlegt" statt einer
+  falschen Farbe. Die Darstellung ist als Schema beschriftet, kein Foto.
+{% enddoc %}
+
+{%- liquid
+  assign tp_lv_product = closest.product | default: product
+  assign tp_lv_position = 0
+  for tp_lv_option in tp_lv_product.options_with_values
+    assign tp_lv_name = tp_lv_option.name | downcase
+    if tp_lv_name contains 'farbe' or tp_lv_name contains 'dekor' or tp_lv_name contains 'color'
+      assign tp_lv_position = tp_lv_option.position
+      assign tp_lv_values = tp_lv_option.values
+      assign tp_lv_selected = tp_lv_option.selected_value
+      assign tp_lv_label = tp_lv_option.name
+      break
+    endif
+  endfor
+
+  capture tp_lv_raw
+    render 'tp-leisten-merkmale', product: tp_lv_product
+  endcapture
+  assign tp_lv_parts = tp_lv_raw | strip | split: '|'
+  assign tp_lv_hoehe_label = tp_lv_parts[1] | strip
+  assign tp_lv_hoehe_key = tp_lv_parts[4] | strip
+  assign tp_lv_hoehe_mm = tp_lv_hoehe_key | remove: 'mm-xl' | remove: 'mm' | plus: 0
+  if tp_lv_hoehe_mm < 20
+    assign tp_lv_hoehe_mm = 60
+  endif
+  # 100 mm entsprechen 150 px im Schema, mindestens 40 px
+  assign tp_lv_board_h = tp_lv_hoehe_mm | times: 1.5 | round
+  assign tp_lv_board_top = 262 | minus: tp_lv_board_h
+
+  # Alle Varianten-Bild-IDs sammeln: mehrfach genutzte Bilder sind kein Farbmuster
+  capture tp_lv_media_ids
+    for tp_lv_v in tp_lv_product.variants
+      if tp_lv_v.featured_media != blank
+        echo '[' | append: tp_lv_v.featured_media.id | append: ']'
+      endif
+    endfor
+  endcapture
+-%}
+
+{%- if tp_lv_position > 0 and tp_lv_values.size > 0 -%}
+  {%- assign tp_lv_index = tp_lv_position | minus: 1 -%}
+  {%- capture tp_lv_map -%}
+    {%- for tp_lv_value in tp_lv_values -%}
+      {%- liquid
+        assign tp_lv_media = null
+        for tp_lv_v in tp_lv_product.variants
+          if tp_lv_v.options[tp_lv_index] == tp_lv_value and tp_lv_v.featured_media != blank
+            assign tp_lv_media = tp_lv_v.featured_media
+            break
+          endif
+        endfor
+        assign tp_lv_src = ''
+        assign tp_lv_foto = false
+        if tp_lv_media
+          assign tp_lv_eigen = true
+          if tp_lv_product.featured_media != blank and tp_lv_media.id == tp_lv_product.featured_media.id
+            assign tp_lv_eigen = false
+          endif
+          if tp_lv_media_ids != blank
+            assign tp_lv_token = '[' | append: tp_lv_media.id | append: ']'
+            assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
+            if tp_lv_count > 1
+              assign tp_lv_eigen = false
+            endif
+          endif
+          if tp_lv_eigen
+            if tp_lv_media.aspect_ratio > 1.15 or tp_lv_media.aspect_ratio < 0.87
+              # Kein quadratisches Farbmuster, sondern ein Foto dieser Farbe
+              assign tp_lv_foto = true
+              assign tp_lv_src = tp_lv_media | image_url: width: 800
+            else
+              assign tp_lv_src = tp_lv_media | image_url: width: 400
+            endif
+          endif
+        endif
+      -%}
+      {%- unless forloop.first -%},{%- endunless -%}
+      {{ tp_lv_value | json }}:{"src":{{ tp_lv_src | json }},"foto":{{ tp_lv_foto }}}
+    {%- endfor -%}
+  {%- endcapture -%}
+
+  {%- liquid
+    assign tp_lv_start = ''
+    assign tp_lv_start_foto = false
+    for tp_lv_v in tp_lv_product.variants
+      if tp_lv_v.options[tp_lv_index] == tp_lv_selected and tp_lv_v.featured_media != blank
+        assign tp_lv_eigen = true
+        if tp_lv_product.featured_media != blank and tp_lv_v.featured_media.id == tp_lv_product.featured_media.id
+          assign tp_lv_eigen = false
+        endif
+        if tp_lv_media_ids != blank
+          assign tp_lv_token = '[' | append: tp_lv_v.featured_media.id | append: ']'
+          assign tp_lv_count = tp_lv_media_ids | split: tp_lv_token | size | minus: 1
+          if tp_lv_count > 1
+            assign tp_lv_eigen = false
+          endif
+        endif
+        if tp_lv_eigen
+          if tp_lv_v.featured_media.aspect_ratio > 1.15 or tp_lv_v.featured_media.aspect_ratio < 0.87
+            assign tp_lv_start_foto = true
+            assign tp_lv_start = tp_lv_v.featured_media | image_url: width: 800
+          else
+            assign tp_lv_start = tp_lv_v.featured_media | image_url: width: 400
+          endif
+        endif
+        break
+      endif
+    endfor
+    assign tp_lv_id = block.id | replace: '_', '' | downcase
+  -%}
+
+  <script src="{{ 'tp-leisten-vorschau.js' | asset_url }}" defer></script>
+  <figure class="tp-lv" data-tp-vorschau {{ block.shopify_attributes }}>
+    <script type="application/json" data-tp-vorschau-map>{ {{ tp_lv_map | strip }} }</script>
+    <div class="tp-lv__frame{% if tp_lv_start == blank %} tp-lv--ohne{% endif %}{% if tp_lv_start_foto %} tp-lv--foto{% endif %}" data-tp-vorschau-frame>
+      <img class="tp-lv__foto" data-tp-vorschau-foto src="{% if tp_lv_start_foto %}{{ tp_lv_start }}{% endif %}" alt="" loading="lazy">
+      <svg class="tp-lv__svg" viewBox="0 0 600 330" role="img" aria-labelledby="tp-lv-title-{{ tp_lv_id }}">
+        <title id="tp-lv-title-{{ tp_lv_id }}">Schematische Ansicht der Sockelleiste in der gewählten Farbe</title>
+        <defs>
+          <linearGradient id="tp-lv-wall-{{ tp_lv_id }}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f3f2f0"/>
+            <stop offset="1" stop-color="#e6e4e0"/>
+          </linearGradient>
+          <linearGradient id="tp-lv-floor-{{ tp_lv_id }}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#d9cbb3"/>
+            <stop offset="1" stop-color="#c9b797"/>
+          </linearGradient>
+          <linearGradient id="tp-lv-shade-{{ tp_lv_id }}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+            <stop offset="0.35" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="1" stop-color="#000000" stop-opacity="0.12"/>
+          </linearGradient>
+          <pattern id="tp-lv-muster-{{ tp_lv_id }}" patternUnits="userSpaceOnUse" x="60" y="{{ tp_lv_board_top }}" width="{{ tp_lv_board_h }}" height="{{ tp_lv_board_h }}">
+            <image data-tp-vorschau-bild href="{% unless tp_lv_start_foto %}{{ tp_lv_start }}{% endunless %}" x="0" y="0" width="{{ tp_lv_board_h }}" height="{{ tp_lv_board_h }}" preserveAspectRatio="xMidYMid slice"/>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="600" height="262" fill="url(#tp-lv-wall-{{ tp_lv_id }})"/>
+        <rect x="0" y="262" width="600" height="68" fill="url(#tp-lv-floor-{{ tp_lv_id }})"/>
+        <g class="tp-lv__floor-lines" stroke="#b8a88a" stroke-opacity="0.35">
+          <line x1="0" y1="284" x2="600" y2="284"/>
+          <line x1="0" y1="306" x2="600" y2="306"/>
+          <line x1="150" y1="262" x2="150" y2="284"/><line x1="360" y1="262" x2="360" y2="284"/>
+          <line x1="80" y1="284" x2="80" y2="306"/><line x1="290" y1="284" x2="290" y2="306"/><line x1="500" y1="284" x2="500" y2="306"/>
+          <line x1="200" y1="306" x2="200" y2="330"/><line x1="420" y1="306" x2="420" y2="330"/>
+        </g>
+        <rect x="60" y="264" width="480" height="6" fill="#000" opacity="0.12"/>
+        <g class="tp-lv__board">
+          <rect x="60" y="{{ tp_lv_board_top }}" width="480" height="{{ tp_lv_board_h }}" fill="#d6d3cf" data-tp-vorschau-fallback/>
+          <rect x="60" y="{{ tp_lv_board_top }}" width="480" height="{{ tp_lv_board_h }}" fill="url(#tp-lv-muster-{{ tp_lv_id }})" data-tp-vorschau-flaeche/>
+          <rect x="60" y="{{ tp_lv_board_top }}" width="480" height="{{ tp_lv_board_h }}" fill="url(#tp-lv-shade-{{ tp_lv_id }})"/>
+          <rect x="60" y="{{ tp_lv_board_top }}" width="480" height="3" fill="#fff" opacity="0.45"/>
+          <rect x="60" y="{{ tp_lv_board_top }}" width="480" height="{{ tp_lv_board_h }}" fill="none" stroke="#000" stroke-opacity="0.18"/>
+        </g>
+        <g class="tp-lv__mass" font-family="inherit" font-size="15" fill="#5b5855">
+          <line x1="562" y1="{{ tp_lv_board_top }}" x2="562" y2="262" stroke="#8a8683" stroke-width="1.5"/>
+          <line x1="556" y1="{{ tp_lv_board_top }}" x2="568" y2="{{ tp_lv_board_top }}" stroke="#8a8683" stroke-width="1.5"/>
+          <line x1="556" y1="262" x2="568" y2="262" stroke="#8a8683" stroke-width="1.5"/>
+          <text x="562" y="{{ tp_lv_board_top | minus: 8 }}" text-anchor="middle" font-size="13">{{ tp_lv_hoehe_mm }} mm</text>
+        </g>
+      </svg>
+      <p class="tp-lv__leer" data-tp-vorschau-leer>Für diese Farbe ist noch kein Musterbild hinterlegt.</p>
+    </div>
+    <figcaption class="tp-lv__caption">
+      <span class="tp-lv__caption-label" data-tp-vorschau-art>{% if tp_lv_start_foto %}Herstellerfoto dieser Farbe{% else %}Schematische Ansicht{% endif %}</span>
+      <span class="tp-lv__caption-value">{{ tp_lv_label | escape }}: <strong data-tp-vorschau-name>{{ tp_lv_selected | escape }}</strong>{% if tp_lv_hoehe_label != blank %} · {{ tp_lv_hoehe_label }} hoch{% endif %}</span>
+    </figcaption>
+  </figure>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-lv {
+    width: 100%;
+    margin: 0;
+  }
+
+  .tp-lv__frame {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.1);
+    border-radius: var(--style-border-radius-md, 8px);
+    background: #f3f2f0;
+  }
+
+  .tp-lv__svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .tp-lv__leer {
+    display: none;
+    position: absolute;
+    inset-inline: 12px;
+    top: 12px;
+    margin: 0;
+    padding: 8px 12px;
+    background: rgb(255 255 255 / 0.92);
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    color: rgb(var(--color-foreground-rgb) / 0.75);
+    text-align: center;
+  }
+
+  .tp-lv--ohne .tp-lv__leer {
+    display: block;
+  }
+
+  .tp-lv__foto {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tp-lv--foto .tp-lv__foto {
+    display: block;
+  }
+
+  .tp-lv--ohne [data-tp-vorschau-flaeche] {
+    opacity: 0;
+  }
+
+  .tp-lv__caption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 12px;
+    margin-block-start: 6px;
+    font-size: 0.8125rem;
+    color: rgb(var(--color-foreground-rgb) / 0.65);
+  }
+
+  .tp-lv__caption strong {
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Farbvorschau",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Leisten-Farbvorschau"
+    }
+  ]
+}
+{% endschema %}

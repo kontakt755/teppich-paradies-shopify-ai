@@ -1,0 +1,383 @@
+{% comment %}
+  Kaufberatung unter dem Produktraster: "Welche Bodenleiste passt zu meinem
+  Boden?" mit drei kurzen Orientierungskarten (Bloecke "tipp") und einer FAQ
+  (Bloecke "faq") als aufklappbare <details>, ohne JavaScript.
+
+  Inhalte sind vollstaendig im Editor bearbeitbar. Die Vorgaben halten sich
+  an das, was die Produktdaten hergeben (Material, Hoehe, Stangenlaenge,
+  Clipsystem, Weichlippe); Eignungsaussagen zu einzelnen Modellen stehen
+  bewusst nicht drin.
+{% endcomment %}
+
+{%- liquid
+  assign tipps = section.blocks | where: 'type', 'tipp'
+  assign faqs = section.blocks | where: 'type', 'faq'
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  id="leisten-beratung"
+  class="tp-lb section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-testid="tp-leisten-beratung-{{ section.id }}"
+>
+  <header class="tp-lb__head">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="tp-lb__heading h3">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+    {%- if section.settings.intro != blank -%}
+      <p class="tp-lb__intro">{{ section.settings.intro | escape }}</p>
+    {%- endif -%}
+  </header>
+
+  {%- if tipps.size > 0 -%}
+    <ul class="tp-lb__tipps" role="list">
+      {%- for block in tipps -%}
+        <li class="tp-lb__tipp" {{ block.shopify_attributes }}>
+          {%- if block.settings.label != blank -%}
+            <p class="tp-lb__tipp-label">{{ block.settings.label | escape }}</p>
+          {%- endif -%}
+          <h3 class="tp-lb__tipp-title">{{ block.settings.title | escape }}</h3>
+          {%- if block.settings.text != blank -%}
+            <p class="tp-lb__tipp-text">{{ block.settings.text | escape }}</p>
+          {%- endif -%}
+          {%- if block.settings.link_label != blank and block.settings.link != blank -%}
+            <a class="tp-lb__tipp-link" href="{{ block.settings.link }}">{{ block.settings.link_label | escape }}</a>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+
+  {%- if faqs.size > 0 -%}
+    <div class="tp-lb__faq">
+      {%- if section.settings.faq_heading != blank -%}
+        <h3 class="tp-lb__faq-heading h5">{{ section.settings.faq_heading | escape }}</h3>
+      {%- endif -%}
+      {%- for block in faqs -%}
+        <details class="tp-lb__item" {{ block.shopify_attributes }}>
+          <summary class="tp-lb__question">
+            <span>{{ block.settings.question | escape }}</span>
+            <svg class="tp-lb__caret" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="tp-lb__answer rte">{{ block.settings.answer }}</div>
+        </details>
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .tp-lb {
+    scroll-margin-top: 96px;
+  }
+
+  .tp-lb__head {
+    max-width: 52rem;
+    margin-block-end: 24px;
+  }
+
+  .tp-lb__heading {
+    margin: 0 0 6px;
+  }
+
+  .tp-lb__intro {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+    font-size: 1rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .tp-lb__tipps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-lb__tipp {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    background: var(--color-background);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.1);
+    border-radius: var(--style-border-radius-md, 8px);
+  }
+
+  .tp-lb__tipp-label {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.6);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .tp-lb__tipp-title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .tp-lb__tipp-text {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: rgb(var(--color-foreground-rgb) / 0.78);
+  }
+
+  .tp-lb__tipp-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-block-start: auto;
+    color: var(--color-foreground);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-lb__faq {
+    max-width: 52rem;
+    margin-block-start: 32px;
+  }
+
+  .tp-lb__faq-heading {
+    margin: 0 0 8px;
+  }
+
+  .tp-lb__item {
+    border-block-end: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+  }
+
+  .tp-lb__item:first-of-type {
+    border-block-start: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+  }
+
+  .tp-lb__question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 52px;
+    padding: 12px 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .tp-lb__question::-webkit-details-marker {
+    display: none;
+  }
+
+  .tp-lb__question:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .tp-lb__caret {
+    flex: 0 0 auto;
+    transition: transform var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-lb__item[open] .tp-lb__caret {
+    transform: rotate(180deg);
+  }
+
+  .tp-lb__answer {
+    padding: 0 4px 16px;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: rgb(var(--color-foreground-rgb) / 0.8);
+  }
+
+  .tp-lb__answer p {
+    margin: 0 0 8px;
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-lb__tipps {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-lb__tipp {
+      padding: 16px;
+    }
+
+    .tp-lb__faq {
+      margin-block-start: 24px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Beratung",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift",
+      "default": "Welche Bodenleiste passt zu meinem Boden?"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Einleitung",
+      "default": "Drei Fragen genügen: Welches Material soll es sein, wie hoch darf die Leiste sein und wie viele Meter brauchen Sie? Die genauen Angaben zu Maßen, Länge und Montage finden Sie auf jeder Produktseite."
+    },
+    {
+      "type": "text",
+      "id": "faq_heading",
+      "label": "FAQ-Ueberschrift",
+      "default": "Häufige Fragen"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "blocks": [
+    {
+      "type": "tipp",
+      "name": "Orientierung",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Dachzeile"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titel",
+          "default": "Titel"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link-Text"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link-Ziel"
+        }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "Frage",
+      "settings": [
+        {
+          "type": "text",
+          "id": "question",
+          "label": "Frage",
+          "default": "Frage"
+        },
+        {
+          "type": "richtext",
+          "id": "answer",
+          "label": "Antwort"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Beratung",
+      "blocks": [
+        {
+          "type": "tipp",
+          "settings": {
+            "label": "Material",
+            "title": "Kunststoff, MDF oder Hartschaum?",
+            "text": "Kunststoffleisten haben eine flexible Weichlippe, die Unebenheiten ausgleicht. MDF-Leisten mit Holzdekor bringen Holzoptik und Clipsystem mit. Hartschaum ist leicht zuzuschneiden und in Unifarben erhältlich."
+          }
+        },
+        {
+          "type": "tipp",
+          "settings": {
+            "label": "Höhe",
+            "title": "40 bis 100 mm",
+            "text": "Niedrige Leisten wirken zurückhaltend, hohe Leisten betonen den Raumabschluss. Achten Sie darauf, dass die Leiste den Dehnungsabstand zur Wand abdeckt."
+          }
+        },
+        {
+          "type": "tipp",
+          "settings": {
+            "label": "Farbe",
+            "title": "Passend zum Boden oder zur Wand",
+            "text": "Weiß und Grau nehmen sich zurück und passen zu hellen Wänden. Holzdekore lassen sich auf den Bodenbelag abstimmen. Die verfügbaren Farben sehen Sie direkt auf der Karte."
+          }
+        },
+        {
+          "type": "faq",
+          "settings": {
+            "question": "Wie viele Meter Leiste brauche ich?",
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Stangenlänge steht auf der jeweiligen Produktseite.</p>"
+          }
+        },
+        {
+          "type": "faq",
+          "settings": {
+            "question": "Wie werden die Leisten befestigt?",
+            "answer": "<p>Je nach Modell durch Kleben, Schrauben oder ein Clipsystem. Welche Montage für ein Modell vorgesehen ist, finden Sie in den Produktdetails.</p>"
+          }
+        },
+        {
+          "type": "faq",
+          "settings": {
+            "question": "Welche Höhe ist die richtige?",
+            "answer": "<p>Das ist vor allem eine Gestaltungsfrage. Wichtig ist, dass die Leiste die Fuge zwischen Boden und Wand sicher abdeckt. Im Sortiment finden Sie Höhen von 40 bis 100 mm.</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

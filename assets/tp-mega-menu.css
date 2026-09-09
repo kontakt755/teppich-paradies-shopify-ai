@@ -47,6 +47,15 @@
     gap: 0.55rem;
   }
 
+  /* Karten einer Reihe gleich hoch. Ohne das endet die Karte auf Inhaltshoehe:
+     ein Eintrag mit Unterpunkten wurde deutlich hoeher als seine Nachbarn, ein
+     reiner Textlink deutlich niedriger - die Reihe stand nicht mehr auf einer
+     Linie. Nur Spalten mit genau einer Karte; die mehrspaltige Variante
+     (:has(> div:nth-child(4))) behaelt ihr eigenes Verhalten. */
+  .mega-menu__list > .mega-menu__column:not(:has(> div:nth-child(2))) {
+    align-content: stretch;
+  }
+
   .mega-menu__list > .mega-menu__column:has(> div:nth-child(4)):not(:has(ul)) {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -130,4 +139,268 @@
       transition: none;
     }
   }
+}
+
+/* ------------------------------------------------------------------
+   Bodenleisten: kuratierte Navigation (snippets/tp-leisten-nav.liquid)
+
+   Reine Textnavigation - fuer die Einstiege nach Material und Hoehe gibt
+   es keine passenden Motive, und ein Platzhalter liest sich als Fehler.
+   Die Groessen kommen aus den Menue-Variablen des Themes, damit die
+   Schrift zu den uebrigen Menuepunkten passt.
+   ------------------------------------------------------------------ */
+.tp-lnav {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem 2.5rem;
+  align-items: start;
+}
+
+@media screen and (min-width: 750px) {
+  .tp-lnav {
+    grid-template-columns: minmax(0, 15rem) minmax(0, 14rem) minmax(0, 1fr);
+    gap: 1.25rem 3rem;
+  }
+}
+
+.tp-lnav__col {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+
+.tp-lnav__label {
+  margin: 0 0 0.15rem;
+  font-family: var(--menu-child-font-family);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--color-foreground-rgb) / 0.55);
+}
+
+.tp-lnav__all {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 0.75rem 0.6rem;
+  border-inline-start: 3px solid rgb(var(--color-foreground-rgb) / 0.18);
+  border-radius: 0 0.5rem 0.5rem 0;
+  text-decoration: none;
+  color: var(--menu-parent-font-color);
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.tp-lnav__all:hover,
+.tp-lnav__all:focus-visible {
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+  border-inline-start-color: currentcolor;
+}
+
+.tp-lnav__all-title {
+  font-family: var(--menu-parent-font-family);
+  font-size: max(var(--menu-parent-font-size), 1rem);
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.tp-lnav__all-meta {
+  font-family: var(--menu-child-font-family);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgb(var(--color-foreground-rgb) / 0.6);
+}
+
+.tp-lnav__list {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+}
+
+.tp-lnav__list--chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.tp-lnav__link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  margin-inline-start: -0.4rem;
+  border-radius: 0.35rem;
+  font-family: var(--menu-child-font-family);
+  font-size: var(--menu-child-font-size);
+  line-height: 1.4;
+  color: var(--menu-child-font-color);
+  text-decoration: none;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.tp-lnav__link:hover,
+.tp-lnav__link:focus-visible {
+  background: rgb(var(--color-foreground-rgb) / 0.07);
+  color: var(--menu-child-active-font-color);
+}
+
+.tp-lnav__list--chips .tp-lnav__link {
+  margin-inline-start: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.16);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tp-lnav__count {
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-foreground-rgb) / 0.5);
+}
+
+.tp-lnav :is(a):focus-visible,
+.tp-lnav-drawer__group :is(a):focus-visible {
+  outline: var(--focus-outline-width, 2px) solid currentcolor;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-lnav__all,
+  .tp-lnav__link {
+    transition: none;
+  }
+}
+
+/* Mobiler Drawer: gleiche Gliederung, an die Drawer-Typografie angepasst. */
+.tp-lnav-drawer__group {
+  padding-block: 0.5rem 0.25rem;
+}
+
+.tp-lnav-drawer__group .tp-lnav__label {
+  padding-inline: var(--menu-drawer-padding-inline, 0);
+  margin-block-end: 0.25rem;
+}
+
+.tp-lnav-drawer__group .tp-lnav__list {
+  gap: 0;
+}
+
+.tp-lnav-drawer__group .tp-lnav__link {
+  width: 100%;
+  /* 44 px ist die kleinste Flaeche, die sich auf dem Handy zuverlaessig
+     treffen laesst. Zentriert statt an der Grundlinie, damit der Text in der
+     groesseren Flaeche mittig sitzt. */
+  min-height: 44px;
+  align-items: center;
+  padding-block: 0.55rem;
+  font-size: var(--menu-child-font-size);
+}
+
+.tp-lnav-drawer__group .tp-lnav__list--chips {
+  gap: 0.45rem;
+  padding-block: 0.15rem;
+}
+
+.tp-lnav-drawer__group .tp-lnav__list--chips .tp-lnav__link {
+  width: auto;
+  min-height: 44px;
+  padding-block: 0.35rem;
+}
+
+.tp-lnav-drawer__all .tp-lnav__count {
+  margin-inline-start: 0.4rem;
+}
+
+/* ------------------------------------------------------------------
+   Menuepunkte ohne Bild im Bildmodus (menu_style: collection_images)
+
+   Das Theme reserviert im Bildmodus fuer jeden Eintrag einen Bildplatz,
+   damit die Zeile ausgerichtet bleibt: ein leeres ::before mit
+   background-color. Bei gefilterten Ansichten - "Holzdekore",
+   "Fliesen- und Steindekore" - gibt es kein Kategoriebild und kann auch
+   keines geben. Uebrig bleibt eine graue Flaeche, die wie ein Ladefehler
+   aussieht. Diese Eintraege stehen deshalb kompakt als Textlink am oberen
+   Rand ihrer Spalte.
+
+   Zur Spezifitaet: die Theme-Regel liegt bei (0,4,3), und eine gleich
+   spezifische Regel wuerde hier verlieren, weil die Bausteine ihre
+   {% stylesheet %} nach dieser Datei ausliefern. :not(:has(img)) erbt die
+   Spezifitaet seines spezifischsten Arguments - img ist ein Element und
+   zaehlt (0,0,1), nicht (0,1,0). Die doppelte Klasse hebt die Regel sauber
+   darueber, ohne !important.
+
+   Diese Regeln standen bis 2026-09-09 in snippets/tp-megamenu.liquid. Das
+   Snippet war verwaist - aus layout/theme.liquid entfernt, aber nie geloescht -
+   und wurde nirgends gerendert. Deshalb waren die grauen Flaechen zurueck.
+   ------------------------------------------------------------------ */
+.mega-menu__grid.mega-menu__grid
+  .mega-menu__column
+  > div
+  > .mega-menu__link:not(:has(img)):not(:has(.mega-menu__link-image))::before {
+  display: none;
+}
+
+.mega-menu__grid.mega-menu__grid .mega-menu__column > div > .mega-menu__link:not(:has(img)) {
+  align-self: start;
+  padding-block: 0.15rem 0.5rem;
+}
+
+/* Bildkacheln: etwas Luft und weiche Ecken, damit Bild und Beschriftung
+   als eine Einheit lesbar bleiben. */
+.mega-menu__link img {
+  border-radius: 6px;
+}
+
+.mega-menu__link:has(.mega-menu__link-image) .wrap-text {
+  display: inline-block;
+  margin-block-start: 6px;
+}
+
+/* Derselbe leere Bildplatz im mobilen Drawer: dort reserviert
+   .menu-drawer__menu--grid ein ::before im gleichen Seitenverhaeltnis.
+   Auch hier stehen die Eintraege ohne Kategoriebild besser als Textzeile. */
+/* Zur Spezifitaet: die Theme-Regel in snippets/header-drawer.liquid liegt bei
+   (0,4,0) - .menu-drawer__menu--grid, :has(.menu-drawer__link-image),
+   .menu-drawer__menu-item und :not(:has(> .menu-drawer__link-image)) zaehlen
+   je eine Klasse. Die doppelte Klasse allein ergaebe ebenfalls (0,4,0), und
+   bei Gleichstand gewinnt die spaeter ausgelieferte Regel - das waere das
+   Block-Stylesheet, also die Theme-Regel. Der zusaetzliche Vorfahre
+   .menu-drawer__navigation hebt den Override auf (0,5,0) und entscheidet die
+   Frage unabhaengig von der Ladereihenfolge. */
+.menu-drawer__navigation
+  .menu-drawer__menu--grid.menu-drawer__menu--grid
+  .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image))::before {
+  display: none;
+}
+
+.menu-drawer__navigation
+  .menu-drawer__menu--grid.menu-drawer__menu--grid
+  .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image)) {
+  row-gap: 0;
+  padding-block: 0.35rem;
+}
+
+/* ------------------------------------------------------------------
+   Trefferflaechen im mobilen Menue
+
+   Die Menuepunkte lagen je nach Ebene bei 31 bis 42 px. Auf dem Handy wird
+   das Menue ausschliesslich mit dem Daumen bedient, 44 px ist die kleinste
+   Flaeche, die sich zuverlaessig treffen laesst.
+
+   Warum die Regeln hier stehen und nicht in snippets/header-drawer.liquid:
+   Dessen CSS liegt in einem {% stylesheet %}-Block. Shopify unterstuetzt den
+   offiziell nur in Sections und Blocks; der daraus kompilierte
+   compiled_assets/styles.css wurde nach mehreren Pushes nicht neu erzeugt,
+   die Aenderung kam also nie in der Storefront an. Diese Datei ist ein
+   eigenstaendiges Asset, wird auf jeder Seite geladen und aktualisiert sofort.
+   ------------------------------------------------------------------ */
+
+.menu-drawer__menu-item {
+  min-height: 44px;
+}
+
+.menu-drawer__back-button {
+  min-height: 44px;
 }

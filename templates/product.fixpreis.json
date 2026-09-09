@@ -202,6 +202,11 @@
               },
               "blocks": {}
             },
+            "tp_zubehoer_menge": {
+              "type": "tp-zubehoer-menge",
+              "name": "TP Zubehoer Mengenhilfe",
+              "settings": {}
+            },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
               "settings": {
@@ -245,24 +250,6 @@
               },
               "blocks": {}
             },
-            "ai_gen_block_b888d9b_CJbJ8X": {
-              "type": "ai_gen_block_b888d9b",
-              "settings": {
-                "desktop_width_percent": 100,
-                "key_column_width": 35,
-                "cell_padding": 16,
-                "border_radius": 8,
-                "row_border_width": 1,
-                "background_color": "#ffffff",
-                "border_color": "#e6e6e6",
-                "key_text_color": "#000000",
-                "value_text_color": "#000000",
-                "key_font_size": 14,
-                "key_font_weight": "600",
-                "value_font_size": 14
-              },
-              "blocks": {}
-            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
@@ -289,17 +276,40 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_leisten_kurzinfo": {
+              "type": "tp-leisten-kurzinfo",
+              "settings": {}
+            },
+            "tp_leisten_farbwahl": {
+              "type": "tp-leisten-farbwahl",
+              "settings": {}
+            },
+            "tp_leisten_details": {
+              "type": "tp-leisten-details",
+              "settings": {
+                "heading": "Produktdetails",
+                "note": "Montagehinweise finden Sie in der Beschreibung."
+              }
+            },
+            "tp_leisten_vorschau": {
+              "type": "tp-leisten-vorschau",
+              "settings": {}
             }
           },
           "block_order": [
             "group_icgrde",
+            "tp_leisten_kurzinfo",
             "divider_VJhene",
+            "tp_leisten_farbwahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_leisten_vorschau",
             "options_price_calculator_product_calculator_z3CEfy",
+            "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
-            "ai_gen_block_b888d9b_CJbJ8X",
+            "tp_leisten_details",
             "text_aEtTtq"
           ]
         }
@@ -323,7 +333,7 @@
           "type": "text",
           "name": "t:names.header",
           "settings": {
-            "text": "<h3>Empfohlene Artikel</h3>",
+            "text": "<h3>Weitere Bodenleisten</h3>",
             "width": "fit-content",
             "max_width": "normal",
             "alignment": "left",
@@ -363,22 +373,6 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "product_card_gallery_DNizbJ": {
-              "type": "_product-card-gallery",
-              "name": "t:names.product_card_media",
-              "settings": {
-                "image_ratio": "adapt",
-                "border": "none",
-                "border_width": 1,
-                "border_opacity": 100,
-                "border_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
             "product_title_M7MJkb": {
               "type": "tp-card-title",
               "name": "t:names.product_title",
@@ -426,24 +420,50 @@
               },
               "blocks": {}
             },
-            "tp_card_specs_pricegLWgA6": {
-              "type": "tp-card-specs",
-              "name": "TP Card-Merkmale",
-              "settings": {},
-              "blocks": {}
-            },
             "tp_card_actions_pricegLWgA6": {
               "type": "tp-card-actions",
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
+            },
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "name": "t:names.product_card_media",
+              "settings": {
+                "image_ratio": "square",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_leisten_bild": {
+              "type": "tp-card-leisten-bild",
+              "settings": {
+                "motiv_muster": "offen-fern|S60.jpg"
+              }
+            },
+            "tp_card_leisten": {
+              "type": "tp-card-leisten",
+              "settings": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
             }
           },
           "block_order": [
-            "product_card_gallery_DNizbJ",
+            "tp_card_leisten_bild",
+            "card-gallery",
             "product_title_M7MJkb",
             "price_gLWgA6",
-            "tp_card_specs_pricegLWgA6",
+            "tp_card_leisten",
+            "tp_card_color_thumbs",
             "tp_card_actions_pricegLWgA6"
           ]
         }
@@ -470,10 +490,183 @@
         "padding-block-start": 48,
         "padding-block-end": 48
       }
+    },
+    "zubehoer": {
+      "type": "tp-zubehoer-produkte",
+      "blocks": {
+        "static-product-card": {
+          "type": "_product-card",
+          "name": "t:names.product_card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "product-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "rte",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_actions": {
+              "type": "tp-card-actions",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_color_thumbs",
+            "tp_card_specs",
+            "tp_card_actions"
+          ]
+        }
+      },
+      "name": "Passendes Montagezubehoer",
+      "settings": {
+        "mode": "beliebt",
+        "collection": "zubehoer-verlegeband",
+        "heading": "Passendes Montagezubehör",
+        "intro": "Klebebänder für die Montage von Sockelleisten – direkt mitbestellen.",
+        "link_text": "Alles Verlegeband",
+        "anchor": "montagezubehoer",
+        "max_products": 4,
+        "layout_type": "grid",
+        "carousel_on_mobile": true,
+        "columns": 4,
+        "mobile_columns": "2",
+        "mobile_card_size": "44cqw",
+        "columns_gap": 16,
+        "rows_gap": 24,
+        "icons_style": "chevron",
+        "icons_shape": "circle",
+        "section_width": "page-width",
+        "gap": 12,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 40,
+        "padding-block-end": 8
+      }
+    },
+    "beratung": {
+      "type": "tp-leisten-beratung",
+      "name": "TP Leisten-Beratung",
+      "blocks": {
+        "faq_laenge": {
+          "type": "faq",
+          "settings": {
+            "question": "Wie viele Meter Leiste brauche ich?",
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Stangenlänge steht in der Produktbeschreibung.</p>"
+          }
+        },
+        "faq_montage": {
+          "type": "faq",
+          "settings": {
+            "question": "Wie werden die Leisten befestigt?",
+            "answer": "<p>Je nach Modell durch Kleben, Schrauben oder ein Clipsystem. Welche Montage für dieses Modell vorgesehen ist, finden Sie in der Beschreibung. Passendes Klebeband finden Sie oben unter Montagezubehör.</p>"
+          }
+        },
+        "faq_muster": {
+          "type": "faq",
+          "settings": {
+            "question": "Passt die Farbe zu meinem Boden?",
+            "answer": "<p>Die Farbkacheln zeigen das Variantenbild des Herstellers. Bildschirmfarben können abweichen – im Zweifel hilft unsere Beratung per Telefon oder WhatsApp.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "faq_laenge",
+        "faq_montage",
+        "faq_muster"
+      ],
+      "settings": {
+        "heading": "Gut zu wissen",
+        "intro": "",
+        "faq_heading": "Häufige Fragen",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 40,
+        "padding-block-end": 40
+      }
     }
   },
   "order": [
     "main",
-    "product_recommendations_qggXJq"
+    "zubehoer",
+    "product_recommendations_qggXJq",
+    "beratung"
   ]
 }

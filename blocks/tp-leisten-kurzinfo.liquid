@@ -1,0 +1,118 @@
+{% doc %}
+  Kurzinfo direkt unter dem Preis auf Leisten-Produktseiten: Material, Hoehe,
+  Art und Anzahl der Farben/Dekore als ruhige Chip-Zeile. Quelle sind die
+  Produkt-Tags (material:, hoehe:, art:) und die Farboption - nichts wird
+  erfunden, fehlende Werte bleiben weg. Bei Produkten ohne diese Tags rendert
+  der Block nichts.
+
+  Enthaelt zusaetzlich die seitenspezifische Anpassung der Galerie: Das
+  Variantenbild einer Leiste ist ein reines Farbmuster (800x800-Kachel). Horizon
+  stellt es immer an den Anfang der Galerie; damit es nicht wie ein leerer
+  Bildschirm wirkt, wird es als gerahmtes Farbmuster mit Beschriftung gezeigt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ki_product = closest.product | default: product
+  capture tp_ki_raw
+    render 'tp-leisten-merkmale', product: tp_ki_product
+  endcapture
+  assign tp_ki_parts = tp_ki_raw | strip | split: '|'
+  assign tp_ki_material = tp_ki_parts[0] | strip
+  assign tp_ki_hoehe = tp_ki_parts[1] | strip
+  assign tp_ki_farben = tp_ki_parts[2] | strip | plus: 0
+
+  assign tp_ki_art = ''
+  for tag in tp_ki_product.tags
+    assign tag_down = tag | downcase
+    if tag_down contains 'art:'
+      assign tp_ki_art_key = tag_down | remove: 'art:' | strip
+      case tp_ki_art_key
+        when 'kernsockelleisten'
+          assign tp_ki_art = 'Kernsockelleiste'
+        when 'sockelleisten'
+          assign tp_ki_art = 'Sockelleiste'
+        else
+          assign tp_ki_art = tp_ki_art_key | capitalize
+      endcase
+    endif
+  endfor
+
+  assign tp_ki_farb_label = 'Farben'
+  for option in tp_ki_product.options_with_values
+    if option.name == 'Dekor'
+      assign tp_ki_farb_label = 'Dekore'
+    endif
+  endfor
+-%}
+
+{%- if tp_ki_material != blank or tp_ki_hoehe != blank -%}
+  <ul class="tp-leisten-kurzinfo" {{ block.shopify_attributes }} aria-label="Kurzinfo">
+    {%- if tp_ki_material != blank -%}<li>{{ tp_ki_material }}</li>{%- endif -%}
+    {%- if tp_ki_hoehe != blank -%}<li>{{ tp_ki_hoehe }} hoch</li>{%- endif -%}
+    {%- if tp_ki_art != blank -%}<li>{{ tp_ki_art }}</li>{%- endif -%}
+    {%- if tp_ki_farben > 1 -%}<li>{{ tp_ki_farben }} {{ tp_ki_farb_label }}</li>{%- endif -%}
+  </ul>
+
+  <style>
+    /* Farbmuster-Kachel in der Galerie als gerahmtes Muster statt Vollflaeche */
+    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media {
+      background: #f5f5f4;
+    }
+    slideshow-slide.product-media-container:has(img[src*='800x800']) .product-media__image {
+      object-fit: contain;
+      padding: 18%;
+    }
+    slideshow-slide.product-media-container:has(img[src*='800x800'])::after {
+      content: 'Farbmuster der gewählten Farbe';
+      position: absolute;
+      inset-inline: 0;
+      top: 14px;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: rgb(var(--color-foreground-rgb) / 0.7);
+      pointer-events: none;
+    }
+    .slideshow-controls__thumbnails-container img[src*='800x800'] {
+      padding: 6px;
+      background: #f5f5f4;
+      object-fit: contain;
+    }
+  </style>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-leisten-kurzinfo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-leisten-kurzinfo li {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 10px;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.14);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: rgb(var(--color-foreground-rgb) / 0.8);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Kurzinfo",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Leisten-Kurzinfo"
+    }
+  ]
+}
+{% endschema %}

@@ -7,14 +7,13 @@
 {%- liquid
   assign tp_sl_id = block.id | replace: '_', '' | downcase
   assign tp_sl_handle = product.handle | url_encode
-  # Musterkonfigurator (/pages/muster) braucht die Option Farbe - er listet die
-  # Farbwerte als bestellbare Muster. Produkte ohne Farboption (Klick-/Klebevinyl
-  # als Einzeldekor) laufen weiter ueber das Kontaktformular.
-  if product.options contains 'Farbe'
-    assign tp_sl_sample_url = '/pages/muster?produkt=' | append: tp_sl_handle
-  else
-    assign tp_sl_sample_url = '/pages/kontakt?thema=muster&produkt=' | append: tp_sl_handle
-  endif
+  # Ziel des Muster-Links entscheidet snippets/tp-musteroption: der
+  # Konfigurator, wenn das Produkt eine Farb- oder Dekoroption hat, sonst das
+  # Kontaktformular (z. B. Klick-/Klebevinyl als Einzeldekor).
+  capture tp_sl_sample_url
+    render 'tp-musteroption', product: product
+  endcapture
+  assign tp_sl_sample_url = tp_sl_sample_url | strip
   assign tp_sl_delivery_time = block.settings.delivery_time | strip
   assign tp_sl_shipping_page = pages['versand-lieferung']
 -%}

@@ -1,236 +1,42 @@
-/*
- * -------------------------------------------------------
- * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
- * -------------------------------------------------------
- */
-
 {
   "sections": {
-    "hero_bodenleisten": {
-      "type": "section",
-      "name": "Bodenleisten Hero Banner",
-      "blocks": {
-        "hero_content": {
-          "type": "group",
-          "name": "Hero Content",
-          "settings": {
-            "content_direction": "column",
-            "vertical_on_mobile": true,
-            "horizontal_alignment": "center",
-            "vertical_alignment": "center",
-            "align_baseline": false,
-            "horizontal_alignment_flex_direction_column": "center",
-            "vertical_alignment_flex_direction_column": "center",
-            "gap": 16,
-            "width": "fill",
-            "custom_width": 100,
-            "width_mobile": "fill",
-            "custom_width_mobile": 100,
-            "height": "fit",
-            "custom_height": 100,
-            "inherit_color_scheme": false,
-            "color_scheme": "scheme-5",
-            "background_media": "none",
-            "video_position": "cover",
-            "background_image_position": "cover",
-            "border": "none",
-            "border_width": 1,
-            "border_opacity": 100,
-            "border_radius": 0,
-            "toggle_overlay": true,
-            "overlay_color": "#00000052",
-            "overlay_style": "solid",
-            "gradient_direction": "to top",
-            "link": "",
-            "open_in_new_tab": false,
-            "placeholder": "",
-            "padding-block-start": 80,
-            "padding-block-end": 80,
-            "padding-inline-start": 16,
-            "padding-inline-end": 16
-          },
-          "blocks": {
-            "hero_title": {
-              "type": "text",
-              "name": "Titel",
-              "settings": {
-                "text": "<h1>{{ closest.collection.title }}</h1>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "h1",
-                "font": "var(--font-primary--family)",
-                "font_size": "",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_description": {
-              "type": "text",
-              "name": "Beschreibung",
-              "settings": {
-                "text": "<p>Der perfekte Abschluss für Ihren neuen Boden – in Echtholz, MDF und Kunststoff, passend zu jedem Wohnstil</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "1.125rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#E8E8E8",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 0,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            },
-            "hero_materials": {
-              "type": "text",
-              "name": "Materialien",
-              "settings": {
-                "text": "<p>✓ Kostenlose Musterbestellung &nbsp;·&nbsp; ✓ Schnelle Lieferung &nbsp;·&nbsp; ✓ Passend zu allen Bodenbelägen</p>",
-                "width": "fit-content",
-                "max_width": "normal",
-                "alignment": "center",
-                "type_preset": "rte",
-                "font": "var(--font-body--family)",
-                "font_size": "0.9375rem",
-                "line_height": "normal",
-                "letter_spacing": "normal",
-                "case": "none",
-                "wrap": "pretty",
-                "color": "#FFFFFF",
-                "background": false,
-                "background_color": "#00000026",
-                "corner_radius": 0,
-                "padding-block-start": 8,
-                "padding-block-end": 0,
-                "padding-inline-start": 0,
-                "padding-inline-end": 0
-              },
-              "blocks": {}
-            }
-          },
-          "block_order": [
-            "hero_title",
-            "hero_description",
-            "hero_materials"
-          ]
-        }
-      },
-      "block_order": [
-        "hero_content"
-      ],
+    "hero": {
+      "type": "tp-leisten-hero",
+      "name": "TP Leisten-Hero",
       "settings": {
-        "content_direction": "row",
-        "vertical_on_mobile": true,
-        "horizontal_alignment": "center",
-        "vertical_alignment": "center",
-        "align_baseline": false,
-        "horizontal_alignment_flex_direction_column": "center",
-        "vertical_alignment_flex_direction_column": "center",
-        "gap": 12,
-        "section_width": "full",
-        "section_height": "",
-        "section_height_custom": 50,
-        "color_scheme": "scheme-1",
-        "background_media": "none",
-        "video_position": "cover",
-        "background_image_position": "cover",
-        "border": "none",
-        "border_width": 1,
-        "border_opacity": 100,
-        "border_radius": 0,
-        "toggle_overlay": false,
-        "overlay_color": "#00000026",
-        "overlay_style": "solid",
-        "gradient_direction": "to top",
-        "padding-block-start": 0,
-        "padding-block-end": 0
+        "show_breadcrumb": true,
+        "breadcrumb_parent": "",
+        "eyebrow": "Sockelleisten für Teppich, Vinyl und Linoleum",
+        "heading": "",
+        "text": "Der saubere Abschluss zwischen Boden und Wand: Sockelleisten aus Kunststoff, MDF mit Holzdekor und Hartschaum in Höhen von 40 bis 100 mm.",
+        "fact_1": "Kunststoff, MDF-Holzdekor und Hartschaum",
+        "fact_2": "Höhen von 40 bis 100 mm",
+        "fact_3": "Bis zu 62 Farben und Dekore je Modell",
+        "cta_label": "Bodenleisten entdecken",
+        "cta_link": "#bodenleisten-produkte",
+        "cta_2_label": "",
+        "cta_2_link": "",
+        "image_product": "skarven-sockelleiste-60mm",
+        "image_alt": "Sockelleiste im Raum: Abschluss zwischen Boden und Wand",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 32,
+        "padding-block-end": 40
       }
     },
-    "section": {
-      "type": "section",
-      "blocks": {
-        "text_twGGkJ": {
-          "type": "text",
-          "name": "Kategorietext",
-          "settings": {
-            "text": "{{ closest.collection.description }}",
-            "width": "fit-content",
-            "max_width": "normal",
-            "alignment": "left",
-            "type_preset": "rte",
-            "font": "var(--font-primary--family)",
-            "font_size": "",
-            "line_height": "normal",
-            "letter_spacing": "normal",
-            "case": "none",
-            "wrap": "pretty",
-            "color": "",
-            "background": false,
-            "background_color": "#00000026",
-            "corner_radius": 0,
-            "padding-block-start": 0,
-            "padding-block-end": 0,
-            "padding-inline-start": 0,
-            "padding-inline-end": 0
-          },
-          "blocks": {}
-        }
-      },
-      "block_order": [
-        "text_twGGkJ"
-      ],
-      "name": "Collection Info",
+    "einstiege": {
+      "type": "tp-leisten-einstiege",
+      "name": "TP Leisten-Einstiege",
       "settings": {
-        "content_direction": "column",
-        "vertical_on_mobile": true,
-        "horizontal_alignment": "flex-start",
-        "vertical_alignment": "center",
-        "align_baseline": false,
-        "horizontal_alignment_flex_direction_column": "flex-start",
-        "vertical_alignment_flex_direction_column": "center",
-        "gap": 12,
-        "section_width": "page-width",
-        "section_height": "",
-        "section_height_custom": 50,
+        "heading": "Schnell zur passenden Leiste",
+        "intro": "Wählen Sie nach Material oder Höhe – die Auswahl unten passt sich sofort an.",
+        "show_material": true,
+        "show_hoehe": true,
+        "text_kunststoff": "Mit flexibler Weichlippe, in vielen Höhen",
+        "text_mdf": "Holzoptik mit Clipsystem",
+        "text_hartschaum": "Leicht zuzuschneiden, Unifarben",
         "color_scheme": "scheme-1",
-        "background_media": "none",
-        "video_position": "cover",
-        "background_image_position": "cover",
-        "border": "none",
-        "border_width": 1,
-        "border_opacity": 100,
-        "border_radius": 0,
-        "toggle_overlay": false,
-        "overlay_color": "#00000026",
-        "overlay_style": "solid",
-        "gradient_direction": "to top",
-        "padding-block-start": 48,
-        "padding-block-end": 48
+        "padding-block-start": 32,
+        "padding-block-end": 8
       }
     },
     "main": {
@@ -241,11 +47,11 @@
           "static": true,
           "settings": {
             "enable_filtering": true,
-            "filter_style": "vertical",
+            "filter_style": "horizontal",
             "filter_width": "centered",
             "text_label_case": "default",
             "show_swatch_label": false,
-            "show_filter_label": false,
+            "show_filter_label": true,
             "enable_sorting": true,
             "enable_grid_density": false,
             "inherit_color_scheme": true,
@@ -276,10 +82,16 @@
             "padding-inline-end": 0
           },
           "blocks": {
+            "tp_card_leisten_bild": {
+              "type": "tp-card-leisten-bild",
+              "settings": {
+                "motiv_muster": "offen-fern|S60.jpg"
+              }
+            },
             "card-gallery": {
               "type": "_product-card-gallery",
               "settings": {
-                "image_ratio": "adapt",
+                "image_ratio": "square",
                 "border": "none",
                 "border_width": 1,
                 "border_opacity": 100,
@@ -291,7 +103,7 @@
               },
               "blocks": {}
             },
-            "product_title_4nY4eT": {
+            "product_title": {
               "type": "product-title",
               "name": "t:names.product_title",
               "settings": {
@@ -309,14 +121,14 @@
                 "background": false,
                 "background_color": "#00000026",
                 "corner_radius": 0,
-                "padding-block-start": 4,
+                "padding-block-start": 6,
                 "padding-block-end": 0,
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
               "blocks": {}
             },
-            "price_EzJzMm": {
+            "price": {
               "type": "price",
               "settings": {
                 "show_sale_price_first": true,
@@ -338,60 +150,125 @@
               },
               "blocks": {}
             },
-            "tp_card_color_thumbs": {
-              "type": "tp-card-color-thumbs",
+            "tp_card_leisten": {
+              "type": "tp-card-leisten",
               "settings": {}
             },
-            "tp_card_specs": {
-              "type": "tp-card-specs",
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
               "settings": {}
             },
             "tp_card_actions": {
               "type": "tp-card-actions",
               "settings": {}
-            },
-            "tp_card_dimensions": {
-              "type": "tp-card-dimensions",
-              "settings": {}
-            },
-            "tp_card_price_sqm": {
-              "type": "tp-card-price-sqm",
-              "settings": {}
             }
           },
           "block_order": [
+            "tp_card_leisten_bild",
             "card-gallery",
-            "product_title_4nY4eT",
-            "price_EzJzMm",
+            "product_title",
+            "price",
+            "tp_card_leisten",
             "tp_card_color_thumbs",
-            "tp_card_specs",
-            "tp_card_actions",
-            "tp_card_dimensions",
-            "tp_card_price_sqm"
+            "tp_card_actions"
           ]
         }
       },
       "settings": {
         "layout_type": "grid",
-        "product_card_size": "large",
-        "mobile_product_card_size": "large",
-        "enable_infinite_scroll": true,
+        "product_card_size": "medium",
+        "mobile_product_card_size": "small",
+        "enable_infinite_scroll": false,
         "products_per_page": 24,
         "product_grid_width": "centered",
-        "full_width_on_mobile": true,
-        "columns_gap_horizontal": 16,
-        "columns_gap_vertical": 24,
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 20,
+        "columns_gap_vertical": 28,
         "padding-inline-start": 0,
         "padding-inline-end": 0,
         "color_scheme": "scheme-1",
-        "padding-block-start": 0,
-        "padding-block-end": 32
+        "padding-block-start": 8,
+        "padding-block-end": 40
+      }
+    },
+    "beratung": {
+      "type": "tp-leisten-beratung",
+      "name": "TP Leisten-Beratung",
+      "blocks": {
+        "tipp_material": {
+          "type": "tipp",
+          "settings": {
+            "label": "Material",
+            "title": "Kunststoff, MDF oder Hartschaum?",
+            "text": "Kunststoffleisten haben eine flexible Weichlippe, die Unebenheiten ausgleicht. MDF-Leisten mit Holzdekor bringen Holzoptik und Clipsystem mit. Hartschaum ist leicht zuzuschneiden und in Unifarben erhältlich.",
+            "link_label": "",
+            "link": ""
+          }
+        },
+        "tipp_hoehe": {
+          "type": "tipp",
+          "settings": {
+            "label": "Höhe",
+            "title": "40 bis 100 mm",
+            "text": "Niedrige Leisten wirken zurückhaltend, hohe Leisten betonen den Raumabschluss. Achten Sie darauf, dass die Leiste den Dehnungsabstand zur Wand abdeckt.",
+            "link_label": "",
+            "link": ""
+          }
+        },
+        "tipp_farbe": {
+          "type": "tipp",
+          "settings": {
+            "label": "Farbe",
+            "title": "Passend zum Boden oder zur Wand",
+            "text": "Weiß und Grau nehmen sich zurück und passen zu hellen Wänden. Holzdekore lassen sich auf den Bodenbelag abstimmen. Die verfügbaren Farben sehen Sie direkt auf der Karte.",
+            "link_label": "",
+            "link": ""
+          }
+        },
+        "faq_laenge": {
+          "type": "faq",
+          "settings": {
+            "question": "Wie viele Meter Leiste brauche ich?",
+            "answer": "<p>Messen Sie alle Wandlängen des Raums und ziehen Sie Türen und Durchgänge ab. Rechnen Sie einen Zuschlag von etwa 10 % für Zuschnitt und Ecken ein. Die Stangenlänge steht auf der jeweiligen Produktseite.</p>"
+          }
+        },
+        "faq_montage": {
+          "type": "faq",
+          "settings": {
+            "question": "Wie werden die Leisten befestigt?",
+            "answer": "<p>Je nach Modell durch Kleben, Schrauben oder ein Clipsystem. Welche Montage für ein Modell vorgesehen ist, finden Sie in den Produktdetails.</p>"
+          }
+        },
+        "faq_hoehe": {
+          "type": "faq",
+          "settings": {
+            "question": "Welche Höhe ist die richtige?",
+            "answer": "<p>Das ist vor allem eine Gestaltungsfrage. Wichtig ist, dass die Leiste die Fuge zwischen Boden und Wand sicher abdeckt. Im Sortiment finden Sie Höhen von 40 bis 100 mm.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "tipp_material",
+        "tipp_hoehe",
+        "tipp_farbe",
+        "faq_laenge",
+        "faq_montage",
+        "faq_hoehe"
+      ],
+      "settings": {
+        "heading": "Welche Bodenleiste passt zu meinem Boden?",
+        "intro": "Drei Fragen genügen: Welches Material soll es sein, wie hoch darf die Leiste sein und wie viele Meter brauchen Sie? Die genauen Angaben zu Maßen, Länge und Montage finden Sie auf jeder Produktseite.",
+        "faq_heading": "Häufige Fragen",
+        "color_scheme": "scheme-2",
+        "padding-block-start": 48,
+        "padding-block-end": 48
       }
     }
   },
   "order": [
-    "hero_bodenleisten",
-    "section",
-    "main"
+    "hero",
+    "einstiege",
+    "main",
+    "beratung"
   ]
 }

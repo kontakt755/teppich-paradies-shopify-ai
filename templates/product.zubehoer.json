@@ -193,9 +193,15 @@
               "settings": {
                 "label": "Farbe",
                 "groesse": "normal",
-                "show_nummer": false
+                "show_nummer": false,
+                "hinweis_ohne_variantenbild": true
               },
               "blocks": {}
+            },
+            "tp_zubehoer_menge": {
+              "type": "tp-zubehoer-menge",
+              "name": "TP Zubehoer Mengenhilfe",
+              "settings": {}
             },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
@@ -265,13 +271,19 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "tp_groessen_auswahl": {
+              "type": "tp-groessen-auswahl",
+              "settings": {}
             }
           },
           "block_order": [
             "group_icgrde",
             "divider_VJhene",
+            "tp_groessen_auswahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "text_aEtTtq"
@@ -385,6 +397,10 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
+            },
+            "tp_card_groessen": {
+              "type": "tp-card-groessen",
+              "settings": {}
             }
           },
           "block_order": [
@@ -392,7 +408,8 @@
             "product_title_M7MJkb",
             "price_gLWgA6",
             "tp_card_specs_pricegLWgA6",
-            "tp_card_actions_pricegLWgA6"
+            "tp_card_actions_pricegLWgA6",
+            "tp_card_groessen"
           ]
         }
       },
@@ -541,6 +558,10 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
+            },
+            "tp_card_groessen": {
+              "type": "tp-card-groessen",
+              "settings": {}
             }
           },
           "block_order": [
@@ -548,7 +569,8 @@
             "product_title_M7MJkb",
             "price_gLWgA6",
             "tp_card_specs_pricegLWgA6",
-            "tp_card_actions_pricegLWgA6"
+            "tp_card_actions_pricegLWgA6",
+            "tp_card_groessen"
           ]
         }
       },

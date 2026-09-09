@@ -2,11 +2,36 @@
   var SAMPLE_HANDLE = 'kostenloses-muster';
   var MAX_SAMPLES = 3;
 
-  function colorPosition(product) {
-    var option = (product.options || []).find(function (entry) {
-      return String(entry.name || '').trim().toLowerCase() === 'farbe';
+  // Der Konfigurator listet die Werte EINER Produktoption als Muster. Welche
+  // Option das ist, heisst je nach Sortiment anders: Teppich- und Vinylboden
+  // fuehren "Farbe", folierte Sockelleisten "Dekor". Dieselbe Liste steht in
+  // snippets/tp-musteroption.liquid, das entscheidet, wohin der Muster-Link
+  // zeigt - beide muessen gleich bleiben.
+  var OPTION_NAMES = ['farbe', 'dekor', 'color'];
+
+  function findOption(product) {
+    return (product.options || []).find(function (entry) {
+      return OPTION_NAMES.indexOf(String(entry.name || '').trim().toLowerCase()) !== -1;
     });
+  }
+
+  function colorPosition(product) {
+    var option = findOption(product);
     return option ? Number(option.position) : 0;
+  }
+
+  // Sichtbare Bezeichnung fuer Oberflaeche und Warenkorbzeile: der echte
+  // Optionsname des Produkts, nicht ein fest verdrahtetes "Farbe".
+  function getOptionName(product) {
+    var option = findOption(product);
+    var name = option ? String(option.name || '').trim() : '';
+    return name || 'Farbe';
+  }
+
+  function getOptionTerm(product, form) {
+    var name = getOptionName(product).toLowerCase();
+    if (name === 'dekor') return form === 'plural' ? 'Dekore' : 'Dekor';
+    return form === 'plural' ? 'Farben' : 'Farbe';
   }
 
   // Technische Varianten des Preisrechners. Sie tragen einen generierten
@@ -82,20 +107,24 @@
   }
 
   function buildCartItems(args) {
+    var optionName = args.optionName || getOptionName(args.product);
     return args.colors.map(function (color) {
+      var properties = {
+        Produkt: args.product.title,
+        _Muster_ID: sampleKey(args.product.handle, color.value),
+        _Quellprodukt: args.product.handle,
+        _Quellprodukt_ID: String(args.product.id),
+        _Quellvariante_ID: String(color.variantId),
+        _Bild: color.image || '',
+        _Produktlink: args.origin + '/products/' + args.product.handle,
+      };
+      // Der Optionsname wird zur Warenkorbzeile: "Dekor: Sand Hell" statt
+      // "Farbe: Sand Hell" bei folierten Leisten.
+      properties[optionName] = color.value;
       return {
         id: Number(args.sampleVariantId),
         quantity: 1,
-        properties: {
-          Produkt: args.product.title,
-          Farbe: color.value,
-          _Muster_ID: sampleKey(args.product.handle, color.value),
-          _Quellprodukt: args.product.handle,
-          _Quellprodukt_ID: String(args.product.id),
-          _Quellvariante_ID: String(color.variantId),
-          _Bild: color.image || '',
-          _Produktlink: args.origin + '/products/' + args.product.handle,
-        },
+        properties: properties,
       };
     });
   }
@@ -104,6 +133,8 @@
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
     getUniqueColors: getUniqueColors,
+    getOptionName: getOptionName,
+    getOptionTerm: getOptionTerm,
     sampleKey: sampleKey,
     getSampleState: getSampleState,
     getSelectionStatus: getSelectionStatus,
