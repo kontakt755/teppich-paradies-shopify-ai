@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T21:29:39.063Z",
+  "generated_at": "2026-09-09T21:34:38.989Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 57,
+  "count": 58,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T21:29:39.063Z",
+    "fetchedAt": "2026-09-09T21:34:38.989Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 172,
+      "title": "Alt-PRs bereinigt: Konflikte aufgeloest, ueberholte geschlossen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/172",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T21:34:26Z",
+      "updated_at": "2026-09-09T21:34:27Z",
+      "closed_at": null
+    },
     {
       "number": 170,
       "title": "Google-Bewertung: Backend betreiben oder Block entfernen",
@@ -604,7 +628,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/119",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:kategorie"
@@ -613,13 +637,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T08:58:54Z",
-      "updated_at": "2026-09-09T21:29:23Z",
+      "updated_at": "2026-09-09T21:29:39Z",
       "closed_at": "2026-09-09T21:29:23Z"
     },
     {
