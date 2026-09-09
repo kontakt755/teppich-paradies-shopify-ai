@@ -78,11 +78,21 @@ nachgezogen, statt ein Theme mit einem anderen Menü-Handle zu veröffentlichen.
 Das Live-Theme referenziert unverändert `"menu": "main-menu"` in
 `sections/header-group.json` – nachgeprüft am Theme mit `role: MAIN`, nicht am Repo.
 
-Das Kopie-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör",
-`gid://shopify/Menu/346703298894`) existiert dadurch ohne Aufgabe weiter. Es ist
-kein Fallback: es wird von keinem Theme referenziert und läuft bei jeder Änderung
-an `main-menu` weiter auseinander. Vor dem Löschen prüfen, ob wirklich kein Theme
-darauf zeigt; Menüs sind storeweit.
+Das Kopie-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör") ist am
+2026-09-09 nach Freigabe **gelöscht** worden. Es war kein Fallback: kein Theme
+referenzierte es, und es führte nur 7 Punkte ohne Untermenüs, während `main-menu`
+40 Items hat – also kein Ersatzstand, sondern ein veralteter Teilstand, der bei
+jeder Änderung an `main-menu` weiter auseinandergelaufen wäre.
+
+Der ausgelesene Baum liegt vor dem Löschen gesichert in
+`domains/shopify/menu-main-menu-zubehoer-geloescht-2026-09-09.json`; zum
+Wiederherstellen dient `menuCreate` (die MenuItem-IDs darin werden dabei neu
+vergeben). Es gibt damit genau **ein** Hauptmenü, `main-menu` – wer hier ein
+zweites anlegt, baut den Drift neu auf.
+
+Vor dem Löschen eines Menüs: Menüs sind storeweit und wirken sofort. Prüfen heißt
+alle Themes gegen `sections/header-group.json` **und** `config/settings_data.json`
+abgleichen, nicht nur das Live-Theme, und zusätzlich das Repository.
 
 Das Mega-Menü steht auf `menu_style: collection_images` und zeigt Kollektionsbilder
 erst, wenn die Zubehör-Kollektionen Bilder haben. Bis dahin erscheint der Punkt als
