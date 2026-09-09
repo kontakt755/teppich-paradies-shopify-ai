@@ -271,16 +271,11 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
-            },
-            "tp_groessen_auswahl": {
-              "type": "tp-groessen-auswahl",
-              "settings": {}
             }
           },
           "block_order": [
             "group_icgrde",
             "divider_VJhene",
-            "tp_groessen_auswahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
             "tp_zubehoer_menge",
@@ -397,10 +392,6 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
-            },
-            "tp_card_groessen": {
-              "type": "tp-card-groessen",
-              "settings": {}
             }
           },
           "block_order": [
@@ -408,8 +399,7 @@
             "product_title_M7MJkb",
             "price_gLWgA6",
             "tp_card_specs_pricegLWgA6",
-            "tp_card_actions_pricegLWgA6",
-            "tp_card_groessen"
+            "tp_card_actions_pricegLWgA6"
           ]
         }
       },
@@ -558,10 +548,6 @@
               "name": "TP Card-Aktionen",
               "settings": {},
               "blocks": {}
-            },
-            "tp_card_groessen": {
-              "type": "tp-card-groessen",
-              "settings": {}
             }
           },
           "block_order": [
@@ -569,8 +555,7 @@
             "product_title_M7MJkb",
             "price_gLWgA6",
             "tp_card_specs_pricegLWgA6",
-            "tp_card_actions_pricegLWgA6",
-            "tp_card_groessen"
+            "tp_card_actions_pricegLWgA6"
           ]
         }
       },
