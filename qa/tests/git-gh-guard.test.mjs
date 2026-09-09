@@ -89,3 +89,32 @@ test('eine Umleitung macht die uebrigen Grenzen nicht weicher', () => {
     `git checkout -- ${BOT}X 2>/dev/null`,
   ]) assert.equal(blockiert(cmd), true, cmd);
 });
+
+// --- git-Aufrufe hinter einem Vorspann ---------------------------------
+//
+// Eine Regel mit ^git greift nicht mehr, sobald der Aufruf nicht am
+// Segmentanfang steht. Am 2026-09-09 war "git update-ref -d" blockiert,
+// dieselbe Loeschung hinter "xargs" lief durch. Geprueft wird deshalb jede
+// Stelle im Segment, an der ein git/gh-Aufruf beginnt - keine Liste
+// erlaubter Vorspaenne, die bliebe immer unvollstaendig.
+
+for (const cmd of [
+  'xargs -n1 git update-ref -d',
+  "git for-each-ref --format='%(refname)' refs/x/ | xargs -n1 git update-ref -d",
+  'sudo git reset --hard',
+  'env FOO=1 git push --force',
+  'find . -exec git clean -fd {} +',
+  'nohup git stash clear',
+  'sh -c "git stash drop"',
+  `xargs git checkout -- .`,
+]) test(`blockiert hinter Vorspann: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+test('harmlose Befehle bleiben auch hinter einem Vorspann erlaubt', () => {
+  for (const cmd of ['xargs -n1 git status', 'sudo git log --oneline', 'env FOO=1 git diff']) {
+    assert.equal(blockiert(cmd), false, cmd);
+  }
+});
+
+test('die Ausnahme gilt auch hinter einem Vorspann', () => {
+  assert.equal(blockiert(`xargs -n1 git checkout -- ${BOT}`), false);
+});
