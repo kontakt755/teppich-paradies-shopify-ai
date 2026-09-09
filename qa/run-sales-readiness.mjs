@@ -232,7 +232,45 @@ async function sampleFlow({ page, context, result, setPhase }) {
   await page.goto(targetUrl(`/products/${sourceHandle}`, baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('sample-configurator');
   await page.getByRole('link', { name: /Kostenloses Muster anfragen/i }).click({ timeout: 10_000 });
-  await page.waitForURL(url => url.pathname === '/pages/kontakt' && url.searchParams.get('thema') === 'muster' && url.searchParams.get('produkt') === sourceHandle, { timeout: 15_000 });
+  // Seit c1c5185 (snippets/tp-musteroption) entscheidet das Produkt ueber das
+  // Ziel: mit Farb- oder Dekoroption der Musterkonfigurator /pages/muster,
+  // sonst das Kontaktformular im Musterbestellungs-Modus. Piumera hat eine
+  // Farboption und landet damit im Konfigurator. Beide Wege werden geprueft;
+  // im Konfigurator wird nur ausgewaehlt, nicht in den Warenkorb gelegt.
+  await page.waitForURL(url => url.searchParams.get('produkt') === sourceHandle
+    && (url.pathname === '/pages/muster' || (url.pathname === '/pages/kontakt' && url.searchParams.get('thema') === 'muster')), { timeout: 15_000 });
+  if (new URL(page.url()).pathname === '/pages/muster') return sampleConfiguratorChecks({ page, result });
+  return sampleContactFormChecks({ page, result, sourceHandle });
+}
+
+async function sampleConfiguratorChecks({ page, result }) {
+  const root = page.locator('[data-tp-sample-checkout]');
+  await root.waitFor({ state: 'visible', timeout: 15_000 });
+  // Farben kommen per fetch aus /products/<handle>.js; erst danach steht das Raster.
+  await page.waitForFunction(() => document.querySelectorAll('[data-sample-color]').length > 0, null, { timeout: 15_000 });
+  await page.waitForFunction(() => document.querySelector('[data-sample-product-name]')?.textContent?.trim(), null, { timeout: 10_000 });
+  const productName = (await root.locator('[data-sample-product-name]').textContent())?.trim();
+  const colorCount = await root.locator('[data-sample-color]').count();
+  const submit = root.locator('[data-sample-submit]');
+  const submitDisabledBefore = await submit.isDisabled();
+  const firstCheckbox = root.locator('[data-sample-color] input[type="checkbox"]:not([disabled])').first();
+  await firstCheckbox.check({ timeout: 10_000 });
+  await page.waitForFunction(() => !document.querySelector('[data-sample-submit]')?.disabled, null, { timeout: 10_000 });
+  const countText = (await root.locator('[data-sample-count]').textContent())?.trim();
+  const errorText = (await root.locator('[data-sample-error]').textContent())?.trim();
+  result.health = await pageHealth(page);
+  result.sample = { mode: 'konfigurator', productName, colorCount, submitDisabledBefore, countText, errorText };
+  return /Piumera Teppichboden/.test(productName || '')
+    && colorCount > 0
+    && submitDisabledBefore
+    && /1 von/.test(countText || '')
+    && !errorText
+    && !result.health.overflow
+    && result.health.brokenImages.length === 0;
+}
+
+async function sampleContactFormChecks({ page, result, sourceHandle }) {
+  void sourceHandle;
   const root = page.locator('[data-tp-sample-request]');
   await root.waitFor({ state: 'visible', timeout: 15_000 });
   await page.waitForFunction(() => document.querySelector('[data-tp-sample-request]')?.getAttribute('data-mode') === 'sample', null, { timeout: 10_000 });
@@ -257,7 +295,7 @@ async function sampleFlow({ page, context, result, setPhase }) {
   const submit = root.locator('button[type="submit"]');
   await submit.waitFor({ state: 'visible', timeout: 10_000 });
   const submitDisabled = await submit.isDisabled();
-  result.sample = { productName, introText, messageRequired, addressRequired, submitDisabled };
+  result.sample = { mode: 'kontaktformular', productName, introText, messageRequired, addressRequired, submitDisabled };
   return /Piumera Teppichboden/.test(productName || '')
     && !messageRequired
     && addressRequired
