@@ -1,0 +1,103 @@
+{% comment %}
+  Zwei gleichwertige Einstiege: Online kaufen gegenueber regionalem Liefer- und
+  Verlegeservice. Als Snippet und nicht als eigene Section, weil die Boxen
+  unmittelbar nach dem Hero stehen muessen - und Hero, Vertrauensleiste und
+  Kategorienraster liegen in sections/Startseite.liquid in einer einzigen
+  Section. Eine eigene Section liesse sich im Template nur davor oder dahinter
+  einhaengen; dahinter landeten die Boxen mobil rund 3200 px unter dem
+  Seitenanfang, also weit unter fuenf Kategoriekarten.
+
+  Warum es die Boxen gibt: TeppichParadies ist Einzelhandel MIT Dienstleistung.
+  LaminatDEPOT (26 Filialen) und Kibek (Filialkette) haben ebenfalls einen
+  Verlegeservice - keiner der vier verglichenen Shops stellt ihn aber auf der
+  Startseite gleichwertig neben den Onlinekauf. Genau das ist der Unterschied.
+  Siehe docs/analyse/wettbewerb/kaufpfad-2026-09-09.md, Abschnitt 3.
+
+  Das CSS liegt im {% stylesheet %} von sections/Startseite.liquid, weil ein
+  Snippet keines mitbringen kann und ein <style> je Aufruf die Regeln
+  dupliziert haette.
+
+  Aufruf:
+    {% render 'tp-zwei-wege',
+       gewichtung: section.settings.zw_gewichtung,
+       mobil_zuerst: section.settings.zw_mobil_zuerst,
+       ... %}
+{% endcomment %}
+
+{%- liquid
+  assign tp_zw_online_span = 1
+  assign tp_zw_service_span = 1
+  if gewichtung == 'online_groesser'
+    assign tp_zw_online_span = 3
+    assign tp_zw_service_span = 2
+  elsif gewichtung == 'service_groesser'
+    assign tp_zw_online_span = 2
+    assign tp_zw_service_span = 3
+  endif
+  assign tp_zw_mobil = mobil_zuerst | default: 'online'
+-%}
+<div class="tp-zw color-{{ color_scheme | default: 'scheme-1' }}">
+  <div
+    class="tp-zw__grid tp-zw__grid--mobile-{{ tp_zw_mobil }}"
+    style="--tp-zw-online: {{ tp_zw_online_span }}; --tp-zw-service: {{ tp_zw_service_span }};"
+  >
+
+    <div class="tp-zw__box tp-zw__box--online">
+      <p class="tp-zw__eyebrow">{{ online_eyebrow }}</p>
+      <h2 class="tp-zw__title">{{ online_titel }}</h2>
+      <p class="tp-zw__text">{{ online_text }}</p>
+
+      {%- if online_punkte != blank -%}
+        <ul class="tp-zw__list">
+          {%- assign tp_zw_online_items = online_punkte | split: ',' -%}
+          {%- for tp_zw_item in tp_zw_online_items -%}
+            {%- assign tp_zw_label = tp_zw_item | strip -%}
+            {%- if tp_zw_label != blank -%}
+              <li>{{ tp_zw_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <a href="{{ online_link | default: '/collections/all' }}" class="tp-zw__cta tp-zw__cta--primary">
+        {{ online_cta }}
+      </a>
+    </div>
+
+    <div class="tp-zw__box tp-zw__box--service">
+      <p class="tp-zw__eyebrow">{{ service_eyebrow }}</p>
+      <h2 class="tp-zw__title">{{ service_titel }}</h2>
+      <p class="tp-zw__text">{{ service_text }}</p>
+
+      {%- if service_punkte != blank -%}
+        <ul class="tp-zw__list">
+          {%- assign tp_zw_service_items = service_punkte | split: ',' -%}
+          {%- for tp_zw_item in tp_zw_service_items -%}
+            {%- assign tp_zw_label = tp_zw_item | strip -%}
+            {%- if tp_zw_label != blank -%}
+              <li>{{ tp_zw_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <a href="{{ service_link | default: '/pages/liefer-verlegeservice' }}" class="tp-zw__cta tp-zw__cta--primary">
+        {{ service_cta }}
+      </a>
+
+      {%- comment -%}
+        Die Telefonnummer steht nur hier, weil der Regionalkunde haeufig anruft
+        statt zu klicken. Sie kommt aus den Einstellungen, damit sie nicht an
+        zwei Stellen im Code gepflegt werden muss.
+      {%- endcomment -%}
+      {%- if service_telefon != blank -%}
+        <p class="tp-zw__phone">
+          <a href="tel:{{ service_telefon | remove: ' ' | remove: '/' }}">
+            {{ service_telefon_label | default: service_telefon }}
+          </a>
+        </p>
+      {%- endif -%}
+    </div>
+
+  </div>
+</div>
