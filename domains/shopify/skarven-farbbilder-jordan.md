@@ -89,6 +89,27 @@ Die Originale liegen weiterhin beim Lieferanten unter
 `https://media.jordanshop.de/original/<nummer>-8FXC-prod.JPG` und liessen sich
 jederzeit erneut laden.
 
-Die uebrigen 525xxx-Bilder (525248, 525250, 525258, 525268, 525270, 525282,
-525284) bleiben als zusaetzliche Galeriefotos erhalten. Sie zeigen die Serie
-plausibel; 525268 wirkt allerdings olivstichig - bei Gelegenheit pruefen.
+## 6. Nachpruefung der verbliebenen 525xxx-Bilder
+
+Am 2026-09-09 wurde jedes verbliebene 525xxx-Bild gegen das geprueft 998xxx-Foto
+derselben Art.-Nr. gestellt (Sichtvergleich plus Mittelwert der Sichtflaeche in
+HSV). Ergebnis: die 525xxx-Serie ist durchgehend gelb- bis olivstichig. Bei den
+Holzdekoren weicht sie so weit ab, dass sie eine andere Farbe zeigt.
+
+| Art.-Nr. | Farbe | alt (525xxx) | geprueft (998xxx) | Delta Saettigung | Urteil |
+|---|---|---|---|---|---|
+| 2485 | smoked oak white | hell, entsaettigt | hell, entsaettigt | 4 | passt |
+| 1005 | schnee-weiss | weiss | weiss | 3 | passt |
+| 1001 | schwarz | schwarz | schwarz | 6 | passt |
+| 2395 | Nussbaum island | kraeftig goldgelb | graubeiges Holz | 30 | weicht ab |
+| 2365 | eiche hell | senfgelb | helles Natureiche | 27 | weicht ab |
+| 2339 | eiche klassisch | senf-/goldgelb | warmes Natureiche | 30 | weicht ab |
+| 2357 | country gebeizt | oliv-/moosgruen | graues Driftwood | 40 | weicht ab |
+
+Die Saettigungsdifferenz trennt die Faelle sauber: bis 6 passt es, ab 27 zeigt
+das alte Bild eine andere Farbe. Reiner Farbton- oder Helligkeitsvergleich
+taugt hier nicht, weil beide Serien unterschiedlich ausgeleuchtet sind.
+
+Empfehlung: 525250, 525258, 525268 und 525270 aus den Produktmedien entfernen;
+525248, 525282 und 525284 koennen als zusaetzliche Galeriefotos bleiben.
+Stand dieser Datei: noch nicht entfernt.
