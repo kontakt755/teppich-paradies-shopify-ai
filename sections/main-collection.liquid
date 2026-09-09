@@ -35,11 +35,46 @@
   <div
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
   >
+    {%- comment -%}
+      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte. Damit die
+      Trefferanzahl zu den sichtbaren Karten passt, werden die zusammengelegten
+      Groessen hier abgezogen - sonst steht "3 Artikel" ueber einer Karte.
+
+      tp_gruppe_aktiv entscheidet beides: den Abzug hier und das Ueberspringen
+      in der Schleife unten. Eine Bedingung, damit Zahl und Raster nicht
+      auseinanderlaufen koennen.
+
+      collection.products liefert ausserhalb von paginate hoechstens 50
+      Eintraege. Oberhalb davon waere der Abzug unvollstaendig, deshalb bleibt
+      die Zahl dann unangetastet - lieber ungekuerzt als falsch gekuerzt.
+      Der Wert respektiert aktive Filter, weil collection.products das tut.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_gruppe_aktiv = false
+      if collection.handle contains 'zubehoer'
+        assign tp_gruppe_aktiv = true
+      endif
+
+      assign tp_gruppe_abzug = 0
+      if tp_gruppe_aktiv and collection.products_count <= 50
+        for tp_gruppe_p in collection.products
+          capture tp_gruppe_r
+            render 'tp-produktgruppe', product: tp_gruppe_p
+          endcapture
+          assign tp_gruppe_r = tp_gruppe_r | strip
+          if tp_gruppe_r == 'member'
+            assign tp_gruppe_abzug = tp_gruppe_abzug | plus: 1
+          endif
+        endfor
+      endif
+      assign tp_results_size = collection.products_count | minus: tp_gruppe_abzug
+    -%}
+
     {% content_for 'block',
       type: 'filters',
       id: 'filters',
       results: collection,
-      results_size: collection.products_count
+      results_size: tp_results_size
     %}
 
     {% assign products_per_page = 24 %}
@@ -62,7 +97,7 @@
             einzeln sichtbar, damit diese Sektion (Horizon-Kern, alle
             Kategorien) sich unveraendert verhaelt.
           {%- endcomment -%}
-          {%- if collection.handle contains 'zubehoer' -%}
+          {%- if tp_gruppe_aktiv -%}
             {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
             {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
             {%- if tp_gruppe_rolle == 'member' -%}
