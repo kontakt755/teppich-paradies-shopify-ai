@@ -44,6 +44,12 @@
 {%- endif -%}
 
 {% stylesheet %}
+  /* Liefert dieser Block ein Raumbild, tritt die Standardgalerie der Karte zurueck */
+  .product-card__content:has(.tp-card-leisten-bild) .card-gallery,
+  .product-card__content:has(.tp-card-leisten-bild) .product-grid-view-zoom-out--details {
+    display: none;
+  }
+
   .tp-card-leisten-bild {
     position: relative;
     aspect-ratio: 1;
