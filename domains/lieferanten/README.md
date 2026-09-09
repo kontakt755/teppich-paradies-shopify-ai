@@ -1,9 +1,9 @@
 # Lieferantenabgleich Jordan/JOKA vs. M-Plus
 
-Stand 2026-09-09, Phase 1 (Datenquellen) und Phase 2 (Testlauf Teppichboden, 10 Qualitaeten).
+Stand 2026-09-09: Phase 1 (Datenquellen), Phase 2 (Testlauf, 10 Qualitaeten) und Phase 4 (Vollabgleich Teppichboden, Abschnitt 6).
 Keine Shopify-Aenderung. Alles hier ist Analyse und Datenbasis.
 
-Ordner: `teppichboden-abgleich/` — Ergebnis `abgleich-testlauf.json`, Rohdaten unter `rohdaten/`,
+Ordner: `teppichboden-abgleich/` — Vollabgleich `abgleich-teppichboden.json` (+ zwei CSV), Testlauf `abgleich-testlauf.json`, Rohdaten unter `rohdaten/`,
 Skripte unter `scripts/` (Python 3, nur Standardbibliothek plus `pypdf` fuer die PDF-Auswertung).
 
 ## 1. Datenquellen (Phase 1)
@@ -115,17 +115,63 @@ ohne neue Keys.
 derzeit kein Wunschmass bzw. Kettelservice verfuegbar." gezeigt. Beim Variantenwechsel muss der Block die Werte
 aus einem JSON-Datenblock je Variante nachlesen (wie der Rollenware-Rechner), nicht neu rendern.
 
-## 6. Naechste Schritte (Phase 4, nach Freigabe der Methode)
+## 6. Vollabgleich Teppichboden (Phase 4, 2026-09-09)
 
-1. Jordan-Sortiment komplett: Quicksearch je Kollektion (Sprint 027: 378 Farbartikel, Trend 026: 430,
-   Wool & Sisal: 186, Nadelvlies: 288; „Teppichboden" gesamt 3.415) — ca. 850 Aufrufe, dann je Qualitaet eine
-   Produktseite. Laeuft in ~30 Minuten im Hintergrund.
-2. M-Plus: 97 Qualitaeten liegen bereits vollstaendig in `rohdaten/mplus-textil-qualitaeten.json`; fuer alle
-   Leistungserklaerungen laden (Hersteller je Qualitaet).
-3. Matching ueber alles, Farbartikel nur fuer Treffer nachladen.
-4. Bestand: Kundenlogins beider Shops im Browser, dann Verfuegbarkeit je Farbartikel auslesen.
-5. Danach erst Phase 5 (Metafelder anlegen) — nach ausdruecklicher Freigabe.
+Ergebnis in `teppichboden-abgleich/abgleich-teppichboden.json` (Schema 2), dazu zwei CSV fuer die Tabellenkalkulation:
+`abgleich-teppichboden-qualitaeten.csv` (eine Zeile je Qualitaet, inkl. „nur M-Plus") und
+`abgleich-teppichboden-farben.csv` (eine Zeile je Farbe mit Artikelnummern beider Seiten und Servicefaehigkeit).
+
+**Erfassung Jordan:** 20 Quicksearch-Abfragen (Kollektionen, Belagsarten, Breiten) plus automatische Nachsuche
+fuer jede auf Produktseiten gefundene Kollektion — die Suche deckelt bei 1.000 Treffern, deshalb je Kollektion.
+Ergebnis: 2.795 Farbartikel, 276 Produktseiten (Qualitaet + Breite), **191 Qualitaeten** in 14 Kollektionen
+(Arriva 027 Maßteppiche 28, Format 028 20, Sprint 027 20, Homeline 27 19, Atelier 30 Nadelvlies 18, Balance 25 17,
+Format Modul 028 Fliesen 15, Trend 026 14, 030 Wool & Sisal 14, Format Modul 25 6, Quattro 028 / Atrium / Central 5,
+15 ohne Kollektionsangabe). **M-Plus:** 97 Textilqualitaeten mit 873 Farben, Herstellerbeleg fuer 63 davon.
+
+| Status | Jordan-Qualitaeten | Bedeutung |
+|---|---|---|
+| MATCH_CONFIRMED | 2 | Strong 733 und Strong 956 = M-Plus Analog 2029 733/956 (Vebe), Name + Nummer + Technik + alle Farbnummern |
+| MATCH_PROBABLE | 10 | Technik und ≥ 70 % der Farbnummern gleich, Hersteller nur ueber M-Plus-LE belegt |
+| MATCH_POSSIBLE | 7 | Technik ohne Widerspruch, Farbnummern nur teilweise oder Hersteller unbelegt |
+| REVIEW_REQUIRED | 4 | ein technisches Merkmal widerspricht (Poleinsatz, Staerke, Ruecken) trotz gleicher Farbnummern |
+| NO_MATCH | 168 | kein Gegenstueck bei M-Plus |
+| nur M-Plus | 78 Qualitaeten | vor allem Avantiles-Fliesen (19), Ambiente 2025 (12), Avantgarde 2029 (12), Akzente 2029 (11) |
+
+Treffer im Detail (Hersteller laut M-Plus-Leistungserklaerung):
+
+| Jordan | M-Plus | Hersteller | Status |
+|---|---|---|---|
+| Atelier 30 Strong 733 / Strong 956 | Analog 2029 733 / 956 | Vebe | CONFIRMED |
+| Atelier 30 Granat / Forte | Analog 2029 911 / 916 | Vebe | PROBABLE |
+| Trend 026 Plaza (= Arriva 027 Secrets) | Akzente 2029 2403-TR | Condor | PROBABLE |
+| Trend 026 Derby (= Format 028 Linux) | Akzente 2029 2408-TR | ITC/Balta | PROBABLE |
+| Sprint 027 Limbo | Akzente 2029 2418-TR | Condor | PROBABLE |
+| Sprint 027 Lorna | Extrem 2029 TB 1160 | Associated Weavers | PROBABLE |
+| Format 028 Maron | Avantgarde 2029 2202 | ITC/Balta | PROBABLE |
+| Format 028 Maidan Fliese | Extrem 2029 Tiles 2160 | Associated Weavers | PROBABLE |
+| Sprint 027 Tempra (= Homeline 27 Tosca) | Akzente 2029 2419-TR | Vebe | POSSIBLE |
+| Sprint 027 Solid (= Homeline 27 Drago) | Akzente 2029 2404-TR | unbelegt (Scan) | POSSIBLE |
+| Balance 25 Avalon | Avantgarde 2029 2203 | ITC/Balta | POSSIBLE |
+| Format Modul 028 Rapid / Idea Fliese | Extrem Tiles 2157 / Avantiles 214 | Condor / unbelegt | POSSIBLE |
+| Format 028 Oslo, Sprint 027 Doria, Trend 026 Montego, Trend 026 Zirkonia | Akzente 2406 / 2411 / 2401 / 2412 | Condor / ITC / Condor / Lano | REVIEW |
+
+**Befund Jordan-intern:** Jordan fuehrt dieselbe Ware unter mehreren Kollektionsnamen (Plaza = Secrets,
+Derby = Linux, Tempra = Tosca, Solid = Drago; identische Farbnummern und Technik). Die Datei markiert das als
+`jordan_alias_of`. Fuer den Shop heisst das: ein Teppich-Paradies-Produkt, mehrere Jordan-Bezugsquellen.
+
+**Nicht belegt bleibt der Hersteller** bei 34 M-Plus-Qualitaeten (23 ohne Leistungserklaerung, 12 Ambiente 2025,
+deren gescannte LE M-Plus selbst als Hersteller nennt, 1 unlesbarer Scan) und bei allen Jordan-Qualitaeten
+(Jordan-LE nennt Jordan). Bestand/Preis beider Seiten weiterhin nur mit Login.
+
+## 7. Naechste Schritte
+
+1. Die 4 REVIEW- und 7 POSSIBLE-Faelle mit den Datenblaettern (TTD bzw. TD) von Hand pruefen; Datenblatt-Links
+   stehen je Produkt in der JSON.
+2. Bestand: Kundenlogins beider Shops im Browser, dann Verfuegbarkeit je Farbartikel auslesen
+   (Jordan `/api/availability`, M-Plus Produktseite eingeloggt).
+3. Jordan-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
+4. Danach Phase 5 (Metafelder anlegen, Theme-Logik) — nur nach ausdruecklicher Freigabe.
 
 Die Struktur ist kategorieneutral (`category`, `technical_data` als Schluessel-Wert-Paare je Quelle) und laesst
 sich auf PVC, Vinyl, Klickvinyl, Laminat, Parkett, Sockelleisten und Zubehoer uebertragen; nur die Vergleichs-
-merkmale in `match.py` sind je Kategorie anzupassen.
+merkmale in `match_full.py` sind je Kategorie anzupassen.
