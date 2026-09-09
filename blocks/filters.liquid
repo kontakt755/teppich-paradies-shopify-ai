@@ -177,6 +177,13 @@
               should_show_clear_all: true
             %}
 
+              {%- if tp_gesperrte_werte -%}
+                <p class="facets__disabled-hint">
+                  Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                  Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                </p>
+              {%- endif -%}
+
             {% if block_settings.enable_filtering %}
               {% assign total_active_values = 0 %}
 
@@ -247,12 +254,6 @@
                   {{ rendered_filters }}
                 {% endif %}
               </div>
-              {%- if tp_gesperrte_werte -%}
-                <p class="facets__disabled-hint">
-                  Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                  Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
-                </p>
-              {%- endif -%}
 
               {% if block_settings.filter_style == 'horizontal' %}
                 <facet-remove-component
@@ -462,6 +463,13 @@
                 should_show_clear_all: false
               %}
 
+                {%- if tp_gesperrte_werte -%}
+                  <p class="facets__disabled-hint">
+                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                  </p>
+                {%- endif -%}
+
               <div class="facets__filters-wrapper">
                 {% assign total_active_values = 0 %}
                 {% assign is_active = false %}
@@ -491,12 +499,6 @@
                       %}
                   {% endcase %}
                 {%- endfor -%}
-                {%- if tp_gesperrte_werte -%}
-                  <p class="facets__disabled-hint">
-                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
-                  </p>
-                {%- endif -%}
               </div>
             {% endif %}
 
@@ -551,9 +553,19 @@
      je Gruppe - sonst wiederholt sich derselbe Satz mehrfach untereinander. */
   .facets__disabled-hint {
     margin: var(--padding-xs) 0 0;
+    /* Gleicher Innenabstand wie .facets__panel, sonst steht der Satz im Drawer
+       am linken Rand, waehrend die Filterueberschriften eingerueckt sind. */
+    padding-inline: var(--drawer-padding);
     font-size: 0.8125rem;
     line-height: 1.4;
     color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
+  }
+
+  .facets:not(.facets--drawer) .facets__disabled-hint,
+  .facets-controls-wrapper .facets__disabled-hint {
+    @media screen and (min-width: 750px) {
+      padding-inline: 0;
+    }
   }
 
   .facets-block-wrapper {
