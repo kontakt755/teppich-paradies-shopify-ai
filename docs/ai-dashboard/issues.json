@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T21:11:47.974Z",
+  "generated_at": "2026-09-09T21:24:27.785Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 56,
+  "count": 57,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T21:11:47.974Z",
+    "fetchedAt": "2026-09-09T21:24:27.785Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,28 @@
   },
   "issues": [
     {
+      "number": 170,
+      "title": "Google-Bewertung: Backend betreiben oder Block entfernen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/170",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T21:24:11Z",
+      "updated_at": "2026-09-09T21:24:11Z",
+      "closed_at": null
+    },
+    {
       "number": 167,
       "title": "Startseite: zwei Einstiege - Online kaufen und Verlegeservice Oranienburg",
       "state": "open",
@@ -77,13 +99,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:19:47Z",
-      "updated_at": "2026-09-09T21:11:45Z",
+      "updated_at": "2026-09-09T21:11:47Z",
       "closed_at": null
     },
     {
