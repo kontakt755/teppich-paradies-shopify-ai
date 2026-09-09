@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T08:59:41.088Z",
+  "generated_at": "2026-09-09T09:28:08.894Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 35,
+  "count": 36,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T08:59:41.088Z",
+    "fetchedAt": "2026-09-09T09:28:08.894Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -51,6 +51,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 120,
+      "title": "Vinyl von der Rolle: Dekorfilter Holz/Stein reparieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/120",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:filter"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T09:27:53Z",
+      "updated_at": "2026-09-09T09:27:54Z",
+      "closed_at": null
+    },
     {
       "number": 119,
       "title": "Zubehoer: Uebersicht umbenannt, Sauberlauf als eine Karte mit Groessenauswahl",
@@ -114,7 +138,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 6,
       "nextStep": null,
       "fields": {
         "description": "Gesamtanalyse des Shops aus Admin-API, ShopifyQL und 30 bisherigen Berichten. Bericht liegt im PR-Branch `claude/shop-analysis-router-skqvaa` unter `docs/analyse/SHOP_ANALYSE_2026-09-09.md` (plus Produkt-Audit über 434 Produkte und Theme-Code-Review).\n\n**Kernbefund:** 5.136 Sitzungen in 90 Tagen, 22 mit Warenkorb, 6 im Checkout, 0 abgeschlossen. 37 % des Traffics landet auf Verlegeservice-Seiten ohne messbares Ziel. Kein GA4/Ads/Meta-Tag im Theme, Shopify-Pixel nie per Testkauf verifiziert.\n\n**P0**\n- [ ] Customer Events prüfen, genehmigter Testkauf, Anruf-/Formular-Ziele (Ahmet)\n- [ ] Serviceseiten: Anfrage-CTA und `tel:`-Events (Agent, nach Zieldefinition)\n- [ ] Muster-CTAs auf `/pages/muster` statt Kontaktformular umstellen (Agent, 3 Dateien)\n\n**P1**\n- [ ] 152 Produkte ohne `productType` (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten) setzen\n- [ ] Mobiler Kaufpfad: 8 nicht gerenderte `tp-`-Snippets, Touch-Targets\n- [ ] Warenkorb „Geschätzter Gesamtbetrag\", Sie/Du, USP-Band, Länderwähler\n- [ ] 118 Rollenware-Produkte vom Google-Kanal ausschließen (Liste neu erzeugen, Human Gate)\n- [ ] 12 Redirect-Ziele korrigieren/anlegen (fertige Liste im Bericht, Abschnitt 7)\n- [ ] Fotos für …",
@@ -162,7 +186,7 @@
         }
       },
       "created_at": "2026-09-09T06:33:34Z",
-      "updated_at": "2026-09-09T08:54:14Z",
+      "updated_at": "2026-09-09T09:22:00Z",
       "closed_at": null
     },
     {
