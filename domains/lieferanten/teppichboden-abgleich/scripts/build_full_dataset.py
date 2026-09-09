@@ -11,6 +11,7 @@ today=datetime.date.today().isoformat()
 def colors_block(j,m,q):
     jcol={}
     for x in j['articles']:
+        if not re.search(r'_\d+$',x['art_nr'] or ''): continue  # Basisartikel ohne Farbe
         code=ccode(x['farbe'] or x['art_nr'].split('_')[-1]); jcol.setdefault(code,{'article_numbers':[],'urls':[],'label':x['farbe']}); jcol[code]['article_numbers'].append(x['art_nr']); jcol[code]['urls'].append(x['url'])
     for code,pid in j['color_ids'].items():
         jcol.setdefault(code,{'article_numbers':[],'urls':[f'https://www.jordanshop.de/de-DE/product/{pid}'],'label':'Farbe '+code})
@@ -78,7 +79,7 @@ for q,m in MR.items():
     mplus_only.append({'mplus_product_name':m['title'],'quality':m['qualitaet'],'collection':m['collection'],'belagsart':m['art'],'tile':m['tile'],'manufacturer':m['hersteller'],'manufacturer_source':H.get(q,{}).get('hersteller_quelle'),'article_number_first':artnr(m['art_nr']),'url':m['url'],'widths_cm':m['widths'],'colors':[{'mplus_color_number':c['code'],'mplus_color':c['name'],'mplus_available':True,'jordan_available':False,'custom_size_available':False,'edging_available':False,'preferred_supplier':'mplus'} for c in m['colors_raw']],'technical_data':{x:m['spec'].get(x) for x in ['Belagsart','Konstruktion / Struktur','Faserart','Poleinsatzgewicht per m² in g','Gesamtstärke in Millimeter','Florhöhe in millimeter','Rückenausstattung / Träger','Nutzungsklasse','Brandverhalten']},'match_status':'NO_MATCH','note':'nur bei M-Plus - kein Wunschmass/Kettelservice annehmen'})
 cnt=collections.Counter(p['match_status'] for p in products)
 ds={'schema_version':2,'category':'teppichboden','phase':'Vollabgleich (Phase 4)','generated_at':datetime.datetime.now().isoformat(timespec='seconds'),
-    'summary':{'jordan_qualities':len(products),'mplus_qualities':len(MR),'status_counts':dict(cnt),'mplus_only_qualities':len(mplus_only),'jordan_color_articles':sum(len(p['jordan']['urls']) for p in products),'stock':'beide Shops nur mit Login - hier nur "gelistet"'},
+    'summary':{'jordan_qualities':len(products),'mplus_qualities':len(MR),'status_counts':dict(cnt),'mplus_only_qualities':len(mplus_only),'jordan_product_pages':sum(len(p['jordan']['urls']) for p in products),'jordan_color_articles':sum(len([c for c in p['colors'] if c['jordan_available']]) for p in products),'stock':'beide Shops nur mit Login - hier nur "gelistet"'},
     'status_definitions':{'MATCH_CONFIRMED':'gleiche Qualitaetsbezeichnung/-nummer, Technik und Farbnummern gleich, Hersteller ueber M-Plus-LE belegt','MATCH_PROBABLE':'Technik und Farbnummern gleich, Hersteller nur ueber M-Plus-LE belegt, keine Namensverbindung','MATCH_POSSIBLE':'Technik ohne Widerspruch, Farbnummern nur teilweise oder kein Herstellerbeleg','REVIEW_REQUIRED':'starke Farbuebereinstimmung, aber ein technisches Merkmal widerspricht, oder M-Plus-Qualitaet trifft mehrere Jordan-Qualitaeten','NO_MATCH':'kein Gegenstueck'},
     'products':products,'mplus_only':mplus_only}
 os.makedirs(S+'/out',exist_ok=True)

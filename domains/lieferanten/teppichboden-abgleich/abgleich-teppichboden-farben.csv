@@ -1,5 +1,4 @@
 status;jordan_qualitaet;mplus_produkt;farbnr;jordan_farbe;jordan_artikelnummern;mplus_farbe;mplus_artikelnummer;jordan;mplus;wunschmass;kettelung;bevorzugt;alternativ;hinweis
-NO_MATCH;Omega;;0;x 400,0;TEPOMEG4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;106;Farbe 106;TEPOMEG4_106;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;107;Farbe 107;TEPOMEG4_107;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;205;Farbe 205;TEPOMEG4_205;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -19,7 +18,6 @@ NO_MATCH;Omega;;705;Farbe 705;TEPOMEG4_705;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;706;Farbe 706;TEPOMEG4_706;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;902;Farbe 902;TEPOMEG4_902;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Omega;;904;Farbe 904;TEPOMEG4_904;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Maidan;;0;x 500,0;TEPMAIDAN4,TEPMAIDAN5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Maidan;;21;Farbe 21;TEPMAIDAN4_021,TEPMAIDAN5_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Maidan;;33;Farbe 33;TEPMAIDAN4_033,TEPMAIDAN5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Maidan;;40;Farbe 40;TEPMAIDAN4_040,TEPMAIDAN5_040;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -31,14 +29,12 @@ NO_MATCH;Maidan;;94;Farbe 94;TEPMAIDAN4_094,TEPMAIDAN5_094;;;ja;nein;ja;ja;jorda
 NO_MATCH;Maidan;;97;Farbe 97;TEPMAIDAN4_097,TEPMAIDAN5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Maidan;;98;Farbe 98;TEPMAIDAN4_098,TEPMAIDAN5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Maidan;;99;Farbe 99;TEPMAIDAN4_099,TEPMAIDAN5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Genius Planke;;0;1,000x  25,0;TEPGENIUPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;385;Farbe 385;TEPGENIUPL_385;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;555;Farbe 555;TEPGENIUPL_555;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;575;Farbe 575;TEPGENIUPL_575;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;595;Farbe 595;TEPGENIUPL_595;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;725;Farbe 725;TEPGENIUPL_725;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Genius Planke;;765;Farbe 765;TEPGENIUPL_765;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;0;x 400,0;TEPMARON4;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;18;Farbe 18;TEPMARON4_018;018 Rot Dunkel;2014-002648;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;32;Farbe 32;TEPMARON4_032;032 Beige Hell;2014-002649;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;38;Farbe 38;TEPMARON4_038;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -48,7 +44,6 @@ MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;94;Farbe 94;TEPMARO
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;95;Farbe 95;TEPMARON4_095;095 Grau Hell;2014-002653;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;97;Farbe 97;TEPMARON4_097;097 Grau Dunkel;2014-002654;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maron;MPlus Avantgarde 2029 2202-018 TR 400cm;98;Farbe 98;TEPMARON4_098;098 Schwarz Hell;2014-002655;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Fair Planke;;0;1,000x  25,0;TEPFAIPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair Planke;;160;Farbe 160;TEPFAIPL_160;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair Planke;;231;Farbe 231;TEPFAIPL_231;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair Planke;;360;Farbe 360;TEPFAIPL_360;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -68,7 +63,6 @@ NO_MATCH;Fair Planke;;841;Farbe 841;TEPFAIPL_841;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Fair Planke;;850;Farbe 850;TEPFAIPL_850;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair Planke;;861;Farbe 861;TEPFAIPL_861;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair Planke;;870;Farbe 870;TEPFAIPL_870;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Pathos;;0;x 400,0;TEPPATHOS4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;50;Farbe 50;TEPPATHOS4_050;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;73;Farbe 73;TEPPATHOS4_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;76;Farbe 76;TEPPATHOS4_076;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -77,7 +71,6 @@ NO_MATCH;Pathos;;90;Farbe 90;TEPPATHOS4_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;92;Farbe 92;TEPPATHOS4_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;173;Farbe 173;TEPPATHOS4_173;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos;;181;Farbe 181;TEPPATHOS4_181;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;City;;0;x 400,0;TEPCITY04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;City;;106;Farbe 106;TEPCITY04_106;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;City;;107;Farbe 107;TEPCITY04_107;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;City;;205;Farbe 205;TEPCITY04_205;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -124,8 +117,6 @@ NO_MATCH;City Fliese;;704;Farbe 704;TEPCITYFL_704;;;ja;nein;ja;ja;jordan;;nur Jo
 NO_MATCH;City Fliese;;705;Farbe 705;TEPCITYFL_705;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;City Fliese;;706;Farbe 706;TEPCITYFL_706;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;City Fliese;;902;Farbe 902;TEPCITYFL_902;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;City Fliese;;TEPCITYFL;;TEPCITYFL;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Livia;;0;x 400,0;TEPLIVIA4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;240;Farbe 240;TEPLIVIA4_240;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;250;Farbe 250;TEPLIVIA4_250;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;260;Farbe 260;TEPLIVIA4_260;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -142,14 +133,12 @@ NO_MATCH;Livia;;830;Farbe 830;TEPLIVIA4_830;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;840;Farbe 840;TEPLIVIA4_840;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;860;Farbe 860;TEPLIVIA4_860;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Livia;;870;Farbe 870;TEPLIVIA4_870;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Minero;;0;x 400,0;TEPMINER4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;592;Farbe 592;TEPMINER4_592;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;848;Farbe 848;TEPMINER4_848;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;957;Farbe 957;TEPMINER4_957;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;968;Farbe 968;TEPMINER4_968;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;989;Farbe 989;TEPMINER4_989;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero;;991;Farbe 991;TEPMINER4_991;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Misano;;0;x 400,0;TEPMISANO4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;136;Farbe 136;TEPMISANO4_136;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;213;Farbe 213;TEPMISANO4_213;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;344;Farbe 344;TEPMISANO4_344;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -163,8 +152,6 @@ NO_MATCH;Misano;;769;Farbe 769;TEPMISANO4_769;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;770;Farbe 770;TEPMISANO4_770;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;873;Farbe 873;TEPMISANO4_873;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Misano;;940;Farbe 940;TEPMISANO4_940;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lisaro;;0;x 400,0;TEPLISAR4;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lisaro Fliese;;0;0,500x  50,0;TEPLISARFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lisaro Fliese;;138;Farbe 138;TEPLISARFL_138;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lisaro Fliese;;139;Farbe 139;TEPLISARFL_139;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lisaro Fliese;;215;Farbe 215;TEPLISARFL_215;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -177,7 +164,6 @@ NO_MATCH;Lisaro Fliese;;773;Farbe 773;TEPLISARFL_773;;;ja;nein;ja;ja;jordan;;nur
 NO_MATCH;Lisaro Fliese;;875;Farbe 875;TEPLISARFL_875;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lisaro Fliese;;876;Farbe 876;TEPLISARFL_876;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lisaro Fliese;;877;Farbe 877;TEPLISARFL_877;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;0;0,500x  50,0;TEPMAIDAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;21;Farbe 21;TEPMAIDAFL_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;33;Farbe 33;TEPMAIDAFL_033;33 Beige Dunkel;2208-000495;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;40;Farbe 40;TEPMAIDAFL_040;40 Grau Dunkel;2208-000496;ja;ja;ja;ja;jordan;mplus;
@@ -189,12 +175,10 @@ MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;97;Farbe 97;TEPMAIDAFL_097;97 Schwarz Hell;2208-000499;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;98;Farbe 98;TEPMAIDAFL_098;98 Grau Dunkel;2208-000500;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Maidan Fliese (mind.Abgabe 5 VE);MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;99;Farbe 99;TEPMAIDAFL_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Mia;;0;x 500,0;TEPMIA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mia;;410;Farbe 410;TEPMIA05_410;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mia;;412;Farbe 412;TEPMIA05_412;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mia;;414;Farbe 414;TEPMIA05_414;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mia;;415;Farbe 415;TEPMIA04_415,TEPMIA05_415;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rapid;;0;x 500,0;TEPRAPI4,TEPRAPI5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid;;527;Farbe 527;TEPRAPI4_0527,TEPRAPI5_0527;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid;;529;Farbe 529;TEPRAPI4_0529,TEPRAPI5_0529;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid;;573;Farbe 573;TEPRAPI4_0573,TEPRAPI5_0573;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -202,7 +186,6 @@ NO_MATCH;Rapid;;574;Farbe 574;TEPRAPI4_0574,TEPRAPI5_0574;;;ja;nein;ja;ja;jordan
 NO_MATCH;Rapid;;576;Farbe 576;TEPRAPI4_0576,TEPRAPI5_0576;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid;;578;Farbe 578;TEPRAPI4_0578,TEPRAPI5_0578;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid;;582;Farbe 582;TEPRAPI4_0582,TEPRAPI5_0582;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;0;x 400,0;TEPLINUX04,TEPLINUX05;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;15;Farbe 15;TEPLINUX04_015,TEPLINUX05_015;15 Rot Dunkel;2014-002866;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;28;Farbe 28;TEPLINUX04_028,TEPLINUX05_028;28 Grün Dunkel;2014-002867;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;36;Farbe 36;TEPLINUX04_036,TEPLINUX05_036;36 Gelb Mittel;2014-002868;ja;ja;ja;ja;jordan;mplus;
@@ -220,7 +203,6 @@ MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;94;Farbe 94;TEPLINUX04
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;97;Farbe 97;TEPLINUX04_097,TEPLINUX05_097;97 Grau Dunkel;2014-002875;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;98;Farbe 98;TEPLINUX04_098,TEPLINUX05_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Linux;MPlus Akzente 2029 2408-15 TR 400 cm;99;Farbe 99;TEPLINUX04_099,TEPLINUX05_099;99 Schwarz Dunkel;2014-002876;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Fair;;0;x 400,0;TEPFAIR4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;160;Farbe 160;TEPFAIR4_0160;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;231;Farbe 231;TEPFAIR4_0231;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;360;Farbe 360;TEPFAIR4_0360;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -240,7 +222,6 @@ NO_MATCH;Fair;;841;Farbe 841;TEPFAIR4_0841;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;850;Farbe 850;TEPFAIR4_0850;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;861;Farbe 861;TEPFAIR4_0861;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fair;;870;Farbe 870;TEPFAIR4_0870;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cosy;;0;x 400,0;TEPCOSY4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;73;Farbe 73;TEPCOSY4_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;74;Farbe 74;TEPCOSY4_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;75;Farbe 75;TEPCOSY4_075;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -248,7 +229,6 @@ NO_MATCH;Cosy;;77;Farbe 77;TEPCOSY4_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;78;Farbe 78;TEPCOSY4_078;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;80;Farbe 80;TEPCOSY4_080;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy;;82;Farbe 82;TEPCOSY4_082;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Minero Fliese;;0;0,500x  50,0;TEPMINERFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero Fliese;;517;Farbe 517;TEPMINERFL_517;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero Fliese;;592;Farbe 592;TEPMINERFL_592;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero Fliese;;848;Farbe 848;TEPMINERFL_848;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -258,7 +238,6 @@ NO_MATCH;Minero Fliese;;968;Farbe 968;TEPMINERFL_968;;;ja;nein;ja;ja;jordan;;nur
 NO_MATCH;Minero Fliese;;989;Farbe 989;TEPMINERFL_989;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero Fliese;;990;Farbe 990;TEPMINERFL_990;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Minero Fliese;;991;Farbe 991;TEPMINERFL_991;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Grande FL;;2;Paket a     4,00 m2;TEPGRANDFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande FL;;185;Farbe 185;TEPGRANDFL_185;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande FL;;190;Farbe 190;TEPGRANDFL_190;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande FL;;253;Farbe 253;TEPGRANDFL_253;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -273,7 +252,6 @@ NO_MATCH;Grande FL;;730;Farbe 730;TEPGRANDFL_730;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Grande FL;;760;Farbe 760;TEPGRANDFL_760;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande FL;;955;Farbe 955;TEPGRANDFL_955;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande FL;;960;Farbe 960;TEPGRANDFL_960;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Amore;;0;x 400,0;TEPAMORE4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;26;Farbe 26;TEPAMORE4_026;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;31;Farbe 31;TEPAMORE4_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;33;Farbe 33;TEPAMORE4_033;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -286,7 +264,6 @@ NO_MATCH;Amore;;92;Farbe 92;TEPAMORE4_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;93;Farbe 93;TEPAMORE4_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;94;Farbe 94;TEPAMORE4_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amore;;99;Farbe 99;TEPAMORE4_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Anden;;0;x 500,0;TEPANDEN4,TEPANDEN5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Anden;;110;Farbe 110;TEPANDEN4_110,TEPANDEN5_110;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Anden;;200;Farbe 200;TEPANDEN4_200,TEPANDEN5_200;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Anden;;240;Farbe 240;TEPANDEN4_240,TEPANDEN5_240;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -303,7 +280,6 @@ NO_MATCH;Anden;;810;Farbe 810;TEPANDEN4_810,TEPANDEN5_810;;;ja;nein;ja;ja;jordan
 NO_MATCH;Anden;;820;Farbe 820;TEPANDEN4_820,TEPANDEN5_820;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Anden;;840;Farbe 840;TEPANDEN4_840,TEPANDEN5_840;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Anden;;860;Farbe 860;TEPANDEN4_860,TEPANDEN5_860;;;ja;nein;ja;ja;jordan;;nur Jordan
-REVIEW_REQUIRED;Oslo;MPlus Akzente 2029 2406-20 TR 400 cm;0;x 400,0;TEPOSLO04;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Oslo;MPlus Akzente 2029 2406-20 TR 400 cm;20;Farbe 20;TEPOSLO04_020;20 Rot Dunkel;2052-000888;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Oslo;MPlus Akzente 2029 2406-20 TR 400 cm;21;Farbe 21;TEPOSLO04_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Oslo;MPlus Akzente 2029 2406-20 TR 400 cm;26;Farbe 26;TEPOSLO04_026;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -331,7 +307,6 @@ NO_MATCH;Works Element;;1006;Farbe 1006;TEPWORKSEL_1006;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Works Element;;1007;Farbe 1007;TEPWORKSEL_1007;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Works Element;;1008;Farbe 1008;TEPWORKSEL_1008;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Works Element;;1009;Farbe 1009;TEPWORKSEL_1009;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Works Element;;TEPWORKSEL;;TEPWORKSEL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;183;Farbe 183;TEPINKAFL_183;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;186;Farbe 186;TEPINKAFL_186;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;282;Farbe 282;TEPINKAFL_282;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -347,8 +322,6 @@ NO_MATCH;Inka;;579;Farbe 579;TEPINKAFL_579;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;870;Farbe 870;TEPINKAFL_870;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;872;Farbe 872;TEPINKAFL_872;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Inka;;980;Farbe 980;TEPINKAFL_980;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Inka;;TEPINKAFL;;TEPINKAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Skyrock;;0;0,500x  50,0;TEPSKYRFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Skyrock;;504;Farbe 504;TEPSKYRFL_504;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Skyrock;;553;Farbe 553;TEPSKYRFL_553;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Skyrock;;914;Farbe 914;TEPSKYRFL_914;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -366,24 +339,19 @@ NO_MATCH;Imago;;914;Farbe 914;TEPIMAFL_914;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Imago;;957;Farbe 957;TEPIMAFL_957;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Imago;;965;Farbe 965;TEPIMAFL_965;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Imago;;995;Farbe 995;TEPIMAFL_995;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Imago;;TEPIMAFL;;TEPIMAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Optima Fliese;;0;0,500x  50,0;TEPOPTIFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;20;Farbe 20;TEPOPTIFL_020;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;75;Farbe 75;TEPOPTIFL_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;83;Farbe 83;TEPOPTIFL_083;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;291;Farbe 291;TEPOPTIFL_291;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;378;Farbe 378;TEPOPTIFL_378;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Optima Fliese;;393;Farbe 393;TEPOPTIFL_393;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Melba Fliese;;0;0,500x  50,0;TEPMELBFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Melba Fliese;;73;Farbe 73;TEPMELBFL_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Melba Fliese;;74;Farbe 74;TEPMELBFL_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Melba Fliese;;77;Farbe 77;TEPMELBFL_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Melba Fliese;;78;Farbe 78;TEPMELBFL_078;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Level Fliese;;0;0,500x  50,0;TEPLEVELFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Level Fliese;;72;Farbe 72;TEPLEVELFL_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Level Fliese;;74;Farbe 74;TEPLEVELFL_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Level Fliese;;75;Farbe 75;TEPLEVELFL_075;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rapid Fliese;;0;0,500x  50,0;TEPRAPIFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid Fliese;;20;Farbe 20;TEPRAPIFL_0020;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid Fliese;;527;Farbe 527;TEPRAPIFL_0527;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rapid Fliese;;529;Farbe 529;TEPRAPIFL_0529;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -435,7 +403,6 @@ NO_MATCH;;;90;Farbe 90;TEPLORI05_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;94;Farbe 94;TEPLORI05_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;98;Farbe 98;TEPLORI05_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;99;Farbe 99;TEPLORI05_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;0;x 400,0;TEPTEMPR04,TEPTEMPR05;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;8;Farbe 08;TEPTEMPR04_008,TEPTEMPR05_008;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;10;Farbe 10;TEPTEMPR04_010,TEPTEMPR05_010;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;13;Farbe 13;TEPTEMPR04_013,TEPTEMPR05_013;13 Beige Hell;2059-000127;ja;ja;ja;ja;jordan;mplus;
@@ -447,7 +414,6 @@ MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;28;Farbe 28;TEPTEMPR0
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;29;Farbe 29;TEPTEMPR04_029,TEPTEMPR05_029;29 Grau Dunkel;2059-000132;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;35;Farbe 35;TEPTEMPR04_035,TEPTEMPR05_035;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tempra;MPlus Akzente 2029 2419-15 TR 400 cm;85;Farbe 85;TEPTEMPR04_085,TEPTEMPR05_085;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Damos;;0;x 500,0;TEPDAMOS4,TEPDAMOS5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Damos;;31;Farbe 31;TEPDAMOS4_031,TEPDAMOS5_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Damos;;35;Farbe 35;TEPDAMOS4_035,TEPDAMOS5_035;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Damos;;62;Farbe 62;TEPDAMOS4_062,TEPDAMOS5_062;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -458,7 +424,6 @@ NO_MATCH;Damos;;74;Farbe 74;TEPDAMOS4_074,TEPDAMOS5_074;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Damos;;77;Farbe 77;TEPDAMOS4_077,TEPDAMOS5_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Damos;;79;Farbe 79;TEPDAMOS4_079,TEPDAMOS5_079;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Damos;;83;Farbe 83;TEPDAMOS4_083,TEPDAMOS5_083;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Astro;;0;x 500,0;TEPASTR4,TEPASTR5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Astro;;221;Farbe 221;TEPASTR4_221,TEPASTR5_221;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Astro;;231;Farbe 231;TEPASTR4_231,TEPASTR5_231;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Astro;;241;Farbe 241;TEPASTR4_241,TEPASTR5_241;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -471,7 +436,6 @@ NO_MATCH;Astro;;764;Farbe 764;TEPASTR4_764,TEPASTR5_764;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Astro;;820;Farbe 820;TEPASTR4_820,TEPASTR5_820;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Astro;;832;Farbe 832;TEPASTR4_832,TEPASTR5_832;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Astro;;861;Farbe 861;TEPASTR4_861,TEPASTR5_861;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;0;x 500,0;TEPLIMBO4,TEPLIMBO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;70;Farbe 70;TEPLIMBO4_070,TEPLIMBO5_070;70 Beige Hell;2052-000920;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;74;Farbe 74;TEPLIMBO4_074,TEPLIMBO5_074;74 Grau Hell;2052-000921;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;76;Farbe 76;TEPLIMBO4_076,TEPLIMBO5_076;76 Grau Mittel;2052-000922;ja;ja;ja;ja;jordan;mplus;
@@ -481,7 +445,6 @@ MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;90;Farbe 90;TEPLIMBO4_
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;170;Farbe 170;TEPLIMBO4_170,TEPLIMBO5_170;170 Beige Mittel;2052-000924;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;178;Farbe 178;TEPLIMBO4_178,TEPLIMBO5_178;178 Schwarz Dunkel;2052-000925;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Limbo;MPlus Akzente 2029 2418-70 TR 400 cm;282;Farbe 282;TEPLIMBO4_282,TEPLIMBO5_282;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lagos;;0;x 500,0;TEPLAGOS4,TEPLAGOS5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lagos;;72;Farbe 72;TEPLAGOS4_072,TEPLAGOS5_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lagos;;75;Farbe 75;TEPLAGOS4_075,TEPLAGOS5_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lagos;;77;Farbe 77;TEPLAGOS4_077,TEPLAGOS5_077;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -493,7 +456,6 @@ NO_MATCH;Lagos;;94;Farbe 94;TEPLAGOS4_094,TEPLAGOS5_094;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Lagos;;176;Farbe 176;TEPLAGOS4_176,TEPLAGOS5_176;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lagos;;177;Farbe 177;TEPLAGOS4_177,TEPLAGOS5_177;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lagos;;190;Farbe 190;TEPLAGOS4_190,TEPLAGOS5_190;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;0;x 500,0;TEPLORN04,TEPLORN05;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;21;Farbe 21;TEPLORN04_021,TEPLORN05_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;33;Farbe 33;TEPLORN04_033,TEPLORN05_033;33 Beige Dunkel;2208-000488;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;40;Farbe 40;TEPLORN04_040,TEPLORN05_040;40 Grau Dunkel;2208-000489;ja;ja;ja;ja;jordan;mplus;
@@ -505,7 +467,6 @@ MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;94;Farbe 94;TEPLORN
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;97;Farbe 97;TEPLORN04_097,TEPLORN05_097;97 Schwarz Hell;2208-000492;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;98;Farbe 98;TEPLORN04_098,TEPLORN05_098;98 Grau Dunkel;2208-000493;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Lorna;MPlus Extrem 2029 TB 1160-033 TR 400 cm;99;Farbe 99;TEPLORN04_099,TEPLORN05_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Riva;;0;x 400,0;TEPRIVAO4,TEPRIVAO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Riva;;14;Farbe 14;TEPRIVAO4_014,TEPRIVAO5_014;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Riva;;29;Farbe 29;TEPRIVAO4_029,TEPRIVAO5_029;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Riva;;31;Farbe 31;TEPRIVAO4_031,TEPRIVAO5_031;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -515,12 +476,10 @@ NO_MATCH;Riva;;64;Farbe 64;TEPRIVAO4_064,TEPRIVAO5_064;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Riva;;79;Farbe 79;TEPRIVAO4_079,TEPRIVAO5_079;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Riva;;95;Farbe 95;TEPRIVAO4_095,TEPRIVAO5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Riva;;98;Farbe 98;TEPRIVAO4_098,TEPRIVAO5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Nero;;0;x 500,0;TEPNER04,TEPNER05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nero;;710;Farbe 710;TEPNER04_710,TEPNER05_710;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nero;;712;Farbe 712;TEPNER04_712,TEPNER05_712;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nero;;714;Farbe 714;TEPNER04_714,TEPNER05_714;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nero;;715;Farbe 715;TEPNER04_715,TEPNER05_715;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lara;;0;x 500,0;TEPLARA04,TEPLARA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lara;;10;Farbe 10;TEPLARA04_010,TEPLARA05_010;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lara;;15;Farbe 15;TEPLARA04_015,TEPLARA05_015;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lara;;20;Farbe 20;TEPLARA04_020,TEPLARA05_020;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -541,7 +500,6 @@ NO_MATCH;Lara;;91;Farbe 91;TEPLARA04_091,TEPLARA05_091;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Lara;;92;Farbe 92;TEPLARA04_092,TEPLARA05_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lara;;173;Farbe 173;TEPLARA04_173,TEPLARA05_173;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lara;;174;Farbe 174;TEPLARA04_174,TEPLARA05_174;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Nubia;;0;x 400,0;TEPNUBIA4,TEPNUBIA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nubia;;72;Farbe 72;TEPNUBIA4_072,TEPNUBIA5_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nubia;;73;Farbe 73;TEPNUBIA4_073,TEPNUBIA5_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nubia;;75;Farbe 75;TEPNUBIA4_075,TEPNUBIA5_075;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -550,12 +508,10 @@ NO_MATCH;Nubia;;83;Farbe 83;TEPNUBIA4_083,TEPNUBIA5_083;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Nubia;;92;Farbe 92;TEPNUBIA4_092,TEPNUBIA5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nubia;;175;Farbe 175;TEPNUBIA4_175,TEPNUBIA5_175;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nubia;;176;Farbe 176;TEPNUBIA4_176,TEPNUBIA5_176;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Samba;;0;x 500,0;TEPSAMBA04,TEPSAMBA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samba;;810;Farbe 810;TEPSAMBA04_810,TEPSAMBA05_810;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samba;;812;Farbe 812;TEPSAMBA04_812,TEPSAMBA05_812;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samba;;814;Farbe 814;TEPSAMBA04_814,TEPSAMBA05_814;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samba;;815;Farbe 815;TEPSAMBA04_815,TEPSAMBA05_815;;;ja;nein;ja;ja;jordan;;nur Jordan
-REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;0;x 400,0;TEPDORIA4,TEPDORIA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;33;Farbe 33;TEPDORIA4_033,TEPDORIA5_033;33 Beige Mittel;2014-002893;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;43;Farbe 43;TEPDORIA4_043,TEPDORIA5_043;43 Braun Mittel;2014-002894;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;52;Farbe 52;TEPDORIA4_052,TEPDORIA5_052;52 Gelb Dunkel;2014-002895;ja;ja;ja;ja;jordan;mplus;
@@ -564,7 +520,6 @@ REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;74;Farbe 74;TEPDORIA4
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;92;Farbe 92;TEPDORIA4_092,TEPDORIA5_092;92 Grau Mittel;2014-002898;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;97;Farbe 97;TEPDORIA4_097,TEPDORIA5_097;97 Grau Dunkel;2014-002899;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Doria;MPlus Akzente 2029 2411-43 VR 400 cm;98;Farbe 98;TEPDORIA4_098,TEPDORIA5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;0;x 400,0;TEPSOLI04,TEPSOLI05;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;11;Farbe 11;TEPSOLI04_011,TEPSOLI05_011;11 Grau Hell;2059-000101;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;13;Farbe 13;TEPSOLI04_013,TEPSOLI05_013;13 Beige Hell;2059-000102;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;14;Farbe 14;TEPSOLI04_014,TEPSOLI05_014;14 Beige Mittel;2059-000103;ja;ja;ja;ja;jordan;mplus;
@@ -572,7 +527,6 @@ MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;17;Farbe 17;TEPSOLI04_
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;24;Farbe 24;TEPSOLI04_024,TEPSOLI05_024;24 Grau Mittel;2059-000105;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;32;;;32 Blau Hell;2059-000106;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Solid;MPlus Akzente 2029 2404-11 TR 400 cm;43;;;43 Grün Hell;2059-000107;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
-NO_MATCH;Borneo;;0;x 500,0;TEPBORNEO4,TEPBORNEO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Borneo;;21;Farbe 21;TEPBORNEO4_021,TEPBORNEO5_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Borneo;;33;Farbe 33;TEPBORNEO4_033,TEPBORNEO5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Borneo;;36;Farbe 36;TEPBORNEO4_036,TEPBORNEO5_036;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -583,7 +537,6 @@ NO_MATCH;Borneo;;80;Farbe 80;TEPBORNEO4_080,TEPBORNEO5_080;;;ja;nein;ja;ja;jorda
 NO_MATCH;Borneo;;95;Farbe 95;TEPBORNEO4_095,TEPBORNEO5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Borneo;;98;Farbe 98;TEPBORNEO4_098,TEPBORNEO5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Borneo;;99;Farbe 99;TEPBORNEO4_099,TEPBORNEO5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Samir;;0;x 400,0;TEPSAMIR4,TEPSAMIR5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samir;;180;Farbe 180;TEPSAMIR4_180,TEPSAMIR5_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samir;;250;Farbe 250;TEPSAMIR4_250,TEPSAMIR5_250;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samir;;260;Farbe 260;TEPSAMIR4_260,TEPSAMIR5_260;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -594,7 +547,6 @@ NO_MATCH;Samir;;820;Farbe 820;TEPSAMIR4_820,TEPSAMIR5_820;;;ja;nein;ja;ja;jordan
 NO_MATCH;Samir;;830;Farbe 830;TEPSAMIR4_830,TEPSAMIR5_830;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samir;;840;Farbe 840;TEPSAMIR4_840,TEPSAMIR5_840;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Samir;;850;Farbe 850;TEPSAMIR4_850,TEPSAMIR5_850;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Vero;;0;x 500,0;TEPVER04,TEPVER05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vero;;27;Farbe 27;TEPVER04_027,TEPVER05_027;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vero;;34;Farbe 34;TEPVER04_034,TEPVER05_034;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vero;;39;Farbe 39;TEPVER04_039,TEPVER05_039;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -602,12 +554,10 @@ NO_MATCH;Vero;;77;Farbe 77;TEPVER04_077,TEPVER05_077;;;ja;nein;ja;ja;jordan;;nur
 NO_MATCH;Vero;;84;Farbe 84;TEPVER04_084,TEPVER05_084;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vero;;90;Farbe 90;TEPVER04_090,TEPVER05_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vero;;97;Farbe 97;TEPVER04_097,TEPVER05_097;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Bari;;0;x 500,0;TEPBAR4,TEPBAR5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Bari;;410;Farbe 410;TEPBAR4_410,TEPBAR5_410;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Bari;;412;Farbe 412;TEPBAR4_412,TEPBAR5_412;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Bari;;414;Farbe 414;TEPBAR4_414,TEPBAR5_414;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Bari;;415;Farbe 415;TEPBAR4_415,TEPBAR5_415;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cala;;0;x 500,0;TEPCAL4,TEPCAL5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cala;;24;Farbe 24;TEPCAL4_024,TEPCAL5_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cala;;33;Farbe 33;TEPCAL4_033,TEPCAL5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cala;;34;Farbe 34;TEPCAL4_034,TEPCAL5_034;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -616,7 +566,6 @@ NO_MATCH;Cala;;40;Farbe 40;TEPCAL4_040,TEPCAL5_040;;;ja;nein;ja;ja;jordan;;nur J
 NO_MATCH;Cala;;60;Farbe 60;TEPCAL4_060,TEPCAL5_060;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cala;;90;Farbe 90;TEPCAL4_090,TEPCAL5_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cala;;95;Farbe 95;TEPCAL4_095,TEPCAL5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Mila;;0;x 400,0;TEPMIL04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;26;Farbe 26;TEPMIL04_026;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;31;Farbe 31;TEPMIL04_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;36;Farbe 36;TEPMIL04_036;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -626,7 +575,6 @@ NO_MATCH;Mila;;74;Farbe 74;TEPMIL04_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;94;Farbe 94;TEPMIL04_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;95;Farbe 95;TEPMIL04_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mila;;97;Farbe 97;TEPMIL04_097;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Altro;;0;x 400,0;TEPALTRO4,TEPALTRO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Altro;;22;Farbe 22;TEPALTRO4_022,TEPALTRO5_022;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Altro;;63;Farbe 63;TEPALTRO4_063,TEPALTRO5_063;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Altro;;71;Farbe 71;TEPALTRO4_071,TEPALTRO5_071;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -634,7 +582,6 @@ NO_MATCH;Altro;;73;Farbe 73;TEPALTRO4_073,TEPALTRO5_073;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Altro;;77;Farbe 77;TEPALTRO4_077,TEPALTRO5_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Altro;;81;Farbe 81;TEPALTRO4_081,TEPALTRO5_081;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Altro;;91;Farbe 91;TEPALTRO4_091,TEPALTRO5_091;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;0;x 400,0;TEPPLAZ04,TEPPLAZ05;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;22;Farbe 22;TEPPLAZ04_022,TEPPLAZ05_022;22 Rot Mittel;2052-000872;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;42;Farbe 42;TEPPLAZ04_042,TEPPLAZ05_042;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;70;Farbe 70;TEPPLAZ04_070,TEPPLAZ05_070;70 Weiß Mittel;2052-000873;ja;ja;ja;ja;jordan;mplus;
@@ -653,7 +600,6 @@ MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;92;Farbe 92;TEPPLAZ04_
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;93;Farbe 93;TEPPLAZ04_093,TEPPLAZ05_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;94;Farbe 94;TEPPLAZ04_094,TEPPLAZ05_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Plaza;MPlus Akzente 2029 2403-22 TR 400 cm;178;Farbe 178;TEPPLAZ04_178,TEPPLAZ05_178;178 Schwarz Mittel;2052-000878;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Rigoletto;;0;x 500,0;TEPRIGO4,TEPRIGO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rigoletto;;28;Farbe 28;TEPRIGO4_028,TEPRIGO5_028;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rigoletto;;30;Farbe 30;TEPRIGO4_030,TEPRIGO5_030;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rigoletto;;33;Farbe 33;TEPRIGO4_033,TEPRIGO5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -669,7 +615,6 @@ NO_MATCH;Rigoletto;;97;Farbe 97;TEPRIGO4_097,TEPRIGO5_097;;;ja;nein;ja;ja;jordan
 NO_MATCH;Rigoletto;;141;Farbe 141;TEPRIGO4_141,TEPRIGO5_141;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rigoletto;;297;Farbe 297;TEPRIGO4_297,TEPRIGO5_297;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rigoletto;;298;Farbe 298;TEPRIGO4_298,TEPRIGO5_298;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Corsaro;;0;x 500,0;TEPCORSA4,TEPCORSA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Corsaro;;21;Farbe 21;TEPCORSA4_021,TEPCORSA5_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Corsaro;;29;Farbe 29;TEPCORSA4_029,TEPCORSA5_029;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Corsaro;;31;Farbe 31;TEPCORSA4_031,TEPCORSA5_031;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -685,7 +630,6 @@ NO_MATCH;Corsaro;;90;Farbe 90;TEPCORSA4_090,TEPCORSA5_090;;;ja;nein;ja;ja;jordan
 NO_MATCH;Corsaro;;93;Farbe 93;TEPCORSA4_093,TEPCORSA5_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Corsaro;;96;Farbe 96;TEPCORSA4_096,TEPCORSA5_096;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Corsaro;;98;Farbe 98;TEPCORSA4_098,TEPCORSA5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Ambra;;0;x 500,0;TEPAMBR4,TEPAMBR5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambra;;24;Farbe 24;TEPAMBR4_024,TEPAMBR5_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambra;;30;Farbe 30;TEPAMBR4_030,TEPAMBR5_030;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambra;;34;Farbe 34;TEPAMBR4_034,TEPAMBR5_034;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -698,7 +642,6 @@ NO_MATCH;Ambra;;93;Farbe 93;TEPAMBR4_093,TEPAMBR5_093;;;ja;nein;ja;ja;jordan;;nu
 NO_MATCH;Ambra;;95;Farbe 95;TEPAMBR4_095,TEPAMBR5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambra;;97;Farbe 97;TEPAMBR4_097,TEPAMBR5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambra;;99;Farbe 99;TEPAMBR4_099,TEPAMBR5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;0;x 500,0;TEPDERB4,TEPDERB5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;15;Farbe 15;TEPDERB4_015,TEPDERB5_015;15 Rot Dunkel;2014-002866;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;24;Farbe 24;TEPDERB4_024,TEPDERB5_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;28;Farbe 28;TEPDERB4_028,TEPDERB5_028;28 Grün Dunkel;2014-002867;ja;ja;ja;ja;jordan;mplus;
@@ -717,7 +660,6 @@ MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;94;Farbe 94;TEPDERB4_0
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;97;Farbe 97;TEPDERB4_097,TEPDERB5_097;97 Grau Dunkel;2014-002875;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;98;Farbe 98;TEPDERB4_098,TEPDERB5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Derby;MPlus Akzente 2029 2408-15 TR 400 cm;99;Farbe 99;TEPDERB4_099,TEPDERB5_099;99 Schwarz Dunkel;2014-002876;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Luna;;0;x 400,0;TEPLUN4,TEPLUN5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Luna;;21;Farbe 21;TEPLUN4_021,TEPLUN5_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Luna;;36;Farbe 36;TEPLUN4_036,TEPLUN5_036;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Luna;;44;Farbe 44;TEPLUN4_044,TEPLUN5_044;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -730,7 +672,6 @@ NO_MATCH;Luna;;65;Farbe 65;TEPLUN4_065,TEPLUN5_065;;;ja;nein;ja;ja;jordan;;nur J
 NO_MATCH;Luna;;73;Farbe 73;TEPLUN4_073,TEPLUN5_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Luna;;91;Farbe 91;TEPLUN4_091,TEPLUN5_091;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Luna;;92;Farbe 92;TEPLUN4_092,TEPLUN5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Terra;;0;x 400,0;TEPTERR04,TEPTERR05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terra;;45;Farbe 45;TEPTERR04_045,TEPTERR05_045;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terra;;71;Farbe 71;TEPTERR04_071,TEPTERR05_071;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terra;;74;Farbe 74;TEPTERR04_074,TEPTERR05_074;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -745,7 +686,6 @@ NO_MATCH;Terra;;96;Farbe 96;TEPTERR04_096,TEPTERR05_096;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Terra;;97;Farbe 97;TEPTERR04_097,TEPTERR05_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terra;;178;Farbe 178;TEPTERR04_178,TEPTERR05_178;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terra;;179;Farbe 179;TEPTERR04_179,TEPTERR05_179;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sumatra;;0;x 400,0;TEPSUMATR4,TEPSUMATR5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sumatra;;20;Farbe 20;TEPSUMATR4_020,TEPSUMATR5_020;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sumatra;;40;Farbe 40;TEPSUMATR4_040,TEPSUMATR5_040;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sumatra;;50;Farbe 50;TEPSUMATR4_050,TEPSUMATR5_050;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -758,7 +698,6 @@ NO_MATCH;Sumatra;;176;Farbe 176;TEPSUMATR4_176,TEPSUMATR5_176;;;ja;nein;ja;ja;jo
 NO_MATCH;Sumatra;;177;Farbe 177;TEPSUMATR4_177,TEPSUMATR5_177;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sumatra;;182;Farbe 182;TEPSUMATR4_182,TEPSUMATR5_182;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sumatra;;274;Farbe 274;TEPSUMATR4_274,TEPSUMATR5_274;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Nobel;;0;x 400,0;TEPNOBEL4,TEPNOBEL5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nobel;;12;Farbe 12;TEPNOBEL4_012,TEPNOBEL5_012;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nobel;;15;Farbe 15;TEPNOBEL4_015,TEPNOBEL5_015;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nobel;;40;Farbe 40;TEPNOBEL4_040,TEPNOBEL5_040;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -774,7 +713,6 @@ NO_MATCH;Nobel;;474;Farbe 474;TEPNOBEL4_474,TEPNOBEL5_474;;;ja;nein;ja;ja;jordan
 NO_MATCH;Nobel;;476;Farbe 476;TEPNOBEL4_476,TEPNOBEL5_476;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nobel;;482;Farbe 482;TEPNOBEL4_482,TEPNOBEL5_482;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nobel;;492;Farbe 492;TEPNOBEL4_492,TEPNOBEL5_492;;;ja;nein;ja;ja;jordan;;nur Jordan
-REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;0;x 400,0;TEPMONTEG4,TEPMONTEG5;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;20;;;20 Rot Dunkel;2052-000850;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;40;;;40 Grün Dunkel;2052-000851;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;50;Farbe 50;TEPMONTEG4_050,TEPMONTEG5_050;50 Gelb Dunkel;2052-000852;ja;ja;ja;ja;jordan;mplus;
@@ -796,7 +734,6 @@ REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;240;Farbe 240;TEPMO
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;273;Farbe 273;TEPMONTEG4_273,TEPMONTEG5_273;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;274;Farbe 274;TEPMONTEG4_274,TEPMONTEG5_274;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Montego;MPlus Akzente 2029 2401-20 DB 400 cm;277;Farbe 277;TEPMONTEG4_277,TEPMONTEG5_277;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Feeling;;0;x 400,0;TEPFEELIN4,TEPFEELIN5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feeling;;3;Farbe 03;TEPFEELIN4_003,TEPFEELIN5_003;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feeling;;9;Farbe 09;TEPFEELIN4_009,TEPFEELIN5_009;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feeling;;18;Farbe 18;TEPFEELIN4_018,TEPFEELIN5_018;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -812,7 +749,6 @@ NO_MATCH;Feeling;;90;Farbe 90;TEPFEELIN4_090,TEPFEELIN5_090;;;ja;nein;ja;ja;jord
 NO_MATCH;Feeling;;94;Farbe 94;TEPFEELIN4_094,TEPFEELIN5_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feeling;;97;Farbe 97;TEPFEELIN4_097,TEPFEELIN5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feeling;;98;Farbe 98;TEPFEELIN4_098,TEPFEELIN5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Alamo;;0;x 400,0;TEPALAMO4,TEPALAMO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Alamo;;3;Farbe 03;TEPALAMO4_003,TEPALAMO5_003;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Alamo;;5;Farbe 05;TEPALAMO4_005,TEPALAMO5_005;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Alamo;;24;Farbe 24;TEPALAMO4_024,TEPALAMO5_024;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -827,7 +763,6 @@ NO_MATCH;Alamo;;95;Farbe 95;TEPALAMO4_095,TEPALAMO5_095;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Alamo;;96;Farbe 96;TEPALAMO4_096,TEPALAMO5_096;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Alamo;;97;Farbe 97;TEPALAMO4_097,TEPALAMO5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Alamo;;99;Farbe 99;TEPALAMO4_099,TEPALAMO5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;0;x 500,0;TEPZIRKON4,TEPZIRKON5;;;ja;nein;ja;ja;jordan;;nur Jordan
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;250;Farbe 250;TEPZIRKON4_250,TEPZIRKON5_250;250 Beige Hell;2055-000909;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;260;Farbe 260;TEPZIRKON4_260,TEPZIRKON5_260;260 Beige Mittel;2055-000910;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;400;Farbe 400;TEPZIRKON4_400,TEPZIRKON5_400;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -838,7 +773,6 @@ REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;820;Farbe 820;TEP
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;830;Farbe 830;TEPZIRKON4_830,TEPZIRKON5_830;830 Grau Mittel;2055-000912;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;840;Farbe 840;TEPZIRKON4_840,TEPZIRKON5_840;840 Grau Hell;2055-000913;ja;ja;ja;ja;jordan;mplus;
 REVIEW_REQUIRED;Zirkonia;MPlus Akzente 2029 2412-250 VR 400 cm;850;Farbe 850;TEPZIRKON4_850,TEPZIRKON5_850;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Dolce;;0;x 400,0;TEPDOLCE4,TEPDOLCE5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Dolce;;4;Farbe 04;TEPDOLCE4_004,TEPDOLCE5_004;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Dolce;;27;Farbe 27;TEPDOLCE4_027,TEPDOLCE5_027;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Dolce;;30;Farbe 30;TEPDOLCE4_030,TEPDOLCE5_030;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -853,7 +787,6 @@ NO_MATCH;Dolce;;92;Farbe 92;TEPDOLCE4_092,TEPDOLCE5_092;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Dolce;;95;Farbe 95;TEPDOLCE4_095,TEPDOLCE5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Dolce;;98;Farbe 98;TEPDOLCE4_098,TEPDOLCE5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Dolce;;99;Farbe 99;TEPDOLCE4_099,TEPDOLCE5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Point;;0;x 500,0;TEPPOI04,TEPPOI05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Point;;121;Farbe 121;TEPPOI04_121,TEPPOI05_121;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Point;;132;Farbe 132;TEPPOI04_132,TEPPOI05_132;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Point;;136;Farbe 136;TEPPOI04_136,TEPPOI05_136;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -864,7 +797,6 @@ NO_MATCH;Point;;724;Farbe 724;TEPPOI04_724,TEPPOI05_724;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Point;;725;Farbe 725;TEPPOI04_725,TEPPOI05_725;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Point;;751;Farbe 751;TEPPOI04_751,TEPPOI05_751;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Point;;753;Farbe 753;TEPPOI04_753,TEPPOI05_753;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Calais;;0;x 500,0;TEPCALA4,TEPCALA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Calais;;121;Farbe 121;TEPCALA4_121,TEPCALA5_121;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Calais;;139;Farbe 139;TEPCALA4_139,TEPCALA5_139;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Calais;;143;Farbe 143;TEPCALA4_143,TEPCALA5_143;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -875,46 +807,38 @@ NO_MATCH;Calais;;159;Farbe 159;TEPCALA4_159,TEPCALA5_159;;;ja;nein;ja;ja;jordan;
 NO_MATCH;Calais;;212;Farbe 212;TEPCALA4_212,TEPCALA5_212;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Calais;;229;Farbe 229;TEPCALA4_229,TEPCALA5_229;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Calais;;233;Farbe 233;TEPCALA4_233,TEPCALA5_233;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rosso;;0;x 500,0;TEPROSSO4,TEPROSSO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rosso;;126;Farbe 126;TEPROSSO4_126,TEPROSSO5_126;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Nelson;;0;x 500,0;TEPNELS4,TEPNELS5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;102;Farbe 102;TEPNELS4_102,TEPNELS5_102;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;109;Farbe 109;TEPNELS4_109,TEPNELS5_109;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;119;Farbe 119;TEPNELS4_119,TEPNELS5_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;122;Farbe 122;TEPNELS4_122,TEPNELS5_122;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;153;Farbe 153;TEPNELS4_153,TEPNELS5_153;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Nelson;;159;Farbe 159;TEPNELS4_159,TEPNELS5_159;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Parlo;;0;x 400,0;TEPPARLO04,TEPPARLO05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlo;;112;Farbe 112;TEPPARLO04_112,TEPPARLO05_112;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlo;;119;Farbe 119;TEPPARLO04_119,TEPPARLO05_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlo;;126;Farbe 126;TEPPARLO04_126,TEPPARLO05_126;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlo;;132;Farbe 132;TEPPARLO04_132,TEPPARLO05_132;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlo;;139;Farbe 139;TEPPARLO04_139,TEPPARLO05_139;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Oase;;0;x 500,0;TEPOASE04,TEPOASE05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Oase;;513;Farbe 513;TEPOASE04_513,TEPOASE05_513;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Oase;;514;Farbe 514;TEPOASE04_514,TEPOASE05_514;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Oase;;515;Farbe 515;TEPOASE04_515,TEPOASE05_515;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Oase;;518;Farbe 518;TEPOASE04_518,TEPOASE05_518;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Oase;;522;Farbe 522;TEPOASE04_522,TEPOASE05_522;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sipo;;0;x 500,0;TEPSIPO04,TEPSIPO05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sipo;;513;Farbe 513;TEPSIPO04_513,TEPSIPO05_513;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sipo;;514;Farbe 514;TEPSIPO04_514,TEPSIPO05_514;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sipo;;515;Farbe 515;TEPSIPO04_515,TEPSIPO05_515;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sipo;;518;Farbe 518;TEPSIPO04_518,TEPSIPO05_518;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sipo;;522;Farbe 522;TEPSIPO04_522,TEPSIPO05_522;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Vida;;0;x 400,0;TEPVIDA04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vida;;511;Farbe 511;TEPVIDA04_511;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vida;;513;Farbe 513;TEPVIDA04_513;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vida;;515;Farbe 515;TEPVIDA04_515;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vida;;523;Farbe 523;TEPVIDA04_523;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Vida;;525;Farbe 525;TEPVIDA04_525;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lavi;;0;x 400,0;TEPLAVI04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lavi;;510;Farbe 510;TEPLAVI04_510;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lavi;;514;Farbe 514;TEPLAVI04_514;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lavi;;516;Farbe 516;TEPLAVI04_516;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lavi;;520;Farbe 520;TEPLAVI04_520;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lavi;;522;Farbe 522;TEPLAVI04_522;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lida;;0;x 400,0;TEPLIDA04,TEPLIDA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lida;;112;Farbe 112;TEPLIDA04_112,TEPLIDA05_112;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lida;;129;Farbe 129;TEPLIDA04_129,TEPLIDA05_129;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lida;;132;Farbe 132;TEPLIDA04_132,TEPLIDA05_132;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -922,7 +846,6 @@ NO_MATCH;Lida;;133;Farbe 133;TEPLIDA04_133,TEPLIDA05_133;;;ja;nein;ja;ja;jordan;
 NO_MATCH;Lida;;139;Farbe 139;TEPLIDA04_139,TEPLIDA05_139;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lida;;159;Farbe 159;TEPLIDA04_159,TEPLIDA05_159;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lida;;169;Farbe 169;TEPLIDA04_169,TEPLIDA05_169;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Mavie;;0;x 400,0;TEPMAVIE04,TEPMAVIE05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mavie;;109;Farbe 109;TEPMAVIE04_109,TEPMAVIE05_109;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mavie;;112;Farbe 112;TEPMAVIE04_112,TEPMAVIE05_112;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mavie;;113;Farbe 113;TEPMAVIE04_113,TEPMAVIE05_113;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -930,13 +853,11 @@ NO_MATCH;Mavie;;119;Farbe 119;TEPMAVIE04_119,TEPMAVIE05_119;;;ja;nein;ja;ja;jord
 NO_MATCH;Mavie;;129;Farbe 129;TEPMAVIE04_129,TEPMAVIE05_129;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mavie;;132;Farbe 132;TEPMAVIE04_132,TEPMAVIE05_132;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mavie;;139;Farbe 139;TEPMAVIE04_139,TEPMAVIE05_139;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Filo;;0;x 500,0;TEPFILO04,TEPFILO05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filo;;513;Farbe 513;TEPFILO04_513,TEPFILO05_513;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filo;;514;Farbe 514;TEPFILO04_514,TEPFILO05_514;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filo;;515;Farbe 515;TEPFILO04_515,TEPFILO05_515;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filo;;518;Farbe 518;TEPFILO04_518,TEPFILO05_518;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filo;;522;Farbe 522;TEPFILO04_522,TEPFILO05_522;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Denia;;0;x 500,0;TEPDENIA04,TEPDENIA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Denia;;119;Farbe 119;TEPDENIA04_119,TEPDENIA05_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Denia;;122;Farbe 122;TEPDENIA04_122,TEPDENIA05_122;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Denia;;123;Farbe 123;TEPDENIA04_123,TEPDENIA05_123;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -945,14 +866,12 @@ NO_MATCH;Denia;;149;Farbe 149;TEPDENIA04_149,TEPDENIA05_149;;;ja;nein;ja;ja;jord
 NO_MATCH;Denia;;163;Farbe 163;TEPDENIA04_163,TEPDENIA05_163;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Denia;;179;Farbe 179;TEPDENIA04_179,TEPDENIA05_179;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Denia;;189;Farbe 189;TEPDENIA04_189,TEPDENIA05_189;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cosmo;;0;x 400,0;TEPCOSMO04,TEPCOSMO05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;102;Farbe 102;TEPCOSMO04_102,TEPCOSMO05_102;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;109;Farbe 109;TEPCOSMO04_109,TEPCOSMO05_109;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;119;Farbe 119;TEPCOSMO04_119,TEPCOSMO05_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;122;Farbe 122;TEPCOSMO04_122,TEPCOSMO05_122;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;153;Farbe 153;TEPCOSMO04_153,TEPCOSMO05_153;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosmo;;159;Farbe 159;TEPCOSMO04_159,TEPCOSMO05_159;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;0;x 400,0;TEPNAFGRA2,TEPNAFGRA4;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;20;;;911-0020 Grün Mittel;2965-000025;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;32;Farbe 32;TEPNAFGRA2_32,TEPNAFGRA4_32;911-0032 Blau Dunkel;2965-000027;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;35;Farbe 35;TEPNAFGRA2_35,TEPNAFGRA4_35;911-0035 Grau Mittel;2965-000029;ja;ja;ja;ja;jordan;mplus;
@@ -963,7 +882,6 @@ MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;50;Farbe 50;TEPNA
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;70;Farbe 70;TEPNAFGRA2_70,TEPNAFGRA4_70;911-0070 Grau Hell;2965-000039;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;72;Farbe 72;TEPNAFGRA2_72,TEPNAFGRA4_72;911-0072 Grau Mittel;2965-000041;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Granat;MPlus Analog 2029 911-0020 200 cm Rhodos;80;Farbe 80;TEPNAFGRA2_80,TEPNAFGRA4_80;911-0080 Braun Hell;2965-000043;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Karat;;0;x 200,0;TEPKARAT2;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;30;Fb. 30;TEPKARAT2_030;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;40;Fb. 40;TEPKARAT2_040;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;50;Fb. 50;TEPKARAT2_050;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -973,7 +891,6 @@ NO_MATCH;Karat;;80;Fb. 80;TEPKARAT2_080;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;90;Fb. 90;TEPKARAT2_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;100;Fb. 100;TEPKARAT2_100;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat;;110;Fb. 110;TEPKARAT2_110;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Basalt;;0;x 400,0;TEPBASAL2,TEPBASAL4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt;;16;Fb. 16;TEPBASAL2_016,TEPBASAL4_016;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt;;24;Fb. 24;TEPBASAL2_024,TEPBASAL4_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt;;44;Fb. 44;TEPBASAL2_044,TEPBASAL4_044;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -982,7 +899,6 @@ NO_MATCH;Basalt;;56;Fb. 56;TEPBASAL2_056,TEPBASAL4_056;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Basalt;;85;Fb. 85;TEPBASAL2_085,TEPBASAL4_085;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt;;88;Fb. 88;TEPBASAL2_088,TEPBASAL4_088;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt;;89;Fb. 89;TEPBASAL2_089,TEPBASAL4_089;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Granit;;0;x 200,0;TEPGRAN04,TEPGRAN2;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granit;;20;Farbe 20;TEPGRAN04_020,TEPGRAN2_020;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granit;;32;Farbe 32;TEPGRAN04_032,TEPGRAN2_032;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granit;;39;Farbe 39;TEPGRAN04_039,TEPGRAN2_039;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -993,7 +909,6 @@ NO_MATCH;Granit;;62;Farbe 62;TEPGRAN04_062,TEPGRAN2_062;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Granit;;70;Farbe 70;TEPGRAN04_070,TEPGRAN2_070;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granit;;72;Farbe 72;TEPGRAN04_072,TEPGRAN2_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granit;;80;Farbe 80;TEPGRAN04_080,TEPGRAN2_080;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;0;x 200,0;TEPNAFFORL;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;6802;Farbe 6802;TEPNAFFORL_6802;916-6802 Grau Mittel;2022-001416;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;7202;Farbe 7202;TEPNAFFORL_7202;916-7202 Blau Mittel;2022-001417;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;7602;Farbe 7602;TEPNAFFORL_7602;916-7602 Blau Dunkel;2022-001419;ja;ja;ja;ja;jordan;mplus;
@@ -1004,7 +919,6 @@ MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;8802;Farbe 8802;
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;9002;Farbe 9002;TEPNAFFORL_9002;916-9002 Grau Mittel;2022-001425;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;9202;Farbe 9202;TEPNAFFORL_9202;916-9202 Blau Dunkel;2022-001426;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Forte;MPlus Analog 2029 916-6802 200 cm Santorin;9802;Farbe 9802;TEPNAFFORL_9802;916-9802 Schwarz Dunkel;2022-001427;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Mars;;0;x 200,0;TEPNAFMARS;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;100;Farbe 100;TEPNAFMARS_100;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;150;Farbe 150;TEPNAFMARS_150;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;200;Farbe 200;TEPNAFMARS_200;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1015,7 +929,6 @@ NO_MATCH;Mars;;400;Farbe 400;TEPNAFMARS_400;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;500;Farbe 500;TEPNAFMARS_500;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;750;Farbe 750;TEPNAFMARS_750;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mars;;850;Farbe 850;TEPNAFMARS_850;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Granat Fliese;;0;0,500x  50,0;TEPNAFGRAF;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granat Fliese;;39;Fb. 39;TEPNAFGRAF_039;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granat Fliese;;50;Fb. 50;TEPNAFGRAF_050;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Granat Fliese;;70;Fb. 70;TEPNAFGRAF_070;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1030,8 +943,6 @@ NO_MATCH;Karat Fliese;;80;Fb. 80;TEPKARATFL_080;;;ja;nein;ja;ja;jordan;;nur Jord
 NO_MATCH;Karat Fliese;;90;Fb. 90;TEPKARATFL_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat Fliese;;100;Fb. 100;TEPKARATFL_100;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karat Fliese;;110;Fb. 110;TEPKARATFL_110;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Karat Fliese;;TEPKARATFL;;TEPKARATFL;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;0;x 200,0;TEPSTRO956;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;21;Farbe 021;TEPSTRO956_021;956-0021 Grau Hell;2965-000046;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;24;Farbe 024;TEPSTRO956_024;956-0024 Blau Hell;2965-000047;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;37;Farbe 037;TEPSTRO956_037;956-0037 Grün Mittel;2965-000048;ja;ja;ja;ja;jordan;mplus;
@@ -1064,7 +975,6 @@ MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;177;Farbe 17
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;180;Farbe 180;TEPSTRO956_180;956-0180 Grau Mittel;2965-000075;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;181;Farbe 181;TEPSTRO956_181;956-0181 Schwarz Dunkel;2965-000076;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 956;MPlus Analog 2029 956-0021 200 cm Strong;190;Farbe 190;TEPSTRO956_190;956-0190 Lila Dunkel;2965-000077;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Titan Eco;;0;x 200,0;TEPNAFJVT4,TEPNAFJVTI;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco;;160;Farbe 160;TEPNAFJVT4_16,TEPNAFJVTI_16;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco;;200;Farbe 200;TEPNAFJVT4_20,TEPNAFJVTI_20;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco;;300;Farbe 300;TEPNAFJVT4_30,TEPNAFJVTI_30;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1078,7 +988,6 @@ NO_MATCH;Titan Eco;;630;Farbe 630;TEPNAFJVT4_63,TEPNAFJVTI_63;;;ja;nein;ja;ja;jo
 NO_MATCH;Titan Eco;;700;Farbe 700;TEPNAFJVT4_70,TEPNAFJVTI_70;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco;;720;Farbe 720;TEPNAFJVT4_72,TEPNAFJVTI_72;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco;;800;Farbe 800;TEPNAFJVT4_80,TEPNAFJVTI_80;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;0;x 200,0;TEPM733L;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;16;Farbe 16;TEPM733L_016;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;21;Farbe 21;TEPM733L_021;733-0021 Grau Mittel;2965-000093;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;24;Farbe 24;TEPM733L_024;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1092,7 +1001,6 @@ MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;120;Farbe 12
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;142;Farbe 142;TEPM733L_142;733-0142 Beige Mittel;2965-000100;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;180;Farbe 180;TEPM733L_180;733-0180 Grau Mittel;2965-000101;ja;ja;ja;ja;jordan;mplus;
 MATCH_CONFIRMED;Strong 733;MPlus Analog 2029 733-0021 200 cm Strong;181;Farbe 181;TEPM733L_181;733-0181 Schwarz Dunkel;2965-000102;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Strong 966 Fliese;;0;0,500x  50,0;TEPSTR966;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 966 Fliese;;24;Fb. 24;TEPSTR966_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 966 Fliese;;39;Fb. 39;TEPSTR966_039;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 966 Fliese;;50;Fb. 50;TEPSTR966_050;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1103,7 +1011,6 @@ NO_MATCH;Strong 966 Fliese;;85;Fb. 85;TEPSTR966_085;;;ja;nein;ja;ja;jordan;;nur 
 NO_MATCH;Strong 966 Fliese;;89;Fb. 89;TEPSTR966_089;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 966 Fliese;;141;Fb. 141;TEPSTR966_141;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 966 Fliese;;181;Fb. 181;TEPSTR966_181;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Titan Eco Fliese;;0;0,500x  50,0;TEPNAFJVTE;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco Fliese;;160;Fb. 160;TEPNAFJVTE_160;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco Fliese;;310;Fb. 310;TEPNAFJVTE_310;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco Fliese;;330;Fb. 330;TEPNAFJVTE_330;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1111,7 +1018,6 @@ NO_MATCH;Titan Eco Fliese;;390;Fb. 390;TEPNAFJVTE_390;;;ja;nein;ja;ja;jordan;;nu
 NO_MATCH;Titan Eco Fliese;;500;Fb. 500;TEPNAFJVTE_500;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco Fliese;;700;Fb. 700;TEPNAFJVTE_700;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Eco Fliese;;720;Fb. 720;TEPNAFJVTE_720;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Strong Compact 926;;0;x 200,0;TEPSTRCOM;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong Compact 926;;21;Fb. 021;TEPSTRCOM_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong Compact 926;;39;Fb. 039;TEPSTRCOM_039;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong Compact 926;;54;Fb. 054;TEPSTRCOM_054;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1122,7 +1028,6 @@ NO_MATCH;Strong Compact 926;;136;Fb. 136;TEPSTRCOM_136;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Strong Compact 926;;141;Fb. 141;TEPSTRCOM_141;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong Compact 926;;177;Fb. 177;TEPSTRCOM_177;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong Compact 926;;181;Fb. 181;TEPSTRCOM_181;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Strong 745;;0;x 200,0;TEPM745SL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 745;;21;Farbe 21;TEPM745SL_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 745;;24;Farbe 24;TEPM745SL_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 745;;44;Farbe 44;TEPM745SL_044;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1143,7 +1048,6 @@ NO_MATCH;Strong 745;;165;Farbe 165;TEPM745SL_165;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Strong 745;;174;Farbe 174;TEPM745SL_174;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 745;;180;Farbe 180;TEPM745SL_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 745;;181;Farbe 181;TEPM745SL_181;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Strong 956 Tide;;0;x 200,0;TEPSTR956T;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 956 Tide;;2024;Fb. 2024;TEPSTR956T_2024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 956 Tide;;2044;Fb. 2044;TEPSTR956T_2044;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 956 Tide;;2056;Fb. 2056;TEPSTR956T_2056;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1151,7 +1055,6 @@ NO_MATCH;Strong 956 Tide;;2085;Fb. 2085;TEPSTR956T_2085;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Strong 956 Tide;;2088;Fb. 2088;TEPSTR956T_2088;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 956 Tide;;2180;Fb. 2180;TEPSTR956T_2180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Strong 956 Tide;;2181;Fb. 2181;TEPSTR956T_2181;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rambo;;0;0,500x  50,0;TEPRAMBOFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;61;Farbe 61;TEPRAMBOFL_061;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;140;Farbe 140;TEPRAMBOFL_140;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;210;Farbe 210;TEPRAMBOFL_210;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1177,13 +1080,11 @@ NO_MATCH;Rambo;;983;Farbe 983;TEPRAMBOFL_983;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;989;Farbe 989;TEPRAMBOFL_989;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;990;Farbe 990;TEPRAMBOFL_990;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rambo;;995;Farbe 995;TEPRAMBOFL_995;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Central Fliese;;0;0,500x  50,0;TEPCENTRFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central Fliese;;72;Farbe 072;TEPCENTRFL_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central Fliese;;77;Farbe 077;TEPCENTRFL_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central Fliese;;78;Farbe 078;TEPCENTRFL_078;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central Fliese;;93;Farbe 093;TEPCENTRFL_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central Fliese;;378;Farbe 378;TEPCENTRFL_378;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Pathos Fliese;;0;0,500x  50,0;TEPPATHOFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos Fliese;;50;Farbe 50;TEPPATHOFL_050;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos Fliese;;73;Farbe 73;TEPPATHOFL_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos Fliese;;76;Farbe 76;TEPPATHOFL_076;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1192,7 +1093,6 @@ NO_MATCH;Pathos Fliese;;90;Farbe 90;TEPPATHOFL_090;;;ja;nein;ja;ja;jordan;;nur J
 NO_MATCH;Pathos Fliese;;92;Farbe 92;TEPPATHOFL_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos Fliese;;173;Farbe 173;TEPPATHOFL_173;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Pathos Fliese;;181;Farbe 181;TEPPATHOFL_181;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;0;0,500x  50,0;TEPRAPIDFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;20;Farbe 20;TEPRAPIDFL_20;20 Rot Dunkel;2052-000831;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;41;;;41 Grün Dunkel;2052-000832;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;72;;;72 Beige Mittel;2052-000833;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
@@ -1207,7 +1107,6 @@ MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;576;Farbe 576;TEPRAPIDFL_576;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;578;Farbe 578;TEPRAPIDFL_578;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Rapid Fliese;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;582;Farbe 582;TEPRAPIDFL_582;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Diego;;0;0,500x  50,0;TEPDIEGOFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;105;Farbe 105;TEPDIEGOFL_105;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;110;Farbe 110;TEPDIEGOFL_110;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;115;Farbe 115;TEPDIEGOFL_115;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1233,13 +1132,11 @@ NO_MATCH;Diego;;930;Farbe 930;TEPDIEGOFL_930;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;935;Farbe 935;TEPDIEGOFL_935;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;940;Farbe 940;TEPDIEGOFL_940;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Diego;;945;Farbe 945;TEPDIEGOFL_945;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cosy Fliese;;0;0,500x  50,0;TEPCOSY1FL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;74;Farbe 74;TEPCOSY1FL_74;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;75;Farbe 75;TEPCOSY1FL_75;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;77;Farbe 77;TEPCOSY1FL_77;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;78;Farbe 78;TEPCOSY1FL_78;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;80;Farbe 80;TEPCOSY1FL_80;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;0;0,500x  50,0;TEPIDEA1FL;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;73;Farbe 73;TEPIDEA1FL_73;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;74;;;214-74 Grau Mittel;2052-000787;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;75;;;214-75 Grau Dunkel;2052-000788;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
@@ -1249,7 +1146,6 @@ MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pc
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;80;;;214-80 Beige Mittel;2052-000792;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;90;;;214-90 Blau Mittel;2052-000793;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Idea Fliese;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;177;;;214-177 Grau Dunkel;2052-000794;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
-NO_MATCH;Keno;;0;0,500x  50,0;TEPKENOFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;111;Farbe 111;TEPKENOFL_111;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;123;Farbe 123;TEPKENOFL_123;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;124;Farbe 124;TEPKENOFL_124;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1268,7 +1164,6 @@ NO_MATCH;Keno;;921;Farbe 921;TEPKENOFL_921;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;937;Farbe 937;TEPKENOFL_937;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;942;Farbe 942;TEPKENOFL_942;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Keno;;946;Farbe 946;TEPKENOFL_946;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Silas;;0;0,500x  50,0;TEPSILASFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;140;Farbe 140;TEPSILASFL_140;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;145;Farbe 145;TEPSILASFL_145;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;150;Farbe 150;TEPSILASFL_150;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1287,7 +1182,6 @@ NO_MATCH;Silas;;955;Farbe 955;TEPSILASFL_955;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;960;Farbe 960;TEPSILASFL_960;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;965;Farbe 965;TEPSILASFL_965;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Silas;;970;Farbe 970;TEPSILASFL_970;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Polar;;0;1,000x  25,0;TEPPOLARPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;135;Farbe 135;TEPPOLARPL_135;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;340;Farbe 340;TEPPOLARPL_340;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;345;Farbe 345;TEPPOLARPL_345;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1310,7 +1204,6 @@ NO_MATCH;Polar;;843;Farbe 843;TEPPOLARPL_843;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;845;Farbe 845;TEPPOLARPL_845;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;850;Farbe 850;TEPPOLARPL_850;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Polar;;855;Farbe 855;TEPPOLARPL_855;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Karma;;7;0,910x  45,7;TEPKARMAPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;119;Farbe 119;TEPKARMAPL_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;218;Farbe 218;TEPKARMAPL_218;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;321;Farbe 321;TEPKARMAPL_321;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1333,7 +1226,6 @@ NO_MATCH;Karma;;807;Farbe 807;TEPKARMAPL_807;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;808;Farbe 808;TEPKARMAPL_808;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;902;Farbe 902;TEPKARMAPL_902;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Karma;;903;Farbe 903;TEPKARMAPL_903;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;0;x 400,0;TEPSECRE4,TEPSECRE5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;22;Farbe 22;TEPSECRE4_022,TEPSECRE5_022;22 Rot Mittel;2052-000872;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;70;Farbe 70;TEPSECRE4_070,TEPSECRE5_070;70 Weiß Mittel;2052-000873;ja;ja;ja;ja;jordan;mplus;
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;72;Farbe 72;TEPSECRE4_072,TEPSECRE5_072;72 Braun Hell;2052-000874;ja;ja;ja;ja;jordan;mplus;
@@ -1350,7 +1242,6 @@ MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;92;Farbe 92;TEPSECRE
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;93;Farbe 93;TEPSECRE4_093,TEPSECRE5_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;94;Farbe 94;TEPSECRE4_094,TEPSECRE5_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_PROBABLE;Secrets;MPlus Akzente 2029 2403-22 TR 400 cm;178;Farbe 178;TEPSECRE4_178,TEPSECRE5_178;178 Schwarz Mittel;2052-000878;ja;ja;ja;ja;jordan;mplus;
-NO_MATCH;Varia;;0;x 400,0;TEPVARIA4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;71;Farbe 71;TEPVARIA4_071;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;73;Farbe 73;TEPVARIA4_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;74;Farbe 74;TEPVARIA4_074;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1358,11 +1249,9 @@ NO_MATCH;Varia;;75;Farbe 75;TEPVARIA4_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;76;Farbe 76;TEPVARIA4_076;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;77;Farbe 77;TEPVARIA4_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Varia;;176;Farbe 176;TEPVARIA4_176;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lobo;;0;x 400,0;TEPLOBO;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lobo;;991;Farbe 991;TEPLOBO_991;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lobo;;993;Farbe 993;TEPLOBO_993;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lobo;;995;Farbe 995;TEPLOBO_995;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Gloria;;0;x 400,0;TEPGLORI4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;5;Farbe 005;TEPGLORI4_005;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;180;Farbe 180;TEPGLORI4_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;190;Farbe 190;TEPGLORI4_190;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1383,7 +1272,6 @@ NO_MATCH;Gloria;;955;Farbe 955;TEPGLORI4_955;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;960;Farbe 960;TEPGLORI4_960;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;980;Farbe 980;TEPGLORI4_980;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria;;990;Farbe 990;TEPGLORI4_990;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Relation FL;;2;Paket a     4,00 m2;TEPRELAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Relation FL;;605;Farbe 605;TEPRELAFL_605;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Relation FL;;750;Farbe 750;TEPRELAFL_750;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Relation FL;;770;Farbe 770;TEPRELAFL_770;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1391,7 +1279,6 @@ NO_MATCH;Relation FL;;910;Farbe 910;TEPRELAFL_910;;;ja;nein;ja;ja;jordan;;nur Jo
 NO_MATCH;Relation FL;;937;Farbe 937;TEPRELAFL_937;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Relation FL;;940;Farbe 940;TEPRELAFL_940;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Relation FL;;990;Farbe 990;TEPRELAFL_990;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Grande;;0;x 400,0;TEPGRANDE;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;185;Farbe 185;TEPGRANDE_185;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;190;Farbe 190;TEPGRANDE_190;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;253;Farbe 253;TEPGRANDE_253;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1406,12 +1293,9 @@ NO_MATCH;Grande;;730;Farbe 730;TEPGRANDE_730;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;760;Farbe 760;TEPGRANDE_760;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;955;Farbe 955;TEPGRANDE_955;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Grande;;960;Farbe 960;TEPGRANDE_960;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Join PL;;2;Paket a     3,00 m2;TEPJOINPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Join PL;;600;Farbe 600;TEPJOINPL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Join PL;;910;Farbe 910;TEPJOINPL_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Feel;;0;x 400,0;TEPFEEL04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feel;;600;Farbe 600;TEPFEEL04_600;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Amazing;;0;x 400,0;TEPAMAZ04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;150;Farbe 150;TEPAMAZ04_150;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;190;Farbe 190;TEPAMAZ04_190;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;240;Farbe 240;TEPAMAZ04_240;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1428,15 +1312,12 @@ NO_MATCH;Amazing;;920;Farbe 920;TEPAMAZ04_920;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;940;Farbe 940;TEPAMAZ04_940;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;970;Farbe 970;TEPAMAZ04_970;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Amazing;;980;Farbe 980;TEPAMAZ04_980;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Royal;;0;x 400,0;TEPROYAL04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Royal;;100;Farbe 100;TEPROYAL04_100;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Royal;;120;Farbe 120;TEPROYAL04_120;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Royal;;200;Farbe 200;TEPROYAL04_200;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Royal;;220;Farbe 220;TEPROYAL04_220;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Impression;;0;x 400,0;TEPIMPR4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Impression;;600;Farbe 600;TEPIMPR4_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Impression;;910;Farbe 910;TEPIMPR4_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Mikado;;0;x 400,0;TEPMIKA04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;71;Farbe 71;TEPMIKA04_071;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;73;Farbe 73;TEPMIKA04_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;74;Farbe 74;TEPMIKA04_074;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1444,10 +1325,8 @@ NO_MATCH;Mikado;;75;Farbe 75;TEPMIKA04_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;76;Farbe 76;TEPMIKA04_076;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;77;Farbe 77;TEPMIKA04_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Mikado;;176;Farbe 176;TEPMIKA04_176;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Impression FL;;2;Paket a     4,00 m2;TEPIMPRFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Impression FL;;600;Farbe 600;TEPIMPRFL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Impression FL;;910;Farbe 910;TEPIMPRFL_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Gloria FL;;2;Paket a     4,00 m2;TEPGLORIFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria FL;;180;Farbe 180;TEPGLORIFL_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria FL;;190;Farbe 190;TEPGLORIFL_190;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria FL;;570;Farbe 570;TEPGLORIFL_570;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1460,25 +1339,19 @@ NO_MATCH;Gloria FL;;930;Farbe 930;TEPGLORIFL_930;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Gloria FL;;960;Farbe 960;TEPGLORIFL_960;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria FL;;980;Farbe 980;TEPGLORIFL_980;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Gloria FL;;990;Farbe 990;TEPGLORIFL_990;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Join FL;;2;Paket a     4,00 m2;TEPJOINFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Join FL;;600;Farbe 600;TEPJOINFL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Join FL;;910;Farbe 910;TEPJOINFL_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Feel FL;;2;Paket a     4,00 m2;TEPFEELFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Feel FL;;600;Farbe 600;TEPFEELFL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Boho Comfort;;0;x 400,0;TEPBOHOC4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Boho Comfort;;710;Farbe 710;TEPBOHOC4_710;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Boho Comfort;;940;Farbe 940;TEPBOHOC4_940;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Ambient Comfort;;0;x 400,0;TEPAMBIC4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;180;Farbe 180;TEPAMBIC4_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;580;Farbe 580;TEPAMBIC4_580;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;610;Farbe 610;TEPAMBIC4_610;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;630;Farbe 630;TEPAMBIC4_630;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;720;Farbe 720;TEPAMBIC4_720;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ambient Comfort;;740;Farbe 740;TEPAMBIC4_740;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Fancy Comfort;;0;x 400,0;TEPFANCYC4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fancy Comfort;;120;Farbe 120;TEPFANCYC4_120;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Fancy Comfort;;420;Farbe 420;TEPFANCYC4_420;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Terzia PL;;2;Paket a     4,00 m2;TEPTERZPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terzia PL;;180;Farbe 180;TEPTERZPL_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terzia PL;;350;Farbe 350;TEPTERZPL_350;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terzia PL;;355;Farbe 355;TEPTERZPL_355;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1495,14 +1368,10 @@ NO_MATCH;Terzia PL;;750;Farbe 750;TEPTERZPL_750;;;ja;nein;ja;ja;jordan;;nur Jord
 NO_MATCH;Terzia PL;;765;Farbe 765;TEPTERZPL_765;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terzia PL;;770;Farbe 770;TEPTERZPL_770;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Terzia PL;;780;Farbe 780;TEPTERZPL_780;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Savage FL;;2;Paket a     4,00 m2;TEPSAVAGFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Savage FL;;630;Farbe 630;TEPSAVAGFL_630;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Retro FL;;2;Paket a     4,00 m2;TEPRETROFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Retro FL;;603;Farbe 603;TEPRETROFL_603;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sigma PL;;2;a     3,00 m2;TEPSIGMAPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sigma PL;;600;Farbe 600;TEPSIGMAPL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sigma PL;;910;Farbe 910;TEPSIGMAPL_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Travel PL;;2;Paket a     4,00 m2;TEPTRAVPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Travel PL;;170;Farbe 170;TEPTRAVPL_170;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Travel PL;;380;Farbe 380;TEPTRAVPL_380;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Travel PL;;450;Farbe 450;TEPTRAVPL_450;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1516,13 +1385,10 @@ NO_MATCH;Travel PL;;720;Farbe 720;TEPTRAVPL_720;;;ja;nein;ja;ja;jordan;;nur Jord
 NO_MATCH;Travel PL;;760;Farbe 760;TEPTRAVPL_760;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Travel PL;;780;Farbe 780;TEPTRAVPL_780;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Travel PL;;880;Farbe 880;TEPTRAVPL_880;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sigma FL;;2;a     4,00 m2;TEPSIGMAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sigma FL;;600;Farbe 600;TEPSIGMAFL_600;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sigma FL;;910;Farbe 910;TEPSIGMAFL_910;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Resort PL;;2;Paket a     4,50 m2;TEPRESORPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Resort PL;;610;Farbe 610;TEPRESORPL_610;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Resort PL;;780;Farbe 780;TEPRESORPL_780;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sera PL;;2;Paket a     4,00 m2;TEPSERAPL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;140;Farbe 140;TEPSERAPL_140;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;315;Farbe 315;TEPSERAPL_315;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;320;Farbe 320;TEPSERAPL_320;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1543,20 +1409,17 @@ NO_MATCH;Sera PL;;770;Farbe 770;TEPSERAPL_770;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;775;Farbe 775;TEPSERAPL_775;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;810;Farbe 810;TEPSERAPL_810;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sera PL;;840;Farbe 840;TEPSERAPL_840;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Palais;;0;x 400,0;TEPPALA04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;102;Farbe 102;TEPPALA04_102;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;142;Farbe 142;TEPPALA04_142;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;181;Farbe 181;TEPPALA04_181;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;189;Farbe 189;TEPPALA04_189;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;253;Farbe 253;TEPPALA04_253;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palais;;285;Farbe 285;TEPPALA04_285;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Tesso;;0;x 400,0;TEPTESS4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tesso;;24;Farbe 24;TEPTESS4_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tesso;;39;Farbe 39;TEPTESS4_039;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tesso;;43;Farbe 43;TEPTESS4_043;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tesso;;49;Farbe 49;TEPTESS4_049;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tesso;;95;Farbe 95;TEPTESS4_095;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Juwel;;0;x 400,0;TEPJUWE04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;512;Farbe 512;TEPJUWE04_512;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;524;Farbe 524;TEPJUWE04_524;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;525;Farbe 525;TEPJUWE04_525;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1565,18 +1428,15 @@ NO_MATCH;Juwel;;549;Farbe 549;TEPJUWE04_549;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;559;Farbe 559;TEPJUWE04_559;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;563;Farbe 563;TEPJUWE04_563;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Juwel;;579;Farbe 579;TEPJUWE04_579;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Faro;;0;x 500,0;TEPFAR04,TEPFAR05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Faro;;121;Farbe 121;TEPFAR04_121,TEPFAR05_121;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Faro;;132;Farbe 132;TEPFAR04_132,TEPFAR05_132;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Faro;;137;Farbe 137;TEPFAR04_137,TEPFAR05_137;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Faro;;329;Farbe 329;TEPFAR04_329,TEPFAR05_329;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Parlament;;0;x 400,0;TEPPARLA4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlament;;69;Farbe 69;TEPPARLA4_069;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlament;;73;Farbe 73;TEPPARLA4_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlament;;74;Farbe 74;TEPPARLA4_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlament;;77;Farbe 77;TEPPARLA4_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Parlament;;78;Farbe 78;TEPPARLA4_078;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Eskada;;0;x 400,0;TEPESKA4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;11;Farbe 11;TEPESKA4_011;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;40;Farbe 40;TEPESKA4_040;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;70;Farbe 70;TEPESKA4_070;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1586,7 +1446,6 @@ NO_MATCH;Eskada;;75;Farbe 75;TEPESKA4_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;76;Farbe 76;TEPESKA4_076;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;78;Farbe 78;TEPESKA4_078;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Eskada;;92;Farbe 92;TEPESKA4_092;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Camillo;;0;x 500,0;TEPCAMIL04,TEPCAMIL05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Camillo;;20;Farbe 20;TEPCAMIL04_020,TEPCAMIL05_020;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Camillo;;40;Farbe 40;TEPCAMIL04_040,TEPCAMIL05_040;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Camillo;;50;Farbe 50;TEPCAMIL04_050,TEPCAMIL05_050;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1599,7 +1458,6 @@ NO_MATCH;Camillo;;176;Farbe 176;TEPCAMIL04_176,TEPCAMIL05_176;;;ja;nein;ja;ja;jo
 NO_MATCH;Camillo;;177;Farbe 177;TEPCAMIL04_177,TEPCAMIL05_177;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Camillo;;182;Farbe 182;TEPCAMIL04_182,TEPCAMIL05_182;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Camillo;;274;Farbe 274;TEPCAMIL04_274,TEPCAMIL05_274;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Sinfonie;;0;x 500,0;TEPSINF04,TEPSINF05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sinfonie;;3;Farbe 03;TEPSINF04_003,TEPSINF05_003;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sinfonie;;18;Farbe 18;TEPSINF04_018,TEPSINF05_018;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sinfonie;;25;Farbe 25;TEPSINF04_025,TEPSINF05_025;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1611,7 +1469,6 @@ NO_MATCH;Sinfonie;;75;Farbe 75;TEPSINF04_075,TEPSINF05_075;;;ja;nein;ja;ja;jorda
 NO_MATCH;Sinfonie;;95;Farbe 95;TEPSINF04_095,TEPSINF05_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sinfonie;;97;Farbe 97;TEPSINF04_097,TEPSINF05_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Sinfonie;;99;Farbe 99;TEPSINF04_099,TEPSINF05_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;0;x 400,0;TEPAVALO4,TEPAVALO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;29;Farbe 29;TEPAVALO4_029,TEPAVALO5_029;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;31;Farbe 31;TEPAVALO4_031,TEPAVALO5_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;38;Farbe 38;TEPAVALO4_038,TEPAVALO5_038;038 Grau Hell;2014-002657;ja;ja;ja;ja;jordan;mplus;
@@ -1630,10 +1487,8 @@ MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;96;Farbe 96;TEPAVA
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;97;Farbe 97;TEPAVALO4_097,TEPAVALO5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;99;;;099 Schwarz Mittel;2014-002664;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Avalon;MPlus Avantgarde 2029 2203-042 TR 400cm;193;;;193 Grau Hell;2014-002665;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
-NO_MATCH;Tobago;;0;x 500,0;TEPTOBA4,TEPTOBA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tobago;;502;Farbe 502;TEPTOBA4_502,TEPTOBA5_502;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Tobago;;519;Farbe 519;TEPTOBA4_519,TEPTOBA5_519;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Smaragd;;0;x 500,0;TEPSMARA4,TEPSMARA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Smaragd;;22;Farbe 22;TEPSMARA4_022,TEPSMARA5_022;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Smaragd;;45;Farbe 45;TEPSMARA4_045,TEPSMARA5_045;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Smaragd;;55;Farbe 55;TEPSMARA4_055,TEPSMARA5_055;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1650,7 +1505,6 @@ NO_MATCH;Smaragd;;90;Farbe 90;TEPSMARA4_090,TEPSMARA5_090;;;ja;nein;ja;ja;jordan
 NO_MATCH;Smaragd;;92;Farbe 92;TEPSMARA4_092,TEPSMARA5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Smaragd;;93;Farbe 93;TEPSMARA4_093,TEPSMARA5_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Smaragd;;94;Farbe 94;TEPSMARA4_094,TEPSMARA5_094;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Scala;;0;x 400,0;TEPSCALA04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;102;Farbe 102;TEPSCALA04_102;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;119;Farbe 119;TEPSCALA04_119;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;129;Farbe 129;TEPSCALA04_129;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1661,13 +1515,11 @@ NO_MATCH;Scala;;153;Farbe 153;TEPSCALA04_153;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;161;Farbe 161  nicht lieferbar;TEPSCALA04_161;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;179;Farbe 179;TEPSCALA04_179;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Scala;;188;Farbe 188;TEPSCALA04_188;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Serenade;;0;x 400,0;TEPSERE04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Serenade;;24;Farbe 24;TEPSERE04_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Serenade;;39;Farbe 39;TEPSERE04_039;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Serenade;;43;Farbe 43;TEPSERE04_043;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Serenade;;49;Farbe 49;TEPSERE04_049;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Serenade;;95;Farbe 95;TEPSERE04_095;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Broadway;;0;x 400,0;TEPBROAD4,TEPBROAD5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Broadway;;23;Farbe 23;TEPBROAD4_023,TEPBROAD5_023;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Broadway;;33;Farbe 33;TEPBROAD4_033,TEPBROAD5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Broadway;;47;Farbe 47;TEPBROAD4_047,TEPBROAD5_047;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1679,7 +1531,6 @@ NO_MATCH;Broadway;;95;Farbe 95;TEPBROAD4_095,TEPBROAD5_095;;;ja;nein;ja;ja;jorda
 NO_MATCH;Broadway;;96;Farbe 96;TEPBROAD4_096,TEPBROAD5_096;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Broadway;;97;Farbe 97;TEPBROAD4_097,TEPBROAD5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Broadway;;192;Farbe 192;TEPBROAD4_192,TEPBROAD5_192;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Elysee;;0;x 500,0;TEPELYS4,TEPELYS5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elysee;;120;Farbe 120;TEPELYS4_120,TEPELYS5_120;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elysee;;131;Farbe 131;TEPELYS4_131,TEPELYS5_131;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elysee;;221;Farbe 221;TEPELYS4_221,TEPELYS5_221;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1697,7 +1548,6 @@ NO_MATCH;Elysee;;850;Farbe 850;TEPELYS4_850,TEPELYS5_850;;;ja;nein;ja;ja;jordan;
 NO_MATCH;Elysee;;871;Farbe 871;TEPELYS4_871,TEPELYS5_871;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elysee;;880;Farbe 880;TEPELYS4_880,TEPELYS5_880;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elysee;;890;Farbe 890;TEPELYS4_890,TEPELYS5_890;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Soft;;0;x 400,0;TEPSOFT4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;16;Farbe 16;TEPSOFT4_016;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;23;Farbe 23;TEPSOFT4_023;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;24;Farbe 24;TEPSOFT4_024;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1722,7 +1572,6 @@ NO_MATCH;Soft;;95;Farbe 95;TEPSOFT4_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;96;Farbe 96;TEPSOFT4_096;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;97;Farbe 97;TEPSOFT4_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Soft;;98;Farbe 98;TEPSOFT4_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Interlife;;0;x 200,0;TEPTRETIN2;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Interlife;;512;Farbe 512;TEPTRETIN2_512;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Interlife;;514;Farbe 514;TEPTRETIN2_514;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Interlife;;515;Farbe 515;TEPTRETIN2_515;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1763,14 +1612,10 @@ NO_MATCH;Interlife;;592;Farbe 592;TEPTRETIN2_592;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Interlife;;601;Farbe 601;TEPTRETIN2_601;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Interlife;;632;Farbe 632;TEPTRETIN2_632;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Interlife;;633;Farbe 633;TEPTRETIN2_633;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Basalt Fliese;;0;0,500x  50,0;TEPBASALFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt Fliese;;24;Fb. 24;TEPBASALFL_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt Fliese;;44;Fb. 44;TEPBASALFL_044;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Basalt Fliese;;89;Fb. 89;TEPBASALFL_089;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Titan Fliese;;0;0,500x  50,0;TEPNAFJVTF;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Titan Fliese;;39;Farbe 390 (39);TEPNAFJVTF_39;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;;;2010217;;WER2010217;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Elevation III;;1;;TEPLAVA1;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elevation III;;9001;Farbe 9001;TEPLAVA1_9001;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elevation III;;9002;Farbe 9002;TEPLAVA1_9002;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elevation III;;9003;Farbe 9003;TEPLAVA1_9003;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1791,13 +1636,11 @@ NO_MATCH;Elevation III;;9017;Farbe 9017;TEPLAVA1_9017;;;ja;nein;ja;ja;jordan;;nu
 NO_MATCH;Elevation III;;9018;Farbe 9018;TEPLAVA1_9018;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elevation III;;9019;Farbe 9019;TEPLAVA1_9019;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Elevation III;;9020;Farbe 9020;TEPLAVA1_9020;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Central;;0;0,500x  50,0;TEPCENT400,TEPCENTFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central;;72;Farbe 72;TEPCENT400_072,TEPCENTFL_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central;;77;Farbe 77;TEPCENT400_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central;;78;Farbe 78;TEPCENT400_078,TEPCENTFL_078;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central;;93;Farbe 93;TEPCENT400_093,TEPCENTFL_093;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Central;;378;Farbe 378;TEPCENT400_378;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Urban Fliese;;0;0,500x  50,0;TEPURBANFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban Fliese;;75;Farbe 75;TEPURBANFL_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban Fliese;;77;Farbe 77;TEPURBANFL_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban Fliese;;78;Farbe 78;TEPURBANFL_078;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1805,9 +1648,7 @@ NO_MATCH;Urban Fliese;;86;Farbe 86;TEPURBANFL_086;;;ja;nein;ja;ja;jordan;;nur Jo
 NO_MATCH;Urban Fliese;;94;Farbe 94;TEPURBANFL_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban Fliese;;97;Farbe 97;TEPURBANFL_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban Fliese;;177;Farbe 177;TEPURBANFL_177;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lana;;0;0,500x  50,0;TEPLANAFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lana;;2;Farbe 969 ab 5m2;TEPLANAFL_969,TEPLANAFL_979,TEPLANAFL_989;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cosy Fliese;;0;0,500x  50,0;TEPCOSYFL;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;73;Farbe 73;TEPCOSYFL_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;74;Farbe 74;TEPCOSYFL_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;75;Farbe 75;TEPCOSYFL_075;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1815,20 +1656,10 @@ NO_MATCH;Cosy Fliese;;76;Farbe 76;TEPCOSYFL_040;;;ja;nein;ja;ja;jordan;;nur Jord
 NO_MATCH;Cosy Fliese;;78;Farbe 78;TEPCOSYFL_026;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;80;Farbe 80;TEPCOSYFL_018;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Cosy Fliese;;82;Farbe 82;TEPCOSYFL_094;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Quito;;TEPBORQUI;;TEPBORQUI;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Cancun 500 cm nur Fb. 07, 41, 50;;TEPBORCAN;;TEPBORCAN;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Campinas;;TEPBORCAM;;TEPBORCAM;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Brasilia 500 cm nur Fb. 07, 80;;TEPBORBRA;;TEPBORBRA;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Baruta;;1;;TEPBORBAR1;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Barinas;;TEPBORBAR;;TEPBORBAR;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;;;191;;GARNA00191;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;300;300 cm;GARNA00191_300;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;400;400 cm;GARNA00191_400;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;500;500 cm;GARNA00191_500;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;600;600 cm;GARNA00191_600;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;;;10;Rolle 10m;MÖZ783235;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Mangalore natur;;1;;TEPBORMAN1;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Urban;;0;x 400,0;TEPURBAN04;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;75;Farbe 75;TEPURBAN04_075;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;77;Farbe 77;TEPURBAN04_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;78;Farbe 78;TEPURBAN04_078;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1836,7 +1667,6 @@ NO_MATCH;Urban;;86;Farbe 86;TEPURBAN04_086;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;94;Farbe 94;TEPURBAN04_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;97;Farbe 97;TEPURBAN04_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Urban;;177;Farbe 177;TEPURBAN04_177;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Milo;;0;x 400,0;TEPMI4,TEPMI5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Milo;;27;Farbe 27;TEPMI4_027,TEPMI5_027;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Milo;;34;Farbe 34;TEPMI4_034,TEPMI5_034;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Milo;;39;Farbe 39;TEPMI4_039,TEPMI5_039;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1844,7 +1674,6 @@ NO_MATCH;Milo;;77;Farbe 77;TEPMI4_077,TEPMI5_077;;;ja;nein;ja;ja;jordan;;nur Jor
 NO_MATCH;Milo;;84;Farbe 84;TEPMI4_084,TEPMI5_084;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Milo;;90;Farbe 90;TEPMI4_090,TEPMI5_090;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Milo;;97;Farbe 97;TEPMI4_097,TEPMI5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;;;0;x 500,0;TEPTALLIN4,TEPTALLIN5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;22;Farbe 22;TEPTALLIN4_022,TEPTALLIN5_022;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;63;Farbe 63;TEPTALLIN4_063,TEPTALLIN5_063;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;71;Farbe 71;TEPTALLIN4_071,TEPTALLIN5_071;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1852,7 +1681,6 @@ NO_MATCH;;;73;Farbe 73;TEPTALLIN4_073,TEPTALLIN5_073;;;ja;nein;ja;ja;jordan;;nur
 NO_MATCH;;;77;Farbe 77;TEPTALLIN4_077,TEPTALLIN5_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;81;Farbe 81;TEPTALLIN4_081,TEPTALLIN5_081;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;;;91;Farbe 91;TEPTALLIN4_091,TEPTALLIN5_091;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;0;x 500,0;TEPTOS4,TEPTOS5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;8;Farbe 08;TEPTOS4_008,TEPTOS5_008;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;10;Farbe 10;TEPTOS4_010,TEPTOS5_010;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;13;Farbe 13;TEPTOS4_013,TEPTOS5_013;13 Beige Hell;2059-000127;ja;ja;ja;ja;jordan;mplus;
@@ -1864,7 +1692,6 @@ MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;28;Farbe 28;TEPTOS4_02
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;29;Farbe 29;TEPTOS4_029,TEPTOS5_029;29 Grau Dunkel;2059-000132;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;35;Farbe 35;TEPTOS4_035,TEPTOS5_035;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Tosca;MPlus Akzente 2029 2419-15 TR 400 cm;85;Farbe 85;TEPTOS4_085,TEPTOS5_085;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Siro;;0;x 400,0;TEPSIRO4;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;26;Farbe 26;TEPSIRO4_026;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;31;Farbe 31;TEPSIRO4_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;36;Farbe 36;TEPSIRO4_036;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1874,12 +1701,10 @@ NO_MATCH;Siro;;74;Farbe 74;TEPSIRO4_074;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;94;Farbe 94;TEPSIRO4_094;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;95;Farbe 95;TEPSIRO4_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Siro;;97;Farbe 97;TEPSIRO4_097;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rio;;0;x 400,0;TEPRIO4,TEPRIO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rio;;710;Farbe 710;TEPRIO4_710,TEPRIO5_710;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rio;;712;Farbe 712;TEPRIO4_712,TEPRIO5_712;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rio;;714;Farbe 714;TEPRIO4_714,TEPRIO5_714;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rio;;715;Farbe 715;TEPRIO4_715,TEPRIO5_715;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Rival;;0;x 500,0;TEPRIVAL4,TEPRIVAL5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rival;;72;Farbe 72;TEPRIVAL4_072,TEPRIVAL5_072;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rival;;73;Farbe 73;TEPRIVAL4_073,TEPRIVAL5_073;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rival;;75;Farbe 75;TEPRIVAL4_075,TEPRIVAL5_075;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1888,7 +1713,6 @@ NO_MATCH;Rival;;83;Farbe 83;TEPRIVAL4_083,TEPRIVAL5_083;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Rival;;92;Farbe 92;TEPRIVAL4_092,TEPRIVAL5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rival;;175;Farbe 175;TEPRIVAL4_175,TEPRIVAL5_175;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Rival;;176;Farbe 176;TEPRIVAL4_176,TEPRIVAL5_176;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Palia;;0;x 400,0;TEPPALIA4,TEPPALIA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palia;;31;Farbe 31;TEPPALIA4_031,TEPPALIA5_031;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palia;;35;Farbe 35;TEPPALIA4_035,TEPPALIA5_035;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palia;;62;Farbe 62;TEPPALIA4_062,TEPPALIA5_062;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1899,7 +1723,6 @@ NO_MATCH;Palia;;74;Farbe 74;TEPPALIA4_074,TEPPALIA5_074;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Palia;;77;Farbe 77;TEPPALIA4_077,TEPPALIA5_077;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palia;;79;Farbe 79;TEPPALIA4_079,TEPPALIA5_079;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Palia;;83;Farbe 83;TEPPALIA4_083,TEPPALIA5_083;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Para;;0;x 500,0;TEPPARA04,TEPPARA05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Para;;14;Farbe 14;TEPPARA04_014,TEPPARA05_014;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Para;;29;Farbe 29;TEPPARA04_029,TEPPARA05_029;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Para;;31;Farbe 31;TEPPARA04_031,TEPPARA05_031;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1909,7 +1732,6 @@ NO_MATCH;Para;;64;Farbe 64;TEPPARA04_064,TEPPARA05_064;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Para;;79;Farbe 79;TEPPARA04_079,TEPPARA05_079;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Para;;95;Farbe 95;TEPPARA04_095,TEPPARA05_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Para;;98;Farbe 98;TEPPARA04_098,TEPPARA05_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lord;;0;x 400,0;TEPLORD4,TEPLORD5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lord;;180;Farbe 180;TEPLORD4_180,TEPLORD5_180;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lord;;250;Farbe 250;TEPLORD4_250,TEPLORD5_250;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lord;;260;Farbe 260;TEPLORD4_260,TEPLORD5_260;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1920,7 +1742,6 @@ NO_MATCH;Lord;;820;Farbe 820;TEPLORD4_820,TEPLORD5_820;;;ja;nein;ja;ja;jordan;;n
 NO_MATCH;Lord;;830;Farbe 830;TEPLORD4_830,TEPLORD5_830;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lord;;840;Farbe 840;TEPLORD4_840,TEPLORD5_840;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lord;;850;Farbe 850;TEPLORD4_850,TEPLORD5_850;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Heres;;0;x 500,0;TEPHERES4,TEPHERES5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Heres;;10;Farbe 10;TEPHERES4_010,TEPHERES5_010;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Heres;;15;Farbe 15;TEPHERES4_015,TEPHERES5_015;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Heres;;20;Farbe 20;TEPHERES4_020,TEPHERES5_020;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1941,7 +1762,6 @@ NO_MATCH;Heres;;91;Farbe 91;TEPHERES4_091,TEPHERES5_091;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Heres;;92;Farbe 92;TEPHERES4_092,TEPHERES5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Heres;;173;Farbe 173;TEPHERES4_173,TEPHERES5_173;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Heres;;174;Farbe 174;TEPHERES4_174,TEPHERES5_174;;;ja;nein;ja;ja;jordan;;nur Jordan
-MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;0;x 400,0;TEPDRAGO4,TEPDRRAGO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;11;Farbe 11;TEPDRAGO4_011,TEPDRRAGO5_011;11 Grau Hell;2059-000101;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;13;Farbe 13;TEPDRAGO4_013,TEPDRRAGO5_013;13 Beige Hell;2059-000102;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;14;Farbe 14;TEPDRAGO4_014,TEPDRRAGO5_014;14 Beige Mittel;2059-000103;ja;ja;ja;ja;jordan;mplus;
@@ -1949,7 +1769,6 @@ MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;17;Farbe 17;TEPDRAGO4_
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;24;Farbe 24;TEPDRAGO4_024,TEPDRRAGO5_024;24 Grau Mittel;2059-000105;ja;ja;ja;ja;jordan;mplus;
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;32;;;32 Blau Hell;2059-000106;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
 MATCH_POSSIBLE;Drago;MPlus Akzente 2029 2404-11 TR 400 cm;43;;;43 Grün Hell;2059-000107;nein;ja;nein;nein;mplus;;nur M-Plus - kein Wunschmass/Kettelservice annehmen
-NO_MATCH;Ares;;0;x 500,0;TEPARES4,TEPARES5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ares;;21;Farbe 21;TEPARES4_021,TEPARES5_021;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ares;;33;Farbe 33;TEPARES4_033,TEPARES5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ares;;36;Farbe 36;TEPARES4_036,TEPARES5_036;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1960,7 +1779,6 @@ NO_MATCH;Ares;;80;Farbe 80;TEPARES4_080,TEPARES5_080;;;ja;nein;ja;ja;jordan;;nur
 NO_MATCH;Ares;;95;Farbe 95;TEPARES4_095,TEPARES5_095;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ares;;98;Farbe 98;TEPARES4_098,TEPARES5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Ares;;99;Farbe 99;TEPARES4_099,TEPARES5_099;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Leana;;0;x 400,0;TEPLEANA4,TEPLEANA5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Leana;;33;Farbe 33;TEPLEANA4_033,TEPLEANA5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Leana;;43;Farbe 43;TEPLEANA4_043,TEPLEANA5_043;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Leana;;52;Farbe 52;TEPLEANA4_052,TEPLEANA5_052;;;ja;nein;ja;ja;jordan;;nur Jordan
@@ -1969,12 +1787,10 @@ NO_MATCH;Leana;;74;Farbe 74;TEPLEANA4_074,TEPLEANA5_074;;;ja;nein;ja;ja;jordan;;
 NO_MATCH;Leana;;92;Farbe 92;TEPLEANA4_092,TEPLEANA5_092;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Leana;;97;Farbe 97;TEPLEANA4_097,TEPLEANA5_097;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Leana;;98;Farbe 98;TEPLEANA4_098,TEPLEANA5_098;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Lima;;0;x 400,0;TEPLIM04,TEPLIM05;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lima;;810;Farbe 810;TEPLIM04_810,TEPLIM05_810;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lima;;812;Farbe 812;TEPLIM04_812,TEPLIM05_812;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lima;;814;Farbe 814;TEPLIM04_814,TEPLIM05_814;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Lima;;815;Farbe 815;TEPLIM04_815,TEPLIM05_815;;;ja;nein;ja;ja;jordan;;nur Jordan
-NO_MATCH;Filio;;0;x 500,0;TEPFILIO4,TEPFILIO5;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filio;;24;Farbe 24;TEPFILIO4_024,TEPFILIO5_024;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filio;;33;Farbe 33;TEPFILIO4_033,TEPFILIO5_033;;;ja;nein;ja;ja;jordan;;nur Jordan
 NO_MATCH;Filio;;34;Farbe 34;TEPFILIO4_034,TEPFILIO5_034;;;ja;nein;ja;ja;jordan;;nur Jordan

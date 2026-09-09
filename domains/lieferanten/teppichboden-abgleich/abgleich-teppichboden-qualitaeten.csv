@@ -1,192 +1,192 @@
 status;jordan_kollektion;jordan_qualitaet;jordan_produktnamen;jordan_breiten;jordan_farben;mplus_produkt;mplus_kollektion;hersteller;farben_gemeinsam;farben_nur_jordan;farben_nur_mplus;punkte;offene_fragen
-NO_MATCH;Format 028;Omega;Teppichboden Omega 400 cm 028 Format Object;400;20;;;;0;20;0;9;
-NO_MATCH;Format 028;Maidan;Teppichboden Maidan 400 cm 028 Format Object | Teppichboden Maidan 500 cm 028 Format Object;400/500;12;;;;0;12;0;13;
-NO_MATCH;Format 028;Genius Planke;Teppichboden Genius Planke 25 x 100 cm 028 Format Object;25;7;;;;0;7;0;4;
-MATCH_PROBABLE;Format 028;Maron;Teppichboden Maron 400 cm 028 Format Object;400;10;MPlus Avantgarde 2029 2202-018 TR 400cm;Avantgarde 2029;ITC Co BV / Balta Group (B-Tielt);8;2;0;16;Gesamtstaerke auf einer Seite nicht angegeben (None / 7.8) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Format 028;Fair Planke;Teppichboden Fair Planke 25 x 100 cm 028 Format Object;25;20;;;;0;20;0;3;
-NO_MATCH;Format 028;Pathos;Teppichboden Pathos 400 cm 028 Format Object / 028 Atrium Object;400;9;;;;0;9;0;8;
-NO_MATCH;Format 028;City;Teppichboden City 400 cm 028 Format Object;400;26;;;;0;26;0;11;
-NO_MATCH;Format 028;City Fliese;Teppichboden City Fliese 50x50 028 Format Object;50;22;;;;0;22;0;-99;
-NO_MATCH;Format 028;Livia;Teppichboden Livia 400 cm 028 Format Object;400;17;;;;0;17;0;4;
-NO_MATCH;Format 028;Minero;Teppichboden Minero 400 cm 028 Format Object;400;7;;;;0;7;0;11;
-NO_MATCH;Format 028;Misano;Teppichboden Misano 400 cm 028 Format Object;400;14;;;;0;14;0;7;
-NO_MATCH;Format 028;Lisaro;Teppichboden Lisaro 400 cm 028 Format Object;400;1;;;;0;1;0;5;
-NO_MATCH;Format 028;Lisaro Fliese;Teppichboden Lisaro Fliese 50 x 50 cm 028 Format Object;50;13;;;;0;13;0;7;
-MATCH_PROBABLE;Format 028;Maidan Fliese (mind.Abgabe 5 VE);Teppichboden Maidan Fliese 50 x 50 cm 028 Format Object;50;12;MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;Extrem 2029;Associated Weavers Europe NV (B-Ronse);6;6;0;15;Gesamtstaerke auf einer Seite nicht angegeben (None / 5.5) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Homeline 27;Mia;Teppichboden MIA 400 cm Homeline27 | Teppichboden MIA 500 cm Homeline27;400/500;5;;;;0;5;0;6;
-NO_MATCH;Format 028;Rapid;Teppichboden Rapid 400 cm 028 Format Object / 028 Atrium Object | Teppichboden Rapid 500 cm 028 Format Object / 028 Atrium Object;400/500;8;;;;0;8;0;11;
-MATCH_PROBABLE;Format 028;Linux;Teppichboden Linux 400 cm 028 Format Object | Teppichboden Linux 500 cm 028 Format Object;400/500;18;MPlus Akzente 2029 2408-15 TR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);11;7;0;18;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Format 028;Fair;Teppichboden Fair 400 cm 028 Format Object;400;20;;;;0;20;0;5;
-NO_MATCH;Format 028;Cosy;Teppichboden Cosy 400 cm 028 Format Object / 028 Atrium Object;400;8;;;;0;8;0;9;
-NO_MATCH;Format Modul 028;Minero Fliese;Teppichboden Minero Fliese 50 x 50 cm 028 Format Modul Object;50;10;;;;0;10;0;11;
-NO_MATCH;Arriva027;Grande FL;Teppichboden Grande FL 50x50cm Arriva 027;50;15;;;;0;15;0;3;
-NO_MATCH;Balance 25;Amore;Teppichboden AMORE 400cm Balance 25;400;13;;;;0;13;0;6;
-NO_MATCH;Format 028;Anden;Teppichboden Anden 400 cm 028 Format Object | Teppichboden Anden 500 cm 028 Format Object;400/500;17;;;;0;17;0;11;
-REVIEW_REQUIRED;Format 028;Oslo;Teppichboden Oslo 400 cm 028 Format Object;400;17;MPlus Akzente 2029 2406-20 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);5;12;2;10;Poleinsatzgewicht weicht ab (800.0 vs. 550.0) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Quattro 028;Works Element;Teppichfliese Works Element 50 x 50cm Quattro028;50;10;;;;0;10;0;1;
-NO_MATCH;Format Modul 028;Inka;Teppichboden Inka Fliese 50x50 cm 028 Format Modul Object;50;16;;;;0;16;0;-99;
-NO_MATCH;Format Modul 028;Skyrock;Teppichboden Skyrock Fliese 50 x 50 cm 028 Format Modul Object;50;7;;;;0;7;0;-99;
-NO_MATCH;Format Modul 028;Imago;Teppichboden Imago Fliese 50 x 50 cm 028 Format Modul Object;50;12;;;;0;12;0;-99;
-NO_MATCH;Format Modul 25;Optima Fliese;Teppichboden Optima Fliese 50x50cm Format Modul 25 / Atrium 25;50;7;;;;0;7;0;-99;
-NO_MATCH;Format Modul 25;Melba Fliese;Teppichboden Melba Fliese 50x50cm Format Modul25 / Atrium 25;50;5;;;;0;5;0;-99;
-NO_MATCH;Format Modul 25;Level Fliese;Teppichboden Level Fliese 50x50cm Format Modul25/Atrium 25;50;4;;;;0;4;0;-99;
-NO_MATCH;Format Modul 25;Rapid Fliese;Teppichboden Rapid 50x50cm Fliese Format Modul 25;50;10;;;;0;10;0;-99;
+NO_MATCH;Format 028;Omega;Teppichboden Omega 400 cm 028 Format Object;400;19;;;;0;19;0;9;
+NO_MATCH;Format 028;Maidan;Teppichboden Maidan 400 cm 028 Format Object | Teppichboden Maidan 500 cm 028 Format Object;400/500;11;;;;0;11;0;13;
+NO_MATCH;Format 028;Genius Planke;Teppichboden Genius Planke 25 x 100 cm 028 Format Object;25;6;;;;0;6;0;4;
+MATCH_PROBABLE;Format 028;Maron;Teppichboden Maron 400 cm 028 Format Object;400;9;MPlus Avantgarde 2029 2202-018 TR 400cm;Avantgarde 2029;ITC Co BV / Balta Group (B-Tielt);8;1;0;16;Gesamtstaerke auf einer Seite nicht angegeben (None / 7.8) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Format 028;Fair Planke;Teppichboden Fair Planke 25 x 100 cm 028 Format Object;25;19;;;;0;19;0;3;
+NO_MATCH;Format 028;Pathos;Teppichboden Pathos 400 cm 028 Format Object / 028 Atrium Object;400;8;;;;0;8;0;8;
+NO_MATCH;Format 028;City;Teppichboden City 400 cm 028 Format Object;400;25;;;;0;25;0;11;
+NO_MATCH;Format 028;City Fliese;Teppichboden City Fliese 50x50 028 Format Object;50;21;;;;0;21;0;-99;
+NO_MATCH;Format 028;Livia;Teppichboden Livia 400 cm 028 Format Object;400;16;;;;0;16;0;4;
+NO_MATCH;Format 028;Minero;Teppichboden Minero 400 cm 028 Format Object;400;6;;;;0;6;0;11;
+NO_MATCH;Format 028;Misano;Teppichboden Misano 400 cm 028 Format Object;400;13;;;;0;13;0;7;
+NO_MATCH;Format 028;Lisaro;Teppichboden Lisaro 400 cm 028 Format Object;400;0;;;;0;0;0;5;
+NO_MATCH;Format 028;Lisaro Fliese;Teppichboden Lisaro Fliese 50 x 50 cm 028 Format Object;50;12;;;;0;12;0;7;
+MATCH_PROBABLE;Format 028;Maidan Fliese (mind.Abgabe 5 VE);Teppichboden Maidan Fliese 50 x 50 cm 028 Format Object;50;11;MPlus Extrem Tiles 2029 2160-033 50x50cm 5,00 qm/Pck;Extrem 2029;Associated Weavers Europe NV (B-Ronse);6;5;0;15;Gesamtstaerke auf einer Seite nicht angegeben (None / 5.5) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Homeline 27;Mia;Teppichboden MIA 400 cm Homeline27 | Teppichboden MIA 500 cm Homeline27;400/500;4;;;;0;4;0;6;
+NO_MATCH;Format 028;Rapid;Teppichboden Rapid 400 cm 028 Format Object / 028 Atrium Object | Teppichboden Rapid 500 cm 028 Format Object / 028 Atrium Object;400/500;7;;;;0;7;0;11;
+MATCH_PROBABLE;Format 028;Linux;Teppichboden Linux 400 cm 028 Format Object | Teppichboden Linux 500 cm 028 Format Object;400/500;17;MPlus Akzente 2029 2408-15 TR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);11;6;0;18;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Format 028;Fair;Teppichboden Fair 400 cm 028 Format Object;400;19;;;;0;19;0;5;
+NO_MATCH;Format 028;Cosy;Teppichboden Cosy 400 cm 028 Format Object / 028 Atrium Object;400;7;;;;0;7;0;9;
+NO_MATCH;Format Modul 028;Minero Fliese;Teppichboden Minero Fliese 50 x 50 cm 028 Format Modul Object;50;9;;;;0;9;0;11;
+NO_MATCH;Arriva027;Grande FL;Teppichboden Grande FL 50x50cm Arriva 027;50;14;;;;0;14;0;3;
+NO_MATCH;Balance 25;Amore;Teppichboden AMORE 400cm Balance 25;400;12;;;;0;12;0;6;
+NO_MATCH;Format 028;Anden;Teppichboden Anden 400 cm 028 Format Object | Teppichboden Anden 500 cm 028 Format Object;400/500;16;;;;0;16;0;11;
+REVIEW_REQUIRED;Format 028;Oslo;Teppichboden Oslo 400 cm 028 Format Object;400;16;MPlus Akzente 2029 2406-20 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);5;11;2;10;Poleinsatzgewicht weicht ab (800.0 vs. 550.0) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Quattro 028;Works Element;Teppichfliese Works Element 50 x 50cm Quattro028;50;9;;;;0;9;0;1;
+NO_MATCH;Format Modul 028;Inka;Teppichboden Inka Fliese 50x50 cm 028 Format Modul Object;50;15;;;;0;15;0;-99;
+NO_MATCH;Format Modul 028;Skyrock;Teppichboden Skyrock Fliese 50 x 50 cm 028 Format Modul Object;50;6;;;;0;6;0;-99;
+NO_MATCH;Format Modul 028;Imago;Teppichboden Imago Fliese 50 x 50 cm 028 Format Modul Object;50;11;;;;0;11;0;-99;
+NO_MATCH;Format Modul 25;Optima Fliese;Teppichboden Optima Fliese 50x50cm Format Modul 25 / Atrium 25;50;6;;;;0;6;0;-99;
+NO_MATCH;Format Modul 25;Melba Fliese;Teppichboden Melba Fliese 50x50cm Format Modul25 / Atrium 25;50;4;;;;0;4;0;-99;
+NO_MATCH;Format Modul 25;Level Fliese;Teppichboden Level Fliese 50x50cm Format Modul25/Atrium 25;50;3;;;;0;3;0;-99;
+NO_MATCH;Format Modul 25;Rapid Fliese;Teppichboden Rapid 50x50cm Fliese Format Modul 25;50;9;;;;0;9;0;-99;
 NO_MATCH;Homeline 27;;Teppichboden PILAR 400cm Homeline 27 | Teppichboden PILAR 500cm Homeline 27;400/500;11;;;;0;11;0;-99;
 NO_MATCH;Homeline 27;;Teppichboden EVITA 400cm Homeline 27 | Teppichboden EVITA 500cm Homeline 27;400/500;10;;;;0;10;0;-99;
 NO_MATCH;Homeline 27;;Teppichboden ARTUS 400cm Homeline 27 | Teppichboden ARTUS 500cm Homeline 27;400/500;12;;;;0;12;0;-99;
 NO_MATCH;;;Teppichboden LORI 400cm Homeline 27 | Teppichboden LORI 500cm Homeline 27;400/500;9;;;;0;9;0;-99;
-MATCH_POSSIBLE;Sprint 027;Tempra;Teppichboden Tempra 400cm Sprint 027 | Teppichboden Tempra 500cm Sprint 027;400/500;10;MPlus Akzente 2029 2419-15 TR 400 cm;Akzente 2029;Vebe Floorcoverings bv (NL-Genemuiden);4;6;2;16;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Sprint 027;Damos;Teppichboden DAMOS 400cm Sprint027 | Teppichboden DAMOS 500cm Sprint027;400/500;11;;;;0;11;0;4;
-NO_MATCH;Sprint 027;Astro;Teppichboden ASTRO 400cm Sprint027 | Teppichboden ASTRO 500cm Sprint027;400/500;13;;;;0;13;0;1;
-MATCH_PROBABLE;Sprint 027;Limbo;Teppichboden LIMBO 400cm Sprint027 | Teppichboden LIMBO 500cm Sprint027;400/500;10;MPlus Akzente 2029 2418-70 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;3;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Sprint 027;Lagos;Teppichboden LAGOS 400cm Sprint027 | Teppichboden LAGOS 500cm Sprint027;400/500;12;;;;0;12;0;8;
-MATCH_PROBABLE;Sprint 027;Lorna;Teppichboden Lorna 400cm Sprint027 | Teppichboden Lorna 500cm Sprint027;400/500;12;MPlus Extrem 2029 TB 1160-033 TR 400 cm;Extrem 2029;Associated Weavers Europe NV (B-Ronse);6;6;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Sprint 027;Riva;Teppichboden Riva 400 cm Sprint 027 | Teppichboden Riva 500 cm Sprint 027;400/500;10;;;;0;10;0;11;
-NO_MATCH;Sprint 027;Nero;Teppichboden Nero 400 cm Sprint 027 | Teppichboden Nero 500 cm Sprint 027;400/500;5;;;;0;5;0;-1;
-NO_MATCH;Sprint 027;Lara;Teppichboden Lara 400 cm Sprint 027 | Teppichboden Lara 500 cm Sprint 027;400/500;21;;;;0;21;0;9;
-NO_MATCH;Sprint 027;Nubia;Teppichboden Nubia 400 cm Sprint 027 | Teppichboden Nubia 500 cm Sprint 027;400/500;9;;;;0;9;0;5;
-NO_MATCH;Sprint 027;Samba;Teppichboden Samba 400 cm Sprint 027 | Teppichboden Samba 500 cm Sprint 027;400/500;5;;;;0;5;0;3;
-REVIEW_REQUIRED;Sprint 027;Doria;Teppichboden Doria 400 cm Sprint 027 | Teppichboden Doria 500 cm Sprint 027;400/500;9;MPlus Akzente 2029 2411-43 VR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);7;2;0;15;Brandklasse widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-MATCH_POSSIBLE;Sprint 027;Solid;Teppichboden Solid 400 cm Sprint 027 | Teppichboden Solid 500 cm Sprint 027;400/500;6;MPlus Akzente 2029 2404-11 TR 400 cm;Akzente 2029;;5;1;2;16;Kein Herstellerbeleg auf M-Plus-Seite (Leistungserklaerung als Scan in Fragmenten - nicht auswertbar) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Sprint 027;Borneo;Teppichboden Borneo 400 cm Sprint 027 | Teppichboden Borneo 500 cm Sprint 027;400/500;11;;;;0;11;0;6;
-NO_MATCH;Sprint 027;Samir;Teppichboden Samir 400 cm Sprint 027 | Teppichboden Samir 500 cm Sprint 027;400/500;11;;;;0;11;0;15;
-NO_MATCH;Sprint 027;Vero;Teppichboden Vero 400 cm Sprint 027 | Teppichboden Vero 500 cm Sprint 027;400/500;8;;;;0;8;0;7;
-NO_MATCH;Sprint 027;Bari;Teppichboden Bari 400 cm Sprint 027 | Teppichboden Bari 500 cm Sprint 027;400/500;5;;;;0;5;0;9;
-NO_MATCH;Sprint 027;Cala;Teppichboden Cala 400 cm Sprint 027 | Teppichboden Cala 500 cm Sprint 027;400/500;9;;;;0;9;0;2;
-NO_MATCH;Sprint 027;Mila;Teppichboden Mila 400 cm Sprint 027;400;10;;;;0;10;0;6;
-NO_MATCH;Sprint 027;Altro;Teppichboden Altro 400 cm Sprint 027 | Teppichboden Altro 500 cm Sprint 027;400/500;8;;;;0;8;0;3;
-MATCH_PROBABLE;Trend 026;Plaza;Teppichboden PLAZA 400cm Trend 026 | Teppichboden PLAZA 500cm Trend 026;400/500;19;MPlus Akzente 2029 2403-22 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;12;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Trend 026;Rigoletto;Teppichboden RIGOLETTO 400cm Trend 026 | Teppichboden RIGOLETTO 500cm Trend 026;400/500;16;;;;0;16;0;2;
-NO_MATCH;Trend 026;Corsaro;Teppichboden CORSARO 400cm Trend 026 | Teppichboden CORSARO 500cm Trend 026;400/500;16;;;;0;16;0;9;
-NO_MATCH;Trend 026;Ambra;Teppichboden AMBRA 400cm Trend 026 | Teppichboden AMBRA 500cm Trend 026;400/500;13;;;;0;13;0;8;
-MATCH_PROBABLE;Trend 026;Derby;Teppichboden DERBY 400cm Trend 026 | Teppichboden DERBY 500cm Trend 026;400/500;19;MPlus Akzente 2029 2408-15 TR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);11;8;0;18;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Format 028 | Linux"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2408-TR"
-NO_MATCH;Trend 026;Luna;Teppichboden LUNA 400cm Trend 026 | Teppichboden LUNA 500cm Trend 026;400/500;13;;;;0;13;0;6;
-NO_MATCH;Trend 026;Terra;Teppichboden TERRA 400 cm Trend 026 | Teppichboden TERRA 500 cm Trend 026;400/500;15;;;;0;15;0;9;
-NO_MATCH;Trend 026;Sumatra;Teppichboden SUMATRA 400 cm Trend 026 | Teppichboden SUMATRA 500 cm Trend 026;400/500;13;;;;0;13;0;3;
-NO_MATCH;Trend 026;Nobel;Teppichboden NOBEL 400 cm Trend 026 | Teppichboden NOBEL 500 cm Trend 026;400/500;16;;;;0;16;0;9;
-REVIEW_REQUIRED;Trend 026;Montego;Teppichboden MONTEGO 400 cm Trend 026 | Teppichboden MONTEGO 500 cm Trend 026;400/500;19;MPlus Akzente 2029 2401-20 DB 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;12;3;9;Poleinsatzgewicht weicht ab (1380.0 vs. 1650.0) | Ruecken widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Trend 026;Feeling;Teppichboden FEELING 400 cm Trend 026 | Teppichboden FEELING 500 cm Trend 026;400/500;16;;;;0;16;0;7;
-NO_MATCH;Trend 026;Alamo;Teppichboden ALAMO 400 cm Trend 026 | Teppichboden ALAMO 500 cm Trend 026;400/500;15;;;;0;15;0;8;
-REVIEW_REQUIRED;Trend 026;Zirkonia;Teppichboden ZIRKONIA 400 cm Trend 026 | Teppichboden ZIRKONIA 500 cm Trend 026;400/500;11;MPlus Akzente 2029 2412-250 VR 400 cm;Akzente 2029;Lano NV (B-Harelbeke);5;6;0;10;Gesamtstaerke weicht ab (12.0 vs. 13.5) | Ruecken widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Trend 026;Dolce;Teppichboden DOLCE 400 cm Trend 026 | Teppichboden DOLCE 500 cm Trend 026;400/500;15;;;;0;15;0;3;
-NO_MATCH;030 Wool & Sisal;Point;Teppichboden POINT 400cm 030 Wool & Sisal | Teppichboden POINT 500cm 030 Wool & Sisal;400/500;11;;;;0;11;0;-99;
-NO_MATCH;030 Wool & Sisal;Calais;Teppichboden CALAIS 400cm 030 Wool & Sisal | Teppichboden CALAIS 500cm 030 Wool & Sisal;400/500;11;;;;0;11;0;-99;
-NO_MATCH;030 Wool & Sisal;Rosso;Teppichboden Rosso 400cm 030 Wool & Sisal | Teppichboden Rosso 500cm 030 Wool & Sisal;400/500;2;;;;0;2;0;-99;
-NO_MATCH;030 Wool & Sisal;Nelson;Teppichboden NELSON 400cm 030 Wool & Sisal | Teppichboden NELSON 500cm 030 Wool & Sisal;400/500;7;;;;0;7;0;-99;
-NO_MATCH;030 Wool & Sisal;Parlo;Teppichboden PARLO 400cn 030 Wool & Sisal | Teppichboden PARLO 500cn 030 Wool & Sisal;400/500;6;;;;0;6;0;7;
-NO_MATCH;030 Wool & Sisal;Oase;Teppichboden OASE 400cm 030 Wool & Sisal | Teppichboden OASE 500cm 030 Wool & Sisal;400/500;6;;;;0;6;0;1;
-NO_MATCH;030 Wool & Sisal;Sipo;Teppichboden SIPO 400cm 030 Wool & Sisal | Teppichboden SIPO 500cm 030 Wool & Sisal;400/500;6;;;;0;6;0;1;
-NO_MATCH;030 Wool & Sisal;Vida;Teppichboden VIDA 400cm 030 Wool & Sisal;400;6;;;;0;6;0;3;
-NO_MATCH;030 Wool & Sisal;Lavi;Teppichboden LAVI 400cm 030 Wool & Sisal;400;6;;;;0;6;0;-2;
-NO_MATCH;030 Wool & Sisal;Lida;Teppichboden LIDA 400cm 030 Wool & Sisal | Teppichboden LIDA 500cm 030 Wool & Sisal;400/500;8;;;;0;8;0;3;
-NO_MATCH;030 Wool & Sisal;Mavie;Teppichboden MAVIE 400cm 030 Wool & Sisal | Teppichboden MAVIE 500cm 030 Wool & Sisal;400/500;8;;;;0;8;0;2;
-NO_MATCH;030 Wool & Sisal;Filo;Teppichboden FILO 400cm 030 Wool & Sisal | Teppichboden FILO 500cm 030 Wool & Sisal;400/500;6;;;;0;6;0;-3;
-NO_MATCH;030 Wool & Sisal;Denia;Teppichboden DENIA 400cm 030 Wool & Sisal | Teppichboden DENIA 500cm 030 Wool & Sisal;400/500;9;;;;0;9;0;7;
-NO_MATCH;030 Wool & Sisal;Cosmo;Teppichboden COSMO 400cm 030 Wool & Sisal | Teppichboden COSMO 500cm 030 Wool & Sisal;400/500;7;;;;0;7;0;5;
-MATCH_PROBABLE;Atelier 30;Granat;Nadelvlies GRANAT 200cm Atelier 2030 | Nadelvlies GRANAT 400cm Atelier 2030;200/400;9;MPlus Analog 2029 911-0020 200 cm Rhodos;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);8;1;2;16;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Atelier 30;Karat;Nadelvlies KARAT 200cm Atelier 2030;200;10;;;;0;10;0;6;
-NO_MATCH;Atelier 30;Basalt;Nadelvlies Basalt 200cm Atelier 2030 | Nadelvlies Basalt 400cm Atelier 2030;200/400;9;;;;0;9;0;13;
-NO_MATCH;Atelier 30;Granit;Nadelvlies GRANIT 200cm Atelier 2030 | Nadelvlies GRANIT 400cm Atelier 2030;200/400;11;;;;0;11;0;6;
-MATCH_PROBABLE;Atelier 30;Forte;Nadelvlies FORTE 200cm Atelier 2030;200;11;MPlus Analog 2029 916-6802 200 cm Santorin;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);10;1;0;16;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Atelier 30;Mars;Nadelvlies Mars 200cm Atelier 2030;200;11;;;;0;11;0;7;
-NO_MATCH;Atelier 30;Granat Fliese;Nadelvlies GRANAT Fliese 50x50cm Atelier 2030;50;6;;;;0;6;0;12;
-NO_MATCH;Atelier 30;Karat Fliese;Nadelvlies KARAT Fliesen 50x50cm Atelier 2030;50;10;;;;0;10;0;7;
-MATCH_CONFIRMED;Atelier 30;Strong 956;Nadelvlies STRONG 956 200cm Atelier 2030;200;33;MPlus Analog 2029 956-0021 200 cm Strong;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);32;1;0;20;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Atelier 30;Titan Eco;Nadelvlies TITAN Eco 200cm Atelier 2030 | Nadelvlies TITAN Eco 400cm Atelier 2030;200/400;14;;;;0;14;0;9;
-MATCH_CONFIRMED;Atelier 30;Strong 733;Nadelvlies STRONG 733 200 cm Atelier 2030;200;14;MPlus Analog 2029 733-0021 200 cm Strong;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);10;4;0;20;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Atelier 30;Strong 966 Fliese;Nadelvlies STRONG 966 Fliese 50x50cm Atelier 2030;50;11;;;;0;11;0;18;
-NO_MATCH;Atelier 30;Titan Eco Fliese;Nadelvlies TITAN ECO FL 50x50cm Atelier 2030;50;8;;;;0;8;0;7;
-NO_MATCH;Atelier 30;Strong Compact 926;Nadelvlies STRONG COMPACT 926 200cm Atelier 2030;200;11;;;;0;11;0;6;
-NO_MATCH;Atelier 30;Strong 745;Nadelvlies STRONG 745 200 cm Atelier 2030;200;21;;;;0;21;0;14;
-NO_MATCH;Atelier 30;Strong 956 Tide;Nadelvlies STRONG 956 Tide 200 cm Atelier 2030;200;8;;;;0;8;0;11;
-NO_MATCH;Format Modul 028;Rambo;Teppichboden Rambo Fliese 50 x 50 cm 028 Format Modul Object;50;26;;;;0;26;0;5;
-NO_MATCH;Format Modul 028;Central Fliese;Teppichboden Central Fliese 50 x 50 cm 028 Format Modul Object;50;6;;;;0;6;0;7;
-NO_MATCH;Format Modul 028;Pathos Fliese;Teppichboden Pathos Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;9;;;;0;9;0;5;
-MATCH_POSSIBLE;Format Modul 028;Rapid Fliese;Teppichboden Rapid Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;8;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;Extrem 2029;Condor Carpets bv / Condor Group (NL-Hasselt);1;7;7;11;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Format Modul 028;Diego;Teppichboden Diego Fliese 50 x 50 cm 028 Format Modul Object;50;26;;;;0;26;0;7;
-NO_MATCH;Format Modul 028;Cosy Fliese;Teppichboden Cosy Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;6;;;;0;6;0;9;
-MATCH_POSSIBLE;Format Modul 028;Idea Fliese;Teppichboden Idea Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;5;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;Avantiles 2026;;3;2;5;14;Kein Herstellerbeleg auf M-Plus-Seite (keine Leistungserklaerung verlinkt) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Format Modul 028;Keno;Teppichboden Keno Fliese 50 x 50 cm 028 Format Modul Object;50;19;;;;0;19;0;5;
-NO_MATCH;Format Modul 028;Silas;Teppichboden Silas Fliese 50 x 50 cm 028 Format Modul Object;50;19;;;;0;19;0;7;
-NO_MATCH;Format Modul 028;Polar;Teppichboden Polar Planke 25 x 100 cm 028 Format Modul Object;25;23;;;;0;23;0;0;
-NO_MATCH;Format Modul 028;Karma;Teppichboden Karma Planke 45,72 x 91,44 028 Format Modul Object;45;23;;;;0;23;0;6;
-MATCH_PROBABLE;Arriva027;Secrets;Teppichboden Secrets 400 cm Arriva 027 | Teppichboden Secrets 500 cm Arriva 027;400/500;17;MPlus Akzente 2029 2403-22 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;10;0;17;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Trend 026 | Plaza"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2403-TR"
-NO_MATCH;Arriva027;Varia;Teppichboden Varia 400 cm Arriva 027;400;8;;;;0;8;0;6;
-NO_MATCH;Arriva027;Lobo;Teppichboden Lobo 400 cm Arriva 027;400;4;;;;0;4;0;6;
-NO_MATCH;Arriva027;Gloria;Teppichboden Gloria 400 cm Arriva 027;400;21;;;;0;21;0;9;
-NO_MATCH;Arriva027;Relation FL;Teppichboden Relation FL 50x50cm Arriva 027;50;8;;;;0;8;0;1;
-NO_MATCH;Arriva027;Grande;Teppichboden Grande 400 cm Arriva 027;400;15;;;;0;15;0;9;
-NO_MATCH;Arriva027;Join PL;Teppichboden Join PL 25x100cm Arriva 027;50;3;;;;0;3;0;1;
-NO_MATCH;Arriva027;Feel;Teppichboden Feel 400 cm Arriva 027;400;2;;;;0;2;0;6;
-NO_MATCH;Arriva027;Amazing;Teppichboden AMAZING 400 cm Arriva 027;400;17;;;;0;17;0;4;
-NO_MATCH;Arriva027;Royal;Teppichboden Royal 400 cm Arriva 027;400;5;;;;0;5;0;7;
-NO_MATCH;Arriva027;Impression;Teppichboden Impression 400 cm Arriva 027;400;3;;;;0;3;0;6;
-NO_MATCH;Arriva027;Mikado;Teppichboden Mikado 400 cm Arriva 027;400;8;;;;0;8;0;6;
-NO_MATCH;Arriva027;Impression FL;Teppichboden Impression FL 50x50cm Arriva 027;50;3;;;;0;3;0;1;
-NO_MATCH;Arriva027;Gloria FL;Teppichboden Gloria FL 50x50cm Arriva 027;50;13;;;;0;13;0;-1;
-NO_MATCH;Arriva027;Join FL;Teppichboden Join FL 50x50cm Arriva 027;50;3;;;;0;3;0;1;
-NO_MATCH;Arriva027;Feel FL;Teppichboden Feel FL 50x50 cm Arriva 027;50;2;;;;0;2;0;1;
-NO_MATCH;Arriva027;Boho Comfort;Teppichboden Boho Comfort 400 cm Arriva 027;400;3;;;;0;3;0;4;
-NO_MATCH;Arriva027;Ambient Comfort;Teppichboden Ambient Comfort 400 cm Arriva 027;400;7;;;;0;7;0;4;
-NO_MATCH;Arriva027;Fancy Comfort;Teppichboden Fancy Comfort 400 cm Arriva 027;400;3;;;;0;3;0;4;
-NO_MATCH;Arriva027;Terzia PL;Teppichboden Terzia PL 25x100 cm Arriva 027;25;17;;;;0;17;0;2;
-NO_MATCH;Arriva027;Savage FL;Teppichboden Savage FL 50x50 cm Arriva 027;50;2;;;;0;2;0;1;
-NO_MATCH;Arriva027;Retro FL;Teppichboden Retro FL 50x50 cm Arriva 027;50;2;;;;0;2;0;1;
-NO_MATCH;Arriva027;Sigma PL;Teppichboden Sigma PL 25x100 cm Arriva 027;25;3;;;;0;3;0;-2;
-NO_MATCH;Arriva027;Travel PL;Teppichboden Travel PL 25x100 cm Arriva 027;25;14;;;;0;14;0;2;
-NO_MATCH;Arriva027;Sigma FL;Teppichboden Sigma FL 50x50 cm Arriva 027;50;3;;;;0;3;0;1;
-NO_MATCH;Arriva027;Resort PL;Teppichboden Resort PL 25x100 cm Arriva 027;25;3;;;;0;3;0;-6;
-NO_MATCH;Arriva027;Sera PL;Teppichboden Sera PL 25x100 cm selbsthaftend Arriva 027;25;21;;;;0;21;0;2;
-NO_MATCH;Balance 25;Palais;Teppichboden PALAIS Balance 25;400;7;;;;0;7;0;8;
-NO_MATCH;Balance 25;Tesso;Teppichboden TESSO 400cm Balance 25;400;6;;;;0;6;0;10;
-NO_MATCH;Balance 25;Juwel;Teppichboden JUWEL 400cm Balance 25;400;9;;;;0;9;0;0;
-NO_MATCH;Balance 25;Faro;Teppichboden FARO 400cm Balance 25 | Teppichboden FARO 500cm Balance 25;400/500;5;;;;0;5;0;3;
-NO_MATCH;Balance 25;Parlament;Teppichboden PARLAMENT 400cm Balance 25;400;6;;;;0;6;0;5;
-NO_MATCH;Balance 25;Eskada;Teppichboden ESKADA 400cm Balance 25;400;10;;;;0;10;0;4;
-NO_MATCH;Balance 25;Camillo;Teppichboden CAMILLO 400cm Balance 25 | Teppichboden CAMILLO 500cm Balance 25;400/500;13;;;;0;13;0;1;
-NO_MATCH;Balance 25;Sinfonie;Teppichboden SINFONIE 400cm Balance 25 | Teppichboden SINFONIE 500cm Balance 25;400/500;12;;;;0;12;0;7;
-MATCH_POSSIBLE;Balance 25;Avalon;Teppichboden AVALON 400cm Balance 25 | Teppichboden AVALON 500cm Balance 25;400/500;15;MPlus Avantgarde 2029 2203-042 TR 400cm;Avantgarde 2029;ITC Co BV / Balta Group (B-Tielt);5;10;4;16;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
-NO_MATCH;Balance 25;Tobago;Teppichboden TOBAGO 400cm Balance 25 | Teppichboden TOBAGO 500cm Balance 25;400/500;3;;;;0;3;0;9;
-NO_MATCH;Balance 25;Smaragd;Teppichboden SMARAGD 400cm Balance 25 | Teppichboden SMARAGD 500cm Balance 25;400/500;17;;;;0;17;0;9;
-NO_MATCH;Balance 25;Scala;Teppichboden SCALA 400cm Balance 25;400;11;;;;0;11;0;5;
-NO_MATCH;Balance 25;Serenade;Teppichboden SERENADE 400cm Balance 25;400;6;;;;0;6;0;10;
-NO_MATCH;Balance 25;Broadway;Teppichboden Broadway 400cm Deluxe Balance 25 | Teppichboden Broadway 500cm Deluxe Balance 25;400/500;12;;;;0;12;0;10;
-NO_MATCH;Balance 25;Elysee;Teppichboden ELYSEE 400cm Deluxe Balance 25 | Teppichboden ELYSEE 500cm Deluxe Balance25;400/500;18;;;;0;18;0;9;
-NO_MATCH;Balance 25;Soft;Teppichboden Soft 400cm Deluxe Balance25;400;25;;;;0;25;0;10;
-NO_MATCH;;Interlife;Teppichboden Tretford Interlife 200cm;200;41;;;;0;41;0;-99;
-NO_MATCH;Atelier 30;Basalt Fliese;Nadelvlies Basalt Fliese 50x50cm Atelier 2024;50;4;;;;0;4;0;4;
-NO_MATCH;Atelier 30;Titan Fliese;Nadelvlies TITAN SL-Fliesen 50x50cm Atelier 2024;50;2;;;;0;2;0;8;
-NO_MATCH;;;Wolff Anschlag für Nadelvlies 4 mm für Nahtschneider Linocut 2010217;;1;;;;0;1;0;0;
-NO_MATCH;Quattro 028;Elevation III;Teppichfliese Elevation III 50 x 50cm Quattro028;50;21;;;;0;21;0;1;
-NO_MATCH;028 Central Objekt Teppichfliesen;Central;Teppichboden Central Fliese 50x50 cm Central Fliesen Karte | Teppichboden Central TR 400cm Central 028 Karte / 028 Atrium Object;400/50;6;;;;0;6;0;8;
-NO_MATCH;028 Atrium Object;Urban Fliese;Teppichboden Urban Fliese 50x50cm 028 Atrium Object;;8;;;;0;8;0;2;
-NO_MATCH;Format Modul 25;Lana;Teppichboden Lana 50x50 Fliese Format Modul25;50;2;;;;0;2;0;-99;
-NO_MATCH;Format Modul 25;Cosy Fliese;Teppichboden Cosy 50x50cm Fliese Format Modul 25;50;8;;;;0;8;0;-99;
-NO_MATCH;;Quito;Bordüren-Teppich QUITO Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;Cancun 500 cm nur Fb. 07, 41, 50;Bordüren-Teppich CANCUN Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;Campinas;Bordüren-Teppich CAMPINAS Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;Brasilia 500 cm nur Fb. 07, 80;Bordüren-Teppich BRASILIA Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;Baruta;Bordüren-Teppich BARUTA Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;Barinas;Bordüren-Teppich BARINAS Sisal Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;;;Die Urbane Massivdiele 21x162mm flair sisal NATURinFORM;16;5;;;;0;5;0;-99;
-NO_MATCH;;;Kokosfaser-Schnellpolster 115cm 783235 ca. 2,0kg/m², auf Jute H215;;1;;;;0;1;0;-99;
-NO_MATCH;;Mangalore natur;Bordüren-Teppich MANGALORE NATUR Kokos Wunschmaß Armada Naturfaser;;1;;;;0;1;0;-99;
-NO_MATCH;028 Atrium Object;Urban;Teppichboden Urban 400 cm 028 Atrium Object;400;8;;;;0;8;0;8;
-NO_MATCH;Homeline 27;Milo;Teppichboden MILO 400 cm Homeline27 | Teppichboden MILO 500 cm Homeline27;400/500;8;;;;0;8;0;8;
-NO_MATCH;Homeline 27;;Teppichboden TALLIN 400 cm Homeline27 | Teppichboden TALLIN 500 cm Homeline27;400/500;8;;;;0;8;0;1;
-MATCH_POSSIBLE;Homeline 27;Tosca;Teppichboden TOSCA 400 cm Homeline27 | Teppichboden TOSCA 500 cm Homeline27;400/500;10;MPlus Akzente 2029 2419-15 TR 400 cm;Akzente 2029;Vebe Floorcoverings bv (NL-Genemuiden);4;6;2;16;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Sprint 027 | Tempra"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2419-TR"
-NO_MATCH;Homeline 27;Siro;Teppichboden SIRO 400 cm Homeline27;400;10;;;;0;10;0;6;
-NO_MATCH;Homeline 27;Rio;Teppichboden RIO 400 cm Homeline27 | Teppichboden RIO 500 cm Homeline27;400/500;5;;;;0;5;0;-1;
-NO_MATCH;Homeline 27;Rival;Teppichboden RIVAL 400 cm Homeline27 | Teppichboden RIVAL 500 cm Homeline27;400/500;9;;;;0;9;0;5;
-NO_MATCH;Homeline 27;Palia;Teppichboden PALIA 400 cm Homeline27 | Teppichboden PALIA 500 cm Homeline27;400/500;11;;;;0;11;0;4;
-NO_MATCH;Homeline 27;Para;Teppichboden PARA 400 cm Homeline27 | Teppichboden PARA 500 cm Homeline27;400/500;10;;;;0;10;0;11;
-NO_MATCH;Homeline 27;Lord;Teppichboden LORD 400 cm Homeline27 | Teppichboden LORD 500 cm Homeline27;400/500;11;;;;0;11;0;15;
-NO_MATCH;Homeline 27;Heres;Teppichboden HERES 400 cm Homeline27 | Teppichboden HERES 500 cm Homeline27;400/500;21;;;;0;21;0;8;
-MATCH_POSSIBLE;Homeline 27;Drago;Teppichboden DRAGO 400 cm Homeline27 | Teppichboden DRAGO 500 cm Homeline27;400/500;6;MPlus Akzente 2029 2404-11 TR 400 cm;Akzente 2029;;5;1;2;16;"Kein Herstellerbeleg auf M-Plus-Seite (Leistungserklaerung als Scan in Fragmenten - nicht auswertbar) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Sprint 027 | Solid"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2404-TR"
-NO_MATCH;Homeline 27;Ares;Teppichboden ARES 400 cm Homeline27 | Teppichboden ARES 500 cm Homeline27;400/500;11;;;;0;11;0;6;
-NO_MATCH;Homeline 27;Leana;Teppichboden LEANA 400 cm Homeline27 | Teppichboden LEANA 500 cm Homeline27;400/500;9;;;;0;9;0;15;
-NO_MATCH;Homeline 27;Lima;Teppichboden LIMA 400 cm Homeline27 | Teppichboden LIMA 500 cm Homeline27;400/500;5;;;;0;5;0;3;
-NO_MATCH;Homeline 27;Filio;Teppichboden FILIO 400 cm Homeline27 | Teppichboden FILIO 500 cm Homeline27;400/500;9;;;;0;9;0;2;
+MATCH_POSSIBLE;Sprint 027;Tempra;Teppichboden Tempra 400cm Sprint 027 | Teppichboden Tempra 500cm Sprint 027;400/500;9;MPlus Akzente 2029 2419-15 TR 400 cm;Akzente 2029;Vebe Floorcoverings bv (NL-Genemuiden);4;5;2;16;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Sprint 027;Damos;Teppichboden DAMOS 400cm Sprint027 | Teppichboden DAMOS 500cm Sprint027;400/500;10;;;;0;10;0;4;
+NO_MATCH;Sprint 027;Astro;Teppichboden ASTRO 400cm Sprint027 | Teppichboden ASTRO 500cm Sprint027;400/500;12;;;;0;12;0;1;
+MATCH_PROBABLE;Sprint 027;Limbo;Teppichboden LIMBO 400cm Sprint027 | Teppichboden LIMBO 500cm Sprint027;400/500;9;MPlus Akzente 2029 2418-70 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;2;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Sprint 027;Lagos;Teppichboden LAGOS 400cm Sprint027 | Teppichboden LAGOS 500cm Sprint027;400/500;11;;;;0;11;0;8;
+MATCH_PROBABLE;Sprint 027;Lorna;Teppichboden Lorna 400cm Sprint027 | Teppichboden Lorna 500cm Sprint027;400/500;11;MPlus Extrem 2029 TB 1160-033 TR 400 cm;Extrem 2029;Associated Weavers Europe NV (B-Ronse);6;5;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Sprint 027;Riva;Teppichboden Riva 400 cm Sprint 027 | Teppichboden Riva 500 cm Sprint 027;400/500;9;;;;0;9;0;11;
+NO_MATCH;Sprint 027;Nero;Teppichboden Nero 400 cm Sprint 027 | Teppichboden Nero 500 cm Sprint 027;400/500;4;;;;0;4;0;-1;
+NO_MATCH;Sprint 027;Lara;Teppichboden Lara 400 cm Sprint 027 | Teppichboden Lara 500 cm Sprint 027;400/500;20;;;;0;20;0;9;
+NO_MATCH;Sprint 027;Nubia;Teppichboden Nubia 400 cm Sprint 027 | Teppichboden Nubia 500 cm Sprint 027;400/500;8;;;;0;8;0;5;
+NO_MATCH;Sprint 027;Samba;Teppichboden Samba 400 cm Sprint 027 | Teppichboden Samba 500 cm Sprint 027;400/500;4;;;;0;4;0;3;
+REVIEW_REQUIRED;Sprint 027;Doria;Teppichboden Doria 400 cm Sprint 027 | Teppichboden Doria 500 cm Sprint 027;400/500;8;MPlus Akzente 2029 2411-43 VR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);7;1;0;15;Brandklasse widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+MATCH_POSSIBLE;Sprint 027;Solid;Teppichboden Solid 400 cm Sprint 027 | Teppichboden Solid 500 cm Sprint 027;400/500;5;MPlus Akzente 2029 2404-11 TR 400 cm;Akzente 2029;;5;0;2;16;Kein Herstellerbeleg auf M-Plus-Seite (Leistungserklaerung als Scan in Fragmenten - nicht auswertbar) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Sprint 027;Borneo;Teppichboden Borneo 400 cm Sprint 027 | Teppichboden Borneo 500 cm Sprint 027;400/500;10;;;;0;10;0;6;
+NO_MATCH;Sprint 027;Samir;Teppichboden Samir 400 cm Sprint 027 | Teppichboden Samir 500 cm Sprint 027;400/500;10;;;;0;10;0;15;
+NO_MATCH;Sprint 027;Vero;Teppichboden Vero 400 cm Sprint 027 | Teppichboden Vero 500 cm Sprint 027;400/500;7;;;;0;7;0;7;
+NO_MATCH;Sprint 027;Bari;Teppichboden Bari 400 cm Sprint 027 | Teppichboden Bari 500 cm Sprint 027;400/500;4;;;;0;4;0;9;
+NO_MATCH;Sprint 027;Cala;Teppichboden Cala 400 cm Sprint 027 | Teppichboden Cala 500 cm Sprint 027;400/500;8;;;;0;8;0;2;
+NO_MATCH;Sprint 027;Mila;Teppichboden Mila 400 cm Sprint 027;400;9;;;;0;9;0;6;
+NO_MATCH;Sprint 027;Altro;Teppichboden Altro 400 cm Sprint 027 | Teppichboden Altro 500 cm Sprint 027;400/500;7;;;;0;7;0;3;
+MATCH_PROBABLE;Trend 026;Plaza;Teppichboden PLAZA 400cm Trend 026 | Teppichboden PLAZA 500cm Trend 026;400/500;18;MPlus Akzente 2029 2403-22 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;11;0;17;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Trend 026;Rigoletto;Teppichboden RIGOLETTO 400cm Trend 026 | Teppichboden RIGOLETTO 500cm Trend 026;400/500;15;;;;0;15;0;2;
+NO_MATCH;Trend 026;Corsaro;Teppichboden CORSARO 400cm Trend 026 | Teppichboden CORSARO 500cm Trend 026;400/500;15;;;;0;15;0;9;
+NO_MATCH;Trend 026;Ambra;Teppichboden AMBRA 400cm Trend 026 | Teppichboden AMBRA 500cm Trend 026;400/500;12;;;;0;12;0;8;
+MATCH_PROBABLE;Trend 026;Derby;Teppichboden DERBY 400cm Trend 026 | Teppichboden DERBY 500cm Trend 026;400/500;18;MPlus Akzente 2029 2408-15 TR 400 cm;Akzente 2029;ITC Co BV / Balta Group (B-Tielt);11;7;0;18;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Format 028 | Linux"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2408-TR"
+NO_MATCH;Trend 026;Luna;Teppichboden LUNA 400cm Trend 026 | Teppichboden LUNA 500cm Trend 026;400/500;12;;;;0;12;0;6;
+NO_MATCH;Trend 026;Terra;Teppichboden TERRA 400 cm Trend 026 | Teppichboden TERRA 500 cm Trend 026;400/500;14;;;;0;14;0;9;
+NO_MATCH;Trend 026;Sumatra;Teppichboden SUMATRA 400 cm Trend 026 | Teppichboden SUMATRA 500 cm Trend 026;400/500;12;;;;0;12;0;3;
+NO_MATCH;Trend 026;Nobel;Teppichboden NOBEL 400 cm Trend 026 | Teppichboden NOBEL 500 cm Trend 026;400/500;15;;;;0;15;0;9;
+REVIEW_REQUIRED;Trend 026;Montego;Teppichboden MONTEGO 400 cm Trend 026 | Teppichboden MONTEGO 500 cm Trend 026;400/500;18;MPlus Akzente 2029 2401-20 DB 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;11;3;9;Poleinsatzgewicht weicht ab (1380.0 vs. 1650.0) | Ruecken widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Trend 026;Feeling;Teppichboden FEELING 400 cm Trend 026 | Teppichboden FEELING 500 cm Trend 026;400/500;15;;;;0;15;0;7;
+NO_MATCH;Trend 026;Alamo;Teppichboden ALAMO 400 cm Trend 026 | Teppichboden ALAMO 500 cm Trend 026;400/500;14;;;;0;14;0;8;
+REVIEW_REQUIRED;Trend 026;Zirkonia;Teppichboden ZIRKONIA 400 cm Trend 026 | Teppichboden ZIRKONIA 500 cm Trend 026;400/500;10;MPlus Akzente 2029 2412-250 VR 400 cm;Akzente 2029;Lano NV (B-Harelbeke);5;5;0;10;Gesamtstaerke weicht ab (12.0 vs. 13.5) | Ruecken widerspricht | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Trend 026;Dolce;Teppichboden DOLCE 400 cm Trend 026 | Teppichboden DOLCE 500 cm Trend 026;400/500;14;;;;0;14;0;3;
+NO_MATCH;030 Wool & Sisal;Point;Teppichboden POINT 400cm 030 Wool & Sisal | Teppichboden POINT 500cm 030 Wool & Sisal;400/500;10;;;;0;10;0;-99;
+NO_MATCH;030 Wool & Sisal;Calais;Teppichboden CALAIS 400cm 030 Wool & Sisal | Teppichboden CALAIS 500cm 030 Wool & Sisal;400/500;10;;;;0;10;0;-99;
+NO_MATCH;030 Wool & Sisal;Rosso;Teppichboden Rosso 400cm 030 Wool & Sisal | Teppichboden Rosso 500cm 030 Wool & Sisal;400/500;1;;;;0;1;0;-99;
+NO_MATCH;030 Wool & Sisal;Nelson;Teppichboden NELSON 400cm 030 Wool & Sisal | Teppichboden NELSON 500cm 030 Wool & Sisal;400/500;6;;;;0;6;0;-99;
+NO_MATCH;030 Wool & Sisal;Parlo;Teppichboden PARLO 400cn 030 Wool & Sisal | Teppichboden PARLO 500cn 030 Wool & Sisal;400/500;5;;;;0;5;0;7;
+NO_MATCH;030 Wool & Sisal;Oase;Teppichboden OASE 400cm 030 Wool & Sisal | Teppichboden OASE 500cm 030 Wool & Sisal;400/500;5;;;;0;5;0;1;
+NO_MATCH;030 Wool & Sisal;Sipo;Teppichboden SIPO 400cm 030 Wool & Sisal | Teppichboden SIPO 500cm 030 Wool & Sisal;400/500;5;;;;0;5;0;1;
+NO_MATCH;030 Wool & Sisal;Vida;Teppichboden VIDA 400cm 030 Wool & Sisal;400;5;;;;0;5;0;3;
+NO_MATCH;030 Wool & Sisal;Lavi;Teppichboden LAVI 400cm 030 Wool & Sisal;400;5;;;;0;5;0;-2;
+NO_MATCH;030 Wool & Sisal;Lida;Teppichboden LIDA 400cm 030 Wool & Sisal | Teppichboden LIDA 500cm 030 Wool & Sisal;400/500;7;;;;0;7;0;3;
+NO_MATCH;030 Wool & Sisal;Mavie;Teppichboden MAVIE 400cm 030 Wool & Sisal | Teppichboden MAVIE 500cm 030 Wool & Sisal;400/500;7;;;;0;7;0;2;
+NO_MATCH;030 Wool & Sisal;Filo;Teppichboden FILO 400cm 030 Wool & Sisal | Teppichboden FILO 500cm 030 Wool & Sisal;400/500;5;;;;0;5;0;-3;
+NO_MATCH;030 Wool & Sisal;Denia;Teppichboden DENIA 400cm 030 Wool & Sisal | Teppichboden DENIA 500cm 030 Wool & Sisal;400/500;8;;;;0;8;0;7;
+NO_MATCH;030 Wool & Sisal;Cosmo;Teppichboden COSMO 400cm 030 Wool & Sisal | Teppichboden COSMO 500cm 030 Wool & Sisal;400/500;6;;;;0;6;0;5;
+MATCH_PROBABLE;Atelier 30;Granat;Nadelvlies GRANAT 200cm Atelier 2030 | Nadelvlies GRANAT 400cm Atelier 2030;200/400;8;MPlus Analog 2029 911-0020 200 cm Rhodos;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);8;0;2;16;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Atelier 30;Karat;Nadelvlies KARAT 200cm Atelier 2030;200;9;;;;0;9;0;6;
+NO_MATCH;Atelier 30;Basalt;Nadelvlies Basalt 200cm Atelier 2030 | Nadelvlies Basalt 400cm Atelier 2030;200/400;8;;;;0;8;0;13;
+NO_MATCH;Atelier 30;Granit;Nadelvlies GRANIT 200cm Atelier 2030 | Nadelvlies GRANIT 400cm Atelier 2030;200/400;10;;;;0;10;0;6;
+MATCH_PROBABLE;Atelier 30;Forte;Nadelvlies FORTE 200cm Atelier 2030;200;10;MPlus Analog 2029 916-6802 200 cm Santorin;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);10;0;0;16;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Atelier 30;Mars;Nadelvlies Mars 200cm Atelier 2030;200;10;;;;0;10;0;7;
+NO_MATCH;Atelier 30;Granat Fliese;Nadelvlies GRANAT Fliese 50x50cm Atelier 2030;50;5;;;;0;5;0;12;
+NO_MATCH;Atelier 30;Karat Fliese;Nadelvlies KARAT Fliesen 50x50cm Atelier 2030;50;9;;;;0;9;0;7;
+MATCH_CONFIRMED;Atelier 30;Strong 956;Nadelvlies STRONG 956 200cm Atelier 2030;200;32;MPlus Analog 2029 956-0021 200 cm Strong;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);32;0;0;20;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Atelier 30;Titan Eco;Nadelvlies TITAN Eco 200cm Atelier 2030 | Nadelvlies TITAN Eco 400cm Atelier 2030;200/400;13;;;;0;13;0;9;
+MATCH_CONFIRMED;Atelier 30;Strong 733;Nadelvlies STRONG 733 200 cm Atelier 2030;200;13;MPlus Analog 2029 733-0021 200 cm Strong;Analog 2029;Vebe Floorcoverings bv (NL-Genemuiden);10;3;0;20;Polhoehe auf einer Seite nicht angegeben (None / None) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Atelier 30;Strong 966 Fliese;Nadelvlies STRONG 966 Fliese 50x50cm Atelier 2030;50;10;;;;0;10;0;18;
+NO_MATCH;Atelier 30;Titan Eco Fliese;Nadelvlies TITAN ECO FL 50x50cm Atelier 2030;50;7;;;;0;7;0;7;
+NO_MATCH;Atelier 30;Strong Compact 926;Nadelvlies STRONG COMPACT 926 200cm Atelier 2030;200;10;;;;0;10;0;6;
+NO_MATCH;Atelier 30;Strong 745;Nadelvlies STRONG 745 200 cm Atelier 2030;200;20;;;;0;20;0;14;
+NO_MATCH;Atelier 30;Strong 956 Tide;Nadelvlies STRONG 956 Tide 200 cm Atelier 2030;200;7;;;;0;7;0;11;
+NO_MATCH;Format Modul 028;Rambo;Teppichboden Rambo Fliese 50 x 50 cm 028 Format Modul Object;50;25;;;;0;25;0;5;
+NO_MATCH;Format Modul 028;Central Fliese;Teppichboden Central Fliese 50 x 50 cm 028 Format Modul Object;50;5;;;;0;5;0;7;
+NO_MATCH;Format Modul 028;Pathos Fliese;Teppichboden Pathos Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;8;;;;0;8;0;5;
+MATCH_POSSIBLE;Format Modul 028;Rapid Fliese;Teppichboden Rapid Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;7;MPlus Extrem Tiles 2029 2157-020 50x50cm 5,00 qm/Pck;Extrem 2029;Condor Carpets bv / Condor Group (NL-Hasselt);1;6;7;11;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Format Modul 028;Diego;Teppichboden Diego Fliese 50 x 50 cm 028 Format Modul Object;50;25;;;;0;25;0;7;
+NO_MATCH;Format Modul 028;Cosy Fliese;Teppichboden Cosy Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;5;;;;0;5;0;9;
+MATCH_POSSIBLE;Format Modul 028;Idea Fliese;Teppichboden Idea Fliese 50 x 50 cm 028 Format Modul Obj. / 028 Atrium Obj.;50;4;MPlus Avantiles 2026 Tile 214-74 50 x 50 cm 5,00qm/Pck;Avantiles 2026;;3;1;5;14;Kein Herstellerbeleg auf M-Plus-Seite (keine Leistungserklaerung verlinkt) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Format Modul 028;Keno;Teppichboden Keno Fliese 50 x 50 cm 028 Format Modul Object;50;18;;;;0;18;0;5;
+NO_MATCH;Format Modul 028;Silas;Teppichboden Silas Fliese 50 x 50 cm 028 Format Modul Object;50;18;;;;0;18;0;7;
+NO_MATCH;Format Modul 028;Polar;Teppichboden Polar Planke 25 x 100 cm 028 Format Modul Object;25;22;;;;0;22;0;0;
+NO_MATCH;Format Modul 028;Karma;Teppichboden Karma Planke 45,72 x 91,44 028 Format Modul Object;45;22;;;;0;22;0;6;
+MATCH_PROBABLE;Arriva027;Secrets;Teppichboden Secrets 400 cm Arriva 027 | Teppichboden Secrets 500 cm Arriva 027;400/500;16;MPlus Akzente 2029 2403-22 TR 400 cm;Akzente 2029;Condor Carpets bv / Condor Group (NL-Hasselt);7;9;0;17;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Trend 026 | Plaza"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2403-TR"
+NO_MATCH;Arriva027;Varia;Teppichboden Varia 400 cm Arriva 027;400;7;;;;0;7;0;6;
+NO_MATCH;Arriva027;Lobo;Teppichboden Lobo 400 cm Arriva 027;400;3;;;;0;3;0;6;
+NO_MATCH;Arriva027;Gloria;Teppichboden Gloria 400 cm Arriva 027;400;20;;;;0;20;0;9;
+NO_MATCH;Arriva027;Relation FL;Teppichboden Relation FL 50x50cm Arriva 027;50;7;;;;0;7;0;1;
+NO_MATCH;Arriva027;Grande;Teppichboden Grande 400 cm Arriva 027;400;14;;;;0;14;0;9;
+NO_MATCH;Arriva027;Join PL;Teppichboden Join PL 25x100cm Arriva 027;50;2;;;;0;2;0;1;
+NO_MATCH;Arriva027;Feel;Teppichboden Feel 400 cm Arriva 027;400;1;;;;0;1;0;6;
+NO_MATCH;Arriva027;Amazing;Teppichboden AMAZING 400 cm Arriva 027;400;16;;;;0;16;0;4;
+NO_MATCH;Arriva027;Royal;Teppichboden Royal 400 cm Arriva 027;400;4;;;;0;4;0;7;
+NO_MATCH;Arriva027;Impression;Teppichboden Impression 400 cm Arriva 027;400;2;;;;0;2;0;6;
+NO_MATCH;Arriva027;Mikado;Teppichboden Mikado 400 cm Arriva 027;400;7;;;;0;7;0;6;
+NO_MATCH;Arriva027;Impression FL;Teppichboden Impression FL 50x50cm Arriva 027;50;2;;;;0;2;0;1;
+NO_MATCH;Arriva027;Gloria FL;Teppichboden Gloria FL 50x50cm Arriva 027;50;12;;;;0;12;0;-1;
+NO_MATCH;Arriva027;Join FL;Teppichboden Join FL 50x50cm Arriva 027;50;2;;;;0;2;0;1;
+NO_MATCH;Arriva027;Feel FL;Teppichboden Feel FL 50x50 cm Arriva 027;50;1;;;;0;1;0;1;
+NO_MATCH;Arriva027;Boho Comfort;Teppichboden Boho Comfort 400 cm Arriva 027;400;2;;;;0;2;0;4;
+NO_MATCH;Arriva027;Ambient Comfort;Teppichboden Ambient Comfort 400 cm Arriva 027;400;6;;;;0;6;0;4;
+NO_MATCH;Arriva027;Fancy Comfort;Teppichboden Fancy Comfort 400 cm Arriva 027;400;2;;;;0;2;0;4;
+NO_MATCH;Arriva027;Terzia PL;Teppichboden Terzia PL 25x100 cm Arriva 027;25;16;;;;0;16;0;2;
+NO_MATCH;Arriva027;Savage FL;Teppichboden Savage FL 50x50 cm Arriva 027;50;1;;;;0;1;0;1;
+NO_MATCH;Arriva027;Retro FL;Teppichboden Retro FL 50x50 cm Arriva 027;50;1;;;;0;1;0;1;
+NO_MATCH;Arriva027;Sigma PL;Teppichboden Sigma PL 25x100 cm Arriva 027;25;2;;;;0;2;0;-2;
+NO_MATCH;Arriva027;Travel PL;Teppichboden Travel PL 25x100 cm Arriva 027;25;13;;;;0;13;0;2;
+NO_MATCH;Arriva027;Sigma FL;Teppichboden Sigma FL 50x50 cm Arriva 027;50;2;;;;0;2;0;1;
+NO_MATCH;Arriva027;Resort PL;Teppichboden Resort PL 25x100 cm Arriva 027;25;2;;;;0;2;0;-6;
+NO_MATCH;Arriva027;Sera PL;Teppichboden Sera PL 25x100 cm selbsthaftend Arriva 027;25;20;;;;0;20;0;2;
+NO_MATCH;Balance 25;Palais;Teppichboden PALAIS Balance 25;400;6;;;;0;6;0;8;
+NO_MATCH;Balance 25;Tesso;Teppichboden TESSO 400cm Balance 25;400;5;;;;0;5;0;10;
+NO_MATCH;Balance 25;Juwel;Teppichboden JUWEL 400cm Balance 25;400;8;;;;0;8;0;0;
+NO_MATCH;Balance 25;Faro;Teppichboden FARO 400cm Balance 25 | Teppichboden FARO 500cm Balance 25;400/500;4;;;;0;4;0;3;
+NO_MATCH;Balance 25;Parlament;Teppichboden PARLAMENT 400cm Balance 25;400;5;;;;0;5;0;5;
+NO_MATCH;Balance 25;Eskada;Teppichboden ESKADA 400cm Balance 25;400;9;;;;0;9;0;4;
+NO_MATCH;Balance 25;Camillo;Teppichboden CAMILLO 400cm Balance 25 | Teppichboden CAMILLO 500cm Balance 25;400/500;12;;;;0;12;0;1;
+NO_MATCH;Balance 25;Sinfonie;Teppichboden SINFONIE 400cm Balance 25 | Teppichboden SINFONIE 500cm Balance 25;400/500;11;;;;0;11;0;7;
+MATCH_POSSIBLE;Balance 25;Avalon;Teppichboden AVALON 400cm Balance 25 | Teppichboden AVALON 500cm Balance 25;400/500;14;MPlus Avantgarde 2029 2203-042 TR 400cm;Avantgarde 2029;ITC Co BV / Balta Group (B-Tielt);5;9;4;16;Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt
+NO_MATCH;Balance 25;Tobago;Teppichboden TOBAGO 400cm Balance 25 | Teppichboden TOBAGO 500cm Balance 25;400/500;2;;;;0;2;0;9;
+NO_MATCH;Balance 25;Smaragd;Teppichboden SMARAGD 400cm Balance 25 | Teppichboden SMARAGD 500cm Balance 25;400/500;16;;;;0;16;0;9;
+NO_MATCH;Balance 25;Scala;Teppichboden SCALA 400cm Balance 25;400;10;;;;0;10;0;5;
+NO_MATCH;Balance 25;Serenade;Teppichboden SERENADE 400cm Balance 25;400;5;;;;0;5;0;10;
+NO_MATCH;Balance 25;Broadway;Teppichboden Broadway 400cm Deluxe Balance 25 | Teppichboden Broadway 500cm Deluxe Balance 25;400/500;11;;;;0;11;0;10;
+NO_MATCH;Balance 25;Elysee;Teppichboden ELYSEE 400cm Deluxe Balance 25 | Teppichboden ELYSEE 500cm Deluxe Balance25;400/500;17;;;;0;17;0;9;
+NO_MATCH;Balance 25;Soft;Teppichboden Soft 400cm Deluxe Balance25;400;24;;;;0;24;0;10;
+NO_MATCH;;Interlife;Teppichboden Tretford Interlife 200cm;200;40;;;;0;40;0;-99;
+NO_MATCH;Atelier 30;Basalt Fliese;Nadelvlies Basalt Fliese 50x50cm Atelier 2024;50;3;;;;0;3;0;4;
+NO_MATCH;Atelier 30;Titan Fliese;Nadelvlies TITAN SL-Fliesen 50x50cm Atelier 2024;50;1;;;;0;1;0;8;
+NO_MATCH;;;Wolff Anschlag für Nadelvlies 4 mm für Nahtschneider Linocut 2010217;;0;;;;0;0;0;0;
+NO_MATCH;Quattro 028;Elevation III;Teppichfliese Elevation III 50 x 50cm Quattro028;50;20;;;;0;20;0;1;
+NO_MATCH;028 Central Objekt Teppichfliesen;Central;Teppichboden Central Fliese 50x50 cm Central Fliesen Karte | Teppichboden Central TR 400cm Central 028 Karte / 028 Atrium Object;400/50;5;;;;0;5;0;8;
+NO_MATCH;028 Atrium Object;Urban Fliese;Teppichboden Urban Fliese 50x50cm 028 Atrium Object;;7;;;;0;7;0;2;
+NO_MATCH;Format Modul 25;Lana;Teppichboden Lana 50x50 Fliese Format Modul25;50;1;;;;0;1;0;-99;
+NO_MATCH;Format Modul 25;Cosy Fliese;Teppichboden Cosy 50x50cm Fliese Format Modul 25;50;7;;;;0;7;0;-99;
+NO_MATCH;;Quito;Bordüren-Teppich QUITO Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;Cancun 500 cm nur Fb. 07, 41, 50;Bordüren-Teppich CANCUN Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;Campinas;Bordüren-Teppich CAMPINAS Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;Brasilia 500 cm nur Fb. 07, 80;Bordüren-Teppich BRASILIA Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;Baruta;Bordüren-Teppich BARUTA Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;Barinas;Bordüren-Teppich BARINAS Sisal Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;;;Die Urbane Massivdiele 21x162mm flair sisal NATURinFORM;16;4;;;;0;4;0;-99;
+NO_MATCH;;;Kokosfaser-Schnellpolster 115cm 783235 ca. 2,0kg/m², auf Jute H215;;0;;;;0;0;0;-99;
+NO_MATCH;;Mangalore natur;Bordüren-Teppich MANGALORE NATUR Kokos Wunschmaß Armada Naturfaser;;0;;;;0;0;0;-99;
+NO_MATCH;028 Atrium Object;Urban;Teppichboden Urban 400 cm 028 Atrium Object;400;7;;;;0;7;0;8;
+NO_MATCH;Homeline 27;Milo;Teppichboden MILO 400 cm Homeline27 | Teppichboden MILO 500 cm Homeline27;400/500;7;;;;0;7;0;8;
+NO_MATCH;Homeline 27;;Teppichboden TALLIN 400 cm Homeline27 | Teppichboden TALLIN 500 cm Homeline27;400/500;7;;;;0;7;0;1;
+MATCH_POSSIBLE;Homeline 27;Tosca;Teppichboden TOSCA 400 cm Homeline27 | Teppichboden TOSCA 500 cm Homeline27;400/500;9;MPlus Akzente 2029 2419-15 TR 400 cm;Akzente 2029;Vebe Floorcoverings bv (NL-Genemuiden);4;5;2;16;"Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Sprint 027 | Tempra"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2419-TR"
+NO_MATCH;Homeline 27;Siro;Teppichboden SIRO 400 cm Homeline27;400;9;;;;0;9;0;6;
+NO_MATCH;Homeline 27;Rio;Teppichboden RIO 400 cm Homeline27 | Teppichboden RIO 500 cm Homeline27;400/500;4;;;;0;4;0;-1;
+NO_MATCH;Homeline 27;Rival;Teppichboden RIVAL 400 cm Homeline27 | Teppichboden RIVAL 500 cm Homeline27;400/500;8;;;;0;8;0;5;
+NO_MATCH;Homeline 27;Palia;Teppichboden PALIA 400 cm Homeline27 | Teppichboden PALIA 500 cm Homeline27;400/500;10;;;;0;10;0;4;
+NO_MATCH;Homeline 27;Para;Teppichboden PARA 400 cm Homeline27 | Teppichboden PARA 500 cm Homeline27;400/500;9;;;;0;9;0;11;
+NO_MATCH;Homeline 27;Lord;Teppichboden LORD 400 cm Homeline27 | Teppichboden LORD 500 cm Homeline27;400/500;10;;;;0;10;0;15;
+NO_MATCH;Homeline 27;Heres;Teppichboden HERES 400 cm Homeline27 | Teppichboden HERES 500 cm Homeline27;400/500;20;;;;0;20;0;8;
+MATCH_POSSIBLE;Homeline 27;Drago;Teppichboden DRAGO 400 cm Homeline27 | Teppichboden DRAGO 500 cm Homeline27;400/500;5;MPlus Akzente 2029 2404-11 TR 400 cm;Akzente 2029;;5;0;2;16;"Kein Herstellerbeleg auf M-Plus-Seite (Leistungserklaerung als Scan in Fragmenten - nicht auswertbar) | Jordan-Leistungserklaerung nennt nur W. & L. Jordan - Herstellerbeleg fuer die Jordan-Seite fehlt | Vermutlich dieselbe Ware wie Jordan ""Sprint 027 | Solid"" (Farbnummern 100 % gleich) - beide zeigen auf M-Plus M-Plus-Akzente-2029-2404-TR"
+NO_MATCH;Homeline 27;Ares;Teppichboden ARES 400 cm Homeline27 | Teppichboden ARES 500 cm Homeline27;400/500;10;;;;0;10;0;6;
+NO_MATCH;Homeline 27;Leana;Teppichboden LEANA 400 cm Homeline27 | Teppichboden LEANA 500 cm Homeline27;400/500;8;;;;0;8;0;15;
+NO_MATCH;Homeline 27;Lima;Teppichboden LIMA 400 cm Homeline27 | Teppichboden LIMA 500 cm Homeline27;400/500;4;;;;0;4;0;3;
+NO_MATCH;Homeline 27;Filio;Teppichboden FILIO 400 cm Homeline27 | Teppichboden FILIO 500 cm Homeline27;400/500;8;;;;0;8;0;2;
 NO_MATCH;;;Teppichboden RAVEL 400 cm Homeline26 | Teppichboden RAVEL 500 cm Homeline26;400/500;12;;;;0;12;0;4;
 NO_MATCH;;;Teppichboden PANAMA 400 cm Homeline26 | Teppichboden PANAMA 500 cm Homeline26;400/500;16;;;;0;16;0;7;
 NO_MATCH;;;Teppichboden BRASIL 400 cm Homeline26 | Teppichboden BRASIL 500 cm Homeline26;400/500;14;;;;0;14;0;5;
