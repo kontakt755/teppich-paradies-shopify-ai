@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:03:44.940Z",
+  "generated_at": "2026-09-09T12:07:32.827Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 47,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:03:44.940Z",
+    "fetchedAt": "2026-09-09T12:07:32.827Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,7 +65,7 @@
     {
       "number": 147,
       "title": "Bodenleisten-Produktkarte: fuenf BLOCK_DRIFT-Warnungen nach dem Umbau",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/147",
       "labels": [
         "status:review",
@@ -84,8 +84,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:02:58Z",
-      "updated_at": "2026-09-09T12:03:23Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T12:07:19Z",
+      "closed_at": "2026-09-09T12:07:19Z"
     },
     {
       "number": 142,
