@@ -413,6 +413,12 @@ Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation), Teil 
 neu erzeugt, aber **nicht mitcommitten** (`git add -A` vermeiden, Datei vor dem Commit mit `git checkout --
 docs/ai-dashboard/issues.json` zurücksetzen) — sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
 
+Dieser eine Befehl ist die einzige Ausnahme in `.claude/hooks/git-gh-guard.mjs`, der sonst jedes
+Verwerfen im Working Tree blockiert. Sie gilt **nur** für exakt diesen Pfad: `git checkout -- .`,
+ein zweiter Pfad dahinter oder eine andere Datei bleiben blockiert. Bis 2026-09-09 fehlte die
+Ausnahme, Doku und Hook widersprachen sich, und der Ausweg war ein Stash pro Sitzung — im
+zwischen allen Worktrees geteilten Stash-Stack, wo ihn eine andere Sitzung fälschlich poppen konnte.
+
 **Aufgaben pflegen sich über Ereignisse selbst** (`.github/workflows/task-automation.yml`,
 `scripts/task-automation.mjs`): neues Issue → Eingang mit Typ/Bereich-Vorschlag, PR referenziert
 `#n` → In Arbeit, PR gemergt → Review, Issue geschlossen → Erledigt. Prioritäten und Owner werden
