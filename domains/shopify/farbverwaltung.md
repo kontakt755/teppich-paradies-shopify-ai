@@ -215,9 +215,31 @@ dessen, was der Befund versprach.
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
 Das Produkt-Metafeld `grosshandel.sku` nennt nur die Kollektion
-(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Bei Eichenhain tragen die
-Optionswerte ausserdem englische Lieferantennamen (`Prestige Oak Honey Braun`) - das ist
-ein eigener Fall fuer die Namensregeln.
+(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Ohne Nummer kein Registereintrag -
+das holt der Farb-Nachzug nach, sobald die Produkte SKUs bekommen.
+
+**Eichenhain: Farbnamen eingedeutscht (2026-09-09).** Die sechs Werte hiessen
+`Prestige Oak Honey Braun` und `Infinity Oak Naturel` - Lieferanten-Dekornamen mit
+angehaengter deutscher Farbe. Bei Bodenbelaegen gilt die Eigennamen-Regel: die
+Lieferantenlinie gehoert nach `grosshandel.sku`, nicht in den Optionswert.
+
+| vorher | jetzt |
+|---|---|
+| Prestige Oak Honey Braun | Eiche Honigbraun |
+| Infinity Oak Naturel | Eiche Naturell |
+| Prestige Oak Greige Grau | Eiche Greige |
+| Prestige Oak Brown Grau | Eiche Braungrau |
+| Prestige Oak Natural | Eiche Natur |
+| Prestige Oak White Beige | Eiche Weissbeige |
+
+`Naturel` und `Natural` waeren beide zu "Eiche Natur" geworden. Die Unterscheidung
+`Naturell` gegen `Natur` haelt den Unterschied des Originals fest, ohne eine Farbe zu
+erfinden - nur zwei der sechs Varianten haben ueberhaupt ein Bild, und das sind Raumbilder.
+
+**Anders als bei Skarven wurden hier keine Tags mit den Originalnamen gesetzt.** Sockelleisten
+werden ueber den Dekornamen des Herstellers gesucht; ein Bodenbelag traegt bei uns bewusst
+einen Eigennamen, und `Prestige Oak` als Tag waere die Lieferantenlinie, die laut Namensregel
+nur in `grosshandel.sku` stehen darf.
 
 **Pflegehinweis:** Nach jedem Produktimport gehoert der Farb-Nachzug dazu - Registereintrag,
 `custom.farbcode`, `custom.farbe`. Sonst zeigt die Bestellung fuer neue Produkte keine
