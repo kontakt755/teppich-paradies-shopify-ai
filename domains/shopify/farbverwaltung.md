@@ -276,6 +276,13 @@ Die Buchstaben-Suffixe sehen aus wie eine Notloesung, um doppelte SKUs zu vermei
 Welche Nummer der Hersteller fuehrt, ist damit unklar - das klaert nur die JOKA-Preisliste.
 Nicht geraten, deshalb steht es hier.
 
-**Hinweis zur Einheitlichkeit:** Die sechs Feldwin-Sockelleisten schreiben ihre Farben
-weiterhin klein (`anthrazit`, `weiß RAL 9010`). Das ist derselbe Fall wie bei Skarven,
-war aber nicht beauftragt.
+**Feldwin nachgezogen (2026-09-09):** Die sechs Feldwin-Sockelleisten schrieben ihre Farben
+klein (`anthrazit`, `weiß RAL 9010`). 37 Optionswerte und die 11 Registereintraege stehen jetzt
+in derselben Schreibweise wie bei Skarven. `RAL` bleibt gross, `(Sonderfarbe)` bleibt stehen -
+diese Klammer ist ein Hinweis fuer den Kunden und keine Farbnummer.
+
+Zwei bekannte Eigenheiten bleiben und sind kein Fehler:
+`Platin (Sonderfarbe)` in der XL-60-Linie zeigt auf den Registereintrag `Platinsilber – 1246`,
+weil der Lieferant beide unter 1246 fuehrt. Und `Lichtgrau` in der XL-80-Linie traegt den
+Farbcode `1012/1202`, waehrend das Register `1012` nennt - die Doppelnummer steht so im
+Lieferantenkatalog und wurde unveraendert abgeschrieben.
