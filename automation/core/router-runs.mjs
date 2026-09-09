@@ -8,11 +8,17 @@ export const STOP_HOOK_COMMAND_MARKER = 'codex-stop-review.mjs';
 
 // runs: [{ name, files: string[], mtimeMs }]
 export function assessAgentRuns({ runs = [], now = Date.now(), reviewTimeoutMs = REVIEW_TIMEOUT_MS, repairedAtMs = null } = {}) {
-  const result = { total: runs.length, reviewed: 0, failed: 0, running: 0, aborted: 0, abortedSinceRepair: 0, abortedNames: [] };
+  const result = { total: runs.length, reviewed: 0, failed: 0, failedRecent: 0, failedNames: [], running: 0, aborted: 0, abortedSinceRepair: 0, abortedNames: [] };
+  // "Aktuell" ist ein Fehler, wenn danach kein Review mehr gelungen ist.
+  const lastSuccessMs = Math.max(0, ...runs.filter(run => (run.files ?? []).some(f => f === 'codex-review.json' || f === 'claude-review.json')).map(run => Number(run.mtimeMs ?? 0)));
   for (const run of runs) {
     const files = run.files ?? [];
     if (files.includes('codex-review.json') || files.includes('claude-review.json')) { result.reviewed += 1; continue; }
-    if (files.includes('review-error.txt')) { result.failed += 1; continue; }
+    if (files.includes('review-error.txt')) {
+      result.failed += 1;
+      if (Number(run.mtimeMs ?? 0) > lastSuccessMs) { result.failedRecent += 1; result.failedNames.push(run.name); }
+      continue;
+    }
     if (files.length > 0) continue; // fremde Inhalte, kein Review-Lauf
     const age = now - Number(run.mtimeMs ?? 0);
     if (age < reviewTimeoutMs) { result.running += 1; continue; }
@@ -42,6 +48,9 @@ export function diagnoseRouterRuns({ assessment, timeout }) {
   const notes = [];
   if (timeout.present && !timeout.sufficient) {
     problems.push(`Stop-Hook-Timeout ist ${timeout.configured == null ? 'nicht gesetzt (Claude-Code-Default 60 s)' : `${timeout.configured} s`}; ein Codex-Review braucht bis zu ${Math.round(REVIEW_TIMEOUT_MS / 60000)} min. "timeout" in .claude/settings.json setzen, sonst wird das Review vor dem Ergebnis gekillt.`);
+  }
+  if (assessment.failedRecent > 0) {
+    problems.push(`${assessment.failedRecent} Review-Lauf/Laeufe mit review-error.txt nach dem letzten erfolgreichen Review (${assessment.failedNames.join(', ')}): Reviewer-Infrastruktur aktuell gestoert, Datei lesen.`);
   }
   if (assessment.abortedSinceRepair > 0) {
     problems.push(`${assessment.abortedSinceRepair} Review-Laeufe ohne Ergebnis seit dem gesetzten Timeout: die Ursache ist nicht mehr das Timeout. review-error.txt fehlt ebenfalls, also wurde der Hook von aussen beendet.`);

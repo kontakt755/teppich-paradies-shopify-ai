@@ -54,6 +54,9 @@ function readTaskSource(taskFile, io = fs) {
 // Temp-Verzeichnis sucht. git schreibt daraufhin zwei Zeilen auf stderr und liefert
 // trotzdem korrekte Ergebnisse. Am 2026-09-06 las ein Reviewer das als Abbruch und
 // meldete P1 "Diff nicht ermittelbar", obwohl der Diff im selben Lauf ausgegeben wurde.
+// Pruefbereich fuer jeden Implementierungs-Review zentral hier, nicht nur im Stop-Hook.
+import { detectReviewScope } from './review-scope.mjs';
+
 const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git auf stderr "confstr() failed ... DARWIN_USER_TEMP_DIR" und "couldn\'t create cache file \'/tmp/xcrun_db-...\'". Das ist bekanntes Rauschen des macOS-git-Shims; git liefert trotzdem vollstaendige, korrekte Ausgaben. Diese Zeilen sind kein Befund und kein Grund, die Pruefung abzubrechen. Nur wenn ein git-Befehl tatsaechlich keine Ausgabe liefert, ist das ein echtes Problem.';
 
 // reviewScope: Text aus describeReviewScope(). Ohne Angabe bleibt der bisherige
@@ -93,20 +96,30 @@ function recordReviewUsage({ recordUsage, taskId, provider, model, effort, start
 
 // `reviewStep` kommt aus workflow/model-matrix.mjs (Provider, Modell, Effort).
 // Ohne Angabe laeuft Codex mit seinem Konfig-Default - das ist der Legacy-Pfad.
-export function runCodexReview({ reviewScope = '', taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
+// Ohne expliziten reviewScope wird er direkt vor dem Review aus dem Repository
+// ermittelt - damit sehen runCliAgentCycle, runReviewOnly, createReviewExecutor
+// und agents:review nach einem Commit denselben Pruefbereich wie der Stop-Hook.
+function resolveReviewScope({ reviewScope, taskType, cwd, detectScope }) {
+  if (String(reviewScope ?? '').trim()) return reviewScope;
+  if (taskType === 'ANALYSIS' || typeof detectScope !== 'function') return '';
+  try { return detectScope({ cwd })?.text ?? ''; } catch { return ''; }
+}
+
+export function runCodexReview({ reviewScope = '', detectScope = detectReviewScope, taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
   const source = taskFile ? readTaskSource(taskFile, io) : { text: taskText, absolutePath: null };
   if (!source.text?.trim()) throw new CliAgentError('A task or task file is required');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'codex-review.json');
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
   // Absoluter Pfad statt blossem "codex": das Desktop-Bundle liegt nicht im PATH.
   const binary = resolveCodexBinary() ?? 'codex';
   const startedAt = new Date().toISOString();
   execute(binary, [
     'exec', '--ephemeral', '--sandbox', 'read-only', ...codexArgsForStep(reviewStep),
     '--output-schema', REVIEW_SCHEMA, '--output-last-message', outputPath,
-    buildCodexReviewPrompt(source.text, { taskType, candidateText, reviewScope }),
+    buildCodexReviewPrompt(source.text, { taskType, candidateText, reviewScope: scopeText }),
   ], { cwd, env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' }, timeoutMs, spawn });
   const review = parseReviewResult(io.readFileSync(outputPath, 'utf8'));
   recordReviewUsage({ recordUsage, taskId: id, provider: 'CODEX_SUBSCRIPTION', model: reviewStep?.model ?? null, effort: reviewStep?.effort, startedAt, reviewStatus: review.status });
@@ -124,14 +137,15 @@ function extractJsonObject(text) {
 // Cross-Provider-Fallback des Reviews: faellt Codex wegen Rate Limit oder
 // erschoepftem Kontingent aus, prueft ein anderes Claude-Modell als der Autor.
 // Read-only ueber --permission-mode plan; Ergebnis im selben Review-Schema.
-export function runClaudeReview({ reviewScope = '', taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
+export function runClaudeReview({ reviewScope = '', detectScope = detectReviewScope, taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
   if (!taskText?.trim()) throw new CliAgentError('A task is required');
   if (!reviewStep?.model) throw new CliAgentError('Claude review requires an explicit model that differs from the author');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'claude-review.json');
-  const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText, reviewScope })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
+  const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText, reviewScope: scopeText })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
   const env = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
   delete env.ANTHROPIC_API_KEY;
   const startedAt = new Date().toISOString();

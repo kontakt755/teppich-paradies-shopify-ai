@@ -18,7 +18,7 @@ test('runs are classified as reviewed, failed, running or aborted', () => {
       run('R6', ['notes.txt'], 60),
     ],
   });
-  assert.deepEqual({ ...result, abortedNames: undefined }, { total: 6, reviewed: 2, failed: 1, running: 1, aborted: 1, abortedSinceRepair: 0, abortedNames: undefined });
+  assert.deepEqual({ ...result, abortedNames: undefined, failedNames: undefined }, { total: 6, reviewed: 2, failed: 1, failedRecent: 0, running: 1, aborted: 1, abortedSinceRepair: 0, abortedNames: undefined, failedNames: undefined });
   assert.deepEqual(result.abortedNames, ['R5']);
 });
 
@@ -58,4 +58,16 @@ test('a missing timeout is reported as the cause, aborts after the repair as a n
   });
   assert.equal(after.problems.length, 1);
   assert.match(after.problems[0], /nicht mehr das Timeout/);
+});
+
+test('a failed run after the last successful review is a current problem, an older one is not', () => {
+  const okTimeout = { present: true, configured: 900, effectiveSeconds: 900, sufficient: true };
+  const recent = assessAgentRuns({ now: NOW, runs: [run('old-ok', ['codex-review.json'], 600), run('new-fail', ['review-error.txt'], 5)] });
+  assert.equal(recent.failedRecent, 1);
+  const { problems } = diagnoseRouterRuns({ assessment: recent, timeout: okTimeout });
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /new-fail/);
+  const historic = assessAgentRuns({ now: NOW, runs: [run('old-fail', ['review-error.txt'], 600), run('new-ok', ['codex-review.json'], 5)] });
+  assert.equal(historic.failedRecent, 0);
+  assert.deepEqual(diagnoseRouterRuns({ assessment: historic, timeout: okTimeout }).problems, []);
 });

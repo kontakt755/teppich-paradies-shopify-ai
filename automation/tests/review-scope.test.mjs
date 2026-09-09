@@ -26,7 +26,8 @@ test('clean tree with unmerged commits reviews the commit range and declares the
 test('clean tree on main has nothing to review', () => {
   const scope = describeReviewScope({ porcelain: '', aheadCommits: '' });
   assert.equal(scope.kind, REVIEW_SCOPE_NONE);
-  assert.equal(scope.text, '');
+  assert.match(scope.text, /kein Diff/);
+  assert.match(scope.text, /Implementierung fehlt/);
 });
 
 test('detectReviewScope never fails open: a git failure is UNKNOWN with a fallback scope, not NONE', () => {

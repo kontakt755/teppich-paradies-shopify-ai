@@ -106,7 +106,7 @@ if (fs.existsSync(runsDir)) {
     return { name, files: fs.readdirSync(dir), mtimeMs: fs.statSync(dir).mtimeMs };
   });
   const assessment = assessAgentRuns({ runs, repairedAtMs });
-  say(assessment.reviewed > 0 || runs.length === 0, '.router/agent-runs', `${assessment.total} Laeufe, ${assessment.reviewed} mit Review, ${assessment.failed} mit protokolliertem Review-Fehler, ${assessment.running} offen, ${assessment.aborted} abgebrochen`);
+  say((assessment.reviewed > 0 || runs.length === 0) && assessment.failedRecent === 0, '.router/agent-runs', `${assessment.total} Laeufe, ${assessment.reviewed} mit Review, ${assessment.failed} mit protokolliertem Review-Fehler (${assessment.failedRecent} aktuell), ${assessment.running} offen, ${assessment.aborted} abgebrochen`);
   if (runs.length && !assessment.reviewed) problems.push('Kein einziger Stop-Hook-Lauf hat ein Review-Ergebnis: Codex-Binary pruefen (CODEX_CLI_PATH) und review-error.txt lesen.');
   const diagnosis = diagnoseRouterRuns({ assessment, timeout });
   problems.push(...diagnosis.problems);

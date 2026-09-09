@@ -366,3 +366,25 @@ test('the same finding twice skips a ladder step and exhausts escalation into PA
   assert.equal(result.reason, 'ESCALATION_EXHAUSTED');
   assert.deepEqual(steps, ['claude:fable/medium', 'claude:fable/high', 'codex:gpt-6-astra']);
 });
+
+test('every implementation review resolves the scope centrally, analysis reviews do not', () => {
+  const prompts = [];
+  const io = { mkdirSync: () => {}, readFileSync: () => JSON.stringify({ status: 'PASS', summary: 'ok', findings: [] }) };
+  const spawn = (command, args) => { prompts.push(args[args.length - 1]); return { status: 0, stdout: '', stderr: '' }; };
+  const detectScope = ({ cwd }) => ({ kind: 'COMMITTED', text: `die Commits gegen origin/main in ${cwd}` });
+  runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope, recordUsage: () => {} });
+  assert.match(prompts[0], /Prüfe die Commits gegen origin\/main in \/repo in diesem Repository/);
+  runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope, reviewScope: 'explizit', recordUsage: () => {} });
+  assert.match(prompts[1], /Prüfe explizit in diesem Repository/);
+  runCodexReview({ taskText: 'Analyse', taskType: 'ANALYSIS', candidateText: 'x', io, spawn, cwd: '/repo', detectScope: () => { throw new Error('must not detect for analysis'); }, recordUsage: () => {} });
+  assert.match(prompts[2], /ZU PRÜFENDE ANALYSE/);
+  runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope: () => { throw new Error('git broken'); }, recordUsage: () => {} });
+  assert.match(prompts[3], /uncommitteten Änderungen/);
+});
+
+test('runReviewStep forwards the resolved scope through the Codex path used by the agent cycle', () => {
+  let seen = null;
+  const review = ({ reviewScope }) => { seen = reviewScope; return { status: 'PASS', findings: [] }; };
+  runReviewStep({ review, reviewStep: { provider: 'CODEX', model: 'gpt-5.6-sol', effort: 'medium' }, taskText: 'x', reviewScope: 'Commit-Range' });
+  assert.equal(seen, 'Commit-Range');
+});

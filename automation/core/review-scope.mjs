@@ -32,7 +32,13 @@ export function describeReviewScope({ porcelain = '', aheadCommits = '', baseRef
       text: `die ${commits.length} bereits committeten, aber noch nicht in ${baseRef} enthaltenen Commits: ${commits.join('; ')}. Der Working Tree ist sauber; der zu prüfende Diff ist "git diff ${mergeBase || baseRef}..HEAD". Ein leerer "git diff" ist hier erwartet und kein Befund`,
     };
   }
-  return { kind: REVIEW_SCOPE_NONE, commits: [], text: '' };
+  // Kein Diff beweist nur, dass nichts geaendert wurde - nicht, dass der Auftrag
+  // erfuellt ist. Der Reviewer entscheidet, ob der No-op den Auftrag erfuellt.
+  return {
+    kind: REVIEW_SCOPE_NONE,
+    commits: [],
+    text: `den unveränderten Stand: der Working Tree ist sauber und es gibt keine Commits gegenüber ${baseRef}, es existiert also kein Diff. Entscheide, ob der Auftrag ohne Änderung erfüllt ist (belegter No-op, dann PASS) oder ob eine Implementierung fehlt (dann Befund)`,
+  };
 }
 
 // Ermittelt den Scope aus dem Repository. NONE gibt es nur, wenn Status,
