@@ -124,12 +124,27 @@ Muster fuer alle drei, Treppenverlegung zuerst:
 
 Kein neuer Baustein, keine Architektur. Drei Seiten, jede fuer sich sauber.
 
-## 6. Offen bei Ahmet, bevor gebaut wird
+## 6. Beantwortet von Ahmet (2026-09-10)
 
-1. **15 km oder 50 km?** Wenn 15 km kostenlos ab 649 EUR und 50 km Einsatzgebiet gegen
-   Anfahrt: genau so, ueberall gleich.
-2. **Preisanker fuer Treppen** — pro Stufe, pro Treppe, ab-Preis. Ohne bleibt die Seite
-   ein Prospekt.
+**Radius — drei Stufen, nicht eine Zahl:**
+
+| Stufe | Bedeutung | Formulierung fuer die Seiten |
+|---|---|---|
+| 15 km | das Angebot: Lieferung und lose Verlegung kostenlos ab 649 EUR Warenwert | "kostenlos im Umkreis von 15 km" — nur dort, wo es um den Preis geht |
+| 50 km | Einsatzgebiet, so weit wird gefahren | "in Oranienburg und 50 km Umkreis" — ueberall, wo es um das Ob geht |
+| weiter | auf Anfrage, wenn es sich lohnt | "weiter auf Anfrage" als Nebensatz, kein Versprechen |
+
+Damit ist der Widerspruch keiner: die Teppichboden-Seite spricht vom Angebot (15 km),
+die Bausteine vom Einsatzgebiet (50 km). Beide Zahlen sind richtig — sie brauchen nur
+jeweils das Wort, das sagt, was gemeint ist. Die 13 "50 km"-Stellen bleiben, die
+Preisstellen sagen "15 km".
+
+**Treppen — kein Preisanker.** "Treppen sind sehr unterschiedlich." Dann steht auf der
+Seite auch kein Preis, und das Fehlen wird zum Argument statt zur Luecke:
+*"Jede Treppe ist anders — offene oder geschlossene Stufen, Kanten, Podeste. Deshalb
+schauen wir sie uns an und messen auf, kostenlos im Umkreis von 15 km."* Das Aufmass ist
+der naechste Schritt, nicht der Preis. Genau so machen es die Wettbewerber mit
+Massanfertigung (Teppichscheune: "Anfrage | Termin" statt Listenpreis).
 
 ## 7. Reihenfolge fuer die Ausfuehrung
 
@@ -140,5 +155,5 @@ Kein neuer Baustein, keine Architektur. Drei Seiten, jede fuer sich sauber.
 3. **Vinylboden-verlegen** nach demselben Muster nachziehen.
 4. **Teppichboden-verlegen** nur angleichen — ist am weitesten.
 
-**Status: Analyse und Entscheidung. Keine Ausfuehrung ohne Ahmets Wort.**
+**Status: Analyse und Entscheidung, offene Fragen beantwortet. Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
 Die Kurzfassung steht als Kommentar in Issue #167.
