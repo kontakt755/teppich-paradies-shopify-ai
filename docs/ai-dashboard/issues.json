@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:35:02.805Z",
+  "generated_at": "2026-09-09T12:36:21.589Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 48,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:35:02.805Z",
+    "fetchedAt": "2026-09-09T12:36:21.589Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -68,7 +68,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/152",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p3",
         "area:backend"
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Die Ausnahme fuer docs/ai-dashboard/issues.json war am Segmentende verankert und blockierte deshalb 'git checkout -- <botdatei> 2>/dev/null' - dieselbe harmlose Operation mit unterdrueckter Fehlerausgabe, in der Praxis die haeufigere Schreibweise.\n\nErweitert, aber bewusst nicht auf Umleitungen allgemein: '> wichtig.txt' wuerde diese Datei ueberschreiben. Dann haette eine Ausnahme fuer eine harmlose Bot-Datei ein Werkzeug freigegeben, das eine beliebige andere zerstoert. Erlaubt sind nur /dev/null als Ziel und 2>&1.\n\nAcht neue Tests, per Mutation gegengeprueft: werden Umleitungen pauschal erlaubt, fallen drei.\n\nPR #151.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:12:45Z",
-      "updated_at": "2026-09-09T12:34:47Z",
+      "updated_at": "2026-09-09T12:35:04Z",
       "closed_at": "2026-09-09T12:34:47Z"
     },
     {
@@ -362,10 +362,10 @@
     {
       "number": 120,
       "title": "Vinyl von der Rolle: Dekorfilter Holz/Stein reparieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/120",
       "labels": [
-        "status:blockiert",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:filter"
@@ -374,14 +374,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 9,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T09:27:53Z",
-      "updated_at": "2026-09-09T11:25:32Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T12:36:11Z",
+      "closed_at": "2026-09-09T12:36:11Z"
     },
     {
       "number": 119,
