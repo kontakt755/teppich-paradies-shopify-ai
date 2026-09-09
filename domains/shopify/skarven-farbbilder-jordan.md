@@ -110,6 +110,9 @@ Die Saettigungsdifferenz trennt die Faelle sauber: bis 6 passt es, ab 27 zeigt
 das alte Bild eine andere Farbe. Reiner Farbton- oder Helligkeitsvergleich
 taugt hier nicht, weil beide Serien unterschiedlich ausgeleuchtet sind.
 
-Empfehlung: 525250, 525258, 525268 und 525270 aus den Produktmedien entfernen;
-525248, 525282 und 525284 koennen als zusaetzliche Galeriefotos bleiben.
-Stand dieser Datei: noch nicht entfernt.
+Am 2026-09-09 nach Freigabe durch Ahmet entfernt: 525250, 525258, 525268, 525270.
+Erhalten bleiben 525248, 525282 und 525284 als zusaetzliche Galeriefotos.
+
+Damit sind aus der 525xxx-Serie sieben Bilder entfernt (drei mit Farben, die es
+in der Serie nicht gibt, vier mit deutlichem Gelb-/Olivstich). Alle Originale
+liegen weiterhin unter `https://media.jordanshop.de/original/<nummer>-8FXC-prod.JPG`.
