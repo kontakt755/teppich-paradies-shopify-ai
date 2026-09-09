@@ -36,7 +36,9 @@
       assign tp_cps_tag_lower = tp_cps_tag | downcase
       if tp_cps_tag_lower contains 'breite_boden'
         # Format: "breite_boden: 300cm" oder "breite_boden:300cm"
-        assign tp_cps_width_match = tp_cps_tag | match: '(\d+(?:[.,]\d+)?)'
+        # 'match' ist kein Liquid-Filter (Theme Check: UnknownFilter, Shopify liefert nil).
+        # Verhalten unveraendert (nil): Breite kommt weiterhin aus custom.rollenbreite, siehe Issue Laengen-Extraktion.
+        assign tp_cps_width_match = nil
         if tp_cps_width_match
           assign tp_cps_width_cm = tp_cps_width_match | times: 1.0
           assign tp_cps_width_m = tp_cps_width_cm | divided_by: 100.0
@@ -59,7 +61,9 @@
     assign tp_cps_length_m = 0
     assign tp_cps_length_found = false
     assign tp_cps_variant_title = tp_cps_variant.title
-    assign tp_cps_length_match = tp_cps_variant_title | match: '(\d+(?:[.,]\d+)?)'
+    # 'match' ist kein Liquid-Filter (Theme Check: UnknownFilter, Shopify liefert nil).
+    # Verhalten unveraendert (nil), siehe Issue Laengen-Extraktion.
+    assign tp_cps_length_match = nil
 
     if tp_cps_length_match
       assign tp_cps_length_cm = tp_cps_length_match | times: 1.0
