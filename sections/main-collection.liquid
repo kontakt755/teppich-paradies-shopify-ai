@@ -55,11 +55,19 @@
             Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte:
             nur die fuehrende Groesse wird gerendert, siehe
             snippets/tp-produktgruppe.liquid.
+
+            Bewusst nur im Zubehoerbereich, denn dort ist die Zusammenfassung
+            beauftragt und geprueft. Auf jeder anderen Kollektion - Suche,
+            /collections/all, kuenftige Kollektionen - bleiben die Produkte
+            einzeln sichtbar, damit diese Sektion (Horizon-Kern, alle
+            Kategorien) sich unveraendert verhaelt.
           {%- endcomment -%}
-          {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
-          {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
-          {%- if tp_gruppe_rolle == 'member' -%}
-            {%- continue -%}
+          {%- if collection.handle contains 'zubehoer' -%}
+            {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
+            {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
+            {%- if tp_gruppe_rolle == 'member' -%}
+              {%- continue -%}
+            {%- endif -%}
           {%- endif -%}
           <li
             id="{{ section.id }}-{{ product.id }}"
