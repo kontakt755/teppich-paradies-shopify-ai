@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T10:19:22.630Z",
+  "generated_at": "2026-09-09T11:25:39.786Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 38,
+  "count": 39,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T10:19:22.630Z",
+    "fetchedAt": "2026-09-09T11:25:39.786Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -52,6 +52,31 @@
   },
   "issues": [
     {
+      "number": 129,
+      "title": "menu:guard - tote Menuelinks automatisch finden",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/129",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Folgearbeit zu #123. Dieselbe Fehlerklasse stand zweimal wochenlang live (Vinyl 108467d, Bodenleisten #123): ein Menuepunkt filtert auf einen Metaobjekt-Wert und liefert ein leeres Produktraster, im Editor nicht von einem gesunden Link zu unterscheiden.\n\nVollpruefung des Hauptmenues: alle 34 Links gesund.\n\nNeu: npm run menu:guard liest das gerenderte Menue aus der Storefront und ruft jeden Link ab. Meldet MENU_LINK_TOT (HTTP-Fehler) und MENU_LINK_LEER (200 mit leerem Raster). Gegen beide bekannten Faelle verifiziert. Kein Token noetig, ohne Netz SKIP.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:25:25Z",
+      "updated_at": "2026-09-09T11:25:35Z",
+      "closed_at": null
+    },
+    {
       "number": 123,
       "title": "Bodenleisten-Menue: drei Filterlinks zeigten auf leeres Produktraster",
       "state": "open",
@@ -91,13 +116,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T10:11:18Z",
-      "updated_at": "2026-09-09T10:11:33Z",
+      "updated_at": "2026-09-09T10:19:41Z",
       "closed_at": null
     },
     {
@@ -115,13 +140,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T09:27:53Z",
-      "updated_at": "2026-09-09T10:11:12Z",
+      "updated_at": "2026-09-09T11:25:32Z",
       "closed_at": null
     },
     {
@@ -475,7 +500,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/55",
       "labels": [
-        "status:geplant",
+        "status:review",
         "type:technik",
         "priority:p0",
         "area:google"
@@ -484,7 +509,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Tägliches Monitoring (erste 7 Tage)",
       "fields": {
         "description": "Starte alle Google Ads Kampagnen",
@@ -522,7 +547,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:41Z",
-      "updated_at": "2026-09-08T14:22:59Z",
+      "updated_at": "2026-09-09T11:21:05Z",
       "closed_at": null
     },
     {
@@ -1443,7 +1468,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
       "labels": [
-        "status:blockiert",
+        "status:review",
         "type:technik",
         "priority:p0",
         "area:backend"
@@ -1452,7 +1477,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -1461,7 +1486,7 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-08T14:23:31Z",
+      "updated_at": "2026-09-09T11:21:02Z",
       "closed_at": null
     },
     {
