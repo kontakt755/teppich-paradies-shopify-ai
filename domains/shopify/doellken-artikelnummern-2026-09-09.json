@@ -1,0 +1,310 @@
+{
+ "100": [
+  {
+   "nummer": "1012",
+   "name": "lichtgrau",
+   "pid": "477497",
+   "artnr": "ZUBDÖLK100_0002",
+   "ean": "4036793094816",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  },
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "477506",
+   "artnr": "ZUBDÖLK100_0001",
+   "ean": "4036793094793",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  },
+  {
+   "nummer": "1245",
+   "name": "champagner",
+   "pid": "591222",
+   "artnr": "ZUBDÖLK100_1245",
+   "ean": "4036793129532",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  },
+  {
+   "nummer": "1144",
+   "name": "schwarz",
+   "pid": "591229",
+   "artnr": "ZUBDÖLK100_0007",
+   "ean": "4036793111858",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  },
+  {
+   "nummer": "1209",
+   "name": "anthrazit",
+   "pid": "591237",
+   "artnr": "ZUBDÖLK100_0005",
+   "ean": "4036793111391",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591245",
+   "artnr": "ZUBDÖLK100_0004",
+   "ean": "4036793123936",
+   "titel": "Cubu flex life 100 100mm Höhe"
+  }
+ ],
+ "80": [
+  {
+   "nummer": "1190",
+   "name": "edelstahl",
+   "pid": "438128",
+   "artnr": "ZUBDÖLK80_1190",
+   "ean": "4066256466102",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1012",
+   "name": "lichtgrau",
+   "pid": "477579",
+   "artnr": "ZUBDÖLK80_0002",
+   "ean": "4036793094755",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "477586",
+   "artnr": "ZUBDÖLK80_0001",
+   "ean": "4036793094731",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1246",
+   "name": "platinsilber",
+   "pid": "549111",
+   "artnr": "ZUBDÖLK80_0006",
+   "ean": "4036793119410",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1245",
+   "name": "champagner",
+   "pid": "549129",
+   "artnr": "ZUBDÖLK80_0005",
+   "ean": "4036793119397",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1209",
+   "name": "anthrazit",
+   "pid": "549213",
+   "artnr": "ZUBDÖLK80_0007",
+   "ean": "4036793111377",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1144",
+   "name": "schwarz",
+   "pid": "591297",
+   "artnr": "ZUBDÖLK80_0009",
+   "ean": "4036793106199",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591304",
+   "artnr": "ZUBDÖLK80_0008",
+   "ean": "4036793124537",
+   "titel": "Cubu flex life 80 80mm Höhe"
+  }
+ ],
+ "60": [
+  {
+   "nummer": "1408",
+   "name": "weiß (RAL 9016)",
+   "pid": "419816",
+   "artnr": "ZUBDÖLK60_1408",
+   "ean": "4036793142890",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1139",
+   "name": "steingrau",
+   "pid": "431777",
+   "artnr": "ZUBDÖLK60_1139",
+   "ean": "4066256323757",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1063",
+   "name": "silber",
+   "pid": "477542",
+   "artnr": "ZUBDÖLK60_0003",
+   "ean": "4036793094717",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1012",
+   "name": "lichtgrau",
+   "pid": "477552",
+   "artnr": "ZUBDÖLK60_0002",
+   "ean": "4036793094694",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "477561",
+   "artnr": "ZUBDÖLK60_0001",
+   "ean": "4036793094670",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1209",
+   "name": "anthrazit",
+   "pid": "523800",
+   "artnr": "ZUBDÖLK60_0004",
+   "ean": "4036793111353",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1246",
+   "name": "platinsilber",
+   "pid": "549082",
+   "artnr": "ZUBDÖLK60_0006",
+   "ean": "4036793119373",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1245",
+   "name": "champagner",
+   "pid": "549099",
+   "artnr": "ZUBDÖLK60_0005",
+   "ean": "4036793119359",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591275",
+   "artnr": "ZUBDÖLK60_0007",
+   "ean": "4036793123912",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  },
+  {
+   "nummer": "1144",
+   "name": "schwarz",
+   "pid": "600783",
+   "artnr": "ZUBDÖLK60_1144",
+   "ean": "4036793112718",
+   "titel": "Cubu flex life 60 60mm Höhe"
+  }
+ ],
+ "40": [
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "477535",
+   "artnr": "ZUBDÖLK40_0001",
+   "ean": "4036793094618",
+   "titel": "Cubu flex life 40 40mm Höhe"
+  },
+  {
+   "nummer": "1246",
+   "name": "platinsilber",
+   "pid": "539229",
+   "artnr": "ZUBDÖLK40_0004",
+   "ean": "4036793127637",
+   "titel": "Cubu flex life 40 40mm Höhe"
+  },
+  {
+   "nummer": "1245",
+   "name": "champagner",
+   "pid": "591260",
+   "artnr": "ZUBDÖLK40_0007",
+   "ean": "4036793129518",
+   "titel": "Cubu flex life 40 40mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591267",
+   "artnr": "ZUBDÖLK40_0006",
+   "ean": "4036793123899",
+   "titel": "Cubu flex life 40 40mm Höhe"
+  },
+  {
+   "nummer": "1209",
+   "name": "anthrazit",
+   "pid": "591481",
+   "artnr": "ZUBDÖLK40_0005",
+   "ean": "4036793111339",
+   "titel": "Cubu flex life 40 40mm Höhe"
+  }
+ ],
+ "XL60": [
+  {
+   "nummer": "1012",
+   "name": "lichtgrau",
+   "pid": "503028",
+   "artnr": "ZUBDÖLK60X_0002",
+   "ean": "4056829216494",
+   "titel": "Cubu flex life XL 60/19 60mm Höhe"
+  },
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "503038",
+   "artnr": "ZUBDÖLK60X_0001",
+   "ean": "4036793104355",
+   "titel": "Cubu flex life XL 60/19 60mm Höhe"
+  },
+  {
+   "nummer": "1246",
+   "name": "platin, Sonder-FB.MM 200m",
+   "pid": "591283",
+   "artnr": "ZUBDÖLK60X_0005",
+   "ean": "4056829775601",
+   "titel": "Cubu flex life XL 60/19 60mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591289",
+   "artnr": "ZUBDÖLK60X_0004",
+   "ean": "4036793130033",
+   "titel": "Cubu flex life XL 60/19 60mm Höhe"
+  }
+ ],
+ "XL80": [
+  {
+   "nummer": "1012/1202",
+   "name": "lichtgrau",
+   "pid": "498308",
+   "artnr": "ZUBDÖLK80X_0002",
+   "ean": "4036793100951",
+   "titel": "Cubu flex life XL 80/19 80mm Höhe"
+  },
+  {
+   "nummer": "1013/5012",
+   "name": "weiß",
+   "pid": "498324",
+   "artnr": "ZUBDÖLK80X_0001",
+   "ean": "4036793100937",
+   "titel": "Cubu flex life XL 80/19 80mm Höhe"
+  },
+  {
+   "nummer": "1246",
+   "name": "platinsilber",
+   "pid": "591312",
+   "artnr": "ZUBDÖLK80X_0005",
+   "ean": "4056829775649",
+   "titel": "Cubu flex life XL 80/19 80mm Höhe"
+  },
+  {
+   "nummer": "1132",
+   "name": "weiß (RAL 9010)",
+   "pid": "591319",
+   "artnr": "ZUBDÖLK80X_0004",
+   "ean": "4036793120218",
+   "titel": "Cubu flex life XL 80/19 80mm Höhe"
+  }
+ ]
+}

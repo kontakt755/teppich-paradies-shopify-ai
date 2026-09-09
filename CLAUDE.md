@@ -414,8 +414,10 @@ Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation, Brief)
 
 `docs/ai-dashboard/issues.json` gehört dem Bot: lokal wird sie von `npm run task` und `npm run dashboard`
 neu erzeugt, aber **nicht mitcommitten**: Dateien gezielt mit `git add <datei>` stagen, nie `git add -A`.
-(`git checkout --` blockiert der Git-Guard absichtlich; die Datei darf einfach unverändert liegen bleiben.)
-Sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
+Zurücksetzen ist erlaubt — genau für diese eine Datei nimmt `.claude/hooks/git-gh-guard.mjs`
+`git checkout -- docs/ai-dashboard/issues.json` und `git restore …` vom Verwerfen-Verbot aus
+(`qa/tests/git-gh-guard.test.mjs` hält die Ausnahme eng). Sonst gibt es bei jedem Push einen
+Konflikt mit dem Sync-Workflow.
 
 Dieser eine Befehl ist die einzige Ausnahme in `.claude/hooks/git-gh-guard.mjs`, der sonst jedes
 Verwerfen im Working Tree blockiert. Sie gilt **nur** für exakt diesen Pfad: `git checkout -- .`,

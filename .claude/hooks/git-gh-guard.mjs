@@ -24,17 +24,14 @@
 // Sie gehoert dem Sync-Workflow (dashboard-data.yml committet sie stuendlich)
 // und wird lokal von "npm run task" und "npm run dashboard" neu erzeugt. Sie
 // enthaelt nie Handarbeit - was hier verworfen wird, erzeugt der naechste Lauf
-// identisch neu. CLAUDE.md verlangt ausdruecklich, sie vor dem Commit
-// zurueckzusetzen, sonst kollidiert jeder Push mit dem Sync-Workflow.
-//
-// Ohne diese Ausnahme standen sich Hook und CLAUDE.md gegenueber: die Doku
-// empfahl den Befehl, der Hook blockierte ihn. Der Ausweg war ein Stash pro
-// Sitzung - und der Stash-Stack ist zwischen allen Worktrees geteilt, sodass
-// jede Sitzung dort einen Eintrag hinterliess, den eine andere faelschlich
-// poppen konnte. Die Ausnahme beseitigt die Ursache.
+// identisch neu. Ohne die Ausnahme standen sich Hook und CLAUDE.md gegenueber.
 //
 // Bewusst eng: nur dieser eine Pfad, exakt am Segmentende verankert. Damit
 // bleiben "git checkout -- ." und ein zweiter Pfad hinter der Datei blockiert.
+// Eingefuehrt in b6cf711, von fe8631f (Branch-Loeschen) versehentlich
+// ueberschrieben - qa/tests/git-gh-guard.test.mjs haelt sie seitdem fest und
+// hat den Verlust auch gefunden: vier Tests fielen und blockierten die
+// Deploy-Kette, bis 83931e4 die Ausnahme wiederherstellte.
 //
 // Angehaengte Umleitungen sind erlaubt, aber nur nach /dev/null oder als 2>&1.
 // Nicht Umleitungen allgemein: "git checkout -- <botdatei> > wichtig.txt"
@@ -52,7 +49,12 @@ const AUSNAHMEN = [
 const VERBOTEN = [
   // --- git: verwirft Arbeit oder ueberschreibt fremde Commits ---
   [/^git\s+(.*\s)?push\b.*(--force\b|--force-with-lease\b|\s-f\b)/, 'git push --force ueberschreibt Commits auf dem Remote'],
-  [/^git\s+(.*\s)?push\b.*(--delete\b|--mirror\b)/,                 'git push --delete entfernt einen Branch oder Tag auf dem Remote'],
+  [/^git\s+(.*\s)?push\b.*--mirror\b/,                              'git push --mirror ueberschreibt saemtliche Refs auf dem Remote'],
+  // Branch loeschen auf dem Remote ist seit 2026-09-09 auf Wunsch des Nutzers
+  // erlaubt: aufgeraeumt wird nach dem Merge, und ein geloeschter Branch laesst
+  // sich aus dem Commit wiederherstellen, solange die Commits woanders haengen.
+  // Ein Tag dagegen ist eine Veroeffentlichung - das bleibt gesperrt.
+  [/^git\s+(.*\s)?push\b.*--delete\b.*(\btag\b|refs\/tags\/)/,      'git push --delete auf ein Tag entfernt eine Veroeffentlichung'],
   [/^git\s+(.*\s)?reset\b.*(--hard\b|--merge\b|--keep\b)/,          'git reset --hard verwirft uncommittete Aenderungen'],
   [/^git\s+(.*\s)?clean\b\s+-[a-zA-Z]*[fdx]/,                       'git clean loescht nicht versionierte Dateien'],
   [/^git\s+(.*\s)?restore\b/,                                       'git restore verwirft Aenderungen im Working Tree'],
