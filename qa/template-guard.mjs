@@ -44,7 +44,7 @@ export function blockTypesOf(raw, parentType) {
  * @param {string[]} [options.required]  Diese Typen muessen ueberall vorkommen (Fehler).
  * @param {string[]} [options.optional]  Duerfen fehlen, ohne als Drift zu gelten.
  */
-export function analyzeTemplates(templates, { required = [], optional = [] } = {}) {
+export function analyzeTemplates(templates, { required = [], optional = [], bewusstAbwesend = {} } = {}) {
   const findings = [];
   const present = new Map();
 
@@ -70,10 +70,19 @@ export function analyzeTemplates(templates, { required = [], optional = [] } = {
 
   // Ein Typ, der in manchen, aber nicht allen Templates steckt, ist Drift -
   // ausser er ist ausdruecklich als optional erklaert.
+  //
+  // bewusstAbwesend nennt Block und Template gemeinsam: "dieser Block fehlt in
+  // genau diesen Templates mit Absicht". Bewusst nicht ueber `optional`, denn
+  // das wuerde den Block ueberall stummschalten - faellt er spaeter aus einem
+  // Kategorie-Template heraus, in dem er hingehoert, bliebe das unbemerkt.
   const ignore = new Set([...required, ...optional]);
   for (const [type, owners] of present) {
     if (ignore.has(type) || owners.size === templates.length) continue;
-    const missing = templates.filter(t => !owners.has(t.name)).map(t => t.name);
+    const erlaubt = new Set(bewusstAbwesend[type] ?? []);
+    const missing = templates
+      .filter(t => !owners.has(t.name) && !erlaubt.has(t.name))
+      .map(t => t.name);
+    if (missing.length === 0) continue;
     findings.push({
       severity: 'warn',
       rule: 'BLOCK_DRIFT',

@@ -10,5 +10,18 @@
     "tp-card-title",
     "product-title"
   ],
-  "note": "required = muss auf jeder Kategorieseite stehen. optional = Titelblock, den es in zwei Varianten gibt (tp-card-title bzw. product-title); dass nicht ueberall derselbe steckt, ist bekannt und kein Drift-Fund."
+  "bewusstAbwesend": {
+    "tp-card-price-sqm": [
+      "collection.zubehoer.json",
+      "collection.zubehoer-profile.json",
+      "collection.zubehoer-unterkategorie.json"
+    ],
+    "tp-card-dimensions": [
+      "collection.zubehoer.json",
+      "collection.zubehoer-profile.json",
+      "collection.zubehoer-unterkategorie.json"
+    ]
+  },
+  "note": "required = muss auf jeder Kategorieseite stehen. optional = Titelblock, den es in zwei Varianten gibt (tp-card-title bzw. product-title); dass nicht ueberall derselbe steckt, ist bekannt und kein Drift-Fund.",
+  "note_bewusstAbwesend": "Block plus die Templates, in denen er mit Absicht fehlt. Zubehoer wird als Stueck verkauft, nicht nach Flaeche: am 2026-09-09 ueber die Admin API geprueft, alle 43 Produkte der Kollektion zubehoer haben custom.rollenbreite = null und custom.qm_pro_paket = null und tragen kein breite_boden-Tag. tp-card-price-sqm und tp-card-dimensions wuerden dort nichts rendern. Eintraege hier gelten nur fuer die genannten Templates - faellt derselbe Block aus einem Bodenbelag-Template heraus, meldet der Guard das weiterhin."
 }
