@@ -228,17 +228,34 @@ verschieden, deshalb tragen sie einen eigenen Namen statt einer Ziffer:
 | 406 | Grün Dunkel | `#333e3f` blaugruen | Petrol Dunkel |
 | 514 | Grau Mittel | `#8f8b83` warmgrau, so hell wie 515 | Grau Warm |
 
-**Skarven: die englischen Namen bleiben - bewusst.**
-`Fashion Oak`, `Calistoga Grey`, `Wild Oak` sind keine schlecht gepflegten Farbnamen,
-sondern die Dekornamen von Doellken. Beim Lieferanten stehen sie identisch
-(jordanshop.de, Farbwaehler des Artikels "Doellken S 60 TOP", 62 Werte). Eine Sockelleiste
-wird passend zum Bodendekor gekauft; wer `Wild Oak` als Boden hat, sucht die Leiste unter
-diesem Namen. Uebersetzt waere sie nicht mehr auffindbar, und ohne Farbfoto liesse sich die
-Optik ohnehin nicht pruefen - 45 der 62 Dekore haben beim Grosshaendler kein Farbbild.
+**Skarven: Dekornamen auf Wunsch eingedeutscht (2026-09-09).**
+Zuerst hatte ich sie stehen lassen, weil `Fashion Oak` und `Wild Oak` die Dekornamen von
+Doellken sind und eine Sockelleiste passend zum Bodendekor gesucht wird. Nach Ruecksprache
+wurden 26 Werte uebersetzt.
 
-Geaendert wurde deshalb nur die Schreibweise: 26 Werte von `fashion oak` auf `Fashion Oak`,
-damit nicht `anthrazit` neben `Weiß Standard` steht. Register nachgezogen, Gegenpruefung
-62 von 62.
+Uebersetzt wurde die **Bedeutung** (Holzart plus Attribut), nicht die Optik - eine Farbaussage
+waere ohne Farbmuster geraten, und 45 der 62 Dekore haben beim Grosshaendler kein Foto.
+Vier Dekore mit Foto wurden angesehen: `Fashion Oak` ist graubeige, daher `Eiche Greige`.
+
+| vorher | jetzt |
+|---|---|
+| Wild Oak | Wildeiche |
+| Grey Limed Oak | Eiche Grau Gekalkt |
+| Bleached Ash | Esche Gebleicht |
+| Tuscany Walnut | Nussbaum Toskana |
+| Scandinavian Country Pl. | Skandinavische Landhausdiele |
+| Smoked Oak White | Räuchereiche Weiß |
+
+**Neun Werte blieben stehen**, weil sie keine uebersetzbare Bedeutung tragen: `Alumetallic`,
+`Twist`, `Aruba`, `Natural Place`, `Boogie`, `Salsa`, `Quartett`, `Nussbaum Island`. Dazu
+`Chene Gris` - franzoesisch fuer "Eiche Grau", aber dieser Name ist im selben Produkt von 2495
+belegt, und ohne Farbmuster liesse sich kein unterscheidender Zusatz vergeben, ohne zu raten.
+
+**Die Auffindbarkeit ist gesichert:** Der Lieferanten-Dekorname steht im `hinweis` jedes
+Registereintrags, die vollstaendige Zuordnung in
+`domains/shopify/skarven-dekornamen-deutsch-2026-09-09.json`. Wer im Katalog nach `Wild Oak`
+sucht, findet dort `Wildeiche`. Offen: dieselben Namen zusaetzlich als Produkt-Tags zu setzen,
+damit auch die Shop-Suche sie findet.
 
 ### Offener Befund: JOKA-Farbnummern
 
