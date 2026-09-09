@@ -392,8 +392,9 @@ Zaehler und die drei dringendsten Aufgaben aus `issues.json` - ohne gh, auch in 
 Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation, Brief), Teil von `npm test`.
 
 `docs/ai-dashboard/issues.json` gehört dem Bot: lokal wird sie von `npm run task` und `npm run dashboard`
-neu erzeugt, aber **nicht mitcommitten** (`git add -A` vermeiden, Datei vor dem Commit mit `git checkout --
-docs/ai-dashboard/issues.json` zurücksetzen) — sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
+neu erzeugt, aber **nicht mitcommitten**: Dateien gezielt mit `git add <datei>` stagen, nie `git add -A`.
+(`git checkout --` blockiert der Git-Guard absichtlich; die Datei darf einfach unverändert liegen bleiben.)
+Sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
 
 **Aufgaben pflegen sich über Ereignisse selbst** (`.github/workflows/task-automation.yml`,
 `scripts/task-automation.mjs`): neues Issue → Eingang mit Typ/Bereich-Vorschlag, PR referenziert
