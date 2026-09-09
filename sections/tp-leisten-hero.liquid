@@ -138,6 +138,10 @@
   .product-grid .product-grid__item:focus-within .card-gallery {
     border-color: rgb(var(--color-foreground-rgb) / 0.2);
   }
+  /* Liefert der Raumbild-Block ein Foto, tritt die Standardgalerie zurueck */
+  .product-grid .product-card__content:has(.tp-card-leisten-bild) .card-gallery {
+    display: none;
+  }
   .product-grid .product-grid__item[hidden] {
     display: none;
   }

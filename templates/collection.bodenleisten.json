@@ -82,6 +82,12 @@
             "padding-inline-end": 0
           },
           "blocks": {
+            "tp_card_leisten_bild": {
+              "type": "tp-card-leisten-bild",
+              "settings": {
+                "motiv_muster": "offen-fern|S60.jpg"
+              }
+            },
             "card-gallery": {
               "type": "_product-card-gallery",
               "settings": {
@@ -158,6 +164,7 @@
             }
           },
           "block_order": [
+            "tp_card_leisten_bild",
             "card-gallery",
             "product_title",
             "price",
