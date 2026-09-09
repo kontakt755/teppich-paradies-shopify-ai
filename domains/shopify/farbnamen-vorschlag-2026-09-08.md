@@ -1,6 +1,6 @@
 # Farbnamen (aus Produktbildern gemessen, 2026-09-08 umgesetzt)
 
-Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben eines Produkts im selben Ton, trennt Warm/Kühl, dann Meliert (Streuung), dann Heller/Dunkler, zuletzt eine Ziffer. Diese Zusaetze markieren die Faelle, die man sich am Bild ansehen sollte. Die Nummer bleibt in SKU, custom.farbcode und Farbregister.
+Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben eines Produkts im selben Ton, trennt Warm/Kühl, dann Meliert (Streuung), dann Heller/Dunkler, zuletzt eine Ziffer. Die 22 Faelle, bei denen nur eine Ziffer blieb, wurden am 2026-09-09 am Bild nachbenannt (Savena, Callista, Merinda, Nordica) - dort steht jetzt ein echter Name. Die Nummer bleibt in SKU, custom.farbcode und Farbregister.
 
 
 ## Altessa Teppichboden 400cm 500cm
@@ -50,16 +50,16 @@ Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben ei
 
 | Nr. | alt | Messwert | neu |
 |---|---|---|---|
-| 121 | Farbe 121 | #a7a599 | Grau Mittel 1 |
-| 139 | Farbe 139 | #9f9a8c | Grau Mittel 2 |
+| 121 | Farbe 121 | #a7a599 | Grau Hell |
+| 139 | Farbe 139 | #9f9a8c | Grau Oliv |
 | 143 | Farbe 143 | #8d7f6c | Taupe Dunkel |
-| 145 | Farbe 145 | #aa957f | Beige Mittel 3 |
+| 145 | Farbe 145 | #aa957f | Sand Warm |
 | 148 | Farbe 148 | #5e564d | Anthrazit |
-| 149 | Farbe 149 | #998f80 | Beige Mittel 4 |
-| 159 | Farbe 159 | #8f877e | Grau Mittel 4 |
-| 212 | Farbe 212 | #beb097 | Beige Mittel 1 |
-| 229 | Farbe 229 | #959289 | Grau Mittel 3 |
-| 233 | Farbe 233 | #a9a08a | Beige Mittel 2 |
+| 149 | Farbe 149 | #998f80 | Taupe Hell |
+| 159 | Farbe 159 | #8f877e | Taupe Mittel |
+| 212 | Farbe 212 | #beb097 | Sand Hell |
+| 229 | Farbe 229 | #959289 | Grau Mittel |
+| 233 | Farbe 233 | #a9a08a | Greige Mittel |
 
 ## Coralia Teppichboden 400cm 500cm
 
@@ -172,11 +172,11 @@ Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben ei
 
 | Nr. | alt | Messwert | neu |
 |---|---|---|---|
-| 119 | Farbe 119 | #b1ab99 | Beige Mittel 2 |
-| 122 | Farbe 122 | #b4aa96 | Beige Mittel 1 |
-| 123 | Farbe 123 | #9e9481 | Beige Mittel 5 |
-| 132 | Farbe 132 | #a79b84 | Beige Mittel 3 |
-| 149 | Farbe 149 | #9f8f84 | Beige Mittel 4 |
+| 119 | Farbe 119 | #b1ab99 | Greige Hell |
+| 122 | Farbe 122 | #b4aa96 | Sand Hell |
+| 123 | Farbe 123 | #9e9481 | Beige Oliv |
+| 132 | Farbe 132 | #a79b84 | Beige Mittel |
+| 149 | Farbe 149 | #9f8f84 | Taupe Warm |
 | 163 | Farbe 163 | #887f74 | Grau Dunkel |
 | 179 | Farbe 179 | #7f7469 | Grau Dunkel Meliert |
 | 189 | Farbe 189 | #6a625b | Anthrazit |
@@ -186,11 +186,11 @@ Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben ei
 | Nr. | alt | Messwert | neu |
 |---|---|---|---|
 | 102 | Farbe 102 | #d7ccb2 | Sand Hell |
-| 109 | Farbe 109 | #b9b2a1 | Beige Mittel 1 |
-| 119 | Farbe 119 | #b7a991 | Beige Mittel 3 |
-| 122 | Farbe 122 | #bbb19c | Beige Mittel 2 |
-| 153 | Farbe 153 | #a7947b | Beige Mittel 5 |
-| 159 | Farbe 159 | #a1978a | Beige Mittel 4 |
+| 109 | Farbe 109 | #b9b2a1 | Greige Hell |
+| 119 | Farbe 119 | #b7a991 | Beige Warm |
+| 122 | Farbe 122 | #bbb19c | Beige Hell |
+| 153 | Farbe 153 | #a7947b | Sand Warm |
+| 159 | Farbe 159 | #a1978a | Greige Mittel |
 
 ## Novaris Teppichboden 400cm 500cm
 
@@ -375,12 +375,12 @@ Grundton + Helligkeit aus dem Median-RGB des Bildkerns. Liegen mehrere Farben ei
 
 | Nr. | alt | Messwert | neu |
 |---|---|---|---|
-| 072 | Farbe 72 | #b9a08b | Beige Mittel 3 |
-| 073 | Farbe 73 | #b8a69a | Beige Mittel 2 |
-| 075 | Farbe 75 | #b7aea7 | Beige Mittel 1 |
+| 072 | Farbe 72 | #b9a08b | Sand Warm |
+| 073 | Farbe 73 | #b8a69a | Beige Hell |
+| 075 | Farbe 75 | #b7aea7 | Greige Hell |
 | 078 | Farbe 78 | #4d4e4c | Anthrazit |
 | 083 | Farbe 83 | #787d83 | Grau Dunkel |
-| 092 | Farbe 92 | #a89383 | Beige Mittel 4 |
+| 092 | Farbe 92 | #a89383 | Taupe Meliert |
 | 175 | Farbe 175 | #9b9491 | Grau Mittel |
 | 176 | Farbe 176 | #7d7978 | Grau Dunkel Meliert |
 

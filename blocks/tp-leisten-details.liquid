@@ -1,0 +1,157 @@
+{% doc %}
+  Produktdetails-Tabelle fuer Leisten: Material, Hoehe, Art, Stangenlaenge,
+  Anzahl Farben/Dekore. Nur Zeilen, die am Produkt belegt sind (Tags material:,
+  hoehe:, art:, die Farboption und custom.stangenlaenge). Rendert nichts, wenn
+  nichts davon vorhanden ist.
+
+  Die Stangenlaenge kommt aus demselben Metafeld wie der Rechner in
+  blocks/tp-zubehoer-menge.liquid - eine Quelle, zwei Anzeigen. Fehlt das
+  Metafeld, entfaellt die Zeile; es wird kein Wert geraten.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ld_product = closest.product | default: product
+  capture tp_ld_raw
+    render 'tp-leisten-merkmale', product: tp_ld_product
+  endcapture
+  assign tp_ld_parts = tp_ld_raw | strip | split: '|'
+  assign tp_ld_material = tp_ld_parts[0] | strip
+  assign tp_ld_hoehe = tp_ld_parts[1] | strip
+  assign tp_ld_farben = tp_ld_parts[2] | strip | plus: 0
+
+  assign tp_ld_art = ''
+  for tag in tp_ld_product.tags
+    assign tag_down = tag | downcase
+    if tag_down contains 'art:'
+      assign tp_ld_art_key = tag_down | remove: 'art:' | strip
+      case tp_ld_art_key
+        when 'kernsockelleisten'
+          assign tp_ld_art = 'Kernsockelleiste'
+        when 'sockelleisten'
+          assign tp_ld_art = 'Sockelleiste'
+        else
+          assign tp_ld_art = tp_ld_art_key | capitalize
+      endcase
+    endif
+  endfor
+
+  # Stangenlaenge deutsch formatieren: 5.15 -> "5,15 m", 4.0 -> "4 m".
+  assign tp_ld_sl = ''
+  capture tp_ld_sl_raw
+    echo tp_ld_product.metafields.custom.stangenlaenge.value
+  endcapture
+  assign tp_ld_sl_raw = tp_ld_sl_raw | strip
+  assign tp_ld_sl_num = tp_ld_sl_raw | times: 1.0
+  if tp_ld_sl_num > 0
+    assign tp_ld_sl_parts = tp_ld_sl_raw | split: '.'
+    assign tp_ld_sl_int = tp_ld_sl_parts[0]
+    assign tp_ld_sl_dec = tp_ld_sl_parts[1] | default: ''
+    if tp_ld_sl_dec == '' or tp_ld_sl_dec == '0' or tp_ld_sl_dec == '00'
+      assign tp_ld_sl = tp_ld_sl_int
+    else
+      assign tp_ld_sl = tp_ld_sl_int | append: ',' | append: tp_ld_sl_dec
+    endif
+    assign tp_ld_sl = tp_ld_sl | append: ' m'
+  endif
+
+  assign tp_ld_farb_label = 'Farben'
+  for option in tp_ld_product.options_with_values
+    if option.name == 'Dekor'
+      assign tp_ld_farb_label = 'Dekore'
+    endif
+  endfor
+-%}
+
+{%- if tp_ld_material != blank or tp_ld_hoehe != blank or tp_ld_sl != blank -%}
+  <div class="tp-leisten-details" {{ block.shopify_attributes }}>
+    {%- if block.settings.heading != blank -%}
+      <h2 class="tp-leisten-details__heading">{{ block.settings.heading | escape }}</h2>
+    {%- endif -%}
+    <table class="tp-leisten-details__table">
+      <tbody>
+        {%- if tp_ld_art != blank -%}
+          <tr><th scope="row">Art</th><td>{{ tp_ld_art }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_material != blank -%}
+          <tr><th scope="row">Material</th><td>{{ tp_ld_material }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_hoehe != blank -%}
+          <tr><th scope="row">Höhe</th><td>{{ tp_ld_hoehe }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_sl != blank -%}
+          <tr><th scope="row">Stangenlänge</th><td>{{ tp_ld_sl }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_farben > 0 -%}
+          <tr><th scope="row">{{ tp_ld_farb_label }}</th><td>{{ tp_ld_farben }}</td></tr>
+        {%- endif -%}
+      </tbody>
+    </table>
+    {%- if block.settings.note != blank -%}
+      <p class="tp-leisten-details__note">{{ block.settings.note | escape }}</p>
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-leisten-details {
+    width: 100%;
+  }
+
+  .tp-leisten-details__heading {
+    margin: 0 0 10px;
+    font-size: 1.0625rem;
+    font-weight: 650;
+  }
+
+  .tp-leisten-details__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  .tp-leisten-details__table th,
+  .tp-leisten-details__table td {
+    padding: 9px 0;
+    border-bottom: 1px solid rgb(var(--color-foreground-rgb) / 0.1);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .tp-leisten-details__table th {
+    width: 38%;
+    font-weight: 600;
+    color: rgb(var(--color-foreground-rgb) / 0.7);
+  }
+
+  .tp-leisten-details__note {
+    margin: 10px 0 0;
+    font-size: 0.875rem;
+    color: rgb(var(--color-foreground-rgb) / 0.65);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Details",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift",
+      "default": "Produktdetails"
+    },
+    {
+      "type": "text",
+      "id": "note",
+      "label": "Hinweis unter der Tabelle",
+      "default": "Montagehinweise finden Sie in der Beschreibung."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Details"
+    }
+  ]
+}
+{% endschema %}

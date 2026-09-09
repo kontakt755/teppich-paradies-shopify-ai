@@ -193,9 +193,15 @@
               "settings": {
                 "label": "Farbe",
                 "groesse": "normal",
-                "show_nummer": false
+                "show_nummer": false,
+                "hinweis_ohne_variantenbild": true
               },
               "blocks": {}
+            },
+            "tp_zubehoer_menge": {
+              "type": "tp-zubehoer-menge",
+              "name": "TP Zubehoer Mengenhilfe",
+              "settings": {}
             },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
@@ -272,6 +278,7 @@
             "divider_VJhene",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "text_aEtTtq"

@@ -71,6 +71,23 @@
     endif
   endif
 %}
+{%- comment -%}
+  Bodenleisten bekommen eine kuratierte Textnavigation statt der Bildkacheln
+  aus dem globalen Menue - siehe snippets/tp-leisten-nav.liquid. Das globale
+  Menue bleibt unveraendert, weil es von allen Themes benutzt wird.
+{%- endcomment -%}
+{%- liquid
+  assign tp_leisten_nav = false
+  if parent_link.type == 'collection_link' and parent_link.object.handle == 'bodenleisten'
+    assign tp_leisten_nav = true
+  endif
+-%}
+{%- if tp_leisten_nav -%}
+  <div class="mega-menu__intro">
+    <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
+  </div>
+  {% render 'tp-leisten-nav', variant: 'megamenu', parent_link: parent_link %}
+{%- else -%}
 <div class="mega-menu__intro">
   <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
 </div>
@@ -346,3 +363,4 @@
       </ul>
     </span>
 {% endcase %}
+{%- endif -%}

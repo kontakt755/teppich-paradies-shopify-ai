@@ -1,0 +1,558 @@
+{% comment %}
+  Schnelleinstiege fuer Bodenleisten: Kacheln nach Material und Chips nach
+  Hoehe. Beide Gruppen werden aus den Produkt-Tags der aktuellen Kollektion
+  gebildet (material:, hoehe:), es erscheinen also nur Gruppen, die das
+  Sortiment wirklich hat - samt Trefferzahl.
+
+  Die Einstiege blenden Karten im Produktraster darunter ein und aus
+  (assets/tp-leisten-filter.js). Shopify-Filter, Sortierung und Nachladen
+  bleiben unberuehrt. Ohne JavaScript sind es Sprunglinks zum Raster.
+
+  Hintergrund: Search & Discovery kennt fuer diese Kategorie nur Preis und
+  Verfuegbarkeit als Filter. Sobald dort Tag-Filter fuer Material und Hoehe
+  aktiviert sind, kann diese Sektion auf echte Filter-URLs umgestellt werden.
+{% endcomment %}
+
+{%- liquid
+  assign material_keys = ''
+  assign material_labels = ''
+  assign hoehe_keys = ''
+  assign hoehe_labels = ''
+  assign data_json = ''
+
+  for p in collection.products
+    capture raw
+      render 'tp-leisten-merkmale', product: p
+    endcapture
+    assign parts = raw | strip | split: '|'
+    assign m_label = parts[0] | strip
+    assign h_label = parts[1] | strip
+    assign m_key = parts[3] | strip
+    assign h_key = parts[4] | strip
+
+    if m_key != blank
+      assign probe = '|' | append: m_key | append: '|'
+      assign haystack = '|' | append: material_keys | append: '|'
+      unless haystack contains probe
+        assign material_keys = material_keys | append: m_key | append: '|'
+        assign material_labels = material_labels | append: m_label | append: '|'
+      endunless
+    endif
+    if h_key != blank
+      assign probe = '|' | append: h_key | append: '|'
+      assign haystack = '|' | append: hoehe_keys | append: '|'
+      unless haystack contains probe
+        assign hoehe_keys = hoehe_keys | append: h_key | append: '|'
+        assign hoehe_labels = hoehe_labels | append: h_label | append: '|'
+      endunless
+    endif
+
+    capture entry
+      echo p.handle | json
+      echo ':{"material":'
+      echo m_key | json
+      echo ',"hoehe":'
+      echo h_key | json
+      echo '}'
+    endcapture
+    if data_json != blank
+      assign data_json = data_json | append: ','
+    endif
+    assign data_json = data_json | append: entry
+  endfor
+
+  assign material_key_list = material_keys | split: '|'
+  assign material_label_list = material_labels | split: '|'
+  assign hoehe_key_list = hoehe_keys | split: '|'
+  assign hoehe_label_list = hoehe_labels | split: '|'
+  # Hoehen in Sortimentsreihenfolge (numerisch), unbekannte Werte hinten anhaengen
+  assign hoehe_order = '40mm|60mm|60mm-xl|80mm|80mm-xl|100mm|120mm' | split: '|'
+  assign hoehe_sorted_str = ''
+  for o in hoehe_order
+    for k in hoehe_key_list
+      if k == o
+        assign hoehe_sorted_str = hoehe_sorted_str | append: k | append: '|'
+      endif
+    endfor
+  endfor
+  for k in hoehe_key_list
+    assign probe = '|' | append: k | append: '|'
+    assign haystack = '|' | append: hoehe_sorted_str | append: '|'
+    unless haystack contains probe
+      assign hoehe_sorted_str = hoehe_sorted_str | append: k | append: '|'
+    endunless
+  endfor
+  assign hoehe_sorted = hoehe_sorted_str | split: '|'
+-%}
+
+{%- if material_key_list.size > 0 or hoehe_key_list.size > 0 -%}
+<script src="{{ 'tp-leisten-filter.js' | asset_url }}" defer></script>
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-le section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-tp-leisten
+  data-testid="tp-leisten-einstiege-{{ section.id }}"
+>
+  <script type="application/json" data-tp-leisten-data>{ {{ data_json }} }</script>
+
+  {%- if section.settings.heading != blank or section.settings.intro != blank -%}
+    <header class="tp-le__head">
+      {%- if section.settings.heading != blank -%}
+        <h2 class="tp-le__heading h3">{{ section.settings.heading | escape }}</h2>
+      {%- endif -%}
+      {%- if section.settings.intro != blank -%}
+        <p class="tp-le__intro">{{ section.settings.intro | escape }}</p>
+      {%- endif -%}
+    </header>
+  {%- endif -%}
+
+  {%- if section.settings.show_material and material_key_list.size > 0 -%}
+    <div class="tp-le__group" role="group" aria-labelledby="tp-le-material-{{ section.id }}">
+      <p class="tp-le__label" id="tp-le-material-{{ section.id }}">Nach Material</p>
+      <ul class="tp-le__tiles" role="list">
+        {%- for m_key in material_key_list -%}
+          {%- liquid
+            assign m_label = material_label_list[forloop.index0]
+            assign count = 0
+            assign sample_image = blank
+            for p in collection.products
+              assign tagged = false
+              for tag in p.tags
+                assign tag_down = tag | downcase
+                if tag_down contains 'material:'
+                  assign v = tag_down | remove: 'material:' | strip
+                  if v == m_key
+                    assign tagged = true
+                  endif
+                endif
+              endfor
+              if tagged
+                assign count = count | plus: 1
+                if sample_image == blank and p.featured_image != blank
+                  assign sample_image = p.featured_image
+                endif
+              endif
+            endfor
+            case m_key
+              when 'kunststoff'
+                assign m_text = section.settings.text_kunststoff
+              when 'mdf'
+                assign m_text = section.settings.text_mdf
+              when 'hartschaum'
+                assign m_text = section.settings.text_hartschaum
+              else
+                assign m_text = ''
+            endcase
+          -%}
+          <li class="tp-le__tile-item">
+            <a
+              class="tp-le__tile"
+              href="#bodenleisten-produkte"
+              data-tp-leisten-group="material"
+              data-tp-leisten-value="{{ m_key }}"
+              aria-pressed="false"
+            >
+              {%- if sample_image != blank -%}
+                <span class="tp-le__tile-media">
+                  {{ sample_image | image_url: width: 300 | image_tag: loading: 'lazy', widths: '150, 300', sizes: '96px', alt: '' }}
+                </span>
+              {%- endif -%}
+              <span class="tp-le__tile-body">
+                <span class="tp-le__tile-title">{{ m_label }}</span>
+                {%- if m_text != blank -%}<span class="tp-le__tile-text">{{ m_text | escape }}</span>{%- endif -%}
+                <span class="tp-le__tile-count">{{ count }} {% if count == 1 %}Modell{% else %}Modelle{% endif %}</span>
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+
+  {%- if section.settings.show_hoehe and hoehe_key_list.size > 0 -%}
+    <div class="tp-le__group" role="group" aria-labelledby="tp-le-hoehe-{{ section.id }}">
+      <p class="tp-le__label" id="tp-le-hoehe-{{ section.id }}">Nach Höhe</p>
+      <ul class="tp-le__chips" role="list">
+        {%- for h_key in hoehe_sorted -%}
+          {%- liquid
+            assign h_label = h_key
+            for k in hoehe_key_list
+              if k == h_key
+                assign h_label = hoehe_label_list[forloop.index0]
+              endif
+            endfor
+            assign count = 0
+            for p in collection.products
+              for tag in p.tags
+                assign tag_down = tag | downcase
+                if tag_down contains 'hoehe:'
+                  assign v = tag_down | remove: 'hoehe:' | strip
+                  if v == h_key
+                    assign count = count | plus: 1
+                  endif
+                endif
+              endfor
+            endfor
+          -%}
+          <li>
+            <a
+              class="tp-le__chip"
+              href="#bodenleisten-produkte"
+              data-tp-leisten-group="hoehe"
+              data-tp-leisten-value="{{ h_key }}"
+              aria-pressed="false"
+            >
+              {{ h_label }}<span class="tp-le__chip-count" aria-label="{{ count }} Modelle">{{ count }}</span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
+
+  <div class="tp-le__status-row">
+    <p class="tp-le__status" role="status" aria-live="polite" data-tp-leisten-status></p>
+    <button type="button" class="tp-le__reset" data-tp-leisten-reset hidden>Auswahl zurücksetzen</button>
+  </div>
+  <p class="tp-le__empty" data-tp-leisten-empty hidden>
+    Keine Leiste passt zu dieser Kombination. Bitte eine Auswahl abwählen oder die Auswahl zurücksetzen.
+  </p>
+  {%- comment -%} Sprungziel fuer Hero-Button und Einstiege: direkt ueber dem Produktraster {%- endcomment -%}
+  <div id="bodenleisten-produkte" class="tp-le__anchor" aria-hidden="true"></div>
+</div>
+
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-le__head {
+    max-width: 52rem;
+    margin-block-end: 20px;
+  }
+
+  .tp-le__heading {
+    margin: 0 0 6px;
+  }
+
+  .tp-le__intro {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+    font-size: 1rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .tp-le__group + .tp-le__group {
+    margin-block-start: 20px;
+  }
+
+  .tp-le__label {
+    margin: 0 0 10px;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .tp-le__tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-le__tile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 88px;
+    height: 100%;
+    padding: 12px 14px;
+    background: var(--color-background);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+    border-radius: var(--style-border-radius-md, 8px);
+    color: var(--color-foreground);
+    text-decoration: none;
+    transition:
+      border-color var(--animation-speed, 0.2s) var(--animation-easing, ease),
+      box-shadow var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-le__tile:hover {
+    border-color: rgb(var(--color-foreground-rgb) / 0.35);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.06);
+  }
+
+  .tp-le__tile:focus-visible,
+  .tp-le__chip:focus-visible,
+  .tp-le__reset:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .tp-le__tile[aria-pressed='true'] {
+    border-color: var(--color-foreground);
+    box-shadow: inset 0 0 0 1px var(--color-foreground);
+  }
+
+  .tp-le__tile-media {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    border-radius: var(--style-border-radius-sm, 6px);
+  }
+
+  .tp-le__tile-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    object-fit: contain;
+  }
+
+  .tp-le__tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .tp-le__tile-title {
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+
+  .tp-le__tile-text {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-le__tile-count {
+    margin-block-start: 2px;
+    font-size: 0.8125rem;
+    color: rgb(var(--color-foreground-rgb) / 0.6);
+  }
+
+  .tp-le__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-le__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    background: var(--color-background);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.2);
+    border-radius: 999px;
+    color: var(--color-foreground);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    transition: border-color var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-le__chip:hover {
+    border-color: rgb(var(--color-foreground-rgb) / 0.5);
+  }
+
+  .tp-le__chip[aria-pressed='true'] {
+    background: var(--color-foreground);
+    border-color: var(--color-foreground);
+    color: var(--color-background);
+  }
+
+  .tp-le__chip-count {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.7;
+  }
+
+  .tp-le__status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-block-start: 16px;
+    min-height: 24px;
+  }
+
+  .tp-le__status {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-le__status:empty {
+    display: none;
+  }
+
+  .tp-le__reset {
+    min-height: 44px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 0;
+    color: var(--color-foreground);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .tp-le__anchor {
+    height: 0;
+    scroll-margin-top: 88px;
+  }
+
+  .tp-le__empty {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    background: rgb(var(--color-foreground-rgb) / 0.05);
+    border-radius: var(--style-border-radius-sm, 6px);
+    font-size: 0.9375rem;
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-le__tiles {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-le__head {
+      margin-block-end: 14px;
+    }
+
+    .tp-le__tiles {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .tp-le__tile {
+      min-height: 64px;
+      padding: 10px 12px;
+    }
+
+    .tp-le__tile-media {
+      flex-basis: 52px;
+      width: 52px;
+      height: 52px;
+    }
+
+    .tp-le__tile-text {
+      display: none;
+    }
+
+    .tp-le__chip {
+      padding: 10px 14px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Einstiege",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift",
+      "default": "Schnell zur passenden Leiste"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Einleitung",
+      "default": "Wählen Sie nach Material oder Höhe – die Auswahl unten passt sich sofort an."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_material",
+      "label": "Einstiege nach Material anzeigen",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_hoehe",
+      "label": "Einstiege nach Höhe anzeigen",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Kurztexte je Material"
+    },
+    {
+      "type": "text",
+      "id": "text_kunststoff",
+      "label": "Kunststoff",
+      "default": "Mit flexibler Weichlippe, in vielen Höhen"
+    },
+    {
+      "type": "text",
+      "id": "text_mdf",
+      "label": "MDF Holzdekor",
+      "default": "Holzoptik mit Clipsystem"
+    },
+    {
+      "type": "text",
+      "id": "text_hartschaum",
+      "label": "Hartschaum",
+      "default": "Leicht zuzuschneiden, Unifarben"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 8
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Einstiege"
+    }
+  ]
+}
+{% endschema %}

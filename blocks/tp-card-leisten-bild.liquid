@@ -1,0 +1,93 @@
+{% doc %}
+  Raumbild fuer Leisten-Produktkarten. Viele Leisten haben als Hauptbild eine
+  technische Zeichnung, im Medienstapel liegt aber ein Raumfoto (bei Doellken
+  "…-offen-fern…", bei Skarven "S60.jpg"). Dieser Block sucht das erste Bild,
+  dessen Dateiname eines der Muster enthaelt, und zeigt es quadratisch
+  beschnitten. Findet er keins, rendert er nichts - dann bleibt die normale
+  Kartengalerie sichtbar (die wird per CSS nur ausgeblendet, wenn dieser Block
+  ein Bild liefert; siehe sections/tp-leisten-hero.liquid).
+
+  Produktdaten werden nicht angefasst, die Auswahl passiert im Theme.
+{% enddoc %}
+
+{%- liquid
+  assign tp_cb_product = closest.product
+  assign tp_cb_patterns = block.settings.motiv_muster | default: 'offen-fern|S60.jpg' | split: '|'
+  assign tp_cb_image = blank
+
+  for media in tp_cb_product.media
+    if media.media_type != 'image'
+      continue
+    endif
+    assign tp_cb_src = media.src | downcase
+    for pattern in tp_cb_patterns
+      assign tp_cb_needle = pattern | strip | downcase
+      if tp_cb_needle != blank and tp_cb_src contains tp_cb_needle
+        assign tp_cb_image = media
+        break
+      endif
+    endfor
+    if tp_cb_image != blank
+      break
+    endif
+  endfor
+-%}
+
+{%- if tp_cb_image != blank -%}
+  <div class="tp-card-leisten-bild" {{ block.shopify_attributes }}>
+    {{
+      tp_cb_image
+      | image_url: width: 900
+      | image_tag: loading: 'lazy', widths: '300, 450, 600, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw', alt: tp_cb_product.title
+    }}
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  /* Liefert dieser Block ein Raumbild, tritt die Standardgalerie der Karte zurueck */
+  .product-card__content:has(.tp-card-leisten-bild) .card-gallery,
+  .product-card__content:has(.tp-card-leisten-bild) .product-grid-view-zoom-out--details {
+    display: none;
+  }
+
+  .tp-card-leisten-bild {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--style-border-radius-md, 6px);
+    background: #f4f4f4;
+  }
+
+  .tp-card-leisten-bild img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--animation-speed, 0.25s) var(--animation-easing, ease);
+  }
+
+  .product-grid__item:hover .tp-card-leisten-bild img,
+  .product-grid__item:focus-within .tp-card-leisten-bild img {
+    transform: scale(1.03);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Raumbild",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "motiv_muster",
+      "label": "Dateinamen-Muster fuer Raumbilder (mit | getrennt)",
+      "default": "offen-fern|S60.jpg"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Leisten-Raumbild"
+    }
+  ]
+}
+{% endschema %}

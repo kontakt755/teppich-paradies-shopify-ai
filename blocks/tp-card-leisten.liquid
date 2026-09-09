@@ -1,0 +1,68 @@
+{% doc %}
+  Kurzmerkmale fuer Bodenleisten auf der Produktkarte: Material, Hoehe und
+  Anzahl der Farben/Dekore. Quelle sind die Produkt-Tags (material:, hoehe:)
+  und die Farboption - siehe snippets/tp-leisten-merkmale.liquid. Produkte
+  ohne diese Tags rendern nichts, damit der Block auf anderen Karten still
+  bleibt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_cl_product = closest.product
+  capture tp_cl_raw
+    render 'tp-leisten-merkmale', product: tp_cl_product
+  endcapture
+  assign tp_cl_parts = tp_cl_raw | strip | split: '|'
+  assign tp_cl_material = tp_cl_parts[0] | strip
+  assign tp_cl_hoehe = tp_cl_parts[1] | strip
+  assign tp_cl_farben = tp_cl_parts[2] | strip | plus: 0
+-%}
+
+{%- if tp_cl_material != blank or tp_cl_hoehe != blank -%}
+  <ul class="tp-card-leisten" {{ block.shopify_attributes }}>
+    {%- if tp_cl_material != blank -%}<li>{{ tp_cl_material }}</li>{%- endif -%}
+    {%- if tp_cl_hoehe != blank -%}<li>{{ tp_cl_hoehe }}</li>{%- endif -%}
+    {%- if tp_cl_farben > 1 -%}<li>{{ tp_cl_farben }} Farben</li>{%- endif -%}
+  </ul>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-card-leisten {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 8px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-card-leisten li {
+    font-size: 13.5px;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .tp-card-leisten li:not(:last-child)::after {
+    content: '\00b7';
+    margin-left: 8px;
+    opacity: 0.6;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-leisten li {
+      font-size: 12.5px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Leisten-Merkmale",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Leisten-Merkmale"
+    }
+  ]
+}
+{% endschema %}

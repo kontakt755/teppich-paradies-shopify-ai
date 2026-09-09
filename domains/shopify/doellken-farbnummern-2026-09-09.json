@@ -1,0 +1,266 @@
+{
+ "100": {
+  "titel": "Cubu flex life 100 100mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK100_1245",
+  "marke": "Döllken",
+  "farben": [
+   {
+    "nummer": "1012",
+    "name": "lichtgrau",
+    "pid": "477497",
+    "roh": "1012 lichtgrau"
+   },
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "477506",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1245",
+    "name": "champagner",
+    "pid": "591222",
+    "roh": "1245 champagner"
+   },
+   {
+    "nummer": "1144",
+    "name": "schwarz",
+    "pid": "591229",
+    "roh": "1144 schwarz"
+   },
+   {
+    "nummer": "1209",
+    "name": "anthrazit",
+    "pid": "591237",
+    "roh": "1209 anthrazit"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591245",
+    "roh": "1132 weiß (RAL 9010)"
+   }
+  ]
+ },
+ "80": {
+  "titel": "Cubu flex life 80 80mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK80_0008",
+  "marke": "Döllken",
+  "farben": [
+   {
+    "nummer": "1190",
+    "name": "edelstahl",
+    "pid": "438128",
+    "roh": "1190 edelstahl"
+   },
+   {
+    "nummer": "1012",
+    "name": "lichtgrau",
+    "pid": "477579",
+    "roh": "1012 lichtgrau"
+   },
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "477586",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1246",
+    "name": "platinsilber",
+    "pid": "549111",
+    "roh": "1246 platinsilber"
+   },
+   {
+    "nummer": "1245",
+    "name": "champagner",
+    "pid": "549129",
+    "roh": "1245 champagner"
+   },
+   {
+    "nummer": "1209",
+    "name": "anthrazit",
+    "pid": "549213",
+    "roh": "1209 anthrazit"
+   },
+   {
+    "nummer": "1144",
+    "name": "schwarz",
+    "pid": "591297",
+    "roh": "1144 schwarz"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591304",
+    "roh": "1132 weiß (RAL 9010)"
+   }
+  ]
+ },
+ "60": {
+  "titel": "Cubu flex life 60 60mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK60_1144",
+  "marke": "Döllken",
+  "farben": [
+   {
+    "nummer": "1408",
+    "name": "weiß (RAL 9016)",
+    "pid": "419816",
+    "roh": "1408 weiß (RAL 9016)"
+   },
+   {
+    "nummer": "1139",
+    "name": "steingrau",
+    "pid": "431777",
+    "roh": "1139 steingrau"
+   },
+   {
+    "nummer": "1063",
+    "name": "silber",
+    "pid": "477542",
+    "roh": "1063 silber"
+   },
+   {
+    "nummer": "1012",
+    "name": "lichtgrau",
+    "pid": "477552",
+    "roh": "1012 lichtgrau"
+   },
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "477561",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1209",
+    "name": "anthrazit",
+    "pid": "523800",
+    "roh": "1209 anthrazit"
+   },
+   {
+    "nummer": "1246",
+    "name": "platinsilber",
+    "pid": "549082",
+    "roh": "1246 platinsilber"
+   },
+   {
+    "nummer": "1245",
+    "name": "champagner",
+    "pid": "549099",
+    "roh": "1245 champagner"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591275",
+    "roh": "1132 weiß (RAL 9010)"
+   },
+   {
+    "nummer": "1144",
+    "name": "schwarz",
+    "pid": "600783",
+    "roh": "1144 schwarz"
+   }
+  ]
+ },
+ "40": {
+  "titel": "Cubu flex life 40 40mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK40_0005",
+  "marke": "Döllken",
+  "farben": [
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "477535",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1246",
+    "name": "platinsilber",
+    "pid": "539229",
+    "roh": "1246 platinsilber"
+   },
+   {
+    "nummer": "1245",
+    "name": "champagner",
+    "pid": "591260",
+    "roh": "1245 champagner"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591267",
+    "roh": "1132 weiß (RAL 9010)"
+   },
+   {
+    "nummer": "1209",
+    "name": "anthrazit",
+    "pid": "591481",
+    "roh": "1209 anthrazit"
+   }
+  ]
+ },
+ "XL60": {
+  "titel": "Cubu flex life XL 60/19 60mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK60X_0004",
+  "marke": "Keine Marke",
+  "farben": [
+   {
+    "nummer": "1012",
+    "name": "lichtgrau",
+    "pid": "503028",
+    "roh": "1012 lichtgrau"
+   },
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "503038",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1246",
+    "name": "platin, Sonder-FB.MM 200m",
+    "pid": "591283",
+    "roh": "1246 platin, Sonder-FB.MM 200m"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591289",
+    "roh": "1132 weiß (RAL 9010)"
+   }
+  ]
+ },
+ "XL80": {
+  "titel": "Cubu flex life XL 80/19 80mm Höhe",
+  "artnr_beispiel": "ZUBDÖLK80X_0004",
+  "marke": "Döllken",
+  "farben": [
+   {
+    "nummer": "1012/1202",
+    "name": "lichtgrau",
+    "pid": "498308",
+    "roh": "1012/1202 lichtgrau"
+   },
+   {
+    "nummer": "1013/5012",
+    "name": "weiß",
+    "pid": "498324",
+    "roh": "1013/5012 weiß"
+   },
+   {
+    "nummer": "1246",
+    "name": "platinsilber",
+    "pid": "591312",
+    "roh": "1246 platinsilber"
+   },
+   {
+    "nummer": "1132",
+    "name": "weiß (RAL 9010)",
+    "pid": "591319",
+    "roh": "1132 weiß (RAL 9010)"
+   }
+  ]
+ }
+}
