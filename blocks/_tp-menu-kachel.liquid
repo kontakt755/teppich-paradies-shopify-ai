@@ -1,0 +1,56 @@
+{%- doc -%}
+  Bildkachel fuer einen Punkt des Hauptmenues - Desktop-Megamenue und mobiler Drawer.
+
+  Warum ein Block und kein Kollektionsbild: Die Navigation ist shopweit, Kollektionsbilder
+  und Metafelder sind Store-Daten und wirken sofort im Live-Theme. Der Block liegt in
+  sections/header-group.json des jeweiligen Themes, laesst sich im Theme-Editor pflegen
+  und bleibt auf das Theme beschraenkt, in dem er angelegt wurde.
+
+  Zuordnung: "menu_match" ist der Titel des Navigationspunkts genau wie in der Navigation
+  (z. B. "Klickvinyl") oder alternativ sein URL-Pfad (z. B. /collections/vinylboden-klickvinyl).
+  Der Block gibt einen Textdatensatz aus (siehe unten); sections/header.liquid faengt
+  content_for blocks ein und reicht den Text als tp_kacheln weiter. Warum nicht section.blocks
+  oder block.blocks: Beide liefern fuer Theme-Bloecke nur Platzhalter (type "@theme", keine
+  Settings) - belegt am 2026-09-09 im Draft-Theme. Auswertung: snippets/tp-menu-kachel-index.liquid,
+  Bild: snippets/tp-menu-bild.liquid.
+
+  Ohne passende Kachel greift die Reihenfolge Kollektionsbild -> erstes Produktbild.
+{%- enddoc -%}
+
+{%- liquid
+  # Ausgabe als Datensatz: Menuepunkt |~| Bild-URL (800 px) |~| Kurztext, Satzende ~~
+  # Der Header faengt content_for blocks per capture ein und reicht den Text an
+  # Megamenue und Drawer weiter (snippets/tp-menu-kachel-index.liquid).
+  assign tp_k_img = ''
+  if block.settings.image != blank
+    assign tp_k_img = block.settings.image | image_url: width: 800
+  endif
+  echo block.settings.menu_match | strip | append: '|~|' | append: tp_k_img | append: '|~|' | append: block.settings.subtitle | strip | append: '~~'
+-%}
+
+{% schema %}
+{
+  "name": "Menü-Bildkachel",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "menu_match",
+      "label": "Menüpunkt",
+      "info": "Titel genau wie in der Navigation (z. B. „Klickvinyl“) oder der URL-Pfad (z. B. /collections/vinylboden-klickvinyl)."
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Bild",
+      "info": "Querformat, wird auf 16:9 zugeschnitten. Fehlt es, greift das Kollektions- bzw. Produktbild."
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "Kurztext (optional)",
+      "info": "Eine Zeile unter dem Titel. Fehlt er, zeigen Kollektionen ihre Produktanzahl."
+    }
+  ]
+}
+{% endschema %}

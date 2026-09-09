@@ -147,6 +147,19 @@
                           if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
                             assign render_link_image = true
                           endif
+                            # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
+                            if render_link_image == false and kacheln != blank
+                              for tp_dl in link.links
+                                capture tp_dl_idx
+                                  render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
+                                endcapture
+                                assign tp_dl_idx = tp_dl_idx | strip | plus: 0
+                                if tp_dl_idx > 0
+                                  assign render_link_image = true
+                                  break
+                                endif
+                              endfor
+                            endif
                         endif
                       %}
                       <ul
@@ -176,7 +189,7 @@
                               {% endif %}
                             >
                               {% if render_link_image %}
-                                {% render 'link-featured-image',
+                                {% render 'tp-menu-bild', kacheln: kacheln,
                                   link: childlink,
                                   class: 'menu-drawer__link-image',
                                   sizes: 'auto, 400px'
@@ -217,6 +230,19 @@
                       if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
                         assign render_link_image = true
                       endif
+                        # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
+                        if render_link_image == false and kacheln != blank
+                          for tp_dl in link.links
+                            capture tp_dl_idx
+                              render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
+                            endcapture
+                            assign tp_dl_idx = tp_dl_idx | strip | plus: 0
+                            if tp_dl_idx > 0
+                              assign render_link_image = true
+                              break
+                            endif
+                          endfor
+                        endif
                     endif
                   %}
                   <ul
@@ -245,7 +271,7 @@
                           {% endif %}
                         >
                           {% if render_link_image %}
-                            {% render 'link-featured-image',
+                            {% render 'tp-menu-bild', kacheln: kacheln,
                               link: childlink,
                               class: 'menu-drawer__link-image',
                               sizes: 'auto, 400px'
@@ -350,6 +376,19 @@
                             if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
                               assign render_link_image = true
                             endif
+                              # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
+                              if render_link_image == false and kacheln != blank
+                                for tp_dl in link.links
+                                  capture tp_dl_idx
+                                    render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
+                                  endcapture
+                                  assign tp_dl_idx = tp_dl_idx | strip | plus: 0
+                                  if tp_dl_idx > 0
+                                    assign render_link_image = true
+                                    break
+                                  endif
+                                endfor
+                              endif
                           endif
                         %}
                         <ul
@@ -389,7 +428,7 @@
                                   {% endif %}
                                 >
                                   {% if render_link_image and link.levels == 1 %}
-                                    {% render 'link-featured-image',
+                                    {% render 'tp-menu-bild', kacheln: kacheln,
                                       link: childlink,
                                       class: 'menu-drawer__link-image',
                                       sizes: 'auto, 400px'
@@ -460,7 +499,7 @@
                                               {% endif %}
                                             >
                                               {% if render_link_image %}
-                                                {% render 'link-featured-image',
+                                                {% render 'tp-menu-bild', kacheln: kacheln,
                                                   link: grandchildlink,
                                                   class: 'menu-drawer__link-image',
                                                   sizes: 'auto, 400px'
@@ -529,7 +568,7 @@
                                           {% endif %}
                                         >
                                           {% if render_link_image %}
-                                            {% render 'link-featured-image',
+                                            {% render 'tp-menu-bild', kacheln: kacheln,
                                               link: grandchildlink,
                                               class: 'menu-drawer__link-image',
                                               sizes: 'auto, 400px'

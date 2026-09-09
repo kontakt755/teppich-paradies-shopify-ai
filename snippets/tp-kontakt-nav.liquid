@@ -1,0 +1,46 @@
+{%- doc -%}
+  Kuratiertes Megamenue fuer "Kontakt": drei Karten - Anrufen, WhatsApp (Logo-Kachel), Standort.
+  Bilder kommen aus den Bildkacheln (Menuepunkt = Kartentitel), Ziel und Kurztext
+  stehen hier. Telefon- und WhatsApp-Nummer sind dieselben wie in
+  sections/tp-shipping-delivery.liquid; Adresse und Zeiten wie auf der Kontaktseite
+  (sections/contact-form.liquid). Aendert sich eine Nummer, hier und dort anpassen.
+
+  @param {object} parent_link - Menuepunkt (Kontaktseite)
+  @param {string} [kacheln] - Datensaetze der Bildkacheln
+  @param {string} id - Menue-ID fuer die Rasterregeln
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_kn_titles = 'Anrufen|WhatsApp|Vor Ort in Oranienburg' | split: '|'
+  assign tp_kn_urls = 'tel:+4933015733720|https://wa.me/4917657931322|' | append: parent_link.url | split: '|'
+  assign tp_kn_subs = '03301 5733720 · Mo–Fr 8:30–18:00, Sa 8:30–14:30|0176 57931322 · Foto senden, Beratung erhalten|Saarlandstraße 73, 16515 Oranienburg' | split: '|'
+  assign tp_kn_sizes = '(min-width: 990px) 30vw, (min-width: 750px) 33vw, 100vw'
+-%}
+
+{% style %}
+  .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
+    --tp-mm-cols: 3;
+    --tp-mm-cols-tablet: 3;
+    --tp-mm-col: minmax(0, 1fr);
+  }
+{% endstyle %}
+
+<ul data-menu-list-id="{{ id }}" class="mega-menu__list list-unstyled">
+  {%- for tp_kn_title in tp_kn_titles -%}
+    {%- liquid
+      assign tp_kn_i = forloop.index0
+      assign tp_kn_url = tp_kn_urls[tp_kn_i]
+      assign tp_kn_attrs = ''
+      assign tp_kn_icon = ''
+      if tp_kn_url contains 'wa.me'
+        assign tp_kn_attrs = 'target="_blank" rel="noopener"'
+        assign tp_kn_icon = 'whatsapp'
+      endif
+      # Bildkachel ueber einen Pseudo-Link mit dem Kartentitel finden
+      capture tp_kn_img
+        render 'tp-menu-bild', link: tp_kn_link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_kn_sizes, match_title: tp_kn_title
+      endcapture
+    -%}
+    {%- render 'tp-menu-karte', url: tp_kn_url, title: tp_kn_title, sub: tp_kn_subs[tp_kn_i], image_html: tp_kn_img, attrs: tp_kn_attrs, icon: tp_kn_icon -%}
+  {%- endfor -%}
+</ul>

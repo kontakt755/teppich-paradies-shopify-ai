@@ -1,0 +1,48 @@
+{%- doc -%}
+  Findet die Bildkachel (Block _tp-menu-kachel) zu einem Navigationspunkt.
+
+  `kacheln` ist der Text, den sections/header.liquid per capture aus content_for 'blocks'
+  einfaengt: je Kachel ein Datensatz "Menuepunkt|~|Bild-URL|~|Kurztext", Datensaetze
+  durch "~~" getrennt. Warum Text statt Block-Objekte: section.blocks und block.blocks
+  liefern fuer Theme-Bloecke nur Platzhalter (type "@theme", keine Settings).
+
+  Ausgabe: der 1-basierte Index des passenden Datensatzes, sonst 0. Der Aufrufer liest
+  die Ausgabe per capture ein und greift mit (kacheln | split: '~~')[index - 1] zu.
+
+  Verglichen wird der Menuepunkt der Kachel exakt mit dem Titel des Punkts, mit seiner
+  vollstaendigen URL und mit dem Pfad ohne Host. Der Pfad ist noetig, weil
+  Navigationspunkte vom Typ HTTP absolute Adressen tragen (https://www.../pages/...).
+
+  @param {object} link - Navigationspunkt (linklist item)
+  @param {string} kacheln - Datensaetze aus content_for 'blocks'
+  @param {string} [match_title] - Titel statt link.title vergleichen (kuratierte Karten ohne Navigationspunkt)
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_mki_found = 0
+
+  if kacheln != blank
+    assign tp_mki_title = match_title | default: link.title | strip
+    assign tp_mki_url = link.url | default: '' | strip
+    assign tp_mki_path = tp_mki_url
+    if tp_mki_url contains '://'
+      assign tp_mki_rest = tp_mki_url | split: '://' | last
+      assign tp_mki_host = tp_mki_rest | split: '/' | first
+      assign tp_mki_path = tp_mki_rest | remove_first: tp_mki_host
+    endif
+
+    assign tp_mki_records = kacheln | split: '~~'
+    for tp_mki_rec in tp_mki_records
+      assign tp_mki_m = tp_mki_rec | split: '|~|' | first | strip
+      if tp_mki_m == blank
+        continue
+      endif
+      if tp_mki_m == tp_mki_title or tp_mki_m == tp_mki_url or tp_mki_m == tp_mki_path
+        assign tp_mki_found = forloop.index
+        break
+      endif
+    endfor
+  endif
+
+  echo tp_mki_found
+-%}

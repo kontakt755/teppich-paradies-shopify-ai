@@ -22,7 +22,8 @@
         linklist: block_settings.menu,
         data_header_drawer_type: 'mobile-drawer',
         block: block,
-        section: section
+        section: section,
+        kacheln: tp_kacheln
       %}
     </div>
 
@@ -84,6 +85,19 @@
 
     {% capture children %}
       {% for link in block_settings.menu.links %}
+        {%- liquid
+          # Kuratierte Untermenues fuer Punkte ohne Unterpunkte in der Navigation:
+          # Linoleum (Sortiment aus der Kollektion) und Kontakt (Anruf, WhatsApp, Standort).
+          # Siehe snippets/tp-linoleum-nav.liquid und snippets/tp-kontakt-nav.liquid.
+          assign tp_has_submenu = false
+          if link.links != blank
+            assign tp_has_submenu = true
+          elsif link.type == 'collection_link' and link.object.handle == 'linoleumboden-1'
+            assign tp_has_submenu = true
+          elsif link.title == 'Kontakt'
+            assign tp_has_submenu = true
+          endif
+        -%}
         <li
           role="presentation"
           class="menu-list__list-item"
@@ -96,7 +110,7 @@
             href="{{ link.url }}"
             data-skip-node-update="true"
             class="menu-list__link{% if link.active %} menu-list__link--active{% endif %}"
-            {%- if link.links != blank -%}
+            {%- if tp_has_submenu -%}
               aria-controls="submenu-{{ forloop.index }}"
               aria-haspopup="true"
               aria-expanded="false"
@@ -108,7 +122,7 @@
           >
             <span class="menu-list__link-title">{%- render 'tp-menu-label', link: link -%}</span>
           </a>
-          {%- if link.links != blank -%}
+          {%- if tp_has_submenu -%}
             <div class="menu-list__submenu{{ color_scheme_classes }}" ref="submenu[]">
               <div
                 id="submenu-{{ forloop.index }}"
@@ -130,7 +144,8 @@
                       grid_columns_count_collection_images: 8,
                       menu_content_type: menu_content_type,
                       content_aspect_ratio: ratio,
-                      image_border_radius: image_border_radius
+                      image_border_radius: image_border_radius,
+                      kacheln: tp_kacheln
                     %}
                   </div>
                 </div>
@@ -691,6 +706,11 @@
 {
   "name": "t:names.menu",
   "tag": null,
+  "blocks": [
+    {
+      "type": "_tp-menu-kachel"
+    }
+  ],
   "settings": [
     {
       "type": "link_list",

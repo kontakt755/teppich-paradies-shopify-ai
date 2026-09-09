@@ -1,9 +1,24 @@
-/* Teppich Paradies: clearer hierarchy for desktop mega menus. */
+/* Teppich Paradies: Mega-Menue als Bildkarten (Desktop) und Bildraster (Drawer).
+
+   Markup: snippets/mega-menu-list.liquid (Karten .tp-mm-card), Bilder aus
+   snippets/tp-menu-bild.liquid (Bildkachel-Block -> Kollektionsbild -> Produktbild).
+
+   Zur Spezifitaet: Das Theme liefert seine Menue-Regeln aus dem {% stylesheet %} des
+   Bausteins blocks/_header-menu.liquid NACH dieser Datei aus. Regeln hier, die eine
+   Theme-Regel ueberschreiben, tragen deshalb bewusst mehr Klassen als noetig
+   (.mega-menu__grid .mega-menu__list ...), damit sie unabhaengig von der
+   Ladereihenfolge gewinnen - ohne !important. */
+
 @media screen and (min-width: 750px) {
   .mega-menu__grid {
     --tp-mega-menu-line: rgb(var(--color-foreground-rgb) / 0.14);
     --tp-mega-menu-soft: rgb(var(--color-foreground-rgb) / 0.035);
     --tp-mega-menu-hover: rgb(var(--color-foreground-rgb) / 0.075);
+    --tp-mm-radius: 14px;
+    --tp-mm-border: rgb(var(--color-foreground-rgb) / 0.09);
+    --tp-mm-border-hover: rgb(var(--color-foreground-rgb) / 0.22);
+    --tp-mm-shadow: 0 10px 28px rgb(var(--color-foreground-rgb) / 0.1);
+    --tp-mm-ease: 220ms ease;
 
     align-items: start;
     row-gap: clamp(1rem, 2vw, 1.75rem);
@@ -41,17 +56,42 @@
     opacity: 0.8;
   }
 
+  /* ------------------------------------------------------------------
+     Raster im Bildmodus
+
+     Die Spaltenzahl (--tp-mm-cols) setzt snippets/mega-menu-list.liquid je
+     Menue nach der Anzahl der Punkte. Das Theme rechnet sonst mit einem
+     8er-Raster und doppelt breiten Karten (span 2) - beides wird hier
+     neutralisiert, damit die Reihe immer voll ist.
+     ------------------------------------------------------------------ */
+  .mega-menu__grid[data-menu-grid-id]:has(> .mega-menu__list .tp-mm-card--media) {
+    grid-template-columns: repeat(var(--tp-mm-cols-tablet, 4), minmax(0, 1fr));
+    column-gap: 1.25rem;
+  }
+
+  @media screen and (min-width: 990px) {
+    .mega-menu__grid[data-menu-grid-id]:has(> .mega-menu__list .tp-mm-card--media) {
+      grid-template-columns: repeat(var(--tp-mm-cols, 4), var(--tp-mm-col, minmax(0, 1fr)));
+    }
+  }
+
+  .mega-menu__grid[data-menu-grid-id] > .mega-menu__list:has(.tp-mm-card--media) {
+    grid-column: 1 / -1;
+    gap: 1.25rem;
+  }
+
+  .mega-menu__grid[data-menu-grid-id] > .mega-menu__list:has(.tp-mm-card--media) > .mega-menu__column {
+    grid-column: span 1;
+  }
+
   .mega-menu__column {
     display: grid;
     align-content: start;
     gap: 0.55rem;
   }
 
-  /* Karten einer Reihe gleich hoch. Ohne das endet die Karte auf Inhaltshoehe:
-     ein Eintrag mit Unterpunkten wurde deutlich hoeher als seine Nachbarn, ein
-     reiner Textlink deutlich niedriger - die Reihe stand nicht mehr auf einer
-     Linie. Nur Spalten mit genau einer Karte; die mehrspaltige Variante
-     (:has(> div:nth-child(4))) behaelt ihr eigenes Verhalten. */
+  /* Karten einer Reihe gleich hoch: die Spalte fuellt die Rasterzeile, die
+     Karte die Spalte. */
   .mega-menu__list > .mega-menu__column:not(:has(> div:nth-child(2))) {
     align-content: stretch;
   }
@@ -67,24 +107,27 @@
     }
   }
 
-  .mega-menu__column > div {
+  /* ------------------------------------------------------------------
+     Textkarten (Menues ohne einziges Bild - Rueckfall)
+     ------------------------------------------------------------------ */
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) {
     min-width: 0;
     padding: 0.65rem 0.75rem 0.75rem;
     border: 1px solid transparent;
     border-inline-start: 3px solid var(--tp-mega-menu-line);
     border-radius: 0 0.65rem 0.65rem 0;
     background: var(--tp-mega-menu-soft);
-    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    transition: background-color 160ms ease, border-color 160ms ease;
   }
 
-  .mega-menu__column > div:hover,
-  .mega-menu__column > div:focus-within {
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media):hover,
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media):focus-within {
     border-color: var(--tp-mega-menu-line);
     border-inline-start-color: currentColor;
     background: var(--tp-mega-menu-hover);
   }
 
-  .mega-menu__column > div > .mega-menu__link:not(:has(.mega-menu__link-image)) {
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > .tp-mm-card__link {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -100,43 +143,245 @@
     color: var(--menu-parent-font-color);
   }
 
-  .mega-menu__column > div > .mega-menu__link:not(:has(.mega-menu__link-image))::after {
-    content: '›';
-    flex: 0 0 auto;
-    font-size: 1.25em;
+  /* ------------------------------------------------------------------
+     Bildkarten
+
+     Aufbau: <div.tp-mm-card--media> <a.tp-mm-card__link> [Bild] [Titel,
+     Kurztext] [Pfeil] </a> [<ul.tp-mm-card__sublist>] </div>. Der Link fuellt
+     die Karte, damit auch die Freiflaeche unter dem Titel anklickbar ist.
+     ------------------------------------------------------------------ */
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    border: 1px solid var(--tp-mm-border);
+    border-radius: var(--tp-mm-radius);
+    background: rgb(var(--color-background-rgb));
+    transition: box-shadow var(--tp-mm-ease), border-color var(--tp-mm-ease), transform var(--tp-mm-ease);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:hover,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:focus-within {
+    border-color: var(--tp-mm-border-hover);
+    box-shadow: var(--tp-mm-shadow);
+    transform: translateY(-2px);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__link {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    padding: 0;
+    text-decoration: none;
+    color: var(--menu-parent-font-color);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__link:hover,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__link:focus-visible {
+    color: var(--menu-parent-active-font-color, var(--menu-parent-font-color));
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__link:focus-visible {
+    outline: var(--focus-outline-width, 2px) solid currentColor;
+    outline-offset: -3px;
+    border-radius: var(--tp-mm-radius);
+  }
+
+  /* Der Theme-Platzhalter (leeres ::before im Bildmodus) hat in der Karte
+     nichts verloren - die Karte bringt ihren eigenen Bildplatz mit. */
+  .mega-menu__grid .mega-menu__list .mega-menu__column > .tp-mm-card--media > .mega-menu__link.tp-mm-card__link::before {
+    content: none;
+    display: none;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card__media {
+    display: block;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: rgb(var(--color-foreground-rgb) / 0.05);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card__media > img.mega-menu__link-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    aspect-ratio: auto;
+    object-fit: cover;
+    border-radius: 0;
+    transition: transform 380ms ease;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:hover .tp-mm-card__media > img,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:focus-within .tp-mm-card__media > img {
+    transform: scale(1.045);
+  }
+
+  /* Ersatz, wenn keine Quelle ein Bild liefert: Farbverlauf in der
+     Primaerfarbe mit Initiale - erkennbar gestaltet, nicht grau und leer. */
+  .mega-menu__grid .mega-menu__list .tp-mm-card__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-primary, currentColor) 26%, rgb(var(--color-background-rgb))),
+      color-mix(in srgb, var(--color-primary, currentColor) 8%, rgb(var(--color-background-rgb)))
+    );
+    font-family: var(--menu-parent-font-family);
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: color-mix(in srgb, var(--color-primary, currentColor) 70%, rgb(var(--color-foreground-rgb)));
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.75rem 2.4rem 0.85rem 0.9rem;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card__title {
+    display: block;
+    margin: 0;
+    font-family: var(--menu-parent-font-family);
+    font-size: max(var(--menu-parent-font-size), 1rem);
+    font-style: var(--menu-parent-font-style);
+    font-weight: 650;
+    line-height: 1.3;
+    text-transform: var(--menu-parent-font-case);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card__sub {
+    display: block;
+    font-family: var(--menu-child-font-family);
+    font-size: 0.8125rem;
     font-weight: 400;
-    line-height: 1;
-    opacity: 0.5;
-    transition: opacity 160ms ease, transform 160ms ease;
+    line-height: 1.35;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
   }
 
-  .mega-menu__column > div > .mega-menu__link:not(:has(.mega-menu__link-image)):hover::after,
-  .mega-menu__column > div > .mega-menu__link:not(:has(.mega-menu__link-image)):focus-visible::after {
+  /* Pfeil als gezeichneter Chevron auf Hoehe der Titelzeile */
+  .mega-menu__grid .mega-menu__list .tp-mm-card__arrow {
+    position: absolute;
+    top: calc(var(--tp-mm-arrow-top, 0) + 0.75rem + 0.45em);
+    right: 1rem;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 1.6px solid currentColor;
+    border-bottom: 1.6px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: 0.45;
+    transition: transform var(--tp-mm-ease), opacity var(--tp-mm-ease);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__link > .tp-mm-card__arrow {
+    top: auto;
+    bottom: calc(0.85rem + 0.55em);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:has(.tp-mm-card__sub) > .tp-mm-card__link > .tp-mm-card__arrow {
+    bottom: calc(0.85rem + 1.35em + 0.2rem + 0.4em);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:hover .tp-mm-card__arrow,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media:focus-within .tp-mm-card__arrow {
     opacity: 1;
-    transform: translateX(0.15rem);
+    transform: translateX(0.2rem) rotate(-45deg);
   }
 
-  .mega-menu__column > div > ul {
+  /* Unterpunkte (z. B. "Vinyl von der Rolle": Rollenware, Holz-, Steindekore) */
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media > .tp-mm-card__sublist {
+    display: grid;
+    gap: 0.05rem;
+    margin: 0;
+    padding: 0.45rem 0.9rem 0.7rem;
+    border-block-start: 1px solid var(--tp-mm-border);
+    column-count: auto;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.28rem 0;
+    font-family: var(--menu-child-font-family);
+    font-size: var(--menu-child-font-size);
+    line-height: 1.35;
+    color: var(--menu-child-font-color);
+    text-decoration: none;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink::before {
+    content: '';
+    flex: 0 0 auto;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: 1.4px solid currentColor;
+    border-bottom: 1.4px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: 0.45;
+    transition: transform var(--tp-mm-ease), opacity var(--tp-mm-ease);
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink:hover,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink:focus-visible {
+    color: var(--menu-child-active-font-color, var(--menu-child-font-color));
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink:hover::before,
+  .mega-menu__grid .mega-menu__list .tp-mm-card--media .tp-mm-card__sublink:focus-visible::before {
+    opacity: 1;
+    transform: translateX(0.15rem) rotate(-45deg);
+  }
+
+  /* Textkarten: Unterpunkte wie bisher */
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > ul {
     margin-block-start: 0.35rem;
     column-gap: clamp(1rem, 2vw, 2rem);
   }
 
-  .mega-menu__column > div > ul .mega-menu__link {
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > ul .mega-menu__link {
     width: 100%;
     padding-block: 0.35rem;
     border-radius: 0.35rem;
   }
 
-  .mega-menu__column > div > ul .mega-menu__link:hover,
-  .mega-menu__column > div > ul .mega-menu__link:focus-visible {
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > ul .mega-menu__link:hover,
+  .mega-menu__column > .tp-mm-card:not(.tp-mm-card--media) > ul .mega-menu__link:focus-visible {
     text-decoration: underline;
     text-underline-offset: 0.2em;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mega-menu__column > div,
-    .mega-menu__column > div > .mega-menu__link::after {
+    .mega-menu__column > .tp-mm-card,
+    .mega-menu__grid .mega-menu__list .tp-mm-card--media,
+    .mega-menu__grid .mega-menu__list .tp-mm-card__media > img.mega-menu__link-image,
+    .mega-menu__grid .mega-menu__list .tp-mm-card__arrow,
+    .mega-menu__grid .mega-menu__list .tp-mm-card__sublink::before {
       transition: none;
+    }
+
+    .mega-menu__grid .mega-menu__list .tp-mm-card--media:hover {
+      transform: none;
+    }
+
+    .mega-menu__grid .mega-menu__list .tp-mm-card--media:hover .tp-mm-card__media > img {
+      transform: none;
     }
   }
 }
@@ -144,8 +389,10 @@
 /* ------------------------------------------------------------------
    Bodenleisten: kuratierte Navigation (snippets/tp-leisten-nav.liquid)
 
-   Reine Textnavigation - fuer die Einstiege nach Material und Hoehe gibt
-   es keine passenden Motive, und ein Platzhalter liest sich als Fehler.
+   Die Einstiegskarte "Alle Bodenleisten" traegt ein Bild aus derselben
+   Quelle wie die uebrigen Menuekarten (Bildkachel -> Produktbild); die
+   Einstiege nach Material und Hoehe bleiben Text, weil es dafuer keine
+   passenden Motive gibt und ein Platzhalter sich als Fehler liest.
    Die Groessen kommen aus den Menue-Variablen des Themes, damit die
    Schrift zu den uebrigen Menuepunkten passt.
    ------------------------------------------------------------------ */
@@ -158,7 +405,7 @@
 
 @media screen and (min-width: 750px) {
   .tp-lnav {
-    grid-template-columns: minmax(0, 15rem) minmax(0, 14rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 18rem) minmax(0, 14rem) minmax(0, 1fr);
     gap: 1.25rem 3rem;
   }
 }
@@ -196,6 +443,53 @@
 .tp-lnav__all:focus-visible {
   background: rgb(var(--color-foreground-rgb) / 0.06);
   border-inline-start-color: currentcolor;
+}
+
+/* Variante mit Bild: gleiche Kartensprache wie die Bildkarten der anderen Menues */
+.tp-lnav__all--media {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.09);
+  border-inline-start-width: 1px;
+  border-radius: 14px;
+  background: rgb(var(--color-background-rgb));
+  transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
+}
+
+.tp-lnav__all--media:hover,
+.tp-lnav__all--media:focus-visible {
+  background: rgb(var(--color-background-rgb));
+  border-color: rgb(var(--color-foreground-rgb) / 0.22);
+  box-shadow: 0 10px 28px rgb(var(--color-foreground-rgb) / 0.1);
+  transform: translateY(-2px);
+}
+
+.tp-lnav__all-media {
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: rgb(var(--color-foreground-rgb) / 0.05);
+}
+
+.tp-lnav__all-media > .tp-lnav__all-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 380ms ease;
+}
+
+.tp-lnav__all--media:hover .tp-lnav__all-image,
+.tp-lnav__all--media:focus-visible .tp-lnav__all-image {
+  transform: scale(1.045);
+}
+
+.tp-lnav__all--media .tp-lnav__all-title {
+  padding: 0.75rem 0.9rem 0;
+}
+
+.tp-lnav__all--media .tp-lnav__all-meta {
+  padding: 0 0.9rem 0.85rem;
 }
 
 .tp-lnav__all-title {
@@ -268,8 +562,17 @@
 
 @media (prefers-reduced-motion: reduce) {
   .tp-lnav__all,
-  .tp-lnav__link {
+  .tp-lnav__link,
+  .tp-lnav__all-media > .tp-lnav__all-image {
     transition: none;
+  }
+
+  .tp-lnav__all--media:hover {
+    transform: none;
+  }
+
+  .tp-lnav__all--media:hover .tp-lnav__all-image {
+    transform: none;
   }
 }
 
@@ -318,11 +621,10 @@
 
    Das Theme reserviert im Bildmodus fuer jeden Eintrag einen Bildplatz,
    damit die Zeile ausgerichtet bleibt: ein leeres ::before mit
-   background-color. Bei gefilterten Ansichten - "Holzdekore",
-   "Fliesen- und Steindekore" - gibt es kein Kategoriebild und kann auch
-   keines geben. Uebrig bleibt eine graue Flaeche, die wie ein Ladefehler
-   aussieht. Diese Eintraege stehen deshalb kompakt als Textlink am oberen
-   Rand ihrer Spalte.
+   background-color. Seit den Bildkacheln (blocks/_tp-menu-kachel.liquid)
+   traegt jede Karte ein Bild oder ihren eigenen farbigen Ersatz; diese
+   Regeln bleiben als Sicherheitsnetz fuer Eintraege, die das Theme selbst
+   ohne Karte rendert.
 
    Zur Spezifitaet: die Theme-Regel liegt bei (0,4,3), und eine gleich
    spezifische Regel wuerde hier verlieren, weil die Bausteine ihre
@@ -330,32 +632,17 @@
    Spezifitaet seines spezifischsten Arguments - img ist ein Element und
    zaehlt (0,0,1), nicht (0,1,0). Die doppelte Klasse hebt die Regel sauber
    darueber, ohne !important.
-
-   Diese Regeln standen bis 2026-09-09 in snippets/tp-megamenu.liquid. Das
-   Snippet war verwaist - aus layout/theme.liquid entfernt, aber nie geloescht -
-   und wurde nirgends gerendert. Deshalb waren die grauen Flaechen zurueck.
    ------------------------------------------------------------------ */
 .mega-menu__grid.mega-menu__grid
   .mega-menu__column
   > div
-  > .mega-menu__link:not(:has(img)):not(:has(.mega-menu__link-image))::before {
+  > .mega-menu__link:not(:has(img)):not(:has(.mega-menu__link-image)):not(:has(.tp-mm-card__media))::before {
   display: none;
 }
 
-.mega-menu__grid.mega-menu__grid .mega-menu__column > div > .mega-menu__link:not(:has(img)) {
+.mega-menu__grid.mega-menu__grid .mega-menu__column > div:not(.tp-mm-card) > .mega-menu__link:not(:has(img)) {
   align-self: start;
   padding-block: 0.15rem 0.5rem;
-}
-
-/* Bildkacheln: etwas Luft und weiche Ecken, damit Bild und Beschriftung
-   als eine Einheit lesbar bleiben. */
-.mega-menu__link img {
-  border-radius: 6px;
-}
-
-.mega-menu__link:has(.mega-menu__link-image) .wrap-text {
-  display: inline-block;
-  margin-block-start: 6px;
 }
 
 /* Derselbe leere Bildplatz im mobilen Drawer: dort reserviert
@@ -382,6 +669,24 @@
   padding-block: 0.35rem;
 }
 
+/* Bildkacheln im Drawer: weiche Ecken und ein Hauch Rahmen, damit Bild und
+   Beschriftung als eine Karte lesbar sind. Kein Hover - auf dem Handy gibt
+   es keinen. */
+.menu-drawer__navigation .menu-drawer__menu--grid .menu-drawer__link-image {
+  border-radius: 10px;
+  background: rgb(var(--color-foreground-rgb) / 0.05);
+}
+
+.menu-drawer__navigation .menu-drawer__menu--grid .menu-drawer__menu-item:has(> .menu-drawer__link-image) {
+  row-gap: 0.35rem;
+  padding-block-end: 0.35rem;
+}
+
+.menu-drawer__navigation .menu-drawer__menu--grid .menu-drawer__menu-item:has(> .menu-drawer__link-image) .menu-drawer__menu-item-text {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 /* ------------------------------------------------------------------
    Trefferflaechen im mobilen Menue
 
@@ -403,4 +708,29 @@
 
 .menu-drawer__back-button {
   min-height: 44px;
+}
+
+/* Kontakt: WhatsApp-Karte mit Logo statt Foto (snippets/tp-kontakt-nav.liquid) */
+.mega-menu__grid .mega-menu__list .tp-mm-card__icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  color: #fff;
+}
+
+.mega-menu__grid .mega-menu__list .tp-mm-card__icon svg {
+  width: 38%;
+  height: auto;
+  max-height: 70%;
+  fill: currentColor;
+  transition: transform 380ms ease;
+}
+
+.mega-menu__grid .mega-menu__list .tp-mm-card--media:hover .tp-mm-card__icon svg {
+  transform: scale(1.06);
 }

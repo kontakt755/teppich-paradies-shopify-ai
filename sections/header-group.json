@@ -82,6 +82,262 @@
             "drawer_dividers": false
           },
           "blocks": {}
+        },
+        "tp_kachel_teppich_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Teppichböden",
+            "image": "shopify://shop_images/hochflor-teppich-in-einem-wohnzimmer-dargestellt-farbe-beige-das-ganze-zimmer-soll-den-teppich-haben.png",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_hochflor": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Hochflor",
+            "image": "shopify://shop_images/1196444-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_kurzflor": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Kurzflor",
+            "image": "shopify://shop_images/1269056-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_velours": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Velours",
+            "image": "shopify://shop_images/1196472-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_schlinge": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Schlinge",
+            "image": "shopify://shop_images/1312387-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_wolle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Wolle",
+            "image": "shopify://shop_images/1312357-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppich_nadelvlies": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Nadelvlies & Objekt",
+            "image": "shopify://shop_images/1276693-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Vinylböden",
+            "image": "shopify://shop_images/Klickvinyl.png",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_klick": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Klickvinyl",
+            "image": "shopify://shop_images/tp-vinyl-klickvinyl-kategorie-2026.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_klebe": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Klebevinyl",
+            "image": "shopify://shop_images/tp-vinyl-klebevinyl-kategorie-2026.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_rolle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Vinyl von der Rolle",
+            "image": "shopify://shop_images/tp-vinyl-rollenvinyl-kategorie-2026.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_rolle_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Rollenware",
+            "image": "shopify://shop_images/tp-vinyl-rollenvinyl-kategorie-2026.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_rolle_holz": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Holzdekore",
+            "image": "shopify://shop_images/1158969-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_rolle_stein": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Steindekore",
+            "image": "shopify://shop_images/1158859-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_vinyl_holz": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Holzdekore",
+            "image": "shopify://shop_images/vinyl_visual_scharf_2000x844_eeffef81-2c80-43f7-b6b4-15d1e84d150c.jpg",
+            "subtitle": "Klick, Klebe & Rolle"
+          }
+        },
+        "tp_kachel_vinyl_stein": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Steindekore",
+            "image": "shopify://shop_images/1741631700_0.jpg",
+            "subtitle": "Klick, Klebe & Rolle"
+          }
+        },
+        "tp_kachel_leisten": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Bodenleisten",
+            "image": "shopify://shop_images/S60.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alles Zubehör",
+            "image": "shopify://shop_images/products_632868.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_profile": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Profile",
+            "image": "shopify://shop_images/products_464026.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_kleber": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Kleber & Fixierung",
+            "image": "shopify://shop_images/products_461722.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_bauchemie": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Bauchemie",
+            "image": "shopify://shop_images/products_540180.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_unterlagen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Verlege- & Dämmunterlagen",
+            "image": "shopify://shop_images/products_548499.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_reinigung": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Reinigungsmittel",
+            "image": "shopify://shop_images/products_637719.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_verlegeband": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Verlegeband",
+            "image": "shopify://shop_images/switchtec-sigan-3-trockenklebstoff-rolle.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_zubehoer_sauberlauf": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Sauberlauf",
+            "image": "shopify://shop_images/products_3471044.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_service_teppich": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppichboden verlegen",
+            "image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+            "subtitle": "Fachgerecht verlegt, persönlich beraten"
+          }
+        },
+        "tp_kachel_service_vinyl": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Vinylboden verlegen",
+            "image": "shopify://shop_images/1752160300_0.png",
+            "subtitle": "Klick, Klebe & Rollenware"
+          }
+        },
+        "tp_kachel_service_treppen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Treppen professionell belegen",
+            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-25.jpg",
+            "subtitle": "Sicher & stilvoll belegt"
+          }
+        },
+        "tp_kachel_service_firmen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Für Firmenkunden",
+            "image": "shopify://shop_images/Gemini_Generated_Image_ukoil4ukoil4ukoi.png",
+            "subtitle": "Gewerbliche Räume & Objekte"
+          }
+        },
+        "tp_kachel_linoleum": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Linoleumboden",
+            "image": "shopify://shop_images/1209405-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_kontakt_anrufen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Anrufen",
+            "image": "shopify://shop_images/teamwork-makes-the-dream-work.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_kontakt_vorort": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Vor Ort in Oranienburg",
+            "image": "shopify://shop_images/2022-08-15.jpg",
+            "subtitle": ""
+          }
         }
       },
       "settings": {
@@ -118,7 +374,41 @@
         "product_color_scheme": "default",
         "enable_transparent_header_collection": false,
         "collection_color_scheme": "default"
-      }
+      },
+      "block_order": [
+        "tp_kachel_teppich_alle",
+        "tp_kachel_teppich_hochflor",
+        "tp_kachel_teppich_kurzflor",
+        "tp_kachel_teppich_velours",
+        "tp_kachel_teppich_schlinge",
+        "tp_kachel_teppich_wolle",
+        "tp_kachel_teppich_nadelvlies",
+        "tp_kachel_vinyl_alle",
+        "tp_kachel_vinyl_klick",
+        "tp_kachel_vinyl_klebe",
+        "tp_kachel_vinyl_rolle",
+        "tp_kachel_vinyl_rolle_alle",
+        "tp_kachel_vinyl_rolle_holz",
+        "tp_kachel_vinyl_rolle_stein",
+        "tp_kachel_vinyl_holz",
+        "tp_kachel_vinyl_stein",
+        "tp_kachel_leisten",
+        "tp_kachel_zubehoer_alle",
+        "tp_kachel_zubehoer_profile",
+        "tp_kachel_zubehoer_kleber",
+        "tp_kachel_zubehoer_bauchemie",
+        "tp_kachel_zubehoer_unterlagen",
+        "tp_kachel_zubehoer_reinigung",
+        "tp_kachel_zubehoer_verlegeband",
+        "tp_kachel_zubehoer_sauberlauf",
+        "tp_kachel_service_teppich",
+        "tp_kachel_service_vinyl",
+        "tp_kachel_service_treppen",
+        "tp_kachel_service_firmen",
+        "tp_kachel_linoleum",
+        "tp_kachel_kontakt_anrufen",
+        "tp_kachel_kontakt_vorort"
+      ]
     },
     "divider_BkWxdN": {
       "type": "divider",
