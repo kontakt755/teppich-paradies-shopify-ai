@@ -4,6 +4,7 @@ import { prepareClaudeBridge } from '../../automation/core/claude-bridge.mjs';
 import { buildClaudeHookContext, shouldRouteClaudePrompt } from '../../automation/core/claude-hook-policy.mjs';
 import { loadLocalOpenRouterEnvironment } from '../../automation/core/local-openrouter-env.mjs';
 import { clearClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
+import { currentCommit } from '../../automation/core/review-scope.mjs';
 import { classifyTask } from '../../workflow/router.mjs';
 import { buildModelPlan } from '../../workflow/model-matrix.mjs';
 
@@ -45,10 +46,16 @@ try {
   const maxTokens = Number(process.env.OPENROUTER_MAX_OUTPUT_TOKENS ?? 256);
   const result = await prepareClaudeBridge({ taskId: `CLAUDE-HOOK-${digest}`, task: prompt, outputDir: path.join(projectDir, '.router/claude-handoffs'), maxTokens });
   if (result.status === 'READY' && result.classified.taskType === 'IMPLEMENTATION') {
+    // HEAD bei Task-Start: der Stop-Hook prueft damit nur noch, was seit
+    // diesem Moment entstand - nicht jeden Commit gegenueber origin/main, der
+    // in einem geteilten Checkout auch von einer anderen, parallel laufenden
+    // Sitzung stammen kann. null (kein Repo/Commit) faellt beim Review auf
+    // das bisherige Verhalten zurueck, siehe review-scope.mjs.
+    const startCommit = currentCommit({ cwd: projectDir });
     writeClaudeSessionState({
       sessionId: input.session_id,
       projectDir,
-      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan },
+      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit },
     });
   } else {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
