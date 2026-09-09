@@ -21,7 +21,9 @@
       unless tp_rl_variant_title contains 'opc-'
         # Längenvarianten aus Titel extrahieren (z.B. "300 cm", "300cm", "300")
         # Pattern: Zahl + optionales "cm" am Anfang/Ende des Titels
-        assign tp_rl_match = tp_rl_variant.title | match: '^\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?'
+        # 'match' ist kein Liquid-Filter (Theme Check: UnknownFilter, Shopify liefert nil).
+        # Verhalten unveraendert (nil); Snippet ist derzeit nirgends eingebunden.
+        assign tp_rl_match = nil
         assign tp_rl_centimetres_str = ''
 
         if tp_rl_match

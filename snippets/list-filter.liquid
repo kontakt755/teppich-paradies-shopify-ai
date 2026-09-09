@@ -196,16 +196,6 @@
                 assign image_columns = filter.values.size
               endif
             endif
-
-            # Vorab pruefen, ob ueberhaupt ein Wert gesperrt ist. Nur dann wird unter der
-            # Liste erklaert, warum - eine stumme Ausgrauung ist fuer Kunden nicht deutbar.
-            assign tp_has_disabled_values = false
-            for value in filter.values
-              if value.count == 0 and value.active == false
-                assign tp_has_disabled_values = true
-                break
-              endif
-            endfor
           %}
           <ul
             id="filters-list-{{ sectionId }}-{{ filter.param_name | escape | replace: '.', '-' }}"
@@ -246,7 +236,7 @@
                   {% if is_disabled %} facets__inputs-list-item--disabled{% endif %}
                 "
                 {% if is_disabled %}
-                  title="Mit der aktuellen Auswahl nicht verfügbar"
+                  title="Mit der aktuellen Auswahl nicht verf&uuml;gbar"
                 {% endif %}
                 {% if hidden_class %}
                   ref="showMoreItems[]"
@@ -405,15 +395,17 @@
                     %}
                   {% endif %}
                 {% endif %}
+                {%- comment -%}
+                  Das title-Attribut am <li> lesen Screenreader nicht vor, und der
+                  gesperrte Input faellt aus der Tab-Reihenfolge. Diese Zeile steht
+                  deshalb im Lesefluss direkt hinter dem Wert.
+                {%- endcomment -%}
+                {% if is_disabled %}
+                  <span class="visually-hidden">Nicht verf&uuml;gbar mit der aktuellen Auswahl</span>
+                {% endif %}
               </li>
             {%- endfor -%}
           </ul>
-          {%- if tp_has_disabled_values -%}
-            <p class="facets__disabled-hint">
-              Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-              Filter zurücksetzen, um alle Optionen zu sehen.
-            </p>
-          {%- endif -%}
         </div>
         {% if render_show_more %}
           <button
@@ -473,14 +465,6 @@
     font-weight: 500;
   }
 
-  /* Erklaerung statt stummer Ausgrauung. Nur sichtbar, wenn wirklich ein Wert gesperrt ist. */
-  .facets__disabled-hint {
-    margin: var(--padding-xs) 0 0;
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
-  }
-
   /* Auf dem Handy muessen Filterzeilen und Pills sicher treffbar sein (min. 44px). */
   @media screen and (max-width: 749px) {
     .facets__inputs-list-item .checkbox {
@@ -501,11 +485,10 @@
       align-items: center;
     }
 
-    /* Gesperrte Werte bleiben lesbar - reine Deckkraft macht sie sonst unleserlich. */
-    .facets__inputs-list-item--disabled {
-      opacity: 1;
-    }
-
+    /* Gesperrte Werte lesbar halten. Die Ausgrauung kommt aus .checkbox--disabled
+       bzw. .facets__pill-input:disabled, nicht vom Listenelement - deshalb hier
+       gezielt Textfarbe und Durchstreichung statt einer Deckkraft-Regel, die auf
+       dem <li> nichts zu ueberschreiben haette. */
     .facets__inputs-list-item--disabled .checkbox__label-text,
     .facets__inputs-list-item--disabled .facets__pill-label {
       color: rgb(var(--color-foreground-rgb) / var(--opacity-40-60));

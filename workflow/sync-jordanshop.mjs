@@ -42,7 +42,7 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 const SHOPIFY_STORE = 'sjjyq1-6w';
-const SHOPIFY_API_VERSION = '2024-01';
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2026-07';
 const SYNC_TOKEN_ENV = 'SHOPIFY_ADMIN_TOKEN';
 const SYNC_APPROVED_ENV = 'SYNC_APPROVED';
 
@@ -338,7 +338,16 @@ async function main() {
   }
 
   // Step 3: Query Shopify
-  console.log('📡 Querying Shopify...');
+  // Ohne Token (lokal, ohne MCP-Bruecke) ist kein Abgleich moeglich: die
+  // Abfragen werden nur gesammelt und exportiert, der Lauf endet sauber.
+  if (!graphqlProxy.live) {
+    console.log('ℹ️  Kein SHOPIFY_ADMIN_TOKEN gesetzt: Abfragen werden nur gesammelt, kein Abgleich mit Shopify.');
+    console.log('   In GitHub Actions kommt der Token aus dem Repository-Secret; lokal laeuft Schreibzugriff ueber den Shopify-MCP (CLAUDE.md).');
+    await getShopifyProducts().catch(() => null);
+    graphqlProxy.exportLog();
+    process.exit(0);
+  }
+  console.log(`📡 Querying Shopify (${graphqlProxy.endpoint})...`);
   const shopifyProducts = await getShopifyProducts();
   console.log(`✅ Found ${shopifyProducts.length} existing products\n`);
 
@@ -363,7 +372,7 @@ async function main() {
 🛑 Zu löschen:        0 (NIEMALS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Report:            ${reportPath}
-📡 GraphQL-Calls:     ${graphqlProxy.requestLog.length} (würden über MCP ausgeführt)
+📡 GraphQL-Calls:     ${graphqlProxy.requestLog.length} (LIVE gegen die Admin API)
   `);
 
   // Exportiere GraphQL-Calls für externe Verarbeitung über Claude/MCP

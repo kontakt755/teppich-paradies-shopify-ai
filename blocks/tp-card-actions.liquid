@@ -81,13 +81,9 @@
     </button>
     {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
     {%- unless tp_ca_product.tags contains 'zubehoer' -%}
-      {%- comment -%} Musterkonfigurator nur mit Option Farbe, sonst Kontaktformular (siehe tp-service-links) {%- endcomment -%}
-      {%- assign tp_ca_handle = tp_ca_product.handle | url_encode -%}
-      {%- if tp_ca_product.options contains 'Farbe' -%}
-        {%- assign tp_ca_sample_url = '/pages/muster?produkt=' | append: tp_ca_handle -%}
-      {%- else -%}
-        {%- assign tp_ca_sample_url = '/pages/kontakt?thema=muster&produkt=' | append: tp_ca_handle -%}
-      {%- endif -%}
+      {%- comment -%} Ziel des Muster-Links: siehe snippets/tp-musteroption {%- endcomment -%}
+      {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}
+      {%- assign tp_ca_sample_url = tp_ca_sample_url | strip -%}
       <a
         class="tp-card-actions__sample"
         href="{{ tp_ca_sample_url }}"
@@ -113,7 +109,7 @@
   .tp-card-actions__compare {
     flex: 1 1 auto;
     min-width: 0;
-    min-height: 36px;
+    min-height: 44px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -139,7 +135,7 @@
     display: inline-flex;
     align-items: center;
     flex: 0 0 auto;
-    min-height: 36px;
+    min-height: 44px;
     padding: 8px 10px;
     border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
     border-radius: 6px;
@@ -152,6 +148,25 @@
 
   .tp-card-actions__sample:hover {
     background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  }
+
+  /* Sehr schmale Geraete: Beschriftung nicht abschneiden. Weniger Innenabstand
+     und eine Spur kleinere Schrift genuegen, damit "Vergleichen" vollstaendig
+     neben "Muster" passt - beide bleiben 44 px hoch. */
+  @media screen and (max-width: 400px) {
+    .tp-card-actions {
+      gap: 4px;
+    }
+
+    .tp-card-actions__compare {
+      padding-inline: 4px;
+      font-size: 12.5px;
+    }
+
+    .tp-card-actions__sample {
+      padding-inline: 8px;
+      font-size: 12.5px;
+    }
   }
 {% endstylesheet %}
 

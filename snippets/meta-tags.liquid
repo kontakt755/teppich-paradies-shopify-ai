@@ -153,7 +153,19 @@
 <title>
   {%- if request.page_type == 'product' -%}
     {{ optimized_page_title | escape }}
+  {%- elsif request.page_type == 'index' and page_title == shop.name -%}
+    {%- comment -%}
+      Ohne Homepage-Titel in den Onlineshop-Einstellungen liefert Shopify nur
+      den Shopnamen (15 Zeichen). Der Fallback traegt Sortiment und Marke;
+      ein im Admin gesetzter Titel gewinnt weiterhin.
+    {%- endcomment -%}
+    Bodenbeläge online kaufen | Teppichboden & Vinyl | Teppich Paradies
   {%- else -%}
+    {%- comment -%}
+      Der else-Zweig fehlte nach f195de7: Kollektionen, Seiten und Suche
+      lieferten einen leeren <title>. Deploy-Gate SEO hat es am 2026-09-09
+      gefunden, bevor es live ging.
+    {%- endcomment -%}
     {{ page_title }}
     {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
     {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}

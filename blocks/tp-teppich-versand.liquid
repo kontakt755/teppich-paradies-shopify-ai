@@ -11,13 +11,11 @@
 
 {%- liquid
   assign tp_tv2_id = block.id | replace: '_', '' | downcase
-  assign tp_tv2_handle = product.handle | url_encode
-  # Musterkonfigurator nur mit Option Farbe, sonst Kontaktformular (siehe tp-service-links)
-  if product.options contains 'Farbe'
-    assign tp_tv2_sample_url = '/pages/muster?produkt=' | append: tp_tv2_handle
-  else
-    assign tp_tv2_sample_url = '/pages/kontakt?thema=muster&produkt=' | append: tp_tv2_handle
-  endif
+  # Ziel des Muster-Links: siehe snippets/tp-musteroption
+  capture tp_tv2_sample_url
+    render 'tp-musteroption', product: product
+  endcapture
+  assign tp_tv2_sample_url = tp_tv2_sample_url | strip
   assign tp_tv2_delivery_time = block.settings.delivery_time | strip
   assign tp_tv2_shipping_page = pages['versand-lieferung']
   assign tp_tv2_versandart = product.metafields.custom.versandart.value | downcase | strip

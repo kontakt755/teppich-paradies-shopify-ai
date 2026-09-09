@@ -36,7 +36,10 @@
       tiles.forEach(function (t) {
         t.setAttribute('aria-pressed', t.getAttribute('data-tp-farbwahl-value') === value ? 'true' : 'false');
       });
-      if (current && value) current.textContent = value;
+      // Angezeigt wird der Kundenname der Kachel, nicht der rohe Optionswert.
+      var aktiv = tiles.filter(function (t) { return t.getAttribute('data-tp-farbwahl-value') === value; })[0];
+      var label = aktiv ? aktiv.getAttribute('data-tp-farbwahl-name') : '';
+      if (current && (label || value)) current.textContent = label || value;
     }
 
     tiles.forEach(function (tile) {

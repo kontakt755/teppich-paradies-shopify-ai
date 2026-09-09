@@ -202,6 +202,11 @@
               },
               "blocks": {}
             },
+            "tp_zubehoer_menge": {
+              "type": "tp-zubehoer-menge",
+              "name": "TP Zubehoer Mengenhilfe",
+              "settings": {}
+            },
             "buy_buttons_eYQEYi": {
               "type": "buy-buttons",
               "settings": {
@@ -284,8 +289,12 @@
               "type": "tp-leisten-details",
               "settings": {
                 "heading": "Produktdetails",
-                "note": "Stangenlänge und Montagehinweise finden Sie in der Beschreibung."
+                "note": "Montagehinweise finden Sie in der Beschreibung."
               }
+            },
+            "tp_leisten_vorschau": {
+              "type": "tp-leisten-vorschau",
+              "settings": {}
             }
           },
           "block_order": [
@@ -295,7 +304,9 @@
             "tp_leisten_farbwahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_leisten_vorschau",
             "options_price_calculator_product_calculator_z3CEfy",
+            "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "tp_leisten_details",

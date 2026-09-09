@@ -1,0 +1,69 @@
+{% doc %}
+  Lead-Ereignisse fuer den Service-Funnel (Massnahme 2 der Shop-Analyse).
+
+  37 Prozent der Einstiege landen auf den Verlegeservice-Seiten. Wer dort
+  anruft, WhatsApp schreibt oder das Kontaktformular abschickt, war bisher
+  unsichtbar. Dieses Snippet veroeffentlicht solche Aktionen als Custom
+  Events ueber Shopify.analytics.publish - ein Custom Pixel im Admin
+  (Einstellungen > Kundenereignisse) kann sie mit analytics.subscribe
+  abonnieren und an GA4 oder Google Ads weiterreichen. Zusaetzlich landen
+  sie in window.dataLayer, falls ein Tag Manager laeuft.
+
+  Ereignisse: tp_lead_call, tp_lead_whatsapp, tp_lead_mail,
+  tp_lead_contact_click, tp_lead_form_submit.
+  Nutzdaten: page (Pfad), label (Linktext), target (Nummer/Adresse), form.
+  Keine personenbezogenen Daten - Formularinhalte werden nicht gelesen.
+
+  Anleitung fuer den Pixel: docs/analyse/service-funnel-events.md
+{% enddoc %}
+
+<script>
+  (function () {
+    var page = window.location.pathname;
+
+    function publish(name, payload) {
+      var data = { page: page };
+      for (var key in payload) if (Object.prototype.hasOwnProperty.call(payload, key)) data[key] = payload[key];
+      try {
+        if (window.Shopify && window.Shopify.analytics && typeof window.Shopify.analytics.publish === 'function') {
+          window.Shopify.analytics.publish(name, data);
+        }
+      } catch (error) {}
+      try {
+        window.dataLayer = window.dataLayer || [];
+        var entry = { event: name };
+        for (var k in data) if (Object.prototype.hasOwnProperty.call(data, k)) entry[k] = data[k];
+        window.dataLayer.push(entry);
+      } catch (error) {}
+    }
+
+    function label(el) {
+      return (el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    }
+
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var link = target.closest('a[href]');
+      if (!link) return;
+      var href = link.getAttribute('href') || '';
+      if (/^tel:/i.test(href)) {
+        publish('tp_lead_call', { target: href.replace(/^tel:/i, ''), label: label(link) });
+      } else if (/wa\.me|whatsapp/i.test(href)) {
+        publish('tp_lead_whatsapp', { label: label(link) });
+      } else if (/^mailto:/i.test(href)) {
+        publish('tp_lead_mail', { target: href.replace(/^mailto:/i, '').split('?')[0], label: label(link) });
+      } else if (/\/pages\/kontakt(\?|$)/.test(href)) {
+        publish('tp_lead_contact_click', { label: label(link) });
+      }
+    }, true);
+
+    document.addEventListener('submit', function (event) {
+      var form = event.target;
+      if (!form || typeof form.matches !== 'function') return;
+      if (form.matches('form[action*="/contact"]')) {
+        publish('tp_lead_form_submit', { form: form.id || '' });
+      }
+    }, true);
+  })();
+</script>

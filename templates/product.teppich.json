@@ -221,6 +221,7 @@
             },
             "buy_buttons_teppich_main": {
               "type": "buy-buttons",
+              "disabled": true,
               "settings": {
                 "stacking": true,
                 "show_pickup_availability": false,

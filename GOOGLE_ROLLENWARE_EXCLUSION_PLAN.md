@@ -1,8 +1,18 @@
 # Google-&-YouTube-Ausschlussplan für Rollenware
 
-Stand: 12. August 2026  
+Stand: 12. August 2026, Nachtrag 9. September 2026  
 Shop: Teppich Paradies  
 Scope: sichere Vorbereitung; es wurden keine Vertriebskanal-Einstellungen geändert.
+
+> **Nachtrag 2026-09-09 (Maßnahme 10 der Shop-Analyse):** Liste per Admin API neu
+> erzeugt, jetzt **122 Produkte** (Teppichboden 50, Vinyl von der Rolle 63,
+> Linoleum 9). Gegenüber August: Saphir, Rohan, Norway, Softiq, Seleno und Tavora
+> gelöscht; neun Linoleum-Produkte, Fortiva und Tessara neu. Gegenprüfung über
+> `publishedOnPublication`: **keines der 122 Produkte ist auf Google & YouTube
+> veröffentlicht** — der Kanalausschluss ist damit wirksam, ohne dass ein
+> Produkt umgestellt werden musste. Auf dem Kanal liegen 225 Produkte, alle
+> Klick- und Klebevinyl (Paketware mit festem Paketpreis). Offen: `elastium-
+> linoleumboden-200cm-1` hat kein `custom.rollenbreite`-Metafeld (Spalte leer).
 
 ## Ergebnis
 

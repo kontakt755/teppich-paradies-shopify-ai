@@ -71,15 +71,32 @@ Blöcken, `npm run template:guard` hält das gleich).
 
 ## Navigation
 
-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör", `gid://shopify/Menu/346703298894`)
-ist eine Kopie von `main-menu` plus dem Punkt „Zubehör" nach Bodenleisten und vor
-Service & Verlegung. Das Live-Theme nutzt weiter `main-menu`; beim Live-Gang entweder
-das Theme mit `main-menu-zubehoer` veröffentlichen (passiert über das Repo) oder
-den Punkt in `main-menu` nachziehen und den Handle zurückstellen.
+**Der Punkt „Zubehör" steht im Live-Menü `main-menu`** (nach Bodenleisten, vor
+Service & Verlegung, mit acht Unterpunkten). Von den beiden Wegen, die hier früher
+zur Wahl standen, ist der zweite gegangen worden: der Punkt wurde in `main-menu`
+nachgezogen, statt ein Theme mit einem anderen Menü-Handle zu veröffentlichen.
+Das Live-Theme referenziert unverändert `"menu": "main-menu"` in
+`sections/header-group.json` – nachgeprüft am Theme mit `role: MAIN`, nicht am Repo.
 
-Das Mega-Menü steht auf `featured_products` und zeigt Kollektionsbilder erst, wenn
-die Zubehör-Kollektionen Bilder oder Produkte haben. Bis dahin erscheint der Punkt
-als Textspalte – das ist Absicht, kein Fehler.
+Das Kopie-Menü **`main-menu-zubehoer`** („Hauptmenü mit Zubehör") ist am
+2026-09-09 nach Freigabe **gelöscht** worden. Es war kein Fallback: kein Theme
+referenzierte es, und es führte nur 7 Punkte ohne Untermenüs, während `main-menu`
+40 Items hat – also kein Ersatzstand, sondern ein veralteter Teilstand, der bei
+jeder Änderung an `main-menu` weiter auseinandergelaufen wäre.
+
+Der ausgelesene Baum liegt vor dem Löschen gesichert in
+`domains/shopify/menu-main-menu-zubehoer-geloescht-2026-09-09.json`; zum
+Wiederherstellen dient `menuCreate` (die MenuItem-IDs darin werden dabei neu
+vergeben). Es gibt damit genau **ein** Hauptmenü, `main-menu` – wer hier ein
+zweites anlegt, baut den Drift neu auf.
+
+Vor dem Löschen eines Menüs: Menüs sind storeweit und wirken sofort. Prüfen heißt
+alle Themes gegen `sections/header-group.json` **und** `config/settings_data.json`
+abgleichen, nicht nur das Live-Theme, und zusätzlich das Repository.
+
+Das Mega-Menü steht auf `menu_style: collection_images` und zeigt Kollektionsbilder
+erst, wenn die Zubehör-Kollektionen Bilder haben. Bis dahin erscheint der Punkt als
+Textspalte – das ist Absicht, kein Fehler.
 
 ## Regeln für den Import von Jordan / M-Plus
 
@@ -105,6 +122,26 @@ als Textspalte – das ist Absicht, kein Fehler.
 
 - Kollektionsbilder für die Kacheln und das Mega-Menü: erst mit echten Produkten
   aus dem eigenen Shop belegen (keine Lieferantenfotos mit Logo).
-- Bodenleisten-Menü führt „Übergangsprofile/Abschlussprofile/Kleber" weiter als
-  Filterlinks. Sobald Zubehör live ist, entscheiden, ob diese Punkte dort bleiben
-  oder auf die Zubehör-Kollektionen zeigen.
+
+## Erledigt
+
+**Bodenleisten-Menü zeigt auf die Zubehör-Kollektionen** (2026-09-09). Die drei
+Punkte „Übergangsprofile/Abschlussprofile/Kleber & Fixierung" im Zweig Bodenleisten
+waren `HTTP`-Filterlinks auf `/collections/bodenleisten?filter.p.m.custom.arten=…`
+und lieferten ein leeres Raster. Sie sind jetzt `COLLECTION`-Punkte auf
+`zubehoer-uebergangsprofile` (5 Produkte), `zubehoer-abschlussprofile` (5) und
+`zubehoer-kleber-fixierung` (7). „Sockelleisten" bleibt Filterlink – der greift.
+
+Nicht zu verwechseln mit dem Vinyl-Fall (Commit 108467d): dort trug kein Produkt
+den gefilterten Metaobjekt-Wert. Hier war das Metafeld richtig gesetzt, nur der
+**Scope** falsch – die Kollektion `bodenleisten` enthält 9 Produkte, die per
+Admin API nachweislich alle nur `sockelleisten` tragen. Die Profil- und
+Kleberprodukte liegen in den Smart-Collections, wo sie hingehören. Deshalb
+umgehängt und nicht entfernt.
+
+`menuUpdate` ersetzt den gesamten Item-Baum: vorher alle Zweige mit ihren
+MenuItem-IDs auslesen und unverändert zurückschreiben. Gegenprobe war, dass
+alle 40 MenuItem-IDs vor und nach dem Schreibvorgang identisch sind.
+
+„Kleber & Fixierung" steht seitdem bewusst zweimal im Menü – unter Bodenleisten
+und unter Zubehör, beide auf dieselbe Kollektion.

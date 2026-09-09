@@ -51,7 +51,9 @@
 
     # Länge extrahieren
     assign tp_cd_length_cm = 0
-    assign tp_cd_length_match = tp_cd_variant.title | match: '(\d+(?:[.,]\d+)?)'
+    # 'match' ist kein Liquid-Filter (Theme Check: UnknownFilter, Shopify liefert nil).
+    # Verhalten unveraendert (nil), siehe Issue Laengen-Extraktion.
+    assign tp_cd_length_match = nil
     if tp_cd_length_match
       assign tp_cd_length_cm = tp_cd_length_match | times: 1.0 | round
     endif
@@ -142,12 +144,12 @@
 
 {% schema %}
 {
-  "name": "TP Card-Dimensionen (Breite × Länge)",
+  "name": "TP Card-Breite × Länge",
   "tag": null,
   "settings": [],
   "presets": [
     {
-      "name": "TP Card-Dimensionen (Breite × Länge)"
+      "name": "TP Card-Breite × Länge"
     }
   ]
 }

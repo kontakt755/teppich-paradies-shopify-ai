@@ -1,0 +1,92 @@
+{%- doc -%}
+  Eine Kachel der Leisten-Farbwahl (blocks/tp-leisten-farbwahl.liquid).
+
+  Entscheidet fuer einen Optionswert, ob ein echtes Farbmuster vorliegt, und
+  rendert die Kachel nur im passenden Modus. So laeuft dieselbe Pruefung fuer
+  Bildraster und Textliste genau einmal je Wert.
+
+  @param {string} value - Roher Optionswert (Klick-Ziel, nie veraendert)
+  @param {object} product - Das Produkt
+  @param {number} index - Nullbasierte Position der Farboption
+  @param {string} selected - Aktuell gewaehlter Optionswert
+  @param {string} media_ids - Alle Varianten-Bild-IDs als "[id][id]..."
+  @param {string} modus - 'bild' oder 'text'
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_fk_variante = null
+  assign tp_fk_media = null
+  for tp_fk_v in product.variants
+    if tp_fk_v.options[index] == value
+      unless tp_fk_variante
+        assign tp_fk_variante = tp_fk_v
+      endunless
+      if tp_fk_v.featured_media != blank and tp_fk_media == null
+        assign tp_fk_media = tp_fk_v.featured_media
+      endif
+    endif
+  endfor
+
+  # Zwei Pruefungen, beide muessen halten - sonst gilt das Bild als
+  # Produktfoto und die Farbe bekommt eine Textkachel.
+  #
+  # 1) Das Hauptbild des Produkts (Raumfoto) ist nie ein Farbmuster. Diese
+  #    Regel traegt allein, weil Shopify Varianten ohne eigenes Bild genau
+  #    dieses Hauptbild als featured_media liefert.
+  # 2) Zusaetzlich faellt ein Bild durch, das sich mehrere Farben teilen.
+  #    Die Zaehlung wird nur ausgewertet, wenn media_ids gefuellt ist -
+  #    eine leere Liste darf nicht zu "ist ein Muster" fuehren.
+  assign tp_fk_hat_muster = false
+  if tp_fk_media
+    assign tp_fk_hat_muster = true
+    if product.featured_media != blank and tp_fk_media.id == product.featured_media.id
+      assign tp_fk_hat_muster = false
+    endif
+    if media_ids != blank
+      assign tp_fk_token = '[' | append: tp_fk_media.id | append: ']'
+      assign tp_fk_vorkommen = media_ids | split: tp_fk_token | size | minus: 1
+      if tp_fk_vorkommen > 1
+        assign tp_fk_hat_muster = false
+      endif
+    endif
+  endif
+
+  assign tp_fk_modus = 'text'
+  if tp_fk_hat_muster
+    assign tp_fk_modus = 'bild'
+  endif
+-%}
+
+{%- if tp_fk_modus == modus -%}
+  {%- capture tp_fk_name -%}
+    {%- if tp_fk_variante -%}
+      {%- render 'tp-farbe-daten', variant: tp_fk_variante, product: product, feld: 'name' -%}
+    {%- endif -%}
+  {%- endcapture -%}
+  {%- assign tp_fk_name = tp_fk_name | strip | default: value -%}
+
+  {%- assign tp_fk_aktiv = false -%}
+  {%- if value == selected -%}
+    {%- assign tp_fk_aktiv = true -%}
+  {%- endif -%}
+
+  <button
+    type="button"
+    class="tp-lfw__tile tp-lfw__tile--{{ modus }}"
+    data-tp-farbwahl-value="{{ value | escape }}"
+    data-tp-farbwahl-name="{{ tp_fk_name | escape }}"
+    aria-pressed="{{ tp_fk_aktiv }}"
+    title="{{ tp_fk_name | escape }}"
+  >
+    {%- if modus == 'bild' -%}
+      {{
+        tp_fk_media
+        | image_url: width: 120
+        | image_tag: loading: 'lazy', width: 56, height: 56, class: 'tp-lfw__img', alt: ''
+      }}
+      <span class="visually-hidden">{{ tp_fk_name | escape }}</span>
+    {%- else -%}
+      <span class="tp-lfw__text">{{ tp_fk_name | escape }}</span>
+    {%- endif -%}
+  </button>
+{%- endif -%}

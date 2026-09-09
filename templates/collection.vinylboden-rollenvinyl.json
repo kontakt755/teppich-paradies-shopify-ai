@@ -45,6 +45,7 @@
       ],
       "name": "Hero Split Features",
       "settings": {
+        "image": "shopify://shop_images/tp-vinyl-rollenvinyl-kategorie-2026.jpg",
         "heading": "Vinyl von der Rolle",
         "subheading": "Große Flächen. Weniger Fugen.",
         "body": "<p>Vinyl von der Rolle ist komfortable, pflegeleichte Bahnenware für große Flächen mit wenigen Nähten. Verschiedene Qualitäten ermöglichen eine passende Auswahl je nach Raum und Beanspruchung.</p>",
@@ -177,7 +178,7 @@
             },
             "tp_card_dimensions_v1": {
               "type": "tp-card-dimensions",
-              "name": "TP Card-Dimensionen (Breite × Länge)",
+              "name": "TP Card-Breite × Länge",
               "settings": {},
               "blocks": {}
             },

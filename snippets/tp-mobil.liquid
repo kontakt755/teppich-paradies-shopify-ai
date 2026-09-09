@@ -4,9 +4,8 @@
   Befunde aus der Prüfung gegen den Regelsatz von ui-ux-pro-max
   (references/quick-reference.md, Kategorien 1 und 2), gemessen bei 375 x 812.
 
-  Bewusst getrennt von 'tp-farbwelt' gehalten: das eine ändert Farben, das
-  andere Trefferflächen und Schriftgrößen. Beide lassen sich einzeln über je
-  eine Zeile in layout/theme.liquid zurücknehmen.
+  Nur Trefferflächen und Schriftgrößen, keine Farben. Eingebunden über eine
+  Zeile in layout/theme.liquid; die Zeile zu entfernen nimmt alles zurück.
 {% enddoc %}
 
 <style>
@@ -147,6 +146,16 @@
     body .facets-toggle__button {
       min-height: 44px;
       padding-inline: 12px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
+
+  /* "Mehr anzeigen" innerhalb der Filterlisten lag bei 17 px Hoehe - der
+     Knopf, der die restlichen Farben und Breiten erst sichtbar macht. */
+  @media screen and (max-width: 749px) {
+    body .facets__inputs .show-more__button {
+      min-height: 44px;
       display: inline-flex;
       align-items: center;
     }

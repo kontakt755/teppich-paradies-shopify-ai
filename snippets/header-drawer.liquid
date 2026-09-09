@@ -281,6 +281,15 @@
             {% assign animation_index = 0 %}
             {%- for link in linklist.links -%}
               {% assign animation_index = animation_index | plus: 1 %}
+              {%- liquid
+                # Bodenleisten bekommen im Drawer eine kuratierte Auswahl -
+                # auch wenn die Navigation eine dritte Ebene bekommt und
+                # deshalb dieser Zweig greift.
+                assign tp_leisten_drawer = false
+                if link.type == 'collection_link' and link.object.handle == 'bodenleisten'
+                  assign tp_leisten_drawer = true
+                endif
+              -%}
               <li
                 class="menu-drawer__list-item"
                 style="--menu-drawer-animation-index: {{ animation_index }};"
@@ -344,11 +353,18 @@
                           endif
                         %}
                         <ul
-                          class="menu-drawer__menu menu-drawer__menu--childlist{% if render_link_image and link.levels == 1 %} menu-drawer__menu--grid{% endif %}"
+                          class="menu-drawer__menu menu-drawer__menu--childlist{% if render_link_image and link.levels == 1 and tp_leisten_drawer != true %} menu-drawer__menu--grid{% endif %}"
                           role="list"
                           tabindex="-1"
                         >
                           {% assign first_accordion_open = false -%}
+                          {%- comment -%}
+                            Bodenleisten: kuratierte Auswahl statt der globalen
+                            Menuekinder. Siehe snippets/tp-leisten-nav.liquid.
+                          {%- endcomment -%}
+                          {%- if tp_leisten_drawer -%}
+                            {% render 'tp-leisten-nav', variant: 'drawer', parent_link: link %}
+                          {%- else -%}
                           {%- for childlink in link.links -%}
                             <li
                               class="
@@ -416,7 +432,11 @@
                                           assign catalog_links = childlink.links | where: 'type', 'catalog_link'
                                           assign collection_list_links = childlink.links | where: 'type', 'collections_link'
                                           assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                          if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
+                                          # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
+                                          # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
+                                          # auseinander - ein Eintrag mit Foto, die anderen ohne.
+                                          assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
+                                          if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
                                             assign render_link_image = true
                                           endif
                                         endif
@@ -481,7 +501,11 @@
                                       assign catalog_links = childlink.links | where: 'type', 'catalog_link'
                                       assign collection_list_links = childlink.links | where: 'type', 'collections_link'
                                       assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                      if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
+                                      # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
+                                      # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
+                                      # auseinander - ein Eintrag mit Foto, die anderen ohne.
+                                      assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
+                                      if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
                                         assign render_link_image = true
                                       endif
                                     endif
@@ -522,6 +546,7 @@
                               {%- endif -%}
                             </li>
                           {%- endfor -%}
+                          {%- endif -%}
                         </ul>
                         {% liquid
                           if eager_loading
@@ -1117,6 +1142,23 @@
   .menu-drawer__list-item--deep .menu-drawer__menu,
   .menu-drawer__menu--grandchildlist {
     padding-inline: 0;
+  }
+
+  /* Dritte Ebene als Untergruppe lesbar machen: eingerueckt, mit Leitlinie und
+     kleiner als der Elternpunkt. Ohne das wirken die Kinder wie Hauptpunkte
+     und der Elternpunkt wie eine blosse Ueberschrift. */
+  .menu-drawer__menu--grandchildlist {
+    margin-inline-start: 1rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid rgb(var(--color-foreground-rgb) / 0.15);
+  }
+
+  .menu-drawer__menu--grandchildlist .menu-drawer__menu-item {
+    font-size: 0.875rem;
+    font-weight: 400;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .menu-drawer__list-item--deep .menu-drawer__menu {

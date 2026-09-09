@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { plan, apply, referencedIssues, closingIssues, inferLabels, MARKER } from '../../../scripts/task-automation.mjs';
+import { plan, apply, referencedIssues, closingIssues, inferLabels, stripCode, MARKER } from '../../../scripts/task-automation.mjs';
 import { parseArgs, run } from '../../../scripts/task.mjs';
 
 const REPO = 'kontakt755/teppich-paradies-shopify-ai';
@@ -9,6 +9,13 @@ test('referencedIssues und closingIssues lesen Nummern aus PR-Text', () => {
   assert.deepEqual(referencedIssues('Fix Menü (#92) closes #34, siehe https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/41', REPO), [34, 41, 92]);
   assert.deepEqual(closingIssues('Closes #34 and fixes #12'), [34, 12]);
   assert.deepEqual(referencedIssues('kein bezug', REPO), []);
+});
+
+test('Issue-Nummern in Code-Bloecken und Inline-Code sind keine Referenzen', () => {
+  const body = 'Zeigt den Brief:\n```\n  #34 Shopify Admin API - P0\n  #120 Dekorfilter\n```\nund `#7` inline. Echt: refs #92';
+  assert.deepEqual(referencedIssues(body, REPO), [92]);
+  assert.deepEqual(closingIssues('```\nCloses #34\n```\nfixes #12'), [12]);
+  assert.equal(stripCode('a `b` c').includes('b'), false);
 });
 
 test('inferLabels ist deterministisch und liefert Typ und Bereich', () => {

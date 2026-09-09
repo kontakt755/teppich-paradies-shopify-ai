@@ -5,9 +5,25 @@
   den zugehoerigen Radio-Button (assets/tp-leisten-farbwahl.js). Warenkorb,
   Preis, Galerie und Farbanzeige reagieren also wie bisher.
 
+  Zwei Regeln halten Bild und Bezeichnung ehrlich:
+
+  1. Eine Bildkachel entsteht nur, wenn das Variantenbild genau zu dieser
+     einen Farbe gehoert. Teilen sich mehrere Farben dasselbe Bild, ist das
+     ein generisches Produktfoto und kein Farbmuster - diese Farben landen in
+     der Textliste "Weitere Farben". Ein geteiltes Foto als Farbkachel zu
+     zeigen behauptet eine Zuordnung, die die Daten nicht hergeben.
+  2. Die sichtbare Bezeichnung kommt aus 'tp-farbe-daten' (feld: 'name'), also
+     der einen Stelle, die interne Farbnummern vom Kundennamen trennt. Der
+     Wert im data-Attribut bleibt der rohe Optionswert - nur so trifft der
+     Klick weiterhin exakt den richtigen Radio-Button.
+
   Ohne JavaScript bleibt der Block verborgen und der normale Variantenwaehler
   sichtbar; mit JavaScript wird der Variantenwaehler nur visuell versteckt,
   bleibt aber im DOM und fuer Screenreader erreichbar.
+
+  Hinweis fuer Produkte mit mehreren Optionen (Farbe + Breite): dort teilen
+  sich Varianten derselben Farbe legitim ein Bild und rutschen in die
+  Textliste. Das ist die sichere Richtung - lieber kein Bild als ein falsches.
 {% enddoc %}
 
 {%- liquid
@@ -27,6 +43,17 @@
 
 {%- if tp_fw_position > 0 and tp_fw_values.size > 1 -%}
   {%- assign tp_fw_index = tp_fw_position | minus: 1 -%}
+
+  {%- comment -%}
+    Ein Durchlauf ueber die Varianten sammelt alle Bild-IDs. Kommt eine ID
+    mehrfach vor, ist das Bild nicht farbspezifisch.
+  {%- endcomment -%}
+  {%- capture tp_fw_media_ids -%}
+    {%- for tp_fw_v in tp_fw_product.variants -%}
+      {%- if tp_fw_v.featured_media != blank -%}[{{ tp_fw_v.featured_media.id }}]{%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+
   <script src="{{ 'tp-leisten-farbwahl.js' | asset_url }}" defer></script>
   <div
     class="tp-lfw"
@@ -40,45 +67,53 @@
       <span class="tp-lfw__current" data-tp-farbwahl-current>{{ tp_fw_selected | escape }}</span>
       <span class="tp-lfw__count">{{ tp_fw_values.size }} zur Auswahl</span>
     </p>
-    <div class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} wählen">
+
+    {%- capture tp_fw_bildkacheln -%}
       {%- for tp_fw_value in tp_fw_values -%}
-        {%- liquid
-          # Nur echte Farbmuster als Bild: Varianten, deren Bild nur das
-          # allgemeine Produktfoto ist, bekommen eine Textkachel mit Namen.
-          assign tp_fw_match = null
-          for tp_fw_variant in tp_fw_product.variants
-            if tp_fw_variant.options[tp_fw_index] == tp_fw_value and tp_fw_variant.featured_media != blank
-              if tp_fw_variant.featured_media.id != tp_fw_product.featured_media.id
-                assign tp_fw_match = tp_fw_variant
-              endif
-              break
-            endif
-          endfor
-          assign tp_fw_is_current = false
-          if tp_fw_value == tp_fw_selected
-            assign tp_fw_is_current = true
-          endif
+        {%- render 'tp-leisten-farbkachel',
+          value: tp_fw_value,
+          product: tp_fw_product,
+          index: tp_fw_index,
+          selected: tp_fw_selected,
+          media_ids: tp_fw_media_ids,
+          modus: 'bild'
         -%}
-        <button
-          type="button"
-          class="tp-lfw__tile{% unless tp_fw_match %} tp-lfw__tile--text{% endunless %}"
-          data-tp-farbwahl-value="{{ tp_fw_value | escape }}"
-          aria-pressed="{{ tp_fw_is_current }}"
-          title="{{ tp_fw_value | escape }}"
-        >
-          {%- if tp_fw_match -%}
-            {{
-              tp_fw_match.featured_media
-              | image_url: width: 120
-              | image_tag: loading: 'lazy', width: 56, height: 56, class: 'tp-lfw__img', alt: ''
-            }}
-            <span class="visually-hidden">{{ tp_fw_value | escape }}</span>
-          {%- else -%}
-            <span class="tp-lfw__name">{{ tp_fw_value | escape }}</span>
-          {%- endif -%}
-        </button>
       {%- endfor -%}
-    </div>
+    {%- endcapture -%}
+
+    {%- capture tp_fw_textkacheln -%}
+      {%- for tp_fw_value in tp_fw_values -%}
+        {%- render 'tp-leisten-farbkachel',
+          value: tp_fw_value,
+          product: tp_fw_product,
+          index: tp_fw_index,
+          selected: tp_fw_selected,
+          media_ids: tp_fw_media_ids,
+          modus: 'text'
+        -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- assign tp_fw_hat_bilder = tp_fw_bildkacheln | strip -%}
+    {%- assign tp_fw_hat_texte = tp_fw_textkacheln | strip -%}
+
+    {%- if tp_fw_hat_bilder != blank -%}
+      <div class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} nach Musterbild wählen">
+        {{ tp_fw_bildkacheln }}
+      </div>
+    {%- endif -%}
+
+    {%- if tp_fw_hat_texte != blank -%}
+      {%- if tp_fw_hat_bilder != blank -%}
+        <p class="tp-lfw__hinweis">
+          Für die folgenden Farben liegt uns noch kein Musterbild vor. Ein
+          kostenloses Muster können Sie unten anfragen.
+        </p>
+      {%- endif -%}
+      <div class="tp-lfw__liste" role="group" aria-label="Weitere {{ tp_fw_label | escape }}n wählen">
+        {{ tp_fw_textkacheln }}
+      </div>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -140,6 +175,37 @@
   .tp-lfw__tile[aria-pressed='true'] {
     border-color: var(--color-foreground);
     box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3px var(--color-foreground);
+  }
+
+  .tp-lfw__liste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tp-lfw__hinweis {
+    margin: 4px 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: rgb(var(--color-foreground-rgb) / 0.6);
+  }
+
+  /* Farben ohne eigenes Musterbild: der Name traegt die Kachel */
+  .tp-lfw__tile--text {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    height: auto;
+    min-height: 44px;
+    padding: 8px 12px;
+    background: rgb(var(--color-foreground-rgb) / 0.03);
+  }
+
+  .tp-lfw__text {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    color: var(--color-foreground);
+    text-align: start;
   }
 
   .tp-lfw__img {

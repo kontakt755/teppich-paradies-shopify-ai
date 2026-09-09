@@ -1,0 +1,426 @@
+{% doc %}
+  Mengenhilfe fuer Zubehoer-Produkte.
+
+  Zubehoer wird nicht einheitlich in Stueck verkauft. Vier Faelle, vier
+  Umrechnungen - mehr macht der Block nicht:
+
+    lfm     Preis je laufendem Meter, Bahnenbreite bekannt. Eingabe m2.
+    qm      Preis je Quadratmeter. Eingabe m2.
+    gebinde Rolle/Faltplatte mit bekanntem Flaecheninhalt. Eingabe m2.
+    stange  Stueckware bekannter Laenge - Sockelleiste je Stange, Profil je
+            Schiene. Eingabe Meter.
+
+  Die ersten drei stehen bereits in der Variantenbezeichnung ("... 80 cm breit
+  (je lfm)", "... (je m2)", "Rolle 30,14 m2", "Faltplatte 15 m2",
+  "Rolle 50 m x 100 cm") - dafuer wurde kein Metafeld gebraucht.
+
+  Der vierte Fall hat zwei Datenquellen, weil die Laenge zwei Orte hat:
+
+  Bei Sockelleisten gilt eine Laenge fuers ganze Produkt (jede Farbe dieselbe
+  Stange), und sie steht in keiner Bezeichnung und keinem Tag. Sie liegt
+  deshalb seit 2026-09-09 in custom.stangenlaenge (Meter, je Produkt). Belegte
+  Quelle je Produkt: domains/shopify/leisten-stangenlaenge/stangenlaenge.json.
+
+  Bei Profilen und Uebergangsschienen ist die Laenge dagegen eine echte
+  Produktoption ("Laenge": 270 cm / 100 cm / 90 cm) und damit je Variante
+  verschieden. Dafuer braucht es kein Metafeld - der Block liest den
+  Optionswert. Gelesen wird nur eine Option, die exakt "Laenge" heisst; ein
+  Wert ohne Einheit cm oder m wird nicht verwendet.
+
+  Das Metafeld hat Vorrang vor der Option: Traegt ein Produkt beides, gilt die
+  gepflegte Produktlaenge.
+
+  Ehrlichkeitsregel: Trifft keiner der vier Faelle zu - Kleber, Reinigungs-
+  mittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten - rendert der
+  Block still nichts. Es gibt keinen Fallback und keine Pauschalannahme; ohne
+  belegte Mengeneinheit gibt es keinen Rechner. Insbesondere wird eine fehlende
+  Stangenlaenge nie durch einen Standardwert ersetzt.
+
+  Der Block legt nichts selbst in den Warenkorb. Er schreibt ausschliesslich in
+  das vorhandene Mengenfeld der Kaufbuttons, damit es genau einen Kaufweg und
+  genau einen Preis gibt - den echten Variantenpreis mal Menge.
+{% enddoc %}
+
+{%- liquid
+  assign tp_zm_id = block.id | replace: '_', '' | downcase
+  assign tp_zm_product = closest.product | default: product
+  assign tp_zm_any = false
+  assign tp_zm_rows = ''
+
+  # Die Stangenlaenge gilt fuer das ganze Produkt, nicht je Variante: eine
+  # Sockelleiste hat in jeder Farbe dieselbe Stangenlaenge. Ohne belegtes
+  # Metafeld bleibt der Stangenmodus aus, und das Produkt faellt auf die
+  # Variantenerkennung darunter zurueck - die bei Leisten nichts findet.
+  assign tp_zm_stange = tp_zm_product.metafields.custom.stangenlaenge.value | times: 1.0
+
+  # Profile und Uebergangsschienen tragen die Laenge als Produktoption. Nur
+  # eine Option, die exakt "Laenge" heisst, wird gelesen - "Breite" (Verlege-
+  # baender) und "Ausfuehrung" bleiben damit unberuehrt.
+  assign tp_zm_len_pos = 0
+  for tp_zm_opt in tp_zm_product.options_with_values
+    assign tp_zm_opt_name = tp_zm_opt.name | downcase | replace: 'ä', 'a'
+    if tp_zm_opt_name == 'lange' or tp_zm_opt_name == 'laenge'
+      assign tp_zm_len_pos = tp_zm_opt.position
+      break
+    endif
+  endfor
+
+  for tp_zm_v in tp_zm_product.variants
+    # "qm" ist dieselbe Einheit wie m2, nur anders geschrieben. Genau eine
+    # Variante im Shop nutzt sie (UZIN U 3000 "Set - 125 qm, 16 kg"), und die
+    # Reichweite ist vom Hersteller belegt. Nur " qm" mit fuehrendem Leerzeichen
+    # ersetzen, damit kein Wortbestandteil getroffen wird.
+    assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2' | replace: ' qm', ' m2'
+    assign tp_zm_mode = ''
+    assign tp_zm_width = 0
+    assign tp_zm_area = 0
+
+    assign tp_zm_noun = ''
+
+    if tp_zm_stange > 0
+      assign tp_zm_mode = 'stange'
+      assign tp_zm_noun = 'stange'
+      assign tp_zm_area = tp_zm_stange
+    elsif tp_zm_len_pos > 0
+      # Optionswert der Laengenoption dieser Variante, z. B. "270 cm".
+      if tp_zm_len_pos == 1
+        assign tp_zm_len_val = tp_zm_v.option1
+      elsif tp_zm_len_pos == 2
+        assign tp_zm_len_val = tp_zm_v.option2
+      else
+        assign tp_zm_len_val = tp_zm_v.option3
+      endif
+      assign tp_zm_len_val = tp_zm_len_val | downcase | strip | replace: ',', '.'
+      assign tp_zm_len_m = 0
+      if tp_zm_len_val contains 'cm'
+        assign tp_zm_len_cm = tp_zm_len_val | split: 'cm' | first | strip | times: 1.0
+        assign tp_zm_len_m = tp_zm_len_cm | divided_by: 100.0
+      elsif tp_zm_len_val contains 'm'
+        assign tp_zm_len_m = tp_zm_len_val | split: 'm' | first | strip | times: 1.0
+      endif
+      if tp_zm_len_m > 0
+        assign tp_zm_mode = 'stange'
+        assign tp_zm_noun = 'profil'
+        assign tp_zm_area = tp_zm_len_m
+      endif
+    elsif tp_zm_t contains 'je lfm'
+      assign tp_zm_mode = 'lfm'
+      if tp_zm_t contains 'cm breit'
+        assign tp_zm_w = tp_zm_t | split: 'cm breit' | first | split: ',' | last | strip | replace: ',', '.'
+        assign tp_zm_width = tp_zm_w | times: 1.0
+      endif
+    elsif tp_zm_t contains 'je m2'
+      assign tp_zm_mode = 'qm'
+    elsif tp_zm_t contains 'm2'
+      assign tp_zm_mode = 'gebinde'
+      assign tp_zm_a = tp_zm_t | split: 'm2' | first | split: '(' | last | strip | split: ' ' | last | replace: ',', '.'
+      assign tp_zm_area = tp_zm_a | times: 1.0
+    elsif tp_zm_t contains ' m x ' or tp_zm_t contains ' m × '
+      assign tp_zm_norm = tp_zm_t | replace: ' × ', ' x '
+      if tp_zm_norm contains 'cm x ' or tp_zm_norm contains 'x 100 cm' or tp_zm_norm contains 'cm'
+        assign tp_zm_len = tp_zm_norm | split: ' m x' | first | split: ' ' | last | replace: ',', '.' | times: 1.0
+        assign tp_zm_wcm = tp_zm_norm | split: ' x ' | last | split: 'cm' | first | strip | replace: ',', '.' | times: 1.0
+        if tp_zm_len > 0 and tp_zm_wcm > 0
+          assign tp_zm_mode = 'gebinde'
+          assign tp_zm_area = tp_zm_wcm | divided_by: 100.0 | times: tp_zm_len
+        endif
+      endif
+    endif
+
+    unless tp_zm_mode == ''
+      assign tp_zm_any = true
+      capture tp_zm_row
+        echo '"'
+        echo tp_zm_v.id
+        echo '":{"m":"'
+        echo tp_zm_mode
+        echo '","w":'
+        echo tp_zm_width
+        echo ',"a":'
+        echo tp_zm_area
+        echo ',"n":"'
+        echo tp_zm_noun
+        echo '"}'
+      endcapture
+      if tp_zm_rows == ''
+        assign tp_zm_rows = tp_zm_row
+      else
+        assign tp_zm_rows = tp_zm_rows | append: ',' | append: tp_zm_row
+      endif
+    endunless
+  endfor
+-%}
+
+{%- if tp_zm_any -%}
+  <tp-zubehoer-menge
+    class="tp-zm"
+    id="tp-zm-{{ tp_zm_id }}"
+    data-map='{ {{ tp_zm_rows }} }'
+    data-selected="{{ tp_zm_product.selected_or_first_available_variant.id }}"
+    {{ block.shopify_attributes }}
+  >
+    <div class="tp-zm__box" data-box hidden>
+      <label class="tp-zm__label" for="tp-zm-input-{{ tp_zm_id }}" data-label>Benötigte Fläche</label>
+      <div class="tp-zm__row">
+        <input
+          class="tp-zm__input"
+          id="tp-zm-input-{{ tp_zm_id }}"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.1"
+          placeholder="0"
+          data-input
+        >
+        <span class="tp-zm__unit" data-unit>m&sup2;</span>
+      </div>
+      <p class="tp-zm__result" data-result role="status" aria-live="polite"></p>
+      <p class="tp-zm__hint" data-hint></p>
+    </div>
+  </tp-zubehoer-menge>
+
+  <script>
+    (() => {
+      // Custom Element statt einmalig laufendem Skript: Horizon ersetzt beim
+      // Variantenwechsel das Abschnitts-DOM, ein Inline-Skript laeuft danach
+      // nicht erneut und ein Listener am alten Knoten ist verloren. Genau das
+      // hat am 2026-09-09 bei Profilen dazu gefuehrt, dass nach dem Wechsel
+      // von 270 cm auf 100 cm weiter mit 2,7 m gerechnet wurde - der Preis
+      // stimmte, die Menge nicht. connectedCallback plus ein Listener am
+      // document ueberleben beide Faelle.
+      if (customElements.get('tp-zubehoer-menge')) return;
+
+      const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
+
+      // Die Eingabe soll einen Re-Render ueberstehen, deshalb liegt sie
+      // ausserhalb des Elements.
+      const eingaben = new Map();
+
+      // Sockelleiste und Profil rechnen gleich, heissen aber nicht gleich.
+      const words = (info) =>
+        info.n === 'profil'
+          ? {
+              label: 'Benötigte Länge',
+              eines: 'Ein Profil',
+              eine: 'Profil',
+              viele: 'Profile',
+              abzug: 'Zuschnitt und Verschnitt bitte selbst einplanen.',
+            }
+          : {
+              label: 'Benötigte Wandlänge',
+              eines: 'Eine Stange',
+              eine: 'Stange',
+              viele: 'Stangen',
+              abzug: 'Türen und Durchgänge bitte selbst abziehen.',
+            };
+
+      class TpZubehoerMenge extends HTMLElement {
+        connectedCallback() {
+          try {
+            this.map = JSON.parse(this.dataset.map || '{}');
+          } catch (e) {
+            return;
+          }
+
+          this.box = this.querySelector('[data-box]');
+          this.label = this.querySelector('[data-label]');
+          this.input = this.querySelector('[data-input]');
+          this.unit = this.querySelector('[data-unit]');
+          this.result = this.querySelector('[data-result]');
+          this.hint = this.querySelector('[data-hint]');
+          if (!this.box || !this.input) return;
+
+          this.schluessel = 'tpzm-' + (this.dataset.selected || '');
+          const gemerkt = eingaben.get(this.schluessel);
+          if (gemerkt) this.input.value = gemerkt;
+
+          this.input.addEventListener('input', () => {
+            eingaben.set(this.schluessel, this.input.value);
+            this.compute();
+          });
+
+          // Am document, nicht am Abschnitt: der Abschnitt kann ersetzt werden.
+          this.onChange = (event) => {
+            if (event.target && event.target.name === 'quantity') return;
+            if (this.input.contains(event.target)) return;
+            // Horizon rendert nach dem Wechsel asynchron - zweimal nachsehen.
+            setTimeout(() => this.render(), 80);
+            setTimeout(() => this.render(), 500);
+          };
+          document.addEventListener('change', this.onChange);
+
+          this.render();
+        }
+
+        disconnectedCallback() {
+          if (this.onChange) document.removeEventListener('change', this.onChange);
+        }
+
+        // Die aktuelle Variante steht im Kaufformular selbst - das Theme bleibt
+        // die einzige Quelle, der Block baut keine Variantenlogik nach.
+        variantId() {
+          const scope = this.closest('.shopify-section, main') || document;
+          const feld = scope.querySelector('input[name="id"], select[name="id"]');
+          return feld && feld.value ? String(feld.value) : String(this.dataset.selected || '');
+        }
+
+        quantityInput() {
+          const scope = this.closest('.shopify-section, main') || document;
+          return scope.querySelector('input[name="quantity"]');
+        }
+
+        setQuantity(value) {
+          const feld = this.quantityInput();
+          if (!feld) return false;
+          feld.value = String(value);
+          feld.dispatchEvent(new Event('input', { bubbles: true }));
+          feld.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+
+        render() {
+          const info = this.map[this.variantId()];
+          if (!info) {
+            this.box.hidden = true;
+            return;
+          }
+          this.box.hidden = false;
+
+          if (info.m === 'stange') {
+            const w = words(info);
+            this.label.textContent = w.label;
+            this.unit.textContent = 'm';
+            this.hint.textContent = w.eines + ' ist ' + nf.format(Number(info.a) || 0)
+              + ' m lang. ' + w.abzug;
+            this.compute();
+            return;
+          }
+
+          this.unit.textContent = 'm²';
+          this.label.textContent = 'Benötigte Fläche';
+
+          if (info.m === 'lfm') {
+            const b = Number(info.w) || 0;
+            this.hint.textContent = b > 0
+              ? 'Abgerechnet wird je laufendem Meter, Bahnenbreite ' + nf.format(b) + ' cm.'
+              : 'Abgerechnet wird je laufendem Meter.';
+          } else if (info.m === 'qm') {
+            this.hint.textContent = 'Abgerechnet wird je Quadratmeter.';
+          } else {
+            this.hint.textContent = 'Ein Gebinde reicht für ' + nf.format(Number(info.a) || 0) + ' m².';
+          }
+          this.compute();
+        }
+
+        compute() {
+          const info = this.map[this.variantId()];
+          const menge = parseFloat(String(this.input.value).replace(',', '.'));
+          if (!info || !(menge > 0)) {
+            this.result.textContent = '';
+            return;
+          }
+
+          let need = 0;
+          let text = '';
+
+          if (info.m === 'stange') {
+            const len = Number(info.a) || 0;
+            if (!(len > 0)) return void (this.result.textContent = '');
+            const w = words(info);
+            need = Math.ceil(menge / len);
+            text = need + ' ' + (need === 1 ? w.eine : w.viele)
+              + ' bestellen (ergibt ' + nf.format(need * len) + ' m).';
+          } else if (info.m === 'lfm') {
+            const b = Number(info.w) || 0;
+            if (!(b > 0)) return void (this.result.textContent = '');
+            need = Math.ceil(menge / (b / 100));
+            text = need + ' lfd. Meter bestellen (deckt ' + nf.format(need * (b / 100)) + ' m²).';
+          } else if (info.m === 'qm') {
+            need = Math.ceil(menge);
+            text = need + ' m² bestellen.';
+          } else {
+            const a = Number(info.a) || 0;
+            if (!(a > 0)) return void (this.result.textContent = '');
+            need = Math.ceil(menge / a);
+            text = need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
+          }
+
+          this.result.textContent = this.setQuantity(need)
+            ? text + ' Die Menge ist eingetragen.'
+            : text;
+        }
+      }
+
+      customElements.define('tp-zubehoer-menge', TpZubehoerMenge);
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-zm__box {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    border-radius: 10px;
+  }
+
+  .tp-zm__label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .tp-zm__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tp-zm__input {
+    width: 7.5rem;
+    max-width: 100%;
+    padding: 8px 10px;
+    font-size: 15px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
+    border-radius: 6px;
+    background: var(--color-background, #fff);
+    color: var(--color-foreground, #222);
+  }
+
+  .tp-zm__unit {
+    font-size: 14px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-zm__result:not(:empty) {
+    margin: 8px 0 0;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .tp-zm__hint:not(:empty) {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.68);
+  }
+
+  @media (max-width: 749px) {
+    .tp-zm__input {
+      width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Zubehoer Mengenhilfe",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Zubehoer Mengenhilfe"
+    }
+  ]
+}
+{% endschema %}

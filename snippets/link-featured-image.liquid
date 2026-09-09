@@ -11,20 +11,28 @@
 
 {% assign image_sizes = sizes | default: 'auto' %}
 
+{%- comment -%}
+  Menuebilder werden mit rund 230 px (Desktop) bzw. 60 px (Handy) dargestellt.
+  Vorher lag die Ausspielung bei 800 px mit nur zwei srcset-Stufen (352w/800w),
+  sodass jedes Bild rund 56 KB kostete - auf jeder Seite, fuer ein zugeklapptes
+  Menue. Kleinere Stufen liefern dieselbe Darstellung fuer einen Bruchteil.
+{%- endcomment -%}
+{%- assign menu_image_widths = '120, 200, 300, 400, 480' -%}
+
 {% if link.type == 'collection_link' %}
   {% if link.object.featured_image %}
     {{
       link.object.featured_image
-      | image_url: width: 800
-      | image_tag: loading: 'lazy', class: class, sizes: image_sizes
+      | image_url: width: 480
+      | image_tag: loading: 'lazy', fetchpriority: 'low', widths: menu_image_widths, class: class, sizes: image_sizes
     }}
   {% elsif link.object.products.size > 0 %}
     {% assign product_object = link.object.products | where: 'featured_image' | first %}
     {% if product_object.featured_image %}
       {{
         product_object.featured_image
-        | image_url: width: 800
-        | image_tag: loading: 'lazy', class: class, sizes: image_sizes
+        | image_url: width: 480
+        | image_tag: loading: 'lazy', fetchpriority: 'low', widths: menu_image_widths, class: class, sizes: image_sizes
       }}
     {% endif %}
   {% endif %}
@@ -33,15 +41,15 @@
   {% if collection_object.featured_image %}
     {{
       collection_object.featured_image
-      | image_url: width: 800
-      | image_tag: loading: 'lazy', class: class, sizes: image_sizes
+      | image_url: width: 480
+      | image_tag: loading: 'lazy', fetchpriority: 'low', widths: menu_image_widths, class: class, sizes: image_sizes
     }}
   {% endif %}
 {% elsif link.type == 'catalog_link' %}
   {% assign product_object = collections.all.products | where: 'featured_image' | first %}
   {{
     product_object.featured_image
-    | image_url: width: 800
-    | image_tag: loading: 'lazy', class: class, sizes: image_sizes
+    | image_url: width: 480
+    | image_tag: loading: 'lazy', fetchpriority: 'low', widths: menu_image_widths, class: class, sizes: image_sizes
   }}
 {% endif %}

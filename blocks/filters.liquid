@@ -37,6 +37,22 @@
     echo ' 0px;'
   endcapture
 
+  # Einmal pro Filterblock pruefen, ob irgendein Wert gesperrt ist. Der Hinweis
+  # dazu stand vorher in jeder Filtergruppe und erschien dadurch mehrfach
+  # untereinander. Er gehoert einmal an den Filterbereich, nicht an die Gruppe.
+  assign tp_gesperrte_werte = false
+  for filter in filters
+    for value in filter.values
+      if value.count == 0 and value.active == false
+        assign tp_gesperrte_werte = true
+        break
+      endif
+    endfor
+    if tp_gesperrte_werte
+      break
+    endif
+  endfor
+
   for filter in filters
     case filter.type
       when 'price_range'
@@ -160,6 +176,13 @@
               show_filter_label: block_settings.show_filter_label,
               should_show_clear_all: true
             %}
+
+              {%- if tp_gesperrte_werte -%}
+                <p class="facets__disabled-hint" role="note">
+                  Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                  Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                </p>
+              {%- endif -%}
 
             {% if block_settings.enable_filtering %}
               {% assign total_active_values = 0 %}
@@ -440,6 +463,13 @@
                 should_show_clear_all: false
               %}
 
+                {%- if tp_gesperrte_werte -%}
+                  <p class="facets__disabled-hint" role="note">
+                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                  </p>
+                {%- endif -%}
+
               <div class="facets__filters-wrapper">
                 {% assign total_active_values = 0 %}
                 {% assign is_active = false %}
@@ -519,6 +549,25 @@
 {% endif %}
 
 {% stylesheet %}
+  /* Erklaerung statt stummer Ausgrauung. Steht einmal je Filterbereich, nicht
+     je Gruppe - sonst wiederholt sich derselbe Satz mehrfach untereinander. */
+  .facets__disabled-hint {
+    margin: var(--padding-xs) 0 0;
+    /* Gleicher Innenabstand wie .facets__panel, sonst steht der Satz im Drawer
+       am linken Rand, waehrend die Filterueberschriften eingerueckt sind. */
+    padding-inline: var(--drawer-padding);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
+  }
+
+  .facets:not(.facets--drawer) .facets__disabled-hint,
+  .facets-controls-wrapper .facets__disabled-hint {
+    @media screen and (min-width: 750px) {
+      padding-inline: 0;
+    }
+  }
+
   .facets-block-wrapper {
     @media screen and (min-width: 750px) {
       margin: var(--facets-margin);

@@ -1,0 +1,14 @@
+{
+  "_comment": "Stangenlaenge je Sockelleisten-Produkt in Metern. Erhoben 2026-09-09. Quelle je Zeile angegeben - nichts geschaetzt, nichts fortgeschrieben. Zielfeld: Produkt-Metafeld custom.stangenlaenge (number_decimal).",
+  "produkte": [
+    { "handle": "skarven-sockelleiste-60mm", "productId": "gid://shopify/Product/16044427182414", "stangenlaenge_m": "5.15", "quelle": "jordanshop.de Produkt 642427/592388/545216/545203 (Doellken S 60 TOP Kernsockelleisten), Attribut 'Laenge (mm)' = 5.150" },
+    { "handle": "feldwin-sockelleiste-40mm", "productId": "gid://shopify/Product/16044427051342", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 591481 (Cubu flex life 40), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "feldwin-sockelleiste-60mm", "productId": "gid://shopify/Product/16044426985806", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 600783/591275 (Cubu flex life 60), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "feldwin-sockelleiste-80mm", "productId": "gid://shopify/Product/16044426920270", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 591304/591297 (Cubu flex life 80), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "feldwin-sockelleiste-100mm", "productId": "gid://shopify/Product/16044391596366", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 591245/591237/477506/394828 (Cubu flex life 100), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "feldwin-sockelleiste-xl-60mm", "productId": "gid://shopify/Product/16044427116878", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 591289/591283 (Cubu flex life XL 60/19), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "feldwin-sockelleiste-xl-80mm", "productId": "gid://shopify/Product/16044427149646", "stangenlaenge_m": "2.5", "quelle": "jordanshop.de Produkt 591319/591312 (Cubu flex life XL 80/19), Attribut 'Laenge (mm)' = 2.500" },
+    { "handle": "cortessa-sockelleiste", "productId": "gid://shopify/Product/16020510802254", "stangenlaenge_m": "2.4", "quelle": "eigene Produktbeschreibung: 'Masse 14 x 58 mm, 2,4 m Laenge'" },
+    { "handle": "basira-sockelleiste", "productId": "gid://shopify/Product/16020510507342", "stangenlaenge_m": "4.0", "quelle": "eigene Produktbeschreibung: 'Laenge 4 m je Stange'" }
+  ]
+}
