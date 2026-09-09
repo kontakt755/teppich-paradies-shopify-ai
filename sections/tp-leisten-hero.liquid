@@ -165,8 +165,7 @@
   }
   /* Kartentitel auf schmalen Geraeten eine Stufe kleiner, damit zwei Spalten lesbar bleiben */
   @media screen and (max-width: 749px) {
-    .product-grid product-title h3,
-    .product-grid product-title [role='heading'] {
+    .product-grid .text-block[class*='product_title'] p {
       font-size: 1rem;
       line-height: 1.3;
     }
