@@ -92,6 +92,26 @@ Drei Gates halten das jetzt:
 - `npm run unmerged:guard` — blockiert Deploys aus einem ungemergten Branch.
 - Pre-Commit-Hook — warnt ab 7 Tagen, blockiert ab 30 Tagen auf ungemergtem Branch.
 
+**6b. Ein toter Menuelink sieht im Editor genauso aus wie ein lebender.**
+Zweimal ist derselbe Fehler wochenlang live gestanden: Menuepunkte filtern per
+`?filter.p.m.custom.<feld>=<Metaobjekt>` und liefern ein leeres Raster. Zwei
+verschiedene Ursachen, gleiches Symptom:
+
+| Fall | Ursache | Fix |
+|---|---|---|
+| Vinyl (108467d) | kein Produkt trug den gefilterten Wert | Metafelder gesetzt |
+| Bodenleisten (#123) | Wert korrekt, aber Produkte liegen in einer anderen Kollektion | Links auf die richtige Kollektion umgehaengt |
+
+Die zweite Diagnose ist die verfuehrerische: „Metafelder fehlen" liegt nahe und ist
+falsch. **Erst zaehlen, welche Werte die Produkte der Kollektion tatsaechlich tragen**,
+dann entscheiden. `npm run menu:guard` findet den Zustand; die Ursache klaert nur
+eine Abfrage.
+
+Beim Aendern des Menues: `menuUpdate` ersetzt den **gesamten** Item-Baum. Vorher den
+kompletten Bestand auslesen und alle anderen Zweige mit ihren MenuItem-IDs unveraendert
+zurueckschreiben. Gegenprobe ist, dass die Menge der MenuItem-IDs vorher und nachher
+identisch ist — nicht `userErrors: []`.
+
 **7. Ein Produktimport, der ohne geklärte Namensregeln startet, wird zweimal gebaut.**
 Am 2026-09-07 entstanden sieben Linoleum-Produkte mit Lieferantennamen im Titel
 (`Jokalino Vivace`) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
@@ -134,6 +154,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run schema:guard` | Block-Schemata, die deployen aber im Editor unsichtbar bleiben |
 | `npm run template:guard` | Kollektions-Templates, deren Produktkarte abweicht |
 | `npm run theme:guard` | veraltete Theme-IDs in Anweisungsdateien, ungeschütztes Live-Theme |
+| `npm run menu:guard` | Menuelinks, die auf ein leeres Produktraster oder ins Nichts zeigen (braucht Netz) |
 | `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise — findet verlorene Bausteine vor dem Push |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
@@ -395,6 +416,12 @@ Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation, Brief)
 neu erzeugt, aber **nicht mitcommitten**: Dateien gezielt mit `git add <datei>` stagen, nie `git add -A`.
 (`git checkout --` blockiert der Git-Guard absichtlich; die Datei darf einfach unverändert liegen bleiben.)
 Sonst gibt es bei jedem Push einen Konflikt mit dem Sync-Workflow.
+
+Dieser eine Befehl ist die einzige Ausnahme in `.claude/hooks/git-gh-guard.mjs`, der sonst jedes
+Verwerfen im Working Tree blockiert. Sie gilt **nur** für exakt diesen Pfad: `git checkout -- .`,
+ein zweiter Pfad dahinter oder eine andere Datei bleiben blockiert. Bis 2026-09-09 fehlte die
+Ausnahme, Doku und Hook widersprachen sich, und der Ausweg war ein Stash pro Sitzung — im
+zwischen allen Worktrees geteilten Stash-Stack, wo ihn eine andere Sitzung fälschlich poppen konnte.
 
 **Aufgaben pflegen sich über Ereignisse selbst** (`.github/workflows/task-automation.yml`,
 `scripts/task-automation.mjs`): neues Issue → Eingang mit Typ/Bereich-Vorschlag, PR referenziert

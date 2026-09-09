@@ -58,7 +58,15 @@ echo "✅ Priority-Labels erstellt"
 
 # Area Labels
 echo "📝 Erstelle Area-Labels..."
-for area in produktseite kategorie navigation filter warenkorb checkout seo google versand design backend sonstiges; do
+# Die Liste kommt aus docs/ai-dashboard/lib/model.mjs, nicht aus einer zweiten
+# Kopie hier: die fest verdrahtete Liste war bis 2026-09-09 elf Bereiche hinter
+# dem Modell zurueck, und "npm run task --area technik" scheiterte deshalb an
+# einem Label, das es laut Modell geben muss.
+AREAS=$(node --input-type=module -e "
+import { AREAS } from './docs/ai-dashboard/lib/model.mjs';
+console.log(AREAS.flatMap(a => a.areas).join(' '));
+") || { echo "❌ Bereiche nicht aus model.mjs lesbar"; exit 1; }
+for area in $AREAS; do
   gh label create "area:$area" --color 17a2b8 --description "🎯 $area" --force 2>/dev/null
 done
 echo "✅ Area-Labels erstellt"
