@@ -105,6 +105,26 @@ als Textspalte – das ist Absicht, kein Fehler.
 
 - Kollektionsbilder für die Kacheln und das Mega-Menü: erst mit echten Produkten
   aus dem eigenen Shop belegen (keine Lieferantenfotos mit Logo).
-- Bodenleisten-Menü führt „Übergangsprofile/Abschlussprofile/Kleber" weiter als
-  Filterlinks. Sobald Zubehör live ist, entscheiden, ob diese Punkte dort bleiben
-  oder auf die Zubehör-Kollektionen zeigen.
+
+## Erledigt
+
+**Bodenleisten-Menü zeigt auf die Zubehör-Kollektionen** (2026-09-09). Die drei
+Punkte „Übergangsprofile/Abschlussprofile/Kleber & Fixierung" im Zweig Bodenleisten
+waren `HTTP`-Filterlinks auf `/collections/bodenleisten?filter.p.m.custom.arten=…`
+und lieferten ein leeres Raster. Sie sind jetzt `COLLECTION`-Punkte auf
+`zubehoer-uebergangsprofile` (5 Produkte), `zubehoer-abschlussprofile` (5) und
+`zubehoer-kleber-fixierung` (7). „Sockelleisten" bleibt Filterlink – der greift.
+
+Nicht zu verwechseln mit dem Vinyl-Fall (Commit 108467d): dort trug kein Produkt
+den gefilterten Metaobjekt-Wert. Hier war das Metafeld richtig gesetzt, nur der
+**Scope** falsch – die Kollektion `bodenleisten` enthält 9 Produkte, die per
+Admin API nachweislich alle nur `sockelleisten` tragen. Die Profil- und
+Kleberprodukte liegen in den Smart-Collections, wo sie hingehören. Deshalb
+umgehängt und nicht entfernt.
+
+`menuUpdate` ersetzt den gesamten Item-Baum: vorher alle Zweige mit ihren
+MenuItem-IDs auslesen und unverändert zurückschreiben. Gegenprobe war, dass
+alle 40 MenuItem-IDs vor und nach dem Schreibvorgang identisch sind.
+
+„Kleber & Fixierung" steht seitdem bewusst zweimal im Menü – unter Bodenleisten
+und unter Zubehör, beide auf dieselbe Kollektion.
