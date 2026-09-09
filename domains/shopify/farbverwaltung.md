@@ -190,23 +190,56 @@ Doppelnummern wie `1013/5012` stehen so beim Lieferanten und wurden unveraendert
 Die Linie XL 60/19 fuehrt die Nummer 1246 als `platin, Sonder-FB.MM 200m`; im Shop heisst
 die Variante `platin (Sonderfarbe)`. Das steht im Hinweis des Registereintrags.
 
-### Offener Befund: die Shop-SKUs weichen von den Lieferanten-Artikelnummern ab
+### Zurueckgezogen: die Shop-SKUs sind korrekt
 
-**32 der 37 SKU-Suffixe stimmen nicht.** Beispiel: `anthrazit` in der 60er-Leiste liegt im Shop
-unter `ZUBDÖLK60_0004`, beim Lieferanten unter `ZUBDÖLK60_1209`. Das Muster `_0001` bis `_0009`
-ist eine laufende Nummer, die es beim Lieferanten nicht gibt.
+Hier stand bis zum 2026-09-09 der Befund, 32 der 37 Feldwin-SKUs wichen von den
+Lieferanten-Artikelnummern ab. **Das war ein Fehlschluss.** Nachgeprueft an jeder
+einzelnen Farbseite bei jordanshop.de: **37 von 37 Shop-SKUs stimmen exakt mit der
+Jordan-Artikelnummer ueberein.** Rohdaten: `domains/shopify/doellken-artikelnummern-2026-09-09.json`.
 
-Das ist ein Bestellrisiko, kein Anzeigefehler: Wer nach der Shop-SKU beim Lieferanten bestellt,
-findet den Artikel nicht. `custom.farbcode` traegt jetzt die richtige Nummer, die SKU nicht.
-SKUs zu aendern ist eine geschuetzte Aktion und braucht eine ausdrueckliche Freigabe -
-deshalb steht das hier und wurde nicht nebenbei erledigt.
+Der Fehler war, zwei verschiedene Nummernsysteme zu vergleichen:
+
+| System | Beispiel 60mm anthrazit | wo es steht |
+|---|---|---|
+| Jordan-Artikelnummer | `ZUBDÖLK60_0004` | SKU im Shop, Bestellung beim Grosshaendler |
+| Doellken-Farbnummer | `1209` | `custom.farbcode`, Farbregister, Herstellerkatalog |
+
+Beide sind richtig und stehen nebeneinander. Der Suffix `_0004` ist Jordans laufende
+Position innerhalb der Linie, nicht die Farbnummer. Dass dieselbe Farbe je Leistenhoehe
+eine andere Positionsnummer hat, ist deshalb kein Datenfehler, sondern Jordans Systematik.
+
+**Die SKUs duerfen nicht auf die Doellken-Farbnummern gezogen werden.** Genau dann waere
+die Bestellung beim Grosshaendler nicht mehr moeglich - die Wirkung waere das Gegenteil
+dessen, was der Befund versprach.
 
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
 Das Produkt-Metafeld `grosshandel.sku` nennt nur die Kollektion
-(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Bei Eichenhain tragen die
-Optionswerte ausserdem englische Lieferantennamen (`Prestige Oak Honey Braun`) - das ist
-ein eigener Fall fuer die Namensregeln.
+(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Ohne Nummer kein Registereintrag -
+das holt der Farb-Nachzug nach, sobald die Produkte SKUs bekommen.
+
+**Eichenhain: Farbnamen eingedeutscht (2026-09-09).** Die sechs Werte hiessen
+`Prestige Oak Honey Braun` und `Infinity Oak Naturel` - Lieferanten-Dekornamen mit
+angehaengter deutscher Farbe. Bei Bodenbelaegen gilt die Eigennamen-Regel: die
+Lieferantenlinie gehoert nach `grosshandel.sku`, nicht in den Optionswert.
+
+| vorher | jetzt |
+|---|---|
+| Prestige Oak Honey Braun | Eiche Honigbraun |
+| Infinity Oak Naturel | Eiche Naturell |
+| Prestige Oak Greige Grau | Eiche Greige |
+| Prestige Oak Brown Grau | Eiche Braungrau |
+| Prestige Oak Natural | Eiche Natur |
+| Prestige Oak White Beige | Eiche Weissbeige |
+
+`Naturel` und `Natural` waeren beide zu "Eiche Natur" geworden. Die Unterscheidung
+`Naturell` gegen `Natur` haelt den Unterschied des Originals fest, ohne eine Farbe zu
+erfinden - nur zwei der sechs Varianten haben ueberhaupt ein Bild, und das sind Raumbilder.
+
+**Anders als bei Skarven wurden hier keine Tags mit den Originalnamen gesetzt.** Sockelleisten
+werden ueber den Dekornamen des Herstellers gesucht; ein Bodenbelag traegt bei uns bewusst
+einen Eigennamen, und `Prestige Oak` als Tag waere die Lieferantenlinie, die laut Namensregel
+nur in `grosshandel.sku` stehen darf.
 
 **Pflegehinweis:** Nach jedem Produktimport gehoert der Farb-Nachzug dazu - Registereintrag,
 `custom.farbcode`, `custom.farbe`. Sonst zeigt die Bestellung fuer neue Produkte keine
@@ -228,17 +261,38 @@ verschieden, deshalb tragen sie einen eigenen Namen statt einer Ziffer:
 | 406 | Grün Dunkel | `#333e3f` blaugruen | Petrol Dunkel |
 | 514 | Grau Mittel | `#8f8b83` warmgrau, so hell wie 515 | Grau Warm |
 
-**Skarven: die englischen Namen bleiben - bewusst.**
-`Fashion Oak`, `Calistoga Grey`, `Wild Oak` sind keine schlecht gepflegten Farbnamen,
-sondern die Dekornamen von Doellken. Beim Lieferanten stehen sie identisch
-(jordanshop.de, Farbwaehler des Artikels "Doellken S 60 TOP", 62 Werte). Eine Sockelleiste
-wird passend zum Bodendekor gekauft; wer `Wild Oak` als Boden hat, sucht die Leiste unter
-diesem Namen. Uebersetzt waere sie nicht mehr auffindbar, und ohne Farbfoto liesse sich die
-Optik ohnehin nicht pruefen - 45 der 62 Dekore haben beim Grosshaendler kein Farbbild.
+**Skarven: Dekornamen auf Wunsch eingedeutscht (2026-09-09).**
+Zuerst hatte ich sie stehen lassen, weil `Fashion Oak` und `Wild Oak` die Dekornamen von
+Doellken sind und eine Sockelleiste passend zum Bodendekor gesucht wird. Nach Ruecksprache
+wurden 26 Werte uebersetzt.
 
-Geaendert wurde deshalb nur die Schreibweise: 26 Werte von `fashion oak` auf `Fashion Oak`,
-damit nicht `anthrazit` neben `Weiß Standard` steht. Register nachgezogen, Gegenpruefung
-62 von 62.
+Uebersetzt wurde die **Bedeutung** (Holzart plus Attribut), nicht die Optik - eine Farbaussage
+waere ohne Farbmuster geraten, und 45 der 62 Dekore haben beim Grosshaendler kein Foto.
+Vier Dekore mit Foto wurden angesehen: `Fashion Oak` ist graubeige, daher `Eiche Greige`.
+
+| vorher | jetzt |
+|---|---|
+| Wild Oak | Wildeiche |
+| Grey Limed Oak | Eiche Grau Gekalkt |
+| Bleached Ash | Esche Gebleicht |
+| Tuscany Walnut | Nussbaum Toskana |
+| Scandinavian Country Pl. | Skandinavische Landhausdiele |
+| Smoked Oak White | Räuchereiche Weiß |
+
+**Neun Werte blieben stehen**, weil sie keine uebersetzbare Bedeutung tragen: `Alumetallic`,
+`Twist`, `Aruba`, `Natural Place`, `Boogie`, `Salsa`, `Quartett`, `Nussbaum Island`. Dazu
+`Chene Gris` - franzoesisch fuer "Eiche Grau", aber dieser Name ist im selben Produkt von 2495
+belegt, und ohne Farbmuster liesse sich kein unterscheidender Zusatz vergeben, ohne zu raten.
+
+**Die Auffindbarkeit ist gesichert:** Der Lieferanten-Dekorname steht im `hinweis` jedes
+Registereintrags, die vollstaendige Zuordnung in
+`domains/shopify/skarven-dekornamen-deutsch-2026-09-09.json`. Wer im Katalog nach `Wild Oak`
+sucht, findet dort `Wildeiche`. Zusaetzlich stehen sie seit 2026-09-09 als
+Produkt-Tags am Artikel, im vorhandenen Schema `dekor: wild oak` (klein, wie `art:` und
+`raum:`). Belegt: die Suche nach `Calistoga` und nach `Wild Oak` findet die Skarven-Leiste
+sowohl in der Sofortsuche als auch in der Volltextsuche. Der Bodenleisten-Filter zeigt
+weiterhin nur Arten, Verfuegbarkeit und Preis - `dekor:` taucht dort nicht als neue
+Filtergruppe auf, weil die Filter fest konfiguriert sind.
 
 ### Offener Befund: JOKA-Farbnummern
 
@@ -255,6 +309,13 @@ Die Buchstaben-Suffixe sehen aus wie eine Notloesung, um doppelte SKUs zu vermei
 Welche Nummer der Hersteller fuehrt, ist damit unklar - das klaert nur die JOKA-Preisliste.
 Nicht geraten, deshalb steht es hier.
 
-**Hinweis zur Einheitlichkeit:** Die sechs Feldwin-Sockelleisten schreiben ihre Farben
-weiterhin klein (`anthrazit`, `weiß RAL 9010`). Das ist derselbe Fall wie bei Skarven,
-war aber nicht beauftragt.
+**Feldwin nachgezogen (2026-09-09):** Die sechs Feldwin-Sockelleisten schrieben ihre Farben
+klein (`anthrazit`, `weiß RAL 9010`). 37 Optionswerte und die 11 Registereintraege stehen jetzt
+in derselben Schreibweise wie bei Skarven. `RAL` bleibt gross, `(Sonderfarbe)` bleibt stehen -
+diese Klammer ist ein Hinweis fuer den Kunden und keine Farbnummer.
+
+Zwei bekannte Eigenheiten bleiben und sind kein Fehler:
+`Platin (Sonderfarbe)` in der XL-60-Linie zeigt auf den Registereintrag `Platinsilber – 1246`,
+weil der Lieferant beide unter 1246 fuehrt. Und `Lichtgrau` in der XL-80-Linie traegt den
+Farbcode `1012/1202`, waehrend das Register `1012` nennt - die Doppelnummer steht so im
+Lieferantenkatalog und wurde unveraendert abgeschrieben.

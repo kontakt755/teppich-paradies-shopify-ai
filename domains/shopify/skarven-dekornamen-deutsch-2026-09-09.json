@@ -1,0 +1,199 @@
+{
+ "_comment": "Skarven Sockelleiste 60mm (Doellken S 60 TOP): Zuordnung Lieferanten-Dekorname zu deutschem Shop-Namen, Stand 2026-09-09. Der Lieferantenname steht zusaetzlich im Hinweis des jeweiligen tp_farbe-Registereintrags. Zum Zurueckdrehen: productOptionUpdate mit shop_vorher.",
+ "produkt": "gid://shopify/Product/16044427182414",
+ "uebersetzt": [
+  {
+   "nummer": "2022",
+   "lieferant": "Vintage Oak Grey",
+   "shop_vorher": "Vintage Oak Grey",
+   "shop_jetzt": "Vintage Eiche Grau",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2254",
+   "lieferant": "Light Classic Oak",
+   "shop_vorher": "Light Classic Oak",
+   "shop_jetzt": "Eiche Klassisch Hell",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2330",
+   "lieferant": "Esche weiss",
+   "shop_vorher": "Esche Weiss",
+   "shop_jetzt": "Esche Weiß",
+   "grundlage": "Rechtschreibung: scharfes s"
+  },
+  {
+   "nummer": "2357",
+   "lieferant": "country gebeizt (EB)",
+   "shop_vorher": "Country Gebeizt",
+   "shop_jetzt": "Landhaus Gebeizt",
+   "grundlage": "Wortuebersetzung; \"Eiche Landhaus\" war von 2574 belegt"
+  },
+  {
+   "nummer": "2364",
+   "lieferant": "Fruchtbaum Medium",
+   "shop_vorher": "Fruchtbaum Medium",
+   "shop_jetzt": "Fruchtbaum Mittel",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2412",
+   "lieferant": "Tuscany Walnut",
+   "shop_vorher": "Tuscany Walnut",
+   "shop_jetzt": "Nussbaum Toskana",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2425",
+   "lieferant": "Alba Oak Cottage",
+   "shop_vorher": "Alba Oak Cottage",
+   "shop_jetzt": "Alba Eiche Landhaus",
+   "grundlage": "Wortuebersetzung, Alba bleibt als Dekorname"
+  },
+  {
+   "nummer": "2447",
+   "lieferant": "Calistoga Grey",
+   "shop_vorher": "Calistoga Grey",
+   "shop_jetzt": "Calistoga Grau",
+   "grundlage": "Wortuebersetzung, Calistoga bleibt als Dekorname"
+  },
+  {
+   "nummer": "2452",
+   "lieferant": "Calistoga Cream",
+   "shop_vorher": "Calistoga Cream",
+   "shop_jetzt": "Calistoga Creme",
+   "grundlage": "Wortuebersetzung, Calistoga bleibt als Dekorname"
+  },
+  {
+   "nummer": "2485",
+   "lieferant": "smoked oak white",
+   "shop_vorher": "Smoked Oak White",
+   "shop_jetzt": "Räuchereiche Weiß",
+   "grundlage": "Bild: sehr helle, weiss gekalkte Eiche"
+  },
+  {
+   "nummer": "2487",
+   "lieferant": "Wild Oak",
+   "shop_vorher": "Wild Oak",
+   "shop_jetzt": "Wildeiche",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2493",
+   "lieferant": "Eiche Classic",
+   "shop_vorher": "Eiche Classic",
+   "shop_jetzt": "Eiche Klassik",
+   "grundlage": "deutsch; \"Eiche Klassisch\" ist von 2339 belegt"
+  },
+  {
+   "nummer": "2511",
+   "lieferant": "Bleached Ash",
+   "shop_vorher": "Bleached Ash",
+   "shop_jetzt": "Esche Gebleicht",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2518",
+   "lieferant": "Scandinavian Country Pl.",
+   "shop_vorher": "Scandinavian Country Pl.",
+   "shop_jetzt": "Skandinavische Landhausdiele",
+   "grundlage": "Wortuebersetzung, \"Pl.\" = Plank"
+  },
+  {
+   "nummer": "2570",
+   "lieferant": "native oak",
+   "shop_vorher": "Native Oak",
+   "shop_jetzt": "Eiche Natur",
+   "grundlage": "Bild: helle warme Eiche"
+  },
+  {
+   "nummer": "2571",
+   "lieferant": "vintage desert",
+   "shop_vorher": "Vintage Desert",
+   "shop_jetzt": "Vintage Eiche Braun",
+   "grundlage": "Bild: warmbraune Eiche mit Vintage-Struktur"
+  },
+  {
+   "nummer": "2572",
+   "lieferant": "fashion oak",
+   "shop_vorher": "Fashion Oak",
+   "shop_jetzt": "Eiche Greige",
+   "grundlage": "Bild: graubeige Eiche"
+  },
+  {
+   "nummer": "2573",
+   "lieferant": "Western Oak",
+   "shop_vorher": "Western Oak",
+   "shop_jetzt": "Eiche Western",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2574",
+   "lieferant": "Country Oak",
+   "shop_vorher": "Country Oak",
+   "shop_jetzt": "Eiche Landhaus",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2639",
+   "lieferant": "Scandinavian Pine",
+   "shop_vorher": "Scandinavian Pine",
+   "shop_jetzt": "Kiefer Skandinavisch",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2645",
+   "lieferant": "Grey Limed Oak",
+   "shop_vorher": "Grey Limed Oak",
+   "shop_jetzt": "Eiche Grau Gekalkt",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2698",
+   "lieferant": "Rustic Pine Warm",
+   "shop_vorher": "Rustic Pine Warm",
+   "shop_jetzt": "Kiefer Rustikal Warm",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "2813",
+   "lieferant": "Island Oak Honey",
+   "shop_vorher": "Island Oak Honey",
+   "shop_jetzt": "Island Eiche Honig",
+   "grundlage": "Wortuebersetzung, Island bleibt wie bei Nussbaum Island"
+  },
+  {
+   "nummer": "2976",
+   "lieferant": "Spirit Oak Silver",
+   "shop_vorher": "Spirit Oak Silver",
+   "shop_jetzt": "Spirit Eiche Silber",
+   "grundlage": "Wortuebersetzung, Spirit bleibt als Dekorname"
+  },
+  {
+   "nummer": "2989",
+   "lieferant": "Blond Limed Oak",
+   "shop_vorher": "Blond Limed Oak",
+   "shop_jetzt": "Eiche Blond Gekalkt",
+   "grundlage": "Wortuebersetzung"
+  },
+  {
+   "nummer": "3101",
+   "lieferant": "Grant Oak Brown",
+   "shop_vorher": "Grant Oak Brown",
+   "shop_jetzt": "Grant Eiche Braun",
+   "grundlage": "Wortuebersetzung, Grant bleibt als Dekorname"
+  }
+ ],
+ "unveraendert": {
+  "Alumetallic": "Kunstwort des Herstellers",
+  "Twist": "Fantasiename",
+  "Aruba": "Fantasiename",
+  "Natural Place": "Fantasiename",
+  "Boogie": "Fantasiename",
+  "Salsa": "Fantasiename",
+  "Quartett": "bereits deutsch",
+  "Nussbaum Island": "Island ist Teil des Dekornamens",
+  "Chene Gris": "franzoesisch fuer Eiche Grau; dieser Name ist von 2495 belegt, und ohne Farbmuster laesst sich kein unterscheidender Zusatz vergeben, ohne zu raten"
+ }
+}
