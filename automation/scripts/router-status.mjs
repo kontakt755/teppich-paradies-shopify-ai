@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { assessAgentRuns, diagnoseRouterRuns, stopHookTimeout } from '../core/router-runs.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../');
 const at = p => path.join(root, p);
@@ -88,18 +89,31 @@ if (fs.existsSync(ledger)) {
 
 // Stop-Hook-Reviews: bis 2026-09-08 verschwand jeder Infrastrukturfehler still.
 // Jetzt hinterlaesst er review-error.txt; ohne ein einziges codex-review.json ist
-// der Review-Zweig nachweislich nie gelaufen.
+// der Review-Zweig nachweislich nie gelaufen. Leere Ordner sind Abbrueche von aussen
+// (bis 2026-09-09: Stop-Hook ohne "timeout", Claude Code killt nach 60 s) - oder ein
+// gerade laufendes Review. router-runs.mjs trennt aktuell von historisch.
+let settingsJson = null;
+try { settingsJson = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { /* oben gemeldet */ }
+const timeout = stopHookTimeout(settingsJson);
+if (timeout.present) say(timeout.sufficient, 'Stop-Hook timeout', timeout.configured == null ? 'nicht gesetzt (Default 60 s)' : `${timeout.configured} s`);
+// Reparaturzeitpunkt = letzter Commit, der das Timeout in settings.json gesetzt hat.
+const repairCommit = git('log', '-1', '--format=%ct', '-S', '"timeout": 900', '--', '.claude/settings.json');
+const repairedAtMs = repairCommit ? Number(repairCommit) * 1000 : null;
 const runsDir = at('.router/agent-runs');
 if (fs.existsSync(runsDir)) {
-  const runs = fs.readdirSync(runsDir);
-  const reviewed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'codex-review.json')) || fs.existsSync(path.join(runsDir, run, 'claude-review.json'))).length;
-  const failed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'review-error.txt'))).length;
-  // Leerer Ordner = Lauf wurde von aussen abgebrochen, bevor Codex geschrieben hat
-  // (bis 2026-09-09: Stop-Hook ohne "timeout" -> Claude Code killt nach 60 s).
-  const empty = runs.filter(run => fs.readdirSync(path.join(runsDir, run)).length === 0).length;
-  say(reviewed > 0 || runs.length === 0, '.router/agent-runs', `${runs.length} Laeufe, ${reviewed} mit Review, ${failed} mit protokolliertem Review-Fehler, ${empty} ohne Ergebnis`);
-  if (runs.length && !reviewed) problems.push('Kein einziger Stop-Hook-Lauf hat ein Review-Ergebnis: Codex-Binary pruefen (CODEX_CLI_PATH) und review-error.txt lesen.');
-  else if (empty > reviewed) problems.push(`${empty} Laeufe ohne Ergebnisdatei: der Stop-Hook wurde vor dem Ende des Reviews abgebrochen. "timeout" des Stop-Hooks in .claude/settings.json pruefen (Review braucht bis zu 15 min).`);
+  const runs = fs.readdirSync(runsDir).map(name => {
+    const dir = path.join(runsDir, name);
+    return { name, files: fs.readdirSync(dir), mtimeMs: fs.statSync(dir).mtimeMs };
+  });
+  const assessment = assessAgentRuns({ runs, repairedAtMs });
+  say((assessment.reviewed > 0 || runs.length === 0) && assessment.failedRecent === 0, '.router/agent-runs', `${assessment.total} Laeufe, ${assessment.reviewed} mit Review, ${assessment.failed} mit protokolliertem Review-Fehler (${assessment.failedRecent} aktuell), ${assessment.running} offen, ${assessment.aborted} abgebrochen`);
+  if (runs.length && !assessment.reviewed) problems.push('Kein einziger Stop-Hook-Lauf hat ein Review-Ergebnis: Codex-Binary pruefen (CODEX_CLI_PATH) und review-error.txt lesen.');
+  const diagnosis = diagnoseRouterRuns({ assessment, timeout });
+  problems.push(...diagnosis.problems);
+  for (const note of diagnosis.notes) lines.push(`  ${note}`);
+} else {
+  const diagnosis = diagnoseRouterRuns({ assessment: assessAgentRuns({ runs: [] }), timeout });
+  problems.push(...diagnosis.problems);
 }
 const codexBinary = ['CODEX_CLI_PATH' in process.env ? process.env.CODEX_CLI_PATH : null, '/Applications/ChatGPT.app/Contents/Resources/codex'].filter(Boolean).find(candidate => fs.existsSync(candidate));
 say(Boolean(codexBinary), 'codex-Binary', codexBinary ?? 'nicht gefunden (CODEX_CLI_PATH setzen)');

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
+import { detectReviewScope, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
@@ -58,7 +59,16 @@ try {
   // dieselben Befunde wiederholt.
   const reviewStep = reviews >= 2 && plan.secondReviewer ? plan.secondReviewer : plan.reviewer;
   const taskId = `${current.state.taskId}-AUTO-R${reviews + 1}`;
+  // Nach einem Commit ist "git diff" leer; der Reviewer bekommt deshalb den
+  // tatsaechlichen Pruefbereich (uncommittet oder Commit-Range gegen origin/main).
+  // Der Pruefbereich wird immer an den Reviewer gegeben: UNKNOWN (git-Fehler)
+  // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
+  // Auftrag erfuellt. Kein Zustand beendet ohne Modell-Review; nur Klasse A
+  // (oben, plan.reviewer fehlt) kommt ohne aus.
+  const scope = detectReviewScope({ cwd: projectDir });
+  if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
+    reviewScope: scope.text,
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
