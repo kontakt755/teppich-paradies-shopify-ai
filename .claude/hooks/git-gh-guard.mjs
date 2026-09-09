@@ -35,9 +35,18 @@
 //
 // Bewusst eng: nur dieser eine Pfad, exakt am Segmentende verankert. Damit
 // bleiben "git checkout -- ." und ein zweiter Pfad hinter der Datei blockiert.
+//
+// Angehaengte Umleitungen sind erlaubt, aber nur nach /dev/null oder als 2>&1.
+// Nicht Umleitungen allgemein: "git checkout -- <botdatei> > wichtig.txt"
+// wuerde wichtig.txt ueberschreiben - dann haette die Ausnahme fuer eine
+// harmlose Datei ein Werkzeug freigegeben, das eine beliebige andere
+// zerstoert.
+const UMLEITUNG = '(\\s*(?:[12]?>{1,2}\\s*\\/dev\\/null|&>{1,2}\\s*\\/dev\\/null|2>&1))*\\s*$';
+const BOTDATEI = '(?:\\.\\/)?docs\\/ai-dashboard\\/issues\\.json';
+
 const AUSNAHMEN = [
-  /^git\s+checkout\s+--\s+(\.\/)?docs\/ai-dashboard\/issues\.json\s*$/,
-  /^git\s+restore\s+(--worktree\s+|--\s+)?(\.\/)?docs\/ai-dashboard\/issues\.json\s*$/,
+  new RegExp(`^git\\s+checkout\\s+--\\s+${BOTDATEI}${UMLEITUNG}`),
+  new RegExp(`^git\\s+restore\\s+(?:--worktree\\s+|--\\s+)?${BOTDATEI}${UMLEITUNG}`),
 ];
 
 const VERBOTEN = [

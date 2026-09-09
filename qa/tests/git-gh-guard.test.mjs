@@ -60,3 +60,32 @@ for (const cmd of [
 for (const cmd of ['git status', 'npm run task -- list']) {
   test(`unberuehrt erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
 }
+
+// --- Angehaengte Umleitungen -------------------------------------------
+//
+// Erlaubt sind nur Umleitungen nach /dev/null und 2>&1. Eine Umleitung in
+// eine echte Datei bleibt blockiert: sie wuerde diese Datei ueberschreiben,
+// und dann haette die Ausnahme fuer eine harmlose Bot-Datei ein Werkzeug
+// freigegeben, das eine beliebige andere zerstoert.
+
+for (const suffix of ['2>/dev/null', '>/dev/null', '>/dev/null 2>&1', '&>/dev/null']) {
+  test(`erlaubt mit Umleitung: ${suffix}`, () => {
+    assert.equal(blockiert(`git checkout -- ${BOT} ${suffix}`), false);
+    assert.equal(blockiert(`git restore ${BOT} ${suffix}`), false);
+  });
+}
+
+for (const suffix of ['> wichtig.txt', '>> CLAUDE.md', '2> qa/wichtig.json']) {
+  test(`blockiert Umleitung in eine echte Datei: ${suffix}`, () => {
+    assert.equal(blockiert(`git checkout -- ${BOT} ${suffix}`), true);
+  });
+}
+
+test('eine Umleitung macht die uebrigen Grenzen nicht weicher', () => {
+  for (const cmd of [
+    'git checkout -- . 2>/dev/null',
+    'git checkout -- CLAUDE.md 2>/dev/null',
+    `git checkout -- ${BOT} CLAUDE.md 2>/dev/null`,
+    `git checkout -- ${BOT}X 2>/dev/null`,
+  ]) assert.equal(blockiert(cmd), true, cmd);
+});
