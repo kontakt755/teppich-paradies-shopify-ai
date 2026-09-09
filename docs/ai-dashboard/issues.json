@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:40:11.762Z",
+  "generated_at": "2026-09-09T11:41:51.823Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 43,
+  "count": 44,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:40:11.762Z",
+    "fetchedAt": "2026-09-09T11:41:51.823Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 139,
+      "title": "Area-Labels: setup-dashboard.sh lief elf Bereiche hinter model.mjs",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/139",
+      "labels": [
+        "status:in-arbeit",
+        "type:bug",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "setup-dashboard.sh fuehrte eine eigene fest verdrahtete Bereichsliste, elf Bereiche hinter docs/ai-dashboard/lib/model.mjs: ads, analytics, collections, content, katalog, operations, produktdaten, service, sicherheit, technik, tracking.\n\nFolge: npm run task --area technik bricht mit 'could not add label' ab, obwohl technik im Modell gueltig ist. Die Meldung nennt das Label, nicht die Ursache.\n\nFix: Skript liest die Bereiche aus model.mjs und bricht ab, wenn das nicht geht. Die elf Labels sind angelegt, 23 von 23 vorhanden.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:41:37Z",
+      "updated_at": "2026-09-09T11:41:48Z",
+      "closed_at": null
+    },
     {
       "number": 136,
       "title": "Verwaistes Menue main-menu-zubehoer geloescht",
