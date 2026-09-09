@@ -1,7 +1,45 @@
-<!-- Elfsight Google Reviews Section -->
+{% comment %}
+  Google-Bewertungen (Elfsight-Widget). Das Script laedt erst, wenn der
+  Besucher Marketing-Cookies zugelassen hat (Shopify Customer Privacy API).
+  Ist kein Cookie-Banner konfiguriert, gilt die Zustimmung als erteilt und
+  das Widget laedt wie bisher. Vorher lud es bedingungslos - DSGVO-Risiko
+  auf den drei Serviceseiten, auf denen diese Section liegt.
+{% endcomment %}
 <section class="google-reviews">
-  <script src="https://static.elfsight.com/platform/platform.js" async></script>
   <div class="elfsight-app-e64233ac-362d-4d8f-ae26-3ec4cc88789e" data-elfsight-app-lazy></div>
+  <script>
+    (function () {
+      var loaded = false;
+      function loadElfsight() {
+        if (loaded) return;
+        loaded = true;
+        var script = document.createElement('script');
+        script.src = 'https://static.elfsight.com/platform/platform.js';
+        script.async = true;
+        document.head.appendChild(script);
+      }
+      function checkConsent() {
+        var privacy = window.Shopify && window.Shopify.customerPrivacy;
+        if (!privacy || typeof privacy.marketingAllowed !== 'function') return;
+        if (privacy.marketingAllowed()) {
+          loadElfsight();
+          return;
+        }
+        document.addEventListener('visitorConsentCollected', function (event) {
+          if (event.detail && event.detail.marketingAllowed) loadElfsight();
+        });
+      }
+      if (window.Shopify && typeof window.Shopify.loadFeatures === 'function') {
+        window.Shopify.loadFeatures(
+          [{ name: 'consent-tracking-api', version: '0.1' }],
+          function (error) {
+            if (error) return;
+            checkConsent();
+          }
+        );
+      }
+    })();
+  </script>
 </section>
 
 <style>

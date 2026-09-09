@@ -17,29 +17,63 @@ Nicht möglich aus der Remote-Session: Storefront-Screenshots, Lighthouse, Testk
 
 ---
 
-## 1. Kurzfazit
+## 1. Zusammenfassung — was wir entdeckt haben, was besser werden muss
 
-**Der Shop hat Besucher, aber keinen einzigen echten Verkauf.** In den letzten 90 Tagen gab es rund
-5.100 Sitzungen, 22 mit Warenkorb-Aktion, 6 im Checkout, 0 abgeschlossen. Über 365 Tage: 15.481
-Sitzungen, 35 Checkout-Starts, 3 Bestellungen — ein Test, zwei kostenlose Muster.
+Stand 2026-09-09 nach der zweiten Session. Erledigtes ist markiert, damit der Bericht nicht
+als Liste offener Baustellen weiterlebt, die längst keine mehr sind.
 
-Drei Gründe, in dieser Reihenfolge:
+### Was wir entdeckt haben
 
-1. **Der Traffic ist Service-Traffic, kein Kauf-Traffic.** 40 % aller Sitzungen landen auf den drei
-   Verlegeservice-Seiten (Teppichboden verlegen lassen, Vinylboden verlegen, Treppenverlegung). Das sind
-   Menschen aus Oranienburg/Berlin, die einen Handwerker suchen. Sie kaufen nicht online, sie rufen an.
-   Der Shop misst diesen Erfolg nicht (keine Anruf-/Formular-Conversion).
-2. **Wer kaufen will, findet auf dem Weg zum Warenkorb Reibung.** Muster-Buttons führen ins
-   Kontaktformular statt in den fertigen Musterkonfigurator, Warenkorb sagt „Geschätzter Gesamtbetrag",
-   Sie/Du gemischt, kein USP-Band, und 289 aktive Vinylprodukte haben genau ein Bild.
-3. **Es wird nicht gemessen.** Kein GA4/Ads/Meta-Tag im Theme; ob die Shopify-Pixel im Admin
-   korrekt feuern, ist seit dem 12.08. „UNKLAR" und wurde nie durch einen Testkauf verifiziert.
+1. **Besucher ja, Käufer nein.** 5.136 Sitzungen in 90 Tagen, 22 mit Warenkorb, 6 im Checkout,
+   **0 abgeschlossen**. Über 365 Tage: 15.481 Sitzungen, 3 Bestellungen (1 Test, 2 Muster).
+   Der Traffic hat sich in einem Jahr vervierfacht, die Checkout-Starts nicht.
+2. **Der Shop ist ein lokaler Fachbetrieb mit Online-Katalog.** 37 % der Einstiege landen auf
+   den Verlegeservice-Seiten. Diese Menschen suchen einen Handwerker in Oranienburg/Berlin und
+   rufen an. Der wichtigste Umsatzkanal ist im Shop unsichtbar, weil kein Anruf und kein
+   Formular gemessen wird.
+3. **Es wird nichts gemessen.** Kein GA4-, Ads- oder Meta-Tag im Theme; die beiden Shopify-Pixel
+   im Admin wurden nie per Testkauf verifiziert. Der Google-Ads-Plan (#43–#58) baut auf einer
+   Messung auf, die es nicht gibt.
+4. **Der Kaufpfad hatte vermeidbare Reibung.** Muster-Buttons führten ins Kontaktformular am
+   fertigen Musterkonfigurator vorbei *(behoben)*. Warenkorb sagt „Geschätzter Gesamtbetrag",
+   Sie und Du sind gemischt, kein USP-Band, Länderwähler aktiv, Elfsight lädt ohne Consent.
+5. **Mobil ist das schwächste Glied.** Mobil bringt 7-mal mehr deutsche Besucher als Desktop,
+   erreicht aber 5-mal seltener den Checkout. Acht Mobil- und Formular-Snippets im Theme werden
+   nirgends gerendert, Touch-Targets liegen unter 44 px.
+6. **Produktdaten waren lückenhaft.** 152 Produkte ohne Typ *(behoben)*, 308 aktive Produkte
+   mit nur einem Bild, 0 GTIN, Tags in drei Schreibweisen, Kollektion Kurzflor mit einem Produkt,
+   ein aktives Produkt unveröffentlicht, ein Entwurf mit 1.504 Varianten als App-Artefakt.
+7. **Alte Pfade liefen ins Leere.** Sechs Weiterleitungen zeigten auf gelöschte Kollektionen,
+   sieben alte Pfade mit direkten Einstiegen lieferten 404 *(behoben)*.
+8. **Alte Berichte widersprechen sich.** Drei verschiedene Produktzahlen, drei Live-Theme-IDs,
+   ein Audit über Produkte, die nie existierten, ein Konfigurator gleichzeitig „bereit" und
+   „verworfen". Tabelle in Abschnitt 6.
+9. **Gut und nicht anfassen:** Theme-Code sauber (alle Guards grün), Menü vollständig, Versand
+   für Bodenbeläge kostenlos, alle Zahlungsarten aktiv, kein aktives Produkt unverkäuflich.
 
-Positiv: Theme-Code ist technisch sauber (alle Guards grün, 0 Liquid-Fehler), Versand für Bodenbeläge
-ist kostenlos, Zahlungsarten inkl. Shop Pay/Apple Pay/Google Pay sind aktiv, kein aktives Produkt ist
-unverkäuflich, alle aktiven Produkte hängen in einer Kollektion.
+### Was wir besser machen
 
----
+In dieser Reihenfolge, weil jeder Punkt den nächsten erst bewertbar macht:
+
+| # | Maßnahme | Status | Wer |
+|---|---|---|---|
+| 1 | **Messen**: Customer Events prüfen, Testkauf, Anruf- und Formular-Ziele anlegen | offen | Ahmet |
+| 2 | **Service-Funnel monetarisieren**: Anfrage-CTA und `tel:`-Events auf den Verlegeseiten | **Theme fertig** (PR #118); Pixel und Ziele bei Ahmet, Anleitung `service-funnel-events.md` | Agent → Ahmet |
+| 3 | **Musterpfad**: Muster-CTAs auf den Konfigurator | **erledigt** (PR #114) | — |
+| 4 | **Produkttypen** bei 147 Produkten | **erledigt** (Admin API) | — |
+| 5 | **Redirects**: 6 Ziele korrigiert, 7 neu angelegt | **erledigt** (Admin API) | — |
+| 6 | **Vertrauen mobil**: Warenkorb-Text, Sie-Form, USP-Band, Länderwähler aus, Elfsight hinter Consent | **erledigt** (PR #118) | — |
+| 7 | **Tote Snippets** einbinden oder löschen, Touch-Targets auf 44 px | **erledigt** (PR #118) | — |
+| 8 | **Latente cm-Modus-Fehler** in `price_custom` und Rechner schließen | **erledigt** (PR #118); Warenkorb-Mengenanzeige im cm-Modus offen | — |
+| 9 | **Kollektions-SEO**, Startseiten-Title, Linoleum-Platzhalterbild | **erledigt** (22 Kollektionen per API, Title-Fallback PR #118); Platzhalterbild lokal gegenprüfen | — |
+| 10 | **Google Shopping**: Rollenware-Ausschlussliste neu erzeugen, dann Kanalausschluss | **erledigt**: 122 Produkte, keines auf dem Kanal | — |
+| 11 | **Fotos** für die 20 meistbesuchten Produkte, Alt-Texte | **vorbereitet**: `foto-prioritaeten-2026-09-09.md`; Shooting bei Ahmet | Ahmet → Agent |
+| 12 | **Datenhygiene**: Tags, Zubehör-Kategorien, Solvana-Duplikat, Marlow veröffentlichen | **erledigt** (Admin API; Solvana-Polyamid heißt jetzt Tessara) | — |
+| 13 | **Entscheidungen**: `shipping-weight` löschen, 26 Supplier-Drafts, Markenname | Drafts **archiviert**; `shipping-weight` wartet auf App-Prüfung; Markenname: BODIVA in Registerprüfung | Ahmet |
+
+Stand 2026-09-09 abends: Alles, was ein Agent ohne Freigabe umsetzen kann, ist umgesetzt.
+Offen bleiben Punkt 1 (Messung, Testkauf), der Pixel für Punkt 2, das Foto-Shooting (11) und
+die Entscheidungen aus Punkt 13. Ohne Punkt 1 bleibt jede weitere Theme-Arbeit unbewertbar.
 
 ## 2. Kennzahlen
 
@@ -104,7 +138,7 @@ Warenkorb-Aktionen; die Serviceseiten mit 1.487 Sitzungen genau 2.
 | Vinylboden aktiv (Klebe / Klick / Rolle) | 141 / 85 / 63 |
 | Teppichboden aktiv | 51 (Schlinge 27, Velours 21, Wolle 11, Hochflor 9, Nadelvlies 2, **Kurzflor 1**) |
 | Linoleum / Bodenleisten / Zubehör | 9 / 9 / 43 |
-| Produkte ohne `productType` | **152 (35 %)** |
+| Produkte ohne `productType` | **152 (35 %)** — am 09.09. auf 0 aktive gebracht |
 | Aktive Produkte mit nur einem Bild | **308** (gesamter Vinyl-Katalog) |
 | Varianten ohne GTIN | alle (2.893 laut Feed-Audit 30.08.) |
 | Bestellungen seit Februar 2026 | 3 (1 Test 5,99 €, 2 Muster 0 €) |
@@ -152,14 +186,16 @@ ist im Shop unsichtbar.
 → Agent kann: `tel:`-Links und Formular-Submit als Custom Events auszeichnen, Serviceseiten mit
 klarem Anfrage-CTA versehen. Ahmet: Ziele in GA4/Ads anlegen.
 
-**P0-3 · Musterbestellung führt am fertigen Musterkonfigurator vorbei.** *(Code geprüft)*
+**P0-3 · Musterbestellung führt am fertigen Musterkonfigurator vorbei.** *(Code geprüft — erledigt 2026-09-09, PR #114)*
 `sections/tp-sample-checkout.liquid` + `templates/page.muster.json` sind ein kompletter
 Warenkorb-Musterservice (max. 3 Farben, kostenlos). Kein Link im Theme zeigt darauf; alle drei
 Muster-CTAs verlinken `/pages/kontakt?thema=muster`:
 `blocks/tp-service-links.liquid:17`, `blocks/tp-card-actions.liquid:86`, `blocks/tp-teppich-versand.liquid:21`.
 `/pages/muster` hatte in 180 Tagen 10 Einstiege. Muster sind bei Bodenbelägen der Kaufauslöser Nr. 1.
-→ Agent: drei `href` auf `/pages/muster?produkt={{ handle }}` umstellen, Kontaktformular-Variante
-als Fallback behalten. Klasse A/B, kleines PR.
+→ Erledigt: Produkte mit Option `Farbe` verlinken `/pages/muster?produkt=<handle>`. Produkte ohne
+Farboption (Klick-/Klebevinyl als Einzeldekor) behalten das Kontaktformular, weil der Konfigurator
+die Farbwerte der Option als Muster listet und ohne Option nur eine Fehlermeldung zeigt. Live nach
+dem nächsten Deploy.
 
 ### P1 — diese Woche
 
@@ -168,11 +204,12 @@ nur das Dekorbild, kein Raumbild, keine Struktur, keine Verlegung. Fotos sind la
 `qa/PHOTO_ROLLOUT_CHECKLIST.md` beauftragt.
 → Ahmet: Fotos priorisiert für die 20 meistbesuchten Produkte; Agent: Alt-Texte beim Einspielen.
 
-**P1-2 · 152 Produkte ohne `productType`** (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten).
+**P1-2 · 152 Produkte ohne `productType`** (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten). *(erledigt 2026-09-09)*
 Filter, Reports, Google-Feed-Kategorien und Typ-Logik im Theme greifen nur auf ein Viertel.
 Zuordnung ist aus Kollektion und `art:`-Tag eindeutig.
-→ Agent: Bulk-`productUpdate`, kein Human Gate nötig (kein Preis/SKU/Variante). Details in
-`produkt-audit-2026-09-08.md` Abschnitt 1.
+→ Erledigt per Admin API für alle 147 aktiven Produkte. Gegenprüfung: 0 aktive Produkte ohne Typ,
+Klebevinyl 141, Teppichboden 52, Sockelleisten 9. Fünf Entwürfe (Sylvara, `shipping-weight`)
+bewusst nicht angefasst. Details in `produkt-audit-2026-09-08.md` Abschnitt 1.
 
 **P1-3 · Mobile Kaufpfad.** Mobil 2.871 DE-Sitzungen → 1 Checkout; Desktop 415 → 5. Bekannte
 Touch-Target-Warnungen (`SEO_REPORT.md` 07.09.: „Vergleichen" 32 px, „Filter" 58×22, Stepper 32×32).
@@ -195,12 +232,12 @@ das offen ist, darf keine Shopping-Kampagne starten. Die Ausschlussliste enthäl
 Handles (Saphir, Rohan, Norway) und muss neu erzeugt werden.
 → Ahmet (Human Gate), Agent erzeugt die Liste neu.
 
-**P1-6 · Redirect-Ketten mit 404-Ziel.** *(Admin geprüft)* Sechs Weiterleitungen zeigen auf
-Kollektionen, die nicht mehr existieren (`/collections/hochflor`, `kurzflor`, `schlinge`, `wolle`,
-`vinylrollenware`, `nadelvlies`); zusätzlich landen Besucher direkt auf diesen alten Pfaden
-(`/collections/hochflor` 22 Sitzungen mit 3 Warenkorb-Aktionen). Eine Weiterleitung wurde in dieser
-Session bereits korrigiert (`/collections/kurzflor-teppichboden-1` → `teppichboden-kurzflor`),
-die übrigen hat die Sicherheitsstufe der Session geblockt. Fertige Liste in Abschnitt 7.
+**P1-6 · Redirect-Ketten mit 404-Ziel.** *(Admin geprüft — erledigt 2026-09-09)* Sechs
+Weiterleitungen zeigten auf Kollektionen, die nicht mehr existieren (`/collections/hochflor`,
+`kurzflor`, `schlinge`, `wolle`, `rollenware`, `vinylrollenware`); zusätzlich landeten Besucher
+direkt auf diesen alten Pfaden (`/collections/hochflor` 22 Sitzungen mit 3 Warenkorb-Aktionen).
+Alle sechs Ziele sind korrigiert, sieben neue Weiterleitungen angelegt, Zielkollektionen
+gegengeprüft. Liste in Abschnitt 7.
 
 ### P2 — SEO und Datenqualität
 
@@ -303,10 +340,10 @@ Reihenfolge nach Hebel. „Agent" = kann in einer Session ohne Human Gate umgese
 | # | Maßnahme | Wer | Klasse | Blocker |
 |---|---|---|---|---|
 | 1 | Customer Events prüfen, Testkauf, Anruf-/Formular-Ziele | Ahmet | — | Admin-Zugang |
-| 2 | Muster-CTAs auf `/pages/muster` umstellen (3 Dateien) | Agent | A | keine |
+| 2 | Muster-CTAs auf `/pages/muster` umstellen (3 Dateien) | Agent | A | **erledigt** (PR #114) |
 | 3 | Serviceseiten: Anfrage-CTA + `tel:`-Events | Agent | B | Ziel-Definition mit Ahmet |
-| 4 | `productType` bei 152 Produkten setzen | Agent | B | keine (kein Preis/SKU) |
-| 5 | Redirect-Ziele korrigieren (Liste unten) | Agent/Ahmet | A | Session-Sicherheitsstufe |
+| 4 | `productType` bei 152 Produkten setzen | Agent | B | **erledigt** (147 aktive, 5 Entwürfe offen) |
+| 5 | Redirect-Ziele korrigieren (Liste unten) | Agent/Ahmet | A | **erledigt** (6 geändert, 7 neu) |
 | 6 | Warenkorb-Text, Sie-Form, USP-Band, Länderwähler aus | Agent | B | keine |
 | 7 | Tote `tp-`-Snippets einbinden oder löschen, Touch-Targets | Agent | B | keine |
 | 8 | Latente cm-Modus-Fehler fixen (`price_custom`, Rechner Z. 835) | Agent | B | keine |
@@ -317,9 +354,9 @@ Reihenfolge nach Hebel. „Agent" = kann in einer Session ohne Human Gate umgese
 | 13 | `shipping-weight` (1.504 Varianten) und 26 Supplier-Drafts entscheiden | Ahmet | — | Freigabe Löschen |
 | 14 | Markenname → Vendor → MPN → GTIN-Anfrage | Ahmet | — | Entscheidung |
 
-### Redirects, fertig zum Ausführen (Admin → Navigation → URL-Weiterleitungen, oder per MCP)
+### Redirects — umgesetzt am 2026-09-09 (Admin API, Zielkollektionen gegengeprüft)
 
-Bestehende Weiterleitungen, Ziel ändern:
+Bestehende Weiterleitungen, Ziel geändert:
 
 | Pfad | altes Ziel (404) | neues Ziel |
 |---|---|---|
@@ -330,7 +367,7 @@ Bestehende Weiterleitungen, Ziel ändern:
 | `/collections/rollenware` | `/collections/vinylrollenware` | `/collections/vinylboden-vinyl-von-der-rolle` |
 | `/collections/vinyl-rollenware` | `/collections/rollenware` | `/collections/vinylboden-vinyl-von-der-rolle` |
 
-Neu anlegen (Pfade bekommen direkte Einstiege, aktuell 404):
+Neu angelegt (Pfade bekamen direkte Einstiege und lieferten 404):
 
 | Pfad | Ziel |
 |---|---|
@@ -340,9 +377,9 @@ Neu anlegen (Pfade bekommen direkte Einstiege, aktuell 404):
 | `/collections/wolle` | `/collections/teppichboden-wolle` |
 | `/collections/nadelvlies` | `/collections/teppichboden-nadelvlies` |
 | `/collections/vinylrollenware` | `/collections/vinylboden-vinyl-von-der-rolle` |
-| `/über-uns` | `/pages/uber-uns` |
+| `/über-uns` (gespeichert als `/%c3%bcber-uns`) | `/pages/uber-uns` |
 
-Erledigt in dieser Session: `/collections/kurzflor-teppichboden-1` → `/collections/teppichboden-kurzflor`.
+Zusätzlich: `/collections/kurzflor-teppichboden-1` → `/collections/teppichboden-kurzflor`. Weiterleitungen gesamt: 66 → 73.
 
 ---
 
@@ -357,5 +394,8 @@ Erledigt in dieser Session: `/collections/kurzflor-teppichboden-1` → `/collect
   Sicherheitsstufe der Remote-Session zweimal geblockt — ebenso 2 von 3 Redirect-Schreibzugriffen.
   Diese Stufe liegt außerhalb des Repositorys; sie lässt sich nur in den Sitzungseinstellungen
   von claude.ai/code ändern, nicht per Datei im Repo.
-- Shopify-Schreibzugriffe in dieser Session: genau eine Redirect-Korrektur (siehe oben). Keine
-  Produkt-, Preis-, Varianten- oder Theme-Änderung.
+- Shopify-Schreibzugriffe über beide Sessions: `productType` bei 147 Produkten, 13 Redirects.
+  Keine Preis-, SKU-, Varianten- oder Theme-Änderung über die API; Theme-Änderungen laufen über
+  PR und die Deploy-Kette.
+- Zweite Session (2026-09-09, Klassen B): Muster-Links (PR #114), Produkttypen, Redirects. Die
+  Sicherheitsstufe hat die Shopify-Mutationen diesmal durchgelassen.
