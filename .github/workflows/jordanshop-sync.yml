@@ -25,17 +25,11 @@ jobs:
       - name: 🔧 Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: 📦 Install deps
         run: npm ci
-
-      - name: 🔐 Store Shopify Token
-        run: |
-          mkdir -p ~/.shopify
-          echo "${{ secrets.SHOPIFY_ADMIN_TOKEN }}" > ~/.shopify/token
-          chmod 600 ~/.shopify/token
 
       - name: 🔍 Run Guards
         run: |
