@@ -196,16 +196,6 @@
                 assign image_columns = filter.values.size
               endif
             endif
-
-            # Vorab pruefen, ob ueberhaupt ein Wert gesperrt ist. Nur dann wird unter der
-            # Liste erklaert, warum - eine stumme Ausgrauung ist fuer Kunden nicht deutbar.
-            assign tp_has_disabled_values = false
-            for value in filter.values
-              if value.count == 0 and value.active == false
-                assign tp_has_disabled_values = true
-                break
-              endif
-            endfor
           %}
           <ul
             id="filters-list-{{ sectionId }}-{{ filter.param_name | escape | replace: '.', '-' }}"
@@ -408,12 +398,6 @@
               </li>
             {%- endfor -%}
           </ul>
-          {%- if tp_has_disabled_values -%}
-            <p class="facets__disabled-hint">
-              Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
-              Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
-            </p>
-          {%- endif -%}
         </div>
         {% if render_show_more %}
           <button
@@ -471,14 +455,6 @@
 {% stylesheet %}
   .facets input:checked + label {
     font-weight: 500;
-  }
-
-  /* Erklaerung statt stummer Ausgrauung. Nur sichtbar, wenn wirklich ein Wert gesperrt ist. */
-  .facets__disabled-hint {
-    margin: var(--padding-xs) 0 0;
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
   }
 
   /* Auf dem Handy muessen Filterzeilen und Pills sicher treffbar sein (min. 44px). */

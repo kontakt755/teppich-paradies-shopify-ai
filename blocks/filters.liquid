@@ -37,6 +37,22 @@
     echo ' 0px;'
   endcapture
 
+  # Einmal pro Filterblock pruefen, ob irgendein Wert gesperrt ist. Der Hinweis
+  # dazu stand vorher in jeder Filtergruppe und erschien dadurch mehrfach
+  # untereinander. Er gehoert einmal an den Filterbereich, nicht an die Gruppe.
+  assign tp_gesperrte_werte = false
+  for filter in filters
+    for value in filter.values
+      if value.count == 0 and value.active == false
+        assign tp_gesperrte_werte = true
+        break
+      endif
+    endfor
+    if tp_gesperrte_werte
+      break
+    endif
+  endfor
+
   for filter in filters
     case filter.type
       when 'price_range'
@@ -231,6 +247,12 @@
                   {{ rendered_filters }}
                 {% endif %}
               </div>
+              {%- if tp_gesperrte_werte -%}
+                <p class="facets__disabled-hint">
+                  Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                  Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                </p>
+              {%- endif -%}
 
               {% if block_settings.filter_style == 'horizontal' %}
                 <facet-remove-component
@@ -469,6 +491,12 @@
                       %}
                   {% endcase %}
                 {%- endfor -%}
+                {%- if tp_gesperrte_werte -%}
+                  <p class="facets__disabled-hint">
+                    Ausgegraute Optionen sind mit der aktuellen Auswahl nicht kombinierbar.
+                    Filter zur&uuml;cksetzen, um alle Optionen zu sehen.
+                  </p>
+                {%- endif -%}
               </div>
             {% endif %}
 
@@ -519,6 +547,15 @@
 {% endif %}
 
 {% stylesheet %}
+  /* Erklaerung statt stummer Ausgrauung. Steht einmal je Filterbereich, nicht
+     je Gruppe - sonst wiederholt sich derselbe Satz mehrfach untereinander. */
+  .facets__disabled-hint {
+    margin: var(--padding-xs) 0 0;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-60));
+  }
+
   .facets-block-wrapper {
     @media screen and (min-width: 750px) {
       margin: var(--facets-margin);
