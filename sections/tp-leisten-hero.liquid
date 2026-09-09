@@ -192,6 +192,7 @@
   .tp-lh__breadcrumb li {
     display: inline-flex;
     align-items: center;
+    min-height: 44px;
   }
 
   .tp-lh__breadcrumb li + li::before {
@@ -201,7 +202,9 @@
   }
 
   .tp-lh__breadcrumb a {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
     padding-block: 6px;
     color: inherit;
     text-decoration: none;
@@ -388,7 +391,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-lh__breadcrumb {
-      margin-block-end: 12px;
+      margin-block-end: 4px;
     }
 
     .tp-lh__lead {
