@@ -346,12 +346,22 @@
 /* Derselbe leere Bildplatz im mobilen Drawer: dort reserviert
    .menu-drawer__menu--grid ein ::before im gleichen Seitenverhaeltnis.
    Auch hier stehen die Eintraege ohne Kategoriebild besser als Textzeile. */
-.menu-drawer__menu--grid.menu-drawer__menu--grid
+/* Zur Spezifitaet: die Theme-Regel in snippets/header-drawer.liquid liegt bei
+   (0,4,0) - .menu-drawer__menu--grid, :has(.menu-drawer__link-image),
+   .menu-drawer__menu-item und :not(:has(> .menu-drawer__link-image)) zaehlen
+   je eine Klasse. Die doppelte Klasse allein ergaebe ebenfalls (0,4,0), und
+   bei Gleichstand gewinnt die spaeter ausgelieferte Regel - das waere das
+   Block-Stylesheet, also die Theme-Regel. Der zusaetzliche Vorfahre
+   .menu-drawer__navigation hebt den Override auf (0,5,0) und entscheidet die
+   Frage unabhaengig von der Ladereihenfolge. */
+.menu-drawer__navigation
+  .menu-drawer__menu--grid.menu-drawer__menu--grid
   .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image))::before {
   display: none;
 }
 
-.menu-drawer__menu--grid.menu-drawer__menu--grid
+.menu-drawer__navigation
+  .menu-drawer__menu--grid.menu-drawer__menu--grid
   .menu-drawer__menu-item:not(:has(> .menu-drawer__link-image)) {
   row-gap: 0;
   padding-block: 0.35rem;
