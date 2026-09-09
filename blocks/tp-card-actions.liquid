@@ -81,9 +81,16 @@
     </button>
     {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
     {%- unless tp_ca_product.tags contains 'zubehoer' -%}
+      {%- comment -%} Musterkonfigurator nur mit Option Farbe, sonst Kontaktformular (siehe tp-service-links) {%- endcomment -%}
+      {%- assign tp_ca_handle = tp_ca_product.handle | url_encode -%}
+      {%- if tp_ca_product.options contains 'Farbe' -%}
+        {%- assign tp_ca_sample_url = '/pages/muster?produkt=' | append: tp_ca_handle -%}
+      {%- else -%}
+        {%- assign tp_ca_sample_url = '/pages/kontakt?thema=muster&produkt=' | append: tp_ca_handle -%}
+      {%- endif -%}
       <a
         class="tp-card-actions__sample"
-        href="/pages/kontakt?thema=muster&produkt={{ tp_ca_product.handle | url_encode }}"
+        href="{{ tp_ca_sample_url }}"
       >
         Muster
       </a>

@@ -12,13 +12,19 @@
 {%- liquid
   assign tp_tv2_id = block.id | replace: '_', '' | downcase
   assign tp_tv2_handle = product.handle | url_encode
+  # Musterkonfigurator nur mit Option Farbe, sonst Kontaktformular (siehe tp-service-links)
+  if product.options contains 'Farbe'
+    assign tp_tv2_sample_url = '/pages/muster?produkt=' | append: tp_tv2_handle
+  else
+    assign tp_tv2_sample_url = '/pages/kontakt?thema=muster&produkt=' | append: tp_tv2_handle
+  endif
   assign tp_tv2_delivery_time = block.settings.delivery_time | strip
   assign tp_tv2_shipping_page = pages['versand-lieferung']
   assign tp_tv2_versandart = product.metafields.custom.versandart.value | downcase | strip
 -%}
 
 <div class="tp-teppich-versand-{{ tp_tv2_id }}" {{ block.shopify_attributes }}>
-  <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="/pages/kontakt?thema=muster&produkt={{ tp_tv2_handle }}">
+  <a class="tp-teppich-versand__sample-{{ tp_tv2_id }}" href="{{ tp_tv2_sample_url }}">
     Kostenloses Muster anfragen
   </a>
 
