@@ -1,0 +1,17 @@
+{
+  "_hinweis": "Sicherung des Menues main-menu-zubehoer vor dem Loeschen am 2026-09-09. Ausgelesen ueber die Admin API. Zum Wiederherstellen dient menuCreate; die MenuItem-IDs darin sind die alten und werden dabei neu vergeben.",
+  "_grund": "Verwaiste Kopie von main-menu. Ueber alle Themes geprueft referenzierte sie keines. Sie fuehrte nur 7 Punkte ohne Untermenues, waehrend main-menu 40 Items hat - also kein Fallback, sondern ein veralteter Teilstand.",
+  "id": "gid://shopify/Menu/346703298894",
+  "handle": "main-menu-zubehoer",
+  "title": "Hauptmenü mit Zubehör",
+  "isDefault": false,
+  "items": [
+    { "id": "gid://shopify/MenuItem/868470686030", "title": "Teppichboden",        "type": "COLLECTION", "url": "/collections/teppichboden",   "resourceId": "gid://shopify/Collection/688863674702" },
+    { "id": "gid://shopify/MenuItem/868470948174", "title": "Vinylboden",          "type": "COLLECTION", "url": "/collections/vinylboden-1",   "resourceId": "gid://shopify/Collection/688863740238" },
+    { "id": "gid://shopify/MenuItem/868471177550", "title": "Linoleumboden",       "type": "HTTP",       "url": "/collections/linoleumboden-1", "resourceId": null },
+    { "id": "gid://shopify/MenuItem/868471210318", "title": "Bodenleisten",        "type": "COLLECTION", "url": "/collections/bodenleisten",   "resourceId": "gid://shopify/Collection/688863773006" },
+    { "id": "gid://shopify/MenuItem/868471406926", "title": "Zubehör",             "type": "COLLECTION", "url": "/collections/zubehoer",       "resourceId": "gid://shopify/Collection/701924376910" },
+    { "id": "gid://shopify/MenuItem/868471767374", "title": "Service & Verlegung", "type": "HTTP",       "url": "https://www.teppich-paradies.net/pages/boden-malerarbeiten", "resourceId": null },
+    { "id": "gid://shopify/MenuItem/868471931214", "title": "Kontakt",             "type": "HTTP",       "url": "https://www.teppich-paradies.net/pages/kontakt",             "resourceId": null }
+  ]
+}

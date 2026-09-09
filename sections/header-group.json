@@ -11,6 +11,43 @@
   "type": "header",
   "name": "Header",
   "sections": {
+    "announcements_tp": {
+      "type": "header-announcements",
+      "blocks": {
+        "usp_versand": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Bodenbeläge versandkostenfrei innerhalb Deutschlands"
+          }
+        },
+        "usp_muster": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Kostenlose Muster bestellen",
+            "link": "shopify://pages/muster"
+          }
+        },
+        "usp_beratung": {
+          "type": "_announcement",
+          "settings": {
+            "text": "Persönliche Fachberatung: 03301 5733720"
+          }
+        }
+      },
+      "block_order": [
+        "usp_versand",
+        "usp_muster",
+        "usp_beratung"
+      ],
+      "settings": {
+        "speed": 5,
+        "section_width": "page-width",
+        "color_scheme": "scheme-1",
+        "divider_width": 0,
+        "padding-block-start": 8,
+        "padding-block-end": 8
+      }
+    },
     "header_section": {
       "type": "header",
       "blocks": {
@@ -55,9 +92,9 @@
         "show_search": true,
         "search_position": "right",
         "search_row": "top",
-        "show_country": true,
+        "show_country": false,
         "country_selector_style": false,
-        "show_language": true,
+        "show_language": false,
         "localization_font": "heading",
         "localization_font_size": "0.625rem",
         "localization_position": "right",
@@ -99,6 +136,7 @@
     }
   },
   "order": [
+    "announcements_tp",
     "header_section",
     "divider_BkWxdN"
   ]
