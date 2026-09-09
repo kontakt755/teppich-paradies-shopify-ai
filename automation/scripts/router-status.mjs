@@ -94,8 +94,12 @@ if (fs.existsSync(runsDir)) {
   const runs = fs.readdirSync(runsDir);
   const reviewed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'codex-review.json')) || fs.existsSync(path.join(runsDir, run, 'claude-review.json'))).length;
   const failed = runs.filter(run => fs.existsSync(path.join(runsDir, run, 'review-error.txt'))).length;
-  say(reviewed > 0 || runs.length === 0, '.router/agent-runs', `${runs.length} Laeufe, ${reviewed} mit Review, ${failed} mit protokolliertem Review-Fehler`);
+  // Leerer Ordner = Lauf wurde von aussen abgebrochen, bevor Codex geschrieben hat
+  // (bis 2026-09-09: Stop-Hook ohne "timeout" -> Claude Code killt nach 60 s).
+  const empty = runs.filter(run => fs.readdirSync(path.join(runsDir, run)).length === 0).length;
+  say(reviewed > 0 || runs.length === 0, '.router/agent-runs', `${runs.length} Laeufe, ${reviewed} mit Review, ${failed} mit protokolliertem Review-Fehler, ${empty} ohne Ergebnis`);
   if (runs.length && !reviewed) problems.push('Kein einziger Stop-Hook-Lauf hat ein Review-Ergebnis: Codex-Binary pruefen (CODEX_CLI_PATH) und review-error.txt lesen.');
+  else if (empty > reviewed) problems.push(`${empty} Laeufe ohne Ergebnisdatei: der Stop-Hook wurde vor dem Ende des Reviews abgebrochen. "timeout" des Stop-Hooks in .claude/settings.json pruefen (Review braucht bis zu 15 min).`);
 }
 const codexBinary = ['CODEX_CLI_PATH' in process.env ? process.env.CODEX_CLI_PATH : null, '/Applications/ChatGPT.app/Contents/Resources/codex'].filter(Boolean).find(candidate => fs.existsSync(candidate));
 say(Boolean(codexBinary), 'codex-Binary', codexBinary ?? 'nicht gefunden (CODEX_CLI_PATH setzen)');
