@@ -7,17 +7,28 @@
     lfm     Preis je laufendem Meter, Bahnenbreite bekannt. Eingabe m2.
     qm      Preis je Quadratmeter. Eingabe m2.
     gebinde Rolle/Faltplatte mit bekanntem Flaecheninhalt. Eingabe m2.
-    stange  Sockelleiste, Preis je Stange bekannter Laenge. Eingabe Meter.
+    stange  Stueckware bekannter Laenge - Sockelleiste je Stange, Profil je
+            Schiene. Eingabe Meter.
 
   Die ersten drei stehen bereits in der Variantenbezeichnung ("... 80 cm breit
   (je lfm)", "... (je m2)", "Rolle 30,14 m2", "Faltplatte 15 m2",
   "Rolle 50 m x 100 cm") - dafuer wurde kein Metafeld gebraucht.
 
-  Der vierte Fall braucht eines: Die Stangenlaenge steht in keiner Bezeichnung
-  und in keinem Tag, sondern hoechstens im Beschreibungstext. Sie liegt deshalb
-  seit 2026-09-09 in custom.stangenlaenge (Meter, je Produkt, nicht je
-  Variante). Belegte Quelle je Produkt:
-  domains/shopify/leisten-stangenlaenge/stangenlaenge.json - nichts geschaetzt.
+  Der vierte Fall hat zwei Datenquellen, weil die Laenge zwei Orte hat:
+
+  Bei Sockelleisten gilt eine Laenge fuers ganze Produkt (jede Farbe dieselbe
+  Stange), und sie steht in keiner Bezeichnung und keinem Tag. Sie liegt
+  deshalb seit 2026-09-09 in custom.stangenlaenge (Meter, je Produkt). Belegte
+  Quelle je Produkt: domains/shopify/leisten-stangenlaenge/stangenlaenge.json.
+
+  Bei Profilen und Uebergangsschienen ist die Laenge dagegen eine echte
+  Produktoption ("Laenge": 270 cm / 100 cm / 90 cm) und damit je Variante
+  verschieden. Dafuer braucht es kein Metafeld - der Block liest den
+  Optionswert. Gelesen wird nur eine Option, die exakt "Laenge" heisst; ein
+  Wert ohne Einheit cm oder m wird nicht verwendet.
+
+  Das Metafeld hat Vorrang vor der Option: Traegt ein Produkt beides, gilt die
+  gepflegte Produktlaenge.
 
   Ehrlichkeitsregel: Trifft keiner der vier Faelle zu - Kleber, Reinigungs-
   mittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten - rendert der
@@ -42,15 +53,52 @@
   # Variantenerkennung darunter zurueck - die bei Leisten nichts findet.
   assign tp_zm_stange = tp_zm_product.metafields.custom.stangenlaenge.value | times: 1.0
 
+  # Profile und Uebergangsschienen tragen die Laenge als Produktoption. Nur
+  # eine Option, die exakt "Laenge" heisst, wird gelesen - "Breite" (Verlege-
+  # baender) und "Ausfuehrung" bleiben damit unberuehrt.
+  assign tp_zm_len_pos = 0
+  for tp_zm_opt in tp_zm_product.options_with_values
+    assign tp_zm_opt_name = tp_zm_opt.name | downcase | replace: 'ä', 'a'
+    if tp_zm_opt_name == 'lange' or tp_zm_opt_name == 'laenge'
+      assign tp_zm_len_pos = tp_zm_opt.position
+      break
+    endif
+  endfor
+
   for tp_zm_v in tp_zm_product.variants
     assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2'
     assign tp_zm_mode = ''
     assign tp_zm_width = 0
     assign tp_zm_area = 0
 
+    assign tp_zm_noun = ''
+
     if tp_zm_stange > 0
       assign tp_zm_mode = 'stange'
+      assign tp_zm_noun = 'stange'
       assign tp_zm_area = tp_zm_stange
+    elsif tp_zm_len_pos > 0
+      # Optionswert der Laengenoption dieser Variante, z. B. "270 cm".
+      if tp_zm_len_pos == 1
+        assign tp_zm_len_val = tp_zm_v.option1
+      elsif tp_zm_len_pos == 2
+        assign tp_zm_len_val = tp_zm_v.option2
+      else
+        assign tp_zm_len_val = tp_zm_v.option3
+      endif
+      assign tp_zm_len_val = tp_zm_len_val | downcase | strip | replace: ',', '.'
+      assign tp_zm_len_m = 0
+      if tp_zm_len_val contains 'cm'
+        assign tp_zm_len_cm = tp_zm_len_val | split: 'cm' | first | strip | times: 1.0
+        assign tp_zm_len_m = tp_zm_len_cm | divided_by: 100.0
+      elsif tp_zm_len_val contains 'm'
+        assign tp_zm_len_m = tp_zm_len_val | split: 'm' | first | strip | times: 1.0
+      endif
+      if tp_zm_len_m > 0
+        assign tp_zm_mode = 'stange'
+        assign tp_zm_noun = 'profil'
+        assign tp_zm_area = tp_zm_len_m
+      endif
     elsif tp_zm_t contains 'je lfm'
       assign tp_zm_mode = 'lfm'
       if tp_zm_t contains 'cm breit'
@@ -86,7 +134,9 @@
         echo tp_zm_width
         echo ',"a":'
         echo tp_zm_area
-        echo '}'
+        echo ',"n":"'
+        echo tp_zm_noun
+        echo '"}'
       endcapture
       if tp_zm_rows == ''
         assign tp_zm_rows = tp_zm_row
@@ -127,146 +177,177 @@
 
   <script>
     (() => {
-      const host = document.getElementById('tp-zm-{{ tp_zm_id }}');
-      if (!host || host.dataset.ready === '1') return;
-      host.dataset.ready = '1';
-
-      let map = {};
-      try {
-        map = JSON.parse(host.dataset.map || '{}');
-      } catch (e) {
-        return;
-      }
-
-      const box = host.querySelector('[data-box]');
-      const label = host.querySelector('[data-label]');
-      const input = host.querySelector('[data-input]');
-      const result = host.querySelector('[data-result]');
-      const hint = host.querySelector('[data-hint]');
-      const unit = host.querySelector('[data-unit]');
+      // Custom Element statt einmalig laufendem Skript: Horizon ersetzt beim
+      // Variantenwechsel das Abschnitts-DOM, ein Inline-Skript laeuft danach
+      // nicht erneut und ein Listener am alten Knoten ist verloren. Genau das
+      // hat am 2026-09-09 bei Profilen dazu gefuehrt, dass nach dem Wechsel
+      // von 270 cm auf 100 cm weiter mit 2,7 m gerechnet wurde - der Preis
+      // stimmte, die Menge nicht. connectedCallback plus ein Listener am
+      // document ueberleben beide Faelle.
+      if (customElements.get('tp-zubehoer-menge')) return;
 
       const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
 
-      // Die aktuelle Variante steht im Formular selbst - so bleibt der Block
-      // mit der Variantenauswahl des Themes synchron, ohne sie nachzubauen.
-      const currentVariantId = () => {
-        const form = host.closest('.shopify-section, main') || document;
-        const field = form.querySelector('input[name="id"], select[name="id"]');
-        return field && field.value ? String(field.value) : String(host.dataset.selected || '');
-      };
+      // Die Eingabe soll einen Re-Render ueberstehen, deshalb liegt sie
+      // ausserhalb des Elements.
+      const eingaben = new Map();
 
-      const quantityInput = () => {
-        const scope = host.closest('.shopify-section, main') || document;
-        return scope.querySelector('input[name="quantity"]');
-      };
+      // Sockelleiste und Profil rechnen gleich, heissen aber nicht gleich.
+      const words = (info) =>
+        info.n === 'profil'
+          ? {
+              label: 'Benötigte Länge',
+              eines: 'Ein Profil',
+              eine: 'Profil',
+              viele: 'Profile',
+              abzug: 'Zuschnitt und Verschnitt bitte selbst einplanen.',
+            }
+          : {
+              label: 'Benötigte Wandlänge',
+              eines: 'Eine Stange',
+              eine: 'Stange',
+              viele: 'Stangen',
+              abzug: 'Türen und Durchgänge bitte selbst abziehen.',
+            };
 
-      const setQuantity = (value) => {
-        const field = quantityInput();
-        if (!field) return false;
-        field.value = String(value);
-        field.dispatchEvent(new Event('input', { bubbles: true }));
-        field.dispatchEvent(new Event('change', { bubbles: true }));
-        return true;
-      };
-
-      const render = () => {
-        const info = map[currentVariantId()];
-        if (!info) {
-          box.hidden = true;
-          return;
-        }
-        box.hidden = false;
-
-        if (info.m === 'stange') {
-          label.textContent = 'Benötigte Wandlänge';
-          unit.textContent = 'm';
-          hint.textContent = 'Eine Stange ist ' + nf.format(Number(info.a) || 0)
-            + ' m lang. Türen und Durchgänge bitte selbst abziehen.';
-          compute();
-          return;
-        }
-
-        unit.textContent = 'm²';
-
-        if (info.m === 'lfm') {
-          const w = Number(info.w) || 0;
-          label.textContent = 'Benötigte Fläche';
-          hint.textContent = w > 0
-            ? 'Abgerechnet wird je laufendem Meter, Bahnenbreite ' + nf.format(w) + ' cm.'
-            : 'Abgerechnet wird je laufendem Meter.';
-        } else if (info.m === 'qm') {
-          label.textContent = 'Benötigte Fläche';
-          hint.textContent = 'Abgerechnet wird je Quadratmeter.';
-        } else {
-          label.textContent = 'Benötigte Fläche';
-          hint.textContent = 'Ein Gebinde reicht für ' + nf.format(Number(info.a) || 0) + ' m².';
-        }
-        compute();
-      };
-
-      const compute = () => {
-        const info = map[currentVariantId()];
-        const area = parseFloat(String(input.value).replace(',', '.'));
-        if (!info || !(area > 0)) {
-          result.textContent = '';
-          return;
-        }
-
-        let need = 0;
-        let text = '';
-
-        if (info.m === 'stange') {
-          const len = Number(info.a) || 0;
-          if (!(len > 0)) {
-            result.textContent = '';
+      class TpZubehoerMenge extends HTMLElement {
+        connectedCallback() {
+          try {
+            this.map = JSON.parse(this.dataset.map || '{}');
+          } catch (e) {
             return;
           }
-          need = Math.ceil(area / len);
-          text = need + (need === 1 ? ' Stange' : ' Stangen')
-            + ' bestellen (ergibt ' + nf.format(need * len) + ' m).';
-          result.textContent = setQuantity(need)
+
+          this.box = this.querySelector('[data-box]');
+          this.label = this.querySelector('[data-label]');
+          this.input = this.querySelector('[data-input]');
+          this.unit = this.querySelector('[data-unit]');
+          this.result = this.querySelector('[data-result]');
+          this.hint = this.querySelector('[data-hint]');
+          if (!this.box || !this.input) return;
+
+          this.schluessel = 'tpzm-' + (this.dataset.selected || '');
+          const gemerkt = eingaben.get(this.schluessel);
+          if (gemerkt) this.input.value = gemerkt;
+
+          this.input.addEventListener('input', () => {
+            eingaben.set(this.schluessel, this.input.value);
+            this.compute();
+          });
+
+          // Am document, nicht am Abschnitt: der Abschnitt kann ersetzt werden.
+          this.onChange = (event) => {
+            if (event.target && event.target.name === 'quantity') return;
+            if (this.input.contains(event.target)) return;
+            // Horizon rendert nach dem Wechsel asynchron - zweimal nachsehen.
+            setTimeout(() => this.render(), 80);
+            setTimeout(() => this.render(), 500);
+          };
+          document.addEventListener('change', this.onChange);
+
+          this.render();
+        }
+
+        disconnectedCallback() {
+          if (this.onChange) document.removeEventListener('change', this.onChange);
+        }
+
+        // Die aktuelle Variante steht im Kaufformular selbst - das Theme bleibt
+        // die einzige Quelle, der Block baut keine Variantenlogik nach.
+        variantId() {
+          const scope = this.closest('.shopify-section, main') || document;
+          const feld = scope.querySelector('input[name="id"], select[name="id"]');
+          return feld && feld.value ? String(feld.value) : String(this.dataset.selected || '');
+        }
+
+        quantityInput() {
+          const scope = this.closest('.shopify-section, main') || document;
+          return scope.querySelector('input[name="quantity"]');
+        }
+
+        setQuantity(value) {
+          const feld = this.quantityInput();
+          if (!feld) return false;
+          feld.value = String(value);
+          feld.dispatchEvent(new Event('input', { bubbles: true }));
+          feld.dispatchEvent(new Event('change', { bubbles: true }));
+          return true;
+        }
+
+        render() {
+          const info = this.map[this.variantId()];
+          if (!info) {
+            this.box.hidden = true;
+            return;
+          }
+          this.box.hidden = false;
+
+          if (info.m === 'stange') {
+            const w = words(info);
+            this.label.textContent = w.label;
+            this.unit.textContent = 'm';
+            this.hint.textContent = w.eines + ' ist ' + nf.format(Number(info.a) || 0)
+              + ' m lang. ' + w.abzug;
+            this.compute();
+            return;
+          }
+
+          this.unit.textContent = 'm²';
+          this.label.textContent = 'Benötigte Fläche';
+
+          if (info.m === 'lfm') {
+            const b = Number(info.w) || 0;
+            this.hint.textContent = b > 0
+              ? 'Abgerechnet wird je laufendem Meter, Bahnenbreite ' + nf.format(b) + ' cm.'
+              : 'Abgerechnet wird je laufendem Meter.';
+          } else if (info.m === 'qm') {
+            this.hint.textContent = 'Abgerechnet wird je Quadratmeter.';
+          } else {
+            this.hint.textContent = 'Ein Gebinde reicht für ' + nf.format(Number(info.a) || 0) + ' m².';
+          }
+          this.compute();
+        }
+
+        compute() {
+          const info = this.map[this.variantId()];
+          const menge = parseFloat(String(this.input.value).replace(',', '.'));
+          if (!info || !(menge > 0)) {
+            this.result.textContent = '';
+            return;
+          }
+
+          let need = 0;
+          let text = '';
+
+          if (info.m === 'stange') {
+            const len = Number(info.a) || 0;
+            if (!(len > 0)) return void (this.result.textContent = '');
+            const w = words(info);
+            need = Math.ceil(menge / len);
+            text = need + ' ' + (need === 1 ? w.eine : w.viele)
+              + ' bestellen (ergibt ' + nf.format(need * len) + ' m).';
+          } else if (info.m === 'lfm') {
+            const b = Number(info.w) || 0;
+            if (!(b > 0)) return void (this.result.textContent = '');
+            need = Math.ceil(menge / (b / 100));
+            text = need + ' lfd. Meter bestellen (deckt ' + nf.format(need * (b / 100)) + ' m²).';
+          } else if (info.m === 'qm') {
+            need = Math.ceil(menge);
+            text = need + ' m² bestellen.';
+          } else {
+            const a = Number(info.a) || 0;
+            if (!(a > 0)) return void (this.result.textContent = '');
+            need = Math.ceil(menge / a);
+            text = need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
+          }
+
+          this.result.textContent = this.setQuantity(need)
             ? text + ' Die Menge ist eingetragen.'
             : text;
-          return;
         }
+      }
 
-        if (info.m === 'lfm') {
-          const w = Number(info.w) || 0;
-          if (!(w > 0)) {
-            result.textContent = '';
-            return;
-          }
-          need = Math.ceil(area / (w / 100));
-          text = need + ' lfd. Meter bestellen (deckt ' + nf.format(need * (w / 100)) + ' m²).';
-        } else if (info.m === 'qm') {
-          need = Math.ceil(area);
-          text = need + ' m² bestellen.';
-        } else {
-          const a = Number(info.a) || 0;
-          if (!(a > 0)) {
-            result.textContent = '';
-            return;
-          }
-          need = Math.ceil(area / a);
-          text = need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
-        }
-
-        result.textContent = setQuantity(need)
-          ? text + ' Die Menge ist eingetragen.'
-          : text;
-      };
-
-      input.addEventListener('input', compute);
-
-      // Variantenwechsel: Horizon tauscht Teile der Seite aus, deshalb wird der
-      // Zustand nach jeder Aenderung im Abschnitt neu gelesen.
-      const scope = host.closest('.shopify-section, main') || document;
-      scope.addEventListener('change', (event) => {
-        if (event.target && event.target.name === 'quantity') return;
-        setTimeout(render, 60);
-      });
-
-      render();
+      customElements.define('tp-zubehoer-menge', TpZubehoerMenge);
     })();
   </script>
 {%- endif -%}
