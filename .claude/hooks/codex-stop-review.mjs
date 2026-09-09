@@ -65,7 +65,12 @@ try {
   // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
   // Auftrag erfuellt. Kein Zustand beendet ohne Modell-Review; nur Klasse A
   // (oben, plan.reviewer fehlt) kommt ohne aus.
-  const scope = detectReviewScope({ cwd: projectDir });
+  // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
+  // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
+  // origin/main - der in einem geteilten Checkout auch von einer anderen,
+  // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
+  // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
+  const scope = detectReviewScope({ cwd: projectDir, sinceRef: current.state.startCommit ?? null });
   if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
