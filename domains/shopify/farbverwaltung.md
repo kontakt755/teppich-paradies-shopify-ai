@@ -294,20 +294,30 @@ sowohl in der Sofortsuche als auch in der Volltextsuche. Der Bodenleisten-Filter
 weiterhin nur Arten, Verfuegbarkeit und Preis - `dekor:` taucht dort nicht als neue
 Filtergruppe auf, weil die Filter fest konfiguriert sind.
 
-### Offener Befund: JOKA-Farbnummern
+### JOKA-Farbnummern geklaert (2026-09-09)
 
-Bei `JOKA JK 34 Silikon-Dichtstoff` widersprechen sich Name und Nummer:
+Der Widerspruch zwischen Name und Nummer bei `JOKA JK 34` ist aufgeloest. JOKA ist die
+Eigenmarke desselben Lieferanten; der Farbwaehler des Artikels nennt Farbnummer und
+Bezeichnung, die Attributtabelle die Artikelnummer. Rohdaten:
+`domains/shopify/joka-jk34-farbnummern-2026-09-09.json`.
 
-| Farbe | Nummer im alten Namen | `custom.farbcode` aus der SKU |
-|---|---|---|
-| Nussbraun | 26 | 26B |
-| Gelb | 25 | 25G |
-| Reinweiß | keine | 26 |
-| Transparent | keine | 25 |
+Zwei Farben tragen beim Hersteller **gar keine Zahlennummer**, und daran hing der ganze
+scheinbare Konflikt:
 
-Die Buchstaben-Suffixe sehen aus wie eine Notloesung, um doppelte SKUs zu vermeiden.
-Welche Nummer der Hersteller fuehrt, ist damit unklar - das klaert nur die JOKA-Preisliste.
-Nicht geraten, deshalb steht es hier.
+| Farbe | JOKA fuehrt sie als | Artikelnummer | `custom.farbcode` jetzt |
+|---|---|---|---|
+| Nussbraun | `26 nussbraun` | `ZUBSARHAVS_26B` | `26` |
+| Reinweiss | `N-Weiss, reinweiss` | `ZUBSARHAVS_26` | `N-Weiss` |
+| Gelb | `25 gelb` | `ZUBSARHAVS_25G` | `25` |
+| Transparent | `transparent` | `ZUBSARHAVS_25` | `transparent` |
+
+Die Buchstaben `B` und `G` in der Artikelnummer sind keine Notloesung des Shops, sondern
+stehen so beim Lieferanten: `_26` und `_25` waren fuer die beiden namenlosen Farben
+vergeben, also bekamen die nummerierten ein Kuerzel angehaengt. Farbnummer und
+Artikelnummer sind hier verschiedene Dinge - genau wie bei den Doellken-Leisten.
+
+Alle 26 Shop-SKUs stimmen mit den Jordan-Artikelnummern ueberein. Vier `farbcode`-Werte
+wurden korrigiert, die uebrigen 22 waren schon richtig.
 
 **Feldwin nachgezogen (2026-09-09):** Die sechs Feldwin-Sockelleisten schrieben ihre Farben
 klein (`anthrazit`, `weiß RAL 9010`). 37 Optionswerte und die 11 Registereintraege stehen jetzt
