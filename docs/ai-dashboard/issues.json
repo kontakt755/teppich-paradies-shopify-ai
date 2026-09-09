@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:37:45.977Z",
+  "generated_at": "2026-09-09T11:38:20.763Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 43,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:37:45.977Z",
+    "fetchedAt": "2026-09-09T11:38:20.763Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -57,7 +57,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/136",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p3",
         "area:navigation"
@@ -66,14 +66,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Kopie von main-menu, die kein Theme referenzierte. Nur 7 Punkte ohne Untermenues gegenueber 40 Items in main-menu - kein Fallback, sondern veralteter Teilstand.\n\nVor dem Loeschen frisch geprueft: 18 Themes gegen header-group.json und settings_data.json, dazu das Repository. Kein Treffer. Baum vorher gesichert und versioniert abgelegt.\n\nGegenprobe: menus() listet nur noch main-menu, footer, customer-account-main-menu. main-menu unveraendert mit allen 40 MenuItem-IDs. menu:guard 35 Links 0 Fehler.\n\nStoreweit und sofort live, nach ausdruecklicher Freigabe. PR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:37:28Z",
-      "updated_at": "2026-09-09T11:37:44Z",
+      "updated_at": "2026-09-09T11:37:52Z",
       "closed_at": null
     },
     {
