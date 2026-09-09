@@ -21,19 +21,11 @@
     endif
   endfor
 
-  # Manche Sortimente fuehren echte Farbvarianten, ohne dass je Farbe ein
-  # eigenes Foto vorliegt (Sauberlauf: 12 Farben, aber nur Serienaufnahmen).
-  # Die Galerie zeigt dann beim Farbwechsel weiter dasselbe Bild - der Kunde
-  # waehlt Weinrot und sieht Dunkelgruen. Statt das stehen zu lassen, sagt der
-  # Hinweis unten offen, was die Bilder zeigen. Sobald je Variante ein Bild
-  # gepflegt ist, faellt er von selbst wieder weg.
-  assign tp_fa_hat_variantenbild = false
-  for tp_fa_v in tp_fa_product.variants
-    if tp_fa_v.featured_media != blank
-      assign tp_fa_hat_variantenbild = true
-      break
-    endif
-  endfor
+  # Fehlt einer Farbe das eigene Foto, zeigt die Galerie das Hauptbild des
+  # Produkts - der Kunde waehlt Sturmgrau und sieht Dunkelgruen. Der Hinweis
+  # unten sagt das offen, und zwar je Farbe: er haengt an der gewaehlten
+  # Variante, nicht am Produkt. Sobald ein Foto gepflegt ist, verschwindet er
+  # fuer diese Farbe von selbst. tp-farbe.js schaltet ihn beim Farbwechsel.
 -%}
 
 {%- if tp_fa_has_farbe -%}
@@ -92,12 +84,16 @@
       </span>
     {%- endif -%}
     <script type="application/json" data-tp-farbe-map>{ {{ tp_fa_map | strip }} }</script>
+    {%- if block.settings.hinweis_ohne_variantenbild -%}
+      <p
+        class="tp-farbanzeige__hinweis"
+        data-tp-farbe-hinweis
+        {% if tp_fa_variant.featured_media != blank %}hidden{% endif %}
+      >
+        {{ block.settings.hinweis_text | default: 'Für diese Farbe liegt noch kein Foto vor.' | escape }}
+      </p>
+    {%- endif -%}
   </tp-farbe-anzeige>
-  {%- if block.settings.hinweis_ohne_variantenbild and tp_fa_hat_variantenbild == false -%}
-    <p class="tp-farbanzeige__hinweis">
-      {{ block.settings.hinweis_text | default: 'Die Abbildungen zeigen die Serie, nicht die gewählte Farbe.' | escape }}
-    </p>
-  {%- endif -%}
   <script src="{{ 'tp-farbe.js' | asset_url }}" type="module"></script>
 {%- endif -%}
 
@@ -194,14 +190,14 @@
       "type": "checkbox",
       "id": "hinweis_ohne_variantenbild",
       "label": "Hinweis, wenn keine Farbe ein eigenes Foto hat",
-      "info": "Erscheint nur, solange keine einzige Variante ein Variantenbild traegt. Sobald Fotos je Farbe gepflegt sind, verschwindet der Hinweis automatisch.",
+      "info": "Erscheint nur bei Farben ohne eigenes Foto. Sobald ein Foto gepflegt ist, verschwindet der Hinweis fuer diese Farbe automatisch.",
       "default": false
     },
     {
       "type": "text",
       "id": "hinweis_text",
       "label": "Text des Hinweises",
-      "default": "Die Abbildungen zeigen die Serie, nicht die gewählte Farbe."
+      "default": "Für diese Farbe liegt noch kein Foto vor."
     },
     {
       "type": "checkbox",
