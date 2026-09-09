@@ -36,19 +36,26 @@
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
   >
     {%- comment -%}
-      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte. Damit die
-      Trefferanzahl zu den sichtbaren Karten passt, werden die zusammengelegten
-      Groessen hier abgezogen - sonst steht "3 Artikel" ueber einer Karte.
+      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte. Welche
+      Groesse sie traegt, entscheidet die Liste selbst: das erste Mitglied, das
+      hier vorkommt. Eine feste Leitgroesse hat die ganze Gruppe verschwinden
+      lassen, sobald ein Filter genau sie ausschloss - beim Preisfilter
+      "150-400 EUR" waren beide grossen Matten unauffindbar, obwohl kaufbar.
 
-      tp_gruppe_aktiv entscheidet beides: den Abzug hier und das Ueberspringen
-      in der Schleife unten. Eine Bedingung, damit Zahl und Raster nicht
-      auseinanderlaufen koennen.
+      Der Merker wird pro Seite gesetzt. Damit traegt jede Seite, auf der
+      Mitglieder vorkommen, genau eine Karte; kein kaufbares Produkt faellt je
+      ganz aus der Liste.
 
-      collection.products liefert ausserhalb von paginate hoechstens 50
-      Eintraege. Oberhalb davon waere der Abzug unvollstaendig, deshalb bleibt
-      die Zahl dann unangetastet - lieber ungekuerzt als falsch gekuerzt.
-      Der Wert respektiert aktive Filter, weil collection.products das tut.
+      Die Trefferzahl wird nur gekuerzt, wenn das Ergebnis auf eine Seite passt
+      und hoechstens 50 Produkte umfasst - nur dann ist die Kuerzung exakt.
+      Sonst bleibt die Originalzahl stehen: lieber etwas zu hoch als falsch.
     {%- endcomment -%}
+    {% assign products_per_page = 24 %}
+
+    {% if section.settings.enable_infinite_scroll == false %}
+      {% assign products_per_page = section.settings.products_per_page %}
+    {% endif %}
+
     {%- liquid
       assign tp_gruppe_aktiv = false
       if collection.handle contains 'zubehoer'
@@ -56,16 +63,20 @@
       endif
 
       assign tp_gruppe_abzug = 0
-      if tp_gruppe_aktiv and collection.products_count <= 50
+      if tp_gruppe_aktiv and collection.products_count <= 50 and collection.products_count <= products_per_page
+        assign tp_gruppe_treffer = 0
         for tp_gruppe_p in collection.products
           capture tp_gruppe_r
             render 'tp-produktgruppe', product: tp_gruppe_p
           endcapture
           assign tp_gruppe_r = tp_gruppe_r | strip
-          if tp_gruppe_r == 'member'
-            assign tp_gruppe_abzug = tp_gruppe_abzug | plus: 1
+          if tp_gruppe_r == 'mitglied'
+            assign tp_gruppe_treffer = tp_gruppe_treffer | plus: 1
           endif
         endfor
+        if tp_gruppe_treffer > 1
+          assign tp_gruppe_abzug = tp_gruppe_treffer | minus: 1
+        endif
       endif
       assign tp_results_size = collection.products_count | minus: tp_gruppe_abzug
     -%}
@@ -77,31 +88,25 @@
       results_size: tp_results_size
     %}
 
-    {% assign products_per_page = 24 %}
-
-    {% if section.settings.enable_infinite_scroll == false %}
-      {% assign products_per_page = section.settings.products_per_page %}
-    {% endif %}
-
     {% paginate collection.products by products_per_page %}
       {% capture children %}
+        {%- assign tp_gruppe_gezeigt = false -%}
         {% for product in collection.products %}
           {%- comment -%}
-            Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte:
-            nur die fuehrende Groesse wird gerendert, siehe
-            snippets/tp-produktgruppe.liquid.
-
-            Bewusst nur im Zubehoerbereich, denn dort ist die Zusammenfassung
-            beauftragt und geprueft. Auf jeder anderen Kollektion - Suche,
-            /collections/all, kuenftige Kollektionen - bleiben die Produkte
-            einzeln sichtbar, damit diese Sektion (Horizon-Kern, alle
-            Kategorien) sich unveraendert verhaelt.
+            Erstes Mitglied der Gruppe traegt die Karte, weitere entfallen.
+            Bewusst nur im Zubehoerbereich: diese Sektion ist der Horizon-Kern
+            aller Kategorien und soll sich sonst unveraendert verhalten - in
+            der Suche und auf anderen Kollektionen bleiben alle Groessen
+            einzeln sichtbar.
           {%- endcomment -%}
           {%- if tp_gruppe_aktiv -%}
             {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
             {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
-            {%- if tp_gruppe_rolle == 'member' -%}
-              {%- continue -%}
+            {%- if tp_gruppe_rolle == 'mitglied' -%}
+              {%- if tp_gruppe_gezeigt -%}
+                {%- continue -%}
+              {%- endif -%}
+              {%- assign tp_gruppe_gezeigt = true -%}
             {%- endif -%}
           {%- endif -%}
           <li

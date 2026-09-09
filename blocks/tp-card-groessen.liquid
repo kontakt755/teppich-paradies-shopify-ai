@@ -2,9 +2,9 @@
   Groessenauswahl auf der Produktkarte fuer Produkte, die zu einer
   Darstellungs-Gruppe gehoeren (siehe snippets/tp-produktgruppe.liquid).
 
-  Rendert ausschliesslich auf der fuehrenden Karte der Gruppe. Die uebrigen
-  Groessen werden in den Listen uebersprungen, damit die Gruppe als eine Karte
-  erscheint. Produkte ohne Gruppe zeigt der Block still nichts.
+  Die Liste zeigt je Gruppe nur eine Karte; welches Mitglied sie traegt, haengt
+  vom Filter ab. Deshalb rendert der Block auf jedem Mitglied - nicht auf einer
+  festen Groesse. Produkte ohne Gruppe zeigt er still nichts.
 {% enddoc %}
 
 {%- liquid
@@ -15,7 +15,7 @@
   assign tp_cg_role = tp_cg_role | strip
 -%}
 
-{%- if tp_cg_role == 'primary' -%}
+{%- if tp_cg_role == 'mitglied' -%}
   <div {{ block.shopify_attributes }}>
     {% render 'tp-produktgruppe-liste', product: tp_cg_product, style: 'card' %}
   </div>

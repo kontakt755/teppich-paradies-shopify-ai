@@ -16,9 +16,14 @@
   @param {object} product - Das zu pruefende Produkt.
 
   Ausgabe (per capture einzulesen, Liquid kennt keine Rueckgabewerte):
-    ''        - gehoert zu keiner Gruppe
-    'primary' - traegt die gemeinsame Karte
-    'member'  - gehoert dazu, wird in Listen unterdrueckt
+    ''          - gehoert zu keiner Gruppe
+    'mitglied'  - gehoert zur Gruppe
+
+  Welches Mitglied die gemeinsame Karte traegt, entscheidet bewusst NICHT
+  dieses Snippet, sondern die Liste: das erste Mitglied, das dort tatsaechlich
+  vorkommt. Eine fest verdrahtete Leitgroesse verschwindet sonst mitsamt der
+  ganzen Gruppe, sobald ein Filter genau sie ausschliesst - beim Preisfilter
+  "150-400 EUR" waren so beide grossen Matten unauffindbar, obwohl kaufbar.
 {%- enddoc -%}
 
 {%- liquid
@@ -26,10 +31,6 @@
   assign tp_pg_handle = product.handle
 
   if tp_pg_handle != blank and tp_pg_handles contains tp_pg_handle
-    if tp_pg_handle == tp_pg_handles.first
-      echo 'primary'
-    else
-      echo 'member'
-    endif
+    echo 'mitglied'
   endif
 -%}
