@@ -286,6 +286,10 @@
                 "heading": "Produktdetails",
                 "note": "Stangenlänge und Montagehinweise finden Sie in der Beschreibung."
               }
+            },
+            "tp_leisten_vorschau": {
+              "type": "tp-leisten-vorschau",
+              "settings": {}
             }
           },
           "block_order": [
@@ -295,6 +299,7 @@
             "tp_leisten_farbwahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_leisten_vorschau",
             "options_price_calculator_product_calculator_z3CEfy",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
