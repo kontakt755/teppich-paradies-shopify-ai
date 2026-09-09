@@ -43,7 +43,12 @@ const AUSNAHMEN = [
 const VERBOTEN = [
   // --- git: verwirft Arbeit oder ueberschreibt fremde Commits ---
   [/^git\s+(.*\s)?push\b.*(--force\b|--force-with-lease\b|\s-f\b)/, 'git push --force ueberschreibt Commits auf dem Remote'],
-  [/^git\s+(.*\s)?push\b.*(--delete\b|--mirror\b)/,                 'git push --delete entfernt einen Branch oder Tag auf dem Remote'],
+  [/^git\s+(.*\s)?push\b.*--mirror\b/,                              'git push --mirror ueberschreibt saemtliche Refs auf dem Remote'],
+  // Branch loeschen auf dem Remote ist seit 2026-09-09 auf Wunsch des Nutzers
+  // erlaubt: aufgeraeumt wird nach dem Merge, und ein geloeschter Branch laesst
+  // sich aus dem Commit wiederherstellen, solange die Commits woanders haengen.
+  // Ein Tag dagegen ist eine Veroeffentlichung - das bleibt gesperrt.
+  [/^git\s+(.*\s)?push\b.*--delete\b.*(\btag\b|refs\/tags\/)/,      'git push --delete auf ein Tag entfernt eine Veroeffentlichung'],
   [/^git\s+(.*\s)?reset\b.*(--hard\b|--merge\b|--keep\b)/,          'git reset --hard verwirft uncommittete Aenderungen'],
   [/^git\s+(.*\s)?clean\b\s+-[a-zA-Z]*[fdx]/,                       'git clean loescht nicht versionierte Dateien'],
   [/^git\s+(.*\s)?restore\b/,                                       'git restore verwirft Aenderungen im Working Tree'],
