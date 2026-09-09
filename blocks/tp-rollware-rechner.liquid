@@ -184,12 +184,12 @@
     </div>
   </div>
 
-  <p class="tp-rwc-hint">
-    Räume sind selten exakt im Winkel. Türnischen und Vorsprünge mitmessen und
-    10–15 cm Zugabe einplanen.
-  </p>
-
-  <button type="button" class="tp-rwc-cta" data-cta disabled>Länge eingeben</button>
+  {%- comment -%}
+    Der Button bleibt bis zur ersten gueltigen Laenge komplett verborgen. Ein
+    ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
+    Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
+  {%- endcomment -%}
+  <button type="button" class="tp-rwc-cta" data-cta disabled hidden>Länge eingeben</button>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
 </div>
@@ -397,11 +397,6 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.5rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-hint {
-    margin: 0 0 14px; padding-left: 11px; border-left: 2px solid var(--tp-rwc-line);
-    font-size: .82rem; line-height: 1.5; color: var(--tp-rwc-muted);
-  }
-
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details { margin: 0 0 16px; font-size: 12.5px; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details summary { cursor: pointer; color: var(--tp-rwc-ink); font-weight: 600; }
@@ -411,6 +406,7 @@
     display: block; width: 100%; padding: 15px 18px; border: 0; border-radius: var(--style-border-radius-buttons-primary, 6px);
     background: #1d6b47; color: #fff; font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
   }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #185a3b; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #145c38; }
@@ -742,6 +738,9 @@
     }
 
     cta.disabled = !(valid && ok);
+    // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
+    // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
+    cta.hidden = cta.disabled;
   }
 
   function setMode(mode) {
