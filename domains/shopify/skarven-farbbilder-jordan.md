@@ -73,9 +73,22 @@ Fuer Feldwin (Doellken Cubu flex life 40/60/80/100 und XL) fuehrt Jordan
 ueberhaupt nur ein Bild je Hoehe - die technische Zeichnung. Dort ist vom
 Grosshaendler nichts zu holen.
 
-## 5. Offen
+## 5. Geloeschte Fehlbilder
 
-Drei alte 525xxx-Bilder liegen weiterhin in den Produktmedien und zeigen Farben,
-die es in dieser Serie nicht gibt (525238 gruen, 525276 mint, 525278 blau).
-Sie sind keiner Variante mehr zugeordnet, erscheinen aber in der Galerie.
-Empfehlung: entfernen. Nicht ohne Freigabe geloescht, weil das nicht umkehrbar ist.
+Am 2026-09-09 nach Freigabe durch Ahmet aus den Produktmedien entfernt, weil sie
+Farben zeigten, die es in dieser Serie nicht gibt und die keiner Variante mehr
+zugeordnet waren:
+
+| Datei | zeigte |
+|---|---|
+| 525238-8FXC-prod.jpg | gruene Leiste |
+| 525276-8FXC-prod.jpg | mintfarbene Leiste |
+| 525278-8FXC-prod.jpg | hellblaue Leiste |
+
+Die Originale liegen weiterhin beim Lieferanten unter
+`https://media.jordanshop.de/original/<nummer>-8FXC-prod.JPG` und liessen sich
+jederzeit erneut laden.
+
+Die uebrigen 525xxx-Bilder (525248, 525250, 525258, 525268, 525270, 525282,
+525284) bleiben als zusaetzliche Galeriefotos erhalten. Sie zeigen die Serie
+plausibel; 525268 wirkt allerdings olivstichig - bei Gelegenheit pruefen.
