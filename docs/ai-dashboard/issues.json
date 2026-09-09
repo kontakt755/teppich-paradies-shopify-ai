@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:42:28.457Z",
+  "generated_at": "2026-09-09T11:45:02.236Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 44,
+  "count": 45,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:42:28.457Z",
+    "fetchedAt": "2026-09-09T11:45:02.236Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 140,
+      "title": "Laengen- und Breiten-Extraktion in Produktkarten ohne match-Filter umsetzen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/140",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Extraktion ohne match implementieren und auf einer Rollenware-Kollektion im Preview-Theme pruefen",
+      "fields": {
+        "description": "Befund beim Deploy 2026-09-09: In blocks/tp-card-price-sqm.liquid, blocks/tp-card-dimensions.liquid und snippets/tp-card-roll-lengths.liquid (aus PR 98, Commit 115ac4d) wird der Filter 'match' benutzt. Den gibt es in Liquid nicht: Theme Check meldet UnknownFilter (Fehler, blockiert den strikten Push), Shopify liefert zur Laufzeit nil. Die Laengen-Extraktion aus Variantentiteln und die Breite aus Tags haben also nie funktioniert; EUR/m2 auf der Karte kommt heute nur ueber den Metafeld-Fallback custom.rollenbreite. Zum Entsperren des Deploys wurden die vier Stellen verhaltenserhaltend auf nil gesetzt (Kommentar im Code). Offen: Extraktion mit echten Liquid-Mitteln (z. B. split/plus: 0 auf den fuehrenden Zahlenwert) umsetzen, mit Karten-QA fuer Rollenware pruefen. tp-card-roll-lengths.liquid ist derzeit nirgends eingebunden (OrphanedSnippet) - entweder anbinden oder entfernen.",
+        "nextStep": "Extraktion ohne match implementieren und auf einer Rollenware-Kollektion im Preview-Theme pruefen"
+      },
+      "created_at": "2026-09-09T11:44:45Z",
+      "updated_at": "2026-09-09T11:44:46Z",
+      "closed_at": null
+    },
     {
       "number": 139,
       "title": "Area-Labels: setup-dashboard.sh lief elf Bereiche hinter model.mjs",
