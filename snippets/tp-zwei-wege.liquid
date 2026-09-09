@@ -13,15 +13,16 @@
   Startseite gleichwertig neben den Onlinekauf. Genau das ist der Unterschied.
   Siehe docs/analyse/wettbewerb/kaufpfad-2026-09-09.md, Abschnitt 3.
 
+  Zur Reihenfolge: sie wird HIER im Markup erzeugt, nicht per CSS "order".
+  Die erste Fassung kippte die Boxen nur optisch; Tastatur und Screenreader
+  behielten die alte Reihenfolge. Wer die Boxen tauscht, tauscht sie deshalb
+  ueberall - Bild und Bedienung bleiben gleich.
+
   Das CSS liegt im {% stylesheet %} von sections/Startseite.liquid, weil ein
   Snippet keines mitbringen kann und ein <style> je Aufruf die Regeln
   dupliziert haette.
 
-  Aufruf:
-    {% render 'tp-zwei-wege',
-       gewichtung: section.settings.zw_gewichtung,
-       mobil_zuerst: section.settings.zw_mobil_zuerst,
-       ... %}
+  Aufruf: siehe sections/Startseite.liquid
 {% endcomment %}
 
 {%- liquid
@@ -34,70 +35,92 @@
     assign tp_zw_online_span = 2
     assign tp_zw_service_span = 3
   endif
-  assign tp_zw_mobil = mobil_zuerst | default: 'online'
+
+  assign tp_zw_online_ziel = online_link | default: '/collections/all'
+  assign tp_zw_service_ziel = service_link | default: '/pages/liefer-verlegeservice'
 -%}
+
+{%- comment -%}
+  Beide Boxen werden zuerst gebaut und danach in der gewaehlten Reihenfolge
+  ausgegeben. capture statt "render ... as" - letzteres gibt es in Liquid nicht
+  und Shopify verwirft die Datei beim Push kommentarlos.
+{%- endcomment -%}
+
+{%- capture tp_zw_box_online -%}
+  <div class="tp-zw__box tp-zw__box--online">
+    <p class="tp-zw__eyebrow">{{ online_eyebrow }}</p>
+    <h2 class="tp-zw__title">{{ online_titel }}</h2>
+    <p class="tp-zw__text">{{ online_text }}</p>
+
+    {%- if online_punkte != blank -%}
+      <ul class="tp-zw__list">
+        {%- assign tp_zw_online_items = online_punkte | split: ',' -%}
+        {%- for tp_zw_item in tp_zw_online_items -%}
+          {%- assign tp_zw_label = tp_zw_item | strip -%}
+          {%- if tp_zw_label != blank -%}
+            <li>{{ tp_zw_label }}</li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <a href="{{ tp_zw_online_ziel }}" class="tp-zw__cta tp-zw__cta--primary">
+      {{ online_cta }}
+    </a>
+  </div>
+{%- endcapture -%}
+
+{%- capture tp_zw_box_service -%}
+  <div class="tp-zw__box tp-zw__box--service">
+    <p class="tp-zw__eyebrow">{{ service_eyebrow }}</p>
+    <h2 class="tp-zw__title">{{ service_titel }}</h2>
+    <p class="tp-zw__text">{{ service_text }}</p>
+
+    {%- if service_punkte != blank -%}
+      <ul class="tp-zw__list">
+        {%- assign tp_zw_service_items = service_punkte | split: ',' -%}
+        {%- for tp_zw_item in tp_zw_service_items -%}
+          {%- assign tp_zw_label = tp_zw_item | strip -%}
+          {%- if tp_zw_label != blank -%}
+            <li>{{ tp_zw_label }}</li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <a href="{{ tp_zw_service_ziel }}" class="tp-zw__cta tp-zw__cta--primary">
+      {{ service_cta }}
+    </a>
+
+    {%- comment -%}
+      Die Telefonnummer steht nur in dieser Box, weil der Regionalkunde haeufig
+      anruft statt zu klicken.
+    {%- endcomment -%}
+    {%- if service_telefon != blank -%}
+      <p class="tp-zw__phone">
+        <a href="tel:{{ service_telefon | remove: ' ' | remove: '/' }}">
+          {{ service_telefon_label | default: service_telefon }}
+        </a>
+      </p>
+    {%- endif -%}
+  </div>
+{%- endcapture -%}
+
 <div class="tp-zw color-{{ color_scheme | default: 'scheme-1' }}">
+  {%- if frage != blank -%}
+    <p class="tp-zw__frage">{{ frage }}</p>
+  {%- endif -%}
+
   <div
-    class="tp-zw__grid tp-zw__grid--mobile-{{ tp_zw_mobil }}"
+    class="tp-zw__grid"
     style="--tp-zw-online: {{ tp_zw_online_span }}; --tp-zw-service: {{ tp_zw_service_span }};"
   >
-
-    <div class="tp-zw__box tp-zw__box--online">
-      <p class="tp-zw__eyebrow">{{ online_eyebrow }}</p>
-      <h2 class="tp-zw__title">{{ online_titel }}</h2>
-      <p class="tp-zw__text">{{ online_text }}</p>
-
-      {%- if online_punkte != blank -%}
-        <ul class="tp-zw__list">
-          {%- assign tp_zw_online_items = online_punkte | split: ',' -%}
-          {%- for tp_zw_item in tp_zw_online_items -%}
-            {%- assign tp_zw_label = tp_zw_item | strip -%}
-            {%- if tp_zw_label != blank -%}
-              <li>{{ tp_zw_label }}</li>
-            {%- endif -%}
-          {%- endfor -%}
-        </ul>
-      {%- endif -%}
-
-      <a href="{{ online_link | default: '/collections/all' }}" class="tp-zw__cta tp-zw__cta--primary">
-        {{ online_cta }}
-      </a>
-    </div>
-
-    <div class="tp-zw__box tp-zw__box--service">
-      <p class="tp-zw__eyebrow">{{ service_eyebrow }}</p>
-      <h2 class="tp-zw__title">{{ service_titel }}</h2>
-      <p class="tp-zw__text">{{ service_text }}</p>
-
-      {%- if service_punkte != blank -%}
-        <ul class="tp-zw__list">
-          {%- assign tp_zw_service_items = service_punkte | split: ',' -%}
-          {%- for tp_zw_item in tp_zw_service_items -%}
-            {%- assign tp_zw_label = tp_zw_item | strip -%}
-            {%- if tp_zw_label != blank -%}
-              <li>{{ tp_zw_label }}</li>
-            {%- endif -%}
-          {%- endfor -%}
-        </ul>
-      {%- endif -%}
-
-      <a href="{{ service_link | default: '/pages/liefer-verlegeservice' }}" class="tp-zw__cta tp-zw__cta--primary">
-        {{ service_cta }}
-      </a>
-
-      {%- comment -%}
-        Die Telefonnummer steht nur hier, weil der Regionalkunde haeufig anruft
-        statt zu klicken. Sie kommt aus den Einstellungen, damit sie nicht an
-        zwei Stellen im Code gepflegt werden muss.
-      {%- endcomment -%}
-      {%- if service_telefon != blank -%}
-        <p class="tp-zw__phone">
-          <a href="tel:{{ service_telefon | remove: ' ' | remove: '/' }}">
-            {{ service_telefon_label | default: service_telefon }}
-          </a>
-        </p>
-      {%- endif -%}
-    </div>
-
+    {%- if reihenfolge == 'service' -%}
+      {{ tp_zw_box_service }}
+      {{ tp_zw_box_online }}
+    {%- else -%}
+      {{ tp_zw_box_online }}
+      {{ tp_zw_box_service }}
+    {%- endif -%}
   </div>
 </div>

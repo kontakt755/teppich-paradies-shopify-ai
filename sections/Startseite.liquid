@@ -9,6 +9,8 @@
   position: relative;
   background: url('https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ChatGPT_Image_12._Feb._2026_09_31_42.png?v=1770885222') center/cover no-repeat;
   min-height: 520px;
+  /* Als Band: das Bild bleibt, traegt aber nur noch Ueberschrift und Kontakt.
+     Die Entscheidung faellt in den Boxen darunter, nicht hier. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,19 +416,53 @@
 .category-box a.category-cta:hover svg{
   transform: translateX(2px);
 }
+.hero--band {
+  min-height: 260px;
+  padding: 24px 20px;
+}
+
+.hero--band .hero-content {
+  padding: 20px 24px;
+  max-width: 760px;
+}
+
+.hero--band .hero h1,
+.hero--band h1 {
+  font-size: clamp(22px, 3.2vw, 32px);
+  margin-bottom: 6px;
+}
+
+@media (max-width: 749px) {
+  .hero--band {
+    min-height: 180px;
+    padding: 18px 14px;
+  }
+
+  .hero--band .hero-content {
+    padding: 16px 16px;
+  }
+}
 </style>
 
-<section class="hero">
+<section class="hero hero--{{ section.settings.hero_hoehe }}">
   <div class="hero-content">
     <div class="hero-text">
       <h1>Bodenbeläge vom Fachhandel</h1>
-      <p>Vinylboden, Teppichboden und mehr – online entdecken oder persönlich beraten lassen.</p>
+      <p>{{ section.settings.hero_unterzeile }}</p>
     </div>
 
-    <div class="hero-actions">
-      <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
-      <a href="/pages/boden-malerarbeiten" class="btn-secondary">Beratung & Verlegeservice</a>
-    </div>
+    {%- comment -%}
+      Die beiden alten Hero-Buttons zeigten auf dieselben zwei Wege wie die
+      Boxen darunter. Zwei konkurrierende Aufforderungen direkt uebereinander
+      heben sich gegenseitig auf, deshalb sind sie standardmaessig aus. Die
+      Einstellung holt sie zurueck, falls die Boxen doch nicht ueberzeugen.
+    {%- endcomment -%}
+    {%- if section.settings.hero_buttons_zeigen -%}
+      <div class="hero-actions">
+        <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
+        <a href="/pages/boden-malerarbeiten" class="btn-secondary">Beratung &amp; Verlegeservice</a>
+      </div>
+    {%- endif -%}
 
     <div class="hero-contact">
       <a href="tel:+4933015733720">Anrufen: 03301 5733720</a>
@@ -445,7 +481,8 @@
 {%- if section.settings.zw_anzeigen -%}
   {% render 'tp-zwei-wege',
     gewichtung: section.settings.zw_gewichtung,
-    mobil_zuerst: section.settings.zw_mobil_zuerst,
+    reihenfolge: section.settings.zw_reihenfolge,
+    frage: section.settings.zw_frage,
     online_eyebrow: section.settings.zw_online_eyebrow,
     online_titel: section.settings.zw_online_titel,
     online_text: section.settings.zw_online_text,
@@ -597,6 +634,14 @@
     padding: 40px 20px;
   }
 
+  .tp-zw__frage {
+    max-width: 1100px;
+    margin: 0 auto 14px;
+    text-align: center;
+    font-size: 16px;
+    color: var(--color-foreground);
+  }
+
   .tp-zw__grid {
     max-width: 1100px;
     margin: 0 auto;
@@ -705,7 +750,12 @@
 
   @media screen and (max-width: 749px) {
     .tp-zw {
-      padding: 24px 16px;
+      padding: 20px 16px;
+    }
+
+    .tp-zw__frage {
+      font-size: 15px;
+      margin-bottom: 12px;
     }
 
     .tp-zw__grid {
@@ -716,12 +766,6 @@
     .tp-zw__box--online,
     .tp-zw__box--service {
       grid-column: auto;
-    }
-
-    /* Untereinander gewinnt die obere Box fast alles - deshalb ist die
-       Reihenfolge eine Einstellung und kein fester Wert. */
-    .tp-zw__grid--mobile-service .tp-zw__box--service {
-      order: -1;
     }
 
     .tp-zw__box {
@@ -740,6 +784,40 @@
   "tag": "section",
   "class": "section",
   "settings": [
+    {
+      "type": "header",
+      "content": "Hero"
+    },
+    {
+      "type": "select",
+      "id": "hero_hoehe",
+      "label": "Höhe",
+      "info": "Als Band tritt das Bild zurück und die Wahl darunter nach vorn.",
+      "options": [
+        {
+          "value": "band",
+          "label": "Band (schmal)"
+        },
+        {
+          "value": "gross",
+          "label": "Groß (wie vorher)"
+        }
+      ],
+      "default": "band"
+    },
+    {
+      "type": "text",
+      "id": "hero_unterzeile",
+      "label": "Unterzeile",
+      "default": "Vinylboden, Teppichboden und mehr – online kaufen oder von uns verlegen lassen."
+    },
+    {
+      "type": "checkbox",
+      "id": "hero_buttons_zeigen",
+      "label": "Alte Hero-Buttons zeigen",
+      "info": "Standardmäßig aus: sie zeigen auf dieselben zwei Wege wie die Boxen darunter.",
+      "default": false
+    },
     {
       "type": "header",
       "content": "Zwei Einstiege (unter dem Hero)"
@@ -773,20 +851,27 @@
     },
     {
       "type": "select",
-      "id": "zw_mobil_zuerst",
-      "label": "Auf dem Handy zuerst",
-      "info": "Untereinander gewinnt die obere Box fast alles.",
+      "id": "zw_reihenfolge",
+      "label": "Reihenfolge der Boxen",
+      "info": "Gilt überall gleich – am Bildschirm links, auf dem Handy oben. Bewusst nicht getrennt: eine nur optische Vertauschung würde Tastatur und Screenreader in der alten Reihenfolge lassen.",
       "options": [
         {
           "value": "online",
-          "label": "Online kaufen"
+          "label": "Online kaufen zuerst"
         },
         {
           "value": "service",
-          "label": "Verlegeservice"
+          "label": "Verlegeservice zuerst"
         }
       ],
       "default": "online"
+    },
+    {
+      "type": "text",
+      "id": "zw_frage",
+      "label": "Zeile über den Boxen",
+      "info": "Leer lassen blendet sie aus.",
+      "default": "Wie sollen wir Ihnen helfen?"
     },
     {
       "type": "header",

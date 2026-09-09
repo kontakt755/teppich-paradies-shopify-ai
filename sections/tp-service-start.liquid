@@ -1,0 +1,357 @@
+{% comment %}
+  Kopf der zweiten Startseite: Liefer- und Verlegeservice.
+
+  Der Grundsatz aus dem Plan (Issue #167): der Modus versteckt nie etwas.
+  Deshalb steht ganz oben ein Streifen, der sagt, wo man ist UND wie man in den
+  gesamten Online-Shop kommt - in beide Richtungen, jederzeit, ohne Umweg.
+
+  Wer hier landet, will verlegen lassen und trotzdem Produkte sehen. Diese
+  Section liefert nur den Kopf: Streifen, Angebot, Kategorien.
+  Die Produkte darunter kommen aus normalen product-list-Sections im Template
+  page.verlegeservice.json - dieselben Kollektionen und dieselben Karten wie im
+  Shop. Es gibt bewusst keinen zweiten Katalog.
+
+  Der Hinweis auf das Ladengeschaeft liegt bewusst in einer eigenen Section
+  (tp-laden-hinweis) und im Template UNTER den Produktrastern: er ist das
+  "und da ist noch mehr" nach dem Blaettern, nicht davor.
+{% endcomment %}
+
+<div class="tp-ss color-{{ section.settings.color_scheme }}">
+
+  {%- if section.settings.streifen_zeigen -%}
+    <div class="tp-ss__bar">
+      <span class="tp-ss__bar-label">{{ section.settings.streifen_text }}</span>
+      <a href="{{ section.settings.shop_link | default: '/collections/all' }}" class="tp-ss__bar-link">
+        {{ section.settings.shop_cta }}
+      </a>
+    </div>
+  {%- endif -%}
+
+  <div class="tp-ss__inner">
+    <div class="tp-ss__intro">
+      <h1 class="tp-ss__title">{{ section.settings.titel }}</h1>
+      <p class="tp-ss__text">{{ section.settings.text }}</p>
+
+      {%- if section.settings.schritte != blank -%}
+        <ol class="tp-ss__steps">
+          {%- assign tp_ss_steps = section.settings.schritte | split: ',' -%}
+          {%- for tp_ss_step in tp_ss_steps -%}
+            {%- assign tp_ss_label = tp_ss_step | strip -%}
+            {%- if tp_ss_label != blank -%}
+              <li>{{ tp_ss_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ol>
+      {%- endif -%}
+
+      <div class="tp-ss__actions">
+        <a href="{{ section.settings.anfrage_link | default: '/pages/kontakt' }}" class="tp-ss__cta">
+          {{ section.settings.anfrage_cta }}
+        </a>
+        {%- if section.settings.telefon != blank -%}
+          <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="tp-ss__tel">
+            {{ section.settings.telefon_label | default: section.settings.telefon }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- comment -%}
+      Kategorien als Ueberblick. Sie zeigen heute auf die Kollektionen; sobald
+      der Modus mitlaeuft (Plan Phase 3), traegt er sich dorthin weiter. Wer
+      hier nicht klickt, findet dieselben Produkte direkt darunter auf dieser
+      Seite.
+    {%- endcomment -%}
+    {%- if section.blocks.size > 0 -%}
+      <ul class="tp-ss__cats">
+        {%- for block in section.blocks -%}
+          <li {{ block.shopify_attributes }}>
+            <a href="{{ block.settings.ziel | default: '#' }}">{{ block.settings.label }}</a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+
+</div>
+
+{% stylesheet %}
+  .tp-ss {
+    padding: 0 0 8px;
+  }
+
+  .tp-ss__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+  }
+
+  .tp-ss__bar-label {
+    font-weight: 600;
+  }
+
+  .tp-ss__bar-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    text-decoration: underline;
+    color: var(--color-foreground);
+  }
+
+  .tp-ss__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+  }
+
+  .tp-ss__title {
+    margin: 0 0 8px;
+    font-size: 30px;
+    line-height: 1.15;
+  }
+
+  .tp-ss__text {
+    margin: 0 0 14px;
+    font-size: 17px;
+    line-height: 1.5;
+    max-width: 640px;
+  }
+
+  .tp-ss__steps {
+    margin: 0 0 18px;
+    padding-left: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 28px;
+    font-size: 15px;
+  }
+
+  .tp-ss__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+  }
+
+  .tp-ss__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-ss__tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  .tp-ss__cats {
+    margin: 22px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tp-ss__cats a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    font-size: 15px;
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+
+
+  @media screen and (max-width: 749px) {
+    .tp-ss__bar {
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .tp-ss__inner {
+      padding: 20px 16px 4px;
+    }
+
+    .tp-ss__title {
+      font-size: 24px;
+    }
+
+    .tp-ss__text {
+      font-size: 16px;
+    }
+
+    .tp-ss__steps {
+      flex-direction: column;
+      gap: 4px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Service-Start",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Streifen (Weg zurück in den Shop)"
+    },
+    {
+      "type": "checkbox",
+      "id": "streifen_zeigen",
+      "label": "Streifen zeigen",
+      "info": "Er sagt dem Besucher, wo er ist, und wie er in den gesamten Shop kommt. Ohne ihn wirkt die Seite wie eine Sackgasse.",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "streifen_text",
+      "label": "Text links",
+      "default": "Liefer- und Verlegeservice · Oranienburg und 50 km Umkreis"
+    },
+    {
+      "type": "text",
+      "id": "shop_cta",
+      "label": "Text rechts",
+      "default": "Zum gesamten Online-Shop"
+    },
+    {
+      "type": "url",
+      "id": "shop_link",
+      "label": "Ziel rechts"
+    },
+    {
+      "type": "header",
+      "content": "Angebot"
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Wir verlegen Ihren Boden"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "default": "Vom Aufmaß bis zur fertigen Verlegung – mit eigenem Team aus Oranienburg, ein Ansprechpartner für alles."
+    },
+    {
+      "type": "text",
+      "id": "schritte",
+      "label": "Schritte (mit Komma trennen)",
+      "default": "Beratung und Aufmaß vor Ort, Lieferung, Fachgerechte Verlegung"
+    },
+    {
+      "type": "text",
+      "id": "anfrage_cta",
+      "label": "Button",
+      "default": "Aufmaß-Termin anfragen"
+    },
+    {
+      "type": "url",
+      "id": "anfrage_link",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "kategorie",
+      "name": "Kategorie",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Beschriftung",
+          "default": "Teppichboden"
+        },
+        {
+          "type": "url",
+          "id": "ziel",
+          "label": "Ziel",
+          "info": "Sprungmarke auf dieser Seite (z. B. #teppichboden) oder eine andere Seite."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Service-Start",
+      "blocks": [
+        {
+          "type": "kategorie",
+          "settings": {
+            "label": "Teppichboden",
+            "ziel": "#teppichboden"
+          }
+        },
+        {
+          "type": "kategorie",
+          "settings": {
+            "label": "Vinylboden",
+            "ziel": "#vinylboden"
+          }
+        },
+        {
+          "type": "kategorie",
+          "settings": {
+            "label": "Linoleum",
+            "ziel": "#linoleum"
+          }
+        },
+        {
+          "type": "kategorie",
+          "settings": {
+            "label": "Treppenverlegung",
+            "ziel": "/pages/treppenverlegung"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

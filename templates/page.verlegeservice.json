@@ -1,28 +1,65 @@
 /*
- * ------------------------------------------------------------
- * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
- * ------------------------------------------------------------
+ * Zweite Startseite: Liefer- und Verlegeservice.
+ * Kopf plus dieselben Produktraster wie im Shop - kein zweiter Katalog.
+ * Zuordnung zur Seite erfolgt spaeter ueber template_suffix; zum Ansehen
+ * genuegt ?view=verlegeservice an /pages/liefer-verlegeservice.
  */
 {
   "sections": {
-    "startseite_JCA6KB": {
-      "type": "Startseite",
-      "name": "Startseite Kategorien",
+    "kopf": {
+      "type": "tp-service-start",
       "settings": {
-        "zw_anzeigen": true,
-        "zw_gewichtung": "gleich",
-        "zw_online_link": "/collections/all",
-        "zw_service_link": "/pages/liefer-verlegeservice",
-        "hero_hoehe": "band",
-        "hero_buttons_zeigen": false,
-        "zw_reihenfolge": "online"
-      }
+        "streifen_zeigen": true,
+        "streifen_text": "Liefer- und Verlegeservice · Oranienburg und 50 km Umkreis",
+        "shop_cta": "Zum gesamten Online-Shop",
+        "shop_link": "/collections/all",
+        "titel": "Wir verlegen Ihren Boden",
+        "text": "Vom Aufmaß bis zur fertigen Verlegung – mit eigenem Team aus Oranienburg, ein Ansprechpartner für alles.",
+        "schritte": "Beratung und Aufmaß vor Ort, Lieferung, Fachgerechte Verlegung",
+        "anfrage_cta": "Aufmaß-Termin anfragen",
+        "anfrage_link": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "k1": {
+          "type": "kategorie",
+          "settings": {
+            "label": "Teppichboden",
+            "ziel": "/collections/teppichboden"
+          }
+        },
+        "k2": {
+          "type": "kategorie",
+          "settings": {
+            "label": "Vinylboden",
+            "ziel": "/collections/vinylboden-1"
+          }
+        },
+        "k3": {
+          "type": "kategorie",
+          "settings": {
+            "label": "Linoleum",
+            "ziel": "/collections/linoleumboden-1"
+          }
+        },
+        "k4": {
+          "type": "kategorie",
+          "settings": {
+            "label": "Treppenverlegung",
+            "ziel": "/pages/treppenverlegung"
+          }
+        }
+      },
+      "block_order": [
+        "k1",
+        "k2",
+        "k3",
+        "k4"
+      ]
     },
-    "product_list_fa6P9H": {
+    "raster_teppichboden": {
       "type": "product-list",
       "blocks": {
         "static-header": {
@@ -59,7 +96,7 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "product_list_text_YFtzcL": {
+            "product_list_text_HkT37C": {
               "type": "_product-list-text",
               "name": "t:names.collection_title",
               "settings": {
@@ -85,7 +122,7 @@
               },
               "blocks": {}
             },
-            "product_list_button_MWeP9V": {
+            "product_list_button_RiwqEU": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
@@ -101,8 +138,8 @@
             }
           },
           "block_order": [
-            "product_list_text_YFtzcL",
-            "product_list_button_MWeP9V"
+            "product_list_text_HkT37C",
+            "product_list_button_RiwqEU"
           ]
         },
         "static-product-card": {
@@ -123,7 +160,7 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "product_card_gallery_677WP3": {
+            "product_card_gallery_BhkWFR": {
               "type": "_product-card-gallery",
               "name": "t:names.product_card_media",
               "settings": {
@@ -139,7 +176,7 @@
               },
               "blocks": {}
             },
-            "product_title_YXxMTj": {
+            "product_title_LR6n8c": {
               "type": "tp-card-title",
               "name": "t:names.product_title",
               "settings": {
@@ -164,7 +201,7 @@
               },
               "blocks": {}
             },
-            "price_JQzVV4": {
+            "price_LfCqzt": {
               "type": "price",
               "name": "t:names.product_price",
               "settings": {
@@ -187,13 +224,13 @@
               },
               "blocks": {}
             },
-            "tp_card_specs_home_teppich": {
+            "tp_card_specs_home_vinyl": {
               "type": "tp-card-specs",
               "name": "TP Card-Merkmale",
               "settings": {},
               "blocks": {}
             },
-            "tp_card_actions_home_teppich": {
+            "tp_card_actions_home_vinyl": {
               "type": "tp-card-actions",
               "name": "TP Card-Aktionen",
               "settings": {},
@@ -201,11 +238,11 @@
             }
           },
           "block_order": [
-            "product_card_gallery_677WP3",
-            "product_title_YXxMTj",
-            "price_JQzVV4",
-            "tp_card_specs_home_teppich",
-            "tp_card_actions_home_teppich"
+            "product_card_gallery_BhkWFR",
+            "product_title_LR6n8c",
+            "price_LfCqzt",
+            "tp_card_specs_home_vinyl",
+            "tp_card_actions_home_vinyl"
           ]
         }
       },
@@ -227,10 +264,11 @@
         "gap": 28,
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
-        "padding-block-end": 48
+        "padding-block-end": 48,
+        "max": 4
       }
     },
-    "product_list_8rDkXg": {
+    "raster_vinylboden": {
       "type": "product-list",
       "blocks": {
         "static-header": {
@@ -435,10 +473,11 @@
         "gap": 28,
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
-        "padding-block-end": 48
+        "padding-block-end": 48,
+        "max": 4
       }
     },
-    "product_list_linoleum_DxYpK2": {
+    "raster_linoleum": {
       "type": "product-list",
       "blocks": {
         "static-header": {
@@ -475,11 +514,11 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "product_list_text_linoleum": {
+            "product_list_text_HkT37C": {
               "type": "_product-list-text",
               "name": "t:names.collection_title",
               "settings": {
-                "text": "<h3>Unsere Linoleumböden</h3>",
+                "text": "<h3>{{ closest.collection.title }}</h3>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "left",
@@ -501,7 +540,7 @@
               },
               "blocks": {}
             },
-            "product_list_button_linoleum": {
+            "product_list_button_RiwqEU": {
               "type": "_product-list-button",
               "name": "t:names.product_list_button",
               "settings": {
@@ -517,8 +556,8 @@
             }
           },
           "block_order": [
-            "product_list_text_linoleum",
-            "product_list_button_linoleum"
+            "product_list_text_HkT37C",
+            "product_list_button_RiwqEU"
           ]
         },
         "static-product-card": {
@@ -539,7 +578,7 @@
             "padding-inline-end": 0
           },
           "blocks": {
-            "product_card_gallery_linoleum": {
+            "product_card_gallery_BhkWFR": {
               "type": "_product-card-gallery",
               "name": "t:names.product_card_media",
               "settings": {
@@ -555,7 +594,7 @@
               },
               "blocks": {}
             },
-            "product_title_linoleum": {
+            "product_title_LR6n8c": {
               "type": "tp-card-title",
               "name": "t:names.product_title",
               "settings": {
@@ -580,7 +619,7 @@
               },
               "blocks": {}
             },
-            "price_linoleum": {
+            "price_LfCqzt": {
               "type": "price",
               "name": "t:names.product_price",
               "settings": {
@@ -603,13 +642,13 @@
               },
               "blocks": {}
             },
-            "tp_card_specs_home_linoleum": {
+            "tp_card_specs_home_vinyl": {
               "type": "tp-card-specs",
               "name": "TP Card-Merkmale",
               "settings": {},
               "blocks": {}
             },
-            "tp_card_actions_home_linoleum": {
+            "tp_card_actions_home_vinyl": {
               "type": "tp-card-actions",
               "name": "TP Card-Aktionen",
               "settings": {},
@@ -617,11 +656,11 @@
             }
           },
           "block_order": [
-            "product_card_gallery_linoleum",
-            "product_title_linoleum",
-            "price_linoleum",
-            "tp_card_specs_home_linoleum",
-            "tp_card_actions_home_linoleum"
+            "product_card_gallery_BhkWFR",
+            "product_title_LR6n8c",
+            "price_LfCqzt",
+            "tp_card_specs_home_vinyl",
+            "tp_card_actions_home_vinyl"
           ]
         }
       },
@@ -643,127 +682,28 @@
         "gap": 28,
         "color_scheme": "scheme-1",
         "padding-block-start": 48,
-        "padding-block-end": 48
+        "padding-block-end": 48,
+        "max": 4
       }
     },
-    "google_VUPPGj": {
-      "type": "google",
-      "name": "Google Bewertungen",
-      "settings": {}
-    },
-    "tp_staerken_home": {
-      "type": "tp-staerken",
-      "name": "TP Unsere Stärken",
+    "laden": {
+      "type": "tp-laden-hinweis",
       "settings": {
+        "titel": "Im Ladengeschäft steht mehr, als hier online zu sehen ist",
+        "text": "Über 1.000 m² Sonderposten und Lagerware, sofort verfügbar. Was gerade da ist, zeigen wir Ihnen am besten vor Ort in Oranienburg.",
+        "cta": "Termin vereinbaren",
+        "link": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720",
         "color_scheme": "scheme-1"
       }
-    },
-    "tp_fachhandel_home": {
-      "type": "tp-fachhandel",
-      "name": "TP Verlegeservice",
-      "settings": {
-        "color_scheme": "scheme-1"
-      }
-    },
-    "kundenbilder_grid_g3nkQc": {
-      "type": "kundenbilder-grid",
-      "blocks": {
-        "kundenbild_KjmABf": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/IMG_20230926_095237.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: neu verlegter Boden von TeppichParadies im Wohnbereich"
-          }
-        },
-        "kundenbild_JeKdLn": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: fertig verlegter Bodenbelag von TeppichParadies"
-          }
-        },
-        "kundenbild_YKRrfw": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114732.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Bodenverlegung im Wohnraum, ausgeführt mit Material von TeppichParadies"
-          }
-        },
-        "kundenbild_EgV4zy": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20220920_113832.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: neu verlegter Boden in einem Zimmer, Material von TeppichParadies"
-          }
-        },
-        "kundenbild_MntX7k": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20230327_132924.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: verlegter Bodenbelag von TeppichParadies im Detail"
-          }
-        },
-        "kundenbild_krgCMm": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/image-1-compressed.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Wohnraum mit frisch verlegtem Boden von TeppichParadies"
-          }
-        },
-        "kundenbild_cVJjwX": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/1000012408.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: fertiggestellte Bodenverlegung von TeppichParadies"
-          }
-        },
-        "kundenbild_Fhcjhy": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114941.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Nahaufnahme des neu verlegten Bodens von TeppichParadies"
-          }
-        },
-        "kundenbild_M3KUjL": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/1000008785.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Raum mit neu verlegtem Bodenbelag von TeppichParadies"
-          }
-        }
-      },
-      "block_order": [
-        "kundenbild_KjmABf",
-        "kundenbild_JeKdLn",
-        "kundenbild_YKRrfw",
-        "kundenbild_EgV4zy",
-        "kundenbild_MntX7k",
-        "kundenbild_krgCMm",
-        "kundenbild_cVJjwX",
-        "kundenbild_Fhcjhy",
-        "kundenbild_M3KUjL"
-      ],
-      "name": "Kundenbilder Grid",
-      "settings": {}
     }
   },
   "order": [
-    "startseite_JCA6KB",
-    "tp_staerken_home",
-    "product_list_8rDkXg",
-    "product_list_fa6P9H",
-    "product_list_linoleum_DxYpK2",
-    "tp_fachhandel_home",
-    "kundenbilder_grid_g3nkQc",
-    "google_VUPPGj"
+    "kopf",
+    "raster_teppichboden",
+    "raster_vinylboden",
+    "raster_linoleum",
+    "laden"
   ]
 }
