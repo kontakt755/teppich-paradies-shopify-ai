@@ -152,3 +152,42 @@ Dieser Lauf ändert Produktdaten und braucht eine ausdrückliche Freigabe.
 - Offener Befund: Bei Novaris tragen 7 Varianten kein eigenes Variantenbild, obwohl das Produktbild existiert. Gemessen wurde deshalb über den Alt-Text des Produktbilds. Im Theme greift dort der Register-Swatch statt des Variantenbilds.
 
 - Kein Eingriff in Benachrichtigungs-Templates: Shopify zeigt sichtbare Line-Item-Properties in der Bestellbestätigung von selbst an.
+
+## Nachzug 2026-09-09: Zubehoer
+
+Nach dem Datenlauf sind Produkte hinzugekommen und umgebaut worden. Der Nachzug ist deshalb kein einmaliger Schritt.
+
+**Erledigt** (77 Varianten, gegengeprueft 77 von 77):
+
+| Produkt | Varianten | Nummernquelle |
+|---|---|---|
+| Skarven Sockelleiste 60mm | 62 | SKU-Suffix, echte Doellken-Farbnummern |
+| Cortessa Sockelleiste | 15 | SKU-Suffix `L600` bis `L615`, Luecke bei `L602` |
+
+**Bewusst ausgelassen: die sechs Feldwin-Sockelleisten (37 Varianten).**
+Ihr SKU-Suffix ist keine Farbnummer, sondern eine laufende Nummer je Leistenhoehe.
+Beleg: dieselbe Farbe traegt verschiedene Nummern.
+
+| Farbe | Nummern bei Feldwin | Doellken-Nummer laut Skarven |
+|---|---|---|
+| weiß RAL 9010 | 0004, 0006, 0007, 0008 | - |
+| anthrazit | 0004, 0005, 0007 | 1209 |
+| schwarz | 0007, 0009, 1144 | 1001 |
+| platinsilber | 0004, 0005, 0006 | 1246 |
+| champagner | 0005, 0007, **1245** | 1245 |
+
+Nur wo eine echte Doellken-Nummer in der SKU steht (`1245` champagner, `1408` weiß RAL 9016),
+passt sie zur Skarven-Palette. Diese Nummern ins Register zu schreiben haette dieselbe Farbe
+unter bis zu vier Nummern gefuehrt und damit genau den Zweck des Registers zerstoert.
+Zu tun: die echten Doellken-Farbnummern beim Lieferanten abschreiben, dann nachziehen.
+
+**Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
+`AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
+Das Produkt-Metafeld `grosshandel.sku` nennt nur die Kollektion
+(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Bei Eichenhain tragen die
+Optionswerte ausserdem englische Lieferantennamen (`Prestige Oak Honey Braun`) - das ist
+ein eigener Fall fuer die Namensregeln.
+
+**Pflegehinweis:** Nach jedem Produktimport gehoert der Farb-Nachzug dazu - Registereintrag,
+`custom.farbcode`, `custom.farbe`. Sonst zeigt die Bestellung fuer neue Produkte keine
+Farbnummer, und die Farbanzeige faellt auf den Optionswert zurueck.
