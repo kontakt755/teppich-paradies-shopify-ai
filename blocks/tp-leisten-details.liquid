@@ -1,7 +1,12 @@
 {% doc %}
-  Produktdetails-Tabelle fuer Leisten: Material, Hoehe, Art, Anzahl Farben/
-  Dekore. Nur Zeilen, die am Produkt belegt sind (Tags material:, hoehe:, art:
-  und Farboption). Rendert nichts, wenn keine Leisten-Tags vorhanden sind.
+  Produktdetails-Tabelle fuer Leisten: Material, Hoehe, Art, Stangenlaenge,
+  Anzahl Farben/Dekore. Nur Zeilen, die am Produkt belegt sind (Tags material:,
+  hoehe:, art:, die Farboption und custom.stangenlaenge). Rendert nichts, wenn
+  nichts davon vorhanden ist.
+
+  Die Stangenlaenge kommt aus demselben Metafeld wie der Rechner in
+  blocks/tp-zubehoer-menge.liquid - eine Quelle, zwei Anzeigen. Fehlt das
+  Metafeld, entfaellt die Zeile; es wird kein Wert geraten.
 {% enddoc %}
 
 {%- liquid
@@ -30,6 +35,25 @@
     endif
   endfor
 
+  # Stangenlaenge deutsch formatieren: 5.15 -> "5,15 m", 4.0 -> "4 m".
+  assign tp_ld_sl = ''
+  capture tp_ld_sl_raw
+    echo tp_ld_product.metafields.custom.stangenlaenge.value
+  endcapture
+  assign tp_ld_sl_raw = tp_ld_sl_raw | strip
+  assign tp_ld_sl_num = tp_ld_sl_raw | times: 1.0
+  if tp_ld_sl_num > 0
+    assign tp_ld_sl_parts = tp_ld_sl_raw | split: '.'
+    assign tp_ld_sl_int = tp_ld_sl_parts[0]
+    assign tp_ld_sl_dec = tp_ld_sl_parts[1] | default: ''
+    if tp_ld_sl_dec == '' or tp_ld_sl_dec == '0' or tp_ld_sl_dec == '00'
+      assign tp_ld_sl = tp_ld_sl_int
+    else
+      assign tp_ld_sl = tp_ld_sl_int | append: ',' | append: tp_ld_sl_dec
+    endif
+    assign tp_ld_sl = tp_ld_sl | append: ' m'
+  endif
+
   assign tp_ld_farb_label = 'Farben'
   for option in tp_ld_product.options_with_values
     if option.name == 'Dekor'
@@ -38,7 +62,7 @@
   endfor
 -%}
 
-{%- if tp_ld_material != blank or tp_ld_hoehe != blank -%}
+{%- if tp_ld_material != blank or tp_ld_hoehe != blank or tp_ld_sl != blank -%}
   <div class="tp-leisten-details" {{ block.shopify_attributes }}>
     {%- if block.settings.heading != blank -%}
       <h2 class="tp-leisten-details__heading">{{ block.settings.heading | escape }}</h2>
@@ -53,6 +77,9 @@
         {%- endif -%}
         {%- if tp_ld_hoehe != blank -%}
           <tr><th scope="row">Höhe</th><td>{{ tp_ld_hoehe }}</td></tr>
+        {%- endif -%}
+        {%- if tp_ld_sl != blank -%}
+          <tr><th scope="row">Stangenlänge</th><td>{{ tp_ld_sl }}</td></tr>
         {%- endif -%}
         {%- if tp_ld_farben > 0 -%}
           <tr><th scope="row">{{ tp_ld_farb_label }}</th><td>{{ tp_ld_farben }}</td></tr>
@@ -118,7 +145,7 @@
       "type": "text",
       "id": "note",
       "label": "Hinweis unter der Tabelle",
-      "default": "Stangenlänge und Montagehinweise finden Sie in der Beschreibung."
+      "default": "Montagehinweise finden Sie in der Beschreibung."
     }
   ],
   "presets": [

@@ -289,7 +289,7 @@
               "type": "tp-leisten-details",
               "settings": {
                 "heading": "Produktdetails",
-                "note": "Stangenlänge und Montagehinweise finden Sie in der Beschreibung."
+                "note": "Montagehinweise finden Sie in der Beschreibung."
               }
             },
             "tp_leisten_vorschau": {
