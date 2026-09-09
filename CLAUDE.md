@@ -421,7 +421,9 @@ Konflikt mit dem Sync-Workflow.
 
 Dieser eine Befehl ist die einzige Ausnahme in `.claude/hooks/git-gh-guard.mjs`, der sonst jedes
 Verwerfen im Working Tree blockiert. Sie gilt **nur** für exakt diesen Pfad: `git checkout -- .`,
-ein zweiter Pfad dahinter oder eine andere Datei bleiben blockiert. Bis 2026-09-09 fehlte die
+ein zweiter Pfad dahinter oder eine andere Datei bleiben blockiert. Ein angehängtes
+`2>/dev/null`, `>/dev/null` oder `2>&1` ist erlaubt — eine Umleitung in eine **echte** Datei
+dagegen nicht, denn `… > wichtig.txt` würde diese Datei überschreiben. Bis 2026-09-09 fehlte die
 Ausnahme, Doku und Hook widersprachen sich, und der Ausweg war ein Stash pro Sitzung — im
 zwischen allen Worktrees geteilten Stash-Stack, wo ihn eine andere Sitzung fälschlich poppen konnte.
 
