@@ -15,8 +15,8 @@
       "settings": {
         "zw_anzeigen": true,
         "zw_gewichtung": "gleich",
-        "zw_online_link": "/collections/all",
-        "zw_service_link": "/pages/liefer-verlegeservice",
+        "zw_online_link": "/collections/all?modus=shop",
+        "zw_service_link": "/pages/liefer-verlegeservice?modus=service",
         "hero_hoehe": "band",
         "hero_buttons_zeigen": false,
         "zw_reihenfolge": "online"

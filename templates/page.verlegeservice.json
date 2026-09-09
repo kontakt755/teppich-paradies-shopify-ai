@@ -12,7 +12,7 @@
         "streifen_zeigen": true,
         "streifen_text": "Liefer- und Verlegeservice · Oranienburg und 50 km Umkreis",
         "shop_cta": "Zum gesamten Online-Shop",
-        "shop_link": "/collections/all",
+        "shop_link": "/collections/all?modus=shop",
         "titel": "Wir verlegen Ihren Boden",
         "text": "Vom Aufmaß bis zur fertigen Verlegung – mit eigenem Team aus Oranienburg, ein Ansprechpartner für alles.",
         "schritte": "Beratung und Aufmaß vor Ort, Lieferung, Fachgerechte Verlegung",
@@ -27,28 +27,28 @@
           "type": "kategorie",
           "settings": {
             "label": "Teppichboden",
-            "ziel": "/collections/teppichboden"
+            "ziel": "/collections/teppichboden?modus=service"
           }
         },
         "k2": {
           "type": "kategorie",
           "settings": {
             "label": "Vinylboden",
-            "ziel": "/collections/vinylboden-1"
+            "ziel": "/collections/vinylboden-1?modus=service"
           }
         },
         "k3": {
           "type": "kategorie",
           "settings": {
             "label": "Linoleum",
-            "ziel": "/collections/linoleumboden-1"
+            "ziel": "/collections/linoleumboden-1?modus=service"
           }
         },
         "k4": {
           "type": "kategorie",
           "settings": {
             "label": "Treppenverlegung",
-            "ziel": "/pages/treppenverlegung"
+            "ziel": "/pages/treppenverlegung?modus=service"
           }
         }
       },

@@ -323,6 +323,17 @@
                 "value_font_size": 14
               },
               "blocks": {}
+            },
+            "tp_modus_aufmass": {
+              "type": "tp-modus-aufmass",
+              "settings": {
+                "titel": "Diesen Boden verlegen lassen?",
+                "text": "Wir messen auf, liefern und verlegen – in Oranienburg und 50 km Umkreis.",
+                "cta": "Aufmaß anfragen",
+                "ziel": "/pages/kontakt",
+                "telefon": "+4933015733720",
+                "telefon_label": "oder anrufen: 03301 5733720"
+              }
             }
           },
           "block_order": [
@@ -335,6 +346,7 @@
             "color_swatch_picker_f7EyBF",
             "tp_farbanzeige_tp1",
             "tp_roll_order_help_sales1",
+            "tp_modus_aufmass",
             "tp_rollware_rechner_sales1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
