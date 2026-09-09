@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T09:34:26.068Z",
+  "generated_at": "2026-09-09T09:38:35.330Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 36,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T09:34:26.068Z",
+    "fetchedAt": "2026-09-09T09:38:35.330Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -102,10 +102,10 @@
     {
       "number": 117,
       "title": "Bodenleisten-Kategorieseite: Hero, Einstiege, Kaufberatung (Theme 203946459470)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/117",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:kategorie"
@@ -114,14 +114,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T08:29:39Z",
-      "updated_at": "2026-09-09T08:30:31Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T09:38:23Z",
+      "closed_at": "2026-09-09T09:38:23Z"
     },
     {
       "number": 112,
@@ -138,7 +138,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": null,
       "fields": {
         "description": "Gesamtanalyse des Shops aus Admin-API, ShopifyQL und 30 bisherigen Berichten. Bericht liegt im PR-Branch `claude/shop-analysis-router-skqvaa` unter `docs/analyse/SHOP_ANALYSE_2026-09-09.md` (plus Produkt-Audit über 434 Produkte und Theme-Code-Review).\n\n**Kernbefund:** 5.136 Sitzungen in 90 Tagen, 22 mit Warenkorb, 6 im Checkout, 0 abgeschlossen. 37 % des Traffics landet auf Verlegeservice-Seiten ohne messbares Ziel. Kein GA4/Ads/Meta-Tag im Theme, Shopify-Pixel nie per Testkauf verifiziert.\n\n**P0**\n- [ ] Customer Events prüfen, genehmigter Testkauf, Anruf-/Formular-Ziele (Ahmet)\n- [ ] Serviceseiten: Anfrage-CTA und `tel:`-Events (Agent, nach Zieldefinition)\n- [ ] Muster-CTAs auf `/pages/muster` statt Kontaktformular umstellen (Agent, 3 Dateien)\n\n**P1**\n- [ ] 152 Produkte ohne `productType` (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten) setzen\n- [ ] Mobiler Kaufpfad: 8 nicht gerenderte `tp-`-Snippets, Touch-Targets\n- [ ] Warenkorb „Geschätzter Gesamtbetrag\", Sie/Du, USP-Band, Länderwähler\n- [ ] 118 Rollenware-Produkte vom Google-Kanal ausschließen (Liste neu erzeugen, Human Gate)\n- [ ] 12 Redirect-Ziele korrigieren/anlegen (fertige Liste im Bericht, Abschnitt 7)\n- [ ] Fotos für …",
@@ -186,7 +186,7 @@
         }
       },
       "created_at": "2026-09-09T06:33:34Z",
-      "updated_at": "2026-09-09T09:28:48Z",
+      "updated_at": "2026-09-09T09:35:09Z",
       "closed_at": null
     },
     {
