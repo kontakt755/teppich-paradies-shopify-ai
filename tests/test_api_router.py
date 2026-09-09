@@ -47,7 +47,9 @@ class ApiRouterTests(unittest.TestCase):
         self.assertIsNone(result["model"])
         self.assertEqual(self.tracker.summary("monthly")["rows"], [])
 
-    def test_b_uses_haiku_and_logs_usage_request_id_and_cache_fields(self):
+    def test_b_uses_fable_and_logs_usage_request_id_and_cache_fields(self):
+        # Seit der Modellmatrix (workflow/model-matrix.mjs) laeuft Klasse B auf Fable;
+        # Haiku ist nur noch fuer Klasse A und Voranalysen vorgesehen.
         response = SimpleNamespace(
             usage=SimpleNamespace(input_tokens=100, output_tokens=400,
                                   cache_creation_input_tokens=200, cache_read_input_tokens=300),
@@ -57,7 +59,7 @@ class ApiRouterTests(unittest.TestCase):
         client = SimpleNamespace(messages=messages)
         adapter = ClaudeExecutionAdapter(RouterConfig(usage_db=self.db), client=client, tracker=self.tracker)
         result = adapter.route_request(user_query="implement", task_class="B", static_context="rules " * 3000)
-        self.assertEqual(result["model"], "claude-haiku-4-5-20251001")
+        self.assertEqual(result["model"], "claude-fable-5-1")
         self.assertEqual(result["request_id"], "req_test")
         self.assertEqual(messages.calls[0]["system"][1]["cache_control"], {"type": "ephemeral"})
         row = self.tracker.summary("monthly")["rows"][0]
