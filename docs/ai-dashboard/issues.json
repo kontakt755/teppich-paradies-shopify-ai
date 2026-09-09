@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:28:08.401Z",
+  "generated_at": "2026-09-09T11:29:27.966Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 41,
+  "count": 42,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:28:08.401Z",
+    "fetchedAt": "2026-09-09T11:29:27.966Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -52,6 +52,31 @@
   },
   "issues": [
     {
+      "number": 134,
+      "title": "git-gh-guard und CLAUDE.md widersprachen sich bei issues.json",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/134",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p3",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "CLAUDE.md verlangt, docs/ai-dashboard/issues.json vor dem Commit mit 'git checkout --' zurueckzusetzen, sonst kollidiert jeder Push mit dem Sync-Workflow. Der Hook .claude/hooks/git-gh-guard.mjs blockierte genau diesen Befehl.\n\nDer Ausweg war ein Stash pro Sitzung. Der Stash-Stack ist zwischen allen Worktrees geteilt, jede Sitzung hinterliess dort einen Eintrag, den eine andere faelschlich poppen konnte - der Umweg war riskanter als der Befehl.\n\nFix: enge Ausnahme fuer genau diesen Pfad, am Segmentende verankert. Blockiert bleiben 'git checkout -- .', jede andere Datei, ein zweiter Pfad dahinter, Praefix-Treffer und alles hinter der Ausnahme in derselben Zeile. qa/tests/git-gh-guard.test.mjs haelt die Grenze mit 19 Faellen fest, per Mutation gegengeprueft.\n\nPR #128.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T11:29:12Z",
+      "updated_at": "2026-09-09T11:29:13Z",
+      "closed_at": null
+    },
+    {
       "number": 131,
       "title": "Sortimentsabgleich Teppichboden Jordan/JOKA vs M-Plus (Analyse Phase 1-3)",
       "state": "open",
@@ -81,7 +106,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/130",
       "labels": [
-        "status:eingang",
+        "status:in-arbeit",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -90,13 +115,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:27:56Z",
-      "updated_at": "2026-09-09T11:27:56Z",
+      "updated_at": "2026-09-09T11:28:41Z",
       "closed_at": null
     },
     {
@@ -1516,7 +1541,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
       "labels": [
-        "status:review",
+        "status:in-arbeit",
         "type:technik",
         "priority:p0",
         "area:backend"
@@ -1525,7 +1550,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -1534,7 +1559,7 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-09T11:21:02Z",
+      "updated_at": "2026-09-09T11:29:17Z",
       "closed_at": null
     },
     {
