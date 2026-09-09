@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:07:32.827Z",
+  "generated_at": "2026-09-09T12:13:00.409Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 47,
+  "count": 48,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:07:32.827Z",
+    "fetchedAt": "2026-09-09T12:13:00.409Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,12 +63,37 @@
   },
   "issues": [
     {
+      "number": 152,
+      "title": "Hook-Ausnahme blockierte die Schreibweise mit 2>/dev/null",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/152",
+      "labels": [
+        "status:in-arbeit",
+        "type:bug",
+        "priority:p3",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Die Ausnahme fuer docs/ai-dashboard/issues.json war am Segmentende verankert und blockierte deshalb 'git checkout -- <botdatei> 2>/dev/null' - dieselbe harmlose Operation mit unterdrueckter Fehlerausgabe, in der Praxis die haeufigere Schreibweise.\n\nErweitert, aber bewusst nicht auf Umleitungen allgemein: '> wichtig.txt' wuerde diese Datei ueberschreiben. Dann haette eine Ausnahme fuer eine harmlose Bot-Datei ein Werkzeug freigegeben, das eine beliebige andere zerstoert. Erlaubt sind nur /dev/null als Ziel und 2>&1.\n\nAcht neue Tests, per Mutation gegengeprueft: werden Umleitungen pauschal erlaubt, fallen drei.\n\nPR #151.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T12:12:45Z",
+      "updated_at": "2026-09-09T12:12:55Z",
+      "closed_at": null
+    },
+    {
       "number": 147,
       "title": "Bodenleisten-Produktkarte: fuenf BLOCK_DRIFT-Warnungen nach dem Umbau",
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/147",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:verbesserung",
         "priority:p3",
         "area:technik"
@@ -77,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Die Bodenleisten-Kategorieseite wurde parallel auf eine eigene Produktkarte umgebaut (tp-card-leisten statt tp-card-specs/dimensions/price-sqm). template:guard meldete fuenf BLOCK_DRIFT-Warnungen.\n\nGeprueft: alle 9 Produkte haben qm_pro_paket = null, keine Variante traegt rollenbreite, Varianten sind Farben statt Breiten. Leisten werden nach Stueck verkauft, tp-card-specs rendert nur fuer Paketprodukte. Die Bloecke wuerden nichts rendern - Absicht, keine Luecke.\n\nNeuer Konfigurationsschluessel nurIn fuer Bloecke, die nur in ein Template gehoeren. Meldet weiterhin, wenn so ein Block in einem fremden Template auftaucht oder aus seinem eigenen faellt. Letzterer Fall fehlte im ersten Entwurf und wurde von der Negativkontrolle gefunden.\n\nPR #146.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:02:58Z",
-      "updated_at": "2026-09-09T12:07:19Z",
+      "updated_at": "2026-09-09T12:07:36Z",
       "closed_at": "2026-09-09T12:07:19Z"
     },
     {
