@@ -395,6 +395,14 @@
                     %}
                   {% endif %}
                 {% endif %}
+                {%- comment -%}
+                  Das title-Attribut am <li> lesen Screenreader nicht vor, und der
+                  gesperrte Input faellt aus der Tab-Reihenfolge. Diese Zeile steht
+                  deshalb im Lesefluss direkt hinter dem Wert.
+                {%- endcomment -%}
+                {% if is_disabled %}
+                  <span class="visually-hidden">Nicht verf&uuml;gbar mit der aktuellen Auswahl</span>
+                {% endif %}
               </li>
             {%- endfor -%}
           </ul>
@@ -477,11 +485,10 @@
       align-items: center;
     }
 
-    /* Gesperrte Werte bleiben lesbar - reine Deckkraft macht sie sonst unleserlich. */
-    .facets__inputs-list-item--disabled {
-      opacity: 1;
-    }
-
+    /* Gesperrte Werte lesbar halten. Die Ausgrauung kommt aus .checkbox--disabled
+       bzw. .facets__pill-input:disabled, nicht vom Listenelement - deshalb hier
+       gezielt Textfarbe und Durchstreichung statt einer Deckkraft-Regel, die auf
+       dem <li> nichts zu ueberschreiben haette. */
     .facets__inputs-list-item--disabled .checkbox__label-text,
     .facets__inputs-list-item--disabled .facets__pill-label {
       color: rgb(var(--color-foreground-rgb) / var(--opacity-40-60));
