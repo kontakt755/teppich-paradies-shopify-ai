@@ -214,9 +214,24 @@ dessen, was der Befund versprach.
 
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
-Das Produkt-Metafeld `grosshandel.sku` nennt nur die Kollektion
-(`M-Plus Ambiente 2025 1312 Ambiance`), nicht die Farbe. Ohne Nummer kein Registereintrag -
-das holt der Farb-Nachzug nach, sobald die Produkte SKUs bekommen.
+Ohne Nummer kein Registereintrag - das holt der Farb-Nachzug nach, sobald die Produkte
+SKUs bekommen.
+
+**AW Ganges: Farbnummern nicht auffindbar (geprueft 2026-09-09).** Die sieben Farbnamen sind
+bereits sauber deutsch (`Rot Bordeaux`, `Weiß Creme`); nur `Grau dunkel` wurde auf
+`Grau Dunkel` angeglichen. Eine Farbnummer liess sich nirgends abschreiben:
+
+- keine SKU, kein Barcode, kein Variantenbild
+- `grosshandel.sku` nennt `M-Plus Ambiente 2025 1312 Ambiance` - eine Kollektion, keine Farbe
+- der Grosshaendler jordanshop.de fuehrt weder `Ganges` noch `Ambiance` Teppichboden;
+  das Produkt stammt von M-Plus, nicht von Jordan
+- die Herstellerseite von Associated Weavers fuehrt `Ganges` nicht oeffentlich
+
+Ein Hinweis fuer den naechsten Anlauf: Die drei Produktbilder heissen `GGESTA_21.jpg`,
+`GGESTA_21_LIVING.jpg` und `GGESTA_33_LIVING.jpg`. Die 21 und die 33 **koennten**
+Farbnummern sein, es gibt aber nur drei Bilder fuer sieben Farben und keine Zuordnung zu
+einer Variante. Daraus eine Nummer abzuleiten waere geraten - deshalb steht es hier als
+Spur und nicht im Farbregister. Die Farbnummern muessen aus der M-Plus-Preisliste kommen.
 
 **Eichenhain: Farbnamen eingedeutscht (2026-09-09).** Die sechs Werte hiessen
 `Prestige Oak Honey Braun` und `Infinity Oak Naturel` - Lieferanten-Dekornamen mit
