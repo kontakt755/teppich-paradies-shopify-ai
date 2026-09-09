@@ -432,7 +432,11 @@
                                           assign catalog_links = childlink.links | where: 'type', 'catalog_link'
                                           assign collection_list_links = childlink.links | where: 'type', 'collections_link'
                                           assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                          if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
+                                          # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
+                                          # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
+                                          # auseinander - ein Eintrag mit Foto, die anderen ohne.
+                                          assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
+                                          if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
                                             assign render_link_image = true
                                           endif
                                         endif
@@ -497,7 +501,11 @@
                                       assign catalog_links = childlink.links | where: 'type', 'catalog_link'
                                       assign collection_list_links = childlink.links | where: 'type', 'collections_link'
                                       assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                      if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
+                                      # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
+                                      # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
+                                      # auseinander - ein Eintrag mit Foto, die anderen ohne.
+                                      assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
+                                      if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
                                         assign render_link_image = true
                                       endif
                                     endif
@@ -1134,6 +1142,23 @@
   .menu-drawer__list-item--deep .menu-drawer__menu,
   .menu-drawer__menu--grandchildlist {
     padding-inline: 0;
+  }
+
+  /* Dritte Ebene als Untergruppe lesbar machen: eingerueckt, mit Leitlinie und
+     kleiner als der Elternpunkt. Ohne das wirken die Kinder wie Hauptpunkte
+     und der Elternpunkt wie eine blosse Ueberschrift. */
+  .menu-drawer__menu--grandchildlist {
+    margin-inline-start: 1rem;
+    padding-inline-start: 0.75rem;
+    border-inline-start: 1px solid rgb(var(--color-foreground-rgb) / 0.15);
+  }
+
+  .menu-drawer__menu--grandchildlist .menu-drawer__menu-item {
+    font-size: 0.875rem;
+    font-weight: 400;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
   }
 
   .menu-drawer__list-item--deep .menu-drawer__menu {
