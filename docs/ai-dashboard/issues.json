@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T10:18:16.003Z",
+  "generated_at": "2026-09-09T10:19:22.630Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 38,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T10:18:16.003Z",
+    "fetchedAt": "2026-09-09T10:19:22.630Z",
     "labelsAvailable": [
       "area:backend",
       "area:checkout",
@@ -57,7 +57,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/123",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:bug",
         "priority:p2",
         "area:navigation"
@@ -66,14 +66,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Drei der vier Filterlinks im Menuezweig Bodenleisten (Uebergangsprofile, Abschlussprofile, Kleber & Fixierung) filterten auf /collections/bodenleisten?filter.p.m.custom.arten=... und lieferten ein leeres Produktraster.\n\nUrsache: nicht fehlende Metafelder (anders als beim Vinyl-Fall in 108467d). Per Admin API gezaehlt tragen alle 9 Produkte der Kollektion bodenleisten ausschliesslich den Wert sockelleisten. Die Profil- und Kleberprodukte existieren, sind korrekt ausgezeichnet und liegen in den Zubehoer-Smart-Collections. Falsch war der Scope des Filters, nicht die Produktdaten.\n\nFix: die drei Punkte per menuUpdate von HTTP-Filterlink auf COLLECTION umgehaengt, auf zubehoer-uebergangsprofile (5 Produkte), zubehoer-abschlussprofile (5) und zubehoer-kleber-fixierung (7). Sockelleisten bleibt Filterlink. Alle 40 MenuItem-IDs vorher = nachher.\n\nMenue-Aenderung ist bereits live (storeweit, nach Freigabe). PR #122 traegt die Doku nach.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T10:18:01Z",
-      "updated_at": "2026-09-09T10:18:15Z",
+      "updated_at": "2026-09-09T10:18:26Z",
       "closed_at": null
     },
     {
