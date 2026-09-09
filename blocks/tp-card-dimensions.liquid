@@ -1,0 +1,154 @@
+{% doc %}
+  Kombinierte Anzeige von Breite × Länge für Rollenware auf Produktkarten.
+  Zeigt beide Dimensionen in strukturierter Form mit visueller Hierarchie.
+
+  Datenquellen:
+  - Breite: Tags (breite_boden) oder Metafeld custom.rollenbreite
+  - Länge: Varianten-Titel (z.B. "300 cm")
+
+  Fällt still aus wenn nur eine Dimension oder keine gefunden wird.
+{% enddoc %}
+
+{%- liquid
+  assign tp_cd_product = closest.product
+  assign tp_cd_variant = tp_cd_product.selected_or_first_available_variant
+  assign tp_cd_id = block.id | replace: '_', '' | downcase
+
+  if tp_cd_product != blank and tp_cd_variant != blank
+    # Breite extrahieren (dedupliziert, sortiert)
+    assign tp_cd_width_seen = '|'
+    assign tp_cd_widths_entries = ''
+    assign tp_cd_widths_count = 0
+
+    for tp_cd_variant_loop in tp_cd_product.variants
+      assign tp_cd_variant_title_lower = tp_cd_variant_loop.title | downcase
+      unless tp_cd_variant_title_lower contains 'opc-'
+        assign tp_cd_width_mf = tp_cd_variant_loop.metafields.custom.rollenbreite.value
+        if tp_cd_width_mf != blank
+          assign tp_cd_width_cm = tp_cd_width_mf | times: 100 | round
+          assign tp_cd_width_token = '|' | append: tp_cd_width_cm | append: '|'
+
+          if tp_cd_width_cm > 0
+            unless tp_cd_width_seen contains tp_cd_width_token
+              assign tp_cd_width_seen = tp_cd_width_seen | append: tp_cd_width_cm | append: '|'
+              assign tp_cd_width_sort_key = tp_cd_width_cm | prepend: '000000'
+              assign tp_cd_width_sort_key_size = tp_cd_width_sort_key | size
+              assign tp_cd_width_sort_key_start = tp_cd_width_sort_key_size | minus: 6
+              assign tp_cd_width_sort_key = tp_cd_width_sort_key | slice: tp_cd_width_sort_key_start, 6
+
+              if tp_cd_widths_entries != blank
+                assign tp_cd_widths_entries = tp_cd_widths_entries | append: ','
+              endif
+              assign tp_cd_widths_entries = tp_cd_widths_entries | append: tp_cd_width_sort_key | append: ':' | append: tp_cd_width_cm
+              assign tp_cd_widths_count = tp_cd_widths_count | plus: 1
+            endunless
+          endif
+        endif
+      endunless
+    endfor
+
+    assign tp_cd_widths_sorted = tp_cd_widths_entries | split: ',' | sort
+
+    # Länge extrahieren
+    assign tp_cd_length_cm = 0
+    assign tp_cd_length_match = tp_cd_variant.title | match: '(\d+(?:[.,]\d+)?)'
+    if tp_cd_length_match
+      assign tp_cd_length_cm = tp_cd_length_match | times: 1.0 | round
+    endif
+  endif
+-%}
+
+{%- if tp_cd_widths_count > 0 and tp_cd_length_cm > 0 -%}
+  <div class="tp-card-dimensions-{{ tp_cd_id }}" {{ block.shopify_attributes }}>
+    <div class="tp-card-dimensions__item">
+      <span class="tp-card-dimensions__label">Breite</span>
+      <span class="tp-card-dimensions__value">
+        {%- for tp_cd_width_entry in tp_cd_widths_sorted -%}
+          {%- assign tp_cd_width_val = tp_cd_width_entry | split: ':' | last -%}
+          {%- if tp_cd_widths_count == 2 and forloop.index == 2 -%}
+            &nbsp;&amp;&nbsp;
+          {%- elsif tp_cd_widths_count > 2 and forloop.index > 1 -%}
+            &nbsp;·&nbsp;
+          {%- endif -%}
+          {{- tp_cd_width_val -}}
+        {%- endfor -%}
+        &nbsp;cm
+      </span>
+    </div>
+
+    <span class="tp-card-dimensions__separator">×</span>
+
+    <div class="tp-card-dimensions__item">
+      <span class="tp-card-dimensions__label">Länge</span>
+      <span class="tp-card-dimensions__value">{{ tp_cd_length_cm }}&nbsp;cm</span>
+    </div>
+  </div>
+
+  <style>
+    .tp-card-dimensions-{{ tp_cd_id }} {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .tp-card-dimensions__item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: var(--font-body--family);
+      font-size: clamp(0.75rem, 0.72rem + 0.1vw, 0.82rem);
+      line-height: 1.3;
+    }
+
+    .tp-card-dimensions__label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+    }
+
+    .tp-card-dimensions__value {
+      font-weight: 600;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.88);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tp-card-dimensions__separator {
+      font-weight: 600;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.5);
+      align-self: flex-end;
+      margin-bottom: 4px;
+    }
+
+    @media screen and (max-width: 749px) {
+      .tp-card-dimensions-{{ tp_cd_id }} {
+        gap: 6px;
+      }
+
+      .tp-card-dimensions__item {
+        font-size: clamp(0.72rem, 0.7rem + 0.05vw, 0.78rem);
+      }
+
+      .tp-card-dimensions__label {
+        font-size: 0.6rem;
+      }
+    }
+  </style>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Card-Dimensionen (Breite × Länge)",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Card-Dimensionen (Breite × Länge)"
+    }
+  ]
+}
+{% endschema %}

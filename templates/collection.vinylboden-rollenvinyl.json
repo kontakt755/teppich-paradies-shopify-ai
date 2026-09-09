@@ -169,6 +169,18 @@
               },
               "blocks": {}
             },
+            "tp_card_price_sqm_v1": {
+              "type": "tp-card-price-sqm",
+              "name": "TP Card-€/m² (Rollenware)",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_dimensions_v1": {
+              "type": "tp-card-dimensions",
+              "name": "TP Card-Dimensionen (Breite × Länge)",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_card_specs_v1": {
               "type": "tp-card-specs",
               "name": "TP Card-Merkmale",
@@ -189,7 +201,9 @@
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
+            "tp_card_dimensions_v1",
             "price_EzJzMm",
+            "tp_card_price_sqm_v1",
             "tp_card_color_thumbs",
             "tp_card_specs_v1",
             "tp_card_actions_v1"
