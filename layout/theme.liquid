@@ -31,6 +31,14 @@
     {%- render 'scripts' -%}
     {%- render 'theme-styles-variables' -%}
     {%- render 'color-schemes' -%}
+    {%- comment -%}
+      TP-Feinschliff: Trefferflaechen und Schriftgroessen am Telefon, Mega-Menue
+      im Bildmodus, Verlegeservice-Seite am Telefon. Jede Zeile laesst sich
+      einzeln zuruecknehmen.
+    {%- endcomment -%}
+    {%- render 'tp-mobil' -%}
+    {%- render 'tp-megamenu' -%}
+    {%- render 'tp-verlegeseite' -%}
 
     {% if request.design_mode %}
       {%- render 'theme-editor' -%}
@@ -136,6 +144,7 @@
     {% endif %}
 
     {% render 'tp-compare-bar' %}
+    {% render 'tp-formular' %}
     <script src="{{ 'tp-carpet-navigation.js' | asset_url }}" defer></script>
     <script>
       (function improveDynamicAccessibility() {
