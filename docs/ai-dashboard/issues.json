@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:45:29.699Z",
+  "generated_at": "2026-09-09T12:49:23.203Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 49,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:45:29.699Z",
+    "fetchedAt": "2026-09-09T12:49:23.203Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,10 +65,10 @@
     {
       "number": 160,
       "title": "Git-Guard: Regeln griffen nicht hinter xargs, sudo oder find -exec",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/160",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p2",
         "area:sicherheit"
@@ -84,8 +84,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:44:35Z",
-      "updated_at": "2026-09-09T12:44:52Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T12:49:21Z",
+      "closed_at": "2026-09-09T12:49:08Z"
     },
     {
       "number": 152,
