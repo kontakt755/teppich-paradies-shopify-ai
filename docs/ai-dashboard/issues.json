@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T21:34:38.989Z",
+  "generated_at": "2026-09-09T21:34:54.563Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 58,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T21:34:38.989Z",
+    "fetchedAt": "2026-09-09T21:34:54.563Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -68,7 +68,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/172",
       "labels": [
-        "status:eingang",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:technik"
@@ -77,13 +77,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T21:34:26Z",
-      "updated_at": "2026-09-09T21:34:27Z",
+      "updated_at": "2026-09-09T21:34:53Z",
       "closed_at": null
     },
     {
