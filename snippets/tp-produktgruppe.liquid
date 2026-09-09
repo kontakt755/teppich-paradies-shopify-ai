@@ -16,13 +16,17 @@
   @param {object} product - Das zu pruefende Produkt.
 
   Ausgabe (per capture einzulesen, Liquid kennt keine Rueckgabewerte):
-    ''          - gehoert zu keiner Gruppe
-    'mitglied'  - gehoert zur Gruppe
+    ''     - gehoert zu keiner Gruppe
+    '1'..  - Position in der Gruppe, aufsteigend nach Groesse
 
-  Welches Mitglied die gemeinsame Karte traegt, entscheidet bewusst NICHT
-  dieses Snippet, sondern die Liste: das erste Mitglied, das dort tatsaechlich
-  vorkommt. Eine fest verdrahtete Leitgroesse verschwindet sonst mitsamt der
-  ganzen Gruppe, sobald ein Filter genau sie ausschliesst - beim Preisfilter
+  Die Position ist die Vorzugsreihenfolge fuer die gemeinsame Karte: die
+  kleinste vorhandene Groesse traegt sie, damit die Karte den Einstiegspreis
+  der Gruppe zeigt.
+
+  Welches Mitglied am Ende traegt, entscheidet aber bewusst die LISTE, nicht
+  dieses Snippet - naemlich unter den dort tatsaechlich vorhandenen Mitgliedern.
+  Eine fest verdrahtete Leitgroesse verschwindet sonst mitsamt der ganzen
+  Gruppe, sobald ein Filter genau sie ausschliesst: beim Preisfilter
   "150-400 EUR" waren so beide grossen Matten unauffindbar, obwohl kaufbar.
 {%- enddoc -%}
 
@@ -31,6 +35,11 @@
   assign tp_pg_handle = product.handle
 
   if tp_pg_handle != blank and tp_pg_handles contains tp_pg_handle
-    echo 'mitglied'
+    for tp_pg_h in tp_pg_handles
+      if tp_pg_h == tp_pg_handle
+        echo forloop.index
+        break
+      endif
+    endfor
   endif
 -%}

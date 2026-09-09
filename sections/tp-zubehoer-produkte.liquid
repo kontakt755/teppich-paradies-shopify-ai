@@ -45,7 +45,25 @@
 
 {%- capture list_items -%}
   {%- assign rendered = 0 -%}
-  {%- assign tp_gruppe_gezeigt = false -%}
+  {%- comment -%}
+    Traeger der Gruppe: die kleinste hier vorhandene Groesse, damit die Karte
+    den Einstiegspreis zeigt. Bestimmt im Vorlauf, damit die Gruppe auch dann
+    eine Karte behaelt, wenn die kleineren Groessen in dieser Liste fehlen.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_gruppe_traeger = ''
+    assign tp_gruppe_beste = 999
+    for tp_gruppe_p in items
+      capture tp_gruppe_pos
+        render 'tp-produktgruppe', product: tp_gruppe_p
+      endcapture
+      assign tp_gruppe_pos = tp_gruppe_pos | strip | plus: 0
+      if tp_gruppe_pos > 0 and tp_gruppe_pos < tp_gruppe_beste
+        assign tp_gruppe_beste = tp_gruppe_pos
+        assign tp_gruppe_traeger = tp_gruppe_p.handle
+      endif
+    endfor
+  -%}
   {%- for item in items -%}
     {%- if rendered >= max_items -%}
       {%- break -%}
@@ -57,14 +75,11 @@
     {%- if item.featured_image == blank -%}
       {%- continue -%}
     {%- endif -%}
-    {%- comment -%} Erstes Mitglied einer Groessen-Gruppe traegt die Karte, weitere entfallen. {%- endcomment -%}
+    {%- comment -%} Von einer Groessen-Gruppe traegt nur die kleinste vorhandene Groesse die Karte. {%- endcomment -%}
     {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: item -%}{%- endcapture -%}
     {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
-    {%- if tp_gruppe_rolle == 'mitglied' -%}
-      {%- if tp_gruppe_gezeigt -%}
-        {%- continue -%}
-      {%- endif -%}
-      {%- assign tp_gruppe_gezeigt = true -%}
+    {%- if tp_gruppe_rolle != blank and item.handle != tp_gruppe_traeger -%}
+      {%- continue -%}
     {%- endif -%}
     {%- if rendered > 0 -%}<!--@list/split-->{%- endif -%}
     <div class="resource-list__item">

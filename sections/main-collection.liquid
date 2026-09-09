@@ -36,19 +36,17 @@
     class="collection-wrapper grid gap-style{% if section.settings.product_grid_width == 'full-width' %} collection-wrapper--grid-full-width{% endif %}"
   >
     {%- comment -%}
-      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte. Welche
-      Groesse sie traegt, entscheidet die Liste selbst: das erste Mitglied, das
-      hier vorkommt. Eine feste Leitgroesse hat die ganze Gruppe verschwinden
-      lassen, sobald ein Filter genau sie ausschloss - beim Preisfilter
-      "150-400 EUR" waren beide grossen Matten unauffindbar, obwohl kaufbar.
+      Groessen-Gruppen (z. B. Sauberlauf) erscheinen als eine Karte je Seite.
 
-      Der Merker wird pro Seite gesetzt. Damit traegt jede Seite, auf der
-      Mitglieder vorkommen, genau eine Karte; kein kaufbares Produkt faellt je
-      ganz aus der Liste.
+      Fuer die Trefferzahl reicht es nicht, die zusammengelegten Groessen
+      einfach abzuziehen: verteilt die Paginierung sie auf zwei Seiten, traegt
+      jede Seite eine Karte. Abgezogen wird deshalb
+        Mitglieder - Anzahl der Seiten, auf denen Mitglieder vorkommen.
 
-      Die Trefferzahl wird nur gekuerzt, wenn das Ergebnis auf eine Seite passt
-      und hoechstens 50 Produkte umfasst - nur dann ist die Kuerzung exakt.
-      Sonst bleibt die Originalzahl stehen: lieber etwas zu hoch als falsch.
+      Bei bis zu 50 Produkten liefert collection.products die vollstaendige
+      Reihenfolge, damit ist diese Verteilung exakt berechenbar. Darueber
+      hinaus bleibt die Originalzahl stehen - lieber unveraendert als geraten.
+      Aktive Filter sind beruecksichtigt, weil collection.products ihnen folgt.
     {%- endcomment -%}
     {% assign products_per_page = 24 %}
 
@@ -63,19 +61,28 @@
       endif
 
       assign tp_gruppe_abzug = 0
-      if tp_gruppe_aktiv and collection.products_count <= 50 and collection.products_count <= products_per_page
-        assign tp_gruppe_treffer = 0
+      if tp_gruppe_aktiv and collection.products_count <= 50
+        assign tp_gruppe_mitglieder = 0
+        assign tp_gruppe_seiten = ''
+        assign tp_gruppe_index = 0
         for tp_gruppe_p in collection.products
-          capture tp_gruppe_r
+          capture tp_gruppe_pos
             render 'tp-produktgruppe', product: tp_gruppe_p
           endcapture
-          assign tp_gruppe_r = tp_gruppe_r | strip
-          if tp_gruppe_r == 'mitglied'
-            assign tp_gruppe_treffer = tp_gruppe_treffer | plus: 1
+          assign tp_gruppe_pos = tp_gruppe_pos | strip
+          if tp_gruppe_pos != blank
+            assign tp_gruppe_mitglieder = tp_gruppe_mitglieder | plus: 1
+            assign tp_gruppe_seite = tp_gruppe_index | divided_by: products_per_page
+            assign tp_gruppe_marke = '|' | append: tp_gruppe_seite | append: '|'
+            unless tp_gruppe_seiten contains tp_gruppe_marke
+              assign tp_gruppe_seiten = tp_gruppe_seiten | append: tp_gruppe_marke
+            endunless
           endif
+          assign tp_gruppe_index = tp_gruppe_index | plus: 1
         endfor
-        if tp_gruppe_treffer > 1
-          assign tp_gruppe_abzug = tp_gruppe_treffer | minus: 1
+        if tp_gruppe_mitglieder > 0
+          assign tp_gruppe_seitenzahl = tp_gruppe_seiten | split: '||' | size
+          assign tp_gruppe_abzug = tp_gruppe_mitglieder | minus: tp_gruppe_seitenzahl
         endif
       endif
       assign tp_results_size = collection.products_count | minus: tp_gruppe_abzug
@@ -89,11 +96,33 @@
     %}
 
     {% paginate collection.products by products_per_page %}
+      {%- comment -%}
+        Traeger dieser Seite ist die kleinste hier vorhandene Groesse (kleinste
+        Position). Ein Vorlauf ueber dieselbe Seitenmenge bestimmt sie, damit
+        die Karte den Einstiegspreis zeigt und trotzdem nie eine Seite mit
+        Mitgliedern ohne Karte bleibt - auch wenn ein Filter die kleineren
+        Groessen ausschliesst.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_gruppe_traeger = ''
+        assign tp_gruppe_beste = 999
+        if tp_gruppe_aktiv
+          for tp_gruppe_p in collection.products
+            capture tp_gruppe_pos
+              render 'tp-produktgruppe', product: tp_gruppe_p
+            endcapture
+            assign tp_gruppe_pos = tp_gruppe_pos | strip | plus: 0
+            if tp_gruppe_pos > 0 and tp_gruppe_pos < tp_gruppe_beste
+              assign tp_gruppe_beste = tp_gruppe_pos
+              assign tp_gruppe_traeger = tp_gruppe_p.handle
+            endif
+          endfor
+        endif
+      -%}
       {% capture children %}
-        {%- assign tp_gruppe_gezeigt = false -%}
         {% for product in collection.products %}
           {%- comment -%}
-            Erstes Mitglied der Gruppe traegt die Karte, weitere entfallen.
+            Nur der oben bestimmte Traeger der Gruppe wird gerendert.
             Bewusst nur im Zubehoerbereich: diese Sektion ist der Horizon-Kern
             aller Kategorien und soll sich sonst unveraendert verhalten - in
             der Suche und auf anderen Kollektionen bleiben alle Groessen
@@ -102,11 +131,8 @@
           {%- if tp_gruppe_aktiv -%}
             {%- capture tp_gruppe_rolle -%}{%- render 'tp-produktgruppe', product: product -%}{%- endcapture -%}
             {%- assign tp_gruppe_rolle = tp_gruppe_rolle | strip -%}
-            {%- if tp_gruppe_rolle == 'mitglied' -%}
-              {%- if tp_gruppe_gezeigt -%}
-                {%- continue -%}
-              {%- endif -%}
-              {%- assign tp_gruppe_gezeigt = true -%}
+            {%- if tp_gruppe_rolle != blank and product.handle != tp_gruppe_traeger -%}
+              {%- continue -%}
             {%- endif -%}
           {%- endif -%}
           <li

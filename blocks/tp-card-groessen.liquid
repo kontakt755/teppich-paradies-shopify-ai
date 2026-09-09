@@ -15,7 +15,7 @@
   assign tp_cg_role = tp_cg_role | strip
 -%}
 
-{%- if tp_cg_role == 'mitglied' -%}
+{%- if tp_cg_role != blank -%}
   <div {{ block.shopify_attributes }}>
     {% render 'tp-produktgruppe-liste', product: tp_cg_product, style: 'card' %}
   </div>
