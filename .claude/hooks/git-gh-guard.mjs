@@ -94,6 +94,29 @@ function segmente(cmd) {
     .filter(Boolean);
 }
 
+// Ein git-Aufruf muss nicht am Segmentanfang stehen. Steckt er hinter einem
+// Vorspann, greift eine Regel mit ^git nicht mehr:
+//
+//   xargs -n1 git update-ref -d        find . -exec git clean -fd {} +
+//   env GIT_DIR=... git push --force   sudo git reset --hard
+//   sh -c "git stash drop"             timeout 5 git push --delete
+//
+// Am 2026-09-09 ist genau das aufgefallen: "git update-ref -d" war blockiert,
+// dieselbe Loeschung hinter "xargs" lief durch.
+//
+// Deshalb keine Liste erlaubter Vorspaenne - die bleibt immer unvollstaendig -
+// sondern jede Stelle im Segment, an der ein git/gh-Aufruf beginnt. Das faellt
+// bewusst fail-closed aus: steht "git push --force" nur als Text in einem
+// Befehl, wird auch das blockiert. Ein zu viel blockierter Befehl kostet eine
+// Rueckfrage, ein durchgerutschter kostet Arbeit.
+function kandidaten(segment) {
+  const out = [segment];
+  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])(?:git|gh)\s/g)) {
+    if (m.index > 0) out.push(segment.slice(m.index));
+  }
+  return out;
+}
+
 async function stdinJson() {
   let input = '';
   process.stdin.setEncoding('utf8');
@@ -103,7 +126,8 @@ async function stdinJson() {
 
 const command = (await stdinJson())?.tool_input?.command ?? '';
 
-for (const teil of segmente(command)) {
+for (const segment of segmente(command)) {
+ for (const teil of kandidaten(segment)) {
   if (AUSNAHMEN.some((muster) => muster.test(teil))) continue;
   for (const [muster, grund] of VERBOTEN) {
     if (muster.test(teil)) {
@@ -120,4 +144,5 @@ for (const teil of segmente(command)) {
       process.exit(0);
     }
   }
+ }
 }

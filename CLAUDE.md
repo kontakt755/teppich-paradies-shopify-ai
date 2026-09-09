@@ -423,7 +423,13 @@ Dieser eine Befehl ist die einzige Ausnahme in `.claude/hooks/git-gh-guard.mjs`,
 Verwerfen im Working Tree blockiert. Sie gilt **nur** für exakt diesen Pfad: `git checkout -- .`,
 ein zweiter Pfad dahinter oder eine andere Datei bleiben blockiert. Ein angehängtes
 `2>/dev/null`, `>/dev/null` oder `2>&1` ist erlaubt — eine Umleitung in eine **echte** Datei
-dagegen nicht, denn `… > wichtig.txt` würde diese Datei überschreiben. Bis 2026-09-09 fehlte die
+dagegen nicht, denn `… > wichtig.txt` würde diese Datei überschreiben.
+
+Der Hook prüft **jede** Stelle im Befehl, an der ein `git`/`gh`-Aufruf beginnt, nicht nur den
+Anfang. Sonst rutscht dieselbe Operation hinter einem Vorspann durch: `git update-ref -d` war
+blockiert, `xargs -n1 git update-ref -d` lief durch. Das fällt bewusst fail-closed aus — steht
+ein verbotener Befehl nur als Text in einer Zeile, wird auch das blockiert. Für Fließtext, der
+solche Befehle erwähnt, ist ein Heredoc der Weg; dessen Inhalt behandelt der Hook als Daten. Bis 2026-09-09 fehlte die
 Ausnahme, Doku und Hook widersprachen sich, und der Ausweg war ein Stash pro Sitzung — im
 zwischen allen Worktrees geteilten Stash-Stack, wo ihn eine andere Sitzung fälschlich poppen konnte.
 
