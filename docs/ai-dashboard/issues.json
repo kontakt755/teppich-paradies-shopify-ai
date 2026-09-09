@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:58:06.644Z",
+  "generated_at": "2026-09-09T12:03:10.878Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 46,
+  "count": 47,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:58:06.644Z",
+    "fetchedAt": "2026-09-09T12:03:10.878Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 147,
+      "title": "Bodenleisten-Produktkarte: fuenf BLOCK_DRIFT-Warnungen nach dem Umbau",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/147",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Die Bodenleisten-Kategorieseite wurde parallel auf eine eigene Produktkarte umgebaut (tp-card-leisten statt tp-card-specs/dimensions/price-sqm). template:guard meldete fuenf BLOCK_DRIFT-Warnungen.\n\nGeprueft: alle 9 Produkte haben qm_pro_paket = null, keine Variante traegt rollenbreite, Varianten sind Farben statt Breiten. Leisten werden nach Stueck verkauft, tp-card-specs rendert nur fuer Paketprodukte. Die Bloecke wuerden nichts rendern - Absicht, keine Luecke.\n\nNeuer Konfigurationsschluessel nurIn fuer Bloecke, die nur in ein Template gehoeren. Meldet weiterhin, wenn so ein Block in einem fremden Template auftaucht oder aus seinem eigenen faellt. Letzterer Fall fehlte im ersten Entwurf und wurde von der Negativkontrolle gefunden.\n\nPR #146.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-09T12:02:58Z",
+      "updated_at": "2026-09-09T12:02:58Z",
+      "closed_at": null
+    },
     {
       "number": 142,
       "title": "template:guard meldete zwei Dauerwarnungen zu den Zubehoer-Templates",
@@ -127,14 +152,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "setup-dashboard.sh fuehrte eine eigene fest verdrahtete Bereichsliste, elf Bereiche hinter docs/ai-dashboard/lib/model.mjs: ads, analytics, collections, content, katalog, operations, produktdaten, service, sicherheit, technik, tracking.\n\nFolge: npm run task --area technik bricht mit 'could not add label' ab, obwohl technik im Modell gueltig ist. Die Meldung nennt das Label, nicht die Ursache.\n\nFix: Skript liest die Bereiche aus model.mjs und bricht ab, wenn das nicht geht. Die elf Labels sind angelegt, 23 von 23 vorhanden.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:41:37Z",
-      "updated_at": "2026-09-09T11:58:05Z",
+      "updated_at": "2026-09-09T11:58:06Z",
       "closed_at": "2026-09-09T11:57:51Z"
     },
     {
@@ -143,7 +168,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/136",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:navigation"
@@ -152,14 +177,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Kopie von main-menu, die kein Theme referenzierte. Nur 7 Punkte ohne Untermenues gegenueber 40 Items in main-menu - kein Fallback, sondern veralteter Teilstand.\n\nVor dem Loeschen frisch geprueft: 18 Themes gegen header-group.json und settings_data.json, dazu das Repository. Kein Treffer. Baum vorher gesichert und versioniert abgelegt.\n\nGegenprobe: menus() listet nur noch main-menu, footer, customer-account-main-menu. main-menu unveraendert mit allen 40 MenuItem-IDs. menu:guard 35 Links 0 Fehler.\n\nStoreweit und sofort live, nach ausdruecklicher Freigabe. PR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:37:28Z",
-      "updated_at": "2026-09-09T11:57:51Z",
+      "updated_at": "2026-09-09T11:58:08Z",
       "closed_at": "2026-09-09T11:57:51Z"
     },
     {
@@ -177,14 +202,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "CLAUDE.md verlangt, docs/ai-dashboard/issues.json vor dem Commit mit 'git checkout --' zurueckzusetzen, sonst kollidiert jeder Push mit dem Sync-Workflow. Der Hook .claude/hooks/git-gh-guard.mjs blockierte genau diesen Befehl.\n\nDer Ausweg war ein Stash pro Sitzung. Der Stash-Stack ist zwischen allen Worktrees geteilt, jede Sitzung hinterliess dort einen Eintrag, den eine andere faelschlich poppen konnte - der Umweg war riskanter als der Befehl.\n\nFix: enge Ausnahme fuer genau diesen Pfad, am Segmentende verankert. Blockiert bleiben 'git checkout -- .', jede andere Datei, ein zweiter Pfad dahinter, Praefix-Treffer und alles hinter der Ausnahme in derselben Zeile. qa/tests/git-gh-guard.test.mjs haelt die Grenze mit 19 Faellen fest, per Mutation gegengeprueft.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:29:12Z",
-      "updated_at": "2026-09-09T11:58:05Z",
+      "updated_at": "2026-09-09T11:58:06Z",
       "closed_at": "2026-09-09T11:57:50Z"
     },
     {
