@@ -44,6 +44,25 @@ Der Markenname steht noch nicht fest. Ausgeschieden sind:
 **Regel, die sich daraus ergibt:** Der Wortstamm „TEP" ist in der Branche
 durchgängig besetzt. Kandidaten mit diesem Stamm nicht weiter verfolgen.
 
+### Kandidatenrunde 2026-09-09 (Stufe 1: Websuche)
+
+Fünf neue Kandidaten ohne „TEP"-Stamm, jeweils zweimal gesucht: mit „Teppich/
+Bodenbelag/Marke" und als reiner Name. Kein Kandidat kollidiert mit einer
+Boden- oder Teppichmarke. Die allgemeinen Treffer:
+
+| Kandidat | Allgemeine Treffer | Einordnung |
+|---|---|---|
+| **BODIVA** | Wertpapierbörse in Angola (bodiva.ao), sonst nichts | Beste Ausgangslage: kurz, klingt nach „Boden", keine deutsche Firma, keine Warenklasse 27/35 |
+| TERRAVIA | Patagonia-Rucksacklinie, insolventes US-Biotech (2017) | Möglich; „Terra" ist in der Bodenbranche häufig, Domain .de prüfen |
+| LOVENTA | Türkische Taschenmarke, Dating-Plattform, Speiseeis (BY) | Klangvoll, aber viele aktive Marken in Nachbarklassen |
+| ARVENTA | Arventa GmbH, Heidelberg (Autohaus), Arventa Ltd. (AU), Schriftfamilie | **Ausgeschieden**: deutsche GmbH gleichen Namens im Handelsregister |
+| VELMARA | Mehrere Onlineshops (Geschenke, Wellness) | Ausgeschieden: mehrfach als Shopname aktiv |
+
+**Empfehlung:** BODIVA in Stufe 2 nehmen (DPMAregister Klassen 27 und 35,
+TMview, Domain bodiva.de, Handelsregister). TERRAVIA als Rückfalloption.
+Die Registerabfragen laufen über Browser und Admin-Zugang, nicht aus der
+Remote-Session. Bis zur Entscheidung bleibt `vendor` unverändert.
+
 Prüfreihenfolge für neue Kandidaten, vom Billigsten zum Teuersten:
 Websuche mit „Teppich" bzw. „Boden" → DPMAregister, Nizza-Klassen 27 und 35 →
 TMview → Domain → Handelsregister.
