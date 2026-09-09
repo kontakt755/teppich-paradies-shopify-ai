@@ -44,7 +44,7 @@ export function blockTypesOf(raw, parentType) {
  * @param {string[]} [options.required]  Diese Typen muessen ueberall vorkommen (Fehler).
  * @param {string[]} [options.optional]  Duerfen fehlen, ohne als Drift zu gelten.
  */
-export function analyzeTemplates(templates, { required = [], optional = [], bewusstAbwesend = {} } = {}) {
+export function analyzeTemplates(templates, { required = [], optional = [], bewusstAbwesend = {}, nurIn = {} } = {}) {
   const findings = [];
   const present = new Map();
 
@@ -77,7 +77,32 @@ export function analyzeTemplates(templates, { required = [], optional = [], bewu
   // Kategorie-Template heraus, in dem er hingehoert, bliebe das unbemerkt.
   const ignore = new Set([...required, ...optional]);
   for (const [type, owners] of present) {
-    if (ignore.has(type) || owners.size === templates.length) continue;
+    if (ignore.has(type)) continue;
+
+    // nurIn: der Block gehoert ausschliesslich in diese Templates. Das Fehlen
+    // ueberall sonst ist dann kein Drift - wohl aber, wenn er aus seinem
+    // eigenen Template verschwindet oder in einem fremden auftaucht. Fuer
+    // solche Bloecke waere bewusstAbwesend die falsche Form: man muesste alle
+    // uebrigen Templates aufzaehlen, und jedes neue Template braechte die
+    // Warnung zurueck, obwohl sich an der Absicht nichts geaendert hat.
+    if (nurIn[type]) {
+      const zuhause = new Set(nurIn[type]);
+      const fehltZuhause = [...zuhause].filter(t => !owners.has(t));
+      const fremd = [...owners].filter(t => !zuhause.has(t));
+      if (fehltZuhause.length === 0 && fremd.length === 0) continue;
+      findings.push({
+        severity: 'warn',
+        rule: 'BLOCK_DRIFT',
+        type,
+        templates: [...fehltZuhause, ...fremd],
+        message: fehltZuhause.length
+          ? `"${type}" gehoert laut nurIn in ${[...zuhause].join(', ')}, fehlt aber in: ${fehltZuhause.join(', ')}`
+          : `"${type}" gehoert laut nurIn nur in ${[...zuhause].join(', ')}, steckt aber auch in: ${fremd.join(', ')}`,
+      });
+      continue;
+    }
+
+    if (owners.size === templates.length) continue;
     const erlaubt = new Set(bewusstAbwesend[type] ?? []);
     const missing = templates
       .filter(t => !owners.has(t.name) && !erlaubt.has(t.name))
@@ -89,6 +114,21 @@ export function analyzeTemplates(templates, { required = [], optional = [], bewu
       type,
       templates: missing,
       message: `"${type}" steckt in ${owners.size} von ${templates.length} Templates, fehlt in: ${missing.join(', ')}`,
+    });
+  }
+
+  // Ein nurIn-Block, der aus JEDEM Template verschwunden ist, taucht in
+  // `present` gar nicht mehr auf - die Schleife oben sieht ihn nie. Genau der
+  // Fall ist der wichtigste: der Block ist aus seinem eigenen Template
+  // herausgefallen und niemand merkt es.
+  for (const [type, zuhause] of Object.entries(nurIn)) {
+    if (present.has(type)) continue;
+    findings.push({
+      severity: 'warn',
+      rule: 'BLOCK_DRIFT',
+      type,
+      templates: [...zuhause],
+      message: `"${type}" gehoert laut nurIn in ${zuhause.join(', ')}, steckt aber in keinem Template mehr`,
     });
   }
 

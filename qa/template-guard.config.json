@@ -14,14 +14,28 @@
     "tp-card-price-sqm": [
       "collection.zubehoer.json",
       "collection.zubehoer-profile.json",
-      "collection.zubehoer-unterkategorie.json"
+      "collection.zubehoer-unterkategorie.json",
+      "collection.bodenleisten.json"
     ],
     "tp-card-dimensions": [
       "collection.zubehoer.json",
       "collection.zubehoer-profile.json",
-      "collection.zubehoer-unterkategorie.json"
+      "collection.zubehoer-unterkategorie.json",
+      "collection.bodenleisten.json"
+    ],
+    "tp-card-specs": [
+      "collection.bodenleisten.json"
     ]
   },
   "note": "required = muss auf jeder Kategorieseite stehen. optional = Titelblock, den es in zwei Varianten gibt (tp-card-title bzw. product-title); dass nicht ueberall derselbe steckt, ist bekannt und kein Drift-Fund.",
-  "note_bewusstAbwesend": "Block plus die Templates, in denen er mit Absicht fehlt. Zubehoer wird nicht nach Flaeche verkauft: am 2026-09-09 ueber die Admin API geprueft, alle 43 Produkte der Kollektion zubehoer haben custom.qm_pro_paket = null und tragen kein breite_boden-Tag, und custom.rollenbreite ist sowohl auf Produkt- als auch auf Variantenebene leer (die Bloecke lesen die Variantenebene). tp-card-price-sqm und tp-card-dimensions wuerden dort nichts rendern. Das ist Konvention, keine Luecke: jedes Zubehoerprodukt nennt sein Mass im Variantentitel in der Einheit, die zu seinem Verkaufsmodell passt - 'Rolle 50 m x 100 cm', 'Rolle 100 m2', 'Faltplatte 15 m2', 'je lfm'. Eintraege hier gelten nur fuer die genannten Templates - faellt derselbe Block aus einem Bodenbelag-Template heraus, meldet der Guard das weiterhin."
+  "note_bewusstAbwesend": "Block plus die Templates, in denen er mit Absicht fehlt. Zubehoer wird nicht nach Flaeche verkauft: am 2026-09-09 ueber die Admin API geprueft, alle 43 Produkte der Kollektion zubehoer haben custom.qm_pro_paket = null und tragen kein breite_boden-Tag, und custom.rollenbreite ist sowohl auf Produkt- als auch auf Variantenebene leer (die Bloecke lesen die Variantenebene). tp-card-price-sqm und tp-card-dimensions wuerden dort nichts rendern. Das ist Konvention, keine Luecke: jedes Zubehoerprodukt nennt sein Mass im Variantentitel in der Einheit, die zu seinem Verkaufsmodell passt - 'Rolle 50 m x 100 cm', 'Rolle 100 m2', 'Faltplatte 15 m2', 'je lfm'. Bodenleisten aus demselben Grund (2026-09-09 geprueft: alle 9 Produkte der Kollektion bodenleisten haben qm_pro_paket = null, keine Variante traegt rollenbreite, und die Varianten sind Farben statt Breiten - Leisten werden nach Stueck verkauft; tp-card-specs rendert ohnehin nur fuer Paketprodukte). Eintraege hier gelten nur fuer die genannten Templates - faellt derselbe Block aus einem Bodenbelag-Template heraus, meldet der Guard das weiterhin.",
+  "nurIn": {
+    "tp-card-leisten": [
+      "collection.bodenleisten.json"
+    ],
+    "tp-card-leisten-bild": [
+      "collection.bodenleisten.json"
+    ]
+  },
+  "note_nurIn": "Bloecke, die ausschliesslich in die genannten Templates gehoeren. Der Guard meldet dann nicht mehr, dass sie ueberall sonst fehlen, sehr wohl aber, wenn einer aus seinem eigenen Template verschwindet oder in einem fremden auftaucht. Fuer solche Bloecke waere bewusstAbwesend die falsche Form - man muesste die 16 uebrigen Templates aufzaehlen, und jedes neue Template braechte die Warnung zurueck, obwohl sich an der Absicht nichts geaendert hat."
 }
