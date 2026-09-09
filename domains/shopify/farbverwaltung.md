@@ -164,22 +164,42 @@ Nach dem Datenlauf sind Produkte hinzugekommen und umgebaut worden. Der Nachzug 
 | Skarven Sockelleiste 60mm | 62 | SKU-Suffix, echte Doellken-Farbnummern |
 | Cortessa Sockelleiste | 15 | SKU-Suffix `L600` bis `L615`, Luecke bei `L602` |
 
-**Bewusst ausgelassen: die sechs Feldwin-Sockelleisten (37 Varianten).**
-Ihr SKU-Suffix ist keine Farbnummer, sondern eine laufende Nummer je Leistenhoehe.
-Beleg: dieselbe Farbe traegt verschiedene Nummern.
+**Erledigt am 2026-09-09: die sechs Feldwin-Sockelleisten (37 Varianten).**
+Die echten Doellken-Farbnummern stehen im Farbwaehler der Lieferantenseite, direkt vor dem
+Farbnamen (`1209 anthrazit`). Abgeschrieben von jordanshop.de, je Linie eine Produktseite;
+der Farbwaehler listet die ganze Linie. Rohdaten: `domains/shopify/doellken-farbnummern-2026-09-09.json`.
 
-| Farbe | Nummern bei Feldwin | Doellken-Nummer laut Skarven |
+Aus 37 Varianten wurden **11 Registereintraege** - dieselbe Farbe traegt ueber alle sechs
+Leistenhoehen dieselbe Nummer. Genau dafuer ist das Register da.
+
+| Nummer | Farbe | Leistenhoehen |
 |---|---|---|
-| weiß RAL 9010 | 0004, 0006, 0007, 0008 | - |
-| anthrazit | 0004, 0005, 0007 | 1209 |
-| schwarz | 0007, 0009, 1144 | 1001 |
-| platinsilber | 0004, 0005, 0006 | 1246 |
-| champagner | 0005, 0007, **1245** | 1245 |
+| 1132 | weiß RAL 9010 | 100, 80, 60, 40, XL60, XL80 |
+| 1013/5012 | weiß | 100, 80, 60, 40, XL60, XL80 |
+| 1012 | lichtgrau | 100, 80, 60, XL60, XL80 |
+| 1246 | platinsilber | 80, 60, 40, XL60, XL80 |
+| 1245 | champagner | 100, 80, 60, 40 |
+| 1209 | anthrazit | 100, 80, 60, 40 |
+| 1144 | schwarz | 100, 80, 60 |
+| 1190 | edelstahl | 80 |
+| 1063 | silber | 60 |
+| 1139 | steingrau | 60 |
+| 1408 | weiß RAL 9016 | 60 |
 
-Nur wo eine echte Doellken-Nummer in der SKU steht (`1245` champagner, `1408` weiß RAL 9016),
-passt sie zur Skarven-Palette. Diese Nummern ins Register zu schreiben haette dieselbe Farbe
-unter bis zu vier Nummern gefuehrt und damit genau den Zweck des Registers zerstoert.
-Zu tun: die echten Doellken-Farbnummern beim Lieferanten abschreiben, dann nachziehen.
+Doppelnummern wie `1013/5012` stehen so beim Lieferanten und wurden unveraendert uebernommen.
+Die Linie XL 60/19 fuehrt die Nummer 1246 als `platin, Sonder-FB.MM 200m`; im Shop heisst
+die Variante `platin (Sonderfarbe)`. Das steht im Hinweis des Registereintrags.
+
+### Offener Befund: die Shop-SKUs weichen von den Lieferanten-Artikelnummern ab
+
+**32 der 37 SKU-Suffixe stimmen nicht.** Beispiel: `anthrazit` in der 60er-Leiste liegt im Shop
+unter `ZUBDÖLK60_0004`, beim Lieferanten unter `ZUBDÖLK60_1209`. Das Muster `_0001` bis `_0009`
+ist eine laufende Nummer, die es beim Lieferanten nicht gibt.
+
+Das ist ein Bestellrisiko, kein Anzeigefehler: Wer nach der Shop-SKU beim Lieferanten bestellt,
+findet den Artikel nicht. `custom.farbcode` traegt jetzt die richtige Nummer, die SKU nicht.
+SKUs zu aendern ist eine geschuetzte Aktion und braucht eine ausdrueckliche Freigabe -
+deshalb steht das hier und wurde nicht nebenbei erledigt.
 
 **Ohne Nummernquelle** (13 Varianten, beide Produkte auf Entwurf, fuer Kunden unsichtbar):
 `AW Ganges Teppichboden` (7) und `Eichenhain - Design-Klebevinyl` (6) haben gar keine SKU.
