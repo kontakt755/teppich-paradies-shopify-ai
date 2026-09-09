@@ -23,6 +23,12 @@ fi
 # sei defekt, waehrend er lokal einwandfrei lief.
 node automation/scripts/router-status.mjs --kurz 2>/dev/null | sed 's/^/  /' || true
 
+# Laeuft IMMER: Zustand des Control Centers (docs/ai-dashboard/issues.json, liegt
+# im Repo, braucht weder gh noch Netz). Jede Session sieht damit offene Arbeit,
+# Blocker und Freigaben, bevor sie den ersten Befehl tippt - und weiss, dass
+# eigene Arbeit ueber `npm run task` als Aufgabe gefuehrt wird.
+node scripts/dashboard-brief.mjs 2>/dev/null | sed 's/^/  /' || true
+
 # Lokal laeuft die Umgebung ohnehin; der Rest des Hooks ist fuer Claude Code on the web.
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
   exit 0

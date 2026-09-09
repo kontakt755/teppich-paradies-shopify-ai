@@ -386,7 +386,10 @@ blockiert, beobachten, fertig, abgebrochen), `type:*`, `priority:p0`–`p3`, `ar
 `./setup-dashboard.sh` legt sie an. Solange `status:freigabe` fehlt, gilt
 `status:blockiert` + `reviewer:mensch` als „Warten auf Freigabe" (Übergangsregel im Modell).
 
-Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation), Teil von `npm test`.
+Beim Sessionstart zeigt `.claude/hooks/session-start.sh` den Kurzbrief (`npm run dashboard:brief`): Datenstand,
+Zaehler und die drei dringendsten Aufgaben aus `issues.json` - ohne gh, auch in Worktrees und Remote-Sessions.
+
+Tests: `npm run dashboard:test` (Modell, Export, API, Server, Automation, Brief), Teil von `npm test`.
 
 `docs/ai-dashboard/issues.json` gehört dem Bot: lokal wird sie von `npm run task` und `npm run dashboard`
 neu erzeugt, aber **nicht mitcommitten** (`git add -A` vermeiden, Datei vor dem Commit mit `git checkout --
