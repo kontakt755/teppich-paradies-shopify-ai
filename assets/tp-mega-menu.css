@@ -381,3 +381,26 @@
   row-gap: 0;
   padding-block: 0.35rem;
 }
+
+/* ------------------------------------------------------------------
+   Trefferflaechen im mobilen Menue
+
+   Die Menuepunkte lagen je nach Ebene bei 31 bis 42 px. Auf dem Handy wird
+   das Menue ausschliesslich mit dem Daumen bedient, 44 px ist die kleinste
+   Flaeche, die sich zuverlaessig treffen laesst.
+
+   Warum die Regeln hier stehen und nicht in snippets/header-drawer.liquid:
+   Dessen CSS liegt in einem {% stylesheet %}-Block. Shopify unterstuetzt den
+   offiziell nur in Sections und Blocks; der daraus kompilierte
+   compiled_assets/styles.css wurde nach mehreren Pushes nicht neu erzeugt,
+   die Aenderung kam also nie in der Storefront an. Diese Datei ist ein
+   eigenstaendiges Asset, wird auf jeder Seite geladen und aktualisiert sofort.
+   ------------------------------------------------------------------ */
+
+.menu-drawer__menu-item {
+  min-height: 44px;
+}
+
+.menu-drawer__back-button {
+  min-height: 44px;
+}
