@@ -66,7 +66,11 @@
   endfor
 
   for tp_zm_v in tp_zm_product.variants
-    assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2'
+    # "qm" ist dieselbe Einheit wie m2, nur anders geschrieben. Genau eine
+    # Variante im Shop nutzt sie (UZIN U 3000 "Set - 125 qm, 16 kg"), und die
+    # Reichweite ist vom Hersteller belegt. Nur " qm" mit fuehrendem Leerzeichen
+    # ersetzen, damit kein Wortbestandteil getroffen wird.
+    assign tp_zm_t = tp_zm_v.title | downcase | replace: 'm²', 'm2' | replace: ' qm', ' m2'
     assign tp_zm_mode = ''
     assign tp_zm_width = 0
     assign tp_zm_area = 0
