@@ -746,10 +746,20 @@
       ],
       "name": "Kundenbilder Grid",
       "settings": {}
+    },
+    "tp_zwei_wege_home": {
+      "type": "tp-zwei-wege",
+      "settings": {
+        "gewichtung": "gleich",
+        "mobil_zuerst": "online",
+        "online_link": "/collections/all",
+        "service_link": "/pages/liefer-verlegeservice"
+      }
     }
   },
   "order": [
     "startseite_JCA6KB",
+    "tp_zwei_wege_home",
     "tp_staerken_home",
     "product_list_8rDkXg",
     "product_list_fa6P9H",

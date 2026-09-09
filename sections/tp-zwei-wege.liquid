@@ -1,0 +1,379 @@
+{% comment %}
+  Zwei gleichwertige Einstiege direkt unter dem Hero: Online kaufen gegenueber
+  regionalem Liefer- und Verlegeservice.
+
+  Warum es diese Section gibt: TeppichParadies ist Einzelhandel MIT Dienstleistung.
+  Die verglichenen Wettbewerber (Teppichscheune, LaminatDEPOT, planeo, Kibek) sind
+  reine Versender und fuehren jeden Besucher auf einen Weg, den Warenkorb. Bei uns
+  kommen zwei verschiedene Kunden an - der Versandkunde und der Regionalkunde -
+  und der zweite fand bisher nur einen Warenkorb vor.
+  Siehe docs/analyse/wettbewerb/kaufpfad-2026-09-09.md, Abschnitt 3.
+
+  Drei Entscheidungen sind bewusst Einstellungen und keine festen Werte, weil sie
+  Geschaeftsfragen sind und nicht im Code beantwortet werden koennen:
+  - Gewichtung: gleich gross, oder eine Seite groesser
+  - Reihenfolge auf dem Handy: untereinander gewinnt die obere Box fast alles
+  - der Servicebereich als Text ("Oranienburg und 50 km Umkreis") ist eine Zusage.
+    Eine echte PLZ-Pruefung ist bewusst NICHT Teil dieser Section.
+{% endcomment %}
+
+{%- liquid
+  assign tp_zw_online_span = 1
+  assign tp_zw_service_span = 1
+  if section.settings.gewichtung == 'online_groesser'
+    assign tp_zw_online_span = 3
+    assign tp_zw_service_span = 2
+  elsif section.settings.gewichtung == 'service_groesser'
+    assign tp_zw_online_span = 2
+    assign tp_zw_service_span = 3
+  endif
+-%}
+
+<div class="tp-zw color-{{ section.settings.color_scheme }}">
+  <div
+    class="tp-zw__grid tp-zw__grid--mobile-{{ section.settings.mobil_zuerst }}"
+    style="--tp-zw-online: {{ tp_zw_online_span }}; --tp-zw-service: {{ tp_zw_service_span }};"
+  >
+
+    <div class="tp-zw__box tp-zw__box--online">
+      <p class="tp-zw__eyebrow">{{ section.settings.online_eyebrow }}</p>
+      <h2 class="tp-zw__title">{{ section.settings.online_titel }}</h2>
+      <p class="tp-zw__text">{{ section.settings.online_text }}</p>
+
+      {%- if section.settings.online_punkte != blank -%}
+        <ul class="tp-zw__list">
+          {%- assign tp_zw_online_items = section.settings.online_punkte | split: ',' -%}
+          {%- for tp_zw_item in tp_zw_online_items -%}
+            {%- assign tp_zw_label = tp_zw_item | strip -%}
+            {%- if tp_zw_label != blank -%}
+              <li>{{ tp_zw_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <a href="{{ section.settings.online_link | default: '/collections/all' }}" class="tp-zw__cta tp-zw__cta--primary">
+        {{ section.settings.online_cta }}
+      </a>
+    </div>
+
+    <div class="tp-zw__box tp-zw__box--service">
+      <p class="tp-zw__eyebrow">{{ section.settings.service_eyebrow }}</p>
+      <h2 class="tp-zw__title">{{ section.settings.service_titel }}</h2>
+      <p class="tp-zw__text">{{ section.settings.service_text }}</p>
+
+      {%- if section.settings.service_punkte != blank -%}
+        <ul class="tp-zw__list">
+          {%- assign tp_zw_service_items = section.settings.service_punkte | split: ',' -%}
+          {%- for tp_zw_item in tp_zw_service_items -%}
+            {%- assign tp_zw_label = tp_zw_item | strip -%}
+            {%- if tp_zw_label != blank -%}
+              <li>{{ tp_zw_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <a href="{{ section.settings.service_link | default: '/pages/liefer-verlegeservice' }}" class="tp-zw__cta tp-zw__cta--primary">
+        {{ section.settings.service_cta }}
+      </a>
+
+      {%- comment -%}
+        Die Telefonnummer steht nur hier, weil der Regionalkunde haeufig anruft
+        statt zu klicken. Sie kommt aus den Einstellungen, damit sie nicht an
+        zwei Stellen im Code gepflegt werden muss.
+      {%- endcomment -%}
+      {%- if section.settings.service_telefon != blank -%}
+        <p class="tp-zw__phone">
+          <a href="tel:{{ section.settings.service_telefon | remove: ' ' | remove: '/' }}">
+            {{ section.settings.service_telefon_label | default: section.settings.service_telefon }}
+          </a>
+        </p>
+      {%- endif -%}
+    </div>
+
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-zw {
+    padding: 40px 20px;
+  }
+
+  .tp-zw__grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(var(--tp-zw-online), minmax(0, 1fr)) repeat(var(--tp-zw-service), minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .tp-zw__box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 28px 24px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    background: var(--color-background);
+  }
+
+  .tp-zw__box--online {
+    grid-column: span var(--tp-zw-online);
+  }
+
+  .tp-zw__box--service {
+    grid-column: span var(--tp-zw-service);
+  }
+
+  .tp-zw__eyebrow {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-foreground);
+    opacity: 0.65;
+  }
+
+  .tp-zw__title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .tp-zw__text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .tp-zw__list {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tp-zw__list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .tp-zw__list li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .tp-zw__cta {
+    margin-top: auto;
+    padding-top: 14px;
+  }
+
+  .tp-zw__cta--primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 44 px Mindesthoehe fuer Touch, wie in PR #118 fuer den ganzen Shop gesetzt */
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-zw__phone {
+    margin: 10px 0 0;
+    font-size: 15px;
+  }
+
+  .tp-zw__phone a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-zw {
+      padding: 24px 16px;
+    }
+
+    .tp-zw__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .tp-zw__box--online,
+    .tp-zw__box--service {
+      grid-column: auto;
+    }
+
+    /* Untereinander gewinnt die obere Box fast alles - deshalb ist die
+       Reihenfolge eine Einstellung und kein fester Wert. */
+    .tp-zw__grid--mobile-service .tp-zw__box--service {
+      order: -1;
+    }
+
+    .tp-zw__box {
+      padding: 22px 18px;
+    }
+
+    .tp-zw__title {
+      font-size: 21px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Zwei Wege",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Gewichtung"
+    },
+    {
+      "type": "select",
+      "id": "gewichtung",
+      "label": "Verhältnis der beiden Boxen",
+      "info": "Gleich groß sagt dem Besucher: such dir was aus. Wenn ein Weg wichtiger ist, darf er größer sein.",
+      "options": [
+        { "value": "gleich", "label": "Gleich groß" },
+        { "value": "online_groesser", "label": "Online kaufen größer" },
+        { "value": "service_groesser", "label": "Verlegeservice größer" }
+      ],
+      "default": "gleich"
+    },
+    {
+      "type": "select",
+      "id": "mobil_zuerst",
+      "label": "Auf dem Handy zuerst",
+      "info": "Untereinander gewinnt die obere Box fast alles.",
+      "options": [
+        { "value": "online", "label": "Online kaufen" },
+        { "value": "service", "label": "Verlegeservice" }
+      ],
+      "default": "online"
+    },
+    {
+      "type": "header",
+      "content": "Box 1 – Online kaufen"
+    },
+    {
+      "type": "text",
+      "id": "online_eyebrow",
+      "label": "Kleine Zeile darüber",
+      "default": "Online Shop"
+    },
+    {
+      "type": "text",
+      "id": "online_titel",
+      "label": "Überschrift",
+      "default": "Direkt zu Ihnen geliefert"
+    },
+    {
+      "type": "text",
+      "id": "online_text",
+      "label": "Text",
+      "default": "Boden aussuchen, Wunschmaß angeben, liefern lassen – deutschlandweit."
+    },
+    {
+      "type": "text",
+      "id": "online_punkte",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Versandkostenfrei in Deutschland, Kostenlose Muster, Zuschnitt nach Wunschmaß"
+    },
+    {
+      "type": "url",
+      "id": "online_link",
+      "label": "Ziel"
+    },
+    {
+      "type": "text",
+      "id": "online_cta",
+      "label": "Button",
+      "default": "Zum Sortiment"
+    },
+    {
+      "type": "header",
+      "content": "Box 2 – Liefer- und Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "service_eyebrow",
+      "label": "Kleine Zeile darüber",
+      "default": "Liefer- und Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "service_titel",
+      "label": "Überschrift",
+      "default": "Oranienburg und 50 km Umkreis"
+    },
+    {
+      "type": "text",
+      "id": "service_text",
+      "label": "Text",
+      "default": "Wir messen auf, liefern und verlegen – mit eigenem Team aus Oranienburg."
+    },
+    {
+      "type": "text",
+      "id": "service_punkte",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Beratung und Aufmaß vor Ort, Fachgerechte Verlegung, Ein Ansprechpartner"
+    },
+    {
+      "type": "url",
+      "id": "service_link",
+      "label": "Ziel"
+    },
+    {
+      "type": "text",
+      "id": "service_cta",
+      "label": "Button",
+      "default": "Beratung anfragen"
+    },
+    {
+      "type": "text",
+      "id": "service_telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "service_telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "Oder anrufen: 03301 5733720"
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    { "name": "TP Zwei Wege" }
+  ]
+}
+{% endschema %}
