@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T12:13:00.409Z",
+  "generated_at": "2026-09-09T12:35:02.805Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 48,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T12:13:00.409Z",
+    "fetchedAt": "2026-09-09T12:35:02.805Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,10 +65,10 @@
     {
       "number": 152,
       "title": "Hook-Ausnahme blockierte die Schreibweise mit 2>/dev/null",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/152",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:bug",
         "priority:p3",
         "area:backend"
@@ -77,15 +77,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Die Ausnahme fuer docs/ai-dashboard/issues.json war am Segmentende verankert und blockierte deshalb 'git checkout -- <botdatei> 2>/dev/null' - dieselbe harmlose Operation mit unterdrueckter Fehlerausgabe, in der Praxis die haeufigere Schreibweise.\n\nErweitert, aber bewusst nicht auf Umleitungen allgemein: '> wichtig.txt' wuerde diese Datei ueberschreiben. Dann haette eine Ausnahme fuer eine harmlose Bot-Datei ein Werkzeug freigegeben, das eine beliebige andere zerstoert. Erlaubt sind nur /dev/null als Ziel und 2>&1.\n\nAcht neue Tests, per Mutation gegengeprueft: werden Umleitungen pauschal erlaubt, fallen drei.\n\nPR #151.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T12:12:45Z",
-      "updated_at": "2026-09-09T12:12:55Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T12:34:47Z",
+      "closed_at": "2026-09-09T12:34:47Z"
     },
     {
       "number": 147,
