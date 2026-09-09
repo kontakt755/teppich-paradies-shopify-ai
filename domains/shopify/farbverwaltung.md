@@ -254,8 +254,12 @@ belegt, und ohne Farbmuster liesse sich kein unterscheidender Zusatz vergeben, o
 **Die Auffindbarkeit ist gesichert:** Der Lieferanten-Dekorname steht im `hinweis` jedes
 Registereintrags, die vollstaendige Zuordnung in
 `domains/shopify/skarven-dekornamen-deutsch-2026-09-09.json`. Wer im Katalog nach `Wild Oak`
-sucht, findet dort `Wildeiche`. Offen: dieselben Namen zusaetzlich als Produkt-Tags zu setzen,
-damit auch die Shop-Suche sie findet.
+sucht, findet dort `Wildeiche`. Zusaetzlich stehen sie seit 2026-09-09 als
+Produkt-Tags am Artikel, im vorhandenen Schema `dekor: wild oak` (klein, wie `art:` und
+`raum:`). Belegt: die Suche nach `Calistoga` und nach `Wild Oak` findet die Skarven-Leiste
+sowohl in der Sofortsuche als auch in der Volltextsuche. Der Bodenleisten-Filter zeigt
+weiterhin nur Arten, Verfuegbarkeit und Preis - `dekor:` taucht dort nicht als neue
+Filtergruppe auf, weil die Filter fest konfiguriert sind.
 
 ### Offener Befund: JOKA-Farbnummern
 
