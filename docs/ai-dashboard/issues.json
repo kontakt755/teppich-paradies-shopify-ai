@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T11:54:10.535Z",
+  "generated_at": "2026-09-09T11:58:06.644Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 46,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T11:54:10.535Z",
+    "fetchedAt": "2026-09-09T11:58:06.644Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,10 +65,10 @@
     {
       "number": 142,
       "title": "template:guard meldete zwei Dauerwarnungen zu den Zubehoer-Templates",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/142",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:verbesserung",
         "priority:p3",
         "area:technik"
@@ -77,15 +77,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "tp-card-price-sqm und tp-card-dimensions fehlen in den drei Zubehoer-Templates, der Guard meldete das bei jedem Lauf. Eine Warnung, die immer steht, wird ueberlesen und verdeckt die naechste echte.\n\nGeprueft statt angenommen: alle 43 Produkte der Kollektion zubehoer haben custom.rollenbreite = null und custom.qm_pro_paket = null, kein breite_boden-Tag. Beide Bloecke wuerden dort nichts rendern - das Weglassen ist richtig.\n\nFix: neuer Konfigurationsschluessel bewusstAbwesend, der Block und Template gemeinsam nennt. Nicht ueber optional, das haette die Bloecke ueberall stummgeschaltet und echten Drift in Bodenbelag-Templates verdeckt. Drei Tests, per Mutation gegengeprueft.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:45:36Z",
-      "updated_at": "2026-09-09T11:46:03Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T11:58:05Z",
+      "closed_at": "2026-09-09T11:57:52Z"
     },
     {
       "number": 140,
@@ -115,10 +115,10 @@
     {
       "number": 139,
       "title": "Area-Labels: setup-dashboard.sh lief elf Bereiche hinter model.mjs",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/139",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p3",
         "area:technik"
@@ -134,13 +134,13 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:41:37Z",
-      "updated_at": "2026-09-09T11:41:55Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T11:58:05Z",
+      "closed_at": "2026-09-09T11:57:51Z"
     },
     {
       "number": 136,
       "title": "Verwaistes Menue main-menu-zubehoer geloescht",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/136",
       "labels": [
         "status:review",
@@ -159,16 +159,16 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:37:28Z",
-      "updated_at": "2026-09-09T11:37:52Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T11:57:51Z",
+      "closed_at": "2026-09-09T11:57:51Z"
     },
     {
       "number": 134,
       "title": "git-gh-guard und CLAUDE.md widersprachen sich bei issues.json",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/134",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p3",
         "area:backend"
@@ -184,8 +184,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:29:12Z",
-      "updated_at": "2026-09-09T11:29:38Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T11:58:05Z",
+      "closed_at": "2026-09-09T11:57:50Z"
     },
     {
       "number": 131,
@@ -238,10 +238,10 @@
     {
       "number": 129,
       "title": "menu:guard - tote Menuelinks automatisch finden",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/129",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:navigation"
@@ -250,15 +250,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Folgearbeit zu #123. Dieselbe Fehlerklasse stand zweimal wochenlang live (Vinyl 108467d, Bodenleisten #123): ein Menuepunkt filtert auf einen Metaobjekt-Wert und liefert ein leeres Produktraster, im Editor nicht von einem gesunden Link zu unterscheiden.\n\nVollpruefung des Hauptmenues: alle 34 Links gesund.\n\nNeu: npm run menu:guard liest das gerenderte Menue aus der Storefront und ruft jeden Link ab. Meldet MENU_LINK_TOT (HTTP-Fehler) und MENU_LINK_LEER (200 mit leerem Raster). Gegen beide bekannten Faelle verifiziert. Kein Token noetig, ohne Netz SKIP.\n\nPR #128.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T11:25:25Z",
-      "updated_at": "2026-09-09T11:25:41Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T11:58:04Z",
+      "closed_at": "2026-09-09T11:57:50Z"
     },
     {
       "number": 123,
