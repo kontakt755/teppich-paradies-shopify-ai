@@ -17,8 +17,8 @@
   Snippet tp-verlegegebiet-flaeche, je Stufe des Reglers einer.
 
   Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
-    desktop  1000 x 760 Bildpunkte, 185.12 m je Punkt
-    mobile     350 x 380 Bildpunkte, 370.24 m je Punkt
+    desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
+    mobile    680 x 760 Bildpunkte, 185.12 m je Punkt (halb angezeigt)
   Der Pfad ist in Desktop-Bildpunkten notiert; die schmale Karte hat den halben
   Massstab und deshalb eine eigene viewBox ueber den doppelten Ausschnitt. Beide
   Ausschnitte muessen die groesste Reglerstufe fassen, nicht nur die
@@ -27,7 +27,7 @@
 {% endcomment %}
 
 {%- liquid
-  assign vg_radius = section.settings.radius | at_least: 30 | at_most: 60
+  assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
 
   assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
 -%}
@@ -56,13 +56,15 @@
     <figure class="tp-vg__karte">
       <div class="tp-vg__buehne">
         <picture>
+          {%- comment -%} Die schmale Karte gibt es nur in einer Fassung: sie
+            kommt aus derselben Zoomstufe wie die breite und wird auf halber
+            Groesse gezeigt. Eine kleinere Datei muesste aus einer groeberen
+            Stufe kommen, in der die Orte im Verlegegebiet fehlen.
+          {%- endcomment -%}
           <source
             media="(max-width: 749px)"
             type="image/webp"
-            srcset="
-              {{ 'tp-verlegegebiet-mobile.webp' | asset_url }} 1x,
-              {{ 'tp-verlegegebiet-mobile-2x.webp' | asset_url }} 2x
-            "
+            srcset="{{ 'tp-verlegegebiet-mobile.webp' | asset_url }}"
           >
           <img
             src="{{ 'tp-verlegegebiet-desktop.webp' | asset_url }}"
@@ -72,7 +74,7 @@
             "
             alt="{{ vg_karte_alt | escape }}"
             width="1000"
-            height="760"
+            height="700"
             loading="lazy"
             decoding="async"
             class="tp-vg__bild"
@@ -83,10 +85,10 @@
           damit sie in Markenfarbe und bei jeder Breite scharf bleiben. Zwei
           SVG, weil die beiden Karten verschiedene Massstaebe haben und eine
           viewBox sich nicht per CSS umschalten laesst. {%- endcomment -%}
-        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -380 1000 760" aria-hidden="true" focusable="false">
+        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -350 1000 700" aria-hidden="true" focusable="false">
           {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
         </svg>
-        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-350 -380 700 760" aria-hidden="true" focusable="false">
+        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-340 -380 680 760" aria-hidden="true" focusable="false">
           {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
         </svg>
 
@@ -232,7 +234,7 @@
 
   .tp-vg__buehne {
     position: relative;
-    aspect-ratio: 1000 / 760;
+    aspect-ratio: 1000 / 700;
     border: 1px solid var(--tp-vg-linie);
     border-radius: 14px;
     overflow: hidden;
@@ -532,7 +534,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-vg__buehne {
-      aspect-ratio: 350 / 380;
+      aspect-ratio: 340 / 380;
       border-radius: 12px;
     }
 
@@ -637,7 +639,7 @@
       "label": "Radius in km",
       "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt.",
       "min": 30,
-      "max": 60,
+      "max": 50,
       "step": 10,
       "unit": "km",
       "default": 50

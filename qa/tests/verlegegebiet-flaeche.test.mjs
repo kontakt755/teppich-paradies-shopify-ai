@@ -54,9 +54,15 @@ function ausschnitt(klasse) {
 const STRICH_BREIT = 1;
 const STRICH_SCHMAL = 2.1;
 
-test('jede Reglerstufe hat einen Pfad', () => {
-  const stufen = [...pfade().keys()].sort((a, b) => a - b);
-  assert.deepEqual(stufen, [30, 40, 50, 60]);
+test('jeder Pfad ist gefuellt und beginnt mit einem moveto', () => {
+  // Die Stufenliste steht bewusst nicht hier: sie kommt aus dem Schema, und
+  // eine zweite Kopie waere genau die Quelle, die stillschweigend veraltet.
+  const alle = pfade();
+  assert.ok(alle.size >= 2, 'Es sind weniger als zwei Stufen hinterlegt.');
+  for (const [km, d] of alle) {
+    assert.match(d, /^M-?\d/, `Der Pfad der Stufe ${km} km beginnt nicht mit einem moveto.`);
+    assert.ok(d.length > 100, `Der Pfad der Stufe ${km} km ist verdaechtig kurz.`);
+  }
 });
 
 test('Snippet und Schema kennen dieselben Stufen', () => {

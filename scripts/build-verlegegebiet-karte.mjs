@@ -45,7 +45,10 @@ const PUNKTE = path.join(WURZEL, '.cache', 'verlegegebiet-punkte.json');
 const UMRISS = path.join(WURZEL, 'snippets', 'tp-verlegegebiet-flaeche.liquid');
 
 // Muss zu den Stufen des Reglers in sections/tp-verlegegebiet.liquid passen.
-const RADIEN = [30, 40, 50, 60];
+// 50 km ist die groesste Stufe - der Kartenausschnitt ist darauf zugeschnitten.
+// Eine weitere Stufe braucht deshalb auch einen groesseren Ausschnitt;
+// qa/tests/verlegegebiet-flaeche.test.mjs meldet sich, wenn das vergessen wird.
+const RADIEN = [30, 40, 50];
 
 // Kilometer, um die der Umriss geschrumpft und wieder aufgeblasen wird.
 const RUNDUNG = 5.5;
@@ -58,13 +61,19 @@ const LON = 13.2485;   // Saarlandstrasse, 16515 Oranienburg
  * ist Zoom 8 hier so gross wie Zoom 9 dort.
  *
  * Der Ausschnitt muss die groesste Stufe von RADIEN vollstaendig fassen, nicht
- * nur die voreingestellte: der 60-km-Umriss reicht bis 365 Bildpunkte nach
- * Norden und Sueden, deshalb 760 statt 700 in der Hoehe. qa/tests/
- * verlegegebiet-flaeche.test.mjs prueft das bei jedem Lauf nach.
+ * nur die voreingestellte. qa/tests/verlegegebiet-flaeche.test.mjs prueft das
+ * bei jedem Lauf nach.
  */
 const VARIANTEN = [
-  { name: 'desktop', breite: 1000, hoehe: 760, zoom: 8, stadt: 13, ort: 11.5 },
-  { name: 'mobile', breite: 350, hoehe: 380, zoom: 7, stadt: 14, ort: 12 },
+  { name: 'desktop', breite: 1000, hoehe: 700, zoom: 8, stadt: 13, ort: 11.5, dichten: [1, 2] },
+  // Die schmale Karte zeigt dieselbe Flaeche wie die breite, nur auf halber
+  // Anzeigebreite. Naheliegend waere Zoom 7 - dort fehlen aber Neuruppin,
+  // Zehdenick, Bernau und Hennigsdorf schon in den Kacheldaten, und keine
+  // Einstellung holt sie zurueck. Deshalb Zoom 8 in doppelter Pixelzahl und
+  // entsprechend groesserer Schrift; angezeigt wird das Bild auf halber
+  // Groesse. Eine einfache Aufloesung entfaellt dadurch - sie muesste wieder
+  // aus Zoom 7 kommen und haette dieselbe Luecke.
+  { name: 'mobile', breite: 680, hoehe: 760, zoom: 8, stadt: 24, ort: 21, dichten: [1] },
 ];
 
 const meterProPixel = (zoom) => (156543.03392 * Math.cos((LAT * Math.PI) / 180)) / 2 ** (zoom + 1);
@@ -117,6 +126,14 @@ const SEITE = `<!doctype html>
       const gross = ebene.id !== 'label_town';
       karte.setLayoutProperty(ebene.id, 'text-size', parseFloat(P.get(gross ? 'stadt' : 'ort')));
       karte.setLayoutProperty(ebene.id, 'text-letter-spacing', 0.01);
+      // Bei Platzmangel laesst MapLibre Beschriftungen weg. Ohne Vorgabe
+      // gewinnt der Zufall der Reihenfolge, und auf dem schmalen Display
+      // blieben ausgerechnet die fernen Orte stehen, waehrend die im
+      // Verlegegebiet verschwanden. Der Abstand zum Standort als Sortier-
+      // schluessel dreht das um: je naeher, desto eher wird gesetzt.
+      karte.setLayoutProperty(ebene.id, 'symbol-sort-key', [
+        'distance', { type: 'Point', coordinates: [${LON}, ${LAT}] },
+      ]);
       // Oranienburg traegt die Sektion als eigenen Marker - zweimal derselbe
       // Ortsname an derselben Stelle liest sich wie ein Fehler.
       karte.setFilter(ebene.id, ['all', ebene.filter || true, ['!=', ['get', 'name'], 'Oranienburg']]);
@@ -233,7 +250,7 @@ const browser = await puppeteer.launch({
 
 const geometrie = {};
 for (const v of VARIANTEN) {
-  for (const dichte of [1, 2]) {
+  for (const dichte of v.dichten) {
     const seite = await browser.newPage();
     const fehler = [];
     seite.on('pageerror', (e) => fehler.push(e.message));
@@ -252,7 +269,8 @@ for (const v of VARIANTEN) {
   }
   const mpp = meterProPixel(v.zoom);
   geometrie[v.name] = { breite: v.breite, hoehe: v.hoehe, meter_pro_pixel: Number(mpp.toFixed(2)) };
-  console.log(`   ${v.name}: ${mpp.toFixed(2)} m je Punkt, 50 km = ${((50000 / mpp / v.breite) * 100).toFixed(3)} % der Breite`);
+  console.log(`   ${v.name}: ${mpp.toFixed(2)} m je Punkt, Ausschnitt `
+    + `${((v.breite * mpp) / 1000).toFixed(0)} x ${((v.hoehe * mpp) / 1000).toFixed(0)} km`);
 }
 
 // --- Umriss ---------------------------------------------------------------
