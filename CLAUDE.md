@@ -376,6 +376,33 @@ längst läuft. Nur `router:status` unterscheidet die beiden Fälle.
 > nicht", und daraus wurde der falsche Schluss, der Router sei nie gestartet —
 > obwohl das Ledger im selben Moment 23 Gemini-Aufrufe auswies.
 
+### Wenn das Codex-Review fremde Arbeit anmahnt
+
+Meldet die unabhängige Prüfung Befunde zu Dateien, die man nie angefasst hat,
+ist das kein Missverständnis, das sich durch Erklären auflöst — **zuerst
+nachsehen, welchen Diff sie überhaupt gelesen hat**:
+
+```
+git -C <hauptcheckout> log --oneline -1     # HEAD dort
+git diff --name-only origin/main..<eigener-branch>
+```
+
+Weichen die beiden auseinander, prüft der Reviewer einen fremden Arbeitsstand.
+Bis 2026-09-10 passierte das in jedem Worktree zuverlässig: Beide Hooks nahmen
+`CLAUDE_PROJECT_DIR` (den Hauptcheckout), wo die eigenen Commits gar nicht
+liegen — wohl aber die einer parallel laufenden Sitzung. `resolveReviewDir` in
+`automation/core/review-scope.mjs` behebt das.
+
+**Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
+hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien
+aufzuräumen. Beides hätte die uncommittete Arbeit anderer Sitzungen zerstört.
+Fremde Änderungen gehören dem Branch, auf dem sie entstanden sind; Evidence für
+fremden Code zu erzeugen wäre eine falsche Zusicherung.
+
+Bleiben Befunde nach drei Runden bestehen, greift `REVIEW_LIMIT_REACHED`: die
+verbleibenden Befunde berichten und aufhören, statt eine vierte Runde zu
+provozieren.
+
 ### Prompt-Caching
 
 Nur stabilen, wiederverwendbaren Kontext cachen (Projektregeln, Tool-Schemata,
