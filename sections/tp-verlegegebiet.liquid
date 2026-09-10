@@ -194,6 +194,13 @@
           data-cta-url="{{ section.settings.cta_link }}"
           data-cta-text="{{ section.settings.cta_label | escape }}"
         {%- endif %}
+        {%- comment -%} Der Verlegeservice endet bei 50 km, der Versand nicht.
+          Ohne diesen zweiten Weg waere die Pruefung fuer jeden ausserhalb eine
+          Absage, obwohl er bestellen koennte. {%- endcomment -%}
+        {%- if section.settings.versand_link != blank and section.settings.versand_label != blank %}
+          data-versand-url="{{ section.settings.versand_link }}"
+          data-versand-text="{{ section.settings.versand_label | escape }}"
+        {%- endif %}
         hidden
       >
         <label class="tp-vg__sub" for="tp-vg-plz-{{ section.id }}">
@@ -218,7 +225,7 @@
           ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
           im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
         <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
-        <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot.</p>
+        <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
       </form>
     {%- endif -%}
   </div>
@@ -446,9 +453,11 @@
 
   /* Adresse und Pruefung ------------------------------------------------ */
 
+  /* Mitwachsend statt fest dreispaltig: die Zahl der Stufen ist eine
+     Editor-Entscheidung, das Raster darf ihr nicht im Weg stehen. */
   .tp-vg__stufen {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     gap: 0 clamp(20px, 3vw, 40px);
     max-width: 1000px;
     margin: clamp(20px, 3vw, 28px) auto 0;
@@ -886,6 +895,18 @@
     },
     {
       "type": "text",
+      "id": "versand_label",
+      "label": "Button im Ergebnis ausserhalb des Gebiets",
+      "info": "Erscheint, wenn ein Ort ausserhalb liegt. Leer lassen, um ihn wegzulassen.",
+      "default": "Zum Sortiment"
+    },
+    {
+      "type": "url",
+      "id": "versand_link",
+      "label": "Ziel dieses Buttons"
+    },
+    {
+      "type": "text",
       "id": "vertrauen",
       "label": "Vertrauenszeile",
       "default": "Beratung · Aufmaß · professionelle Verlegung"
@@ -945,7 +966,8 @@
       "name": "TP Verlegegebiet",
       "settings": {
         "cta_link": "/pages/kontakt",
-        "cta2_link": "https://wa.me/4917657931322"
+        "cta2_link": "https://wa.me/4917657931322",
+        "versand_link": "/collections/all"
       },
       "blocks": [
         {
@@ -967,6 +989,13 @@
           "settings": {
             "label": "Bis 50 km um Oranienburg",
             "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Deutschlandweit",
+            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
           }
         }
       ]

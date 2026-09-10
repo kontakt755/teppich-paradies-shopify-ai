@@ -56,15 +56,17 @@ class Knoten {
 }
 
 /** Baut Sektion und Formular auf und laesst das echte Skript darauf los. */
-function aufbauen({ ohneCta = false } = {}) {
+function aufbauen({ ohneCta = false, ohneVersand = false } = {}) {
   const ctaUrl = ohneCta ? undefined : '/pages/kontakt';
   const ctaText = ohneCta ? undefined : 'Verlegung anfragen';
+  const versandUrl = ohneVersand ? undefined : '/collections/all';
+  const versandText = ohneVersand ? undefined : 'Zum Sortiment';
   const eingabe = new Knoten({ value: '' });
   const ausgabe = new Knoten();
   const weg = new Knoten();
   weg.hidden = true;
   const sektion = new Knoten({ dataset: { radius: '50', orte: 'tp-verlegegebiet-orte.json' } });
-  const formular = new Knoten({ dataset: { ctaUrl, ctaText } });
+  const formular = new Knoten({ dataset: { ctaUrl, ctaText, versandUrl, versandText } });
   formular.hidden = true;
   formular.sektion = sektion;
   formular.treffer = new Map([
@@ -117,15 +119,39 @@ test('eine Postleitzahl im Gebiet fuehrt zu Zusage und Anfrage-Link', async () =
   assert.match(weg.kinder[0].textContent, /Verlegung anfragen/);
 });
 
-test('ausserhalb und unbekannt zeigen keinen Anfrage-Link', async () => {
-  for (const [wert, status] of [['39104', 'aussen'], ['Hamburg', 'unbekannt']]) {
-    const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
-    eingabe.value = wert;
-    formular.ausloesen('submit');
-    await antworten(offen, 0);
-    assert.equal(ausgabe.attribute['data-status'], status, `${wert} sollte ${status} sein.`);
-    assert.equal(weg.hidden, true, `${wert} darf keinen Anfrage-Link zeigen.`);
-  }
+test('ausserhalb des Gebiets fuehrt in den Shop statt in eine Absage', async () => {
+  // Der Verlegeservice endet bei 50 km, der Versand nicht. Ohne diesen Weg
+  // waere die Pruefung fuer jeden ausserhalb eine Absage.
+  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
+  eingabe.value = '39104';
+  formular.ausloesen('submit');
+  await antworten(offen, 0);
+
+  assert.equal(ausgabe.attribute['data-status'], 'aussen');
+  assert.match(ausgabe.textContent, /deutschlandweit/, 'Die Lieferung wird nicht erwaehnt.');
+  assert.doesNotMatch(ausgabe.textContent, /keine Verlegung|nicht möglich/,
+    'Die Antwort darf nicht wie eine Absage klingen.');
+  assert.equal(weg.hidden, false, 'Ausserhalb fehlt der Weg in den Shop.');
+  assert.equal(weg.kinder[0].href, '/collections/all');
+  assert.match(weg.kinder[0].textContent, /Zum Sortiment/);
+});
+
+test('eine unverstandene Eingabe bietet gar nichts an', async () => {
+  // Dort ist noch nichts entschieden - ein Angebot waere geraten.
+  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
+  eingabe.value = 'Hamburg';
+  formular.ausloesen('submit');
+  await antworten(offen, 0);
+  assert.equal(ausgabe.attribute['data-status'], 'unbekannt');
+  assert.equal(weg.hidden, true);
+});
+
+test('ohne hinterlegten Versandweg bleibt das Ergebnis ausserhalb eine Zeile', async () => {
+  const { eingabe, weg, formular, offen } = aufbauen({ ohneVersand: true });
+  eingabe.value = '39104';
+  formular.ausloesen('submit');
+  await antworten(offen, 0);
+  assert.equal(weg.hidden, true);
 });
 
 test('ohne hinterlegten Anfrage-Link bleibt das Ergebnis eine Zeile', async () => {
@@ -154,7 +180,10 @@ test('zweimal absenden laesst nur die zweite Antwort anzeigen', async () => {
   assert.equal(ausgabe.attribute['data-status'], 'aussen',
     'Die alte Abfrage hat das Ergebnis der neuen ueberschrieben.');
   assert.match(ausgabe.textContent, /39104/);
-  assert.equal(weg.hidden, true, 'Die alte Abfrage hat eine Zusage nachgeliefert.');
+  // Ausserhalb fuehrt in den Shop - der Weg zur Anfrage aus der alten
+  // Abfrage darf dort nicht stehengeblieben sein.
+  assert.equal(weg.kinder[0].href, '/collections/all',
+    'Die alte Abfrage hat ihren Anfrage-Link nachgeliefert.');
 });
 
 test('Weitertippen verwirft eine laufende Abfrage', async () => {

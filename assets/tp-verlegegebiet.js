@@ -15,9 +15,11 @@
  * kein totes Eingabefeld dasteht. Ueberschrift, Karte, Hinweis und die
  * Kontaktwege stehen unabhaengig davon.
  *
- * Faellt die Antwort positiv aus, steht der naechste Schritt direkt darunter:
- * wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen, ist am ehesten
- * bereit anzufragen - und muss dafuer nicht erst weiterscrollen.
+ * Jede Antwort fuehrt weiter, keine endet in einer Absage. Wer im Gebiet
+ * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, sieht den Weg in
+ * den Shop: der Verlegeservice endet bei 50 km, der Versand nicht - das
+ * Sortiment geht deutschlandweit. Ohne diesen zweiten Weg waere die Pruefung
+ * fuer jeden ausserhalb eine Absage, obwohl er bestellen koennte.
  *
  * Jede Abfrage traegt eine laufende Nummer. Die Tabelle wird beim ersten
  * Absenden geladen, das kann dauern; wer in der Zwischenzeit weitertippt oder
@@ -36,7 +38,7 @@
       return was + ' reicht über die Grenze unseres üblichen Gebiets hinaus. Geben Sie am besten Ihre Postleitzahl ein – oder fragen Sie uns direkt.';
     },
     aussen: function (was) {
-      return was + ' liegt etwas außerhalb unseres üblichen Radius. Fragen Sie uns trotzdem an – abhängig vom Auftragsumfang fahren wir auch weiter.';
+      return was + ' liegt außerhalb unseres Verlegegebiets. Ihren Boden liefern wir trotzdem – deutschlandweit. Für eine Verlegung fragen Sie uns gern an.';
     },
     leer: 'Bitte geben Sie eine Postleitzahl oder einen Ort ein.',
     unbekannt: 'Diesen Ort kennen wir nicht. Bitte geben Sie Ihre Postleitzahl ein – oder fragen Sie uns einfach direkt an.',
@@ -95,10 +97,14 @@
     feld.textContent = text;
   }
 
+  /* Je Ergebnis ein anderer Weg: im Gebiet zur Anfrage, ausserhalb in den
+     Shop. Bei einer unverstandenen Eingabe keiner - dort ist noch nichts
+     entschieden, und ein Angebot waere geraten. */
   function wegAnzeigen(feld, formular, status) {
-    var ziel = formular.dataset.ctaUrl;
-    var text = formular.dataset.ctaText;
-    if (status !== 'innen' || !ziel || !text) {
+    var innen = status === 'innen';
+    var ziel = innen ? formular.dataset.ctaUrl : formular.dataset.versandUrl;
+    var text = innen ? formular.dataset.ctaText : formular.dataset.versandText;
+    if ((status !== 'innen' && status !== 'aussen') || !ziel || !text) {
       feld.hidden = true;
       feld.textContent = '';
       return;

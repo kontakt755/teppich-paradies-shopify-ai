@@ -178,7 +178,8 @@
         "cta_zeigen": false,
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322",
-        "vertrauen": ""
+        "vertrauen": "",
+        "versand_link": "/collections/all"
       },
       "blocks": {
         "stufe_15km": {
@@ -201,12 +202,20 @@
             "label": "Bis 50 km um Oranienburg",
             "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
           }
+        },
+        "stufe_versand": {
+          "type": "leistung",
+          "settings": {
+            "label": "Deutschlandweit",
+            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+          }
         }
       },
       "block_order": [
         "stufe_15km",
         "stufe_649",
-        "stufe_50km"
+        "stufe_50km",
+        "stufe_versand"
       ]
     }
   },
