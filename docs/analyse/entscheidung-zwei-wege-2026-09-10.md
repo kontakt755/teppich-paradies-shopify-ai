@@ -9,7 +9,7 @@ Sein Einwand, der die Analyse traegt: *"Wenn ich Werbung ueber Ads mache, dann f
 die Leute die Seite eh ueber Keywords — Treppenverlegung — dann kommen sie auf die
 Treppenverlegung-Seite."*
 
-Grundlage: die Seiten im Wegwerf-Theme `204060885326` (Stand PR #168, fuenf Commits),
+Grundlage: die Seiten im Wegwerf-Theme zu PR #168 (Stand fuenf Commits; ID nicht hier, siehe AGENTS.md),
 die Einstiegszahlen aus `SHOP_ANALYSE_2026-09-09.md`, die Ads-Planung in
 `docs/GOOGLE_ADS_TODAY.md`, die Templates der vier Verlegeseiten.
 
@@ -61,7 +61,7 @@ die groesseren werden — beruehren sie kaum.
 
 ### Die zwei Boxen (Phase 1)
 
-**Sichtpruefung am Wegwerf-Theme, 2026-09-09 spaetabends** (Screenshots im Browser bei
+**Sichtpruefung am Wegwerf-Theme zu PR #168, 2026-09-09 spaetabends** (Screenshots im Browser bei
 1280 px und 390 px, Klickziele per Skript geprueft):
 
 - 1280 px: Hero-Band 260 px hoch, darunter "Wie sollen wir Ihnen helfen?" und die zwei
@@ -74,6 +74,12 @@ die groesseren werden — beruehren sie kaum.
   und verlegen lassen") liegt unter der Falz und braucht einen Scroll.
 - Klickziele: `/collections/all` (200) und `/pages/liefer-verlegeservice` (200), beide mit
   `?modus=…`-Parameter, der nach dem Rueckbau entfaellt.
+
+Die Messwerte stammen aus Browser-Skripten und Screenshots der Sitzung vom 2026-09-09;
+protokolliert sind sie in den Kommentaren zu PR #168 (Phase 1/2 und Phase 3). Sie liegen
+**nicht** als Dateien im Repository und sind damit nicht unabhaengig reproduzierbar — fuer
+die Ausfuehrung sind sie Orientierung, nicht Abnahmegrundlage. Vor dem Livegang misst
+die Deploy-Kette neu.
 
 **Bewertung.** Als Wegweiser fuer Marken- und Direkt-Traffic plausibel — das ist eine
 **Hypothese, keine Messung**; Klicks werden erst mit den Customer Events gezaehlt. Sie
@@ -95,10 +101,17 @@ Erklaerungsbedarf.
 
 ### Der Block auf den Verlegeseiten (Phase 4)
 
-Jede Verlegeseite hatte bereits einen guten Abschluss (`final-cta`): *"Teppichboden
-verlegen lassen? → Angebot anfragen · Direkt anrufen · WhatsApp schreiben"*. Der neue
-Block `tp-service-einstieg` steht **direkt darunter** mit derselben Botschaft, einem
-zweiten Button und einer zweiten Telefonnummer. Das ist eine Verdopplung, kein Mehrwert.
+**Drei** der vier Seiten hatten bereits einen guten Abschluss (`final-cta`):
+*"Teppichboden verlegen lassen? → Angebot anfragen · Direkt anrufen · WhatsApp
+schreiben"* — `teppichboden-verlegen`, `vinylboden-verlegen`, `treppenverlegung`. Dort
+steht der neue Block `tp-service-einstieg` **direkt darunter** mit derselben Botschaft,
+einem zweiten Button und einer zweiten Telefonnummer. Verdopplung, kein Mehrwert.
+
+**`boden-malerarbeiten` ist die Ausnahme.** Das Template hat keinen `final-cta`
+(Aufbau: `main-page` → `_blocks` → `google` → `kundenbilder-grid` → `_blocks`). Dort ist
+`tp-service-einstieg` heute der einzige Sortiments-, Anfrage- und Telefon-Einstieg.
+Ein pauschaler Rueckbau wuerde ihn ersatzlos entfernen. Die erste Fassung dieses
+Dokuments hatte das uebersehen.
 
 ### Der Radius
 
@@ -124,7 +137,8 @@ Seite sagen.
 | Service-Startseite (Phase 2) | **bleibt** als Menue-Ziel, keine weitere Arbeit | ordentlich, kostet nichts |
 | Modus, Streifen, localStorage (Phase 3) | **raus** | erreicht Ads-Traffic nicht, kostet Zustand und Erklaerung |
 | Aufmass-Band auf Produktseiten | **bleibt, immer sichtbar**, ohne Modus | ehrliches Angebot eines Verlegebetriebs, ein Satz mit Ort; Vorbild "Muster · Anfrage · Termin" bei der Teppichscheune |
-| `tp-service-einstieg` (Phase 4) | **raus** aus den vier Templates | verdoppelt `final-cta` |
+| `tp-service-einstieg` auf den drei Verlegeseiten (Phase 4) | **raus** | verdoppelt `final-cta` |
+| `tp-service-einstieg` auf `boden-malerarbeiten` | **bleibt vorerst** | dort gibt es keinen `final-cta`; erst ersetzen, dann entfernen |
 | Die drei Verlegeseiten | **hier gehoert die Arbeit hin** | dort landen die Anzeigen |
 
 ## 5. Was eine Landingpage braucht, die aus einer Anzeige traegt
@@ -175,11 +189,12 @@ Preis. Genau so machen es die Wettbewerber mit Massanfertigung (Teppichscheune:
 
 1. **Rueckbau**: Modus raus (`tp-modus.liquid`, `tp-modus-band.liquid`, `tp-modus.css`,
    Verdrahtung in `layout/theme.liquid`, `?modus=` aus den Templates), `tp-service-einstieg`
-   aus den vier Verlegeseiten, Aufmass-Band immer sichtbar, Radius vereinheitlichen.
+   aus den **drei** Verlegeseiten mit `final-cta` (nicht aus `boden-malerarbeiten`),
+   Aufmass-Band immer sichtbar, Radius vereinheitlichen.
 2. **Treppenverlegung** neu aufbauen nach Abschnitt 5 — vorher Frage 3 aus Abschnitt 6
    klaeren (Aufmass kostenlos?).
 3. **Vinylboden-verlegen** nach demselben Muster nachziehen.
 4. **Teppichboden-verlegen** nur angleichen — ist am weitesten.
 
-**Status: Analyse und Entscheidung, offene Fragen beantwortet. Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
+**Status: Analyse abgeschlossen. Vor der Treppenseite (Schritt 2) sind die Aufmass-Konditionen (Frage 3) noch zu klaeren. Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
 Die Kurzfassung steht als Kommentar in Issue #167.
