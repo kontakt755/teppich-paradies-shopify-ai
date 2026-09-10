@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-10T05:02:29.719Z",
+  "generated_at": "2026-09-10T08:56:14.970Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 58,
+  "count": 59,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-10T05:02:29.719Z",
+    "fetchedAt": "2026-09-10T08:56:14.970Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 173,
+      "title": "Verlegegebiet-Karte fuer die Verlegeseiten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/173",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p2",
+        "area:service"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T08:55:57Z",
+      "updated_at": "2026-09-10T08:55:58Z",
+      "closed_at": null
+    },
     {
       "number": 172,
       "title": "Alt-PRs bereinigt: Konflikte aufgeloest, ueberholte geschlossen",
@@ -123,13 +147,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 12,
+      "comments": 14,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:19:47Z",
-      "updated_at": "2026-09-09T22:05:23Z",
+      "updated_at": "2026-09-10T05:52:14Z",
       "closed_at": null
     },
     {
