@@ -18,6 +18,12 @@
  * Faellt die Antwort positiv aus, steht der naechste Schritt direkt darunter:
  * wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen, ist am ehesten
  * bereit anzufragen - und muss dafuer nicht erst weiterscrollen.
+ *
+ * Jede Abfrage traegt eine laufende Nummer. Die Tabelle wird beim ersten
+ * Absenden geladen, das kann dauern; wer in der Zwischenzeit weitertippt oder
+ * erneut absendet, bekaeme sonst die Antwort auf seine alte Eingabe - im
+ * schlimmsten Fall eine Zusage fuer eine Postleitzahl, die er gar nicht mehr
+ * im Feld stehen hat. Nur die jeweils letzte Abfrage darf anzeigen.
  */
 (function () {
   'use strict';
@@ -113,11 +119,13 @@
 
     var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
+    var lauf = 0;
     formular.hidden = false;
 
     formular.addEventListener('submit', function (ereignis) {
       ereignis.preventDefault();
       var wert = eingabe.value;
+      var meine = (lauf += 1);
       if (!wert.trim()) {
         anzeigen(ausgabe, '', TEXTE.leer);
         if (weg) wegAnzeigen(weg, formular, '');
@@ -125,11 +133,13 @@
       }
       tabelleLaden(sektion).then(
         function (daten) {
+          if (meine !== lauf) return;
           var ergebnis = bewerten(wert, daten, radius);
           anzeigen(ausgabe, ergebnis.status, ergebnis.text);
           if (weg) wegAnzeigen(weg, formular, ergebnis.status);
         },
         function () {
+          if (meine !== lauf) return;
           anzeigen(ausgabe, 'unbekannt', TEXTE.fehler);
           if (weg) wegAnzeigen(weg, formular, 'unbekannt');
         }
@@ -137,7 +147,10 @@
     });
 
     eingabe.addEventListener('input', function () {
-      if (!ausgabe.textContent) return;
+      // Auch ohne sichtbares Ergebnis hochzaehlen: eine noch laufende Abfrage
+      // gehoert zur alten Eingabe und darf nicht mehr anzeigen.
+      lauf += 1;
+      if (!ausgabe.textContent && (!weg || weg.hidden)) return;
       anzeigen(ausgabe, '', '');
       if (weg) wegAnzeigen(weg, formular, '');
     });
