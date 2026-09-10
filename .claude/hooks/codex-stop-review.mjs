@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
-import { detectReviewScope, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
+import { detectReviewScope, resolveReviewDir, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
@@ -70,7 +70,10 @@ try {
   // origin/main - der in einem geteilten Checkout auch von einer anderen,
   // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
   // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
-  const scope = detectReviewScope({ cwd: projectDir, sinceRef: current.state.startCommit ?? null });
+  // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
+  // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
+  const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
+  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null });
   if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
@@ -79,7 +82,11 @@ try {
     authorModel: plan.primary?.model ?? null,
     taskFile: current.state.handoffPath,
     taskId,
-    cwd: projectDir,
+    // Der Reviewer liest den Code im Arbeitsverzeichnis der Sitzung; die
+    // Laufprotokolle bleiben absichtlich unter projectDir, weil
+    // `npm run router:status` und die Handoffs dort nachsehen.
+    cwd: reviewDir,
+    runDir: path.join(projectDir, '.router', 'agent-runs'),
     onState: event => process.stderr.write(`Review-Fallback: ${event.from} -> ${event.to} (${event.reason})\n`),
   });
   writeClaudeSessionState({
