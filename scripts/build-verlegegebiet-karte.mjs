@@ -55,12 +55,16 @@ const LON = 13.2485;   // Saarlandstrasse, 16515 Oranienburg
 
 /**
  * MapLibre rechnet mit 512er-Kacheln, die uebliche Formel mit 256ern - deshalb
- * ist Zoom 8 hier so gross wie Zoom 9 dort. Die Breite ist so gewaehlt, dass
- * der 50-km-Kreis die Flaeche fuellt, ohne anzustossen.
+ * ist Zoom 8 hier so gross wie Zoom 9 dort.
+ *
+ * Der Ausschnitt muss die groesste Stufe von RADIEN vollstaendig fassen, nicht
+ * nur die voreingestellte: der 60-km-Umriss reicht bis 365 Bildpunkte nach
+ * Norden und Sueden, deshalb 760 statt 700 in der Hoehe. qa/tests/
+ * verlegegebiet-flaeche.test.mjs prueft das bei jedem Lauf nach.
  */
 const VARIANTEN = [
-  { name: 'desktop', breite: 1000, hoehe: 700, zoom: 8, stadt: 13, ort: 11.5 },
-  { name: 'mobile', breite: 340, hoehe: 380, zoom: 7, stadt: 14, ort: 12 },
+  { name: 'desktop', breite: 1000, hoehe: 760, zoom: 8, stadt: 13, ort: 11.5 },
+  { name: 'mobile', breite: 350, hoehe: 380, zoom: 7, stadt: 14, ort: 12 },
 ];
 
 const meterProPixel = (zoom) => (156543.03392 * Math.cos((LAT * Math.PI) / 180)) / 2 ** (zoom + 1);

@@ -17,10 +17,13 @@
   Snippet tp-verlegegebiet-flaeche, je Stufe des Reglers einer.
 
   Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
-    desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
-    mobile    340 x 380 Bildpunkte, 370.24 m je Punkt
+    desktop  1000 x 760 Bildpunkte, 185.12 m je Punkt
+    mobile     350 x 380 Bildpunkte, 370.24 m je Punkt
   Der Pfad ist in Desktop-Bildpunkten notiert; die schmale Karte hat den halben
-  Massstab und deshalb eine eigene viewBox ueber den doppelten Ausschnitt.
+  Massstab und deshalb eine eigene viewBox ueber den doppelten Ausschnitt. Beide
+  Ausschnitte muessen die groesste Reglerstufe fassen, nicht nur die
+  voreingestellte - sonst wird der Umriss oben und unten abgeschnitten.
+  qa/tests/verlegegebiet-flaeche.test.mjs haelt das fest.
 {% endcomment %}
 
 {%- liquid
@@ -69,7 +72,7 @@
             "
             alt="{{ vg_karte_alt | escape }}"
             width="1000"
-            height="700"
+            height="760"
             loading="lazy"
             decoding="async"
             class="tp-vg__bild"
@@ -80,10 +83,10 @@
           damit sie in Markenfarbe und bei jeder Breite scharf bleiben. Zwei
           SVG, weil die beiden Karten verschiedene Massstaebe haben und eine
           viewBox sich nicht per CSS umschalten laesst. {%- endcomment -%}
-        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -350 1000 700" aria-hidden="true" focusable="false">
+        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -380 1000 760" aria-hidden="true" focusable="false">
           {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
         </svg>
-        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-340 -380 680 760" aria-hidden="true" focusable="false">
+        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-350 -380 700 760" aria-hidden="true" focusable="false">
           {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
         </svg>
 
@@ -229,7 +232,7 @@
 
   .tp-vg__buehne {
     position: relative;
-    aspect-ratio: 1000 / 700;
+    aspect-ratio: 1000 / 760;
     border: 1px solid var(--tp-vg-linie);
     border-radius: 14px;
     overflow: hidden;
@@ -529,7 +532,7 @@
 
   @media screen and (max-width: 749px) {
     .tp-vg__buehne {
-      aspect-ratio: 340 / 380;
+      aspect-ratio: 350 / 380;
       border-radius: 12px;
     }
 
