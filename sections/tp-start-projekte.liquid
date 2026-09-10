@@ -12,11 +12,11 @@
         <h2 id="tp-proj-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
         {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
       </div>
-      {%- if section.settings.link_label != blank -%}<a class="tp-s-link" href="{{ section.settings.link | default: '/pages/bisherige-arbeiten' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
+      {%- if section.settings.link_label != blank -%}<a class="tp-s-link" href="{{ section.settings.link | default: '/pages/unsere-arbeit' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
     </div>
     <div class="tp-proj__grid">
       {%- for block in section.blocks limit: 5 -%}
-        <a class="tp-proj__item" href="{{ block.settings.link | default: section.settings.link | default: '#tp-arbeiten' }}" {{ block.shopify_attributes }}>
+        <a class="tp-proj__item" href="{{ block.settings.link | default: section.settings.link | default: '/pages/unsere-arbeit' }}" {{ block.shopify_attributes }}>
           {%- if block.settings.bild != blank -%}
             {%- if forloop.first -%}
               {{ block.settings.bild | image_url: width: 1400 | image_tag: loading: 'lazy', widths: '600, 900, 1400', sizes: '(max-width: 767px) 100vw, 50vw', alt: block.settings.bild.alt | default: block.settings.objekt, class: 'tp-proj__img' }}
@@ -33,8 +33,9 @@
       {%- endfor -%}
     </div>
     <div class="tp-proj__ctas">
-      {%- if section.settings.cta_label != blank -%}<a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">{{ section.settings.cta_label | escape }}</a>{%- endif -%}
-      {%- if section.settings.link_label != blank -%}<a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.link | default: '/pages/bisherige-arbeiten' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
+      {%- if section.settings.link_label != blank -%}<a class="tp-s-btn tp-s-btn--dark" href="{{ section.settings.link | default: '/pages/unsere-arbeit' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
+      {%- if section.settings.treppen_label != blank -%}<a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.treppen_link | default: '/pages/unsere-arbeit?kategorie=treppen' }}">{{ section.settings.treppen_label | escape }}</a>{%- endif -%}
+      {%- if section.settings.cta_label != blank -%}<a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">{{ section.settings.cta_label | escape }}</a>{%- endif -%}
     </div>
   </div>
 </section>
@@ -65,6 +66,8 @@
     { "type": "text", "id": "text", "label": "Unterzeile", "default": "Treppen, Wohnräume, Gastronomie, Läden und Kirchen – alles echte Baustellen unseres Teams, keine Stockfotos." },
     { "type": "text", "id": "link_label", "label": "Link zur Galerie", "default": "Mehr Arbeiten ansehen" },
     { "type": "url", "id": "link", "label": "Galerie-Seite" },
+    { "type": "text", "id": "treppen_label", "label": "Zweiter Link (Treppen)", "default": "Unsere Treppenarbeiten ansehen" },
+    { "type": "url", "id": "treppen_link", "label": "Ziel Treppen", "info": "Leer lassen fuer die Galerie mit dem Filter Treppen." },
     { "type": "text", "id": "cta_label", "label": "Button", "default": "Verlegung anfragen" },
     { "type": "url", "id": "cta_link", "label": "Button-Ziel" }
   ],

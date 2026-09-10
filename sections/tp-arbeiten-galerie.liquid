@@ -1,0 +1,299 @@
+{%- comment -%}
+  Referenzgalerie "Unsere Arbeit". Quelle sind die Metaobjekte tp_projekt -
+  gepflegt im Shopify-Admin unter Inhalt > Metaobjekte, nicht im Code.
+  Die Filterleiste entsteht aus den Kategorien, die tatsaechlich belegt sind.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'tp-arbeiten.js' | asset_url }}" defer></script>
+
+{%- liquid
+  assign alle = shop.metaobjects.tp_projekt.values
+
+  # Nach dem Feld "reihenfolge" sortieren. Liquid kann Metaobjekt-Felder nicht
+  # direkt sortieren, deshalb ueber einen Schluessel aus Rang und Position.
+  assign schluessel = ''
+  for projekt in alle
+    assign rang = projekt.reihenfolge.value | default: 9000 | plus: 100000
+    assign schluessel = schluessel | append: rang | append: '-' | append: forloop.index0 | append: ','
+  endfor
+  assign sortiert = schluessel | split: ',' | sort
+
+  assign grenze = section.settings.nur_kategorie
+-%}
+
+{%- if alle.size == 0 -%}
+  {%- comment -%} Ohne Projekte bleibt die Section still - kein leeres Raster. {%- endcomment -%}
+  {%- if request.design_mode -%}
+    <div class="tp-s-wrap" style="padding:40px 0">
+      <p><b>Referenzgalerie:</b> Noch kein Projekt angelegt. Shopify-Admin &rarr; Inhalt &rarr;
+      Metaobjekte &rarr; „Referenzprojekt (TP)“ &rarr; Eintrag hinzufügen.</p>
+    </div>
+  {%- endif -%}
+{%- else -%}
+
+<section class="tp-s-sec tp-arb"
+  id="{{ section.settings.anker | default: 'arbeiten' }}"
+  aria-labelledby="tp-arb-h2-{{ section.id }}"
+  data-tp-arbeiten
+  data-tp-schritt="{{ section.settings.pro_schritt }}"
+  data-tp-start="{{ grenze | handleize | default: 'alle' }}">
+  <div class="tp-s-wrap">
+
+    <div class="tp-s-sec-head">
+      <div>
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>
+        {%- endif -%}
+        <h2 id="tp-arb-h2-{{ section.id }}" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+    </div>
+
+    {%- unless grenze != blank -%}
+      {%- liquid
+        # Kategorien in fester Reihenfolge, aber nur die mit mindestens einem Projekt.
+        assign reihenfolge = 'Treppen,Teppichboden,Vinyl & Designbelag,Linoleum & PVC,Laminat & Parkett,Gewerbe & Objekt,Renovierung,Leisten & Details' | split: ','
+      -%}
+      <div class="tp-arb__filter" data-tp-filterleiste role="group" aria-label="Arbeiten nach Kategorie filtern">
+        <button type="button" class="tp-arb__chip is-aktiv" data-tp-chip="alle" aria-pressed="true">
+          Alle Arbeiten <span class="tp-arb__zahl">{{ alle.size }}</span>
+        </button>
+        {%- for kategorie in reihenfolge -%}
+          {%- liquid
+            assign anzahl = 0
+            for projekt in alle
+              if projekt.kategorie.value == kategorie
+                assign anzahl = anzahl | plus: 1
+              endif
+            endfor
+          -%}
+          {%- if anzahl > 0 -%}
+            <button type="button" class="tp-arb__chip" data-tp-chip="{{ kategorie | handleize }}" aria-pressed="false">
+              {{ kategorie | escape }} <span class="tp-arb__zahl">{{ anzahl }}</span>
+            </button>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endunless -%}
+
+    {%- assign lfd = 0 -%}
+    <ul class="tp-arb__grid" role="list">
+      {%- for eintrag in sortiert -%}
+        {%- liquid
+          assign pos = eintrag | split: '-' | last | times: 1
+          assign projekt = alle[pos]
+        -%}
+        {%- if projekt.titelbild.value == blank -%}{%- continue -%}{%- endif -%}
+        {%- if grenze != blank and projekt.kategorie.value != grenze -%}{%- continue -%}{%- endif -%}
+        {%- liquid
+          assign bild = projekt.titelbild.value
+          assign anzahl_bilder = 1
+          if projekt.bilder.value.size > 0
+            assign anzahl_bilder = projekt.bilder.value.size | plus: 1
+          endif
+          assign alt_text = bild.alt | default: projekt.titel.value
+        -%}
+        <li class="tp-arb__zelle" data-tp-zelle data-tp-slug="{{ projekt.kategorie.value | handleize }}">
+          <button type="button" class="tp-arb__karte" data-tp-oeffnen="{{ lfd }}" aria-haspopup="dialog">
+            {{ bild
+              | image_url: width: 900
+              | image_tag:
+                loading: 'lazy',
+                widths: '400, 600, 900, 1200',
+                sizes: '(max-width: 767px) 92vw, (max-width: 1023px) 46vw, 31vw',
+                alt: alt_text,
+                class: 'tp-arb__bild' }}
+            <span class="tp-arb__unten">
+              <span class="tp-arb__titel">{{ projekt.titel.value | escape }}</span>
+              <span class="tp-arb__fakten">
+                {{- projekt.kategorie.value | escape -}}
+                {%- if projekt.belag.value != blank %} · {{ projekt.belag.value | escape }}{% endif -%}
+                {%- if projekt.ort.value != blank %} · {{ projekt.ort.value | escape }}{% endif -%}
+              </span>
+            </span>
+            {%- if anzahl_bilder > 1 -%}
+              <span class="tp-arb__badge">{{ anzahl_bilder }} Bilder</span>
+            {%- endif -%}
+            <span class="tp-arb__lupe" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>
+              </svg>
+            </span>
+            <span class="visually-hidden">Projekt ansehen</span>
+          </button>
+        </li>
+        {%- assign lfd = lfd | plus: 1 -%}
+      {%- endfor -%}
+    </ul>
+
+    <p class="tp-arb__leer" data-tp-leer hidden>In dieser Kategorie ist noch kein Projekt hinterlegt.</p>
+
+    <div class="tp-arb__unterbau">
+      <button type="button" class="tp-s-btn tp-s-btn--ghost" data-tp-mehr hidden>Weitere Arbeiten anzeigen</button>
+      {%- if section.settings.cta_label != blank -%}
+        <a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">
+          {{ section.settings.cta_label | escape }}
+        </a>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- comment -%} Datenpaket fuer die Lightbox - nur Text und Bild-URLs, kein Markup. {%- endcomment -%}
+  {%- capture daten -%}
+    [
+    {%- assign erstes = true -%}
+    {%- for eintrag in sortiert -%}
+      {%- liquid
+        assign pos = eintrag | split: '-' | last | times: 1
+        assign projekt = alle[pos]
+      -%}
+      {%- if projekt.titelbild.value == blank -%}{%- continue -%}{%- endif -%}
+      {%- if grenze != blank and projekt.kategorie.value != grenze -%}{%- continue -%}{%- endif -%}
+      {%- unless erstes -%},{%- endunless -%}
+      {%- assign erstes = false -%}
+      {
+        "t": {{ projekt.titel.value | json }},
+        "k": {{ projekt.kategorie.value | json }},
+        "bl": {{ projekt.belag.value | json }},
+        "o": {{ projekt.ort.value | json }},
+        "j": {{ projekt.jahr.value | json }},
+        "d": {{ projekt.beschreibung.value | json }},
+        "b": [
+          {%- assign hauptbild = projekt.titelbild.value -%}
+          { "u": {{ hauptbild | image_url | json }}, "w": {{ hauptbild.width }}, "h": {{ hauptbild.height }}, "a": {{ hauptbild.alt | default: projekt.titel.value | json }} }
+          {%- for weiteres in projekt.bilder.value -%}
+            ,{ "u": {{ weiteres | image_url | json }}, "w": {{ weiteres.width }}, "h": {{ weiteres.height }}, "a": {{ weiteres.alt | default: projekt.titel.value | json }} }
+          {%- endfor -%}
+        ]
+      }
+    {%- endfor -%}
+    ]
+  {%- endcapture -%}
+  <script type="application/json" data-tp-daten>{{ daten }}</script>
+
+  <dialog class="tp-lb" data-tp-lightbox aria-label="Projektansicht">
+    <div class="tp-lb__kopf">
+      <p class="tp-lb__zaehler" data-tp-lb-zaehler></p>
+      <button type="button" class="tp-lb__zu" data-tp-lb-zu aria-label="Ansicht schließen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="tp-lb__koerper">
+      <div class="tp-lb__flaeche" data-tp-lb-flaeche>
+        <img class="tp-lb__bild" data-tp-lb-bild alt="" width="1400" height="1050">
+        <button type="button" class="tp-lb__pfeil tp-lb__pfeil--zurueck" data-tp-lb-prev aria-label="Vorheriges Bild">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button type="button" class="tp-lb__pfeil tp-lb__pfeil--vor" data-tp-lb-next aria-label="Nächstes Bild">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <div class="tp-lb__info">
+        <h3 class="tp-lb__titel" data-tp-lb-titel></h3>
+        <p class="tp-lb__fakten" data-tp-lb-fakten></p>
+        <p class="tp-lb__text" data-tp-lb-text></p>
+        <div class="tp-lb__thumbs" data-tp-lb-thumbs hidden></div>
+        {%- if section.settings.cta_label != blank -%}
+          <a class="tp-s-btn tp-s-btn--primary tp-lb__cta" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">
+            {{ section.settings.cta_label | escape }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+  </dialog>
+</section>
+
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-arb__filter { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 22px; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .tp-arb__filter::-webkit-scrollbar { display: none; }
+  .tp-arb__chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--tp-line); background: #fff; color: var(--tp-ink); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
+  .tp-arb__chip:hover { border-color: var(--tp-line-2); background: var(--tp-bg-2); }
+  .tp-arb__chip.is-aktiv { background: var(--tp-ink); border-color: var(--tp-ink); color: #fff; font-weight: 600; }
+  .tp-arb__zahl { font-size: 12.5px; opacity: 0.65; font-variant-numeric: tabular-nums; }
+  .tp-arb__chip.is-aktiv .tp-arb__zahl { opacity: 0.75; }
+
+  .tp-arb__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; list-style: none; margin: 0; padding: 0; }
+  .tp-arb__zelle { margin: 0; }
+  .tp-arb__karte { position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: var(--tp-r-lg); overflow: hidden; background: var(--tp-bg-3); cursor: pointer; text-align: left; font: inherit; aspect-ratio: 4 / 3; }
+  .tp-arb__bild { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
+  .tp-arb__karte:hover .tp-arb__bild { transform: scale(1.045); }
+  .tp-arb__karte:focus-visible { outline: 3px solid var(--tp-red); outline-offset: 3px; }
+  .tp-arb__unten { position: absolute; inset: auto 0 0 0; display: block; padding: 42px 14px 13px; color: #fff; background: linear-gradient(to top, rgba(20, 18, 16, 0.86) 0%, rgba(20, 18, 16, 0.55) 45%, rgba(20, 18, 16, 0) 100%); }
+  .tp-arb__titel { display: block; font-weight: 650; font-size: 16px; line-height: 1.25; }
+  .tp-arb__fakten { display: block; font-size: 13px; opacity: 0.86; margin-top: 3px; }
+  .tp-arb__badge { position: absolute; top: 12px; left: 12px; background: rgba(20, 18, 16, 0.76); color: #fff; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; }
+  .tp-arb__lupe { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.9); color: var(--tp-ink); opacity: 0; transition: opacity 0.2s; }
+  .tp-arb__lupe svg { width: 17px; height: 17px; }
+  .tp-arb__karte:hover .tp-arb__lupe, .tp-arb__karte:focus-visible .tp-arb__lupe { opacity: 1; }
+  .tp-arb__leer { color: var(--tp-muted); padding: 24px 0; }
+  .tp-arb__unterbau { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 26px; }
+
+  .tp-lb { width: min(1180px, 94vw); max-width: none; max-height: 92vh; padding: 0; border: 0; border-radius: var(--tp-r-lg); background: #fff; color: var(--tp-ink); overflow: hidden; }
+  .tp-lb::backdrop { background: rgba(18, 16, 14, 0.82); }
+  .tp-lb__kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--tp-line); }
+  .tp-lb__zaehler { margin: 0; font-size: 13px; color: var(--tp-muted); font-variant-numeric: tabular-nums; }
+  .tp-lb__zu { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--tp-bg-2); color: var(--tp-ink); cursor: pointer; }
+  .tp-lb__zu svg { width: 20px; height: 20px; }
+  .tp-lb__zu:hover { background: var(--tp-bg-3); }
+  .tp-lb__koerper { display: grid; grid-template-columns: 1.85fr 1fr; max-height: calc(92vh - 65px); }
+  .tp-lb__flaeche { position: relative; background: #14120f; display: grid; place-items: center; min-height: 0; }
+  .tp-lb__bild { width: 100%; height: 100%; max-height: calc(92vh - 65px); object-fit: contain; display: block; }
+  .tp-lb__pfeil { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.9); color: var(--tp-ink); cursor: pointer; }
+  .tp-lb__pfeil svg { width: 22px; height: 22px; }
+  .tp-lb__pfeil:hover { background: #fff; }
+  .tp-lb__pfeil--zurueck { left: 12px; }
+  .tp-lb__pfeil--vor { right: 12px; }
+  .tp-lb__info { padding: 22px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .tp-lb__titel { margin: 0; font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .tp-lb__fakten { margin: 0; color: var(--tp-red); font-size: 14px; font-weight: 600; }
+  .tp-lb__text { margin: 0; color: var(--tp-ink-2); font-size: 15px; line-height: 1.55; white-space: pre-line; }
+  .tp-lb__thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-lb__thumb { width: 72px; height: 54px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: var(--tp-bg-3); cursor: pointer; }
+  .tp-lb__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tp-lb__thumb.is-aktiv { border-color: var(--tp-red); }
+  .tp-lb__cta { margin-top: auto; align-self: flex-start; }
+
+  @media (max-width: 1023px) {
+    .tp-arb__grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .tp-lb__koerper { grid-template-columns: 1fr; grid-template-rows: auto auto; max-height: calc(92vh - 65px); overflow-y: auto; }
+    .tp-lb__bild { max-height: 58vh; }
+  }
+  @media (max-width: 767px) {
+    .tp-arb__grid { grid-template-columns: 1fr; gap: 14px; }
+    .tp-arb__karte { aspect-ratio: 4 / 3; border-radius: var(--tp-r); }
+    .tp-arb__titel { font-size: 17px; }
+    .tp-lb { width: 100vw; max-height: 100vh; height: 100dvh; border-radius: 0; }
+    .tp-lb__koerper { max-height: none; height: calc(100dvh - 65px); }
+    .tp-lb__bild { max-height: 52vh; }
+    .tp-lb__pfeil { width: 42px; height: 42px; }
+    .tp-lb__info { padding: 16px; }
+    .tp-arb__unterbau .tp-s-btn { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tp-arb__bild, .tp-arb__lupe { transition: none; }
+    .tp-arb__karte:hover .tp-arb__bild { transform: none; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Arbeiten Galerie",
+  "tag": "section",
+  "settings": [
+    { "type": "paragraph", "content": "Projekte werden im Admin unter Inhalt > Metaobjekte > Referenzprojekt (TP) gepflegt. Neue Projekte erscheinen hier automatisch." },
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Referenzen" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Ausgefuehrte Arbeiten" },
+    { "type": "textarea", "id": "text", "label": "Unterzeile" },
+    { "type": "text", "id": "anker", "label": "Anker-ID", "default": "arbeiten", "info": "Fuer Sprungmarken, ohne Raute." },
+    { "type": "range", "id": "pro_schritt", "label": "Projekte pro Ladeschritt", "min": 3, "max": 30, "step": 3, "default": 9 },
+    { "type": "text", "id": "nur_kategorie", "label": "Nur eine Kategorie zeigen", "info": "Leer lassen fuer die volle Galerie mit Filter. Sonst exakt der Kategoriename, z. B. Treppen." },
+    { "type": "text", "id": "cta_label", "label": "Button", "default": "Aehnliches Projekt anfragen" },
+    { "type": "url", "id": "cta_link", "label": "Button-Ziel" }
+  ],
+  "presets": [ { "name": "TP Arbeiten Galerie" } ]
+}
+{% endschema %}

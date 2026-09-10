@@ -844,10 +844,12 @@
         "eyebrow": "Von uns verlegt",
         "heading": "Echte Arbeiten aus Oranienburg, Berlin und Brandenburg",
         "text": "Treppen, Wohnräume, Gastronomie, Läden und Kirchen – alles echte Baustellen unseres Teams, keine Stockfotos.",
-        "link_label": "Mehr Arbeiten ansehen",
-        "link": "shopify://pages/bisherige-arbeiten",
+        "link_label": "Alle Referenzen ansehen",
+        "link": "shopify://pages/unsere-arbeit",
         "cta_label": "Verlegung anfragen",
-        "cta_link": "#tp-kontakt"
+        "cta_link": "#tp-kontakt",
+        "treppen_label": "Unsere Treppenarbeiten ansehen",
+        "treppen_link": ""
       },
       "blocks": {
         "p1": {

@@ -1,0 +1,72 @@
+{%- comment -%}
+  Kopf der Referenzseite: H1, Einordnung, Vertrauenszeile und Sprungmarke zu den
+  Treppenarbeiten. Bewusst textarm - die Bilder sollen wirken.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-s-sec--tight tp-arbintro">
+  <div class="tp-s-wrap">
+    <nav class="tp-arbintro__brot" aria-label="Brotkrumen">
+      <a href="{{ routes.root_url }}">Startseite</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ section.settings.heading | escape }}</span>
+    </nav>
+
+    {%- if section.settings.eyebrow != blank -%}
+      <span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>
+    {%- endif -%}
+    <h1 class="tp-arbintro__h1">{{ section.settings.heading | escape }}</h1>
+    {%- if section.settings.text != blank -%}
+      <p class="tp-arbintro__text">{{ section.settings.text }}</p>
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+      <ul class="tp-arbintro__punkte" role="list">
+        {%- for block in section.blocks -%}
+          <li {{ block.shopify_attributes }}>
+            <svg class="tp-s-check" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 10.5l4 4 8-9"/>
+            </svg>
+            <span>{{ block.settings.punkt | escape }}</span>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-arbintro__brot { font-size: 13.5px; color: var(--tp-muted); margin-bottom: 14px; display: flex; gap: 7px; flex-wrap: wrap; }
+  .tp-arbintro__brot a { color: var(--tp-muted); text-decoration: none; border-bottom: 1px solid var(--tp-line-2); }
+  .tp-arbintro__brot a:hover { color: var(--tp-ink); }
+  .tp-arbintro__h1 { font-size: clamp(28px, 3.4vw, 44px); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; margin: 0; color: var(--tp-ink); text-wrap: balance; }
+  .tp-arbintro__text { max-width: 66ch; color: var(--tp-ink-2); font-size: 17px; line-height: 1.6; margin: 14px 0 0; }
+  .tp-arbintro__punkte { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .tp-arbintro__punkte li { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; font-weight: 500; color: var(--tp-ink); }
+  .tp-arbintro__punkte svg { color: var(--tp-green); }
+  @media (max-width: 767px) {
+    .tp-arbintro__text { font-size: 16px; }
+    .tp-arbintro__punkte { flex-direction: column; gap: 9px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Arbeiten Kopf",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Unsere Arbeit" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift (H1)", "default": "Bodenbelaege, die wir selbst verlegt haben" },
+    { "type": "richtext", "id": "text", "label": "Einleitung" }
+  ],
+  "blocks": [
+    {
+      "type": "punkt",
+      "name": "Vertrauenspunkt",
+      "limit": 6,
+      "settings": [ { "type": "text", "id": "punkt", "label": "Text", "default": "Aufmass vor Ort" } ]
+    }
+  ],
+  "presets": [ { "name": "TP Arbeiten Kopf" } ]
+}
+{% endschema %}
