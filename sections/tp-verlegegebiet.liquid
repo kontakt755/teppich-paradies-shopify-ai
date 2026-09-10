@@ -135,6 +135,31 @@
     </figure>
   {%- endif -%}
 
+  {%- comment -%} Die Stufen des Verlegeservice, so wie sie auf der Serviceseite
+    stehen. Sie gehoeren neben die Karte, nicht nur auf eine andere Seite: wer
+    hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen, was das
+    einschliesst - sonst erwartet jemand aus 40 km Entfernung die Leistungen,
+    die im Umkreis von 15 km gelten.
+
+    Als Bloecke, damit sich Stufen im Editor aendern lassen, ohne den Code
+    anzufassen. Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben
+    den zweien darunter.
+  {%- endcomment -%}
+  {%- if section.blocks.size > 0 -%}
+    <ul class="tp-vg__stufen" role="list">
+      {%- for block in section.blocks -%}
+        <li class="tp-vg__stufe" {{ block.shopify_attributes }}>
+          {%- if block.settings.label != blank -%}
+            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape }}</span>
+          {%- endif -%}
+          {%- if block.settings.text != blank -%}
+            <span class="tp-vg__stufe-text">{{ block.settings.text | escape }}</span>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+
   <div class="tp-vg__spalten">
     <div class="tp-vg__karte-adresse">
       <h3 class="tp-vg__sub">{{ section.settings.standort_name | escape }}</h3>
@@ -421,6 +446,34 @@
 
   /* Adresse und Pruefung ------------------------------------------------ */
 
+  .tp-vg__stufen {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 clamp(20px, 3vw, 40px);
+    max-width: 1000px;
+    margin: clamp(20px, 3vw, 28px) auto 0;
+    padding: clamp(18px, 2.5vw, 22px) 0 0;
+    border-top: 1px solid var(--tp-vg-linie);
+    list-style: none;
+  }
+
+  .tp-vg__stufe {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.5;
+  }
+
+  .tp-vg__stufe-marke {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tp-vg__stufe-text {
+    color: var(--tp-vg-leise);
+    font-size: 14px;
+  }
+
   .tp-vg__spalten {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -670,6 +723,12 @@
       font-size: 12px;
     }
 
+    /* Drei Spalten pressen die Saetze auf einem Telefon zu Schnueren. */
+    .tp-vg__stufen {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
     .tp-vg__spalten {
       grid-template-columns: 1fr;
     }
@@ -862,13 +921,55 @@
       "default": 56
     }
   ],
+  "blocks": [
+    {
+      "type": "leistung",
+      "name": "Leistungsstufe",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Stufe",
+          "info": "Die Zahl oder Bedingung, an der die Stufe haengt."
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Was sie umfasst"
+        }
+      ]
+    }
+  ],
   "presets": [
     {
       "name": "TP Verlegegebiet",
       "settings": {
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322"
-      }
+      },
+      "blocks": [
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Im Umkreis von 15 km",
+            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Ab 649 € Warenwert",
+            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Bis 50 km um Oranienburg",
+            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+          }
+        }
+      ]
     }
   ]
 }

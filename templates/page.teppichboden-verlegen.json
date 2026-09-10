@@ -215,8 +215,37 @@
       "settings": {
         "cta_zeigen": false,
         "cta_link": "/pages/kontakt",
-        "cta2_link": "https://wa.me/4917657931322"
-      }
+        "cta2_link": "https://wa.me/4917657931322",
+        "vertrauen": ""
+      },
+      "blocks": {
+        "stufe_15km": {
+          "type": "leistung",
+          "settings": {
+            "label": "Im Umkreis von 15 km",
+            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
+          }
+        },
+        "stufe_649": {
+          "type": "leistung",
+          "settings": {
+            "label": "Ab 649 € Warenwert",
+            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
+          }
+        },
+        "stufe_50km": {
+          "type": "leistung",
+          "settings": {
+            "label": "Bis 50 km um Oranienburg",
+            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+          }
+        }
+      },
+      "block_order": [
+        "stufe_15km",
+        "stufe_649",
+        "stufe_50km"
+      ]
     }
   },
   "order": [
