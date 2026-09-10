@@ -12,6 +12,7 @@
 // Ohne sinceRef (z. B. bei `npm run agents:review` ohne Sitzung) bleibt das
 // alte Verhalten unveraendert.
 import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 
 export const REVIEW_SCOPE_UNCOMMITTED = 'UNCOMMITTED';
 export const REVIEW_SCOPE_COMMITTED = 'COMMITTED';
@@ -101,6 +102,39 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   const ahead = git('log', '--format=%h %s', `${mergeBase.out}..HEAD`);
   if (!ahead.ok) return unknownScope(errors, baseRef);
   return describeReviewScope({ porcelain: status.out, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12) });
+}
+
+// Dritte Luecke, gefunden am 2026-09-10: Arbeitet eine Sitzung in einem
+// git-Worktree (`.claude/worktrees/...`), zeigt CLAUDE_PROJECT_DIR weiterhin
+// auf den Hauptcheckout. Dort liegen die Commits DIESER Sitzung gar nicht -
+// wohl aber die einer anderen, parallel laufenden. Der Reviewer bekam so
+// zuverlaessig einen fremden Diff vorgelegt und meldete, das Ergebnis des
+// Auftrags fehle vollstaendig. Auch sinceRef half nicht: Der Startcommit wurde
+// im selben falschen Verzeichnis gelesen.
+//
+// Deshalb: Alles Git-Bezogene laeuft im echten Arbeitsverzeichnis der Sitzung,
+// sofern es zum selben Repository gehoert (gleiches --git-common-dir). Zustand,
+// .env.local und .router bleiben beim projectDir, damit `router:status` und die
+// Handoffs weiterhin an einer Stelle liegen.
+//
+// Gehoert sessionCwd zu einem anderen Repository oder ist git dort nicht
+// lesbar, bleibt es bei projectDir - das ist das Verhalten von vorher.
+export function resolveReviewDir({ projectDir, sessionCwd, exec = execFileSync } = {}) {
+  if (!projectDir || !sessionCwd || sessionCwd === projectDir) return projectDir;
+  const commonDir = (cwd) => {
+    try {
+      const out = String(exec('git', ['rev-parse', '--git-common-dir'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).trim();
+      // Die Ausgabe ist relativ zum cwd, wenn das Repository dort liegt, sonst
+      // absolut. path.resolve deckt beide Faelle ab.
+      return out ? path.resolve(cwd, out) : null;
+    } catch {
+      return null;
+    }
+  };
+  const session = commonDir(sessionCwd);
+  if (!session) return projectDir;
+  const project = commonDir(projectDir);
+  return project && project === session ? sessionCwd : projectDir;
 }
 
 // Fuer openrouter-user-prompt.mjs: der HEAD-Commit bei Task-Start, der spaeter
