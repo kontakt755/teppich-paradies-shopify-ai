@@ -56,59 +56,54 @@
 
   {%- if section.settings.karte_zeigen -%}
     <figure class="tp-vg__karte">
-      <picture>
-        <source
-          media="(max-width: 749px)"
-          type="image/webp"
-          srcset="
-            {{ 'tp-verlegegebiet-mobile.webp' | asset_url }} 1x,
-            {{ 'tp-verlegegebiet-mobile-2x.webp' | asset_url }} 2x
-          "
-        >
-        <img
-          src="{{ 'tp-verlegegebiet-desktop.webp' | asset_url }}"
-          srcset="
-            {{ 'tp-verlegegebiet-desktop.webp' | asset_url }} 1x,
-            {{ 'tp-verlegegebiet-desktop-2x.webp' | asset_url }} 2x
-          "
-          alt="{{ vg_karte_alt | escape }}"
-          width="1000"
-          height="700"
-          loading="lazy"
-          decoding="async"
-          class="tp-vg__bild"
-        >
-      </picture>
+      <div class="tp-vg__buehne">
+        <picture>
+          <source
+            media="(max-width: 749px)"
+            type="image/webp"
+            srcset="
+              {{ 'tp-verlegegebiet-mobile.webp' | asset_url }} 1x,
+              {{ 'tp-verlegegebiet-mobile-2x.webp' | asset_url }} 2x
+            "
+          >
+          <img
+            src="{{ 'tp-verlegegebiet-desktop.webp' | asset_url }}"
+            srcset="
+              {{ 'tp-verlegegebiet-desktop.webp' | asset_url }} 1x,
+              {{ 'tp-verlegegebiet-desktop-2x.webp' | asset_url }} 2x
+            "
+            alt="{{ vg_karte_alt | escape }}"
+            width="1000"
+            height="700"
+            loading="lazy"
+            decoding="async"
+            class="tp-vg__bild"
+          >
+        </picture>
 
-      {%- comment -%} Radiusflaeche und Standort liegen als Markup ueber dem Bild,
-        damit sie in Markenfarbe und bei jeder Breite scharf bleiben. {%- endcomment -%}
-      <span class="tp-vg__radius" aria-hidden="true">
-        <span class="tp-vg__radius-label">ca. {{ vg_radius }} km</span>
-      </span>
-
-      <span class="tp-vg__marker" aria-hidden="true">
-        <span class="tp-vg__punkt"></span>
-        <span class="tp-vg__marker-name">
-          {{ section.settings.standort_name | escape }}
-          <small>{{ section.settings.standort_ort | escape }}</small>
+        {%- comment -%} Radiusflaeche und Standort liegen als Markup ueber dem Bild,
+          damit sie in Markenfarbe und bei jeder Breite scharf bleiben. {%- endcomment -%}
+        <span class="tp-vg__radius" aria-hidden="true">
+          <span class="tp-vg__radius-label">ca. {{ vg_radius }} km</span>
         </span>
-      </span>
 
-      <figcaption class="tp-vg__quelle">
-        Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a>-Mitwirkende
+        <span class="tp-vg__marker" aria-hidden="true">
+          <span class="tp-vg__punkt"></span>
+          <span class="tp-vg__marker-name">
+            {{ section.settings.standort_name | escape }}
+            <small>{{ section.settings.standort_ort | escape }}</small>
+          </span>
+        </span>
+      </div>
+
+      {%- comment -%} Bildunterschrift statt Legende: der Punkt traegt seinen Namen
+        schon auf der Karte, der Kreis seine Kilometerzahl. Farbige Punkte davor
+        haetten wie Bedienelemente ausgesehen, ohne welche zu sein. {%- endcomment -%}
+      <figcaption class="tp-vg__legende">
+        <span>Reguläres Verlegegebiet, ca. {{ vg_radius }} km rund um {{ section.settings.standort_ort | escape }}</span>
+        <span>Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a>-Mitwirkende</span>
       </figcaption>
     </figure>
-
-    <ul class="tp-vg__legende" role="list">
-      <li>
-        <span class="tp-vg__swatch tp-vg__swatch--punkt" aria-hidden="true"></span>
-        Unser Standort in {{ section.settings.standort_ort | escape }}
-      </li>
-      <li>
-        <span class="tp-vg__swatch tp-vg__swatch--flaeche" aria-hidden="true"></span>
-        ca. {{ vg_radius }} km reguläres Verlegegebiet
-      </li>
-    </ul>
   {%- endif -%}
 
   <div class="tp-vg__spalten">
@@ -227,9 +222,12 @@
   /* Karte -------------------------------------------------------------- */
 
   .tp-vg__karte {
-    position: relative;
     max-width: 1000px;
     margin: clamp(24px, 4vw, 40px) auto 0;
+  }
+
+  .tp-vg__buehne {
+    position: relative;
     aspect-ratio: 1000 / 700;
     border: 1px solid var(--tp-vg-linie);
     border-radius: 14px;
@@ -248,7 +246,7 @@
      Grundfarbe der Karte laesst sie ausklingen, statt sie halb stehen zu lassen.
      Die Farbe ist die des Kartenbildes, nicht die der Seite - deshalb steht sie
      hier als fester Wert und nicht als Farbschema-Variable. */
-  .tp-vg__karte::after {
+  .tp-vg__buehne::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -332,56 +330,23 @@
     opacity: 0.75;
   }
 
-  .tp-vg__quelle {
-    position: absolute;
-    z-index: 2;
-    right: 8px;
-    bottom: 8px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: rgb(255 255 255 / 0.82);
-    color: rgb(28 26 24 / 0.62);
-    font-size: 11px;
-  }
 
-  .tp-vg__quelle a {
-    color: inherit;
-  }
-
+  /* Bildunterschrift wie in einem Bericht: links, worum es geht, rechts die
+     Quelle. Keine Farbpunkte davor - die saehen wie Bedienelemente aus. */
   .tp-vg__legende {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px 24px;
-    margin: 14px 0 0;
-    padding: 0;
-    color: var(--tp-vg-leise);
-    font-size: 14px;
-    list-style: none;
+    justify-content: space-between;
+    gap: 4px 24px;
+    margin-top: 12px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+    font-size: 13px;
+    line-height: 1.5;
   }
 
-  .tp-vg__legende li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .tp-vg__swatch {
-    flex: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-  }
-
-  .tp-vg__swatch--punkt {
-    border: 2px solid #fff;
-    background: #1c1917;
-    box-shadow: 0 0 0 1px rgb(28 26 24 / 0.35);
-  }
-
-  .tp-vg__swatch--flaeche {
-    border: 2px solid rgb(var(--tp-vg-ton) / 0.62);
-    background: rgb(var(--tp-vg-ton) / 0.22);
+  .tp-vg__legende a {
+    color: inherit;
+    text-underline-offset: 2px;
   }
 
   /* Adresse und Pruefung ------------------------------------------------ */
@@ -449,7 +414,7 @@
   .tp-vg__input:focus-visible,
   .tp-vg__btn:focus-visible,
   .tp-vg__route:focus-visible,
-  .tp-vg__quelle a:focus-visible {
+  .tp-vg__legende a:focus-visible {
     outline: 2px solid currentcolor;
     outline-offset: 2px;
   }
@@ -571,7 +536,7 @@
   }
 
   @media screen and (max-width: 749px) {
-    .tp-vg__karte {
+    .tp-vg__buehne {
       aspect-ratio: 340 / 380;
       border-radius: 12px;
     }
@@ -582,7 +547,7 @@
 
     /* Auf der schmalen Karte stehen mehr Namen am Rand an; der Verlauf faellt
        deshalb breiter aus. Ausserhalb des Kreises geht dabei nichts verloren. */
-    .tp-vg__karte::after {
+    .tp-vg__buehne::after {
       background:
         linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 42px),
         linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 42px),
@@ -594,17 +559,10 @@
       font-size: 12px;
     }
 
-    .tp-vg__quelle {
-      right: 6px;
-      bottom: 6px;
-      padding: 2px 6px;
-      font-size: 10px;
-    }
 
     .tp-vg__legende {
-      justify-content: flex-start;
-      gap: 6px 18px;
-      font-size: 13px;
+      gap: 2px;
+      font-size: 12px;
     }
 
     .tp-vg__spalten {
