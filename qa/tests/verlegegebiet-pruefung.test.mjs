@@ -259,6 +259,36 @@ test('kein Template setzt ein eigenes, abweichendes Routenziel', () => {
   }
 });
 
+test('auf den Verlegeseiten bleibt der Weg im Ergebnis, obwohl die Knoepfe aus sind', () => {
+  // Auf diesen Seiten folgt direkt final_cta_service mit eigenen Knoepfen,
+  // deshalb sind die der Sektion abgeschaltet. Die Ziele muessen trotzdem
+  // gesetzt bleiben: das Ergebnis der Ortspruefung haengt an ihnen, nicht am
+  // Haken. Wer cta_link fuer ungenutzt haelt und leert, nimmt dem Kunden
+  // genau in dem Moment den Weg, in dem er ihn braucht.
+  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
+    const abschnitt = JSON.parse(roh.slice(roh.indexOf('{'))).sections.tp_verlegegebiet;
+    assert.equal(abschnitt.settings.cta_zeigen, false, `${name}: Knoepfe unerwartet an.`);
+    assert.ok(abschnitt.settings.cta_link, `${name}: ohne cta_link fuehrt ein Treffer nirgendwohin.`);
+    assert.ok(abschnitt.settings.versand_link, `${name}: ohne versand_link endet "ausserhalb" in einer Absage.`);
+  }
+});
+
+test('jede Reglerstufe der Vorlage hat eine Leistungsstufe', () => {
+  // Die Stufen kommen auf den Seiten aus dem Template, nicht aus dem Preset -
+  // fehlt block_order, rendert die Sektion sie stillschweigend gar nicht.
+  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
+    const abschnitt = JSON.parse(roh.slice(roh.indexOf('{'))).sections.tp_verlegegebiet;
+    const ordnung = abschnitt.block_order || [];
+    assert.ok(ordnung.length >= 3, `${name}: zu wenige Leistungsstufen.`);
+    for (const schluessel of ordnung) {
+      assert.ok(abschnitt.blocks[schluessel], `${name}: block_order nennt ${schluessel}, den es nicht gibt.`);
+      assert.ok(abschnitt.blocks[schluessel].settings.label, `${name}: ${schluessel} ohne Beschriftung.`);
+    }
+  }
+});
+
 test('der Link oeffnet in einem neuen Tab und sagt das auch an', () => {
   const block = SEKTION.slice(SEKTION.indexOf('class="tp-vg__route"'));
   const link = block.slice(0, block.indexOf('</a>'));
