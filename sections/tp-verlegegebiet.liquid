@@ -34,6 +34,25 @@
   assign vg_lon = 13.2485
 
   assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
+
+  # Das Ziel fuer "Route planen" entsteht aus derselben Adresse, die auf der
+  # Seite steht. Der Link stand vorher als fertige URL in der Voreinstellung
+  # und in jedem Template - vier Kopien, und in allen vieren war die Hausnummer
+  # 73 statt 73-81. Abgeleitet kann das nicht mehr auseinanderlaufen.
+  #
+  # Der Gedankenstrich der Hausnummer wird zum Bindestrich: in der Adresszeile
+  # ist er richtig gesetzt, in einer Suchanfrage ist er nur ein Sonderzeichen.
+  #
+  # Wer den Google-Unternehmenseintrag verlinken will, traegt ihn im Editor als
+  # eigenen Link ein; dann gilt dieser.
+  capture vg_adresszeile
+    echo section.settings.standort_adresse | newline_to_br | replace: '<br />', ', ' | replace: '<br/>', ', ' | replace: '<br>', ', ' | strip_html | strip_newlines | strip | replace: '–', '-'
+  endcapture
+  assign vg_route = section.settings.route_link
+  if vg_route == blank and vg_adresszeile != blank
+    assign vg_ziel = vg_adresszeile | url_encode
+    assign vg_route = 'https://www.google.com/maps/dir/?api=1&destination=' | append: vg_ziel
+  endif
 -%}
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
@@ -122,14 +141,14 @@
       <address>
         {{ section.settings.standort_adresse | escape | newline_to_br }}
       </address>
-      {%- if section.settings.route_link != blank -%}
+      {%- if vg_route != blank -%}
         {%- comment -%} Ein gewoehnlicher Link, kein eingebetteter Kartendienst:
           er sendet erst beim Klick etwas und braucht deshalb keine Einwilligung.
           Die Universal-Link-Form oeffnet auf dem Telefon die Karten-App, sonst
           den Browser. {%- endcomment -%}
         <a
           class="tp-vg__route"
-          href="{{ section.settings.route_link }}"
+          href="{{ vg_route }}"
           target="_blank"
           rel="noopener nofollow"
         >
@@ -754,8 +773,8 @@
     {
       "type": "url",
       "id": "route_link",
-      "label": "Link \"Route planen\"",
-      "info": "Oeffnet die Karten-App bzw. Google Maps. Leer lassen, um den Link auszublenden. Wenn es einen Google-Unternehmenseintrag gibt, ist dessen Link die bessere Wahl."
+      "label": "Link \"Route planen\" (optional)",
+      "info": "Leer lassen: das Ziel entsteht dann aus der Adresse oben. Nur ausfuellen, um stattdessen den Google-Unternehmenseintrag zu verlinken."
     },
     {
       "type": "header",
@@ -847,7 +866,6 @@
     {
       "name": "TP Verlegegebiet",
       "settings": {
-        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Teppich+Paradies+Oranienburg+GmbH%2C+Saarlandstra%C3%9Fe+73%2C+16515+Oranienburg",
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322"
       }

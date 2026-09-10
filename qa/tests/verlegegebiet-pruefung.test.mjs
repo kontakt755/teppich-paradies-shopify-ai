@@ -178,25 +178,56 @@ test('eine leere Eingabe fragt die Tabelle gar nicht erst ab', () => {
   assert.match(ausgabe.textContent, /Postleitzahl oder einen Ort/);
 });
 
-test('der Link "Route planen" fuehrt sauber zu Google Maps', () => {
-  const treffer = SEKTION.match(/"route_link": "([^"]+)"/);
-  assert.ok(treffer, 'Im Preset fehlt der Link fuer "Route planen".');
+/** Bildet die Liquid-Ableitung des Ziels nach: Zeilen zu einer Zeile,
+ *  Gedankenstrich zu Bindestrich, dann kodieren wie Shopifys url_encode. */
+function zielAusAdresse(adresse) {
+  const zeile = adresse.split(/\\n|\n/).map((t) => t.trim()).filter(Boolean).join(', ').replace(/–/g, '-');
+  return encodeURIComponent(zeile).replace(/%20/g, '+');
+}
 
-  const ziel = new URL(treffer[1].replace(/&amp;/g, '&'));
-  assert.equal(ziel.protocol, 'https:', 'Der Link muss verschluesselt sein.');
-  assert.equal(ziel.host, 'www.google.com');
-  assert.equal(ziel.pathname, '/maps/dir/');
+test('das Ziel fuer "Route planen" entsteht aus der Adresse der Sektion', () => {
+  // Vier fertige Kopien der URL hatten die Hausnummer 73 statt 73-81. Seitdem
+  // wird sie abgeleitet - dieser Test haelt fest, dass sie es bleibt.
+  assert.match(
+    SEKTION,
+    /assign vg_route = 'https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=' \| append: vg_ziel/,
+    'Der Link wird nicht mehr aus der Adresse gebildet.',
+  );
+  assert.match(SEKTION, /assign vg_ziel = vg_adresszeile \| url_encode/, 'Das Ziel wird nicht kodiert.');
+  assert.match(SEKTION, /strip_newlines/,
+    'Ohne strip_newlines landen die Zeilenumbrueche der Adresse als %0A im Ziel.');
+  assert.match(SEKTION, /replace: '–', '-'/, 'Der Gedankenstrich der Hausnummer wird nicht ersetzt.');
+
+  const adresse = SEKTION.match(/"id": "standort_adresse"[\s\S]*?"default": "([^"]+)"/)[1];
+  const ziel = zielAusAdresse(adresse);
+  const url = new URL('https://www.google.com/maps/dir/?api=1&destination=' + ziel);
+
+  assert.equal(url.protocol, 'https:');
+  assert.equal(url.host, 'www.google.com');
+  assert.equal(url.pathname, '/maps/dir/');
   // api=1 ist die dokumentierte Universal-Link-Form: auf dem Telefon oeffnet
   // sie die Karten-App, sonst den Browser. Ohne sie gibt es keinen Fallback.
-  assert.equal(ziel.searchParams.get('api'), '1');
-  const zieladresse = ziel.searchParams.get('destination');
-  assert.ok(zieladresse, 'Dem Link fehlt das Ziel.');
-  assert.match(zieladresse, /Oranienburg/);
-  assert.match(zieladresse, /16515/);
-  assert.ok(
-    !/[<>"' ]/.test(treffer[1]),
-    'Das Ziel muss kodiert sein, sonst bricht der Link an Leer- und Sonderzeichen.',
-  );
+  assert.equal(url.searchParams.get('api'), '1');
+
+  const zieladresse = url.searchParams.get('destination');
+  assert.match(zieladresse, /Teppich Paradies Oranienburg GmbH/, 'Der Firmenname fehlt im Ziel.');
+  assert.match(zieladresse, /Saarlandstraße 73-81/, 'Die Hausnummer weicht von der Geschaeftsadresse ab.');
+  assert.match(zieladresse, /16515 Oranienburg/);
+  assert.ok(!/[<>"' ]/.test(ziel), 'Das Ziel muss kodiert sein.');
+});
+
+test('kein Template setzt ein eigenes, abweichendes Routenziel', () => {
+  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
+    const vorlage = JSON.parse(roh.slice(roh.indexOf('{')));
+    const abschnitt = vorlage.sections.tp_verlegegebiet;
+    assert.ok(abschnitt, `${name} bindet die Sektion nicht ein.`);
+    assert.equal(
+      abschnitt.settings.route_link,
+      undefined,
+      `${name} traegt eine eigene Kopie des Routenziels - genau so laufen die Adressen auseinander.`,
+    );
+  }
 });
 
 test('der Link oeffnet in einem neuen Tab und sagt das auch an', () => {

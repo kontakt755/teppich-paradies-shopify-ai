@@ -206,7 +206,6 @@
     "tp_verlegegebiet": {
       "type": "tp-verlegegebiet",
       "settings": {
-        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Teppich+Paradies+Oranienburg+GmbH%2C+Saarlandstra%C3%9Fe+73%2C+16515+Oranienburg",
         "cta_zeigen": false,
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322"
