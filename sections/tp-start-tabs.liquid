@@ -17,7 +17,7 @@
     </div>
     <div class="tp-tabs__list" role="tablist" aria-label="Produktbereich">
       {%- for block in section.blocks -%}
-        <button class="tp-tabs__tab" role="tab" type="button" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-tp-target="shopify-section-{{ block.settings.section_id | strip }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</button>
+        <button class="tp-tabs__tab" role="tab" type="button" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-tp-target="{{ block.settings.section_id | strip }}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</button>
       {%- endfor -%}
     </div>
   </div>
@@ -29,7 +29,6 @@
   .tp-tabs__list { display: flex; gap: 6px; flex-wrap: wrap; }
   .tp-tabs__tab { padding: 9px 16px; border-radius: 999px; border: 1.5px solid #d5cec4; background: #fff; font: inherit; font-weight: 500; font-size: 15px; min-height: 42px; cursor: pointer; color: #1d1a17; }
   .tp-tabs__tab[aria-selected="true"] { background: #1d1a17; color: #fff; border-color: #1d1a17; }
-  .tp-tabs--aktiv ~ .shopify-section.tp-tabs__versteckt { display: none; }
   @media (max-width: 767px) {
     .tp-tabs__list { overflow-x: auto; flex-wrap: nowrap; margin: 0 calc(-1 * var(--tp-pad)); padding: 0 var(--tp-pad) 2px; scrollbar-width: none; }
     .tp-tabs__list::-webkit-scrollbar { display: none; }
@@ -45,7 +44,8 @@
         tabs.forEach(function (t) {
           var on = t === active;
           t.setAttribute('aria-selected', on ? 'true' : 'false');
-          var sec = document.getElementById(t.getAttribute('data-tp-target'));
+          var key = t.getAttribute('data-tp-target');
+          var sec = document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
           if (sec) sec.hidden = !on;
         });
       }
