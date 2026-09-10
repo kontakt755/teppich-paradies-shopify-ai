@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-10T11:27:19.333Z",
+  "generated_at": "2026-09-10T12:28:18.921Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 62,
+  "count": 63,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-10T11:27:19.333Z",
+    "fetchedAt": "2026-09-10T12:28:18.921Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,15 +63,15 @@
   },
   "issues": [
     {
-      "number": 181,
-      "title": "Mega-Menue: header-drawer.liquid ueberschreitet die Liquid-Komplexitaet",
+      "number": 184,
+      "title": "Referenzgalerie Unsere Arbeit + defekte Arbeiten-Links",
       "state": "open",
-      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/181",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/184",
       "labels": [
         "status:eingang",
         "type:technik",
-        "priority:p3",
-        "area:navigation"
+        "priority:p2",
+        "area:content"
       ],
       "assignee": "kontakt755",
       "assignees": [
@@ -82,8 +82,32 @@
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
+      "created_at": "2026-09-10T12:27:30Z",
+      "updated_at": "2026-09-10T12:27:30Z",
+      "closed_at": null
+    },
+    {
+      "number": 181,
+      "title": "Mega-Menue: header-drawer.liquid ueberschreitet die Liquid-Komplexitaet",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/181",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p3",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
       "created_at": "2026-09-10T11:27:02Z",
-      "updated_at": "2026-09-10T11:27:02Z",
+      "updated_at": "2026-09-10T11:29:08Z",
       "closed_at": null
     },
     {
