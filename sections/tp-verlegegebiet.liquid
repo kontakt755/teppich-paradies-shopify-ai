@@ -29,6 +29,10 @@
 {%- liquid
   assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
 
+  # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
+  assign vg_lat = 52.7378
+  assign vg_lon = 13.2485
+
   assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
 -%}
 
@@ -119,6 +123,10 @@
         {{ section.settings.standort_adresse | escape | newline_to_br }}
       </address>
       {%- if section.settings.route_link != blank -%}
+        {%- comment -%} Ein gewoehnlicher Link, kein eingebetteter Kartendienst:
+          er sendet erst beim Klick etwas und braucht deshalb keine Einwilligung.
+          Die Universal-Link-Form oeffnet auf dem Telefon die Karten-App, sonst
+          den Browser. {%- endcomment -%}
         <a
           class="tp-vg__route"
           href="{{ section.settings.route_link }}"
@@ -126,6 +134,7 @@
           rel="noopener nofollow"
         >
           Route planen
+          <span class="tp-vg__weg">(öffnet Google Maps in einem neuen Tab)</span>
         </a>
       {%- endif -%}
     </div>
@@ -134,7 +143,15 @@
       {%- comment -%} Ohne JavaScript bleibt das Feld verborgen, statt tot dazustehen;
         das Skript nimmt das hidden-Attribut weg. Ueberschrift, Karte, Hinweis und
         Kontaktwege stehen unabhaengig davon. {%- endcomment -%}
-      <form class="tp-vg__check" data-tp-verlegegebiet-form hidden>
+      <form
+        class="tp-vg__check"
+        data-tp-verlegegebiet-form
+        {%- if section.settings.cta_link != blank and section.settings.cta_label != blank %}
+          data-cta-url="{{ section.settings.cta_link }}"
+          data-cta-text="{{ section.settings.cta_label | escape }}"
+        {%- endif %}
+        hidden
+      >
         <label class="tp-vg__sub" for="tp-vg-plz-{{ section.id }}">
           Liegt Ihr Wohnort in unserem Verlegegebiet?
         </label>
@@ -153,6 +170,10 @@
           <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
         </div>
         <p class="tp-vg__ergebnis" role="status" aria-live="polite" data-tp-verlegegebiet-result></p>
+        {%- comment -%} Wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen,
+          ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
+          im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
+        <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
         <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot.</p>
       </form>
     {%- endif -%}
@@ -184,6 +205,35 @@
         </a>
       {%- endif -%}
     </div>
+  {%- endif -%}
+
+  {%- comment -%} Kein zweiter LocalBusiness: den Betrieb zeichnet bereits
+    sections/header.liquid auf jeder Seite aus. Hier steht die Leistung mit
+    ihrem Einzugsgebiet, und der Radius kommt aus derselben Einstellung wie
+    die Karte - so koennen Anzeige und Auszeichnung nicht auseinanderlaufen.
+  {%- endcomment -%}
+  {%- if section.settings.karte_zeigen -%}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "serviceType": "Bodenverlegung",
+        "provider": {
+          "@type": "Organization",
+          "name": {{ shop.name | json }},
+          "url": {{ request.origin | json }}
+        },
+        "areaServed": {
+          "@type": "GeoCircle",
+          "geoMidpoint": {
+            "@type": "GeoCoordinates",
+            "latitude": {{ vg_lat }},
+            "longitude": {{ vg_lon }}
+          },
+          "geoRadius": {{ vg_radius | times: 1000 }}
+        }
+      }
+    </script>
   {%- endif -%}
 
   {%- if section.settings.vertrauen != blank -%}
@@ -288,19 +338,19 @@
     vector-effect: non-scaling-stroke;
   }
 
+  /* Der Punkt sitzt exakt auf dem Standort, das Schild darueber: neben ihm
+     liegen Hohen Neuendorf, Hennigsdorf und Bernau, oberhalb ist die Karte
+     bis Zehdenick frei. */
   .tp-vg__marker {
     position: absolute;
     z-index: 2;
     top: 50%;
     left: 50%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
     transform: translate(-50%, -50%);
   }
 
   .tp-vg__punkt {
-    flex: none;
+    display: block;
     width: 15px;
     height: 15px;
     border: 3px solid #fff;
@@ -310,6 +360,10 @@
   }
 
   .tp-vg__marker-name {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
     padding: 5px 10px;
     border-radius: 8px;
     background: #1c1917;
@@ -386,6 +440,20 @@
     text-underline-offset: 3px;
   }
 
+  /* Fuer Screenreader: der Link verlaesst die Seite. Sichtbar waere der
+     Zusatz nur Text, der die ruhige Karte stoert. */
+  .tp-vg__weg {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .tp-vg__check[hidden] {
     display: none;
   }
@@ -451,6 +519,23 @@
   .tp-vg__ergebnis[data-status='aussen']::before,
   .tp-vg__ergebnis[data-status='unbekannt']::before {
     content: '\2139';
+  }
+
+  .tp-vg__ergebnis-weg {
+    margin: 10px 0 0;
+  }
+
+  .tp-vg__ergebnis-weg[hidden] {
+    display: none;
+  }
+
+  .tp-vg__ergebnis-weg a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
   }
 
   .tp-vg__klein {
@@ -670,7 +755,7 @@
       "type": "url",
       "id": "route_link",
       "label": "Link \"Route planen\"",
-      "info": "Leer lassen, um den Link auszublenden."
+      "info": "Oeffnet die Karten-App bzw. Google Maps. Leer lassen, um den Link auszublenden. Wenn es einen Google-Unternehmenseintrag gibt, ist dessen Link die bessere Wahl."
     },
     {
       "type": "header",
@@ -762,7 +847,7 @@
     {
       "name": "TP Verlegegebiet",
       "settings": {
-        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Saarlandstra%C3%9Fe+73-81%2C+16515+Oranienburg",
+        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Teppich+Paradies+Oranienburg+GmbH%2C+Saarlandstra%C3%9Fe+73%2C+16515+Oranienburg",
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322"
       }

@@ -171,11 +171,21 @@
         "phone_number": "+4933015733720",
         "phone_display": "03301 / 573 37 20"
       }
+    },
+    "tp_verlegegebiet": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Teppich+Paradies+Oranienburg+GmbH%2C+Saarlandstra%C3%9Fe+73%2C+16515+Oranienburg",
+        "cta_zeigen": false,
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322"
+      }
     }
   },
   "order": [
     "vinylboden_verlegen_8thyEt",
     "main",
+    "tp_verlegegebiet",
     "final_cta_service",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"

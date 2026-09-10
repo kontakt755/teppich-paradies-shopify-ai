@@ -14,6 +14,10 @@
  * Ohne JavaScript bleibt das Formular verborgen (hidden im Markup), damit
  * kein totes Eingabefeld dasteht. Ueberschrift, Karte, Hinweis und die
  * Kontaktwege stehen unabhaengig davon.
+ *
+ * Faellt die Antwort positiv aus, steht der naechste Schritt direkt darunter:
+ * wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen, ist am ehesten
+ * bereit anzufragen - und muss dafuer nicht erst weiterscrollen.
  */
 (function () {
   'use strict';
@@ -85,12 +89,29 @@
     feld.textContent = text;
   }
 
+  function wegAnzeigen(feld, formular, status) {
+    var ziel = formular.dataset.ctaUrl;
+    var text = formular.dataset.ctaText;
+    if (status !== 'innen' || !ziel || !text) {
+      feld.hidden = true;
+      feld.textContent = '';
+      return;
+    }
+    var link = document.createElement('a');
+    link.href = ziel;
+    link.textContent = text + ' \u2192';
+    feld.textContent = '';
+    feld.appendChild(link);
+    feld.hidden = false;
+  }
+
   function verdrahten(formular) {
     var sektion = formular.closest('[data-radius]');
     var eingabe = formular.querySelector('[data-tp-verlegegebiet-input]');
     var ausgabe = formular.querySelector('[data-tp-verlegegebiet-result]');
     if (!sektion || !eingabe || !ausgabe) return;
 
+    var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
     formular.hidden = false;
 
@@ -99,21 +120,26 @@
       var wert = eingabe.value;
       if (!wert.trim()) {
         anzeigen(ausgabe, '', TEXTE.leer);
+        if (weg) wegAnzeigen(weg, formular, '');
         return;
       }
       tabelleLaden(sektion).then(
         function (daten) {
           var ergebnis = bewerten(wert, daten, radius);
           anzeigen(ausgabe, ergebnis.status, ergebnis.text);
+          if (weg) wegAnzeigen(weg, formular, ergebnis.status);
         },
         function () {
           anzeigen(ausgabe, 'unbekannt', TEXTE.fehler);
+          if (weg) wegAnzeigen(weg, formular, 'unbekannt');
         }
       );
     });
 
     eingabe.addEventListener('input', function () {
-      if (ausgabe.textContent) anzeigen(ausgabe, '', '');
+      if (!ausgabe.textContent) return;
+      anzeigen(ausgabe, '', '');
+      if (weg) wegAnzeigen(weg, formular, '');
     });
   }
 
