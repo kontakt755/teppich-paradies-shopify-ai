@@ -1,17 +1,13 @@
 {% comment %}
-  Einstieg ins Sortiment am Fuss der bestehenden Serviceseiten (Phase 4,
-  Issue #167).
+  Einstieg ins Sortiment am Fuss von `boden-malerarbeiten` (Issue #167).
 
-  Warum gerade hier: `teppichboden-verlegen-lassen`, `vinylboden-verlegen` und
-  `treppenverlegung` sind nach der Startseite die meistbesuchten Seiten. Wer
-  dort liest, will verlegen lassen - und findet am Ende der Seite bisher keinen
-  Weg zum Boden selbst. Diese Section schliesst genau diese Luecke.
-
-  Die Links tragen ?modus=service, damit der Verlegeservice-Modus mitkommt
-  (siehe snippets/tp-modus.liquid). Der Modus wird bewusst NICHT automatisch
-  beim Aufruf der Seite gesetzt: er soll aus einem Klick entstehen, nicht aus
-  einem Seitenaufruf. Sonst traegt jemand einen Modus mit sich, den er nie
-  gewaehlt hat.
+  Stand 2026-09-10: Diese Section steht nur noch auf `boden-malerarbeiten`.
+  Von den drei Verlegeseiten wurde sie entfernt, weil sie dort den vorhandenen
+  final-cta verdoppelte - zweiter Kasten, zweiter Button, zweite Telefonnummer,
+  gleiche Botschaft. `boden-malerarbeiten` hat keinen final-cta; dort ist sie
+  der einzige Weg zu Sortiment, Anfrage und Telefon und bleibt deshalb, bis
+  diese Seite einen eigenen Abschluss bekommt.
+  Siehe docs/analyse/entscheidung-zwei-wege-2026-09-10.md
 
   Kein zweiter Katalog: die Links zeigen auf dieselben Kollektionen wie der
   Shop.
@@ -151,7 +147,7 @@
       "type": "text",
       "id": "text",
       "label": "Text",
-      "default": "Suchen Sie in Ruhe aus. Aufmaß, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis."
+      "default": "Suchen Sie in Ruhe aus. Aufmaß kostenlos, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis, weiter auf Anfrage."
     },
     {
       "type": "text",
@@ -199,7 +195,7 @@
           "type": "url",
           "id": "ziel",
           "label": "Ziel",
-          "info": "?modus=service anhängen, damit der Verlegeservice-Weg mitkommt."
+          "info": "Wohin dieser Link führt."
         }
       ]
     }
@@ -208,9 +204,9 @@
     {
       "name": "TP Service-Einstieg",
       "blocks": [
-        { "type": "ziel", "settings": { "label": "Teppichboden ansehen", "ziel": "/collections/teppichboden?modus=service" } },
-        { "type": "ziel", "settings": { "label": "Vinylboden ansehen", "ziel": "/collections/vinylboden-1?modus=service" } },
-        { "type": "ziel", "settings": { "label": "Alle Böden", "ziel": "/collections/all?modus=service" } }
+        { "type": "ziel", "settings": { "label": "Teppichboden ansehen", "ziel": "/collections/teppichboden" } },
+        { "type": "ziel", "settings": { "label": "Vinylboden ansehen", "ziel": "/collections/vinylboden-1" } },
+        { "type": "ziel", "settings": { "label": "Alle Böden", "ziel": "/collections/all" } }
       ]
     }
   ]

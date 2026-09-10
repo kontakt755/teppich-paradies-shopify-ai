@@ -236,7 +236,7 @@
       "type": "tp-service-einstieg",
       "settings": {
         "titel": "Boden aussuchen – wir verlegen ihn",
-        "text": "Suchen Sie in Ruhe aus. Aufmaß, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis.",
+        "text": "Suchen Sie in Ruhe aus. Aufmaß kostenlos, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
         "anfrage_cta": "Aufmaß-Termin anfragen",
         "anfrage_link": "/pages/kontakt",
         "telefon": "+4933015733720",
@@ -248,21 +248,21 @@
           "type": "ziel",
           "settings": {
             "label": "Teppichboden ansehen",
-            "ziel": "/collections/teppichboden?modus=service"
+            "ziel": "/collections/teppichboden"
           }
         },
         "z2": {
           "type": "ziel",
           "settings": {
             "label": "Vinylboden ansehen",
-            "ziel": "/collections/vinylboden-1?modus=service"
+            "ziel": "/collections/vinylboden-1"
           }
         },
         "z3": {
           "type": "ziel",
           "settings": {
             "label": "Alle Böden",
-            "ziel": "/collections/all?modus=service"
+            "ziel": "/collections/all"
           }
         }
       },

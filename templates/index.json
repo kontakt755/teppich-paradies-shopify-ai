@@ -15,11 +15,13 @@
       "settings": {
         "zw_anzeigen": true,
         "zw_gewichtung": "gleich",
-        "zw_online_link": "/collections/all?modus=shop",
-        "zw_service_link": "/pages/liefer-verlegeservice?modus=service",
+        "zw_online_link": "/collections/all",
+        "zw_service_link": "/pages/liefer-verlegeservice",
         "hero_hoehe": "band",
         "hero_buttons_zeigen": false,
-        "zw_reihenfolge": "online"
+        "zw_reihenfolge": "online",
+        "zw_service_text": "Wir messen kostenlos auf, liefern und verlegen – mit eigenem Team aus Oranienburg.",
+        "zw_service_punkte": "Kostenloses Aufmaß vor Ort, Fachgerechte Verlegung, Ein Ansprechpartner"
       }
     },
     "product_list_fa6P9H": {

@@ -290,11 +290,11 @@
               },
               "blocks": {}
             },
-            "tp_modus_aufmass": {
-              "type": "tp-modus-aufmass",
+            "tp_verlegen_lassen": {
+              "type": "tp-verlegen-lassen",
               "settings": {
                 "titel": "Diesen Boden verlegen lassen?",
-                "text": "Wir messen auf, liefern und verlegen – in Oranienburg und 50 km Umkreis.",
+                "text": "Wir messen kostenlos auf, liefern und verlegen – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
                 "cta": "Aufmaß anfragen",
                 "ziel": "/pages/kontakt",
                 "telefon": "+4933015733720",
@@ -312,7 +312,7 @@
             "tp_service_links_night1",
             "tp_compare_toggle_night3",
             "options_price_calculator_product_calculator_z3CEfy",
-            "tp_modus_aufmass",
+            "tp_verlegen_lassen",
             "buy_buttons_eYQEYi",
             "text_aEtTtq"
           ]
