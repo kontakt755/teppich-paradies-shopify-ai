@@ -1,0 +1,74 @@
+{%- comment -%}
+  TP Trust-Streifen: links die Google-Bewertung (nur wenn ein echter Wert
+  eingetragen ist), rechts bis zu vier belegbare Aussagen als Bloecke.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<div class="tp-trust" role="region" aria-label="Warum Teppich Paradies">
+  <div class="tp-s-wrap tp-trust__wrap{% if section.settings.rating_wert == blank %} tp-trust__wrap--ohne-rating{% endif %}">
+    {%- if section.settings.rating_wert != blank -%}
+      <a class="tp-trust__rating" href="{{ section.settings.rating_link | default: '#' }}" rel="noopener" target="_blank">
+        <span class="tp-trust__g" aria-hidden="true">G</span>
+        <span><b>{{ section.settings.rating_wert | escape }} <span class="tp-trust__stars" aria-hidden="true">★★★★★</span></b><small>{{ section.settings.rating_text | escape }}</small></span>
+      </a>
+    {%- endif -%}
+    <ul class="tp-trust__list">
+      {%- for block in section.blocks -%}
+        <li {{ block.shopify_attributes }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>{{ block.settings.text | escape }}</li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-trust { border-top: 1px solid #e6e0d8; border-bottom: 1px solid #e6e0d8; background: #fff; }
+  .tp-trust__wrap { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; padding-top: 18px; padding-bottom: 18px; }
+  .tp-trust__wrap--ohne-rating { grid-template-columns: 1fr; }
+  .tp-trust__list { list-style: none; margin: 0; padding: 0; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .tp-trust__list li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; color: #4a443f; }
+  .tp-trust__list svg { width: 20px; height: 20px; color: #b73740; flex: none; }
+  .tp-trust__rating { display: flex; align-items: center; gap: 12px; padding-right: 32px; border-right: 1px solid #e6e0d8; text-decoration: none; color: #1d1a17; }
+  .tp-trust__g { width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 1px solid #e6e0d8; display: grid; place-items: center; font-weight: 700; font-size: 20px; color: #4285f4; }
+  .tp-trust__rating b { display: block; font-size: 15px; }
+  .tp-trust__stars { color: #e5a51c; }
+  .tp-trust__rating small { color: #7a726a; font-size: 12.5px; }
+  @media (max-width: 767px) {
+    .tp-trust__wrap { grid-template-columns: 1fr; gap: 14px; padding-top: 16px; padding-bottom: 16px; }
+    .tp-trust__rating { border-right: 0; padding-right: 0; border-bottom: 1px solid #e6e0d8; padding-bottom: 14px; }
+    .tp-trust__list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tp-trust__list li { font-size: 14px; }
+  }
+  @media (max-width: 389px) { .tp-trust__list { grid-template-columns: 1fr; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Trust-Streifen",
+  "tag": "div",
+  "settings": [
+    { "type": "header", "content": "Google-Bewertung (nur echte Werte, leer = ausgeblendet)" },
+    { "type": "text", "id": "rating_wert", "label": "Wert, z. B. 4,9" },
+    { "type": "text", "id": "rating_text", "label": "Text darunter", "default": "Google-Bewertungen · Unternehmensprofil" },
+    { "type": "url", "id": "rating_link", "label": "Link zum Google-Profil" }
+  ],
+  "blocks": [
+    {
+      "type": "aussage",
+      "name": "Aussage",
+      "limit": 4,
+      "settings": [ { "type": "text", "id": "text", "label": "Text", "default": "Bis zu 3 Muster kostenlos" } ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Trust-Streifen",
+      "blocks": [
+        { "type": "aussage", "settings": { "text": "Deutschlandweiter Versand" } },
+        { "type": "aussage", "settings": { "text": "Bis zu 3 Muster kostenlos" } },
+        { "type": "aussage", "settings": { "text": "Rollenware im Wunschmaß zugeschnitten" } },
+        { "type": "aussage", "settings": { "text": "Eigener Verlegeservice bis 50 km" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

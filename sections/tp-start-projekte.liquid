@@ -1,0 +1,86 @@
+{%- comment -%}
+  TP Echte Arbeiten: ein grosses Bild plus vier kleine aus echten Projektfotos,
+  jedes mit Bildunterschrift (Objekt, Belag). Keine Stockfotos.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-proj" id="tp-arbeiten" aria-labelledby="tp-proj-h2">
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head">
+      <div>
+        {%- if section.settings.eyebrow != blank -%}<span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>{%- endif -%}
+        <h2 id="tp-proj-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+      {%- if section.settings.link_label != blank -%}<a class="tp-s-link" href="{{ section.settings.link | default: '/pages/bisherige-arbeiten' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
+    </div>
+    <div class="tp-proj__grid">
+      {%- for block in section.blocks limit: 5 -%}
+        <a class="tp-proj__item" href="{{ block.settings.link | default: section.settings.link | default: '#tp-arbeiten' }}" {{ block.shopify_attributes }}>
+          {%- if block.settings.bild != blank -%}
+            {%- if forloop.first -%}
+              {{ block.settings.bild | image_url: width: 1400 | image_tag: loading: 'lazy', widths: '600, 900, 1400', sizes: '(max-width: 767px) 100vw, 50vw', alt: block.settings.bild.alt | default: block.settings.objekt, class: 'tp-proj__img' }}
+            {%- else -%}
+              {{ block.settings.bild | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 50vw, 25vw', alt: block.settings.bild.alt | default: block.settings.objekt, class: 'tp-proj__img' }}
+            {%- endif -%}
+          {%- else -%}
+            {{ 'lifestyle-1' | placeholder_svg_tag: 'tp-proj__img' }}
+          {%- endif -%}
+          {%- if block.settings.objekt != blank -%}
+            <span class="tp-proj__cap"><b>{{ block.settings.objekt | escape }}</b>{% if block.settings.belag != blank %} · {{ block.settings.belag | escape }}{% endif %}</span>
+          {%- endif -%}
+        </a>
+      {%- endfor -%}
+    </div>
+    <div class="tp-proj__ctas">
+      {%- if section.settings.cta_label != blank -%}<a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta_link | default: '/pages/kontakt' }}">{{ section.settings.cta_label | escape }}</a>{%- endif -%}
+      {%- if section.settings.link_label != blank -%}<a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.link | default: '/pages/bisherige-arbeiten' }}">{{ section.settings.link_label | escape }}</a>{%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-proj__grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px; height: 520px; }
+  .tp-proj__item { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; display: block; }
+  .tp-proj__item:first-child { grid-row: 1 / 3; }
+  .tp-proj__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+  .tp-proj__item:hover .tp-proj__img { transform: scale(1.04); }
+  .tp-proj__cap { position: absolute; left: 12px; bottom: 12px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: 13px; padding: 6px 11px; border-radius: 999px; }
+  .tp-proj__ctas { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+  @media (max-width: 1023px) {
+    .tp-proj__grid { height: auto; grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+    .tp-proj__item { aspect-ratio: 4 / 3; }
+    .tp-proj__item:first-child { grid-row: auto; grid-column: 1 / 3; aspect-ratio: 16 / 9; }
+  }
+  @media (max-width: 767px) { .tp-proj__grid { gap: 10px; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Echte Arbeiten",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Von uns verlegt" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Echte Arbeiten aus Oranienburg, Berlin und Brandenburg" },
+    { "type": "text", "id": "text", "label": "Unterzeile", "default": "Treppen, Wohnräume, Gastronomie, Läden und Kirchen – alles echte Baustellen unseres Teams, keine Stockfotos." },
+    { "type": "text", "id": "link_label", "label": "Link zur Galerie", "default": "Mehr Arbeiten ansehen" },
+    { "type": "url", "id": "link", "label": "Galerie-Seite" },
+    { "type": "text", "id": "cta_label", "label": "Button", "default": "Verlegung anfragen" },
+    { "type": "url", "id": "cta_link", "label": "Button-Ziel" }
+  ],
+  "blocks": [
+    {
+      "type": "projekt",
+      "name": "Projektfoto",
+      "limit": 5,
+      "settings": [
+        { "type": "image_picker", "id": "bild", "label": "Foto" },
+        { "type": "text", "id": "objekt", "label": "Objekt", "default": "Treppe" },
+        { "type": "text", "id": "belag", "label": "Belag", "default": "Teppichboden" },
+        { "type": "url", "id": "link", "label": "Ziel (optional)" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Echte Arbeiten" } ]
+}
+{% endschema %}

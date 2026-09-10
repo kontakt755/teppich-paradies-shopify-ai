@@ -1,0 +1,59 @@
+/* TP Startseite Konzept C - gemeinsame Tokens, Buttons und Raster.
+   Wird von den tp-start-* Sections eingebunden. Rot = Logo-Rot (gemessen),
+   warme Neutraltoene, eine Schriftfamilie aus dem Theme (var(--font-body--family)). */
+:root {
+  --tp-red: #b73740;
+  --tp-red-dark: #96262f;
+  --tp-red-soft: #fbeeef;
+  --tp-ink: #1d1a17;
+  --tp-ink-2: #4a443f;
+  --tp-muted: #7a726a;
+  --tp-line: #e6e0d8;
+  --tp-line-2: #d5cec4;
+  --tp-bg-2: #f6f2ec;
+  --tp-bg-3: #ede7de;
+  --tp-sand: #e9c8a1;
+  --tp-green: #2f7a4c;
+  --tp-green-soft: #e7f3ea;
+  --tp-star: #e5a51c;
+  --tp-r: 10px;
+  --tp-r-lg: 16px;
+  --tp-shadow: 0 10px 30px rgba(29, 26, 23, 0.1);
+  --tp-container: 1240px;
+  --tp-pad: 24px;
+  --tp-sec: 88px;
+}
+@media (min-width: 1600px) { :root { --tp-container: 1360px; } }
+@media (max-width: 1023px) { :root { --tp-sec: 64px; } }
+@media (max-width: 767px) { :root { --tp-pad: 16px; --tp-sec: 44px; } }
+
+.tp-s-wrap { max-width: var(--tp-container); margin: 0 auto; padding: 0 var(--tp-pad); }
+.tp-s-sec { padding: var(--tp-sec) 0; }
+.tp-s-sec--tight { padding: 56px 0; }
+.tp-s-sec--band { background: var(--tp-bg-2); }
+.tp-s-h2 { font-size: clamp(24px, 2.3vw, 32px); font-weight: 700; line-height: 1.12; margin: 0; letter-spacing: -0.01em; color: var(--tp-ink); text-wrap: balance; }
+.tp-s-h3 { font-size: 19px; font-weight: 600; line-height: 1.2; margin: 0; color: var(--tp-ink); }
+.tp-s-eyebrow { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-red); margin-bottom: 10px; }
+.tp-s-sec-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.tp-s-sec-head p { color: var(--tp-muted); margin: 6px 0 0; max-width: 60ch; }
+.tp-s-link { font-weight: 600; color: var(--tp-ink); border-bottom: 2px solid var(--tp-line-2); padding-bottom: 2px; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0; }
+.tp-s-link:hover { border-color: var(--tp-red); }
+.tp-s-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 0 22px; border-radius: var(--tp-r); font-weight: 600; font-size: 16px; text-decoration: none; border: 0; cursor: pointer; font-family: inherit; white-space: nowrap; transition: background 0.15s; }
+.tp-s-btn svg { width: 18px; height: 18px; flex: none; }
+.tp-s-btn--primary { background: var(--tp-red); color: #fff; }
+.tp-s-btn--primary:hover { background: var(--tp-red-dark); color: #fff; }
+.tp-s-btn--dark { background: var(--tp-ink); color: #fff; }
+.tp-s-btn--dark:hover { background: #000; color: #fff; }
+.tp-s-btn--ghost { background: #fff; color: var(--tp-ink); border: 1.5px solid var(--tp-line-2); }
+.tp-s-btn--ghost:hover { border-color: var(--tp-ink); }
+.tp-s-btn--light { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1.5px solid rgba(255, 255, 255, 0.55); }
+.tp-s-btn--light:hover { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.tp-s-btn--wa { background: #1f9d55; color: #fff; }
+.tp-s-btn--wa:hover { background: #178246; color: #fff; }
+.tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: 15px; }
+.tp-s-note { font-size: 12.5px; color: var(--tp-muted); margin: 0; }
+.tp-s-check { width: 18px; height: 18px; flex: none; margin-top: 3px; }
+@media (max-width: 767px) {
+  .tp-s-sec-head { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; }
+  .tp-s-btn { font-size: 15px; }
+}

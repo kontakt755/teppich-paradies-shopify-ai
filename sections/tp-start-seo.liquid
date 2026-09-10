@@ -1,0 +1,69 @@
+{%- comment -%}
+  TP SEO-Absatz mit internen Links: links zwei Absaetze, rechts zwei Linklisten
+  aus Menues (Ratgeber, Service in der Region). Keine Ortslisten, kein Keyword-Stuffing.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-s-sec--band tp-seo" id="tp-ratgeber" aria-labelledby="tp-seo-h2">
+  <div class="tp-s-wrap tp-seo__wrap">
+    <div>
+      <h2 id="tp-seo-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+      <div class="tp-seo__text">{{ section.settings.text }}</div>
+    </div>
+    <div class="tp-seo__cols">
+      {%- for block in section.blocks -%}
+        <div {{ block.shopify_attributes }}>
+          <h3 class="tp-seo__h4">{{ block.settings.titel | default: block.settings.menu.title | escape }}</h3>
+          <ul>
+            {%- if block.settings.menu != blank -%}
+              {%- for link in block.settings.menu.links -%}<li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>{%- endfor -%}
+            {%- elsif block.settings.links != blank -%}
+              {%- assign zeilen = block.settings.links | newline_to_br | split: '<br />' -%}
+              {%- for zeile in zeilen -%}
+                {%- assign teile = zeile | strip | split: '|' -%}
+                {%- if teile.size == 2 -%}<li><a href="{{ teile[1] | strip }}">{{ teile[0] | strip | escape }}</a></li>{%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+          </ul>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-seo__wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; }
+  .tp-seo__text { color: #4a443f; margin-top: 12px; max-width: 62ch; }
+  .tp-seo__text p { margin: 0 0 12px; }
+  .tp-seo__cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .tp-seo__h4 { font-size: 12.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a726a; margin: 0 0 8px; font-weight: 600; }
+  .tp-seo__cols ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .tp-seo__cols a { color: #4a443f; font-size: 15px; text-decoration: none; }
+  .tp-seo__cols a:hover { color: #b73740; }
+  @media (max-width: 1023px) { .tp-seo__wrap { grid-template-columns: 1fr; gap: 32px; } }
+  @media (max-width: 339px) { .tp-seo__cols { grid-template-columns: 1fr; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP SEO-Absatz + Links",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Teppichboden, Vinyl und Linoleum vom Fachhandel in Oranienburg" },
+    { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Teppich Paradies ist Fachhändler für Bodenbeläge in Oranienburg bei Berlin. Im Online-Shop finden Sie Teppichboden als Meterware, Klick- und Klebevinyl, Vinyl von der Rolle, Linoleum, Sockelleisten und Verlegezubehör – mit Preis pro Quadratmeter, kostenlosen Mustern und Rollenware im Wunschmaß.</p><p>Für Kunden in Oranienburg, Oberhavel und im Norden Berlins übernimmt unser Team Aufmaß, Lieferung, Untergrundvorbereitung und die fachgerechte Verlegung – auch auf Treppen sowie in Praxen, Büros und Gastronomie.</p>" }
+  ],
+  "blocks": [
+    {
+      "type": "liste",
+      "name": "Linkliste",
+      "limit": 2,
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel (leer = Menuename)" },
+        { "type": "link_list", "id": "menu", "label": "Menue (optional)" },
+        { "type": "textarea", "id": "links", "label": "Oder Links: Titel|URL je Zeile", "info": "Wird nur genutzt, wenn kein Menue gewaehlt ist." }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP SEO-Absatz + Links" } ]
+}
+{% endschema %}

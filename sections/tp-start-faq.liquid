@@ -1,0 +1,54 @@
+{%- comment -%}
+  TP FAQ: echte Fragen als Akkordeon (native details), erste Frage offen.
+  Kein FAQ-Schema auf der Startseite - das gehoert auf eine eigene FAQ-Seite.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-faq" id="tp-faq" aria-labelledby="tp-faq-h2">
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head"><div><h2 id="tp-faq-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2></div></div>
+    <div class="tp-faq__list">
+      {%- for block in section.blocks -%}
+        <details {% if forloop.first and section.settings.erste_offen %}open{% endif %} {{ block.shopify_attributes }}>
+          <summary>{{ block.settings.frage | escape }}</summary>
+          <div class="tp-faq__a">{{ block.settings.antwort }}</div>
+        </details>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-faq__list { max-width: 820px; }
+  .tp-faq__list details { border-top: 1px solid #e6e0d8; }
+  .tp-faq__list details:last-child { border-bottom: 1px solid #e6e0d8; }
+  .tp-faq__list summary { list-style: none; cursor: pointer; padding: 18px 0; display: flex; justify-content: space-between; gap: 16px; font-weight: 600; font-size: 17px; min-height: 56px; align-items: center; color: #1d1a17; }
+  .tp-faq__list summary::-webkit-details-marker { display: none; }
+  .tp-faq__list summary::after { content: "+"; font-size: 24px; color: #b73740; flex: none; width: 28px; text-align: center; }
+  .tp-faq__list details[open] summary::after { content: "–"; }
+  .tp-faq__a { padding: 0 0 18px; color: #4a443f; max-width: 68ch; }
+  .tp-faq__a p { margin: 0 0 8px; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP FAQ",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Häufige Fragen" },
+    { "type": "checkbox", "id": "erste_offen", "label": "Erste Frage geoeffnet", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "frage",
+      "name": "Frage",
+      "limit": 8,
+      "settings": [
+        { "type": "text", "id": "frage", "label": "Frage", "default": "Liefern Sie deutschlandweit?" },
+        { "type": "richtext", "id": "antwort", "label": "Antwort", "default": "<p>Ja, wir liefern in ganz Deutschland. Die Versandkosten sehen Sie vor dem Abschluss im Warenkorb.</p>" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP FAQ" } ]
+}
+{% endschema %}

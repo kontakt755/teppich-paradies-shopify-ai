@@ -1,18 +1,183 @@
-/*
- * ------------------------------------------------------------
- * IMPORTANT: The contents of this file are auto-generated.
- *
- * This file may be updated by the Shopify admin theme editor
- * or related systems. Please exercise caution as any changes
- * made to this file may be overwritten.
- * ------------------------------------------------------------
- */
 {
   "sections": {
-    "startseite_JCA6KB": {
-      "type": "Startseite",
-      "name": "Startseite Kategorien",
-      "settings": {}
+    "tp_start_hero": {
+      "type": "tp-start-hero",
+      "settings": {
+        "eyebrow": "Fachhandel in Oranienburg",
+        "headline": "<p>Bodenbeläge vom Fachhandel – <em>online kaufen</em> oder <em>verlegen lassen</em>.</p>",
+        "subline": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>",
+        "cta1_label": "Bodenbeläge entdecken",
+        "cta1_link": "#tp-kategorien",
+        "cta2_label": "Aufmaß & Verlegung anfragen",
+        "cta2_link": "#tp-kontakt",
+        "telefon": "03301 573 37 20",
+        "whatsapp": "https://wa.me/4917657931322",
+        "rating_wert": "",
+        "rating_text": "Google-Bewertungen",
+        "rating_link": "",
+        "bild": "shopify://shop_images/1000012408.jpg",
+        "bild_caption": "Echtes Projekt · Teppichboden, von uns verlegt"
+      }
+    },
+    "tp_start_kategorien": {
+      "type": "tp-start-kategorien",
+      "settings": {
+        "heading": "Womit möchten Sie starten?",
+        "text": "Sechs Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos.",
+        "link_label": "Alle Produkte ansehen",
+        "link": "shopify://collections/all"
+      },
+      "blocks": {
+        "k1": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "teppichboden",
+            "bild": "shopify://shop_images/1196472-8FXC-prod.jpg",
+            "titel": "Teppichboden",
+            "untertitel": "Velours, Schlinge, Hochflor, Wolle",
+            "zahl_zeigen": true,
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "k2": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "vinylboden-klickvinyl",
+            "bild": "shopify://shop_images/1267580-8FXC-prod.jpg",
+            "titel": "Klickvinyl",
+            "untertitel": "Ohne Kleber verlegen",
+            "zahl_zeigen": true,
+            "zahl_wort": "Dekore"
+          }
+        },
+        "k3": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "vinylboden-1",
+            "bild": "shopify://shop_images/1158971-8FXC-prod.jpg",
+            "titel": "Vinylboden",
+            "untertitel": "Klebe- und Rollenvinyl",
+            "zahl_zeigen": true,
+            "zahl_wort": "Dekore"
+          }
+        },
+        "k4": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "linoleumboden-1",
+            "bild": "shopify://shop_images/1127866-8FXC-prod.jpg",
+            "titel": "Linoleum",
+            "untertitel": "Natürlich, strapazierfähig",
+            "zahl_zeigen": true,
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "k5": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "bodenleisten",
+            "bild": "shopify://shop_images/1310680-8FXC-prod.jpg",
+            "titel": "Bodenleisten",
+            "untertitel": "Passend zu jedem Boden",
+            "zahl_zeigen": true,
+            "zahl_wort": "Profile"
+          }
+        },
+        "k6": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "zubehoer",
+            "bild": "shopify://shop_images/products_473388.jpg",
+            "titel": "Zubehör",
+            "untertitel": "Kleber, Profile, Unterlagen",
+            "zahl_zeigen": true,
+            "zahl_wort": "Artikel"
+          }
+        }
+      },
+      "block_order": [
+        "k1",
+        "k2",
+        "k3",
+        "k4",
+        "k5",
+        "k6"
+      ]
+    },
+    "tp_start_trust": {
+      "type": "tp-start-trust",
+      "settings": {
+        "rating_wert": "",
+        "rating_text": "Google-Bewertungen · Unternehmensprofil",
+        "rating_link": ""
+      },
+      "blocks": {
+        "t1": {
+          "type": "aussage",
+          "settings": {
+            "text": "Deutschlandweiter Versand"
+          }
+        },
+        "t2": {
+          "type": "aussage",
+          "settings": {
+            "text": "Bis zu 3 Muster kostenlos"
+          }
+        },
+        "t3": {
+          "type": "aussage",
+          "settings": {
+            "text": "Rollenware im Wunschmaß zugeschnitten"
+          }
+        },
+        "t4": {
+          "type": "aussage",
+          "settings": {
+            "text": "Eigener Verlegeservice bis 50 km"
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3",
+        "t4"
+      ]
+    },
+    "tp_start_tabs": {
+      "type": "tp-start-tabs",
+      "settings": {
+        "heading": "Beliebte Bodenbeläge",
+        "text": "Meterware wird nach Ihrem Maß zugeschnitten, Paketware nach Fläche berechnet. Der Preis pro m² ist immer die Leitgröße."
+      },
+      "blocks": {
+        "r1": {
+          "type": "tab",
+          "settings": {
+            "label": "Teppichboden",
+            "section_id": "product_list_fa6P9H"
+          }
+        },
+        "r2": {
+          "type": "tab",
+          "settings": {
+            "label": "Vinylboden",
+            "section_id": "product_list_8rDkXg"
+          }
+        },
+        "r3": {
+          "type": "tab",
+          "settings": {
+            "label": "Linoleum",
+            "section_id": "product_list_linoleum_DxYpK2"
+          }
+        }
+      },
+      "block_order": [
+        "r1",
+        "r2",
+        "r3"
+      ]
     },
     "product_list_fa6P9H": {
       "type": "product-list",
@@ -638,134 +803,272 @@
         "padding-block-end": 48
       }
     },
-    "google_VUPPGj": {
-      "type": "google",
-      "name": "Google Bewertungen",
-      "settings": {}
-    },
-    "tp_staerken_home": {
-      "type": "tp-staerken",
-      "name": "TP Unsere Stärken",
-      "settings": {
-        "color_scheme": "scheme-1"
-      }
-    },
-    "tp_fachhandel_home": {
-      "type": "tp-fachhandel",
-      "name": "TP Verlegeservice",
-      "settings": {
-        "color_scheme": "scheme-1"
-      }
-    },
-    "kundenbilder_grid_g3nkQc": {
-      "type": "kundenbilder-grid",
-      "blocks": {
-        "kundenbild_KjmABf": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/IMG_20230926_095237.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: neu verlegter Boden von TeppichParadies im Wohnbereich"
-          }
-        },
-        "kundenbild_JeKdLn": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: fertig verlegter Bodenbelag von TeppichParadies"
-          }
-        },
-        "kundenbild_YKRrfw": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114732.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Bodenverlegung im Wohnraum, ausgeführt mit Material von TeppichParadies"
-          }
-        },
-        "kundenbild_EgV4zy": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20220920_113832.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: neu verlegter Boden in einem Zimmer, Material von TeppichParadies"
-          }
-        },
-        "kundenbild_MntX7k": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20230327_132924.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: verlegter Bodenbelag von TeppichParadies im Detail"
-          }
-        },
-        "kundenbild_krgCMm": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/image-1-compressed.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Wohnraum mit frisch verlegtem Boden von TeppichParadies"
-          }
-        },
-        "kundenbild_cVJjwX": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/1000012408.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: fertiggestellte Bodenverlegung von TeppichParadies"
-          }
-        },
-        "kundenbild_Fhcjhy": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114941.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Nahaufnahme des neu verlegten Bodens von TeppichParadies"
-          }
-        },
-        "kundenbild_M3KUjL": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/1000008785.jpg",
-            "caption": "",
-            "alt": "Kundenfoto: Raum mit neu verlegtem Bodenbelag von TeppichParadies"
-          }
-        }
-      },
-      "block_order": [
-        "kundenbild_KjmABf",
-        "kundenbild_JeKdLn",
-        "kundenbild_YKRrfw",
-        "kundenbild_EgV4zy",
-        "kundenbild_MntX7k",
-        "kundenbild_krgCMm",
-        "kundenbild_cVJjwX",
-        "kundenbild_Fhcjhy",
-        "kundenbild_M3KUjL"
-      ],
-      "name": "Kundenbilder Grid",
-      "settings": {}
-    },
     "tp_zwei_wege_home": {
       "type": "tp-zwei-wege",
       "settings": {
         "gewichtung": "gleich",
         "mobil_zuerst": "online",
-        "online_link": "/collections/all",
-        "service_link": "/pages/liefer-verlegeservice"
+        "online_link": "#tp-kategorien",
+        "service_link": "#tp-kontakt",
+        "online_eyebrow": "Online-Shop · deutschlandweit",
+        "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
+        "online_text": "Rollenware im Wunschmaß, cm-genau berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. Versandkosten sehen Sie vor dem Kauf im Warenkorb.",
+        "online_punkte": "Rollenware im Wunschmaß, Bis zu 3 Muster kostenlos, Versand deutschlandweit",
+        "online_cta": "Zum Sortiment",
+        "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
+        "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
+        "service_text": "Im Umkreis von 15 km: Lieferung und lose Verlegung inklusive, feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis. Ab 649 € Warenwert: alles inklusive – Anfahrt, Lieferung und feste Verlegung. Bis 50 km regulär, weiter entfernt auf Anfrage.",
+        "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Auch Treppen und Gewerbe",
+        "service_cta": "Aufmaß & Verlegung anfragen",
+        "service_telefon": "03301 573 37 20",
+        "service_telefon_label": "03301 573 37 20"
       }
+    },
+    "tp_verlegegebiet_home": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "eyebrow": "Wo wir hinkommen",
+        "heading": "Unser Liefer- und Verlegegebiet",
+        "intro": "Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive, feste Verlegung gegen Aufpreis; ab 649 € Warenwert ist alles inklusive. Regulär verlegen wir bis 50 km, weiter entfernt auf Anfrage.",
+        "karte_zeigen": true,
+        "radius": 50,
+        "pruefung_zeigen": true,
+        "cta_zeigen": true,
+        "cta_label": "Verlegung anfragen",
+        "cta_link": "#tp-kontakt"
+      }
+    },
+    "tp_start_projekte": {
+      "type": "tp-start-projekte",
+      "settings": {
+        "eyebrow": "Von uns verlegt",
+        "heading": "Echte Arbeiten aus Oranienburg, Berlin und Brandenburg",
+        "text": "Treppen, Wohnräume, Gastronomie, Läden und Kirchen – alles echte Baustellen unseres Teams, keine Stockfotos.",
+        "link_label": "Mehr Arbeiten ansehen",
+        "link": "shopify://pages/bisherige-arbeiten",
+        "cta_label": "Verlegung anfragen",
+        "cta_link": "#tp-kontakt"
+      },
+      "blocks": {
+        "p1": {
+          "type": "projekt",
+          "settings": {
+            "bild": "shopify://shop_images/IMG_20230926_095237.jpg",
+            "objekt": "Gastronomie",
+            "belag": "Objektboden"
+          }
+        },
+        "p2": {
+          "type": "projekt",
+          "settings": {
+            "bild": "shopify://shop_images/PHOTO-2024-10-01-13-53-26.jpg",
+            "objekt": "Treppe",
+            "belag": "Teppichboden"
+          }
+        },
+        "p3": {
+          "type": "projekt",
+          "settings": {
+            "bild": "shopify://shop_images/1000008785.jpg",
+            "objekt": "Ladengeschäft",
+            "belag": "Objektboden"
+          }
+        },
+        "p4": {
+          "type": "projekt",
+          "settings": {
+            "bild": "shopify://shop_images/20230327_132924.jpg",
+            "objekt": "Wohnhaus",
+            "belag": "Treppe"
+          }
+        },
+        "p5": {
+          "type": "projekt",
+          "settings": {
+            "bild": "shopify://shop_images/20231129_114941.jpg",
+            "objekt": "Dachgeschoss",
+            "belag": "Velours"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4",
+        "p5"
+      ]
+    },
+    "tp_start_fachhandel": {
+      "type": "tp-start-fachhandel",
+      "settings": {
+        "bild": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+        "eyebrow": "Warum Teppich Paradies",
+        "heading": "Ein echtes Fachgeschäft – kein anonymer Online-Shop",
+        "text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen.</p>",
+        "cta1_label": "Beratung vereinbaren",
+        "cta1_link": "#tp-kontakt",
+        "cta2_label": "Fachgeschäft & Anfahrt",
+        "cta2_link": "shopify://pages/kontakt"
+      },
+      "blocks": {
+        "f1": {
+          "type": "fakt",
+          "settings": {
+            "wert": "400+",
+            "label": "Bodenbeläge online, Muster kostenlos"
+          }
+        },
+        "f2": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Mo–Sa",
+            "label": "Geöffnet, Beratung vor Ort"
+          }
+        },
+        "f3": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Eigenes Team",
+            "label": "Aufmaß bis Verlegung"
+          }
+        },
+        "f4": {
+          "type": "fakt",
+          "settings": {
+            "wert": "Bis 50 km",
+            "label": "Verlegeservice um Oranienburg"
+          }
+        }
+      },
+      "block_order": [
+        "f1",
+        "f2",
+        "f3",
+        "f4"
+      ]
+    },
+    "tp_start_bewertungen": {
+      "type": "tp-start-bewertungen",
+      "settings": {
+        "heading": "Das sagen unsere Kunden",
+        "text": "Echte Rezensionen aus dem Google-Unternehmensprofil.",
+        "link_label": "Alle Bewertungen bei Google",
+        "link": "",
+        "elfsight_id": "e64233ac-362d-4d8f-ae26-3ec4cc88789e"
+      }
+    },
+    "tp_start_kontakt": {
+      "type": "tp-start-kontakt",
+      "settings": {
+        "heading": "Eine Frage? Wir antworten persönlich.",
+        "text": "Welcher Boden passt, wie viel Sie brauchen, ob wir bei Ihnen verlegen – fragen Sie einfach.",
+        "telefon": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr.",
+        "whatsapp": "https://wa.me/4917657931322"
+      }
+    },
+    "tp_start_faq": {
+      "type": "tp-start-faq",
+      "settings": {
+        "heading": "Häufige Fragen",
+        "erste_offen": true
+      },
+      "blocks": {
+        "q1": {
+          "type": "frage",
+          "settings": {
+            "frage": "Liefern Sie deutschlandweit?",
+            "antwort": "<p>Ja, wir liefern in ganz Deutschland. Rollenware kommt per Spedition frei Bordsteinkante, kleinere Artikel mit dem Paketdienst. Die Versandkosten sehen Sie vor dem Abschluss im Warenkorb. Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive, feste Verlegung gegen Aufpreis; ab 649 € Warenwert ist alles inklusive.</p>"
+          }
+        },
+        "q2": {
+          "type": "frage",
+          "settings": {
+            "frage": "Kann ich vorher ein Muster bekommen?",
+            "antwort": "<p>Bis zu drei Farben eines Produkts schicken wir kostenlos zu Ihnen. Die Muster wählen Sie direkt auf der Produktseite oder über „Muster bestellen“.</p>"
+          }
+        },
+        "q3": {
+          "type": "frage",
+          "settings": {
+            "frage": "Verlegen Sie auch – und was kostet das?",
+            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten. Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber berechnen wir gegen Aufpreis. Ab 649 € Warenwert ist alles inklusive: Anfahrt, Lieferung und feste Verlegung. Unser Verlegeservice reicht regulär bis 50 km um Oranienburg, weiter entfernt verlegen wir nur auf Anfrage.</p>"
+          }
+        },
+        "q4": {
+          "type": "frage",
+          "settings": {
+            "frage": "Wie viel Boden muss ich bestellen?",
+            "antwort": "<p>Bei Rollenware geben Sie Breite und Länge Ihres Raums ein, wir rechnen die Fläche und den Preis sofort aus. Bei Paketware zeigt der Rechner die benötigten Pakete inklusive Verschnitt.</p>"
+          }
+        },
+        "q5": {
+          "type": "frage",
+          "settings": {
+            "frage": "Kann ich telefonisch bestellen?",
+            "antwort": "<p>Ja. Rufen Sie an, wir nehmen die Bestellung auf und schicken Ihnen die Bestätigung per E-Mail.</p>"
+          }
+        },
+        "q6": {
+          "type": "frage",
+          "settings": {
+            "frage": "Klickvinyl oder Klebevinyl – was passt zu mir?",
+            "antwort": "<p>Klickvinyl liegt schwimmend und lässt sich selbst verlegen. Klebevinyl ist flacher, ideal bei Fußbodenheizung und Renovierung.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6"
+      ]
+    },
+    "tp_start_seo": {
+      "type": "tp-start-seo",
+      "settings": {
+        "heading": "Teppichboden, Vinyl und Linoleum vom Fachhandel in Oranienburg"
+      },
+      "blocks": {
+        "l1": {
+          "type": "liste",
+          "settings": {
+            "titel": "Sortiment & Muster",
+            "links": "Teppichboden Meterware|/collections/teppichboden\nVinylboden|/collections/vinylboden-1\nKlickvinyl|/collections/vinylboden-klickvinyl\nLinoleumboden|/collections/linoleumboden-1\nSockelleisten|/collections/bodenleisten\nMuster bestellen|/pages/muster"
+          }
+        },
+        "l2": {
+          "type": "liste",
+          "settings": {
+            "titel": "Service in der Region",
+            "links": "Teppichboden verlegen lassen|/pages/teppichboden-verlegen-lassen\nVinylboden verlegen lassen|/pages/vinylboden-verlegen\nTreppen mit Teppich belegen|/pages/treppenverlegung\nBöden für Praxen & Büros|/pages/boden-malerarbeiten\nVersand & Lieferung|/pages/versand-lieferung\nKontakt & Anfahrt|/pages/kontakt"
+          }
+        }
+      },
+      "block_order": [
+        "l1",
+        "l2"
+      ]
     }
   },
   "order": [
-    "startseite_JCA6KB",
-    "tp_zwei_wege_home",
-    "tp_staerken_home",
-    "product_list_8rDkXg",
+    "tp_start_hero",
+    "tp_start_kategorien",
+    "tp_start_trust",
+    "tp_start_tabs",
     "product_list_fa6P9H",
+    "product_list_8rDkXg",
     "product_list_linoleum_DxYpK2",
-    "tp_fachhandel_home",
-    "kundenbilder_grid_g3nkQc",
-    "google_VUPPGj"
+    "tp_zwei_wege_home",
+    "tp_verlegegebiet_home",
+    "tp_start_projekte",
+    "tp_start_fachhandel",
+    "tp_start_bewertungen",
+    "tp_start_kontakt",
+    "tp_start_faq",
+    "tp_start_seo"
   ]
 }

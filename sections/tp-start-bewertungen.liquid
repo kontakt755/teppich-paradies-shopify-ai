@@ -1,0 +1,73 @@
+{%- comment -%}
+  TP Kundenstimmen: Ueberschrift, Link zum Google-Profil und das Elfsight-Widget
+  mit echten Rezensionen. Das Widget laedt erst nach Marketing-Einwilligung
+  (Shopify Customer Privacy API) - wie in sections/google.liquid. Ohne
+  Einwilligung steht statt leerer Flaeche ein Hinweis mit Link zu Google.
+  Keine eingetippten Bewertungen, keine hartcodierte Zahl.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-bew" id="tp-bewertungen" aria-labelledby="tp-bew-h2">
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head">
+      <div>
+        <h2 id="tp-bew-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+      {%- if section.settings.link != blank -%}<a class="tp-s-link" href="{{ section.settings.link }}" rel="noopener" target="_blank">{{ section.settings.link_label | default: 'Alle Bewertungen bei Google' | escape }}</a>{%- endif -%}
+    </div>
+    {%- if section.settings.elfsight_id != blank -%}
+      <div class="tp-bew__widget">
+        <div class="elfsight-app-{{ section.settings.elfsight_id | escape }}" data-elfsight-app-lazy></div>
+        <p class="tp-bew__hinweis tp-s-note" data-tp-bew-hinweis>Die Rezensionen laden, sobald Sie im Cookie-Hinweis Marketing-Cookies zulassen.{% if section.settings.link != blank %} Oder direkt bei <a href="{{ section.settings.link }}" rel="noopener" target="_blank">Google ansehen</a>.{% endif %}</p>
+      </div>
+      <script>
+        (function () {
+          var loaded = false;
+          var hinweis = document.querySelector('[data-tp-bew-hinweis]');
+          function loadElfsight() {
+            if (loaded) return;
+            loaded = true;
+            if (hinweis) hinweis.hidden = true;
+            var s = document.createElement('script');
+            s.src = 'https://static.elfsight.com/platform/platform.js';
+            s.async = true;
+            document.head.appendChild(s);
+          }
+          function checkConsent() {
+            var privacy = window.Shopify && window.Shopify.customerPrivacy;
+            if (!privacy || typeof privacy.marketingAllowed !== 'function') return;
+            if (privacy.marketingAllowed()) { loadElfsight(); return; }
+            document.addEventListener('visitorConsentCollected', function (event) {
+              if (event.detail && event.detail.marketingAllowed) loadElfsight();
+            });
+          }
+          if (window.Shopify && typeof window.Shopify.loadFeatures === 'function') {
+            window.Shopify.loadFeatures([{ name: 'consent-tracking-api', version: '0.1' }], function (error) { if (!error) checkConsent(); });
+          }
+        })();
+      </script>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-bew__widget { min-height: 120px; }
+  .tp-bew__hinweis { padding: 18px 20px; border: 1.5px dashed #d5cec4; border-radius: 12px; }
+  .tp-bew__hinweis a { color: #b73740; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Kundenstimmen (Google)",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Das sagen unsere Kunden" },
+    { "type": "text", "id": "text", "label": "Unterzeile", "default": "Echte Rezensionen aus dem Google-Unternehmensprofil." },
+    { "type": "text", "id": "link_label", "label": "Link-Text", "default": "Alle Bewertungen bei Google" },
+    { "type": "url", "id": "link", "label": "Link zum Google-Profil" },
+    { "type": "text", "id": "elfsight_id", "label": "Elfsight-App-ID", "default": "e64233ac-362d-4d8f-ae26-3ec4cc88789e" }
+  ],
+  "presets": [ { "name": "TP Kundenstimmen (Google)" } ]
+}
+{% endschema %}
