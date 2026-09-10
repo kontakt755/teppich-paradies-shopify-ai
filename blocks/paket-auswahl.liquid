@@ -421,8 +421,13 @@
 
     const sqmPerPackageRaw = component.dataset.sqmPerPackage || '0';
     const sqmPerPackage = parseFloat(sqmPerPackageRaw);
-    const packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
-    const variantId = component.dataset.variantId;
+    // Variante und Preis sind veraenderlich: Der Farbwaehler tauscht die
+    // Variante ohne Seitenwechsel aus, und dieser Block wird dabei nicht neu
+    // gerendert. Bis 2026-09-10 blieb deshalb die beim Seitenaufbau gewaehlte
+    // Variante stehen - wer "Blau Tief" waehlte, bekam "Blau Dunkel" in den
+    // Warenkorb. Beides wird jetzt aus variant:update nachgefuehrt.
+    let packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
+    let variantId = component.dataset.variantId;
     const WASTE_FACTOR = 1.05;
     const SQM_STEP = 0.25;
 
@@ -748,6 +753,32 @@
         renderResults();
       });
     }
+
+    // Horizon meldet den Variantenwechsel als "variant:update" am Abschnitt.
+    // Nur Ereignisse dieses Produkts zaehlen - eine Empfehlungskarte daneben
+    // darf den Rechner nicht umstellen.
+    const section = component.closest('.shopify-section');
+    const productId = '{{ product.id }}';
+
+    (section || document).addEventListener('variant:update', function (event) {
+      const detail = event.detail || {};
+      if (detail.data && String(detail.data.productId) !== productId) return;
+
+      const variant = detail.resource;
+      if (!variant || !variant.id) return;
+
+      variantId = String(variant.id);
+      component.dataset.variantId = variantId;
+
+      // variant.price kommt als Betrag in Cent aus dem Variant-JSON.
+      const preis = parseInt(variant.price, 10);
+      if (!isNaN(preis) && preis > 0) {
+        packagePriceCents = preis;
+        component.dataset.packagePriceCents = String(preis);
+      }
+
+      renderResults();
+    });
 
     // Kein syncInputValue() beim Start: das Feld bleibt leer, bis der Kunde
     // seine Flaeche nennt. desiredSqm traegt trotzdem den Wert fuer genau ein
