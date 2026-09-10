@@ -7,9 +7,10 @@
   Einwilligung noetig), kein JavaScript fuer die Darstellung, keinen Layout
   Shift - und es kann auf dem Smartphone das Scrollen nicht abfangen.
 
-  Die Bilder erzeugt scripts/build-verlegegebiet-karte.py aus
-  OpenStreetMap-Kacheln. Aendert sich der Standort, muessen sie neu erzeugt
-  werden; der Kreis rechnet mit der Geometrie unten und darf nicht raten.
+  Die Bilder rendert scripts/build-verlegegebiet-karte.mjs aus Vektorkacheln
+  in doppelter Aufloesung, die Ortstabelle baut scripts/build-verlegegebiet-orte.py.
+  Aendert sich der Standort, muessen beide neu laufen; der Kreis rechnet mit der
+  Geometrie unten und darf nicht raten.
 
   Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
     desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
@@ -243,10 +244,28 @@
     object-fit: cover;
   }
 
+  /* Am Bildrand schneidet die Karte Ortsnamen an. Ein schmaler Verlauf in der
+     Grundfarbe der Karte laesst sie ausklingen, statt sie halb stehen zu lassen.
+     Die Farbe ist die des Kartenbildes, nicht die der Seite - deshalb steht sie
+     hier als fester Wert und nicht als Farbschema-Variable. */
+  .tp-vg__karte::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 26px),
+      linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 26px),
+      linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 22px),
+      linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 22px);
+  }
+
   /* Der Kreis wird ueber die Bildbreite bemasst, nicht ueber den Container -
      beide sind identisch, weil aspect-ratio dem Bild entspricht. */
   .tp-vg__radius {
     position: absolute;
+    z-index: 2;
     box-sizing: border-box;
     top: 50%;
     left: 50%;
@@ -276,6 +295,7 @@
 
   .tp-vg__marker {
     position: absolute;
+    z-index: 2;
     top: 50%;
     left: 50%;
     display: flex;
@@ -314,6 +334,7 @@
 
   .tp-vg__quelle {
     position: absolute;
+    z-index: 2;
     right: 8px;
     bottom: 8px;
     padding: 3px 8px;
@@ -557,6 +578,16 @@
 
     .tp-vg__radius {
       width: var(--tp-vg-kreis-mobile);
+    }
+
+    /* Auf der schmalen Karte stehen mehr Namen am Rand an; der Verlauf faellt
+       deshalb breiter aus. Ausserhalb des Kreises geht dabei nichts verloren. */
+    .tp-vg__karte::after {
+      background:
+        linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 42px),
+        linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 42px),
+        linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 26px),
+        linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 26px);
     }
 
     .tp-vg__marker-name {
