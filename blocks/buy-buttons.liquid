@@ -24,9 +24,12 @@
   # hiess dort drei Pakete ohne jeden m2-Bezug und ohne Zeileneigenschaften
   # (Befund 2026-09-10). Bedingung ist absichtlich dieselbe wie die
   # Render-Bedingung des Rechners: custom.qm_pro_paket > 0.
-  assign tp_sqm_per_package = product.metafields.custom.qm_pro_paket.value | times: 1.0
+  capture tp_verkaufsart
+    render 'tp-verkaufseinheit', product: product
+  endcapture
+  assign tp_verkaufsart = tp_verkaufsart | strip
   assign tp_hide_buy_buttons = false
-  if template.name == 'product' and tp_sqm_per_package > 0
+  if template.name == 'product' and tp_verkaufsart == 'paket'
     assign tp_hide_buy_buttons = true
   endif
 

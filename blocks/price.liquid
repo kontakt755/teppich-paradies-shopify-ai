@@ -5,8 +5,14 @@
   assign product_resource = closest.product
   assign selected_variant = product_resource.selected_or_first_available_variant
   assign sqm_per_package = product_resource.metafields.custom.qm_pro_paket.value
+  # Verkaufsart aus der zentralen Quelle, damit hier nicht wieder eine eigene
+  # Erkennung entsteht (siehe snippets/tp-verkaufseinheit.liquid).
+  capture tp_preis_art
+    render 'tp-verkaufseinheit', product: product_resource
+  endcapture
+  assign tp_preis_art = tp_preis_art | strip
   assign show_price_per_sqm = false
-  if sqm_per_package != blank and sqm_per_package > 0 and template.name == 'product' and product_resource.handle == product.handle
+  if tp_preis_art == 'paket' and template.name == 'product' and product_resource.handle == product.handle
     assign show_price_per_sqm = true
   endif
 -%}
@@ -55,7 +61,8 @@
   {% if show_price_per_sqm %}
     {% render 'tp-price-per-sqm',
       selected_variant: selected_variant,
-      sqm_per_package: sqm_per_package
+      sqm_per_package: sqm_per_package,
+      product: product_resource
     %}
   {% else %}
     {% render 'price',

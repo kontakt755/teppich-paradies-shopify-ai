@@ -56,6 +56,14 @@
   # Auf Product Cards ist allein ein gueltiges custom.rollenbreite auf einer
   # echten Variante (oder als Product-Fallback) der Rollenware-Nachweis.
   # Produkttyp, Tags, Titel und qm_pro_paket spielen dafuer keine Rolle.
+  # Verkaufsart aus der zentralen Quelle. Sie ersetzt die frueher hier
+  # verstreute Erkennung; die Regeln selbst sind unveraendert uebernommen
+  # (siehe snippets/tp-verkaufseinheit.liquid).
+  capture tp_pr_art
+    render 'tp-verkaufseinheit', product: product_resource
+  endcapture
+  assign tp_pr_art = tp_pr_art | strip
+
   if is_product_card
     for roll_variant in product_resource.variants
       assign roll_variant_title = roll_variant.title | downcase
@@ -90,12 +98,15 @@
       endif
     endif
 
-    if is_roll_card
-      assign is_sqm_card = true
-      assign has_volume_pricing = false
-    elsif sqm_per_package != blank and sqm_per_package > 0 and has_volume_pricing != true
+    # Paketware zuerst: ein Produkt mit qm_pro_paket ist nie Rollenware, auch
+    # wenn productType oder Tags danach aussehen (Quadra ist "Teppichboden").
+    if tp_pr_art == 'paket' and has_volume_pricing != true
+      assign is_roll_card = false
       assign is_package_card = true
       assign is_sqm_card = true
+    elsif is_roll_card
+      assign is_sqm_card = true
+      assign has_volume_pricing = false
     endif
   elsif has_volume_pricing != true
     # Ausserhalb der Product Card - praktisch die Sticky-Leiste der
@@ -106,17 +117,11 @@
     # "294,50 EUR/m2" statt "58,90 EUR/m2" - das Fuenffache (Befund
     # 2026-09-10). is_package_card rechnet den Paketpreis unten korrekt
     # auf den Quadratmeter herunter.
-    assign product_type_downcase = product_resource.type | downcase
-    assign product_tags_downcase = product_resource.tags | join: '|' | downcase
-    if sqm_per_package != blank and sqm_per_package > 0
+    if tp_pr_art == 'paket'
       assign is_package_card = true
       assign is_sqm_card = true
-    elsif product_type_downcase == 'teppichboden' or product_type_downcase == 'vinyl von der rolle'
+    elsif tp_pr_art == 'rolle'
       assign is_roll_card = true
-    elsif product_tags_downcase contains 'art: teppichboden' and product_tags_downcase contains 'maß: wunschmaß'
-      assign is_roll_card = true
-    endif
-    if is_roll_card
       assign is_sqm_card = true
     endif
   endif
@@ -151,6 +156,9 @@
     endif
 
     if is_package_card
+      # Der Paketpreis vor der Umrechnung - die Produktkarte nennt ihn als
+      # zweite Zeile, damit die Einstiegskosten schon in der Kategorie stehen.
+      assign tp_pr_paketpreis = price
       assign price = price | times: 1.0 | divided_by: sqm_per_package | round
       if compare_at_price != blank
         assign compare_at_price = compare_at_price | times: 1.0 | divided_by: sqm_per_package | round
@@ -256,6 +264,18 @@
       </div>
     {% endif %}
   {% endif %}
+  {%- if is_package_card and is_product_card and tp_pr_paketpreis != blank -%}
+    {%- comment -%}
+      Zweite Zeile der Produktkarte: was ein Paket kostet und enthaelt. Ohne
+      sie sieht der Kunde in der Kategorie nur den m2-Preis und erfaehrt die
+      tatsaechlichen Einstiegskosten erst auf der Produktseite.
+    {%- endcomment -%}
+    <div class="tp-price-card-package">
+      {%- if show_from_price %}ab {% endif -%}
+      {{ tp_pr_paketpreis | money_without_currency }}&nbsp;€ / Paket ·
+      {% render 'tp-paketinhalt', product: product_resource, sqm_per_package: sqm_per_package, prefix: '' %}
+    </div>
+  {%- endif -%}
   {%- if selected_variant.unit_price and show_unit_price %}
     {%- liquid
       if use_currency
@@ -286,5 +306,16 @@
   .price-card-from {
     font-size: 0.82em;
     font-weight: 500;
+  }
+
+  /* Zweite Zeile der Produktkarte: Paketpreis und Paketinhalt. Bewusst
+     zurueckhaltend - der Quadratmeterpreis bleibt die Leitgroesse. */
+  .tp-price-card-package {
+    margin-top: 2px;
+    font-size: 0.78em;
+    line-height: 1.3;
+    font-weight: 400;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    text-wrap: balance;
   }
 {% endstylesheet %}

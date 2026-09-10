@@ -212,6 +212,8 @@
                         </dl>
                       {%- endif -%}
 
+                      {%- render 'tp-cart-paketzeile', line_item: item -%}
+
                       {%- liquid
                         assign has_visible_properties = false
                         for property in item.properties

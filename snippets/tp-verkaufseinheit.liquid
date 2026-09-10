@@ -1,0 +1,93 @@
+{%- doc -%}
+  Einzige Quelle fuer die Verkaufsart eines Produkts. Gibt genau einen Wert aus:
+
+    paket   Ware, die nur in ganzen Verpackungseinheiten verkauft wird
+            (Teppichfliesen, Klickvinyl, Klebevinyl). Beleg: custom.qm_pro_paket.
+    rolle   Bahnenware, die nach Breite x Laenge geschnitten wird.
+    stueck  Stangen- und Stueckware mit bekannter Laenge (Sockelleisten).
+    einzel  Alles uebrige - normaler Artikel mal Menge.
+
+  Aufruf immer ueber capture, denn render liefert Text:
+    {% capture art %}{% render 'tp-verkaufseinheit', product: product %}{% endcapture %}
+
+  Warum das zentral gehoert: Bis 2026-09-10 entschied jede Stelle selbst, und
+  snippets/price.liquid schloss ausserhalb der Produktkarte allein aus
+  productType == "teppichboden" auf Rollenware. Quadra ist eine Teppichfliese
+  mit genau diesem productType - die Sticky-Leiste beschriftete deshalb den
+  Paketpreis mit "EUR/m2" und zeigte 294,50 statt 58,90. Der productType ist
+  hier nie allein ausschlaggebend; Paketware wird immer zuerst geprueft.
+
+  Die Rollenerkennung uebernimmt bewusst unveraendert die Regeln, die vorher in
+  snippets/price.liquid standen (Metafeld, sonst productType, sonst Tagpaar) -
+  Linoleum zum Beispiel traegt keine custom.rollenbreite, wuerde also von einer
+  reinen Metafeldpruefung nicht erfasst.
+
+  @param {object} product - Produkt
+{%- enddoc -%}
+{%- liquid
+  assign tp_ve_produkt = product
+
+  # 1. Paketware. Das Metafeld ist die Paketflaeche selbst und damit der
+  #    unmittelbare Beleg - kein abgeleitetes Merkmal.
+  assign tp_ve_paket = tp_ve_produkt.metafields.custom.qm_pro_paket.value | times: 1.0
+
+  # 2. Rollenware. Eine gueltige Rollenbreite auf einer echten Variante zaehlt;
+  #    OPC-Konfiguratorvarianten tragen Gesamtpreise und bleiben aussen vor.
+  assign tp_ve_rolle = false
+  if tp_ve_paket <= 0
+    for tp_ve_variante in tp_ve_produkt.variants
+      assign tp_ve_vtitel = tp_ve_variante.title | downcase
+      unless tp_ve_vtitel contains 'opc-'
+        assign tp_ve_breite = tp_ve_variante.metafields.custom.rollenbreite.value | times: 1
+        if tp_ve_breite > 0
+          assign tp_ve_rolle = true
+          break
+        endif
+      endunless
+    endfor
+
+    if tp_ve_rolle == false
+      assign tp_ve_pbreite = tp_ve_produkt.metafields.custom.rollenbreite
+      assign tp_ve_pwert = tp_ve_pbreite.value
+      if tp_ve_pwert != blank
+        if tp_ve_pbreite.type contains 'list.'
+          for tp_ve_eintrag in tp_ve_pwert
+            assign tp_ve_zahl = tp_ve_eintrag | times: 1
+            if tp_ve_zahl > 0
+              assign tp_ve_rolle = true
+              break
+            endif
+          endfor
+        else
+          assign tp_ve_zahl = tp_ve_pwert | times: 1
+          if tp_ve_zahl > 0
+            assign tp_ve_rolle = true
+          endif
+        endif
+      endif
+    endif
+
+    if tp_ve_rolle == false
+      assign tp_ve_typ = tp_ve_produkt.type | downcase
+      assign tp_ve_tags = tp_ve_produkt.tags | join: '|' | downcase
+      if tp_ve_typ == 'teppichboden' or tp_ve_typ == 'vinyl von der rolle'
+        assign tp_ve_rolle = true
+      elsif tp_ve_tags contains 'art: teppichboden' and tp_ve_tags contains 'maß: wunschmaß'
+        assign tp_ve_rolle = true
+      endif
+    endif
+  endif
+
+  # 3. Stangenware. Belegte Produktlaenge, siehe blocks/tp-zubehoer-menge.liquid.
+  assign tp_ve_stange = tp_ve_produkt.metafields.custom.stangenlaenge.value | times: 1.0
+
+  if tp_ve_paket > 0
+    echo 'paket'
+  elsif tp_ve_rolle
+    echo 'rolle'
+  elsif tp_ve_stange > 0
+    echo 'stueck'
+  else
+    echo 'einzel'
+  endif
+-%}

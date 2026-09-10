@@ -149,6 +149,11 @@
     color: var(--cp-muted);
   }
 
+  /* Der Zahlenwert bleibt einzeilig; umbrechen darf nur die Beschriftung. */
+  .carpet-package__results-row-{{ package_selector_id }} > span:last-child {
+    white-space: nowrap;
+  }
+
   .carpet-package__results-row-{{ package_selector_id }}[data-emphasis] {
     color: var(--cp-text);
     font-weight: 700;
@@ -190,9 +195,34 @@
     font-weight: 400;
   }
 
-  .carpet-package__hint-{{ package_selector_id }} {
-    margin-top: 10px;
+  .carpet-package__unit-hint-{{ package_selector_id }} {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-left: 3px solid var(--cp-border-strong);
+    background: var(--cp-surface);
+    border-radius: 5px;
     font-size: 14px;
+    line-height: 1.45;
+    color: var(--cp-text);
+  }
+
+  .carpet-package__unit-hint-{{ package_selector_id }} strong {
+    display: block;
+    font-weight: 600;
+  }
+
+  .carpet-package__unit-hint-detail-{{ package_selector_id }} {
+    display: block;
+    margin-top: 2px;
+    color: var(--cp-muted);
+  }
+
+  .carpet-package__results-title-{{ package_selector_id }} {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--cp-muted);
   }
 
@@ -236,6 +266,14 @@
     .carpet-package__submit-{{ package_selector_id }} {
       font-size: 18px;
     }
+
+    /* Auf schmalen Schirmen bricht "Sie bestellen" neben dem Paket-Steller
+       zweizeilig um. Label und Steller stehen dort deshalb untereinander. */
+    .carpet-package__results-row-{{ package_selector_id }}[data-emphasis] {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
   }
 {% endstyle %}
 
@@ -251,11 +289,19 @@
   data-package-price-cents="{{ selected_variant.price }}"
   data-variant-id="{{ selected_variant.id }}"
   data-initial-packages="{{ initial_packages }}"
+  {%- comment -%}
+    Stueckzahl und Format nur, wenn sie am Produkt gepflegt sind. Nie aus der
+    Flaeche oder dem Titel geschaetzt - im Warenkorb waere das eine Zusicherung,
+    die niemand belegen kann.
+  {%- endcomment -%}
+  data-piece-count="{{ product.metafields.custom.stueck_pro_paket.value }}"
+  data-piece-label="{{ product.metafields.custom.stueck_bezeichnung.value | default: 'Stück' }}"
+  data-piece-format="{{ product.metafields.custom.format_cm.value }}"
   {{ block.shopify_attributes }}
 >
   <div class="carpet-package__primary-{{ package_selector_id }}">
     <label class="carpet-package__label-{{ package_selector_id }}" for="tp-sqm-input-{{ package_selector_id }}">
-      Benötigte Fläche
+      Wie viel Fläche benötigen Sie?
     </label>
 
     <div class="carpet-package__input-row-{{ package_selector_id }}">
@@ -268,12 +314,17 @@
         −
       </button>
 
+      {%- comment -%}
+        Bewusst type="text": In einem number-Input ist "1,5" ein ungueltiger
+        Wert, den der Browser als leeren String liefert - deutsche
+        Kommaeingabe war damit unmoeglich. inputmode="decimal" oeffnet auf
+        dem Handy trotzdem die Zifferntastatur.
+      {%- endcomment -%}
       <input
         class="carpet-package__input-{{ package_selector_id }}"
-        type="number"
+        type="text"
         inputmode="decimal"
-        step="0.01"
-        min="0.01"
+        autocomplete="off"
         id="tp-sqm-input-{{ package_selector_id }}"
         placeholder="z. B. 18,00"
         data-sqm-input
@@ -304,27 +355,46 @@
     </label>
   </div>
 
-  <div class="carpet-package__results-{{ package_selector_id }}">
+  {% comment %}
+    Der Hinweis erscheint nur, wenn der Kunde weniger eingibt als ein Paket
+    fasst - genau der Moment, in dem sonst der Eindruck entsteht, es werde
+    willkuerlich aufgerundet. Das Wort "aufgerundet" kommt hier bewusst nicht
+    mehr vor: Ein Paket ist eine reale Verkaufseinheit, keine Rundung.
+  {% endcomment %}
+  <p class="carpet-package__unit-hint-{{ package_selector_id }}" data-unit-hint hidden>
+    <strong>Dieses Produkt wird ausschließlich in vollständigen Originalpaketen geliefert.</strong>
+    <span class="carpet-package__unit-hint-detail-{{ package_selector_id }}">
+      Kleinste Verkaufseinheit: {% render 'tp-paketinhalt', product: product, sqm_per_package: sqm_per_package %}
+    </span>
+  </p>
+
+  <div
+    class="carpet-package__results-{{ package_selector_id }}"
+    role="status"
+    aria-live="polite"
+  >
+    <p class="carpet-package__results-title-{{ package_selector_id }}">Ihre Bestellung</p>
+
     <div class="carpet-package__results-row-{{ package_selector_id }}">
-      <span data-need-label>Bedarf</span>
+      <span data-need-label>Benötigte Fläche</span>
       <span data-need-display>–</span>
     </div>
+
     <div class="carpet-package__results-row-{{ package_selector_id }}" data-emphasis>
-      <span>Bestellmenge</span>
-      <span data-sqm-display>–</span>
-    </div>
-    <div class="carpet-package__results-row-{{ package_selector_id }} carpet-package__results-row--packages-{{ package_selector_id }}">
-      <span>Pakete</span>
+      <span>Sie bestellen</span>
       <span class="carpet-package__packages-control-{{ package_selector_id }}">
         <button type="button" data-decrease-packages aria-label="Ein Paket weniger">−</button>
         <span data-package-display>–</span>
         <button type="button" data-increase-packages aria-label="Ein Paket mehr">+</button>
-        <span class="carpet-package__packages-unit-{{ package_selector_id }}">à <span data-package-unit-value>{{ sqm_per_package }}</span> m²</span>
+        <span class="carpet-package__packages-unit-{{ package_selector_id }}" data-package-word>Originalpakete</span>
       </span>
     </div>
-  </div>
 
-  <div class="carpet-package__hint-{{ package_selector_id }}">Wird auf volle Pakete aufgerundet.</div>
+    <div class="carpet-package__results-row-{{ package_selector_id }}">
+      <span>Gesamtfläche</span>
+      <span data-sqm-display>–</span>
+    </div>
+  </div>
 
   <div class="carpet-package__total-{{ package_selector_id }}">
     <div>Gesamtpreis <span data-total-display>–</span></div>
@@ -351,8 +421,13 @@
 
     const sqmPerPackageRaw = component.dataset.sqmPerPackage || '0';
     const sqmPerPackage = parseFloat(sqmPerPackageRaw);
-    const packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
-    const variantId = component.dataset.variantId;
+    // Variante und Preis sind veraenderlich: Der Farbwaehler tauscht die
+    // Variante ohne Seitenwechsel aus, und dieser Block wird dabei nicht neu
+    // gerendert. Bis 2026-09-10 blieb deshalb die beim Seitenaufbau gewaehlte
+    // Variante stehen - wer "Blau Tief" waehlte, bekam "Blau Dunkel" in den
+    // Warenkorb. Beides wird jetzt aus variant:update nachgefuehrt.
+    let packagePriceCents = parseInt(component.dataset.packagePriceCents || '0', 10);
+    let variantId = component.dataset.variantId;
     const WASTE_FACTOR = 1.05;
     const SQM_STEP = 0.25;
 
@@ -386,7 +461,8 @@
     const needDisplay = component.querySelector('[data-need-display]');
     const sqmDisplay = component.querySelector('[data-sqm-display]');
     const packageDisplay = component.querySelector('[data-package-display]');
-    const packageUnitValue = component.querySelector('[data-package-unit-value]');
+    const packageWord = component.querySelector('[data-package-word]');
+    const unitHint = component.querySelector('[data-unit-hint]');
     const totalDisplay = component.querySelector('[data-total-display]');
     const wasteCheckbox = component.querySelector('[data-waste-checkbox]');
     const addToCartButton = component.querySelector('[data-add-to-cart]');
@@ -401,8 +477,11 @@
       return formatGermanNumber(value, sqmDecimals);
     }
 
+    // Tausenderpunkt, damit "1.178,00 €" nicht als "1178,00 €" dasteht.
+    const moneyFormat = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
     function formatMoney(cents) {
-      return formatGermanNumber(cents / 100) + ' €';
+      return moneyFormat.format(cents / 100) + ' €';
     }
 
     // Epsilon faengt Gleitkomma-Rauschen ab (z.B. wiederholtes += auf
@@ -455,16 +534,19 @@
       const actualSqm = packages * sqmPerPackage;
       const totalCents = packages * packagePriceCents;
 
-      if (needLabel) {
-        needLabel.textContent = getWasteFactor() > 1 ? 'Bedarf inkl. 5% Verschnitt' : 'Bedarf';
-      }
-
       // Solange niemand eine Flaeche genannt hat, wird auch keine behauptet.
       // Der Ruhezustand ist "1 Paket" - eine vorbelegte Zahl im Feld waere
       // eine erfundene Kundenangabe (und mit Verschnittzuschlag zusaetzlich
       // krumm).
+      const hatEingabe = !!sqmInput && sqmInput.value.trim() !== '';
+
+      if (needLabel) {
+        needLabel.textContent =
+          getWasteFactor() > 1 ? 'Benötigte Fläche inkl. 5% Verschnitt' : 'Benötigte Fläche';
+      }
+
       if (needDisplay) {
-        needDisplay.textContent = sqmInput && sqmInput.value.trim() === '' ? '–' : formatSqm(requiredSqm) + ' m²';
+        needDisplay.textContent = hatEingabe ? formatSqm(requiredSqm) + ' m²' : '–';
       }
 
       if (sqmDisplay) {
@@ -473,6 +555,18 @@
 
       if (packageDisplay) {
         packageDisplay.textContent = String(packages);
+      }
+
+      if (packageWord) {
+        packageWord.textContent = packages === 1 ? 'Originalpaket' : 'Originalpakete';
+      }
+
+      // Der Hinweis auf die Verkaufseinheit erscheint genau dann, wenn der
+      // Kunde weniger eingegeben hat, als ein Paket fasst - sonst waere er
+      // ueberfluessiger Text. Ohne Eingabe steht die Paketangabe bereits im
+      // Preisblock darueber.
+      if (unitHint) {
+        unitHint.hidden = !(hatEingabe && desiredSqm > 0 && desiredSqm < sqmPerPackage);
       }
 
       if (totalDisplay) {
@@ -487,7 +581,7 @@
     // Eingabefeld, weil der Nutzer hier gerade nicht selbst tippt.
     function syncInputValue() {
       if (sqmInput) {
-        sqmInput.value = desiredSqm.toFixed(2);
+        sqmInput.value = desiredSqm.toFixed(2).replace('.', ',');
       }
     }
 
@@ -513,16 +607,24 @@
       addToCartButton.disabled = true;
       addToCartButton.textContent = 'Wird hinzugefügt...';
 
+      // Alle Eigenschaften tragen einen Unterstrich und sind damit im
+      // Warenkorb unsichtbar (snippets/cart-products.liquid blendet sie aus),
+      // stehen aber weiterhin in der Bestellung fuer Kommissionierung und
+      // Support. Die Klartextzeile im Warenkorb rechnet Liquid aus der echten
+      // Zeilenmenge - eine hier mitgeschriebene Menge waere falsch, sobald der
+      // Kunde im Warenkorb nachjustiert.
+      const properties = {
+        _bedarf_qm: formatSqm(desiredSqm),
+        _pakete: String(packages),
+        _qm_gesamt: formatSqm(actualSqm),
+        _qm_pro_paket: formatSqm(sqmPerPackage),
+        _verschnitt: wasteCheckbox && wasteCheckbox.checked ? '5%' : '0%',
+      };
+
       const payload = {
         id: variantId,
         quantity: packages,
-        properties: {
-          'Benötigte Fläche': formatSqm(desiredSqm) + ' m²',
-          'Paket(e)': String(packages),
-          'm² gesamt (aufgerundet)': formatSqm(actualSqm) + ' m²',
-          'm² pro Paket': formatSqm(sqmPerPackage) + ' m²',
-          Verschnitt: wasteCheckbox && wasteCheckbox.checked ? '5%' : '0%',
-        },
+        properties: properties,
       };
 
       try {
@@ -575,15 +677,34 @@
       }
     }
 
+    // Akzeptiert "1,5" und "1.5", ignoriert Leerzeichen und alles andere.
+    function parseSqm(raw) {
+      const text = String(raw == null ? '' : raw).replace(/\s/g, '').replace(',', '.');
+      if (text === '') return null;
+      const parsed = parseFloat(text);
+      return isNaN(parsed) ? null : parsed;
+    }
+
     if (sqmInput) {
       sqmInput.addEventListener('input', function () {
-        const parsed = parseFloat(sqmInput.value.replace(',', '.'));
-        desiredSqm = isNaN(parsed) ? 0 : Math.max(0, parsed);
+        const parsed = parseSqm(sqmInput.value);
+        desiredSqm = parsed == null || parsed <= 0 ? 0 : parsed;
         renderResults();
       });
 
+      // Beim Verlassen wird die Eingabe normalisiert. Eine leere, eine 0 und
+      // eine negative Eingabe fuehren zurueck in den Ruhezustand: Feld leer,
+      // ein Paket kaufbar. Vorher schrieb das Feld dort "0,01" hinein - eine
+      // Zahl, die der Kunde nie eingegeben hat.
       sqmInput.addEventListener('blur', function () {
-        setDesiredSqm(desiredSqm);
+        const parsed = parseSqm(sqmInput.value);
+        if (parsed == null || parsed <= 0) {
+          sqmInput.value = '';
+          desiredSqm = sqmForPackages(1);
+          renderResults();
+          return;
+        }
+        setDesiredSqm(parsed);
       });
     }
 
@@ -633,9 +754,31 @@
       });
     }
 
-    if (packageUnitValue) {
-      packageUnitValue.textContent = formatSqm(sqmPerPackage);
-    }
+    // Horizon meldet den Variantenwechsel als "variant:update" am Abschnitt.
+    // Nur Ereignisse dieses Produkts zaehlen - eine Empfehlungskarte daneben
+    // darf den Rechner nicht umstellen.
+    const section = component.closest('.shopify-section');
+    const productId = '{{ product.id }}';
+
+    (section || document).addEventListener('variant:update', function (event) {
+      const detail = event.detail || {};
+      if (detail.data && String(detail.data.productId) !== productId) return;
+
+      const variant = detail.resource;
+      if (!variant || !variant.id) return;
+
+      variantId = String(variant.id);
+      component.dataset.variantId = variantId;
+
+      // variant.price kommt als Betrag in Cent aus dem Variant-JSON.
+      const preis = parseInt(variant.price, 10);
+      if (!isNaN(preis) && preis > 0) {
+        packagePriceCents = preis;
+        component.dataset.packagePriceCents = String(preis);
+      }
+
+      renderResults();
+    });
 
     // Kein syncInputValue() beim Start: das Feld bleibt leer, bis der Kunde
     // seine Flaeche nennt. desiredSqm traegt trotzdem den Wert fuer genau ein
