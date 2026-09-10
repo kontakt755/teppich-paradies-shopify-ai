@@ -178,12 +178,15 @@ schauen wir sie uns an und messen auf."* Das Aufmass ist der naechste Schritt, n
 Preis. Genau so machen es die Wettbewerber mit Massanfertigung (Teppichscheune:
 "Anfrage | Termin" statt Listenpreis).
 
-> **Korrektur nach Codex-Pruefung:** Die erste Fassung dieses Satzes versprach das Aufmass
-> "kostenlos im Umkreis von 15 km". Das ist **nicht belegt**. Belegt ist nur: Lieferung und
-> lose Verlegung kostenlos ab 649 EUR Warenwert innerhalb von 15 km. Ob das Aufmass etwas
-> kostet, hat Ahmet nicht gesagt — und eine Zusage, die niemand gemacht hat, gehoert nicht
-> auf eine Seite. **Offene Frage 3 an Ahmet: Ist das Aufmass kostenlos, und wenn ja, in
-> welchem Radius?** Bis dahin steht dort nur "wir messen auf".
+> **Zum Aufmass — Verlauf:** Die erste Fassung dieses Satzes versprach das Aufmass
+> "kostenlos im Umkreis von 15 km", ohne Beleg; das war erfunden und wurde entfernt.
+> **Am 2026-09-10 hat Ahmet bestaetigt: "Aufmass ist kostenlos."** Einen Radius hat er
+> dazu nicht genannt — deshalb steht auf der Seite "kostenloses Aufmass" ohne
+> Kilometerangabe. Wo ein Radius gebraucht wird, gilt bis auf Widerruf das Einsatzgebiet
+> (50 km); eine eigene Zahl fuer das Aufmass wird nicht behauptet.
+>
+> Satz fuer die Treppenseite damit: *"Jede Treppe ist anders — offene oder geschlossene
+> Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf."*
 
 ## 7. Reihenfolge fuer die Ausfuehrung
 
@@ -191,10 +194,9 @@ Preis. Genau so machen es die Wettbewerber mit Massanfertigung (Teppichscheune:
    Verdrahtung in `layout/theme.liquid`, `?modus=` aus den Templates), `tp-service-einstieg`
    aus den **drei** Verlegeseiten mit `final-cta` (nicht aus `boden-malerarbeiten`),
    Aufmass-Band immer sichtbar, Radius vereinheitlichen.
-2. **Treppenverlegung** neu aufbauen nach Abschnitt 5 — vorher Frage 3 aus Abschnitt 6
-   klaeren (Aufmass kostenlos?).
+2. **Treppenverlegung** neu aufbauen nach Abschnitt 5 (Aufmass kostenlos — bestaetigt).
 3. **Vinylboden-verlegen** nach demselben Muster nachziehen.
 4. **Teppichboden-verlegen** nur angleichen — ist am weitesten.
 
-**Status: Analyse abgeschlossen. Vor der Treppenseite (Schritt 2) sind die Aufmass-Konditionen (Frage 3) noch zu klaeren. Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
+**Status: Analyse abgeschlossen, alle drei Fragen beantwortet (Radius in drei Stufen, Treppen ohne Preis, Aufmass kostenlos). Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
 Die Kurzfassung steht als Kommentar in Issue #167.
