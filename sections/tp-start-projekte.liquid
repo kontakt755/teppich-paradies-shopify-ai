@@ -18,10 +18,11 @@
       {%- for block in section.blocks limit: 5 -%}
         <a class="tp-proj__item" href="{{ block.settings.link | default: section.settings.link | default: '/pages/unsere-arbeit' }}" {{ block.shopify_attributes }}>
           {%- if block.settings.bild != blank -%}
-            {%- if forloop.first -%}
-              {{ block.settings.bild | image_url: width: 1400 | image_tag: loading: 'lazy', widths: '600, 900, 1400', sizes: '(max-width: 767px) 100vw, 50vw', alt: block.settings.bild.alt | default: block.settings.objekt, class: 'tp-proj__img' }}
+            {%- assign proj_alt = block.settings.bild.alt | default: block.settings.objekt -%}
+          {%- if forloop.first -%}
+              {{ block.settings.bild | image_url: width: 1400 | image_tag: loading: 'lazy', widths: '600, 900, 1400', sizes: '(max-width: 767px) 100vw, 50vw', alt: proj_alt, class: 'tp-proj__img' }}
             {%- else -%}
-              {{ block.settings.bild | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 50vw, 25vw', alt: block.settings.bild.alt | default: block.settings.objekt, class: 'tp-proj__img' }}
+              {{ block.settings.bild | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 50vw, 25vw', alt: proj_alt, class: 'tp-proj__img' }}
             {%- endif -%}
           {%- else -%}
             {{ 'lifestyle-1' | placeholder_svg_tag: 'tp-proj__img' }}
@@ -42,7 +43,7 @@
 
 {% stylesheet %}
   .tp-proj__grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 14px; height: 520px; }
-  .tp-proj__item { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; display: block; }
+  .tp-proj__item { position: relative; height: 100%; border-radius: 14px; overflow: hidden; background: #ede7de; display: block; }
   .tp-proj__item:first-child { grid-row: 1 / 3; }
   .tp-proj__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
   .tp-proj__item:hover .tp-proj__img { transform: scale(1.04); }

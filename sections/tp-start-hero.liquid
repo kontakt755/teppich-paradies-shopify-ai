@@ -45,7 +45,12 @@
     </div>
     <div class="tp-hero__media">
       {%- if section.settings.bild != blank -%}
-        {{ section.settings.bild | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '640, 960, 1280, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: section.settings.bild.alt | default: section.settings.bild_caption, class: 'tp-hero__img' }}
+        {%- comment -%}
+          alt zuerst zuweisen: eine Filterkette im alt-Argument verschluckt alle
+          folgenden Argumente von image_tag - class kam sonst nie am Bild an.
+        {%- endcomment -%}
+        {%- assign hero_alt = section.settings.bild.alt | default: section.settings.bild_caption -%}
+        {{ section.settings.bild | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '640, 960, 1280, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: hero_alt, class: 'tp-hero__img' }}
       {%- else -%}
         <div class="tp-hero__platzhalter">{{ 'image' | placeholder_svg_tag }}</div>
       {%- endif -%}

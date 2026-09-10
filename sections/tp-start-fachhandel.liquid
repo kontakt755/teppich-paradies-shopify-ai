@@ -8,7 +8,8 @@
   <div class="tp-s-wrap tp-fh__wrap">
     <div class="tp-fh__media">
       {%- if section.settings.bild != blank -%}
-        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(max-width: 1023px) 100vw, 50vw', alt: section.settings.bild.alt | default: section.settings.heading, class: 'tp-fh__img' }}
+        {%- assign fh_alt = section.settings.bild.alt | default: section.settings.heading -%}
+        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '600, 900, 1200', sizes: '(max-width: 1023px) 100vw, 50vw', alt: fh_alt, class: 'tp-fh__img' }}
       {%- else -%}
         {{ 'lifestyle-2' | placeholder_svg_tag: 'tp-fh__img' }}
       {%- endif -%}
