@@ -39,7 +39,8 @@ Einstiege in 90 Tagen (ohne Ads, Shop in der Bauphase):
 | `/pages/liefer-verlegeservice` | 98 | 2 % |
 | alle Kollektions- und Produktseiten zusammen | < 500 | < 10 % |
 
-**Schon heute landen 37 % direkt auf den drei Verlegeseiten** — ohne eine einzige Anzeige.
+**Schon heute landen rund 35 % direkt auf den drei Verlegeseiten** (1.819 von 5.136;
+mit der allgemeinen Serviceseite 37 %) — ohne eine einzige Anzeige.
 Mit Ads kippt das weiter: Suchanzeigen fuer "Treppenverlegung Oranienburg" fuehren auf die
 Treppenseite, Shopping-Anzeigen (siehe `GOOGLE_ADS_TODAY.md`, Merchant Center) auf
 Produktseiten. Die Startseite wird zu einem Einstieg unter mehreren, vor allem fuer
@@ -60,11 +61,28 @@ die groesseren werden — beruehren sie kaum.
 
 ### Die zwei Boxen (Phase 1)
 
-Funktionieren als Wegweiser fuer den ersten Weg. Kosten nichts, sind ueber
-Editor-Einstellungen reversibel. **Aber sie sind kein Hebel** fuer den Traffic, der
-gekauft wird. Aesthetisch: reine Textkaesten mit Haekchen, keine Bilder — der Shop hat
-noch keine fertigen Produktfotos, die Projektfotos aus dem Kundenbilder-Raster waeren die
-einzige Bildquelle.
+**Sichtpruefung am Wegwerf-Theme, 2026-09-09 spaetabends** (Screenshots im Browser bei
+1280 px und 390 px, Klickziele per Skript geprueft):
+
+- 1280 px: Hero-Band 260 px hoch, darunter "Wie sollen wir Ihnen helfen?" und die zwei
+  Boxen nebeneinander (540/540 px, gleich hoch), Boxen ab 377 px von oben. Die Boxen sind
+  Textkaesten mit duennem Rahmen, Kleinzeile in Versalien, Ueberschrift, ein Satz, drei
+  Haekchen-Zeilen, schwarzer Button. Sauber, aber ohne Bild — sie wirken wie ein
+  Formular, nicht wie ein Einstieg.
+- 390 px: einspaltig 326/326 px, Boxen ab 429 px, Touch-Ziele 46/46/44 px, kein
+  Querscroll. Die erste Box endet etwa am unteren Bildschirmrand; die zweite ("Liefern
+  und verlegen lassen") liegt unter der Falz und braucht einen Scroll.
+- Klickziele: `/collections/all` (200) und `/pages/liefer-verlegeservice` (200), beide mit
+  `?modus=…`-Parameter, der nach dem Rueckbau entfaellt.
+
+**Bewertung.** Als Wegweiser fuer Marken- und Direkt-Traffic plausibel — das ist eine
+**Hypothese, keine Messung**; Klicks werden erst mit den Customer Events gezaehlt. Sie
+kosten nichts und sind ueber Editor-Einstellungen reversibel. **Aber sie sind kein
+Hebel** fuer den Traffic, der gekauft wird. Der optische Eindruck ("nicht gelungen") ist
+nachvollziehbar: reine Textkaesten, keine Bilder — der Shop hat noch keine fertigen
+Produktfotos, die Projektfotos aus dem Kundenbilder-Raster waeren die einzige Bildquelle.
+Wenn die Boxen bleiben, ist ein Projektfoto je Box die eine Aenderung, die den Eindruck
+dreht; das ist Kosmetik und wartet, bis die Landingpages stehen.
 
 ### Der Modus (Phase 3)
 
@@ -142,16 +160,24 @@ Preisstellen sagen "15 km".
 **Treppen — kein Preisanker.** "Treppen sind sehr unterschiedlich." Dann steht auf der
 Seite auch kein Preis, und das Fehlen wird zum Argument statt zur Luecke:
 *"Jede Treppe ist anders — offene oder geschlossene Stufen, Kanten, Podeste. Deshalb
-schauen wir sie uns an und messen auf, kostenlos im Umkreis von 15 km."* Das Aufmass ist
-der naechste Schritt, nicht der Preis. Genau so machen es die Wettbewerber mit
-Massanfertigung (Teppichscheune: "Anfrage | Termin" statt Listenpreis).
+schauen wir sie uns an und messen auf."* Das Aufmass ist der naechste Schritt, nicht der
+Preis. Genau so machen es die Wettbewerber mit Massanfertigung (Teppichscheune:
+"Anfrage | Termin" statt Listenpreis).
+
+> **Korrektur nach Codex-Pruefung:** Die erste Fassung dieses Satzes versprach das Aufmass
+> "kostenlos im Umkreis von 15 km". Das ist **nicht belegt**. Belegt ist nur: Lieferung und
+> lose Verlegung kostenlos ab 649 EUR Warenwert innerhalb von 15 km. Ob das Aufmass etwas
+> kostet, hat Ahmet nicht gesagt — und eine Zusage, die niemand gemacht hat, gehoert nicht
+> auf eine Seite. **Offene Frage 3 an Ahmet: Ist das Aufmass kostenlos, und wenn ja, in
+> welchem Radius?** Bis dahin steht dort nur "wir messen auf".
 
 ## 7. Reihenfolge fuer die Ausfuehrung
 
 1. **Rueckbau**: Modus raus (`tp-modus.liquid`, `tp-modus-band.liquid`, `tp-modus.css`,
    Verdrahtung in `layout/theme.liquid`, `?modus=` aus den Templates), `tp-service-einstieg`
    aus den vier Verlegeseiten, Aufmass-Band immer sichtbar, Radius vereinheitlichen.
-2. **Treppenverlegung** neu aufbauen nach Abschnitt 5.
+2. **Treppenverlegung** neu aufbauen nach Abschnitt 5 — vorher Frage 3 aus Abschnitt 6
+   klaeren (Aufmass kostenlos?).
 3. **Vinylboden-verlegen** nach demselben Muster nachziehen.
 4. **Teppichboden-verlegen** nur angleichen — ist am weitesten.
 
