@@ -121,6 +121,9 @@
       var liste = bilderVon(p);
       var b = liste[bIdx];
       if (!b) return;
+      // Die kleine Fassung liegt meist schon aus dem Raster im Cache. Sie steht
+      // als Hintergrund sofort, das grosse Bild legt sich darueber, sobald es da ist.
+      bild.style.backgroundImage = 'url("' + mitBreite(b.u, 400) + '")';
       bild.src = mitBreite(b.u, 1400);
       bild.srcset = srcsetBauen(b.u, [600, 900, 1400, 1800]);
       bild.sizes = '(max-width: 899px) 100vw, 62vw';

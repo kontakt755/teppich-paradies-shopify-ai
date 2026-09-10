@@ -7,7 +7,9 @@
 <script src="{{ 'tp-arbeiten.js' | asset_url }}" defer></script>
 
 {%- liquid
-  assign alle = shop.metaobjects.tp_projekt.values
+  # sort macht aus der Metaobjekt-Sammlung ein echtes Array. Ohne das liefert
+  # der Zugriff alle[i] nichts - die Sammlung selbst kennt keinen Index.
+  assign alle = shop.metaobjects.tp_projekt.values | sort: 'handle'
 
   # Nach dem Feld "reihenfolge" sortieren. Liquid kann Metaobjekt-Felder nicht
   # direkt sortieren, deshalb ueber einen Schluessel aus Rang und Position.
@@ -83,6 +85,7 @@
           assign pos = eintrag | split: '-' | last | times: 1
           assign projekt = alle[pos]
         -%}
+        {%- if projekt == blank -%}{%- continue -%}{%- endif -%}
         {%- if projekt.titelbild.value == blank -%}{%- continue -%}{%- endif -%}
         {%- if grenze != blank and projekt.kategorie.value != grenze -%}{%- continue -%}{%- endif -%}
         {%- liquid
@@ -171,6 +174,45 @@
   {%- endcapture -%}
   <script type="application/json" data-tp-daten>{{ daten }}</script>
 
+
+  {%- comment -%}
+    Strukturierte Daten: die Galerie als ImageGallery mit den einzelnen Bildern.
+    Gibt Google die Zuordnung Bild -> Projekt -> Ort, ohne Text auf der Seite zu blaehen.
+  {%- endcomment -%}
+  {%- capture strukturdaten -%}
+    {
+      "@context": "https://schema.org",
+      "@type": "ImageGallery",
+      "name": {{ section.settings.heading | json }},
+      "url": {{ request.origin | append: request.path | json }},
+      "about": {{ 'Verlegte Bodenbelaege von Teppich Paradies Oranienburg' | json }},
+      "associatedMedia": [
+        {%- assign erstes_ld = true -%}
+        {%- for eintrag in sortiert -%}
+          {%- liquid
+            assign pos = eintrag | split: '-' | last | times: 1
+            assign projekt = alle[pos]
+          -%}
+          {%- if projekt == blank or projekt.titelbild.value == blank -%}{%- continue -%}{%- endif -%}
+          {%- if grenze != blank and projekt.kategorie.value != grenze -%}{%- continue -%}{%- endif -%}
+          {%- unless erstes_ld -%},{%- endunless -%}
+          {%- assign erstes_ld = false -%}
+          {%- assign ld_bild = projekt.titelbild.value -%}
+          {
+            "@type": "ImageObject",
+            "contentUrl": {{ ld_bild | image_url: width: 1400 | prepend: 'https:' | json }},
+            "name": {{ projekt.titel.value | json }},
+            "description": {{ ld_bild.alt | default: projekt.titel.value | json }}
+            {%- if projekt.ort.value != blank -%}
+            , "contentLocation": { "@type": "Place", "name": {{ projekt.ort.value | json }} }
+            {%- endif -%}
+          }
+        {%- endfor -%}
+      ]
+    }
+  {%- endcapture -%}
+  <script type="application/ld+json">{{ strukturdaten }}</script>
+
   <dialog class="tp-lb" data-tp-lightbox aria-label="Projektansicht">
     <div class="tp-lb__kopf">
       <p class="tp-lb__zaehler" data-tp-lb-zaehler></p>
@@ -208,7 +250,9 @@
 {%- endif -%}
 
 {% stylesheet %}
-  .tp-arb__filter { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 22px; scrollbar-width: none; scroll-snap-type: x proximity; }
+  /* Ab Tablet umbrechen - eine abgeschnittene Chip-Reihe sieht auf Desktop
+     nach Fehler aus. Erst auf dem Telefon wird daraus eine Wischleiste. */
+  .tp-arb__filter { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 4px; margin-bottom: 22px; }
   .tp-arb__filter::-webkit-scrollbar { display: none; }
   .tp-arb__chip { flex: none; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--tp-line); background: #fff; color: var(--tp-ink); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s, border-color 0.15s; }
   .tp-arb__chip:hover { border-color: var(--tp-line-2); background: var(--tp-bg-2); }
@@ -255,14 +299,19 @@
   .tp-lb__thumb { width: 72px; height: 54px; padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden; background: var(--tp-bg-3); cursor: pointer; }
   .tp-lb__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .tp-lb__thumb.is-aktiv { border-color: var(--tp-red); }
-  .tp-lb__cta { margin-top: auto; align-self: flex-start; }
+  .tp-lb__cta { margin-top: 6px; align-self: flex-start; }
+  .tp-lb__bild { background-size: contain; background-position: center; background-repeat: no-repeat; }
+  /* Zwei Klassen, damit die Regel gegen .tp-s-sec aus tp-startseite.css gewinnt. */
+  .tp-s-sec.tp-arb { padding-top: 0; }
 
   @media (max-width: 1023px) {
     .tp-arb__grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-    .tp-lb__koerper { grid-template-columns: 1fr; grid-template-rows: auto auto; max-height: calc(92vh - 65px); overflow-y: auto; }
+    .tp-lb__koerper { grid-template-columns: 1fr; grid-template-rows: auto 1fr; max-height: calc(92vh - 65px); overflow-y: auto; }
     .tp-lb__bild { max-height: 58vh; }
   }
   @media (max-width: 767px) {
+    .tp-arb__filter { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; margin-inline: calc(var(--tp-pad) * -1); padding-inline: var(--tp-pad); }
+    .tp-arb__filter::-webkit-scrollbar { display: none; }
     .tp-arb__grid { grid-template-columns: 1fr; gap: 14px; }
     .tp-arb__karte { aspect-ratio: 4 / 3; border-radius: var(--tp-r); }
     .tp-arb__titel { font-size: 17px; }

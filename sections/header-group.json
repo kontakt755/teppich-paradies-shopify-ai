@@ -364,20 +364,6 @@
         "tp_kachel_kontakt_vorort"
       ]
     },
-    "divider_BkWxdN": {
-      "type": "divider",
-      "name": "t:names.divider_section",
-      "settings": {
-        "color_scheme": "",
-        "section_width": "page-width",
-        "thickness": 1,
-        "corner_radius": "square",
-        "width_percent": 100,
-        "alignment_horizontal": "center",
-        "padding-block-start": 16,
-        "padding-block-end": 16
-      }
-    },
     "tp_topbar": {
       "type": "tp-topbar",
       "settings": {
@@ -491,7 +477,6 @@
   "order": [
     "tp_topbar",
     "header_section",
-    "tp_header_suche",
-    "divider_BkWxdN"
+    "tp_header_suche"
   ]
 }
