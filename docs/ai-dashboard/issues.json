@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-10T08:56:14.970Z",
+  "generated_at": "2026-09-10T09:22:46.970Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 59,
+  "count": 60,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-10T08:56:14.970Z",
+    "fetchedAt": "2026-09-10T09:22:46.970Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,15 +63,15 @@
   },
   "issues": [
     {
-      "number": 173,
-      "title": "Verlegegebiet-Karte fuer die Verlegeseiten",
+      "number": 175,
+      "title": "Produktseite Paketware: vier Defekte im Kaufbereich",
       "state": "open",
-      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/173",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/175",
       "labels": [
         "status:eingang",
-        "type:verbesserung",
-        "priority:p2",
-        "area:service"
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
       ],
       "assignee": "kontakt755",
       "assignees": [
@@ -82,8 +82,32 @@
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
+      "created_at": "2026-09-10T09:22:34Z",
+      "updated_at": "2026-09-10T09:22:35Z",
+      "closed_at": null
+    },
+    {
+      "number": 173,
+      "title": "Verlegegebiet-Karte fuer die Verlegeseiten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/173",
+      "labels": [
+        "status:in-arbeit",
+        "type:verbesserung",
+        "priority:p2",
+        "area:service"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
       "created_at": "2026-09-10T08:55:57Z",
-      "updated_at": "2026-09-10T08:55:58Z",
+      "updated_at": "2026-09-10T08:57:15Z",
       "closed_at": null
     },
     {
