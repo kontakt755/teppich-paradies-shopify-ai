@@ -2,8 +2,13 @@
 """PLZ- und Ortstabelle fuer die Sektion "TP Verlegegebiet" erzeugen.
 
 Damit prueft die Sektion offline, ob ein Wohnort im Verlegegebiet liegt -
-ohne Geocoding-Dienst, ohne Schluessel, ohne Kosten. Die Kartenbilder baut
-das Schwesterskript scripts/build-verlegegebiet-karte.mjs.
+ohne Geocoding-Dienst, ohne Schluessel, ohne Kosten.
+
+Nebenbei entsteht .cache/verlegegebiet-punkte.json mit den Koordinaten. Daraus
+zeichnet scripts/build-verlegegebiet-karte.mjs den Umriss des Verlegegebiets.
+Beide lesen damit dieselbe Quelle - die Flaeche auf der Karte und die Antwort
+der Pruefung koennen so gar nicht auseinanderlaufen. Dieses Skript zuerst
+laufen lassen.
 
 Aufruf:
     python3 scripts/build-verlegegebiet-orte.py
@@ -32,9 +37,13 @@ UA = "TeppichParadies-Theme/1.0 (kontakt@teppich-paradies.net)"
 # --- PLZ-Tabelle ----------------------------------------------------------
 GEONAMES = "https://download.geonames.org/export/zip/DE.zip"
 MAX_KM = 90          # Reserve ueber dem im Editor einstellbaren Radius (max. 60)
+# Fuer den Umriss braucht die Karte auch Punkte ausserhalb: sie begrenzen die
+# aeusseren Zellen, sonst franst die Flaeche am Rand aus.
+PUNKTE_KM = 130
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, "assets")
+CACHE = os.path.join(ROOT, ".cache")
 
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -57,6 +66,7 @@ def plz_tabelle_bauen():
     with zipfile.ZipFile(io.BytesIO(daten)) as z:
         zeilen = z.read("DE.txt").decode("utf-8").splitlines()
 
+    punkte = {}
     plz = {}
     # Grossstaedte reichen ueber den Rand, deshalb je Ort die naechste und die
     # entfernteste PLZ - sonst meldet "Berlin" pauschal "im Gebiet".
@@ -69,9 +79,11 @@ def plz_tabelle_bauen():
             km = haversine(LAT, LON, float(c[9]), float(c[10]))
         except ValueError:
             continue
+        code, ort = c[1], c[2]
+        if km <= PUNKTE_KM and (code not in punkte or km < punkte[code][2]):
+            punkte[code] = [round(float(c[10]), 5), round(float(c[9]), 5), round(km, 1)]
         if km > MAX_KM:
             continue
-        code, ort = c[1], c[2]
         if code not in plz or km < plz[code]:
             plz[code] = km
         n = normalisieren(ort)
@@ -91,6 +103,13 @@ def plz_tabelle_bauen():
         }, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{os.path.basename(ziel)}  {len(plz)} PLZ, {len(orte)} Orte, "
           f"{os.path.getsize(ziel) / 1024:.0f} KB")
+
+    os.makedirs(CACHE, exist_ok=True)
+    punkteziel = os.path.join(CACHE, "verlegegebiet-punkte.json")
+    with open(punkteziel, "w", encoding="utf-8") as f:
+        json.dump(punkte, f, separators=(",", ":"))
+    print(f"{os.path.join('.cache', 'verlegegebiet-punkte.json')}  {len(punkte)} Punkte bis "
+          f"{PUNKTE_KM} km (Vorlage fuer den Umriss, nicht im Repository)")
 
 
 if __name__ == "__main__":

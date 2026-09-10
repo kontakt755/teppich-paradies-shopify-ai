@@ -1,43 +1,38 @@
 {% comment %}
-  Verlegegebiet rund um Oranienburg: vorgerenderte Karte mit Radiusflaeche,
-  Standortkarte, optionaler PLZ-Pruefung und zwei Kontaktwegen.
+  Verlegegebiet rund um Oranienburg: vorgerenderte Karte mit markierter
+  Flaeche, Standortkarte, optionaler PLZ-Pruefung und zwei Kontaktwegen.
 
   Warum ein Bild und keine Live-Karte: die Sektion braucht weder Zoom noch
   Pan. Ein statisches WebP kostet keinen externen Request (damit keine
   Einwilligung noetig), kein JavaScript fuer die Darstellung, keinen Layout
   Shift - und es kann auf dem Smartphone das Scrollen nicht abfangen.
 
-  Die Bilder rendert scripts/build-verlegegebiet-karte.mjs aus Vektorkacheln
-  in doppelter Aufloesung, die Ortstabelle baut scripts/build-verlegegebiet-orte.py.
-  Aendert sich der Standort, muessen beide neu laufen; der Kreis rechnet mit der
-  Geometrie unten und darf nicht raten.
+  Die Bilder rendert scripts/build-verlegegebiet-karte.mjs, die Ortstabelle
+  baut scripts/build-verlegegebiet-orte.py. Aendert sich der Standort, muessen
+  beide neu laufen.
+
+  Die Flaeche ist kein Kreis, sondern der Umriss der Postleitzahlen, gegen die
+  auch die Pruefung im Formular laeuft - beide stammen aus derselben Quelle und
+  koennen deshalb nicht auseinanderlaufen. Der Pfad kommt fertig aus dem
+  Snippet tp-verlegegebiet-flaeche, je Stufe des Reglers einer.
 
   Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
     desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
     mobile    340 x 380 Bildpunkte, 370.24 m je Punkt
-  Der Kreisdurchmesser in Prozent der Bildbreite ist deshalb
-    radius_km * 2000 / meter_je_punkt / bildbreite * 100.
-  Weil Web Mercator winkeltreu ist, bleibt ein 50-km-Kreis auf dieser Breite
-  bis auf rund zwei Prozent ein Kreis - eine Ellipse waere hier falsch.
+  Der Pfad ist in Desktop-Bildpunkten notiert; die schmale Karte hat den halben
+  Massstab und deshalb eine eigene viewBox ueber den doppelten Ausschnitt.
 {% endcomment %}
 
 {%- liquid
-  assign vg_radius = section.settings.radius | at_least: 10 | at_most: 60
+  assign vg_radius = section.settings.radius | at_least: 30 | at_most: 60
 
-  assign vg_dt_kreis = vg_radius | times: 2000.0 | divided_by: 185.12 | divided_by: 1000 | times: 100
-  assign vg_mb_kreis = vg_radius | times: 2000.0 | divided_by: 370.24 | divided_by: 340 | times: 100
-
-  assign vg_karte_alt = 'Karte der Region um Oranienburg. Der markierte Kreis zeigt das Verlegegebiet von etwa ' | append: vg_radius | append: ' Kilometern rund um unseren Standort; Berlin und Potsdam liegen darin.'
+  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
 -%}
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
-  style="
-    {% render 'spacing-style', settings: section.settings %}
-    --tp-vg-kreis-desktop: {{ vg_dt_kreis }}%;
-    --tp-vg-kreis-mobile: {{ vg_mb_kreis }}%;
-  "
+  style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-verlegegebiet-{{ section.id }}"
   data-radius="{{ vg_radius }}"
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
@@ -81,11 +76,16 @@
           >
         </picture>
 
-        {%- comment -%} Radiusflaeche und Standort liegen als Markup ueber dem Bild,
-          damit sie in Markenfarbe und bei jeder Breite scharf bleiben. {%- endcomment -%}
-        <span class="tp-vg__radius" aria-hidden="true">
-          <span class="tp-vg__radius-label">ca. {{ vg_radius }} km</span>
-        </span>
+        {%- comment -%} Flaeche und Standort liegen als Markup ueber dem Bild,
+          damit sie in Markenfarbe und bei jeder Breite scharf bleiben. Zwei
+          SVG, weil die beiden Karten verschiedene Massstaebe haben und eine
+          viewBox sich nicht per CSS umschalten laesst. {%- endcomment -%}
+        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -350 1000 700" aria-hidden="true" focusable="false">
+          {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
+        </svg>
+        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-340 -380 680 760" aria-hidden="true" focusable="false">
+          {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
+        </svg>
 
         <span class="tp-vg__marker" aria-hidden="true">
           <span class="tp-vg__punkt"></span>
@@ -96,9 +96,10 @@
         </span>
       </div>
 
-      {%- comment -%} Bildunterschrift statt Legende: der Punkt traegt seinen Namen
-        schon auf der Karte, der Kreis seine Kilometerzahl. Farbige Punkte davor
-        haetten wie Bedienelemente ausgesehen, ohne welche zu sein. {%- endcomment -%}
+      {%- comment -%} Bildunterschrift statt Legende: der Standort traegt seinen
+        Namen schon auf der Karte, die Flaeche erklaert diese Zeile. Farbige
+        Punkte davor haetten wie Bedienelemente ausgesehen, ohne welche zu sein.
+      {%- endcomment -%}
       <figcaption class="tp-vg__legende">
         <span>Reguläres Verlegegebiet, ca. {{ vg_radius }} km rund um {{ section.settings.standort_ort | escape }}</span>
         <span>Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a>-Mitwirkende</span>
@@ -259,36 +260,27 @@
       linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 22px);
   }
 
-  /* Der Kreis wird ueber die Bildbreite bemasst, nicht ueber den Container -
-     beide sind identisch, weil aspect-ratio dem Bild entspricht. */
-  .tp-vg__radius {
+  /* Die Flaeche liegt als Vektor ueber dem Bild: in Markenfarbe, bei jeder
+     Breite scharf und ueber den Regler austauschbar, ohne dass die Karte neu
+     gebaut werden muss. */
+  .tp-vg__gebiet {
     position: absolute;
     z-index: 2;
-    box-sizing: border-box;
-    top: 50%;
-    left: 50%;
-    width: var(--tp-vg-kreis-desktop);
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%);
-    border: 2px solid rgb(var(--tp-vg-ton) / 0.62);
-    border-radius: 50%;
-    background: rgb(var(--tp-vg-ton) / 0.09);
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  .tp-vg__radius-label {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 0 0 1px rgb(var(--tp-vg-ton) / 0.35);
-    color: #6f5836;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
+  .tp-vg__gebiet--schmal {
+    display: none;
+  }
+
+  .tp-vg__gebiet-form {
+    fill: rgb(var(--tp-vg-ton) / 0.14);
+    stroke: rgb(var(--tp-vg-ton) / 0.85);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
   }
 
   .tp-vg__marker {
@@ -541,8 +533,12 @@
       border-radius: 12px;
     }
 
-    .tp-vg__radius {
-      width: var(--tp-vg-kreis-mobile);
+    .tp-vg__gebiet--breit {
+      display: none;
+    }
+
+    .tp-vg__gebiet--schmal {
+      display: block;
     }
 
     /* Auf der schmalen Karte stehen mehr Namen am Rand an; der Verlauf faellt
@@ -636,10 +632,10 @@
       "type": "range",
       "id": "radius",
       "label": "Radius in km",
-      "info": "Der Kartenausschnitt ist fest; bis 60 km bleibt der Kreis vollstaendig sichtbar.",
-      "min": 10,
+      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt.",
+      "min": 30,
       "max": 60,
-      "step": 5,
+      "step": 10,
       "unit": "km",
       "default": 50
     },
