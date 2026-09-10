@@ -239,8 +239,14 @@
   }
 {% endstyle %}
 
+{% comment %}
+  Die Klasse tp-paket-auswahl ist der stabile Anker: Der Elementname traegt die
+  Block-ID und ist damit je Template verschieden. assets/sticky-add-to-cart.js
+  findet ueber diese Klasse den Kaufweg, weil Paketprodukte keinen
+  Standard-Kaufblock mehr rendern (siehe blocks/buy-buttons.liquid).
+{% endcomment %}
 <carpet-package-selector-{{ package_selector_id }}
-  class="carpet-package-{{ package_selector_id }}"
+  class="carpet-package-{{ package_selector_id }} tp-paket-auswahl"
   data-sqm-per-package="{{ sqm_per_package }}"
   data-package-price-cents="{{ selected_variant.price }}"
   data-variant-id="{{ selected_variant.id }}"
@@ -269,6 +275,7 @@
         step="0.01"
         min="0.01"
         id="tp-sqm-input-{{ package_selector_id }}"
+        placeholder="z. B. 18,00"
         data-sqm-input
       >
 
@@ -284,9 +291,16 @@
       </button>
     </div>
 
+    {% comment %}
+      Verschnitt ist vorausgewaehlt. Abgewaehlt empfahl der Rechner die
+      knappest moegliche Bestellung - beim Bodenbelag der teure Fehler, weil
+      fehlendes Material eine Nachbestellung aus anderer Charge bedeutet
+      (Befund 2026-09-10). Abwaehlbar bleibt es fuer alle, die selbst
+      gerechnet haben.
+    {% endcomment %}
     <label class="carpet-package__waste-{{ package_selector_id }}">
-      <input type="checkbox" data-waste-checkbox>
-      <span>+ 5% Verschnitt</span>
+      <input type="checkbox" data-waste-checkbox checked>
+      <span>+ 5% Verschnitt (empfohlen)</span>
     </label>
   </div>
 
@@ -356,8 +370,16 @@
     // (addToCart) verwendet, damit beide niemals auseinanderlaufen. Sowohl das
     // primäre m²-Feld als auch die sekundäre manuelle Paketanpassung verändern
     // ausschließlich desiredSqm - es gibt keinen zweiten, unabhängigen Zustand.
+    // Startwert so waehlen, dass der Ruhezustand der Seite genau ein Paket
+    // zeigt - AUCH mit vorausgewaehltem Verschnitt. Ein glatter Startwert von
+    // einer vollen Paketflaeche wuerde mit dem Zuschlag darueber liegen und
+    // die Seite unaufgefordert mit zwei Paketen und doppeltem Preis oeffnen.
+    // Abgerundet auf zwei Nachkommastellen, damit die Rueckrechnung im
+    // Eingabefeld nicht durch Rundung wieder ueber die Paketgrenze kippt.
     const initialPackages = parseInt(component.dataset.initialPackages || '1', 10);
-    let desiredSqm = Math.max(1, initialPackages) * sqmPerPackage;
+    const initialWasteFactor = component.querySelector('[data-waste-checkbox]')?.checked ? WASTE_FACTOR : 1.0;
+    let desiredSqm =
+      Math.floor(((Math.max(1, initialPackages) * sqmPerPackage) / initialWasteFactor) * 100) / 100;
 
     const sqmInput = component.querySelector('[data-sqm-input]');
     const needLabel = component.querySelector('[data-need-label]');
@@ -391,6 +413,14 @@
 
     function getWasteFactor() {
       return wasteCheckbox && wasteCheckbox.checked ? WASTE_FACTOR : 1.0;
+    }
+
+    // Umkehrung von computePackages: die Flaeche, die genau n Pakete deckt -
+    // Verschnittzuschlag herausgerechnet. Abgerundet auf zwei Nachkommastellen,
+    // damit die Rueckrechnung ueber das Eingabefeld (toFixed(2)) nicht durch
+    // Rundung ueber die Paketgrenze kippt und ein Paket zu viel bestellt.
+    function sqmForPackages(packages) {
+      return Math.floor(((Math.max(1, packages) * sqmPerPackage) / getWasteFactor()) * 100) / 100;
     }
 
     function getRequiredSqm() {
@@ -429,8 +459,12 @@
         needLabel.textContent = getWasteFactor() > 1 ? 'Bedarf inkl. 5% Verschnitt' : 'Bedarf';
       }
 
+      // Solange niemand eine Flaeche genannt hat, wird auch keine behauptet.
+      // Der Ruhezustand ist "1 Paket" - eine vorbelegte Zahl im Feld waere
+      // eine erfundene Kundenangabe (und mit Verschnittzuschlag zusaetzlich
+      // krumm).
       if (needDisplay) {
-        needDisplay.textContent = formatSqm(requiredSqm) + ' m²';
+        needDisplay.textContent = sqmInput && sqmInput.value.trim() === '' ? '–' : formatSqm(requiredSqm) + ' m²';
       }
 
       if (sqmDisplay) {
@@ -571,14 +605,18 @@
       }
 
       // Sekundäre, manuelle Paketanpassung: verändert ebenfalls nur
-      // desiredSqm (um eine ganze Paketgröße), kein zweiter Zustand.
+      // desiredSqm, kein zweiter Zustand. Der Schritt zielt auf die
+      // Paketanzahl selbst (sqmForPackages), nicht auf "plus eine
+      // Paketfläche" - sonst addierte man eine Bruttofläche auf einen
+      // Nettobedarf, und ein Klick sprang bei aktivem Verschnitt von einem
+      // auf drei Pakete.
       if (increasePackages) {
-        setDesiredSqm(desiredSqm + sqmPerPackage);
+        setDesiredSqm(sqmForPackages(computePackages() + 1));
         return;
       }
 
       if (decreasePackages) {
-        setDesiredSqm(Math.max(sqmPerPackage, desiredSqm - sqmPerPackage));
+        setDesiredSqm(sqmForPackages(Math.max(1, computePackages() - 1)));
         return;
       }
 
@@ -599,7 +637,9 @@
       packageUnitValue.textContent = formatSqm(sqmPerPackage);
     }
 
-    syncInputValue();
+    // Kein syncInputValue() beim Start: das Feld bleibt leer, bis der Kunde
+    // seine Flaeche nennt. desiredSqm traegt trotzdem den Wert fuer genau ein
+    // Paket, damit die Seite kaufbereit oeffnet.
     renderResults();
   })();
 </script>

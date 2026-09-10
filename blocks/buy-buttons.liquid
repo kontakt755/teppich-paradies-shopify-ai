@@ -17,6 +17,19 @@
   assign can_add_to_cart = false
   assign add_to_cart_text = 'products.product.unavailable' | t
 
+  # Paketware hat auf der Produktseite genau einen Kaufweg: den Paket-Rechner
+  # (blocks/paket-auswahl.liquid). Der legt die berechnete Paketzahl samt
+  # Flaechenangaben in den Warenkorb. Stand daneben zusaetzlich dieser
+  # Standard-Kaufblock, gab es zwei Buttons mit zwei Ergebnissen - "Menge 3"
+  # hiess dort drei Pakete ohne jeden m2-Bezug und ohne Zeileneigenschaften
+  # (Befund 2026-09-10). Bedingung ist absichtlich dieselbe wie die
+  # Render-Bedingung des Rechners: custom.qm_pro_paket > 0.
+  assign tp_sqm_per_package = product.metafields.custom.qm_pro_paket.value | times: 1.0
+  assign tp_hide_buy_buttons = false
+  if template.name == 'product' and tp_sqm_per_package > 0
+    assign tp_hide_buy_buttons = true
+  endif
+
   if variant
     if variant.quantity_rule.min > variant.inventory_quantity and inventory_managed and inventory_policy == 'deny'
       assign quantity_rule_soldout = true
@@ -35,6 +48,7 @@
   endif
 %}
 
+{%- unless tp_hide_buy_buttons -%}
 <span
   class="buy-buttons-block buy-buttons-block--{{ block.id }}"
   {{ block.shopify_attributes }}
@@ -365,6 +379,7 @@
     {% endif %}
   </local-pickup>
 {% endif %}
+{%- endunless -%}
 
 {% render 'buy-buttons-styles' %}
 

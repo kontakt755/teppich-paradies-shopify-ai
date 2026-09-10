@@ -99,10 +99,14 @@ class StickyAddToCartComponent extends Component {
    * Sets up the IntersectionObserver to watch the buy buttons visibility
    */
   #setupIntersectionObserver() {
+    // Paketprodukte rendern keinen Standard-Kaufblock mehr, weil dort der
+    // Paket-Rechner der einzige Kaufweg ist (siehe blocks/buy-buttons.liquid).
+    // Er uebernimmt deshalb beide Rollen des Kaufblocks: Scroll-Anker fuer das
+    // Ein- und Ausblenden der Leiste und Ziel des Sticky-Buttons. Ohne diesen
+    // Rueckfall bliebe die Sticky-Leiste auf genau den Produkten aus, auf
+    // denen sie mobil am meisten traegt.
     const productForm = this.#getProductForm();
-    if (!productForm) return;
-
-    const buyButtonsBlock = productForm.closest('.buy-buttons-block');
+    const buyButtonsBlock = productForm?.closest('.buy-buttons-block') ?? this.#getPackageSelector();
     if (!buyButtonsBlock) return;
 
     // In themes migrated from 2.0, the footer element doesn't exist
@@ -155,7 +159,31 @@ class StickyAddToCartComponent extends Component {
 
     this.#buyButtonsIntersectionObserver.observe(buyButtonsBlock);
     this.#mainBottomObserver.observe(footer);
-    this.#targetAddToCartButton = productForm.querySelector('[ref="addToCartButton"]');
+    this.#targetAddToCartButton = this.#getTargetAddToCartButton();
+  }
+
+  /**
+   * Der Paket-Rechner der Paketprodukte, sofern die Seite einen hat.
+   * @returns {HTMLElement | null}
+   */
+  #getPackageSelector() {
+    const sectionElement = this.closest('.shopify-section');
+    return sectionElement?.querySelector('.tp-paket-auswahl') ?? null;
+  }
+
+  /**
+   * Der echte Kaufbutton, den der Sticky-Button stellvertretend klickt:
+   * normalerweise der des Standard-Kaufblocks, bei Paketware der des
+   * Paket-Rechners.
+   * @returns {HTMLButtonElement | null}
+   */
+  #getTargetAddToCartButton() {
+    const productForm = this.#getProductForm();
+    const button = productForm
+      ? productForm.querySelector('[ref="addToCartButton"]')
+      : this.#getPackageSelector()?.querySelector('[data-add-to-cart]');
+
+    return /** @type {HTMLButtonElement | null} */ (button ?? null);
   }
 
   // Public action handlers
@@ -225,9 +253,9 @@ class StickyAddToCartComponent extends Component {
     }
 
     // Re-cache the target add to cart button after morphing
-    const productForm = this.#getProductForm();
-    if (productForm) {
-      this.#targetAddToCartButton = productForm.querySelector('[ref="addToCartButton"]');
+    const nextTarget = this.#getTargetAddToCartButton();
+    if (nextTarget) {
+      this.#targetAddToCartButton = nextTarget;
     }
 
     if (variant == null) {

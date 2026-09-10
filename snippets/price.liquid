@@ -98,11 +98,20 @@
       assign is_sqm_card = true
     endif
   elsif has_volume_pricing != true
-    # Bestehendes PDP-Verhalten unveraendert lassen; diese Korrektur betrifft
-    # ausschliesslich die gemeinsame Product-Card-Erkennung.
+    # Ausserhalb der Product Card - praktisch die Sticky-Leiste der
+    # Produktseite. Paketware wird hier ZUERST geprueft, denn sie traegt
+    # denselben productType wie Rollenware: Quadra ist "Teppichboden",
+    # verkauft aber Pakete zu 5 m2. Ohne diese Reihenfolge galt der
+    # Paketpreis als Quadratmeterpreis, und die Sticky-Leiste zeigte
+    # "294,50 EUR/m2" statt "58,90 EUR/m2" - das Fuenffache (Befund
+    # 2026-09-10). is_package_card rechnet den Paketpreis unten korrekt
+    # auf den Quadratmeter herunter.
     assign product_type_downcase = product_resource.type | downcase
     assign product_tags_downcase = product_resource.tags | join: '|' | downcase
-    if product_type_downcase == 'teppichboden' or product_type_downcase == 'vinyl von der rolle'
+    if sqm_per_package != blank and sqm_per_package > 0
+      assign is_package_card = true
+      assign is_sqm_card = true
+    elsif product_type_downcase == 'teppichboden' or product_type_downcase == 'vinyl von der rolle'
       assign is_roll_card = true
     elsif product_tags_downcase contains 'art: teppichboden' and product_tags_downcase contains 'maß: wunschmaß'
       assign is_roll_card = true
