@@ -18,7 +18,6 @@
   @param {string} [prefix] - Text vor der Flaeche, Vorgabe "1 Paket ="
 {%- enddoc -%}
 {%- liquid
-  assign tp_pi_flaeche = sqm_per_package | times: 1.0
   # Kein default-Filter: Der behandelt einen leeren String als "nicht gesetzt"
   # und haette den Praefix auf der Produktkarte wieder eingesetzt - dort stand
   # dann "41,25 EUR / Paket · 1 Paket = 0,794 m²".
