@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-10T09:56:54.639Z",
+  "generated_at": "2026-09-10T10:34:46.475Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 60,
+  "count": 61,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-10T09:56:54.639Z",
+    "fetchedAt": "2026-09-10T10:34:46.475Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 179,
+      "title": "Paketware verstaendlich darstellen: Preis, Rechner, Warenkorb, Karten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/179",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T10:34:31Z",
+      "updated_at": "2026-09-10T10:34:32Z",
+      "closed_at": null
+    },
     {
       "number": 175,
       "title": "Produktseite Paketware: vier Defekte im Kaufbereich",
