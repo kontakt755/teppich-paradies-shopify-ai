@@ -96,3 +96,8 @@ venv/
 # Tree dirty und blockieren workflow:doctor, Preview und Live. Die Handoffs
 # enthalten ausserdem den vollen Auftragstext.
 .router/
+
+# Heruntergeladene OpenStreetMap-Kacheln von scripts/build-verlegegebiet-karte.py.
+# Reiner Build-Cache: die fertigen WebP-Dateien liegen in assets/, die Kacheln
+# selbst gehoeren nicht ins Repository und wuerden den Working Tree dirty machen.
+.cache/

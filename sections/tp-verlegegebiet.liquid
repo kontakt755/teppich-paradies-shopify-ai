@@ -1,0 +1,782 @@
+{% comment %}
+  Verlegegebiet rund um Oranienburg: vorgerenderte Karte mit Radiusflaeche,
+  Standortkarte, optionaler PLZ-Pruefung und zwei Kontaktwegen.
+
+  Warum ein Bild und keine Live-Karte: die Sektion braucht weder Zoom noch
+  Pan. Ein statisches WebP kostet keinen externen Request (damit keine
+  Einwilligung noetig), kein JavaScript fuer die Darstellung, keinen Layout
+  Shift - und es kann auf dem Smartphone das Scrollen nicht abfangen.
+
+  Die Bilder erzeugt scripts/build-verlegegebiet-karte.py aus
+  OpenStreetMap-Kacheln. Aendert sich der Standort, muessen sie neu erzeugt
+  werden; der Kreis rechnet mit der Geometrie unten und darf nicht raten.
+
+  Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
+    desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
+    mobile    340 x 380 Bildpunkte, 370.24 m je Punkt
+  Der Kreisdurchmesser in Prozent der Bildbreite ist deshalb
+    radius_km * 2000 / meter_je_punkt / bildbreite * 100.
+  Weil Web Mercator winkeltreu ist, bleibt ein 50-km-Kreis auf dieser Breite
+  bis auf rund zwei Prozent ein Kreis - eine Ellipse waere hier falsch.
+{% endcomment %}
+
+{%- liquid
+  assign vg_radius = section.settings.radius | at_least: 10 | at_most: 60
+
+  assign vg_dt_kreis = vg_radius | times: 2000.0 | divided_by: 185.12 | divided_by: 1000 | times: 100
+  assign vg_mb_kreis = vg_radius | times: 2000.0 | divided_by: 370.24 | divided_by: 340 | times: 100
+
+  assign vg_karte_alt = 'Karte der Region um Oranienburg. Der markierte Kreis zeigt das Verlegegebiet von etwa ' | append: vg_radius | append: ' Kilometern rund um unseren Standort; Berlin und Potsdam liegen darin.'
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
+  style="
+    {% render 'spacing-style', settings: section.settings %}
+    --tp-vg-kreis-desktop: {{ vg_dt_kreis }}%;
+    --tp-vg-kreis-mobile: {{ vg_mb_kreis }}%;
+  "
+  data-testid="tp-verlegegebiet-{{ section.id }}"
+  data-radius="{{ vg_radius }}"
+  data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
+>
+  <header class="tp-vg__head">
+    {%- if section.settings.eyebrow != blank -%}
+      <p class="tp-vg__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+    {%- endif -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="tp-vg__heading h3">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+    {%- if section.settings.intro != blank -%}
+      <p class="tp-vg__intro">{{ section.settings.intro | escape }}</p>
+    {%- endif -%}
+  </header>
+
+  {%- if section.settings.karte_zeigen -%}
+    <figure class="tp-vg__karte">
+      <picture>
+        <source
+          media="(max-width: 749px)"
+          type="image/webp"
+          srcset="
+            {{ 'tp-verlegegebiet-mobile.webp' | asset_url }} 1x,
+            {{ 'tp-verlegegebiet-mobile-2x.webp' | asset_url }} 2x
+          "
+        >
+        <img
+          src="{{ 'tp-verlegegebiet-desktop.webp' | asset_url }}"
+          srcset="
+            {{ 'tp-verlegegebiet-desktop.webp' | asset_url }} 1x,
+            {{ 'tp-verlegegebiet-desktop-2x.webp' | asset_url }} 2x
+          "
+          alt="{{ vg_karte_alt | escape }}"
+          width="1000"
+          height="700"
+          loading="lazy"
+          decoding="async"
+          class="tp-vg__bild"
+        >
+      </picture>
+
+      {%- comment -%} Radiusflaeche und Standort liegen als Markup ueber dem Bild,
+        damit sie in Markenfarbe und bei jeder Breite scharf bleiben. {%- endcomment -%}
+      <span class="tp-vg__radius" aria-hidden="true">
+        <span class="tp-vg__radius-label">ca. {{ vg_radius }} km</span>
+      </span>
+
+      <span class="tp-vg__marker" aria-hidden="true">
+        <span class="tp-vg__punkt"></span>
+        <span class="tp-vg__marker-name">
+          {{ section.settings.standort_name | escape }}
+          <small>{{ section.settings.standort_ort | escape }}</small>
+        </span>
+      </span>
+
+      <figcaption class="tp-vg__quelle">
+        Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a>-Mitwirkende
+      </figcaption>
+    </figure>
+
+    <ul class="tp-vg__legende" role="list">
+      <li>
+        <span class="tp-vg__swatch tp-vg__swatch--punkt" aria-hidden="true"></span>
+        Unser Standort in {{ section.settings.standort_ort | escape }}
+      </li>
+      <li>
+        <span class="tp-vg__swatch tp-vg__swatch--flaeche" aria-hidden="true"></span>
+        ca. {{ vg_radius }} km reguläres Verlegegebiet
+      </li>
+    </ul>
+  {%- endif -%}
+
+  <div class="tp-vg__spalten">
+    <div class="tp-vg__karte-adresse">
+      <h3 class="tp-vg__sub">{{ section.settings.standort_name | escape }}</h3>
+      <address>
+        {{ section.settings.standort_adresse | escape | newline_to_br }}
+      </address>
+      {%- if section.settings.route_link != blank -%}
+        <a
+          class="tp-vg__route"
+          href="{{ section.settings.route_link }}"
+          target="_blank"
+          rel="noopener nofollow"
+        >
+          Route planen
+        </a>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.pruefung_zeigen -%}
+      {%- comment -%} Ohne JavaScript bleibt das Feld verborgen, statt tot dazustehen;
+        das Skript nimmt das hidden-Attribut weg. Ueberschrift, Karte, Hinweis und
+        Kontaktwege stehen unabhaengig davon. {%- endcomment -%}
+      <form class="tp-vg__check" data-tp-verlegegebiet-form hidden>
+        <label class="tp-vg__sub" for="tp-vg-plz-{{ section.id }}">
+          Liegt Ihr Wohnort in unserem Verlegegebiet?
+        </label>
+        <div class="tp-vg__check-zeile">
+          <input
+            id="tp-vg-plz-{{ section.id }}"
+            class="tp-vg__input"
+            type="text"
+            name="ort"
+            inputmode="text"
+            autocomplete="postal-code"
+            maxlength="40"
+            placeholder="PLZ oder Ort"
+            data-tp-verlegegebiet-input
+          >
+          <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
+        </div>
+        <p class="tp-vg__ergebnis" role="status" aria-live="polite" data-tp-verlegegebiet-result></p>
+        <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot.</p>
+      </form>
+    {%- endif -%}
+  </div>
+
+  {%- if section.settings.hinweis != blank -%}
+    <p class="tp-vg__hinweis">{{ section.settings.hinweis | escape }}</p>
+  {%- endif -%}
+
+  {%- if section.settings.cta_zeigen -%}
+    <div class="tp-vg__aktionen">
+      {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+        <a class="tp-vg__btn tp-vg__btn--primaer" href="{{ section.settings.cta_link }}">
+          {{ section.settings.cta_label | escape }}
+        </a>
+      {%- endif -%}
+      {%- if section.settings.cta2_label != blank and section.settings.cta2_link != blank -%}
+        <a
+          class="tp-vg__btn tp-vg__btn--sekundaer"
+          href="{{ section.settings.cta2_link }}"
+          {% if section.settings.cta2_link contains 'wa.me' %}target="_blank" rel="noopener"{% endif %}
+        >
+          {%- if section.settings.cta2_link contains 'wa.me' -%}
+            <svg class="tp-vg__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+              {%- render 'icon', icon: 'whatsapp' -%}
+            </svg>
+          {%- endif -%}
+          {{ section.settings.cta2_label | escape }}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- if section.settings.vertrauen != blank -%}
+    <p class="tp-vg__vertrauen">{{ section.settings.vertrauen | escape }}</p>
+  {%- endif -%}
+</div>
+
+<script src="{{ 'tp-verlegegebiet.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .tp-vg {
+    --tp-vg-ton: 141 113 76;
+    --tp-vg-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    --tp-vg-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .tp-vg__head {
+    max-width: 62ch;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .tp-vg__eyebrow {
+    margin: 0;
+    color: #8d714c;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tp-vg__heading {
+    margin: 8px 0 12px;
+  }
+
+  .tp-vg__intro {
+    margin: 0;
+    color: var(--tp-vg-leise);
+    line-height: 1.6;
+  }
+
+  /* Karte -------------------------------------------------------------- */
+
+  .tp-vg__karte {
+    position: relative;
+    max-width: 1000px;
+    margin: clamp(24px, 4vw, 40px) auto 0;
+    aspect-ratio: 1000 / 700;
+    border: 1px solid var(--tp-vg-linie);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #faf8f5;
+  }
+
+  .tp-vg__bild {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Der Kreis wird ueber die Bildbreite bemasst, nicht ueber den Container -
+     beide sind identisch, weil aspect-ratio dem Bild entspricht. */
+  .tp-vg__radius {
+    position: absolute;
+    box-sizing: border-box;
+    top: 50%;
+    left: 50%;
+    width: var(--tp-vg-kreis-desktop);
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    border: 2px solid rgb(var(--tp-vg-ton) / 0.62);
+    border-radius: 50%;
+    background: rgb(var(--tp-vg-ton) / 0.09);
+  }
+
+  .tp-vg__radius-label {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(var(--tp-vg-ton) / 0.35);
+    color: #6f5836;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .tp-vg__marker {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transform: translate(-50%, -50%);
+  }
+
+  .tp-vg__punkt {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: #1c1917;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+  }
+
+  .tp-vg__marker-name {
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #1c1917;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .tp-vg__marker-name small {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.75;
+  }
+
+  .tp-vg__quelle {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.82);
+    color: rgb(28 26 24 / 0.62);
+    font-size: 11px;
+  }
+
+  .tp-vg__quelle a {
+    color: inherit;
+  }
+
+  .tp-vg__legende {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 24px;
+    margin: 14px 0 0;
+    padding: 0;
+    color: var(--tp-vg-leise);
+    font-size: 14px;
+    list-style: none;
+  }
+
+  .tp-vg__legende li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tp-vg__swatch {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+
+  .tp-vg__swatch--punkt {
+    border: 2px solid #fff;
+    background: #1c1917;
+    box-shadow: 0 0 0 1px rgb(28 26 24 / 0.35);
+  }
+
+  .tp-vg__swatch--flaeche {
+    border: 2px solid rgb(var(--tp-vg-ton) / 0.62);
+    background: rgb(var(--tp-vg-ton) / 0.22);
+  }
+
+  /* Adresse und Pruefung ------------------------------------------------ */
+
+  .tp-vg__spalten {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 1000px;
+    margin: clamp(20px, 3vw, 32px) auto 0;
+  }
+
+  .tp-vg__karte-adresse,
+  .tp-vg__check {
+    padding: clamp(18px, 2.5vw, 24px);
+    border: 1px solid var(--tp-vg-linie);
+    border-radius: 12px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+  }
+
+  .tp-vg__sub {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .tp-vg__karte-adresse address {
+    margin: 0;
+    color: var(--tp-vg-leise);
+    font-style: normal;
+    line-height: 1.6;
+  }
+
+  .tp-vg__route {
+    display: inline-block;
+    margin-top: 10px;
+    color: inherit;
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  .tp-vg__check[hidden] {
+    display: none;
+  }
+
+  .tp-vg__check-zeile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tp-vg__input {
+    flex: 1 1 10rem;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.28);
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-size: 16px; /* verhindert das Hineinzoomen von iOS beim Fokus */
+  }
+
+  .tp-vg__input:focus-visible,
+  .tp-vg__btn:focus-visible,
+  .tp-vg__route:focus-visible,
+  .tp-vg__quelle a:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  .tp-vg__ergebnis {
+    margin: 12px 0 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .tp-vg__ergebnis:empty {
+    display: none;
+  }
+
+  .tp-vg__ergebnis[data-status='innen'] {
+    color: #1d6b47;
+  }
+
+  .tp-vg__ergebnis[data-status='rand'],
+  .tp-vg__ergebnis[data-status='aussen'],
+  .tp-vg__ergebnis[data-status='unbekannt'] {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .tp-vg__ergebnis::before {
+    margin-right: 6px;
+    font-weight: 700;
+  }
+
+  /* Der Status haengt nicht allein an der Farbe, sondern traegt ein Zeichen. */
+  .tp-vg__ergebnis[data-status='innen']::before {
+    content: '\2713';
+  }
+
+  .tp-vg__ergebnis[data-status='rand']::before,
+  .tp-vg__ergebnis[data-status='aussen']::before,
+  .tp-vg__ergebnis[data-status='unbekannt']::before {
+    content: '\2139';
+  }
+
+  .tp-vg__klein {
+    margin: 10px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Hinweis und Aktionen ------------------------------------------------ */
+
+  .tp-vg__hinweis {
+    max-width: 62ch;
+    margin: clamp(24px, 3.5vw, 36px) auto 0;
+    color: var(--tp-vg-leise);
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .tp-vg__aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .tp-vg__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+  }
+
+  .tp-vg__btn--primaer {
+    background: #1c1917;
+    color: #fff;
+  }
+
+  .tp-vg__btn--sekundaer {
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.35);
+    color: inherit;
+  }
+
+  .tp-vg__btn--check {
+    padding: 12px 20px;
+    background: #1c1917;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .tp-vg__btn:hover {
+    opacity: 0.88;
+  }
+
+  .tp-vg__btn--sekundaer:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    opacity: 1;
+  }
+
+  .tp-vg__icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .tp-vg__vertrauen {
+    margin: 16px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-vg__karte {
+      aspect-ratio: 340 / 380;
+      border-radius: 12px;
+    }
+
+    .tp-vg__radius {
+      width: var(--tp-vg-kreis-mobile);
+    }
+
+    .tp-vg__marker-name {
+      font-size: 12px;
+    }
+
+    .tp-vg__quelle {
+      right: 6px;
+      bottom: 6px;
+      padding: 2px 6px;
+      font-size: 10px;
+    }
+
+    .tp-vg__legende {
+      justify-content: flex-start;
+      gap: 6px 18px;
+      font-size: 13px;
+    }
+
+    .tp-vg__spalten {
+      grid-template-columns: 1fr;
+    }
+
+    .tp-vg__head,
+    .tp-vg__hinweis {
+      text-align: left;
+    }
+
+    .tp-vg__aktionen {
+      flex-direction: column;
+    }
+
+    .tp-vg__btn--primaer,
+    .tp-vg__btn--sekundaer {
+      width: 100%;
+    }
+
+    .tp-vg__vertrauen {
+      text-align: left;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-vg__btn {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegegebiet",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Kleine Zeile darueber",
+      "default": "Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift",
+      "default": "Unser Verlegegebiet rund um Oranienburg"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Einleitung",
+      "default": "Von unserem Standort in Oranienburg sind unsere Bodenleger für Sie in einem Umkreis von etwa 50 km unterwegs."
+    },
+    {
+      "type": "header",
+      "content": "Karte"
+    },
+    {
+      "type": "checkbox",
+      "id": "karte_zeigen",
+      "label": "Karte anzeigen",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "radius",
+      "label": "Radius in km",
+      "info": "Der Kartenausschnitt ist fest; bis 60 km bleibt der Kreis vollstaendig sichtbar.",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "km",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Standort"
+    },
+    {
+      "type": "text",
+      "id": "standort_name",
+      "label": "Name",
+      "default": "Teppich Paradies"
+    },
+    {
+      "type": "text",
+      "id": "standort_ort",
+      "label": "Ort",
+      "default": "Oranienburg"
+    },
+    {
+      "type": "textarea",
+      "id": "standort_adresse",
+      "label": "Adresse",
+      "default": "Teppich Paradies Oranienburg GmbH\nSaarlandstraße 73–81\n16515 Oranienburg"
+    },
+    {
+      "type": "url",
+      "id": "route_link",
+      "label": "Link \"Route planen\"",
+      "info": "Leer lassen, um den Link auszublenden."
+    },
+    {
+      "type": "header",
+      "content": "Verfuegbarkeit pruefen"
+    },
+    {
+      "type": "checkbox",
+      "id": "pruefung_zeigen",
+      "label": "PLZ-Pruefung anzeigen",
+      "info": "Prueft offline gegen eine mitgelieferte Tabelle. Kein externer Dienst, keine Kosten.",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Hinweis und Kontakt"
+    },
+    {
+      "type": "textarea",
+      "id": "hinweis",
+      "label": "Hinweis unter der Karte",
+      "default": "Ihr Wohnort liegt etwas weiter entfernt? Fragen Sie uns einfach an – je nach Auftrag sind auch weitere Anfahrten möglich."
+    },
+    {
+      "type": "checkbox",
+      "id": "cta_zeigen",
+      "label": "Kontaktbuttons anzeigen",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button 1 Text",
+      "default": "Verlegung anfragen"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button 1 Link"
+    },
+    {
+      "type": "text",
+      "id": "cta2_label",
+      "label": "Button 2 Text",
+      "default": "Per WhatsApp fragen"
+    },
+    {
+      "type": "url",
+      "id": "cta2_link",
+      "label": "Button 2 Link"
+    },
+    {
+      "type": "text",
+      "id": "vertrauen",
+      "label": "Vertrauenszeile",
+      "default": "Beratung · Aufmaß · professionelle Verlegung"
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Verlegegebiet",
+      "settings": {
+        "route_link": "https://www.google.com/maps/dir/?api=1&destination=Saarlandstra%C3%9Fe+73-81%2C+16515+Oranienburg",
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322"
+      }
+    }
+  ]
+}
+{% endschema %}
