@@ -13,7 +13,8 @@
   vollstaendigen URL und mit dem Pfad ohne Host. Der Pfad ist noetig, weil
   Navigationspunkte vom Typ HTTP absolute Adressen tragen (https://www.../pages/...).
 
-  @param {object} link - Navigationspunkt (linklist item)
+  @param {object} [link] - Navigationspunkt (linklist item). Entfaellt bei kuratierten
+    Karten ohne Navigationspunkt - dann vergleicht match_title.
   @param {string} kacheln - Datensaetze aus content_for 'blocks'
   @param {string} [match_title] - Titel statt link.title vergleichen (kuratierte Karten ohne Navigationspunkt)
 {%- enddoc -%}
