@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:52:37.020Z",
+  "generated_at": "2026-09-11T12:54:50.684Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 72,
+  "count": 73,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:52:37.020Z",
+    "fetchedAt": "2026-09-11T12:54:50.684Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 203,
+      "title": "Bezugsquellen im oeffentlichen Repo-Stand neutralisieren",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/203",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:sicherheit"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T12:54:35Z",
+      "updated_at": "2026-09-11T12:54:36Z",
+      "closed_at": null
+    },
     {
       "number": 202,
       "title": "Live-Seiten zeigen B2B-Kopf: Vorlagen-Rueckfall reparieren",
