@@ -1,0 +1,196 @@
+{% doc %}
+  Hinweis "Liefer- & Verlegeservice verfuegbar" auf der Produktseite.
+
+  Erscheint nur bei Produkten, fuer die der Service gilt - das entscheidet
+  snippets/tp-vs-berechtigt: Template "rolle" UND ein Produkttyp aus den
+  Theme-Einstellungen (TP Verlegeservice, Standard: Teppichboden und Vinyl
+  von der Rolle). Klick- und Klebevinyl (Template planken), Teppichfliesen
+  (fliese), Leisten und Zubehoer bekommen ihn deshalb nie - auch nicht, wenn
+  jemand den Block versehentlich in ihr Template setzt. Linoleum teilt sich
+  das Template "rolle" und faellt allein ueber den Produkttyp heraus.
+
+  Zugeklappt eine Zeile mit dem staerksten Argument (kostenlos ab der
+  Schwelle in der ersten Zone), aufgeklappt beide Stufen in je einem Satz
+  und der Weg zur Seite mit allen Preisen. Alle Zahlen aus den
+  Theme-Einstellungen.
+{% enddoc %}
+
+{%- liquid
+  capture vsh_gilt
+    render 'tp-vs-berechtigt', product: product
+  endcapture
+  assign vsh_gilt = vsh_gilt | strip
+
+  assign vsh_seite = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
+  assign vsh_schwelle = settings.tp_vs_schwelle
+  assign vsh_nah = settings.tp_vs_radius_basis
+-%}
+
+{%- if vsh_gilt == 'ja' -%}
+  <details class="tp-vsh" {{ block.shopify_attributes }}>
+    <summary class="tp-vsh__kopf">
+      {%- render 'tp-vs-icon', name: 'truck' -%}
+      <span class="tp-vsh__titel">
+        Liefer- &amp; Verlegeservice verfügbar
+        <span class="tp-vsh__unter">Ab {{ vsh_schwelle }}&nbsp;€ Warenwert bis {{ vsh_nah }}&nbsp;km kostenlos</span>
+      </span>
+    </summary>
+    <div class="tp-vsh__inhalt">
+      <dl class="tp-vsh__stufen">
+        <div class="tp-vsh__plus">
+          <dt>Ab {{ vsh_schwelle }}&nbsp;€ Warenwert</dt>
+          <dd>Lieferung &amp; lose Verlegung bis {{ vsh_nah }}&nbsp;km kostenlos – dazu vergünstigte Fixierungs- und Klebepreise.</dd>
+        </div>
+        <div>
+          <dt>Unter {{ vsh_schwelle }}&nbsp;€ oder weiter weg</dt>
+          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</dd>
+        </div>
+      </dl>
+      <p class="tp-vsh__lose">Lose Verlegung heißt: passend zugeschnitten, ohne Verklebung.</p>
+      <a class="tp-vsh__link" href="{{ vsh_seite }}">Alle Preise und Informationen zum Verlegeservice</a>
+    </div>
+  </details>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-vsh {
+    margin-top: 12px;
+    border: 1px solid rgb(141 113 76 / 0.35);
+    border-radius: 8px;
+    background: rgb(141 113 76 / 0.06);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .tp-vsh__kopf {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 10px 14px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .tp-vsh__kopf::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Eigener Pfeil statt des Dreiecks: dreht sich beim Aufklappen und sagt
+     damit, dass hier mehr steht. */
+  .tp-vsh__kopf::after {
+    content: '';
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-right: 2px solid currentcolor;
+    border-bottom: 2px solid currentcolor;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.2s ease;
+  }
+
+  .tp-vsh[open] .tp-vsh__kopf::after {
+    transform: rotate(-135deg) translateY(-2px);
+  }
+
+  .tp-vsh__kopf:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
+  .tp-vsh__kopf > .tp-vs-icon {
+    width: 24px;
+    height: 24px;
+    color: #8d714c;
+  }
+
+  .tp-vsh__titel {
+    display: flex;
+    flex-direction: column;
+    color: var(--color-foreground, #222);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .tp-vsh__unter {
+    color: #1d6b47;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .tp-vsh__inhalt {
+    padding: 0 14px 14px;
+  }
+
+  .tp-vsh__stufen {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .tp-vsh__stufen > div {
+    padding: 10px 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    border-radius: 6px;
+    background: var(--color-background, #fff);
+  }
+
+  .tp-vsh__stufen > .tp-vsh__plus {
+    border-color: rgb(141 113 76 / 0.7);
+  }
+
+  .tp-vsh__stufen dt {
+    color: var(--color-foreground, #222);
+    font-weight: 700;
+  }
+
+  .tp-vsh__stufen dd {
+    margin: 2px 0 0;
+  }
+
+  .tp-vsh__lose {
+    margin: 10px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    font-size: 13px;
+  }
+
+  .tp-vsh__link {
+    display: inline-block;
+    margin-top: 10px;
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  .tp-vsh__link::after {
+    content: '\00a0\2192';
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-vsh__kopf::after {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegehinweis",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Erscheint nur bei Rollenware (Template rolle), deren Produkttyp in den Theme-Einstellungen unter „TP Verlegeservice“ steht. Standard: Teppichboden und Vinyl von der Rolle."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Verlegehinweis"
+    }
+  ]
+}
+{% endschema %}

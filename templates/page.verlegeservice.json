@@ -1,0 +1,154 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "main-page",
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        },
+        "page-content": {
+          "type": "page-content",
+          "settings": {},
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading",
+        "page-content"
+      ],
+      "disabled": true,
+      "settings": {
+        "content_direction": "column",
+        "gap": 32,
+        "color_scheme": "",
+        "padding-block-start": 40,
+        "padding-block-end": 80
+      }
+    },
+    "tp_verlegeservice": {
+      "type": "tp-verlegeservice",
+      "settings": {
+        "eyebrow": "Liefer- & Verlegeservice für Rollenware",
+        "heading": "Teppichboden & Vinyl von der Rolle – geliefert und verlegt.",
+        "sub": "Sie wählen den Boden aus, wir bringen ihn zu Ihnen nach Hause und verlegen ihn – in Oranienburg, Berlin und Brandenburg.",
+        "image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+        "produkte_link": "shopify://collections/teppichboden",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 40,
+        "knopf": "Teppichboden entdecken",
+        "knopf_2": "Vinyl von der Rolle entdecken",
+        "produkte_link_2": "shopify://collections/vinylboden-vinyl-von-der-rolle",
+        "vertrauen": "Persönliche Beratung im Geschäft · Aufmaß vor Ort · Eigenes Verlegeteam aus Oranienburg"
+      }
+    },
+    "tp_verlegegebiet": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "eyebrow": "Liefergebiet",
+        "heading": "Wie weit wir zu Ihnen kommen",
+        "intro": "Von unserem Geschäft in Oranienburg liefern und verlegen wir bis nach Berlin und ins Brandenburger Umland. Prüfen Sie hier Ihren Wohnort.",
+        "rollenware_stufen": true,
+        "hinweis": "",
+        "cta_zeigen": false,
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322",
+        "versand_link": "/collections/all",
+        "vertrauen": "",
+        "padding-block-start": 40,
+        "padding-block-end": 24
+      }
+    },
+    "tp_verlegeservice_kontakt": {
+      "type": "tp-verlegeservice-kontakt",
+      "settings": {
+        "kontakt_link": "/pages/kontakt",
+        "vertrauen": "",
+        "referenzen_titel": "Echte Arbeiten aus der Region"
+      },
+      "blocks": {
+        "ref_kadewe": {
+          "type": "referenz",
+          "settings": {
+            "bild": "shopify://shop_images/1000008785.jpg",
+            "unterschrift": "KaDeWe – Premium-Teppichboden",
+            "alt": "Premium-Teppichboden im KaDeWe"
+          }
+        },
+        "ref_dachgeschoss": {
+          "type": "referenz",
+          "settings": {
+            "bild": "shopify://shop_images/20231129_114941.jpg",
+            "unterschrift": "Dachgeschoss mit gemütlichem Teppichboden",
+            "alt": "Teppichboden in einem Dachgeschoss"
+          }
+        },
+        "ref_treppe": {
+          "type": "referenz",
+          "settings": {
+            "bild": "shopify://shop_images/20231129_114732.jpg",
+            "unterschrift": "Stufen und Podest verkleidet",
+            "alt": "Mit Teppichboden verkleidete Stufen und Podest"
+          }
+        },
+        "ref_nadelvlies": {
+          "type": "referenz",
+          "settings": {
+            "bild": "shopify://shop_images/image-3-compressed.jpg",
+            "unterschrift": "Nadelvlies – über 2.000 m²",
+            "alt": "Nadelvlies auf einer großen Fläche"
+          }
+        }
+      },
+      "block_order": [
+        "ref_kadewe",
+        "ref_dachgeschoss",
+        "ref_treppe",
+        "ref_nadelvlies"
+      ]
+    },
+    "google_bewertungen": {
+      "type": "google",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main",
+    "tp_verlegeservice",
+    "tp_verlegegebiet",
+    "tp_verlegeservice_kontakt",
+    "google_bewertungen"
+  ]
+}
