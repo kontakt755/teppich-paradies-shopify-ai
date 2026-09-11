@@ -45,6 +45,17 @@ try {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
     process.exit(0);
   }
+  if (!resolveCodexBinary()) {
+    throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
+  }
+  const reviews = Number(current.state.reviews ?? 0);
+  if (reviews >= 3) {
+    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
+    block('Human Gate: Nach drei unabhängigen Review-Runden bestehen noch Befunde. Berichte die verbleibenden Befunde und stoppe weitere automatische Änderungen.');
+    process.exit(0);
+  }
+  // Scope erst hinter Codex-Pruefung und Human Gate ermitteln (wie vor dem
+  // Fragen-Skip): beide Gates duerfen nicht von git-Aufrufen abhaengen.
   // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
   // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
   const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
@@ -63,15 +74,6 @@ try {
   // als No-op erkennt, statt Code zu verlangen. Bei jedem anderen Scope ''.
   // Fehlt das Feld, ist es leer oder kein String, laeuft das Review wie bisher.
   const candidateText = reviewCandidateFromStop({ input, scope });
-  if (!resolveCodexBinary()) {
-    throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
-  }
-  const reviews = Number(current.state.reviews ?? 0);
-  if (reviews >= 3) {
-    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
-    block('Human Gate: Nach drei unabhängigen Review-Runden bestehen noch Befunde. Berichte die verbleibenden Befunde und stoppe weitere automatische Änderungen.');
-    process.exit(0);
-  }
   // Runde 1 und 2: Reviewer der Matrix. Runde 3: zweiter unabhaengiger Blick
   // (sofern die Klasse einen vorsieht), damit nicht dreimal dasselbe Modell
   // dieselben Befunde wiederholt.

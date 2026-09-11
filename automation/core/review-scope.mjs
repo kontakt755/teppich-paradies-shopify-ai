@@ -376,9 +376,22 @@ export const REVIEW_CANDIDATE_MAX_CHARS = 12_000;
 
 export function reviewCandidateFromStop({ input, scope } = {}) {
   if (scope?.kind !== REVIEW_SCOPE_NONE) return '';
-  const text = input?.last_assistant_message;
-  if (typeof text !== 'string' || !text.trim()) return '';
-  return truncateKeepingEnds(text.trim(), REVIEW_CANDIDATE_MAX_CHARS);
+  const text = sanitizeReviewCandidate(input?.last_assistant_message);
+  if (!text) return '';
+  return truncateKeepingEnds(text, REVIEW_CANDIDATE_MAX_CHARS);
+}
+
+// Steuerzeichen raus (Nachpruefung 2026-09-11): Der Prompt geht als argv an
+// spawnSync, und ein NUL darin wirft ERR_INVALID_ARG_VALUE. Der Stop-Hook
+// landete damit im Infrastrukturfehler-Pfad, und der Turn endete ohne Review -
+// ausgeloest von genau dem Agenten, der geprueft werden soll. Tab, Zeilenumbruch
+// und Wagenruecklauf bleiben; alle anderen C0-Zeichen und DEL werden zu einem
+// Leerzeichen, damit keine Woerter zusammenkleben. Kein String -> ''.
+const CANDIDATE_CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+
+export function sanitizeReviewCandidate(text) {
+  if (typeof text !== 'string') return '';
+  return text.replace(CANDIDATE_CONTROL_CHARS, ' ').trim();
 }
 
 // Anfang UND Ende behalten: am Anfang steht meist die Antwort, am Ende das

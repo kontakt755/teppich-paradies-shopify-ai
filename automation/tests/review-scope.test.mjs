@@ -257,6 +257,16 @@ test('reviewCandidateFromStop: bei Aenderungen oder unbestimmtem Scope bleibt al
   assert.equal(reviewCandidateFromStop({ input }), '', 'ohne Scope nie eine Schlussantwort');
 });
 
+// Nachpruefung 2026-09-11: ein NUL in der Schlussantwort liess spawnSync mit
+// ERR_INVALID_ARG_VALUE werfen - der Turn endete dann ohne Review.
+test('reviewCandidateFromStop: Steuerzeichen werden neutralisiert, Tab und Zeilenumbruch bleiben', () => {
+  const scope = { kind: REVIEW_SCOPE_NONE };
+  const text = reviewCandidateFromStop({ input: { last_assistant_message: 'Antwort\u0000mit NUL\u001b[31m\tund Tab\r\nZeile 2\u007f' }, scope });
+  assert.equal(text, 'Antwort mit NUL [31m\tund Tab\r\nZeile 2');
+  assert.doesNotMatch(text, /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/);
+  assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: '\u0000\u0000 \u0007' }, scope }), '', 'nur Steuerzeichen -> wie ein leeres Feld');
+});
+
 test('reviewCandidateFromStop: Ueberlaenge wird gekuerzt, Anfang und Ende bleiben, die Kuerzung ist markiert', () => {
   const scope = { kind: REVIEW_SCOPE_NONE };
   const long = `ANFANG ${'x'.repeat(30_000)} ENDE`;
