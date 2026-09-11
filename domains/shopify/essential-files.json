@@ -14,6 +14,16 @@
       ]
     },
     {
+      "name": "Warenkorb-Artikelzahl",
+      "reason": "Header-Blase, Warenkorbtitel und Drawer zaehlen eine Zeile Flaechenware (custom.preis_pro_001_qm) als einen Artikel statt als Menge in 0,01 m2. Fehlt das Snippet, bricht die Header-Blase auf jeder Seite mit 'Could not find asset'; fehlt die Section, zeigt die Blase fuer einen 10-m2-Teppich wieder 1000; ohne das Asset laden cart-icon.js, header-actions.js und cart-drawer.js gar nicht.",
+      "files": [
+        "snippets/tp-cart-artikelzahl.liquid",
+        "sections/tp-cart-artikelzahl.liquid",
+        "assets/tp-cart-artikelzahl.js",
+        "snippets/tp-cart-flaeche.liquid"
+      ]
+    },
+    {
       "name": "Vertrauens-Elemente",
       "reason": "Von product.rolle.json referenziert. Fehlen sie, lehnt Shopify den ganzen Template-Push ab - der Fehler nennt nur den Block, nicht die Ursache.",
       "files": [
