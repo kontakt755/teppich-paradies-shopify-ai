@@ -73,5 +73,8 @@ im Theme-Editor gepflegt und zeigt bewusst nur die stärksten Bilder.
 - Sections: `tp-arbeiten-intro`, `tp-arbeiten-galerie`, `tp-vorher-nachher`
 - Skript: `assets/tp-arbeiten.js` (Filter, Nachladen, Lightbox, Vorher/Nachher) –
   kein Framework, keine externe Bibliothek
-- Die Galerie zeigt zunächst 9 Projekte und lädt in Schritten nach. Bei 100+
+- Die Galerie zeigt zunächst 9 Projekte und lädt in Schritten nach. Bei vielen
   Projekten bleibt die Seite dadurch schnell.
+- **Obergrenze: 250 aktive Projekte.** Shopify gibt Metaobjekte in Liquid ohne
+  `paginate` nur bis 50 heraus, mit `paginate` bis 250 pro Seite. Darüber
+  würden Projekte still fehlen – dann die Galerie auf echte Seiten umstellen.

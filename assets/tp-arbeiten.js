@@ -233,7 +233,11 @@
     wurzel.querySelectorAll('[data-tp-vergleich]').forEach(function (box) {
       var regler = box.querySelector('input[type="range"]');
       if (!regler) return;
-      function setzen() { box.style.setProperty('--tp-pos', regler.value + '%'); }
+      function setzen() {
+        box.style.setProperty('--tp-pos', regler.value + '%');
+        // Screenreader hoeren den Anteil, nicht nur eine nackte Zahl.
+        regler.setAttribute('aria-valuetext', regler.value + ' Prozent Vorher-Bild');
+      }
       regler.addEventListener('input', setzen);
       setzen();
     });

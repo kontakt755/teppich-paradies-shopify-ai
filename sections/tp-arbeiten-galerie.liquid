@@ -6,10 +6,15 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'tp-arbeiten.js' | asset_url }}" defer></script>
 
+{%- comment -%}
+  Ohne paginate liefert values hoechstens 50 Eintraege - ab Projekt 51 fehlten
+  Karten und Filterzaehler still. paginate hebt die Grenze auf 250.
+  sort macht aus der Sammlung ein echtes Array, sonst liefert alle[i] nichts.
+{%- endcomment -%}
+{%- paginate shop.metaobjects.tp_projekt.values by 250 -%}
+  {%- assign alle = shop.metaobjects.tp_projekt.values | sort: 'handle' -%}
+{%- endpaginate -%}
 {%- liquid
-  # sort macht aus der Metaobjekt-Sammlung ein echtes Array. Ohne das liefert
-  # der Zugriff alle[i] nichts - die Sammlung selbst kennt keinen Index.
-  assign alle = shop.metaobjects.tp_projekt.values | sort: 'handle'
 
   # Nach dem Feld "reihenfolge" sortieren. Liquid kann Metaobjekt-Felder nicht
   # direkt sortieren, deshalb ueber einen Schluessel aus Rang und Position.
@@ -185,7 +190,7 @@
       "@type": "ImageGallery",
       "name": {{ section.settings.heading | json }},
       "url": {{ request.origin | append: request.path | json }},
-      "about": {{ 'Verlegte Bodenbelaege von Teppich Paradies Oranienburg' | json }},
+      "about": {{ 'Verlegte Bodenbeläge von Teppich Paradies Oranienburg' | json }},
       "associatedMedia": [
         {%- assign erstes_ld = true -%}
         {%- for eintrag in sortiert -%}
@@ -335,12 +340,12 @@
   "settings": [
     { "type": "paragraph", "content": "Projekte werden im Admin unter Inhalt > Metaobjekte > Referenzprojekt (TP) gepflegt. Neue Projekte erscheinen hier automatisch." },
     { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Referenzen" },
-    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Ausgefuehrte Arbeiten" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Ausgeführte Arbeiten" },
     { "type": "textarea", "id": "text", "label": "Unterzeile" },
     { "type": "text", "id": "anker", "label": "Anker-ID", "default": "arbeiten", "info": "Fuer Sprungmarken, ohne Raute." },
     { "type": "range", "id": "pro_schritt", "label": "Projekte pro Ladeschritt", "min": 3, "max": 30, "step": 3, "default": 9 },
     { "type": "text", "id": "nur_kategorie", "label": "Nur eine Kategorie zeigen", "info": "Leer lassen fuer die volle Galerie mit Filter. Sonst exakt der Kategoriename, z. B. Treppen." },
-    { "type": "text", "id": "cta_label", "label": "Button", "default": "Aehnliches Projekt anfragen" },
+    { "type": "text", "id": "cta_label", "label": "Button", "default": "Ähnliches Projekt anfragen" },
     { "type": "url", "id": "cta_link", "label": "Button-Ziel" }
   ],
   "presets": [ { "name": "TP Arbeiten Galerie" } ]
