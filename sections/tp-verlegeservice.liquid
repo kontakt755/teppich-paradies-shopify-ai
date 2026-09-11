@@ -45,8 +45,9 @@
   assign vs_mitte = settings.tp_vs_radius_mitte
   assign vs_fern = settings.tp_vs_radius_premium
   assign vs_mindest = settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€'
-  assign vs_bezeichnung = settings.tp_vs_bezeichnung | default: 'Teppichboden von der Rolle'
+  assign vs_bezeichnung = settings.tp_vs_bezeichnung | default: 'Teppichboden und Vinyl von der Rolle'
   assign vs_produkte = section.settings.produkte_link | default: collections['teppichboden'].url | default: '/collections/teppichboden'
+  assign vs_produkte_2 = section.settings.produkte_link_2 | default: collections['vinylboden-vinyl-von-der-rolle'].url | default: '/collections/vinylboden-vinyl-von-der-rolle'
   assign vs_bild_alt = section.settings.image.alt | default: 'Teppichboden wird an der Wand passend zugeschnitten'
   assign vs_vertrauen = section.settings.vertrauen | split: '·'
 
@@ -84,6 +85,9 @@
 
       <div class="tp-vs__aktionen">
         <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
+        {%- if section.settings.knopf_2 != blank -%}
+          <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte_2 }}">{{ section.settings.knopf_2 | escape }}</a>
+        {%- endif -%}
         {%- if vs_tel != blank -%}
           <a class="tp-vs__tel" href="tel:{{ vs_tel }}">
             {%- render 'tp-vs-icon', name: 'phone' -%}
@@ -1069,13 +1073,13 @@
       "type": "text",
       "id": "heading",
       "label": "Überschrift (H1 der Seite)",
-      "default": "Teppichboden kaufen – Lieferung & Verlegung gleich mit erledigt."
+      "default": "Teppichboden & Vinyl von der Rolle – Lieferung & Verlegung gleich mit erledigt."
     },
     {
       "type": "textarea",
       "id": "sub",
       "label": "Untertitel",
-      "default": "Wir liefern Ihren neuen Teppichboden und verlegen ihn direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg."
+      "default": "Wir liefern Ihren neuen Boden und verlegen ihn direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg."
     },
     {
       "type": "text",
@@ -1087,7 +1091,20 @@
       "type": "url",
       "id": "produkte_link",
       "label": "Ziel der Knöpfe",
-      "info": "Leer lassen: Kollektion Teppichboden."
+      "info": "Gilt auch für die Knöpfe der Konditionen. Leer lassen: Kollektion Teppichboden."
+    },
+    {
+      "type": "text",
+      "id": "knopf_2",
+      "label": "Text des zweiten Knopfs",
+      "info": "Leer lassen blendet ihn aus – z. B. wenn Vinyl von der Rolle nicht mehr unter „TP Verlegeservice“ steht.",
+      "default": "Vinyl von der Rolle entdecken"
+    },
+    {
+      "type": "url",
+      "id": "produkte_link_2",
+      "label": "Ziel des zweiten Knopfs",
+      "info": "Leer lassen: Kollektion Vinyl von der Rolle."
     },
     {
       "type": "text",

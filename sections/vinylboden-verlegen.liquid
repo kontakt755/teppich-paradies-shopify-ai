@@ -114,6 +114,22 @@
 .vinylart-card a:hover {
   background: #1b5e20;
 }
+/* Zweiter Link der Rollenware-Karte: Textlink, damit er nicht mit dem
+   Kollektionsknopf konkurriert. */
+.vinylart-card a.vinylart-card__service {
+  display: block;
+  margin-top: 14px;
+  padding: 0;
+  background: none;
+  color: #2a2a2a;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.vinylart-card a.vinylart-card__service:hover {
+  background: none;
+  color: #1b5e20;
+}
 </style>
 
 <section class="vinylarten-section">
@@ -148,8 +164,13 @@
         <li>Große Fläche, wenig Fugen – ideal für Wohnzimmer</li>
         <li>Besonders günstig & schnell verlegt</li>
         <li>Auch für temporäre Lösungen geeignet</li>
+        <li>Lieferung &amp; lose Verlegung kostenlos ab {{ settings.tp_vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ settings.tp_vs_radius_basis }}&nbsp;km</li>
       </ul>
       <a href="/collections/vinylboden-vinyl-von-der-rolle">Zu Rollenware</a>
+      {%- comment -%} Vinyl von der Rolle ist Rollenware mit Liefer- und
+        Verlegeservice (Freigabe 2026-09-11) - Klick- und Klebevinyl nicht,
+        deshalb steht der Hinweis nur in dieser Karte. {%- endcomment -%}
+      <a class="vinylart-card__service" href="{{ pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice' }}">Alle Preise im Liefer- &amp; Verlegeservice</a>
     </div>
 
   </div>

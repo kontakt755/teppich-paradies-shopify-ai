@@ -74,7 +74,25 @@
     <span aria-hidden="true">·</span>
     <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
     <span aria-hidden="true">·</span>
-    <a href="/pages/boden-malerarbeiten">Verlegeservice</a>
+    {%- comment -%}
+      Ziel nach Produktart: Rollenware mit Service (snippets/tp-vs-berechtigt)
+      auf die Serviceseite, Klick- und Klebevinyl auf "Vinylboden verlegen",
+      alles andere wie bisher. Vorher fuehrte der Link bei jedem Produkt auf
+      die Gewerbeseite "Boden & Malerarbeiten".
+    {%- endcomment -%}
+    {%- liquid
+      capture tp_sl_vs
+        render 'tp-vs-berechtigt', product: product
+      endcapture
+      if tp_sl_vs contains 'ja'
+        assign tp_sl_verlegen_url = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
+      elsif product.template_suffix == 'planken'
+        assign tp_sl_verlegen_url = pages['vinylboden-verlegen'].url | default: '/pages/vinylboden-verlegen'
+      else
+        assign tp_sl_verlegen_url = pages['boden-malerarbeiten'].url | default: '/pages/boden-malerarbeiten'
+      endif
+    -%}
+    <a href="{{ tp_sl_verlegen_url }}">Verlegeservice</a>
   </div>
 </div>
 

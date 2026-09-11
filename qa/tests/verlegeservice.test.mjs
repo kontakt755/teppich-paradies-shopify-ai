@@ -127,14 +127,18 @@ test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
 });
 
 test('der Produkthinweis erscheint nur bei Rollenware der freigegebenen Typen', () => {
+  const pruefung = lesen('snippets', 'tp-vs-berechtigt.liquid');
+  assert.match(pruefung, /product\.template_suffix == 'rolle'/, 'Die Pruefung auf Rollenware fehlt.');
+  assert.match(pruefung, /settings\.tp_vs_produkttypen/, 'Die Freigabe nach Produkttyp fehlt.');
+  assert.match(pruefung, /product\.type/);
   const block = lesen('blocks', 'tp-verlegeservice-hinweis.liquid');
-  assert.match(block, /product\.template_suffix == 'rolle'/, 'Die Pruefung auf Rollenware fehlt.');
-  assert.match(block, /settings\.tp_vs_produkttypen/, 'Die Freigabe nach Produkttyp fehlt.');
-  assert.match(block, /product\.type/);
-  assert.match(block, /{%-?\s*if vsh_gilt\s*-?%}/, 'Der Hinweis rendert ohne Bedingung.');
-  // Standard: nur Teppichboden. Vinyl von der Rolle teilt sich das Template
-  // "rolle" und darf erst nach bewusster Freigabe dazukommen.
-  assert.equal(standard('tp_vs_produkttypen'), 'Teppichboden');
+  assert.match(block, /render 'tp-vs-berechtigt'/, 'Der Hinweis prueft nicht ueber das gemeinsame Snippet.');
+  assert.match(block, /{%-?\s*if vsh_gilt == 'ja'\s*-?%}/, 'Der Hinweis rendert ohne Bedingung.');
+  // Freigegeben (Inhaber, 2026-09-11): Teppichboden und Vinyl von der Rolle.
+  // Linoleum teilt sich das Template "rolle" und bleibt draussen, bis es
+  // bewusst in die Liste kommt.
+  const typen = standard('tp_vs_produkttypen').split(',').map((t) => t.trim());
+  assert.deepEqual(typen, ['Teppichboden', 'Vinyl von der Rolle']);
 });
 
 test('den Produkthinweis setzt nur das Rollenware-Template ein', () => {
@@ -179,4 +183,40 @@ test('Kontaktdaten kommen aus dem Shop, nicht erfunden', () => {
   assert.equal(standard('tp_vs_email'), 'kontakt@teppich-paradies.net');
   assert.match(lesen('blocks', 'tp-service-links.liquid'), /tel:\+4933015733720/);
   assert.match(lesen('blocks', 'tp-service-links.liquid'), /wa\.me\/4917657931322/);
+});
+
+test('der Link "Verlegeservice" fuehrt je nach Produktart auf die passende Seite', () => {
+  // Vorher ging er bei jedem Produkt auf die Gewerbeseite "Boden &
+  // Malerarbeiten". Die Rollenware-Seite darf aber nur bei Rollenware mit
+  // Service verlinkt sein - sonst bekommt Klickvinyl & Co. den Service ueber
+  // den Link doch zugesagt.
+  const code = ohneKommentare(lesen('blocks', 'tp-service-links.liquid'));
+  assert.match(code, /render 'tp-vs-berechtigt', product: product/);
+  const zweige = code.match(/if tp_sl_vs contains 'ja'([\s\S]*?)elsif product\.template_suffix == 'planken'([\s\S]*?)else([\s\S]*?)endif/);
+  assert.ok(zweige, 'Die Unterscheidung nach Produktart fehlt.');
+  assert.match(zweige[1], /liefer-verlegeservice/);
+  assert.match(zweige[2], /vinylboden-verlegen/);
+  assert.doesNotMatch(zweige[3], /liefer-verlegeservice/, 'Andere Produkte duerfen nicht auf die Rollenware-Seite.');
+  assert.match(code, /<a href="{{ tp_sl_verlegen_url }}">Verlegeservice<\/a>/);
+});
+
+test('Vinyl von der Rolle: Einstieg und Vinylseite nennen den Service, Klick- und Klebevinyl nicht', () => {
+  const einstieg = vorlage('page.verlegeservice').sections.tp_verlegeservice.settings;
+  assert.match(einstieg.heading, /Vinyl von der Rolle/);
+  assert.equal(einstieg.produkte_link_2, 'shopify://collections/vinylboden-vinyl-von-der-rolle');
+  assert.match(ohneKommentare(lesen('sections', 'tp-verlegeservice.liquid')), /section\.settings\.knopf_2/);
+
+  // Auf der Vinylseite nur in der Karte "Vinyl-Rollenware", mit den Zahlen
+  // aus den Einstellungen.
+  const vinyl = ohneKommentare(lesen('sections', 'vinylboden-verlegen.liquid'));
+  const karten = vinyl.split('<div class="vinylart-card">').slice(1);
+  const rolle = karten.find((k) => /<h3>Vinyl-Rollenware<\/h3>/.test(k));
+  assert.ok(rolle, 'Karte Vinyl-Rollenware fehlt.');
+  assert.match(rolle, /settings\.tp_vs_schwelle/);
+  assert.match(rolle, /settings\.tp_vs_radius_basis/);
+  assert.match(rolle, /liefer-verlegeservice/);
+  for (const karte of karten.filter((k) => k !== rolle)) {
+    assert.doesNotMatch(karte, /liefer-verlegeservice|kostenlos|tp_vs_/, 'Klick-/Klebevinyl mit dem Rollenware-Service verbunden.');
+  }
+  assert.doesNotMatch(vinyl, /\b649\b|\b15\s*(km|&nbsp;km)/, 'Zahl von Hand statt aus den Einstellungen.');
 });

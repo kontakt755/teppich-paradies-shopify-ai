@@ -1,0 +1,36 @@
+{% doc %}
+  Gilt der Liefer- & Verlegeservice fuer dieses Produkt? Gibt "ja" aus oder
+  nichts.
+
+  Regel: Template "rolle" UND ein Produkttyp aus den Theme-Einstellungen
+  (TP Verlegeservice, tp_vs_produkttypen). Klick- und Klebevinyl (Template
+  planken), Teppichfliesen (fliese), Leisten und Zubehoer fallen damit immer
+  heraus - Linoleum teilt sich das Template "rolle" und bleibt draussen,
+  solange sein Typ nicht in der Liste steht.
+
+  Eine Quelle fuer den Produkthinweis (blocks/tp-verlegeservice-hinweis) und
+  das Ziel des Links "Verlegeservice" (blocks/tp-service-links). Vorher stand
+  die Pruefung nur im Hinweis, und der Link fuehrte bei jedem Produkt auf
+  dieselbe Seite.
+
+  Aufruf:
+    capture x
+      render 'tp-vs-berechtigt', product: product
+    endcapture
+
+  @param {object} product - das Produkt
+{% enddoc %}
+
+{%- liquid
+  if product.template_suffix == 'rolle'
+    assign vsb_typ = product.type | strip | downcase
+    assign vsb_typen = settings.tp_vs_produkttypen | downcase | split: ','
+    for vsb_eintrag in vsb_typen
+      assign vsb_tn = vsb_eintrag | strip
+      if vsb_tn != blank and vsb_tn == vsb_typ
+        echo 'ja'
+        break
+      endif
+    endfor
+  endif
+-%}

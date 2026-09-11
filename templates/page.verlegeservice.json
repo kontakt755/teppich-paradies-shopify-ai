@@ -52,14 +52,16 @@
       "type": "tp-verlegeservice",
       "settings": {
         "eyebrow": "Liefer- & Verlegeservice für Rollenware",
-        "heading": "Teppichboden kaufen – Lieferung & Verlegung gleich mit erledigt.",
-        "sub": "Wir liefern Ihren neuen Teppichboden und verlegen ihn direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg.",
+        "heading": "Teppichboden & Vinyl von der Rolle – Lieferung & Verlegung gleich mit erledigt.",
+        "sub": "Wir liefern Ihren neuen Boden und verlegen ihn direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg.",
         "image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
         "produkte_link": "shopify://collections/teppichboden",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
         "padding-block-end": 40,
         "knopf": "Teppichboden entdecken",
+        "knopf_2": "Vinyl von der Rolle entdecken",
+        "produkte_link_2": "shopify://collections/vinylboden-vinyl-von-der-rolle",
         "vertrauen": "Persönliche Beratung im Geschäft · Aufmaß vor Ort · Eigenes Verlegeteam aus Oranienburg"
       }
     },

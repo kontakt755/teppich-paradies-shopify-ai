@@ -2300,14 +2300,14 @@
         "type": "text",
         "id": "tp_vs_produkttypen",
         "label": "Produkttypen mit Verlegeservice",
-        "info": "Kommagetrennt, genau wie im Produkt. Es zählen nur Produkte mit dem Template „rolle“ – Klick- und Klebevinyl, Teppichfliesen, Leisten und Zubehör bleiben dadurch außen vor. Vinyl von der Rolle wäre z. B. „Teppichboden, Vinyl von der Rolle“.",
-        "default": "Teppichboden"
+        "info": "Kommagetrennt, genau wie im Produkt. Es zählen nur Produkte mit dem Template „rolle“ – Klick- und Klebevinyl, Teppichfliesen, Leisten und Zubehör bleiben dadurch außen vor. Linoleum von der Rolle käme mit „, Linoleumboden“ dazu.",
+        "default": "Teppichboden, Vinyl von der Rolle"
       },
       {
         "type": "text",
         "id": "tp_vs_bezeichnung",
         "label": "So heißt die Ware im Text",
-        "default": "Teppichboden von der Rolle"
+        "default": "Teppichboden und Vinyl von der Rolle"
       },
       {
         "type": "header",
