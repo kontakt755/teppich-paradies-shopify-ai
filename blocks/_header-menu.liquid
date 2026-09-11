@@ -571,6 +571,14 @@
     border-radius: var(--menu-image-border-radius);
   }
 
+  /* TP: Die geschlossenen Untermenues liegen unsichtbar (visibility: hidden)
+     im Sichtbereich - der Browser laedt ihre lazy-Bilder deshalb sofort.
+     display: none verhindert das, bis header-menu.js bei der ersten Absicht
+     data-images-revealed setzt. */
+  header-menu:not([data-images-revealed]) img {
+    display: none;
+  }
+
   /* Fix alignment for collection image mode links without images */
 
   /* Target only top-level links (direct children of column > div) in collection image mode */
