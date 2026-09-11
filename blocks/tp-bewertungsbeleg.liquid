@@ -23,7 +23,8 @@
 <div class="tp-bewertungsbeleg-{{ tp_bb_id }}" {{ block.shopify_attributes }}>
   {%- if tp_bb_rating != blank -%}
     <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
-      {%- assign tp_bb_full = tp_bb_rating | replace: ',', '.' | floor -%}
+      {%- comment -%} Runden wie Google: 4,9 zeigt fuenf Sterne, nicht vier {%- endcomment -%}
+      {%- assign tp_bb_full = tp_bb_rating | replace: ',', '.' | round -%}
       {%- for i in (1..5) -%}
         {%- if i <= tp_bb_full -%}★{%- else -%}☆{%- endif -%}
       {%- endfor -%}
