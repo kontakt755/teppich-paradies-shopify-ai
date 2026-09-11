@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:55:21.037Z",
+  "generated_at": "2026-09-11T14:50:36.275Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 73,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:55:21.037Z",
+    "fetchedAt": "2026-09-11T14:50:36.275Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -199,14 +199,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Qualitaetsprogramm Richtung 99/100. Arbeits-Theme = unveroeffentlichte Kopie des Entwurfs, Branch feature/shop-qualitaet. Erstbefund: docs/analyse/qualitaet-erstbefund-2026-09-11.md. Live-Theme wird nicht angefasst, nichts wird veroeffentlicht.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:20:38Z",
-      "updated_at": "2026-09-11T12:46:20Z",
+      "updated_at": "2026-09-11T14:22:46Z",
       "closed_at": null
     },
     {
