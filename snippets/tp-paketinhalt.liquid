@@ -16,6 +16,9 @@
   @param {object} product - Produkt
   @param {number} sqm_per_package - Paketflaeche in m2
   @param {string} [prefix] - Text vor der Flaeche, Vorgabe "1 Paket ="
+  @param {boolean} [nur_flaeche] - Stueckzahl und Format weglassen. Fuer die
+    Produktkarte: dort bleibt es bei Paketpreis und Flaeche, damit die Karte
+    nicht ueberladen wirkt. Die Stueckzahl steht auf der Produktseite.
 {%- enddoc -%}
 {%- liquid
   # Kein default-Filter: Der behandelt einen leeren String als "nicht gesetzt"
@@ -51,7 +54,7 @@
 -%}
 {%- if tp_pi_prefix != blank %}{{ tp_pi_prefix }} {% endif -%}
 {{- tp_pi_flaeche_text }}&nbsp;m²
-{%- if tp_pi_stueck > 0 -%}
+{%- if tp_pi_stueck > 0 and nur_flaeche != true -%}
   &nbsp;· {{ tp_pi_stueck }} {{ tp_pi_einheit }}
   {%- if tp_pi_format != blank %} à {{ tp_pi_format }}{% endif -%}
 {%- endif -%}
