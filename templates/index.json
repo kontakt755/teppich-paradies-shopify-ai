@@ -809,7 +809,7 @@
         "gewichtung": "gleich",
         "mobil_zuerst": "online",
         "online_link": "#tp-kategorien",
-        "service_link": "#tp-kontakt",
+        "service_link": "/pages/liefer-verlegeservice",
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
         "online_text": "Rollenware im Wunschmaß, cm-genau berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. Versandkosten sehen Sie vor dem Kauf im Warenkorb.",
@@ -817,8 +817,8 @@
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
         "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
-        "service_text": "Im Umkreis von 15 km: Lieferung und lose Verlegung inklusive, feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis. Ab 649 € Warenwert: alles inklusive – Anfahrt, Lieferung und feste Verlegung. Bis 50 km regulär, weiter entfernt auf Anfrage.",
-        "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Auch Treppen und Gewerbe",
+        "service_text": "Teppichboden von der Rolle liefern und verlegen wir rund um Oranienburg – ab 649 € Warenwert im Nahbereich kostenlos, sonst zu fairen Festpreisen. Fixierung oder Verklebung auf Wunsch.",
+        "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Bis 50 km regulär – weiter entfernt auf Anfrage",
         "service_cta": "Aufmaß & Verlegung anfragen",
         "service_telefon": "03301 573 37 20",
         "service_telefon_label": "03301 573 37 20"
@@ -829,7 +829,7 @@
       "settings": {
         "eyebrow": "Wo wir hinkommen",
         "heading": "Unser Liefer- und Verlegegebiet",
-        "intro": "Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive, feste Verlegung gegen Aufpreis; ab 649 € Warenwert ist alles inklusive. Regulär verlegen wir bis 50 km, weiter entfernt auf Anfrage.",
+        "intro": "Von Oranienburg aus sind unsere Bodenleger bis nach Berlin und ins Brandenburger Umland für Sie unterwegs, weiter entfernt auf Anfrage.",
         "karte_zeigen": true,
         "radius": 50,
         "pruefung_zeigen": true,
@@ -981,7 +981,7 @@
           "type": "frage",
           "settings": {
             "frage": "Liefern Sie deutschlandweit?",
-            "antwort": "<p>Ja, wir liefern in ganz Deutschland. Rollenware kommt per Spedition frei Bordsteinkante, kleinere Artikel mit dem Paketdienst. Die Versandkosten sehen Sie vor dem Abschluss im Warenkorb. Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive, feste Verlegung gegen Aufpreis; ab 649 € Warenwert ist alles inklusive.</p>"
+            "antwort": "<p>Ja, wir liefern in ganz Deutschland. Rollenware kommt per Spedition frei Bordsteinkante, kleinere Artikel mit dem Paketdienst. Die Versandkosten sehen Sie vor dem Abschluss im Warenkorb. Lieferung mit Verlegung rund um Oranienburg: alle Konditionen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>.</p>"
           }
         },
         "q2": {
@@ -995,7 +995,7 @@
           "type": "frage",
           "settings": {
             "frage": "Verlegen Sie auch – und was kostet das?",
-            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten. Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber berechnen wir gegen Aufpreis. Ab 649 € Warenwert ist alles inklusive: Anfahrt, Lieferung und feste Verlegung. Unser Verlegeservice reicht regulär bis 50 km um Oranienburg, weiter entfernt verlegen wir nur auf Anfrage.</p>"
+            "antwort": "<p>Ja, mit eigenem Team: Aufmaß, Lieferung, Untergrundvorbereitung, Verlegung und Sockelleisten für Teppichboden und Vinyl von der Rolle. Regulär bis 50 km um Oranienburg, weiter entfernt auf Anfrage. Alle Stufen und Preise stehen auf der Seite <a href=\"/pages/liefer-verlegeservice\">Liefer- &amp; Verlegeservice</a>. Geben Sie oben Ihre Postleitzahl ein oder rufen Sie kurz an.</p>"
           }
         },
         "q4": {
