@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-11T10:52:50Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-11T12:20:58Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-11T10:52:50Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-11T12:20:58Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -77,6 +77,12 @@
       "name": "Preview Gallery V3",
       "retiredNoticedAt": "2026-09-11",
       "note": "Per workflow:live abgeloest durch 203690246478 (Commit 4903591, PR #192: Produktkarte zeigt bei Paketware nur Paketpreis und Flaeche, Stueckzahl bleibt auf Produktseite, Rechner und Warenkorb). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203690246478",
+      "name": "preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-11",
+      "note": "Per workflow:live abgeloest durch 203558781262 (Commit 6f2f137, PR #196 + #197: Paketzeile der Karte 12 px, Format bricht nicht vor cm um, Reserve-Hinweis bei Fliesen, Drawer-Bildraster als Snippet (#181), Vorlage product.fliese.json). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
