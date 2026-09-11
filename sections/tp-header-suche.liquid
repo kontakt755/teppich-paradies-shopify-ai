@@ -19,7 +19,16 @@
       </button>
     </form>
   </div>
-  {%- if section.blocks.size > 0 -%}
+  {%- comment -%}
+    Auf Produktseite und Warenkorb keine Kategorie-Leiste: dort zaehlt der
+    Artikel, die Leiste schob ihn am Telefon 56 px nach unten. Brotkrumen
+    und Menue fuehren von dort weiter.
+  {%- endcomment -%}
+  {%- assign tp_hs_ohne_leiste = false -%}
+  {%- if template.name == 'product' or template.name == 'cart' -%}
+    {%- assign tp_hs_ohne_leiste = true -%}
+  {%- endif -%}
+  {%- if section.blocks.size > 0 and tp_hs_ohne_leiste == false -%}
     <nav class="tp-hs__chips" aria-label="Kategorien">
       {%- for block in section.blocks -%}
         <a href="{{ block.settings.link }}" class="tp-hs__chip{% if block.settings.hervorheben %} tp-hs__chip--rot{% endif %}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
@@ -39,10 +48,14 @@
   .tp-hs__btn svg { width: 17px; height: 17px; }
   .tp-hs__chips { display: none; }
   @media (max-width: 767px) {
-    .tp-hs__form { margin: 8px 0; }
-    .tp-hs__chips { display: flex; gap: 8px; overflow-x: auto; padding: 4px var(--tp-pad) 12px; scrollbar-width: none; scroll-snap-type: x proximity; }
+    /* Kompakter Kopfbereich am Telefon: Feld 44 px, Leiste 36 px hoch
+       (vorher 50 + 40 px, zusammen 219 px bis zum Inhalt). Eingabe bleibt
+       16 px, sonst zoomt iOS. */
+    .tp-hs__form { height: 44px; margin: 6px 0; padding: 0 4px 0 16px; }
+    .tp-hs__btn { width: 36px; height: 36px; }
+    .tp-hs__chips { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--tp-pad) 8px; scrollbar-width: none; scroll-snap-type: x proximity; }
     .tp-hs__chips::-webkit-scrollbar { display: none; }
-    .tp-hs__chip { flex: none; scroll-snap-align: start; min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: #f6f2ec; border: 1px solid #e6e0d8; font-weight: 500; font-size: 14.5px; color: #1d1a17; text-decoration: none; }
+    .tp-hs__chip { flex: none; scroll-snap-align: start; min-height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: #f6f2ec; border: 1px solid #e6e0d8; font-weight: 500; font-size: 14.5px; color: #1d1a17; text-decoration: none; }
     .tp-hs__chip--rot { background: #fbeeef; color: #b73740; border-color: transparent; font-weight: 600; }
   }
 {% endstylesheet %}
