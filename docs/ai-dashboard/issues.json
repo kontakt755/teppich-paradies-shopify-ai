@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T20:11:23.724Z",
+  "generated_at": "2026-09-11T20:13:13.883Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 77,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T20:11:23.724Z",
+    "fetchedAt": "2026-09-11T20:13:13.883Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,10 +65,10 @@
     {
       "number": 217,
       "title": "Branch analyse/wettbewerb-kaufpfad nach main mergen (Startseite, Service- und Verlegeseiten)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/217",
       "labels": [
-        "status:eingang",
+        "status:fertig",
         "type:verbesserung",
         "priority:p2",
         "area:content"
@@ -77,15 +77,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "10 ungemergte Commits (Startseite zwei Einstiege, Serviceseiten, Verlegeseiten fuer Ads-Traffic, Analyse-Doku). Konflikte mit #191/#213 nach deren Vorgabe aufgeloest: Verlegeservice-Seite und Konditionen aus main (Regel 2026-09-11).",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T20:11:11Z",
-      "updated_at": "2026-09-11T20:11:12Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T20:13:12Z",
+      "closed_at": "2026-09-11T20:12:57Z"
     },
     {
       "number": 206,
