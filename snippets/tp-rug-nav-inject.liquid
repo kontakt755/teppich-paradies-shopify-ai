@@ -127,11 +127,76 @@
         }, { once: true, capture: true });
       }
 
+      var hold = false;
+      var stash = [];
+
       function run() {
+        if (hold) return;
         try { desktop(); } catch (e) { console.warn('tp-rug-nav (Desktop):', e); }
         try { drawer(); } catch (e) { console.warn('tp-rug-nav (Handy):', e); }
       }
+
+      // Die Header-Hydration morpht header-menu und Drawer auf den Serverstand
+      // und gleicht Geschwister nach Position ab (morph.js, updateChildren).
+      // Mit dem zusaetzlichen Punkt bekaeme jeder folgende Knoten den Inhalt
+      // seines Nachbarn: gehaltene Elemente zeigen danach auf den falschen Punkt,
+      // "Mehr" verliert slot, ein offenes Untermenue zeigt kurz fremden Inhalt.
+      // Deshalb nehmen wir die eigenen Punkte direkt vor dem Morph heraus - die
+      // Listen stimmen dann mit dem Server ueberein - und setzen dieselben Knoten
+      // danach wieder ein. Beides laeuft in derselben Microtask-Folge, also ohne
+      // Zwischenbild. Fehlt die Schnittstelle, bleibt es beim Neueinsetzen unten.
+      function ownsNav(sectionId) {
+        var el = document.getElementById('shopify-section-' + String(sectionId).replace(/^shopify-section-/, ''));
+        return !!(el && el.querySelector('[data-tp-rug-nav]'));
+      }
+      function takeOut() {
+        hold = true;
+        document.querySelectorAll('[data-tp-rug-nav]').forEach(function (li) {
+          stash.push({ li: li, prev: li.previousElementSibling });
+          li.remove();
+        });
+        setTimeout(restore, 1500);
+      }
+      function restore() {
+        if (!hold) return;
+        hold = false;
+        stash.splice(0).forEach(function (x) {
+          var list = x.prev && x.prev.isConnected ? x.prev.parentNode : null;
+          if (list && !list.querySelector(':scope > [data-tp-rug-nav]')) x.prev.after(x.li);
+        });
+        run();
+      }
+      function hookRenderer() {
+        import('@theme/section-renderer').then(function (mod) {
+          var sr = mod && mod.sectionRenderer;
+          if (!sr || sr.__tpRugNav || typeof sr.renderSection !== 'function' || typeof sr.getSectionHTML !== 'function') return;
+          sr.__tpRugNav = true;
+          var render = sr.renderSection;
+          var getHTML = sr.getSectionHTML;
+          var inRender = false;
+          // renderSection ruft getSectionHTML synchron vor seinem ersten await auf.
+          sr.renderSection = function (sectionId) {
+            var own = ownsNav(sectionId);
+            var p;
+            inRender = own;
+            try { p = render.apply(this, arguments); } finally { inRender = false; }
+            if (own) p.then(restore, restore);
+            return p;
+          };
+          sr.getSectionHTML = function () {
+            var p = getHTML.apply(this, arguments);
+            if (!inRender) return p;
+            return p.then(function (html) {
+              // Aus dem Seiten-Cache kommt HTML, das die Punkte schon enthaelt.
+              if (typeof html === 'string' && html.indexOf('data-tp-rug-nav') === -1) takeOut();
+              return html;
+            });
+          };
+        }).catch(function () {});
+      }
+
       run();
+      hookRenderer();
       document.addEventListener('DOMContentLoaded', run);
       document.addEventListener('shopify:section:load', run);
 
