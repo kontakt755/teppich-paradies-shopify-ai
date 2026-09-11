@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T19:46:59.927Z",
+  "generated_at": "2026-09-11T19:56:13.081Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 76,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T19:46:59.927Z",
+    "fetchedAt": "2026-09-11T19:56:13.081Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -115,7 +115,7 @@
     {
       "number": 204,
       "title": "Lexware-API: Funktionsumfang dokumentieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/204",
       "labels": [
         "status:in-arbeit",
@@ -134,8 +134,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:40:58Z",
-      "updated_at": "2026-09-11T18:12:33Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T19:55:58Z",
+      "closed_at": "2026-09-11T19:55:58Z"
     },
     {
       "number": 203,
