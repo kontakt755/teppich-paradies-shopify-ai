@@ -30,14 +30,14 @@
 </div>
 
 {% stylesheet %}
-  .tp-tb { background: #1d1a17; color: #fff; font-size: 13.5px; }
+  .tp-tb { background: var(--tp-ink, #1d1a17); color: #fff; font-size: 13.5px; }
   .tp-tb__wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 36px; }
   .tp-tb__list { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; }
   .tp-tb__item { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .tp-tb__item svg { width: 15px; height: 15px; color: #e9c8a1; flex: none; }
+  .tp-tb__item svg { width: 15px; height: 15px; color: var(--tp-sand, #e9c8a1); flex: none; }
   .tp-tb__item a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .tp-tb__tel { display: flex; align-items: center; gap: 7px; font-weight: 600; color: #fff; text-decoration: none; white-space: nowrap; flex: none; }
-  .tp-tb__tel svg { width: 15px; height: 15px; color: #e9c8a1; }
+  .tp-tb__tel svg { width: 15px; height: 15px; color: var(--tp-sand, #e9c8a1); }
   .tp-tb__zeiten { color: #c9c2b8; font-weight: 400; }
   @media (max-width: 1599px) { .tp-tb__zeiten { display: none; } }
   @media (max-width: 1279px) { .tp-tb__item:nth-child(3) { display: none; } }

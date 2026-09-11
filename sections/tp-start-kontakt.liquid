@@ -58,20 +58,20 @@
      gestreckt und zeigten 400 px Leerraum (Audit B-11). */
   .tp-kon__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); grid-template-rows: auto 1fr; gap: 20px; align-items: start; }
   .tp-kon__card--form { grid-column: 2; grid-row: 1 / span 2; }
-  .tp-kon__card { border: 1px solid #e6e0d8; border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
-  .tp-kon__card p { color: #4a443f; font-size: 15px; margin: 0; }
+  .tp-kon__card { border: 1px solid var(--tp-line, #e6e0d8); border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
+  .tp-kon__card p { color: var(--tp-ink-2, #4a443f); font-size: 15px; margin: 0; }
   .tp-kon__card > .tp-s-btn { margin-top: auto; align-self: flex-start; }
-  .tp-kon__ico { width: 44px; height: 44px; border-radius: 12px; background: #fbeeef; color: #b73740; display: grid; place-items: center; }
+  .tp-kon__ico { width: 44px; height: 44px; border-radius: 12px; background: var(--tp-red-soft, #fbeeef); color: var(--tp-red, #b73740); display: grid; place-items: center; }
   .tp-kon__ico svg { width: 22px; height: 22px; }
   .tp-kon__ico--wa { background: #e6f6ec; color: #1f9d55; }
   .tp-kon__toggle { display: none; }
   .tp-kon__form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .tp-kon__form label { display: grid; gap: 5px; font-size: 13.5px; font-weight: 500; color: #4a443f; }
-  .tp-kon__form input, .tp-kon__form select, .tp-kon__form textarea { height: 46px; border: 1.5px solid #d5cec4; border-radius: 8px; padding: 0 12px; font: inherit; font-size: 16px; background: #fff; color: #1d1a17; }
+  .tp-kon__form label { display: grid; gap: 5px; font-size: 13.5px; font-weight: 500; color: var(--tp-ink-2, #4a443f); }
+  .tp-kon__form input, .tp-kon__form select, .tp-kon__form textarea { height: 46px; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 8px; padding: 0 12px; font: inherit; font-size: 16px; background: #fff; color: var(--tp-ink, #1d1a17); }
   .tp-kon__form textarea { height: auto; min-height: 80px; padding: 10px 12px; resize: vertical; }
-  .tp-kon__form input:focus, .tp-kon__form select:focus, .tp-kon__form textarea:focus { border-color: #1d1a17; outline: none; }
+  .tp-kon__form input:focus, .tp-kon__form select:focus, .tp-kon__form textarea:focus { border-color: var(--tp-ink, #1d1a17); outline: none; }
   .tp-kon__full { grid-column: 1 / -1; }
-  .tp-kon__ok { grid-column: 1 / -1; background: #e7f3ea; color: #1f5a36; padding: 10px 12px; border-radius: 8px; }
+  .tp-kon__ok { grid-column: 1 / -1; background: var(--tp-green-soft, #e7f3ea); color: #1f5a36; padding: 10px 12px; border-radius: 8px; }
   .tp-kon__err { grid-column: 1 / -1; background: #fff6e5; color: #7a4b00; padding: 10px 12px; border-radius: 8px; }
   @media (max-width: 1023px) { .tp-kon__grid { grid-template-columns: 1fr 1fr; } .tp-kon__card--form { grid-column: 1 / -1; grid-row: auto; } }
   @media (max-width: 767px) {
