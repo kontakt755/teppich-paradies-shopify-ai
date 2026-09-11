@@ -28,6 +28,20 @@
   {%- if template.name == 'product' or template.name == 'cart' -%}
     {%- assign tp_hs_ohne_leiste = true -%}
   {%- endif -%}
+  {%- comment -%}
+    Auch nicht auf den Kategorieseiten mit eigener Unterkategorie-Leiste
+    (Teppichboden, Vinylboden und ihre Unterkategorien, siehe
+    snippets/tp-unterkategorien-leiste.liquid): Dort standen am Telefon zwei
+    Knopfreihen fast uebereinander, "Klickvinyl" doppelt, rund 50 px. Die
+    Leiste unter der H1 ist dort die genauere Navigation, das Menue die
+    uebergreifende.
+  {%- endcomment -%}
+  {%- if template.name == 'collection' -%}
+    {%- assign tp_hs_suffix = template.suffix | default: '' -%}
+    {%- if tp_hs_suffix == 'teppichboden' or tp_hs_suffix == 'vinylboden' or tp_hs_suffix contains 'teppichboden-' or tp_hs_suffix contains 'vinylboden-' -%}
+      {%- assign tp_hs_ohne_leiste = true -%}
+    {%- endif -%}
+  {%- endif -%}
   {%- if section.blocks.size > 0 and tp_hs_ohne_leiste == false -%}
     <nav class="tp-hs__chips" aria-label="Kategorien">
       {%- for block in section.blocks -%}
