@@ -51,7 +51,7 @@
         </div>
         <div>
           <dt>Unter {{ vsh_schwelle }}&nbsp;€ oder weiter weg</dt>
-          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</dd>
+          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</dd>
         </div>
       </dl>
       <p class="tp-vsh__lose">Lose Verlegung heißt: passend zugeschnitten, ohne Verklebung.</p>

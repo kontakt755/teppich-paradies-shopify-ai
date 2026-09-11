@@ -77,10 +77,10 @@
     data-basis="{{ settings.tp_vs_radius_basis }}"
     data-mitte="{{ settings.tp_vs_radius_mitte }}"
     data-schwelle="{{ settings.tp_vs_schwelle }}"
-    data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape }}"
-    data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape }}"
-    data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape }}"
-    data-lose="{{ settings.tp_vs_lose | escape }}"
+    data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose="{{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}"
   {%- endif %}
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
 >
@@ -176,15 +176,15 @@
     <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos, darunter {{ settings.tp_vs_anfahrt_nah | escape }} für Lieferung und Anfahrt.</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos, darunter {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }} für Lieferung und Anfahrt.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Weiter entfernt</span>
