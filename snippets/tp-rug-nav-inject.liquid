@@ -120,6 +120,11 @@
           list.appendChild(item);
         }
         ref.parentNode.insertBefore(li, ref.nextSibling);
+        // Natives lazy greift im verborgenen Drawer nicht zuverlaessig: Bilder beim
+        // ersten Oeffnen des Menues laden - vorher kostet der Punkt keine Anfrage.
+        root.addEventListener('click', function () {
+          li.querySelectorAll('img[loading="lazy"]').forEach(function (img) { img.loading = 'eager'; });
+        }, { once: true, capture: true });
       }
 
       function run() {

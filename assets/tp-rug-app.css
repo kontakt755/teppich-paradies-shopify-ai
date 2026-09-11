@@ -345,7 +345,7 @@
 @media (max-width: 989px) {
   .tp-rug-conf__grid { grid-template-columns: minmax(0, 1fr); }
   .tp-rug-conf__gallery { position: static; }
-  .tp-rug-gal__vis { display: none; }
+  .tp-rug-gal__vis { min-height: 44px; font-size: 14px; }
   .tp-rug-info__tabs { display: none; }
   .tp-rug-info__panel { display: block; border-bottom: 1px solid var(--tp-line); }
   .tp-rug-info__acc { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 56px; padding: 0; border: 0; background: none; font: inherit; font-weight: 650; font-size: 16px; color: var(--tp-ink); text-align: left; cursor: pointer; }

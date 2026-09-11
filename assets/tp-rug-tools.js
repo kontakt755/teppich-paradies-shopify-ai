@@ -25,6 +25,7 @@ const GROUPS = [
   ['raum', 'Raum', ROOMS],
   ['form', 'Form', Object.fromEntries(Object.entries(SHAPES).filter(([, v]) => v.group !== 'anfrage').map(([k, v]) => [k, v.label]))],
   ['kante', 'Einfassung', { kettel: 'Kettelung', paspel: 'Paspel', baumwolle: 'Baumwolle', cover: 'Cover (Kippkante)' }],
+  ['farbe', 'Farbe', null],
   ['material', 'Material', { velours: 'Velours', hochflor: 'Hochflor', schlinge: 'Schlinge', flachgewebe: 'Flachgewebe', objekt: 'Objektqualität', outdoor: 'Outdoor' }],
   ['flor', 'Florhöhe', { kurz: 'kurz', mittel: 'mittel', hoch: 'hoch', flach: 'flach gewebt' }],
   ['faser', 'Faser', { kunstfaser: 'Kunstfaser', wolle: 'Wolle', naturfaser: 'Naturfaser' }],
@@ -56,7 +57,16 @@ class TpRugList extends HTMLElement {
     if (this.ready) return;
     this.ready = true;
     this.cards = [...this.querySelectorAll('[data-tp-rug-card]')];
-    this.vals = (card, g) => (card.dataset[ATTR[g]] || '').split(',').map((s) => s.trim()).filter(Boolean);
+    // Farben stehen als "Name:#hex|Name:#hex" an der Karte; Schluessel ist der kleingeschriebene Name.
+    this.farben = new Map();
+    const farbenOf = (card) => (card.dataset.farben || '').split('|').map((s) => {
+      const [name, hex] = s.split(':').map((x) => (x || '').trim());
+      if (!name) return null;
+      const key = name.toLowerCase();
+      if (!this.farben.has(key)) this.farben.set(key, { name, hex });
+      return key;
+    }).filter(Boolean);
+    this.vals = (card, g) => (g === 'farbe' ? farbenOf(card) : (card.dataset[ATTR[g]] || '').split(',').map((s) => s.trim()).filter(Boolean));
     const params = new URLSearchParams(location.search);
     this.sel = {};
     for (const [g] of GROUPS) {
@@ -79,15 +89,18 @@ class TpRugList extends HTMLElement {
   build() {
     const html = [];
     this.groups = [];
-    for (const [g, label, labels] of GROUPS) {
+    for (const [g, label, fixed] of GROUPS) {
       const present = new Map();
+      if (g === 'farbe') for (const c of this.cards) this.vals(c, g);
+      const labels = fixed || Object.fromEntries([...this.farben].map(([k, f]) => [k, f.name]));
       for (const c of this.cards) for (const v of this.vals(c, g)) if (labels[v]) present.set(v, (present.get(v) || 0) + 1);
       if (present.size < 2 && !(this.sel[g] && this.sel[g].size)) continue;
       this.groups.push(g);
       const order = Object.keys(labels).filter((k) => present.has(k));
       html.push(`<div class="tp-rug-filter__group" role="group" aria-label="${esc(label)}"><p class="tp-rug-filter__label">${esc(label)}</p><div class="tp-rug-filter__opts">${order.map((v) => {
         const ic = g === 'form' ? `form-${v}` : g === 'kante' ? `kante-${v}` : null;
-        return `<button type="button" class="tp-rug-fchip" data-f="${g}" data-v="${v}" aria-pressed="false">${ic ? this.icon(ic) : ''}<span>${esc(labels[v])}</span><span class="tp-rug-fchip__n" data-n></span></button>`;
+        const sw = g === 'farbe' && this.farben.get(v)?.hex ? `<span class="tp-rug-fchip__sw" style="--sw:${esc(this.farben.get(v).hex)}" aria-hidden="true"></span>` : '';
+        return `<button type="button" class="tp-rug-fchip" data-f="${g}" data-v="${esc(v)}" aria-pressed="false">${ic ? this.icon(ic) : sw}<span>${esc(labels[v])}</span><span class="tp-rug-fchip__n" data-n></span></button>`;
       }).join('')}</div></div>`);
     }
     // Raum, Form und Einfassung sofort; der Rest hinter "Weitere Filter" - sonst
@@ -152,7 +165,7 @@ class TpRugList extends HTMLElement {
     const singles = Object.entries(this.sel).filter(([, s]) => s.size);
     if (active === 1) {
       const [g, s] = singles[0]; const v = [...s][0];
-      title = TITLE[g]?.[v] || `Teppiche: ${GROUPS.find((x) => x[0] === g)[2][v]}`;
+      title = TITLE[g]?.[v] || (g === 'farbe' ? `Teppiche in ${this.farben.get(v)?.name || v}` : `Teppiche: ${GROUPS.find((x) => x[0] === g)[2]?.[v] || v}`);
       if (g === 'raum') intro = INTRO[v] || null;
     } else if (active > 1) title = 'Teppiche nach Ihrer Auswahl';
     const h = this.querySelector('[data-list-title]'); if (h) h.textContent = title;

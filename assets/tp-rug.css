@@ -8,7 +8,7 @@
 .tp-rug {
   --tp-ink: #1f1d1b;
   --tp-ink-2: rgb(31 29 27 / 0.72);
-  --tp-ink-3: rgb(31 29 27 / 0.54);
+  --tp-ink-3: rgb(31 29 27 / 0.66); /* ca. 5:1 auf Weiss - AA auch fuer kleine Schrift */
   --tp-line: rgb(31 29 27 / 0.12);
   --tp-line-2: rgb(31 29 27 / 0.22);
   --tp-bg: #fff;
@@ -239,6 +239,7 @@ a.tp-rug-trust__item:hover { border-color: var(--tp-ink); }
 .tp-rug-fchip[aria-pressed="true"] .tp-rug-icon { color: #fff; }
 .tp-rug-fchip .tp-rug-icon { color: var(--tp-accent); }
 .tp-rug-fchip__n { font-size: 12px; opacity: .65; }
+.tp-rug-fchip__sw { flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .18); }
 .tp-rug-filter__toggle { display: none; }
 .tp-rug-filter__more { display: grid; gap: 14px; }
 .tp-rug-filter__morebtn { justify-self: start; }

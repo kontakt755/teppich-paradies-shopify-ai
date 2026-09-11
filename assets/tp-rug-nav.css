@@ -8,7 +8,7 @@
 .tp-rug-nav {
   --tp-ink: rgb(var(--color-foreground-rgb, 28 26 24));
   --tp-ink-2: rgb(var(--color-foreground-rgb, 28 26 24) / 0.66);
-  --tp-ink-3: rgb(var(--color-foreground-rgb, 28 26 24) / 0.5);
+  --tp-ink-3: rgb(var(--color-foreground-rgb, 28 26 24) / 0.64);
   --tp-line: rgb(var(--color-foreground-rgb, 28 26 24) / 0.12);
   --tp-sand: #f4efe7;
   --tp-accent: #8a5a3c;
@@ -119,6 +119,10 @@
 }
 
 /* --- Handy ---------------------------------------------------------- */
+/* Das Theme blendet Drawer-Bilder aus, bis ein Bereich "aufgedeckt" wird - fuer den
+   eingesetzten Punkt kommt dieses Signal nie. Die Bilder bleiben lazy und laden erst,
+   wenn das Panel sichtbar wird. */
+header-drawer .tp-rug-nav--drawer img { display: block !important; }
 .tp-rug-nav-li { list-style: none; padding: 0 !important; }
 .tp-rug-nav--drawer { display: flex; flex-direction: column; gap: 8px; padding: 4px 0 28px; font-size: 15px; }
 .tp-rug-nav--drawer .tp-rug-nav__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
