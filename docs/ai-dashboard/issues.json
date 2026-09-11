@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:02:44.860Z",
+  "generated_at": "2026-09-11T12:13:37.601Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 68,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:02:44.860Z",
+    "fetchedAt": "2026-09-11T12:13:37.601Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -68,7 +68,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/194",
       "labels": [
-        "status:eingang",
+        "status:in-arbeit",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Qualitaetsprogramm Richtung 99/100. Arbeits-Theme = unveroeffentlichte Kopie des Entwurfs, Branch feature/shop-qualitaet. Erstbefund: docs/analyse/qualitaet-erstbefund-2026-09-11.md. Live-Theme wird nicht angefasst, nichts wird veroeffentlicht.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:20:38Z",
-      "updated_at": "2026-09-11T11:20:39Z",
+      "updated_at": "2026-09-11T12:13:27Z",
       "closed_at": null
     },
     {
@@ -102,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-11T11:45:28Z",
+      "updated_at": "2026-09-11T12:06:27Z",
       "closed_at": null
     },
     {
@@ -215,7 +215,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/181",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:navigation"
@@ -224,13 +224,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-10T11:27:02Z",
-      "updated_at": "2026-09-11T12:02:29Z",
+      "updated_at": "2026-09-11T12:02:50Z",
       "closed_at": "2026-09-11T12:02:29Z"
     },
     {
