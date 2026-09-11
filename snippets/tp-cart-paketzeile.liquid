@@ -1,0 +1,66 @@
+{%- doc -%}
+  Klartextzeile fuer eine Warenkorbposition mit Paketware:
+  "4 Originalpakete · Gesamtflaeche 20,00 m²".
+
+  Bewusst aus item.quantity gerechnet und NICHT aus einer beim Hinzufuegen
+  gespeicherten Line-Item-Property: Der Kunde kann die Menge im Warenkorb
+  aendern, und eine mitgeschriebene Property waere danach falsch, ohne dass
+  es jemand merkt. So kann Anzeige und Bestellmenge nicht auseinanderlaufen.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- liquid
+  assign tp_cz_produkt = line_item.product
+  assign tp_cz_paket = tp_cz_produkt.metafields.custom.qm_pro_paket.value | times: 1.0
+  assign tp_cz_menge = line_item.quantity | times: 1
+-%}
+{%- if tp_cz_paket > 0 and tp_cz_menge > 0 -%}
+  {%- liquid
+    assign tp_cz_gesamt = tp_cz_paket | times: tp_cz_menge
+
+    # Deutsches Komma mit zwei Nachkommastellen. Ueber Cent gerechnet, damit
+    # kein Gleitkomma-Rest wie 20,000000001 in der Anzeige landet.
+    assign tp_cz_hundertstel = tp_cz_gesamt | times: 100 | round
+    assign tp_cz_ganz = tp_cz_hundertstel | divided_by: 100
+    assign tp_cz_rest = tp_cz_hundertstel | modulo: 100
+    if tp_cz_rest < 10
+      assign tp_cz_rest = tp_cz_rest | prepend: '0'
+    endif
+    assign tp_cz_flaeche = tp_cz_ganz | append: ',' | append: tp_cz_rest
+
+    if tp_cz_menge == 1
+      assign tp_cz_wort = 'Originalpaket'
+    else
+      assign tp_cz_wort = 'Originalpakete'
+    endif
+
+    assign tp_cz_stueck = tp_cz_produkt.metafields.custom.stueck_pro_paket.value | times: 1
+    assign tp_cz_einheit = tp_cz_produkt.metafields.custom.stueck_bezeichnung.value | strip | default: 'Stück'
+    assign tp_cz_format = tp_cz_produkt.metafields.custom.format_cm.value | strip
+  -%}
+  <div class="cart-items__paket">
+    <span class="cart-items__paket-menge">{{ tp_cz_menge }} {{ tp_cz_wort }}</span>
+    {%- if tp_cz_stueck > 0 -%}
+      {%- assign tp_cz_stueck_gesamt = tp_cz_stueck | times: tp_cz_menge -%}
+      <span>{{ tp_cz_stueck_gesamt }} {{ tp_cz_einheit }}{% if tp_cz_format != blank %} à&nbsp;{{ tp_cz_format | replace: ' ', '&nbsp;' }}{% endif %}</span>
+    {%- endif -%}
+    <span>Gesamtfläche: {{ tp_cz_flaeche }}&nbsp;m²</span>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .cart-items__paket {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-top: 2px;
+    font-size: 0.92em;
+    line-height: 1.35;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .cart-items__paket-menge {
+    font-weight: 600;
+    color: var(--color-foreground, #222);
+  }
+{% endstylesheet %}

@@ -1,0 +1,60 @@
+{%- doc -%}
+  Beschreibt in einer Zeile, was ein Originalpaket enthaelt. Einzige Quelle
+  dafuer - Produktseite, Produktkarte und Warenkorb rufen dasselbe Snippet auf,
+  damit keine zwei Formulierungen entstehen koennen.
+
+  Ausgabe je nach vorhandenen Daten:
+    "1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm"
+    "1 Paket = 5,00 m² · 20 Stück"
+    "1 Paket = 5,00 m²"
+
+  Stueckzahl und Format werden NIE aus Titel oder Flaeche geschaetzt. Fehlt das
+  Metafeld, bleibt die Zeile kuerzer - eine erfundene Stueckzahl waere eine
+  Zusicherung gegenueber dem Kunden, die niemand belegen kann. Welche Produkte
+  die Felder noch brauchen, steht im Abschlussbericht.
+
+  @param {object} product - Produkt
+  @param {number} sqm_per_package - Paketflaeche in m2
+  @param {string} [prefix] - Text vor der Flaeche, Vorgabe "1 Paket ="
+  @param {boolean} [nur_flaeche] - Stueckzahl und Format weglassen. Fuer die
+    Produktkarte: dort bleibt es bei Paketpreis und Flaeche, damit die Karte
+    nicht ueberladen wirkt. Die Stueckzahl steht auf der Produktseite.
+{%- enddoc -%}
+{%- liquid
+  # Kein default-Filter: Der behandelt einen leeren String als "nicht gesetzt"
+  # und haette den Praefix auf der Produktkarte wieder eingesetzt - dort stand
+  # dann "41,25 EUR / Paket · 1 Paket = 0,794 m²".
+  assign tp_pi_prefix = prefix
+  if prefix == nil
+    assign tp_pi_prefix = '1 Paket ='
+  endif
+
+  # Deutsches Dezimalkomma, mindestens zwei Nachkommastellen, damit nicht "5,0"
+  # neben "1,73" steht. Eine dritte Stelle bleibt erhalten, wenn das Metafeld
+  # sie fuehrt (Lyon 0,794 m²) - abschneiden wuerde echte Praezision kosten.
+  # Gerechnet wird auf dem Rohtext des Metafelds, nicht ueber round: das
+  # vermeidet Gleitkomma-Rauschen und haelt die Stellenzahl vorhersagbar.
+  assign tp_pi_roh = sqm_per_package | append: ''
+  assign tp_pi_ganz = tp_pi_roh | split: '.' | first
+  if tp_pi_roh contains '.'
+    assign tp_pi_rest = tp_pi_roh | split: '.' | last
+  else
+    assign tp_pi_rest = ''
+  endif
+  if tp_pi_rest.size >= 3
+    assign tp_pi_rest = tp_pi_rest | slice: 0, 3
+  else
+    assign tp_pi_rest = tp_pi_rest | append: '00' | slice: 0, 2
+  endif
+  assign tp_pi_flaeche_text = tp_pi_ganz | append: ',' | append: tp_pi_rest
+
+  assign tp_pi_stueck = product.metafields.custom.stueck_pro_paket.value | times: 1
+  assign tp_pi_format = product.metafields.custom.format_cm.value | strip
+  assign tp_pi_einheit = product.metafields.custom.stueck_bezeichnung.value | strip | default: 'Stück'
+-%}
+{%- if tp_pi_prefix != blank %}{{ tp_pi_prefix }} {% endif -%}
+{{- tp_pi_flaeche_text }}&nbsp;m²
+{%- if tp_pi_stueck > 0 and nur_flaeche != true -%}
+  &nbsp;· {{ tp_pi_stueck }} {{ tp_pi_einheit }}
+  {%- if tp_pi_format != blank %} à&nbsp;{{ tp_pi_format | replace: ' ', '&nbsp;' }}{% endif -%}
+{%- endif -%}

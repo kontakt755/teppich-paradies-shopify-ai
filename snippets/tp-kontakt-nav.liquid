@@ -38,7 +38,10 @@
       endif
       # Bildkachel ueber einen Pseudo-Link mit dem Kartentitel finden
       capture tp_kn_img
-        render 'tp-menu-bild', link: tp_kn_link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_kn_sizes, match_title: tp_kn_title
+        # Kein link: Die Kontaktkarten sind kuratiert und haben keinen
+        # Navigationspunkt - gefunden wird ueber match_title. Bis 2026-09-10
+        # stand hier tp_kn_link, eine nie zugewiesene Variable.
+        render 'tp-menu-bild', kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_kn_sizes, match_title: tp_kn_title
       endcapture
     -%}
     {%- render 'tp-menu-karte', url: tp_kn_url, title: tp_kn_title, sub: tp_kn_subs[tp_kn_i], image_html: tp_kn_img, attrs: tp_kn_attrs, icon: tp_kn_icon -%}

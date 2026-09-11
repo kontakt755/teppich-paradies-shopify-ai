@@ -20,10 +20,16 @@ Die Postleitzahl-Liste von GeoNames kennt keine Ortsteile und keine Gemeinden,
 die anders heissen als ihr Postort - Spandau, Hoppegarten, Panketal fehlten.
 Deshalb kommen die Ortsnamen im Umkreis zusaetzlich aus OpenStreetMap.
 
-GeoNames fuehrt ausserdem die Postleitzahlen von Grosskunden unter dem
-Firmennamen (rund 3.500 Zeilen). Die bleiben in der Postleitzahl-Tabelle, aus
-den Ortsnamen fliegen sie heraus - niemand wohnt in "Daimler Insurance
-Services GmbH".
+GeoNames fuehrt ausserdem die Postleitzahlen von Grosskunden und Behoerden
+unter ihrem Namen - "Zalando Lounge", "Auswaertiges Amt", "Berliner
+Feuerwehr". Eine Liste von Firmenwoertern erwischt davon nur einen Teil; die
+erste Fassung hatte eine und liess die meisten durch. Deshalb entscheidet ein
+Merkmal der Daten: ein Name aus der Postleitzahl-Liste zaehlt nur, wenn er
+sich vollstaendig in echte Orte aus OpenStreetMap zerlegen laesst. "Berlin
+Kreuzberg" wird zu Berlin und Kreuzberg und bleibt, "Agentur fuer Arbeit
+Berlin Mitte" scheitert an "Agentur". Die Postleitzahlen selbst bleiben alle
+in der Tabelle - wer eine Grosskunden-PLZ eintippt, bekommt trotzdem eine
+Antwort.
 
 Nebenbei entsteht .cache/verlegegebiet-punkte.json mit den Koordinaten. Daraus
 zeichnet scripts/build-verlegegebiet-karte.mjs den Umriss des Verlegegebiets.
@@ -76,13 +82,6 @@ OVERPASS = "https://overpass-api.de/api/interpreter"
 # Brandenburg liegen 60 km auseinander und bleiben zwei.
 GLEICHER_ORT_KM = 10
 
-# Rechtsformen und Behoerdenwoerter der Grosskunden-Postleitzahlen.
-FIRMA = re.compile(
-    r"\b(GmbH|mbH|AG|KG|KGaA|SE|OHG|GbR|UG|e\.\s?V\.|Co\.?|Bank|Sparkasse|"
-    r"Versicherung\w*|Vertrieb\w*|Service\w*|Stiftung|Verwaltung|Holding|Zentrale|"
-    r"Deutsche|Finanzamt|Amtsgericht|Landesamt|Bundesamt|Ministerium|Universit\w*|"
-    r"Hochschule|Klinikum|Krankenhaus)\b"
-)
 
 # Kurzform eines Ortsnamens: ohne Klammerzusatz, ohne "/Zusatz", ohne
 # "bei/am/an der ...". Bindestriche bleiben - "Schoenwalde-Glien" ist ein
@@ -120,6 +119,28 @@ def schluessel(name):
     voll = normalisieren(name)
     kurz = normalisieren(kurzform(name))
     return {k for k in (voll, kurz) if k}
+
+
+def geografisch(name, orte):
+    """Laesst sich der Name vollstaendig in bekannte Orte zerlegen?
+
+    Die Woerter werden von vorn mit dem jeweils laengsten Stueck belegt, das
+    ein Ortsname ist - "Bad Saarow Petersdorf" wird zu "Bad Saarow" und
+    "Petersdorf". Bleibt ein Wort uebrig, das zu keinem Ort gehoert, ist der
+    Name kein Ort.
+    """
+    woerter = [normalisieren(w) for w in re.split(r"[\s,/()\-]+", name)]
+    woerter = [w for w in woerter if w]
+    if not woerter:
+        return False
+    belegt = [False] * (len(woerter) + 1)
+    belegt[len(woerter)] = True
+    for i in range(len(woerter) - 1, -1, -1):
+        for j in range(len(woerter), i, -1):
+            if belegt[j] and "".join(woerter[i:j]) in orte:
+                belegt[i] = True
+                break
+    return belegt[0]
 
 
 def osm_orte():
@@ -174,11 +195,22 @@ def plz_tabelle_bauen():
     with zipfile.ZipFile(io.BytesIO(daten)) as z:
         zeilen = z.read("DE.txt").decode("utf-8").splitlines()
 
+    # Echte Orte im Umkreis - der Massstab dafuer, was ein Ortsname ist.
+    osm = osm_orte()
+    osm_nah = [(n, la, lo) for n, la, lo in osm if haversine(LAT, LON, la, lo) <= MAX_KM]
+    orte_osm = set()
+    for name, _, _ in osm_nah:
+        orte_osm |= schluessel(name)
+
     punkte = {}
     plz = {}
     praefixe = set()
-    # Je Name alle Fundstellen in ganz Deutschland: (lat, lon, km)
+    # Je Name alle Fundstellen in ganz Deutschland: (lat, lon, km). Auch die
+    # fernen und die der Grosskunden - sie zaehlen nur fuer Namen, die am Ende
+    # zugelassen sind, und machen dort gleichnamige Orte sichtbar.
     fundstellen = defaultdict(list)
+    zugelassen = set(orte_osm)
+    verworfen = set()
     for zeile in zeilen:
         c = zeile.split("\t")
         if len(c) < 11 or not c[9] or not c[10]:
@@ -197,22 +229,25 @@ def plz_tabelle_bauen():
             # mehrere Doerfer umfassen, und beide Eingaben sollen gleich zaehlen.
             spanne = plz.get(code)
             plz[code] = [km, km] if spanne is None else [min(spanne[0], km), max(spanne[1], km)]
-        if FIRMA.search(ort):
-            continue
-        for k in schluessel(ort):
+        schl = schluessel(ort)
+        for k in schl:
             fundstellen[k].append((lat, lon, km))
+        if km <= MAX_KM:
+            if geografisch(ort, orte_osm):
+                zugelassen |= schl
+            else:
+                verworfen.add(ort)
 
-    osm = osm_orte()
-    for name, lat, lon in osm:
+    for name, lat, lon in osm_nah:
         km = haversine(LAT, LON, lat, lon)
-        if km > MAX_KM:
-            continue
         for k in schluessel(name):
             fundstellen[k].append((lat, lon, km))
 
     orte = {}
     mehrfach = 0
     for k, liste in fundstellen.items():
+        if k not in zugelassen:
+            continue
         entfernungen = [f[2] for f in liste]
         if min(entfernungen) > MAX_KM:
             continue  # nur Namen, die im Umkreis vorkommen
@@ -236,7 +271,8 @@ def plz_tabelle_bauen():
             "praefixe": "".join(sorted(praefixe)),
         }, f, ensure_ascii=False, separators=(",", ":"))
     print(f"{os.path.basename(ziel)}  {len(plz)} PLZ, {len(orte)} Ortsnamen "
-          f"(davon {mehrfach} mehrdeutig), {len(praefixe)} PLZ-Anfaenge, "
+          f"(davon {mehrfach} mehrdeutig), {len(verworfen)} Postnamen ohne Ort verworfen, "
+          f"{len(praefixe)} PLZ-Anfaenge, "
           f"{os.path.getsize(ziel) / 1024:.0f} KB")
 
     os.makedirs(CACHE, exist_ok=True)

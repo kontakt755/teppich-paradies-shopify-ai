@@ -1,13 +1,12 @@
 {
   "generatedAt": "2026-09-09T16:06:53.869Z",
   "errors": 0,
-  "warnings": 41,
+  "warnings": 40,
   "fingerprints": [
     "warning|ExcessiveSettingsCount|blocks/ai_gen_block_18d894e.liquid|156:0|This schema declares 48 settings, which exceeds the maximum of 40. Consider splitting this section or block into smaller pieces, or grouping related options with a header.",
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|131:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|141:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|151:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
-    "warning|LiquidComplexity|snippets/header-drawer.liquid|793:16|Liquid complexity is 122, which exceeds the maximum of 120. The decision at line 794 pushed it over the limit. Consider simplifying conditional logic, or moving self-contained decision logic into snippets with the render tag.",
     "warning|OrphanedSnippet|snippets/live-chat-widget.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|snippets/tp-card-roll-lengths.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|theme/snippets/product-sisal-badge.liquid|0:0|This snippet is not referenced by any other files",
