@@ -152,6 +152,55 @@ test('Baseline fehlt, ist kaputt, gescheitert oder aus einem anderen Repository:
   assert.equal(scheitert.excluded, undefined);
 });
 
+// Pruefung 2026-09-11: git hash-object --stdin-paths entquotet Zeilen, die mit
+// " beginnen, und schneidet \r ab - die Baseline trug den Hash der Nachbardatei.
+test('Baseline: Pfade mit fuehrendem Anfuehrungszeichen oder CR sind nicht hashbar und werden nie ausgeklammert', () => {
+  const { dir, startCommit } = vorbestehenderStand();
+  fs.writeFileSync(path.join(dir, '"q"'), 'original\n');
+  fs.writeFileSync(path.join(dir, 'q'), 'nachbar\n');
+  fs.writeFileSync(path.join(dir, 'a\r'), 'original\n');
+  fs.writeFileSync(path.join(dir, 'a'), 'nachbar\n');
+  const baseline = captureWorkingTreeSnapshot({ cwd: dir });
+  assert.equal(baseline.ok, true);
+  assert.equal(baseline.entries['"q"'].unhashable, true);
+  assert.equal(baseline.entries['a\r'].unhashable, true);
+  assert.equal(baseline.entries['"q"'].hash, undefined);
+  assert.ok(baseline.entries.q.hash);
+  fs.writeFileSync(path.join(dir, '"q"'), 'von der Sitzung geaendert\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.ok(!scope.excluded.includes('"q"'));
+  assert.ok(!scope.excluded.includes('a\r'));
+  assert.deepEqual(scope.excluded, ['.claude/launch.json', 'a', 'domains/shopify/bild-qualitaetstest.py', 'q']);
+});
+
+// Pruefung 2026-09-11: Statuscode und Working-Tree-Hash wie bei Sitzungsbeginn,
+// aber die Sitzung hat dazwischen einen neuen Stand committet.
+test('Baseline: Commit einer vorbestehend geaenderten Datei mit wiederhergestelltem Working Tree bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  assert.ok(baseline.entries['.claude/launch.json'].index, 'versionierte Pfade tragen den Index-Hash');
+  assert.equal(baseline.entries['domains/shopify/bild-qualitaetstest.py'].index, undefined);
+  fs.writeFileSync(path.join(dir, '.claude/launch.json'), '{"version":"0.0.3"}\n');
+  git(dir, 'commit', '-qam', 'launch v3');
+  fs.writeFileSync(path.join(dir, '.claude/launch.json'), '{"version":"0.0.2"}\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.excluded, ['domains/shopify/bild-qualitaetstest.py']);
+  assert.doesNotMatch(scope.text, /Working Tree ist sauber/);
+});
+
+// Pruefung 2026-09-11: UNKNOWN verlangt konservative Pruefung von allem;
+// eine "kein Befund"-Notiz zu ausgeklammerten Dateien widerspraeche dem.
+test('Baseline: bei UNKNOWN (git-Fehler) wird nichts ausgeklammert und nichts als "kein Befund" genannt', () => {
+  const { dir, baseline } = vorbestehenderStand();
+  const scope = detectReviewScope({ cwd: dir, baseRef: 'refs/remotes/origin/nicht-da', baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNKNOWN);
+  assert.equal(scope.baselineStatus, 'NOT_APPLIED_UNKNOWN_SCOPE');
+  assert.equal(scope.excluded, undefined);
+  assert.doesNotMatch(scope.text, /kein Befund/);
+  assert.doesNotMatch(scope.text, /Vorbestehend/);
+});
+
 test('captureWorkingTreeSnapshot wirft nie, sondern meldet ok:false', () => {
   const snapshot = captureWorkingTreeSnapshot({ cwd: '/nowhere', exec: () => { throw new Error('not a git repository'); } });
   assert.equal(snapshot.ok, false);

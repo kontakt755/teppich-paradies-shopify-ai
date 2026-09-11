@@ -31,11 +31,16 @@ try {
   // dem Routing-Gate, damit auch ein nicht gerouteter erster Prompt ("ok")
   // sie anlegt; im Arbeitsverzeichnis der Sitzung, in dem der Stop-Hook spaeter
   // prueft (resolveReviewDir). Ein Fehler hier darf das Routing nie verhindern -
-  // ohne Baseline wird nur nichts ausgeklammert.
+  // ohne Baseline wird nur nichts ausgeklammert. transcript_path belegt, ob
+  // dies wirklich der erste Prompt ist - sonst legte nach einem gescheiterten
+  // Speichern (volle Platte) ein spaeterer Prompt eine Baseline an, die die
+  // eigenen Aenderungen der Sitzung ausklammert.
   try {
     ensureClaudeSessionBaseline({
       sessionId: input.session_id,
       projectDir,
+      transcriptPath: input.transcript_path ?? null,
+      prompt,
       capture: () => captureWorkingTreeSnapshot({ cwd: resolveReviewDir({ projectDir, sessionCwd: input.cwd }) }),
     });
   } catch { /* fail-safe, siehe oben */ }
@@ -61,11 +66,13 @@ try {
   const maxTokens = Number(process.env.OPENROUTER_MAX_OUTPUT_TOKENS ?? 256);
   const result = await prepareClaudeBridge({ taskId: `CLAUDE-HOOK-${digest}`, task: prompt, outputDir: path.join(projectDir, '.router/claude-handoffs'), maxTokens });
   // Reine Frage (2026-09-11): trotzdem Session-State, aber mit
-  // reviewOnlyIfChanged - der Stop-Hook prueft nur, wenn die Sitzung seit der
-  // Frage tatsaechlich etwas geaendert hat. promptBaseline haelt dafuer den
-  // Working Tree bei Eingang der Frage fest: sonst loeste eine Rueckfrage nach
-  // bereits geprueften, noch uncommitteten Aenderungen erneut Codex-Runden
-  // gegen eine Wissensfrage aus - genau der Fehler, der hier behoben wird.
+  // reviewOnlyIfChanged - der Stop-Hook prueft nur, wenn der Pruefbereich nach
+  // Abzug der Sitzungs-Baseline nicht leer ist. Bewusst KEIN Schnappschuss bei
+  // Eingang der Frage: der haette alles, was die Sitzung vorher geaendert und
+  // noch nicht pruefen lassen hat (Abbruch per Esc, Review an der
+  // Infrastruktur gescheitert), als "vorbestehend" ausgeklammert
+  // (Pruefung 2026-09-11). Uncommittete, schon geprueft Aenderungen werden
+  // dafuer bei einer Rueckfrage erneut geprueft - das ist der billigere Fehler.
   const question = result.classified?.taskTypeSource === 'QUESTION';
   if (result.status === 'READY' && (result.classified.taskType === 'IMPLEMENTATION' || question)) {
     // HEAD bei Task-Start: der Stop-Hook prueft damit nur noch, was seit
@@ -85,7 +92,7 @@ try {
       state: {
         taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit,
         taskType: result.classified.taskType, taskTypeSource: result.classified.taskTypeSource,
-        ...(question ? { reviewOnlyIfChanged: true, promptBaseline: captureWorkingTreeSnapshot({ cwd: reviewDir }) } : {}),
+        ...(question ? { reviewOnlyIfChanged: true } : {}),
       },
     });
   } else {

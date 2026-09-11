@@ -101,7 +101,10 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   if (!status.ok) return unknownScope(errors, baseRef);
   const tree = applyBaseline({ cwd, baseline, porcelain: status.out, exec, io });
   const finish = scope => (tree.status ? { ...scope, baselineStatus: tree.status } : scope);
-  const unknown = errs => finish(withBaselineNotes(unknownScope(errs, baseRef), tree));
+  // UNKNOWN verlangt ohnehin, alles Uncommittete konservativ zu pruefen - eine
+  // Notiz "kein Befund" zu vorbestehenden Dateien wuerde das nur aufweichen
+  // (Pruefung 2026-09-11). Deshalb hier keine Ausklammerung und keine Notiz.
+  const unknown = errs => ({ ...unknownScope(errs, baseRef), ...(tree.status ? { baselineStatus: tree.status === 'APPLIED' ? 'NOT_APPLIED_UNKNOWN_SCOPE' : tree.status } : {}) });
   if (sinceRef) {
     const since = git('rev-parse', '--verify', '--quiet', `${sinceRef}^{commit}`);
     if (since.ok && since.out) {
@@ -210,9 +213,37 @@ export function parsePorcelainZ(raw) {
   return byPath;
 }
 
+// git hash-object --stdin-paths kennt kein -z: eine Zeile, die mit " beginnt,
+// wird C-entquotet, ein abschliessendes \r abgeschnitten - beides haette den
+// Hash der NACHBARDATEI geliefert, und die Datei waere trotz Aenderung
+// ausgeklammert worden (Pruefung 2026-09-11). Solche Pfade gelten als nicht
+// hashbar und werden nie ausgeklammert.
+function isHashablePath(file) {
+  return !/[\n\r]/.test(file) && !file.startsWith('"');
+}
+
+// "<mode> <hash> <stage>\t<pfad>\0" je Eintrag. Pfade mit Konfliktstufen
+// (stage > 0) sind nicht eindeutig und gelten als nicht hashbar.
+export function parseLsFilesZ(raw) {
+  const index = new Map();
+  for (const token of String(raw ?? '').split('\0')) {
+    const tab = token.indexOf('\t');
+    if (tab < 0) continue;
+    const [, hash, stage] = token.slice(0, tab).split(' ');
+    const file = token.slice(tab + 1);
+    if (stage !== '0' || index.get(file) === null) index.set(file, null);
+    else index.set(file, hash);
+  }
+  return index;
+}
+
 // Zustand jedes Pfads, den git status meldet: Statuscodes plus Inhalts-Hash
 // (git hash-object, ein Aufruf fuer alle Dateien), Symlink-Ziel oder
-// "geloescht". Nie eine Exception - ein Fehler kommt als { ok: false } zurueck.
+// "geloescht". Fuer versionierte Pfade zusaetzlich der Blob-Hash im Index:
+// committet die Sitzung eine vorbestehend geaenderte Datei und stellt danach
+// den alten Working-Tree-Inhalt wieder her, sind Statuscode und Inhalts-Hash
+// wie bei Sitzungsbeginn, der Index aber nicht (Pruefung 2026-09-11).
+// Nie eine Exception - ein Fehler kommt als { ok: false } zurueck.
 export function captureWorkingTreeSnapshot({ cwd = process.cwd(), exec = execFileSync, io = fs } = {}) {
   try {
     const run = (args, { dir = cwd, input } = {}) => String(exec('git', args, {
@@ -229,6 +260,7 @@ export function captureWorkingTreeSnapshot({ cwd = process.cwd(), exec = execFil
     // Leerzeichen (" M", " D"). --no-optional-locks: kein index.lock neben einer
     // parallel arbeitenden Sitzung.
     const byPath = parsePorcelainZ(run(['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'], { dir: root }));
+    const index = byPath.size ? parseLsFilesZ(run(['--no-optional-locks', 'ls-files', '-s', '-z'], { dir: root })) : new Map();
     const entries = Object.create(null);
     const toHash = [];
     for (const [file, codes] of byPath) {
@@ -240,11 +272,17 @@ export function captureWorkingTreeSnapshot({ cwd = process.cwd(), exec = execFil
       } catch (error) {
         if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') throw error;
       }
-      if (!stat) entry.deleted = true;
+      if (index.has(file)) {
+        const indexHash = index.get(file);
+        if (indexHash === null) entry.unhashable = true;
+        else entry.index = indexHash;
+      }
+      if (entry.unhashable) { /* Konfliktstufen: nie ausklammern */ }
+      else if (!stat) entry.deleted = true;
       else if (stat.isSymbolicLink()) entry.link = io.readlinkSync(absolute);
-      else if (stat.isFile() && !file.includes('\n')) toHash.push(file);
-      // Verzeichnis (eingebettetes Repository) o. ae.: Inhalt nicht belegbar,
-      // wird deshalb nie ausgeklammert.
+      else if (stat.isFile() && isHashablePath(file)) toHash.push(file);
+      // Verzeichnis (eingebettetes Repository), nicht hashbarer Pfad o. ae.:
+      // Inhalt nicht belegbar, wird deshalb nie ausgeklammert.
       else entry.unhashable = true;
       entries[file] = entry;
     }
@@ -269,6 +307,9 @@ export function isUsableBaseline(baseline) {
 function sameEntry(before, now) {
   if (!before || typeof before !== 'object' || !Array.isArray(before.codes) || before.unhashable || now.unhashable) return false;
   if (JSON.stringify([...before.codes].sort()) !== JSON.stringify(now.codes)) return false;
+  // Index-Hash: fehlt er auf einer Seite oder weicht er ab, hat sich der
+  // Vergleichsstand (HEAD/Index) geaendert - dann ist der Diff ein anderer.
+  if ((before.index ?? null) !== (now.index ?? null)) return false;
   if (before.deleted || now.deleted) return before.deleted === true && now.deleted === true;
   if (before.link !== undefined || now.link !== undefined) return typeof before.link === 'string' && before.link === now.link;
   return typeof before.hash === 'string' && before.hash.length > 0 && before.hash === now.hash;

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
-import { detectReviewScope, isUsableBaseline, resolveReviewDir, shouldSkipReview, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
+import { detectReviewScope, resolveReviewDir, shouldSkipReview, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionBaseline, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
@@ -52,17 +52,20 @@ try {
   // solange sie exakt so geblieben sind. Fehlt die Baseline oder ist sie
   // kaputt, wird nichts ausgeklammert (siehe review-scope.mjs).
   const sessionBaseline = readClaudeSessionBaseline({ sessionId: input.session_id, projectDir });
-  // Reine Frage (2026-09-11): nur pruefen, wenn seit der Frage etwas geaendert
-  // wurde - gemessen am Working Tree bei Eingang der Frage (promptBaseline),
-  // hilfsweise an der Sitzungs-Baseline. Hat sich etwas geaendert, laeuft das
-  // Review unten exakt wie fuer jeden anderen Auftrag.
-  if (current.state.reviewOnlyIfChanged) {
-    const questionBaseline = isUsableBaseline(current.state.promptBaseline) ? current.state.promptBaseline : sessionBaseline;
-    const sinceQuestion = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: questionBaseline });
-    if (shouldSkipReview({ state: current.state, scope: sinceQuestion })) {
-      clearClaudeSessionState({ sessionId: input.session_id, projectDir });
-      process.exit(0);
-    }
+  // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
+  // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
+  // origin/main - der in einem geteilten Checkout auch von einer anderen,
+  // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
+  // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
+  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
+  // Reine Frage (2026-09-11): nur pruefen, wenn der Pruefbereich nach Abzug
+  // der Sitzungs-Baseline nicht leer ist. Alles, was die Sitzung seit ihrem
+  // Beginn geaendert hat, zaehlt - auch aus frueheren, nicht abgeschlossenen
+  // Auftraegen. Hat sich etwas geaendert, laeuft das Review unten exakt wie
+  // fuer jeden anderen Auftrag.
+  if (shouldSkipReview({ state: current.state, scope })) {
+    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
+    process.exit(0);
   }
   if (!resolveCodexBinary()) {
     throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
@@ -85,12 +88,6 @@ try {
   // Auftrag erfuellt. Ohne Modell-Review enden nur Klasse A (oben,
   // plan.reviewer fehlt) und eine reine Frage ohne jede Aenderung (oben,
   // shouldSkipReview) - nie ein Implementierungsauftrag.
-  // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
-  // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
-  // origin/main - der in einem geteilten Checkout auch von einer anderen,
-  // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
-  // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
-  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
   if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
