@@ -30,7 +30,6 @@
   assign tp_rc_shapes = shapes | split: ','
   assign tp_rc_edges = edges | split: ','
   assign tp_rc_colors = colors | split: '|'
-  assign tp_rc_flags = flags | default: '' | split: ','
 
   if url != blank
     assign tp_rc_url = url

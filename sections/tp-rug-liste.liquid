@@ -54,12 +54,36 @@
             {%- for p in collection.products -%}
               {%- assign cfg = p.metafields.tp_rug.config.value -%}
               {%- if cfg == blank -%}{%- continue -%}{%- endif -%}
-              {%- capture cols -%}{%- for c in cfg.colors -%}{{ c.name }}:{{ c.hex }}{% unless forloop.last %}|{% endunless %}{%- endfor -%}{%- endcapture -%}
-              {%- capture flg -%}{% if cfg.camper_suitable %}camper_suitable,{% endif %}{% if cfg.outdoor_suitable %}outdoor_suitable,{% endif %}{% if cfg.object_suitable %}object_suitable{% endif %}{%- endcapture -%}
+              {%- capture tp_rl_colors -%}{%- for c in cfg.colors -%}{{ c.name }}:{{ c.hex }}{% unless forloop.last %}|{% endunless %}{%- endfor -%}{%- endcapture -%}
+              {%- comment -%} Dieselben Eignungen wie der Demo-Katalog (scripts/tp-rug/build-assets.mjs, flagsOf) - nur bei true {%- endcomment -%}
+              {%- capture tp_rl_flags -%}
+                {%- if cfg.camper_suitable == true -%}camper_suitable,{%- endif -%}
+                {%- if cfg.outdoor_suitable == true -%}outdoor_suitable,{%- endif -%}
+                {%- if cfg.object_suitable == true -%}object_suitable,{%- endif -%}
+                {%- if cfg.underfloor_heating == true -%}underfloor_heating,{%- endif -%}
+                {%- if cfg.castor_chair == true -%}castor_chair,{%- endif -%}
+                {%- if cfg.pet_friendly == true -%}pet_friendly,{%- endif -%}
+                {%- if cfg.easy_care == true -%}easy_care{%- endif -%}
+              {%- endcapture -%}
+              {%- comment -%} render nimmt keine Filter in Argumenten - Listen vorher zusammensetzen {%- endcomment -%}
+              {%- assign tp_rl_rooms = cfg.rooms | join: ',' -%}
+              {%- assign tp_rl_shapes = cfg.shapes | join: ',' -%}
+              {%- assign tp_rl_edges = cfg.edges | join: ',' -%}
               {%- render 'tp-rug-card',
-                handle: p.handle, title: p.title, subtitle: cfg.subtitle, image_obj: p.featured_image, url: p.url,
-                rooms: cfg.rooms | join: ',', shapes: cfg.shapes | join: ',', edges: cfg.edges | join: ',', colors: cols,
-                antislip: cfg.antislip, flags: flg, material_key: cfg.material_key, pile: cfg.pile, fiber: cfg.fiber
+                handle: p.handle,
+                title: p.title,
+                subtitle: cfg.subtitle,
+                image_obj: p.featured_image,
+                url: p.url,
+                rooms: tp_rl_rooms,
+                shapes: tp_rl_shapes,
+                edges: tp_rl_edges,
+                colors: tp_rl_colors,
+                antislip: cfg.antislip,
+                flags: tp_rl_flags,
+                material_key: cfg.material_key,
+                pile: cfg.pile,
+                fiber: cfg.fiber
               -%}
             {%- endfor -%}
           {%- else -%}

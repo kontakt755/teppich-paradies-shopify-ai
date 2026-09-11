@@ -10,7 +10,6 @@
   {%- liquid
     assign s = section.settings
     assign fid = 'tp-rug-req-' | append: section.id
-    assign tp_ra_items = '[' | append: '' | append: ']'
   -%}
   {%- capture tp_ra_cat -%}{%- render 'tp-rug-katalog', mode: 'json' -%}{%- endcapture -%}
   {%- capture tp_ra_extra -%}
