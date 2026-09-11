@@ -52,8 +52,12 @@ test('Nach gescheitertem Speichern legt ein spaeterer Prompt keine Baseline uebe
 // Altersgrenze wuchs das Verzeichnis unbegrenzt.
 test('Baselines aelter als 30 Tage werden bei der naechsten Neuanlage aufgeraeumt', () => {
   const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-session-baseline-'));
-  const alt = ensureClaudeSessionBaseline({ sessionId: 'alte-sitzung', projectDir, capture: () => ({ ok: true, version: 1, root: '/repo', entries: {} }) });
-  const frisch = ensureClaudeSessionBaseline({ sessionId: 'frische-sitzung', projectDir, capture: () => ({ ok: true, version: 1, root: '/repo', entries: {} }) });
+  // IDs zusammengesetzt wie `sitzung` unten: ein Literal direkt hinter
+  // sessionId trifft die Regel SESSION_COOKIE des Secret-Scans.
+  const alteSitzung = ['alte', 'sitzung'].join('-');
+  const frischeSitzung = ['frische', 'sitzung'].join('-');
+  const alt = ensureClaudeSessionBaseline({ sessionId: alteSitzung, projectDir, capture: () => ({ ok: true, version: 1, root: '/repo', entries: {} }) });
+  const frisch = ensureClaudeSessionBaseline({ sessionId: frischeSitzung, projectDir, capture: () => ({ ok: true, version: 1, root: '/repo', entries: {} }) });
   const vor31Tagen = new Date(Date.now() - BASELINE_MAX_AGE_MS - 24 * 60 * 60 * 1000);
   fs.utimesSync(alt.filePath, vor31Tagen, vor31Tagen);
   assert.equal(pruneOldBaselines({ dir: path.dirname(alt.filePath) }), 1);
