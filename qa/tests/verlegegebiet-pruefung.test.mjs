@@ -9,9 +9,10 @@
  * stand. Die Tests loesen die Abfragen deshalb bewusst verzoegert und in
  * verkehrter Reihenfolge auf.
  *
- * Seit 2026-09-11 nennt die Pruefung auf Teppichboden-Seiten auch die Stufe
- * des Rollenware-Service (data-basis, data-schwelle). Ausserhalb des Gebiets
- * gibt es weder Absage noch Zusage, sondern zuerst den Weg zur Anfrage.
+ * Seit 2026-09-11 nennt die Pruefung auf Teppichboden-Seiten auch Zone und
+ * Preis des Rollenware-Service (data-basis, data-mitte, data-preis-*).
+ * Kostenlos ist es nur ab der Schwelle in der ersten Zone. Ausserhalb des
+ * Gebiets gibt es weder Absage noch Zusage, sondern zuerst die Anfrage.
  *
  * Statt eines Browsers steht hier ein sehr kleines DOM: die Sektion braucht
  * nur eine Handvoll Eigenschaften, und der Rest der Suite laeuft ohne Browser.
@@ -26,9 +27,9 @@ const WURZEL = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.
 const SKRIPT = readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet.js'), 'utf8');
 const SEKTION = readFileSync(path.join(WURZEL, 'sections', 'tp-verlegegebiet.liquid'), 'utf8');
 
-// 16515 Oranienburg, 14199 Berlin-Wilmersdorf, 39104 Magdeburg.
+// 16515 Oranienburg, 14199 Berlin-Wilmersdorf, 16816 Neuruppin (Zone 3), 39104 Magdeburg.
 const TABELLE = {
-  plz: { 16515: 2, 14199: 29, 39104: 120 },
+  plz: { 16515: 2, 14199: 29, 16816: 42, 39104: 120 },
   orte: { berlin: [11.2, 47] },
 };
 
@@ -84,7 +85,12 @@ function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {})
   weg.hidden = true;
   const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json' };
   // So gibt die Sektion die Stufen nur auf Teppichboden-Seiten weiter.
-  if (stufen) Object.assign(daten, { basis: '15', schwelle: '649' });
+  if (stufen) {
+    Object.assign(daten, {
+      basis: '15', mitte: '30', schwelle: '649',
+      preisNah: '39 €', preisMitte: '49 €', preisFern: '69 €', lose: '4,95 €/m²',
+    });
+  }
   const sektion = new Knoten({ dataset: daten });
   const formular = new Knoten({ dataset: { ctaUrl, ctaText, versandUrl, versandText } });
   formular.hidden = true;
@@ -147,31 +153,39 @@ test('eine Postleitzahl im Gebiet fuehrt zu Zusage und Anfrage-Link', async () =
 test('ohne Stufen verspricht die Pruefung keinen Rollenware-Service', async () => {
   // Vinyl- und Treppenseiten: dort gilt die kostenlose lose Verlegung nicht.
   const { ausgabe } = await pruefen(aufbauen(), '16515');
-  assert.doesNotMatch(ausgabe.textContent, /Warenwert|lose Verlegung|inklusive/);
+  assert.doesNotMatch(ausgabe.textContent, /Warenwert|lose Verlegung|kostenlos|€/);
 });
 
-test('mit Stufen: bis zum Basisradius gilt jeder Warenwert', async () => {
+test('mit Stufen, erste Zone: kostenlos erst ab der Schwelle, darunter die Pauschale', async () => {
+  // Szenario A (400 EUR, nah): nicht kostenlos. Szenario B (700 EUR, nah): kostenlos.
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '16515');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
-  assert.match(ausgabe.textContent, /lose Verlegung Ihrer Rollenware sind hier bei jedem Warenwert inklusive/);
+  assert.match(ausgabe.textContent, /Ab 649 € Warenwert sind Lieferung und lose Verlegung hier kostenlos/);
+  assert.match(ausgabe.textContent, /darunter berechnen wir 39 €/);
 });
 
-test('mit Stufen: hinter dem Basisradius erst ab der Schwelle', async () => {
-  // Der Kunde aus 29 km Entfernung darf nicht lesen, es sei fuer jeden
-  // Einkauf inklusive - fuer ihn gilt das erst ab 649 EUR.
+test('mit Stufen, zweite Zone: nie kostenlos, Pauschale und lose Verlegung', async () => {
+  // Der Kunde aus 29 km Entfernung darf "kostenlos" nicht lesen - auch nicht ab 649 EUR.
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '14199');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
-  assert.match(ausgabe.textContent, /ab 649 € Warenwert inklusive/);
-  assert.doesNotMatch(ausgabe.textContent, /bei jedem Warenwert/);
+  assert.match(ausgabe.textContent, /Lieferung und Anfahrt kosten hier 49 €, die lose Verlegung 4,95 €\/m²/);
+  assert.doesNotMatch(ausgabe.textContent, /kostenlos/);
 });
 
-test('mit Stufen: ein Ort ueber die Basisgrenze hinweg bekommt keine Stufe zugesagt', async () => {
-  // Berlin reicht von 11 bis 47 km - "bei jedem Warenwert" stimmt nur fuer
-  // einen Teil der Stadt. Die Pruefung fragt dann nach der Postleitzahl.
+test('mit Stufen, dritte Zone: die hoehere Pauschale', async () => {
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '16816');
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+  assert.match(ausgabe.textContent, /kosten hier 69 €/);
+  assert.doesNotMatch(ausgabe.textContent, /kostenlos/);
+});
+
+test('mit Stufen: ein Ort ueber mehrere Zonen bekommt keinen Preis zugesagt', async () => {
+  // Berlin reicht von 11 bis 47 km - "kostenlos" stimmt nur fuer einen Teil
+  // der Stadt. Die Pruefung fragt dann nach der Postleitzahl.
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), 'Berlin');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
   assert.match(ausgabe.textContent, /hängt vom Ortsteil ab/);
-  assert.doesNotMatch(ausgabe.textContent, /bei jedem Warenwert/);
+  assert.doesNotMatch(ausgabe.textContent, /kostenlos|€/);
 });
 
 test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage', async () => {
@@ -193,7 +207,7 @@ test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage',
 test('ausserhalb des Gebiets wird auch mit Stufen nichts zugesagt', async () => {
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '39104');
   assert.equal(ausgabe.attribute['data-status'], 'aussen');
-  assert.doesNotMatch(ausgabe.textContent, /inklusive/);
+  assert.doesNotMatch(ausgabe.textContent, /inklusive|kostenlos/);
 });
 
 test('eine unverstandene Eingabe bietet gar nichts an', async () => {
@@ -363,6 +377,9 @@ test('Rollenware-Konditionen nur auf Teppichboden-Seiten, nie auf Vinyl oder Tre
 test('Basisradius und Schwelle gibt die Sektion nur mit eingeschalteten Stufen weiter', () => {
   const stelle = SEKTION.indexOf('data-basis=');
   assert.ok(stelle > 0, 'data-basis fehlt in der Sektion.');
+  for (const attribut of ['data-mitte=', 'data-preis-nah=', 'data-preis-mitte=', 'data-preis-fern=', 'data-lose=']) {
+    assert.ok(SEKTION.includes(attribut), `${attribut} fehlt - die Pruefung kann den Preis der Zone nicht nennen.`);
+  }
   assert.match(SEKTION.slice(Math.max(0, stelle - 120), stelle), /if vg_stufen/,
     'data-basis steht ohne Bedingung - dann nennt jede Seite die Rollenware-Stufen.');
 });

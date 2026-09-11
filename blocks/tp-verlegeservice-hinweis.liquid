@@ -9,8 +9,10 @@
   Vinyl von der Rolle teilt sich das Template "rolle" und faellt allein
   ueber den Produkttyp heraus, solange er nicht freigegeben ist.
 
-  Zugeklappt eine Zeile, aufgeklappt beide Stufen in je einem Satz und der
-  Weg zur Seite mit allen Details. Alle Zahlen aus den Theme-Einstellungen.
+  Zugeklappt eine Zeile mit dem staerksten Argument (kostenlos ab der
+  Schwelle in der ersten Zone), aufgeklappt beide Stufen in je einem Satz
+  und der Weg zur Seite mit allen Preisen. Alle Zahlen aus den
+  Theme-Einstellungen.
 {% enddoc %}
 
 {%- liquid
@@ -29,6 +31,7 @@
 
   assign vsh_seite = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
   assign vsh_schwelle = settings.tp_vs_schwelle
+  assign vsh_nah = settings.tp_vs_radius_basis
 -%}
 
 {%- if vsh_gilt -%}
@@ -37,22 +40,22 @@
       {%- render 'tp-vs-icon', name: 'truck' -%}
       <span class="tp-vsh__titel">
         Liefer- &amp; Verlegeservice verfügbar
-        <span class="tp-vsh__unter">Lieferung &amp; lose Verlegung rund um Oranienburg</span>
+        <span class="tp-vsh__unter">Ab {{ vsh_schwelle }}&nbsp;€ Warenwert bis {{ vsh_nah }}&nbsp;km kostenlos</span>
       </span>
     </summary>
     <div class="tp-vsh__inhalt">
       <dl class="tp-vsh__stufen">
-        <div>
-          <dt>Unter {{ vsh_schwelle }}&nbsp;€ Warenwert</dt>
-          <dd>Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_basis }}&nbsp;km inklusive. Fixierung optional.</dd>
-        </div>
         <div class="tp-vsh__plus">
           <dt>Ab {{ vsh_schwelle }}&nbsp;€ Warenwert</dt>
-          <dd>Lieferung &amp; lose Verlegung bis {{ settings.tp_vs_radius_premium }}&nbsp;km inklusive – plus vergünstigte Fixierungs- und Klebepreise.</dd>
+          <dd>Lieferung &amp; lose Verlegung bis {{ vsh_nah }}&nbsp;km kostenlos – dazu vergünstigte Fixierungs- und Klebepreise.</dd>
+        </div>
+        <div>
+          <dt>Unter {{ vsh_schwelle }}&nbsp;€ oder weiter weg</dt>
+          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</dd>
         </div>
       </dl>
       <p class="tp-vsh__lose">Lose Verlegung heißt: passend zugeschnitten, ohne Verklebung.</p>
-      <a class="tp-vsh__link" href="{{ vsh_seite }}">Alle Informationen zum Verlegeservice</a>
+      <a class="tp-vsh__link" href="{{ vsh_seite }}">Alle Preise und Informationen zum Verlegeservice</a>
     </div>
   </details>
 {%- endif -%}
@@ -122,9 +125,9 @@
   }
 
   .tp-vsh__unter {
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    color: #1d6b47;
     font-size: 13px;
-    font-weight: 400;
+    font-weight: 600;
   }
 
   .tp-vsh__inhalt {
@@ -172,7 +175,7 @@
   }
 
   .tp-vsh__link::after {
-    content: ' \2192';
+    content: '\00a0\2192';
   }
 
   @media (prefers-reduced-motion: reduce) {

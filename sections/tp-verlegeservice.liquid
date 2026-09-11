@@ -2,22 +2,29 @@
   Liefer- und Verlegeservice fuer Rollenware - Seite /pages/liefer-verlegeservice
   (Template page.verlegeservice).
 
+  Regel (Vorgabe des Inhabers, 2026-09-11): Lieferung und lose Verlegung sind
+  nur ab der Warenwert-Schwelle UND innerhalb der kostenlosen Zone kostenlos.
+  Darunter oder weiter weg gelten feste Preise, die hier offen stehen -
+  Anfahrtskosten duerfen Privatkunden nur berechnet werden, wenn sie vorher
+  genannt sind.
+
   Reihenfolge wie die Fragen eines Kunden:
     1. Einstieg: worum es geht und fuer welche Ware
     2. Die zwei Stufen als Karten (Snippet tp-verlegeservice-stufen)
     3. Was "lose Verlegung" heisst
-    4. Fixierung und Verklebung: kurz erklaert und verglichen
+    4. Alle Preise im Vergleich, mit Erklaerung der Verlegearten
     5. Gut zu wissen
   Liefergebiet mit Karte und Ortspruefung (tp-verlegegebiet) und der Kontakt
   fuer weitere Entfernungen (tp-verlegeservice-kontakt) folgen als eigene
   Sektionen, damit sie auch auf anderen Seiten einzeln stehen koennen.
 
-  Keine Zahl steht hier im Code. Schwelle, Radien und Preise kommen aus den
+  Keine Zahl steht hier im Code. Schwelle, Zonen und Preise kommen aus den
   Theme-Einstellungen, Gruppe "TP Verlegeservice" - dieselben Werte wie im
   Produkthinweis und in der Ortspruefung.
 
-  Wortwahl mit Absicht: nie "kostenlose Verlegung", immer "lose Verlegung".
-  Sonst liest jemand eine vollflaechige Verklebung als inklusive heraus.
+  Wortwahl mit Absicht: nie "kostenlose Verlegung" allein, immer "lose
+  Verlegung". Sonst liest jemand eine vollflaechige Verklebung als
+  inklusive heraus.
 
   Die Tabelle ist am Desktop eine echte Tabelle und am Telefon je Leistung
   eine Karte mit zwei Preisfeldern - keine breite Tabelle, kein seitliches
@@ -27,6 +34,10 @@
 
 {%- liquid
   assign vs_schwelle = settings.tp_vs_schwelle
+  assign vs_nah = settings.tp_vs_radius_basis
+  assign vs_mitte = settings.tp_vs_radius_mitte
+  assign vs_fern = settings.tp_vs_radius_premium
+  assign vs_mindest = settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€'
   assign vs_bezeichnung = settings.tp_vs_bezeichnung | default: 'Teppichboden von der Rolle'
   assign vs_produkte = section.settings.produkte_link | default: collections['teppichboden'].url | default: '/collections/teppichboden'
   assign vs_bild_alt = section.settings.image.alt | default: 'Teppichboden wird an der Wand passend zugeschnitten'
@@ -55,9 +66,18 @@
         <p class="tp-vs__sub">{{ section.settings.sub | escape }}</p>
       {%- endif -%}
       <ul class="tp-vs__vorteile" role="list">
-        <li>{% render 'tp-vs-icon', name: 'check' %}Lieferung möglich</li>
-        <li>{% render 'tp-vs-icon', name: 'check' %}Lose Verlegung inklusive</li>
-        <li>{% render 'tp-vs-icon', name: 'check' %}Fixierung oder Verklebung optional</li>
+        <li>
+          {%- render 'tp-vs-icon', name: 'check' -%}
+          <span>Ab {{ vs_schwelle }}&nbsp;€ Warenwert: Lieferung &amp; lose Verlegung bis {{ vs_nah }}&nbsp;km kostenlos</span>
+        </li>
+        <li>
+          {%- render 'tp-vs-icon', name: 'check' -%}
+          <span>Sonst faire Festpreise – vorab genannt</span>
+        </li>
+        <li>
+          {%- render 'tp-vs-icon', name: 'check' -%}
+          <span>Fixierung oder Verklebung auf Wunsch</span>
+        </li>
       </ul>
       <div class="tp-vs__aktionen">
         <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_produkte }}">Rollenware entdecken</a>
@@ -89,13 +109,11 @@
   <div class="tp-vs__teil" id="konditionen-{{ section.id }}">
     <div class="tp-vs__kopf">
       <h2 class="tp-vs__h2">Lieferung &amp; Verlegung: Ihre Konditionen</h2>
-      <p class="tp-vs__intro">Für Rollenware, die Sie bei uns kaufen ({{ vs_bezeichnung | escape }}). Entscheidend ist der Warenwert.</p>
+      <p class="tp-vs__intro">Für Rollenware, die Sie bei uns kaufen ({{ vs_bezeichnung | escape }}). Entscheidend sind Warenwert und Entfernung.</p>
     </div>
     {%- render 'tp-verlegeservice-stufen', link: vs_produkte -%}
     <p class="tp-vs__vorteil">
-      Ab {{ vs_schwelle }}&nbsp;€ Warenwert profitieren Sie nicht nur von
-      <strong>Lieferung und loser Verlegung bis {{ settings.tp_vs_radius_premium }}&nbsp;km</strong>, sondern auch von
-      <strong>deutlich günstigeren Konditionen für Fixierung und Verklebung</strong>.
+      Ab {{ vs_schwelle }}&nbsp;€ Warenwert liefern und verlegen wir im Umkreis von {{ vs_nah }}&nbsp;km <strong>kostenlos</strong> – und Fixierung oder Verklebung gibt es <strong>deutlich günstiger</strong>.
     </p>
   </div>
 
@@ -121,11 +139,11 @@
 
   <div class="tp-vs__teil">
     <div class="tp-vs__kopf">
-      <h2 class="tp-vs__h2">Fixierung &amp; Verklebung: der Preisvorteil ab {{ vs_schwelle }}&nbsp;€</h2>
-      <p class="tp-vs__intro">Was die drei Varianten bedeuten – und was sie unter und ab {{ vs_schwelle }}&nbsp;€ Warenwert kosten.</p>
+      <h2 class="tp-vs__h2">Alle Preise im Überblick</h2>
+      <p class="tp-vs__intro">Unter und ab {{ vs_schwelle }}&nbsp;€ Warenwert – mit kurzer Erklärung der Verlegearten.</p>
     </div>
     <table class="tp-vs-tabelle" role="table">
-      <caption class="visually-hidden">Leistungen und Preise unter und ab {{ vs_schwelle }} € Warenwert</caption>
+      <caption class="visually-hidden">Preise für Lieferung und Verlegung unter und ab {{ vs_schwelle }} € Warenwert</caption>
       <thead role="rowgroup">
         <tr role="row">
           <th scope="col" role="columnheader">Leistung</th>
@@ -136,26 +154,38 @@
       <tbody role="rowgroup">
         <tr role="row">
           <th scope="row" role="rowheader">
-            <span class="tp-vs-tabelle__name">Lose Verlegung</span>
-            <span class="tp-vs-tabelle__info">Passend zugeschnitten, ohne Verklebung.</span>
+            <span class="tp-vs-tabelle__name">Lieferung &amp; Anfahrt</span>
+            <span class="tp-vs-tabelle__info">Nach Entfernung von unserem Geschäft in Oranienburg.</span>
           </th>
           <td role="cell" data-label="Unter {{ vs_schwelle }} €">
-            <span class="tp-vs-tabelle__inkl">{% render 'tp-vs-icon', name: 'check' %}inklusive</span>
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</li>
+              <li><span>bis {{ vs_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
+              <li><span>bis {{ vs_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
+            </ul>
           </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
-            <span class="tp-vs-tabelle__inkl">{% render 'tp-vs-icon', name: 'check' %}inklusive</span>
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs-preis tp-vs-gratis">kostenlos</span></li>
+              <li><span>bis {{ vs_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
+              <li><span>bis {{ vs_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
+            </ul>
           </td>
         </tr>
         <tr role="row">
           <th scope="row" role="rowheader">
-            <span class="tp-vs-tabelle__name">Liefergebiet</span>
-            <span class="tp-vs-tabelle__info">Umkreis um unser Geschäft in Oranienburg.</span>
+            <span class="tp-vs-tabelle__name">Lose Verlegung</span>
+            <span class="tp-vs-tabelle__info">Passend zugeschnitten, ohne Verklebung.</span>
           </th>
           <td role="cell" data-label="Unter {{ vs_schwelle }} €">
-            <span class="tp-vs-preis">bis {{ settings.tp_vs_radius_basis }}&nbsp;km</span>
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
+            <span class="tp-vs-klein">mind. {{ vs_mindest }}</span>
           </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
-            <span class="tp-vs-preis">bis {{ settings.tp_vs_radius_premium }}&nbsp;km</span>
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs-preis tp-vs-gratis">kostenlos</span></li>
+              <li><span>darüber</span>{% render 'tp-vs-preis', wert: settings.tp_vs_lose %}</li>
+            </ul>
           </td>
         </tr>
         <tr role="row">
@@ -163,9 +193,13 @@
             <span class="tp-vs-tabelle__name">Doppelseitiges Verlegeband</span>
             <span class="tp-vs-tabelle__info">Punktuelle bzw. randseitige Fixierung des Bodenbelags.</span>
           </th>
-          <td role="cell" data-label="Unter {{ vs_schwelle }} €">{% render 'tp-vs-preis', wert: settings.tp_vs_band_basis %}</td>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_band_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
             {%- render 'tp-vs-preis', wert: settings.tp_vs_band_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
           </td>
         </tr>
         <tr role="row">
@@ -173,9 +207,13 @@
             <span class="tp-vs-tabelle__name">Flüssigfixierung</span>
             <span class="tp-vs-tabelle__info">Eine lösbare Fixierung für einen stabileren Halt des Bodenbelags.</span>
           </th>
-          <td role="cell" data-label="Unter {{ vs_schwelle }} €">{% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}</td>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
             {%- render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
           </td>
         </tr>
         <tr role="row">
@@ -183,13 +221,23 @@
             <span class="tp-vs-tabelle__name">Vollflächige Verklebung</span>
             <span class="tp-vs-tabelle__info">Der Bodenbelag wird vollflächig mit dem Untergrund verklebt.</span>
           </th>
-          <td role="cell" data-label="Unter {{ vs_schwelle }} €">{% render 'tp-vs-preis', wert: settings.tp_vs_kleber_basis %}</td>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_kleber_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
             {%- render 'tp-vs-preis', wert: settings.tp_vs_kleber_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
           </td>
         </tr>
       </tbody>
     </table>
+    {%- comment -%} Der Beispielsatz macht den Preisvorteil greifbar. Er gilt
+      nur in der kostenlosen Zone - dort ist die lose Verlegung ab der
+      Schwelle kostenlos und der Aufpreis damit der ganze Preis. {%- endcomment -%}
+    <p class="tp-vs-tabelle__beispiel">
+      <strong>Beispiel im Umkreis von {{ vs_nah }}&nbsp;km:</strong> Verlegung mit Flüssigfixierung kostet unter {{ vs_schwelle }}&nbsp;€ Warenwert {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}, ab {{ vs_schwelle }}&nbsp;€ nur {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %} – die lose Verlegung ist dann kostenlos.
+    </p>
   </div>
 
   <div class="tp-vs__teil tp-vs__wissen">
@@ -197,15 +245,15 @@
     <ul class="tp-vs__wissen-liste" role="list">
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Kostenlos</strong> sind Lieferung und lose Verlegung ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km. Alles andere berechnen wir zu den Festpreisen oben.</span>
+      </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
         <span><strong>Der Service gilt für bei uns gekaufte Rollenware</strong> – {{ vs_bezeichnung | escape }}.</span>
       </li>
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
-        <span><strong>Lose Verlegung beinhaltet keine Fixierung</strong> und keine vollflächige Verklebung.</span>
-      </li>
-      <li>
-        {%- render 'tp-vs-icon', name: 'info' -%}
-        <span><strong>Fixierungs- und Klebematerial</strong> kann optional hinzugebucht werden.</span>
+        <span><strong>Lose Verlegung beinhaltet keine Fixierung</strong> und keine vollflächige Verklebung – beides buchen Sie auf Wunsch dazu.</span>
       </li>
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
@@ -216,7 +264,7 @@
         <span><strong>Zusatzarbeiten</strong> wie besondere Untergrundarbeiten, Möbelräumung oder das Entfernen des alten Belags können weitere Leistungen erfordern.</span>
       </li>
     </ul>
-    <p class="tp-vs__wissen-schluss">Zusätzliche Arbeiten besprechen wir transparent mit Ihnen vor der Ausführung.</p>
+    <p class="tp-vs__wissen-schluss">Alle Kosten nennen wir Ihnen vor der Ausführung – zusätzliche Arbeiten besprechen wir transparent mit Ihnen.</p>
   </div>
 </div>
 
@@ -280,7 +328,7 @@
 
   .tp-vs__vorteile {
     display: grid;
-    gap: 10px;
+    gap: 12px;
     margin: 24px 0 0;
     padding: 0;
     list-style: none;
@@ -288,11 +336,11 @@
 
   .tp-vs__vorteile li {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 12px;
     font-size: 17px;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
   .tp-vs__vorteile .tp-vs-icon {
@@ -426,7 +474,7 @@
     text-underline-offset: 3px;
   }
 
-  /* Vergleich --------------------------------------------------------- */
+  /* Preise ------------------------------------------------------------ */
 
   .tp-vs-tabelle {
     width: 100%;
@@ -454,8 +502,12 @@
   }
 
   .tp-vs-tabelle td {
-    width: 24%;
-    font-weight: 700;
+    width: 26%;
+  }
+
+  .tp-vs-tabelle td > .tp-vs-preis,
+  .tp-vs-tabelle td > .tp-vs-klein {
+    display: block;
   }
 
   /* Die Spalte ab der Schwelle traegt den Ton der hervorgehobenen Karte -
@@ -473,8 +525,13 @@
     border-radius: 0 0 12px 12px;
   }
 
-  .tp-vs-tabelle td.tp-vs-tabelle__plus {
+  .tp-vs-tabelle td.tp-vs-tabelle__plus .tp-vs-preis {
     color: #6d5536;
+  }
+
+  .tp-vs-tabelle .tp-vs-gratis,
+  .tp-vs-tabelle td.tp-vs-tabelle__plus .tp-vs-gratis {
+    color: #1d6b47;
   }
 
   .tp-vs-tabelle__name {
@@ -490,16 +547,35 @@
     font-weight: 400;
   }
 
-  .tp-vs-tabelle__inkl {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+  .tp-vs-zonen {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .tp-vs-tabelle__inkl .tp-vs-icon {
-    width: 18px;
-    height: 18px;
-    color: #1d6b47;
+  .tp-vs-zonen li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 12px;
+  }
+
+  .tp-vs-zonen li > span:first-child {
+    color: var(--tp-vs-leise);
+    font-size: 14px;
+  }
+
+  .tp-vs-tabelle__beispiel {
+    max-width: 980px;
+    margin: 18px auto 0;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: rgb(var(--tp-vs-ton) / 0.07);
+    font-size: 16px;
+    line-height: 1.55;
   }
 
   /* Gut zu wissen ----------------------------------------------------- */
@@ -565,10 +641,7 @@
       width: 100%;
     }
 
-    .tp-vs__kopf {
-      text-align: left;
-    }
-
+    .tp-vs__kopf,
     .tp-vs__vorteil {
       text-align: left;
     }
@@ -579,7 +652,7 @@
     }
 
     /* Je Leistung eine Karte: Name und Erklaerung oben, darunter die beiden
-       Preise nebeneinander, jeder mit seiner Stufe beschriftet. */
+       Preisfelder nebeneinander, jedes mit seiner Stufe beschriftet. */
     .tp-vs-tabelle,
     .tp-vs-tabelle tbody {
       display: block;
@@ -627,6 +700,7 @@
 
     .tp-vs-tabelle td::before {
       content: attr(data-label);
+      margin-bottom: 2px;
       color: var(--tp-vs-leise);
       font-size: 13px;
       font-weight: 600;
@@ -636,6 +710,10 @@
     .tp-vs-tabelle tbody tr:last-child .tp-vs-tabelle__plus {
       border-radius: 10px;
       background: rgb(var(--tp-vs-ton) / 0.12);
+    }
+
+    .tp-vs-zonen li > span:first-child {
+      font-size: 13px;
     }
 
     .tp-vs__wissen-liste {
@@ -655,7 +733,7 @@
   "settings": [
     {
       "type": "paragraph",
-      "content": "Schwelle, Liefergebiet, Preise und Kontaktwege stehen zentral in den Theme-Einstellungen unter „TP Verlegeservice“."
+      "content": "Schwelle, Zonen, Preise und Kontaktwege stehen zentral in den Theme-Einstellungen unter „TP Verlegeservice“."
     },
     {
       "type": "header",

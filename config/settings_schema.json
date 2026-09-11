@@ -2290,7 +2290,7 @@
     "settings": [
       {
         "type": "paragraph",
-        "content": "Gilt nur für Rollenware. Diese Werte stehen auf der Seite Liefer- & Verlegeservice, auf „Teppichboden verlegen lassen“, im Hinweis auf der Produktseite und im Ergebnis der Ortsprüfung – eine Änderung hier gilt überall."
+        "content": "Gilt nur für Rollenware. Kostenlos sind Lieferung und lose Verlegung nur ab der Warenwert-Schwelle und innerhalb der kostenlosen Zone – alles andere zu den Festpreisen unten. Die Werte stehen auf der Seite Liefer- & Verlegeservice, auf „Teppichboden verlegen lassen“, im Hinweis auf der Produktseite und im Ergebnis der Ortsprüfung."
       },
       {
         "type": "header",
@@ -2311,7 +2311,7 @@
       },
       {
         "type": "header",
-        "content": "Schwelle und Liefergebiet"
+        "content": "Schwelle und Zonen"
       },
       {
         "type": "number",
@@ -2322,46 +2322,99 @@
       {
         "type": "number",
         "id": "tp_vs_radius_basis",
-        "label": "Liefergebiet unter der Schwelle in km",
+        "label": "Kostenlose Zone bis km",
+        "info": "Bis hierhin sind Lieferung und lose Verlegung ab der Schwelle kostenlos.",
         "default": 15
       },
       {
         "type": "number",
+        "id": "tp_vs_radius_mitte",
+        "label": "Zweite Zone bis km",
+        "default": 30
+      },
+      {
+        "type": "number",
         "id": "tp_vs_radius_premium",
-        "label": "Liefergebiet ab der Schwelle in km",
-        "info": "Die Ortsprüfung rechnet mit diesem Wert. Die Fläche auf der Karte kennt 30, 40 und 50 km und wird in der Sektion eingestellt.",
+        "label": "Einsatzgebiet bis km",
+        "info": "Darüber auf Anfrage. Die Ortsprüfung rechnet mit diesem Wert; die Fläche auf der Karte kennt 30, 40 und 50 km und wird in der Sektion eingestellt.",
         "default": 50
       },
       {
         "type": "header",
-        "content": "Preise unter der Schwelle"
+        "content": "Lieferung und Anfahrt"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_anfahrt_nah",
+        "label": "In der kostenlosen Zone, unter der Schwelle",
+        "default": "39 €"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_anfahrt_mitte",
+        "label": "In der zweiten Zone",
+        "default": "49 €"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_anfahrt_fern",
+        "label": "Bis zum Ende des Einsatzgebiets",
+        "default": "69 €"
+      },
+      {
+        "type": "header",
+        "content": "Lose Verlegung, wenn nicht kostenlos"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_lose",
+        "label": "Preis",
+        "default": "4,95 €/m²"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_lose_mindest",
+        "label": "Mindestbetrag je Auftrag",
+        "default": "49 €"
+      },
+      {
+        "type": "header",
+        "content": "Unter der Schwelle: Komplettpreise"
+      },
+      {
+        "type": "paragraph",
+        "content": "Inklusive Verlegung."
       },
       {
         "type": "text",
         "id": "tp_vs_band_basis",
-        "label": "Doppelseitiges Verlegeband",
+        "label": "Mit Verlegeband",
         "default": "8,95 €/m²"
       },
       {
         "type": "text",
         "id": "tp_vs_fluessig_basis",
-        "label": "Flüssigfixierung",
+        "label": "Mit Flüssigfixierung",
         "default": "9,95 €/m²"
       },
       {
         "type": "text",
         "id": "tp_vs_kleber_basis",
-        "label": "Vollflächige Verklebung",
+        "label": "Vollflächig verklebt",
         "default": "10,95 €/m²"
       },
       {
         "type": "header",
-        "content": "Preise ab der Schwelle"
+        "content": "Ab der Schwelle: Aufpreise"
+      },
+      {
+        "type": "paragraph",
+        "content": "Zusätzlich zur losen Verlegung."
       },
       {
         "type": "text",
         "id": "tp_vs_band_premium",
-        "label": "Doppelseitiges Verlegeband",
+        "label": "Verlegeband",
         "default": "ca. 25 € pro Raum"
       },
       {

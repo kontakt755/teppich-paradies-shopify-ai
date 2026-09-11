@@ -21,12 +21,13 @@
  * Einzelfall -, dann den in den Shop, denn der Versand endet nicht an der
  * Grenze des Verlegegebiets.
  *
- * Auf Teppichboden-Seiten gibt die Sektion zusaetzlich die Stufen des
- * Rollenware-Service mit (data-basis, data-schwelle aus den
- * Theme-Einstellungen). Dann nennt ein Treffer im Gebiet, welche Stufe dort
- * gilt: bis zum Basisradius bei jedem Warenwert, dahinter ab der Schwelle.
- * Auf Vinyl- und Treppenseiten fehlen die Attribute - dort gilt der
- * Rollenware-Service nicht, und es wird nichts davon versprochen.
+ * Auf Teppichboden-Seiten gibt die Sektion zusaetzlich die Zonen und Preise
+ * des Rollenware-Service mit (data-basis, data-mitte, data-schwelle,
+ * data-preis-*, data-lose aus den Theme-Einstellungen). Dann nennt ein
+ * Treffer im Gebiet, was dort gilt: in der ersten Zone ab der Schwelle
+ * kostenlos, sonst die Pauschale der Zone. Auf Vinyl- und Treppenseiten
+ * fehlen die Attribute - dort gilt der Rollenware-Service nicht, und es wird
+ * nichts davon versprochen.
  *
  * Jede Abfrage traegt eine laufende Nummer. Die Tabelle wird beim ersten
  * Absenden geladen, das kann dauern; wer in der Zwischenzeit weitertippt oder
@@ -47,13 +48,13 @@
     aussen: function (was) {
       return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
     },
-    stufeBasis: 'Lieferung und lose Verlegung Ihrer Rollenware sind hier bei jedem Warenwert inklusive.',
-    stufePlus: function (schwelle) {
-      return 'Lieferung und lose Verlegung Ihrer Rollenware sind hier ab ' + schwelle + ' € Warenwert inklusive – bei kleineren Aufträgen fragen Sie uns gern an.';
+    zoneNah: function (s) {
+      return 'Ab ' + s.schwelle + ' € Warenwert sind Lieferung und lose Verlegung hier kostenlos, darunter berechnen wir ' + s.preisNah + ' für Lieferung und Anfahrt.';
     },
-    stufeOffen: function (schwelle) {
-      return 'Ob Lieferung und lose Verlegung schon unter ' + schwelle + ' € Warenwert inklusive sind, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.';
+    zone: function (preis, s) {
+      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + s.lose + '.';
     },
+    zoneOffen: 'Was Lieferung und Verlegung kosten, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.',
     anfragen: 'Individuell anfragen',
     leer: 'Bitte geben Sie eine Postleitzahl oder einen Ort ein.',
     unbekannt: 'Diesen Ort kennen wir nicht. Bitte geben Sie Ihre Postleitzahl ein – oder fragen Sie uns einfach direkt an.',
@@ -81,15 +82,17 @@
     return sektion._tpVgDaten;
   }
 
-  /* Die Stufe des Rollenware-Service fuer einen Abstand, als angehaengter
+  /* Die Zone des Rollenware-Service fuer einen Abstand, als angehaengter
      Satz. nah/fern ist bei einer PLZ derselbe Wert, bei einem Ortsnamen die
-     Spanne seiner Postleitzahlen. Reicht ein Ort ueber den Basisradius, wird
-     keine Stufe zugesagt, sondern nach der PLZ gefragt. */
-  function stufe(nah, fern, stufen) {
-    if (!stufen) return '';
-    if (fern <= stufen.basis) return ' ' + TEXTE.stufeBasis;
-    if (nah > stufen.basis) return ' ' + TEXTE.stufePlus(stufen.schwelle);
-    return ' ' + TEXTE.stufeOffen(stufen.schwelle);
+     Spanne seiner Postleitzahlen. Liegt ein Ort in zwei Zonen, wird kein Preis
+     genannt, sondern nach der PLZ gefragt - "kostenlos" fuer einen Ortsteil,
+     in dem es nicht gilt, waere eine falsche Zusage. */
+  function zone(nah, fern, s) {
+    if (!s) return '';
+    if (fern <= s.basis) return ' ' + TEXTE.zoneNah(s);
+    if (nah > s.basis && fern <= s.mitte) return ' ' + TEXTE.zone(s.preisMitte, s);
+    if (nah > s.mitte) return ' ' + TEXTE.zone(s.preisFern, s);
+    return ' ' + TEXTE.zoneOffen;
   }
 
   /* Liefert {status, text} - die Entscheidung steckt hier, nicht in der Ausgabe. */
@@ -105,7 +108,7 @@
         return { status: 'aussen', text: TEXTE.aussen(plz[1]) };
       }
       return km <= radius
-        ? { status: 'innen', text: TEXTE.innen(plz[1], Math.round(km)) + stufe(km, km, stufen) }
+        ? { status: 'innen', text: TEXTE.innen(plz[1], Math.round(km)) + zone(km, km, stufen) }
         : { status: 'aussen', text: TEXTE.aussen(plz[1]) };
     }
 
@@ -114,7 +117,7 @@
 
     var ort = roh.replace(/\s+/g, ' ');
     if (spanne[1] <= radius) {
-      return { status: 'innen', text: TEXTE.innen(ort, Math.round(spanne[0])) + stufe(spanne[0], spanne[1], stufen) };
+      return { status: 'innen', text: TEXTE.innen(ort, Math.round(spanne[0])) + zone(spanne[0], spanne[1], stufen) };
     }
     if (spanne[0] <= radius) return { status: 'rand', text: TEXTE.rand(ort) };
     return { status: 'aussen', text: TEXTE.aussen(ort) };
@@ -147,6 +150,23 @@
     });
   }
 
+  /* Zonen und Preise aus den data-Attributen der Sektion - nur vorhanden,
+     wenn dort rollenware_stufen eingeschaltet ist. */
+  function stufenLesen(d, radius) {
+    var basis = parseFloat(d.basis);
+    if (!isFinite(basis)) return null;
+    var mitte = parseFloat(d.mitte);
+    return {
+      basis: basis,
+      mitte: isFinite(mitte) ? mitte : radius,
+      schwelle: d.schwelle || '',
+      preisNah: d.preisNah || '',
+      preisMitte: d.preisMitte || '',
+      preisFern: d.preisFern || '',
+      lose: d.lose || ''
+    };
+  }
+
   function verdrahten(formular) {
     var sektion = formular.closest('[data-radius]');
     var eingabe = formular.querySelector('[data-tp-verlegegebiet-input]');
@@ -155,8 +175,7 @@
 
     var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
-    var basis = parseFloat(sektion.dataset.basis);
-    var stufen = isFinite(basis) ? { basis: basis, schwelle: sektion.dataset.schwelle || '' } : null;
+    var stufen = stufenLesen(sektion.dataset, radius);
     var lauf = 0;
     formular.hidden = false;
 

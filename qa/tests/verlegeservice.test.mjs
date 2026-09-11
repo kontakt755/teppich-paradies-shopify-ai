@@ -46,11 +46,19 @@ const SERVICE_DATEIEN = [
   ['blocks', 'tp-verlegeservice-hinweis.liquid'],
 ];
 
-test('Schwelle, Radien und Preise stehen zentral in den Theme-Einstellungen', () => {
+test('Schwelle, Zonen und Preise stehen zentral in den Theme-Einstellungen', () => {
+  // Stand: Vorgabe des Inhabers vom 2026-09-11 - kostenlos nur ab 649 EUR bis
+  // 15 km; sonst Lieferung/Anfahrt 39/49/69 EUR und lose Verlegung 4,95 EUR/m2.
   assert.ok(GRUPPE, 'Gruppe "TP Verlegeservice" fehlt in config/settings_schema.json.');
   assert.equal(standard('tp_vs_schwelle'), 649);
   assert.equal(standard('tp_vs_radius_basis'), 15);
+  assert.equal(standard('tp_vs_radius_mitte'), 30);
   assert.equal(standard('tp_vs_radius_premium'), 50);
+  assert.equal(standard('tp_vs_anfahrt_nah'), '39 €');
+  assert.equal(standard('tp_vs_anfahrt_mitte'), '49 €');
+  assert.equal(standard('tp_vs_anfahrt_fern'), '69 €');
+  assert.equal(standard('tp_vs_lose'), '4,95 €/m²');
+  assert.equal(standard('tp_vs_lose_mindest'), '49 €');
   assert.equal(standard('tp_vs_band_basis'), '8,95 €/m²');
   assert.equal(standard('tp_vs_fluessig_basis'), '9,95 €/m²');
   assert.equal(standard('tp_vs_kleber_basis'), '10,95 €/m²');
@@ -65,9 +73,9 @@ test('keine Datei des Service schreibt eine Zahl selbst hin', () => {
   for (const teile of SERVICE_DATEIEN) {
     const code = ohneSchema(ohneKommentare(lesen(...teile)));
     const datei = teile.join('/');
-    assert.doesNotMatch(code, /\b\d{1,2},\d{2}\s*€/, `${datei} nennt einen Preis im Code.`);
+    assert.doesNotMatch(code, /\b\d+(,\d{2})?\s*(€|&nbsp;€)/, `${datei} nennt einen Preis im Code.`);
     assert.doesNotMatch(code, /\b649\b/, `${datei} nennt die Schwelle im Code.`);
-    assert.doesNotMatch(code, /\b(15|50)\s*km\b/, `${datei} nennt einen Radius im Code.`);
+    assert.doesNotMatch(code, /\b(15|30|50)\s*(km|&nbsp;km)\b/, `${datei} nennt einen Radius im Code.`);
   }
 });
 
@@ -104,6 +112,18 @@ test('nirgends "kostenlose Verlegung", "alles inklusive" oder feste Verlegung oh
     [],
     'Diese Saetze versprechen eine Verklebung oder einen Service, der nicht inklusive ist.',
   );
+});
+
+test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
+  // "Lieferung und lose Verlegung kostenlos" ohne Bedingung waere die falsche
+  // Zusage an Kunden unter 649 EUR oder aus 30 km Entfernung.
+  for (const teile of SERVICE_DATEIEN) {
+    const code = ohneSchema(ohneKommentare(lesen(...teile)));
+    for (const zeile of code.split('\n').filter((z) => /kostenlos/.test(z) && !/tp-vs-gratis/.test(z))) {
+      assert.match(zeile, /tp_vs_radius_basis|vs_nah|vss_nah|vsh_nah|kostenlose Zone/,
+        `${teile.join('/')}: "kostenlos" ohne die erste Zone: ${zeile.trim()}`);
+    }
+  }
 });
 
 test('der Produkthinweis erscheint nur bei Rollenware der freigegebenen Typen', () => {

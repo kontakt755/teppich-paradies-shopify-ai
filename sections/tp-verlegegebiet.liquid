@@ -75,7 +75,12 @@
   data-radius="{{ vg_pruef_radius }}"
   {%- if vg_stufen %}
     data-basis="{{ settings.tp_vs_radius_basis }}"
+    data-mitte="{{ settings.tp_vs_radius_mitte }}"
     data-schwelle="{{ settings.tp_vs_schwelle }}"
+    data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape }}"
+    data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape }}"
+    data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape }}"
+    data-lose="{{ settings.tp_vs_lose | escape }}"
   {%- endif %}
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
 >
@@ -157,9 +162,10 @@
     Leistungen, die im Umkreis von 15 km gelten.
 
     Zwei Quellen, je nach Seite:
-    - rollenware_stufen an (Teppichboden-Seiten): die Stufen des
-      Rollenware-Service aus den Theme-Einstellungen - dieselben Zahlen wie
-      auf der Serviceseite und im Produkthinweis, keine Kopie im Template.
+    - rollenware_stufen an (Teppichboden-Seiten): die Zonen des
+      Rollenware-Service mit ihren Preisen aus den Theme-Einstellungen -
+      dieselben Zahlen wie auf der Serviceseite und im Produkthinweis, keine
+      Kopie im Template. Kostenlos nur ab der Schwelle in der ersten Zone.
     - sonst die Bloecke aus dem Template. Auf Vinyl- und Treppenseiten stehen
       dort bewusst keine Rollenware-Konditionen, weil sie dort nicht gelten.
 
@@ -170,11 +176,15 @@
     <ul class="tp-vg__stufen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung und lose Verlegung Ihrer Rollenware inklusive – bei jedem Warenwert.</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos, darunter {{ settings.tp_vs_anfahrt_nah | escape }} für Lieferung und Anfahrt.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung, Anfahrt und lose Verlegung inklusive ab {{ settings.tp_vs_schwelle }} € Warenwert.</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape }}, lose Verlegung {{ settings.tp_vs_lose | escape }}.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Weiter entfernt</span>
