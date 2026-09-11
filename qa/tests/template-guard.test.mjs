@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { analyzeTemplates, blockTypesOf, stripHeader } from '../template-guard.mjs';
+import { analyzeTemplates, blockTypesOf, forbiddenCardBlocks, stripHeader } from '../template-guard.mjs';
 
 const template = (order, types) => JSON.stringify({
   sections: { main: { blocks: { pc: {
@@ -152,6 +152,34 @@ test('H4: nurIn meldet auch, wenn er nur aus seinem Template faellt, sonst aber 
   const findings = analyzeTemplates(templates, NUR_IN);
   assert.equal(findings.length, 1);
   assert.ok(findings[0].templates.includes('collection.bodenleisten.json'));
+});
+
+// --- verbotenInKarte: Bloecke, auf deren Fehlen sich Code verlaesst -------
+
+const VERBOTEN = { swatches: 'Grund' };
+
+test('I: verbotener Block in einer Karte wird gefunden, auch verschachtelt und in Section-Gruppen', () => {
+  // Karte in einer Section-Gruppe (Empfehlungen), swatches eine Ebene tiefer in einer Gruppe
+  const raw = JSON.stringify({ sections: { rec: { type: 'product-recommendations', blocks: { pc: {
+    type: '_product-card',
+    blocks: { grp: { type: '_product-card-group', blocks: { sw: { type: 'swatches' } } } },
+  } } } } });
+  assert.deepEqual(forbiddenCardBlocks(raw, '_product-card', VERBOTEN), ['swatches']);
+});
+
+test('I2: derselbe Block ausserhalb einer Karte ist erlaubt (PDP-Farbauswahl)', () => {
+  const raw = JSON.stringify({ sections: { main: { type: 'product-information', blocks: {
+    details: { type: '_product-details', blocks: { sw: { type: 'swatches' } } },
+    pc: { type: '_product-card', blocks: { t: { type: 'price' } } },
+  } } } });
+  assert.deepEqual(forbiddenCardBlocks(raw, '_product-card', VERBOTEN), []);
+});
+
+test('I3: die echte Konfiguration verbietet swatches in Karten und begruendet es', async () => {
+  const { readFileSync } = await import('node:fs');
+  const cfg = JSON.parse(readFileSync(new URL('../template-guard.config.json', import.meta.url), 'utf8'));
+  assert.ok(cfg.verbotenInKarte?.swatches, 'swatches fehlt in verbotenInKarte');
+  assert.match(cfg.verbotenInKarte.swatches, /card-gallery/);
 });
 
 test('H5: die echte Konfiguration nennt fuer nurIn nur Bodenleisten', async () => {

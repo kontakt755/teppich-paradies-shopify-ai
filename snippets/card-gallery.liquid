@@ -126,6 +126,7 @@
         assign section_is_near_top = true
       endif
 
+      assign rendered_slide_count = 0
       capture slides
         for media in media_list_to_show
           assign loading = 'lazy'
@@ -140,6 +141,18 @@
               # hide all variant images that aren't the first one
               assign hidden = true
             endif
+          endif
+
+          # TP: Versteckte Variantenbilder gar nicht erst rendern. Sie dienen
+          # nur dem Kartenblock "swatches" (product-card.js schaltet damit
+          # das Kartenbild um), und den nutzt keine Karte - Farben laufen
+          # ueber tp-card-color-thumbs, reine Links. Auf /collections/teppichboden
+          # waren das 228 unsichtbare Folien, 412 KB HTML. Das Bild eines per
+          # Filter gewaehlten Farbtons bleibt erhalten: es kommt ueber
+          # product.featured_media als erste Folie. npm run template:guard
+          # meldet, falls "swatches" in eine Karte eingefuegt wird.
+          if hidden
+            continue
           endif
 
           # Performance improvement: don't render more than 5 visible images into the slideshow
@@ -173,6 +186,7 @@
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit
+          assign rendered_slide_count = rendered_slide_count | plus: 1
         endfor
       endcapture
 
@@ -191,7 +205,7 @@
         ref: 'slideshow',
         initial_slide: 0,
         slides: slides,
-        slide_count: media_list_to_show.size,
+        slide_count: rendered_slide_count,
         show_arrows: show_arrows,
         attributes: slideshow_attributes
       %}
