@@ -254,3 +254,35 @@ Kategorie-Karussells (Phase 11). Vergleiche ab jetzt als Median aus drei Läufen
 **Zwischenscore Entwurf: 70 / 100** (vorher 67): Performance 58 → 61, Accessibility 70 → 78,
 Mobile UX 62 → 66, Produktseiten 72 → 73, Technische Qualität 60 → 61. Unverändert offen: Kategorieseite
 mobil (Produkte spät), CLS Desktop-Startseite, Suche/Synonyme, Live-P0 (Deploy).
+
+## Zwischenstand Kategorieseiten und Kaufwege (2026-09-11, abends)
+
+Vorgabe des Inhabers: Ergebnis in Theme `204168364366` hochladen – das ist die Arbeitskopie, in die jede
+Änderung nach bestandener Prüfung dateigenau gepusht wird. Nichts veröffentlicht.
+
+| # | Änderung | Messung vorher → nachher |
+|---|---|---|
+| 8 | Schrift-Vorladen mit hoher Priorität | **zurückgenommen**: CLS war nach #4 schon 0,015 (nicht mehr 0,174); „high“ verschlechterte Desktop-FCP 0,86 → 1,25 s und Score 95 → 90 (Median aus 3) |
+| 9 | Unterkategorien-Leiste aus dem Hauptmenü, Produkte vor dem Karussell (Teppichboden, Vinylboden) | erste Produktkarte mobil 802/907 → 382 px, Desktop 902/1.000 → 415 px |
+| 10 | Unterkategorie-Kopf am Telefon kompakt, Geschwister-Leiste (9 Templates) | erste Karte mobil Klickvinyl 1.015 → 629 px, Hochflor 1.096 → 713 px; seitlicher Rand am Telefon ergänzt |
+| 11 | Zubehör-Bereichskacheln am Telefon als kompakte Liste | Kachelbereich 1.495 → 754 px, erstes Produkt 2.484 → 1.743 px |
+| 12 | Bodenleisten: Kopfbild am Telefon aus, Material-Kacheln nebeneinander | erstes Produkt 1.644 → 1.228 px |
+
+Eigene Regression gefunden und vor dem Commit behoben: Die nicht umbrechende Leiste zog in #10 die
+Rasterspalte auf 520 px, der Text wurde am Telefon rechts abgeschnitten (`min-width: 0`).
+
+Kaufwege nach allen Änderungen:
+
+| Strecke | Desktop (Playwright) | Telefon 390 px (DOM) |
+|---|---|---|
+| Paketware Klickvinyl | PASS | PASS – „3,5“ ergibt 2 Pakete, 10 m² → 6 Pakete à 105,98 €, Warenkorb 635,88 € |
+| Rollenware Vinyl 400 × 250 cm | PASS | PASS – 10 m², 259,00 €, Eigenschaften Rollenbreite, Länge, Fläche vollständig |
+| Sockelleiste 38 m | – | PASS – „8 Stangen (ergibt 41,2 m)“, Menge 8 im Warenkorb |
+| Muster | PASS | – (Vorschauleiste, siehe Notiz) |
+
+Interne Warenkorb-Eigenschaft `_Farbe intern` wird im Warenkorb nicht angezeigt (Unterstrich-Schlüssel werden
+in `snippets/cart-products.liquid` übersprungen).
+
+**Zwischenscore Entwurf: 73 / 100**: Kategorieseiten 62 → 72, Mobile UX 66 → 71, Navigation 73 → 75,
+Performance 61 → 62. Offen als Nächstes: Überschriften-Reihenfolge der Produktkarten, verborgene
+fokussierbare Karussell-Folien, Startseitenlänge, Suche (Synonyme – Such-App, Inhaber), Live-P0 (Deploy).
