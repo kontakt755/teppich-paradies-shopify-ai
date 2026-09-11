@@ -1,0 +1,548 @@
+/* Teppich Paradies: Navigation.
+   Gemeinsame Bausteine fuer Desktop-Megamenue und Handy-Menue, dazu das
+   Handy-Menue selbst (snippets/tp-drawer-nav.liquid) und die Gliederungen
+   Vinyl (tp-vinyl-nav) und Bodenleisten (tp-leisten-nav).
+
+   Geladen von blocks/_header-menu.liquid im Desktop-Zweig, also einmal je Seite.
+   Warum eine eigene Datei und nicht der {% stylesheet %} von
+   snippets/header-drawer.liquid: dessen compiled_assets kamen nach mehreren
+   Pushes nicht in der Storefront an (siehe assets/tp-mega-menu.css). Ein Asset
+   wirkt sofort. Audit 2026-09-11, Aufgabe #193. */
+
+/* ------------------------------------------------------------------
+   Gemeinsame Bausteine
+   ------------------------------------------------------------------ */
+.tp-nav-group {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--color-foreground-rgb) / 0.58);
+}
+
+.tp-nav-links,
+.tp-nav-chips {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-nav-links {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.tp-nav-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.tp-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-inline: -0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: var(--menu-child-font-size, 1rem);
+  line-height: 1.35;
+  color: var(--menu-child-font-color, var(--color-foreground));
+  text-decoration: none;
+  transition: background-color 150ms ease;
+}
+
+.tp-nav-link:hover {
+  background: rgb(var(--color-foreground-rgb) / 0.07);
+}
+
+.tp-nav-link__count,
+.tp-nav-chip__count {
+  font-size: 0.78em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-foreground-rgb) / 0.55);
+}
+
+.tp-nav-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
+  border-radius: 999px;
+  background: rgb(var(--color-background-rgb));
+  font-size: var(--menu-child-font-size, 0.95rem);
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--menu-child-font-color, var(--color-foreground));
+  text-decoration: none;
+  transition: border-color 150ms ease;
+}
+
+.tp-nav-chip:hover {
+  border-color: rgb(var(--color-foreground-rgb) / 0.5);
+}
+
+.tp-nav-link:focus-visible,
+.tp-nav-chip:focus-visible,
+.tp-dn-row:focus-visible,
+.tp-dn-cta:focus-visible,
+.tp-dn-quick__btn:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------
+   Handy-Menue (Drawer, bis Tablet quer)
+
+   Eine Zeile je Punkt, auf jeder Ebene gleich: Bild 52 px, Titel 16-17 px,
+   Kurztext 13,5 px, Anzahl, Pfeil. Zeilen mindestens 64 px hoch, Knoepfe
+   und Chips mindestens 44 px - das Menue wird mit dem Daumen bedient.
+   ------------------------------------------------------------------ */
+.menu-drawer .tp-dn {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0 12px 4px;
+  list-style: none;
+}
+
+.menu-drawer .tp-dn__label {
+  padding: 18px 8px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--color-foreground-rgb) / 0.58);
+}
+
+.menu-drawer .tp-dn__label:first-child {
+  padding-top: 4px;
+}
+
+.menu-drawer .tp-dn__item,
+.menu-drawer .tp-dn-list__item {
+  display: block;
+  margin: 0;
+}
+
+.menu-drawer .tp-dn__details > summary {
+  list-style: none;
+}
+
+.menu-drawer .tp-dn__details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-drawer .tp-dn-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  color: var(--color-foreground);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease;
+}
+
+.menu-drawer .tp-dn-row:hover,
+.menu-drawer .tp-dn-row:active {
+  background: rgb(var(--color-foreground-rgb) / 0.05);
+}
+
+.menu-drawer .tp-dn-row.is-active,
+.menu-drawer .tp-dn-row.is-current {
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+}
+
+.menu-drawer .tp-dn-row__media {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+  color: var(--color-foreground);
+}
+
+.menu-drawer .tp-dn-row__media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-drawer .tp-dn-row__media svg {
+  width: 24px;
+  height: 24px;
+}
+
+.menu-drawer .tp-dn-row__media--whatsapp {
+  color: #1f9d55;
+}
+
+.menu-drawer .tp-dn-row__initial {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgb(var(--color-foreground-rgb) / 0.45);
+}
+
+.menu-drawer .tp-dn-row__body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+
+.menu-drawer .tp-dn-row__title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.menu-drawer .tp-dn-row--top .tp-dn-row__title {
+  font-size: 17px;
+}
+
+/* "Sie sind hier": Punkt in der Markenfarbe hinter dem aktuellen Bereich */
+.menu-drawer .tp-dn-row.is-active .tp-dn-row__title::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #b73740;
+  vertical-align: 0.12em;
+}
+
+.menu-drawer .tp-dn-row__sub {
+  overflow: hidden;
+  font-size: 13.5px;
+  line-height: 1.35;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgb(var(--color-foreground-rgb) / 0.62);
+}
+
+.menu-drawer .tp-dn-row__count {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--color-foreground-rgb) / 0.62);
+}
+
+.menu-drawer .tp-dn-row__chev {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin: 0 6px 0 2px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+  opacity: 0.4;
+}
+
+/* Unterebene */
+.menu-drawer .tp-dn-panel__inner {
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.menu-drawer .tp-dn-panel__bar {
+  padding: 4px 4px 0;
+}
+
+.menu-drawer .tp-dn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-height: 48px;
+  padding: 8px 14px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.menu-drawer .tp-dn-back > .svg-wrapper {
+  margin-right: 0;
+}
+
+.menu-drawer .tp-dn-panel__head {
+  padding: 2px 20px 12px;
+}
+
+.menu-drawer .tp-dn-panel__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--color-foreground);
+}
+
+.menu-drawer .tp-dn-panel__body {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: 0 12px;
+}
+
+.menu-drawer .tp-dn-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  margin: 0 0 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--color-foreground);
+  color: var(--color-background);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+
+.menu-drawer .tp-dn-cta__text {
+  flex: 1 1 auto;
+}
+
+.menu-drawer .tp-dn-cta__count {
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.menu-drawer .tp-dn-cta::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.menu-drawer .tp-dn-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu-drawer .tp-dn-list__sub {
+  padding: 0 8px 6px 74px;
+}
+
+.menu-drawer .tp-nav-group {
+  margin: 18px 8px 6px;
+  font-size: 12px;
+}
+
+.menu-drawer .tp-nav-links {
+  gap: 2px;
+}
+
+.menu-drawer .tp-nav-link {
+  min-height: 48px;
+  margin-inline: 0;
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 16px;
+  color: var(--color-foreground);
+}
+
+.menu-drawer .tp-nav-link__count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(var(--color-foreground-rgb) / 0.06);
+  font-size: 13px;
+  color: rgb(var(--color-foreground-rgb) / 0.62);
+}
+
+.menu-drawer .tp-nav-chips {
+  gap: 8px;
+  padding: 2px 8px 4px;
+}
+
+.menu-drawer .tp-nav-chip {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.menu-drawer .tp-nav-chip__count {
+  font-size: 12px;
+}
+
+/* Unter der Hauptebene: Muster, Anrufen, WhatsApp */
+.menu-drawer .tp-dn-foot {
+  display: grid;
+  gap: 8px;
+  margin: 8px 12px 16px;
+  padding: 6px 6px 10px;
+  border-radius: 14px;
+  background: rgb(var(--color-foreground-rgb) / 0.04);
+}
+
+.menu-drawer .tp-dn-foot .tp-dn-row {
+  min-height: 60px;
+}
+
+.menu-drawer .tp-dn-foot .tp-dn-row__media {
+  background: rgb(var(--color-background-rgb));
+}
+
+.menu-drawer .tp-dn-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.menu-drawer .tp-dn-quick__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid rgb(var(--color-foreground-rgb) / 0.14);
+  border-radius: 10px;
+  background: rgb(var(--color-background-rgb));
+  color: var(--color-foreground);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.menu-drawer .tp-dn-quick__btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.menu-drawer .tp-dn-quick__btn--wa svg {
+  color: #1f9d55;
+}
+
+/* ------------------------------------------------------------------
+   Desktop: Vinyl (snippets/tp-vinyl-nav.liquid)
+   Vier Bildkarten (Einstieg + drei Verlegearten), rechts Optik und Zubehoer.
+   ------------------------------------------------------------------ */
+.tp-vnav {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 1.5rem 2.5rem;
+  align-items: start;
+}
+
+@media screen and (min-width: 1200px) {
+  .tp-vnav {
+    grid-template-columns: minmax(0, 1fr) minmax(14rem, 17rem);
+  }
+}
+
+.mega-menu__grid .tp-vnav .tp-vnav__cards {
+  display: grid;
+  grid-column: auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.tp-vnav__aside {
+  display: grid;
+  gap: 1.5rem;
+  align-content: start;
+}
+
+@media screen and (min-width: 750px) and (max-width: 1199px) {
+  .tp-vnav__aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tp-vnav__group {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+}
+
+/* ------------------------------------------------------------------
+   Desktop: Bodenleisten - vierte Spalte fuer die Profile
+   ------------------------------------------------------------------ */
+@media screen and (min-width: 1200px) {
+  .tp-lnav:has(> .tp-lnav__col--profile) {
+    grid-template-columns: minmax(0, 17rem) minmax(0, 12rem) minmax(0, 1fr) minmax(0, 13rem);
+    gap: 1.25rem 2.5rem;
+  }
+}
+
+@media screen and (min-width: 750px) and (max-width: 1199px) {
+  .tp-lnav:has(> .tp-lnav__col--profile) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.tp-lnav .tp-nav-group {
+  margin-bottom: 0.15rem;
+}
+
+/* ------------------------------------------------------------------
+   Laptop mit wenig Hoehe (1366 x 768): Die Menues mit sieben und acht
+   Bildkarten brauchten 562 px und wurden bei 80 vh abgeschnitten.
+   Hier darf das Menue fast die volle Hoehe nutzen, die Bilder werden flacher.
+   ------------------------------------------------------------------ */
+@media screen and (min-width: 990px) and (max-height: 860px) {
+  .header-menu .menu-list__submenu-inner.menu-list__submenu-inner {
+    max-height: calc(100vh - var(--header-height, 88px) - 16px);
+  }
+
+  .header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__media {
+    aspect-ratio: 2 / 1;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Desktop: Kontakt als Symbolkacheln (snippets/tp-kontakt-nav.liquid)
+   Telefon dunkel, WhatsApp gruen (Grundregel in tp-mega-menu.css), Standort
+   in der Markenfarbe. Telefon und Standort sind Liniensymbole - ohne Fuellung,
+   sonst macht die fill-Regel der Kachel eine Flaeche daraus.
+   ------------------------------------------------------------------ */
+.header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--phone {
+  background: linear-gradient(135deg, #3b342e, #1d1a17);
+}
+
+.header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--pin {
+  background: linear-gradient(135deg, #c24a53, #962f38);
+}
+
+.header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--phone svg,
+.header-menu .mega-menu__grid .mega-menu__list .tp-mm-card__icon--pin svg {
+  width: 30%;
+  fill: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-nav-link,
+  .tp-nav-chip,
+  .menu-drawer .tp-dn-row {
+    transition: none;
+  }
+}

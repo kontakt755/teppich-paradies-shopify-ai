@@ -110,7 +110,7 @@
           <a
             href="{{ link.url }}"
             data-skip-node-update="true"
-            class="menu-list__link{% if link.active %} menu-list__link--active{% endif %}"
+            class="menu-list__link{% if link.active or link.child_active %} menu-list__link--active{% endif %}"
             {%- if tp_has_submenu -%}
               aria-controls="submenu-{{ forloop.index }}"
               aria-haspopup="true"
@@ -169,6 +169,9 @@
         </button>
       </li>
     {% endcapture %}
+
+    {%- comment -%} Navigation Desktop und Handy: tp-vinyl-nav, tp-leisten-nav, tp-drawer-nav {%- endcomment -%}
+    {{ 'tp-nav.css' | asset_url | stylesheet_tag }}
 
     <header-menu
       ref="headerMenu"

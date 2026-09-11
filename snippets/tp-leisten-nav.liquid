@@ -18,16 +18,22 @@
     Diese Hashes wertet assets/tp-leisten-filter.js aus (beim Laden und bei
     hashchange). Search & Discovery kennt fuer diese Kategorie nur Preis und
     Verfuegbarkeit, echte Filter-URLs gibt es fuer Material und Hoehe also
-    nicht.
+    nicht. Steht man schon auf der Kategorieseite, schliesst das Handy-Menue
+    beim Tippen selbst (snippets/tp-drawer-nav.liquid).
+  - Profile fuer Uebergaenge und Kanten: die Unterpunkte des Menuepunkts, die
+    auf eine Profil-Kollektion zeigen und Produkte haben
+    (zubehoer-uebergangsprofile, zubehoer-abschlussprofile). Bis 2026-09-11
+    fehlten sie hier, weil sie frueher als Filterlinks ins Leere zeigten; seit
+    #123 fuehren sie auf die richtigen Kollektionen (Audit 2026-09-11, #193).
 
-  Bewusst nicht enthalten: Uebergangsprofile, Abschlussprofile, Kleber &
-  Fixierung. Diese Filteransichten treffen in der Kategorie kein einziges
-  Produkt - sie gehoeren unter "Zubehoer". Ebenso entfaellt der doppelte
-  Einstieg "Alle Bodenleisten" + "Sockelleisten": beide fuehren zum selben
-  Sortiment.
+  Bewusst nicht enthalten: "Kleber & Fixierung" - das sind Klebstoffe fuer
+  Bodenbelaege, nicht fuer Leisten; sie stehen unter "Zubehoer". Ebenso
+  entfaellt der doppelte Einstieg "Sockelleisten": er fuehrt zum selben
+  Sortiment wie "Alle Bodenleisten". Desktop und Handy nennen den Einstieg
+  gleich ("Alle Bodenleisten"), bis 2026-09-11 hiess er am Handy anders.
 
   @param {string} variant - 'megamenu' (Desktop) oder 'drawer' (mobil)
-  @param {object} [parent_link] - Menuepunkt, liefert Titel und Ziel
+  @param {object} [parent_link] - Menuepunkt, liefert Titel, Ziel und Profil-Unterpunkte
   @param {object} [kacheln] - block.blocks des Header-Menue-Blocks (Bildkachel fuer die Einstiegskarte)
 {% enddoc %}
 
@@ -113,9 +119,9 @@
       endfor
     -%}
     <li>
-      <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:material={{ m_key | url_encode }}">
-        <span class="tp-lnav__link-text">{{ m_label | escape }}</span>
-        <span class="tp-lnav__count" aria-hidden="true">{{ m_count }}</span>
+      <a class="tp-nav-link" href="{{ tp_ln_url }}#leisten:material={{ m_key | url_encode }}">
+        <span class="tp-nav-link__text">{{ m_label | escape }}</span>
+        <span class="tp-nav-link__count" aria-hidden="true">{{ m_count }}</span>
         <span class="visually-hidden">{{ m_count }} {% if m_count == 1 %}Produkt{% else %}Produkte{% endif %}</span>
       </a>
     </li>
@@ -145,44 +151,53 @@
       endfor
     -%}
     <li>
-      <a class="tp-lnav__link" href="{{ tp_ln_url }}#leisten:hoehe={{ h_key | url_encode }}">
-        <span class="tp-lnav__link-text">{{ h_label | escape }}</span>
-        <span class="tp-lnav__count" aria-hidden="true">{{ h_count }}</span>
+      <a class="tp-nav-chip" href="{{ tp_ln_url }}#leisten:hoehe={{ h_key | url_encode }}">
+        <span>{{ h_label | escape }}</span>
+        <span class="tp-nav-chip__count" aria-hidden="true">{{ h_count }}</span>
         <span class="visually-hidden">{{ h_count }} {% if h_count == 1 %}Produkt{% else %}Produkte{% endif %}</span>
       </a>
     </li>
   {%- endfor -%}
 {%- endcapture -%}
 
+{%- capture tp_ln_profile -%}
+  {%- for c in parent_link.links -%}
+    {%- if c.type == 'collection_link' and c.object.handle contains 'profile' and c.object.all_products_count > 0 -%}
+      <li>
+        <a class="tp-nav-link" href="{{ c.url }}">
+          <span class="tp-nav-link__text">{{ c.title | escape }}</span>
+          <span class="tp-nav-link__count" aria-hidden="true">{{ c.object.all_products_count }}</span>
+          <span class="visually-hidden">{{ c.object.all_products_count }} Produkte</span>
+        </a>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
 {%- if variant == 'drawer' -%}
-  <li class="menu-drawer__list-item tp-lnav-drawer__item">
-    <a
-      href="{{ tp_ln_url }}"
-      class="menu-drawer__menu-item menu-drawer__menu-item--child menu-drawer__animated-element focus-inset tp-lnav-drawer__all"
-    >
-      <span class="menu-drawer__menu-item-text wrap-text">
-        Alle Sockelleisten
-        {%- if tp_ln_collection.all_products_count > 0 %}
-          <span class="tp-lnav__count" aria-hidden="true">{{ tp_ln_collection.all_products_count }}</span>
-        {%- endif -%}
-      </span>
-    </a>
-  </li>
+  <a class="tp-dn-cta" href="{{ tp_ln_url }}">
+    <span class="tp-dn-cta__text">Alle {{ tp_ln_title | escape }} ansehen</span>
+    {%- if tp_ln_collection.all_products_count > 0 -%}
+      <span class="tp-dn-cta__count">{{ tp_ln_collection.all_products_count }}<span class="visually-hidden"> Produkte</span></span>
+    {%- endif -%}
+  </a>
   {%- if tp_ln_m_key_list.size > 0 -%}
-    <li class="tp-lnav-drawer__group">
-      <p class="tp-lnav__label" id="tp-lnav-drawer-material">Nach Material</p>
-      <ul class="tp-lnav__list list-unstyled" role="list" aria-labelledby="tp-lnav-drawer-material">
-        {{ tp_ln_materials }}
-      </ul>
-    </li>
+    <p class="tp-nav-group">Nach Material</p>
+    <ul class="tp-nav-links list-unstyled" role="list" aria-label="Nach Material">
+      {{- tp_ln_materials -}}
+    </ul>
   {%- endif -%}
   {%- if tp_ln_h_sorted.size > 0 -%}
-    <li class="tp-lnav-drawer__group">
-      <p class="tp-lnav__label" id="tp-lnav-drawer-hoehe">Nach Höhe</p>
-      <ul class="tp-lnav__list tp-lnav__list--chips list-unstyled" role="list" aria-labelledby="tp-lnav-drawer-hoehe">
-        {{ tp_ln_hoehen }}
-      </ul>
-    </li>
+    <p class="tp-nav-group">Nach Höhe</p>
+    <ul class="tp-nav-chips list-unstyled" role="list" aria-label="Nach Höhe">
+      {{- tp_ln_hoehen -}}
+    </ul>
+  {%- endif -%}
+  {%- if tp_ln_profile != blank -%}
+    <p class="tp-nav-group">Profile für Übergänge und Kanten</p>
+    <ul class="tp-nav-links list-unstyled" role="list" aria-label="Profile für Übergänge und Kanten">
+      {{- tp_ln_profile -}}
+    </ul>
   {%- endif -%}
 {%- else -%}
   <div class="tp-lnav" data-testid="tp-leisten-nav">
@@ -207,18 +222,27 @@
 
     {%- if tp_ln_m_key_list.size > 0 -%}
       <div class="tp-lnav__col">
-        <p class="tp-lnav__label" id="tp-lnav-material">Nach Material</p>
-        <ul class="tp-lnav__list list-unstyled" role="list" aria-labelledby="tp-lnav-material">
-          {{ tp_ln_materials }}
+        <p class="tp-nav-group" id="tp-lnav-material">Nach Material</p>
+        <ul class="tp-nav-links list-unstyled" role="list" aria-labelledby="tp-lnav-material">
+          {{- tp_ln_materials -}}
         </ul>
       </div>
     {%- endif -%}
 
     {%- if tp_ln_h_sorted.size > 0 -%}
       <div class="tp-lnav__col tp-lnav__col--wide">
-        <p class="tp-lnav__label" id="tp-lnav-hoehe">Nach Höhe</p>
-        <ul class="tp-lnav__list tp-lnav__list--chips list-unstyled" role="list" aria-labelledby="tp-lnav-hoehe">
-          {{ tp_ln_hoehen }}
+        <p class="tp-nav-group" id="tp-lnav-hoehe">Nach Höhe</p>
+        <ul class="tp-nav-chips list-unstyled" role="list" aria-labelledby="tp-lnav-hoehe">
+          {{- tp_ln_hoehen -}}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if tp_ln_profile != blank -%}
+      <div class="tp-lnav__col tp-lnav__col--profile">
+        <p class="tp-nav-group" id="tp-lnav-profile">Profile für Übergänge und Kanten</p>
+        <ul class="tp-nav-links list-unstyled" role="list" aria-labelledby="tp-lnav-profile">
+          {{- tp_ln_profile -}}
         </ul>
       </div>
     {%- endif -%}
