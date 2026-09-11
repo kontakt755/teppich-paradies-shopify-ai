@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T11:05:44.235Z",
+  "generated_at": "2026-09-11T11:20:54.026Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 67,
+  "count": 68,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T11:05:44.235Z",
+    "fetchedAt": "2026-09-11T11:20:54.026Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 194,
+      "title": "Shop-Qualitaet: Baseline, Erstbefund und P0/P1 im Theme-Entwurf",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/194",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Qualitaetsprogramm Richtung 99/100. Arbeits-Theme = unveroeffentlichte Kopie des Entwurfs, Branch feature/shop-qualitaet. Erstbefund: docs/analyse/qualitaet-erstbefund-2026-09-11.md. Live-Theme wird nicht angefasst, nichts wird veroeffentlicht.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T11:20:38Z",
+      "updated_at": "2026-09-11T11:20:39Z",
+      "closed_at": null
+    },
     {
       "number": 193,
       "title": "Mobiles Menue neu gliedern: Vinyl und Bodenleisten, Desktop und Handy angleichen",
