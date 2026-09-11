@@ -1,0 +1,50 @@
+{
+  "_comment": "Reichweite je Gebinde (m2) fuer Zubehoer ohne Flaeche in der Bezeichnung. Erhoben 2026-09-11 ueber die Admin API (nur lesend) aus den eigenen Produktbeschreibungen. Zielfeld: Varianten-Metafeld custom.reichweite_m2 (number_decimal), Definition in metafeld-definitionen.json. NICHT geschrieben. reichweite_m2 ist das Zielfeld und bleibt null, solange der Inhaber den Wert nicht freigegeben hat; vorschlag_m2 ist nur ein Vorschlag mit offengelegter Grundlage.",
+  "metafeld": "custom.reichweite_m2",
+  "stand": "2026-09-11",
+  "status_bedeutung": {
+    "belegt": "Herstellerangabe nennt genau einen Wert je Gebinde - nach Freigabe in reichweite_m2 uebernehmen",
+    "freigabe_noetig": "Wert ist aus der Beschreibung ableitbar, aber mit 'ca.', als Spanne, ohne klaren Bezug oder aus einem Verbrauch je m2 gerechnet - der Inhaber entscheidet",
+    "mehrdeutig": "mehrere Verbrauchswerte je Zahnung bzw. Belagsart - ohne verbindliche Wahl durch den Inhaber kein Rechner",
+    "fehlt": "Beschreibung nennt keine Reichweite - Herstellerangabe liefern",
+    "widerspruch": "Angaben in der Bezeichnung widersprechen sich - Bezeichnung korrigieren, dann rechnet der Block wieder ueber sie",
+    "bezeichnung": "der Block rechnet bereits ueber die Variantenbezeichnung - kein Metafeld noetig"
+  },
+  "varianten": [
+    { "handle": "designbodenpflege-matt", "variante": "5 l", "variantId": "gid://shopify/ProductVariant/60707937911118", "status": "freigabe_noetig", "reichweite_m2": null, "vorschlag_m2": "100", "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 100 m²', 'Gebinde 5 l'", "offen": "Wortlaut nennt keinen Bezug. Bestaetigen, dass ein 5-l-Gebinde fuer eine Pflegeschicht auf etwa 100 m² reicht." },
+    { "handle": "teppichreiniger-konzentrat", "variante": "750 ml", "variantId": "gid://shopify/ProductVariant/60707918872910", "status": "freigabe_noetig", "reichweite_m2": null, "vorschlag_m2": "60", "angabe": "eigene Produktbeschreibung: '750 ml reichen für 60 bis 70 m²'", "offen": "Spanne. Vorschlag ist die untere Grenze, damit die bestellte Menge eher reicht." },
+    { "handle": "pu-reiniger-fuer-hartboeden", "variante": "750 ml", "variantId": "gid://shopify/ProductVariant/60707937812814", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "pu-reiniger-fuer-hartboeden", "variante": "5 l", "variantId": "gid://shopify/ProductVariant/60707937845582", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "pu-reiniger-fuer-hartboeden", "variante": "10 l", "variantId": "gid://shopify/ProductVariant/60707937878350", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "laminat-reiniger", "variante": "750 ml", "variantId": "gid://shopify/ProductVariant/60707936993614", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "laminat-reiniger", "variante": "5 l", "variantId": "gid://shopify/ProductVariant/60707937026382", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "fussbodenreiniger-fuer-die-taegliche-reinigung", "variante": "10 l", "variantId": "gid://shopify/ProductVariant/60707918676302", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "fussbodenreiniger-fuer-die-taegliche-reinigung", "variante": "5 l", "variantId": "gid://shopify/ProductVariant/60707918709070", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "fussbodenreiniger-fuer-die-taegliche-reinigung", "variante": "2,5 l", "variantId": "gid://shopify/ProductVariant/60707918741838", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "fussbodenreiniger-fuer-die-taegliche-reinigung", "variante": "750 ml", "variantId": "gid://shopify/ProductVariant/60707918774606", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "pu-reiniger-fuer-designboeden", "variante": "5 l", "variantId": "gid://shopify/ProductVariant/60707918348622", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "pu-reiniger-fuer-designboeden", "variante": "800 ml", "variantId": "gid://shopify/ProductVariant/60707918381390", "status": "fehlt", "reichweite_m2": null, "angabe": "keine Reichweite in der Beschreibung" },
+    { "handle": "dispersionsgrundierung-fuer-spachtelmassen", "variante": "10 kg", "variantId": "gid://shopify/ProductVariant/60707836789070", "status": "freigabe_noetig", "reichweite_m2": null, "vorschlag_m2": "66", "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 150 g/m²', 'Gebinde 10 kg'", "offen": "Gerechnet: 10 kg / 0,15 kg/m² = 66,7 m², abgerundet. Der Verbrauch einer Grundierung haengt an der Saugfaehigkeit des Untergrunds." },
+    { "handle": "linoleumklebstoff", "variante": "18 kg", "variantId": "gid://shopify/ProductVariant/60707812245838", "status": "freigabe_noetig", "reichweite_m2": null, "vorschlag_m2": "40", "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 450 g/m²', 'Gebinde 18 kg'", "offen": "Gerechnet: 18 kg / 0,45 kg/m² = 40 m². Nur eine Zeile genannt, die Nummerierung deutet aber auf eine Zahnung hin, die im Shop nicht erklaert ist." },
+    { "handle": "haftfixierung-fuer-designboeden", "variante": "RollFix 10 kg", "variantId": "gid://shopify/ProductVariant/60707812704590", "status": "freigabe_noetig", "reichweite_m2": null, "vorschlag_m2": "125", "angabe": "eigene Produktbeschreibung: '80 g/m² RollFix-Verbrauch'", "offen": "Gerechnet: 10 kg / 0,08 kg/m² = 125 m². Der Vorstrich ist in dieser Variante nicht enthalten - klaeren, ob die Mengenhilfe hier ueberhaupt passt." },
+    { "handle": "haftfixierung-fuer-designboeden", "variante": "Set - 125 qm, 16 kg", "variantId": "gid://shopify/ProductVariant/60707812737358", "status": "bezeichnung", "reichweite_m2": null, "angabe": "Variantenbezeichnung 'Set - 125 qm, 16 kg'" },
+    { "handle": "dispersionsfixierung-wasserabloesbar", "variante": "3 kg", "variantId": "gid://shopify/ProductVariant/60707836723534", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 100-200 g/m² 2.) 150-200 g/m² 3.) 250-300 g/m² 4.) 350 g/m²'" },
+    { "handle": "dispersionsfixierung-wasserabloesbar", "variante": "12 kg", "variantId": "gid://shopify/ProductVariant/60707836756302", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "wie 3 kg" },
+    { "handle": "nass-und-haftklebstoff-fuer-elastische-belaege", "variante": "14 kg", "variantId": "gid://shopify/ProductVariant/60707812606286", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 250-300 g/m² 2.) 300-350 g/m² 3.) 200-250 g/m²'" },
+    { "handle": "nass-und-haftklebstoff-fuer-elastische-belaege", "variante": "2 kg", "variantId": "gid://shopify/ProductVariant/60707812639054", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "wie 14 kg" },
+    { "handle": "nass-und-haftklebstoff-fuer-elastische-belaege", "variante": "6 kg", "variantId": "gid://shopify/ProductVariant/60707812671822", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "wie 14 kg" },
+    { "handle": "textilbelagsklebstoff", "variante": "18 kg", "variantId": "gid://shopify/ProductVariant/60707812540750", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 300 g/m² 2.) 400 g/m² 3.) 500 g/m²'" },
+    { "handle": "designbelagsklebstoff-fuer-vinyl-und-lvt", "variante": "14 kg", "variantId": "gid://shopify/ProductVariant/60707797074254", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 280 g/m² 2.) 320 g/m²'" },
+    { "handle": "universalklebstoff-fuer-teppich-pvc-und-cv", "variante": "18 kg", "variantId": "gid://shopify/ProductVariant/60707797041486", "status": "mehrdeutig", "reichweite_m2": null, "angabe": "eigene Produktbeschreibung: 'Verbrauch ca. 1.) 300 g/m² 2.) 350 g/m² 3.) 450 g/m²'" },
+    { "handle": "trockenklebstoff-fuer-bahnenware-rolle-75-cm", "variante": "Rolle 75 cm × 25 m (20 m²)", "variantId": "gid://shopify/ProductVariant/60707968483662", "status": "widerspruch", "reichweite_m2": null, "angabe": "Variantenbezeichnung und Beschreibung: 75 cm × 25 m ergibt 18,75 m², genannt sind 20 m²", "offen": "Breite, Laenge oder Flaeche ist falsch. Bis 2026-09-11 rechnete die Mengenhilfe mit 20 m² - bei 40 m² Bedarf haette der Kunde 2 Rollen fuer tatsaechlich 37,5 m² bekommen." }
+  ],
+  "ohne_rechner": [
+    { "handle": "blitzspachtel-zementaer-schnell", "grund": "Verbrauch je mm Schichtdicke - braucht eine zweite Eingabe, die der Kunde nicht kennt" },
+    { "handle": "spachtelmasse-zementaer-selbstverlaufend", "grund": "Verbrauch je mm Schichtdicke - braucht eine zweite Eingabe, die der Kunde nicht kennt" },
+    { "handle": "acryl-dichtstoff-ueberstreichbar-310-ml", "grund": "Spanne in lfm und nur fuer ein bestimmtes Fugenmass ('bei 5 x 5 mm ca. 12 - 15 lfm pro Kartusche')" },
+    { "handle": "silikon-dichtstoff-dauerelastisch-310-ml", "grund": "Spanne in lfm und nur fuer ein bestimmtes Fugenmass ('bei 5 x 5 mm ca. 12 - 15 lfm pro Kartusche')" },
+    { "handle": "sauberlaufmatte-135-205-cm", "grund": "Stueckware mit festem Mass - ein Stueck ist ein Stueck" },
+    { "handle": "sauberlaufmatte-90-155-cm", "grund": "Stueckware mit festem Mass - ein Stueck ist ein Stueck" },
+    { "handle": "sauberlaufmatte-55-90-cm", "grund": "Stueckware mit festem Mass - ein Stueck ist ein Stueck" }
+  ]
+}

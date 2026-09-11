@@ -1,0 +1,25 @@
+{
+  "_comment": "Vorbereitete Metafeld-Definitionen fuer die Mengenhilfe in blocks/tp-zubehoer-menge.liquid (Issue #121). Stand 2026-09-11. NICHT in Shopify angelegt - Anlage und Befuellung erst nach Freigabe durch den Inhaber. Solange ein Feld fehlt oder leer ist, rendert der Block fuer das betroffene Produkt still nichts. Die Mutation zum Anlegen im Schema des Shopify-MCP nachschlagen, nicht raten.",
+  "definitionen": [
+    {
+      "namespace": "custom",
+      "key": "bandlaenge",
+      "name": "Bandlänge (m)",
+      "ownerType": "PRODUCT",
+      "type": "number_decimal",
+      "description": "Länge einer Rolle in Metern bei Klebe- und Verlegebändern, die je Rolle verkauft werden. Gilt für alle Varianten (Breiten) des Produkts. Grundlage für die Mengenhilfe auf der Produktseite.",
+      "validations": [{ "name": "min", "value": "0.1" }],
+      "quelldaten": "bandlaenge.json"
+    },
+    {
+      "namespace": "custom",
+      "key": "reichweite_m2",
+      "name": "Reichweite je Gebinde (m²)",
+      "ownerType": "PRODUCTVARIANT",
+      "type": "number_decimal",
+      "description": "Fläche in m², für die ein Gebinde dieser Variante laut Herstellerangabe reicht. Genau ein verbindlicher Wert - keine Spanne, kein Mittelwert aus mehreren Verbrauchsangaben. Leer lassen, wenn die Angabe fehlt oder mehrdeutig ist; dann zeigt die Produktseite keinen Rechner.",
+      "validations": [{ "name": "min", "value": "0.1" }],
+      "quelldaten": "reichweite.json"
+    }
+  ]
+}
