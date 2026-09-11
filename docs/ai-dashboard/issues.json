@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T19:56:38.152Z",
+  "generated_at": "2026-09-11T20:11:23.724Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 76,
+  "count": 77,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T19:56:38.152Z",
+    "fetchedAt": "2026-09-11T20:11:23.724Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,12 +63,37 @@
   },
   "issues": [
     {
+      "number": 217,
+      "title": "Branch analyse/wettbewerb-kaufpfad nach main mergen (Startseite, Service- und Verlegeseiten)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/217",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p2",
+        "area:content"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "10 ungemergte Commits (Startseite zwei Einstiege, Serviceseiten, Verlegeseiten fuer Ads-Traffic, Analyse-Doku). Konflikte mit #191/#213 nach deren Vorgabe aufgeloest: Verlegeservice-Seite und Konditionen aus main (Regel 2026-09-11).",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T20:11:11Z",
+      "updated_at": "2026-09-11T20:11:12Z",
+      "closed_at": null
+    },
+    {
       "number": 206,
       "title": "Bildqualitaetstest: Filz-Test misst KI-erzeugte Raender nicht",
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/206",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p2",
         "area:produktdaten"
@@ -77,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "domains/shopify/bild-qualitaetstest.py misst die Struktur nur im Rechteck der Quelle. Mit --ausgabe sind das die zurueckgesetzten Originalpixel; die KI-erzeugten Raender werden nie auf Filz geprueft und ein solches Komposit gilt als ANGENOMMEN. Die Datei lag seit 2026-09-09 nur unversioniert im Hauptcheckout.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:41:02Z",
-      "updated_at": "2026-09-11T19:56:24Z",
+      "updated_at": "2026-09-11T19:56:41Z",
       "closed_at": "2026-09-11T19:56:24Z"
     },
     {
@@ -93,7 +118,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/205",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:bug",
         "priority:p2",
         "area:technik"
@@ -102,14 +127,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Eine reine Frage (enthielt 'erstellen' und 'loeschen') lief ueber die Wortliste in claude-bridge.mjs als IMPLEMENTATION; der Codex-Stop-Review verlangte drei Runden lang Code und das Loeschen einer Datei, die schon vor Sitzungsbeginn unversioniert im Working Tree lag. Fix: konservative Fragenerkennung, Review bei Fragen nur bei eigenen Aenderungen, Baseline vorbestehender Dateien im Review-Scope.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:41:00Z",
-      "updated_at": "2026-09-11T19:56:32Z",
+      "updated_at": "2026-09-11T19:56:46Z",
       "closed_at": "2026-09-11T19:56:32Z"
     },
     {
@@ -225,13 +250,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:20:50Z",
-      "updated_at": "2026-09-11T18:21:48Z",
+      "updated_at": "2026-09-11T20:02:58Z",
       "closed_at": null
     },
     {
