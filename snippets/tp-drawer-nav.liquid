@@ -228,7 +228,15 @@
       var target = new URL(anchor.href, location.href);
       if (!target.hash || target.pathname !== location.pathname) return;
       var drawer = anchor.closest('header-drawer');
-      if (drawer && typeof drawer.close === 'function') drawer.close();
+      if (drawer && typeof drawer.close === 'function') {
+        drawer.close();
+        // Solange das Menue schliesst, ist die Seite gesperrt, und die Sperre setzt
+        // die Scrollposition danach zurueck - das Ergebnis blieb unter dem Hero
+        // unsichtbar. Nach dem Schliessen das Sprungziel deshalb erneut melden.
+        setTimeout(function () {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }, 500);
+      }
     });
   }
 </script>
