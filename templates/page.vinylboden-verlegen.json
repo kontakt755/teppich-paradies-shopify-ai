@@ -182,25 +182,18 @@
         "versand_link": "/collections/all"
       },
       "blocks": {
-        "stufe_15km": {
-          "type": "leistung",
-          "settings": {
-            "label": "Im Umkreis von 15 km",
-            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
-          }
-        },
-        "stufe_649": {
-          "type": "leistung",
-          "settings": {
-            "label": "Ab 649 € Warenwert",
-            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
-          }
-        },
         "stufe_50km": {
           "type": "leistung",
           "settings": {
-            "label": "Bis 50 km um Oranienburg",
-            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+            "label": "Bis [km] km um Oranienburg",
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
+          }
+        },
+        "stufe_weiter": {
+          "type": "leistung",
+          "settings": {
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
           }
         },
         "stufe_versand": {
@@ -212,9 +205,8 @@
         }
       },
       "block_order": [
-        "stufe_15km",
-        "stufe_649",
         "stufe_50km",
+        "stufe_weiter",
         "stufe_versand"
       ]
     }

@@ -280,6 +280,12 @@
               },
               "blocks": {}
             },
+            "tp_verlegeservice_hinweis": {
+              "type": "tp-verlegeservice-hinweis",
+              "name": "TP Verlegehinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
@@ -338,6 +344,7 @@
             "tp_rollware_rechner_sales1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
+            "tp_verlegeservice_hinweis",
             "text_aEtTtq",
             "ai_gen_block_b888d9b_CJbJ8X"
           ]

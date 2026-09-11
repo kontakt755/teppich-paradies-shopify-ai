@@ -21,10 +21,18 @@
  * Kontaktwege stehen unabhaengig davon.
  *
  * Jede Antwort fuehrt weiter, keine endet in einer Absage. Wer im Gebiet
- * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, sieht den Weg in
- * den Shop: der Verlegeservice endet bei 50 km, der Versand nicht - das
- * Sortiment geht deutschlandweit. Ohne diesen zweiten Weg waere die Pruefung
- * fuer jeden ausserhalb eine Absage, obwohl er bestellen koennte.
+ * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, bekommt weder eine
+ * Absage noch eine Zusage: zuerst den Weg zur Anfrage - wir pruefen den
+ * Einzelfall -, dann den in den Shop, denn der Versand endet nicht an der
+ * Grenze des Verlegegebiets.
+ *
+ * Auf Teppichboden-Seiten gibt die Sektion zusaetzlich die Zonen und Preise
+ * des Rollenware-Service mit (data-basis, data-mitte, data-schwelle,
+ * data-preis-*, data-lose aus den Theme-Einstellungen). Dann nennt ein
+ * Treffer im Gebiet, was dort gilt: in der ersten Zone ab der Schwelle
+ * kostenlos, sonst die Pauschale der Zone. Auf Vinyl- und Treppenseiten
+ * fehlen die Attribute - dort gilt der Rollenware-Service nicht, und es wird
+ * nichts davon versprochen.
  *
  * Jede Abfrage traegt eine laufende Nummer. Die Tabelle wird beim ersten
  * Absenden geladen, das kann dauern; wer in der Zwischenzeit weitertippt oder
@@ -57,12 +65,28 @@
       return 'Die Postleitzahl ' + code + ' kennen wir nicht. Bitte prüfen Sie die Eingabe.';
     },
     aussen: function (was) {
-      return was + ' liegt außerhalb unseres Verlegegebiets. Ihren Boden liefern wir trotzdem – deutschlandweit. Für eine Verlegung fragen Sie uns gern an.';
+      return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
     },
+    // Unter der Schwelle kostet auch in der ersten Zone die lose Verlegung -
+    // steht nur die Anfahrt da, liest man sie als inklusive.
+    zoneNah: function (s) {
+      return 'Ab ' + s.schwelle + ' € Warenwert sind Lieferung und lose Verlegung hier kostenlos, darunter berechnen wir ' + s.preisNah + ' für Lieferung und Anfahrt und ' + losePreis(s) + ' für die lose Verlegung.';
+    },
+    zone: function (preis, s) {
+      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + losePreis(s) + '.';
+    },
+    zoneOffen: 'Was Lieferung und Verlegung kosten, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.',
+    anfragen: 'Individuell anfragen',
     leer: 'Bitte geben Sie eine Postleitzahl oder einen Ort ein.',
     unbekannt: 'Diesen Ort kennen wir nicht. Bitte geben Sie Ihre Postleitzahl ein – oder fragen Sie uns einfach direkt an.',
     fehler: 'Die Prüfung ist gerade nicht möglich. Fragen Sie uns einfach direkt an – wir sagen Ihnen, ob wir zu Ihnen kommen.'
   };
+
+  /* Preis der losen Verlegung samt Mindestbetrag - wie in der Preistabelle
+     der Serviceseite. */
+  function losePreis(s) {
+    return s.loseMindest ? s.lose + ' (mind. ' + s.loseMindest + ')' : s.lose;
+  }
 
   function normalisieren(wert) {
     return wert
@@ -92,11 +116,26 @@
     return sektion._tpVgDaten;
   }
 
+  /* Die Zone des Rollenware-Service fuer eine Spanne, als angehaengter Satz.
+     Liegt die Spanne in zwei Zonen, wird kein Preis genannt, sondern nach der
+     PLZ gefragt - "kostenlos" fuer einen Ortsteil, in dem es nicht gilt,
+     waere eine falsche Zusage. */
+  function zone(nah, fern, s) {
+    if (!s) return '';
+    if (fern <= s.basis) return ' ' + TEXTE.zoneNah(s);
+    if (nah > s.basis && fern <= s.mitte) return ' ' + TEXTE.zone(s.preisMitte, s);
+    if (nah > s.mitte) return ' ' + TEXTE.zone(s.preisFern, s);
+    return ' ' + TEXTE.zoneOffen;
+  }
+
+  /* Angezeigte Entfernung: aufgerundet, die Zone rechnet mit den genauen
+     Werten. Gerundet stand bei 15,4 km "rund 15 km" neben dem Preis der
+     zweiten Zone, obwohl die Seite "bis 15 km kostenlos" sagt. */
   function entfernung(spanne) {
-    var von = Math.round(spanne[0]);
-    var bis = Math.round(spanne[1]);
+    var von = Math.ceil(spanne[0]);
+    var bis = Math.ceil(spanne[1]);
     if (bis - von > 5) return 'je nach Lage ' + von + ' bis ' + bis + ' km';
-    return 'rund ' + Math.round((spanne[0] + spanne[1]) / 2) + ' km';
+    return 'rund ' + Math.ceil((spanne[0] + spanne[1]) / 2) + ' km';
   }
 
   function gueltigePlz(code, daten) {
@@ -110,16 +149,17 @@
   }
 
   /* Eine Spanne [naechster, entferntester] gegen den Radius. Eine angehaengte 1
-     heisst: mehrere Orte dieses Namens. */
-  function einordnen(was, spanne, radius, istPlz) {
-    if (spanne[1] <= radius) return { status: 'innen', text: TEXTE.innen(was, entfernung(spanne)) };
+     heisst: mehrere Orte dieses Namens. Im Gebiet haengt die Zone des
+     Rollenware-Service an, wenn die Sektion sie mitgibt. */
+  function einordnen(was, spanne, radius, istPlz, stufen) {
+    if (spanne[1] <= radius) return { status: 'innen', text: TEXTE.innen(was, entfernung(spanne)) + zone(spanne[0], spanne[1], stufen) };
     if (spanne[0] > radius) return { status: 'aussen', text: TEXTE.aussen(was) };
     if (spanne[2] === 1) return { status: 'mehrdeutig', text: TEXTE.mehrdeutig(was) };
     return { status: 'rand', text: istPlz ? TEXTE.randPlz(was) : TEXTE.rand(was) };
   }
 
   /* Liefert {status, text} - die Entscheidung steckt hier, nicht in der Ausgabe. */
-  function bewerten(eingabe, daten, radius) {
+  function bewerten(eingabe, daten, radius, stufen) {
     var roh = eingabe.trim();
     if (!roh) return { status: '', text: TEXTE.leer };
 
@@ -128,7 +168,7 @@
       var code = plz[1];
       var spanne = daten.plz[code];
       if (typeof spanne === 'number') spanne = [spanne, spanne];
-      if (spanne) return einordnen(code, spanne, radius, true);
+      if (spanne) return einordnen(code, spanne, radius, true, stufen);
       // Nicht in der Tabelle: entweder weit weg oder gar keine Postleitzahl.
       return gueltigePlz(code, daten)
         ? { status: 'aussen', text: TEXTE.aussen(code) }
@@ -137,7 +177,7 @@
 
     var eintrag = daten.orte[normalisieren(roh)];
     if (!eintrag) return { status: 'unbekannt', text: TEXTE.unbekannt };
-    return einordnen(roh.replace(/\s+/g, ' '), eintrag, radius, false);
+    return einordnen(roh.replace(/\s+/g, ' '), eintrag, radius, false, stufen);
   }
 
   function anzeigen(feld, status, text) {
@@ -145,25 +185,45 @@
     feld.textContent = text;
   }
 
-  /* Je Ergebnis ein anderer Weg: im Gebiet und am Rand zur Anfrage - am Rand
-     sagt der Text ohnehin "fragen Sie uns" -, ausserhalb in den Shop. Bei
-     einem mehrdeutigen oder unverstandenen Namen keiner: dort ist noch nichts
-     entschieden, und ein Angebot waere geraten. */
+  /* Je Ergebnis ein anderer Weg. Im Gebiet und am Rand zur Anfrage - am Rand
+     sagt der Text ohnehin "fragen Sie uns". Ausserhalb erst die Anfrage - wir
+     pruefen den Einzelfall -, dann der Shop. Bei einem mehrdeutigen oder
+     unverstandenen Namen keiner: dort ist noch nichts entschieden, und ein
+     Angebot waere geraten. */
   function wegAnzeigen(feld, formular, status) {
-    var anfragen = status === 'innen' || status === 'rand';
-    var ziel = anfragen ? formular.dataset.ctaUrl : formular.dataset.versandUrl;
-    var text = anfragen ? formular.dataset.ctaText : formular.dataset.versandText;
-    if ((!anfragen && status !== 'aussen') || !ziel || !text) {
-      feld.hidden = true;
-      feld.textContent = '';
-      return;
+    var d = formular.dataset;
+    var wege = [];
+    if ((status === 'innen' || status === 'rand') && d.ctaUrl && d.ctaText) wege.push([d.ctaUrl, d.ctaText]);
+    if (status === 'aussen') {
+      if (d.ctaUrl) wege.push([d.ctaUrl, TEXTE.anfragen]);
+      if (d.versandUrl && d.versandText) wege.push([d.versandUrl, d.versandText]);
     }
-    var link = document.createElement('a');
-    link.href = ziel;
-    link.textContent = text + ' \u2192';
     feld.textContent = '';
-    feld.appendChild(link);
-    feld.hidden = false;
+    feld.hidden = wege.length === 0;
+    wege.forEach(function (weg) {
+      var link = document.createElement('a');
+      link.href = weg[0];
+      link.textContent = weg[1] + ' →';
+      feld.appendChild(link);
+    });
+  }
+
+  /* Zonen und Preise aus den data-Attributen der Sektion - nur vorhanden,
+     wenn dort rollenware_stufen eingeschaltet ist. */
+  function stufenLesen(d, radius) {
+    var basis = parseFloat(d.basis);
+    if (!isFinite(basis)) return null;
+    var mitte = parseFloat(d.mitte);
+    return {
+      basis: basis,
+      mitte: isFinite(mitte) ? mitte : radius,
+      schwelle: d.schwelle || '',
+      preisNah: d.preisNah || '',
+      preisMitte: d.preisMitte || '',
+      preisFern: d.preisFern || '',
+      lose: d.lose || '',
+      loseMindest: d.loseMindest || ''
+    };
   }
 
   function verdrahten(formular) {
@@ -177,6 +237,7 @@
 
     var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
+    var stufen = stufenLesen(sektion.dataset, radius);
     var lauf = 0;
     formular.hidden = false;
 
@@ -192,7 +253,7 @@
       tabelleLaden(sektion).then(
         function (daten) {
           if (meine !== lauf) return;
-          var ergebnis = bewerten(wert, daten, radius);
+          var ergebnis = bewerten(wert, daten, radius, stufen);
           anzeigen(ausgabe, ergebnis.status, ergebnis.text);
           if (weg) wegAnzeigen(weg, formular, ergebnis.status);
         },
