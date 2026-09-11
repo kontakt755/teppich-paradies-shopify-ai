@@ -51,14 +51,16 @@
     "tp_verlegeservice": {
       "type": "tp-verlegeservice",
       "settings": {
-        "eyebrow": "Verlegeservice für Rollenware",
-        "heading": "Rollenware kaufen – Lieferung & Verlegung gleich mit erledigt.",
-        "sub": "Wir liefern Ihren neuen Teppichboden und verlegen ihn auf Wunsch direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg.",
+        "eyebrow": "Liefer- & Verlegeservice für Rollenware",
+        "heading": "Teppichboden kaufen – Lieferung & Verlegung gleich mit erledigt.",
+        "sub": "Wir liefern Ihren neuen Teppichboden und verlegen ihn direkt bei Ihnen zu Hause – in Oranienburg, Berlin und Brandenburg.",
         "image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
         "produkte_link": "shopify://collections/teppichboden",
         "color_scheme": "scheme-1",
         "padding-block-start": 24,
-        "padding-block-end": 40
+        "padding-block-end": 40,
+        "knopf": "Teppichboden entdecken",
+        "vertrauen": "Persönliche Beratung im Geschäft · Aufmaß vor Ort · Eigenes Verlegeteam aus Oranienburg"
       }
     },
     "tp_verlegegebiet": {
@@ -81,53 +83,50 @@
     "tp_verlegeservice_kontakt": {
       "type": "tp-verlegeservice-kontakt",
       "settings": {
-        "kontakt_link": "/pages/kontakt"
-      }
-    },
-    "kundenbilder": {
-      "type": "kundenbilder-grid",
-      "name": "Kundenbilder Grid",
+        "kontakt_link": "/pages/kontakt",
+        "vertrauen": "",
+        "referenzen_titel": "Echte Arbeiten aus der Region"
+      },
       "blocks": {
-        "bild_kadewe": {
-          "type": "kundenbild",
+        "ref_kadewe": {
+          "type": "referenz",
           "settings": {
-            "image": "shopify://shop_images/1000008785.jpg",
-            "caption": "KaDeWe - Premium Teppichboden",
+            "bild": "shopify://shop_images/1000008785.jpg",
+            "unterschrift": "KaDeWe – Premium-Teppichboden",
             "alt": "Premium-Teppichboden im KaDeWe"
           }
         },
-        "bild_dachgeschoss": {
-          "type": "kundenbild",
+        "ref_dachgeschoss": {
+          "type": "referenz",
           "settings": {
-            "image": "shopify://shop_images/20231129_114941.jpg",
-            "caption": "Dachgeschoss mit gemütlichem Teppichboden",
+            "bild": "shopify://shop_images/20231129_114941.jpg",
+            "unterschrift": "Dachgeschoss mit gemütlichem Teppichboden",
             "alt": "Teppichboden in einem Dachgeschoss"
           }
         },
-        "bild_treppe": {
-          "type": "kundenbild",
+        "ref_treppe": {
+          "type": "referenz",
           "settings": {
-            "image": "shopify://shop_images/20231129_114732.jpg",
-            "caption": "Stufen und Podest verkleiden",
+            "bild": "shopify://shop_images/20231129_114732.jpg",
+            "unterschrift": "Stufen und Podest verkleidet",
             "alt": "Mit Teppichboden verkleidete Stufen und Podest"
           }
         },
-        "bild_nadelvlies": {
-          "type": "kundenbild",
+        "ref_nadelvlies": {
+          "type": "referenz",
           "settings": {
-            "image": "shopify://shop_images/image-3-compressed.jpg",
-            "caption": "Nadelvlies - über 2.000 m²",
+            "bild": "shopify://shop_images/image-3-compressed.jpg",
+            "unterschrift": "Nadelvlies – über 2.000 m²",
             "alt": "Nadelvlies auf einer großen Fläche"
           }
         }
       },
       "block_order": [
-        "bild_kadewe",
-        "bild_dachgeschoss",
-        "bild_treppe",
-        "bild_nadelvlies"
-      ],
-      "settings": {}
+        "ref_kadewe",
+        "ref_dachgeschoss",
+        "ref_treppe",
+        "ref_nadelvlies"
+      ]
     },
     "google_bewertungen": {
       "type": "google",
@@ -139,7 +138,6 @@
     "tp_verlegeservice",
     "tp_verlegegebiet",
     "tp_verlegeservice_kontakt",
-    "kundenbilder",
     "google_bewertungen"
   ]
 }

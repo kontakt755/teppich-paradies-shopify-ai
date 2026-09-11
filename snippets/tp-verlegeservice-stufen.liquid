@@ -1,17 +1,22 @@
 {% doc %}
-  Die zwei Stufen des Verlegeservice fuer Rollenware als Karten: unter und ab
+  Die zwei Stufen des Verlegeservice fuer Rollenware als Karten: ab und unter
   der Warenwert-Schwelle.
 
   Regel (Vorgabe des Inhabers, 2026-09-11): kostenlos sind Lieferung und lose
   Verlegung nur ab der Schwelle UND innerhalb der kostenlosen Zone. Alles
-  andere kostet einen festen, vorab genannten Preis - Lieferung und Anfahrt
-  nach Zonen, lose Verlegung je m2 mit Mindestbetrag.
+  andere kostet einen festen, vorab genannten Preis.
 
-  Unter der Schwelle sind die Preise mit Band, Fluessigfixierung und Kleber
-  Komplettpreise inklusive Verlegung, ab der Schwelle Aufpreise zur losen
-  Verlegung. Deshalb stehen sie nicht als "statt"-Paar nebeneinander: direkt
-  vergleichbar sind sie nur in der kostenlosen Zone - das zeigt der
-  Beispielsatz unter der Tabelle der Serviceseite.
+  Die Karten fassen zusammen, die Preistabelle der Serviceseite nennt jede
+  Zone und jede Verlegeart einzeln. Vorher standen alle Preise in beiden -
+  die Karten wurden zum Preisblatt, und dieselbe Zahl stand zweimal auf der
+  Seite. Deshalb hier nur drei Kernaussagen je Karte, mit "ab" fuer den
+  niedrigsten Wert: Anfahrt aus der ersten Zone, Verlegung mit Fixierung aus
+  dem Preis mit Band.
+
+  Reihenfolge: im Markup steht die bessere Stufe zuerst - am Telefon und fuer
+  Screenreader beginnt die Seite damit mit "kostenlos" statt mit "unter der
+  Schwelle". Am Desktop stellt CSS sie nach rechts, wie im Auftrag
+  vorgesehen.
 
   Hier steht keine Zahl. Schwelle, Zonen und Preise kommen aus den
   Theme-Einstellungen (Gruppe TP Verlegeservice).
@@ -28,81 +33,68 @@
   assign vss_ebene = ebene | default: 'h3'
   assign vss_schwelle = settings.tp_vs_schwelle
   assign vss_nah = settings.tp_vs_radius_basis
-  assign vss_mitte = settings.tp_vs_radius_mitte
-  assign vss_fern = settings.tp_vs_radius_premium
   assign vss_mindest = settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€'
 -%}
 
 <div class="tp-vs-stufen">
-  <article class="tp-vs-stufe">
-    <{{ vss_ebene }} class="tp-vs-stufe__titel">Unter {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
-    <p class="tp-vs-stufe__kern">Nichts inklusive – dafür faire Festpreise, vorab genannt.</p>
-
-    <p class="tp-vs-stufe__label">Lieferung &amp; Anfahrt</p>
-    <ul class="tp-vs-preise" role="list">
-      <li><span>bis {{ vss_nah }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</li>
-      <li><span>bis {{ vss_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
-      <li><span>bis {{ vss_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
-    </ul>
-
-    <p class="tp-vs-stufe__label">Verlegung</p>
-    <ul class="tp-vs-preise" role="list">
-      <li>
-        <span>Lose verlegt</span>
-        <span class="tp-vs-wert">
-          {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
-          <span class="tp-vs-klein">mind. {{ vss_mindest }}</span>
-        </span>
-      </li>
-      <li><span>Mit Verlegeband</span>{% render 'tp-vs-preis', wert: settings.tp_vs_band_basis %}</li>
-      <li><span>Mit Flüssigfixierung</span>{% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}</li>
-      <li><span>Vollflächig verklebt</span>{% render 'tp-vs-preis', wert: settings.tp_vs_kleber_basis %}</li>
-    </ul>
-    <p class="tp-vs-stufe__fuss">Preise mit Band, Flüssigfixierung und Kleber inklusive Verlegung.</p>
-
-    <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vss_link }}">Rollenware entdecken</a>
-  </article>
-
   <article class="tp-vs-stufe tp-vs-stufe--plus">
     <p class="tp-vs-stufe__abzeichen">Bester Service ab {{ vss_schwelle }}&nbsp;€</p>
     <{{ vss_ebene }} class="tp-vs-stufe__titel">Ab {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
 
-    <p class="tp-vs-stufe__label tp-vs-stufe__label--gratis">Bis {{ vss_nah }}&nbsp;km kostenlos</p>
-    <ul class="tp-vs-haken" role="list">
-      <li>{% render 'tp-vs-icon', name: 'check' %}Lieferung</li>
-      <li>{% render 'tp-vs-icon', name: 'check' %}Anfahrt</li>
-      <li>{% render 'tp-vs-icon', name: 'check' %}Lose Verlegung</li>
+    <div class="tp-vs-stufe__gratis">
+      <span class="tp-vs-stufe__gratis-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
+      <p><strong>Lieferung &amp; lose Verlegung kostenlos</strong> <span>im Umkreis von {{ vss_nah }}&nbsp;km</span></p>
+    </div>
+
+    <ul class="tp-vs-kurz" role="list">
+      <li>
+        <span>Fixierung &amp; Verklebung</span>
+        <span class="tp-vs-kurz__wert">vergünstigt ab {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}</span>
+      </li>
+      <li>
+        <span>Weiter als {{ vss_nah }}&nbsp;km</span>
+        <span class="tp-vs-kurz__wert">Lieferung ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</span>
+      </li>
     </ul>
 
-    <p class="tp-vs-stufe__label">Weiter als {{ vss_nah }}&nbsp;km</p>
-    <ul class="tp-vs-preise" role="list">
-      <li><span>Lieferung &amp; Anfahrt bis {{ vss_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
-      <li><span>Lieferung &amp; Anfahrt bis {{ vss_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
+    <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vss_link }}">Jetzt Rollenware auswählen</a>
+  </article>
+
+  <article class="tp-vs-stufe">
+    <{{ vss_ebene }} class="tp-vs-stufe__titel">Unter {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
+    <p class="tp-vs-stufe__kern">Faire Festpreise – vorab genannt, ohne Überraschungen.</p>
+
+    <ul class="tp-vs-kurz" role="list">
+      <li>
+        <span>Lieferung &amp; Anfahrt</span>
+        <span class="tp-vs-kurz__wert">ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</span>
+      </li>
       <li>
         <span>Lose Verlegung</span>
-        <span class="tp-vs-wert">
+        <span class="tp-vs-kurz__wert">
           {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
-          <span class="tp-vs-klein">mind. {{ vss_mindest }}</span>
+          <small>mind. {{ vss_mindest }}</small>
+        </span>
+      </li>
+      <li>
+        <span>Mit Fixierung oder Kleber</span>
+        <span class="tp-vs-kurz__wert">
+          ab {% render 'tp-vs-preis', wert: settings.tp_vs_band_basis -%}
+          <small>inkl. Verlegung</small>
         </span>
       </li>
     </ul>
 
-    <p class="tp-vs-stufe__label">Vergünstigte Fixierung – Aufpreis zur losen Verlegung</p>
-    <ul class="tp-vs-preise" role="list">
-      <li><span>Verlegeband</span>{% render 'tp-vs-preis', wert: settings.tp_vs_band_premium %}</li>
-      <li><span>Flüssigfixierung</span>{% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}</li>
-      <li><span>Vollflächige Verklebung</span>{% render 'tp-vs-preis', wert: settings.tp_vs_kleber_premium %}</li>
-    </ul>
-
-    <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vss_link }}">Jetzt Rollenware auswählen</a>
+    <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vss_link }}">Rollenware entdecken</a>
   </article>
 </div>
 
 {% stylesheet %}
   .tp-vs-stufen {
     --tp-vs-ton: 141 113 76;
+    --tp-vs-gruen: 29 107 71;
     --tp-vs-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
-    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: clamp(20px, 3vw, 32px);
@@ -110,12 +102,17 @@
     text-align: left;
   }
 
+  /* Am Desktop die bessere Stufe rechts (Auftrag), im Markup steht sie vorn. */
+  .tp-vs-stufen > .tp-vs-stufe--plus {
+    order: 2;
+  }
+
   .tp-vs-stufe {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: clamp(22px, 3vw, 32px);
+    gap: 14px;
+    padding: clamp(24px, 3vw, 34px);
     border: 1px solid var(--tp-vs-linie);
     border-radius: 16px;
     background: var(--color-background, #fff);
@@ -127,23 +124,24 @@
   .tp-vs-stufe--plus {
     border: 2px solid rgb(var(--tp-vs-ton) / 0.85);
     background:
-      linear-gradient(180deg, rgb(var(--tp-vs-ton) / 0.08), rgb(var(--tp-vs-ton) / 0.02) 55%),
+      linear-gradient(180deg, rgb(var(--tp-vs-ton) / 0.07), rgb(var(--tp-vs-ton) / 0.015) 60%),
       var(--color-background, #fff);
-    box-shadow: 0 12px 32px rgb(28 25 23 / 0.08);
+    box-shadow: 0 14px 36px rgb(28 25 23 / 0.08);
   }
 
   .tp-vs-stufe__abzeichen {
     position: absolute;
     top: 0;
-    left: clamp(22px, 3vw, 32px);
+    left: clamp(24px, 3vw, 34px);
     transform: translateY(-50%);
     margin: 0;
     padding: 6px 14px;
     border-radius: 999px;
     background: #8d714c;
     color: #fff;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
+    letter-spacing: 0.02em;
     line-height: 1.2;
     white-space: nowrap;
   }
@@ -152,93 +150,108 @@
     margin: 0;
     font-family: var(--font-heading--family, inherit);
     font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.6rem);
-    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
   }
 
   .tp-vs-stufe--plus .tp-vs-stufe__titel {
-    margin-top: 6px;
+    margin-top: 4px;
   }
 
   .tp-vs-stufe__kern {
     margin: 0;
+    color: var(--tp-vs-leise);
     font-size: 16px;
     line-height: 1.5;
   }
 
-  .tp-vs-stufe__label {
-    margin: 8px 0 0;
-    color: var(--tp-vs-leise);
-    font-size: 14px;
-    font-weight: 700;
+  /* Die Kernaussage der besseren Stufe in der hellgruenen Flaeche des Themes
+     (Farbschema 3) - dieselbe Farbe wie die Angebotsbox im Einstieg. */
+  .tp-vs-stufe__gratis {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #eef1ea;
+  }
+
+  .tp-vs-stufe__gratis p {
+    margin: 0;
+    font-size: 16px;
     line-height: 1.4;
   }
 
-  .tp-vs-stufe__label--gratis {
-    color: #1d6b47;
-    font-size: 17px;
+  .tp-vs-stufe__gratis strong {
+    display: block;
+    color: rgb(var(--tp-vs-gruen));
+    font-size: 18px;
+    font-weight: 700;
   }
 
-  .tp-vs-stufe__fuss {
-    margin: 0;
-    color: var(--tp-vs-leise);
-    font-size: 13px;
-    line-height: 1.45;
+  .tp-vs-stufe__gratis-zeichen {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgb(var(--tp-vs-gruen));
+    color: #fff;
   }
 
-  .tp-vs-haken,
-  .tp-vs-preise {
-    margin: 0;
+  .tp-vs-stufe__gratis-zeichen .tp-vs-icon {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.6;
+  }
+
+  .tp-vs-kurz {
+    margin: 0 0 6px;
     padding: 0;
     list-style: none;
   }
 
-  .tp-vs-haken li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 3px 0;
-    font-size: 17px;
-    line-height: 1.4;
-  }
-
-  .tp-vs-haken .tp-vs-icon {
-    width: 20px;
-    height: 20px;
-    color: #1d6b47;
-  }
-
-  .tp-vs-preise li {
+  .tp-vs-kurz li {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 2px 16px;
-    padding: 9px 0;
+    padding: 11px 0;
     border-top: 1px solid var(--tp-vs-linie);
     font-size: 16px;
     line-height: 1.4;
   }
 
-  .tp-vs-preise li:last-child {
+  .tp-vs-kurz li:last-child {
     border-bottom: 1px solid var(--tp-vs-linie);
   }
 
-  /* Bricht eine Zeile auf dem Telefon um, bleibt der Preis rechts stehen,
+  /* Bricht eine Zeile auf dem Telefon um, bleibt der Wert rechts stehen,
      statt unter den Namen nach links zu rutschen. */
-  .tp-vs-preise li > :last-child {
+  .tp-vs-kurz__wert {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     margin-left: auto;
     text-align: right;
   }
 
-  .tp-vs-wert {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
+  .tp-vs-kurz__wert small {
+    color: var(--tp-vs-leise);
+    font-size: 13px;
   }
 
   .tp-vs-preis {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+  }
+
+  .tp-vs-kurz .tp-vs-preis {
+    font-size: 17px;
   }
 
   .tp-vs-stufe--plus .tp-vs-preis {
@@ -251,14 +264,9 @@
     font-weight: 400;
   }
 
-  /* Knoepfe beider Karten auf einer Linie, egal wie lang die Listen sind. */
+  /* Knoepfe beider Karten auf einer Linie, egal wie lang der Inhalt ist. */
   .tp-vs-stufe .tp-vs-knopf {
     margin-top: auto;
-  }
-
-  .tp-vs-stufe > ul:last-of-type,
-  .tp-vs-stufe__fuss {
-    margin-bottom: 14px;
   }
 
   .tp-vs-knopf {
@@ -303,15 +311,15 @@
   }
 
   @media screen and (max-width: 749px) {
-    /* Untereinander braucht es mehr Abstand: das Abzeichen der zweiten Karte
-       ragt ueber ihren oberen Rand. */
+    /* Untereinander: die bessere Stufe zuerst (Markup-Reihenfolge), mehr
+       Abstand, weil das Abzeichen ueber den oberen Rand ragt. */
     .tp-vs-stufen {
       grid-template-columns: 1fr;
       gap: 34px;
     }
 
-    .tp-vs-haken li {
-      font-size: 16px;
+    .tp-vs-stufen > .tp-vs-stufe--plus {
+      order: 0;
     }
 
     .tp-vs-knopf {

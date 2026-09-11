@@ -1,12 +1,12 @@
 {% doc %}
   Linien-Icons fuer den Verlegeservice (Seite, Kontakt, Produkthinweis).
 
-  Das Icon-Snippet des Themes hat weder Telefon noch Brief, und Flaechen- und
-  Linien-Icons nebeneinander wirken unruhig - deshalb dieser kleine eigene
-  Satz. Nur WhatsApp kommt aus dem Theme, weil das Markenzeichen dort
-  gepflegt wird.
+  Das Icon-Snippet des Themes hat weder Telefon noch Brief noch Werkzeug, und
+  Flaechen- und Linien-Icons nebeneinander wirken unruhig - deshalb dieser
+  kleine eigene Satz im Stil der Startseite (Linie, runde Enden). Nur
+  WhatsApp kommt aus dem Theme, weil das Markenzeichen dort gepflegt wird.
 
-  @param {string} name - truck | check | info | phone | mail | chat | pin | whatsapp
+  @param {string} name - truck | check | info | phone | mail | chat | pin | whatsapp | schere | band | tropfen | spachtel | lineal
 {% enddoc %}
 
 {%- if name == 'whatsapp' -%}
@@ -30,6 +30,16 @@
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       {%- when 'pin' -%}
         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>
+      {%- when 'schere' -%}
+        <circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/>
+      {%- when 'band' -%}
+        <circle cx="10" cy="11" r="7"/><circle cx="10" cy="11" r="2.5"/><path d="M10 18h11.5"/>
+      {%- when 'tropfen' -%}
+        <path d="M12 2.8s-6.5 6.9-6.5 11.4a6.5 6.5 0 0 0 13 0C18.5 9.7 12 2.8 12 2.8z"/><path d="M9 14.5a3 3 0 0 0 3 3"/>
+      {%- when 'spachtel' -%}
+        <path d="M3 13h18v3.5l-1.5 1.5-1.5-1.5-1.5 1.5-1.5-1.5-1.5 1.5-1.5-1.5-1.5 1.5-1.5-1.5-1.5 1.5-1.5-1.5-1.5 1.5L3 16.5z"/><path d="M9 13V8a3 3 0 0 1 6 0v5"/>
+      {%- when 'lineal' -%}
+        <path d="M3.5 16.5 16.5 3.5l4 4-13 13z"/><path d="M7.5 12.5l2 2M10.5 9.5l2 2M13.5 6.5l2 2"/>
     {%- endcase -%}
   </svg>
 {%- endif -%}

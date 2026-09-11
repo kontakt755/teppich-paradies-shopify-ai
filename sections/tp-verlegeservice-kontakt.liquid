@@ -1,11 +1,17 @@
 {% comment %}
   Kontakt fuer alle, die weiter entfernt wohnen als das regulaere
   Liefergebiet reicht - und fuer jede andere Frage zum Verlegeservice.
+  Darunter echte Projektfotos als Bloecke (Referenzfoto).
 
   Weder Absage noch Zusage: wer ausserhalb wohnt, bekommt jeden Weg zu uns,
   und wir pruefen den Einzelfall. Dasselbe sagt das Ergebnis der
   Ortspruefung (assets/tp-verlegegebiet.js), damit Seite und Pruefung nicht
   zwei verschiedene Antworten geben.
+
+  Die Fotos ersetzen auf der Serviceseite das Modul "Kundenbilder": das hat
+  einen eigenen Stil (zentrierte Ueberschrift, feste Hoehe, Schatten) und
+  stapelt am Telefon jedes Bild in voller Breite. Hier stehen sie im Stil der
+  Seite, am Telefon zwei nebeneinander.
 
   Telefon, WhatsApp, E-Mail und Adresse kommen aus den Theme-Einstellungen,
   Gruppe TP Verlegeservice. "[km]" in Ueberschrift und Text ersetzt die
@@ -126,12 +132,38 @@
       {%- endif -%}
     </ul>
   </div>
+
+  {%- if section.blocks.size > 0 -%}
+    <div class="tp-vsk__referenzen">
+      {%- if section.settings.referenzen_titel != blank -%}
+        <p class="tp-vsk__eyebrow">Referenzen</p>
+        <h2 class="tp-vsk__ref-titel">{{ section.settings.referenzen_titel | escape }}</h2>
+      {%- endif -%}
+      <ul class="tp-vsk__ref-liste" role="list">
+        {%- for block in section.blocks -%}
+          {%- if block.settings.bild != blank -%}
+            {%- assign vk_alt = block.settings.alt | default: block.settings.unterschrift -%}
+            <li class="tp-vsk__ref" {{ block.shopify_attributes }}>
+              {{
+                block.settings.bild
+                | image_url: width: 800
+                | image_tag: widths: '320, 480, 640, 800', sizes: '(min-width: 990px) 260px, 50vw', alt: vk_alt, class: 'tp-vsk__ref-bild', loading: 'lazy'
+              }}
+              {%- if block.settings.unterschrift != blank -%}
+                <p class="tp-vsk__ref-text">{{ block.settings.unterschrift | escape }}</p>
+              {%- endif -%}
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </div>
+  {%- endif -%}
 </div>
 
 {% stylesheet %}
   .tp-vsk {
     --tp-vs-ton: 141 113 76;
-    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
   }
 
   .tp-vsk__kasten {
@@ -167,8 +199,10 @@
   .tp-vsk__titel {
     margin: 0;
     font-family: var(--font-heading--family, inherit);
-    font-size: clamp(1.45rem, 1.1rem + 1.4vw, 2rem);
-    line-height: 1.2;
+    font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.18;
     text-wrap: balance;
   }
 
@@ -176,6 +210,7 @@
     margin: 12px 0 0;
     font-size: 17px;
     line-height: 1.6;
+    text-wrap: pretty;
   }
 
   .tp-vsk__vertrauen {
@@ -192,7 +227,7 @@
     align-items: center;
     gap: 6px;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.4;
   }
 
@@ -300,9 +335,76 @@
     color: #1f9e53;
   }
 
+  /* Referenzen -------------------------------------------------------- */
+
+  .tp-vsk__referenzen {
+    max-width: 1080px;
+    margin: clamp(48px, 7vw, 72px) auto 0;
+  }
+
+  .tp-vsk__eyebrow {
+    margin: 0 0 10px;
+    color: #8d714c;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .tp-vsk__ref-titel {
+    margin: 0;
+    font-family: var(--font-heading--family, inherit);
+    font-size: clamp(1.4rem, 1.1rem + 1.2vw, 1.9rem);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+
+  .tp-vsk__ref-liste {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vsk__ref-bild {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 14px;
+    background: rgb(var(--tp-vs-ton) / 0.08);
+  }
+
+  .tp-vsk__ref-text {
+    margin: 8px 0 0;
+    color: var(--tp-vs-leise);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
   @media screen and (max-width: 749px) {
     .tp-vsk__kasten {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Zwei Fotos nebeneinander statt jedes in voller Breite: dieselben vier
+       Arbeiten auf einem Drittel der Hoehe. */
+    .tp-vsk__ref-liste {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .tp-vsk__ref-bild {
+      aspect-ratio: 1;
+    }
+
+    .tp-vsk__ref-text {
+      font-size: 13px;
     }
   }
 
@@ -363,6 +465,16 @@
     },
     {
       "type": "header",
+      "content": "Referenzfotos"
+    },
+    {
+      "type": "text",
+      "id": "referenzen_titel",
+      "label": "Überschrift über den Fotos",
+      "default": "Echte Arbeiten aus der Region"
+    },
+    {
+      "type": "header",
       "content": "Darstellung"
     },
     {
@@ -392,6 +504,31 @@
       "default": 56
     }
   ],
+  "blocks": [
+    {
+      "type": "referenz",
+      "name": "Referenzfoto",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "bild",
+          "label": "Foto"
+        },
+        {
+          "type": "text",
+          "id": "unterschrift",
+          "label": "Bildunterschrift"
+        },
+        {
+          "type": "text",
+          "id": "alt",
+          "label": "Alt-Text",
+          "info": "Beschreibt das Foto für Screenreader. Leer: die Bildunterschrift."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 8,
   "presets": [
     {
       "name": "TP Service-Kontakt"
