@@ -161,7 +161,7 @@
     "shipping_policy_html": "<a href=\"{{ link }}\">Versand</a> wird beim Checkout berechnet.",
     "taxes_included": "Inkl. MwSt.",
     "product_badge_sold_out": "Ausverkauft",
-    "product_badge_sale": "Sale",
+    "product_badge_sale": "Angebot",
     "search_input_label": "Suchen",
     "search_input_placeholder": "Suchen",
     "search_results": "Suchergebnisse",

@@ -60,12 +60,27 @@
         tabs.forEach(function (t) {
           var on = t === active;
           t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.setAttribute('tabindex', on ? '0' : '-1');
           var key = t.getAttribute('data-tp-target');
           var sec = document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
           if (sec) sec.hidden = !on;
         });
       }
       tabs.forEach(function (t) { t.addEventListener('click', function () { show(t); }); });
+      // Pfeiltasten, Pos1 und Ende wie bei role=tablist ueblich (Audit B-47)
+      tabs.forEach(function (t, i) {
+        t.addEventListener('keydown', function (e) {
+          var next = null;
+          if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+          else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+          else if (e.key === 'Home') next = tabs[0];
+          else if (e.key === 'End') next = tabs[tabs.length - 1];
+          if (!next) return;
+          e.preventDefault();
+          show(next);
+          next.focus();
+        });
+      });
       show(tabs[0]);
     });
   })();
