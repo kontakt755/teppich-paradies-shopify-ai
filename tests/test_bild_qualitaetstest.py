@@ -11,6 +11,7 @@ import contextlib
 import importlib.util
 import io
 import os
+import random
 import subprocess
 import sys
 import tempfile
@@ -58,6 +59,7 @@ QW, QH = 600, 400                 # Quelle
 STUFE = int(0.68 * QH)            # Zeile zwischen FLOR_HINTEN (bis 0,62) und FLOR_VORN (ab 0,75)
 GUT = 24                          # Amplitude vorn (kameranah, unten)
 FLACH = 8                         # Amplitude hinten (kamerafern, oben)
+QW_HOCH, QH_HOCH = 200, 3000      # hohe Quelle wie in der Nachpruefung
 
 
 def stufe_unten(y0, hoehe):
@@ -253,11 +255,13 @@ class RandmessungTests(unittest.TestCase):
         self.assertEqual(b["gut"], bq.VERLAUF_GUT)
 
     def test_fortgesetzte_zeichnung_unten_ist_ok(self):
-        # Zeichnung waechst linear mit dem Zeilenabstand zum Horizont (wie in
-        # der Quelle, 3,2x zwischen den Quellkaesten) und setzt sich 30 % der
-        # Quellhoehe nach unten fort. Ueber den kurzen Umfang des Streifens
-        # ergibt das nur ~1,29x - mit der festen Schwelle 1,5 GRENZWERTIG,
-        # mit der umgerechneten OK.
+        # Synthetisch nach dem Modell von verlauf_schwelle_unten: Zeichnung
+        # waechst linear mit dem Zeilenabstand zum Horizont, der Horizont ist
+        # so gelegt, dass die Quellkaesten rund 3,2x ergeben (gemessen an
+        # Foto 31: 3,21x). Sie setzt sich 30 % der Quellhoehe nach unten
+        # fort; ueber den kurzen Umfang des Streifens ergibt das rechnerisch
+        # ~1,29x - mit der festen Schwelle 1,5 GRENZWERTIG, mit der
+        # umgerechneten OK.
         horizont = 0.446 * QH
 
         def amp(x, y):
@@ -279,6 +283,73 @@ class RandmessungTests(unittest.TestCase):
             self.assertTrue(bq.urteil(b["messung"], b["gut"]).startswith("GRENZWERTIG"), hu)
             fehler, _ = bq.beurteile_raender([b])
             self.assertEqual(len(fehler), 1)
+
+    def unterer_streifen(self, hu, amp):
+        """Der eine Befund "unten": hohe Quelle, darunter hu px erzeugt."""
+        bild = KunstBild(QW_HOCH, QH_HOCH + hu, amp)
+        befunde = bq.messe_raender(bild, bq.Roi(0, 0, QW_HOCH, QH_HOCH))
+        self.assertEqual([b["seite"] for b in befunde], ["unten"])
+        return befunde[0]
+
+    def test_duenner_unterer_streifen_ist_nicht_messbar(self):
+        # Die Faelle der Nachpruefung: 110 px unter 3000 px Quelle mit 4 %
+        # Amplitudenrampe, 150 px mit zusaetzlich +-8 % Zufall je Zeile. Die
+        # Messkaesten sind gross genug (34 bzw. 46 px hoch); zu klein ist der
+        # Abstand der Schwelle von 1,0 - sie trennt Filz nicht mehr von einer
+        # Fortsetzung. Das gilt auch fuer flache und filzige Streifen: wie
+        # beim zu schmalen Rand wird dort nicht geurteilt.
+        zufall = random.Random(20260911)
+        rauschen = [1 + zufall.uniform(-0.08, 0.08) for _ in range(150)]
+
+        def rampe(hu, streuung=False):
+            def amp(x, y):
+                if y < QH_HOCH:
+                    return 20
+                faktor = rauschen[y - QH_HOCH] if streuung else 1
+                return 20 * (1 + 0.04 * (y - QH_HOCH) / hu) * faktor
+            return amp
+
+        s = stufe_unten(QH_HOCH, 150)
+        faelle = (("Rampe 4 %", 110, rampe(110)),
+                  ("Rampe mit Rauschen", 150, rampe(150, streuung=True)),
+                  ("flach", 150, lambda x, y: 16),
+                  ("Filz", 150, lambda x, y: verlauf_filz(y, s)))
+        for name, hu, amp in faelle:
+            with self.subTest(name):
+                b = self.unterer_streifen(hu, amp)
+                self.assertIsNone(b["messung"])
+                self.assertIn("zu niedrig fuer eine Tiefenaussage", b["grund"])
+                self.assertNotIn("zu klein", b["grund"])
+                self.assertGreater(b["gut"], bq.VERLAUF_FILZ)
+                self.assertLess(b["gut"], bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND)
+                self.assertEqual(bq.beurteile_raender([b]), ([], [f"Rand unten {b['grund']}"]))
+
+    def test_hoher_unterer_streifen_wie_bisher(self):
+        # Dieselbe hohe Quelle, 600 px Streifen (20 %): die Schwelle liegt
+        # weit genug ueber 1,0, der Streifen wird gemessen und beurteilt.
+        hu = 600
+        horizont = 0.446 * QH_HOCH
+        s = stufe_unten(QH_HOCH, hu)
+        faelle = (("Fortsetzung", lambda x, y: max(0.0, 0.01 * (y - horizont)), "OK"),
+                  ("flach", lambda x, y: 16, "GRENZWERTIG"),
+                  ("Filz", lambda x, y: verlauf_filz(y, s), "VERWERFEN"))
+        for name, amp, erwartet in faelle:
+            with self.subTest(name):
+                b = self.unterer_streifen(hu, amp)
+                self.assertIsNone(b["grund"])
+                self.assertGreaterEqual(b["gut"], bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND)
+                self.assertTrue(bq.urteil(b["messung"], b["gut"]).startswith(erwartet))
+
+    def test_grenze_liegt_bei_unten_min_abstand(self):
+        # 240 px liegen knapp unter, 260 px knapp ueber der Grenze - welche
+        # Seite messbar ist, entscheidet allein die umgerechnete Schwelle.
+        gesehen = set()
+        for hu in (240, 260):
+            b = self.unterer_streifen(hu, lambda x, y: 16)
+            zu_niedrig = b["gut"] < bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND
+            gesehen.add(zu_niedrig)
+            self.assertEqual(b["messung"] is None, zu_niedrig, hu)
+        self.assertEqual(gesehen, {True, False})
 
     def test_oberer_rand_liegt_ueber_der_florzone(self):
         roi = bq.Roi(0, 120, QW, QH)
@@ -403,6 +474,29 @@ class EndeZuEndeTests(unittest.TestCase):
         self.assertIn("nicht messbar - Messkasten zu klein", r.stdout)
         self.assertIn("Ohne Strukturpruefung: Rand links", r.stdout)
         self.assertIn("Rand rechts", r.stdout.split("Ohne Strukturpruefung")[1])
+        self.assertIn("ANGENOMMEN - Rand ohne Strukturpruefung", r.stdout)
+
+    def test_duenner_unterer_streifen_steht_in_der_ausgabe(self):
+        # Quelle 40x1400, darunter 110 px flacher Rand: Messkaesten 40x34 px,
+        # aber die umgerechnete Schwelle liegt unter 1,05. Vorher GRENZWERTIG
+        # und ABGELEHNT, jetzt nicht messbar - dieselbe Ausgabe und Wirkung
+        # wie beim zu schmalen Rand.
+        qw, qh, hu = 40, 1400, 110
+        stufe = int(0.68 * qh)
+
+        def amp(x, y):
+            return verlauf_gut(y, stufe) if y < qh else 16
+        quelle, erg = KunstBild(qw, qh, amp), KunstBild(qw, qh + hu, amp)
+        qp = os.path.join(self.tmp.name, "quelle.bmp")
+        ep = os.path.join(self.tmp.name, "ergebnis.bmp")
+        bq.schreibe_bmp(qp, quelle.w, quelle.h, quelle.rgb)
+        bq.schreibe_bmp(ep, erg.w, erg.h, erg.rgb)
+        r = subprocess.run([sys.executable, str(SKRIPT), qp, ep, "--bei", "0,0"],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Rand unten (erzeugt)", r.stdout)
+        self.assertIn("nicht messbar - Streifen zu niedrig fuer eine Tiefenaussage", r.stdout)
+        self.assertIn("Ohne Strukturpruefung: Rand unten", r.stdout)
         self.assertIn("ANGENOMMEN - Rand ohne Strukturpruefung", r.stdout)
 
     def test_guter_rand_wird_angenommen(self):

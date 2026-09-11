@@ -46,8 +46,11 @@ Urteil nicht OK ist, fuehrt zur Ablehnung.
   unten         obere gegen untere Lage des Streifens, die unteren Ecken
                 je fuer sich. Die Schwelle 1,5 gilt fuer den Tiefenumfang
                 der Quellkaesten; fuer den kuerzeren Umfang eines Streifens
-                wird sie umgerechnet (verlauf_schwelle_unten), Filz bleibt
-                < 1,0
+                wird sie umgerechnet (verlauf_schwelle_unten - ein Modell,
+                an echten Outpaint-Fotos nicht kalibriert), Filz bleibt
+                < 1,0. Liegt die umgerechnete Schwelle weniger als
+                UNTEN_MIN_ABSTAND ueber 1,0, ist der Streifen zu niedrig
+                fuer eine Tiefenaussage -> "nicht messbar"
   oben          liegt ueber der Florzone -> "nicht messbar"
 
 Ein Streifen, dessen Messkasten kleiner als RAND_MIN_KASTEN ist, wird
@@ -94,6 +97,20 @@ UNTEN_VORN = (0.65, 0.95)
 # stehen in einem Kasten nur noch wenige Florbueschel, der Mikrokontrast
 # haengt dann an einzelnen Fasern statt an der Zeichnung.
 RAND_MIN_KASTEN = 32
+
+# Kleinster Abstand, den die umgerechnete Schwelle eines unteren Streifens
+# (verlauf_schwelle_unten) ueber VERLAUF_FILZ haben muss. Annahme, kein
+# Messwert: ein Verlauf ist der Quotient zweier Mikrokontraste, und die
+# schwanken auch ohne jeden Tiefenunterschied - Florbueschel, Licht,
+# Kompression. Wie weit, ist an echten Outpaint-Fotos nicht vermessen. Liegt
+# die Schwelle naeher an 1,0, trennt sie Filz nicht mehr von einer
+# Fortsetzung, dann entscheidet diese Schwankung das Urteil. Der Streifen ist
+# zu niedrig fuer eine Tiefenaussage und wird als "nicht messbar" gemeldet.
+# 0,05 ist ein Zehntel des Abstands, den das Motiv zwischen Filz und
+# brauchbar laesst (VERLAUF_GUT - VERLAUF_FILZ); gesetzt, nicht kalibriert.
+# Im Modell von verlauf_schwelle_unten trifft das Streifen unter rund 8 %
+# der Quellhoehe.
+UNTEN_MIN_ABSTAND = 0.05
 
 VERLAUF_GUT = 1.5
 VERLAUF_FILZ = 1.0
@@ -467,23 +484,32 @@ def _kastenmass(bild, kasten):
 def verlauf_schwelle_unten(roi, rand):
     """Verlauf, ab dem ein unterer Streifen als brauchbar gilt.
 
-    VERLAUF_GUT ist am Motiv geeicht: FLOR_HINTEN gegen FLOR_VORN, die Mitten
-    der Kaesten liegen 0,275 Quellhoehen auseinander. Die Kaesten eines
-    unteren Streifens liegen nur 0,6 Streifenhoehen auseinander - bei einem
-    Streifen von 15 % der Quellhoehe also ein Drittel des Tiefenumfangs. Eine
-    Zeichnung, die die Quelle fehlerfrei fortsetzt, erreicht dort 1,5 nie
-    (linear ab Horizont: 1,15x bei 15 %, 1,46x bei 50 %); die feste Schwelle
-    wuerde jeden guten unteren Rand ablehnen.
+    VERLAUF_GUT ist am Motiv festgelegt: FLOR_HINTEN gegen FLOR_VORN, die
+    Mitten der Kaesten liegen 0,275 Quellhoehen auseinander. Die Kaesten
+    eines unteren Streifens liegen nur 0,6 Streifenhoehen auseinander - bei
+    einem Streifen von 15 % der Quellhoehe also ein Drittel des
+    Tiefenumfangs. Eine Zeichnung, die die Quelle fehlerfrei fortsetzt, bildet
+    ueber diesen kuerzeren Umfang einen kleineren Verlauf ab; mit der festen
+    Schwelle 1,5 wuerden gute untere Raender abgelehnt.
 
-    Umrechnung: Boden unter einer Lochkamera - der Abbildungsmassstab und
-    damit die Zeichnung wachsen mit dem Zeilenabstand zum Horizont; hier
-    vereinfachend linear. VERLAUF_GUT an den Quellkaesten entspricht dann
-    genau einem Horizont; derselbe Horizont ergibt fuer die Kaesten des
-    Streifens die umgerechnete Schwelle. Sie haengt nur an der Geometrie,
-    nicht an Messwerten, ist immer > 1,0 (flach bleibt GRENZWERTIG) und wird
-    bei VERLAUF_GUT gekappt - ein Rand wird nie strenger beurteilt als das
-    Motiv. Filz (< VERLAUF_FILZ, Tiefe umgekehrt) haengt nicht am Umfang und
-    bleibt, wie es ist."""
+    Umrechnung, Modellannahme: Boden unter einer Lochkamera - der
+    Abbildungsmassstab und damit die Zeichnung wachsen mit dem Zeilenabstand
+    zum Horizont; hier vereinfachend linear. VERLAUF_GUT an den Quellkaesten
+    entspricht dann genau einem Horizont; derselbe Horizont ergibt fuer die
+    Kaesten des Streifens die umgerechnete Schwelle. Sie haengt nur an der
+    Geometrie, ist immer > 1,0 und wird bei VERLAUF_GUT gekappt - ein Rand
+    wird nicht strenger beurteilt als das Motiv. Je niedriger der Streifen,
+    desto naeher liegt sie an 1,0; unter VERLAUF_FILZ + UNTEN_MIN_ABSTAND
+    wird der Streifen nicht beurteilt (messe_raender). Filz (< VERLAUF_FILZ,
+    Tiefe umgekehrt) haengt nicht am Umfang und bleibt, wie es ist.
+
+    Was davon belegt ist: gemessen ist nur der Verlauf der Quelle von Foto 31,
+    3,21x. Das lineare Modell passt nicht einmal zu diesem einen Wert - daran
+    angepasst laege der Horizont bei 44,6 % der Quellhoehe, unterhalb der
+    Sockelleiste, die in dieser Serie im oberen Drittel steht (siehe
+    FLOR_VORN). Die Schwelle ist damit gerechnet, nicht gemessen; die
+    Kalibrierung an echten Outpaint-Fotos mit erzeugtem unteren Rand ist
+    offen."""
     mitte_q_hinten = roi.y + (FLOR_HINTEN[1] + FLOR_HINTEN[3]) / 2 * roi.h
     mitte_q_vorn = roi.y + (FLOR_VORN[1] + FLOR_VORN[3]) / 2 * roi.h
     horizont = (VERLAUF_GUT * mitte_q_hinten - mitte_q_vorn) / (VERLAUF_GUT - 1)
@@ -504,21 +530,28 @@ def messe_raender(bild, roi, weiss=None):
                     Quelle vergleichbar, Schwelle VERLAUF_GUT.
       unten         UNTEN_HINTEN gegen UNTEN_VORN innerhalb des Streifens,
                     ebenso je untere Ecke; Schwelle verlauf_schwelle_unten.
+                    Liegt die unter VERLAUF_FILZ + UNTEN_MIN_ABSTAND, ist
+                    der Streifen zu niedrig fuer eine Tiefenaussage: Filz
+                    und Fortsetzung liegen dann naeher beieinander als die
+                    angenommene Schwankung eines Verlaufs -> nicht messbar.
       oben        nicht messbar: der Streifen liegt vollstaendig ueber der
                     Florzone (die beginnt erst bei FLOR_HINTEN, also bei 52 %
                     der Quellhoehe). Dort stehen in dieser Serie Wand und
                     Sockelleiste - ein Mikrokontrastverlauf davon sagt nichts
                     ueber Filz.
 
-    "nicht messbar" (oben, oder Messkasten unter RAND_MIN_KASTEN) lehnt nicht
-    ab: ein Rand, der schmaler als der Mindestkasten ist, traegt zu wenig
-    Flaeche fuer den flaechigen Filzeindruck, und oben ist keine Florzeichnung,
-    die filzig werden koennte. Ablehnen hiesse, jede Erweiterung nach oben zu
-    verbieten, ohne dass das Bild dadurch sicherer wird. Stumm bleibt es
-    trotzdem nicht - der Grund steht im Befund und in der Ausgabe. Der Grund
-    nennt beide Kastenmasse: bei seitlichen Streifen ist die Hoehe 10 % der
-    Quellhoehe, eine niedrige Quelle macht also auch einen breiten Rand
-    unmessbar.
+    "nicht messbar" (oben, Messkasten unter RAND_MIN_KASTEN, unterer Streifen
+    zu niedrig) lehnt nicht ab: ein Rand, der schmaler als der Mindestkasten
+    ist, traegt zu wenig Flaeche fuer den flaechigen Filzeindruck, und oben
+    ist keine Florzeichnung, die filzig werden koennte. Ablehnen hiesse, jede
+    Erweiterung nach oben zu verbieten, ohne dass das Bild dadurch sicherer
+    wird. Beim zu niedrigen unteren Streifen entschiede ein Urteil ueber die
+    Schwankung statt ueber die Zeichnung - ablehnen waere so beliebig wie
+    annehmen; er wird deshalb behandelt wie ein zu schmaler Rand. Stumm
+    bleibt es trotzdem nicht - der Grund steht im Befund und in der Ausgabe.
+    Beim zu kleinen Messkasten nennt der Grund beide Kastenmasse: bei
+    seitlichen Streifen ist die Hoehe 10 % der Quellhoehe, eine niedrige
+    Quelle macht also auch einen breiten Rand unmessbar.
 
     Rueckgabe: je vorhandenem Rand {"seite", "rand", "messung", "grund",
     "gut"}; genau eines von messung/grund ist gesetzt, gut ist die Schwelle
@@ -545,6 +578,12 @@ def messe_raender(bild, roi, weiss=None):
         if min(breite, hoehe) < RAND_MIN_KASTEN:
             b["grund"] = (f"Messkasten zu klein ({max(breite, 0)}x{max(hoehe, 0)} px, "
                           f"Mindestkante {RAND_MIN_KASTEN} px; Streifen {rand.w}x{rand.h} px)")
+            continue
+        if seite.startswith("unten") and b["gut"] < VERLAUF_FILZ + UNTEN_MIN_ABSTAND:
+            b["grund"] = (f"Streifen zu niedrig fuer eine Tiefenaussage ({rand.h} px = "
+                          f"{rand.h / roi.h * 100:.1f} % der Quellhoehe; Schwelle "
+                          f"{b['gut']:.3f}x liegt weniger als {UNTEN_MIN_ABSTAND:.2f} "
+                          f"ueber {VERLAUF_FILZ:.1f})")
             continue
         b["messung"] = _messwerte(bild, kv, kh, weiss, f"Rand {seite} (erzeugt)")
     return befunde
