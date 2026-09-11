@@ -352,3 +352,233 @@ Offen als Nächstes:
 - Startseitenlänge
 - Design-Tokens
 - Schlussaudit mit redirect-freiem Lighthouse
+
+## Schlussbericht (2026-09-11)
+
+Alle Änderungen liegen auf `feature/shop-qualitaet` (je ein Commit pro Schritt) und im unveröffentlichten
+Arbeits-Theme `204168364366` „Qualitaet Arbeitskopie 2026-09-11“. **Nichts ist veröffentlicht, das Live-Theme
+ist unverändert.** Kein Preis, keine Versandregel, keine Produktdaten verändert. Rechtstexte: bei Datenschutz und AGB nur
+die vorhandene Überschrift als H1 ausgezeichnet, kein Wort des Textes geändert.
+
+### Änderungen im Überblick
+
+| # | Bereich | Änderung | Commit |
+|---|---|---|---|
+| 1 | Performance | Karten-CSS einmal pro Seite statt je Karte | `f3bbaee` |
+| 2 | Karten | Kartentitel-Regel nur auf den Kartentitel | `292354a` |
+| 3 | Performance | Passende Bildbreiten für Karten | `355111e` |
+| 4 | Performance | Megamenü-Bilder erst bei der ersten Absicht | `3dc4799` |
+| 5 | Accessibility | Kontraste, Namen, H1 der Rechtstexte, 16-px-Felder | `12775a5`, `a90fc9f` |
+| 6 | Mobile UX | Kopfbereich mobil kompakt, Kategorie-Leiste nicht auf Produkt/Warenkorb | `b4d9dfe` |
+| 7 | Produktseite | Galerie und Titel direkt unter der Breadcrumb | `1f8e37e` |
+| 8 | Performance | Schrift-Vorladen mit hoher Priorität – **zurückgenommen** (kein Nutzen) | – |
+| 9 | Kategorie | Unterkategorien-Leiste aus dem Hauptmenü, Produkte vor dem Karussell | `108714b` |
+| 10 | Kategorie | Unterkategorie-Kopf am Telefon kompakt, Geschwister-Leiste | `17a42a4` |
+| 11 | Kategorie | Zubehör-Bereichskacheln am Telefon als Liste | `b2ba4ae` |
+| 12 | Kategorie | Bodenleisten: Kopfbild am Telefon aus, Material-Kacheln nebeneinander | `3a1deee` |
+| 13 | Kategorie | Tablet: mindestens zwei Spalten | `328fca8` |
+| 14 | Accessibility | H2 zwischen Seitentitel und Produktkarten | `0c6aaec` |
+| 15 | Accessibility | Verborgene Karussell-Folien aus der Tab-Reihenfolge | `c20776c` |
+| 16 | Startseite | Footer-Aufforderung auf der Startseite nicht doppelt | `422e7f2` |
+| 17 | SEO | Marke in Titeln einheitlich und nur einmal | `4936381` |
+| 18 | SEO | Organisationsname im JSON-LD | `6f77724` |
+| 19 | Performance | Versteckte Variantenfolien in Karten nicht rendern + Guard-Regel | `f48c7a5` |
+| 20 | Performance | Bildblöcke ab Section 3 lazy, srcset-Stufen 480/640 | `3598ac4`, `659c0e8` |
+| 21 | Performance | Erstes Kartenbild als LCP-Element priorisieren | `e4a95cd` |
+| 22 | Performance | Megamenü-Bilder nach Header-Hydration wieder freigeben (Fund einer anderen Sitzung) | `67a4927` |
+| 23 | Startseite | Listen inaktiver Reiter ab dem ersten Bild ausblenden (Absicherung, siehe unten) | `affb6f7` |
+| 24 | Kategorie | Keine doppelte Knopfreihe auf Kategorien mit Unterkategorie-Leiste | `92b6ba9` |
+| 25 | Karten | Einheit „€/m²“ neben dem Kartenpreis lesbar (9,8 → 13 px) | `dfa1a2c` |
+| 26 | Seiten | Karriere: Telefon- und E-Mail-Link, einheitliches Nummernformat | `5ed5985` |
+
+**Theme-Abgleich (Admin API, Prüfsummen, danach inhaltlich):** 37 der 49 auf diesem Branch geänderten
+Theme-Dateien sind im Arbeits-Theme byte-identisch. Die übrigen 12 sind inhaltlich geprüft:
+
+- **11 Kategorie-Templates:** Sie weichen nur in drei Raster-Einstellungen der Menü-Sitzung ab (Kartengröße „medium“, mobil „small“, mobil nicht randlos). Alle Template-Änderungen dieses Programms sind enthalten.
+- **`_header-menu.liquid`:** Das ist die Fassung der Menü-Sitzung; sie enthält die Regel aus #4.
+
+Wer die Branches zusammenführt, muss die Raster-Einstellungen der Menü-Sitzung übernehmen – auf diesem Branch stehen noch die alten Werte.
+Die `sizes`-Korrektur aus #21 deckt beide Fassungen ab.
+
+### Vorher / nachher – deterministische Messgrößen
+
+| Messung | vorher | nachher |
+|---|---|---|
+| Kopfbereich bis Inhalt, mobil 390 px (Start/Kategorie) | 219 px | 185 px |
+| Kopfbereich bis Inhalt, mobil (Produkt/Warenkorb) | 219 px | 141 px |
+| Erste Produktkarte mobil – Teppichboden | 802 px | 382 px |
+| Erste Produktkarte mobil – Klickvinyl / Hochflor | 1.015 / 1.096 px | 629 / 713 px |
+| Erstes Produkt mobil – Zubehör / Bodenleisten | 2.484 / 1.644 px | 1.743 / 1.228 px |
+| H1 Produktseite mobil | 702 px | 595 px |
+| Startseite Länge mobil | 11.077 px | 10.560 px |
+| HTML Kategorie Teppichboden | 1.534 KB | 1.004 KB |
+| DOM-Knoten Kategorie Teppichboden mobil | ~5.280 | 4.555 |
+| Bilder beim Laden Kategorie, mobil / Desktop | 1.571 / 1.547 KB | 996 / 412 KB |
+| Megamenü-Bildanfragen beim Laden, Desktop / mobil | 65 / 50 | 31 / 16 |
+| LCP Kategorie mobil gedrosselt (Banner blockiert, 7 Läufe) | 7,58 s | 3,95 s |
+| Seitentitel mit doppelter Marke („… \| Teppich Paradies – TeppichParadies“) | 3 von 10 Seitentypen | 0 |
+| Seitentitel / og:site_name mit Admin-Schreibweise „TeppichParadies“ | 9 / 10 von 10 | 0 / 0 |
+| Fokussierbare Elemente in verborgenen Karussell-Folien | > 0 | 0 |
+
+**DOM-Größe ehrlich:** Im Endlauf hat jede Seite rund 850 DOM-Knoten mehr als im Ausgangslauf, etwa
+Kontakt 1.499 → 2.359. Das kommt vom neuen Handy- und Megamenü der Menü-Sitzung im selben Theme. Auf
+Kategorie Teppichboden bleiben netto +140, weil #19 dort rund 700 Knoten spart. Die Verlegeservice-Seite ist
+durch neue Inhalte der Verlegeservice-Sitzung deutlich länger (mobil 3.047 → 9.128 px). Die Klickvinyl-Produktseite
+war im Ausgangslauf eine 404-Seite und ist deshalb nicht vergleichbar.
+
+### Vorher / nachher – Lighthouse (Schlussaudit)
+
+**Methode:**
+- Lighthouse 13.4.1, Live-Theme und Entwurf abwechselnd im selben Zeitfenster gemessen, je 3 Läufe, Median.
+- Der Entwurf lief ohne Vorschau-Umleitung: Das Vorschau-Cookie wurde vorab per curl geholt, und geprüft wurde, dass nur Theme-Pfad `t/53` geladen wurde.
+- Mobil heißt: simuliertes Mittelklasse-Telefon mit gedrosseltem Netz.
+
+| Seite | Gerät | Läufe | Live P / A / BP / SEO | Entwurf P / A / BP / SEO | Live LCP | Entwurf LCP | Live CLS | Entwurf CLS | Live KB | Entwurf KB |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Startseite | mobil | 3/3 | 65 / 93 / 73 / 100 | 60 / 97 / 73 / 100 | 9,92 s | 11,37 s | 0,000 | 0,000 | 2700 | 2828 |
+| Kategorie Teppichboden | mobil | 3/3 | 63 / 88 / 73 / 92 | 60 / 97 / 73 / 100 | 14,89 s | 13,08 s | 0,000 | 0,000 | 4388 | 3364 |
+| Kategorie Klickvinyl | mobil | 3/3 | 65 / 88 / 73 / 100 | 72 / 97 / 73 / 100 | 10,53 s | 6,79 s | 0,000 | 0,000 | 3271 | 2502 |
+| Produkt Rollenware | mobil | 3/3 | 66 / 85 / 73 / 100 | 61 / 96 / 73 / 100 | 8,09 s | 8,82 s | 0,000 | 0,000 | 2169 | 2031 |
+| Produkt Sockelleiste | mobil | 3/3 | 59 / 84 / 73 / 100 | 71 / 97 / 73 / 100 | 9,34 s | 6,40 s | 0,000 | 0,000 | 2786 | 2606 |
+| Verlegeservice | mobil | 3/3 | 66 / 93 / 73 / 100 | 61 / 97 / 73 / 100 | 7,61 s | 8,74 s | 0,000 | 0,000 | 2060 | 2091 |
+| Startseite | Desktop | 3/3 | 92 / 90 / 73 / 100 | 95 / 94 / 73 / 100 | 1,84 s | 1,34 s | 0,000 | 0,002 | 3212 | 4333 |
+| Kategorie Teppichboden | Desktop | 3/3 | 95 / 86 / 73 / 92 | 93 / 93 / 73 / 100 | 1,34 s | 1,47 s | 0,000 | 0,003 | 6804 | 3861 |
+| Produkt Rollenware | Desktop | 3/3 | 98 / 87 / 73 / 100 | 96 / 93 / 73 / 100 | 1,07 s | 1,26 s | 0,000 | 0,002 | 2361 | 2167 |
+
+**Einordnung:**
+- **Accessibility und SEO:** überall besser. Mobil 84–93 → 96–97, Desktop 86–90 → 93–94, SEO Kategorie 92 → 100.
+- **Kategorien und Produktseiten:** deutlich leichter (Teppichboden Desktop 6,8 → 3,9 MB). Sockelleiste mobil P 59 → 71 (LCP 9,3 → 6,4 s), Klickvinyl P 65 → 72 (LCP 10,5 → 6,8 s).
+- **Startseite, Rollenware und Verlegeservice mobil:** schlechter als Live (P 60/61 statt 65/66).
+  - Auf Startseite und Verlegeservice ist das LCP-Element im Entwurf der Text des Cookie-Banners, auf Live der Hero.
+  - Die LCP-Werte streuen zweigipflig (Rollenware 5,5 / 8,8 / 8,9 s).
+  - Beide Seiten gehören inhaltlich zu Konzept C bzw. zur Verlegeservice-Sitzung. Ein Rückschritt bleibt es trotzdem und steht unten als offener Punkt.
+- **Startseite Desktop:** Im Audit noch 1,1 MB schwerer als Live. Nach #23 leichter als Live: 2,6 statt 3,2 MB, siehe unten.
+- **Gleichzeitige Arbeit:** Während des Audits haben zwei andere Sitzungen dateigenau ins selbe Theme gepusht (Menü, Verlegeservice). Gemessen ist der geteilte Entwurf, nicht allein dieses Programm.
+
+**#23 – zwei Messungen, zwei Ergebnisse, beide wahr:**
+- **Im Browsertest (Puppeteer):** Im Entwurf laden vor und nach der Änderung gleich viele Produktbilder (mobil 12 × 395 KB, Desktop 21 × 548 KB).
+- **In Lighthouse:** Die Nachmessung der Startseite nach #23 (3 Läufe) zeigt die Wirkung:
+
+  | Startseite | vorher | nachher |
+  |---|---|---|
+  | Desktop, Seitengewicht | 4.333 KB | 2.587–2.651 KB (jetzt unter Live, 3.212 KB) |
+  | Desktop, Produktfotos in 1.080/1.440 px | 8 Stück, 1.443 KB | keine |
+  | Desktop, P / LCP | – | 95–96 / 1,26–1,37 s |
+  | mobil, P (Median) | 60 | 61 (Läufe 60/72/61) |
+  | mobil, LCP | 11,4 s | 10,6 s |
+
+- **Deutung:** Die Bilder der verborgenen Reiter wurden nur in der Lighthouse-Umgebung angefragt, bevor das Skript die Listen versteckte. Das CSS ab dem ersten Bild verhindert das jetzt in jeder Umgebung.
+- **Mobil** bleibt die Startseite hinter Live (P 65).
+
+### Testmatrix (Endstand)
+
+| Prüfung | Ergebnis |
+|---|---|
+| `liquid:guard`, `schema:guard`, `theme:guard`, `essential:guard` | 0 Fehler |
+| `npm test` | 37/37 bestanden |
+| `template:guard` | 0 Fehler (2 bekannte Warnungen aus fremden Templates); neue Regel `verbotenInKarte`, 17/17 Tests |
+| `validate --static` | WORKFLOW, UNIT/AUTOMATION, QA EVIDENCE, SECRET SCAN, Guards: PASS |
+| `shopify theme check` | 0 Fehler, 41 Warnungen (unverändert gegenüber dem Ausgangsstand), keine in geänderten Dateien |
+| Kaufweg Desktop: Paket, Rollenware, Muster | 3/3 PASS (Theme-ID geprüft, keine Bestellung) |
+| Kaufweg Telefon: Paket „3,5“ → 2 Pakete, Rollenware 400 × 250 → 259,00 €, Sockelleiste 38 m → 8 Stangen | 3/3 PASS, Eigenschaften vollständig, `_Farbe intern` unsichtbar |
+| Karten auf Kategorie, Suche, Startseite, PDP-Empfehlungen | Bilder vorhanden, 0 JS-Fehler (390/1440) |
+| Farbfilter Kategorie | passendes Kartenbild bleibt erste Folie |
+| Karussell-Kacheln lazy | beim Blättern 0 sichtbare leere Kacheln |
+| Seitentitel und og:site_name (10 Seitentypen, curl) | einheitlich „Teppich Paradies“ |
+| JSON-LD (Start, Kategorie, 2 PDP, Kontakt, Verlegeservice, Referenzen) | alle Blöcke parsen; Organisation, Service, BreadcrumbList, ProductGroup |
+| Querscrollen 8 Viewports | 160 Aufrufe (20 Seiten × 8 Viewports): 0 × Querscrollen, 0 Abbrüche, alle Theme 204168364366; Konsolenfehler 112 (Ausgangslauf 120) |
+| Konsolenfehler | nur Plattform (favicon 404, shop.app-CSP in der Vorschau) |
+| Eigenes Dev-Theme `204180619598` (Kontext feature-shop-qualitaet), Änderungen #22–#26 | Prüfsummen = lokal; Laufzeitprüfung 10/11 PASS (einziger FAIL: favicon.ico 404); mobile Kaufwege 3/3 PASS |
+| Entwurf nach dateigenauem Push (#22–#26) | Prüfsummen der 5 Dateien = lokal; Laufzeitprüfung 10/11 PASS (favicon); Reiter hin und zurück, 0 JS-Fehler |
+| Dreiwege-Prüfung vor jedem Push ab #22 | Theme-Prüfsumme = eigene Ausgangsfassung, sonst kein Push (`snippets/price.liquid` einer anderen Sitzung deshalb nicht angefasst) |
+
+### Endstand Score
+
+Gleiche Rechenweise wie Abschnitt A: einfacher Durchschnitt der 22 Kategorien.
+
+| Kategorie | Start Entwurf | Ende | Grund |
+|---|---|---|---|
+| Gesamteindruck | 69 | 72 | Produkte zuerst auf Kategorieseiten, Kopfbereich mobil kompakt |
+| Professionalität | 67 | 71 | Titel ohne Doppelmarke, H1 der Rechtstexte, lesbare Einheit; Favicon fehlt weiter |
+| Vertrauen | 64 | 64 | unverändert – kein Laden-/Teamfoto |
+| Startseite | 70 | 72 | doppelte Aufforderung weg, Desktop nach #23 leichter als Live (2,6 statt 3,2 MB); mobil hinter Live |
+| Navigation | 73 | 76 | Unterkategorie- und Geschwister-Leiste, Karussell-Fokus, keine doppelte Knopfreihe |
+| Desktop UX | 70 | 72 | Tablet zweispaltig, Produkte zuerst, passende Bildbreiten |
+| Mobile UX | 62 | 72 | Kopf 219 → 185/141 px, erste Karte 802 → 382 px, 16-px-Felder |
+| Produktkarten | 63 | 70 | CSS einmal, Bildbreiten, keine versteckten Folien, Einheit 13 px |
+| Kategorieseiten | 62 | 75 | Produkte zuerst, Unterkategorien, LCP-Bild priorisiert, halbes HTML-Gewicht |
+| Produktseiten | 72 | 74 | Galerie unter der Breadcrumb, Sticky-Button benannt |
+| Rechner | 79 | 79 | unverändert, alle Kaufwege PASS |
+| Kaufprozess | 74 | 74 | unverändert, alle Kaufwege PASS |
+| Conversion | 60 | 60 | unbelegt – 0 Käufe, keine neuen Daten |
+| Verlegeservice | 70 | 70 | nicht Teil dieses Programms |
+| Kontakt | 78 | 79 | 16-px-Felder, WhatsApp-Kontrast, Karriere-Links |
+| Design-Konsistenz | 58 | 59 | nur Kontrast-Korrekturen; 73 Hex-Werte offen |
+| SEO | 68 | 72 | Titel, JSON-LD, H1; Lighthouse-SEO Kategorie 92 → 100 |
+| Local SEO | 62 | 63 | Organisationsname und alternateName |
+| Performance | 58 | 64 | Kategorien, Produktseiten und Startseite Desktop leichter und schneller; Startseite/Verlegeservice mobil hinter Live |
+| Accessibility | 70 | 82 | Lighthouse mobil 96–97, Desktop 93–94; ohne Screenreader-Test |
+| Technische Qualität | 60 | 62 | Guard-Regel, Messmethode; tote Sections weiter vorhanden |
+| Wettbewerbsfähigkeit | 63 | 64 | Kategorie mobil konkurrenzfähiger, Startseite nicht |
+| **Gesamt** | **67** | **70** | |
+
+**Korrektur:** Die Zwischenstände 73 und 75 weiter oben waren zu hoch. Sie haben vor allem die veränderten
+Kategorien gewichtet. Nach der Rechenweise von Abschnitt A steht der Entwurf bei **70 / 100** (Start 67).
+Der Live-Shop bleibt bei etwa 60, weil nichts davon veröffentlicht ist.
+
+### Was verhindert jetzt noch 100/100?
+
+Ehrlich eingeordnet: Mit Theme-Arbeit allein ist mehr als rund 80 nicht zu erreichen. Die großen
+Hebel liegen beim Inhaber, bei Shopify oder brauchen echte Kaufdaten.
+
+1. **Nichts davon ist live.** Der Live-Shop steht bei etwa 60.
+   - Die Deploy-Kette verlangt `main`.
+   - Dieser Branch baut auf dem unveröffentlichten Konzept-C-Entwurf auf (Draft-PR #190 → #186 → #174).
+   - Ohne Merge und „deploy“ erreicht keine Verbesserung einen Kunden.
+2. **Performance mobil:** Der Rest liegt überwiegend außerhalb des Themes.
+   - **Shopify-Plattform:** 83 KB Analytics-JSON im Kopf, rund 600 KB Checkout-Vorladen, Pixel-Loader.
+   - **Cookie-Banner:** Er ist für Erstbesucher das LCP-Element.
+   - **Filterformular:** Es steht doppelt im HTML (Horizon-Kern, 215 KB vor dem Raster). Allein „Florhöhe“ hat 27 Werte (Filterdaten).
+   - **Kopfbereich:** 1.170 DOM-Elemente (Megamenü und Drawer, Bereich der Menü-Sitzung).
+   - **Unterkategorie-Seiten:** Das Raster steht dort an Section-Position 3, die LCP-Priorisierung (#21) greift noch nicht – nächster technischer Schritt.
+3. **Conversion ist unbelegt.**
+   - 0 Käufe bei 2.614 Sitzungen (Audit 2026-09-10).
+   - Die Änderungen sind begründet und gemessen, aber nicht durch Kaufdaten bestätigt.
+   - Nötig sind Deploy und danach vier bis sechs Wochen Messung (Warenkorb-Rate, Checkout-Abbrüche).
+4. **Vertrauen:** Es gibt kein Laden- oder Teamfoto, und das Favicon fehlt (404 auf jeder Seite).
+5. **Suche:** Synonyme gehen nur über die Such-App.
+6. **Daten:**
+   - Produkttitel mit Rollenbreiten
+   - Seiten ohne Meta-Beschreibung
+   - uneinheitliche Florhöhen-Werte
+   - Rollenware ohne Produkt-Rich-Result (Preismodell ungeklärt)
+   - keine Versand- und Rückgabe-Auszeichnung
+7. **Design-Konsistenz:**
+   - 73 Hex-Werte in eigenen Dateien, darunter Beinahe-Dubletten.
+   - Eine Token-Umstellung ist ein eigener Umbau mit Pixel-Vergleich.
+8. **Startseite mobil 10.560 px:** Die Struktur gehört zu Konzept C (#186), dort wird nicht gestapelt.
+9. **Sprache:** Englische Systemtexte und die Du-Form im Cookie-Banner kommen aus Store-Einstellungen.
+10. **Startseite und Verlegeservice mobil schlechter als Live** (P 60/61 statt 65/66).
+    - Das LCP-Element ist dort im Entwurf der Cookie-Banner-Text.
+    - Die Seiten stammen aus Konzept C bzw. der Verlegeservice-Sitzung; die Ursache ist nicht abschließend geklärt.
+11. **Mehrere Sitzungen in einem Theme:** Heute haben sich drei Sitzungen im Arbeits-Theme gegenseitig zurückgesetzt, anfangs auch durch dieses Programm (Voll-Pushes bis 11:55 UTC, Vorlagen um 12:33 UTC, `tp-verlegegebiet.liquid` um 13:05 UTC). Seit #22 gilt: Dreiwege-Prüfung, Dev-Theme, dateigenau.
+
+**Entscheidungen, die nur der Inhaber treffen kann:**
+1. Deploy der Kette.
+2. Favicon (quadratisches Logo).
+3. Shopname im Admin „TeppichParadies“ → „Teppich Paradies“ (wirkt auch in E-Mails, Checkout, Copyright).
+4. Cookie-Banner kürzer bzw. als kompakte Leiste.
+5. Such-Synonyme in der Such-App.
+6. Florhöhen-Werte vereinheitlichen.
+7. Produkttitel ohne Breiten.
+8. Meta-Beschreibungen der restlichen Seiten.
+9. Preisauszeichnung für Rollenware (Rich Result).
+10. Verbindliche Versand- und Rückgaberegeln für die Auszeichnung.
+11. Abrechnung nach cm statt aufgerundeter m² (Geschäftsregel).
+12. Shop-Sprache Deutsch für Systemtexte.
+13. Laden- oder Teamfoto.
+14. Leisten-Produktseite, „Passendes Montagezubehör“:
+    - Die Section zeigt die Kollektion „Verlegeband“, also vor allem Teppich-Verlegebänder für 149–162 €.
+    - Passend wären die zwei Produkte darin für Sockelleisten (Trockenkleber-Band, Sockelklebeband).
+    - Vorschlag: eine Kollektion „Leisten-Zubehör“ oder eine feste Produktauswahl in der Section. Beides ist eine Sortimentsentscheidung, die Kollektion wäre zudem storeweit.
+15. Veröffentlichung von `feature/shop-qualitaet` auf GitHub. Die Menü-Sitzung wartet damit auf ihren Branch, der diese Commits enthält.
