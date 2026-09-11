@@ -618,3 +618,13 @@ Hebel liegen beim Inhaber, bei Shopify oder brauchen echte Kaufdaten.
   - Prüfstufe grün: Guards, `validate --static`, Theme Check ohne neue Warnung, `npm test` 154/154.
   - Dev-Theme: Prüfsumme gleich, Laufzeitprüfung 10/11 (favicon).
   - Entwurf: Prüfsumme gleich. 5 kalte Aufrufe mit 1 × 0,008 aus dem Header-Bereich (Menü-Sitzung); Live 0.
+
+### Nachtrag 3: Konfliktauflösung für den späteren Merge nach `main`
+
+Hinweis der Verlegeservice-Sitzung, weitergegeben von der Menü-Sitzung. Er gilt für den Merge von `feature/shop-qualitaet` bzw. der Konzept-C-Kette nach `main`:
+
+- **`templates/page.verlegeservice.json`:**
+  - `main.disabled = true` aus `main` behalten.
+  - `dcfcbe8` („Hauptbereich aktivieren“) würde neben der H1 der Section `tp-verlegeservice` eine zweite H1 erzeugen, und `qa/tests/verlegeservice.test.mjs` verlangt genau eine.
+  - Die Referenzgalerie aus `674a199` dreiseitig neben die `referenz`-Blöcke in `tp-verlegeservice-kontakt` setzen.
+- **`config/settings_schema.json`:** Beide Gruppen behalten, „TP Verlegeservice“ aus `main` und die Gruppen der Kette.
