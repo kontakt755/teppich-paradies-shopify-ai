@@ -47,7 +47,15 @@
   assign tp_vn_z_handles = 'bodenleisten|zubehoer-verlegeunterlagen|zubehoer-kleber-fixierung|zubehoer-profile' | split: '|'
   assign tp_vn_z_labels = 'Sockelleisten|Verlege- & Dämmunterlagen|Kleber & Fixierung|Profile' | split: '|'
 
-  assign tp_vn_fg_url = routes.search_url | append: '?q=Fischgr%C3%A4t&type=product'
+  # Fischgraet: eigene Kollektion vinylboden-fischgraet (angelegt 2026-09-11,
+  # unveroeffentlicht), sobald sie im Onlineshop veroeffentlicht ist. Bis dahin
+  # liefert collections[...] nichts, und der Einstieg bleibt die Shopsuche.
+  assign tp_vn_fg = collections['vinylboden-fischgraet']
+  if tp_vn_fg.all_products_count > 0
+    assign tp_vn_fg_url = tp_vn_fg.url
+  else
+    assign tp_vn_fg_url = routes.search_url | append: '?q=Fischgr%C3%A4t&type=product'
+  endif
 -%}
 
 {%- capture tp_vn_optik -%}
