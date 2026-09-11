@@ -316,6 +316,13 @@ migrieren, große irreversible Shopify-Datenänderungen ausführen.
 Kleine, getestete Theme-Optimierungen dürfen eigenständig laufen. Große
 architektonische Änderungen erst analysieren und berichten.
 
+**Berechtigungen:** Claude arbeitet im Bypass-Modus ohne Rückfragen
+(Entscheidung Ahmet, 2026-09-11). Die Grenzen oben gelten trotzdem – sie sind
+Verhaltensregeln, keine Rückfragen. **Keine `permissions.ask`-Regeln anlegen:**
+sie fragen in *jedem* Modus nach, auch unter Bypass, und haben genau die
+Dauer-Rückfragen erzeugt, die abgeschafft werden sollten. Harte Grenzen gehören
+als `deny` in `.claude/hooks/git-gh-guard.mjs`. Details: `.claude/README.md`.
+
 `RISK_MODEL_SPEC.md` definiert die Gates, `RISK_MAP.yaml` und
 `domains/shopify/risk-map.json` die Kategorien. Übersteigt das tatsächliche
 Risiko das erlaubte, greift `HARD_STOP`. Review-Schleifen laufen maximal
