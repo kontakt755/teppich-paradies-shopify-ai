@@ -109,10 +109,9 @@
               },
               "blocks": {
                 "text_xrnftG": {
-                  "type": "text",
+                  "type": "tp-product-h1",
                   "name": "Product title",
                   "settings": {
-                    "text": "<h1>{{ closest.product.title }}</h1>",
                     "width": "100%",
                     "max_width": "normal",
                     "alignment": "left",
@@ -134,13 +133,10 @@
                   },
                   "blocks": {}
                 },
-                "price_custom_Cp66p6": {
-                  "type": "price_custom",
-                  "name": "Produktpreis mit Einheit",
+                "price_tVjtKg": {
+                  "type": "price",
                   "settings": {
                     "show_sale_price_first": true,
-                    "unit_label": "m²",
-                    "unit_separator": "/",
                     "show_installments": false,
                     "show_tax_info": false,
                     "type_preset": "paragraph",
@@ -152,7 +148,7 @@
                     "letter_spacing": "normal",
                     "case": "none",
                     "color": "var(--color-foreground)",
-                    "padding-block-start": 0,
+                    "padding-block-start": 4,
                     "padding-block-end": 0,
                     "padding-inline-start": 0,
                     "padding-inline-end": 0
@@ -162,28 +158,13 @@
               },
               "block_order": [
                 "text_xrnftG",
-                "price_custom_Cp66p6"
+                "price_tVjtKg"
               ]
             },
-            "tp_vorteile_sales1": {
+            "tp_vorteile_night1": {
               "type": "tp-vorteile",
               "name": "TP Vorteile",
               "settings": {},
-              "blocks": {}
-            },
-            "tp_vertrauen_sales1": {
-              "type": "tp-vertrauen",
-              "name": "TP Vertrauen",
-              "settings": {},
-              "blocks": {}
-            },
-            "tp_bewertungsbeleg_night1": {
-              "type": "tp-bewertungsbeleg",
-              "name": "TP Bewertungsbeleg",
-              "settings": {
-                "rating": "",
-                "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen"
-              },
               "blocks": {}
             },
             "divider_VJhene": {
@@ -198,32 +179,43 @@
               },
               "blocks": {}
             },
-            "tp_step_farbe_sales1": {
-              "type": "tp-step",
-              "name": "TP Schritt-Überschrift",
+            "variant_picker_R3rGDr": {
+              "type": "variant-picker",
               "settings": {
-                "number": 1,
-                "label": "Wähle deine Farbe"
+                "variant_style": "buttons",
+                "show_swatches": false,
+                "alignment": "left",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
               },
               "blocks": {}
             },
-            "color_swatch_picker_f7EyBF": {
-              "type": "color-swatch-picker",
-              "name": "Farb-Swatches",
+            "paket_auswahl_xLTafR": {
+              "type": "paket-auswahl",
+              "name": "Paket-Auswahl",
               "settings": {},
               "blocks": {}
             },
-            "tp_roll_order_help_sales1": {
-              "type": "tp-roll-order-help",
-              "name": "TP Rollenware-Hilfe",
+            "tp_service_links_night1": {
+              "type": "tp-service-links",
+              "name": "TP Service-Links",
+              "settings": {
+                "delivery_time": "5–7 Werktage"
+              },
+              "blocks": {}
+            },
+            "tp_compare_toggle_night3": {
+              "type": "tp-compare-toggle",
+              "name": "TP Vergleichen-Button",
               "settings": {},
               "blocks": {}
             },
-            "tp_rollware_rechner_sales1": {
-              "type": "tp-rollware-rechner",
-              "name": "TP Rollenware-Rechner",
-              "settings": {},
-              "blocks": {}
+            "options_price_calculator_product_calculator_z3CEfy": {
+              "type": "shopify://apps/options-price-calculator/blocks/product_calculator/46eaac1e-1432-4cdd-814e-d2c707255110",
+              "disabled": true,
+              "settings": {}
             },
             "tp_farbanzeige_tp1": {
               "type": "tp-farbanzeige",
@@ -250,7 +242,6 @@
               "blocks": {
                 "quantity": {
                   "type": "quantity",
-                  "disabled": true,
                   "static": true,
                   "settings": {},
                   "blocks": {}
@@ -272,17 +263,10 @@
               },
               "block_order": []
             },
-            "tp_service_links_sales1": {
-              "type": "tp-service-links",
-              "name": "TP Service-Links",
-              "settings": {
-                "delivery_time": "5–7 Werktage"
-              },
-              "blocks": {}
-            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
+              "disabled": true,
               "settings": {
                 "text": "{{ closest.product.description }}",
                 "width": "100%",
@@ -305,41 +289,20 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
-            },
-            "ai_gen_block_b888d9b_CJbJ8X": {
-              "type": "ai_gen_block_b888d9b",
-              "settings": {
-                "desktop_width_percent": 100,
-                "key_column_width": 35,
-                "cell_padding": 16,
-                "border_radius": 8,
-                "row_border_width": 1,
-                "background_color": "#ffffff",
-                "border_color": "#e6e6e6",
-                "key_text_color": "#000000",
-                "value_text_color": "#000000",
-                "key_font_size": 14,
-                "key_font_weight": "600",
-                "value_font_size": 14
-              },
-              "blocks": {}
             }
           },
           "block_order": [
             "group_icgrde",
-            "tp_vorteile_sales1",
-            "tp_vertrauen_sales1",
-            "tp_bewertungsbeleg_night1",
+            "tp_vorteile_night1",
             "divider_VJhene",
-            "tp_step_farbe_sales1",
-            "color_swatch_picker_f7EyBF",
+            "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
-            "tp_roll_order_help_sales1",
-            "tp_rollware_rechner_sales1",
+            "paket_auswahl_xLTafR",
+            "tp_service_links_night1",
+            "tp_compare_toggle_night3",
+            "options_price_calculator_product_calculator_z3CEfy",
             "buy_buttons_eYQEYi",
-            "tp_service_links_sales1",
-            "text_aEtTtq",
-            "ai_gen_block_b888d9b_CJbJ8X"
+            "text_aEtTtq"
           ]
         }
       },
@@ -353,6 +316,65 @@
         "color_scheme": "",
         "padding-block-start": 0,
         "padding-block-end": 0
+      }
+    },
+    "product_info_full_width_TP1": {
+      "type": "section",
+      "name": "Produktinformationen (Full Width)",
+      "blocks": {
+        "tp_verkaufstext_night2": {
+          "type": "tp-verkaufstext",
+          "name": "TP Verkaufstext",
+          "settings": {},
+          "blocks": {}
+        },
+        "ai_gen_block_b888d9b_CJbJ8X": {
+          "type": "ai_gen_block_b888d9b",
+          "settings": {
+            "desktop_width_percent": 100,
+            "key_column_width": 30,
+            "cell_padding": 16,
+            "border_radius": 8,
+            "row_border_width": 1,
+            "background_color": "#ffffff",
+            "border_color": "#e6e6e6",
+            "key_text_color": "#000000",
+            "value_text_color": "#000000",
+            "key_font_size": 16,
+            "key_font_weight": "600",
+            "value_font_size": 15
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "tp_verkaufstext_night2",
+        "ai_gen_block_b888d9b_CJbJ8X"
+      ],
+      "settings": {
+        "content_direction": "column",
+        "vertical_on_mobile": true,
+        "horizontal_alignment": "flex-start",
+        "vertical_alignment": "center",
+        "horizontal_alignment_flex_direction_column": "flex-start",
+        "vertical_alignment_flex_direction_column": "flex-start",
+        "gap": 32,
+        "section_width": "page-width",
+        "section_height": "",
+        "color_scheme": "",
+        "background_media": "none",
+        "video_position": "cover",
+        "background_image_position": "cover",
+        "border": "none",
+        "border_width": 1,
+        "border_opacity": 100,
+        "border_radius": 0,
+        "toggle_overlay": false,
+        "overlay_color": "#00000026",
+        "overlay_style": "solid",
+        "gradient_direction": "to top",
+        "padding-block-start": 40,
+        "padding-block-end": 40
       }
     },
     "product_recommendations_qggXJq": {
@@ -513,6 +535,7 @@
   },
   "order": [
     "main",
+    "product_info_full_width_TP1",
     "product_recommendations_qggXJq"
   ]
 }

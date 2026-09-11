@@ -7,26 +7,34 @@
   Default und wurde nie durch eine echte Zahl ersetzt - am 2026-09-05 als
   falsche Angabe erkannt und entfernt. Erst nach echter Elfsight/Reviews-
   API-Anbindung wieder mit echtem Wert ergaenzen, nie mit einer Schaetzung.
+
+  Dasselbe galt fuer die Sterne: "4.8" war Schema-Default, nie gegen das
+  Google-Profil geprueft, waehrend Startseite und Trust-Streifen bewusst leer
+  sind. Seit 2026-09-11 (Audit B-02): Wert leer = keine Sterne, nur der Link.
 {% enddoc %}
 
 {%- liquid
   assign tp_bb_id = block.id | replace: '_', '' | downcase
-  assign tp_bb_rating = block.settings.rating
+  assign tp_bb_rating = block.settings.rating | strip
   assign tp_bb_link = block.settings.review_link
 -%}
 
+{%- if tp_bb_rating != blank or tp_bb_link != blank -%}
 <div class="tp-bewertungsbeleg-{{ tp_bb_id }}" {{ block.shopify_attributes }}>
-  <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
-    {%- assign tp_bb_full = tp_bb_rating | floor -%}
-    {%- for i in (1..5) -%}
-      {%- if i <= tp_bb_full -%}★{%- else -%}☆{%- endif -%}
-    {%- endfor -%}
-  </span>
-  <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
+  {%- if tp_bb_rating != blank -%}
+    <span class="tp-bewertungsbeleg__stars-{{ tp_bb_id }}" aria-label="{{ tp_bb_rating }} von 5 Sternen">
+      {%- assign tp_bb_full = tp_bb_rating | replace: ',', '.' | floor -%}
+      {%- for i in (1..5) -%}
+        {%- if i <= tp_bb_full -%}★{%- else -%}☆{%- endif -%}
+      {%- endfor -%}
+    </span>
+    <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
+  {%- endif -%}
   {%- if tp_bb_link != blank -%}
-    <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">Auf Google lesen</a>
+    <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
   {%- endif -%}
 </div>
+{%- endif -%}
 
 <style>
   .tp-bewertungsbeleg-{{ tp_bb_id }} {
@@ -70,8 +78,8 @@
     {
       "type": "text",
       "id": "rating",
-      "label": "Sternebewertung (z.B. 4.8)",
-      "default": "4.8"
+      "label": "Sternebewertung (leer = ausgeblendet)",
+      "info": "Nur aus dem Google-Unternehmensprofil abschreiben, nie schaetzen."
     },
     {
       "type": "url",

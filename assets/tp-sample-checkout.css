@@ -197,3 +197,53 @@
   text-underline-offset: 2px;
   color: inherit;
 }
+
+/* display:flex/inline-flex der Klassen oben schlug das hidden-Attribut:
+   leeres Produktkaestchen und "Zum Warenkorb" waren immer sichtbar. */
+.tp-sample [hidden] {
+  display: none !important;
+}
+
+.tp-sample__empty {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+  border-radius: 8px;
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.03);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.tp-sample__empty p {
+  margin: 0 0 12px;
+}
+
+.tp-sample__empty p:last-child {
+  margin-bottom: 0;
+}
+
+.tp-sample__empty-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-sample__empty-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #817c68;
+  border-radius: 999px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tp-sample__empty-links a:hover,
+.tp-sample__empty-links a:focus-visible {
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+}
