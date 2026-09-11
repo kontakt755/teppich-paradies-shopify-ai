@@ -44,10 +44,29 @@ function defaultsOf(kind, type) {
   return schemaCache.get(key);
 }
 
+// Links, die die Section bzw. der Block selbst absichert: Steht im Liquid
+// `settings.<id> != blank`, rendert ein leerer Link gar nichts statt eines
+// toten Knopfs. Beispiel seit #191: tp-verlegeservice-kontakt zeigt "Fotos
+// unserer Verlegearbeiten ansehen" nur, wenn arbeiten_link gesetzt ist.
+// Grobe Heuristik: Sie erkennt den Schutz in der Datei, nicht jede Stelle.
+const schutzCache = new Map();
+function geschuetztOf(kind, type) {
+  const key = `${kind}/${type}`;
+  if (!schutzCache.has(key)) {
+    const file = new URL(`${kind}/${type}.liquid`, ROOT);
+    const quelle = existsSync(file) ? readFileSync(file, 'utf8') : '';
+    schutzCache.set(key, new Set([...quelle.matchAll(/settings\.([a-z0-9_]+)\s*!=\s*blank/g)].map((m) => m[1])));
+  }
+  return schutzCache.get(key);
+}
+
+const PRUEFUNG = { defaults: defaultsOf, geschuetzt: geschuetztOf };
+
 // Ein Knopf ist ein Paar aus `<x>_link` und `<x>_text` bzw. `<x>_label`
 // (primary_btn_link/primary_btn_text, primary_link/primary_label,
 // link/label). Hat der Knopf einen Text, aber keinen Link, fuehrt er ins
-// Leere. Abgeschaltete Bereiche und `<x>_enabled: false` rendern nicht.
+// Leere. Abgeschaltete Bereiche und `<x>_enabled: false` rendern nicht,
+// ebenso Links, die die Section selbst mit `!= blank` absichert.
 const LINK = /^(?:(.*)_)?(?:link|url)$/;
 
 function abgeschaltet(settings, praefix) {
@@ -59,14 +78,15 @@ function abgeschaltet(settings, praefix) {
   return false;
 }
 
-function leereKnopfLinks(template, { defaults = () => ({}) } = {}) {
+function leereKnopfLinks(template, { defaults = () => ({}), geschuetzt = () => new Set() } = {}) {
   const funde = [];
   const pruefe = (knoten, kind, pfad) => {
     if (!knoten || knoten.disabled === true) return;
     const settings = { ...defaults(kind, knoten.type), ...(knoten.settings ?? {}) };
+    const schutz = geschuetzt(kind, knoten.type);
     for (const key of Object.keys(settings)) {
       const m = key.match(LINK);
-      if (!m) continue;
+      if (!m || schutz.has(key)) continue;
       const p = m[1] ?? '';
       if (abgeschaltet(settings, p)) continue;
       const label = [p ? `${p}_text` : 'text', p ? `${p}_label` : 'label']
@@ -97,7 +117,7 @@ test('A: page.json ist die neutrale Standardseite ohne B2B-Kopf', () => {
 test('B: kein Knopf in einer Seitenvorlage hat einen leeren Link', () => {
   const dateien = readdirSync(TEMPLATES).filter((f) => /^page(\..+)?\.json$/.test(f) && !VERWAIST.includes(f));
   assert.ok(dateien.includes('page.json'));
-  const funde = dateien.flatMap((f) => leereKnopfLinks(lies(f), { defaults: defaultsOf }).map((x) => `${f}: ${x}`));
+  const funde = dateien.flatMap((f) => leereKnopfLinks(lies(f), PRUEFUNG).map((x) => `${f}: ${x}`));
   assert.deepEqual(funde, []);
 });
 
@@ -135,10 +155,22 @@ test('D2: abgeschaltete Kacheln, abgeschaltete Bereiche und Links ohne Knopftext
   assert.equal(leereKnopfLinks(tpl).length, 1);
 });
 
+test('D3: einen Link, den die Section selbst mit != blank absichert, zaehlt nicht', () => {
+  const tpl = { sections: { a: { type: 'x', settings: { arbeiten_label: 'Fotos ansehen', arbeiten_link: '' } } } };
+  assert.equal(leereKnopfLinks(tpl).length, 1);
+  assert.deepEqual(leereKnopfLinks(tpl, { geschuetzt: () => new Set(['arbeiten_link']) }), []);
+  // Der echte Fall: ohne gesetzten Link rendert die Section keinen Knopf.
+  if (existsSync(new URL('sections/tp-verlegeservice-kontakt.liquid', ROOT))) {
+    assert.ok(geschuetztOf('sections', 'tp-verlegeservice-kontakt').has('arbeiten_link'));
+  }
+  // Ungeschuetzte Knoepfe bleiben ein Fund, z. B. der B2B-Kopf.
+  assert.ok(!geschuetztOf('sections', 'b2b-hero-bereich').has('primary_btn_link'));
+});
+
 test('E: die Ausnahmeliste nennt nur Dateien, die es gibt und die sie noch brauchen', () => {
   for (const f of VERWAIST) {
     assert.ok(existsSync(new URL(f, TEMPLATES)), `${f} existiert nicht mehr - aus VERWAIST streichen`);
     assert.ok(!B2B_SUFFIXE.some((s) => f === `page.${s}.json`), `${f} ist eine echte Suffix-Vorlage, keine verwaiste`);
-    assert.ok(leereKnopfLinks(lies(f), { defaults: defaultsOf }).length > 0, `${f} hat keine leeren Links mehr - aus VERWAIST streichen`);
+    assert.ok(leereKnopfLinks(lies(f), PRUEFUNG).length > 0, `${f} hat keine leeren Links mehr - aus VERWAIST streichen`);
   }
 });
