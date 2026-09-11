@@ -6,6 +6,11 @@ Keine Shopify-Aenderung. Alles hier ist Analyse und Datenbasis.
 Ordner: `teppichboden-abgleich/` — Vollabgleich `abgleich-teppichboden.json` (+ zwei CSV), Testlauf `abgleich-testlauf.json`, Rohdaten unter `rohdaten/`,
 Skripte unter `scripts/` (Python 3, nur Standardbibliothek plus `pypdf` fuer die PDF-Auswertung).
 
+**Kleinmengen und Dropshipping:** `kleinmengen-dropshipping-2026-09-10.md` beantwortet aus denselben Rohdaten,
+ob Paketware unterhalb eines Gebindes bestellbar ist. Kurz: nein — bei beiden Haendlern ist das Paket die
+Handelseinheit, Mindestabnahmen gehen nach oben („mind. 5 VE"), und wer ein Paket oeffnet, macht kein
+Dropshipping mehr. Rollenware dagegen ist bei beiden nach laufendem Meter bestellbar.
+
 ## 1. Datenquellen (Phase 1)
 
 | Quelle | Zugang | Was sie liefert | Grenzen |
@@ -170,7 +175,11 @@ deren gescannte LE M-Plus selbst als Hersteller nennt, 1 unlesbarer Scan) und be
 2. Bestand: Kundenlogins beider Shops im Browser, dann Verfuegbarkeit je Farbartikel auslesen
    (Jordan `/api/availability`, M-Plus Produktseite eingeloggt).
 3. Jordan-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
-4. Danach Phase 5 (Metafelder anlegen, Theme-Logik) — nur nach ausdruecklicher Freigabe.
+   Dazu jetzt zwei Fragen aus `kleinmengen-dropshipping-2026-09-10.md`: Mindestabnahme je Artikel (Jordan pflegt sie
+   nur als Freitext im Feld `Qualitaet`, 1 von 276 Seiten) und die Dropshipping-Konditionen beider Haendler.
+4. Danach Phase 5 (Metafelder anlegen, Theme-Logik) — nur nach ausdruecklicher Freigabe. Dabei
+   `lieferant.mindestabnahme_ve` mit aufnehmen: Ohne dieses Feld kann der Shop ein Paket verkaufen, das der
+   Lieferant nicht einzeln liefert.
 
 Die Struktur ist kategorieneutral (`category`, `technical_data` als Schluessel-Wert-Paare je Quelle) und laesst
 sich auf PVC, Vinyl, Klickvinyl, Laminat, Parkett, Sockelleisten und Zubehoer uebertragen; nur die Vergleichs-

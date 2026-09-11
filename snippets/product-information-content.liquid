@@ -144,6 +144,23 @@
       <span aria-hidden="true">/</span>
       <span aria-current="page">{{ product.title }}</span>
     </nav>
+    {%- comment -%} Dieselben Stufen wie die sichtbare Breadcrumb als BreadcrumbList (Audit B-15) {%- endcomment -%}
+    {%- assign tp_crumb_pos = 1 -%}
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+        {"@type":"ListItem","position":1,"name":"Start","item":{{ request.origin | append: routes.root_url | json }}}
+        {%- if tp_crumb_1 -%}
+          {%- assign tp_crumb_pos = tp_crumb_pos | plus: 1 -%}
+          ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ tp_crumb_1.title | json }},"item":{{ request.origin | append: tp_crumb_1.url | json }}}
+        {%- endif -%}
+        {%- if tp_crumb_2 != blank and tp_crumb_2 != tp_crumb_1 -%}
+          {%- assign tp_crumb_pos = tp_crumb_pos | plus: 1 -%}
+          ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ tp_crumb_2_label | json }},"item":{{ request.origin | append: tp_crumb_2.url | json }}}
+        {%- endif -%}
+        {%- assign tp_crumb_pos = tp_crumb_pos | plus: 1 -%}
+        ,{"@type":"ListItem","position":{{ tp_crumb_pos }},"name":{{ product.title | json }},"item":{{ request.origin | append: product.url | json }}}
+      ]}
+    </script>
   {%- endif -%}
   {% if settings.desktop_media_position == 'left' and product_has_media and request.page_type == 'product' %}
     {% assign product_href = '#ProductInformation-' | append: section_id %}

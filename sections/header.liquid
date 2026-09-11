@@ -307,7 +307,9 @@
       "image": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
     {% endif %}
     "url": {{ request.origin | json }},
-    {% if shop.phone != blank %}"telephone": {{ shop.phone | json }},{% endif %}
+    {%- comment -%} shop.phone ist im Admin die Mobilnummer; sichtbar ist ueberall das Festnetz (Audit B-15) {%- endcomment -%}
+    {%- assign tp_schema_tel = settings.tp_telefon_schema | default: shop.phone -%}
+    {% if tp_schema_tel != blank %}"telephone": {{ tp_schema_tel | json }},{% endif %}
     {% if shop.email != blank %}"email": {{ shop.email | json }},{% endif %}
     {% if shop.address.street != blank %}
       "address": {

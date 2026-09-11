@@ -244,7 +244,17 @@
   -%}
   {%- if tp_cart_has_spedition_item -%}
     <p class="tp-cart-shipping-note">
-      <strong>Versandkostenfrei in Deutschland.</strong> Rollen und große Pakete bringt die Spedition bis vor die Haustür, wir rufen vorher an.
+      {%- comment -%}
+        Alle aktiven Produkte liegen im allgemeinen Versandprofil: unter 50 EUR
+        Bestellwert kostet der Versand 4,99 EUR (z. B. ein einzelnes Paket).
+        Ohne die Schwelle versprach der Warenkorb dort etwas Falsches (Audit B-18).
+      {%- endcomment -%}
+      {%- if cart.total_price >= 5000 -%}
+        <strong>Versandkostenfrei in Deutschland.</strong>
+      {%- else -%}
+        <strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert.</strong>
+      {%- endif %}
+      Rollen und große Pakete bringt die Spedition bis vor die Haustür, wir rufen vorher an.
     </p>
   {%- endif -%}
 

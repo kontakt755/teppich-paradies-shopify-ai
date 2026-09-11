@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-09T21:34:54.563Z",
+  "generated_at": "2026-09-11T05:37:07.620Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 58,
+  "count": 63,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-09T21:34:54.563Z",
+    "fetchedAt": "2026-09-11T05:37:07.620Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,9 +63,129 @@
   },
   "issues": [
     {
+      "number": 184,
+      "title": "Referenzgalerie Unsere Arbeit + defekte Arbeiten-Links",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/184",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:content"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T12:27:30Z",
+      "updated_at": "2026-09-10T12:55:15Z",
+      "closed_at": null
+    },
+    {
+      "number": 181,
+      "title": "Mega-Menue: header-drawer.liquid ueberschreitet die Liquid-Komplexitaet",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/181",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p3",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T11:27:02Z",
+      "updated_at": "2026-09-10T11:29:08Z",
+      "closed_at": null
+    },
+    {
+      "number": 179,
+      "title": "Paketware verstaendlich darstellen: Preis, Rechner, Warenkorb, Karten",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/179",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T10:34:31Z",
+      "updated_at": "2026-09-10T11:13:53Z",
+      "closed_at": "2026-09-10T11:13:35Z"
+    },
+    {
+      "number": 175,
+      "title": "Produktseite Paketware: vier Defekte im Kaufbereich",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/175",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T09:22:34Z",
+      "updated_at": "2026-09-10T11:12:21Z",
+      "closed_at": "2026-09-10T11:12:05Z"
+    },
+    {
+      "number": 173,
+      "title": "Verlegegebiet-Karte fuer die Verlegeseiten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/173",
+      "labels": [
+        "status:review",
+        "type:verbesserung",
+        "priority:p2",
+        "area:service"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-10T08:55:57Z",
+      "updated_at": "2026-09-10T10:36:20Z",
+      "closed_at": null
+    },
+    {
       "number": 172,
       "title": "Alt-PRs bereinigt: Konflikte aufgeloest, ueberholte geschlossen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/172",
       "labels": [
         "status:fertig",
@@ -83,8 +203,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T21:34:26Z",
-      "updated_at": "2026-09-09T21:34:53Z",
-      "closed_at": null
+      "updated_at": "2026-09-09T21:34:54Z",
+      "closed_at": "2026-09-09T21:34:54Z"
     },
     {
       "number": 170,
@@ -123,13 +243,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 9,
+      "comments": 14,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:19:47Z",
-      "updated_at": "2026-09-09T21:25:05Z",
+      "updated_at": "2026-09-10T05:52:14Z",
       "closed_at": null
     },
     {

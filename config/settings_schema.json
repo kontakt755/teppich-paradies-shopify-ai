@@ -2284,5 +2284,21 @@
         "default": "equal-width-buttons"
       }
     ]
+  },
+  {
+    "name": "TP Firmendaten",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Werte fuer strukturierte Daten (Google). Die sichtbaren Nummern stehen in den jeweiligen Sections."
+      },
+      {
+        "type": "text",
+        "id": "tp_telefon_schema",
+        "label": "Telefon (Festnetz) im LocalBusiness-Schema",
+        "info": "Internationales Format. Leer = Telefonnummer aus den Shop-Einstellungen (dort steht die Mobilnummer).",
+        "default": "+49 3301 5733720"
+      }
+    ]
   }
 ]

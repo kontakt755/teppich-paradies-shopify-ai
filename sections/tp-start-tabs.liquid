@@ -23,6 +23,22 @@
   </div>
 </div>
 
+{%- comment -%}
+  Die Produktlisten sind Horizon-Sections mit page-width und standen deshalb
+  84 px weiter links als Reiter und Ueberschrift. Genau die Listen dieser Reiter
+  bekommen die Inhaltsbreite der TP-Sections (Audit B-16). Die Section-IDs sind
+  dynamisch, deshalb hier ein style-Tag statt stylesheet.
+{%- endcomment -%}
+{%- assign tp_tabs_prefix = section.id | split: '__' | first -%}
+<style>
+  {%- for block in section.blocks -%}
+    {%- assign tp_tabs_key = block.settings.section_id | strip -%}
+    {%- if tp_tabs_key != blank -%}
+      #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} .section { --page-content-width: calc(var(--tp-container) - 2 * var(--tp-pad)); --page-width: calc(var(--page-content-width) + var(--page-margin) * 2); }
+    {%- endif -%}
+  {%- endfor -%}
+</style>
+
 {% stylesheet %}
   .tp-tabs { padding-top: var(--tp-sec); }
   .tp-tabs__head { margin-bottom: 18px; }
@@ -44,12 +60,27 @@
         tabs.forEach(function (t) {
           var on = t === active;
           t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.setAttribute('tabindex', on ? '0' : '-1');
           var key = t.getAttribute('data-tp-target');
           var sec = document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
           if (sec) sec.hidden = !on;
         });
       }
       tabs.forEach(function (t) { t.addEventListener('click', function () { show(t); }); });
+      // Pfeiltasten, Pos1 und Ende wie bei role=tablist ueblich (Audit B-47)
+      tabs.forEach(function (t, i) {
+        t.addEventListener('keydown', function (e) {
+          var next = null;
+          if (e.key === 'ArrowRight') next = tabs[(i + 1) % tabs.length];
+          else if (e.key === 'ArrowLeft') next = tabs[(i - 1 + tabs.length) % tabs.length];
+          else if (e.key === 'Home') next = tabs[0];
+          else if (e.key === 'End') next = tabs[tabs.length - 1];
+          if (!next) return;
+          e.preventDefault();
+          show(next);
+          next.focus();
+        });
+      });
       show(tabs[0]);
     });
   })();

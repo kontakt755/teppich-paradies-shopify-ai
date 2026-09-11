@@ -124,12 +124,50 @@ async function packageFlow({ page, context, result, setPhase }) {
   setPhase('navigation');
   await page.goto(targetUrl('/products/marlow-eiche-nordisch-klickvinyl-7mm', baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('calculator');
-  const input = page.locator('main input[type="number"]').first();
+  // Das Flaechenfeld ist bewusst type="text" mit inputmode="decimal": in einem
+  // number-Input ist "1,5" ein ungueltiger Wert und kommt als leerer String an,
+  // deutsche Kommaeingabe waere unmoeglich. Deshalb ueber das Datenattribut
+  // ansprechen und nicht ueber den Feldtyp.
+  const input = page.locator('main [data-sqm-input]').first();
   await input.fill('10');
   await input.dispatchEvent('input');
   await input.dispatchEvent('change');
-  await page.waitForFunction(() => /Gesamtpreis\s+529,90\s*€/.test(document.querySelector('main')?.innerText || ''), null, { timeout: 10_000 });
+  await input.dispatchEvent('blur');
+
+  // Erwartung selbst rechnen statt feste Betraege zu verankern: Paketflaeche und
+  // Paketpreis stehen als Vertrag am Rechner, der Verschnittzuschlag am
+  // Kontrollkaestchen. Aendert sich ein Lieferantenpreis, prueft der Test
+  // weiterhin das Richtige - naemlich dass Anzeige und Warenkorb zur selben
+  // Rechnung gehoeren.
+  const vertrag = await page.evaluate(() => {
+    const rechner = document.querySelector('.tp-paket-auswahl');
+    const verschnitt = document.querySelector('[data-waste-checkbox]');
+    return rechner
+      ? {
+          flaeche: parseFloat(rechner.dataset.sqmPerPackage),
+          preisCent: parseInt(rechner.dataset.packagePriceCents, 10),
+          verschnitt: verschnitt ? verschnitt.checked : false,
+        }
+      : null;
+  });
+  if (!vertrag) throw new Error('Paket-Rechner nicht gefunden (.tp-paket-auswahl)');
+
+  const faktor = vertrag.verschnitt ? 1.05 : 1;
+  const erwartetePakete = Math.max(1, Math.ceil((10 * faktor) / vertrag.flaeche - 1e-9));
+  const erwarteterCent = erwartetePakete * vertrag.preisCent;
+  const alsEuro = cent => (cent / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  await page.waitForFunction(
+    (betrag) => (document.querySelector('[data-total-display]')?.textContent || '').includes(betrag),
+    alsEuro(erwarteterCent),
+    { timeout: 10_000 }
+  );
+
   const calculatorText = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
+  const anzeige = await page.evaluate(() => ({
+    pakete: parseInt(document.querySelector('[data-package-display]')?.textContent || '0', 10),
+    wort: (document.querySelector('[data-package-word]')?.textContent || '').trim(),
+  }));
   result.health = await pageHealth(page);
   setPhase('add-to-cart');
   const addResponse = page.waitForResponse(response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
@@ -138,17 +176,22 @@ async function packageFlow({ page, context, result, setPhase }) {
   const cart = await getCart(context);
   const line = cart.items[0];
   result.calculator = {
-    perSqmVisible: /50,95\s*€\/m²/.test(calculatorText),
-    packageContentVisible: /2,08\s*m²/.test(calculatorText),
-    packagesVisible: /Pakete\s*−\s*5\s*\+/.test(calculatorText),
-    totalVisible: /529,90\s*€/.test(calculatorText),
+    perSqmVisible: /\d+,\d{2}\s*€\/m²/.test(calculatorText),
+    packageContentVisible: /pro Originalpaket/.test(calculatorText),
+    packagesVisible: anzeige.pakete === erwartetePakete && /Originalpaket/.test(anzeige.wort),
+    totalVisible: calculatorText.includes(alsEuro(erwarteterCent)),
   };
+  result.erwartung = { ...vertrag, eingabeQm: 10, erwartetePakete, erwarteterCent };
   result.cart = {
     itemCount: cart.item_count,
     quantity: line?.quantity,
     unitPriceCents: line?.price,
     totalCents: cart.total_price,
-    plausible: cart.item_count === 5 && line?.quantity === 5 && line?.price === 10598 && cart.total_price === 52990,
+    plausible:
+      cart.item_count === erwartetePakete &&
+      line?.quantity === erwartetePakete &&
+      line?.price === vertrag.preisCent &&
+      cart.total_price === erwarteterCent,
   };
   result.checkout = await reachCheckout(page, setPhase);
   return Object.values(result.calculator).every(Boolean) && result.cart.plausible && result.checkout.reachable && !result.health.overflow && result.health.brokenImages.length === 0;

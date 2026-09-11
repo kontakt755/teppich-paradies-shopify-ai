@@ -13,7 +13,8 @@
   jede Stufe selbst. Die Kacheln werden zwischen rund 160 px (Handy, zwei Spalten) und
   700 px (Desktop, breite Karte auf Retina) dargestellt.
 
-  @param {object} link - Navigationspunkt (linklist item)
+  @param {object} [link] - Navigationspunkt (linklist item). Entfaellt bei kuratierten
+    Karten ohne Navigationspunkt - dann vergleicht match_title.
   @param {string} [kacheln] - Datensaetze aus content_for 'blocks' (siehe tp-menu-kachel-index)
   @param {string} [class] - CSS-Klasse fuer das img
   @param {string} [sizes] - sizes-Attribut

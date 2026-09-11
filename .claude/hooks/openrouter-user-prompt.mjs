@@ -4,7 +4,7 @@ import { prepareClaudeBridge } from '../../automation/core/claude-bridge.mjs';
 import { buildClaudeHookContext, shouldRouteClaudePrompt } from '../../automation/core/claude-hook-policy.mjs';
 import { loadLocalOpenRouterEnvironment } from '../../automation/core/local-openrouter-env.mjs';
 import { clearClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
-import { currentCommit } from '../../automation/core/review-scope.mjs';
+import { currentCommit, resolveReviewDir } from '../../automation/core/review-scope.mjs';
 import { classifyTask } from '../../workflow/router.mjs';
 import { buildModelPlan } from '../../workflow/model-matrix.mjs';
 
@@ -51,7 +51,11 @@ try {
     // in einem geteilten Checkout auch von einer anderen, parallel laufenden
     // Sitzung stammen kann. null (kein Repo/Commit) faellt beim Review auf
     // das bisherige Verhalten zurueck, siehe review-scope.mjs.
-    const startCommit = currentCommit({ cwd: projectDir });
+    // Arbeitet die Sitzung in einem Worktree, ist der Startcommit dort ein
+    // anderer als im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt. Wird er
+    // im falschen Verzeichnis gelesen, prueft der Stop-Hook spaeter den Diff
+    // einer fremden Sitzung (siehe resolveReviewDir).
+    const startCommit = currentCommit({ cwd: resolveReviewDir({ projectDir, sessionCwd: input.cwd }) });
     writeClaudeSessionState({
       sessionId: input.session_id,
       projectDir,

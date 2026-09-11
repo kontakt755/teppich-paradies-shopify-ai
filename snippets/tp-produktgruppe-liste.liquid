@@ -27,8 +27,16 @@
   assign tp_pgl_style = style | default: 'card'
 -%}
 
+{%- comment -%}
+  Bewusst kein script_tag: der Filter erzeugt ein parser-blockierendes
+  <script> ohne defer, und daran scheiterte jeder "shopify theme push
+  --strict" am Theme-Check (ParserBlockingScript) - also Scratch, Preview
+  und Live gleichermassen. Mit defer laeuft das Skript nach dem Parsen und
+  damit vor DOMContentLoaded; sein sofortiger Aufruf sieht dadurch sogar
+  erstmals das vollstaendige DOM.
+{%- endcomment -%}
 {%- if tp_pgl_style == 'pdp' -%}
-  {{ 'tp-groessen.js' | asset_url | script_tag }}
+  <script src="{{ 'tp-groessen.js' | asset_url }}" defer></script>
 {%- endif -%}
 
 <div class="tp-groessen tp-groessen--{{ tp_pgl_style }}" data-tp-groessen>
