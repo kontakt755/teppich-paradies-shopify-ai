@@ -22,10 +22,20 @@ const WURZEL = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.
 const SKRIPT = readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet.js'), 'utf8');
 const SEKTION = readFileSync(path.join(WURZEL, 'sections', 'tp-verlegegebiet.liquid'), 'utf8');
 
+// Dasselbe Format wie assets/tp-verlegegebiet-orte.json: Spannen je PLZ und
+// Name, eine angehaengte 1 fuer mehrere Orte gleichen Namens, und die gueltigen
+// Anfaenge deutscher Postleitzahlen als Kette von Dreiergruppen.
 const TABELLE = {
-  plz: { 16515: 2, 14199: 29, 39104: 120 },
-  orte: { berlin: [11.2, 47] },
+  plz: { 16515: [1.9, 2.1], 14199: [29, 29], 39104: [120, 120], 16999: [48, 53] },
+  orte: {
+    berlin: [11.2, 47],
+    werderhavel: [46.7, 46.7],
+    werder: [46.7, 480, 1],
+    neuendorf: [12, 31, 1],
+  },
+  praefixe: '141165169391803',
 };
+const ECHTE_TABELLE = JSON.parse(readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet-orte.json'), 'utf8'));
 
 class Knoten {
   constructor(merkmale = {}) {
@@ -80,18 +90,29 @@ function aufbauen({ ohneCta = false, ohneVersand = false } = {}) {
   // hereingereicht werden, nicht nur als Eigenschaft von window.
   const holen = () => new Promise((aufloesen, ablehnen) => offen.push({ aufloesen, ablehnen }));
   const fenster = { fetch: holen };
-  const dokument = {
-    readyState: 'complete',
-    addEventListener() {},
-    createElement: () => new Knoten(),
-    querySelectorAll: (wahl) => (wahl === '[data-tp-verlegegebiet-form]' ? [formular] : []),
-  };
+  const dokument = new Knoten({ readyState: 'complete' });
+  dokument.createElement = () => new Knoten();
+  dokument.querySelectorAll = (wahl) => (wahl === '[data-tp-verlegegebiet-form]' ? [formular] : []);
 
   // Das Skript ist ein IIFE fuers Browserfenster; hier bekommt es genau die
   // Umgebung gereicht, die es anfasst.
-  new Function('window', 'document', 'fetch', SKRIPT)(fenster, dokument, holen);
+  const laden = () => new Function('window', 'document', 'fetch', SKRIPT)(fenster, dokument, holen);
+  laden();
 
-  return { eingabe, ausgabe, weg, formular, offen };
+  return { eingabe, ausgabe, weg, formular, offen, dokument, laden };
+}
+
+/** Faehrt eine Eingabe gegen die echte Tabelle und liefert Status, Text, Weg. */
+async function echtPruefen(wert) {
+  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
+  eingabe.value = wert;
+  formular.ausloesen('submit');
+  await antworten(offen, 0, ECHTE_TABELLE);
+  return {
+    status: ausgabe.attribute['data-status'],
+    text: ausgabe.textContent,
+    weg: weg.hidden ? null : weg.kinder.at(-1).href,
+  };
 }
 
 /** Antwortet auf die n-te noch offene Abfrage. */
@@ -117,6 +138,14 @@ test('eine Postleitzahl im Gebiet fuehrt zu Zusage und Anfrage-Link', async () =
   assert.equal(weg.hidden, false);
   assert.equal(weg.kinder[0].href, '/pages/kontakt');
   assert.match(weg.kinder[0].textContent, /Verlegung anfragen/);
+});
+
+test('Ergebnis und Weg liegen im selben vorgelesenen Bereich', () => {
+  const box = SEKTION.slice(SEKTION.indexOf('class="tp-vg__ergebnis-box"'));
+  const bereich = box.slice(0, box.indexOf('</div>'));
+  assert.match(SEKTION, /class="tp-vg__ergebnis-box" role="status" aria-live="polite"/);
+  assert.match(bereich, /data-tp-verlegegebiet-result/);
+  assert.match(bereich, /data-tp-verlegegebiet-cta/, 'Der Link im Ergebnis wird nicht vorgelesen.');
 });
 
 test('ausserhalb des Gebiets fuehrt in den Shop statt in eine Absage', async () => {
@@ -205,6 +234,111 @@ test('eine leere Eingabe fragt die Tabelle gar nicht erst ab', () => {
   formular.ausloesen('submit');
   assert.equal(offen.length, 0, 'Fuer eine leere Eingabe wurde geladen.');
   assert.match(ausgabe.textContent, /Postleitzahl oder einen Ort/);
+});
+
+test('gleichnamige Orte fuehren zur Postleitzahl statt zu einer geratenen Antwort', async () => {
+  // Aus dem Peer-Review: "Bernau" war fuer Bernau am Chiemsee "im Gebiet",
+  // "Werder" fuer Werder (Havel) "ausserhalb". Gegen die echte Tabelle.
+  for (const name of ['Werder', 'Neuenhagen', 'Bernau', 'Schönwalde']) {
+    const e = await echtPruefen(name);
+    assert.equal(e.status, 'mehrdeutig', `${name}: ${e.status} - ${e.text}`);
+    assert.match(e.text, /Postleitzahl/, `${name}: keine Bitte um die Postleitzahl.`);
+    assert.equal(e.weg, null, `${name}: bei einem mehrdeutigen Namen darf nichts angeboten werden.`);
+  }
+});
+
+test('der volle Name eines Ortes wird eindeutig erkannt', async () => {
+  for (const name of ['Werder (Havel)', 'Neuenhagen bei Berlin', 'Bernau bei Berlin']) {
+    const e = await echtPruefen(name);
+    assert.equal(e.status, 'innen', `${name}: ${e.status} - ${e.text}`);
+  }
+});
+
+test('Ortsteile und Gemeinden ohne eigenen Postort werden gefunden', async () => {
+  // GeoNames kennt nur Postorte; diese kamen frueher als "kennen wir nicht".
+  for (const name of ['Spandau', 'Panketal', 'Mühlenbecker Land']) {
+    const e = await echtPruefen(name);
+    assert.equal(e.status, 'innen', `${name}: ${e.status} - ${e.text}`);
+  }
+});
+
+test('Hoppegarten und Glienicke fragen nach der Postleitzahl - es gibt sie zweimal', async () => {
+  // Kein Fehler der Tabelle: die Gemeinde Hoppegarten liegt bei 36,5 km, ein
+  // gleichnamiges Dorf bei Muencheberg bei 58,5 km - auf beiden Seiten der
+  // Grenze. Glienicke/Nordbahn liegt bei 12 km, ein anderes Glienicke bei 81.
+  // Frueher kamen beide als "kennen wir nicht"; jetzt ehrlich als mehrdeutig.
+  for (const name of ['Hoppegarten', 'Glienicke']) {
+    const e = await echtPruefen(name);
+    assert.equal(e.status, 'mehrdeutig', `${name}: ${e.status} - ${e.text}`);
+  }
+  const voll = await echtPruefen('Glienicke/Nordbahn');
+  assert.equal(voll.status, 'innen', 'Der volle Name muss eindeutig sein.');
+});
+
+test('Firmennamen der Grosskunden-Postleitzahlen sind keine Orte', async () => {
+  const e = await echtPruefen('Daimler Insurance Services GmbH');
+  assert.equal(e.status, 'unbekannt');
+});
+
+test('eine ausgedachte Postleitzahl gilt als unbekannt, eine ferne als ausserhalb', async () => {
+  const falsch = await echtPruefen('00000');
+  assert.equal(falsch.status, 'unbekannt', '00000 wurde als echte Postleitzahl behandelt.');
+  assert.match(falsch.text, /kennen wir nicht/);
+  const fern = await echtPruefen('80331');
+  assert.equal(fern.status, 'aussen');
+  assert.equal(fern.weg, '/collections/all');
+});
+
+test('eine grosse Stadt nennt ihre Spanne statt der naechsten Ecke', async () => {
+  // Frueher: "Berlin ... rund 11 km" - Berlin reicht aber bis 47 km.
+  const e = await echtPruefen('Berlin');
+  assert.equal(e.status, 'innen');
+  assert.match(e.text, /je nach Lage 11 bis 47 km/, e.text);
+});
+
+test('eine Postleitzahl am Rand bittet ums Fragen und bietet die Anfrage an', async () => {
+  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
+  eingabe.value = '16999';
+  formular.ausloesen('submit');
+  await antworten(offen, 0);
+  assert.equal(ausgabe.attribute['data-status'], 'rand');
+  assert.match(ausgabe.textContent, /16999 liegt am Rand/);
+  assert.doesNotMatch(ausgabe.textContent, /Postleitzahl ein/, 'Wer schon eine PLZ eingab, soll nicht um eine gebeten werden.');
+  assert.equal(weg.kinder.at(-1).href, '/pages/kontakt');
+});
+
+test('gleichnamige Orte, die alle im Gebiet liegen, bekommen eine Antwort', async () => {
+  // Zwei Neuendorf zwischen 12 und 31 km: egal welches gemeint ist, wir kommen.
+  const { eingabe, ausgabe, formular, offen } = aufbauen();
+  eingabe.value = 'Neuendorf';
+  formular.ausloesen('submit');
+  await antworten(offen, 0);
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+});
+
+test('ein fehlgeschlagener Abruf wird beim naechsten Pruefen wiederholt', async () => {
+  const { eingabe, ausgabe, formular, offen } = aufbauen();
+  eingabe.value = '16515';
+  formular.ausloesen('submit');
+  offen[0].ablehnen(new Error('offline'));
+  await new Promise((fertig) => setImmediate(fertig));
+  await new Promise((fertig) => setImmediate(fertig));
+  assert.match(ausgabe.textContent, /gerade nicht möglich/);
+
+  formular.ausloesen('submit');
+  assert.equal(offen.length, 2, 'Der Fehlschlag blieb haengen - es wurde nicht neu geladen.');
+  await antworten(offen, 1);
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+});
+
+test('doppelt eingebunden oder neu angemeldet bleibt es bei einem Horcher', () => {
+  // Zwei Sektionen auf einer Seite binden das Skript zweimal ein; der
+  // Theme-Editor meldet Sektionen erneut an.
+  const { formular, dokument, laden } = aufbauen();
+  laden();
+  dokument.ausloesen('shopify:section:load', { target: dokument });
+  dokument.ausloesen('shopify:section:load', { target: dokument });
+  assert.equal(formular.horcher.submit.length, 1, 'Das Formular ist mehrfach verdrahtet.');
 });
 
 /** Bildet die Liquid-Ableitung des Ziels nach: Zeilen zu einer Zeile,

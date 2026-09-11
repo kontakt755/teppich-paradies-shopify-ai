@@ -33,7 +33,13 @@
   assign vg_lat = 52.7378
   assign vg_lon = 13.2485
 
-  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
+  # Der Alt-Text wird vorgelesen, deshalb mit Umlauten. Berlin und Potsdam
+  # liegen erst bei 50 km vollstaendig in der Flaeche - bei 30 oder 40 km waere
+  # der Satz falsch.
+  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Fläche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern.'
+  if vg_radius >= 50
+    assign vg_karte_alt = vg_karte_alt | append: ' Berlin und Potsdam liegen darin.'
+  endif
 
   # Das Ziel fuer "Route planen" entsteht aus derselben Adresse, die auf der
   # Seite steht. Der Link stand vorher als fertige URL in der Voreinstellung
@@ -220,11 +226,16 @@
           >
           <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
         </div>
-        <p class="tp-vg__ergebnis" role="status" aria-live="polite" data-tp-verlegegebiet-result></p>
+        {%- comment -%} Ergebnis und Weg stehen in einem Statusbereich: sonst liest
+          ein Screenreader die Antwort vor, den Link darunter aber nicht.
+        {%- endcomment -%}
+        <div class="tp-vg__ergebnis-box" role="status" aria-live="polite">
+        <p class="tp-vg__ergebnis" data-tp-verlegegebiet-result></p>
         {%- comment -%} Wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen,
           ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
           im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
         <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
+        </div>
         <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
       </form>
     {%- endif -%}
@@ -995,7 +1006,7 @@
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
           }
         }
       ]
