@@ -117,8 +117,15 @@
         <span ref="viewMorePrevious"></span>
       {% endif %}
 
+      {%- comment -%}
+        TP: Zwischen der H1 der Seite und den Kartentiteln (Ebene 3) fehlte
+        eine H2 - Screenreader springen sonst von 1 auf 3. Suche: bisher H4,
+        jetzt H2 im Aussehen einer H4. Kategorie: unsichtbare H2 "Produkte".
+      {%- endcomment -%}
       {% if title %}
-        <h4 class="main-collection-grid__title">{{ title }}</h4>
+        <h2 class="main-collection-grid__title h4">{{ title }}</h2>
+      {% else %}
+        <h2 class="visually-hidden">Produkte</h2>
       {% endif %}
       <ul
         class="product-grid product-grid--{{ section.id }} product-grid--{{ section.settings.layout_type }} {% if section.settings.mobile_product_card_size == 'large' %} product-grid-mobile--large{% endif %}"
