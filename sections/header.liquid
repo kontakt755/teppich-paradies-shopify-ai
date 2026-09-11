@@ -301,7 +301,10 @@
   {
     "@context": "http://schema.org",
     "@type": ["Organization", "HomeAndConstructionBusiness", "Store"],
-    "name": {{ shop.name | json }},
+    {%- comment -%} Marke wie in Titeln und og:site_name; die Admin-Schreibweise bleibt als alternateName auffindbar {%- endcomment -%}
+    {%- assign tp_schema_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies' -%}
+    "name": {{ tp_schema_marke | json }},
+    {% if tp_schema_marke != shop.name %}"alternateName": {{ shop.name | json }},{% endif %}
     {% if settings.logo %}
       "logo": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
       "image": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},

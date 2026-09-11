@@ -271,7 +271,7 @@
         "serviceType": "Bodenverlegung",
         "provider": {
           "@type": "Organization",
-          "name": {{ shop.name | json }},
+          "name": {{ shop.name | replace: 'TeppichParadies', 'Teppich Paradies' | json }},
           "url": {{ request.origin | json }}
         },
         "areaServed": {
