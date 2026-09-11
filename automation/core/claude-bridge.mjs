@@ -20,7 +20,57 @@ const DESTRUCTIVE_TERMS = /(?<![\p{L}\p{N}])(?:(?:lösch|loesch|delete|entfern|r
 const GIT_WRITE_TERMS = term('merge|rebase|force[- ]?push|push|commit|cherry[- ]?pick|revert');
 // "beheben" und "korrigieren" fehlten: "Bug beheben" lief dadurch als ANALYSIS mit
 // Haiku statt als Implementierung mit dem Matrix-Modell.
-const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
+const IMPLEMENTATION_VERBS = '(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push';
+const IMPLEMENTATION_TERMS = term(IMPLEMENTATION_VERBS);
+
+// Reine Fragen, belegt am 2026-09-11: "welche funktionen hast du alles mit
+// lexware api ... angebote erstellen ... oder löschen ... wie ist dein
+// funktionsumfang" traf "erstell" und "lösch" in IMPLEMENTATION_TERMS. Der
+// Stop-Hook startete daraufhin bis zu drei Codex-Runden, die Code fuer eine
+// Wissensfrage verlangten. Die Erkennung ist absichtlich konservativ: EINE
+// Aufforderung irgendwo im Text genuegt, und es bleibt bei der Wortliste.
+const WEND = '(?![\\p{L}\\p{N}])';
+const INTERJECTION = `(?:(?:ja|jo|ok|okay|und|also|nein|gut|dann|jetzt|nun|na|aber|hm+|ah|aha|achso|ach so|alles klar|klar|danke|super|prima|sag mal|mal|kurze frage|eine frage|frage)${WEND}[\\s,.!:;-]*)*`;
+const QUESTION_START = new RegExp(`^${INTERJECTION}(?:welche[mnrs]?|was|wie|wieso|weshalb|warum|wozu|wo|woran|womit|wof(?:ü|ue)r|wohin|woher|wovon|worauf|wor(?:ü|ue)ber|wodurch|wann|wer|wem|wen|wessen|inwiefern|gibt es|gab es|ist es|ist das|sind das|hast du|habt ihr|haben wir|kennst du|kennt ihr|wei(?:ss|ß)t du|wisst ihr|geht das|funktioniert|kann ich|kann man|kannst du|darf ich|muss ich|stimmt es|stimmt das)${WEND}`, 'iu');
+const QUESTION_MARK_END = /\?[\s"'»«)\]!.]*$/u;
+// Fuer das Veto zaehlen auch Partizipien ("Das sollte geändert werden"):
+// "geändert" hat vor "änder" keine Wortgrenze und faellt durch
+// IMPLEMENTATION_TERMS. Ein breiteres Veto macht die Erkennung nur vorsichtiger.
+const REQUEST_VERBS = `${IMPLEMENTATION_VERBS}|ge(?:${IMPLEMENTATION_VERBS})|angepasst|hinzugef(ü|ue)gt|behoben`;
+const REQUEST_VERB = term(REQUEST_VERBS);
+const IMPERATIVE_START = new RegExp(`^${INTERJECTION}(?:bitte${WEND}[\\s,.!]*)?${W}(?:${REQUEST_VERBS})`, 'iu');
+// "Was ist kaputt und fix es": ein Imperativ hinter einer Konjunktion. Nur
+// Formen ohne Endung -n/-t zaehlen, sonst wuerde der Infinitiv in "bearbeiten
+// geht nicht oder löschen" (Originalprompt) die Frage kippen.
+const IMPERATIVE_AFTER_CONJUNCTION = new RegExp(`${W}(?:und|oder|aber|dann|danach|anschlie(?:ß|ss)end|sonst|au(?:ß|ss)erdem)\\s+(?:bitte\\s+)?(?:(?:mal|noch|auch|gleich|direkt|einfach)\\s+)?${W}(?:${IMPLEMENTATION_VERBS})[\\p{L}]*(?<![nt])${WEND}`, 'iu');
+const PLEASE = new RegExp(`${W}bitte${WEND}`, 'iu');
+const MODAL_REQUEST = new RegExp(`${W}(?:kannst du|du kannst|k(?:ö|oe)nntest du|du k(?:ö|oe)nntest|w(?:ü|ue)rdest du|magst du|kann man|k(?:ö|oe)nnt(?:et)? ihr|w(?:ä|ae)rst du|w(?:ä|ae)re es m(?:ö|oe)glich|hast du lust|h(?:ä|ae)ttest du lust)${WEND}`, 'iu');
+const WISH = new RegExp(`${W}(?:ich|wir)\\s+(?:m(?:ö|oe)chten?|will|wollen|brauchen?|h(?:ä|ae)tten? gerne?|w(?:ü|ue)nschen?)${WEND}`, 'iu');
+const SHOULD = new RegExp(`${W}soll[\\p{L}]*`, 'iu');
+
+function sentencesOf(text) {
+  return text.split(/\r?\n+/).flatMap(line => line.split(/(?<=[.!?])\s+/)).map(part => part.trim()).filter(Boolean);
+}
+
+function isInterrogative(sentence) {
+  return QUESTION_MARK_END.test(sentence) || QUESTION_START.test(sentence);
+}
+
+function isRequest(sentence) {
+  const clauses = sentence.split(/[,;:()]|\s[-–—]\s/).map(part => part.trim()).filter(Boolean);
+  if (clauses.some(clause => IMPERATIVE_START.test(clause))) return true;
+  if (IMPERATIVE_AFTER_CONJUNCTION.test(sentence)) return true;
+  if (!REQUEST_VERB.test(sentence)) return false;
+  return PLEASE.test(sentence) || MODAL_REQUEST.test(sentence) || WISH.test(sentence) || SHOULD.test(sentence);
+}
+
+// Frage = mindestens ein Satz/eine Zeile ist interrogativ UND kein Satz ist
+// eine Aufforderung. Im Zweifel false - dann entscheidet die Wortliste wie bisher.
+export function isPureQuestion(task) {
+  if (typeof task !== 'string' || !task.trim()) return false;
+  const sentences = sentencesOf(task);
+  return sentences.some(isInterrogative) && !sentences.some(isRequest);
+}
 // Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
 // Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
 // und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts
@@ -46,7 +96,8 @@ const TASK_TYPES = new Set(['IMPLEMENTATION', 'ANALYSIS']);
 //   1. declaredTaskType - der Mensch hat es im Dashboard/CLI ausdruecklich gesagt
 //   2. READ_ONLY_INTENT - der aktuelle Auftrag sagt ausdruecklich "nur lesen"
 //   3. forceTaskType    - uebernommener Typ eines frueheren Laufs (Wiederholung)
-//   4. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
+//   4. isPureQuestion   - reine Frage ohne jede Aufforderung (ANALYSIS/QUESTION)
+//   5. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
 // Das Veto steht bewusst VOR dem geerbten Typ: ein Folgebefehl "Nur lesen,
 // nichts aendern" nach einem Implementierungs-Lauf haette sonst den alten
 // IMPLEMENTATION-Typ geerbt und trotzdem schreibend ausgefuehrt.
@@ -69,6 +120,9 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
   } else if (TASK_TYPES.has(forceTaskType)) {
     taskType = forceTaskType;
     taskTypeSource = 'INHERITED';
+  } else if (isPureQuestion(task)) {
+    taskType = 'ANALYSIS';
+    taskTypeSource = 'QUESTION';
   } else {
     taskType = IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
     taskTypeSource = 'HEURISTIC';
