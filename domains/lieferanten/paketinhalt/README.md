@@ -49,16 +49,16 @@ gleichgesetzt. Je Artikel nachgesehen sind es zwei Formate:
 | Artikel | Format laut Artikeldaten | Ergebnis |
 |---|---|---|
 | `_901` bis `_915` (8 × Eiche) | 125,1 × 18,9 cm, 1,892 m² | 8,002 → **8 Planken**, 0,03 % — gesetzt |
-| `_920`, `_921` (Terrazzo) | 85,6 × 42,8 cm, 1,892 m² | 5,164 — **offen** |
+| `_920`, `_921` (Terrazzo) | 85,6 × 42,8 cm, 1,892 m² | 5,164 — korrigiert auf **2,20 m², 6 Fliesen** |
 
-Das technische Datenblatt der Qualitaet (Stand 05|2025) nennt fuer die Fliese
-85,6 × 42,8 cm **6 Stueck = 2,20 m²** pro Paket. Die 1,892 m² gehoeren rechnerisch
-zur Planke und stehen bei den beiden Terrazzo-Artikeln vermutlich irrtuemlich in
-den Artikeldaten. Stimmt das Datenblatt, fuehrt der Shop dort eine zu kleine
-Paketflaeche: €/m² erscheint zu hoch, der Rechner bestellt zu viele Pakete. Weil
-das Preisangabe und Bestellmenge aendert, bleibt `qm_pro_paket` bis zur
-Bestaetigung durch den Lieferanten unangetastet; die zwei Produkte tragen keine
-Stueckzahl.
+Fuer die Fliese 85,6 × 42,8 cm nennt das technische Datenblatt der Qualitaet
+(Stand 05|2025) **6 Stueck = 2,20 m²** pro Paket; ein anderer Fachhaendler fuehrt
+dieselben zwei Artikel mit „2,2 m²/Paket" zu 114,29 € (= 51,95 €/m², die
+unverbindliche Preisempfehlung). Die 1,892 m² der Artikeldaten gehoeren rechnerisch
+zur Planke — 5,164 Fliesen je Paket gibt es nicht. Am 2026-09-11 korrigiert:
+`qm_pro_paket` 2.2, 6 Fliesen à 85,6 × 42,8 cm, Filterwert `bis 3 m²`. Der
+Paketpreis blieb dabei 98,29 € (bisher 1,892 × 51,95 €) und ergibt jetzt
+44,68 €/m² — ob er auf 114,29 € geht, entscheidet der Inhaber.
 
 Dasselbe Datenblatt nennt fuer die Planke „10 Stueck" bei 1,89 m² — rechnerisch
 sind es 8 (10 Planken waeren 2,36 m²). Artikeldaten und Datenblatt stimmen in
@@ -88,7 +88,7 @@ Produkt-Metafeld `custom.kleinste_bestellmenge` (Liste, erlaubte Werte
 „bis 2 m²" waehlt, sieht damit alles, was sich mit hoechstens 2 m² bestellen
 laesst. Pakete ueber 3 m² bleiben leer.
 
-Stand 2026-09-11: 227 Paketprodukte, davon 97 mit Wert (bis 1 m²: 4, bis 2 m²: 67,
+Stand 2026-09-11: 227 Paketprodukte, davon 97 mit Wert (bis 1 m²: 4, bis 2 m²: 65,
 bis 3 m²: 97).
 
 Der Wert ist aus `custom.qm_pro_paket` abgeleitet und muss mit ihm geaendert
