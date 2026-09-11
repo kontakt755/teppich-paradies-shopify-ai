@@ -1,0 +1,153 @@
+{% doc %}
+  Wechsel zwischen den Einfassarten eines Teppichs nach Mass und zurueck zur
+  Meterware. Liest nur oeffentliche service-Metafelder:
+    service.einfassung      Einfassart des aktuellen Produkts (Pflicht)
+    service.einfass_gruppe  Liste der Einfassprodukte, das aktuelle inklusive
+    service.einfass_basis   Meterware, aus der zugeschnitten wird
+  Die Farbe bleibt beim Wechsel erhalten ueber service.basisvariante der
+  Varianten: dieselbe Meterware-Variante heisst dieselbe Farbe. Keine
+  Zuordnung ueber Namen oder Titel, nur Varianten mit service.einfassen
+  exakt "Verfuegbar". Rendert nichts, wenn es nichts zu wechseln gibt.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ew_id = block.id | replace: '_', '' | downcase
+  assign tp_ew_arten = 'cover,ketteln,einfassband,paspelband' | split: ','
+  assign tp_ew_eigen = product.metafields.service.einfassung.value | strip | downcase
+  assign tp_ew_gruppe = product.metafields.service.einfass_gruppe.value
+  assign tp_ew_basis = product.metafields.service.einfass_basis.value
+
+  assign tp_ew_anzahl = 0
+  if tp_ew_arten contains tp_ew_eigen
+    for tp_ew_p in tp_ew_gruppe
+      assign tp_ew_a = tp_ew_p.metafields.service.einfassung.value | strip | downcase
+      if tp_ew_arten contains tp_ew_a and tp_ew_p.available and tp_ew_p.id != product.id
+        assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
+      endif
+    endfor
+    if tp_ew_basis and tp_ew_basis.available
+      assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
+    endif
+  endif
+-%}
+
+{%- if tp_ew_anzahl > 0 -%}
+  <nav class="tp-ew" id="tp-ew-{{ tp_ew_id }}" aria-label="Kante wählen" {{ block.shopify_attributes }}>
+    <p class="tp-ew__titel">Kante</p>
+    <div class="tp-ew__chips">
+      {%- for tp_ew_art in tp_ew_arten -%}
+        {%- for tp_ew_p in tp_ew_gruppe -%}
+          {%- assign tp_ew_a = tp_ew_p.metafields.service.einfassung.value | strip | downcase -%}
+          {%- if tp_ew_a == tp_ew_art -%}
+            {%- if tp_ew_p.id == product.id or tp_ew_p.available -%}
+              {%- case tp_ew_a -%}
+                {%- when 'cover' -%}{%- assign tp_ew_label = 'Cover' -%}
+                {%- when 'ketteln' -%}{%- assign tp_ew_label = 'Gekettelt' -%}
+                {%- when 'einfassband' -%}{%- assign tp_ew_label = 'Einfassband' -%}
+                {%- when 'paspelband' -%}{%- assign tp_ew_label = 'Paspelband' -%}
+              {%- endcase -%}
+              {%- if tp_ew_p.id == product.id -%}
+                <span class="tp-ew__chip is-aktiv" aria-current="page">{{ tp_ew_label }}</span>
+              {%- else -%}
+                <a class="tp-ew__chip" href="{{ tp_ew_p.url }}" data-ew-ziel="{{ tp_ew_p.id }}">{{ tp_ew_label }}</a>
+              {%- endif -%}
+            {%- endif -%}
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+    </div>
+    {%- if tp_ew_basis and tp_ew_basis.available -%}
+      <a class="tp-ew__basis" href="{{ tp_ew_basis.url }}" data-ew-basis>Lieber als Meterware von der Rolle</a>
+    {%- endif -%}
+
+    <script type="application/json" data-ew-daten>
+      {
+        "eigen": {
+          {%- for tp_ew_v in product.variants -%}
+            {%- assign tp_ew_bv = tp_ew_v.metafields.service.basisvariante.value -%}
+            {%- if tp_ew_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ew_bv -%}
+              "{{ tp_ew_v.id }}": "{{ tp_ew_bv.id }}",
+            {%- endif -%}
+          {%- endfor -%}
+          "_": ""
+        },
+        "ziele": {
+          {%- for tp_ew_p in tp_ew_gruppe -%}
+            "{{ tp_ew_p.id }}": {
+              {%- for tp_ew_v in tp_ew_p.variants -%}
+                {%- assign tp_ew_bv = tp_ew_v.metafields.service.basisvariante.value -%}
+                {%- if tp_ew_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ew_bv -%}
+                  "{{ tp_ew_bv.id }}": "{{ tp_ew_v.id }}",
+                {%- endif -%}
+              {%- endfor -%}
+              "_": ""
+            },
+          {%- endfor -%}
+          "_": {}
+        },
+        "selected_id": {{ product.selected_or_first_available_variant.id | json }}
+      }
+    </script>
+    <script>
+      (function () {
+        var nav = document.getElementById('tp-ew-{{ tp_ew_id }}');
+        var el = nav && nav.querySelector('[data-ew-daten]');
+        if (!el) return;
+        var d;
+        try { d = JSON.parse(el.textContent); } catch (e) { return; }
+        function aktualisieren() {
+          var id = new URLSearchParams(window.location.search).get('variant') || String(d.selected_id);
+          var basisId = d.eigen[id];
+          nav.querySelectorAll('[data-ew-ziel]').forEach(function (a) {
+            var url = new URL(a.getAttribute('href'), window.location.origin);
+            var ziel = basisId && d.ziele[a.getAttribute('data-ew-ziel')] && d.ziele[a.getAttribute('data-ew-ziel')][basisId];
+            if (ziel) url.searchParams.set('variant', ziel); else url.searchParams.delete('variant');
+            a.setAttribute('href', url.pathname + url.search);
+          });
+          var basis = nav.querySelector('[data-ew-basis]');
+          if (basis) {
+            var bu = new URL(basis.getAttribute('href'), window.location.origin);
+            if (basisId) bu.searchParams.set('variant', basisId); else bu.searchParams.delete('variant');
+            basis.setAttribute('href', bu.pathname + bu.search);
+          }
+        }
+        document.addEventListener('change', function () { setTimeout(aktualisieren, 120); });
+        document.addEventListener('variant:update', function () { setTimeout(aktualisieren, 60); });
+        aktualisieren();
+      })();
+    </script>
+  </nav>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-ew { display: grid; gap: 8px; margin: 4px 0 8px; }
+  .tp-ew__titel { margin: 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
+  .tp-ew__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-ew__chip {
+    display: inline-flex; align-items: center; padding: 8px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.16); border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--color-foreground, #15171a); text-decoration: none;
+  }
+  .tp-ew__chip:hover { border-color: var(--color-foreground, #15171a); }
+  .tp-ew__chip.is-aktiv { border-color: #1d6b47; background: #1d6b47; color: #fff; }
+  .tp-ew__basis { font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; color: var(--color-foreground, #15171a); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Einfass-Wechsel",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Zeigt die anderen Einfassarten aus service.einfass_gruppe und den Weg zur Meterware (service.einfass_basis). Rendert nur auf Produkten mit gueltiger service.einfassung."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Einfass-Wechsel"
+    }
+  ]
+}
+{% endschema %}
