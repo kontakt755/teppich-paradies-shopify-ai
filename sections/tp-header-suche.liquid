@@ -74,6 +74,42 @@
   }
 {% endstylesheet %}
 
+{% javascript %}
+  (function () {
+    // TP: Am Telefon oeffnet das Suchfeld die Schnellsuche mit Vorschlaegen -
+    // dieselbe wie die Lupe im Header. Vorher standen zwei Suchen
+    // untereinander, und nur die Lupe zeigte Vorschlaege. Nur pointerdown,
+    // nicht focus: Beim Schliessen gibt der Dialog den Fokus zurueck, ein
+    // focus-Ausloeser wuerde die Suche sofort wieder oeffnen. Desktop, ohne
+    // JavaScript oder ohne Schnellsuche bleibt es beim normalen Formular.
+    // Die Lupe im Header bleibt: Diese Leiste scrollt weg, der Header nicht.
+    // Gleiche Grenze wie die Telefon-Regeln dieser Section (767 px)
+    var telefon = window.matchMedia('(max-width: 767px)');
+    function oeffnen(event) {
+      if (!telefon.matches) return;
+      var modal = document.getElementById('search-modal');
+      if (!modal || typeof modal.showDialog !== 'function') return;
+      event.preventDefault();
+      var text = event.currentTarget.value;
+      modal.showDialog();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var ziel = modal.querySelector('input[type="search"]');
+          if (!ziel) return;
+          if (text) {
+            ziel.value = text;
+            ziel.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          ziel.focus();
+        });
+      });
+    }
+    document.querySelectorAll('.tp-hs__input').forEach(function (feld) {
+      feld.addEventListener('pointerdown', oeffnen);
+    });
+  })();
+{% endjavascript %}
+
 {% schema %}
 {
   "name": "TP Suche + Kategorien",
