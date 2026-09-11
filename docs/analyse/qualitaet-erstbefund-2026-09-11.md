@@ -582,3 +582,19 @@ Hebel liegen beim Inhaber, bei Shopify oder brauchen echte Kaufdaten.
     - Passend wären die zwei Produkte darin für Sockelleisten (Trockenkleber-Band, Sockelklebeband).
     - Vorschlag: eine Kollektion „Leisten-Zubehör“ oder eine feste Produktauswahl in der Section. Beides ist eine Sortimentsentscheidung, die Kollektion wäre zudem storeweit.
 15. Veröffentlichung von `feature/shop-qualitaet` auf GitHub. Die Menü-Sitzung wartet damit auf ihren Branch, der diese Commits enthält.
+
+### Nachtrag (2026-09-11, abends)
+
+- **Live-Wechsel:**
+  - #174, #191 und #213 wurden zwischen 20:35 und 20:41 Uhr in `main` gemergt und um 20:45 Uhr in das Live-Theme gespielt.
+  - Es ist dasselbe Theme mit neuem Inhalt, laut `live-theme.json` und Admin API (Rolle MAIN).
+  - Die Live-Spalte des Schlussaudits wurde von 15:25 bis 16:03 Uhr gemessen und zeigt den Stand davor.
+  - Verlegegebiet-Karte und Verlegeservice-Seite sind seitdem live. Keine Änderung dieses Programms ist live.
+- **Merge-Lage:**
+  - Offen sind nur noch #186 → #190 (Konzept C) und danach `feature/shop-qualitaet`.
+  - Gegen `origin/main` entstehen zwei Konflikte, lokal mit `git merge-tree` gerechnet: `config/settings_schema.json` und `templates/page.verlegeservice.json`. Beide stammen aus der Konzept-C-Kette, keine Änderung dieses Programms.
+  - Beim Zusammenführen die Fassungen aus `main` (#191/#213) als Grundlage nehmen und Konzept-C-Ergänzungen dreiseitig nachziehen.
+- **Theme-Stand (Nachprüfung):**
+  - 204168364366 ist weiter unveröffentlicht. 38 von 51 Dateien sind byte-gleich mit dem Branch, 12 davon abweichend sind Menü-Fassungen wie oben.
+  - `sections/tp-verlegegebiet.liquid` ist jetzt die zusammengeführte Fassung der Verlegeservice-Sitzung. Die Seite im Entwurf enthält beides: Rollenware-Zonen mit Preisen (`data-basis`, `data-schwelle`, `data-preis`, `data-lose`) und den Organisationsnamen „Teppich Paradies“ im Service-JSON-LD.
+  - Der Rückschritt durch den Push um 13:05 UTC ist damit behoben.
