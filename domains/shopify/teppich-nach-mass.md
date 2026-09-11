@@ -76,3 +76,7 @@ gesetzter Wert, eine cm-genaue Meterware, ein Lieferantenname im Titel. Die Ents
 3. Die Raummaß-Variante erscheint wie jede Variante im Google-Feed. Ob sie ausgeschlossen wird, ist zu entscheiden.
 4. Produkt für Kettelleisten fehlt noch. Solange es fehlt, erscheint der Schritt nicht.
 5. `templates/product.rolle.json`: Block-Einstellungen (Kettelleisten, Haftunterlage) erst nach dem Merge von PR #191 setzen.
+6. **Reihenfolge:** Wunschmaß-Varianten erst anlegen, wenn dieser Code live ist. Der bisherige Rechner erkennt
+   eine Breitenoption mit dem Wert „Wunschmaß“ nicht mehr als Breite und zeigt dann nur noch eine feste Breite.
+7. Schnellkauf und Variantenwähler außerhalb des Rechners prüfen (Kollektionskarten, Quick-Add):
+   „Wunschmaß“ darf dort nicht wählbar sein. Sonst landet 1 m² ohne Maßangabe im Warenkorb.
