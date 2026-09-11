@@ -101,7 +101,8 @@
   }
 
   .tp-zw__grid {
-    max-width: 1100px;
+    /* Gleiche Inhaltskante wie die TP-Sections der Startseite (Audit B-16) */
+    max-width: calc(var(--tp-container, 1240px) - 2 * var(--tp-pad, 24px));
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(var(--tp-zw-online), minmax(0, 1fr)) repeat(var(--tp-zw-service), minmax(0, 1fr));

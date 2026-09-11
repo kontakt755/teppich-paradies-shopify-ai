@@ -81,7 +81,8 @@
   @media (max-width: 1023px) { .tp-hero__wrap { gap: 28px; min-height: 0; } }
   @media (max-width: 767px) {
     .tp-hero__wrap { grid-template-columns: 1fr; padding-top: 20px; padding-bottom: 28px; gap: 20px; }
-    .tp-hero__media { order: -1; aspect-ratio: 16 / 10; border-radius: 12px; }
+    /* Text vor Bild: H1 und Buttons gehoeren in den ersten Bildschirm (Audit B-06) */
+    .tp-hero__media { aspect-ratio: 16 / 10; border-radius: 12px; }
     .tp-hero__h1 { font-size: 30px; }
     .tp-hero__sub { font-size: 16.5px; margin: 12px 0 18px; }
     .tp-hero__ctas .tp-s-btn { flex: 1 1 100%; }

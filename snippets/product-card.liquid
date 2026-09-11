@@ -131,7 +131,10 @@
      Klasse ueberhaupt, zwei davon verbergen sie). Deshalb hier bewusst mit
      !important - eingeschraenkt auf Raster, die NICHT in der Zoom-Out-
      Ansicht sind, damit die Funktion beim Wiedereinschalten intakt bleibt. */
-  .product-grid:not([product-grid-view='zoom-out']) .product-grid-view-zoom-out--details {
+  /* Die Produktlisten der Startseite sind kein .product-grid - dort griff die
+     Regel nicht und der Volltitel stand wieder doppelt (Audit B-08). Deshalb:
+     ueberall verbergen, ausser innerhalb eines Rasters in Zoom-Out-Ansicht. */
+  .product-grid-view-zoom-out--details:not([product-grid-view='zoom-out'] *) {
     display: none !important;
   }
 

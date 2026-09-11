@@ -56,7 +56,7 @@
             "collection": "vinylboden-1",
             "bild": "shopify://shop_images/1158971-8FXC-prod.jpg",
             "titel": "Vinylboden",
-            "untertitel": "Klebe- und Rollenvinyl",
+            "untertitel": "Klick-, Klebe- und Rollenvinyl",
             "zahl_zeigen": true,
             "zahl_wort": "Dekore"
           }
@@ -812,7 +812,7 @@
         "service_link": "#tp-kontakt",
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
-        "online_text": "Rollenware im Wunschmaß, cm-genau berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. Versandkosten sehen Sie vor dem Kauf im Warenkorb.",
+        "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab 50 € Bestellwert versandkostenfrei.",
         "online_punkte": "Rollenware im Wunschmaß, Bis zu 3 Muster kostenlos, Versand deutschlandweit",
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
@@ -829,7 +829,7 @@
       "settings": {
         "eyebrow": "Wo wir hinkommen",
         "heading": "Unser Liefer- und Verlegegebiet",
-        "intro": "Im Umkreis von 15 km um Oranienburg sind Lieferung und lose Verlegung inklusive, feste Verlegung gegen Aufpreis; ab 649 € Warenwert ist alles inklusive. Regulär verlegen wir bis 50 km, weiter entfernt auf Anfrage.",
+        "intro": "Geben Sie Ihre Postleitzahl ein – Sie sehen sofort, ob Ihr Ort in unserem Verlegegebiet liegt. Regulär verlegen wir bis 50 km um Oranienburg, weiter entfernt auf Anfrage.",
         "karte_zeigen": true,
         "radius": 50,
         "pruefung_zeigen": true,

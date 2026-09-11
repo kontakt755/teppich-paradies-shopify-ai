@@ -53,7 +53,11 @@
 </section>
 
 {% stylesheet %}
-  .tp-kon__grid { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 20px; }
+  /* Desktop: Anrufen und WhatsApp uebereinander links, Formular rechts ueber beide
+     Zeilen. Vorher drei Spalten, die zwei kurzen Karten wurden auf Formularhoehe
+     gestreckt und zeigten 400 px Leerraum (Audit B-11). */
+  .tp-kon__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+  .tp-kon__card--form { grid-column: 2; grid-row: 1 / span 2; }
   .tp-kon__card { border: 1px solid #e6e0d8; border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
   .tp-kon__card p { color: #4a443f; font-size: 15px; margin: 0; }
   .tp-kon__card > .tp-s-btn { margin-top: auto; align-self: flex-start; }
@@ -69,7 +73,7 @@
   .tp-kon__full { grid-column: 1 / -1; }
   .tp-kon__ok { grid-column: 1 / -1; background: #e7f3ea; color: #1f5a36; padding: 10px 12px; border-radius: 8px; }
   .tp-kon__err { grid-column: 1 / -1; background: #fff6e5; color: #7a4b00; padding: 10px 12px; border-radius: 8px; }
-  @media (max-width: 1023px) { .tp-kon__grid { grid-template-columns: 1fr 1fr; } .tp-kon__card--form { grid-column: 1 / -1; } }
+  @media (max-width: 1023px) { .tp-kon__grid { grid-template-columns: 1fr 1fr; } .tp-kon__card--form { grid-column: 1 / -1; grid-row: auto; } }
   @media (max-width: 767px) {
     .tp-kon__grid { grid-template-columns: 1fr; }
     .tp-kon__form { grid-template-columns: 1fr; }

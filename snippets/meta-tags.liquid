@@ -159,7 +159,10 @@
       den Shopnamen (15 Zeichen). Der Fallback traegt Sortiment und Marke;
       ein im Admin gesetzter Titel gewinnt weiterhin.
     {%- endcomment -%}
-    Bodenbeläge online kaufen | Teppichboden & Vinyl | Teppich Paradies
+    Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies
+  {%- elsif request.page_type == 'cart' -%}
+    {%- comment -%} Shopify liefert hier "Dein Warenkorb" - der Shop siezt (Audit B-17) {%- endcomment -%}
+    Ihr Warenkorb &ndash; {{ shop.name }}
   {%- else -%}
     {%- comment -%}
       Der else-Zweig fehlte nach f195de7: Kollektionen, Seiten und Suche

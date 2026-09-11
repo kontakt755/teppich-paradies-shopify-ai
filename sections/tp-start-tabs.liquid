@@ -23,6 +23,22 @@
   </div>
 </div>
 
+{%- comment -%}
+  Die Produktlisten sind Horizon-Sections mit page-width und standen deshalb
+  84 px weiter links als Reiter und Ueberschrift. Genau die Listen dieser Reiter
+  bekommen die Inhaltsbreite der TP-Sections (Audit B-16). Die Section-IDs sind
+  dynamisch, deshalb hier ein style-Tag statt stylesheet.
+{%- endcomment -%}
+{%- assign tp_tabs_prefix = section.id | split: '__' | first -%}
+<style>
+  {%- for block in section.blocks -%}
+    {%- assign tp_tabs_key = block.settings.section_id | strip -%}
+    {%- if tp_tabs_key != blank -%}
+      #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} .section { --page-content-width: calc(var(--tp-container) - 2 * var(--tp-pad)); --page-width: calc(var(--page-content-width) + var(--page-margin) * 2); }
+    {%- endif -%}
+  {%- endfor -%}
+</style>
+
 {% stylesheet %}
   .tp-tabs { padding-top: var(--tp-sec); }
   .tp-tabs__head { margin-bottom: 18px; }

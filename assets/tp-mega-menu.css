@@ -155,7 +155,9 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    height: 100%;
+    /* Inhaltshoehe statt 100 %: eine Karte mit Unterliste (Vinyl von der Rolle)
+       zog sonst alle Karten der Reihe auf 340 px mit leerer Flaeche (Audit B-09). */
+    height: auto;
     overflow: hidden;
     border: 1px solid var(--tp-mm-border);
     border-radius: var(--tp-mm-radius);
