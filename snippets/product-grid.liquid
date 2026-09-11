@@ -47,8 +47,11 @@
     {% endcase %}
 
     /* This logic helps prevent displaying one column for an large or extra-large product card size on a small screen. We want it to display at least two columns. */
+    /* TP: auch "medium" - mit Filterspalte bleiben am Tablet (768 px) nur
+       ~460 px Rasterbreite; minmax(250px) ergab dort eine einzige Spalte mit
+       690 px hohen Karten (Seite 18.000 px lang). */
     {% case section.settings.product_card_size %}
-      {% when 'extra-large' or 'large' %}
+      {% when 'extra-large' or 'large' or 'medium' %}
         @container product-grid (max-width: calc({{ product_card_size }} * 3 + {{ section.settings.columns_gap_horizontal }}px * 2)) {
           .product-grid--{{ section.id }}:is(.product-grid--grid) {
             --product-grid-columns-desktop: repeat(2, 1fr);
