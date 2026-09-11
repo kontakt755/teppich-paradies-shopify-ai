@@ -36,14 +36,18 @@ Schwellen
 Erzeugte Raender
 ----------------
 Mit Ergebnisbild wird jeder KI-erzeugte Randstreifen zusaetzlich fuer sich
-gemessen - nur mit seinen eigenen Pixeln. Das Motiv allein reicht nicht: nach
-dem Kompositieren sind das die Originalpixel, das Urteil waere immer das der
-Quelle. Fuer jeden gemessenen Rand gelten dieselben Verlauf-Schwellen wie
-fuer das Motiv; ein Rand unter 1,5 fuehrt zur Ablehnung.
+gemessen - nur mit seinen eigenen Pixeln, auch der Nachbar an der Naht wird
+nicht mitgelesen. Das Motiv allein reicht nicht: nach dem Kompositieren sind
+das die Originalpixel, das Urteil waere immer das der Quelle. Ein Rand, dessen
+Urteil nicht OK ist, fuehrt zur Ablehnung.
 
-  links/rechts  dieselben Zeilen wie die Messkaesten der Quelle
+  links/rechts  dieselben Zeilen wie die Messkaesten der Quelle, dieselben
+                Schwellen wie das Motiv
   unten         obere gegen untere Lage des Streifens, die unteren Ecken
-                je fuer sich
+                je fuer sich. Die Schwelle 1,5 gilt fuer den Tiefenumfang
+                der Quellkaesten; fuer den kuerzeren Umfang eines Streifens
+                wird sie umgerechnet (verlauf_schwelle_unten), Filz bleibt
+                < 1,0
   oben          liegt ueber der Florzone -> "nicht messbar"
 
 Ein Streifen, dessen Messkasten kleiner als RAND_MIN_KASTEN ist, wird
@@ -82,7 +86,7 @@ FLOR_HINTEN = (0.15, 0.52, 0.58, 0.62)
 # der Quelle; innerhalb des Streifens gilt dieselbe Regel: oben ferner, unten
 # naeher. Die beiden Kaesten liegen so weit auseinander wie moeglich, damit
 # der geringere Tiefenumfang eines schmalen Streifens nicht noch weiter
-# schrumpft.
+# schrumpft. Die Schwelle dafuer rechnet verlauf_schwelle_unten aus.
 UNTEN_HINTEN = (0.05, 0.35)
 UNTEN_VORN = (0.65, 0.95)
 
@@ -156,13 +160,19 @@ class Roi:
                 and self.x + self.w <= bild.w and self.y + self.h <= bild.h)
 
 
+def _messkasten(bild, kasten, schritt=1):
+    """Kasten so gekappt, wie mikrokontrast ihn abtastet: der Nachbar
+    (x + schritt, y + schritt) muss noch im Bild liegen. Eine Stelle fuer
+    beide Nutzer, damit Messung und Mindestmass nie auseinanderlaufen."""
+    x0, y0, x1, y1 = kasten
+    return x0, y0, min(x1, bild.w - schritt), min(y1, bild.h - schritt)
+
+
 def mikrokontrast(bild, kasten, schritt=1):
     """Mittlere Helligkeitsdifferenz benachbarter Punkte, normiert auf die
     mittlere Helligkeit. Die Normierung macht das Mass unabhaengig davon, ob
     das Bild hell oder dunkel entwickelt wurde."""
-    x0, y0, x1, y1 = kasten
-    x1 = min(x1, bild.w - schritt - 1)
-    y1 = min(y1, bild.h - schritt - 1)
+    x0, y0, x1, y1 = _messkasten(bild, kasten, schritt)
     summe = flaeche = 0.0
     n = 0
     for y in range(y0, y1, schritt):
@@ -387,10 +397,13 @@ def komponiere(quelle, ergebnis, roi, ausgabe, band=40):
     return naht
 
 
-def urteil(m):
+def urteil(m, gut=VERLAUF_GUT):
+    """gut: Verlauf, ab dem die Zeichnung brauchbar ist - fuer das Motiv und
+    die seitlichen Raender VERLAUF_GUT, fuer untere Streifen der auf ihren
+    Tiefenumfang umgerechnete Wert (verlauf_schwelle_unten)."""
     if m["verlauf"] < VERLAUF_FILZ:
         return "VERWERFEN - Tiefe umgekehrt, wirkt wie Filz"
-    if m["verlauf"] < VERLAUF_GUT:
+    if m["verlauf"] < gut:
         return "GRENZWERTIG - Zeichnung zu flach"
     return "OK"
 
@@ -433,11 +446,50 @@ def randbereiche(roi, bild):
     return r
 
 
-def _nutzkante(bild, kasten):
-    """Kleinere Kantenlaenge des Kastens, so wie mikrokontrast ihn nutzt
-    (dort wird am Bildrand um schritt + 1 gekappt)."""
+def _im_streifen(rand, kasten):
+    """Kasten so kappen, dass auch der Nachbar (x + 1, y + 1), den
+    mikrokontrast mitliest, noch im Streifen liegt. Ohne diese Kappung geht
+    an der Naht eine Spalte bzw. Zeile des Nachbarn in die Messung ein - bei
+    einem strukturlosen Rand entscheidet dann diese eine Spalte das Urteil,
+    und links (Nachbar = Quelle) faellt es anders aus als rechts (Nachbar =
+    Bildrand)."""
     x0, y0, x1, y1 = kasten
-    return min(min(x1, bild.w - 2) - x0, min(y1, bild.h - 2) - y0)
+    return x0, y0, min(x1, rand.x + rand.w - 1), min(y1, rand.y + rand.h - 1)
+
+
+def _kastenmass(bild, kasten):
+    """(Breite, Hoehe) des Kastens in Pixeln, die in die Messung eingehen -
+    einschliesslich des letzten Nachbarn, den mikrokontrast liest."""
+    x0, y0, x1, y1 = _messkasten(bild, kasten)
+    return x1 - x0 + 1, y1 - y0 + 1
+
+
+def verlauf_schwelle_unten(roi, rand):
+    """Verlauf, ab dem ein unterer Streifen als brauchbar gilt.
+
+    VERLAUF_GUT ist am Motiv geeicht: FLOR_HINTEN gegen FLOR_VORN, die Mitten
+    der Kaesten liegen 0,275 Quellhoehen auseinander. Die Kaesten eines
+    unteren Streifens liegen nur 0,6 Streifenhoehen auseinander - bei einem
+    Streifen von 15 % der Quellhoehe also ein Drittel des Tiefenumfangs. Eine
+    Zeichnung, die die Quelle fehlerfrei fortsetzt, erreicht dort 1,5 nie
+    (linear ab Horizont: 1,15x bei 15 %, 1,46x bei 50 %); die feste Schwelle
+    wuerde jeden guten unteren Rand ablehnen.
+
+    Umrechnung: Boden unter einer Lochkamera - der Abbildungsmassstab und
+    damit die Zeichnung wachsen mit dem Zeilenabstand zum Horizont; hier
+    vereinfachend linear. VERLAUF_GUT an den Quellkaesten entspricht dann
+    genau einem Horizont; derselbe Horizont ergibt fuer die Kaesten des
+    Streifens die umgerechnete Schwelle. Sie haengt nur an der Geometrie,
+    nicht an Messwerten, ist immer > 1,0 (flach bleibt GRENZWERTIG) und wird
+    bei VERLAUF_GUT gekappt - ein Rand wird nie strenger beurteilt als das
+    Motiv. Filz (< VERLAUF_FILZ, Tiefe umgekehrt) haengt nicht am Umfang und
+    bleibt, wie es ist."""
+    mitte_q_hinten = roi.y + (FLOR_HINTEN[1] + FLOR_HINTEN[3]) / 2 * roi.h
+    mitte_q_vorn = roi.y + (FLOR_VORN[1] + FLOR_VORN[3]) / 2 * roi.h
+    horizont = (VERLAUF_GUT * mitte_q_hinten - mitte_q_vorn) / (VERLAUF_GUT - 1)
+    mitte_r_hinten = rand.y + sum(UNTEN_HINTEN) / 2 * rand.h
+    mitte_r_vorn = rand.y + sum(UNTEN_VORN) / 2 * rand.h
+    return min(VERLAUF_GUT, (mitte_r_vorn - horizont) / (mitte_r_hinten - horizont))
 
 
 def messe_raender(bild, roi, weiss=None):
@@ -449,9 +501,9 @@ def messe_raender(bild, roi, weiss=None):
 
       links/rechts  dieselben Zeilen wie FLOR_VORN/FLOR_HINTEN der Quelle -
                     gleiche Entfernung, der Verlauf ist direkt mit dem der
-                    Quelle vergleichbar.
+                    Quelle vergleichbar, Schwelle VERLAUF_GUT.
       unten         UNTEN_HINTEN gegen UNTEN_VORN innerhalb des Streifens,
-                    ebenso je untere Ecke.
+                    ebenso je untere Ecke; Schwelle verlauf_schwelle_unten.
       oben        nicht messbar: der Streifen liegt vollstaendig ueber der
                     Florzone (die beginnt erst bei FLOR_HINTEN, also bei 52 %
                     der Quellhoehe). Dort stehen in dieser Serie Wand und
@@ -463,29 +515,36 @@ def messe_raender(bild, roi, weiss=None):
     Flaeche fuer den flaechigen Filzeindruck, und oben ist keine Florzeichnung,
     die filzig werden koennte. Ablehnen hiesse, jede Erweiterung nach oben zu
     verbieten, ohne dass das Bild dadurch sicherer wird. Stumm bleibt es
-    trotzdem nicht - der Grund steht im Befund und in der Ausgabe.
+    trotzdem nicht - der Grund steht im Befund und in der Ausgabe. Der Grund
+    nennt beide Kastenmasse: bei seitlichen Streifen ist die Hoehe 10 % der
+    Quellhoehe, eine niedrige Quelle macht also auch einen breiten Rand
+    unmessbar.
 
-    Rueckgabe: je vorhandenem Rand {"seite", "rand", "messung", "grund"};
-    genau eines von messung/grund ist gesetzt."""
+    Rueckgabe: je vorhandenem Rand {"seite", "rand", "messung", "grund",
+    "gut"}; genau eines von messung/grund ist gesetzt, gut ist die Schwelle
+    fuer urteil."""
     if weiss is None:
         weiss = weissreferenz(bild, roi)
     befunde = []
     for seite, rand in randbereiche(roi, bild).items():
-        b = {"seite": seite, "rand": rand, "messung": None, "grund": None}
+        b = {"seite": seite, "rand": rand, "messung": None, "grund": None,
+             "gut": VERLAUF_GUT}
         befunde.append(b)
         if seite == "oben":
             b["grund"] = "liegt ueber der Florzone, keine Florzeichnung zu messen"
             continue
         if seite.startswith("unten"):
             vorn, hinten = UNTEN_VORN, UNTEN_HINTEN
+            b["gut"] = verlauf_schwelle_unten(roi, rand)
         else:
             vorn, hinten = FLOR_VORN[1::2], FLOR_HINTEN[1::2]
-        kv = rand.kasten((0.0, vorn[0], 1.0, vorn[1]))
-        kh = rand.kasten((0.0, hinten[0], 1.0, hinten[1]))
-        kante = min(_nutzkante(bild, kv), _nutzkante(bild, kh))
-        if kante < RAND_MIN_KASTEN:
-            b["grund"] = (f"zu schmal ({rand.w}x{rand.h} px, Messkasten {max(kante, 0)} px "
-                          f"< {RAND_MIN_KASTEN} px)")
+        kv = _im_streifen(rand, rand.kasten((0.0, vorn[0], 1.0, vorn[1])))
+        kh = _im_streifen(rand, rand.kasten((0.0, hinten[0], 1.0, hinten[1])))
+        breite = min(_kastenmass(bild, kv)[0], _kastenmass(bild, kh)[0])
+        hoehe = min(_kastenmass(bild, kv)[1], _kastenmass(bild, kh)[1])
+        if min(breite, hoehe) < RAND_MIN_KASTEN:
+            b["grund"] = (f"Messkasten zu klein ({max(breite, 0)}x{max(hoehe, 0)} px, "
+                          f"Mindestkante {RAND_MIN_KASTEN} px; Streifen {rand.w}x{rand.h} px)")
             continue
         b["messung"] = _messwerte(bild, kv, kh, weiss, f"Rand {seite} (erzeugt)")
     return befunde
@@ -500,7 +559,7 @@ def beurteile_raender(befunde):
         if b["messung"] is None:
             ungeprueft.append(f"Rand {b['seite']} {b['grund']}")
             continue
-        u = urteil(b["messung"])
+        u = urteil(b["messung"], b["gut"])
         if u != "OK":
             fehler.append(f"Struktur Rand {b['seite']}: {u}")
     return fehler, ungeprueft
@@ -608,7 +667,7 @@ def main():
         kopf()
         for b in befunde:
             if b["messung"]:
-                zeile(b["messung"], "  " + urteil(b["messung"]))
+                zeile(b["messung"], f"  {urteil(b['messung'], b['gut'])} (ab {b['gut']:.2f}x)")
             else:
                 etikett = f"Rand {b['seite']} (erzeugt)"
                 print(f"{etikett:38}nicht messbar - {b['grund']}")

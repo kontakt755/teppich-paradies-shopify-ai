@@ -173,11 +173,33 @@ class RandmessungTests(unittest.TestCase):
         b = befunde[0]
         self.assertEqual(b["seite"], "links")
         self.assertIsNone(b["messung"])
-        self.assertIn("zu schmal", b["grund"])
+        self.assertIn("zu klein", b["grund"])
+        self.assertIn("20x", b["grund"])              # die Breite ist das Mass, das fehlt
         fehler, ungeprueft = bq.beurteile_raender(befunde)
         self.assertEqual(fehler, [])
         self.assertEqual(len(ungeprueft), 1)
         self.assertIn("links", ungeprueft[0])
+
+    def test_mindestbreite_links_und_rechts_gleich(self):
+        # Der rechte Streifen liegt am Bildrand, der linke an der Quelle. Beide
+        # muessen ab derselben Breite messbar sein (vorher: links 32, rechts 34).
+        for breite, messbar in ((31, False), (32, True)):
+            links = bq.messe_raender(KunstBild(QW + breite, QH, lambda x, y: 16),
+                                     bq.Roi(breite, 0, QW, QH))[0]
+            rechts = bq.messe_raender(KunstBild(QW + breite, QH, lambda x, y: 16),
+                                      bq.Roi(0, 0, QW, QH))[0]
+            self.assertEqual((links["seite"], rechts["seite"]), ("links", "rechts"))
+            self.assertEqual(links["messung"] is not None, messbar, breite)
+            self.assertEqual(rechts["messung"] is not None, messbar, breite)
+
+    def test_niedrige_quelle_nennt_die_kastenhoehe(self):
+        # Seitliche Kaesten sind 10 % der Quellhoehe hoch: bei 300 px Quelle
+        # nur 30 px - der Grund muss die Hoehe nennen, nicht "zu schmal".
+        bild = KunstBild(QW + 500, 300, lambda x, y: 16)
+        b = bq.messe_raender(bild, bq.Roi(0, 0, QW, 300))[0]
+        self.assertIsNone(b["messung"])
+        self.assertIn("500x31 px", b["grund"])
+        self.assertNotIn("schmal", b["grund"])
 
     def test_zu_niedriger_unterer_rand_ist_nicht_messbar(self):
         # 60 px Streifen -> Messkasten 0,3 * 60 = 18 px
@@ -186,7 +208,77 @@ class RandmessungTests(unittest.TestCase):
         befunde = bq.messe_raender(bild, roi)
         self.assertEqual([b["seite"] for b in befunde], ["unten"])
         self.assertIsNone(befunde[0]["messung"])
-        self.assertIn("zu schmal", befunde[0]["grund"])
+        self.assertIn("zu klein", befunde[0]["grund"])
+
+    def test_strukturloser_rand_links_wie_rechts(self):
+        # Ein Rand ohne jede Zeichnung, beidseitig identisch. Vorher las der
+        # linke Kasten die erste Quellspalte mit und erbte deren Verlauf (3,0x,
+        # OK), waehrend rechts 0,0x VERWERFEN herauskam.
+        def amp(x, y):
+            return verlauf_gut(y) if 200 <= x < 200 + QW else 0
+        befunde = bq.messe_raender(self.bild(amp), self.roi)
+        links, rechts = befund(befunde, "links")["messung"], befund(befunde, "rechts")["messung"]
+        self.assertEqual((links["vorn"], links["hinten"]), (0.0, 0.0))
+        self.assertEqual((rechts["vorn"], rechts["hinten"]), (0.0, 0.0))
+        self.assertEqual(bq.urteil(links), bq.urteil(rechts))
+        fehler, _ = bq.beurteile_raender(befunde)
+        self.assertEqual(len(fehler), 2)
+
+    def test_untere_ecke_liest_nicht_den_nachbarstreifen(self):
+        # unten links ohne Zeichnung, unten (unter der Quelle) mit guter
+        # Zeichnung: die Ecke darf die erste Spalte des Nachbarn nicht sehen.
+        roi = bq.Roi(200, 0, QW, QH)
+        s = stufe_unten(QH, 200)
+
+        def amp(x, y):
+            if y < QH:
+                return verlauf_gut(y)
+            return 0 if x < 200 else verlauf_gut(y, s)
+        befunde = bq.messe_raender(KunstBild(QW + 200, QH + 200, amp), roi)
+        ecke = befund(befunde, "unten links")["messung"]
+        self.assertEqual((ecke["vorn"], ecke["hinten"]), (0.0, 0.0))
+        self.assertEqual(bq.urteil(befund(befunde, "unten")["messung"], befund(befunde, "unten")["gut"]), "OK")
+
+    def test_schwelle_unten_haengt_am_tiefenumfang(self):
+        roi = bq.Roi(0, 0, QW, QH)
+        s15 = bq.verlauf_schwelle_unten(roi, bq.Roi(0, QH, QW, int(0.15 * QH)))
+        s50 = bq.verlauf_schwelle_unten(roi, bq.Roi(0, QH, QW, int(0.50 * QH)))
+        s300 = bq.verlauf_schwelle_unten(roi, bq.Roi(0, QH, QW, 3 * QH))
+        self.assertGreater(s15, 1.0)                  # flach bleibt immer GRENZWERTIG
+        self.assertLess(s15, s50)                     # mehr Tiefe, hoehere Schwelle
+        self.assertLess(s50, bq.VERLAUF_GUT)
+        self.assertEqual(s300, bq.VERLAUF_GUT)        # nie strenger als das Motiv
+        # Seitliche Raender bleiben bei VERLAUF_GUT
+        b = bq.messe_raender(KunstBild(QW + 200, QH, lambda x, y: 16), bq.Roi(200, 0, QW, QH))[0]
+        self.assertEqual(b["gut"], bq.VERLAUF_GUT)
+
+    def test_fortgesetzte_zeichnung_unten_ist_ok(self):
+        # Zeichnung waechst linear mit dem Zeilenabstand zum Horizont (wie in
+        # der Quelle, 3,2x zwischen den Quellkaesten) und setzt sich 30 % der
+        # Quellhoehe nach unten fort. Ueber den kurzen Umfang des Streifens
+        # ergibt das nur ~1,29x - mit der festen Schwelle 1,5 GRENZWERTIG,
+        # mit der umgerechneten OK.
+        horizont = 0.446 * QH
+
+        def amp(x, y):
+            return max(0.0, 0.06 * (y - horizont))
+        roi = bq.Roi(0, 0, QW, QH)
+        mq = bq.messe(KunstBild(QW, QH, amp), roi, "q")
+        self.assertGreater(mq["verlauf"], 3.0)
+        b = bq.messe_raender(KunstBild(QW, QH + 120, amp), roi)[0]
+        self.assertEqual(b["seite"], "unten")
+        self.assertLess(b["messung"]["verlauf"], bq.VERLAUF_GUT)
+        self.assertEqual(bq.urteil(b["messung"], b["gut"]), "OK")
+        self.assertEqual(bq.beurteile_raender([b]), ([], []))
+
+    def test_flacher_unterer_rand_bleibt_grenzwertig(self):
+        roi = bq.Roi(0, 0, QW, QH)
+        for hu in (120, 400):
+            b = bq.messe_raender(KunstBild(QW, QH + hu, lambda x, y: 16), roi)[0]
+            self.assertAlmostEqual(b["messung"]["verlauf"], 1.0, places=2)
+            self.assertTrue(bq.urteil(b["messung"], b["gut"]).startswith("GRENZWERTIG"), hu)
+            fehler, _ = bq.beurteile_raender([b])
+            self.assertEqual(len(fehler), 1)
 
     def test_oberer_rand_liegt_ueber_der_florzone(self):
         roi = bq.Roi(0, 120, QW, QH)
@@ -265,15 +357,15 @@ class RandmessungTests(unittest.TestCase):
             befund(befunde, "unten rechts")["messung"])])
 
 
-def schreibe_paar(verzeichnis, rand_amp):
-    """Quelle (Zeichnung faellt gut ab) bitgenau bei 200,0 im Ergebnis;
-    links und rechts je 200 px Rand mit rand_amp."""
+def schreibe_paar(verzeichnis, rand_amp, rand=200):
+    """Quelle (Zeichnung faellt gut ab) bitgenau bei rand,0 im Ergebnis;
+    links und rechts je rand px Rand mit rand_amp."""
     def amp(x, y):
-        if 200 <= x < 200 + QW:
+        if rand <= x < rand + QW:
             return verlauf_gut(y)
         return rand_amp(y)
-    erg = KunstBild(QW + 400, QH, amp)
-    quelle = KunstBild(QW, QH, lambda x, y: amp(x + 200, y))
+    erg = KunstBild(QW + 2 * rand, QH, amp)
+    quelle = KunstBild(QW, QH, lambda x, y: amp(x + rand, y))
     qp = os.path.join(verzeichnis, "quelle.bmp")
     ep = os.path.join(verzeichnis, "ergebnis.bmp")
     bq.schreibe_bmp(qp, quelle.w, quelle.h, quelle.rgb)
@@ -290,9 +382,9 @@ class EndeZuEndeTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def lauf(self, rand_amp):
-        qp, ep = schreibe_paar(self.tmp.name, rand_amp)
-        return subprocess.run([sys.executable, str(SKRIPT), qp, ep, "--bei", "200,0"],
+    def lauf(self, rand_amp, rand=200):
+        qp, ep = schreibe_paar(self.tmp.name, rand_amp, rand)
+        return subprocess.run([sys.executable, str(SKRIPT), qp, ep, "--bei", f"{rand},0"],
                               capture_output=True, text=True)
 
     def test_filzrand_wird_abgelehnt(self):
@@ -301,6 +393,17 @@ class EndeZuEndeTests(unittest.TestCase):
         self.assertIn("ABGELEHNT", r.stdout)
         self.assertIn("Rand links", r.stdout)
         self.assertIn("Rand rechts", r.stdout)
+
+    def test_zu_schmaler_rand_steht_in_der_ausgabe(self):
+        # 20 px Filzrand: nicht messbar, lehnt nicht ab - aber beides muss in
+        # der Ausgabe stehen, sonst besteht der Rand still.
+        r = self.lauf(verlauf_filz, rand=20)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("Rand links (erzeugt)", r.stdout)
+        self.assertIn("nicht messbar - Messkasten zu klein", r.stdout)
+        self.assertIn("Ohne Strukturpruefung: Rand links", r.stdout)
+        self.assertIn("Rand rechts", r.stdout.split("Ohne Strukturpruefung")[1])
+        self.assertIn("ANGENOMMEN - Rand ohne Strukturpruefung", r.stdout)
 
     def test_guter_rand_wird_angenommen(self):
         r = self.lauf(verlauf_gut)
