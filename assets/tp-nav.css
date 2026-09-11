@@ -601,6 +601,40 @@
   aspect-ratio: 5 / 2;
 }
 
+/* ------------------------------------------------------------------
+   Navigation ausserhalb des Menues (Audit 2026-09-11, B6 und B12)
+   ------------------------------------------------------------------ */
+
+/* Top-Leiste auf dem Tablet: zwei Aussagen plus Telefonnummer passten bei
+   768 px nicht, die Nummer lief rechts aus dem Bild. Die Muster-Aussage steht
+   auf diesen Breiten im Menue ("Muster bestellen"), die Nummer bleibt sichtbar. */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .tp-tb__item:nth-child(2) {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 749px) {
+  /* Breadcrumb der Produktseite: Links waren 17 px hoch. Die Zeile wird
+     44 px hoch, dafuer entfaellt ihr Abstand nach unten. */
+  .tp-product-breadcrumb {
+    margin-bottom: 0;
+  }
+
+  .tp-product-breadcrumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Zubehoer: Sprungleiste zu den Geschwister-Kategorien, bisher 36 px */
+  .tp-zubehoer__chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tp-nav-link,
   .tp-nav-chip,
