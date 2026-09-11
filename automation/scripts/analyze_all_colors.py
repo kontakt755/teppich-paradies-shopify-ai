@@ -89,7 +89,7 @@ VARIANTS_WITH_TITLES = [
     {"sku": "TEPALAMO4_005", "title": "Farbe 05 / 400cm", "product": "Vireno"},
     {"sku": "TEPALAMO4_024", "title": "Farbe 24 / 400cm", "product": "Vireno"},
 
-    # Zafira (18 variants) - Nur Nummern, aber Jordanshop-Nummer!
+    # Zafira (18 variants) - Nur Nummern, aber Lieferanten-Nummer!
     {"sku": "TEPZIRKON4_250", "title": "Farbe 250 / 400cm", "product": "Zafira"},
     {"sku": "TEPZIRKON5_250", "title": "Farbe 250 / 500cm", "product": "Zafira"},
     {"sku": "TEPZIRKON4_260", "title": "Farbe 260 / 400cm", "product": "Zafira"},

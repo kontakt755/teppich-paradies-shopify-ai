@@ -114,8 +114,8 @@ identisch ist — nicht `userErrors: []`.
 
 **7. Ein Produktimport, der ohne geklärte Namensregeln startet, wird zweimal gebaut.**
 Am 2026-09-07 entstanden sieben Linoleum-Produkte mit Lieferantennamen im Titel
-(`Jokalino Vivace`) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
-musste vollständig zurückgebaut werden, obwohl die Regel im jordanshop-Skill stand und die
+(Linienname der Hausmarke von A) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
+musste vollständig zurückgebaut werden, obwohl die Regel im Import-Skill stand und die
 zwei fertigen Produkte im Shop (Coloria, Elastium) sie vormachten. **Das nächstliegende
 fertige Produkt abfragen und daran entlangbauen** — eine Query gegen eine Sitzung.
 
@@ -125,12 +125,23 @@ Metafeldern ab und lässt die alte Variantenstruktur stehen), und warum nach jed
 Schreibvorgang gegengeprüft wird — `userErrors: []` ist kein Beleg, dass das Ergebnis stimmt.
 → `domains/shopify/produktimport-arbeitsweise.md`
 
-Dieselben Korrekturen stecken im Skill `teppichparadies-jordanshop-import`. Der liegt in einem
-**synchronisierten** Bundle unter `~/Library/Application Support/Claude/…/skills-plugin/` — ein
-Sync von claude.ai setzt ihn zurück. Sicherung und Wiederherstellung:
-`domains/shopify/jordanshop-import-SKILL.md` (der gepatchte Volltext) und
-`domains/shopify/skill-patch.py` (spielt die Patches erneut ein; bricht sauber ab, wenn der
-Skill bereits gepatcht ist oder sich geändert hat).
+Dieselben Korrekturen stecken im Import-Skill für Lieferant A (`teppichparadies-*-import` in der
+Skill-Liste). Der liegt in einem **synchronisierten** Bundle unter
+`~/Library/Application Support/Claude/…/skills-plugin/` — ein Sync von claude.ai setzt ihn zurück.
+Sicherung und Wiederherstellung (der gepatchte Volltext und `skill-patch.py`, das die Patches
+erneut einspielt und sauber abbricht, wenn der Skill bereits gepatcht ist oder sich geändert hat)
+liegen **nur lokal** unter `~/teppich-paradies-analyse/lieferantendaten/` — beide enthalten
+Lieferantendaten, siehe Punkt 8.
+
+**8. Lieferantennamen gehören nicht ins Repository.**
+Repository, Issues und Dashboard sind öffentlich; Bezugsquellen sind Geschäftsgeheimnis
+(Regel des Inhabers, 2026-09-11). In Dateien, Commit- und PR-Texten und `npm run task`-Notizen
+stehen deshalb nur Pseudonyme: **Lieferant A** bis **Lieferant D**, **Hausmarke von A**,
+Linoleum-Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`. Schlüssel, Rohdaten,
+Scraper und Import-Pläne liegen nur lokal unter `~/teppich-paradies-analyse/lieferantendaten/`
+(Übersicht dort in `INHALT.md`, im Repo `domains/lieferanten/AUSGELAGERT.md`). SKUs bleiben
+unverändert — sie sind die Kennungen im Shop und dort ohnehin öffentlich. Die Git-Historie
+enthält ältere Stände mit Namen; sie wird bewusst nicht umgeschrieben.
 
 ## Vor jedem Commit
 
@@ -188,7 +199,7 @@ Umgebungsvariable noch aus einer Datei. Wer in einer Sitzung anfaengt, einen
 `shpat_`-Token zu suchen, verliert Zeit an einem Problem, das nicht existiert.
 
 Der einzige Ort, der einen echten Token braucht, ist der **GitHub-Actions-Job**
-(`.github/workflows/jordanshop-sync.yml`) — dort laeuft kein MCP-Server, deshalb
+(`.github/workflows/grosshandel-sync.yml`) — dort laeuft kein MCP-Server, deshalb
 liegt der Token als Repository-Secret `SHOPIFY_ADMIN_TOKEN`.
 
 Token-Typen nicht verwechseln:

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * JordichShop → Shopify GraphQL Admin API Sync
+ * Grosshandel → Shopify GraphQL Admin API Sync
  *
  * Serverseitige Integration (KEINE Chrome-Automation)
  * Standard-Modus: DRY-RUN mit Prüfbarem Report
  * Live-Sync: Nur mit expliziter Freigabe (SYNC_APPROVED=true)
  *
- * Externe ID = Jordan-Artikelnummer (unveränderlicher Schlüssel)
+ * Externe ID = Artikelnummer des Grosshaendlers (unveränderlicher Schlüssel)
  * Neue Artikel → DRAFT-Status
  * Bestehende → Idempotente Feldänderungen (nie productSet mit unvollständigen Listen)
  *
@@ -71,20 +71,20 @@ function runGuards() {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PHASE 2: LOAD JORDANSHOP DATA
+// PHASE 2: LOAD CATALOG DATA
 // ─────────────────────────────────────────────────────────────
 
-function loadJordanshopData() {
-  const catalogPath = path.join(dataDir, 'jordan-catalog.json');
+function loadCatalogData() {
+  const catalogPath = path.join(dataDir, 'grosshandel-catalog.json');
 
   if (!fs.existsSync(catalogPath)) {
-    console.warn(`⚠️  No JordanShop catalog found at ${catalogPath}`);
-    console.warn('   Create one via: JordanShop API export or CSV → JSON conversion');
+    console.warn(`⚠️  No catalog found at ${catalogPath}`);
+    console.warn('   Create one via: supplier API export or CSV → JSON conversion');
     return [];
   }
 
   const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-  console.log(`📦 Loaded ${catalog.length} articles from JordanShop catalog\n`);
+  console.log(`📦 Loaded ${catalog.length} articles from catalog\n`);
   return catalog;
 }
 
@@ -151,23 +151,23 @@ function findExternalId(shopifyProduct) {
   return extIdField?.value || null;
 }
 
-function findNewArticles(jordanData, shopifyProducts) {
+function findNewArticles(catalogData, shopifyProducts) {
   const shopifyExtIds = new Set(shopifyProducts.map(findExternalId).filter(Boolean));
 
-  return jordanData.filter((article) => {
+  return catalogData.filter((article) => {
     const extId = article.externe_id || article.sku;
     return !shopifyExtIds.has(extId);
   });
 }
 
-function findExistingMatches(jordanData, shopifyProducts) {
+function findExistingMatches(catalogData, shopifyProducts) {
   const shopifyMap = new Map();
   shopifyProducts.forEach((p) => {
     const extId = findExternalId(p);
     if (extId) shopifyMap.set(extId, p);
   });
 
-  return jordanData
+  return catalogData
     .filter((article) => {
       const extId = article.externe_id || article.sku;
       return shopifyMap.has(extId);
@@ -175,7 +175,7 @@ function findExistingMatches(jordanData, shopifyProducts) {
     .map((article) => {
       const extId = article.externe_id || article.sku;
       return {
-        jordan: article,
+        artikel: article,
         shopify: shopifyMap.get(extId),
       };
     });
@@ -195,11 +195,11 @@ function checkSafetyRules(newArticles, existingToUpdate) {
   // Check for price changes below package prices
   for (const update of existingToUpdate) {
     const oldPrice = parseFloat(update.shopify.variants[0]?.price || '0');
-    const newPrice = parseFloat(update.jordan.price || '0');
+    const newPrice = parseFloat(update.artikel.price || '0');
 
     if (newPrice > 0 && newPrice < oldPrice * 0.8) {
       issues.push(
-        `⚠️  ${update.jordan.titel}: Preisrückgang >20% (${oldPrice}€ → ${newPrice}€)`
+        `⚠️  ${update.artikel.titel}: Preisrückgang >20% (${oldPrice}€ → ${newPrice}€)`
       );
     }
   }
@@ -234,12 +234,12 @@ function generateReport(newArticles, existingToUpdate) {
       preis_eur: a.preis_eur,
     })),
     updates: existingToUpdate.map((u) => ({
-      titel: u.jordan.titel,
+      titel: u.artikel.titel,
       shopifyHandle: u.shopify.handle,
       changes: {
         preis: {
           alt: u.shopify.variants[0]?.price,
-          neu: u.jordan.preis_eur,
+          neu: u.artikel.preis_eur,
         },
       },
     })),
@@ -304,16 +304,16 @@ async function updateProductFields(match) {
   // Nur Felder aktualisieren, nicht blindes productSet
   const mutations = [];
 
-  if (match.jordan.preis_eur !== match.shopify.variants[0]?.price) {
-    mutations.push(`preis: ${match.jordan.preis_eur}€`);
+  if (match.artikel.preis_eur !== match.shopify.variants[0]?.price) {
+    mutations.push(`preis: ${match.artikel.preis_eur}€`);
   }
 
   if (mutations.length === 0) {
-    console.log(`ℹ️  No changes needed: ${match.jordan.titel}`);
+    console.log(`ℹ️  No changes needed: ${match.artikel.titel}`);
     return;
   }
 
-  console.log(`🔄 Updating: ${match.jordan.titel} (${mutations.join(', ')})`);
+  console.log(`🔄 Updating: ${match.artikel.titel} (${mutations.join(', ')})`);
   // TODO: Implement variant price update via productVariantUpdate
 }
 
@@ -323,7 +323,7 @@ async function updateProductFields(match) {
 
 async function main() {
   console.log('╔═════════════════════════════════════════════╗');
-  console.log('║  JordanShop → Shopify GraphQL Admin Sync    ║');
+  console.log('║  Grosshandel → Shopify GraphQL Admin Sync   ║');
   console.log('║  Mode: DRY-RUN (Standard)                   ║');
   console.log('╚═════════════════════════════════════════════╝\n');
 
@@ -331,9 +331,9 @@ async function main() {
   runGuards();
 
   // Step 2: Load data
-  const jordanData = loadJordanshopData();
-  if (jordanData.length === 0) {
-    console.log('ℹ️  No JordanShop data to sync. Exiting.');
+  const catalogData = loadCatalogData();
+  if (catalogData.length === 0) {
+    console.log('ℹ️  No catalog data to sync. Exiting.');
     process.exit(0);
   }
 
@@ -352,8 +352,8 @@ async function main() {
   console.log(`✅ Found ${shopifyProducts.length} existing products\n`);
 
   // Step 4: Diff
-  const newArticles = findNewArticles(jordanData, shopifyProducts);
-  const existingToUpdate = findExistingMatches(jordanData, shopifyProducts);
+  const newArticles = findNewArticles(catalogData, shopifyProducts);
+  const existingToUpdate = findExistingMatches(catalogData, shopifyProducts);
 
   // Step 5: Safety checks
   const isSafe = checkSafetyRules(newArticles, existingToUpdate);
@@ -394,8 +394,8 @@ async function main() {
 
     console.log('\n✅ SYNC COMPLETE');
   } else {
-    console.log(`ℹ️  To apply: SYNC_APPROVED=true npm run sync:jordanshop`);
-    console.log(`ℹ️  Or locally: SYNC_APPROVED=true node workflow/sync-jordanshop.mjs`);
+    console.log(`ℹ️  To apply: SYNC_APPROVED=true npm run sync:grosshandel`);
+    console.log(`ℹ️  Or locally: SYNC_APPROVED=true node workflow/sync-grosshandel.mjs`);
   }
 }
 

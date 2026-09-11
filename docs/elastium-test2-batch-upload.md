@@ -16,8 +16,8 @@ lueckenlos hochgezaehlt. Die **Anzahl** stimmt deshalb (24 = 24), der Inhalt
 nicht. Das Produkt steht mit diesen Daten seit 2026-09-04 20:19 UTC live in
 drei Verkaufskanaelen (Bestand 0).
 
-Echte Quelle: Artikel `PVCJOKANEO`, „Linoleum-Boden Jokaleum Neocare 2,5mm
-Elastic/Linoleum Bahnen 200cm" auf jordanshop.de. Der Shopname „Elastium" ist
+Echte Quelle: Artikel `PVCJOKANEO`, „Linoleum-Boden Linie A-1 2,5mm
+Elastic/Linoleum Bahnen 200cm" bei Lieferant A. Der Shopname „Elastium" ist
 eine Eigenbezeichnung und taucht beim Lieferanten nicht auf — die Suche muss
 ueber die Artikelnummer laufen, nicht ueber den Produktnamen.
 
@@ -61,9 +61,10 @@ allerdings ein erfundener Wert; sie werden mit der Korrektur ueberschrieben.
 
 Der Input-Typ heisst `MetafieldsSetInput`, nicht `MetafieldInput`.
 
-### Bild-URLs aus der Jordan-Suche
+### Bild-URLs aus der Lieferant-A-Suche
 
-21 der 24 echten Farben haben ein Bild: `data/jokaleum-neocare-images.json`.
+21 der 24 echten Farben haben ein Bild; die Liste (Code → Original-Bild-URL) liegt
+seit 2026-09-11 lokal, siehe `domains/lieferanten/AUSGELAGERT.md`.
 Ohne Bild beim Lieferanten und damit offener Fall: **4153, 4259, 4296**.
 
 Drei Fallen, die je Zeit gekostet haben:
@@ -80,14 +81,15 @@ Ausserdem: Die Trefferbilder stehen nicht im ausgelieferten HTML. `curl`
 bekommt HTTP 200 und 175 KB, darin aber nur drei `<img>`-Tags — den Rest
 haengt clientseitiges JavaScript ein. Das Einsammeln braucht einen Browser:
 
-```
-node scripts/jordan-media-scrape.mjs snippet PVCJOKANEO
-```
+Das Werkzeug dafuer (Browser-Snippet plus Upload-Plan) liegt lokal, nicht im Repo.
 
 ## Werkzeuge
 
-| Datei | Zweck |
+Seit 2026-09-11 lokal unter `~/teppich-paradies-analyse/lieferantendaten/`, nicht im Repo
+(Lieferantendaten, siehe `domains/lieferanten/AUSGELAGERT.md`):
+
+| Werkzeug | Zweck |
 |---|---|
-| `scripts/jordan-media-scrape.mjs` | Browser-Snippet erzeugen, Upload-Plan aus dem Katalog bauen |
-| `scripts/elastium-farbcode-korrektur.mjs` | Korrekturplan drucken (aendert nichts) |
-| `data/jokaleum-neocare-images.json` | 24 echte Farbcodes, 21 mit Original-Bild-URL |
+| Bild-Scraper Lieferant A | Browser-Snippet erzeugen, Upload-Plan aus dem Katalog bauen |
+| Elastium-Farbcode-Korrektur | Korrekturplan drucken (aendert nichts) |
+| Farbcode- und Bildliste Linie A-1 | 24 echte Farbcodes, 21 mit Original-Bild-URL |

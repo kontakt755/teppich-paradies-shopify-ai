@@ -25,7 +25,7 @@
         "preis_eur": 8.50
       }
     ],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "last_sync": "2026-09-04T10:00:00Z"
   },
   {
@@ -38,6 +38,6 @@
     "hoehe_mm": 80,
     "material": "Kunststoff",
     "verfuegbare_farben": 2,
-    "quelle": "jordanshop.de"
+    "quelle": "Lieferant A"
   }
 ]
