@@ -79,7 +79,7 @@ export function woerter(text) {
   return [...out];
 }
 
-/** Namensliste als Menge: klein, ohne Umlaute, mit und ohne Bindestrich ("M-Plus" -> m-plus, mplus). */
+/** Namensliste als Menge: klein, ohne Umlaute, mit und ohne Bindestrich ("Ab-Handel" -> ab-handel, abhandel). */
 export function namenSet(namen) {
   const set = new Set();
   for (const n of namen || []) {
