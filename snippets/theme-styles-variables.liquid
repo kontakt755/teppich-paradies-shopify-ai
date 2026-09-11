@@ -123,6 +123,27 @@
     endunless
   %}
 
+  {%- comment -%}
+    TP: Ersatzschrift mit den Massen von Inter. Solange Inter laedt, stand der
+    Text in der generischen Ersatzschrift mit anderen Laufweiten; beim Wechsel
+    brach der Startseiten-Hero neu um und wurde 88 px hoeher - Layout-Sprung
+    0,16 bis 0,33 bei jedem Aufruf, in dem die Schrift nach dem ersten Bild
+    kam (Desktop 1366 px, 3 von 16 kalten Aufrufen). Lokales Arial/Helvetica
+    mit angepasster Groesse und Ober-/Unterlaenge bricht fast wie Inter um.
+    size-adjust je Schnitt gemessen (echter Startseitentext, Breite Inter
+    gegen Ersatz): 400 = 105,2 %, 500 = 107,2 %, 600 = 102,3 %, 700 = 95,5 %.
+    Ein gemeinsamer Wert (107,4 %) liess die fette Hero-Ueberschrift 12 %
+    zu breit und den Sprung bei 0,18.
+    Nur wenn Inter eingestellt ist; bei einer anderen Schrift bleibt alles
+    wie bisher.
+  {%- endcomment -%}
+  {%- if settings.type_body_font.family == 'Inter' or settings.type_subheading_font.family == 'Inter' or settings.type_heading_font.family == 'Inter' or settings.type_accent_font.family == 'Inter' -%}
+    @font-face { font-family: "TP Inter Ersatz"; src: local("Arial"), local("ArialMT"), local("Helvetica Neue"), local("Helvetica"); font-weight: 400; font-style: normal; size-adjust: 105.2%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; }
+    @font-face { font-family: "TP Inter Ersatz"; src: local("Arial"), local("ArialMT"), local("Helvetica Neue"), local("Helvetica"); font-weight: 500; font-style: normal; size-adjust: 107.2%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; }
+    @font-face { font-family: "TP Inter Ersatz"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Neue Bold"), local("Helvetica Bold"); font-weight: 600; font-style: normal; size-adjust: 102.3%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; }
+    @font-face { font-family: "TP Inter Ersatz"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Neue Bold"), local("Helvetica Bold"); font-weight: 700; font-style: normal; size-adjust: 95.5%; ascent-override: 90.2%; descent-override: 22.48%; line-gap-override: 0%; }
+  {%- endif -%}
+
   :root {
     /* Page Layout */
     --sidebar-width: 25rem;
@@ -155,16 +176,16 @@
     --letter-spacing-md: 0.13em;
 
     /* Font families */
-    --font-body--family: {{ settings.type_body_font.family }}, {{ settings.type_body_font.fallback_families }};
+    --font-body--family: {{ settings.type_body_font.family }}, {% if settings.type_body_font.family == 'Inter' %}"TP Inter Ersatz", {% endif %}{{ settings.type_body_font.fallback_families }};
     --font-body--style: {{ settings.type_body_font.style }};
     --font-body--weight: {{ settings.type_body_font.weight }};
-    --font-subheading--family: {{ settings.type_subheading_font.family }}, {{ settings.type_subheading_font.fallback_families }};
+    --font-subheading--family: {{ settings.type_subheading_font.family }}, {% if settings.type_subheading_font.family == 'Inter' %}"TP Inter Ersatz", {% endif %}{{ settings.type_subheading_font.fallback_families }};
     --font-subheading--style: {{ settings.type_subheading_font.style }};
     --font-subheading--weight: {{ settings.type_subheading_font.weight }};
-    --font-heading--family: {{ settings.type_heading_font.family }}, {{ settings.type_heading_font.fallback_families }};
+    --font-heading--family: {{ settings.type_heading_font.family }}, {% if settings.type_heading_font.family == 'Inter' %}"TP Inter Ersatz", {% endif %}{{ settings.type_heading_font.fallback_families }};
     --font-heading--style: {{ settings.type_heading_font.style }};
     --font-heading--weight: {{ settings.type_heading_font.weight }};
-    --font-accent--family: {{ settings.type_accent_font.family }}, {{ settings.type_accent_font.fallback_families }};
+    --font-accent--family: {{ settings.type_accent_font.family }}, {% if settings.type_accent_font.family == 'Inter' %}"TP Inter Ersatz", {% endif %}{{ settings.type_accent_font.fallback_families }};
     --font-accent--style: {{ settings.type_accent_font.style }};
     --font-accent--weight: {{ settings.type_accent_font.weight }};
 
