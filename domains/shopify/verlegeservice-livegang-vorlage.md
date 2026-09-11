@@ -40,6 +40,12 @@ daran (ihre `sections/header-group.json`, nicht im Branch) – main und das Live
 weiter auf `main-menu`, der Livegang ändert daran nichts. Nach Schritt A die Kopie im Admin
 entfernen, sonst altert sie neben dem echten Menü.
 
+Das Megamenü der Arbeitskopie (Bildkacheln, Branch `feature/mobile-menue-ux`) holt die
+Kartenbilder aus `_tp-menu-kachel`-Blöcken in `sections/header-group.json`. Dort steht dafür
+`tp_kachel_service_liefer` (Menüpunkt „Liefer- & Verlegeservice“, Bild `20231129_114941.jpg`)
+vor `tp_kachel_service_teppich`. Geht dieses Megamenü live, muss die Kachel mit – ohne sie
+zeigt die Karte nur den Anfangsbuchstaben.
+
 1. Menü frisch auslesen (Abfrage wie in `CLAUDE.md`, Punkt 6b) und mit `vorher` in der Datei
    vergleichen. Weicht etwas ab, `variables` aus dem frischen Stand neu erzeugen – nie den
    Stand vom 2026-09-11 über neuere Änderungen schreiben. `menuUpdate` ersetzt den ganzen Baum.
