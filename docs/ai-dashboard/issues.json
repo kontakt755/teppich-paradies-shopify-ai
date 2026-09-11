@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:20:47.819Z",
+  "generated_at": "2026-09-11T12:21:57.352Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 69,
+  "count": 70,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:20:47.819Z",
+    "fetchedAt": "2026-09-11T12:21:57.352Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,15 +63,15 @@
   },
   "issues": [
     {
-      "number": 198,
-      "title": "Warenkorb-Blase: Flaechenware je Zeile als 1 Artikel zaehlen",
+      "number": 199,
+      "title": "Teppiche-Bereich im Entwurfstheme aufbauen (Menue, Landingpages, Konfigurator, ohne Preise)",
       "state": "open",
-      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/198",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/199",
       "labels": [
         "status:eingang",
-        "type:bug",
+        "type:technik",
         "priority:p2",
-        "area:warenkorb"
+        "area:kategorie"
       ],
       "assignee": "kontakt755",
       "assignees": [
@@ -80,11 +80,35 @@
       "comments": 0,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T12:20:50Z",
+      "updated_at": "2026-09-11T12:20:51Z",
+      "closed_at": null
+    },
+    {
+      "number": 198,
+      "title": "Warenkorb-Blase: Flaechenware je Zeile als 1 Artikel zaehlen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/198",
+      "labels": [
+        "status:in-arbeit",
+        "type:bug",
+        "priority:p2",
+        "area:warenkorb"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
         "description": "Produkte mit custom.preis_pro_001_qm werden in 0,01-m2-Einheiten verkauft (Menge = Flaeche x 100). Header-Blase und Warenkorb zeigten fuer einen 10-m2-Teppich die Zahl 1000. Umsetzung: Liquid-Zaehlung (Zeile Flaechenware = 1 Artikel), Section-Endpunkt fuer cart-icon.js, Flaeche statt Menge in Drawer und Warenkorbseite. Keine Preis-, Checkout- oder Produktdatenaenderung.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:20:35Z",
-      "updated_at": "2026-09-11T12:20:35Z",
+      "updated_at": "2026-09-11T12:21:15Z",
       "closed_at": null
     },
     {
