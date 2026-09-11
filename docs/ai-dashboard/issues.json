@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T18:22:44.990Z",
+  "generated_at": "2026-09-11T18:35:46.467Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 76,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T18:22:44.990Z",
+    "fetchedAt": "2026-09-11T18:35:46.467Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -481,7 +481,7 @@
     {
       "number": 173,
       "title": "Verlegegebiet-Karte fuer die Verlegeseiten",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/173",
       "labels": [
         "status:review",
@@ -499,8 +499,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-10T08:55:57Z",
-      "updated_at": "2026-09-10T10:36:20Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T18:35:31Z",
+      "closed_at": "2026-09-11T18:35:31Z"
     },
     {
       "number": 172,
