@@ -151,6 +151,21 @@
     }
   }
 
+  /* Kopfzeile am Telefon: 44-px-Symbole plus 2 x 8 px Innenabstand ergaben
+     60 px. 4 px reichen - die Trefferflaechen der Symbole bleiben 44 px, die
+     Zeile wird 52 px hoch wie am Desktop. Teil der Verkuerzung des
+     Kopfbereichs (Top-Leiste, Kopfzeile, Suche, Kategorien) von 219 px. */
+  @media screen and (max-width: 749px) {
+    body .header.header--compact {
+      --header-padding: 4px;
+    }
+
+    /* Der Drawer-Container erzwang die 60 px ueber eine Mindesthoehe. */
+    body .header__drawer {
+      --header-drawer-min-height: 52px;
+    }
+  }
+
   /* "Mehr anzeigen" innerhalb der Filterlisten lag bei 17 px Hoehe - der
      Knopf, der die restlichen Farben und Breiten erst sichtbar macht. */
   @media screen and (max-width: 749px) {

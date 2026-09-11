@@ -1,0 +1,45 @@
+{% doc %}
+  Unterkategorien der aktuellen Kategorie als kompakte Leiste unter der H1.
+  Logik, Markup und CSS stehen in snippets/tp-unterkategorien-leiste.liquid;
+  Quelle ist das Hauptmenue. Ohne passenden Menuepunkt erscheint nichts.
+{% enddoc %}
+
+{%- assign tp_uk_collection = closest.collection | default: collection -%}
+{%- capture tp_uk_attributes -%}{{ block.shopify_attributes }}{%- endcapture -%}
+{%- render 'tp-unterkategorien-leiste',
+  collection_resource: tp_uk_collection,
+  menu: block.settings.menu,
+  label: block.settings.label,
+  attributes: tp_uk_attributes
+-%}
+
+{% schema %}
+{
+  "name": "TP Unterkategorien",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Zeigt die Unterpunkte des Menuepunkts, der zur aktuellen Kategorie fuehrt. Reihenfolge und Namen werden im Menue gepflegt."
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menue",
+      "default": "main-menu"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Bezeichnung fuer Screenreader",
+      "default": "Unterkategorien"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Unterkategorien",
+      "category": "t:categories.collection"
+    }
+  ]
+}
+{% endschema %}

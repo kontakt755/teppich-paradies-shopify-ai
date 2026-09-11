@@ -237,6 +237,15 @@
     gap: var(--gap) 0;
   }
 
+  /* Die Breadcrumb ist eine eigene Zeile im Raster von .product-information.
+     Dessen Zeilenabstand (--gap, hier 48 px) trennte sie weit vom Produkt -
+     am Telefon lag die Galerie dadurch ~60 px tiefer. Das Produktraster hebt
+     den Abstand fuer diese eine Zeile auf; den Abstand bestimmt allein der
+     Aussenabstand der Breadcrumb, egal wie gross --gap eingestellt ist. */
+  .tp-product-breadcrumb ~ [data-product-grid-content] {
+    margin-top: calc(-1 * var(--gap, 0px));
+  }
+
   /* Base grid layout */
   .product-information__grid {
     display: grid;
