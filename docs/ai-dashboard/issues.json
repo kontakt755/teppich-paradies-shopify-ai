@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T19:45:26.472Z",
+  "generated_at": "2026-09-11T19:46:59.927Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 76,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T19:45:26.472Z",
+    "fetchedAt": "2026-09-11T19:46:59.927Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -93,7 +93,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/205",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:bug",
         "priority:p2",
         "area:technik"
@@ -102,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Eine reine Frage (enthielt 'erstellen' und 'loeschen') lief ueber die Wortliste in claude-bridge.mjs als IMPLEMENTATION; der Codex-Stop-Review verlangte drei Runden lang Code und das Loeschen einer Datei, die schon vor Sitzungsbeginn unversioniert im Working Tree lag. Fix: konservative Fragenerkennung, Review bei Fragen nur bei eigenen Aenderungen, Baseline vorbestehender Dateien im Review-Scope.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:41:00Z",
-      "updated_at": "2026-09-11T18:12:20Z",
+      "updated_at": "2026-09-11T19:46:44Z",
       "closed_at": null
     },
     {
@@ -324,14 +324,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Seite /pages/liefer-verlegeservice rendert live die B2B-Seite (page.verlegeservice.json fehlt in main). Neue Service-Seite mit zwei Preisstufen (unter/ab 649 EUR), lose Verlegung erklaert, Klebearten, Vergleich, >50 km Kontakt; Hinweis nur auf Teppichboden-Rollenware; Preise/Schwellen zentral in den Theme-Einstellungen. Korrigiert widerspruechliche Aussagen (feste Verlegung inklusive, 15 km ab 649 EUR). Baut auf #174/#186 auf.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T09:36:48Z",
-      "updated_at": "2026-09-11T18:37:17Z",
+      "updated_at": "2026-09-11T19:46:42Z",
       "closed_at": "2026-09-11T18:37:04Z"
     },
     {
