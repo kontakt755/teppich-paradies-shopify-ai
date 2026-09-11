@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T10:23:16.739Z",
+  "generated_at": "2026-09-11T10:30:11.080Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 66,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T10:23:16.739Z",
+    "fetchedAt": "2026-09-11T10:30:11.080Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -68,7 +68,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/189",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:versand"
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Seite /pages/liefer-verlegeservice rendert live die B2B-Seite (page.verlegeservice.json fehlt in main). Neue Service-Seite mit zwei Preisstufen (unter/ab 649 EUR), lose Verlegung erklaert, Klebearten, Vergleich, >50 km Kontakt; Hinweis nur auf Teppichboden-Rollenware; Preise/Schwellen zentral in den Theme-Einstellungen. Korrigiert widerspruechliche Aussagen (feste Verlegung inklusive, 15 km ab 649 EUR). Baut auf #174/#186 auf.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T09:36:48Z",
-      "updated_at": "2026-09-11T10:11:47Z",
+      "updated_at": "2026-09-11T10:29:58Z",
       "closed_at": null
     },
     {
