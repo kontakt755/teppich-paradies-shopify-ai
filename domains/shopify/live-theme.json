@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-10T11:53:56Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-11T10:52:50Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-10T11:53:56Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-11T10:52:50Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -71,6 +71,12 @@
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-10",
       "note": "Per workflow:live abgeloest durch 203558781262 (Commit a74e67e: Paketware verstaendlich - Verkaufseinheit vor dem Rechner, ein Kaufweg, Farbwechsel erreicht den Warenkorb, Paketpreis auf der Produktkarte; dazu Theme-Check-Befunde des Mega-Menues). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203558781262",
+      "name": "Preview Gallery V3",
+      "retiredNoticedAt": "2026-09-11",
+      "note": "Per workflow:live abgeloest durch 203690246478 (Commit 4903591, PR #192: Produktkarte zeigt bei Paketware nur Paketpreis und Flaeche, Stueckzahl bleibt auf Produktseite, Rechner und Warenkorb). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
