@@ -286,3 +286,69 @@ in `snippets/cart-products.liquid` übersprungen).
 **Zwischenscore Entwurf: 73 / 100**: Kategorieseiten 62 → 72, Mobile UX 66 → 71, Navigation 73 → 75,
 Performance 61 → 62. Offen als Nächstes: Überschriften-Reihenfolge der Produktkarten, verborgene
 fokussierbare Karussell-Folien, Startseitenlänge, Suche (Synonyme – Such-App, Inhaber), Live-P0 (Deploy).
+
+## Zwischenstand Barrierefreiheit, SEO und Seitengewicht (2026-09-11, spätabends)
+
+Alles im Arbeits-Theme `204168364366`, dateigenau gepusht, nichts veröffentlicht.
+
+| # | Änderung | Messung vorher → nachher |
+|---|---|---|
+| 13 | Tablet: mindestens zwei Spalten auch bei Kartengröße „medium“ (`328fca8`) | 768 px mit Filterspalte: vorher eine Spalte mit 690 px hohen Karten, jetzt zwei |
+| 14 | H2 zwischen Seitentitel und Produktkarten (`0c6aaec`) | Überschriften springen nicht mehr von H1 auf H3; Suche behält das Aussehen einer H4 |
+| 15 | Verborgene Karussell-Folien aus der Tab-Reihenfolge (`c20776c`) | fokussierbare Elemente in `aria-hidden`-Folien 0; beim Blättern wieder fokussierbar |
+| 16 | Footer-Aufforderung auf der Startseite nicht doppelt (`422e7f2`) | Startseite mobil 10.969 → 10.560 px; alle anderen Seiten unverändert; abschaltbar |
+| 17 | Marke in Titeln einheitlich und nur einmal (`4936381`) | „Versand & Lieferung \| Teppich Paradies – TeppichParadies“ → „… \| Teppich Paradies“; 10 Seitentypen per curl geprüft, og:site_name ebenso |
+| 18 | Organisationsname im JSON-LD (`6f77724`) | `name` „Teppich Paradies“, Admin-Schreibweise als `alternateName`; Service-Anbieter gleich |
+| 19 | Versteckte Variantenfolien in Produktkarten nicht rendern (`f48c7a5`) | /collections/teppichboden: 228 unsichtbare Folien weg, HTML 1.419 → 1.004 KB (gzip 140 → 109), DOM ~5.280 → 4.557 (mobil) |
+| 20 | Bildblöcke ab der dritten Section lazy, srcset-Stufen 480/640 (`3598ac4`, `659c0e8`) | Bilder beim Laden ohne Scrollen: mobil 1.571 → 996 KB, Desktop 1.547 → 412 KB; Kachel 832 → 640 px (mobil) bzw. 480 px (Desktop), je Kachel 82 → 51 bzw. 29 KB |
+
+Gegenproben:
+- **#19:** Kartenbilder auf Kategorie, Suche, Startseite und PDP-Empfehlungen vorhanden, 0 JS-Fehler. Ein Farbfilter zeigt weiterhin das passende Kartenbild als erste Folie. `npm run template:guard` meldet jetzt als Fehler, falls jemand den Kartenblock `swatches` einsetzt, der diese Folien bräuchte (Regel `verbotenInKarte`, über alle Templates und Section-Gruppen, Tests I–I3).
+- **#20:** Beim Blättern im Karussell ist jede sichtbar werdende Kachel geladen (0 leere). Betroffen sind nur die 36 Bildblöcke der 7 Kategorie-Karussells; oben liegende Bildblöcke und Section-Gruppen rendern byte-gleich.
+
+**Befund Messmethode (korrigiert frühere Annahme):**
+- Lighthouse auf der Vorschau-URL ist zweigipflig: FCP entweder ≈ 2,8 s oder ≈ 5,4 s, LCP 8,5–15,8 s bei unverändertem Stand.
+- Ursache ist die Umleitung, mit der `?preview_theme_id` das Vorschau-Cookie setzt (≈ 860 ms, Lighthouse warnt bei jedem Lauf), zusammen mit wechselndem Cache-Zustand bei Shopify.
+- Ein Median aus drei Läufen kann Schritte dieser Größe deshalb nicht auflösen.
+- Einzelschritte werden ab jetzt mit deterministischen Größen belegt (HTML-Bytes, DOM-Knoten, Bild-Bytes beim Laden).
+- Für das Schlussaudit läuft Lighthouse ohne Umleitung: Das `_shopify_essential`-Cookie wird vorab per curl geholt, geprüft wird, dass Theme-Pfad `t/53` geladen wurde.
+- Die Rücknahme des Schrift-Vorladens (#8) bleibt trotzdem richtig, denn ihr Zweck (CLS) war schon erreicht.
+
+**Befund LCP Kategorieseite mobil:**
+- Für Erstbesucher ist das größte Element der Text des Shopify-Cookie-Banners (307 × 208 px). Er erscheint spät und ist größer als jedes Kartenbild.
+- Das gilt auch im Feld für jeden Erstbesuch. Banner-Code und -Zeitpunkt liegen bei Shopify; Textlänge und Position sind eine Einstellung im Admin (Inhaber).
+- Ohne Banner ist das erste Kartenbild das LCP-Element.
+
+**Endlos-Scrollen:** Die Kategorieseite lädt 3 Seiten (51 Produkte) nach. Das Karussell unter dem Raster ist deshalb erst nach allen Produkten erreichbar; die Unterkategorie-Leiste oben (#9) übernimmt seine Navigation.
+
+Red-Team der eigenen Änderungen:
+- **#17:** Ein im Admin gesetzter SEO-Titel, der „TeppichParadies“ enthält, bleibt wie eingegeben – das Theme ergänzt dann keine zweite Marke. Die saubere Lösung ist der Shopname im Admin (wirkt auch in E-Mails, Checkout, Copyright).
+- **#19:** Der Schnellkauf lädt die Produktseite in ein Modal und liest die Kartenfolien nicht (Code gelesen, nicht im Browser geklickt; die Karten zeigen statt Schnellkauf „Muster bestellen“).
+- **#20:** `section.index` ist in Section-Gruppen leer. Bildblöcke im Kopf- oder Fußbereich bleiben deshalb bewusst unverändert, auch wenn sie unten stehen.
+
+Neu für die Inhaberliste:
+1. Rollenware-Produkte haben absichtlich kein Produkt-JSON-LD (`snippets/tp-product-structured-data.liquid`: Shopify-Preis ist dort ein m²-Basispreis). Ein Rich Result bräuchte eine Entscheidung, wie der Preis ausgezeichnet wird.
+2. Angebote ohne `shippingDetails` und `hasMerchantReturnPolicy`: Das braucht die verbindlichen Versand- und Rückgaberegeln, die das Theme nicht erfinden darf.
+3. Shopname im Admin „TeppichParadies“ → „Teppich Paradies“ (siehe #17).
+4. Cookie-Banner kürzer bzw. als kompakte Leiste (siehe LCP-Befund).
+
+Nicht beeinflussbar, der Vollständigkeit halber: Shopify lädt auf jeder Seite rund 600 KB Checkout-Skripte vor (`/checkouts/internal/preloads.js`, Priorität „VeryLow“, ab 2,5 s). Der Kopfbereich von 115–211 KB HTML besteht überwiegend aus Shopify-Analytics und Pixel-Loader.
+
+**Zwischenscore Entwurf: 75 / 100**:
+
+| Kategorie | vorher → jetzt |
+|---|---|
+| Produktkarten | 63 → 68 (#1–#3, #19) |
+| Performance | 62 → 65 (deterministisch belegt, Lighthouse-Wert in der Vorschau nicht belastbar) |
+| SEO | 68 → 71 |
+| Local SEO | 62 → 63 |
+| Professionalität | 67 → 69 |
+| Accessibility | 78 → 80 |
+| Kategorieseiten | 72 → 74 |
+| Startseite | 70 → 71 |
+
+Offen als Nächstes:
+- Kopfbereich mit 1.170 DOM-Elementen auf jeder Seite (Megamenü und Drawer – Bereich der Menü-Sitzung, nur in Abstimmung)
+- Startseitenlänge
+- Design-Tokens
+- Schlussaudit mit redirect-freiem Lighthouse
