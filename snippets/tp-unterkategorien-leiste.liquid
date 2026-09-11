@@ -1,0 +1,158 @@
+{%- doc -%}
+  Unterkategorien der aktuellen Kategorie als kompakte Leiste.
+
+  Quelle ist das Hauptmenue (einzige Stelle, an der das Sortiment gegliedert
+  wird): gesucht wird der Hauptpunkt, dessen Link oder einer seiner Unterlinks
+  auf die aktuelle Kollektion zeigt. Seine Unterpunkte erscheinen als Leiste,
+  der aktuelle ist markiert. Auf einer Unterkategorie (z. B. Hochflor) stehen
+  damit die Geschwister zur Wahl, auf der Oberkategorie alle Unterkategorien.
+
+  Findet sich kein passender Menuepunkt oder hat er keine Unterpunkte, wird
+  nichts ausgegeben - keine leere Flaeche.
+
+  Genutzt von blocks/tp-unterkategorien.liquid und sections/hero_split.liquid.
+
+  @param {object} collection_resource - Die aktuelle Kollektion
+  @param {string} [menu] - Handle des Menues, Standard main-menu
+  @param {string} [label] - Bezeichnung fuer Screenreader
+  @param {string} [attributes] - Zusaetzliche Attribute fuer das nav-Element (Theme-Editor)
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_uk_menu = linklists[menu]
+  if tp_uk_menu == blank
+    assign tp_uk_menu = linklists['main-menu']
+  endif
+
+  assign tp_uk_parent = null
+  if collection_resource != blank
+    for tp_uk_link in tp_uk_menu.links
+      if tp_uk_link.links.size == 0
+        continue
+      endif
+      if tp_uk_link.url == collection_resource.url
+        assign tp_uk_parent = tp_uk_link
+        break
+      endif
+      for tp_uk_child in tp_uk_link.links
+        if tp_uk_child.url == collection_resource.url
+          assign tp_uk_parent = tp_uk_link
+          break
+        endif
+      endfor
+      if tp_uk_parent
+        break
+      endif
+    endfor
+  endif
+-%}
+
+{%- if tp_uk_parent and tp_uk_parent.links.size > 0 -%}
+  <nav
+    class="tp-uk"
+    aria-label="{{ label | default: 'Unterkategorien' | escape }}"
+    {{ attributes }}
+  >
+    <ul class="tp-uk__list" role="list">
+      {%- for tp_uk_child in tp_uk_parent.links -%}
+        {%- assign tp_uk_current = false -%}
+        {%- if tp_uk_child.url == collection_resource.url -%}
+          {%- assign tp_uk_current = true -%}
+        {%- endif -%}
+        <li>
+          <a
+            class="tp-uk__pill{% if tp_uk_current %} tp-uk__pill--aktiv{% endif %}"
+            href="{{ tp_uk_child.url }}"
+            {% if tp_uk_current %}
+              aria-current="page"
+            {% endif %}
+          >
+            {{- tp_uk_child.title | escape -}}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+{%- endif -%}
+
+{% stylesheet %}
+  /* min-width: 0 und max-width: 100% - die nicht umbrechende Leiste darf
+     ihren Container (Raster- oder Flex-Spalte) nie breiter machen als den
+     Bildschirm. Ohne das zog sie die Spalte auf ihre volle Laenge und
+     schnitt den Text daneben ab. */
+  .tp-uk {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .tp-uk__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-width: 100%;
+  }
+
+  .tp-uk__pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid #e6e0d8;
+    border-radius: 999px;
+    background: #f6f2ec;
+    color: #1d1a17;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .tp-uk__pill:hover {
+    border-color: #1d1a17;
+  }
+
+  .tp-uk__pill:focus-visible {
+    outline: 2px solid #1d1a17;
+    outline-offset: 2px;
+  }
+
+  .tp-uk__pill--aktiv {
+    border-color: #1d1a17;
+    background: #1d1a17;
+    color: #fff;
+  }
+
+  @media screen and (max-width: 749px) {
+    /* Am Telefon eine waagerecht wischbare Zeile statt mehrerer Zeilen.
+       Sie bleibt innerhalb des Inhaltsrands, der erste Eintrag steht
+       buendig mit der Ueberschrift. */
+    .tp-uk__list {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      scroll-snap-type: x proximity;
+      padding-bottom: 2px;
+    }
+
+    .tp-uk__list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tp-uk__list > li {
+      flex: none;
+      scroll-snap-align: start;
+    }
+
+    .tp-uk__pill {
+      min-height: 36px;
+      padding: 0 14px;
+      font-size: 14.5px;
+    }
+  }
+{% endstylesheet %}

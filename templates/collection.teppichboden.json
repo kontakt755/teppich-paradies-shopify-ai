@@ -824,6 +824,14 @@
           },
           "blocks": {}
         },
+        "tp_unterkategorien": {
+          "type": "tp-unterkategorien",
+          "settings": {
+            "menu": "main-menu",
+            "label": "Unterkategorien"
+          },
+          "blocks": {}
+        },
         "text_twGGkJ": {
           "type": "text",
           "name": "Description",
@@ -853,7 +861,8 @@
       },
       "block_order": [
         "text_tqQTNE",
-        "text_twGGkJ"
+        "text_twGGkJ",
+        "tp_unterkategorien"
       ],
       "name": "Collection heading",
       "settings": {
@@ -1045,8 +1054,8 @@
     }
   },
   "order": [
-    "carousel_UKqxXW",
     "section",
-    "main"
+    "main",
+    "carousel_UKqxXW"
   ]
 }
