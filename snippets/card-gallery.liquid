@@ -51,6 +51,17 @@
     assign image_sizes = sizes_attribute | strip
   endif
 
+  # Zweispaltige Mobil-Raster (mobile_columns "2") bekamen "100vw" und luden
+  # damit Bilder in doppelter Breite. Die Desktop-Angabe bleibt unveraendert.
+  if section.settings.mobile_columns == '2'
+    assign image_sizes = image_sizes | replace: ', 100vw', ', 50vw'
+  endif
+
+  # Kartenbilder brauchen nie mehr als ~1.400 px. Die Horizon-Standardliste
+  # sprang von 352 auf 832 px: eine 500-px-Karte am Desktop lud 832. 352 und
+  # 832 bleiben als Stufen erhalten, damit mobil keine Karte groesser laedt.
+  assign card_image_widths = '240, 352, 480, 600, 720, 832, 1080, 1440'
+
   # Product cards use one stable media frame across collections, search and
   # recommendations. Original ratios remain untouched and are cropped only in
   # this card context; PDP galleries keep their separate media-fit behavior.
@@ -158,7 +169,7 @@
           endif
 
           capture slideshow_children
-            render 'product-media', media: media, sizes: sizes, loading: loading, preview_image_only: true
+            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, preview_image_only: true
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit

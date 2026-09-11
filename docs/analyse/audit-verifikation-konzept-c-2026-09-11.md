@@ -20,8 +20,9 @@ sind unverändert. Branch: `fix/audit-konzept-c` (Aufgabe #187).
 | WEITERE PRÜFUNG ERFORDERLICH | 4 |
 | NICHT REPRODUZIERBAR | 0 |
 
-Von den 38 bestätigten oder teilweise bestätigten Befunden sind 27 im Entwurf korrigiert (ganz oder
-im bestätigten Teil). 11 sind bestätigt, brauchen aber eine Freigabe, Daten oder eine Entscheidung.
+Stand nach der Freigabe vom 2026-09-11 (Nachmittag): 29 Befunde sind erledigt – im Entwurf oder, wo es
+Shopify-Daten betraf, direkt im Shop. 14 bleiben offen (Foto, Lieferantendaten, eigener Sprint, Deploy),
+6 brauchen nichts.
 
 ## Drei Befunde über das Audit hinaus
 
@@ -44,24 +45,24 @@ im bestätigten Teil). 11 sind bestätigt, brauchen aber eine Freigabe, Daten od
 | ID | Prio | Status | Beleg | Maßnahme im Entwurf |
 |---|---|---|---|---|
 | B-01 | P0 | BEREITS BEHOBEN | Suffixe (Admin API) gegen Templates: seit PR #186 abgedeckt; bisherige-arbeiten → 301 auf unsere-arbeit. Firmenkunden und Für Geschäftskunden zeigen gewollt B2B. Über uns rendert neutral, aber mit doppelter H1. | `page.ueber-uns.json` ohne Template-H1. Hilfsseiten siehe Z-06. |
-| B-02 | P0 | TEILWEISE | Elfsight erst nach Einwilligung = DSGVO, gewollt. Hero/Trust leer = gewollt: kein belegter Wert, Webquellen widersprechen sich (4,9/227 und 4,8/222). PDP „4.8/5“ war Schema-Default, nie geprüft. | `tp-bewertungsbeleg`: ohne Wert keine Sterne, Link bleibt. Bewertungs-Section mit Google-Link für Besucher ohne Einwilligung. |
+| B-02 | P0 | TEILWEISE | Elfsight erst nach Einwilligung = DSGVO, gewollt. PDP „4.8/5“ war Schema-Default, nie geprüft. Google Maps am 2026-09-11 abgelesen: 4,9 Sterne, 238 Rezensionen. | Hero, Trust-Streifen und PDP zeigen 4,9 · „über 230 Google-Bewertungen“ (Untergrenze, bleibt wahr), Links direkt aufs Google-Profil; Sterne runden wie Google. |
 | B-03 | P0 | BESTÄTIGT | Ohne `?produkt=` Fehlermeldung (`init()`). Zusätzlich wirkte `hidden` nicht: leeres Produktkästchen und „Zum Warenkorb“ immer sichtbar. | Leerzustand mit Anleitung und fünf Einstiegen; `[hidden]` greift. Normalfall getestet. |
 | B-04 | P0 | BESTÄTIGT | Suffix „fliese“ ohne Template. Falsche Blockreihenfolge nur im Entwurf – main hatte sie mit PR #176 korrigiert. | main gemergt; `product.fliese.json` (Paket-Template). H1 bei 261 statt 1.123 px. |
 | B-05 | P0 | BEREITS BEHOBEN | 301 auf /collections/teppichboden besteht. Einstiege fallen ab 2026-08-27 auf 0; das Audit zählte 30 Tage rückwärts. | – |
 | B-06 | P1 | BESTÄTIGT | `order:-1` stellte das Bild mobil vor den Text: H1 bei 492 px, Buttons bei 761 px. | Text vor Bild: H1 248 px, Buttons 517–629 px. Kopfbereich unverändert. |
-| B-07 | P1 | TEILWEISE | Wiederholung stimmt. Die Zwei-Wege-Section ist Ahmets Plan (#167) und bleibt. Ihr Text behauptete „cm-genau berechnet“ (falsch, siehe B-19) und Versandkosten „im Warenkorb“. | Verlegegebiet-Intro ohne Regel; Zwei-Wege-Text sachlich korrigiert. |
+| B-07 | P1 | TEILWEISE | Wiederholung stimmt. Die Zwei-Wege-Section bleibt: Ahmet nennt sie in #167 einen brauchbaren Zwischenschritt, der „so bleiben kann“. Ihr Text behauptete „cm-genau berechnet“ (falsch, siehe B-19) und Versandkosten „im Warenkorb“. | Verlegegebiet-Intro ohne Regel; Zwei-Wege-Text sachlich korrigiert. |
 | B-08 | P1 | TEILWEISE | Doppelter Titel auf der Startseite sichtbar (4 von 4 Karten), in Kategorien nicht. Kürzung folgt dokumentierter Regel; Vergleich ist fertiges Feature. | Zoom-Out-Titel außerhalb der Zoom-Ansicht verborgen. Button-Gewicht: Empfehlung. |
 | B-09 | P1 | BESTÄTIGT | Karten im Grid auf 341 px gestreckt. | `align-self: start`. Filter-URLs sind Menüdaten und funktionieren – unverändert. |
 | B-10 | P1 | TEILWEISE | Überlappung stimmt. „Dekore = Produkte“ falsch: bei Vinyl ist jedes Produkt ein Dekor. | Untertitel „Klick-, Klebe- und Rollenvinyl“. |
 | B-11 | P1 | BESTÄTIGT | Drei Spalten, zwei Karten auf Formularhöhe gestreckt. | Anrufen/WhatsApp links gestapelt, Formular rechts. |
-| B-12 | P1 | WEITERE PRÜFUNG | Stimmt; in den Shop-Dateien gibt es kein Laden-, Team- oder Fassadenfoto. | Foto von Ahmet nötig. |
+| B-12 | P1 | WEITERE PRÜFUNG | Stimmt. Durchsucht: alle Shop-Dateien (16 eigene Fotos – Baustellen und Projekte), Dropbox, Google Drive. Kein Laden-, Team- oder Fassadenfoto; Fotos mit erkennbaren Mitarbeitern bräuchten deren Einwilligung. | Bild bleibt. Fachhandel-Section nennt Ahmets Fakt aus #167: über 1.000 m² Sonderposten und Lagerware im Laden. Ladenfoto muss aufgenommen werden. |
 | B-13 | P1 | TEILWEISE | 452 img, 4.442 DOM-Knoten, ~280 KB je 800-px-Bild stimmen. „Kein WebP“ falsch – Shopify liefert WebP. Farb-Thumbs sind schon auf 6 begrenzt und lazy. | Nicht geändert: eigener Performance-Sprint mit Lighthouse auf Live. |
-| B-14 | P1 | BESTÄTIGT | 8 Seiten ohne Meta-Description (Admin API); Maler-Seite ohne H1; Start-Title kommt aus dem Theme-Fallback. | H1 ergänzt; Title „Teppichboden, Vinyl & Verlegeservice Oranienburg \| Teppich Paradies“. Descriptions: Freigabe, Vorschläge unten. |
+| B-14 | P1 | BESTÄTIGT | 8 Seiten ohne Meta-Description (Admin API); Maler-Seite ohne H1; Start-Title kommt aus dem Theme-Fallback. | H1 und Title im Entwurf. Meta-Descriptions am 2026-09-11 im Shop gesetzt und live im `<head>` geprüft (Texte im Anhang). |
 | B-15 | P1 | TEILWEISE | `telephone` = `shop.phone` = Mobilnummer; kein BreadcrumbList. Rating/sameAs ohne belegte Daten. Rollenware-Offers bewusst unterdrückt (im Audit selbst „Behalten“). | Festnetz per Theme-Setting; BreadcrumbList auf Produktseiten. |
 | B-16 | P1 | BESTÄTIGT | Linke Kanten 124 / 40 / 195 px. | Produktlisten und Zwei-Wege auf 124 px. Zentrierung des Verlegegebiets bewusst belassen. |
 | B-17 | P1 | BESTÄTIGT | „Wähle deine Farbe“, Suchtexte, Warenkorb-Title „Dein Warenkorb“ (Shopify-Standard). | Sie-Form an allen drei Stellen. |
 | B-18 | P1 | TEILWEISE | Die Annahme „Bodenbeläge versandkostenfrei“ ist falsch (siehe oben, Punkt 2). Uneinheitliche Formulierungen stimmen. | Top-Leiste, PDP, Warenkorb, Versandseite einheitlich: „Versandkostenfrei in Deutschland ab 50 €“. |
-| B-19 | P1 | BESTÄTIGT | `preis_pro_001_qm` fehlt (Zafira, Selene). | Preis-Datenlauf = Sicherheitsgrenze, braucht Freigabe. |
+| B-19 | P1 | BESTÄTIGT | `preis_pro_001_qm` fehlt (Zafira, Selene). Umstellen heißt: Variantenpreis pro 0,01 m², Menge in 0,01-m²-Einheiten. Warenkorb, Checkout, Bestellung und Rechnung zeigten dann z. B. 1.332 × 0,39 €, Shop-App und Kasse den Preis 0,39 €. | Bewusst nicht ausgeführt – das ändert die Verkaufseinheit, nicht nur Daten. Die Aufrundung bleibt offen ausgewiesen. |
 | B-20 | P2 | BESTÄTIGT | Zwei Leerzustände, der zweite in der 250-px-Filterspalte. | Volle Breite, ohne Wiederholung. |
 | B-21 | P2 | BESTÄTIGT | Produktliste „all“ zeigt die neuesten Aluprofile. | Teppichboden. |
 | B-22 | P2 | WEITERE PRÜFUNG | Herkunft der Raumbilder nicht belegbar, keine Ersatzfotos. Pfeil über dem Nachbarbild ist Mobile-Peek (fertiges Feature). | Keine Änderung. |
@@ -88,7 +89,7 @@ im bestätigten Teil). 11 sind bestätigt, brauchen aber eine Freigabe, Daten od
 | B-43 | P3 | BESTÄTIGT | Tote Sections, Blöcke, Assets. | Bewusst verschoben (eigener Sprint nach Live). |
 | B-44 | P3 | BESTÄTIGT | ai_gen-Blocknamen. | Verschoben wie B-43. |
 | B-45 | P3 | BESTÄTIGT | Drei Schreibweisen der Festnetznummer. | Anzeige einheitlich „03301 573 37 20“ (7 Stellen), `tel:` unverändert. |
-| B-46 | P3 | BESTÄTIGT | Umfangreicher als gemeldet: Fiora (4 Bilder) und Elastium (21 Bilder) tragen die Produktlinie des Lieferanten im Alt-Text. | Produktdaten: Freigabe. |
+| B-46 | P3 | BESTÄTIGT | Umfangreicher als gemeldet: Fiora (4 Bilder) und Elastium (21 Bilder) trugen die Produktlinie des Lieferanten im Alt-Text. | Am 2026-09-11 im Shop geändert, z. B. „Elastium Linoleumboden Farbe 4289“; live ohne Lieferantenlinie geprüft. |
 | B-47 | P3 | TEILWEISE | Tabs ohne Pfeiltasten stimmt; Karussell-Kopien sind Horizon-Kern. | Pfeiltasten, Pos1/Ende, roving tabindex. |
 | B-48 | P3 | BESTÄTIGT | Badge „Sale“. | „Angebot“. |
 | B-49 | P3 | BESTÄTIGT | Kollektionsbeschreibungen leer. | Admin-Texte: Empfehlung. |
@@ -99,26 +100,37 @@ im bestätigten Teil). 11 sind bestätigt, brauchen aber eine Freigabe, Daten od
 - **Z-02** Pauschales Versandversprechen auf PDP und im Warenkorb, live betroffen – im Entwurf behoben.
 - **Z-03** Vier Service-Seiten zeigen live die B2B-Seite – behebt der Deploy.
 - **Z-04** Musterseite: `hidden` wirkungslos – behoben.
-- **Z-05** Horizon-Demoseite `/pages/materials-and-care` veröffentlicht und in der Sitemap – ausblenden (Freigabe).
-- **Z-06** Hilfsseiten `qualitatssiegel`, `beschreibung-v-2`, `erklarung-auswahl-der-rollenbreite` in der Sitemap – noindex oder ausblenden (Freigabe).
+- **Z-05** Horizon-Demoseite `/pages/materials-and-care` war veröffentlicht und in der Sitemap – am 2026-09-11 ausgeblendet (0 Einstiege in 90 Tagen, kein Menülink; liefert 404).
+- **Z-06** Hilfsseiten `qualitatssiegel`, `beschreibung-v-2`, `erklarung-auswahl-der-rollenbreite` standen in der Sitemap – am 2026-09-11 auf noindex gesetzt (`seo.hidden`), erreichbar bleiben sie.
 - **Z-07** Verwaiste Templates `page.fimenkunden.json`, `page.geschaeftskunden.json` – mit B-43 aufräumen.
-- **Z-08** Zubehör-Titel tragen die Namen der Hersteller (Klebstoffe, Reiniger, Unterlagen, Profile). Das widerspricht Punkt 6 des Auftrags, entspricht aber der Entscheidung vom 2026-09-08 (echte Herstellernamen bei Zubehör). Klärung nötig.
+- **Z-08** Zubehör-Titel tragen die Namen der Hersteller. Entscheidung: bleiben. Punkt 6 des Auftrags verbietet, Lieferantenangaben neu oder unnötig auszugeben; die Herstellernamen im Zubehör hat Ahmet am 2026-09-08 ausdrücklich so gewollt. Bodenbeläge sind nach der Alt-Text-Korrektur frei von Lieferantenangaben (öffentliche Daten aller 401 Produkte geprüft).
 - **Z-09** `qa/run-sales-readiness.mjs`: unbehandelte Promise bricht nach dem mobilen Paketlauf ab. Im Vorschaumodus fangen zusätzlich Cookie-Banner und Shopify-Vorschauleiste mobile Klicks ab.
 
-## Braucht Entscheidung oder Freigabe
+## Freigabe vom 2026-09-11: selbst geklärt und umgesetzt
 
-Diese Punkte ändern Shopify-Daten, die sofort live sichtbar sind, oder sind Geschäftsentscheidungen.
+| Punkt | Ergebnis |
+|---|---|
+| Google-Bewertung (B-02) | Google Maps am 2026-09-11: 4,9 Sterne, 238 Rezensionen (211 × 5, 22 × 4). Im Entwurf 4,9 · „über 230“, Link aufs Profil. |
+| Meta-Descriptions (B-14) | 8 Seiten im Shop gesetzt, live im `<head>` geprüft. |
+| Alt-Texte (B-46) | 25 Bilder ohne Lieferantenlinie, live geprüft. |
+| Demoseite, Hilfsseiten (Z-05, Z-06) | materials-and-care ausgeblendet (404); drei Hilfsseiten noindex, nicht mehr in der Sitemap. |
+| Preis-Datenlauf (B-19) | Geprüft, bewusst nicht ausgeführt: ändert die Verkaufseinheit in Warenkorb, Checkout und Bestellung. |
+| Zwei-Wege-Section (B-07) | Bleibt – laut #167 „brauchbarer Zwischenschritt, kann so bleiben“. |
+| Laden- oder Teamfoto (B-12) | Nirgends vorhanden (Shop-Dateien, Dropbox, Drive). Fakt aus #167 ergänzt. |
+| Zubehör-Herstellernamen (Z-08) | Bleiben, siehe Z-08. |
 
-1. Google-Bewertung: echter Wert, Anzahl und Profil-Link aus dem Unternehmensprofil (B-02).
-2. Meta-Descriptions für acht Seiten (B-14, Vorschläge unten).
-3. Alt-Texte Fiora und Elastium ohne Lieferantennamen, z. B. „Fiora Linoleumboden Farbe 1032“ (B-46).
-4. `materials-and-care` ausblenden, Hilfsseiten auf noindex (Z-05, Z-06).
-5. Preis-Datenlauf `preis_pro_001_qm` für cm-genaue Abrechnung (B-19) – ändert Variantenpreise.
-6. Zwei-Wege-Section behalten oder entfernen (B-07, #167).
-7. Echtes Laden- oder Teamfoto (B-12).
-8. Zubehör-Herstellernamen (Z-08).
-9. Menülink „Service & Verlegung“ auf `/pages/liefer-verlegeservice` – erst nach dem Deploy (B-33).
-10. Deploy: dieser Branch baut auf #186 und #174 auf; alle drei müssen nach main, dann `workflow:preview` und `workflow:live`.
+Damit sind diese Shopify-Daten live geändert (nicht das Theme): 8 Seiten-Metafelder
+`global.description_tag`, 3 × `seo.hidden`, 25 Bild-Alt-Texte, eine Seite unveröffentlicht. Alles umkehrbar.
+
+## Weiterhin offen
+
+1. Ein echtes Laden- oder Teamfoto aufnehmen (B-12).
+2. Menülink „Service & Verlegung“ auf `/pages/liefer-verlegeservice` – erst nach dem Deploy (B-33).
+3. Deploy: dieser Branch baut auf #186 und #174 auf; alle drei nach main, dann `workflow:preview` und
+   `workflow:live`. Nicht ausgeführt – der Auftrag schließt Veröffentlichung aus.
+4. Eigene Sprints: Performance (B-13), Warenkorb-Menge bei Rollenware (B-25), Aufräumen (B-43, B-44).
+5. Daten: Vinyl-Metafelder (B-36), Zubehörbild (B-31), Kollektionsbeschreibungen (B-49),
+   Kollektionssortierung (B-40), Filter (B-27).
 
 ## Bewusst nicht verändert
 
@@ -151,18 +163,19 @@ Preise, Versandprofile, Rollenware-Schema-Unterdrückung, Horizon-Kern.
 | `a5540ad` | P2 |
 | `040f9e8` | P3 und Galerie |
 | `93bfde7` | Versandversprechen an die Versandprofile gebunden |
+| `300a0bc` | Belegte Google-Bewertung, Ladenfakt |
 
-## Anhang: Vorschläge für Meta-Descriptions (B-14)
+## Anhang: Meta-Descriptions (B-14), am 2026-09-11 eingetragen
 
-Nur Fakten, die bereits im Shop stehen. Nicht eingetragen – braucht Freigabe.
+Nur Fakten, die bereits im Shop stehen.
 
-| Seite | Vorschlag |
+| Seite | Text |
 |---|---|
-| teppichboden-verlegen-lassen | Teppichboden verlegen lassen in Oranienburg und Umgebung: Aufmaß, Lieferung und fachgerechte Verlegung vom Fachgeschäft. Im Umkreis von 15 km sind Lieferung und lose Verlegung inklusive. |
-| vinylboden-verlegen | Vinylboden verlegen lassen in Oranienburg: Klick- und Klebevinyl vom Fachhandel, Aufmaß, Untergrund und Verlegung aus einer Hand – bis 50 km um Oranienburg. |
+| kontakt | Teppich Paradies, Saarlandstraße 73–81, 16515 Oranienburg: Telefon 03301 573 37 20 oder WhatsApp. Geöffnet Mo–Fr 8:30–18 Uhr, Sa 8:30–14:30 Uhr. |
+| liefer-verlegeservice | Liefer- und Verlegeservice rund um Oranienburg: bis 15 km Lieferung und lose Verlegung inklusive, ab 649 € Warenwert alles inklusive, regulär bis 50 km. |
+| teppichboden-verlegen-lassen | Teppichboden verlegen lassen in Oranienburg: Aufmaß, Lieferung und Verlegung vom Fachgeschäft. Im Umkreis von 15 km sind Lieferung und lose Verlegung inklusive. |
+| vinylboden-verlegen | Vinylboden verlegen lassen in Oranienburg: Klick- und Klebevinyl vom Fachhandel – Aufmaß, Untergrund und Verlegung aus einer Hand, bis 50 km Umkreis. |
 | treppenverlegung | Treppe mit Teppich belegen lassen: Aufmaß, Zuschnitt und Verlegung vom Teppich Paradies in Oranienburg. Beratung im Fachgeschäft oder bei Ihnen vor Ort. |
-| liefer-verlegeservice | Liefer- und Verlegeservice rund um Oranienburg: im Umkreis von 15 km Lieferung und lose Verlegung inklusive, ab 649 € Warenwert alles inklusive, regulär bis 50 km. |
-| boden-malerarbeiten | Boden- und Malerarbeiten für Praxen, Büros und Gewerbe in Oranienburg und Umgebung – Boden und Wand aus einer Hand. |
 | firmenkunden | Bodenbeläge und Innenausbau für Praxen, Büros und Gewerbe: Beratung, Aufmaß und Verlegung vom Fachhandel in Oranienburg. |
-| kontakt | Teppich Paradies, Saarlandstraße 73–81, 16515 Oranienburg. Telefon 03301 573 37 20, WhatsApp. Mo–Fr 8:30–18 Uhr, Sa 8:30–14:30 Uhr. |
+| boden-malerarbeiten | Boden- und Malerarbeiten für Praxen, Büros und Gewerbe in Oranienburg und Umgebung – Boden und Wand aus einer Hand. |
 | muster | Bis zu drei Muster kostenlos: Farben von Teppichboden, Vinyl und Linoleum zu Hause vergleichen. Muster direkt auf der Produktseite anfragen. |

@@ -7,7 +7,8 @@
   --tp-red-soft: #fbeeef;
   --tp-ink: #1d1a17;
   --tp-ink-2: #4a443f;
-  --tp-muted: #7a726a;
+  /* 5,7:1 auf --tp-bg-2 (vorher #7a726a mit 4,2:1 - unter WCAG AA) */
+  --tp-muted: #655e57;
   --tp-line: #e6e0d8;
   --tp-line-2: #d5cec4;
   --tp-bg-2: #f6f2ec;
@@ -48,8 +49,9 @@
 .tp-s-btn--ghost:hover { border-color: var(--tp-ink); }
 .tp-s-btn--light { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1.5px solid rgba(255, 255, 255, 0.55); }
 .tp-s-btn--light:hover { background: rgba(255, 255, 255, 0.24); color: #fff; }
-.tp-s-btn--wa { background: #1f9d55; color: #fff; }
-.tp-s-btn--wa:hover { background: #178246; color: #fff; }
+/* WhatsApp-Gruen mit weisser Schrift: #0e7a5f = 5,3:1, Hover 7,1:1 (vorher 3,5:1) */
+.tp-s-btn--wa { background: #0e7a5f; color: #fff; }
+.tp-s-btn--wa:hover { background: #0b6450; color: #fff; }
 .tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: 15px; }
 .tp-s-note { font-size: 12.5px; color: var(--tp-muted); margin: 0; }
 .tp-s-check { width: 18px; height: 18px; flex: none; margin-top: 3px; }

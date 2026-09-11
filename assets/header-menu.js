@@ -1,5 +1,5 @@
 import { Component } from '@theme/component';
-import { debounce, onDocumentLoaded, setHeaderMenuStyle } from '@theme/utilities';
+import { debounce, setHeaderMenuStyle } from '@theme/utilities';
 import { MegaMenuHoverEvent } from '@theme/events';
 
 /**
@@ -25,7 +25,13 @@ class HeaderMenu extends Component {
   connectedCallback() {
     super.connectedCallback();
 
-    onDocumentLoaded(this.#preloadImages);
+    // TP: Megamenue-Bilder erst bei der ersten Absicht laden - Zeiger ueber dem
+    // Menue oder Fokus darin. Vorher lud jede Seite rund 35 Menuebilder
+    // (~700 KB), auch auf Touch-Geraeten, die nur den Drawer benutzen.
+    // Capture-Phase, damit die Bilder sichtbar sind, bevor activate() die
+    // Hoehe des Untermenues misst.
+    this.addEventListener('pointerover', this.#revealImages, { capture: true, once: true });
+    this.addEventListener('focus', this.#revealImages, { capture: true, once: true });
     window.addEventListener('resize', this.#resizeListener);
     this.overflowMenu?.addEventListener('pointerleave', this.#overflowSubmenuListener);
   }
@@ -349,9 +355,13 @@ class HeaderMenu extends Component {
   }
 
   /**
-   * Preload images that are set to load lazily.
+   * Show and load the menu images on the first sign of intent.
+   * Until then the CSS keeps them display:none, so the browser does not fetch
+   * them although the closed submenus sit inside the viewport.
    */
-  #preloadImages = () => {
+  #revealImages = () => {
+    if (this.hasAttribute('data-images-revealed')) return;
+    this.setAttribute('data-images-revealed', '');
     const images = this.querySelectorAll('img[loading="lazy"]');
     images?.forEach((image) => image.removeAttribute('loading'));
   };

@@ -273,7 +273,7 @@
     <div class="tp-price-card-package">
       {%- if show_from_price %}ab {% endif -%}
       {{ tp_pr_paketpreis | money_without_currency }}&nbsp;€ / Paket ·
-      {% render 'tp-paketinhalt', product: product_resource, sqm_per_package: sqm_per_package, prefix: '' %}
+      {% render 'tp-paketinhalt', product: product_resource, sqm_per_package: sqm_per_package, prefix: '', nur_flaeche: true %}
     </div>
   {%- endif -%}
   {%- if selected_variant.unit_price and show_unit_price %}
