@@ -23,10 +23,15 @@
 >
 
 {%- liquid
-  assign og_title = page_title | default: shop.name
+  # Marke in Titeln: der Shopname ist im Admin als "TeppichParadies"
+  # hinterlegt, ueberall sonst heisst die Marke "Teppich Paradies". Die
+  # Schreibweise im Admin zu aendern waere die saubere Loesung (wirkt auch in
+  # E-Mails und Checkout) - bis dahin gleicht das Theme sie hier an.
+  assign tp_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies'
+  assign og_title = page_title | default: tp_marke
   assign og_url = canonical_url | default: request.origin
   assign og_type = 'website'
-  assign og_description = page_description | default: shop.description | default: shop.name
+  assign og_description = page_description | default: shop.description | default: tp_marke
   assign optimized_page_title = page_title
 
   if request.page_type == 'product'
@@ -70,7 +75,7 @@
           assign product_title = product_title | strip
         endfor
       endif
-      assign optimized_page_title = product_title | append: ' online kaufen | ' | append: shop.name
+      assign optimized_page_title = product_title | append: ' online kaufen | ' | append: tp_marke
       assign og_title = optimized_page_title
     endif
   elsif request.page_type == 'article'
@@ -82,7 +87,7 @@
 
 <meta
   property="og:site_name"
-  content="{{ shop.name }}"
+  content="{{ tp_marke }}"
 >
 <meta
   property="og:url"
@@ -162,7 +167,7 @@
     Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies
   {%- elsif request.page_type == 'cart' -%}
     {%- comment -%} Shopify liefert hier "Dein Warenkorb" - der Shop siezt (Audit B-17) {%- endcomment -%}
-    Ihr Warenkorb &ndash; {{ shop.name }}
+    Ihr Warenkorb &ndash; {{ tp_marke }}
   {%- else -%}
     {%- comment -%}
       Der else-Zweig fehlte nach f195de7: Kollektionen, Seiten und Suche
@@ -172,7 +177,8 @@
     {{ page_title }}
     {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
     {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
-    {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    {%- comment -%} Marke nur anhaengen, wenn sie nicht schon im Titel steht (sonst "… | Teppich Paradies – TeppichParadies") {%- endcomment -%}
+    {%- unless page_title contains tp_marke or page_title contains shop.name %} &ndash; {{ tp_marke }}{% endunless -%}
   {%- endif -%}
 </title>
 
