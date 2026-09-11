@@ -37,7 +37,9 @@
   assign media_width_desktop = '100vw'
   assign media_width_mobile = '100vw'
   assign sizes = 'auto, (min-width: 750px) ' | append: media_width_desktop | append: ', ' | append: media_width_mobile
-  assign widths = '240, 352, 832, 1200, 1600, 1920, 2560, 3840'
+  # TP: 480 und 640 ergaenzt - zwischen 352 und 832 fehlte eine Stufe, eine
+  # 318-px-Kachel (mobil, 2x) bzw. 432-px-Kachel (Desktop) bekam 832 px.
+  assign widths = '240, 352, 480, 640, 832, 1200, 1600, 1920, 2560, 3840'
 %}
 
 {% liquid
