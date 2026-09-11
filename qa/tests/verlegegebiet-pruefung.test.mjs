@@ -9,6 +9,10 @@
  * stand. Die Tests loesen die Abfragen deshalb bewusst verzoegert und in
  * verkehrter Reihenfolge auf.
  *
+ * Seit 2026-09-11 nennt die Pruefung auf Teppichboden-Seiten auch die Stufe
+ * des Rollenware-Service (data-basis, data-schwelle). Ausserhalb des Gebiets
+ * gibt es weder Absage noch Zusage, sondern zuerst den Weg zur Anfrage.
+ *
  * Statt eines Browsers steht hier ein sehr kleines DOM: die Sektion braucht
  * nur eine Handvoll Eigenschaften, und der Rest der Suite laeuft ohne Browser.
  */
@@ -22,10 +26,23 @@ const WURZEL = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.
 const SKRIPT = readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet.js'), 'utf8');
 const SEKTION = readFileSync(path.join(WURZEL, 'sections', 'tp-verlegegebiet.liquid'), 'utf8');
 
+// 16515 Oranienburg, 14199 Berlin-Wilmersdorf, 39104 Magdeburg.
 const TABELLE = {
   plz: { 16515: 2, 14199: 29, 39104: 120 },
   orte: { berlin: [11.2, 47] },
 };
+
+const VERLEGESEITEN = [
+  'page.teppichboden-verlegen',
+  'page.vinylboden-verlegen',
+  'page.treppenverlegung',
+  'page.verlegeservice',
+];
+
+function abschnittVon(name) {
+  const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
+  return JSON.parse(roh.slice(roh.indexOf('{'))).sections.tp_verlegegebiet;
+}
 
 class Knoten {
   constructor(merkmale = {}) {
@@ -56,7 +73,7 @@ class Knoten {
 }
 
 /** Baut Sektion und Formular auf und laesst das echte Skript darauf los. */
-function aufbauen({ ohneCta = false, ohneVersand = false } = {}) {
+function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {}) {
   const ctaUrl = ohneCta ? undefined : '/pages/kontakt';
   const ctaText = ohneCta ? undefined : 'Verlegung anfragen';
   const versandUrl = ohneVersand ? undefined : '/collections/all';
@@ -65,7 +82,10 @@ function aufbauen({ ohneCta = false, ohneVersand = false } = {}) {
   const ausgabe = new Knoten();
   const weg = new Knoten();
   weg.hidden = true;
-  const sektion = new Knoten({ dataset: { radius: '50', orte: 'tp-verlegegebiet-orte.json' } });
+  const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json' };
+  // So gibt die Sektion die Stufen nur auf Teppichboden-Seiten weiter.
+  if (stufen) Object.assign(daten, { basis: '15', schwelle: '649' });
+  const sektion = new Knoten({ dataset: daten });
   const formular = new Knoten({ dataset: { ctaUrl, ctaText, versandUrl, versandText } });
   formular.hidden = true;
   formular.sektion = sektion;
@@ -101,16 +121,21 @@ async function antworten(offen, index, daten = TABELLE) {
   await new Promise((fertig) => setImmediate(fertig));
 }
 
+/** Sendet eine Eingabe ab und wartet die Antwort ab. */
+async function pruefen(aufbau, wert) {
+  aufbau.eingabe.value = wert;
+  aufbau.formular.ausloesen('submit');
+  await antworten(aufbau.offen, 0);
+  return aufbau;
+}
+
 test('das Formular wird erst durch das Skript sichtbar', () => {
   const { formular } = aufbauen();
   assert.equal(formular.hidden, false, 'Ohne JavaScript muss das Feld verborgen bleiben.');
 });
 
 test('eine Postleitzahl im Gebiet fuehrt zu Zusage und Anfrage-Link', async () => {
-  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
-  eingabe.value = '16515';
-  formular.ausloesen('submit');
-  await antworten(offen, 0);
+  const { ausgabe, weg } = await pruefen(aufbauen(), '16515');
 
   assert.equal(ausgabe.attribute['data-status'], 'innen');
   assert.match(ausgabe.textContent, /16515 liegt in unserem/);
@@ -119,46 +144,79 @@ test('eine Postleitzahl im Gebiet fuehrt zu Zusage und Anfrage-Link', async () =
   assert.match(weg.kinder[0].textContent, /Verlegung anfragen/);
 });
 
-test('ausserhalb des Gebiets fuehrt in den Shop statt in eine Absage', async () => {
-  // Der Verlegeservice endet bei 50 km, der Versand nicht. Ohne diesen Weg
-  // waere die Pruefung fuer jeden ausserhalb eine Absage.
-  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
-  eingabe.value = '39104';
-  formular.ausloesen('submit');
-  await antworten(offen, 0);
+test('ohne Stufen verspricht die Pruefung keinen Rollenware-Service', async () => {
+  // Vinyl- und Treppenseiten: dort gilt die kostenlose lose Verlegung nicht.
+  const { ausgabe } = await pruefen(aufbauen(), '16515');
+  assert.doesNotMatch(ausgabe.textContent, /Warenwert|lose Verlegung|inklusive/);
+});
+
+test('mit Stufen: bis zum Basisradius gilt jeder Warenwert', async () => {
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '16515');
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+  assert.match(ausgabe.textContent, /lose Verlegung Ihrer Rollenware sind hier bei jedem Warenwert inklusive/);
+});
+
+test('mit Stufen: hinter dem Basisradius erst ab der Schwelle', async () => {
+  // Der Kunde aus 29 km Entfernung darf nicht lesen, es sei fuer jeden
+  // Einkauf inklusive - fuer ihn gilt das erst ab 649 EUR.
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '14199');
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+  assert.match(ausgabe.textContent, /ab 649 € Warenwert inklusive/);
+  assert.doesNotMatch(ausgabe.textContent, /bei jedem Warenwert/);
+});
+
+test('mit Stufen: ein Ort ueber die Basisgrenze hinweg bekommt keine Stufe zugesagt', async () => {
+  // Berlin reicht von 11 bis 47 km - "bei jedem Warenwert" stimmt nur fuer
+  // einen Teil der Stadt. Die Pruefung fragt dann nach der Postleitzahl.
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), 'Berlin');
+  assert.equal(ausgabe.attribute['data-status'], 'innen');
+  assert.match(ausgabe.textContent, /hängt vom Ortsteil ab/);
+  assert.doesNotMatch(ausgabe.textContent, /bei jedem Warenwert/);
+});
+
+test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage', async () => {
+  const { ausgabe, weg } = await pruefen(aufbauen(), '39104');
 
   assert.equal(ausgabe.attribute['data-status'], 'aussen');
+  assert.match(ausgabe.textContent, /prüfen individuell/, 'Der Einzelfall wird nicht angeboten.');
   assert.match(ausgabe.textContent, /deutschlandweit/, 'Die Lieferung wird nicht erwaehnt.');
   assert.doesNotMatch(ausgabe.textContent, /keine Verlegung|nicht möglich/,
     'Die Antwort darf nicht wie eine Absage klingen.');
-  assert.equal(weg.hidden, false, 'Ausserhalb fehlt der Weg in den Shop.');
-  assert.equal(weg.kinder[0].href, '/collections/all');
-  assert.match(weg.kinder[0].textContent, /Zum Sortiment/);
+  assert.equal(weg.hidden, false);
+  assert.equal(weg.kinder.length, 2);
+  assert.equal(weg.kinder[0].href, '/pages/kontakt');
+  assert.match(weg.kinder[0].textContent, /Individuell anfragen/);
+  assert.equal(weg.kinder[1].href, '/collections/all');
+  assert.match(weg.kinder[1].textContent, /Zum Sortiment/);
+});
+
+test('ausserhalb des Gebiets wird auch mit Stufen nichts zugesagt', async () => {
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '39104');
+  assert.equal(ausgabe.attribute['data-status'], 'aussen');
+  assert.doesNotMatch(ausgabe.textContent, /inklusive/);
 });
 
 test('eine unverstandene Eingabe bietet gar nichts an', async () => {
   // Dort ist noch nichts entschieden - ein Angebot waere geraten.
-  const { eingabe, ausgabe, weg, formular, offen } = aufbauen();
-  eingabe.value = 'Hamburg';
-  formular.ausloesen('submit');
-  await antworten(offen, 0);
+  const { ausgabe, weg } = await pruefen(aufbauen(), 'Hamburg');
   assert.equal(ausgabe.attribute['data-status'], 'unbekannt');
   assert.equal(weg.hidden, true);
 });
 
-test('ohne hinterlegten Versandweg bleibt das Ergebnis ausserhalb eine Zeile', async () => {
-  const { eingabe, weg, formular, offen } = aufbauen({ ohneVersand: true });
-  eingabe.value = '39104';
-  formular.ausloesen('submit');
-  await antworten(offen, 0);
+test('ohne hinterlegten Versandweg fuehrt ausserhalb nur zur Anfrage', async () => {
+  const { weg } = await pruefen(aufbauen({ ohneVersand: true }), '39104');
+  assert.equal(weg.hidden, false);
+  assert.equal(weg.kinder.length, 1);
+  assert.equal(weg.kinder[0].href, '/pages/kontakt');
+});
+
+test('ohne Anfrage- und Versandweg bleibt das Ergebnis ausserhalb eine Zeile', async () => {
+  const { weg } = await pruefen(aufbauen({ ohneCta: true, ohneVersand: true }), '39104');
   assert.equal(weg.hidden, true);
 });
 
-test('ohne hinterlegten Anfrage-Link bleibt das Ergebnis eine Zeile', async () => {
-  const { eingabe, weg, formular, offen } = aufbauen({ ohneCta: true });
-  eingabe.value = '16515';
-  formular.ausloesen('submit');
-  await antworten(offen, 0);
+test('ohne hinterlegten Anfrage-Link bleibt das Ergebnis im Gebiet eine Zeile', async () => {
+  const { weg } = await pruefen(aufbauen({ ohneCta: true }), '16515');
   assert.equal(weg.hidden, true);
 });
 
@@ -180,10 +238,11 @@ test('zweimal absenden laesst nur die zweite Antwort anzeigen', async () => {
   assert.equal(ausgabe.attribute['data-status'], 'aussen',
     'Die alte Abfrage hat das Ergebnis der neuen ueberschrieben.');
   assert.match(ausgabe.textContent, /39104/);
-  // Ausserhalb fuehrt in den Shop - der Weg zur Anfrage aus der alten
-  // Abfrage darf dort nicht stehengeblieben sein.
-  assert.equal(weg.kinder[0].href, '/collections/all',
-    'Die alte Abfrage hat ihren Anfrage-Link nachgeliefert.');
+  // Die Wege gehoeren zu "ausserhalb" - der Zusage-Link der alten Abfrage
+  // ("Verlegung anfragen") darf nicht stehengeblieben sein.
+  const texte = weg.kinder.map((kind) => kind.textContent).join(' | ');
+  assert.doesNotMatch(texte, /Verlegung anfragen/, 'Die alte Abfrage hat ihren Anfrage-Link nachgeliefert.');
+  assert.equal(weg.kinder.at(-1).href, '/collections/all');
 });
 
 test('Weitertippen verwirft eine laufende Abfrage', async () => {
@@ -246,10 +305,8 @@ test('das Ziel fuer "Route planen" entsteht aus der Adresse der Sektion', () => 
 });
 
 test('kein Template setzt ein eigenes, abweichendes Routenziel', () => {
-  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
-    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
-    const vorlage = JSON.parse(roh.slice(roh.indexOf('{')));
-    const abschnitt = vorlage.sections.tp_verlegegebiet;
+  for (const name of VERLEGESEITEN) {
+    const abschnitt = abschnittVon(name);
     assert.ok(abschnitt, `${name} bindet die Sektion nicht ein.`);
     assert.equal(
       abschnitt.settings.route_link,
@@ -260,26 +317,25 @@ test('kein Template setzt ein eigenes, abweichendes Routenziel', () => {
 });
 
 test('auf den Verlegeseiten bleibt der Weg im Ergebnis, obwohl die Knoepfe aus sind', () => {
-  // Auf diesen Seiten folgt direkt final_cta_service mit eigenen Knoepfen,
-  // deshalb sind die der Sektion abgeschaltet. Die Ziele muessen trotzdem
-  // gesetzt bleiben: das Ergebnis der Ortspruefung haengt an ihnen, nicht am
-  // Haken. Wer cta_link fuer ungenutzt haelt und leert, nimmt dem Kunden
-  // genau in dem Moment den Weg, in dem er ihn braucht.
-  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
-    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
-    const abschnitt = JSON.parse(roh.slice(roh.indexOf('{'))).sections.tp_verlegegebiet;
+  // Auf diesen Seiten folgen eigene Kontaktwege, deshalb sind die Knoepfe der
+  // Sektion abgeschaltet. Die Ziele muessen trotzdem gesetzt bleiben: das
+  // Ergebnis der Ortspruefung haengt an ihnen, nicht am Haken. Wer cta_link
+  // fuer ungenutzt haelt und leert, nimmt dem Kunden genau in dem Moment den
+  // Weg, in dem er ihn braucht.
+  for (const name of VERLEGESEITEN) {
+    const abschnitt = abschnittVon(name);
     assert.equal(abschnitt.settings.cta_zeigen, false, `${name}: Knoepfe unerwartet an.`);
     assert.ok(abschnitt.settings.cta_link, `${name}: ohne cta_link fuehrt ein Treffer nirgendwohin.`);
     assert.ok(abschnitt.settings.versand_link, `${name}: ohne versand_link endet "ausserhalb" in einer Absage.`);
   }
 });
 
-test('jede Reglerstufe der Vorlage hat eine Leistungsstufe', () => {
-  // Die Stufen kommen auf den Seiten aus dem Template, nicht aus dem Preset -
-  // fehlt block_order, rendert die Sektion sie stillschweigend gar nicht.
-  for (const name of ['page.teppichboden-verlegen', 'page.vinylboden-verlegen', 'page.treppenverlegung']) {
-    const roh = readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8');
-    const abschnitt = JSON.parse(roh.slice(roh.indexOf('{'))).sections.tp_verlegegebiet;
+test('jede Verlegeseite zeigt Stufen - aus den Einstellungen oder aus Bloecken', () => {
+  // Kommen die Stufen aus Bloecken, muss block_order sie nennen - fehlt es,
+  // rendert die Sektion sie stillschweigend gar nicht.
+  for (const name of VERLEGESEITEN) {
+    const abschnitt = abschnittVon(name);
+    if (abschnitt.settings.rollenware_stufen === true) continue;
     const ordnung = abschnitt.block_order || [];
     assert.ok(ordnung.length >= 3, `${name}: zu wenige Leistungsstufen.`);
     for (const schluessel of ordnung) {
@@ -287,6 +343,28 @@ test('jede Reglerstufe der Vorlage hat eine Leistungsstufe', () => {
       assert.ok(abschnitt.blocks[schluessel].settings.label, `${name}: ${schluessel} ohne Beschriftung.`);
     }
   }
+});
+
+test('Rollenware-Konditionen nur auf Teppichboden-Seiten, nie auf Vinyl oder Treppe', () => {
+  for (const name of ['page.teppichboden-verlegen', 'page.verlegeservice']) {
+    assert.equal(abschnittVon(name).settings.rollenware_stufen, true, `${name}: Stufen fehlen.`);
+  }
+  for (const name of ['page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    const abschnitt = abschnittVon(name);
+    assert.ok(!abschnitt.settings.rollenware_stufen, `${name}: verspricht den Rollenware-Service.`);
+    const texte = Object.values(abschnitt.blocks || {})
+      .map((block) => `${block.settings.label} ${block.settings.text}`)
+      .join(' ');
+    assert.doesNotMatch(texte, /649|Warenwert|lose Verlegung/,
+      `${name}: nennt Rollenware-Konditionen, die dort nicht gelten.`);
+  }
+});
+
+test('Basisradius und Schwelle gibt die Sektion nur mit eingeschalteten Stufen weiter', () => {
+  const stelle = SEKTION.indexOf('data-basis=');
+  assert.ok(stelle > 0, 'data-basis fehlt in der Sektion.');
+  assert.match(SEKTION.slice(Math.max(0, stelle - 120), stelle), /if vg_stufen/,
+    'data-basis steht ohne Bedingung - dann nennt jede Seite die Rollenware-Stufen.');
 });
 
 test('der Link oeffnet in einem neuen Tab und sagt das auch an', () => {

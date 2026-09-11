@@ -1,0 +1,292 @@
+{% doc %}
+  Die zwei Stufen des Verlegeservice fuer Rollenware als Karten: unter und ab
+  der Warenwert-Schwelle.
+
+  Hier steht keine Zahl. Schwelle, Radien und Preise kommen aus den
+  Theme-Einstellungen (Gruppe TP Verlegeservice). Vorher standen sie von Hand
+  in sections/teppichboden-verlegen.liquid und in drei Templates - und
+  widersprachen sich dort ("ab 649 EUR ... im Umkreis von 15 km", "gelten
+  unabhaengig vom Warenwert", "Alles inklusive - feste Verlegung"). Aus einer
+  Quelle kann das nicht mehr passieren.
+
+  Wortwahl: "lose Verlegung", nie "kostenlose Verlegung". Fixierung und
+  Verklebung stehen in beiden Karten ausdruecklich als Zusatz, damit niemand
+  eine vollflaechige Verklebung als inklusive liest.
+
+  Genutzt von sections/tp-verlegeservice.liquid und
+  sections/teppichboden-verlegen.liquid.
+
+  @param {string} [link] - Ziel der Knoepfe, Standard: Kollektion teppichboden
+  @param {string} [ebene] - Tag der Kartentitel, Standard: h3
+{% enddoc %}
+
+{%- liquid
+  assign vss_link = link | default: collections['teppichboden'].url | default: '/collections/teppichboden'
+  assign vss_ebene = ebene | default: 'h3'
+  assign vss_schwelle = settings.tp_vs_schwelle
+-%}
+
+<div class="tp-vs-stufen">
+  <article class="tp-vs-stufe">
+    <{{ vss_ebene }} class="tp-vs-stufe__titel">Unter {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
+
+    <p class="tp-vs-stufe__label">Inklusive</p>
+    <ul class="tp-vs-haken" role="list">
+      <li>{% render 'tp-vs-icon', name: 'check' %}Lieferung</li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}Lose Verlegung</li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}<span>im Umkreis bis <strong>{{ settings.tp_vs_radius_basis }}&nbsp;km</strong></span></li>
+    </ul>
+
+    <p class="tp-vs-stufe__label">Fixierung nicht enthalten – auf Wunsch dazubuchen</p>
+    <ul class="tp-vs-preise" role="list">
+      <li><span>Verlegeband</span>{% render 'tp-vs-preis', wert: settings.tp_vs_band_basis %}</li>
+      <li><span>Flüssigfixierung</span>{% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}</li>
+      <li><span>Vollflächige Verklebung</span>{% render 'tp-vs-preis', wert: settings.tp_vs_kleber_basis %}</li>
+    </ul>
+
+    <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vss_link }}">Rollenware entdecken</a>
+  </article>
+
+  <article class="tp-vs-stufe tp-vs-stufe--plus">
+    <p class="tp-vs-stufe__abzeichen">Bester Service ab {{ vss_schwelle }}&nbsp;€</p>
+    <{{ vss_ebene }} class="tp-vs-stufe__titel">Ab {{ vss_schwelle }}&nbsp;€ Warenwert</{{ vss_ebene }}>
+
+    <p class="tp-vs-stufe__label">Inklusive</p>
+    <ul class="tp-vs-haken" role="list">
+      <li>{% render 'tp-vs-icon', name: 'check' %}Lieferung</li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}Anfahrt</li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}Lose Verlegung</li>
+      <li>{% render 'tp-vs-icon', name: 'check' %}<span>im Umkreis bis <strong>{{ settings.tp_vs_radius_premium }}&nbsp;km</strong></span></li>
+    </ul>
+
+    <p class="tp-vs-stufe__label">Vergünstigte Fixierung &amp; Verklebung – auf Wunsch</p>
+    <ul class="tp-vs-preise" role="list">
+      <li><span>Verlegeband</span>{% render 'tp-vs-preis', wert: settings.tp_vs_band_premium %}</li>
+      <li>
+        <span>Flüssigfixierung</span>
+        <span class="tp-vs-wert">
+          {%- render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium -%}
+          <span class="tp-vs-statt">statt <s>{{ settings.tp_vs_fluessig_basis | escape | replace: ' €', '&nbsp;€' }}</s></span>
+        </span>
+      </li>
+      <li>
+        <span>Vollflächige Verklebung</span>
+        <span class="tp-vs-wert">
+          {%- render 'tp-vs-preis', wert: settings.tp_vs_kleber_premium -%}
+          <span class="tp-vs-statt">statt <s>{{ settings.tp_vs_kleber_basis | escape | replace: ' €', '&nbsp;€' }}</s></span>
+        </span>
+      </li>
+    </ul>
+
+    <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vss_link }}">Jetzt Rollenware auswählen</a>
+  </article>
+</div>
+
+{% stylesheet %}
+  .tp-vs-stufen {
+    --tp-vs-ton: 141 113 76;
+    --tp-vs-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 32px);
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .tp-vs-stufe {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: clamp(22px, 3vw, 32px);
+    border: 1px solid var(--tp-vs-linie);
+    border-radius: 16px;
+    background: var(--color-background, #fff);
+  }
+
+  /* Die bessere Stufe hebt sich ueber Rahmen, Ton und Abzeichen ab - nicht
+     ueber Groesse oder Signalfarbe. Sie soll wie eine Empfehlung wirken,
+     nicht wie ein Rabattschild. */
+  .tp-vs-stufe--plus {
+    border: 2px solid rgb(var(--tp-vs-ton) / 0.85);
+    background:
+      linear-gradient(180deg, rgb(var(--tp-vs-ton) / 0.08), rgb(var(--tp-vs-ton) / 0.02) 55%),
+      var(--color-background, #fff);
+    box-shadow: 0 12px 32px rgb(28 25 23 / 0.08);
+  }
+
+  .tp-vs-stufe__abzeichen {
+    position: absolute;
+    top: 0;
+    left: clamp(22px, 3vw, 32px);
+    transform: translateY(-50%);
+    margin: 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #8d714c;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .tp-vs-stufe__titel {
+    margin: 0;
+    font-family: var(--font-heading--family, inherit);
+    font-size: clamp(1.3rem, 1.1rem + 0.7vw, 1.6rem);
+    line-height: 1.25;
+  }
+
+  .tp-vs-stufe--plus .tp-vs-stufe__titel {
+    margin-top: 6px;
+  }
+
+  .tp-vs-stufe__label {
+    margin: 8px 0 0;
+    color: var(--tp-vs-leise);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .tp-vs-haken,
+  .tp-vs-preise {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vs-haken li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 0;
+    font-size: 17px;
+    line-height: 1.4;
+  }
+
+  .tp-vs-haken .tp-vs-icon {
+    width: 20px;
+    height: 20px;
+    color: #1d6b47;
+  }
+
+  .tp-vs-preise li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2px 16px;
+    padding: 10px 0;
+    border-top: 1px solid var(--tp-vs-linie);
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .tp-vs-preise li:last-child {
+    border-bottom: 1px solid var(--tp-vs-linie);
+  }
+
+  /* Bricht eine Zeile auf dem Telefon um, bleibt der Preis rechts stehen,
+     statt unter den Namen nach links zu rutschen. */
+  .tp-vs-preise li > :last-child {
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .tp-vs-wert {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .tp-vs-preis {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-vs-stufe--plus .tp-vs-preis {
+    color: #6d5536;
+  }
+
+  .tp-vs-statt {
+    color: var(--tp-vs-leise);
+    font-size: 13px;
+  }
+
+  /* Knoepfe beider Karten auf einer Linie, egal wie lang die Listen sind. */
+  .tp-vs-stufe .tp-vs-preise {
+    margin-bottom: 14px;
+  }
+
+  .tp-vs-stufe .tp-vs-knopf {
+    margin-top: auto;
+  }
+
+  .tp-vs-knopf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+    padding: 13px 22px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+  }
+
+  .tp-vs-knopf--primaer {
+    background: #1c1917;
+    color: #fff;
+  }
+
+  .tp-vs-knopf--zweit {
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.35);
+    background: transparent;
+    color: inherit;
+  }
+
+  .tp-vs-knopf:hover {
+    opacity: 0.88;
+  }
+
+  .tp-vs-knopf--zweit:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    opacity: 1;
+  }
+
+  .tp-vs-knopf:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  @media screen and (max-width: 749px) {
+    /* Untereinander braucht es mehr Abstand: das Abzeichen der zweiten Karte
+       ragt ueber ihren oberen Rand. */
+    .tp-vs-stufen {
+      grid-template-columns: 1fr;
+      gap: 34px;
+    }
+
+    .tp-vs-haken li {
+      font-size: 16px;
+    }
+
+    .tp-vs-knopf {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-vs-knopf {
+      transition: none;
+    }
+  }
+{% endstylesheet %}

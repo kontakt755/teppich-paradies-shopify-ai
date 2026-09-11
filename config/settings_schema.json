@@ -2284,5 +2284,129 @@
         "default": "equal-width-buttons"
       }
     ]
+  },
+  {
+    "name": "TP Verlegeservice",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Gilt nur für Rollenware. Diese Werte stehen auf der Seite Liefer- & Verlegeservice, auf „Teppichboden verlegen lassen“, im Hinweis auf der Produktseite und im Ergebnis der Ortsprüfung – eine Änderung hier gilt überall."
+      },
+      {
+        "type": "header",
+        "content": "Wofür der Service gilt"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_produkttypen",
+        "label": "Produkttypen mit Verlegeservice",
+        "info": "Kommagetrennt, genau wie im Produkt. Es zählen nur Produkte mit dem Template „rolle“ – Klick- und Klebevinyl, Teppichfliesen, Leisten und Zubehör bleiben dadurch außen vor. Vinyl von der Rolle wäre z. B. „Teppichboden, Vinyl von der Rolle“.",
+        "default": "Teppichboden"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_bezeichnung",
+        "label": "So heißt die Ware im Text",
+        "default": "Teppichboden von der Rolle"
+      },
+      {
+        "type": "header",
+        "content": "Schwelle und Liefergebiet"
+      },
+      {
+        "type": "number",
+        "id": "tp_vs_schwelle",
+        "label": "Warenwert-Schwelle in €",
+        "default": 649
+      },
+      {
+        "type": "number",
+        "id": "tp_vs_radius_basis",
+        "label": "Liefergebiet unter der Schwelle in km",
+        "default": 15
+      },
+      {
+        "type": "number",
+        "id": "tp_vs_radius_premium",
+        "label": "Liefergebiet ab der Schwelle in km",
+        "info": "Die Ortsprüfung rechnet mit diesem Wert. Die Fläche auf der Karte kennt 30, 40 und 50 km und wird in der Sektion eingestellt.",
+        "default": 50
+      },
+      {
+        "type": "header",
+        "content": "Preise unter der Schwelle"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_band_basis",
+        "label": "Doppelseitiges Verlegeband",
+        "default": "8,95 €/m²"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_fluessig_basis",
+        "label": "Flüssigfixierung",
+        "default": "9,95 €/m²"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_kleber_basis",
+        "label": "Vollflächige Verklebung",
+        "default": "10,95 €/m²"
+      },
+      {
+        "type": "header",
+        "content": "Preise ab der Schwelle"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_band_premium",
+        "label": "Doppelseitiges Verlegeband",
+        "default": "ca. 25 € pro Raum"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_fluessig_premium",
+        "label": "Flüssigfixierung",
+        "default": "3,95 €/m²"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_kleber_premium",
+        "label": "Vollflächige Verklebung",
+        "default": "4,95 €/m²"
+      },
+      {
+        "type": "header",
+        "content": "Kontaktwege"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_telefon",
+        "label": "Telefon, wie angezeigt",
+        "info": "Der Anruf-Link entsteht daraus: Leerzeichen und Striche fallen weg, die führende 0 wird zu +49.",
+        "default": "03301 5733720"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_whatsapp",
+        "label": "WhatsApp-Nummer",
+        "info": "Nur Ziffern mit Ländervorwahl, ohne + und Leerzeichen. Leer lassen blendet WhatsApp aus.",
+        "default": "4917657931322"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_email",
+        "label": "E-Mail",
+        "default": "kontakt@teppich-paradies.net"
+      },
+      {
+        "type": "text",
+        "id": "tp_vs_adresse",
+        "label": "Adresse des Geschäfts",
+        "info": "Für „Im Geschäft beraten lassen“ und die Route dorthin.",
+        "default": "Saarlandstraße 73–81, 16515 Oranienburg"
+      }
+    ]
   }
 ]

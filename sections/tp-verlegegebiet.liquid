@@ -29,6 +29,18 @@
 {%- liquid
   assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
 
+  # Stufen des Rollenware-Service (Theme-Einstellungen, Gruppe TP Verlegeservice).
+  # Nur auf Teppichboden-Seiten eingeschaltet: auf Vinyl- und Treppenseiten
+  # wuerde "lose Verlegung inklusive" einen Service versprechen, der dort nicht
+  # gilt. Eingeschaltet rechnet die Pruefung mit dem Radius von dort, damit
+  # Ergebnis und Stufentext dieselbe Grenze nennen; die Flaeche auf der Karte
+  # bleibt bei ihren vorgerenderten Stufen.
+  assign vg_stufen = section.settings.rollenware_stufen
+  assign vg_pruef_radius = vg_radius
+  if vg_stufen
+    assign vg_pruef_radius = settings.tp_vs_radius_premium | default: vg_radius
+  endif
+
   # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
   assign vg_lat = 52.7378
   assign vg_lon = 13.2485
@@ -60,7 +72,11 @@
   class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-verlegegebiet-{{ section.id }}"
-  data-radius="{{ vg_radius }}"
+  data-radius="{{ vg_pruef_radius }}"
+  {%- if vg_stufen %}
+    data-basis="{{ settings.tp_vs_radius_basis }}"
+    data-schwelle="{{ settings.tp_vs_schwelle }}"
+  {%- endif %}
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
 >
   <header class="tp-vg__head">
@@ -135,17 +151,37 @@
     </figure>
   {%- endif -%}
 
-  {%- comment -%} Die Stufen des Verlegeservice, so wie sie auf der Serviceseite
-    stehen. Sie gehoeren neben die Karte, nicht nur auf eine andere Seite: wer
-    hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen, was das
-    einschliesst - sonst erwartet jemand aus 40 km Entfernung die Leistungen,
-    die im Umkreis von 15 km gelten.
+  {%- comment -%} Die Stufen gehoeren neben die Karte, nicht nur auf eine andere
+    Seite: wer hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen,
+    was das einschliesst - sonst erwartet jemand aus 40 km Entfernung die
+    Leistungen, die im Umkreis von 15 km gelten.
 
-    Als Bloecke, damit sich Stufen im Editor aendern lassen, ohne den Code
-    anzufassen. Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben
-    den zweien darunter.
+    Zwei Quellen, je nach Seite:
+    - rollenware_stufen an (Teppichboden-Seiten): die Stufen des
+      Rollenware-Service aus den Theme-Einstellungen - dieselben Zahlen wie
+      auf der Serviceseite und im Produkthinweis, keine Kopie im Template.
+    - sonst die Bloecke aus dem Template. Auf Vinyl- und Treppenseiten stehen
+      dort bewusst keine Rollenware-Konditionen, weil sie dort nicht gelten.
+
+    Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben den zweien
+    darunter.
   {%- endcomment -%}
-  {%- if section.blocks.size > 0 -%}
+  {%- if vg_stufen -%}
+    <ul class="tp-vg__stufen" role="list">
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und lose Verlegung Ihrer Rollenware inklusive – bei jedem Warenwert.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung, Anfahrt und lose Verlegung inklusive ab {{ settings.tp_vs_schwelle }} € Warenwert.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Weiter entfernt</span>
+        <span class="tp-vg__stufe-text">Auf Anfrage – wir prüfen gern individuell, was möglich ist.</span>
+      </li>
+    </ul>
+  {%- elsif section.blocks.size > 0 -%}
     <ul class="tp-vg__stufen" role="list">
       {%- for block in section.blocks -%}
         <li class="tp-vg__stufe" {{ block.shopify_attributes }}>
@@ -225,7 +261,13 @@
           ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
           im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
         <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
-        <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
+        {%- comment -%} Mit Stufen waere "Anfahrt klaeren wir im Angebot" falsch:
+          ab der Schwelle ist die Anfahrt inklusive. {%- endcomment -%}
+        {%- if vg_stufen -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Im Zweifel fragen Sie uns einfach.</p>
+        {%- else -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
+        {%- endif -%}
       </form>
     {%- endif -%}
   </div>
@@ -602,7 +644,11 @@
     content: '\2139';
   }
 
+  /* Ausserhalb stehen zwei Wege nebeneinander: Anfrage und Shop. */
   .tp-vg__ergebnis-weg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
     margin: 10px 0 0;
   }
 
@@ -846,6 +892,17 @@
     },
     {
       "type": "header",
+      "content": "Stufen"
+    },
+    {
+      "type": "checkbox",
+      "id": "rollenware_stufen",
+      "label": "Stufen des Rollenware-Service zeigen",
+      "info": "Stufen aus den Theme-Einstellungen (TP Verlegeservice) unter der Karte und im Pruefergebnis. Nur auf Teppichboden-Seiten - auf Vinyl- und Treppenseiten gilt der Service nicht.",
+      "default": false
+    },
+    {
+      "type": "header",
       "content": "Verfuegbarkeit pruefen"
     },
     {
@@ -973,29 +1030,22 @@
         {
           "type": "leistung",
           "settings": {
-            "label": "Im Umkreis von 15 km",
-            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
-          }
-        },
-        {
-          "type": "leistung",
-          "settings": {
-            "label": "Ab 649 € Warenwert",
-            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
-          }
-        },
-        {
-          "type": "leistung",
-          "settings": {
             "label": "Bis 50 km um Oranienburg",
-            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
           }
         },
         {
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland."
           }
         }
       ]

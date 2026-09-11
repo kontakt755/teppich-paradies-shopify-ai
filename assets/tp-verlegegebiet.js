@@ -16,10 +16,17 @@
  * Kontaktwege stehen unabhaengig davon.
  *
  * Jede Antwort fuehrt weiter, keine endet in einer Absage. Wer im Gebiet
- * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, sieht den Weg in
- * den Shop: der Verlegeservice endet bei 50 km, der Versand nicht - das
- * Sortiment geht deutschlandweit. Ohne diesen zweiten Weg waere die Pruefung
- * fuer jeden ausserhalb eine Absage, obwohl er bestellen koennte.
+ * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, bekommt weder eine
+ * Absage noch eine Zusage: zuerst den Weg zur Anfrage - wir pruefen den
+ * Einzelfall -, dann den in den Shop, denn der Versand endet nicht an der
+ * Grenze des Verlegegebiets.
+ *
+ * Auf Teppichboden-Seiten gibt die Sektion zusaetzlich die Stufen des
+ * Rollenware-Service mit (data-basis, data-schwelle aus den
+ * Theme-Einstellungen). Dann nennt ein Treffer im Gebiet, welche Stufe dort
+ * gilt: bis zum Basisradius bei jedem Warenwert, dahinter ab der Schwelle.
+ * Auf Vinyl- und Treppenseiten fehlen die Attribute - dort gilt der
+ * Rollenware-Service nicht, und es wird nichts davon versprochen.
  *
  * Jede Abfrage traegt eine laufende Nummer. Die Tabelle wird beim ersten
  * Absenden geladen, das kann dauern; wer in der Zwischenzeit weitertippt oder
@@ -38,8 +45,16 @@
       return was + ' reicht über die Grenze unseres üblichen Gebiets hinaus. Geben Sie am besten Ihre Postleitzahl ein – oder fragen Sie uns direkt.';
     },
     aussen: function (was) {
-      return was + ' liegt außerhalb unseres Verlegegebiets. Ihren Boden liefern wir trotzdem – deutschlandweit. Für eine Verlegung fragen Sie uns gern an.';
+      return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
     },
+    stufeBasis: 'Lieferung und lose Verlegung Ihrer Rollenware sind hier bei jedem Warenwert inklusive.',
+    stufePlus: function (schwelle) {
+      return 'Lieferung und lose Verlegung Ihrer Rollenware sind hier ab ' + schwelle + ' € Warenwert inklusive – bei kleineren Aufträgen fragen Sie uns gern an.';
+    },
+    stufeOffen: function (schwelle) {
+      return 'Ob Lieferung und lose Verlegung schon unter ' + schwelle + ' € Warenwert inklusive sind, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.';
+    },
+    anfragen: 'Individuell anfragen',
     leer: 'Bitte geben Sie eine Postleitzahl oder einen Ort ein.',
     unbekannt: 'Diesen Ort kennen wir nicht. Bitte geben Sie Ihre Postleitzahl ein – oder fragen Sie uns einfach direkt an.',
     fehler: 'Die Prüfung ist gerade nicht möglich. Fragen Sie uns einfach direkt an – wir sagen Ihnen, ob wir zu Ihnen kommen.'
@@ -66,8 +81,19 @@
     return sektion._tpVgDaten;
   }
 
+  /* Die Stufe des Rollenware-Service fuer einen Abstand, als angehaengter
+     Satz. nah/fern ist bei einer PLZ derselbe Wert, bei einem Ortsnamen die
+     Spanne seiner Postleitzahlen. Reicht ein Ort ueber den Basisradius, wird
+     keine Stufe zugesagt, sondern nach der PLZ gefragt. */
+  function stufe(nah, fern, stufen) {
+    if (!stufen) return '';
+    if (fern <= stufen.basis) return ' ' + TEXTE.stufeBasis;
+    if (nah > stufen.basis) return ' ' + TEXTE.stufePlus(stufen.schwelle);
+    return ' ' + TEXTE.stufeOffen(stufen.schwelle);
+  }
+
   /* Liefert {status, text} - die Entscheidung steckt hier, nicht in der Ausgabe. */
-  function bewerten(eingabe, daten, radius) {
+  function bewerten(eingabe, daten, radius, stufen) {
     var roh = eingabe.trim();
     if (!roh) return { status: '', text: TEXTE.leer };
 
@@ -79,7 +105,7 @@
         return { status: 'aussen', text: TEXTE.aussen(plz[1]) };
       }
       return km <= radius
-        ? { status: 'innen', text: TEXTE.innen(plz[1], Math.round(km)) }
+        ? { status: 'innen', text: TEXTE.innen(plz[1], Math.round(km)) + stufe(km, km, stufen) }
         : { status: 'aussen', text: TEXTE.aussen(plz[1]) };
     }
 
@@ -87,7 +113,9 @@
     if (!spanne) return { status: 'unbekannt', text: TEXTE.unbekannt };
 
     var ort = roh.replace(/\s+/g, ' ');
-    if (spanne[1] <= radius) return { status: 'innen', text: TEXTE.innen(ort, Math.round(spanne[0])) };
+    if (spanne[1] <= radius) {
+      return { status: 'innen', text: TEXTE.innen(ort, Math.round(spanne[0])) + stufe(spanne[0], spanne[1], stufen) };
+    }
     if (spanne[0] <= radius) return { status: 'rand', text: TEXTE.rand(ort) };
     return { status: 'aussen', text: TEXTE.aussen(ort) };
   }
@@ -97,24 +125,26 @@
     feld.textContent = text;
   }
 
-  /* Je Ergebnis ein anderer Weg: im Gebiet zur Anfrage, ausserhalb in den
-     Shop. Bei einer unverstandenen Eingabe keiner - dort ist noch nichts
-     entschieden, und ein Angebot waere geraten. */
+  /* Je Ergebnis ein anderer Weg. Im Gebiet: zur Anfrage. Ausserhalb: erst
+     die Anfrage - wir pruefen den Einzelfall -, dann der Shop. Bei einer
+     unverstandenen Eingabe keiner: dort ist noch nichts entschieden, und ein
+     Angebot waere geraten. */
   function wegAnzeigen(feld, formular, status) {
-    var innen = status === 'innen';
-    var ziel = innen ? formular.dataset.ctaUrl : formular.dataset.versandUrl;
-    var text = innen ? formular.dataset.ctaText : formular.dataset.versandText;
-    if ((status !== 'innen' && status !== 'aussen') || !ziel || !text) {
-      feld.hidden = true;
-      feld.textContent = '';
-      return;
+    var d = formular.dataset;
+    var wege = [];
+    if (status === 'innen' && d.ctaUrl && d.ctaText) wege.push([d.ctaUrl, d.ctaText]);
+    if (status === 'aussen') {
+      if (d.ctaUrl) wege.push([d.ctaUrl, TEXTE.anfragen]);
+      if (d.versandUrl && d.versandText) wege.push([d.versandUrl, d.versandText]);
     }
-    var link = document.createElement('a');
-    link.href = ziel;
-    link.textContent = text + ' \u2192';
     feld.textContent = '';
-    feld.appendChild(link);
-    feld.hidden = false;
+    feld.hidden = wege.length === 0;
+    wege.forEach(function (weg) {
+      var link = document.createElement('a');
+      link.href = weg[0];
+      link.textContent = weg[1] + ' →';
+      feld.appendChild(link);
+    });
   }
 
   function verdrahten(formular) {
@@ -125,6 +155,8 @@
 
     var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
+    var basis = parseFloat(sektion.dataset.basis);
+    var stufen = isFinite(basis) ? { basis: basis, schwelle: sektion.dataset.schwelle || '' } : null;
     var lauf = 0;
     formular.hidden = false;
 
@@ -140,7 +172,7 @@
       tabelleLaden(sektion).then(
         function (daten) {
           if (meine !== lauf) return;
-          var ergebnis = bewerten(wert, daten, radius);
+          var ergebnis = bewerten(wert, daten, radius, stufen);
           anzeigen(ausgabe, ergebnis.status, ergebnis.text);
           if (weg) wegAnzeigen(weg, formular, ergebnis.status);
         },
