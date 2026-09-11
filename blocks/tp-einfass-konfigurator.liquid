@@ -57,7 +57,13 @@
   endif
   assign tp_ek_formen = tp_ek_formen | split: ','
 
-  assign tp_ek_mindest_cent = product.metafields.service.mindestpreis.value | times: 100 | round
+  # Mindestpreis als Zahl (EUR) oder als Geldbetrag - beides ergibt Cent.
+  assign tp_ek_mp = product.metafields.service.mindestpreis.value
+  if tp_ek_mp.amount
+    assign tp_ek_mindest_cent = tp_ek_mp.amount | times: 100 | round
+  else
+    assign tp_ek_mindest_cent = tp_ek_mp | times: 100 | round
+  endif
   assign tp_ek_wa = block.settings.whatsapp | remove: '+' | remove: ' ' | strip
 -%}
 
@@ -220,6 +226,7 @@
                 "available": {{ tp_ek_v.available | json }},
                 "farbe": {{ tp_ek_v_name | strip | json }},
                 "farbnummer": {{ tp_ek_v_nr | strip | json }},
+                "optionen": {{ tp_ek_v.options | json }},
                 "bild": {% if tp_ek_v.featured_image %}{{ tp_ek_v.featured_image | image_url: width: 480 | json }}{% else %}null{% endif %}
               },
             {%- endif -%}

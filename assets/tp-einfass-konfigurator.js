@@ -87,6 +87,21 @@
     var stand = null;
     var gewaehlt = null;
     var groessenForm = null;
+    var formSchritt = q('[data-schritt="form"]');
+    var formSchrittAus = formSchritt ? formSchritt.hidden : true;
+
+    // Regel 1/5: Farben ohne freigegebene Variante gar nicht erst anbieten. Die
+    // Farbwahl ist ein eigener Theme-Block und kennt die Freigabe nicht.
+    if (varianten.some(function (v) { return Array.isArray(v.optionen); })) {
+      var erlaubt = {};
+      varianten.forEach(function (v) { (v.optionen || []).forEach(function (o) { erlaubt[String(o)] = true; }); });
+      document.querySelectorAll('input[name^="color-swatch-"]').forEach(function (input) {
+        if (erlaubt[input.value]) return;
+        var label = input.closest('label');
+        if (label) label.style.display = 'none';
+        input.disabled = true;
+      });
+    }
 
     function form() {
       var c = root.querySelector('input[name^="tp-ek-form-"]:checked');
@@ -288,6 +303,14 @@
     function rechnen() {
       target = aktuelleVariante();
       var f = form();
+      // Fail closed: fremde oder nicht freigegebene Variante - weder Angebot noch Anfrage.
+      if (formSchritt) formSchritt.hidden = !target || formSchrittAus;
+      if (!target) {
+        konfig.hidden = true;
+        if (anfrage) anfrage.hidden = true;
+        stand = null;
+        return;
+      }
       anfrageZeigen(f);
       nummerieren();
       if (ANFRAGE[f]) { stand = null; return; }
@@ -312,8 +335,7 @@
       if (eingegeben && !fehlerListe.length) {
         fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL });
       }
-      if (!target) fehlerListe.push('Diese Farbe gibt es nicht als Teppich nach Maß – bitte eine andere Farbe wählen.');
-      else if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
+      if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       fehler.textContent = fehlerListe.join(' ');
       fehler.hidden = !fehlerListe.length || (!eingegeben && !!target && target.available);
 
@@ -330,6 +352,9 @@
       }
 
       var flaeche = M.abrechnungsflaecheM2(f, b.wert, l.wert);
+      // Angezeigt und in den Warenkorb geschrieben wird, was abgerechnet wird:
+      // die Flaeche aufgerundet auf 0,01 m2 (201 x 301 cm -> 6,06 m2).
+      var abgerechnet = M.mengeHundertstelM2(flaeche) / 100;
       var preis = parseInt(target.price, 10);
       var menge = M.mengeMitMindestpreis(flaeche, preis, mindestCent);
       var summe = menge * preis;
@@ -338,7 +363,7 @@
       var masse = rund ? 'Ø ' + b.wert + ' cm' : b.wert + ' × ' + l.wert + ' cm';
 
       q('[data-masse]').textContent = masse;
-      q('[data-flaeche]').textContent = fmt(flaeche) + ' m²';
+      q('[data-flaeche]').textContent = fmt(abgerechnet) + ' m²';
       q('[data-kante]').textContent = 'Kante ' + fmt(kante) + ' m';
       q('[data-m2preis]').textContent = euro(preis * 100);
       q('[data-rund-hinweis]').hidden = !(f === 'rund' || f === 'oval');
@@ -348,7 +373,7 @@
       q('[data-summe]').textContent = euro(summe);
       rechnung.hidden = false;
 
-      stand = { form: f, w: b.wert, l: l.wert, flaeche: flaeche, menge: menge, kante: kante, masse: masse, mindest: mindest };
+      stand = { form: f, w: b.wert, l: l.wert, flaeche: abgerechnet, menge: menge, kante: kante, masse: masse, mindest: mindest };
       cta.hidden = false;
       cta.disabled = bandFehlt;
       cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);

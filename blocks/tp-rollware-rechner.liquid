@@ -581,7 +581,10 @@
   }
   var hasWunschOption = wIdx !== -1 && variants.some(wunschOk);
   var useSelect = hasWunschOption;
-  var maxRollWidth = widths[widths.length - 1];
+  // Breiten, die es fuer die gewaehlte Farbe gibt (syncWidthUi). Hat eine Farbe
+  // nur die 400er-Rolle, darf das Raummass nicht aus einer 500er kommen.
+  var farbBreiten = widths.slice();
+  function maxFarbBreite() { return farbBreiten.length ? farbBreiten[farbBreiten.length - 1] : 0; }
   var WUNSCH_MIN_CM = 50;
   var hasWidthChoice = wIdx !== -1 && widths.length > 1 && !useSelect;
 
@@ -772,8 +775,8 @@
   }
 
   function rolleFuer(w) {
-    for (var i = 0; i < widths.length; i++) {
-      if (w <= widths[i]) return widths[i];
+    for (var i = 0; i < farbBreiten.length; i++) {
+      if (w <= farbBreiten[i]) return farbBreiten[i];
     }
     return null;
   }
@@ -800,9 +803,13 @@
     if (!useSelect || !widthSelect) return;
     var t = baseOptions();
     var choices = [];
+    farbBreiten = [];
     widths.forEach(function (w) {
       var v = variantFor(t, function (val) { return parseFloat(String(val).replace(',', '.')) === w; });
-      if (v) choices.push({ value: String(w), label: w + ' cm' });
+      if (v) {
+        choices.push({ value: String(w), label: w + ' cm' });
+        farbBreiten.push(w);
+      }
     });
     if (wunschOk(variantFor(t, isWunsch))) choices.push({ value: 'wunsch', label: 'Wunschmaß – eigene Breite' });
     var key = choices.map(function (c) { return c.value; }).join('|');
@@ -844,7 +851,7 @@
     }
     var msg = '';
     if (w > 0 && w < WUNSCH_MIN_CM) msg = 'Breite mindestens ' + WUNSCH_MIN_CM + ' cm.';
-    else if (w > maxRollWidth) msg = 'Breiter als ' + maxRollWidth + ' cm geht nicht aus einem Stück – bitte beraten lassen.';
+    else if (w > maxFarbBreite()) msg = 'Breiter als ' + maxFarbBreite() + ' cm geht nicht aus einem Stück – bitte beraten lassen.';
     if (wunschError) {
       wunschError.textContent = msg;
       wunschError.hidden = !msg;
@@ -854,11 +861,11 @@
 
   function updateWunschInfo(w) {
     if (!isWunschMode()) return;
-    var r = (w >= WUNSCH_MIN_CM && w <= maxRollWidth) ? rolleFuer(w) : null;
+    var r = (w >= WUNSCH_MIN_CM && w <= maxFarbBreite()) ? rolleFuer(w) : null;
     if (wunschHint) {
       wunschHint.textContent = r
         ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
-        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxRollWidth + ' cm.';
+        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxFarbBreite() + ' cm.';
     }
     if (wunschPreis) {
       var ok = wunschOk(target);
@@ -882,7 +889,7 @@
   // Rolle von oben: Ihr Stueck, Schnittkanten und der Rest, der bei uns bleibt.
   function drawRolle(svg, w, len) {
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    var R = (w > 0 && rolleFuer(w)) || maxRollWidth;
+    var R = (w > 0 && rolleFuer(w)) || maxFarbBreite();
     var L = len > 0 ? len : 400;
     var x0 = 46;
     var y0 = 46;
@@ -900,7 +907,7 @@
     svgEl(svg, 'ellipse', { cx: x0 + totalW, cy: y0 + rollH / 2, rx: 9, ry: rollH / 2, fill: '#e9e5de', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 });
     svgEl(svg, 'text', { x: x0 + totalW + 16, y: y0 + rollH / 2, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle', transform: 'rotate(90 ' + (x0 + totalW + 16) + ' ' + (y0 + rollH / 2) + ')' }, 'Rolle ' + R + ' cm');
 
-    if (!(w > 0) || w > maxRollWidth) {
+    if (!(w > 0) || w > maxFarbBreite()) {
       svgEl(svg, 'text', { x: x0 + totalW / 2, y: y0 + rollH / 2 + 4, 'font-size': 13, 'font-weight': 600, fill: 'currentColor', 'text-anchor': 'middle' }, 'Breite eingeben');
       return;
     }

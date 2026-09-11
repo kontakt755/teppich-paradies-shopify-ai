@@ -100,16 +100,18 @@
           var id = new URLSearchParams(window.location.search).get('variant') || String(d.selected_id);
           var basisId = d.eigen[id];
           nav.querySelectorAll('[data-ew-ziel]').forEach(function (a) {
-            var url = new URL(a.getAttribute('href'), window.location.origin);
+            var url = new URL(a.getAttribute('href'), window.location.href);
             var ziel = basisId && d.ziele[a.getAttribute('data-ew-ziel')] && d.ziele[a.getAttribute('data-ew-ziel')][basisId];
-            if (ziel) url.searchParams.set('variant', ziel); else url.searchParams.delete('variant');
-            a.setAttribute('href', url.pathname + url.search);
+            // Gibt es die Farbe dort nicht, gibt es auch keinen Chip (Regel 5).
+            a.style.display = ziel ? '' : 'none';
+            if (ziel) url.searchParams.set('variant', ziel);
+            a.setAttribute('href', url.href);
           });
           var basis = nav.querySelector('[data-ew-basis]');
           if (basis) {
-            var bu = new URL(basis.getAttribute('href'), window.location.origin);
+            var bu = new URL(basis.getAttribute('href'), window.location.href);
             if (basisId) bu.searchParams.set('variant', basisId); else bu.searchParams.delete('variant');
-            basis.setAttribute('href', bu.pathname + bu.search);
+            basis.setAttribute('href', bu.href);
           }
         }
         document.addEventListener('change', function () { setTimeout(aktualisieren, 120); });

@@ -32,9 +32,10 @@ ein neues Produkt. Es gibt dann keinen deaktivierten Knopf und keinen Hinweis �
 | `service.einfass_basis` | Einfassprodukt | die Meterware, aus der zugeschnitten wird |
 | `service.basisvariante` | Variante des Einfassprodukts | die Meterware-Variante derselben Farbe. Die Farbe wird nie über Namen zugeordnet. |
 
-Lieferantenbezug steht nie in `service.*` und nie im Theme. `npm run masstepich:guard` prüft das über
-gesalzene Wort-Hashes (`scripts/masstepich/lieferanten-hashes.json`), damit die Namen selbst nicht im
-öffentlichen Repository stehen.
+Lieferantenbezug steht nie in `service.*` und nie im Theme. `npm run masstepich:guard` prüft das gegen eine
+Namensliste, die nur intern liegt: in der Konfiguration außerhalb des Repositorys oder in `TP_LIEFERANTEN_NAMEN`.
+Auch Hashes wären hier keine Lösung, denn kurze Namen lassen sich per Wörterbuch zurückrechnen. Fehlt die Liste,
+meldet der Guard das ausdrücklich, statt still zu bestehen.
 
 ## Preise
 
@@ -55,9 +56,18 @@ npm run masstepich:guard -- --snapshot <produkte.json>                # zusätzl
 node --test qa/tests/masstepich-*.test.mjs
 ```
 
-Freigabeliste, Aufschlag und Preise liegen in einer internen Konfiguration außerhalb des Repositorys. Bei
-jedem Konflikt plant der Planer für diese Farbe bzw. dieses Produkt nichts: mehrdeutiger Preis, ein von Hand
-gesetzter Wert, eine cm-genaue Meterware, ein Lieferantenname im Titel. Die Entscheidung trifft dann ein Mensch.
+Die Freigabeliste liegt zusammen mit Aufschlag und Preisen in einer internen Konfiguration außerhalb des
+Repositorys, und zwar **je Variante**: Eine später hinzugekommene Farbe ist nicht freigegeben.
+
+Bei jedem Konflikt plant der Planer für diese Farbe bzw. dieses Produkt nichts. Konflikte sind:
+- ein mehrdeutiger Preis,
+- ein von Hand gesetzter Wert, auch an einer Wunschmaß-Variante,
+- eine neue Variante,
+- verschieden breite Rollen je Farbe,
+- eine cm-genaue Meterware,
+- ein Lieferantenname im Titel.
+
+Die Entscheidung trifft dann ein Mensch.
 
 ## Stolperfallen, die hier schon Zeit gekostet haben
 

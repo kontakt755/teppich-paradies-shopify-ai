@@ -4,19 +4,21 @@
  * sie. Die Storefront rechnet mit assets/tp-masstepich-rechnung.js; beide
  * muessen dieselben Zahlen liefern (siehe qa/tests/masstepich-rechnung.test.mjs).
  *
- * Lieferantennamen stehen hier bewusst nicht im Klartext: das Repository ist
- * oeffentlich. Geprueft wird ueber gesalzene Hashes einzelner Woerter
- * (lieferanten-hashes.json), die Namen selbst liegen nur in der internen
- * Konfiguration ausserhalb des Repositorys.
+ * Lieferantennamen stehen nirgends im Repository - auch nicht als Hash, denn
+ * kurze Namen lassen sich per Woerterbuch zurueckrechnen. Die Liste kommt aus
+ * der internen Konfiguration ausserhalb des Repositorys oder aus der
+ * Umgebungsvariable TP_LIEFERANTEN_NAMEN (kommagetrennt, z. B. als CI-Secret).
  */
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import os from 'node:os';
 
 export const VERFUEGBAR = 'Verfügbar';
 export const SERVICE_WERTE = ['Verfügbar', 'Nicht verfügbar', 'Ungeklärt'];
 export const WUNSCHMASS = 'Wunschmaß';
 export const BREITE = /^\d+([.,]\d+)?\s?cm$/i;
 export const WUNSCH = /^wunschma(ß|ss)$/i;
+export const KONFIG_STANDARD = join(os.homedir(), 'teppich-paradies-analyse/kettelservice/masstepich-konfig.json');
 
 export const ARTEN = {
   cover: { wert: 'Cover', kurz: 'COV', titel: (n) => `${n} Coverteppich nach Maß`, handle: 'coverteppich' },
@@ -77,17 +79,34 @@ export function woerter(text) {
   return [...out];
 }
 
-export function wortHash(wort) {
-  return createHash('sha256').update(`tp-lieferant:${wort}`).digest('hex').slice(0, 16);
+/** Namensliste als Menge: klein, ohne Umlaute, mit und ohne Bindestrich ("M-Plus" -> m-plus, mplus). */
+export function namenSet(namen) {
+  const set = new Set();
+  for (const n of namen || []) {
+    const w = ascii(n).toLowerCase().trim();
+    if (!w) continue;
+    set.add(w);
+    set.add(w.replace(/[-_\s]+/g, ''));
+  }
+  return set;
 }
 
-export function ladeLieferantenHashes(url = new URL('./lieferanten-hashes.json', import.meta.url)) {
-  return new Set(JSON.parse(readFileSync(url, 'utf8')).hashes);
+/**
+ * Lieferantennamen aus TP_LIEFERANTEN_NAMEN oder der internen Konfiguration.
+ * null heisst: keine Liste verfuegbar - der Aufrufer muss das melden, nicht
+ * still als "keine Treffer" werten.
+ */
+export function ladeLieferantenNamen(pfad = process.env.TP_MASSTEPICH_KONFIG || KONFIG_STANDARD) {
+  if (process.env.TP_LIEFERANTEN_NAMEN) return namenSet(process.env.TP_LIEFERANTEN_NAMEN.split(','));
+  if (!existsSync(pfad)) return null;
+  const k = JSON.parse(readFileSync(pfad, 'utf8'));
+  return Array.isArray(k.lieferantennamen) && k.lieferantennamen.length ? namenSet(k.lieferantennamen) : null;
 }
 
-/** Woerter im Text, deren Hash ein Lieferantenname ist. */
-export function lieferantenTreffer(text, hashes) {
-  return woerter(text).filter((w) => hashes.has(wortHash(w)));
+/** Woerter im Text, die ein Lieferantenname sind. */
+export function lieferantenTreffer(text, namen) {
+  if (!namen) return [];
+  return woerter(text).filter((w) => namen.has(w));
 }
 
 /** Kurzname eines Basisprodukts: der eigene Produktname vor der Warengruppe. */
