@@ -277,6 +277,16 @@
   }
 }
 
+/* Bilder im Handy-Menue erst laden, wenn jemand das Menue oeffnen will. Das Menue
+   liegt unsichtbar in jedem Seitenkopf; ohne diese Regel lud jede Seite am Handy
+   86 KB Menuebilder (gemessen 2026-09-11). tp-drawer-nav.liquid setzt
+   data-tp-bilder beim ersten Antippen, Zeigen oder Fokussieren des Menueknopfs -
+   dasselbe Muster wie data-images-revealed im Desktop-Megamenue. */
+header-drawer:not([data-tp-bilder]) .tp-dn img,
+header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
+  display: none;
+}
+
 /* Unterebene */
 .menu-drawer .tp-dn-panel__inner {
   padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));

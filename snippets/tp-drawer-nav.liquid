@@ -217,6 +217,20 @@
 </div>
 
 <script>
+  // Menuebilder erst bei der ersten Absicht laden (Regel in assets/tp-nav.css).
+  if (!window.tpDrawerBilder) {
+    window.tpDrawerBilder = true;
+    var tpDrawerAbsicht = function (event) {
+      if (!(event.target instanceof Element) || !event.target.closest('.header__icon--menu, #Details-menu-drawer-container')) return;
+      document.querySelectorAll('header-drawer:not([data-tp-bilder])').forEach(function (drawer) {
+        drawer.setAttribute('data-tp-bilder', '');
+      });
+    };
+    ['pointerdown', 'touchstart', 'mouseover', 'focusin'].forEach(function (type) {
+      document.addEventListener(type, tpDrawerAbsicht, { passive: true, capture: true });
+    });
+  }
+
   // Sprungziel auf derselben Seite (Bodenleisten: #leisten:material=...) laedt die
   // Seite nicht neu. Das Menue schliesst deshalb selbst, sonst verdeckt es das
   // gefilterte Ergebnis.
