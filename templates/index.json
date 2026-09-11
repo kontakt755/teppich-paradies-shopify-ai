@@ -12,9 +12,9 @@
         "cta2_link": "#tp-kontakt",
         "telefon": "03301 573 37 20",
         "whatsapp": "https://wa.me/4917657931322",
-        "rating_wert": "",
-        "rating_text": "Google-Bewertungen",
-        "rating_link": "",
+        "rating_wert": "4,9",
+        "rating_text": "über 230 Google-Bewertungen",
+        "rating_link": "https://maps.google.com/?cid=787042219843486388",
         "bild": "shopify://shop_images/1000012408.jpg",
         "bild_caption": "Echtes Projekt · Teppichboden, von uns verlegt"
       }
@@ -107,9 +107,9 @@
     "tp_start_trust": {
       "type": "tp-start-trust",
       "settings": {
-        "rating_wert": "",
-        "rating_text": "Google-Bewertungen · Unternehmensprofil",
-        "rating_link": ""
+        "rating_wert": "4,9",
+        "rating_text": "über 230 Bewertungen · Google-Unternehmensprofil",
+        "rating_link": "https://maps.google.com/?cid=787042219843486388"
       },
       "blocks": {
         "t1": {
@@ -907,7 +907,7 @@
         "bild": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
         "eyebrow": "Warum Teppich Paradies",
         "heading": "Ein echtes Fachgeschäft – kein anonymer Online-Shop",
-        "text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen.</p>",
+        "text": "<p>Wir beraten in der Saarlandstraße in Oranienburg. Wer online bestellt, spricht mit denselben Menschen, die hier täglich Böden zuschneiden und verlegen. Im Laden stehen über 1.000 m² Sonderposten und Lagerware, sofort verfügbar – was gerade da ist, zeigen wir Ihnen vor Ort.</p>",
         "cta1_label": "Beratung vereinbaren",
         "cta1_link": "#tp-kontakt",
         "cta2_label": "Fachgeschäft & Anfahrt",
@@ -956,7 +956,7 @@
         "heading": "Das sagen unsere Kunden",
         "text": "Echte Rezensionen aus dem Google-Unternehmensprofil.",
         "link_label": "Alle Bewertungen bei Google",
-        "link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen",
+        "link": "https://maps.google.com/?cid=787042219843486388",
         "elfsight_id": "e64233ac-362d-4d8f-ae26-3ec4cc88789e"
       }
     },
