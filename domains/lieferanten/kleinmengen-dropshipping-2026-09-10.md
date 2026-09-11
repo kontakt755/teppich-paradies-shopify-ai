@@ -132,6 +132,8 @@ Titel, Preis und Paketangabe stehen jetzt vor dem Rechner.
 belegen will, findet damit genau die Boeden, deren Paket klein genug ist, statt abzuspringen.
 Braucht ein Produkt-Metafeld als Filterquelle, weil Shopify nicht nach `qm_pro_paket` filtert;
 Wert ist derselbe.
+*Stand 2026-09-11: als Filter „Kleinste Bestellmenge" umgesetzt (`custom.kleinste_bestellmenge`,
+siehe `paketinhalt/README.md`). Eine Sortierung gibt Shopify fuer Metafelder nicht her.*
 
 **L3 — Der ehrliche Satz fuer den Ausreisser.** Bei Teppichfliesen und den grossen
 Klebevinyl-Gebinden fuehrt der bestehende kostenlose Musterweg den Kleinstbedarf ab, ergaenzt um

@@ -1,0 +1,54 @@
+{%- doc -%}
+  Entscheidet, ob die Unterliste eines Menuepunkts im mobilen Drawer als
+  Bildraster erscheint. Gibt "true" aus oder nichts.
+
+  Ausgelagert aus snippets/header-drawer.liquid (#181): Dieselbe Entscheidung
+  stand dort fuenfmal und hob die Liquid-Komplexitaet der Datei ueber das
+  Limit von 120.
+
+  Zwei Regeln:
+  - Ebenen 1 und 2: Raster, sobald ein Eintrag eine Kollektion, die
+    Kollektionsliste oder der Katalog ist - oder eine Bildkachel (Block
+    _tp-menu-kachel) fuer einen Seiten- oder Filterlink mitbringt.
+  - Ebene 3 (streng): Raster nur, wenn JEDER Eintrag ein Bild hat. Gemischte
+    Listen (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster
+    sonst auseinander - ein Eintrag mit Foto, die anderen ohne.
+
+  @param {object} link - Menuepunkt, dessen Kinder geprueft werden
+  @param {string} menu_style - block_settings.menu_style des Header-Menues
+  @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
+  @param {boolean} [streng] - true: nur, wenn jeder Eintrag ein Bild hat
+{%- enddoc -%}
+{%- liquid
+  assign tp_br_raster = false
+
+  if menu_style == 'collection_images'
+    assign tp_br_katalog = link.links | where: 'type', 'catalog_link'
+    assign tp_br_listen = link.links | where: 'type', 'collections_link'
+    assign tp_br_kollektionen = link.links | where: 'type', 'collection_link'
+    assign tp_br_bildfaehig = tp_br_katalog.size | plus: tp_br_listen.size | plus: tp_br_kollektionen.size
+
+    if streng
+      if tp_br_bildfaehig > 0 and tp_br_bildfaehig == link.links.size
+        assign tp_br_raster = true
+      endif
+    elsif tp_br_bildfaehig > 0
+      assign tp_br_raster = true
+    elsif kacheln != blank
+      for tp_br_kind in link.links
+        capture tp_br_idx
+          render 'tp-menu-kachel-index', link: tp_br_kind, kacheln: kacheln
+        endcapture
+        assign tp_br_idx = tp_br_idx | strip | plus: 0
+        if tp_br_idx > 0
+          assign tp_br_raster = true
+          break
+        endif
+      endfor
+    endif
+  endif
+
+  if tp_br_raster
+    echo 'true'
+  endif
+-%}
