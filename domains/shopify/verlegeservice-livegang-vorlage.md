@@ -1,6 +1,9 @@
 # Verlegeservice – Vorlage für den Livegang
 
-Stand 2026-09-11. **Nichts hiervon ist ausgeführt.**
+Stand 2026-09-11. **Ausgeführt am 2026-09-11:** Theme-Livegang um 18:45Z (Theme-ID siehe
+`live-theme.json`), direkt danach Schritt A (Menü, alle 40 IDs erhalten, ein Unterpunkt neu) und
+Schritt B (SEO der drei Seiten), live per `curl` gegengeprüft. Nicht erneut ausführen. Offen ist
+nur das Aufräumen der Menü-Kopie `hauptmenue-entwurf-verlegeservice` (Entscheidung des Inhabers).
 
 Der Theme-Teil liegt im Branch `feature/verlegeservice-rollenware` (PR #191) und auf der
 Arbeitskopie „Qualitaet Arbeitskopie 2026-09-11“. Menü und SEO-Texte sind dagegen
