@@ -50,7 +50,9 @@ Urteil nicht OK ist, fuehrt zur Ablehnung.
                 an echten Outpaint-Fotos nicht kalibriert), Filz bleibt
                 < 1,0. Liegt die umgerechnete Schwelle weniger als
                 UNTEN_MIN_ABSTAND ueber 1,0, ist der Streifen zu niedrig
-                fuer eine Tiefenaussage -> "nicht messbar"
+                fuer eine Tiefenaussage -> "nicht messbar"; eindeutiger
+                Filz (Verlauf unter 1,0 - UNTEN_MIN_ABSTAND) wird auch
+                dort verworfen
   oben          liegt ueber der Florzone -> "nicht messbar"
 
 Ein Streifen, dessen Messkasten kleiner als RAND_MIN_KASTEN ist, wird
@@ -105,7 +107,10 @@ RAND_MIN_KASTEN = 32
 # Kompression. Wie weit, ist an echten Outpaint-Fotos nicht vermessen. Liegt
 # die Schwelle naeher an 1,0, trennt sie Filz nicht mehr von einer
 # Fortsetzung, dann entscheidet diese Schwankung das Urteil. Der Streifen ist
-# zu niedrig fuer eine Tiefenaussage und wird als "nicht messbar" gemeldet.
+# zu niedrig fuer eine Tiefenaussage und wird als "nicht messbar" gemeldet -
+# ausser sein Verlauf liegt um mehr als diese Schwankung unter VERLAUF_FILZ
+# (unter VERLAUF_FILZ - UNTEN_MIN_ABSTAND): dann ist die Tiefe eindeutig
+# umgekehrt, das haengt nicht an der Schwelle, und er wird verworfen.
 # 0,05 ist ein Zehntel des Abstands, den das Motiv zwischen Filz und
 # brauchbar laesst (VERLAUF_GUT - VERLAUF_FILZ); gesetzt, nicht kalibriert.
 # Im Modell von verlauf_schwelle_unten trifft das Streifen unter rund 8 %
@@ -500,8 +505,11 @@ def verlauf_schwelle_unten(roi, rand):
     Geometrie, ist immer > 1,0 und wird bei VERLAUF_GUT gekappt - ein Rand
     wird nicht strenger beurteilt als das Motiv. Je niedriger der Streifen,
     desto naeher liegt sie an 1,0; unter VERLAUF_FILZ + UNTEN_MIN_ABSTAND
-    wird der Streifen nicht beurteilt (messe_raender). Filz (< VERLAUF_FILZ,
-    Tiefe umgekehrt) haengt nicht am Umfang und bleibt, wie es ist.
+    trennt sie Filz nicht mehr von einer Fortsetzung (messe_raender). Filz
+    (< VERLAUF_FILZ, Tiefe umgekehrt) haengt nicht am Umfang: ein gemessener
+    Streifen wird darunter verworfen, ein zu niedriger erst, wenn der Verlauf
+    auch die angenommene Schwankung unterschreitet (< VERLAUF_FILZ -
+    UNTEN_MIN_ABSTAND).
 
     Was davon belegt ist: gemessen ist nur der Verlauf der Quelle von Foto 31,
     3,21x. Das lineare Modell passt nicht einmal zu diesem einen Wert - daran
@@ -534,6 +542,9 @@ def messe_raender(bild, roi, weiss=None):
                     der Streifen zu niedrig fuer eine Tiefenaussage: Filz
                     und Fortsetzung liegen dann naeher beieinander als die
                     angenommene Schwankung eines Verlaufs -> nicht messbar.
+                    Ausnahme: ein Verlauf unter VERLAUF_FILZ -
+                    UNTEN_MIN_ABSTAND ist eindeutig umgekehrt und wird wie
+                    bei jedem gemessenen Rand verworfen.
       oben        nicht messbar: der Streifen liegt vollstaendig ueber der
                     Florzone (die beginnt erst bei FLOR_HINTEN, also bei 52 %
                     der Quellhoehe). Dort stehen in dieser Serie Wand und
@@ -545,9 +556,12 @@ def messe_raender(bild, roi, weiss=None):
     ist, traegt zu wenig Flaeche fuer den flaechigen Filzeindruck, und oben
     ist keine Florzeichnung, die filzig werden koennte. Ablehnen hiesse, jede
     Erweiterung nach oben zu verbieten, ohne dass das Bild dadurch sicherer
-    wird. Beim zu niedrigen unteren Streifen entschiede ein Urteil ueber die
-    Schwankung statt ueber die Zeichnung - ablehnen waere so beliebig wie
-    annehmen; er wird deshalb behandelt wie ein zu schmaler Rand. Stumm
+    wird. Beim zu niedrigen unteren Streifen entschiede ein Urteil nahe 1,0
+    ueber die Schwankung statt ueber die Zeichnung - dort waere ablehnen so
+    beliebig wie annehmen; er wird deshalb behandelt wie ein zu schmaler
+    Rand. Das gilt nur fuer dieses Band: liegt der Verlauf mehr als
+    UNTEN_MIN_ABSTAND unter 1,0 (Higgsfield-Fall 0,80x), entscheidet nicht
+    die Schwankung, und der Streifen wird gemessen und verworfen. Stumm
     bleibt es trotzdem nicht - der Grund steht im Befund und in der Ausgabe.
     Beim zu kleinen Messkasten nennt der Grund beide Kastenmasse: bei
     seitlichen Streifen ist die Hoehe 10 % der Quellhoehe, eine niedrige
@@ -579,13 +593,17 @@ def messe_raender(bild, roi, weiss=None):
             b["grund"] = (f"Messkasten zu klein ({max(breite, 0)}x{max(hoehe, 0)} px, "
                           f"Mindestkante {RAND_MIN_KASTEN} px; Streifen {rand.w}x{rand.h} px)")
             continue
-        if seite.startswith("unten") and b["gut"] < VERLAUF_FILZ + UNTEN_MIN_ABSTAND:
+        m = _messwerte(bild, kv, kh, weiss, f"Rand {seite} (erzeugt)")
+        if (seite.startswith("unten") and b["gut"] < VERLAUF_FILZ + UNTEN_MIN_ABSTAND
+                and m["verlauf"] >= VERLAUF_FILZ - UNTEN_MIN_ABSTAND):
             b["grund"] = (f"Streifen zu niedrig fuer eine Tiefenaussage ({rand.h} px = "
                           f"{rand.h / roi.h * 100:.1f} % der Quellhoehe; Schwelle "
                           f"{b['gut']:.3f}x liegt weniger als {UNTEN_MIN_ABSTAND:.2f} "
-                          f"ueber {VERLAUF_FILZ:.1f})")
+                          f"ueber {VERLAUF_FILZ:.1f}; Verlauf {m['verlauf']:.3f}x, "
+                          f"eindeutig Filz erst unter "
+                          f"{VERLAUF_FILZ - UNTEN_MIN_ABSTAND:.2f}x)")
             continue
-        b["messung"] = _messwerte(bild, kv, kh, weiss, f"Rand {seite} (erzeugt)")
+        b["messung"] = m
     return befunde
 
 

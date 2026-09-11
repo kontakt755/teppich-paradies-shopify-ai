@@ -81,6 +81,11 @@ def verlauf_gleich(y, stufe=STUFE):
     return 16
 
 
+def zwei_lagen(vorn, hinten, stufe):
+    """Amplitude vorn ab der Zeile stufe, hinten darueber - Verlauf vorn/hinten."""
+    return lambda x, y: vorn if y >= stufe else hinten
+
+
 def befund(befunde, seite):
     for b in befunde:
         if b["seite"] == seite:
@@ -296,8 +301,10 @@ class RandmessungTests(unittest.TestCase):
         # Amplitudenrampe, 150 px mit zusaetzlich +-8 % Zufall je Zeile. Die
         # Messkaesten sind gross genug (34 bzw. 46 px hoch); zu klein ist der
         # Abstand der Schwelle von 1,0 - sie trennt Filz nicht mehr von einer
-        # Fortsetzung. Das gilt auch fuer flache und filzige Streifen: wie
-        # beim zu schmalen Rand wird dort nicht geurteilt.
+        # Fortsetzung. Das gilt auch fuer flache Streifen und fuer einen
+        # Verlauf knapp unter 1,0 (0,97x, innerhalb der angenommenen
+        # Schwankung): wie beim zu schmalen Rand wird dort nicht geurteilt.
+        # Eindeutiger Filz wird weiter verworfen, siehe den naechsten Test.
         zufall = random.Random(20260911)
         rauschen = [1 + zufall.uniform(-0.08, 0.08) for _ in range(150)]
 
@@ -313,7 +320,7 @@ class RandmessungTests(unittest.TestCase):
         faelle = (("Rampe 4 %", 110, rampe(110)),
                   ("Rampe mit Rauschen", 150, rampe(150, streuung=True)),
                   ("flach", 150, lambda x, y: 16),
-                  ("Filz", 150, lambda x, y: verlauf_filz(y, s)))
+                  ("knapp unter 1,0", 150, zwei_lagen(19.4, 20, s)))
         for name, hu, amp in faelle:
             with self.subTest(name):
                 b = self.unterer_streifen(hu, amp)
@@ -323,6 +330,53 @@ class RandmessungTests(unittest.TestCase):
                 self.assertGreater(b["gut"], bq.VERLAUF_FILZ)
                 self.assertLess(b["gut"], bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND)
                 self.assertEqual(bq.beurteile_raender([b]), ([], [f"Rand unten {b['grund']}"]))
+
+    def test_duenner_unterer_streifen_mit_filz_wird_verworfen(self):
+        # Die Schwelle nahe 1,0 trennt Filz nicht von einer Fortsetzung - eine
+        # eindeutig umgekehrte Tiefe haengt aber nicht an der Schwelle. 0,80x
+        # ist der Higgsfield-Fall, 0,33x der Filz dieser Tests, 0,94x liegt
+        # knapp unter VERLAUF_FILZ - UNTEN_MIN_ABSTAND. 0,96x liegt knapp
+        # darueber und bleibt nicht messbar.
+        s = stufe_unten(QH_HOCH, 150)
+        for name, amp, verlauf in (("Higgsfield 0,80x", zwei_lagen(16, 20, s), 0.80),
+                                   ("Filz 0,33x", lambda x, y: verlauf_filz(y, s), 1 / 3),
+                                   ("0,94x", zwei_lagen(18.8, 20, s), 0.94)):
+            with self.subTest(name):
+                b = self.unterer_streifen(150, amp)
+                self.assertLess(b["gut"], bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND)
+                self.assertIsNone(b["grund"])
+                self.assertAlmostEqual(b["messung"]["verlauf"], verlauf, places=2)
+                u = bq.urteil(b["messung"], b["gut"])
+                self.assertTrue(u.startswith("VERWERFEN"), u)
+                self.assertEqual(bq.beurteile_raender([b]), ([f"Struktur Rand unten: {u}"], []))
+        b = self.unterer_streifen(150, zwei_lagen(19.2, 20, s))
+        self.assertIsNone(b["messung"])
+        self.assertIn("Verlauf 0.960x", b["grund"])
+
+    def test_duenne_untere_ecke_wie_der_streifen(self):
+        # Die unteren Ecken haben dieselbe Hoehe und damit dieselbe Schwelle
+        # wie der Streifen unter der Quelle: flach nicht messbar, Filz in der
+        # Ecke verworfen. Rechts (seitlicher Rand) wird normal gemessen.
+        hu = 150
+        s = stufe_unten(QH_HOCH, hu)
+        bild = KunstBild(QW_HOCH + 100, QH_HOCH + hu, lambda x, y: 16)
+        befunde = bq.messe_raender(bild, bq.Roi(0, 0, QW_HOCH, QH_HOCH))
+        self.assertEqual([b["seite"] for b in befunde], ["rechts", "unten", "unten rechts"])
+        ecke = befund(befunde, "unten rechts")
+        self.assertLess(ecke["gut"], bq.VERLAUF_FILZ + bq.UNTEN_MIN_ABSTAND)
+        self.assertIsNone(ecke["messung"])
+        self.assertIn("zu niedrig fuer eine Tiefenaussage", ecke["grund"])
+        self.assertIsNotNone(befund(befunde, "rechts")["messung"])
+
+        def amp(x, y):
+            return verlauf_filz(y, s) if x >= QW_HOCH and y >= QH_HOCH else 16
+        befunde = bq.messe_raender(KunstBild(QW_HOCH + 100, QH_HOCH + hu, amp),
+                                   bq.Roi(0, 0, QW_HOCH, QH_HOCH))
+        self.assertIsNone(befund(befunde, "unten")["messung"])
+        ecke = befund(befunde, "unten rechts")
+        self.assertTrue(bq.urteil(ecke["messung"], ecke["gut"]).startswith("VERWERFEN"))
+        fehler, _ = bq.beurteile_raender(befunde)
+        self.assertIn("Struktur Rand unten rechts: " + bq.urteil(ecke["messung"], ecke["gut"]), fehler)
 
     def test_hoher_unterer_streifen_wie_bisher(self):
         # Dieselbe hohe Quelle, 600 px Streifen (20 %): die Schwelle liegt
@@ -476,28 +530,42 @@ class EndeZuEndeTests(unittest.TestCase):
         self.assertIn("Rand rechts", r.stdout.split("Ohne Strukturpruefung")[1])
         self.assertIn("ANGENOMMEN - Rand ohne Strukturpruefung", r.stdout)
 
-    def test_duenner_unterer_streifen_steht_in_der_ausgabe(self):
-        # Quelle 40x1400, darunter 110 px flacher Rand: Messkaesten 40x34 px,
-        # aber die umgerechnete Schwelle liegt unter 1,05. Vorher GRENZWERTIG
-        # und ABGELEHNT, jetzt nicht messbar - dieselbe Ausgabe und Wirkung
-        # wie beim zu schmalen Rand.
-        qw, qh, hu = 40, 1400, 110
-        stufe = int(0.68 * qh)
+    DQW, DQH, DHU = 40, 1400, 110     # Quelle 40x1400, darunter 110 px: Kaesten 40x34 px
+
+    def lauf_unten(self, rand_amp):
+        """Quelle mit guter Zeichnung, darunter DHU px Rand mit rand_amp."""
+        stufe = int(0.68 * self.DQH)
 
         def amp(x, y):
-            return verlauf_gut(y, stufe) if y < qh else 16
-        quelle, erg = KunstBild(qw, qh, amp), KunstBild(qw, qh + hu, amp)
+            return verlauf_gut(y, stufe) if y < self.DQH else rand_amp(x, y)
+        quelle, erg = KunstBild(self.DQW, self.DQH, amp), KunstBild(self.DQW, self.DQH + self.DHU, amp)
         qp = os.path.join(self.tmp.name, "quelle.bmp")
         ep = os.path.join(self.tmp.name, "ergebnis.bmp")
         bq.schreibe_bmp(qp, quelle.w, quelle.h, quelle.rgb)
         bq.schreibe_bmp(ep, erg.w, erg.h, erg.rgb)
-        r = subprocess.run([sys.executable, str(SKRIPT), qp, ep, "--bei", "0,0"],
-                           capture_output=True, text=True)
+        return subprocess.run([sys.executable, str(SKRIPT), qp, ep, "--bei", "0,0"],
+                              capture_output=True, text=True)
+
+    def test_duenner_unterer_streifen_steht_in_der_ausgabe(self):
+        # 110 px flacher Rand: Messkaesten gross genug, aber die umgerechnete
+        # Schwelle liegt unter 1,05. Vorher GRENZWERTIG und ABGELEHNT, jetzt
+        # nicht messbar - dieselbe Ausgabe und Wirkung wie beim zu schmalen Rand.
+        r = self.lauf_unten(lambda x, y: 16)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("Rand unten (erzeugt)", r.stdout)
         self.assertIn("nicht messbar - Streifen zu niedrig fuer eine Tiefenaussage", r.stdout)
         self.assertIn("Ohne Strukturpruefung: Rand unten", r.stdout)
         self.assertIn("ANGENOMMEN - Rand ohne Strukturpruefung", r.stdout)
+
+    def test_duenner_unterer_filzstreifen_wird_abgelehnt(self):
+        # Derselbe duenne Streifen mit umgekehrter Tiefe (0,33x): eindeutig
+        # Filz, unabhaengig von der Schwelle - ABGELEHNT wie vor Runde 3.
+        s = stufe_unten(self.DQH, self.DHU)
+        r = self.lauf_unten(lambda x, y: verlauf_filz(y, s))
+        self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+        self.assertIn("VERWERFEN - Tiefe umgekehrt", r.stdout)
+        self.assertIn("ABGELEHNT: Struktur Rand unten", r.stdout)
+        self.assertNotIn("nicht messbar", r.stdout)
 
     def test_guter_rand_wird_angenommen(self):
         r = self.lauf(verlauf_gut)
