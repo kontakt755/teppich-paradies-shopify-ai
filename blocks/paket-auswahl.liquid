@@ -132,6 +132,13 @@
     accent-color: var(--cp-text);
   }
 
+  .carpet-package__reserve-{{ package_selector_id }} {
+    margin: 8px 0 0;
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
   .carpet-package__results-{{ package_selector_id }} {
     margin: 16px 0 0;
     padding: 12px 14px;
@@ -395,6 +402,19 @@
       <span data-sqm-display>–</span>
     </div>
   </div>
+
+  {% comment %}
+    Reserve-Hinweis nur bei Fliesen: Dort ersetzt man ein beschaedigtes
+    Stueck einzeln, uebrige Fliesen sind also echte Ersatzteile. Bei Planken
+    und Rollenware waere der Satz fachlich schief. Quelle ist
+    custom.stueck_bezeichnung - kein Titel-Parsing.
+  {% endcomment %}
+  {%- assign tp_pa_bezeichnung = product.metafields.custom.stueck_bezeichnung.value | strip -%}
+  {%- if tp_pa_bezeichnung == 'Fliesen' -%}
+    <p class="carpet-package__reserve-{{ package_selector_id }}">
+      Übrige Fliesen können als Reserve für spätere Reparaturen oder Verschmutzungen aufbewahrt werden.
+    </p>
+  {%- endif -%}
 
   <div class="carpet-package__total-{{ package_selector_id }}">
     <div>Gesamtpreis <span data-total-display>–</span></div>

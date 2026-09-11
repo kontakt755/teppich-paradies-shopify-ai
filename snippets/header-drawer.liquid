@@ -140,27 +140,13 @@
                         </span>
                       </summary>
                       {% liquid
+                        # Entscheidung Bildraster: snippets/tp-drawer-bildraster.liquid (#181)
                         assign render_link_image = false
-                        if block_settings.menu_style == 'collection_images'
-                          assign catalog_links = link.links | where: 'type', 'catalog_link'
-                          assign collection_list_links = link.links | where: 'type', 'collections_link'
-                          assign collection_links = link.links | where: 'type', 'collection_link'
-                          if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
-                            assign render_link_image = true
-                          endif
-                            # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
-                            if render_link_image == false and kacheln != blank
-                              for tp_dl in link.links
-                                capture tp_dl_idx
-                                  render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
-                                endcapture
-                                assign tp_dl_idx = tp_dl_idx | strip | plus: 0
-                                if tp_dl_idx > 0
-                                  assign render_link_image = true
-                                  break
-                                endif
-                              endfor
-                            endif
+                        capture tp_bildraster
+                          render 'tp-drawer-bildraster', link: link, menu_style: block_settings.menu_style, kacheln: kacheln
+                        endcapture
+                        if tp_bildraster contains 'true'
+                          assign render_link_image = true
                         endif
                       %}
                       <ul
@@ -223,27 +209,13 @@
                     <span class="menu-drawer__menu-item-text wrap-text">{% render 'tp-menu-label', link: link %}</span>
                   </a>
                   {% liquid
+                    # Entscheidung Bildraster: snippets/tp-drawer-bildraster.liquid (#181)
                     assign render_link_image = false
-                    if block_settings.menu_style == 'collection_images'
-                      assign catalog_links = link.links | where: 'type', 'catalog_link'
-                      assign collection_list_links = link.links | where: 'type', 'collections_link'
-                      assign collection_links = link.links | where: 'type', 'collection_link'
-                      if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
-                        assign render_link_image = true
-                      endif
-                        # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
-                        if render_link_image == false and kacheln != blank
-                          for tp_dl in link.links
-                            capture tp_dl_idx
-                              render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
-                            endcapture
-                            assign tp_dl_idx = tp_dl_idx | strip | plus: 0
-                            if tp_dl_idx > 0
-                              assign render_link_image = true
-                              break
-                            endif
-                          endfor
-                        endif
+                    capture tp_bildraster
+                      render 'tp-drawer-bildraster', link: link, menu_style: block_settings.menu_style, kacheln: kacheln
+                    endcapture
+                    if tp_bildraster contains 'true'
+                      assign render_link_image = true
                     endif
                   %}
                   <ul
@@ -369,27 +341,13 @@
                           </button>
                         </div>
                         {% liquid
+                          # Entscheidung Bildraster: snippets/tp-drawer-bildraster.liquid (#181)
                           assign render_link_image = false
-                          if block_settings.menu_style == 'collection_images'
-                            assign catalog_links = link.links | where: 'type', 'catalog_link'
-                            assign collection_list_links = link.links | where: 'type', 'collections_link'
-                            assign collection_links = link.links | where: 'type', 'collection_link'
-                            if catalog_links.size > 0 or collection_list_links.size > 0 or collection_links.size > 0
-                              assign render_link_image = true
-                            endif
-                              # Bildkacheln (Block _tp-menu-kachel) liefern auch Seiten- und Filterlinks ein Bild.
-                              if render_link_image == false and kacheln != blank
-                                for tp_dl in link.links
-                                  capture tp_dl_idx
-                                    render 'tp-menu-kachel-index', link: tp_dl, kacheln: kacheln
-                                  endcapture
-                                  assign tp_dl_idx = tp_dl_idx | strip | plus: 0
-                                  if tp_dl_idx > 0
-                                    assign render_link_image = true
-                                    break
-                                  endif
-                                endfor
-                              endif
+                          capture tp_bildraster
+                            render 'tp-drawer-bildraster', link: link, menu_style: block_settings.menu_style, kacheln: kacheln
+                          endcapture
+                          if tp_bildraster contains 'true'
+                            assign render_link_image = true
                           endif
                         %}
                         <ul
@@ -467,18 +425,13 @@
                                         </span>
                                       </summary>
                                       {% liquid
+                                        # Entscheidung Bildraster: snippets/tp-drawer-bildraster.liquid (#181)
                                         assign render_link_image = false
-                                        if block_settings.menu_style == 'collection_images'
-                                          assign catalog_links = childlink.links | where: 'type', 'catalog_link'
-                                          assign collection_list_links = childlink.links | where: 'type', 'collections_link'
-                                          assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                          # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
-                                          # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
-                                          # auseinander - ein Eintrag mit Foto, die anderen ohne.
-                                          assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
-                                          if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
-                                            assign render_link_image = true
-                                          endif
+                                        capture tp_bildraster
+                                          render 'tp-drawer-bildraster', link: childlink, menu_style: block_settings.menu_style, streng: true
+                                        endcapture
+                                        if tp_bildraster contains 'true'
+                                          assign render_link_image = true
                                         endif
                                       %}
                                       <ul
@@ -536,18 +489,13 @@
                                     </span>
                                   </a>
                                   {% liquid
+                                    # Entscheidung Bildraster: snippets/tp-drawer-bildraster.liquid (#181)
                                     assign render_link_image = false
-                                    if block_settings.menu_style == 'collection_images'
-                                      assign catalog_links = childlink.links | where: 'type', 'catalog_link'
-                                      assign collection_list_links = childlink.links | where: 'type', 'collections_link'
-                                      assign collection_links = childlink.links | where: 'type', 'collection_link'
-                                      # Bildraster nur, wenn JEDER Eintrag ein Bild hat. Gemischte Listen
-                                      # (eine Kollektion plus gefilterte HTTP-Links) rissen das Raster sonst
-                                      # auseinander - ein Eintrag mit Foto, die anderen ohne.
-                                      assign tp_bildfaehig = catalog_links.size | plus: collection_list_links.size | plus: collection_links.size
-                                      if tp_bildfaehig > 0 and tp_bildfaehig == childlink.links.size
-                                        assign render_link_image = true
-                                      endif
+                                    capture tp_bildraster
+                                      render 'tp-drawer-bildraster', link: childlink, menu_style: block_settings.menu_style, streng: true
+                                    endcapture
+                                    if tp_bildraster contains 'true'
+                                      assign render_link_image = true
                                     endif
                                   %}
                                   <ul
