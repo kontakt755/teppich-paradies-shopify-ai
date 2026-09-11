@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { currentCommit, describeReviewScope, detectReviewScope, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+import { currentCommit, describeReviewScope, detectReviewScope, resolveReviewDir, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
 
 test('dirty working tree reviews the uncommitted changes', () => {
   const scope = describeReviewScope({ porcelain: ' M a.js', aheadCommits: '' });
@@ -150,4 +150,40 @@ test('detectReviewScope: kein sinceRef verhaelt sich unveraendert wie vor dem Fi
 test('currentCommit liefert den HEAD-Commit oder null bei einem git-Fehler, nie eine Exception', () => {
   assert.equal(currentCommit({ cwd: '/repo', exec: () => 'deadbeefcafe\n' }), 'deadbeefcafe');
   assert.equal(currentCommit({ cwd: '/repo', exec: () => { throw new Error('not a git repository'); } }), null);
+});
+
+// 2026-09-10: Ein Worktree-Lauf bekam zweimal hintereinander den Diff einer
+// fremden, parallel laufenden Sitzung vorgelegt und meldete daraufhin, das
+// Ergebnis des Auftrags fehle. Ursache war CLAUDE_PROJECT_DIR, das immer auf
+// den Hauptcheckout zeigt - dort liegen die Commits des Worktrees nicht.
+const gemeinsamesRepo = (cmd, args, options) => {
+  if (args[0] !== 'rev-parse' || args[1] !== '--git-common-dir') throw new Error(`unerwartet: ${args.join(' ')}`);
+  if (options.cwd === '/repo') return '.git\n';
+  if (options.cwd === '/repo/.claude/worktrees/a') return '/repo/.git\n';
+  throw new Error('not a git repository');
+};
+
+test('resolveReviewDir nimmt den Worktree der Sitzung, wenn er zum selben Repository gehoert', () => {
+  assert.equal(
+    resolveReviewDir({ projectDir: '/repo', sessionCwd: '/repo/.claude/worktrees/a', exec: gemeinsamesRepo }),
+    '/repo/.claude/worktrees/a',
+  );
+});
+
+test('resolveReviewDir bleibt beim projectDir: gleiches Verzeichnis, fremdes Repository, kein git', () => {
+  assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: '/repo', exec: gemeinsamesRepo }), '/repo');
+  assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: undefined, exec: gemeinsamesRepo }), '/repo');
+
+  const fremdesRepo = (cmd, args, options) => (options.cwd === '/repo' ? '.git\n' : '/woanders/.git\n');
+  assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: '/woanders/wt', exec: fremdesRepo }), '/repo');
+
+  const keinGit = () => { throw new Error('not a git repository'); };
+  assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: '/irgendwo', exec: keinGit }), '/repo');
+});
+
+test('resolveReviewDir loest eine relative --git-common-dir-Ausgabe gegen das jeweilige cwd auf', () => {
+  // Beide Verzeichnisse melden ".git" relativ - das sind zwei verschiedene
+  // Repositories, nicht dasselbe. Ohne path.resolve waere das ein Fehltreffer.
+  const beideRelativ = () => '.git\n';
+  assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: '/anderes-repo', exec: beideRelativ }), '/repo');
 });
