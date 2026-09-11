@@ -1,157 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaudeContextPack, classifyClaudeRequest, isPureQuestion, prepareClaudeBridge } from '../core/claude-bridge.mjs';
+import { buildClaudeContextPack, classifyClaudeRequest, prepareClaudeBridge } from '../core/claude-bridge.mjs';
 
-// Realer Vorfall 2026-09-11: woertlicher Nutzerprompt, ohne Fragezeichen, mit
-// Zeilenumbruechen. "erstellen" und "löschen" trafen IMPLEMENTATION_TERMS, der
-// Stop-Hook startete Codex-Runden gegen einen vermeintlichen Implementierungsauftrag.
-const LEXWARE_PROMPT = 'welche funktionen hast du alles mit lexware api \n\nich hab bei chatgpt schon eingestellt angebote erstellen \nbearbeiten geht aber nicht zum beispiel oder löschen \n\nwie ist dein funktionsumfang';
-
-test('der woertliche Lexware-Prompt ist eine reine Frage, keine Implementierung', () => {
-  const result = classifyClaudeRequest({ task: LEXWARE_PROMPT });
-  assert.equal(result.taskType, 'ANALYSIS');
-  assert.equal(result.taskTypeSource, 'QUESTION');
-});
-
-test('Positivkorpus: Fragen mit Implementierungswort sind ANALYSIS/QUESTION', () => {
-  for (const task of [
-    'Welche Dateien muss ich ändern, um X zu bauen?',
-    'Wie kann ich die SKU ändern?',
-    'was kostet der router pro tag',
-    'Warum hat Codex das Löschen verlangt?',
-    'gibt es schon einen Test für den Rechner',
-    'ok und wo liegt der Rechner eigentlich',
-    'Kurze Frage: wie funktioniert der Fix für den Filter?',
-    'Weißt du, warum die Karte grün ist?',
-    // Pruefung 2026-09-11: Verb-Erst-Stellung ohne Fragezeichen, Fragen mit
-    // Implementierungsverb in Frage-Wortstellung, Substantiv "Fix".
-    'wie weit bist du mit dem Fix?',
-    'ist der fix schon live',
-    'Fixt der letzte Commit das Problem?',
-    'Setzt der Rechner die Menge richtig?',
-    'Mach ich was falsch beim Push?',
-    'Macht es Sinn, den Block zu entfernen?',
-    'Geht das, wenn ich die SKU ändere?',
-    'Geht das mit dem Fix?',
-    'Wie wäre es mit einer anderen Farbe?',
-    'Kannst du mir sagen, was der Router kostet?',
-    'Wo liegt add-to-cart.js und warum lädt update.js nicht?',
-    'Was machen wir mit dem Header?',
-    'Soll ich weitermachen?',
-  ]) {
-    const result = classifyClaudeRequest({ task });
-    assert.equal(result.taskType, 'ANALYSIS', task);
-    assert.equal(result.taskTypeSource, 'QUESTION', task);
-  }
-});
-
-test('Negativkorpus: jede Aufforderung schlaegt die Frage, es bleibt bei IMPLEMENTATION', () => {
-  for (const task of [
-    'Kannst du den Header ändern?',
-    'Ändere die SKU',
-    'Aendere die SKU',
-    'ja mach das',
-    'Warum ist der Filter kaputt? Fix das.',
-    'bitte lösche die tote CSS-Regel',
-    'Wie ist der Stand? Mach weiter.',
-    'kannst du das bitte bauen',
-    'Füge den Block tp-card-specs hinzu',
-    // weitere Aufforderungsformen neben einer Frage
-    'Welche Farbe hat der Button? Ändere sie auf Grün.',
-    'Was ist kaputt und fix es',
-    'Wie ist der Stand, dann mach weiter',
-    'Wie besprochen: ändere den Header.',
-    'Könntest du prüfen, ob man das umbauen und die Karte anpassen kann?',
-    'Was meinst du, sollten wir den Header ändern?',
-    'Ich möchte wissen, was fehlt, und ich möchte, dass du es behebst. Was fehlt?',
-    // Pruefung 2026-09-11, drei unabhaengige Pruefer: gaengige Bittformen,
-    // die vorher als Frage durchgingen (auf origin/main alle IMPLEMENTATION).
-    'Warum ist der Filter kaputt? Das musst du fixen.',
-    'Wo liegt der Fehler? Den müssen wir beheben.',
-    'Warum ist das so? Lass uns das ändern.',
-    'Warum ist die Seite so langsam? Wäre gut, wenn du das optimierst.',
-    'Wie wäre es, wenn du den Header änderst?',
-    'Geht das, dass du den Header änderst?',
-    'kannste mal den header ändern?',
-    'kanst du den header ändern?',
-    'Könnten Sie den Header ändern?',
-    'Kann ich dich bitten, den Header zu ändern?',
-    'Hast du Zeit, den Filter zu reparieren?',
-    'Kriegst du das hin, die SKU-Anzeige zu fixen?',
-    'Ist es möglich, den Preis zu ändern?',
-    'Welche Datei ist das? Die löschen wir.',
-    'Welche Datei ist das? Das fixen wir jetzt.',
-    'haette gern, dass du die karte gruener machst. passt das?',
-    'Können wir den Header grüner machen?',
-    'Dürfen wir die tote CSS-Regel löschen?',
-    'Können wir dass nicht auf GitHub zugänglich machen oder muss ich das selbst hochladen?',
-    'Warum setzt du nicht einfach den Preis auf 20 Euro?',
-    // Imperativ mitten im Satz, ohne oder mit loser Zeichensetzung
-    'warum ist der filter kaputt fix das',
-    'wieso ist die karte so blass mach die grüner',
-    'Warum ist der Filter kaputt?Fix das.',
-    'warum geht das nicht..mach das mal',
-    'Warum ist der Filter kaputt -> fix das',
-    // Kurzanweisungen und Infinitiv-Befehle
-    'Läuft der Build? Falls ja deployen.',
-    'Läuft der Build? Falls ja: deployen.',
-    'ist der Titel zu lang? dann kürzen und neu setzen',
-    'hast du den PR schon gemerged? wenn nicht, mergen und deployen',
-    'Wie ist der Stand? weiter machen',
-    'Wozu ist die tote CSS-Regel da? Weg damit und entfern auch den Import.',
-    // Listen- und Auszeichnungszeichen vor dem Imperativ
-    'Wie ist der Stand?\n- Ändere den Header\n- Fixe den Footer',
-    'Was fehlt noch?\n* Ändere den Header auf Grün',
-    'Was fehlt noch?\n• Lösche die tote CSS-Regel',
-    'Warum ist der Filter kaputt?\n\n**Fix das.**',
-    'Warum ist der Filter kaputt? "Fix das"',
-    'Warum ist der Filter kaputt? → fix das',
-    'Wie ist der Stand? 👉 Mach weiter.',
-    'Wie ist der Stand beim Rollenware-Konfigurator?\n- Ändere den Header der Seite auf den neuen Titel\n- Fixe den Footer-Abstand auf Mobile',
-  ]) {
-    const result = classifyClaudeRequest({ task });
-    assert.equal(result.taskType, 'IMPLEMENTATION', task);
-    assert.equal(result.taskTypeSource, 'HEURISTIC', task);
-  }
-});
-
-// Diese beiden stehen im Negativkorpus des Auftrags, trafen aber schon vor der
-// Fragenerkennung kein Wort aus IMPLEMENTATION_TERMS ("geändert" hat vor
-// "änder" keine Wortgrenze, "grüner wird" ist gar kein Verb der Liste). Die
-// Fragenerkennung darf sie nicht anfassen - sie bleiben bei der unveraenderten
-// Wortliste. Dass die Wortliste sie nicht als IMPLEMENTATION erkennt, ist eine
-// vorbestehende Luecke und nicht Teil dieses Fixes.
-test('Aufforderungen ohne Fragesatz bleiben bei der unveraenderten Wortliste', () => {
-  for (const task of ['ich möchte, dass die Karte grüner wird', 'Das sollte geändert werden.']) {
-    const result = classifyClaudeRequest({ task });
-    assert.equal(result.taskTypeSource, 'HEURISTIC', task);
-    assert.equal(isPureQuestion(task), false, task);
-  }
-  // Als Frage formuliert greift das Veto (soll + Partizip, Modal-Bitte).
-  assert.equal(isPureQuestion('Sollte das geändert werden?'), false);
-  assert.equal(isPureQuestion('Kann man den Header ändern?'), false);
-});
-
-test('Fragenerkennung steht nach DECLARED, READ_ONLY_INTENT und INHERITED', () => {
-  const inherited = classifyClaudeRequest({ task: 'Was kostet der Router?', forceTaskType: 'IMPLEMENTATION' });
-  assert.equal(inherited.taskType, 'IMPLEMENTATION');
-  assert.equal(inherited.taskTypeSource, 'INHERITED');
-  const declared = classifyClaudeRequest({ task: 'Was kostet der Router?', declaredTaskType: 'IMPLEMENTATION' });
-  assert.equal(declared.taskTypeSource, 'DECLARED');
-  const readOnly = classifyClaudeRequest({ task: 'Was ist los? Nur lesen, nichts ändern.' });
-  assert.equal(readOnly.taskTypeSource, 'READ_ONLY_INTENT');
-});
-
-test('eine Frage senkt das Risiko nicht', () => {
-  const result = classifyClaudeRequest({ task: 'Wie kann ich die SKU ändern?' });
-  assert.equal(result.taskTypeSource, 'QUESTION');
-  assert.equal(result.risk, 'HIGH');
-});
-
-test('isPureQuestion ist ohne Text false', () => {
-  assert.equal(isPureQuestion(''), false);
-  assert.equal(isPureQuestion(null), false);
-  assert.equal(isPureQuestion('Der Header ist zu groß.'), false);
+// Realer Vorfall 2026-09-11: eine Wissensfrage (woertlich, ohne Fragezeichen,
+// mit Zeilenumbruechen) traf "erstell" und "lösch" in IMPLEMENTATION_TERMS und
+// lief als Implementierungsauftrag durch drei Codex-Runden. Die Einstufung wird
+// bewusst NICHT ueber Wortmuster korrigiert: eine Probe am 2026-09-11 ueber 485
+// echte Nutzerprompts haette 36 davon auf "Frage" gekippt, darunter klare
+// Auftraege - die Aenderung waere still ausgefallen. Stattdessen sieht der
+// Reviewer bei leerem Diff die Schlussantwort des Agenten
+// (reviewCandidateFromStop in review-scope.mjs) und kann den No-op bestaetigen.
+// Dieser Test haelt fest, dass die Einstufung dafuer unveraendert bleibt.
+test('der woertliche Lexware-Prompt bleibt IMPLEMENTATION/HEURISTIC wie auf origin/main', () => {
+  const task = 'welche funktionen hast du alles mit lexware api \n\nich hab bei chatgpt schon eingestellt angebote erstellen \nbearbeiten geht aber nicht zum beispiel oder löschen \n\nwie ist dein funktionsumfang';
+  const result = classifyClaudeRequest({ task });
+  assert.equal(result.taskType, 'IMPLEMENTATION');
+  assert.equal(result.taskTypeSource, 'HEURISTIC');
 });
 
 test('bridge classifies ordinary implementation as a low-risk compact handoff', async () => {

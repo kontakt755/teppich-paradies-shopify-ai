@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
-import { detectReviewScope, resolveReviewDir, shouldSkipReview, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
+import { detectReviewScope, resolveReviewDir, reviewCandidateFromStop, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionBaseline, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
@@ -58,15 +58,11 @@ try {
   // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
   // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
   const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
-  // Reine Frage (2026-09-11): nur pruefen, wenn der Pruefbereich nach Abzug
-  // der Sitzungs-Baseline nicht leer ist. Alles, was die Sitzung seit ihrem
-  // Beginn geaendert hat, zaehlt - auch aus frueheren, nicht abgeschlossenen
-  // Auftraegen. Hat sich etwas geaendert, laeuft das Review unten exakt wie
-  // fuer jeden anderen Auftrag.
-  if (shouldSkipReview({ state: current.state, scope })) {
-    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
-    process.exit(0);
-  }
+  // Schlussantwort des Agenten (2026-09-11): nur bei leerem Pruefbereich (nach
+  // Abzug der Baseline), damit der Reviewer eine sachlich beantwortete Frage
+  // als No-op erkennt, statt Code zu verlangen. Bei jedem anderen Scope ''.
+  // Fehlt das Feld, ist es leer oder kein String, laeuft das Review wie bisher.
+  const candidateText = reviewCandidateFromStop({ input, scope });
   if (!resolveCodexBinary()) {
     throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
   }
@@ -85,12 +81,12 @@ try {
   // tatsaechlichen Pruefbereich (uncommittet oder Commit-Range gegen origin/main).
   // Der Pruefbereich wird immer an den Reviewer gegeben: UNKNOWN (git-Fehler)
   // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
-  // Auftrag erfuellt. Ohne Modell-Review enden nur Klasse A (oben,
-  // plan.reviewer fehlt) und eine reine Frage ohne jede Aenderung (oben,
-  // shouldSkipReview) - nie ein Implementierungsauftrag.
+  // Auftrag erfuellt. Kein Zustand beendet ohne Modell-Review; nur Klasse A
+  // (oben, plan.reviewer fehlt) kommt ohne aus.
   if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
+    candidateText,
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,

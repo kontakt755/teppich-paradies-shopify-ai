@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { captureWorkingTreeSnapshot, compareWithBaseline, currentCommit, describeReviewScope, detectReviewScope, isUsableBaseline, parsePorcelainZ, resolveReviewDir, shouldSkipReview, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+import { captureWorkingTreeSnapshot, compareWithBaseline, currentCommit, describeReviewScope, detectReviewScope, isUsableBaseline, parsePorcelainZ, resolveReviewDir, reviewCandidateFromStop, REVIEW_CANDIDATE_MAX_CHARS, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
 
 // --- Baseline vorbestehender Dateien (2026-09-11) --------------------------
 // Realer Vorfall: domains/shopify/bild-qualitaetstest.py lag schon VOR
@@ -230,29 +230,48 @@ test('describeReviewScope nennt ausgeklammerte Pfade auch im No-op-Fall', () => 
   assert.match(scope.text, /Vorbestehend, unverändert seit Sitzungsbeginn: domains\/shopify\/bild-qualitaetstest\.py/);
 });
 
-// --- Fragen nur pruefen, wenn sich etwas geaendert hat (2026-09-11) ---------
+// --- Schlussantwort an den Reviewer, nur bei leerem Pruefbereich (2026-09-11) ---
 
-test('shouldSkipReview: Frage ohne Aenderung wird nicht geprueft', () => {
-  const state = { taskType: 'ANALYSIS', taskTypeSource: 'QUESTION', reviewOnlyIfChanged: true };
-  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_NONE } }), true);
-});
-
-test('shouldSkipReview: Frage mit Aenderung wird wie bisher geprueft', () => {
-  const state = { taskType: 'ANALYSIS', taskTypeSource: 'QUESTION', reviewOnlyIfChanged: true };
-  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_UNCOMMITTED } }), false);
-  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_COMMITTED } }), false);
-  // git-Fehler ist nie "leer"
-  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_UNKNOWN } }), false);
-});
-
-test('shouldSkipReview: Implementierung wird auch bei leerem Scope geprueft', () => {
+test('reviewCandidateFromStop: leerer Pruefbereich mit Schlussantwort liefert den Text', () => {
   const scope = { kind: REVIEW_SCOPE_NONE };
-  assert.equal(shouldSkipReview({ state: { taskType: 'IMPLEMENTATION', taskTypeSource: 'HEURISTIC', startCommit: 'abc' }, scope }), false);
-  // auch ein widerspruechlicher Zustand darf eine Implementierung nie auslassen
-  assert.equal(shouldSkipReview({ state: { taskType: 'IMPLEMENTATION', reviewOnlyIfChanged: true }, scope }), false);
-  // aelterer Session-State ohne die neuen Felder: unveraendert pruefen
-  assert.equal(shouldSkipReview({ state: { status: 'PENDING_REVIEW' }, scope }), false);
-  assert.equal(shouldSkipReview({}), false);
+  assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: '  Die Lexware-API kann Angebote erstellen.\n' }, scope }), 'Die Lexware-API kann Angebote erstellen.');
+});
+
+test('reviewCandidateFromStop: fehlendes, leeres oder nicht-String-Feld ergibt leeren Text statt Abbruch', () => {
+  const scope = { kind: REVIEW_SCOPE_NONE };
+  assert.equal(reviewCandidateFromStop({ input: {}, scope }), '');
+  assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: '' }, scope }), '');
+  assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: ' \n\t ' }, scope }), '');
+  for (const value of [null, undefined, 42, true, ['Antwort'], { text: 'Antwort' }]) {
+    assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: value }, scope }), '', String(value));
+  }
+  assert.equal(reviewCandidateFromStop({ scope }), '');
+  assert.equal(reviewCandidateFromStop(), '');
+});
+
+test('reviewCandidateFromStop: bei Aenderungen oder unbestimmtem Scope bleibt alles wie bisher', () => {
+  const input = { last_assistant_message: 'Erledigt, alles umgesetzt.' };
+  for (const kind of [REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_UNKNOWN]) {
+    assert.equal(reviewCandidateFromStop({ input, scope: { kind } }), '', kind);
+  }
+  assert.equal(reviewCandidateFromStop({ input }), '', 'ohne Scope nie eine Schlussantwort');
+});
+
+test('reviewCandidateFromStop: Ueberlaenge wird gekuerzt, Anfang und Ende bleiben, die Kuerzung ist markiert', () => {
+  const scope = { kind: REVIEW_SCOPE_NONE };
+  const long = `ANFANG ${'x'.repeat(30_000)} ENDE`;
+  const cut = reviewCandidateFromStop({ input: { last_assistant_message: long }, scope });
+  assert.ok(Array.from(cut).length <= REVIEW_CANDIDATE_MAX_CHARS, `${Array.from(cut).length} Zeichen`);
+  assert.ok(cut.startsWith('ANFANG '));
+  assert.ok(cut.endsWith(' ENDE'));
+  assert.match(cut, /\[… \d+ von 30012 Zeichen in der Mitte gekürzt …\]/);
+  // genau an der Grenze: unveraendert, ohne Markierung
+  const exact = 'y'.repeat(REVIEW_CANDIDATE_MAX_CHARS);
+  assert.equal(reviewCandidateFromStop({ input: { last_assistant_message: exact }, scope }), exact);
+  // Zeichen ausserhalb der BMP werden nicht mitten im Surrogatpaar zerschnitten
+  const emoji = reviewCandidateFromStop({ input: { last_assistant_message: '😀'.repeat(REVIEW_CANDIDATE_MAX_CHARS + 10) }, scope });
+  assert.ok(Array.from(emoji).length <= REVIEW_CANDIDATE_MAX_CHARS);
+  assert.doesNotMatch(emoji, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
 });
 
 test('dirty working tree reviews the uncommitted changes', () => {

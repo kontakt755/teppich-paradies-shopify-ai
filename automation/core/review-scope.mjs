@@ -356,12 +356,43 @@ function withBaselineNotes(scope, { excluded = [], reverted = [] } = {}) {
   return { ...scope, text: parts.join('. '), excluded: [...excluded], reverted: [...reverted] };
 }
 
-// Reine Frage (taskTypeSource QUESTION, siehe claude-bridge.mjs) ohne jede
-// Aenderung: kein Modell-Review. Bis 2026-09-11 kostete jede Frage bis zu drei
-// Codex-Laeufe, die Code fuer eine Wissensfrage verlangten. Fuer
-// IMPLEMENTATION bleibt es bei der Frage an den Reviewer, ob ein No-op den
-// Auftrag erfuellt - ein leerer Scope beweist dort nichts. UNKNOWN (git-Fehler)
-// ist nie leer und wird deshalb immer geprueft.
-export function shouldSkipReview({ state, scope } = {}) {
-  return state?.reviewOnlyIfChanged === true && state?.taskType !== 'IMPLEMENTATION' && scope?.kind === REVIEW_SCOPE_NONE;
+// Schlussantwort an den Reviewer (2026-09-11). Eine reine Wissensfrage wurde
+// als IMPLEMENTATION eingestuft, und der Reviewer verlangte fuer einen leeren
+// Diff Code. Die Einstufung wird bewusst NICHT ueber Wortmuster korrigiert:
+// eine Probe ueber 485 echte Nutzerprompts kippte 36 davon auf "Frage",
+// darunter eindeutige Auftraege - die Aenderung waere still ausgefallen.
+// Stattdessen sieht der Reviewer bei leerem Pruefbereich die letzte Antwort
+// des Agenten und entscheidet selbst, ob sie den Auftrag ohne Aenderung
+// erfuellt. Bei jedem anderen Scope (CHANGES, UNKNOWN) bleibt alles wie bisher:
+// dort ist der Diff der Beleg, und der Abschnitt "es gibt keinen Diff" waere
+// falsch.
+//
+// Quelle ist last_assistant_message aus dem Stop-Hook-Input (Hook-Doku von
+// Claude Code), nicht das Transkript: das wird asynchron geschrieben und kann
+// der letzten Antwort hinterherhinken. Fail-safe: fehlt das Feld, ist es leer
+// oder kein String, laeuft das Review wie bisher ohne Schlussantwort - nie
+// wird deshalb uebersprungen oder abgebrochen.
+export const REVIEW_CANDIDATE_MAX_CHARS = 12_000;
+
+export function reviewCandidateFromStop({ input, scope } = {}) {
+  if (scope?.kind !== REVIEW_SCOPE_NONE) return '';
+  const text = input?.last_assistant_message;
+  if (typeof text !== 'string' || !text.trim()) return '';
+  return truncateKeepingEnds(text.trim(), REVIEW_CANDIDATE_MAX_CHARS);
+}
+
+// Anfang UND Ende behalten: am Anfang steht meist die Antwort, am Ende das
+// Fazit bzw. die Belege. Gezaehlt wird in Unicode-Zeichen, damit kein Emoji
+// oder Umlaut-Surrogat mitten durchgeschnitten wird. Das Ergebnis ist nie
+// laenger als maxChars, die Kuerzung steht als Markierung im Text.
+function truncateKeepingEnds(text, maxChars) {
+  const chars = Array.from(text);
+  if (chars.length <= maxChars) return text;
+  const MARK_BUDGET = 100;
+  const budget = Math.max(0, maxChars - MARK_BUDGET);
+  const head = Math.ceil(budget / 2);
+  const tail = budget - head;
+  const omitted = chars.length - head - tail;
+  const mark = `\n\n[… ${omitted} von ${chars.length} Zeichen in der Mitte gekürzt …]\n\n`;
+  return `${chars.slice(0, head).join('')}${mark}${tail ? chars.slice(-tail).join('') : ''}`;
 }

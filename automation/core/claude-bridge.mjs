@@ -20,109 +20,7 @@ const DESTRUCTIVE_TERMS = /(?<![\p{L}\p{N}])(?:(?:lösch|loesch|delete|entfern|r
 const GIT_WRITE_TERMS = term('merge|rebase|force[- ]?push|push|commit|cherry[- ]?pick|revert');
 // "beheben" und "korrigieren" fehlten: "Bug beheben" lief dadurch als ANALYSIS mit
 // Haiku statt als Implementierung mit dem Matrix-Modell.
-const IMPLEMENTATION_VERBS = '(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push';
-const IMPLEMENTATION_TERMS = term(IMPLEMENTATION_VERBS);
-
-// Reine Fragen, belegt am 2026-09-11: "welche funktionen hast du alles mit
-// lexware api ... angebote erstellen ... oder löschen ... wie ist dein
-// funktionsumfang" traf "erstell" und "lösch" in IMPLEMENTATION_TERMS. Der
-// Stop-Hook startete daraufhin bis zu drei Codex-Runden, die Code fuer eine
-// Wissensfrage verlangten. Die Erkennung ist absichtlich konservativ: EINE
-// Aufforderung irgendwo im Text genuegt, und es bleibt bei der Wortliste.
-const WEND = '(?![\\p{L}\\p{N}])';
-const INTERJECTION = `(?:(?:ja|jo|ok|okay|und|also|nein|gut|dann|jetzt|nun|na|aber|hm+|ah|aha|achso|ach so|alles klar|klar|danke|super|prima|sag mal|mal|kurze frage|eine frage|frage)${WEND}[\\s,.!:;-]*)*`;
-// Fragewoerter plus Verb-Erst-Stellung ("ist der fix schon live", "laeuft der
-// Build"): ohne Fragezeichen war "ist der ..." vorher keine Frage, "ist es"
-// und "ist das" schon - das war willkuerlich (Pruefung 2026-09-11).
-const QUESTION_START = new RegExp(`^${INTERJECTION}(?:welche[mnrs]?|was|wie|wieso|weshalb|warum|wozu|wo|woran|womit|wof(?:ü|ue)r|wohin|woher|wovon|worauf|wor(?:ü|ue)ber|wodurch|wann|wer|wem|wen|wessen|inwiefern|gibt es|gab es|ist|sind|war|waren|hat|haben|hast|habt|wird|werden|geht|gehen|l(?:ä|ae)uft|laufen|funktioniert|stimmt|klappt|passt|kann|k(?:ö|oe)nnen|k(?:ö|oe)nnte|muss|m(?:ü|ue)ssen|soll|sollen|sollte|darf|d(?:ü|ue)rfen|kennst|kennt|wei(?:ss|ß)t|wisst|brauch(?:e|t|en)|fehlt|fehlen|existiert|reicht|gilt)${WEND}`, 'iu');
-const QUESTION_MARK_END = /\?[\s"'»«)\]!.*]*$/u;
-// Fuer das Veto zaehlen auch Partizipien ("Das sollte geändert werden"):
-// "geändert" hat vor "änder" keine Wortgrenze und faellt durch
-// IMPLEMENTATION_TERMS. Ein breiteres Veto macht die Erkennung nur vorsichtiger.
-const REQUEST_VERBS = `${IMPLEMENTATION_VERBS}|ge(?:${IMPLEMENTATION_VERBS})|angepasst|hinzugef(ü|ue)gt|behoben`;
-const REQUEST_VERB = term(REQUEST_VERBS);
-// Imperativform: Stamm plus optionale Endung, die nicht auf -n/-t endet.
-// "ändere", "fix", "mach", "entfern" zaehlen; "ändern", "löschen", "macht",
-// "änderst" nicht. Die Endung wird getrennt vom Stamm geprueft, weil der
-// Stamm selbst auf n enden darf ("entfern" - bis zur Pruefung am 2026-09-11
-// fiel "und entfern auch den Import" durch ein Lookbehind auf das ganze Wort).
-const IMPERATIVE_FORM = `(?:${IMPLEMENTATION_VERBS})(?:[\\p{L}]*(?<![nt]))?${WEND}`;
-// Kein Imperativ, sondern eine Frage in Verb-Erst-Stellung: "Mach ich was
-// falsch", "Fixt der letzte Commit", "Macht es Sinn" - Subjektpronomen oder
-// -t-Form mit folgendem Artikel/Pronomen.
-const NOT_IMPERATIVE = `(?!(?:[\\p{L}]*\\s+(?:ich|du|er|wir|ihr)${WEND}|[\\p{L}]*t\\s+(?:es|der|die|das|den|dem|des|dies\\p{L}*|ein\\p{L}*|kein\\p{L}*|mein\\p{L}*|dein\\p{L}*|unser\\p{L}*|jede\\p{L}*|welche\\p{L}*|man|sich)${WEND}))`;
-const IMPERATIVE_START = new RegExp(`^${INTERJECTION}(?:bitte${WEND}[\\s,.!]*)?${W}(?:${REQUEST_VERBS})${NOT_IMPERATIVE}`, 'iu');
-// "Was ist kaputt und fix es": ein Imperativ hinter einer Konjunktion. Nur
-// Imperativformen zaehlen, sonst wuerde der Infinitiv in "bearbeiten geht
-// nicht oder löschen" (Originalprompt) die Frage kippen.
-const IMPERATIVE_AFTER_CONJUNCTION = new RegExp(`${W}(?:und|oder|aber|dann|danach|anschlie(?:ß|ss)end|sonst|au(?:ß|ss)erdem)\\s+(?:bitte\\s+)?(?:(?:mal|noch|auch|gleich|direkt|einfach)\\s+)?${W}${IMPERATIVE_FORM}`, 'iu');
-// Imperativ mitten im Satz, belegt am 2026-09-11: dieser Nutzer schreibt klein
-// und fast ohne Satzzeichen ("warum ist der filter kaputt fix das"), und
-// Listenpunkte ("- Ändere den Header") beginnen keinen Satz. Damit "der Fix
-// für den Filter" (Substantiv) nicht kippt, muss ein Objekt oder eine
-// Partikel folgen: "fix das", "mach die grüner", "mach weiter", "setz es".
-const IMPERATIVE_INLINE = new RegExp(`${W}${IMPERATIVE_FORM}\\s+(?:(?:bitte|mal|doch|ruhig|einfach|gleich|jetzt|noch|auch|erst|dann|kurz|schnell)\\s+)*(?:das|die|den|dem|der|des|es|sie|ihn|ihm|mir|uns|mich|dies\\p{L}*|jede\\p{L}*|alle\\p{L}*|weiter|nichts|nix|hier|dort|mal|bitte|doch|einfach|so|dazu|drauf|rein|raus|ab|los|weg|hinzu|ein|zur(?:ü|ue)ck|dran|um|aus|an|auf)${WEND}`, 'iu');
-// Infinitiv als Befehl in einem Teilsatz, der nur aus Partikeln, weiteren
-// Infinitiven und dem Verb besteht: "Falls ja deployen.", "dann kürzen und
-// neu setzen", "weiter machen". "bearbeiten geht aber nicht ... oder löschen"
-// (Originalprompt) faellt durch, weil "geht" kein erlaubtes Wort ist.
-const INFINITIVE_COMMAND = new RegExp(`^(?:(?:falls|wenn)\\s+(?:ja|nein|nicht|ok|okay)[,:]?\\s+|(?:dann|danach|bitte|mal|noch|auch|gleich|direkt|einfach|jetzt|weiter|neu|erst|kurz|schnell|alles|das|es|sie|die|den|dies\\p{L}*|und|oder|[\\p{L}-]+en)\\s+)*${W}(?:${IMPLEMENTATION_VERBS})[\\p{L}]*en[.!]*$`, 'iu');
-// Wir-Form als Ankuendigung: "Die löschen wir.", "Das fixen wir jetzt." -
-// aber nicht in einer Frage ("Was machen wir mit dem Header?").
-const WE_WILL = new RegExp(`${W}(?:${IMPLEMENTATION_VERBS})[\\p{L}]*en\\s+wir${WEND}`, 'iu');
-// "bitten" mit: "Kann ich dich bitten, den Header zu ändern?"
-const PLEASE = new RegExp(`${W}bitten?${WEND}`, 'iu');
-// Modal-Bitten inklusive Wir-Form, Hoeflichkeitsform, Tippfehlern und
-// umgangssprachlicher Kurzform (Pruefung 2026-09-11: "Können wir dass nicht
-// auf GitHub zugänglich machen" lief als Frage). "muss ich"/"kann ich" bleiben
-// Fragen (Positivkorpus: "Welche Dateien muss ich ändern").
-const MODAL_REQUEST = new RegExp(`${W}(?:kannst(?:e|es|du)?|du kannst|kanst du|kansst du|k(?:ö|oe)nntest(?:e|du)?|du k(?:ö|oe)nntest|w(?:ü|ue)rdest du|magst du|kann man|k(?:ö|oe)nn(?:t|ten|tet|en) (?:ihr|sie|wir)|d(?:ü|ue)rfen wir|d(?:ü|ue)rften wir|musst du|du musst|m(?:ü|ue)ssen wir|wir m(?:ü|ue)ssen|m(?:ü|ue)sst ihr|m(?:ü|ue)sstest du|lasst? uns|w(?:ä|ae)rst du|w(?:ä|ae)re? (?:es |das )?(?:gut|toll|super|sch(?:ö|oe)n|nett|klasse|prima|cool|m(?:ö|oe)glich)|wie w(?:ä|ae)re? (?:es|das)|wie w(?:ä|ae)rs|hast du lust|h(?:ä|ae)ttest du lust)${WEND}`, 'iu');
-// Machbarkeitsfrage, die in Wahrheit eine Bitte ist: nur mit "zu <Verb>" oder
-// "dass/wenn du" im selben Satz. "Geht das, wenn ich die SKU ändere?" und
-// "Geht das mit dem Fix?" bleiben Fragen.
-const FEASIBILITY_REQUEST = new RegExp(`${W}(?:geht (?:das|es)|ist (?:das |es )?m(?:ö|oe)glich|klappt (?:das|es)|hast du (?:zeit|bock)|h(?:ä|ae)ttest du zeit|schaffst du|kriegst du|bekommst du|kann ich dich bitten|darf ich dich bitten|k(?:ö|oe)nntest du dir vorstellen)${WEND}[\\s\\S]{0,120}?(?:${W}zu\\s+${W}(?:${REQUEST_VERBS})|${W}(?:dass|daß|wenn)\\s+(?:du|ihr|wir)${WEND})`, 'iu');
-// Wunsch auch ohne Subjekt in der Ich-Form ("haette gern, dass du ...").
-const WISH = new RegExp(`${W}(?:(?:(?:ich|wir)\\s+)?(?:m(?:ö|oe)chte|brauche|h(?:ä|ae)tte gerne?|w(?:ü|ue)nsche)|(?:ich|wir)\\s+(?:m(?:ö|oe)chten|will|wollen|brauchen|h(?:ä|ae)tten gerne?|w(?:ü|ue)nschen))${WEND}`, 'iu');
-const SHOULD = new RegExp(`${W}soll[\\p{L}]*`, 'iu');
-// Rhetorische Bitte: "Warum setzt du nicht einfach den Preis auf 20 Euro?"
-const RHETORICAL_REQUEST = new RegExp(`${W}(?:warum|wieso|weshalb)\\s+(?:${IMPLEMENTATION_VERBS})[\\p{L}]*\\s+(?:du|ihr|wir)\\s+(?:(?:das|es|den|die|ihn|sie)\\s+)?nicht${WEND}`, 'iu');
-
-// Fuehrende Listen- und Auszeichnungszeichen ("- ", "* ", "**", "→", "👉",
-// Anfuehrungszeichen) sind kein Satzanfang - ohne das Abschneiden stand
-// "- Ändere den Header" nie am Satzanfang (Pruefung 2026-09-11).
-const LEADING_MARKERS = /^[^\p{L}\p{N}]+/u;
-function stripMarkers(part) {
-  return part.replace(LEADING_MARKERS, '').trim();
-}
-
-function sentencesOf(text) {
-  return text.split(/\r?\n+/).flatMap(line => line.split(/(?<=[.!?])\s+/)).map(stripMarkers).filter(Boolean);
-}
-
-function isInterrogative(sentence) {
-  return QUESTION_MARK_END.test(sentence) || QUESTION_START.test(sentence);
-}
-
-// Teilsaetze: Satzzeichen, Gedankenstriche, Pfeile, und Satzzeichen ohne
-// folgendes Leerzeichen ("kaputt?Fix das", "nicht..mach das").
-const CLAUSE_SPLIT = /[,;:()]|\s[-–—>]+\s|\s*(?:->|=>|→|⇒|…|\.{2,})\s*|(?<=[.!?])(?=\S)/u;
-
-function isRequest(sentence) {
-  const clauses = sentence.split(CLAUSE_SPLIT).map(stripMarkers).filter(Boolean);
-  if (clauses.some(clause => IMPERATIVE_START.test(clause) || INFINITIVE_COMMAND.test(clause))) return true;
-  if (IMPERATIVE_AFTER_CONJUNCTION.test(sentence) || IMPERATIVE_INLINE.test(sentence)) return true;
-  if (!REQUEST_VERB.test(sentence)) return false;
-  if (!isInterrogative(sentence) && WE_WILL.test(sentence)) return true;
-  return PLEASE.test(sentence) || MODAL_REQUEST.test(sentence) || FEASIBILITY_REQUEST.test(sentence) || RHETORICAL_REQUEST.test(sentence) || WISH.test(sentence) || SHOULD.test(sentence);
-}
-
-// Frage = mindestens ein Satz/eine Zeile ist interrogativ UND kein Satz ist
-// eine Aufforderung. Im Zweifel false - dann entscheidet die Wortliste wie bisher.
-export function isPureQuestion(task) {
-  if (typeof task !== 'string' || !task.trim()) return false;
-  const sentences = sentencesOf(task);
-  return sentences.some(isInterrogative) && !sentences.some(isRequest);
-}
+const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
 // Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
 // Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
 // und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts
@@ -148,8 +46,7 @@ const TASK_TYPES = new Set(['IMPLEMENTATION', 'ANALYSIS']);
 //   1. declaredTaskType - der Mensch hat es im Dashboard/CLI ausdruecklich gesagt
 //   2. READ_ONLY_INTENT - der aktuelle Auftrag sagt ausdruecklich "nur lesen"
 //   3. forceTaskType    - uebernommener Typ eines frueheren Laufs (Wiederholung)
-//   4. isPureQuestion   - reine Frage ohne jede Aufforderung (ANALYSIS/QUESTION)
-//   5. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
+//   4. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
 // Das Veto steht bewusst VOR dem geerbten Typ: ein Folgebefehl "Nur lesen,
 // nichts aendern" nach einem Implementierungs-Lauf haette sonst den alten
 // IMPLEMENTATION-Typ geerbt und trotzdem schreibend ausgefuehrt.
@@ -172,9 +69,6 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
   } else if (TASK_TYPES.has(forceTaskType)) {
     taskType = forceTaskType;
     taskTypeSource = 'INHERITED';
-  } else if (isPureQuestion(task)) {
-    taskType = 'ANALYSIS';
-    taskTypeSource = 'QUESTION';
   } else {
     taskType = IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
     taskTypeSource = 'HEURISTIC';

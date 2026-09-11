@@ -5,13 +5,59 @@ import os from 'node:os';
 import path from 'node:path';
 // Laeufe ohne cwd legten .router/agent-runs/AGENT-* im echten Repo an (2026-09-09).
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-agent-cycle-'));
-import { buildClaudeWorkPrompt, buildCodexReviewPrompt, describeClaudeActivities, parseReviewResult, runCliAgentCycle, runCodexReview, runReviewStep } from '../core/cli-agent-cycle.mjs';
+import crypto from 'node:crypto';
+import { buildClaudeWorkPrompt, buildCodexReviewPrompt, describeClaudeActivities, parseReviewResult, runCliAgentCycle, runCodexReview, runReviewOnly, runReviewStep } from '../core/cli-agent-cycle.mjs';
 
 test('worker and reviewer prompts require the complete test-review-correct cycle', () => {
   assert.match(buildClaudeWorkPrompt('Fix'), /teste erneut/i);
   assert.match(buildClaudeWorkPrompt('Fix', [{ priority: 'P1' }]), /CODEX-BEFUNDE/);
   assert.match(buildCodexReviewPrompt('Fix'), /uncommitteten Änderungen/);
   assert.match(buildCodexReviewPrompt('Fix'), /verändere keine Dateien/);
+});
+
+// Schlussantwort an den Reviewer (2026-09-11): nur bei leerem Pruefbereich
+// fuellt der Stop-Hook candidateText (reviewCandidateFromStop). Ohne
+// candidateText muss der Prompt byte-gleich zum Stand auf origin/main (1e38408)
+// bleiben. Die Hashes wurden aus dem damaligen Code berechnet (git archive
+// origin/main); aendert jemand den Prompt absichtlich, sind sie neu zu setzen.
+const sha256 = text => crypto.createHash('sha256').update(text).digest('hex');
+const ORIGIN_MAIN_PROMPT_SHA256 = {
+  default: '72b36b59ad6e78e28396470f6699ed743a8c06e4e1fc1e3051ded83cbc768d3e',
+  noOpScope: 'dd6537bf3069ef92d6abc32002ea0a6934553be1411c26c60a0d16ec97acf760',
+  analysis: 'a8c8d58c4e0766537d837259ceb67b14a2dc1ea3d689fa8a70701b1e40305d6f',
+};
+
+test('buildCodexReviewPrompt ohne Schlussantwort ist byte-gleich zu origin/main', () => {
+  assert.equal(sha256(buildCodexReviewPrompt('Fix')), ORIGIN_MAIN_PROMPT_SHA256.default);
+  for (const candidateText of [undefined, '', '   \n']) {
+    assert.equal(sha256(buildCodexReviewPrompt('Fix', { reviewScope: 'den unveränderten Stand', candidateText })), ORIGIN_MAIN_PROMPT_SHA256.noOpScope, JSON.stringify(candidateText));
+  }
+  // Der ANALYSIS-Zweig ist unveraendert, auch mit Kandidat.
+  assert.equal(sha256(buildCodexReviewPrompt('A', { taskType: 'ANALYSIS', candidateText: 'Antwort' })), ORIGIN_MAIN_PROMPT_SHA256.analysis);
+  assert.doesNotMatch(buildCodexReviewPrompt('A', { taskType: 'ANALYSIS', candidateText: 'Antwort' }), /SCHLUSSANTWORT/);
+});
+
+test('buildCodexReviewPrompt haengt bei IMPLEMENTATION mit Schlussantwort den No-op-Beleg an', () => {
+  const without = buildCodexReviewPrompt('Fix', { reviewScope: 'den unveränderten Stand' });
+  const prompt = buildCodexReviewPrompt('Fix', { reviewScope: 'den unveränderten Stand', candidateText: '  Die Lexware-API kann Angebote erstellen.\n' });
+  assert.ok(prompt.startsWith(`${without}\n\n`), 'der bisherige Prompt bleibt unveraendert vorne');
+  assert.match(prompt, /SCHLUSSANTWORT DES AGENTEN \(es gibt keinen Diff; diese Antwort ist der Beleg für einen No-op\)/);
+  assert.match(prompt, /<<<SCHLUSSANTWORT\nDie Lexware-API kann Angebote erstellen\.\nSCHLUSSANTWORT>>>/);
+  assert.match(prompt, /Frage oder Beratung .* ohne Änderung erfüllt \(PASS\)/);
+  assert.match(prompt, /nur beschriebene statt umgesetzte Änderung zählt als fehlend/);
+  assert.match(prompt, /fälschlich IMPLEMENTATION lauten/);
+});
+
+// runCliAgentCycle und agents:review uebergaben den Worker-Kandidaten schon
+// immer auch bei IMPLEMENTATION - bis 2026-09-11 ignorierte der Prompt ihn
+// dort. Mit dem Abschnitt SCHLUSSANTWORT ("es gibt keinen Diff") wuerde er
+// neben einem echten Diff falsch etikettiert; deshalb bleibt er dort draussen.
+test('runReviewOnly gibt den Kandidaten nur bei ANALYSIS an den Reviewer', () => {
+  const seen = [];
+  const review = ({ candidateText }) => { seen.push(candidateText); return { status: 'PASS', findings: [] }; };
+  runReviewOnly({ taskText: 'Fix', taskType: 'IMPLEMENTATION', candidateText: 'Worker-Ergebnis', review });
+  runReviewOnly({ taskText: 'Analyse', taskType: 'ANALYSIS', candidateText: 'Worker-Ergebnis', review });
+  assert.deepEqual(seen, ['', 'Worker-Ergebnis']);
 });
 
 test('runCodexReview stays strictly read-only and never routes through workspace-write approvals', () => {
@@ -387,4 +433,22 @@ test('runReviewStep forwards the resolved scope through the Codex path used by t
   const review = ({ reviewScope }) => { seen = reviewScope; return { status: 'PASS', findings: [] }; };
   runReviewStep({ review, reviewStep: { provider: 'CODEX', model: 'gpt-5.6-sol', effort: 'medium' }, taskText: 'x', reviewScope: 'Commit-Range' });
   assert.equal(seen, 'Commit-Range');
+});
+
+// Siehe runReviewOnly oben: im Agentenzyklus liegt bei IMPLEMENTATION ein
+// Diff vor, das Worker-Ergebnis darf nicht als "Schlussantwort ohne Diff" beim
+// Reviewer landen (2026-09-11).
+test('runCliAgentCycle gibt bei IMPLEMENTATION kein Worker-Ergebnis als Schlussantwort an den Reviewer', async () => {
+  const seen = [];
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    return { status: 0, stdout: JSON.stringify({ result: 'Worker-Ergebnis', usage: {}, total_cost_usd: 0 }), stderr: '' };
+  };
+  const result = await runCliAgentCycle({ cwd: scratch,
+    task: 'Bug: Produktkarte zeigt auf Mobile keine Bewertung, bitte beheben',
+    spawn, recordUsage: () => {}, guardsEnabled: false, io: memoryIo(),
+    review: ({ candidateText, taskType }) => { seen.push({ candidateText, taskType }); return { status: 'PASS', findings: [] }; },
+  });
+  assert.equal(result.status, 'PASS');
+  assert.deepEqual(seen, [{ candidateText: '', taskType: 'IMPLEMENTATION' }]);
 });

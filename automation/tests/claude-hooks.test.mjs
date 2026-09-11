@@ -8,12 +8,11 @@ import { fileURLToPath } from 'node:url';
 import { claudeSessionBaselinePath, claudeSessionStatePath, readClaudeSessionBaseline, writeClaudeSessionState } from '../core/claude-session-state.mjs';
 
 // Verdrahtung der beiden Hook-Skripte (Pruefung 2026-09-11: die reinen
-// Funktionen waren getestet, die Aufrufstellen nicht - ein Stop-Hook, der
-// JEDEN leeren Scope ueberspringt, fiel durch keinen Test). Die Hooks laufen
-// hier gegen ein Wegwerf-Repository mit erfundener Sitzungs-ID. Ein Modell
-// wird nie aufgerufen: der Prompt-Hook endet vor dem Routing-Gate ("ok"),
-// der Stop-Hook vor dem Codex-Aufruf (reviews: 3 -> Human Gate); der
-// Codex-Stub schreibt einen Marker, falls er doch je gestartet wird.
+// Funktionen waren getestet, die Aufrufstellen nicht). Die Hooks laufen hier
+// gegen ein Wegwerf-Repository mit erfundener Sitzungs-ID. Ein Modell wird nie
+// aufgerufen: der Prompt-Hook endet vor dem Routing-Gate ("ok"), der Stop-Hook
+// vor dem Codex-Aufruf (reviews: 3 -> Human Gate); der Codex-Stub schreibt
+// einen Marker, falls er doch je gestartet wird.
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PROMPT_HOOK = path.join(REPO_ROOT, '.claude', 'hooks', 'openrouter-user-prompt.mjs');
 const STOP_HOOK = path.join(REPO_ROOT, '.claude', 'hooks', 'codex-stop-review.mjs');
@@ -52,10 +51,11 @@ function runHook(script, { dir, codexStub, marker, input }) {
   return result;
 }
 
-function fragezustand({ dir, head, extra = {} }) {
+// Session-State eines Implementierungsauftrags nach drei Review-Runden: der
+// Stop-Hook endet damit im Human Gate, bevor er Codex starten wuerde.
+function reviewZustand({ dir, head }) {
   writeClaudeSessionState({ sessionId: SESSION, projectDir: dir, state: {
     taskId: 'CLAUDE-HOOK-TEST', handoffPath: path.join(dir, 'handoff.md'), reviews: 3, status: 'PENDING_REVIEW', taskClass: 'B', startCommit: head,
-    taskType: 'ANALYSIS', taskTypeSource: 'QUESTION', reviewOnlyIfChanged: true, ...extra,
   } });
 }
 
@@ -80,36 +80,26 @@ test('Prompt-Hook: der erste Prompt legt die Baseline vor dem Routing-Gate an, e
   assert.equal(readClaudeSessionBaseline({ sessionId: SESSION, projectDir: projektDir.dir }), null);
 });
 
-test('Stop-Hook: reine Frage ohne Aenderung endet ohne Review und loescht den Zustand', () => {
+// Ein leerer Pruefbereich (hier: nur die vorbestehende, per Baseline
+// ausgeklammerte Datei) ist nie ein Grund, das Review auszulassen - auch
+// nicht mit einer Schlussantwort, die wie eine Antwort auf eine Frage aussieht.
+test('Stop-Hook: leerer Pruefbereich mit Schlussantwort wird nie uebersprungen, die Baseline ueberlebt', () => {
   const projektDir = projekt();
   runHook(PROMPT_HOOK, { ...projektDir, input: { hook_event_name: 'UserPromptSubmit', prompt: 'ok' } });
-  fragezustand(projektDir);
-  const result = runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop' } });
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, '', 'kein block, kein Human Gate');
-  assert.equal(fs.existsSync(claudeSessionStatePath({ sessionId: SESSION, projectDir: projektDir.dir })), false);
-  assert.ok(readClaudeSessionBaseline({ sessionId: SESSION, projectDir: projektDir.dir }), 'die Baseline ueberlebt');
-});
-
-test('Stop-Hook: reine Frage mit Aenderung der Sitzung laeuft in das Review (hier: Human Gate nach drei Runden)', () => {
-  const projektDir = projekt();
-  runHook(PROMPT_HOOK, { ...projektDir, input: { hook_event_name: 'UserPromptSubmit', prompt: 'ok' } });
-  // Aenderung aus einem frueheren, nicht abgeschlossenen Auftrag derselben
-  // Sitzung - sie zaehlt gegen die Sitzungs-Baseline, nicht gegen einen
-  // Schnappschuss bei Eingang der Frage.
-  fs.writeFileSync(path.join(projektDir.dir, 'sitzung.mjs'), 'export {};\n');
-  fragezustand(projektDir);
-  const result = runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop' } });
+  reviewZustand(projektDir);
+  const result = runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop', last_assistant_message: 'Mit der Lexware-API kann ich Angebote erstellen, aber nicht bearbeiten oder löschen.' } });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /"decision":"block"/);
   assert.match(result.stdout, /Human Gate/);
+  assert.ok(readClaudeSessionBaseline({ sessionId: SESSION, projectDir: projektDir.dir }), 'die Baseline ueberlebt');
 });
 
-test('Stop-Hook: Implementierung wird auch bei leerem Scope nie uebersprungen', () => {
+test('Stop-Hook: eine Schlussantwort, die kein String ist, bricht den Hook nicht ab', () => {
   const projektDir = projekt();
   runHook(PROMPT_HOOK, { ...projektDir, input: { hook_event_name: 'UserPromptSubmit', prompt: 'ok' } });
-  fragezustand({ ...projektDir, extra: { taskType: 'IMPLEMENTATION', taskTypeSource: 'HEURISTIC', reviewOnlyIfChanged: undefined } });
-  const result = runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop' } });
+  reviewZustand(projektDir);
+  const result = runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop', last_assistant_message: { kein: 'String' } } });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /"decision":"block"/);
+  assert.match(result.stdout, /"decision":"block"/, 'weiter bis zum Human Gate, kein Infrastrukturfehler');
+  assert.doesNotMatch(result.stderr, /nicht verfuegbar/);
 });

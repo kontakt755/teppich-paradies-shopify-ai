@@ -21,19 +21,6 @@ test('hook context does not repeat the original prompt and requires independent 
   assert.doesNotMatch(context, /Auftrag/);
 });
 
-// Pruefung 2026-09-11: fuer eine reine Frage draengte der Kontext weiterhin
-// zum Implementieren ("Implementiere die kleinste vollständige Änderung").
-test('hook context for a pure question asks for an answer, not for code', () => {
-  const base = { status: 'READY', policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/free' }, analysis: 'Kompakter Plan', handoffPath: '/tmp/handoff.md' };
-  const question = buildClaudeHookContext({ ...base, classified: { risk: 'LOW', taskType: 'ANALYSIS', taskTypeSource: 'QUESTION' } });
-  assert.match(question, /Kompakter Plan/);
-  assert.match(question, /ist eine Frage/);
-  assert.match(question, /ohne Änderung entfällt sie/);
-  assert.doesNotMatch(question, /Implementiere die kleinste/);
-  const implementation = buildClaudeHookContext({ ...base, classified: { risk: 'LOW', taskType: 'IMPLEMENTATION', taskTypeSource: 'HEURISTIC' } });
-  assert.match(implementation, /Implementiere die kleinste/);
-});
-
 test('high-risk result injects a human gate instead of an autonomous plan', () => {
   assert.match(buildClaudeHookContext({ status: 'HUMAN_GATE' }), /HIGH-Risk/);
 });

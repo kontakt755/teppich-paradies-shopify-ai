@@ -65,16 +65,7 @@ try {
   // Satz abgeschnitten (stopReason max_tokens/length in .router/*.jsonl).
   const maxTokens = Number(process.env.OPENROUTER_MAX_OUTPUT_TOKENS ?? 256);
   const result = await prepareClaudeBridge({ taskId: `CLAUDE-HOOK-${digest}`, task: prompt, outputDir: path.join(projectDir, '.router/claude-handoffs'), maxTokens });
-  // Reine Frage (2026-09-11): trotzdem Session-State, aber mit
-  // reviewOnlyIfChanged - der Stop-Hook prueft nur, wenn der Pruefbereich nach
-  // Abzug der Sitzungs-Baseline nicht leer ist. Bewusst KEIN Schnappschuss bei
-  // Eingang der Frage: der haette alles, was die Sitzung vorher geaendert und
-  // noch nicht pruefen lassen hat (Abbruch per Esc, Review an der
-  // Infrastruktur gescheitert), als "vorbestehend" ausgeklammert
-  // (Pruefung 2026-09-11). Uncommittete, schon geprueft Aenderungen werden
-  // dafuer bei einer Rueckfrage erneut geprueft - das ist der billigere Fehler.
-  const question = result.classified?.taskTypeSource === 'QUESTION';
-  if (result.status === 'READY' && (result.classified.taskType === 'IMPLEMENTATION' || question)) {
+  if (result.status === 'READY' && result.classified.taskType === 'IMPLEMENTATION') {
     // HEAD bei Task-Start: der Stop-Hook prueft damit nur noch, was seit
     // diesem Moment entstand - nicht jeden Commit gegenueber origin/main, der
     // in einem geteilten Checkout auch von einer anderen, parallel laufenden
@@ -84,16 +75,11 @@ try {
     // anderer als im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt. Wird er
     // im falschen Verzeichnis gelesen, prueft der Stop-Hook spaeter den Diff
     // einer fremden Sitzung (siehe resolveReviewDir).
-    const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
-    const startCommit = currentCommit({ cwd: reviewDir });
+    const startCommit = currentCommit({ cwd: resolveReviewDir({ projectDir, sessionCwd: input.cwd }) });
     writeClaudeSessionState({
       sessionId: input.session_id,
       projectDir,
-      state: {
-        taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit,
-        taskType: result.classified.taskType, taskTypeSource: result.classified.taskTypeSource,
-        ...(question ? { reviewOnlyIfChanged: true } : {}),
-      },
+      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit },
     });
   } else {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
