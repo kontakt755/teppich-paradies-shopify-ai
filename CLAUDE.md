@@ -393,6 +393,15 @@ Bis 2026-09-10 passierte das in jedem Worktree zuverlässig: Beide Hooks nahmen
 liegen — wohl aber die einer parallel laufenden Sitzung. `resolveReviewDir` in
 `automation/core/review-scope.mjs` behebt das.
 
+Dasselbe galt bis 2026-09-11 für **uncommittete** Arbeit im geteilten Checkout:
+Was eine andere Sitzung schon vor Task-Start liegen hatte, landete komplett im
+Prüfbereich. Seitdem hält der Prompt-Hook die schmutzigen Dateien samt
+Inhalts-Hash fest (`snapshotDirtyFiles`), und der Stop-Hook prüft nur, was
+seitdem neu oder verändert ist; `docs/ai-dashboard/issues.json` gehört nie dazu.
+Der Reviewer liest `.router/claude-handoffs/<TASK-ID>.review.md` — Auftrag und
+Grenzen, ohne die ungeprüfte Voranalyse des Routers. Eine Frage oder Diagnose,
+die das Repository nicht verändert, bekommt kein Review.
+
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien
 aufzuräumen. Beides hätte die uncommittete Arbeit anderer Sitzungen zerstört.

@@ -373,9 +373,9 @@ test('every implementation review resolves the scope centrally, analysis reviews
   const spawn = (command, args) => { prompts.push(args[args.length - 1]); return { status: 0, stdout: '', stderr: '' }; };
   const detectScope = ({ cwd }) => ({ kind: 'COMMITTED', text: `die Commits gegen origin/main in ${cwd}` });
   runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope, recordUsage: () => {} });
-  assert.match(prompts[0], /Prüfe die Commits gegen origin\/main in \/repo in diesem Repository/);
+  assert.match(prompts[0], /^Prüfbereich: die Commits gegen origin\/main in \/repo\.\n\nPrüfe genau diesen Bereich in diesem Repository/);
   runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope, reviewScope: 'explizit', recordUsage: () => {} });
-  assert.match(prompts[1], /Prüfe explizit in diesem Repository/);
+  assert.match(prompts[1], /^Prüfbereich: explizit\./);
   runCodexReview({ taskText: 'Analyse', taskType: 'ANALYSIS', candidateText: 'x', io, spawn, cwd: '/repo', detectScope: () => { throw new Error('must not detect for analysis'); }, recordUsage: () => {} });
   assert.match(prompts[2], /ZU PRÜFENDE ANALYSE/);
   runCodexReview({ taskText: 'Fix', io, spawn, cwd: '/repo', detectScope: () => { throw new Error('git broken'); }, recordUsage: () => {} });

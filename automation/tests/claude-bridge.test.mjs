@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-import { buildClaudeContextPack, classifyClaudeRequest, prepareClaudeBridge } from '../core/claude-bridge.mjs';
+import { buildClaudeContextPack, buildReviewerTaskPack, classifyClaudeRequest, prepareClaudeBridge } from '../core/claude-bridge.mjs';
 
 test('bridge classifies ordinary implementation as a low-risk compact handoff', async () => {
   const result = await prepareClaudeBridge({
@@ -113,4 +116,62 @@ test('risk can only escalate on a repeat run, never be silently downgraded', () 
   assert.equal(staysLow.risk, 'LOW');
   const escalatesOnItsOwnText = classifyClaudeRequest({ task: 'Ändere den Preis der Kollektion.', previousRisk: null });
   assert.equal(escalatesOnItsOwnText.risk, 'HIGH');
+});
+
+// 2026-09-11: Die Handoff-Datei war zugleich der Pruefauftrag des Reviewers.
+// Darin stand die Voranalyse eines kleinen Drittmodells ("Claude 3 Opus ist das
+// leistungsfaehigste Modell", "Auf Claude 3 Opus umschalten") samt
+// "Typ: IMPLEMENTATION" - auch bei einer reinen Frage.
+test('Akzeptanz: der Reviewer-Handoff enthaelt Auftrag und Grenzen, aber keinen Voranalyse-Plan', async t => {
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-bridge-review-'));
+  t.after(() => fs.rmSync(outputDir, { recursive: true, force: true }));
+  const analysis = 'Plan:\n- Claude 3 Opus ist das leistungsfaehigste Modell\n- Auf Claude 3 Opus umschalten';
+  const result = await prepareClaudeBridge({
+    taskId: 'review pack', task: 'Repariere den kleinen CSS-Abstand im Warenkorb.', outputDir,
+    execute: async () => ({ text: analysis, route: { model: 'fixture/flash-lite' }, usage: { costUsd: 0 }, attempts: [] }),
+  });
+  assert.notEqual(result.reviewTaskPath, result.handoffPath);
+  assert.match(result.reviewTaskPath, /REVIEW-PACK\.review\.md$/);
+  const reviewer = fs.readFileSync(result.reviewTaskPath, 'utf8');
+  assert.match(reviewer, /Repariere den kleinen CSS-Abstand im Warenkorb\./);
+  assert.match(reviewer, /keine Shopify-Live-Veröffentlichung/i);
+  assert.doesNotMatch(reviewer, /Claude 3 Opus|Plan:/);
+  assert.doesNotMatch(reviewer, /Typ: IMPLEMENTATION/);
+  // Der Implementer bekommt die Voranalyse weiter - als ungepruefter Hinweis.
+  const implementer = fs.readFileSync(result.handoffPath, 'utf8');
+  assert.match(implementer, /## Ungeprüfte Voranalyse \(Hinweis, nicht verbindlich\)/);
+  assert.match(implementer, /Auf Claude 3 Opus umschalten/);
+  assert.doesNotMatch(implementer, /## OpenRouter-Analyse/);
+});
+
+test('der Reviewer-Pruefauftrag nennt keine Router-Einstufung und laesst bei Fragen eine Antwort ohne Aenderung zu', () => {
+  const pack = buildReviewerTaskPack({ classified: classifyClaudeRequest({ task: 'Welches Modell ist in dieser Sitzung eingestellt?' }) });
+  assert.doesNotMatch(pack, /Typ:|ANALYSIS|IMPLEMENTATION/);
+  assert.match(pack, /fehlende Repository-Änderung kein Befund/);
+});
+
+test('Fragen und Diagnoseauftraege sind ANALYSIS, auch wenn ein Wort der Verb-Liste darin steckt', () => {
+  for (const task of [
+    'Welches Modell ist in dieser Sitzung eingestellt?',
+    'Warum macht der Codex-Review bei mir CHANGES_REQUIRED?',
+    'Wie setzt der Stop-Hook den Pruefbereich? Und welche Dateien zaehlen dazu?',
+    'Finde heraus, warum der Review fremde Dateien anmahnt.',
+    'Erklaere mir, wie der Router die Klasse bestimmt.',
+    'Prüfe, ob der Router in diesem Worktree läuft.',
+  ]) {
+    const result = classifyClaudeRequest({ task });
+    assert.equal(result.taskType, 'ANALYSIS', task);
+    assert.equal(result.taskTypeSource, 'QUESTION_INTENT', task);
+  }
+});
+
+test('Bitten in Frageform und Fragen mit angehaengter Anweisung bleiben Umsetzung', () => {
+  for (const task of [
+    'Kannst du den Button im Warenkorb grün machen?',
+    'Könntest du die Titel kürzen und die Karte anpassen?',
+    'Warum ist der Button grau? Mach ihn grün.',
+    'Finde heraus, warum der Filter leer ist, und behebe es.',
+  ]) {
+    assert.equal(classifyClaudeRequest({ task }).taskType, 'IMPLEMENTATION', task);
+  }
 });

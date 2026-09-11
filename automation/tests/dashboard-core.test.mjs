@@ -57,6 +57,19 @@ test('an invalid persisted task type is dropped instead of trusted', () => {
   assert.equal(persisted.risk, null);
 });
 
+// Seit 2026-09-11 stuft classifyClaudeRequest reine Fragen und Diagnosen als
+// QUESTION_INTENT ein. Ohne Eintrag in der Whitelist fiele die Begruendung im
+// Dashboard still auf null.
+test('a question-intent classification survives persistence like the other sources', () => {
+  const run = makeRun('Warum macht der Review CHANGES_REQUIRED?');
+  run.taskType = 'ANALYSIS';
+  run.taskTypeSource = 'QUESTION_INTENT';
+  run.result = { status: 'PASS', taskType: 'ANALYSIS', taskTypeSource: 'QUESTION_INTENT' };
+  const persisted = publicRun(run);
+  assert.equal(persisted.taskTypeSource, 'QUESTION_INTENT');
+  assert.equal(persisted.result.taskTypeSource, 'QUESTION_INTENT');
+});
+
 test('dashboard usage totals provider records', () => {
   assert.deepEqual(summarizeUsage([{ provider: 'GOOGLE', inputTokens: 4, outputTokens: 2, costUsd: 0 }, { provider: 'OPENROUTER', inputTokens: 3, outputTokens: 1, costUsd: 0.01 }]), {
     requests: 2, inputTokens: 7, outputTokens: 3, costUsd: 0.01,

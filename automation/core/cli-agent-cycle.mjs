@@ -62,10 +62,13 @@ const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git au
 // reviewScope: Text aus describeReviewScope(). Ohne Angabe bleibt der bisherige
 // Wortlaut (uncommittete Aenderungen); mit Angabe weiss der Reviewer auch nach
 // einem Commit, welchen Diff er pruefen soll.
+// Der Pruefbereich steht in einer eigenen Zeile: describeReviewScope liefert
+// mehrere Saetze samt Ausschlussliste. Mitten in "Pruefe <bereich> in diesem
+// Repository ..." eingebettet, lief der Satz hinter der letzten Ausnahme weiter.
 export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', candidateText = '', reviewScope = '' } = {}) {
   if (taskType === 'ANALYSIS') return `Prüfe die folgende technische Analyse unabhängig gegen den Auftrag. Lies AGENTS.md und untersuche das Repository mit ausschließlich lesenden Prüfungen. Bewerte sachliche Richtigkeit, wichtige Auslassungen, Sicherheit und ob Behauptungen belegt sind. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}\n\nZU PRÜFENDE ANALYSE:\n${candidateText}`;
-  const scope = String(reviewScope ?? '').trim() || 'die aktuell uncommitteten Änderungen';
-  return `Prüfe ${scope} in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}`;
+  const scope = (String(reviewScope ?? '').trim() || 'die aktuell uncommitteten Änderungen').replace(/[\s.]+$/, '');
+  return `Prüfbereich: ${scope}.\n\nPrüfe genau diesen Bereich in diesem Repository unabhängig gegen den folgenden Auftrag. Lies AGENTS.md. Führe nur lesende Prüfungen aus und verändere keine Dateien. Bewerte Korrektheit, Regressionen, Sicherheit, Scope und vorhandene Testbelege. P3-Hinweise blockieren PASS nicht. Antworte ausschließlich im vorgegebenen JSON-Schema. Wenn keine P0/P1/P2-Befunde bestehen, ist der Status PASS. Geschäftskritische oder irreversible Schritte sind HUMAN_GATE.\n\n${SANDBOX_GIT_NOISE}\n\nAUFTRAG:\n${taskText}`;
 }
 
 export function buildClaudeWorkPrompt(taskText, findings = [], taskType = 'IMPLEMENTATION') {

@@ -38,3 +38,20 @@ test('hook context names the matrix routing and skips the brief for class A', ()
   assert.match(context, /Klasse A → Implementer claude:haiku\/low, Review -/);
   assert.doesNotMatch(context, /Codex-Prüfung/);
 });
+
+// 2026-09-11: Die Voranalyse empfahl "Auf Claude 3 Opus umschalten" und stand
+// als verbindlich wirkender Plan im Kontext.
+test('die Voranalyse steht nur als ungepruefter Hinweis im Kontext, die manuelle Pruefung zeigt auf den Reviewer-Handoff', () => {
+  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW', taskType: 'IMPLEMENTATION' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/flash-lite' }, analysis: 'Auf Claude 3 Opus umschalten', handoffPath: '/tmp/h.md', reviewTaskPath: '/tmp/h.review.md' });
+  assert.match(context, /ungeprüfter Hinweis eines Drittmodells/);
+  assert.match(context, /--task-file "\/tmp\/h\.review\.md"/);
+  assert.doesNotMatch(context, /Auftrag/);
+});
+
+test('eine Frage oder Diagnose bekommt keinen Implementierungszyklus', () => {
+  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW', taskType: 'ANALYSIS' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/flash-lite' }, analysis: 'Kurzbefund', handoffPath: '/tmp/h.md', reviewTaskPath: '/tmp/h.review.md' });
+  assert.match(context, /Einordnung: Frage oder Diagnose/);
+  assert.match(context, /entfällt die Codex-Prüfung/);
+  assert.doesNotMatch(context, /Implementiere|Fertigstellungszyklus/);
+  assert.doesNotMatch(context, /Auftrag/);
+});
