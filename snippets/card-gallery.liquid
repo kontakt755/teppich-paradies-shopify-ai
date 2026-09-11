@@ -57,6 +57,16 @@
     assign image_sizes = image_sizes | replace: ', 100vw', ', 50vw'
   endif
 
+  # Dasselbe fuer Kategorie-/Suchraster: dort steuert mobile_product_card_size
+  # die Spalten (alles ausser "large" = zwei Spalten, siehe product-grid).
+  # Solange jedes Kartenbild lazy war, entschied sizes="auto" nach der echten
+  # Breite und der Rueckfallwert spielte keine Rolle. Seit die erste Reihe
+  # eager laedt, gilt er: "100vw" holte mobil 832-px-Bilder fuer 173-px-Karten
+  # und verdoppelte den LCP. 24 px = Seitenrand plus halber Spaltenabstand.
+  if section.settings.mobile_product_card_size != blank and section.settings.mobile_product_card_size != 'large'
+    assign image_sizes = image_sizes | replace: ', 100vw', ', calc(50vw - 24px)'
+  endif
+
   # Kartenbilder brauchen nie mehr als ~1.400 px. Die Horizon-Standardliste
   # sprang von 352 auf 832 px: eine 500-px-Karte am Desktop lud 832. 352 und
   # 832 bleiben als Stufen erhalten, damit mobil keine Karte groesser laedt.
@@ -171,9 +181,16 @@
           # row of a grid (real card position, not just section position) and
           # in a section near the very top of the page. Everything else stays
           # lazy so we don't over-fetch images below the fold.
+          assign tp_fetchpriority = nil
           if forloop.first and card_index < eager_card_limit and section_is_near_top
             assign loading = 'eager'
             assign sizes = image_sizes
+            # TP: Das erste Kartenbild ist das LCP-Element der Kategorieseite.
+            # Ohne Hinweis startet es mit Prioritaet "Low" und teilt die Leitung
+            # mit async-Skripten; "high" nur fuer genau dieses eine Bild.
+            if card_index == 0
+              assign tp_fetchpriority = 'high'
+            endif
           endif
 
           assign class = 'product-media-container media-fit product-media-container--[media_type]' | replace: '[media_type]', media.media_type
@@ -182,7 +199,7 @@
           endif
 
           capture slideshow_children
-            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, preview_image_only: true
+            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit
