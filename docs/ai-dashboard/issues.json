@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T08:52:47.172Z",
+  "generated_at": "2026-09-11T09:37:01.077Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 65,
+  "count": 66,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T08:52:47.172Z",
+    "fetchedAt": "2026-09-11T09:37:01.077Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 189,
+      "title": "Liefer- & Verlegeservice fuer Rollenware ueberarbeiten (Seite, Produkthinweis, zentrale Preise)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/189",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:versand"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Seite /pages/liefer-verlegeservice rendert live die B2B-Seite (page.verlegeservice.json fehlt in main). Neue Service-Seite mit zwei Preisstufen (unter/ab 649 EUR), lose Verlegung erklaert, Klebearten, Vergleich, >50 km Kontakt; Hinweis nur auf Teppichboden-Rollenware; Preise/Schwellen zentral in den Theme-Einstellungen. Korrigiert widerspruechliche Aussagen (feste Verlegung inklusive, 15 km ab 649 EUR). Baut auf #174/#186 auf.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T09:36:48Z",
+      "updated_at": "2026-09-11T09:36:49Z",
+      "closed_at": null
+    },
     {
       "number": 188,
       "title": "Kettelservice nach Lieferant und Produkt trennen (Jordan ja je Qualitaet, M-Plus nein)",
