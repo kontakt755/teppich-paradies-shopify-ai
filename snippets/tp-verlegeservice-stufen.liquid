@@ -53,7 +53,10 @@
       </li>
       <li>
         <span>Weiter als {{ vss_nah }}&nbsp;km</span>
-        <span class="tp-vs-kurz__wert"><span>Lieferung ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</span></span>
+        <span class="tp-vs-kurz__wert">
+          <span>Lieferung ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</span>
+          <small>+ lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}</small>
+        </span>
       </li>
     </ul>
 

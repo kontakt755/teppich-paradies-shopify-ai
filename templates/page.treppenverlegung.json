@@ -216,7 +216,7 @@
         "stufe_50km": {
           "type": "leistung",
           "settings": {
-            "label": "Bis 50 km um Oranienburg",
+            "label": "Bis [km] km um Oranienburg",
             "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
           }
         },

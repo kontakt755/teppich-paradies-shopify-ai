@@ -119,17 +119,23 @@
     </div>
     {%- if section.settings.image != blank -%}
       <div class="tp-vs__hero-bild">
-        {{
-          section.settings.image
-          | image_url: width: 1200
-          | image_tag:
-            widths: '480, 720, 960, 1200',
-            sizes: '(min-width: 990px) 42vw, 100vw',
-            alt: vs_bild_alt,
-            class: 'tp-vs__bild',
-            loading: 'eager',
-            fetchpriority: 'high'
-        }}
+        {%- comment -%} Am Telefon ist dieses Bild ausgeblendet. Ohne die leere
+          Quelle laedt der Browser es dort trotzdem - eager und mit hoher
+          Prioritaet, in Konkurrenz zum ersten Bildschirm. {%- endcomment -%}
+        <picture>
+          <source media="(max-width: 749px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+          {{
+            section.settings.image
+            | image_url: width: 1200
+            | image_tag:
+              widths: '480, 720, 960, 1200',
+              sizes: '(min-width: 990px) 42vw, 100vw',
+              alt: vs_bild_alt,
+              class: 'tp-vs__bild',
+              loading: 'eager',
+              fetchpriority: 'high'
+          }}
+        </picture>
       </div>
     {%- endif -%}
   </header>
@@ -535,6 +541,11 @@
     aspect-ratio: 4 / 5;
     border-radius: 18px;
     background: rgb(var(--tp-vs-ton) / 0.08);
+  }
+
+  .tp-vs__hero-bild picture {
+    display: block;
+    height: 100%;
   }
 
   .tp-vs__bild {

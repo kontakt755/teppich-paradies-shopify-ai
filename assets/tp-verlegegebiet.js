@@ -48,11 +48,13 @@
     aussen: function (was) {
       return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
     },
+    // Unter der Schwelle kostet auch in der ersten Zone die lose Verlegung -
+    // steht nur die Anfahrt da, liest man sie als inklusive.
     zoneNah: function (s) {
-      return 'Ab ' + s.schwelle + ' € Warenwert sind Lieferung und lose Verlegung hier kostenlos, darunter berechnen wir ' + s.preisNah + ' für Lieferung und Anfahrt.';
+      return 'Ab ' + s.schwelle + ' € Warenwert sind Lieferung und lose Verlegung hier kostenlos, darunter berechnen wir ' + s.preisNah + ' für Lieferung und Anfahrt und ' + losePreis(s) + ' für die lose Verlegung.';
     },
     zone: function (preis, s) {
-      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + s.lose + '.';
+      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + losePreis(s) + '.';
     },
     zoneOffen: 'Was Lieferung und Verlegung kosten, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.',
     anfragen: 'Individuell anfragen',
@@ -60,6 +62,12 @@
     unbekannt: 'Diesen Ort kennen wir nicht. Bitte geben Sie Ihre Postleitzahl ein – oder fragen Sie uns einfach direkt an.',
     fehler: 'Die Prüfung ist gerade nicht möglich. Fragen Sie uns einfach direkt an – wir sagen Ihnen, ob wir zu Ihnen kommen.'
   };
+
+  /* Preis der losen Verlegung samt Mindestbetrag - wie in der Preistabelle
+     der Serviceseite. */
+  function losePreis(s) {
+    return s.loseMindest ? s.lose + ' (mind. ' + s.loseMindest + ')' : s.lose;
+  }
 
   function normalisieren(wert) {
     return wert
@@ -95,6 +103,13 @@
     return ' ' + TEXTE.zoneOffen;
   }
 
+  /* Angezeigte Entfernung: aufgerundet. Die Zone rechnet mit dem genauen
+     Wert - gerundet stand bei 15,4 km "rund 15 km" neben dem Preis der
+     zweiten Zone, obwohl die Seite "bis 15 km kostenlos" sagt. */
+  function anzeigeKm(km) {
+    return Math.ceil(km);
+  }
+
   /* Liefert {status, text} - die Entscheidung steckt hier, nicht in der Ausgabe. */
   function bewerten(eingabe, daten, radius, stufen) {
     var roh = eingabe.trim();
@@ -108,7 +123,7 @@
         return { status: 'aussen', text: TEXTE.aussen(plz[1]) };
       }
       return km <= radius
-        ? { status: 'innen', text: TEXTE.innen(plz[1], Math.round(km)) + zone(km, km, stufen) }
+        ? { status: 'innen', text: TEXTE.innen(plz[1], anzeigeKm(km)) + zone(km, km, stufen) }
         : { status: 'aussen', text: TEXTE.aussen(plz[1]) };
     }
 
@@ -117,7 +132,7 @@
 
     var ort = roh.replace(/\s+/g, ' ');
     if (spanne[1] <= radius) {
-      return { status: 'innen', text: TEXTE.innen(ort, Math.round(spanne[0])) + zone(spanne[0], spanne[1], stufen) };
+      return { status: 'innen', text: TEXTE.innen(ort, anzeigeKm(spanne[0])) + zone(spanne[0], spanne[1], stufen) };
     }
     if (spanne[0] <= radius) return { status: 'rand', text: TEXTE.rand(ort) };
     return { status: 'aussen', text: TEXTE.aussen(ort) };
@@ -163,7 +178,8 @@
       preisNah: d.preisNah || '',
       preisMitte: d.preisMitte || '',
       preisFern: d.preisFern || '',
-      lose: d.lose || ''
+      lose: d.lose || '',
+      loseMindest: d.loseMindest || ''
     };
   }
 

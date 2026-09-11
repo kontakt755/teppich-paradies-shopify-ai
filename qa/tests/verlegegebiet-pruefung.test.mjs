@@ -27,9 +27,10 @@ const WURZEL = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.
 const SKRIPT = readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet.js'), 'utf8');
 const SEKTION = readFileSync(path.join(WURZEL, 'sections', 'tp-verlegegebiet.liquid'), 'utf8');
 
-// 16515 Oranienburg, 14199 Berlin-Wilmersdorf, 16816 Neuruppin (Zone 3), 39104 Magdeburg.
+// 16515 Oranienburg, 14199 Berlin-Wilmersdorf, 16816 Neuruppin (Zone 3), 39104 Magdeburg,
+// 13469 Berlin-Waidmannslust knapp hinter der ersten Zone.
 const TABELLE = {
-  plz: { 16515: 2, 14199: 29, 16816: 42, 39104: 120 },
+  plz: { 16515: 2, 14199: 29, 16816: 42, 39104: 120, 13469: 15.4 },
   orte: { berlin: [11.2, 47] },
 };
 
@@ -88,7 +89,7 @@ function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {})
   if (stufen) {
     Object.assign(daten, {
       basis: '15', mitte: '30', schwelle: '649',
-      preisNah: '39 €', preisMitte: '49 €', preisFern: '69 €', lose: '4,95 €/m²',
+      preisNah: '39 €', preisMitte: '49 €', preisFern: '69 €', lose: '4,95 €/m²', loseMindest: '49 €',
     });
   }
   const sektion = new Knoten({ dataset: daten });
@@ -161,7 +162,16 @@ test('mit Stufen, erste Zone: kostenlos erst ab der Schwelle, darunter die Pausc
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '16515');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
   assert.match(ausgabe.textContent, /Ab 649 € Warenwert sind Lieferung und lose Verlegung hier kostenlos/);
-  assert.match(ausgabe.textContent, /darunter berechnen wir 39 €/);
+  assert.match(ausgabe.textContent, /darunter berechnen wir 39 € für Lieferung und Anfahrt und 4,95 €\/m² \(mind\. 49 €\) für die lose Verlegung/);
+});
+
+test('mit Stufen: knapp hinter der ersten Zone steht keine Entfernung, die nach Zone 1 aussieht', async () => {
+  // 15,4 km wurden als "rund 15 km" angezeigt - daneben der Preis der zweiten
+  // Zone, obwohl die Seite "bis 15 km kostenlos" sagt.
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '13469');
+  assert.match(ausgabe.textContent, /rund 16 km/);
+  assert.match(ausgabe.textContent, /kosten hier 49 €/);
+  assert.doesNotMatch(ausgabe.textContent, /kostenlos/);
 });
 
 test('mit Stufen, zweite Zone: nie kostenlos, Pauschale und lose Verlegung', async () => {

@@ -32,14 +32,21 @@
   # Stufen des Rollenware-Service (Theme-Einstellungen, Gruppe TP Verlegeservice).
   # Nur auf Teppichboden-Seiten eingeschaltet: auf Vinyl- und Treppenseiten
   # wuerde "lose Verlegung inklusive" einen Service versprechen, der dort nicht
-  # gilt. Eingeschaltet rechnet die Pruefung mit dem Radius von dort, damit
-  # Ergebnis und Stufentext dieselbe Grenze nennen; die Flaeche auf der Karte
-  # bleibt bei ihren vorgerenderten Stufen.
+  # gilt. Eingeschaltet gilt der Radius von dort fuer alles - Pruefung,
+  # Stufentext, Flaeche und Bildunterschrift. Vorher zeigte die Karte den
+  # Radius der Sektion und die Pruefung den aus den Einstellungen; wichen die
+  # beiden ab, nannte die Seite zwei Grenzen. Die Flaeche gibt es nur in
+  # vorgerenderten 10-km-Stufen, deshalb wird fuer sie gerundet.
   assign vg_stufen = section.settings.rollenware_stufen
   assign vg_pruef_radius = vg_radius
-  if vg_stufen
-    assign vg_pruef_radius = settings.tp_vs_radius_premium | default: vg_radius
+  if vg_stufen and settings.tp_vs_radius_premium != blank
+    assign vg_pruef_radius = settings.tp_vs_radius_premium
+    assign vg_radius = settings.tp_vs_radius_premium | divided_by: 10.0 | round | times: 10 | at_least: 30 | at_most: 50
   endif
+
+  # Platzhalter [km] in den Stufen-Bloecken: dieselbe Grenze wie die Pruefung,
+  # statt "50" in jedem Template von Hand.
+  assign vg_km = vg_pruef_radius | append: ''
 
   # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
   assign vg_lat = 52.7378
@@ -81,6 +88,7 @@
     data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}"
     data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}"
     data-lose="{{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose-mindest="{{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }}"
   {%- endif %}
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
 >
@@ -176,7 +184,7 @@
     <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos, darunter {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }} für Lieferung und Anfahrt.</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
@@ -196,10 +204,10 @@
       {%- for block in section.blocks -%}
         <li class="tp-vg__stufe" {{ block.shopify_attributes }}>
           {%- if block.settings.label != blank -%}
-            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape }}</span>
+            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape | replace: '[km]', vg_km }}</span>
           {%- endif -%}
           {%- if block.settings.text != blank -%}
-            <span class="tp-vg__stufe-text">{{ block.settings.text | escape }}</span>
+            <span class="tp-vg__stufe-text">{{ block.settings.text | escape | replace: '[km]', vg_km }}</span>
           {%- endif -%}
         </li>
       {%- endfor -%}
@@ -884,7 +892,7 @@
       "type": "range",
       "id": "radius",
       "label": "Radius in km",
-      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt.",
+      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt. Mit Rollenware-Stufen gilt stattdessen der Radius aus den Theme-Einstellungen (TP Verlegeservice).",
       "min": 30,
       "max": 50,
       "step": 10,
@@ -1037,7 +1045,7 @@
           "type": "text",
           "id": "label",
           "label": "Stufe",
-          "info": "Die Zahl oder Bedingung, an der die Stufe haengt."
+          "info": "Die Zahl oder Bedingung, an der die Stufe haengt. [km] setzt den Radius dieser Sektion ein."
         },
         {
           "type": "textarea",
@@ -1059,7 +1067,7 @@
         {
           "type": "leistung",
           "settings": {
-            "label": "Bis 50 km um Oranienburg",
+            "label": "Bis [km] km um Oranienburg",
             "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
           }
         },

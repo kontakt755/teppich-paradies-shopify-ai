@@ -220,3 +220,32 @@ test('Vinyl von der Rolle: Einstieg und Vinylseite nennen den Service, Klick- un
   }
   assert.doesNotMatch(vinyl, /\b649\b|\b15\s*(km|&nbsp;km)/, 'Zahl von Hand statt aus den Einstellungen.');
 });
+
+test('die lose Verlegung steht ueberall mit Preis, wo die Anfahrt steht', () => {
+  // Review 2026-09-11: "darunter 39 EUR fuer Lieferung und Anfahrt" allein liest
+  // sich, als waere die lose Verlegung unter der Schwelle inklusive.
+  assert.match(lesen('assets', 'tp-verlegegebiet.js'), /zoneNah[\s\S]*?losePreis\(s\)/);
+  const zonen = ohneKommentare(lesen('sections', 'tp-verlegegebiet.liquid'))
+    .match(/<ul class="tp-vg__stufen tp-vg__stufen--zonen"[\s\S]*?<\/ul>/)[0];
+  assert.match(zonen.split('<li')[1], /tp_vs_anfahrt_nah[\s\S]*tp_vs_lose/, 'Erste Zone ohne Preis der losen Verlegung.');
+  const karte = ohneKommentare(lesen('snippets', 'tp-verlegeservice-stufen.liquid'));
+  assert.match(karte.slice(karte.indexOf('Weiter als'), karte.indexOf('Weiter als') + 400), /tp_vs_lose/,
+    'Karte ab der Schwelle: jenseits der ersten Zone fehlt die lose Verlegung.');
+});
+
+test('der Radius steht in keiner Stufe als Zahl von Hand', () => {
+  // Vorlagen und Voreinstellung schreiben [km]; die Sektion setzt die Grenze
+  // ein, mit der auch die Pruefung rechnet.
+  for (const name of ['page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    const sektion = Object.values(vorlage(name).sections).find((s) => s.type === 'tp-verlegegebiet');
+    assert.doesNotMatch(JSON.stringify(sektion?.blocks ?? {}), /\b\d+\s*km\b/, `${name}: Radius von Hand statt [km].`);
+  }
+  const code = lesen('sections', 'tp-verlegegebiet.liquid');
+  assert.doesNotMatch(code.slice(code.indexOf('"presets"')), /\b\d+\s*km\b/, 'Voreinstellung nennt den Radius von Hand.');
+  assert.match(code, /replace: '\[km\]', vg_km/);
+});
+
+test('das am Telefon ausgeblendete Einstiegsbild wird dort nicht geladen', () => {
+  assert.match(lesen('sections', 'tp-verlegeservice.liquid'),
+    /<source media="\(max-width: 749px\)" srcset="data:image\/gif;base64,/);
+});
