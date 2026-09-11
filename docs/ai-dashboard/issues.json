@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:38:21.882Z",
+  "generated_at": "2026-09-11T12:41:45.883Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 70,
+  "count": 71,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:38:21.882Z",
+    "fetchedAt": "2026-09-11T12:41:45.883Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 201,
+      "title": "Review-Scope: fremde uncommittete Aenderungen und Voranalyse aus der Pruefung halten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/201",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-11T12:41:30Z",
+      "updated_at": "2026-09-11T12:41:31Z",
+      "closed_at": null
+    },
     {
       "number": 199,
       "title": "Teppiche-Bereich im Entwurfstheme aufbauen (Menue, Landingpages, Konfigurator, ohne Preise)",
