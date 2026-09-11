@@ -33,7 +33,16 @@
 
     <article>
       <h2>Versandkosten</h2>
-      <p>Die konkreten Versandkosten werden im Checkout vor Abschluss der Bestellung angezeigt.</p>
+      {%- comment -%}
+        Zahlen aus den Versandprofilen (Admin, Stand 2026-09-11). Aendert sich
+        ein Profil, auch die Top-Leiste in sections/header-group.json anpassen.
+      {%- endcomment -%}
+      <p>
+        Innerhalb Deutschlands 4,99 € je Bestellung, ab 50 € Bestellwert versandkostenfrei. Muster verschicken wir
+        innerhalb Deutschlands kostenlos.
+      </p>
+      <p>In andere EU-Länder 13,99 €, in weitere Länder (z. B. Schweiz, Norwegen, Großbritannien) 19,99 €.</p>
+      <p>Den genauen Betrag sehen Sie im Checkout vor Abschluss der Bestellung.</p>
     </article>
 
     <article>

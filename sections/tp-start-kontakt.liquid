@@ -56,7 +56,7 @@
   /* Desktop: Anrufen und WhatsApp uebereinander links, Formular rechts ueber beide
      Zeilen. Vorher drei Spalten, die zwei kurzen Karten wurden auf Formularhoehe
      gestreckt und zeigten 400 px Leerraum (Audit B-11). */
-  .tp-kon__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 20px; align-items: start; }
+  .tp-kon__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); grid-template-rows: auto 1fr; gap: 20px; align-items: start; }
   .tp-kon__card--form { grid-column: 2; grid-row: 1 / span 2; }
   .tp-kon__card { border: 1px solid #e6e0d8; border-radius: 14px; padding: 24px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
   .tp-kon__card p { color: #4a443f; font-size: 15px; margin: 0; }

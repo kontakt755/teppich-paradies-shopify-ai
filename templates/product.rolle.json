@@ -28,7 +28,7 @@
             "thumbnail_radius": 6,
             "aspect_ratio": "1",
             "constrain_to_viewport": true,
-            "media_fit": "contain",
+            "media_fit": "cover",
             "media_radius": 8,
             "extend_media": false,
             "zoom": true,

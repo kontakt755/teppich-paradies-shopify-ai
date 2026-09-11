@@ -181,7 +181,8 @@
     <p><strong>E-Mail:</strong> kontakt@teppich-paradies.net</p>
     <p><strong>WhatsApp:</strong>
       <a href="https://wa.me/4917657931322" target="_blank" class="whatsapp-link">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" class="whatsapp-icon" width="18" height="18"/>
+        {%- comment -%} Eigenes Icon statt upload.wikimedia.org: kein Drittanbieter-Request (Audit B-23) {%- endcomment -%}
+        <svg class="whatsapp-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>
         0176 579 31322
       </a>
     </p>
