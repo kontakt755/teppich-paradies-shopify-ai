@@ -171,11 +171,58 @@
         "phone_number": "+4933015733720",
         "phone_display": "03301 / 573 37 20"
       }
+    },
+    "tp_verlegegebiet": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "cta_zeigen": false,
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322",
+        "vertrauen": "",
+        "versand_link": "/collections/all"
+      },
+      "blocks": {
+        "stufe_15km": {
+          "type": "leistung",
+          "settings": {
+            "label": "Im Umkreis von 15 km",
+            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
+          }
+        },
+        "stufe_649": {
+          "type": "leistung",
+          "settings": {
+            "label": "Ab 649 € Warenwert",
+            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
+          }
+        },
+        "stufe_50km": {
+          "type": "leistung",
+          "settings": {
+            "label": "Bis 50 km um Oranienburg",
+            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+          }
+        },
+        "stufe_versand": {
+          "type": "leistung",
+          "settings": {
+            "label": "Deutschlandweit",
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
+          }
+        }
+      },
+      "block_order": [
+        "stufe_15km",
+        "stufe_649",
+        "stufe_50km",
+        "stufe_versand"
+      ]
     }
   },
   "order": [
     "vinylboden_verlegen_8thyEt",
     "main",
+    "tp_verlegegebiet",
     "final_cta_service",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"
