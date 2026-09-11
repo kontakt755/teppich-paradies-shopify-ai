@@ -96,3 +96,9 @@ venv/
 # Tree dirty und blockieren workflow:doctor, Preview und Live. Die Handoffs
 # enthalten ausserdem den vollen Auftragstext.
 .router/
+
+# Build-Cache der Verlegegebiet-Sektion: Koordinaten fuer den Gebietsumriss und
+# die zwischengespeicherten OpenStreetMap-Ortsnamen von
+# scripts/build-verlegegebiet-orte.py. Die fertigen Dateien liegen in assets/
+# und snippets/; der Cache gehoert nicht ins Repository.
+.cache/

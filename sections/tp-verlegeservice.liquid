@@ -1,0 +1,1170 @@
+{% comment %}
+  Liefer- und Verlegeservice fuer Rollenware - Seite /pages/liefer-verlegeservice
+  (Template page.verlegeservice).
+
+  Regel (Vorgabe des Inhabers, 2026-09-11): Lieferung und lose Verlegung sind
+  nur ab der Warenwert-Schwelle UND innerhalb der kostenlosen Zone kostenlos.
+  Darunter oder weiter weg gelten feste Preise, die hier offen stehen -
+  Anfahrtskosten duerfen Privatkunden nur berechnet werden, wenn sie vorher
+  genannt sind.
+
+  Reihenfolge wie die Fragen eines Kunden:
+    1. Einstieg: Angebot in einer Box, damit es am Telefon im ersten
+       Bildschirm steht, nicht als dritter Punkt einer Liste
+    2. Die zwei Stufen als Karten (Snippet tp-verlegeservice-stufen) - nur
+       Kernaussagen, die Details stehen in der Tabelle
+    3. So einfach geht's: vier Schritte mit Icons
+    4. Was "lose Verlegung" heisst - am Telefon mit dem Zuschnitt-Foto, das
+       dort das Wort erklaert statt den Einstieg zu verlaengern
+    5. Alle Preise im Detail, mit Icon je Verlegeart
+    6. Gut zu wissen
+  Liefergebiet mit Karte und Ortspruefung (tp-verlegegebiet) und der Kontakt
+  mit Projektfotos (tp-verlegeservice-kontakt) folgen als eigene Sektionen.
+
+  Gestaltung nach der Startseite: Inter in 400/500/700 (die Gewichte, die das
+  Theme laedt), Eyebrows in Grossbuchstaben, goldbraune Icons, gruene Haken,
+  die hellgruene Flaeche aus Farbschema 3 fuer "kostenlos".
+
+  Keine Zahl steht hier im Code. Schwelle, Zonen und Preise kommen aus den
+  Theme-Einstellungen, Gruppe "TP Verlegeservice" - dieselben Werte wie im
+  Produkthinweis und in der Ortspruefung.
+
+  Wortwahl mit Absicht: nie "kostenlose Verlegung" allein, immer "lose
+  Verlegung". Sonst liest jemand eine vollflaechige Verklebung als
+  inklusive heraus.
+
+  Die Tabelle ist am Desktop eine echte Tabelle und am Telefon je Leistung
+  eine Karte mit zwei Preisfeldern - keine breite Tabelle, kein seitliches
+  Scrollen. Die role-Attribute halten die Tabellen-Semantik fest, weil manche
+  Screenreader sie verlieren, sobald CSS die display-Werte umstellt.
+{% endcomment %}
+
+{%- liquid
+  assign vs_schwelle = settings.tp_vs_schwelle
+  assign vs_nah = settings.tp_vs_radius_basis
+  assign vs_mitte = settings.tp_vs_radius_mitte
+  assign vs_fern = settings.tp_vs_radius_premium
+  assign vs_mindest = settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€'
+  assign vs_bezeichnung = settings.tp_vs_bezeichnung | default: 'Teppichboden und Vinyl von der Rolle'
+  assign vs_produkte = section.settings.produkte_link | default: collections['teppichboden'].url | default: '/collections/teppichboden'
+  assign vs_produkte_2 = section.settings.produkte_link_2 | default: collections['vinylboden-vinyl-von-der-rolle'].url | default: '/collections/vinylboden-vinyl-von-der-rolle'
+  assign vs_bild_alt = section.settings.image.alt | default: 'Teppichboden wird an der Wand passend zugeschnitten'
+  assign vs_vertrauen = section.settings.vertrauen | split: '·'
+
+  # Anruf-Link aus der angezeigten Nummer: Trennzeichen raus, fuehrende 0 zu +49.
+  assign vs_tel = settings.tp_vs_telefon | remove: ' ' | remove: '/' | remove: '-' | remove: '(' | remove: ')'
+  assign vs_tel_erst = vs_tel | slice: 0
+  if vs_tel_erst == '0'
+    assign vs_tel = vs_tel | slice: 1, 30 | prepend: '+49'
+  endif
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-vs section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-testid="tp-verlegeservice-{{ section.id }}"
+>
+  <header class="tp-vs__hero{% if section.settings.image != blank %} tp-vs__hero--bild{% endif %}">
+    <div class="tp-vs__hero-text">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-vs__marke">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h1 class="tp-vs__titel">{{ section.settings.heading | escape }}</h1>
+      {%- if section.settings.sub != blank -%}
+        <p class="tp-vs__sub">{{ section.settings.sub | escape }}</p>
+      {%- endif -%}
+
+      <div class="tp-vs__angebot">
+        <span class="tp-vs__angebot-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
+        <div>
+          <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km</span></p>
+          <p class="tp-vs__angebot-text">Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt. Fixierung oder Verklebung auf Wunsch.</p>
+        </div>
+      </div>
+
+      <div class="tp-vs__aktionen">
+        <a class="tp-vs-knopf tp-vs-knopf--primaer" href="{{ vs_produkte }}">{{ section.settings.knopf | default: 'Teppichboden entdecken' | escape }}</a>
+        {%- if section.settings.knopf_2 != blank -%}
+          <a class="tp-vs-knopf tp-vs-knopf--zweit" href="{{ vs_produkte_2 }}">{{ section.settings.knopf_2 | escape }}</a>
+        {%- endif -%}
+        {%- if vs_tel != blank -%}
+          <a class="tp-vs__tel" href="tel:{{ vs_tel }}">
+            {%- render 'tp-vs-icon', name: 'phone' -%}
+            Beratung: {{ settings.tp_vs_telefon | escape }}
+          </a>
+        {%- endif -%}
+      </div>
+
+      {%- if section.settings.vertrauen != blank -%}
+        <ul class="tp-vs__vertrauen" role="list">
+          {%- for vs_punkt in vs_vertrauen -%}
+            {%- assign vs_punkt = vs_punkt | strip -%}
+            {%- if vs_punkt != blank -%}
+              {%- liquid
+                case forloop.index
+                  when 1
+                    assign vs_symbol = 'chat'
+                  when 2
+                    assign vs_symbol = 'lineal'
+                  else
+                    assign vs_symbol = 'truck'
+                endcase
+              -%}
+              <li>{% render 'tp-vs-icon', name: vs_symbol %}{{ vs_punkt | escape }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
+    {%- if section.settings.image != blank -%}
+      <div class="tp-vs__hero-bild">
+        {%- comment -%} Am Telefon ist dieses Bild ausgeblendet. Ohne die leere
+          Quelle laedt der Browser es dort trotzdem - eager und mit hoher
+          Prioritaet, in Konkurrenz zum ersten Bildschirm. {%- endcomment -%}
+        <picture>
+          <source media="(max-width: 749px)" srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+          {{
+            section.settings.image
+            | image_url: width: 1200
+            | image_tag:
+              widths: '480, 720, 960, 1200',
+              sizes: '(min-width: 990px) 42vw, 100vw',
+              alt: vs_bild_alt,
+              class: 'tp-vs__bild',
+              loading: 'eager',
+              fetchpriority: 'high'
+          }}
+        </picture>
+      </div>
+    {%- endif -%}
+  </header>
+
+  <div class="tp-vs__teil" id="konditionen-{{ section.id }}">
+    <div class="tp-vs__kopf">
+      <p class="tp-vs__eyebrow">Konditionen</p>
+      <h2 class="tp-vs__h2">Ihre Konditionen auf einen Blick</h2>
+      <p class="tp-vs__intro">Für Rollenware, die Sie bei uns kaufen ({{ vs_bezeichnung | escape }}). Entscheidend sind Warenwert und Entfernung.</p>
+    </div>
+    {%- render 'tp-verlegeservice-stufen', link: vs_produkte -%}
+    <p class="tp-vs__mehr"><a href="#preise-{{ section.id }}">Alle Preise im Detail</a></p>
+  </div>
+
+  <div class="tp-vs__teil">
+    <div class="tp-vs__kopf">
+      <p class="tp-vs__eyebrow">Ablauf</p>
+      <h2 class="tp-vs__h2">So einfach geht’s</h2>
+    </div>
+    <ol class="tp-vs__schritte" role="list">
+      <li>
+        <span class="tp-vs__schritt-zeichen">{% render 'tp-vs-icon', name: 'chat' %}</span>
+        <strong>Beraten lassen</strong>
+        <span>Im Geschäft in Oranienburg, am Telefon oder per WhatsApp.</span>
+      </li>
+      <li>
+        <span class="tp-vs__schritt-zeichen">{% render 'tp-vs-icon', name: 'lineal' %}</span>
+        <strong>Aufmaß vor Ort</strong>
+        <span>Wir messen Ihre Räume aus.</span>
+      </li>
+      <li>
+        <span class="tp-vs__schritt-zeichen">{% render 'tp-vs-icon', name: 'truck' %}</span>
+        <strong>Lieferung</strong>
+        <span>Wir bringen die Rollenware direkt zu Ihnen.</span>
+      </li>
+      <li>
+        <span class="tp-vs__schritt-zeichen">{% render 'tp-vs-icon', name: 'schere' %}</span>
+        <strong>Zuschnitt &amp; Verlegung</strong>
+        <span>Passend zugeschnitten und lose verlegt – auf Wunsch fixiert.</span>
+      </li>
+    </ol>
+  </div>
+
+  <div class="tp-vs__info">
+    {%- if section.settings.image != blank -%}
+      {%- comment -%} Nur am Telefon: dort steht das Foto nicht im Einstieg,
+        und hier erklaert es, was "passend zugeschnitten" heisst. {%- endcomment -%}
+      <div class="tp-vs__info-bild">
+        {{
+          section.settings.image
+          | image_url: width: 900
+          | image_tag: widths: '480, 720, 900', sizes: '100vw', alt: vs_bild_alt, class: 'tp-vs__bild', loading: 'lazy'
+        }}
+      </div>
+    {%- endif -%}
+    <div class="tp-vs__info-text">
+      <h2 class="tp-vs__h2 tp-vs__h2--klein">
+        <span class="tp-vs__info-zeichen">{% render 'tp-vs-icon', name: 'schere' %}</span>
+        Was bedeutet „lose Verlegung“?
+      </h2>
+      <p>
+        Wir schneiden die Rollenware passend zu und verlegen sie ohne vollflächige Verklebung. Für viele Räume ist
+        das eine unkomplizierte Lösung. Wenn eine zusätzliche Fixierung oder Verklebung gewünscht oder technisch
+        sinnvoll ist, kann diese direkt hinzugebucht werden.
+      </p>
+      <p class="tp-vs__info-rat">
+        Unsicher, ob lose Verlegung für Ihren Raum passt?
+        {%- if vs_tel != blank %}
+          <a href="tel:{{ vs_tel }}">Rufen Sie uns an</a> – wir beraten Sie vorab.
+        {%- else %}
+          Sprechen Sie uns an – wir beraten Sie vorab.
+        {%- endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="tp-vs__teil" id="preise-{{ section.id }}">
+    <div class="tp-vs__kopf">
+      <p class="tp-vs__eyebrow">Preise</p>
+      <h2 class="tp-vs__h2">Alle Preise im Detail</h2>
+      <p class="tp-vs__intro">Unter und ab {{ vs_schwelle }}&nbsp;€ Warenwert – mit kurzer Erklärung der Verlegearten.</p>
+    </div>
+    <table class="tp-vs-tabelle" role="table">
+      <caption class="visually-hidden">Preise für Lieferung und Verlegung unter und ab {{ vs_schwelle }} € Warenwert</caption>
+      <thead role="rowgroup">
+        <tr role="row">
+          <th scope="col" role="columnheader">Leistung</th>
+          <th scope="col" role="columnheader">Unter {{ vs_schwelle }}&nbsp;€</th>
+          <th scope="col" role="columnheader" class="tp-vs-tabelle__plus">Ab {{ vs_schwelle }}&nbsp;€</th>
+        </tr>
+      </thead>
+      <tbody role="rowgroup">
+        <tr role="row">
+          <th scope="row" role="rowheader">
+            <span class="tp-vs-tabelle__kopf">
+              <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'truck' %}</span>
+              <span>
+                <span class="tp-vs-tabelle__name">Lieferung &amp; Anfahrt</span>
+                <span class="tp-vs-tabelle__info">Nach Entfernung von unserem Geschäft in Oranienburg.</span>
+              </span>
+            </span>
+          </th>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</li>
+              <li><span>bis {{ vs_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
+              <li><span>bis {{ vs_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
+            </ul>
+          </td>
+          <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs-preis tp-vs-gratis">kostenlos</span></li>
+              <li><span>bis {{ vs_mitte }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</li>
+              <li><span>bis {{ vs_fern }}&nbsp;km</span>{% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_fern %}</li>
+            </ul>
+          </td>
+        </tr>
+        <tr role="row">
+          <th scope="row" role="rowheader">
+            <span class="tp-vs-tabelle__kopf">
+              <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'schere' %}</span>
+              <span>
+                <span class="tp-vs-tabelle__name">Lose Verlegung</span>
+                <span class="tp-vs-tabelle__info">Passend zugeschnitten, ohne Verklebung.</span>
+              </span>
+            </span>
+          </th>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
+            <span class="tp-vs-klein">mind. {{ vs_mindest }}</span>
+          </td>
+          <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
+            <ul class="tp-vs-zonen" role="list">
+              <li><span>bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs-preis tp-vs-gratis">kostenlos</span></li>
+              <li><span>darüber</span>{% render 'tp-vs-preis', wert: settings.tp_vs_lose %}</li>
+            </ul>
+          </td>
+        </tr>
+        <tr role="row">
+          <th scope="row" role="rowheader">
+            <span class="tp-vs-tabelle__kopf">
+              <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'band' %}</span>
+              <span>
+                <span class="tp-vs-tabelle__name">Doppelseitiges Verlegeband</span>
+                <span class="tp-vs-tabelle__info">Punktuelle bzw. randseitige Fixierung des Bodenbelags.</span>
+              </span>
+            </span>
+          </th>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_band_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
+          <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_band_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
+          </td>
+        </tr>
+        <tr role="row">
+          <th scope="row" role="rowheader">
+            <span class="tp-vs-tabelle__kopf">
+              <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'tropfen' %}</span>
+              <span>
+                <span class="tp-vs-tabelle__name">Flüssigfixierung</span>
+                <span class="tp-vs-tabelle__info">Eine lösbare Fixierung für einen stabileren Halt des Bodenbelags.</span>
+              </span>
+            </span>
+          </th>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
+          <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
+          </td>
+        </tr>
+        <tr role="row">
+          <th scope="row" role="rowheader">
+            <span class="tp-vs-tabelle__kopf">
+              <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'spachtel' %}</span>
+              <span>
+                <span class="tp-vs-tabelle__name">Vollflächige Verklebung</span>
+                <span class="tp-vs-tabelle__info">Der Bodenbelag wird vollflächig mit dem Untergrund verklebt.</span>
+              </span>
+            </span>
+          </th>
+          <td role="cell" data-label="Unter {{ vs_schwelle }} €">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_kleber_basis -%}
+            <span class="tp-vs-klein">inkl. Verlegung</span>
+          </td>
+          <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
+            {%- render 'tp-vs-preis', wert: settings.tp_vs_kleber_premium -%}
+            <span class="tp-vs-klein">Aufpreis zur losen Verlegung</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    {%- comment -%} Der Beispielsatz macht den Preisvorteil greifbar. Er gilt
+      nur in der kostenlosen Zone - dort ist die lose Verlegung ab der
+      Schwelle kostenlos und der Aufpreis damit der ganze Preis. {%- endcomment -%}
+    <p class="tp-vs-tabelle__beispiel">
+      <strong>Beispiel im Umkreis von {{ vs_nah }}&nbsp;km:</strong> Verlegung mit Flüssigfixierung kostet unter {{ vs_schwelle }}&nbsp;€ Warenwert {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}, ab {{ vs_schwelle }}&nbsp;€ nur {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %} – die lose Verlegung ist dann kostenlos.
+    </p>
+  </div>
+
+  <div class="tp-vs__teil tp-vs__wissen">
+    <h2 class="tp-vs__h2">Gut zu wissen</h2>
+    <ul class="tp-vs__wissen-liste" role="list">
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Kostenlos</strong> sind Lieferung und lose Verlegung ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km. Alles andere berechnen wir zu den Festpreisen oben.</span>
+      </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Der Service gilt für bei uns gekaufte Rollenware</strong> – {{ vs_bezeichnung | escape }}.</span>
+      </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Lose Verlegung beinhaltet keine Fixierung</strong> und keine vollflächige Verklebung – beides buchen Sie auf Wunsch dazu.</span>
+      </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Die endgültige Verlegeart</strong> hängt auch von Bodenbelag, Untergrund und Nutzung des Raumes ab.</span>
+      </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Zusatzarbeiten</strong> wie besondere Untergrundarbeiten, Möbelräumung oder das Entfernen des alten Belags können weitere Leistungen erfordern.</span>
+      </li>
+    </ul>
+    <p class="tp-vs__wissen-schluss">Alle Kosten nennen wir Ihnen vor der Ausführung – zusätzliche Arbeiten besprechen wir transparent mit Ihnen.</p>
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-vs {
+    --tp-vs-ton: 141 113 76;
+    --tp-vs-gruen: 29 107 71;
+    --tp-vs-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    --tp-vs-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-vs p,
+  .tp-vs li {
+    text-wrap: pretty;
+  }
+
+  /* Einstieg ----------------------------------------------------------- */
+
+  .tp-vs__hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: center;
+    max-width: 760px;
+  }
+
+  .tp-vs__hero--bild {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    max-width: none;
+  }
+
+  /* Eyebrows wie auf der Startseite: klein, Grossbuchstaben, gesperrt. */
+  .tp-vs__marke,
+  .tp-vs__eyebrow {
+    margin: 0 0 12px;
+    color: #8d714c;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .tp-vs__titel {
+    margin: 0;
+    font-family: var(--font-heading--family, inherit);
+    font-size: clamp(2rem, 1.3rem + 2.8vw, 3.25rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.08;
+    text-wrap: balance;
+  }
+
+  .tp-vs__sub {
+    max-width: 52ch;
+    margin: 16px 0 0;
+    color: var(--tp-vs-leise);
+    font-size: clamp(17px, 1.5vw, 19px);
+    line-height: 1.55;
+  }
+
+  /* Das Angebot in der hellgruenen Flaeche aus Farbschema 3 - das staerkste
+     Argument der Seite, am Telefon im ersten Bildschirm. */
+  .tp-vs__angebot {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    max-width: 560px;
+    margin-top: 24px;
+    padding: 16px 18px;
+    border: 1px solid rgb(var(--tp-vs-gruen) / 0.16);
+    border-radius: 14px;
+    background: #eef1ea;
+  }
+
+  .tp-vs__angebot-zeichen {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgb(var(--tp-vs-gruen));
+    color: #fff;
+  }
+
+  .tp-vs__angebot-zeichen .tp-vs-icon {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2.6;
+  }
+
+  .tp-vs__angebot-titel {
+    margin: 0;
+    color: rgb(var(--tp-vs-gruen));
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .tp-vs__angebot-titel span {
+    display: block;
+    margin-top: 2px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .tp-vs__angebot-text {
+    margin: 8px 0 0;
+    color: var(--tp-vs-leise);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .tp-vs__angebot-text .tp-vs-preis {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.9);
+  }
+
+  .tp-vs__aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    margin-top: 24px;
+  }
+
+  .tp-vs__tel {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    color: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  .tp-vs__tel .tp-vs-icon {
+    width: 20px;
+    height: 20px;
+    color: #8d714c;
+  }
+
+  /* Vertrauenszeile wie unter dem Einstieg der Startseite: goldbraune Icons. */
+  .tp-vs__vertrauen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin: 22px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vs__vertrauen li {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .tp-vs__vertrauen .tp-vs-icon {
+    width: 18px;
+    height: 18px;
+    color: #8d714c;
+  }
+
+  .tp-vs__hero-bild {
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
+    border-radius: 18px;
+    background: rgb(var(--tp-vs-ton) / 0.08);
+  }
+
+  .tp-vs__hero-bild picture {
+    display: block;
+    height: 100%;
+  }
+
+  .tp-vs__bild {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 45%;
+  }
+
+  /* Abschnitte -------------------------------------------------------- */
+
+  .tp-vs__teil {
+    margin-top: clamp(56px, 8vw, 96px);
+  }
+
+  .tp-vs__kopf {
+    max-width: 62ch;
+    margin: 0 auto clamp(28px, 4vw, 40px);
+    text-align: center;
+  }
+
+  .tp-vs__h2 {
+    margin: 0;
+    font-family: var(--font-heading--family, inherit);
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  .tp-vs__h2--klein {
+    font-size: clamp(1.25rem, 1.05rem + 0.7vw, 1.5rem);
+  }
+
+  .tp-vs__intro {
+    margin: 12px 0 0;
+    color: var(--tp-vs-leise);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .tp-vs__mehr {
+    margin: clamp(20px, 3vw, 28px) 0 0;
+    text-align: center;
+  }
+
+  .tp-vs__mehr a {
+    color: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  .tp-vs__mehr a::after {
+    content: '\00a0\2193';
+  }
+
+  /* Ablauf ------------------------------------------------------------ */
+
+  .tp-vs__schritte {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+    counter-reset: tp-vs-schritt;
+  }
+
+  .tp-vs__schritte li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 22px 20px 20px;
+    border-radius: 16px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.035);
+    counter-increment: tp-vs-schritt;
+  }
+
+  /* Die Nummer kommt aus einem CSS-Zaehler, nicht aus dem Markup. */
+  .tp-vs__schritte li::before {
+    content: counter(tp-vs-schritt);
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    color: rgb(var(--tp-vs-ton) / 0.55);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .tp-vs__schritt-zeichen {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    margin-bottom: 8px;
+    border-radius: 50%;
+    background: var(--color-background, #fff);
+    color: #8d714c;
+    box-shadow: 0 2px 8px rgb(28 25 23 / 0.06);
+  }
+
+  .tp-vs__schritt-zeichen .tp-vs-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .tp-vs__schritte strong {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .tp-vs__schritte li > span:last-child {
+    color: var(--tp-vs-leise);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* Lose Verlegung ---------------------------------------------------- */
+
+  .tp-vs__info {
+    max-width: 860px;
+    margin: clamp(48px, 7vw, 72px) auto 0;
+    overflow: hidden;
+    border: 1px solid rgb(var(--tp-vs-ton) / 0.28);
+    border-radius: 16px;
+    background: rgb(var(--tp-vs-ton) / 0.07);
+  }
+
+  .tp-vs__info-bild {
+    display: none;
+    aspect-ratio: 16 / 9;
+  }
+
+  .tp-vs__info-text {
+    padding: clamp(20px, 3vw, 30px);
+  }
+
+  .tp-vs__info .tp-vs__h2 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .tp-vs__info-zeichen {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-background, #fff);
+    color: #8d714c;
+  }
+
+  .tp-vs__info-zeichen .tp-vs-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .tp-vs__info p {
+    margin: 12px 0 0;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .tp-vs__info .tp-vs__info-rat {
+    color: var(--tp-vs-leise);
+    font-size: 16px;
+  }
+
+  .tp-vs__info-rat a {
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  /* Preise ------------------------------------------------------------ */
+
+  .tp-vs-tabelle {
+    width: 100%;
+    max-width: 980px;
+    margin: 0 auto;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .tp-vs-tabelle th,
+  .tp-vs-tabelle td {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--tp-vs-linie);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .tp-vs-tabelle thead th {
+    border-bottom-width: 2px;
+    color: var(--tp-vs-leise);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tp-vs-tabelle td {
+    width: 26%;
+  }
+
+  .tp-vs-tabelle td > .tp-vs-preis,
+  .tp-vs-tabelle td > .tp-vs-klein {
+    display: block;
+  }
+
+  .tp-vs-tabelle .tp-vs-preis {
+    font-size: 17px;
+  }
+
+  /* Die Spalte ab der Schwelle traegt den Ton der hervorgehobenen Karte -
+     so ist der Vorteil schon an der Farbe zu sehen, bevor man liest. */
+  .tp-vs-tabelle .tp-vs-tabelle__plus {
+    background: rgb(var(--tp-vs-ton) / 0.09);
+  }
+
+  .tp-vs-tabelle thead .tp-vs-tabelle__plus {
+    border-radius: 12px 12px 0 0;
+    color: #6d5536;
+  }
+
+  .tp-vs-tabelle tbody tr:last-child .tp-vs-tabelle__plus {
+    border-radius: 0 0 12px 12px;
+  }
+
+  .tp-vs-tabelle td.tp-vs-tabelle__plus .tp-vs-preis {
+    color: #6d5536;
+  }
+
+  .tp-vs-tabelle .tp-vs-gratis,
+  .tp-vs-tabelle td.tp-vs-tabelle__plus .tp-vs-gratis {
+    color: rgb(var(--tp-vs-gruen));
+  }
+
+  .tp-vs-tabelle__kopf {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .tp-vs-tabelle__symbol {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgb(var(--tp-vs-ton) / 0.12);
+    color: #8d714c;
+  }
+
+  .tp-vs-tabelle__symbol .tp-vs-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .tp-vs-tabelle__name {
+    display: block;
+    font-weight: 700;
+  }
+
+  .tp-vs-tabelle__info {
+    display: block;
+    margin-top: 3px;
+    color: var(--tp-vs-leise);
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  .tp-vs-zonen {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vs-zonen li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0 12px;
+  }
+
+  .tp-vs-zonen li > span:first-child {
+    color: var(--tp-vs-leise);
+    font-size: 14px;
+  }
+
+  .tp-vs-tabelle__beispiel {
+    max-width: 980px;
+    margin: 18px auto 0;
+    padding: 14px 18px;
+    border-radius: 12px;
+    background: #eef1ea;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  /* Gut zu wissen ----------------------------------------------------- */
+
+  .tp-vs__wissen {
+    max-width: 980px;
+    margin-inline: auto;
+    padding: clamp(22px, 3.5vw, 40px);
+    border-radius: 18px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.035);
+  }
+
+  .tp-vs__wissen .tp-vs__h2 {
+    margin-bottom: 20px;
+  }
+
+  .tp-vs__wissen-liste {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 36px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-vs__wissen-liste li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .tp-vs__wissen-liste .tp-vs-icon {
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+    color: #8d714c;
+  }
+
+  .tp-vs__wissen-schluss {
+    margin: 22px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--tp-vs-linie);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.55;
+  }
+
+  /* Tablet ------------------------------------------------------------ */
+
+  @media screen and (max-width: 989px) {
+    .tp-vs__schritte {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /* Telefon ----------------------------------------------------------- */
+
+  @media screen and (max-width: 749px) {
+    .tp-vs__hero--bild {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Am Telefon kein Bild im Einstieg: es schoebe das Angebot aus dem
+       ersten Bildschirm. Es steht stattdessen bei "lose Verlegung". */
+    .tp-vs__hero-bild {
+      display: none;
+    }
+
+    .tp-vs__info-bild {
+      display: block;
+    }
+
+    .tp-vs__angebot {
+      padding: 14px 16px;
+    }
+
+    .tp-vs__angebot-titel {
+      font-size: 18px;
+    }
+
+    .tp-vs__aktionen .tp-vs-knopf {
+      width: 100%;
+    }
+
+    .tp-vs__kopf,
+    .tp-vs__mehr {
+      text-align: left;
+    }
+
+    .tp-vs__schritte {
+      gap: 10px;
+    }
+
+    .tp-vs__schritte li {
+      padding: 16px 14px;
+    }
+
+    .tp-vs__schritte li::before {
+      top: 14px;
+      right: 14px;
+      font-size: 22px;
+    }
+
+    .tp-vs__schritt-zeichen {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 4px;
+    }
+
+    .tp-vs__schritte strong {
+      font-size: 16px;
+    }
+
+    .tp-vs__schritte li > span:last-child {
+      font-size: 14px;
+    }
+
+    /* Je Leistung eine Karte: Symbol, Name und Erklaerung oben, darunter die
+       beiden Preisfelder nebeneinander, jedes mit seiner Stufe beschriftet. */
+    .tp-vs-tabelle,
+    .tp-vs-tabelle tbody {
+      display: block;
+    }
+
+    .tp-vs-tabelle thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .tp-vs-tabelle tr {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 14px;
+      border: 1px solid var(--tp-vs-linie);
+      border-radius: 14px;
+    }
+
+    .tp-vs-tabelle th,
+    .tp-vs-tabelle td {
+      padding: 0;
+      border: 0;
+    }
+
+    .tp-vs-tabelle th[scope='row'] {
+      grid-column: 1 / -1;
+      margin-bottom: 4px;
+    }
+
+    .tp-vs-tabelle td {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: auto;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.04);
+    }
+
+    .tp-vs-tabelle td::before {
+      content: attr(data-label);
+      margin-bottom: 2px;
+      color: var(--tp-vs-leise);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tp-vs-tabelle td.tp-vs-tabelle__plus,
+    .tp-vs-tabelle tbody tr:last-child .tp-vs-tabelle__plus {
+      border-radius: 10px;
+      background: rgb(var(--tp-vs-ton) / 0.12);
+    }
+
+    .tp-vs-tabelle__symbol {
+      width: 36px;
+      height: 36px;
+    }
+
+    .tp-vs-zonen li > span:first-child {
+      font-size: 13px;
+    }
+
+    .tp-vs__wissen-liste {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegeservice",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Schwelle, Zonen, Preise und Kontaktwege stehen zentral in den Theme-Einstellungen unter „TP Verlegeservice“."
+    },
+    {
+      "type": "header",
+      "content": "Einstieg"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Kleine Zeile über der Überschrift",
+      "default": "Liefer- & Verlegeservice für Rollenware"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Überschrift (H1 der Seite)",
+      "default": "Teppichboden & Vinyl von der Rolle – geliefert und verlegt."
+    },
+    {
+      "type": "textarea",
+      "id": "sub",
+      "label": "Untertitel",
+      "default": "Sie wählen den Boden aus, wir bringen ihn zu Ihnen nach Hause und verlegen ihn – in Oranienburg, Berlin und Brandenburg."
+    },
+    {
+      "type": "text",
+      "id": "knopf",
+      "label": "Text des Knopfs",
+      "default": "Teppichboden entdecken"
+    },
+    {
+      "type": "url",
+      "id": "produkte_link",
+      "label": "Ziel der Knöpfe",
+      "info": "Gilt auch für die Knöpfe der Konditionen. Leer lassen: Kollektion Teppichboden."
+    },
+    {
+      "type": "text",
+      "id": "knopf_2",
+      "label": "Text des zweiten Knopfs",
+      "info": "Leer lassen blendet ihn aus – z. B. wenn Vinyl von der Rolle nicht mehr unter „TP Verlegeservice“ steht.",
+      "default": "Vinyl von der Rolle entdecken"
+    },
+    {
+      "type": "url",
+      "id": "produkte_link_2",
+      "label": "Ziel des zweiten Knopfs",
+      "info": "Leer lassen: Kollektion Vinyl von der Rolle."
+    },
+    {
+      "type": "text",
+      "id": "vertrauen",
+      "label": "Vertrauenszeile",
+      "info": "Punkte mit · trennen. Nur Aussagen, die stimmen.",
+      "default": "Persönliche Beratung im Geschäft · Aufmaß vor Ort · Eigenes Verlegeteam aus Oranienburg"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Bild",
+      "info": "Am Desktop im Einstieg, am Telefon bei „lose Verlegung“."
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Verlegeservice"
+    }
+  ]
+}
+{% endschema %}
