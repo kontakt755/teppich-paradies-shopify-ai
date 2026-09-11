@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T19:56:13.081Z",
+  "generated_at": "2026-09-11T19:56:38.152Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 76,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T19:56:13.081Z",
+    "fetchedAt": "2026-09-11T19:56:38.152Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,7 +65,7 @@
     {
       "number": 206,
       "title": "Bildqualitaetstest: Filz-Test misst KI-erzeugte Raender nicht",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/206",
       "labels": [
         "status:review",
@@ -84,13 +84,13 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:41:02Z",
-      "updated_at": "2026-09-11T19:45:15Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T19:56:24Z",
+      "closed_at": "2026-09-11T19:56:24Z"
     },
     {
       "number": 205,
       "title": "Router stuft Fragen als Implementierung ein; Review nimmt vorbestehende Dateien auf",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/205",
       "labels": [
         "status:review",
@@ -109,8 +109,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:41:00Z",
-      "updated_at": "2026-09-11T19:46:44Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T19:56:32Z",
+      "closed_at": "2026-09-11T19:56:32Z"
     },
     {
       "number": 204,
@@ -118,7 +118,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/204",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:operations"
@@ -127,14 +127,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Angebote lassen sich per Lexware-API nur anlegen, abrufen und (finalisiert) als PDF holen; Aendern, Loeschen und Statuswechsel gibt es nicht - fuer kein Werkzeug. Belegte Uebersicht mit Nachpruef-Befehl: domains/lexware/api-funktionsumfang.md",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:40:58Z",
-      "updated_at": "2026-09-11T19:55:58Z",
+      "updated_at": "2026-09-11T19:56:14Z",
       "closed_at": "2026-09-11T19:55:58Z"
     },
     {
