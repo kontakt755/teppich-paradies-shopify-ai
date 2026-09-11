@@ -47,9 +47,8 @@
 - Typ: package
 - Produkt: Alvora Eiche Bernstein – Klebevinyl 2,5mm
 - Vendor: Alvora
-- Produkttyp: fehlt
+- Produkttyp: Klebevinyl
 - Varianten: 1; mit SKU: 0; mit GTIN/EAN: 0
-- Hinweis: Produkttyp fehlt
 - Hinweis: SKU öffentlich nicht gepflegt
 - Hinweis: GTIN/EAN öffentlich nicht gepflegt
 - Hinweis: Paketware: Feed-/Landingpage-Abgleich muss Paketpreis vs. sichtbaren €/m²-Preis berücksichtigen
