@@ -25,7 +25,7 @@ und Kollektionen anlegen, Adressen in `tp-rug-url` umstellen, Preise/Anfrageproz
 | Seite | Adresse |
 |---|---|
 | Einstieg | `/?view=tp-teppiche` |
-| Alle Teppiche (Filter per `raum`, `form`, `kante`, `material`, `flor`, `faser`, `eigenschaft`, `antirutsch`) | `/?view=tp-teppiche-alle&raum=wohnzimmer` |
+| Alle Teppiche (Filter per `raum`, `form`, `kante`, `farbe`, `material`, `flor`, `faser`, `eigenschaft`, `antirutsch`) | `/?view=tp-teppiche-alle&raum=wohnzimmer` |
 | Konfigurator (Demo, `produkt`, `form`, `raum`, `cfg`) | `/?view=tp-teppich-konfigurator&produkt=tp-rug-test-wohnzimmer` |
 | Wohnmobil | `/?view=tp-teppiche-wohnmobil` |
 | Sonderform nach Skizze/Schablone | `/?view=tp-teppiche-sonderform` |
