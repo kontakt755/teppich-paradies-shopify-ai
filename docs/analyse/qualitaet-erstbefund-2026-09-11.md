@@ -628,3 +628,23 @@ Hinweis der Verlegeservice-Sitzung, weitergegeben von der Menü-Sitzung. Er gilt
   - `dcfcbe8` („Hauptbereich aktivieren“) würde neben der H1 der Section `tp-verlegeservice` eine zweite H1 erzeugen, und `qa/tests/verlegeservice.test.mjs` verlangt genau eine.
   - Die Referenzgalerie aus `674a199` dreiseitig neben die `referenz`-Blöcke in `tp-verlegeservice-kontakt` setzen.
 - **`config/settings_schema.json`:** Beide Gruppen behalten, „TP Verlegeservice“ aus `main` und die Gruppen der Kette.
+
+### Nachtrag 4: Technische Punkte (2026-09-11, abends)
+
+Alle Schritte mit Prüfstufe (Guards, `validate --static`, Theme Check ohne neue Warnung, `npm test` 154/154), eigenem Dev-Theme, Prüfsumme davor und danach, dateigenauem Push in den Entwurf.
+
+| # | Punkt | Ergebnis | Commit |
+|---|---|---|---|
+| 28 | Suchfeld am Telefon öffnet die Schnellsuche | 7/7 in Dev-Theme und Entwurf (Dialog offen, Fokus im Suchfeld, 28 Vorschläge zu „teppich“, Escape schließt ohne Neuöffnen; Desktop bleibt normales Feld, Enter → Suchseite). Die Lupe im Header bleibt, weil die Suchleiste wegscrollt. | `ba543a1` |
+| 29 | Feste Farbwerte durch vorhandene `--tp-`-Tokens ersetzt | 42 Stellen in 7 eigenen Dateien, `var(--tp-…, #hex)` mit altem Wert als Rückfall. Berechnete Farben und Maße von 418 Elementen vorher/nachher ohne Abweichung – in Dev-Theme und Entwurf, nachdem das neue CSS nachweislich ausgeliefert wurde. | `453ca1d` |
+
+**Bewusst nicht umgesetzt, mit Messung:**
+
+- **Erstes Kartenbild auf Unterkategorie-Seiten priorisieren:** Auf Klickvinyl ist das LCP-Element am Telefon ein Textabsatz, LCP rund 1,5 s gedrosselt. Kartenbilder vorzuziehen brächte nichts und nähme dem Text Bandbreite.
+- **Startseite am Telefon:**
+  - Im Entwurf ist der Cookie-Banner das größte Element (287 × 229 px, 16 px Schrift aus der Grundschriftgröße des Themes). Das Hero-Bild steht erst ab 737 px und zeigt im ersten Bildschirm nur 38.328 px² gegen 64.468 px² Banner.
+  - Wirken würde nur, das Hero-Bild am Telefon über den Text zu stellen (rund 80.000 px² sofort sichtbar). Das ist eine Gestaltungsentscheidung zu Konzept C → Inhaber.
+- **Doppeltes Filterformular:**
+  - Die Handy-Kopie ist 115 KB roh, aber nur 6,8 KB gzip. Entfiele sie ganz, spart die Seite 5,5 KB Übertragung und rund 590 Elemente.
+  - Dafür wäre ein Eingriff in Horizons Filterlogik nötig, die beide Formulare synchron hält. Das Risiko für die kaufentscheidenden Filter steht in keinem Verhältnis dazu.
+- **Paketknöpfe** (± 38 × 44 px, Paket-Steller 32 × 32 px): `blocks/paket-auswahl.liquid` liegt im Entwurf in einer fremden Fassung (Fliesen-Reserve-Hinweis, 12:36 UTC). Befund und CSS-Vorschlag gingen an die Paketware-Sitzung, der Paket-Rechner ist geschützt.
