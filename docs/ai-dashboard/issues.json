@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T11:20:54.026Z",
+  "generated_at": "2026-09-11T12:02:44.860Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 68,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T11:20:54.026Z",
+    "fetchedAt": "2026-09-11T12:02:44.860Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -102,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-11T11:05:17Z",
+      "updated_at": "2026-09-11T11:45:28Z",
       "closed_at": null
     },
     {
@@ -127,14 +127,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Seite /pages/liefer-verlegeservice rendert live die B2B-Seite (page.verlegeservice.json fehlt in main). Neue Service-Seite mit zwei Preisstufen (unter/ab 649 EUR), lose Verlegung erklaert, Klebearten, Vergleich, >50 km Kontakt; Hinweis nur auf Teppichboden-Rollenware; Preise/Schwellen zentral in den Theme-Einstellungen. Korrigiert widerspruechliche Aussagen (feste Verlegung inklusive, 15 km ab 649 EUR). Baut auf #174/#186 auf.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T09:36:48Z",
-      "updated_at": "2026-09-11T10:53:22Z",
+      "updated_at": "2026-09-11T11:38:56Z",
       "closed_at": null
     },
     {
@@ -212,7 +212,7 @@
     {
       "number": 181,
       "title": "Mega-Menue: header-drawer.liquid ueberschreitet die Liquid-Komplexitaet",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/181",
       "labels": [
         "status:review",
@@ -230,8 +230,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-10T11:27:02Z",
-      "updated_at": "2026-09-10T11:29:08Z",
-      "closed_at": null
+      "updated_at": "2026-09-11T12:02:29Z",
+      "closed_at": "2026-09-11T12:02:29Z"
     },
     {
       "number": 179,
