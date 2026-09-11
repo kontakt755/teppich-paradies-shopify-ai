@@ -1,6 +1,210 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-import { currentCommit, describeReviewScope, detectReviewScope, resolveReviewDir, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+import { captureWorkingTreeSnapshot, compareWithBaseline, currentCommit, describeReviewScope, detectReviewScope, isUsableBaseline, parsePorcelainZ, resolveReviewDir, shouldSkipReview, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+
+// --- Baseline vorbestehender Dateien (2026-09-11) --------------------------
+// Realer Vorfall: domains/shopify/bild-qualitaetstest.py lag schon VOR
+// Sitzungsbeginn unversioniert im Working Tree, .claude/launch.json war
+// vorbestehend geaendert. Beide landeten im Review, Codex verlangte das
+// Loeschen der fremden Datei. Die Tests laufen gegen echte Wegwerf-Repositories.
+
+function git(cwd, ...args) {
+  return execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', ...args], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+}
+
+function vorbestehenderStand() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-review-baseline-'));
+  git(dir, '-c', 'init.defaultBranch=main', 'init', '-q');
+  fs.mkdirSync(path.join(dir, '.claude'));
+  fs.mkdirSync(path.join(dir, 'domains/shopify'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '.claude/launch.json'), '{"version":"0.0.1"}\n');
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme\n');
+  git(dir, 'add', '.claude/launch.json', 'README.md');
+  git(dir, 'commit', '-qm', 'init');
+  // Zustand bei Sitzungsbeginn: eine vorbestehend geaenderte, eine unversionierte Datei.
+  fs.writeFileSync(path.join(dir, '.claude/launch.json'), '{"version":"0.0.2"}\n');
+  fs.writeFileSync(path.join(dir, 'domains/shopify/bild-qualitaetstest.py'), 'print("fremd")\n');
+  const baseline = captureWorkingTreeSnapshot({ cwd: dir });
+  const startCommit = currentCommit({ cwd: dir });
+  return { dir, baseline, startCommit };
+}
+
+test('Baseline: vorbestehende Dateien, unveraendert, werden ausgeklammert und im Text genannt', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  assert.equal(baseline.ok, true);
+  assert.ok(isUsableBaseline(baseline));
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.equal(scope.baselineStatus, 'APPLIED');
+  assert.deepEqual(scope.excluded, ['.claude/launch.json', 'domains/shopify/bild-qualitaetstest.py']);
+  assert.match(scope.text, /Vorbestehend, unverändert seit Sitzungsbeginn: \.claude\/launch\.json, domains\/shopify\/bild-qualitaetstest\.py/);
+  assert.match(scope.text, /verlange weder ihre Änderung noch ihre Entfernung/);
+});
+
+test('Baseline: eine vorbestehende Datei, die die Sitzung veraendert, bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.appendFileSync(path.join(dir, 'domains/shopify/bild-qualitaetstest.py'), 'print("geaendert")\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.excluded, ['.claude/launch.json']);
+});
+
+test('Baseline: eine neue Datei der Sitzung bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.writeFileSync(path.join(dir, 'neu.mjs'), 'export {};\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.ok(!scope.excluded.includes('neu.mjs'));
+});
+
+test('Baseline: vorbestehend geaendert und per Checkout zurueckgesetzt bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  git(dir, 'checkout', '--', '.claude/launch.json');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.reverted, ['.claude/launch.json']);
+  assert.match(scope.text, /zurückgesetzt oder entfernt.*\.claude\/launch\.json/);
+});
+
+test('Baseline: eine vorbestehende unversionierte Datei, die die Sitzung loescht, bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.rmSync(path.join(dir, 'domains/shopify/bild-qualitaetstest.py'));
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.reverted, ['domains/shopify/bild-qualitaetstest.py']);
+});
+
+test('Baseline: nur gestagt statt geaendert ist ein anderer Zustand und bleibt im Scope', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  git(dir, 'add', '.claude/launch.json');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.excluded, ['domains/shopify/bild-qualitaetstest.py']);
+});
+
+test('Baseline: ein Commit der Sitzung bleibt im Scope, vorbestehende Dateien werden trotzdem genannt', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme 2\n');
+  git(dir, 'add', 'README.md');
+  git(dir, 'commit', '-qm', 'fix: readme');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_COMMITTED);
+  assert.equal(scope.commits.length, 1);
+  assert.match(scope.text, /Vorbestehend, unverändert seit Sitzungsbeginn/);
+});
+
+test('Baseline: ein unveraenderter vorbestehender Symlink (wie node_modules im Worktree) wird ausgeklammert', () => {
+  const { dir, startCommit } = vorbestehenderStand();
+  fs.symlinkSync('/nirgendwo/node_modules', path.join(dir, 'node_modules'));
+  const baseline = captureWorkingTreeSnapshot({ cwd: dir });
+  assert.equal(baseline.entries.node_modules.link, '/nirgendwo/node_modules');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.ok(scope.excluded.includes('node_modules'));
+});
+
+test('Baseline: aus einem Unterverzeichnis erfasst ergibt dieselben Pfade wie aus der Wurzel', () => {
+  const { dir, baseline } = vorbestehenderStand();
+  const ausUnterordner = captureWorkingTreeSnapshot({ cwd: path.join(dir, 'domains') });
+  assert.equal(ausUnterordner.root, baseline.root);
+  assert.deepEqual(Object.keys(ausUnterordner.entries).sort(), Object.keys(baseline.entries).sort());
+});
+
+test('Baseline fehlt, ist kaputt, gescheitert oder aus einem anderen Repository: nichts wird ausgeklammert', () => {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  const ohne = detectReviewScope({ cwd: dir, sinceRef: startCommit });
+  assert.equal(ohne.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.equal(ohne.excluded, undefined);
+  assert.equal(ohne.baselineStatus, undefined);
+
+  const kaputt = [
+    { ok: true, version: 1, root: baseline.root, entries: 'kaputt' },
+    { ok: true, version: 99, root: baseline.root, entries: baseline.entries },
+    { ok: false, version: 1, error: 'git status scheiterte' },
+    'kein Objekt',
+  ];
+  for (const broken of kaputt) {
+    const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: broken });
+    assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED, JSON.stringify(broken));
+    assert.equal(scope.baselineStatus, 'UNUSABLE');
+    assert.equal(scope.excluded, undefined);
+  }
+
+  // Eintraege ohne Statuscodes oder Hash werden nie ausgeklammert.
+  const ohneHash = { ...baseline, entries: { '.claude/launch.json': { codes: [' M'] }, 'domains/shopify/bild-qualitaetstest.py': {} } };
+  assert.equal(detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: ohneHash }).kind, REVIEW_SCOPE_UNCOMMITTED);
+
+  const anderes = vorbestehenderStand();
+  const fremd = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: anderes.baseline });
+  assert.equal(fremd.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.equal(fremd.baselineStatus, 'ROOT_MISMATCH');
+
+  const gitKaputt = (cmd, args) => {
+    if (args[0] === 'status') return ' M a.js';
+    throw new Error('git weg');
+  };
+  const scheitert = detectReviewScope({ cwd: dir, baseline, exec: gitKaputt });
+  assert.equal(scheitert.baselineStatus, 'CAPTURE_FAILED');
+  assert.equal(scheitert.excluded, undefined);
+});
+
+test('captureWorkingTreeSnapshot wirft nie, sondern meldet ok:false', () => {
+  const snapshot = captureWorkingTreeSnapshot({ cwd: '/nowhere', exec: () => { throw new Error('not a git repository'); } });
+  assert.equal(snapshot.ok, false);
+  assert.match(snapshot.error, /not a git repository/);
+  assert.equal(isUsableBaseline(snapshot), false);
+});
+
+test('parsePorcelainZ liest Umbenennungen, Leerzeichen-Statuscodes und doppelte Pfade', () => {
+  const parsed = parsePorcelainZ(' D b.txt\0R  c.txt\0a.txt\0D  x\0?? x\0?? d/neu.txt\0');
+  assert.deepEqual(parsed.get('b.txt'), [' D']);
+  assert.deepEqual(parsed.get('c.txt'), ['R  <- a.txt']);
+  assert.ok(!parsed.has('a.txt'));
+  assert.deepEqual(parsed.get('x'), ['D ', '??']);
+  assert.deepEqual(parsed.get('d/neu.txt'), ['??']);
+});
+
+test('compareWithBaseline trennt ausgeklammert, verbleibend und zurueckgesetzt', () => {
+  const baseline = { entries: { a: { codes: ['??'], hash: 'h1' }, b: { codes: [' M'], hash: 'h2' }, c: { codes: [' D'], deleted: true }, weg: { codes: ['??'], hash: 'h3' } } };
+  const current = { entries: { a: { codes: ['??'], hash: 'h1' }, b: { codes: [' M'], hash: 'h9' }, c: { codes: [' D'], deleted: true }, neu: { codes: ['??'], hash: 'h4' } } };
+  assert.deepEqual(compareWithBaseline({ baseline, current }), { excluded: ['a', 'c'], remaining: ['b', 'neu'], reverted: ['weg'] });
+});
+
+test('describeReviewScope nennt ausgeklammerte Pfade auch im No-op-Fall', () => {
+  const scope = describeReviewScope({ porcelain: '', aheadCommits: '', mergeBase: 'deadbee', taskScoped: true, excluded: ['domains/shopify/bild-qualitaetstest.py'] });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.match(scope.text, /Entscheide, ob der Auftrag ohne Änderung erfüllt ist/);
+  assert.match(scope.text, /Vorbestehend, unverändert seit Sitzungsbeginn: domains\/shopify\/bild-qualitaetstest\.py/);
+});
+
+// --- Fragen nur pruefen, wenn sich etwas geaendert hat (2026-09-11) ---------
+
+test('shouldSkipReview: Frage ohne Aenderung wird nicht geprueft', () => {
+  const state = { taskType: 'ANALYSIS', taskTypeSource: 'QUESTION', reviewOnlyIfChanged: true };
+  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_NONE } }), true);
+});
+
+test('shouldSkipReview: Frage mit Aenderung wird wie bisher geprueft', () => {
+  const state = { taskType: 'ANALYSIS', taskTypeSource: 'QUESTION', reviewOnlyIfChanged: true };
+  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_UNCOMMITTED } }), false);
+  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_COMMITTED } }), false);
+  // git-Fehler ist nie "leer"
+  assert.equal(shouldSkipReview({ state, scope: { kind: REVIEW_SCOPE_UNKNOWN } }), false);
+});
+
+test('shouldSkipReview: Implementierung wird auch bei leerem Scope geprueft', () => {
+  const scope = { kind: REVIEW_SCOPE_NONE };
+  assert.equal(shouldSkipReview({ state: { taskType: 'IMPLEMENTATION', taskTypeSource: 'HEURISTIC', startCommit: 'abc' }, scope }), false);
+  // auch ein widerspruechlicher Zustand darf eine Implementierung nie auslassen
+  assert.equal(shouldSkipReview({ state: { taskType: 'IMPLEMENTATION', reviewOnlyIfChanged: true }, scope }), false);
+  // aelterer Session-State ohne die neuen Felder: unveraendert pruefen
+  assert.equal(shouldSkipReview({ state: { status: 'PENDING_REVIEW' }, scope }), false);
+  assert.equal(shouldSkipReview({}), false);
+});
 
 test('dirty working tree reviews the uncommitted changes', () => {
   const scope = describeReviewScope({ porcelain: ' M a.js', aheadCommits: '' });
