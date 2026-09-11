@@ -30,8 +30,12 @@ class HeaderMenu extends Component {
     // (~700 KB), auch auf Touch-Geraeten, die nur den Drawer benutzen.
     // Capture-Phase, damit die Bilder sichtbar sind, bevor activate() die
     // Hoehe des Untermenues misst.
-    this.addEventListener('pointerover', this.#revealImages, { capture: true, once: true });
-    this.addEventListener('focus', this.#revealImages, { capture: true, once: true });
+    // Bewusst ohne once: Die Header-Hydration kann data-images-revealed wieder
+    // entfernen (nachgestellt: 6 von 36 Bildern blieben bis zum Neuladen
+    // ausgeblendet). #revealImages prueft das Attribut selbst und kostet
+    // danach nur einen hasAttribute-Aufruf.
+    this.addEventListener('pointerover', this.#revealImages, { capture: true });
+    this.addEventListener('focus', this.#revealImages, { capture: true });
     window.addEventListener('resize', this.#resizeListener);
     this.overflowMenu?.addEventListener('pointerleave', this.#overflowSubmenuListener);
   }

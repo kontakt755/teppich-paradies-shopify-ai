@@ -118,6 +118,18 @@
     font-weight: 700;
     line-height: 1.2;
   }
+
+  /*
+   * Einheit "€/m²" neben dem Kartenpreis: Sie sitzt in .price__regular
+   * (12px) statt im Preis (20,8px) und bekam aus snippets/price.liquid
+   * 0.82em = 9,8px - die Leitgroesse des Shops war damit kaum lesbar.
+   * Mindestens 13px; steht die Einheit im Preis selbst, bleibt 0.82em.
+   * Selektor bewusst spezifischer als die Grundregel, damit er unabhaengig
+   * von der Reihenfolge im kompilierten CSS gilt.
+   */
+  product-price [ref='priceContainer'] .price-card-per-unit {
+    font-size: max(0.8125rem, 0.82em);
+  }
 {% endstylesheet %}
 
 {% schema %}

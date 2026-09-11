@@ -28,13 +28,25 @@
   84 px weiter links als Reiter und Ueberschrift. Genau die Listen dieser Reiter
   bekommen die Inhaltsbreite der TP-Sections (Audit B-16). Die Section-IDs sind
   dynamisch, deshalb hier ein style-Tag statt stylesheet.
+
+  Ausblenden ab dem ersten Bild: Bisher versteckte erst das Skript unten die
+  Listen der uebrigen Reiter - zu spaet, der Browser hatte deren Kartenbilder
+  beim ersten Layout schon angefragt (Desktop: Produktfotos in 1.440 px, rund
+  1,4 MB fuer zwei unsichtbare Listen). Jetzt blendet CSS sie von Anfang an aus.
+  Die Regel greift nur mit der Klasse tp-js, die das Einzeiler-Skript setzt:
+  ohne JavaScript bleibt es bei "alle Listen sichtbar". Im Theme-Editor bleibt
+  alles sichtbar, damit die Sections auswaehlbar sind.
 {%- endcomment -%}
 {%- assign tp_tabs_prefix = section.id | split: '__' | first -%}
+<script>document.documentElement.classList.add('tp-js');</script>
 <style>
   {%- for block in section.blocks -%}
     {%- assign tp_tabs_key = block.settings.section_id | strip -%}
     {%- if tp_tabs_key != blank -%}
       #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }} .section { --page-content-width: calc(var(--tp-container) - 2 * var(--tp-pad)); --page-width: calc(var(--page-content-width) + var(--page-margin) * 2); }
+      {%- unless forloop.first or request.design_mode -%}
+        .tp-js #shopify-section-{{ tp_tabs_prefix }}__{{ tp_tabs_key }}:not([data-tp-tab-aktiv]) { display: none; }
+      {%- endunless -%}
     {%- endif -%}
   {%- endfor -%}
 </style>
@@ -63,7 +75,11 @@
           t.setAttribute('tabindex', on ? '0' : '-1');
           var key = t.getAttribute('data-tp-target');
           var sec = document.querySelector('.shopify-section[id$="__' + key + '"]') || document.getElementById('shopify-section-' + key);
-          if (sec) sec.hidden = !on;
+          if (!sec) return;
+          sec.hidden = !on;
+          // Die CSS-Regel oben blendet die Listen der uebrigen Reiter aus, bis sie aktiv sind
+          if (on) sec.setAttribute('data-tp-tab-aktiv', '');
+          else sec.removeAttribute('data-tp-tab-aktiv');
         });
       }
       tabs.forEach(function (t) { t.addEventListener('click', function () { show(t); }); });
