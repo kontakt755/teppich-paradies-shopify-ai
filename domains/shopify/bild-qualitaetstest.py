@@ -33,6 +33,23 @@ Schwellen
   Farbton  <= 1,5 Prozentpunkte Abweichung im R-B-Verhaeltnis zur Weissreferenz
   Pixel    nach dem Kompositieren muss die Abweichung exakt 0 sein
 
+Erzeugte Raender
+----------------
+Mit Ergebnisbild wird jeder KI-erzeugte Randstreifen zusaetzlich fuer sich
+gemessen - nur mit seinen eigenen Pixeln. Das Motiv allein reicht nicht: nach
+dem Kompositieren sind das die Originalpixel, das Urteil waere immer das der
+Quelle. Fuer jeden gemessenen Rand gelten dieselben Verlauf-Schwellen wie
+fuer das Motiv; ein Rand unter 1,5 fuehrt zur Ablehnung.
+
+  links/rechts  dieselben Zeilen wie die Messkaesten der Quelle
+  unten         obere gegen untere Lage des Streifens, die unteren Ecken
+                je fuer sich
+  oben          liegt ueber der Florzone -> "nicht messbar"
+
+Ein Streifen, dessen Messkasten kleiner als RAND_MIN_KASTEN ist, wird
+ebenfalls als "nicht messbar" gemeldet. Das lehnt nicht ab, steht aber
+ausdruecklich in der Ausgabe (Begruendung bei messe_raender).
+
 Aufruf
 ------
   # nur messen
@@ -59,6 +76,20 @@ import tempfile
 # Sockelleiste im oberen Drittel, Flor fuellt die untere Bildhaelfte.
 FLOR_VORN = (0.15, 0.75, 0.58, 0.94)
 FLOR_HINTEN = (0.15, 0.52, 0.58, 0.62)
+
+# Messkaesten im unteren Randstreifen, als Anteil seiner Hoehe (x ueber die
+# ganze Streifenbreite). Der Streifen liegt naeher an der Kamera als alles in
+# der Quelle; innerhalb des Streifens gilt dieselbe Regel: oben ferner, unten
+# naeher. Die beiden Kaesten liegen so weit auseinander wie moeglich, damit
+# der geringere Tiefenumfang eines schmalen Streifens nicht noch weiter
+# schrumpft.
+UNTEN_HINTEN = (0.05, 0.35)
+UNTEN_VORN = (0.65, 0.95)
+
+# Kleinste Kantenlaenge eines Messkastens im Randstreifen, in Pixeln. Darunter
+# stehen in einem Kasten nur noch wenige Florbueschel, der Mikrokontrast
+# haengt dann an einzelnen Fasern statt an der Zeichnung.
+RAND_MIN_KASTEN = 32
 
 VERLAUF_GUT = 1.5
 VERLAUF_FILZ = 1.0
@@ -176,10 +207,14 @@ def weissreferenz(bild, roi):
 
 
 def messe(bild, roi, etikett):
-    vorn = mikrokontrast(bild, roi.kasten(FLOR_VORN))
-    hinten = mikrokontrast(bild, roi.kasten(FLOR_HINTEN))
-    flor = mittel(bild, roi.kasten(FLOR_VORN))
-    weiss = weissreferenz(bild, roi)
+    return _messwerte(bild, roi.kasten(FLOR_VORN), roi.kasten(FLOR_HINTEN),
+                      weissreferenz(bild, roi), etikett)
+
+
+def _messwerte(bild, kasten_vorn, kasten_hinten, weiss, etikett):
+    vorn = mikrokontrast(bild, kasten_vorn)
+    hinten = mikrokontrast(bild, kasten_hinten)
+    flor = mittel(bild, kasten_vorn)
     quot = [flor[i] / weiss[i] if weiss[i] else 0.0 for i in range(3)]
     return {
         "etikett": etikett,
@@ -360,9 +395,115 @@ def urteil(m):
     return "OK"
 
 
-def zeile(m):
+def kopf():
+    print(f"\n{'Bild':38}{'vorn':>8}{'hinten':>8}{'Verlauf':>9}{'Farbe':>10}{'Waerme':>8}")
+    print("-" * 81)
+
+
+def zeile(m, zusatz=""):
     print(f"{m['etikett'][:37]:38}{m['vorn']:7.2f}%{m['hinten']:7.2f}%"
-          f"{m['verlauf']:8.2f}x{m['hex']:>10}{m['waerme']:+7.1f}%")
+          f"{m['verlauf']:8.2f}x{m['hex']:>10}{m['waerme']:+7.1f}%{zusatz}")
+
+
+def randbereiche(roi, bild):
+    """Die KI-erzeugten Randstreifen um das Quellrechteck, je Seite eine Roi.
+
+    Jedes Pixel ausserhalb der Quelle gehoert genau einem Streifen. Links und
+    rechts laufen nur ueber die Zeilen der Quelle - so liegen die seitlichen
+    Messkaesten in genau denselben Zeilen wie die der Quelle. Oben laeuft ueber
+    die ganze Breite (dort wird ohnehin nicht gemessen, siehe messe_raender).
+    Die unteren Ecken sind eigene Streifen: sie sind kameranah und gut
+    sichtbar, und im Mittel ueber die ganze Bildbreite ginge eine filzige Ecke
+    neben einem guten Streifen unter der Quelle unter."""
+    r = {}
+    rechts, unten = roi.x + roi.w, roi.y + roi.h
+    if roi.x > 0:
+        r["links"] = Roi(0, roi.y, roi.x, roi.h)
+    if rechts < bild.w:
+        r["rechts"] = Roi(rechts, roi.y, bild.w - rechts, roi.h)
+    if roi.y > 0:
+        r["oben"] = Roi(0, 0, bild.w, roi.y)
+    if unten < bild.h:
+        hu = bild.h - unten
+        if roi.x > 0:
+            r["unten links"] = Roi(0, unten, roi.x, hu)
+        r["unten"] = Roi(roi.x, unten, roi.w, hu)
+        if rechts < bild.w:
+            r["unten rechts"] = Roi(rechts, unten, bild.w - rechts, hu)
+    return r
+
+
+def _nutzkante(bild, kasten):
+    """Kleinere Kantenlaenge des Kastens, so wie mikrokontrast ihn nutzt
+    (dort wird am Bildrand um schritt + 1 gekappt)."""
+    x0, y0, x1, y1 = kasten
+    return min(min(x1, bild.w - 2) - x0, min(y1, bild.h - 2) - y0)
+
+
+def messe_raender(bild, roi, weiss=None):
+    """Struktur jedes erzeugten Randstreifens, gemessen nur an dessen Pixeln.
+
+    vorn = kameranah (unten im Bild), hinten = kamerafern (oben), wie beim
+    Motiv. Die Entfernung zur Kamera haengt bei dieser Serie nur an der Zeile
+    (Horizont waagerecht), daher:
+
+      links/rechts  dieselben Zeilen wie FLOR_VORN/FLOR_HINTEN der Quelle -
+                    gleiche Entfernung, der Verlauf ist direkt mit dem der
+                    Quelle vergleichbar.
+      unten         UNTEN_HINTEN gegen UNTEN_VORN innerhalb des Streifens,
+                    ebenso je untere Ecke.
+      oben        nicht messbar: der Streifen liegt vollstaendig ueber der
+                    Florzone (die beginnt erst bei FLOR_HINTEN, also bei 52 %
+                    der Quellhoehe). Dort stehen in dieser Serie Wand und
+                    Sockelleiste - ein Mikrokontrastverlauf davon sagt nichts
+                    ueber Filz.
+
+    "nicht messbar" (oben, oder Messkasten unter RAND_MIN_KASTEN) lehnt nicht
+    ab: ein Rand, der schmaler als der Mindestkasten ist, traegt zu wenig
+    Flaeche fuer den flaechigen Filzeindruck, und oben ist keine Florzeichnung,
+    die filzig werden koennte. Ablehnen hiesse, jede Erweiterung nach oben zu
+    verbieten, ohne dass das Bild dadurch sicherer wird. Stumm bleibt es
+    trotzdem nicht - der Grund steht im Befund und in der Ausgabe.
+
+    Rueckgabe: je vorhandenem Rand {"seite", "rand", "messung", "grund"};
+    genau eines von messung/grund ist gesetzt."""
+    if weiss is None:
+        weiss = weissreferenz(bild, roi)
+    befunde = []
+    for seite, rand in randbereiche(roi, bild).items():
+        b = {"seite": seite, "rand": rand, "messung": None, "grund": None}
+        befunde.append(b)
+        if seite == "oben":
+            b["grund"] = "liegt ueber der Florzone, keine Florzeichnung zu messen"
+            continue
+        if seite.startswith("unten"):
+            vorn, hinten = UNTEN_VORN, UNTEN_HINTEN
+        else:
+            vorn, hinten = FLOR_VORN[1::2], FLOR_HINTEN[1::2]
+        kv = rand.kasten((0.0, vorn[0], 1.0, vorn[1]))
+        kh = rand.kasten((0.0, hinten[0], 1.0, hinten[1]))
+        kante = min(_nutzkante(bild, kv), _nutzkante(bild, kh))
+        if kante < RAND_MIN_KASTEN:
+            b["grund"] = (f"zu schmal ({rand.w}x{rand.h} px, Messkasten {max(kante, 0)} px "
+                          f"< {RAND_MIN_KASTEN} px)")
+            continue
+        b["messung"] = _messwerte(bild, kv, kh, weiss, f"Rand {seite} (erzeugt)")
+    return befunde
+
+
+def beurteile_raender(befunde):
+    """(fehler, ungeprueft): ein gemessener Rand, dessen Urteil nicht OK ist,
+    ist ein Fehler - genau wie beim Motiv. Nicht messbare Raender werden
+    getrennt aufgefuehrt."""
+    fehler, ungeprueft = [], []
+    for b in befunde:
+        if b["messung"] is None:
+            ungeprueft.append(f"Rand {b['seite']} {b['grund']}")
+            continue
+        u = urteil(b["messung"])
+        if u != "OK":
+            fehler.append(f"Struktur Rand {b['seite']}: {u}")
+    return fehler, ungeprueft
 
 
 def main():
@@ -392,8 +533,7 @@ def main():
     roi_q = Roi(0, 0, quelle.w, quelle.h)
     mq = messe(quelle, roi_q, f"{quelle.name} (Quelle)")
 
-    print(f"\n{'Bild':38}{'vorn':>8}{'hinten':>8}{'Verlauf':>9}{'Farbe':>10}{'Waerme':>8}")
-    print("-" * 81)
+    kopf()
     zeile(mq)
 
     if len(pfade) < 2:
@@ -444,8 +584,10 @@ def main():
         print()
         zeile(m2)
         ziel = m2
+        bild_ziel = neu
     else:
         ziel = messe(erg, roi_e, "")
+        bild_ziel = erg
 
     d = abs(ziel["waerme"] - mq["waerme"])
     print(f"\n  Farbtonabweichung: {d:.1f} Prozentpunkte "
@@ -457,10 +599,29 @@ def main():
     if not u.startswith("OK"):
         fehler.append(f"Struktur: {u}")
 
+    # Das Motiv-Urteil oben ist nach dem Kompositieren das der Quelle. Was die
+    # KI tatsaechlich erzeugt hat, steht nur in den Raendern.
+    befunde = messe_raender(bild_ziel, roi_e)
+    ungeprueft = []
+    if befunde:
+        print("\n  Struktur der erzeugten Raender (nur KI-Pixel):")
+        kopf()
+        for b in befunde:
+            if b["messung"]:
+                zeile(b["messung"], "  " + urteil(b["messung"]))
+            else:
+                etikett = f"Rand {b['seite']} (erzeugt)"
+                print(f"{etikett:38}nicht messbar - {b['grund']}")
+        rf, ungeprueft = beurteile_raender(befunde)
+        fehler += rf
+        if ungeprueft:
+            print(f"\n  Ohne Strukturpruefung: {'; '.join(ungeprueft)}")
+
     if fehler:
         print(f"\n  ABGELEHNT: {'; '.join(fehler)}\n")
         sys.exit(1)
-    print("\n  ANGENOMMEN\n")
+    print("\n  ANGENOMMEN" + (" - Rand ohne Strukturpruefung, siehe oben" if ungeprueft else "")
+          + "\n")
 
 
 if __name__ == "__main__":
