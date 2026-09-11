@@ -63,11 +63,37 @@
         assign tp_dn_active = true
       endif
 
-      # Kurzbeschreibung: bis zu drei Unterpunkte, ohne den "Alle ..."-Einstieg
+      # Kurzbeschreibung: bis zu drei Unterpunkte, ohne den "Alle ..."-Einstieg.
+      # Bodenleisten gliedert das Panel nach Merkmalen statt nach Menuepunkten
+      # (tp-leisten-nav). Die Zeile nennt deshalb dessen Gruppen - und nicht
+      # "Sockelleisten" oder "Kleber & Fixierung", die das Panel bewusst weglaesst
+      # (Review 2026-09-11). Gleiche Bedingungen wie im Panel: Tags material:/hoehe:,
+      # Profil-Unterpunkte mit Produkten.
       assign tp_dn_sub = ''
       assign tp_dn_seen = 0
       if tp_dn_kind == 'kontakt'
         assign tp_dn_sub = 'Anrufen, WhatsApp, vor Ort'
+      elsif tp_dn_kind == 'leisten'
+        assign tp_dn_tags = link.object.all_tags | join: ',' | downcase
+        if tp_dn_tags contains 'material:' and tp_dn_tags contains 'hoehe:'
+          assign tp_dn_sub = 'Nach Material und Höhe'
+        elsif tp_dn_tags contains 'material:'
+          assign tp_dn_sub = 'Nach Material'
+        elsif tp_dn_tags contains 'hoehe:'
+          assign tp_dn_sub = 'Nach Höhe'
+        endif
+        for c in link.links
+          if c.type == 'collection_link' and c.object.handle contains 'profile' and c.object.all_products_count > 0
+            if tp_dn_sub != ''
+              assign tp_dn_sub = tp_dn_sub | append: ', '
+            endif
+            assign tp_dn_sub = tp_dn_sub | append: 'Profile'
+            break
+          endif
+        endfor
+        if tp_dn_sub == ''
+          assign tp_dn_sub = link.object.all_products_count | append: ' Produkte'
+        endif
       else
         for c in link.links
           assign c_first = c.title | split: ' ' | first
@@ -207,7 +233,7 @@
                   {%- when 'linoleum' -%}
                     {%- render 'tp-linoleum-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
                   {%- when 'kontakt' -%}
-                    {%- render 'tp-kontakt-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
+                    {%- render 'tp-kontakt-nav', variant: 'drawer', parent_link: link -%}
                   {%- else -%}
                     {%- render 'tp-drawer-liste', parent_link: link, kacheln: kacheln -%}
                 {%- endcase -%}
