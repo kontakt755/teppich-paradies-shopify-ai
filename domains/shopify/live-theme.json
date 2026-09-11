@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-11T12:20:58Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-11T18:45:36Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-11T12:20:58Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-11T18:45:36Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
