@@ -8,17 +8,25 @@
   'use strict';
 
   var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband' };
-  var FORM = { rechteck: 'Rechteckig', rund: 'Rund', oval: 'Oval', schablone: 'Nach Schablone', skizze: 'Nach Skizze' };
+  var KANTE = {
+    cover: 'Kante umgeschlagen, mit Vlies',
+    ketteln: 'Garn Ton in Ton',
+    einfassband: 'ca. 3 cm breit',
+    paspelband: 'ca. 1 cm breit'
+  };
+  var FORM = { rechteck: 'Rechteck', rund: 'Rund', oval: 'Oval', schablone: 'Schablone', skizze: 'Skizze' };
   var ANFRAGE = {
     schablone: {
-      titel: 'Teppich nach Schablone',
-      text: 'Beschreiben Sie kurz die Form und schicken Sie uns ein Foto Ihrer Schablone mit den wichtigsten Maßen. Wir prüfen sie und melden uns mit einem Angebot.'
+      titel: 'Teppich nach Schablone', wort: 'Schablone',
+      text: 'Schicken Sie uns ein Foto Ihrer Schablone mit den wichtigsten Maßen. Wir melden uns mit einem Angebot.'
     },
     skizze: {
-      titel: 'Teppich nach Skizze',
-      text: 'Zeichnen Sie die Form mit allen Maßen auf und schicken Sie uns ein Foto davon. Wir prüfen die Skizze und melden uns mit einem Angebot.'
+      titel: 'Teppich nach Skizze', wort: 'Skizze',
+      text: 'Zeichnen Sie die Form mit Maßen auf und schicken Sie uns ein Foto. Wir melden uns mit einem Angebot.'
     }
   };
+  // Beliebte Groessen als Abkuerzung - nur, was in die Grenzen des Produkts passt.
+  var GROESSEN = { eckig: [[160, 230], [200, 300], [250, 350], [300, 400]], rund: [160, 200, 240] };
   var BAND_CM = { einfassband: 3, paspelband: 1 };
   var BEISPIEL = { w: 200, l: 300 };
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -29,7 +37,7 @@
     return Number(n).toLocaleString('de-DE', { minimumFractionDigits: s, maximumFractionDigits: s });
   }
   function euro(cent) { return fmt(cent / 100) + ' €'; }
-
+  function leeren(node) { while (node.firstChild) node.removeChild(node.firstChild); }
   function svgEl(name, attrs, parent) {
     var el = document.createElementNS(SVG_NS, name);
     Object.keys(attrs || {}).forEach(function (k) { el.setAttribute(k, attrs[k]); });
@@ -63,8 +71,9 @@
     var anfrage = q('[data-anfrage]');
     var inBreite = q('[data-breite]');
     var inLaenge = q('[data-laenge]');
-    var feldLaenge = q('[data-feld-laenge]');
+    var laengeTeile = root.querySelectorAll('[data-feld-laenge]');
     var labelBreite = q('[data-label-breite]');
+    var groessen = q('[data-groessen]');
     var grenzen = q('[data-grenzen]');
     var fehler = q('[data-fehler]');
     var vorschau = q('[data-vorschau]');
@@ -76,19 +85,23 @@
     var band = null;
     var target = null;
     var stand = null;
+    var gewaehlt = null;
+    var groessenForm = null;
 
     function form() {
       var c = root.querySelector('input[name^="tp-ek-form-"]:checked');
       return c ? c.value : 'rechteck';
     }
 
-    // Nur Varianten aus der Freigabeliste; eine fremde ?variant= fuehrt zu
+    // Nur Varianten aus der Freigabeliste. Die Farbwahl meldet ihre Variante
+    // per tp:farbe-wechsel; sonst gilt ?variant= - eine fremde ID fuehrt zu
     // keiner Auswahl statt zu einer geratenen.
     function aktuelleVariante() {
-      var id = new URLSearchParams(window.location.search).get('variant') || String(d.selected_id || '');
+      var ausUrl = new URLSearchParams(window.location.search).get('variant');
+      var id = gewaehlt || ausUrl || String(d.selected_id || '');
       var v = varianten.filter(function (x) { return String(x.id) === String(id); })[0];
       if (v) return v;
-      if (new URLSearchParams(window.location.search).get('variant')) return null;
+      if (gewaehlt || ausUrl) return null;
       return varianten.filter(function (x) { return x.available; })[0] || null;
     }
 
@@ -98,6 +111,30 @@
         if (s.hidden || (s.closest('[data-konfig]') && konfig.hidden)) return;
         var num = s.querySelector('.tp-step-heading__number');
         if (num) num.textContent = String(n++);
+      });
+    }
+
+    function groessenAufbauen(f) {
+      if (!groessen || groessenForm === f) return;
+      groessenForm = f;
+      leeren(groessen);
+      var liste = f === 'rund'
+        ? GROESSEN.rund.filter(function (x) { return x <= maxW; }).map(function (x) { return [x, x]; })
+        : GROESSEN.eckig.filter(function (p) { return Math.min(p[0], p[1]) <= maxW && Math.max(p[0], p[1]) <= maxL; });
+      liste.forEach(function (p) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tp-ek__groesse';
+        b.textContent = f === 'rund' ? 'Ø ' + p[0] : p[0] + ' × ' + p[1];
+        b.setAttribute('data-w', p[0]);
+        b.setAttribute('data-l', p[1]);
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () {
+          inBreite.value = p[0];
+          if (inLaenge) inLaenge.value = p[1];
+          rechnen();
+        });
+        groessen.appendChild(b);
       });
     }
 
@@ -113,15 +150,15 @@
         input.name = uid + '-band';
         input.value = b.nr;
         input.setAttribute('aria-label', b.nr + ' ' + b.name);
-        var dot = document.createElement('span');
-        dot.style.background = b.hex;
+        var punkt = document.createElement('span');
+        punkt.style.background = b.hex;
         label.appendChild(input);
-        label.appendChild(dot);
+        label.appendChild(punkt);
         box.appendChild(label);
         input.addEventListener('change', function () {
           band = b;
           var name = q('[data-band-name]');
-          if (name) name.textContent = 'Bandfarbe ' + b.nr + ' · ' + b.name;
+          if (name) name.textContent = b.nr + ' · ' + b.name;
           rechnen();
         });
       });
@@ -134,27 +171,67 @@
       return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma };
     }
 
-    function zeichnen(f, w, l, beispiel) {
-      while (svg.firstChild) svg.removeChild(svg.firstChild);
-      var horiz = f === 'rund' ? w : l;
-      var vert = w;
-      var boxW = 290;
-      var boxH = 180;
-      var s = Math.min(boxW / horiz, boxH / vert);
-      var pw = horiz * s;
-      var ph = vert * s;
-      var x = 50 + (boxW - pw) / 2;
-      var y = 50 + (boxH - ph) / 2;
+    function muster(defs, id, groesse) {
+      if (!target || !target.bild) return '#d9d4cb';
+      var pat = svgEl('pattern', { id: id, patternUnits: 'userSpaceOnUse', width: groesse, height: groesse }, defs);
+      var img = svgEl('image', { width: groesse, height: groesse, preserveAspectRatio: 'xMidYMid slice' }, pat);
+      img.setAttribute('href', target.bild);
+      img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', target.bild);
+      return 'url(#' + id + ')';
+    }
 
-      var defs = svgEl('defs', {}, svg);
-      var fuellung = '#d9d4cb';
-      if (target && target.bild) {
-        var pat = svgEl('pattern', { id: uid + '-muster', patternUnits: 'userSpaceOnUse', width: 110, height: 110 }, defs);
-        var img = svgEl('image', { width: 110, height: 110, preserveAspectRatio: 'xMidYMid slice' }, pat);
-        img.setAttribute('href', target.bild);
-        img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', target.bild);
-        fuellung = 'url(#' + uid + '-muster)';
+    function masslinie(x1, y1, x2, y2, text) {
+      var ink = 'currentColor';
+      var senkrecht = x1 === x2;
+      svgEl('line', { x1: x1, y1: y1, x2: x2, y2: y2, stroke: ink, 'stroke-width': 1 }, svg);
+      if (senkrecht) {
+        svgEl('line', { x1: x1 - 5, y1: y1, x2: x1 + 5, y2: y1, stroke: ink, 'stroke-width': 1 }, svg);
+        svgEl('line', { x1: x1 - 5, y1: y2, x2: x1 + 5, y2: y2, stroke: ink, 'stroke-width': 1 }, svg);
+        var ym = (y1 + y2) / 2;
+        var t = svgEl('text', { x: x1 - 11, y: ym, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: ink, transform: 'rotate(-90 ' + (x1 - 11) + ' ' + ym + ')' }, svg);
+        t.textContent = text;
+      } else {
+        svgEl('line', { x1: x1, y1: y1 - 5, x2: x1, y2: y1 + 5, stroke: ink, 'stroke-width': 1 }, svg);
+        svgEl('line', { x1: x2, y1: y1 - 5, x2: x2, y2: y1 + 5, stroke: ink, 'stroke-width': 1 }, svg);
+        var t2 = svgEl('text', { x: (x1 + x2) / 2, y: y1 - 9, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: ink }, svg);
+        t2.textContent = text;
       }
+    }
+
+    // Lupe unten rechts: die Kante in Nahaufnahme.
+    function lupe(defs) {
+      var lx = 314, ly = 204, r = 36, ky = ly + 8;
+      var clip = svgEl('clipPath', { id: uid + '-lupe' }, defs);
+      svgEl('circle', { cx: lx, cy: ly, r: r }, clip);
+      var g = svgEl('g', { 'clip-path': 'url(#' + uid + '-lupe)' }, svg);
+      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: 2 * r, fill: '#efece6' }, g);
+      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: muster(defs, uid + '-gross', 240) }, g);
+      if (art === 'cover') {
+        svgEl('rect', { x: lx - r, y: ky - 12, width: 2 * r, height: 12, fill: 'rgba(0,0,0,.22)' }, g);
+        svgEl('line', { x1: lx - r, y1: ky - 12, x2: lx + r, y2: ky - 12, stroke: 'rgba(255,255,255,.7)', 'stroke-width': 1.2 }, g);
+        svgEl('rect', { x: lx - r, y: ky, width: 2 * r, height: 3, fill: 'rgba(0,0,0,.18)' }, g);
+      } else if (art === 'ketteln') {
+        for (var x = lx - r; x < lx + r; x += 4) {
+          svgEl('line', { x1: x, y1: ky - 7, x2: x + 3, y2: ky, stroke: 'rgba(0,0,0,.45)', 'stroke-width': 1.4 }, g);
+        }
+      } else {
+        var hoehe = art === 'einfassband' ? 11 : 4;
+        svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: band ? band.hex : 'rgba(255,255,255,.65)' }, g);
+        if (!band) svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '4 3' }, g);
+        if (art === 'einfassband') svgEl('line', { x1: lx - r, y1: ky - hoehe + 2, x2: lx + r, y2: ky - hoehe + 2, stroke: 'rgba(255,255,255,.55)', 'stroke-dasharray': '3 2' }, g);
+      }
+      svgEl('circle', { cx: lx, cy: ly, r: r, fill: 'none', stroke: '#fff', 'stroke-width': 4 }, svg);
+      svgEl('circle', { cx: lx, cy: ly, r: r + 2, fill: 'none', stroke: 'rgba(0,0,0,.18)', 'stroke-width': 1 }, svg);
+    }
+
+    function zeichnen(f, w, l, beispiel) {
+      leeren(svg);
+      var horiz = f === 'rund' ? w : l;
+      var s = Math.min(270 / horiz, 170 / w);
+      var pw = horiz * s, ph = w * s;
+      var x = 46 + (270 - pw) / 2, y = 44 + (170 - ph) / 2;
+      var defs = svgEl('defs', {}, svg);
+      var fuellung = muster(defs, uid + '-muster', 110);
 
       function umriss(extra) {
         var a = extra || {};
@@ -163,11 +240,11 @@
         return svgEl('rect', Object.assign({ x: x, y: y, width: pw, height: ph, rx: 2 }, a), svg);
       }
 
-      umriss({ fill: fuellung, class: 'tp-ek-form', opacity: beispiel ? 0.45 : 1 });
+      umriss({ fill: fuellung, opacity: beispiel ? 0.4 : 1 });
       if (art === 'cover') {
         umriss({ fill: 'none', stroke: fuellung, 'stroke-width': 9 });
         umriss({ fill: 'none', stroke: 'rgba(0,0,0,.22)', 'stroke-width': 9 });
-        umriss({ fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1, transform: 'translate(0 0)' });
+        umriss({ fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1 });
       } else if (art === 'ketteln') {
         umriss({ fill: 'none', stroke: 'rgba(0,0,0,.38)', 'stroke-width': 4, 'stroke-dasharray': '1.4 1.4' });
       } else {
@@ -177,30 +254,16 @@
           : { fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 2, 'stroke-dasharray': '6 4' });
       }
 
-      var farbe = 'currentColor';
-      var oben = f === 'rund' ? 'Ø ' + w + ' cm' : 'Länge ' + l + ' cm';
-      svgEl('line', { x1: x, y1: 32, x2: x + pw, y2: 32, stroke: farbe, 'stroke-width': 1 }, svg);
-      svgEl('line', { x1: x, y1: 27, x2: x, y2: 37, stroke: farbe, 'stroke-width': 1 }, svg);
-      svgEl('line', { x1: x + pw, y1: 27, x2: x + pw, y2: 37, stroke: farbe, 'stroke-width': 1 }, svg);
-      var t1 = svgEl('text', { x: x + pw / 2, y: 22, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 600, fill: farbe }, svg);
-      t1.textContent = oben;
-      if (f !== 'rund') {
-        svgEl('line', { x1: 32, y1: y, x2: 32, y2: y + ph, stroke: farbe, 'stroke-width': 1 }, svg);
-        svgEl('line', { x1: 27, y1: y, x2: 37, y2: y, stroke: farbe, 'stroke-width': 1 }, svg);
-        svgEl('line', { x1: 27, y1: y + ph, x2: 37, y2: y + ph, stroke: farbe, 'stroke-width': 1 }, svg);
-        var t2 = svgEl('text', { x: 20, y: y + ph / 2, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 600, fill: farbe, transform: 'rotate(-90 20 ' + (y + ph / 2) + ')' }, svg);
-        t2.textContent = 'Breite ' + w + ' cm';
-      }
+      masslinie(x, 28, x + pw, 28, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
+      if (f !== 'rund') masslinie(28, y, 28, y + ph, w + ' cm');
       if (beispiel) {
-        var tb = svgEl('text', { x: 50 + boxW / 2, y: 50 + boxH / 2 + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700, fill: farbe }, svg);
-        tb.textContent = 'Beispiel – Maße eingeben';
+        var tb = svgEl('text', { x: x + pw / 2, y: y + ph / 2 + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700, fill: 'currentColor' }, svg);
+        tb.textContent = 'Maße eingeben';
+      } else {
+        lupe(defs);
       }
 
-      var teile = [];
-      if (target && target.farbe) teile.push('Farbe ' + target.farbe);
-      if (band) teile.push('Band ' + band.nr + ' ' + band.name);
-      teile.push('Farben am Bildschirm können abweichen');
-      legende.textContent = teile.join(' · ');
+      legende.textContent = ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' · ' + KANTE[art];
       vorschau.hidden = false;
     }
 
@@ -217,7 +280,7 @@
       var wa = q('[data-whatsapp]');
       if (wa) {
         var text = 'Hallo, ich interessiere mich für „' + d.produkt + '“' + (farbe ? ' in Farbe ' + farbe : '') +
-          ' (' + FORM[f] + '). Ein Foto meiner ' + (f === 'skizze' ? 'Skizze' : 'Schablone') + ' schicke ich mit.';
+          ' (' + FORM[f] + '). Ein Foto meiner ' + ANFRAGE[f].wort + ' schicke ich mit.';
         wa.href = 'https://wa.me/' + encodeURIComponent(wa.getAttribute('data-wa')) + '?text=' + encodeURIComponent(text);
       }
     }
@@ -230,14 +293,19 @@
       if (ANFRAGE[f]) { stand = null; return; }
 
       var rund = f === 'rund';
-      feldLaenge.hidden = rund;
+      laengeTeile.forEach(function (el) { el.hidden = rund; });
       labelBreite.textContent = rund ? 'Durchmesser' : 'Breite';
-      grenzen.textContent = rund
-        ? 'Durchmesser 50 bis ' + maxW + ' cm.'
-        : 'Eine Seite 50 bis ' + maxW + ' cm, die andere bis ' + maxL + ' cm.';
+      grenzen.textContent = rund ? 'Möglich: Ø 50 bis ' + maxW + ' cm' : 'Möglich: bis ' + maxW + ' × ' + maxL + ' cm';
+      groessenAufbauen(rund ? 'rund' : 'eckig');
 
       var b = lesen(inBreite);
       var l = rund ? { wert: b.wert, komma: false } : lesen(inLaenge);
+      if (groessen) {
+        groessen.querySelectorAll('button').forEach(function (btn) {
+          var aktiv = +btn.getAttribute('data-w') === b.wert && (rund || +btn.getAttribute('data-l') === l.wert);
+          btn.setAttribute('aria-pressed', aktiv ? 'true' : 'false');
+        });
+      }
       var fehlerListe = [];
       if (b.komma || l.komma) fehlerListe.push('Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.');
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
@@ -271,12 +339,12 @@
 
       q('[data-masse]').textContent = masse;
       q('[data-flaeche]').textContent = fmt(flaeche) + ' m²';
-      q('[data-kante]').textContent = fmt(kante) + ' m';
+      q('[data-kante]').textContent = 'Kante ' + fmt(kante) + ' m';
       q('[data-m2preis]').textContent = euro(preis * 100);
       q('[data-rund-hinweis]').hidden = !(f === 'rund' || f === 'oval');
       var mh = q('[data-mindest-hinweis]');
       mh.hidden = !mindest;
-      if (mindest) mh.textContent = 'Mindestpreis für einen Teppich nach Maß: ' + euro(mindestCent) + '.';
+      if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
       q('[data-summe]').textContent = euro(summe);
       rechnung.hidden = false;
 
@@ -338,12 +406,16 @@
     });
     [inBreite, inLaenge].forEach(function (i) { if (i) i.addEventListener('input', rechnen); });
     cta.addEventListener('click', hinzufuegen);
-    // Farbwahl schreibt ?variant= in die URL, ohne neu zu laden.
+    document.addEventListener('tp:farbe-wechsel', function (e) {
+      gewaehlt = e.detail && e.detail.variantId ? String(e.detail.variantId) : null;
+      rechnen();
+    });
+    // Farbwahlen ohne eigenes Event schreiben nur ?variant= in die URL.
     document.addEventListener('change', function (e) {
       if (!root.contains(e.target)) setTimeout(rechnen, 120);
     });
     document.addEventListener('variant:update', function () { setTimeout(rechnen, 60); });
-    window.addEventListener('popstate', rechnen);
+    window.addEventListener('popstate', function () { gewaehlt = null; rechnen(); });
 
     // Nach dem Absenden des Anfrageformulars laedt die Seite neu - die
     // Erfolgs- oder Fehlermeldung steht im Anfragebereich, also dorthin.

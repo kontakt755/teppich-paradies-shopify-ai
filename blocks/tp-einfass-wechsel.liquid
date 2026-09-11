@@ -114,6 +114,7 @@
         }
         document.addEventListener('change', function () { setTimeout(aktualisieren, 120); });
         document.addEventListener('variant:update', function () { setTimeout(aktualisieren, 60); });
+        document.addEventListener('tp:farbe-wechsel', function () { setTimeout(aktualisieren, 60); });
         aktualisieren();
       })();
     </script>

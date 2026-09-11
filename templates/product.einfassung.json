@@ -203,7 +203,7 @@
               "name": "TP Schritt-Überschrift",
               "settings": {
                 "number": 1,
-                "label": "Wähle deine Farbe"
+                "label": "Farbe"
               },
               "blocks": {}
             },

@@ -154,15 +154,23 @@
 
   {%- if tp_rc_leiste != blank -%}
     <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden>
-      {% render 'tp-step-heading', number: 4, label: 'Passende Kettelleisten' %}
-      <label class="tp-rwc-check"><input type="checkbox" data-leiste-an> Kettelleisten aus demselben Teppich dazu</label>
+      {% render 'tp-step-heading', number: 4, label: 'Kettelleisten' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-leiste-an>
+        <span class="tp-rwc-karte-text"><b>Passende Leisten aus diesem Teppich</b><small>Kante gekettelt</small></span>
+        <span class="tp-rwc-karte-preis" data-leiste-preis></span>
+      </label>
       <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
-        <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
-        <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
-        <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge in Metern</label>
-        <div class="tp-rwc-input-wrap">
-          <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input tp-rwc-input--length" inputmode="numeric" min="1" step="1" data-leiste-meter>
-          <span class="tp-rwc-unit">m</span>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
+          <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
+        </div>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge</label>
+          <div class="tp-rwc-input-wrap">
+            <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="1" step="1" data-leiste-meter>
+            <span class="tp-rwc-unit">m</span>
+          </div>
         </div>
         <p class="tp-rwc-note" data-leiste-hint></p>
       </div>
@@ -171,8 +179,11 @@
   {%- if tp_rc_haft_v -%}
     <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden>
       {% render 'tp-step-heading', number: 5, label: 'Haftunterlage' %}
-      <label class="tp-rwc-check"><input type="checkbox" data-haft-an> Haftunterlage für die schwimmende Verlegung dazu</label>
-      <p class="tp-rwc-note" data-haft-hint></p>
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-haft-an>
+        <span class="tp-rwc-karte-text"><b>Für die schwimmende Verlegung</b><small data-haft-hint></small></span>
+        <span class="tp-rwc-karte-preis">{{ tp_rc_haft_v.price | money }} / Rolle</span>
+      </label>
     </div>
   {%- endif -%}
 
@@ -472,9 +483,22 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras { display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-check { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; cursor: pointer; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: #1d6b47; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; gap: 6px; margin-top: 12px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte {
+    display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center;
+    padding: 14px 16px; border: 1px solid var(--tp-rwc-line); border-radius: 8px;
+    background: var(--tp-rwc-surface); cursor: pointer; transition: border-color .15s, background-color .15s;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:hover { border-color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: #1d6b47; box-shadow: inset 0 0 0 1px #1d6b47; background: rgb(29 107 71 / 0.05); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .95rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: .8rem; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: .85rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-note { grid-column: 1 / -1; margin: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--tp-rwc-line); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-titel { margin: 0 0 8px; font-size: .9rem; font-weight: 700; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -486,6 +510,8 @@
 
   @media screen and (max-width: 749px) {
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 22px 1fr; row-gap: 4px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { grid-column: 2; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
   }
 </style>
@@ -936,6 +962,10 @@
       var m = Math.ceil(parseFloat(meterIn && meterIn.value) || 0);
       var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
       var lHint = leisteBox.querySelector('[data-leiste-hint]');
+      var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
+      if (lPreisEl && leisteVarianten.length) {
+        lPreisEl.textContent = 'ab ' + fmt(Math.min.apply(null, leisteVarianten.map(function (v) { return parseFloat(v.price); })) / 100) + ' €/m';
+      }
       if (an && lv && m > 0 && area > 0) {
         var lPreis = parseFloat(lv.price) / 100;
         res.items.push({ id: lv.id, quantity: m, properties: { 'Zu Teppichboden': data.product_title, 'Farbe wie Teppichboden': farbeText(), 'Höhe': lv.title } });
@@ -955,8 +985,8 @@
       var rollen = area > 0 && haft ? Math.max(1, Math.ceil(area / haft.qm - 1e-9)) : 0;
       if (hHint) {
         hHint.textContent = rollen
-          ? rollen + (rollen === 1 ? ' Rolle' : ' Rollen') + ' à ' + fmt(haft.qm) + ' m² für ' + fmt(area) + ' m² · ' + fmt(hPreis) + ' € je Rolle'
-          : '';
+          ? rollen + (rollen === 1 ? ' Rolle' : ' Rollen') + ' à ' + fmt(haft.qm) + ' m² für ' + fmt(area) + ' m²'
+          : 'Rollen à ' + fmt(haft ? haft.qm : 0) + ' m²';
       }
       if (hAn && rollen) {
         res.items.push({ id: haft.id, quantity: rollen, properties: { 'Zu Teppichboden': data.product_title } });
@@ -998,9 +1028,9 @@
       }
       a.hidden = !ziel;
       if (ziel) {
-        var u = new URL(a.getAttribute('href'), window.location.origin);
+        var u = new URL(a.getAttribute('href'), window.location.href);
         u.searchParams.set('variant', ziel);
-        a.setAttribute('href', u.pathname + u.search);
+        a.setAttribute('href', u.href);
         show = true;
       }
     });
