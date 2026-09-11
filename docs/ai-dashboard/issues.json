@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T12:32:30.370Z",
+  "generated_at": "2026-09-11T12:38:21.882Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 70,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T12:32:30.370Z",
+    "fetchedAt": "2026-09-11T12:38:21.882Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -142,7 +142,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/193",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:navigation"
@@ -151,14 +151,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-11T12:23:53Z",
+      "updated_at": "2026-09-11T12:38:09Z",
       "closed_at": null
     },
     {
