@@ -33,6 +33,13 @@ Datei: [`menu-main-menu-verlegeservice-vorlage-2026-09-11.json`](menu-main-menu-
 Der neue Unterpunkt ist nötig, weil der Oberpunkt im Mobilmenü nur das Untermenü öffnet – ohne
 ihn wäre die Seite am Telefon über das Menü nicht erreichbar.
 
+**Im Entwurf schon zu sehen:** Für die Vorschau gibt es seit 2026-09-11 eine Kopie
+„Hauptmenü – Entwurf Verlegeservice (nicht live)“ (Handle `hauptmenue-entwurf-verlegeservice`,
+`gid://shopify/Menu/347252130126`) mit genau diesen zwei Änderungen. Nur die Arbeitskopie hängt
+daran (ihre `sections/header-group.json`, nicht im Branch) – main und das Live-Theme verweisen
+weiter auf `main-menu`, der Livegang ändert daran nichts. Nach Schritt A die Kopie im Admin
+entfernen, sonst altert sie neben dem echten Menü.
+
 1. Menü frisch auslesen (Abfrage wie in `CLAUDE.md`, Punkt 6b) und mit `vorher` in der Datei
    vergleichen. Weicht etwas ab, `variables` aus dem frischen Stand neu erzeugen – nie den
    Stand vom 2026-09-11 über neuere Änderungen schreiben. `menuUpdate` ersetzt den ganzen Baum.
