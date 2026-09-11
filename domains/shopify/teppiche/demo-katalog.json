@@ -1,0 +1,344 @@
+{
+  "_comment": "Einzige Quelle der TEST-Teppiche. Daraus entstehen snippets/tp-rug-katalog.liquid, die Demo-Bilder (npm run tp-rug:build) und die Entwurfsprodukte im Shop (Metafeld tp_rug.config). Alle Werte sind Testdaten: Farben, Namen und Eigenschaften sind KEINE Lieferantenangaben. Keine Preise.",
+  "version": 1,
+  "products": [
+    {
+      "handle": "tp-rug-test-teppich-nach-mass",
+      "title": "TEST Teppich nach Maß",
+      "subtitle": "Velours · kurzer Flor",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnzimmer", "schlafzimmer", "esszimmer", "kinderzimmer", "homeoffice"],
+      "shapes": ["rechteck", "quadrat", "rund", "oval", "ellipse", "laeufer", "halbkreis", "viertelkreis", "dreieck", "vieleck", "organisch", "freiform", "skizze", "schablone"],
+      "edges": ["kettel", "paspel", "baumwolle", "cover"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Graphit", "hex": "#55585c" }, { "name": "Steingrau", "hex": "#8b8a86" },
+        { "name": "Silbergrau", "hex": "#b9b8b3" }, { "name": "Sand", "hex": "#cdb99a" }, { "name": "Beige", "hex": "#d9c9ad" },
+        { "name": "Creme", "hex": "#ece3d0" }, { "name": "Taupe", "hex": "#9c8b7a" }, { "name": "Mokka", "hex": "#6e5746" },
+        { "name": "Terrakotta", "hex": "#b5694a" }, { "name": "Salbei", "hex": "#8fa08a" }, { "name": "Petrol", "hex": "#2f5d62" },
+        { "name": "Nachtblau", "hex": "#2c3a55" }, { "name": "Rosé", "hex": "#d4a79b" }, { "name": "Senf", "hex": "#c9a13b" },
+        { "name": "Olive", "hex": "#6f7552" }, { "name": "Rost", "hex": "#9c4f33" }, { "name": "Bordeaux", "hex": "#6e2f38" }
+      ],
+      "scene": "wohnzimmer",
+      "max_width_cm": null,
+      "max_length_cm": 1000,
+      "description": "Testprodukt für den Konfigurator: alle Formen, alle vier Einfassungen und viele Farben. Material-, Pflege- und Produktdaten folgen mit der echten Qualität."
+    },
+    {
+      "handle": "tp-rug-test-wohnzimmer",
+      "title": "TEST Wohnzimmer",
+      "subtitle": "Hochflor · weich",
+      "material": "Hochflor",
+      "material_key": "hochflor",
+      "pile": "hoch",
+      "fiber": "kunstfaser",
+      "texture": "hochflor",
+      "rooms": ["wohnzimmer", "schlafzimmer"],
+      "shapes": ["rechteck", "quadrat", "rund", "oval", "organisch", "freiform", "skizze"],
+      "edges": ["baumwolle", "paspel", "kettel"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Creme", "hex": "#ece3d0" }, { "name": "Sand", "hex": "#cdb99a" }, { "name": "Taupe", "hex": "#9c8b7a" },
+        { "name": "Steingrau", "hex": "#8b8a86" }, { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Salbei", "hex": "#8fa08a" }
+      ],
+      "scene": "wohnzimmer",
+      "description": "Testprodukt für Wohnräume mit hohem Flor. Echte Produktangaben folgen."
+    },
+    {
+      "handle": "tp-rug-test-esszimmer",
+      "title": "TEST Esszimmer",
+      "subtitle": "Schlinge · flach",
+      "material": "Schlinge",
+      "material_key": "schlinge",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "schlinge",
+      "rooms": ["esszimmer", "kueche", "wohnzimmer"],
+      "shapes": ["rechteck", "rund", "oval", "ellipse"],
+      "edges": ["kettel", "baumwolle"],
+      "edge_widths": { "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Beige", "hex": "#d9c9ad" }, { "name": "Taupe", "hex": "#9c8b7a" }, { "name": "Graphit", "hex": "#55585c" },
+        { "name": "Olive", "hex": "#6f7552" }, { "name": "Terrakotta", "hex": "#b5694a" }
+      ],
+      "scene": "esszimmer",
+      "description": "Testprodukt für den Essbereich mit flacher Schlingenoberfläche. Echte Produktangaben folgen."
+    },
+    {
+      "handle": "tp-rug-test-schlafzimmer",
+      "title": "TEST Schlafzimmer",
+      "subtitle": "Velours · mittlerer Flor",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "mittel",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["schlafzimmer", "kinderzimmer"],
+      "shapes": ["rechteck", "laeufer", "oval", "organisch"],
+      "edges": ["baumwolle", "paspel", "cover"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Rosé", "hex": "#d4a79b" }, { "name": "Creme", "hex": "#ece3d0" }, { "name": "Silbergrau", "hex": "#b9b8b3" },
+        { "name": "Nachtblau", "hex": "#2c3a55" }, { "name": "Salbei", "hex": "#8fa08a" }
+      ],
+      "scene": "schlafzimmer",
+      "description": "Testprodukt für Schlafräume. Echte Produktangaben folgen."
+    },
+    {
+      "handle": "tp-rug-test-kueche",
+      "title": "TEST Küche",
+      "subtitle": "Flachgewebe",
+      "material": "Flachgewebe",
+      "material_key": "flachgewebe",
+      "pile": "flach",
+      "fiber": "kunstfaser",
+      "texture": "flach",
+      "rooms": ["kueche", "flur", "esszimmer"],
+      "shapes": ["laeufer", "rechteck", "halbkreis"],
+      "edges": ["kettel", "paspel"],
+      "edge_widths": { "paspel": 1 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Steingrau", "hex": "#8b8a86" }, { "name": "Graphit", "hex": "#55585c" }, { "name": "Sand", "hex": "#cdb99a" },
+        { "name": "Petrol", "hex": "#2f5d62" }
+      ],
+      "scene": "kueche",
+      "description": "Testprodukt als Küchenläufer. Echte Produktangaben, auch zur Reinigung, folgen."
+    },
+    {
+      "handle": "tp-rug-test-flur-laeufer",
+      "title": "TEST Flur / Läufer",
+      "subtitle": "Schlinge · strapazierfähig",
+      "material": "Schlinge",
+      "material_key": "schlinge",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "schlinge",
+      "rooms": ["flur", "eingang", "kueche"],
+      "shapes": ["laeufer", "rechteck", "halbkreis", "skizze"],
+      "edges": ["kettel", "baumwolle", "paspel", "cover"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Mokka", "hex": "#6e5746" }, { "name": "Beige", "hex": "#d9c9ad" },
+        { "name": "Nachtblau", "hex": "#2c3a55" }, { "name": "Rost", "hex": "#9c4f33" }
+      ],
+      "scene": "flur",
+      "description": "Testprodukt für Flur und Diele. Echte Produktangaben folgen."
+    },
+    {
+      "handle": "tp-rug-test-kinderzimmer",
+      "title": "TEST Kinderzimmer",
+      "subtitle": "Velours · kurzer Flor",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["kinderzimmer"],
+      "shapes": ["rund", "organisch", "rechteck", "oval"],
+      "edges": ["paspel", "baumwolle"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Salbei", "hex": "#8fa08a" }, { "name": "Senf", "hex": "#c9a13b" }, { "name": "Rosé", "hex": "#d4a79b" },
+        { "name": "Creme", "hex": "#ece3d0" }, { "name": "Petrol", "hex": "#2f5d62" }
+      ],
+      "scene": "kinderzimmer",
+      "description": "Testprodukt für Kinderzimmer. Angaben zu Schadstoffprüfung und Pflege folgen nur mit echten Produktdaten."
+    },
+    {
+      "handle": "tp-rug-test-homeoffice",
+      "title": "TEST Homeoffice",
+      "subtitle": "Schlinge · dicht",
+      "material": "Schlinge",
+      "material_key": "schlinge",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "schlinge",
+      "rooms": ["homeoffice", "buero"],
+      "shapes": ["rechteck", "quadrat", "rund"],
+      "edges": ["kettel", "cover"],
+      "antislip": "optional",
+      "colors": [
+        { "name": "Graphit", "hex": "#55585c" }, { "name": "Steingrau", "hex": "#8b8a86" }, { "name": "Nachtblau", "hex": "#2c3a55" }
+      ],
+      "scene": "homeoffice",
+      "description": "Testprodukt für den Arbeitsplatz. Ob eine Qualität für Stuhlrollen geeignet ist, wird nur mit echten Produktdaten angegeben."
+    },
+    {
+      "handle": "tp-rug-test-wohnmobil",
+      "title": "TEST Wohnmobil / Camper",
+      "subtitle": "Velours · leicht",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnmobil"],
+      "shapes": ["rechteck", "laeufer", "freiform", "skizze", "schablone"],
+      "edges": ["kettel", "paspel", "baumwolle", "cover"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "camper_suitable": true,
+      "colors": [
+        { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Taupe", "hex": "#9c8b7a" }, { "name": "Sand", "hex": "#cdb99a" },
+        { "name": "Graphit", "hex": "#55585c" }
+      ],
+      "scene": "wohnmobil",
+      "description": "Testprodukt für Wohnmobil, Wohnwagen und Van. Sonderformen per Skizze oder Schablone."
+    },
+    {
+      "handle": "tp-rug-test-gewerbe",
+      "title": "TEST Gewerbe / Objekt",
+      "subtitle": "Schlinge · Objektqualität",
+      "material": "Schlinge",
+      "material_key": "objekt",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "schlinge",
+      "rooms": ["buero", "eingang", "homeoffice"],
+      "shapes": ["rechteck", "quadrat", "rund", "laeufer", "freiform", "skizze"],
+      "edges": ["kettel", "cover"],
+      "antislip": "optional",
+      "object_suitable": true,
+      "colors": [
+        { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Graphit", "hex": "#55585c" }, { "name": "Nachtblau", "hex": "#2c3a55" },
+        { "name": "Bordeaux", "hex": "#6e2f38" }
+      ],
+      "scene": "buero",
+      "description": "Testprodukt für Büro, Praxis, Hotel und Objekt. Objekt-Kennwerte folgen nur mit echten Produktdaten."
+    },
+    {
+      "handle": "tp-rug-test-outdoor",
+      "title": "TEST Outdoor",
+      "subtitle": "Flachgewebe · Kunstfaser",
+      "material": "Flachgewebe",
+      "material_key": "outdoor",
+      "pile": "flach",
+      "fiber": "kunstfaser",
+      "texture": "flach",
+      "rooms": ["outdoor"],
+      "shapes": ["rechteck", "rund", "laeufer"],
+      "edges": ["kettel", "paspel"],
+      "edge_widths": { "paspel": 1 },
+      "antislip": "nicht_verfuegbar",
+      "outdoor_suitable": true,
+      "colors": [
+        { "name": "Graphit", "hex": "#55585c" }, { "name": "Sand", "hex": "#cdb99a" }, { "name": "Olive", "hex": "#6f7552" }
+      ],
+      "scene": "outdoor",
+      "description": "Testprodukt für Terrasse und Balkon. Angaben zur Wetterbeständigkeit folgen nur mit echten Produktdaten."
+    },
+    {
+      "handle": "tp-rug-test-sonderform",
+      "title": "TEST Sonderform",
+      "subtitle": "Velours · freie Form",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnzimmer", "kinderzimmer", "schlafzimmer"],
+      "shapes": ["organisch", "halbkreis", "viertelkreis", "dreieck", "vieleck", "ellipse", "freiform", "skizze", "schablone"],
+      "edges": ["kettel", "paspel", "baumwolle"],
+      "edge_widths": { "paspel": 1, "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Terrakotta", "hex": "#b5694a" }, { "name": "Salbei", "hex": "#8fa08a" }, { "name": "Creme", "hex": "#ece3d0" },
+        { "name": "Senf", "hex": "#c9a13b" }, { "name": "Anthrazit", "hex": "#3b3d40" }
+      ],
+      "scene": "sonderform",
+      "description": "Testprodukt für organische Formen, Vielecke und Sonderanfertigungen."
+    },
+    {
+      "handle": "tp-rug-test-kettelteppich",
+      "title": "TEST Kettelteppich",
+      "subtitle": "Schlinge · gekettelte Kante",
+      "material": "Schlinge",
+      "material_key": "schlinge",
+      "pile": "kurz",
+      "fiber": "wolle",
+      "texture": "wolle",
+      "rooms": ["wohnzimmer", "schlafzimmer", "flur"],
+      "shapes": ["rechteck", "quadrat", "rund", "laeufer"],
+      "edges": ["kettel"],
+      "antislip": "optional",
+      "colors": [
+        { "name": "Creme", "hex": "#ece3d0" }, { "name": "Sand", "hex": "#cdb99a" }, { "name": "Steingrau", "hex": "#8b8a86" }, { "name": "Mokka", "hex": "#6e5746" }
+      ],
+      "scene": "rund",
+      "description": "Testprodukt nur mit Kettelung."
+    },
+    {
+      "handle": "tp-rug-test-paspelteppich",
+      "title": "TEST Paspelteppich",
+      "subtitle": "Velours · Paspel ca. 1 cm",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnzimmer", "schlafzimmer", "esszimmer"],
+      "shapes": ["rechteck", "quadrat", "rund", "oval", "ellipse", "organisch"],
+      "edges": ["paspel"],
+      "edge_widths": { "paspel": 1 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Beige", "hex": "#d9c9ad" }, { "name": "Grau", "hex": "#8b8a86" },
+        { "name": "Senf", "hex": "#c9a13b" }, { "name": "Petrol", "hex": "#2f5d62" }, { "name": "Rosé", "hex": "#d4a79b" }
+      ],
+      "scene": "wohnzimmer",
+      "description": "Testprodukt nur mit Paspel."
+    },
+    {
+      "handle": "tp-rug-test-baumwolleinfassung",
+      "title": "TEST Baumwolleinfassung",
+      "subtitle": "Velours · Band ca. 3 cm",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnzimmer", "esszimmer"],
+      "shapes": ["rechteck", "quadrat", "rund", "oval"],
+      "edges": ["baumwolle"],
+      "edge_widths": { "baumwolle": 3 },
+      "antislip": "optional",
+      "colors": [
+        { "name": "Graphit", "hex": "#55585c" }, { "name": "Sand", "hex": "#cdb99a" }, { "name": "Olive", "hex": "#6f7552" }, { "name": "Creme", "hex": "#ece3d0" }
+      ],
+      "scene": "esszimmer",
+      "description": "Testprodukt nur mit Baumwoll-Einfassband."
+    },
+    {
+      "handle": "tp-rug-test-cover-kippkante",
+      "title": "TEST Cover / Kippkante",
+      "subtitle": "Velours · umgeschlagene Kante",
+      "material": "Velours",
+      "material_key": "velours",
+      "pile": "kurz",
+      "fiber": "kunstfaser",
+      "texture": "velours",
+      "rooms": ["wohnzimmer", "schlafzimmer", "homeoffice"],
+      "shapes": ["rechteck", "quadrat", "laeufer"],
+      "edges": ["cover"],
+      "antislip": "inklusive",
+      "max_width_cm": 390,
+      "max_width_note": "Testwert: Rollenbreite 400 cm minus 10 cm (Regel für Cover). Je Qualität pflegen.",
+      "colors": [
+        { "name": "Taupe", "hex": "#9c8b7a" }, { "name": "Anthrazit", "hex": "#3b3d40" }, { "name": "Beige", "hex": "#d9c9ad" }
+      ],
+      "scene": "schlafzimmer",
+      "description": "Testprodukt nur mit Cover-Kante (Kippkante), Antirutschvlies inklusive."
+    }
+  ]
+}

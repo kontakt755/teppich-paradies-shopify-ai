@@ -1,0 +1,213 @@
+{%- doc -%}
+  Gliederung "Teppiche" fuer Desktop-Megamenue und Handy-Menue - eine Quelle,
+  damit beide Geraete denselben Inhalt zeigen.
+
+  Das Hauptmenue des Shops bleibt unveraendert (es gilt storeweit und damit
+  sofort im Live-Theme). Dieses Snippet wird in snippets/tp-rug-nav-inject.liquid
+  in <template>-Elemente gerendert und von dort hinter "Teppichboden" eingesetzt.
+
+  Material-Chips zeigen nur Werte, zu denen es TEST-Produkte gibt (keine leeren
+  Filter). Sisal/Naturfaser folgen erst mit echten Produkten.
+
+  @param {string} variant - 'megamenu' (Desktop) oder 'drawer' (Handy)
+{%- enddoc -%}
+{%- liquid
+  capture u_start
+    render 'tp-rug-url', key: 'start'
+  endcapture
+  capture u_alle
+    render 'tp-rug-url', key: 'alle'
+  endcapture
+  capture u_konf
+    render 'tp-rug-url', key: 'konfigurator'
+  endcapture
+  capture u_camper
+    render 'tp-rug-url', key: 'wohnmobil'
+  endcapture
+  capture u_sonder
+    render 'tp-rug-url', key: 'sonderform'
+  endcapture
+  capture u_berater
+    render 'tp-rug-url', key: 'berater'
+  endcapture
+  capture u_finder
+    render 'tp-rug-url', key: 'berater', anchor: 'finder'
+  endcapture
+  capture u_vis
+    render 'tp-rug-url', key: 'visualisierer'
+  endcapture
+  capture u_kanten
+    render 'tp-rug-url', key: 'einfassungen'
+  endcapture
+  capture u_muster
+    render 'tp-rug-url', key: 'muster'
+  endcapture
+  capture u_faq
+    render 'tp-rug-url', key: 'start', anchor: 'faq'
+  endcapture
+  capture u_boden
+    render 'tp-rug-url', key: 'teppichboden'
+  endcapture
+
+  assign raum_keys = 'wohnzimmer|esszimmer|schlafzimmer|kueche|flur|kinderzimmer|homeoffice|eingang|buero' | split: '|'
+  assign raum_labels = 'Wohnzimmer|Esszimmer|Schlafzimmer|Küche|Flur & Diele|Kinderzimmer|Arbeitszimmer & Homeoffice|Eingangsbereich|Gewerbe & Büro' | split: '|'
+  assign form_keys = 'rechteck|quadrat|rund|oval|ellipse|laeufer|halbkreis|viertelkreis|dreieck|vieleck|organisch' | split: '|'
+  assign form_labels = 'Rechteck|Quadrat|Rund|Oval|Ellipse|Läufer|Halbkreis|Viertelkreis|Dreieck|Vieleck|Organisch' | split: '|'
+  assign kante_keys = 'kettel|paspel|baumwolle|cover' | split: '|'
+  assign kante_labels = 'Kettelung|Paspel|Baumwolle|Cover (Kippkante)' | split: '|'
+  assign mat_q = 'material=velours|material=schlinge|flor=hoch|flor=kurz|material=flachgewebe|faser=wolle|material=objekt|raum=outdoor' | split: '|'
+  assign mat_labels = 'Velours|Schlinge|Hochflor|Kurzflor|Flachgewebe|Wolle|Objektqualität|Outdoor' | split: '|'
+-%}
+
+{%- capture tp_rn_cards -%}
+  {%- assign card_imgs = 'wohnzimmer|esszimmer|rund|flur|sonderform|wohnmobil' | split: '|' -%}
+  {%- assign card_titles = 'Alle Teppiche|Teppich nach Wunschmaß|Rund & oval|Teppichläufer|Sonderformen & Schablone|Wohnmobil & Camper' | split: '|' -%}
+  {%- assign card_subs = 'Nach Raum, Form und Einfassung|Maße eingeben, live ansehen|Kreis, Oval, Ellipse|Für Flur, Küche und Diele|Nach Skizze oder Schablone|Wohnmobil, Wohnwagen, Van' | split: '|' -%}
+  {%- for img in card_imgs -%}
+    {%- liquid
+      case forloop.index
+        when 1
+          assign c_url = u_alle
+        when 2
+          assign c_url = u_konf
+        when 3
+          capture c_url
+            render 'tp-rug-url', key: 'alle', query: 'form=rund,oval,ellipse'
+          endcapture
+        when 4
+          capture c_url
+            render 'tp-rug-url', key: 'alle', query: 'form=laeufer'
+          endcapture
+        when 5
+          assign c_url = u_sonder
+        else
+          assign c_url = u_camper
+      endcase
+      assign c_file = 'tp-rug-bild-' | append: img | append: '.svg'
+    -%}
+    <li class="tp-rug-nav__card">
+      <a href="{{ c_url }}" class="tp-rug-nav__card-link">
+        <span class="tp-rug-nav__card-media">
+          <img src="{{ c_file | asset_url }}" alt="" width="1200" height="900" loading="lazy" decoding="async">
+        </span>
+        <span class="tp-rug-nav__card-body">
+          <span class="tp-rug-nav__card-title">{{ card_titles[forloop.index0] }}</span>
+          <span class="tp-rug-nav__card-sub">{{ card_subs[forloop.index0] }}</span>
+        </span>
+      </a>
+    </li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_rn_raum -%}
+  {%- for k in raum_keys -%}
+    {%- capture q -%}raum={{ k }}{%- endcapture -%}
+    <li><a class="tp-rug-nav__link" href="{% render 'tp-rug-url', key: 'alle', query: q %}">{{ raum_labels[forloop.index0] }}</a></li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_rn_camper -%}
+  <li><a class="tp-rug-nav__link" href="{{ u_camper }}&fahrzeug=wohnmobil">Wohnmobil</a></li>
+  <li><a class="tp-rug-nav__link" href="{{ u_camper }}&fahrzeug=wohnwagen">Wohnwagen</a></li>
+  <li><a class="tp-rug-nav__link" href="{{ u_camper }}&fahrzeug=van">Camper &amp; Van</a></li>
+  <li><a class="tp-rug-nav__link" href="{% render 'tp-rug-url', key: 'alle', query: 'raum=buero' %}">Hotel, Praxis &amp; Objekt</a></li>
+  <li><a class="tp-rug-nav__link" href="{{ u_sonder }}">Sonderanfertigung</a></li>
+{%- endcapture -%}
+
+{%- capture tp_rn_form -%}
+  {%- for k in form_keys -%}
+    {%- capture q -%}form={{ k }}{%- endcapture -%}
+    {%- capture ic -%}form-{{ k }}{%- endcapture -%}
+    <li><a class="tp-rug-chip" href="{% render 'tp-rug-url', key: 'alle', query: q %}">{% render 'tp-rug-icon', name: ic, size: 18 %}{{ form_labels[forloop.index0] }}</a></li>
+  {%- endfor -%}
+  <li><a class="tp-rug-chip" href="{{ u_sonder }}&amp;weg=skizze">{% render 'tp-rug-icon', name: 'form-skizze', size: 18 %}Nach Skizze</a></li>
+  <li><a class="tp-rug-chip" href="{{ u_sonder }}&amp;weg=schablone">{% render 'tp-rug-icon', name: 'form-schablone', size: 18 %}Nach Schablone</a></li>
+{%- endcapture -%}
+
+{%- capture tp_rn_kante -%}
+  {%- for k in kante_keys -%}
+    {%- capture q -%}kante={{ k }}{%- endcapture -%}
+    {%- capture ic -%}kante-{{ k }}{%- endcapture -%}
+    <li><a class="tp-rug-chip" href="{% render 'tp-rug-url', key: 'alle', query: q %}">{% render 'tp-rug-icon', name: ic, size: 18 %}{{ kante_labels[forloop.index0] }}</a></li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_rn_mat -%}
+  {%- for q in mat_q -%}
+    <li><a class="tp-rug-chip tp-rug-chip--plain" href="{% render 'tp-rug-url', key: 'alle', query: q %}">{{ mat_labels[forloop.index0] }}</a></li>
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- capture tp_rn_service -%}
+  <li><a class="tp-rug-nav__svc" href="{{ u_konf }}">{% render 'tp-rug-icon', name: 'lineal', size: 20 %}<span>Teppich-Konfigurator</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_berater }}">{% render 'tp-rug-icon', name: 'raum', size: 20 %}<span>Größen-Berater &amp; Raummaß-Hilfe</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_finder }}">{% render 'tp-rug-icon', name: 'kompass', size: 20 %}<span>Welcher Teppich passt zu mir?</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_vis }}">{% render 'tp-rug-icon', name: 'auge', size: 20 %}<span>Raum-Visualisierer</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_muster }}">{% render 'tp-rug-icon', name: 'muster', size: 20 %}<span>Muster anfragen</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_sonder }}">{% render 'tp-rug-icon', name: 'upload', size: 20 %}<span>Sonderform anfragen &ndash; Skizze oder Schablone hochladen</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_kanten }}">{% render 'tp-rug-icon', name: 'kante-baumwolle', size: 20 %}<span>Einfassungen erklärt</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{% render 'tp-rug-url', key: 'kontakt' %}">{% render 'tp-rug-icon', name: 'chat', size: 20 %}<span>Persönliche Beratung</span></a></li>
+  <li><a class="tp-rug-nav__svc" href="{{ u_faq }}">{% render 'tp-rug-icon', name: 'info', size: 20 %}<span>Fragen &amp; Antworten</span></a></li>
+{%- endcapture -%}
+
+{%- if variant == 'drawer' -%}
+  <div class="tp-rug-nav tp-rug-nav--drawer" data-tp-rug-nav-content>
+    <div class="tp-rug-nav__actions">
+      <a class="tp-rug-btn tp-rug-btn--primary" href="{{ u_konf }}">Jetzt konfigurieren</a>
+      <a class="tp-rug-btn tp-rug-btn--ghost" href="{{ u_start }}">Teppiche entdecken</a>
+    </div>
+    <p class="tp-rug-nav__group">Teppiche entdecken</p>
+    <ul class="tp-rug-nav__cards" role="list">{{ tp_rn_cards }}</ul>
+    <p class="tp-rug-nav__group">Nach Raum</p>
+    <ul class="tp-rug-nav__links" role="list">{{ tp_rn_raum }}</ul>
+    <p class="tp-rug-nav__group">Camper &amp; Spezial</p>
+    <ul class="tp-rug-nav__links" role="list">{{ tp_rn_camper }}</ul>
+    <p class="tp-rug-nav__group">Nach Form</p>
+    <ul class="tp-rug-chips" role="list">{{ tp_rn_form }}</ul>
+    <p class="tp-rug-nav__group">Nach Einfassung</p>
+    <ul class="tp-rug-chips" role="list">{{ tp_rn_kante }}</ul>
+    <p class="tp-rug-nav__group">Material &amp; Oberfläche</p>
+    <ul class="tp-rug-chips" role="list">{{ tp_rn_mat }}</ul>
+    <p class="tp-rug-nav__group">Beratung &amp; Service</p>
+    <ul class="tp-rug-nav__svcs" role="list">{{ tp_rn_service }}</ul>
+    <p class="tp-rug-nav__hint">Teppichboden für den ganzen Raum? <a href="{{ u_boden }}">Zu Teppichboden</a></p>
+  </div>
+{%- else -%}
+  <div class="tp-rug-nav tp-rug-nav--mega" data-tp-rug-nav-content data-testid="tp-rug-nav">
+    <div class="tp-rug-nav__intro">
+      <p class="tp-rug-nav__kicker">Teppiche nach Maß</p>
+      <p class="tp-rug-nav__title">Ihr Teppich. Ihr Maß. Ihre Form.</p>
+      <p class="tp-rug-nav__text">Fertig eingefasste Teppiche – rechteckig, rund, als Läufer oder ganz frei geformt.</p>
+      <a class="tp-rug-btn tp-rug-btn--primary" href="{{ u_konf }}">Jetzt konfigurieren</a>
+      <a class="tp-rug-nav__more" href="{{ u_start }}">Alle Teppich-Themen {%- render 'tp-rug-icon', name: 'pfeil', size: 16 -%}</a>
+      <p class="tp-rug-nav__hint">Teppichboden für den ganzen Raum? <a href="{{ u_boden }}">Zu Teppichboden</a></p>
+    </div>
+    <div class="tp-rug-nav__main">
+      <ul class="tp-rug-nav__cards" role="list" aria-label="Teppiche entdecken">{{ tp_rn_cards }}</ul>
+      <div class="tp-rug-nav__cols">
+        <div class="tp-rug-nav__col">
+          <p class="tp-rug-nav__group" id="tp-rn-raum">Nach Raum</p>
+          <ul class="tp-rug-nav__links" role="list" aria-labelledby="tp-rn-raum">{{ tp_rn_raum }}</ul>
+        </div>
+        <div class="tp-rug-nav__col">
+          <p class="tp-rug-nav__group" id="tp-rn-form">Nach Form</p>
+          <ul class="tp-rug-chips tp-rug-chips--compact tp-rug-chips--2col" role="list" aria-labelledby="tp-rn-form">{{ tp_rn_form }}</ul>
+        </div>
+        <div class="tp-rug-nav__col">
+          <p class="tp-rug-nav__group" id="tp-rn-kante">Nach Einfassung</p>
+          <ul class="tp-rug-chips tp-rug-chips--compact" role="list" aria-labelledby="tp-rn-kante">{{ tp_rn_kante }}</ul>
+          <p class="tp-rug-nav__group" id="tp-rn-camper">Camper &amp; Spezial</p>
+          <ul class="tp-rug-nav__links" role="list" aria-labelledby="tp-rn-camper">{{ tp_rn_camper }}</ul>
+        </div>
+        <div class="tp-rug-nav__col">
+          <p class="tp-rug-nav__group" id="tp-rn-mat">Material &amp; Oberfläche</p>
+          <ul class="tp-rug-chips tp-rug-chips--compact" role="list" aria-labelledby="tp-rn-mat">{{ tp_rn_mat }}</ul>
+        </div>
+        <div class="tp-rug-nav__col tp-rug-nav__col--svc">
+          <p class="tp-rug-nav__group" id="tp-rn-svc">Beratung &amp; Service</p>
+          <ul class="tp-rug-nav__svcs" role="list" aria-labelledby="tp-rn-svc">{{ tp_rn_service }}</ul>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endif -%}

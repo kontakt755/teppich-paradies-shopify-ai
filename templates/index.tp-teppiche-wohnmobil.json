@@ -1,0 +1,49 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "hero": {
+      "type": "tp-rug-hero",
+      "settings": {
+        "kicker": "Wohnmobil & Camper",
+        "heading": "Wohnmobilteppiche nach Maß",
+        "text": "Für Wohnmobil, Wohnwagen, Camper und Van – als Rechteck mit Ihren Maßen oder als Sonderform nach Skizze, Schablone oder Foto.",
+        "usps": "Rechteck direkt konfigurieren\nSkizze, Foto oder Grundriss hochladen\nSchablone für Rundungen und Aussparungen",
+        "scene": "wohnmobil",
+        "show_card": false,
+        "compact": true,
+        "btn1_label": "Zum Assistenten",
+        "btn1_key": "wohnmobil",
+        "btn2_label": "Direkt anfragen",
+        "btn2_key": "wohnmobil",
+        "btn2_anchor": "anfrage",
+        "quick_label": ""
+      }
+    },
+    "assistent": { "type": "tp-rug-camper", "settings": {} },
+    "anfrage": {
+      "type": "tp-rug-anfrage",
+      "settings": {
+        "mode": "sonderform",
+        "kicker": "Wohnmobilteppich anfragen",
+        "heading": "Skizze, Schablone oder Foto senden",
+        "text": "Beschreiben Sie die Fläche in Ihrem Fahrzeug und wählen Sie Ihre Unterlagen aus. Wir prüfen alles und melden uns mit einer Rückfrage oder einem Vorschlag.",
+        "subject": "Wohnmobil-Teppich",
+        "submit": "Wohnmobilteppich unverbindlich anfragen",
+        "show_vehicle": true,
+        "default_ort": "wohnmobil",
+        "sand": true
+      }
+    },
+    "faq": {
+      "type": "tp-rug-faq",
+      "settings": { "heading": "Fragen zu Wohnmobilteppichen" },
+      "blocks": {
+        "f1": { "type": "frage", "settings": { "question": "Reicht ein Rechteck oder brauche ich eine Schablone?", "answer": "<p>Ist die Fläche rechteckig und frei, genügen Breite und Länge. Bei Rundungen, Schienen, Sitzkonsolen oder Türaussparungen ist eine Schablone die sicherste Grundlage.</p>" } },
+        "f2": { "type": "frage", "settings": { "question": "Wie fertige ich eine Schablone an?", "answer": "<p>Packpapier oder feste Folie auslegen, Kanten sauber nachfahren und zuschneiden. Eine Kontrollstrecke von 50 cm einzeichnen, Fahrtrichtung und Oberseite kennzeichnen, dann fotografieren.</p>" } },
+        "f3": { "type": "frage", "settings": { "question": "Werden meine Dateien mit der Anfrage übertragen?", "answer": "<p>Noch nicht – das Formular kann derzeit keine Anhänge senden. Nach dem Absenden zeigen wir Ihnen, wie Sie Ihre Dateien mit Ihrer Referenz per E-Mail oder WhatsApp nachreichen.</p>" } }
+      },
+      "block_order": ["f1", "f2", "f3"]
+    }
+  },
+  "order": ["test", "hero", "assistent", "anfrage", "faq"]
+}

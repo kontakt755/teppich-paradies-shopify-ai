@@ -1,0 +1,117 @@
+{%- comment -%}
+  Die vier Einfassungen mit Nahaufnahme, sichtbarer Breite, Nutzen und Einsatz.
+  Begriffe nach Lieferantenpruefung (domains/shopify/teppiche/einfassungen.md):
+  Cover = bisher Kippkante, beim Lieferanten nur inklusive Antirutschvlies.
+  Layout "detail" ergaenzt Vergleichstabelle und Antirutsch-Erklaerung.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec{% if section.settings.sand %} tp-rug-sec--sand{% endif %}" id="einfassungen" aria-labelledby="tp-re-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          {%- if section.settings.kicker != blank -%}<p class="tp-rug-kicker">{{ section.settings.kicker | escape }}</p>{%- endif -%}
+          {%- if section.settings.is_page_title -%}
+            <h1 class="tp-rug-h1" id="tp-re-{{ section.id }}">{{ section.settings.heading | escape }}</h1>
+          {%- else -%}
+            <h2 class="tp-rug-h2" id="tp-re-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- endif -%}
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+        {%- if section.settings.layout == 'teaser' -%}
+          <a class="tp-rug-link" href="{% render 'tp-rug-url', key: 'einfassungen' %}">Einfassungen im Detail {% render 'tp-rug-icon', name: 'pfeil', size: 18 %}</a>
+        {%- endif -%}
+      </div>
+      <ul class="tp-rug-edges" role="list">
+        {%- for block in section.blocks -%}
+          {%- if block.type != 'edge' -%}{%- continue -%}{%- endif -%}
+          {%- assign eimg = 'tp-rug-kante-' | append: block.settings.key | append: '.svg' -%}
+          {%- capture eq -%}kante={{ block.settings.key }}{%- endcapture -%}
+          <li class="tp-rug-edge" {{ block.shopify_attributes }}>
+            {%- if block.settings.image != blank -%}
+              {{ block.settings.image | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(min-width: 1100px) 25vw, (min-width: 700px) 50vw, 100vw', class: 'tp-rug-edge__img', alt: block.settings.title }}
+            {%- else -%}
+              <img class="tp-rug-edge__img" src="{{ eimg | asset_url }}" alt="Illustration: Teppichecke mit {{ block.settings.title | escape }}" width="1000" height="750" loading="lazy" decoding="async">
+            {%- endif -%}
+            <div class="tp-rug-edge__body">
+              {%- if block.settings.pill != blank -%}<span class="tp-rug-edge__pill">{{ block.settings.pill | escape }}</span>{%- endif -%}
+              <h3 class="tp-rug-h3">{{ block.settings.title | escape }}</h3>
+              <p class="tp-rug-small">{{ block.settings.text | escape }}</p>
+              <div class="tp-rug-edge__meta">
+                <span><b>Sichtbar:</b> {{ block.settings.width | escape }}</span>
+                <span><b>Gut für:</b> {{ block.settings.use | escape }}</span>
+              </div>
+              <a class="tp-rug-link" href="{% render 'tp-rug-url', key: 'alle', query: eq %}">Teppiche mit {{ block.settings.short | escape }} {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</a>
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      {%- if section.settings.layout == 'detail' -%}
+        <h3 class="tp-rug-h3" style="margin:40px 0 14px">Die Einfassungen im Vergleich</h3>
+        <div class="tp-rug-scroll">
+          <table class="tp-rug-compare">
+            <thead>
+              <tr><th scope="col">Einfassung</th><th scope="col">Sichtbare Kante</th><th scope="col">Naht</th><th scope="col">Antirutschvlies</th><th scope="col">Randfarbe wählbar</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Kettelung</th><td>schmale Garnkante</td><td>umstochen</td><td>optional, je Qualität</td><td>Garnfarbe (Demo-Auswahl)</td></tr>
+              <tr><th scope="row">Paspel</th><td>ca. 1 cm Band</td><td>sichtbar</td><td>optional, je Qualität</td><td>Bandfarbe (Demo-Auswahl)</td></tr>
+              <tr><th scope="row">Baumwoll-Einfassband</th><td>ca. 3 cm Band</td><td>verdeckt</td><td>optional, je Qualität</td><td>Bandfarbe (Demo-Auswahl)</td></tr>
+              <tr><th scope="row">Cover (Kippkante)</th><td>kein Band – Kante umgeschlagen</td><td>verdeckt</td><td>immer inklusive</td><td>–</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tp-rug-small" style="margin-top:10px">Welche Einfassung möglich ist, hängt von der Teppichqualität ab – der Konfigurator zeigt je Produkt nur die erlaubten. Randfarben sind derzeit eine Demo-Auswahl; die echten Band- und Garnfarben folgen.</p>
+
+        <div class="tp-rug-feature" style="margin-top:48px">
+          <div class="tp-rug-feature__media"><img src="{{ 'tp-rug-kante-cover.svg' | asset_url }}" alt="Illustration: umgeschlagene Teppichkante" width="1000" height="750" loading="lazy"></div>
+          <div class="tp-rug-feature__text">
+            <p class="tp-rug-kicker">Antirutschvlies</p>
+            <h3 class="tp-rug-h2">Mehr Halt auf glatten Böden</h3>
+            <ul class="tp-rug-checklist" role="list">
+              <li>{% render 'tp-rug-icon', name: 'check', size: 20 %}<span>Verringert das Verrutschen auf Parkett, Fliesen oder Vinyl.</span></li>
+              <li>{% render 'tp-rug-icon', name: 'check', size: 20 %}<span>Etwas mehr Trittkomfort.</span></li>
+              <li>{% render 'tp-rug-icon', name: 'check', size: 20 %}<span>Passend auf Ihr Teppichmaß zugeschnitten.</span></li>
+            </ul>
+            <p class="tp-rug-muted">Bei der Cover-Kante gehört das Vlies fest dazu. Bei den anderen Einfassungen ist es je nach Qualität wählbar – im Konfigurator unter „Extras“.</p>
+          </div>
+        </div>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Einfassungen",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Dachzeile", "default": "Einfassungen" },
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Vier Kanten, vier Wirkungen" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Die Einfassung schützt die Kante und bestimmt den Look – vom unsichtbaren Abschluss bis zum breiten Rahmen." },
+    { "type": "select", "id": "layout", "label": "Darstellung", "default": "teaser", "options": [{ "value": "teaser", "label": "Übersicht" }, { "value": "detail", "label": "Ausführlich mit Vergleich" }] },
+    { "type": "checkbox", "id": "is_page_title", "label": "Überschrift ist Seitentitel (h1)", "default": false },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "edge",
+      "name": "Einfassung",
+      "settings": [
+        { "type": "select", "id": "key", "label": "Einfassung", "default": "kettel", "options": [{ "value": "kettel", "label": "Kettelung" }, { "value": "paspel", "label": "Paspel" }, { "value": "baumwolle", "label": "Baumwolle" }, { "value": "cover", "label": "Cover (Kippkante)" }] },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Kettelung" },
+        { "type": "text", "id": "short", "label": "Kurzname im Link", "default": "Kettelung" },
+        { "type": "text", "id": "pill", "label": "Hervorhebung" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "text", "id": "width", "label": "Sichtbare Breite" },
+        { "type": "text", "id": "use", "label": "Gut für" },
+        { "type": "image_picker", "id": "image", "label": "Foto (ersetzt die Illustration)" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [{ "name": "TP Teppich-Einfassungen" }]
+}
+{% endschema %}

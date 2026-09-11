@@ -1,0 +1,51 @@
+{%- doc -%}
+  Kopfbereich des Teppichbereichs (eine Zeile in layout/theme.liquid).
+
+  - Menue-Stile laden auf jeder Seite nicht blockierend (das Teppich-Menue
+    haengt im Header, siehe snippets/tp-rug-nav-inject.liquid).
+  - Auf den Teppich-Vorlagen: noindex, eigene Stile, Titel.
+  Alles nur hinter der Veroeffentlichungssperre (snippets/tp-rug-gate.liquid).
+{%- enddoc -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign tp_rh_page = false
+    assign tp_rh_suffix = template.suffix | default: ''
+    if tp_rh_suffix contains 'tp-teppich' or tp_rh_suffix == 'teppich-konfigurator'
+      assign tp_rh_page = true
+    endif
+    case tp_rh_suffix
+      when 'tp-teppiche'
+        assign tp_rh_title = 'Teppiche nach Maß'
+      when 'tp-teppiche-alle'
+        assign tp_rh_title = 'Alle Teppiche'
+      when 'tp-teppich-konfigurator'
+        assign tp_rh_title = 'Teppich-Konfigurator'
+      when 'tp-teppiche-wohnmobil'
+        assign tp_rh_title = 'Wohnmobilteppiche nach Maß'
+      when 'tp-teppiche-sonderform'
+        assign tp_rh_title = 'Teppich-Sonderform nach Skizze oder Schablone'
+      when 'tp-teppiche-berater'
+        assign tp_rh_title = 'Teppichgröße berechnen'
+      when 'tp-teppiche-visualisierer'
+        assign tp_rh_title = 'Teppich im eigenen Raum ansehen'
+      when 'tp-teppiche-einfassungen'
+        assign tp_rh_title = 'Teppich-Einfassungen erklärt'
+      when 'tp-teppiche-muster'
+        assign tp_rh_title = 'Teppich-Muster anfragen'
+      else
+        assign tp_rh_title = ''
+    endcase
+  -%}
+  <link rel="stylesheet" href="{{ 'tp-rug-nav.css' | asset_url }}" media="print" onload="this.media='all'">
+  {%- if tp_rh_page -%}
+    {%- comment -%} Entwurf: nie indexieren, auch nicht ueber einen geteilten Vorschau-Link {%- endcomment -%}
+    <meta name="robots" content="noindex, nofollow">
+    {{ 'tp-rug.css' | asset_url | stylesheet_tag }}
+    {{ 'tp-rug-app.css' | asset_url | stylesheet_tag }}
+    <link rel="modulepreload" href="{{ 'tp-rug-core.js' | asset_url }}">
+    {%- if tp_rh_title != blank -%}
+      <script>document.title = {{ tp_rh_title | append: ' (Entwurf) | ' | append: shop.name | json }};</script>
+    {%- endif -%}
+  {%- endif -%}
+{%- endif -%}

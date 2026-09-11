@@ -1,0 +1,101 @@
+{%- comment -%}
+  Anfrageformular fuer Sonderform, Wohnmobil und Muster - das Shopify-
+  Kontaktformular mit Zusatzfeldern und Datei-Auswahl.
+  Dateien werden NICHT uebertragen (Shopify-Formulare koennen keine Anhaenge);
+  die Oberflaeche sagt das vor und nach dem Absenden (assets/tp-rug-upload.js).
+  Muster: bewusst ohne Angaben zu Kosten, Anzahl oder Lieferzeit.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign s = section.settings
+    assign fid = 'tp-rug-req-' | append: section.id
+    assign tp_ra_items = '[' | append: '' | append: ']'
+  -%}
+  {%- capture tp_ra_cat -%}{%- render 'tp-rug-katalog', mode: 'json' -%}{%- endcapture -%}
+  {%- capture tp_ra_extra -%}
+    {%- if s.mode == 'muster' -%}
+      <fieldset class="tp-rug-fs">
+        <legend class="tp-rug-fs__legend">Für welche Qualitäten? <span aria-hidden="true">*</span></legend>
+        <div class="tp-rug-mchecks" data-mchecks></div>
+      </fieldset>
+      <div class="tp-rug-field">
+        <label for="{{ fid }}-farben">Gewünschte Farben <span class="tp-rug-field__unit">optional</span></label>
+        <input id="{{ fid }}-farben" type="text" name="contact[Farben]" data-q="farben" data-label="Farben" placeholder="z. B. Anthrazit, Sand">
+      </div>
+      <div class="tp-rug-form__grid">
+        <div class="tp-rug-field"><label for="{{ fid }}-str">Straße und Hausnummer <span aria-hidden="true">*</span></label><input id="{{ fid }}-str" type="text" name="contact[Straße]" autocomplete="street-address" data-required data-msg="Bitte Straße und Hausnummer angeben." data-q="strasse" data-label="Straße"><p class="tp-rug-err" data-err-for="{{ fid }}-str" hidden></p></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-plz">PLZ und Ort <span aria-hidden="true">*</span></label><input id="{{ fid }}-plz" type="text" name="contact[PLZ und Ort]" autocomplete="address-level2" data-required data-msg="Bitte PLZ und Ort angeben." data-q="ort2" data-label="PLZ und Ort"><p class="tp-rug-err" data-err-for="{{ fid }}-plz" hidden></p></div>
+      </div>
+    {%- else -%}
+      <div class="tp-rug-form__grid">
+        <div class="tp-rug-field"><label for="{{ fid }}-weg">Wie zeigen Sie uns die Form?</label>
+          <select id="{{ fid }}-weg" name="contact[Weg]" data-q="weg" data-label="Weg">
+            <option value="skizze">Skizze mit Maßen</option><option value="schablone">Schablone</option><option value="foto">Foto oder Grundriss</option><option value="beschreibung">Beschreibung</option>
+          </select></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-ort">Verwendungsort</label>
+          <select id="{{ fid }}-ort" name="contact[Verwendungsort]" data-q="ort" data-label="Verwendungsort">
+            <option value="">Bitte wählen</option><option value="wohnzimmer">Wohnzimmer</option><option value="esszimmer">Esszimmer</option><option value="schlafzimmer">Schlafzimmer</option><option value="kinderzimmer">Kinderzimmer</option><option value="kueche">Küche</option><option value="flur">Flur &amp; Diele</option><option value="treppe">Treppe / Podest</option><option value="buero">Büro / Objekt</option><option value="wohnmobil" {% if s.default_ort == 'wohnmobil' %}selected{% endif %}>Wohnmobil / Wohnwagen / Van</option><option value="boot">Boot</option><option value="sonstiges">Sonstiges</option>
+          </select></div>
+        {%- if s.show_vehicle -%}
+          <div class="tp-rug-field"><label for="{{ fid }}-fz">Fahrzeug (Marke, Modell) <span class="tp-rug-field__unit">optional</span></label><input id="{{ fid }}-fz" type="text" name="contact[Fahrzeug]" data-q="fahrzeug" data-label="Fahrzeug" placeholder="z. B. Wohnmobil, Baujahr 2020"></div>
+        {%- endif -%}
+        <div class="tp-rug-field"><label for="{{ fid }}-b">Breite ca. <span class="tp-rug-field__unit">in cm</span></label><div class="tp-rug-input"><input id="{{ fid }}-b" type="text" inputmode="numeric" name="contact[Breite ca. cm]" data-q="breite" data-label="Breite ca. (cm)"><span class="tp-rug-input__unit">cm</span></div></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-l">Länge ca. <span class="tp-rug-field__unit">in cm, bis 1.000</span></label><div class="tp-rug-input"><input id="{{ fid }}-l" type="text" inputmode="numeric" name="contact[Länge ca. cm]" data-q="laenge" data-label="Länge ca. (cm)"><span class="tp-rug-input__unit">cm</span></div></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-q">Gewünschte Qualität</label><select id="{{ fid }}-q" name="contact[Qualität]" data-q="qualitaet" data-label="Qualität" data-qselect><option value="">Noch offen – bitte beraten</option></select></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-f">Gewünschte Farbe <span class="tp-rug-field__unit">optional</span></label><input id="{{ fid }}-f" type="text" name="contact[Farbe]" data-q="farbe" data-label="Farbe"></div>
+        <div class="tp-rug-field"><label for="{{ fid }}-e">Einfassung</label>
+          <select id="{{ fid }}-e" name="contact[Einfassung]" data-q="einfassung" data-label="Einfassung"><option value="">Noch offen – bitte beraten</option><option>Kettelung</option><option>Paspel (ca. 1 cm)</option><option>Baumwoll-Einfassband (ca. 3 cm)</option><option>Cover / Kippkante (inkl. Antirutschvlies)</option></select></div>
+      </div>
+      <div class="tp-rug-field">
+        <label for="{{ fid }}-d">Beschreibung Ihrer Form <span aria-hidden="true">*</span></label>
+        <textarea id="{{ fid }}-d" name="contact[Beschreibung]" rows="4" maxlength="2000" data-q="beschreibung" data-label="Beschreibung" placeholder="z. B. Fläche zwischen Sitzbank und Tür, rechts abgeschrägt, Schiene in der Mitte"></textarea>
+      </div>
+      <div data-upload-slot></div>
+    {%- endif -%}
+  {%- endcapture -%}
+
+  <section class="tp-rug tp-rug-sec{% if s.sand %} tp-rug-sec--sand{% endif %}" id="anfrage" aria-labelledby="tp-ra-{{ section.id }}">
+    <div class="tp-rug-wrap tp-rug-reqwrap">
+      <div class="tp-rug-reqwrap__intro">
+        <p class="tp-rug-kicker">{{ s.kicker | escape }}</p>
+        {%- if s.is_page_title -%}
+          <h1 class="tp-rug-h1" id="tp-ra-{{ section.id }}">{{ s.heading | escape }}</h1>
+        {%- else -%}
+          <h2 class="tp-rug-h2" id="tp-ra-{{ section.id }}">{{ s.heading | escape }}</h2>
+        {%- endif -%}
+        <p class="tp-rug-lead">{{ s.text | escape }}</p>
+        <ul class="tp-rug-checklist tp-rug-checklist--small" role="list">
+          <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Unverbindlich – kein Kauf, keine Kosten durch die Anfrage.</span></li>
+          <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Sie erhalten eine Referenz für Rückfragen.</span></li>
+          <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Wir melden uns persönlich.</span></li>
+        </ul>
+      </div>
+      <tp-rug-request class="tp-rug-card-box" data-subject="{{ s.subject | escape }}" data-need="{% if s.mode == 'muster' %}qualitaet{% else %}desc{% endif %}" data-catalog="{{ tp_ra_cat | strip | escape }}">
+        {%- render 'tp-rug-anfrageformular', form_id: fid, subject: s.subject, submit: s.submit, extra: tp_ra_extra, message_label: 'Weitere Hinweise' -%}
+      </tp-rug-request>
+    </div>
+  </section>
+  <script type="module" src="{{ 'tp-rug-tools.js' | asset_url }}"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Anfrage",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "select", "id": "mode", "label": "Art", "default": "sonderform", "options": [{ "value": "sonderform", "label": "Sonderform / Wohnmobil" }, { "value": "muster", "label": "Musteranfrage" }] },
+    { "type": "text", "id": "kicker", "label": "Dachzeile", "default": "Sonderform anfragen" },
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Skizze, Schablone oder Foto senden" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Beschreiben Sie Ihre Form und wählen Sie Ihre Unterlagen aus. Wir prüfen alles und melden uns mit einer Rückfrage oder einem Vorschlag." },
+    { "type": "text", "id": "subject", "label": "Betreff", "default": "Teppich-Sonderform" },
+    { "type": "text", "id": "submit", "label": "Knopf", "default": "Unverbindlich anfragen" },
+    { "type": "checkbox", "id": "show_vehicle", "label": "Feld Fahrzeug zeigen", "default": false },
+    { "type": "checkbox", "id": "is_page_title", "label": "Überschrift ist Seitentitel (h1)", "default": false },
+    { "type": "text", "id": "default_ort", "label": "Vorbelegter Verwendungsort" },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": true }
+  ],
+  "presets": [{ "name": "TP Teppich-Anfrage" }]
+}
+{% endschema %}

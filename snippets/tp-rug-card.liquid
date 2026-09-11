@@ -1,0 +1,195 @@
+{%- doc -%}
+  Produktkarte des Teppichbereichs - ohne Preis, mit dem, was bei einem
+  Massteppich zaehlt: Einfassung, Farben, Formen, Einsatzort.
+
+  Eine Karte ist ein einziger Link (keine verschachtelten Knoepfe). Die
+  data-*-Attribute speisen den Filter in sections/tp-rug-liste.liquid.
+  Aufgerufen aus snippets/tp-rug-katalog.liquid (Demo) - fuer echte Produkte
+  liefert sections/tp-rug-liste.liquid dieselben Parameter aus tp_rug.config.
+
+  @param {string} handle
+  @param {string} title
+  @param {string} [subtitle]
+  @param {string} [image] - Dateiname eines Theme-Assets (Demo)
+  @param {object} [image_obj] - Shopify-Bild (echtes Produkt), geht vor image
+  @param {string} [url] - Ziel; ohne Angabe der Konfigurator mit ?produkt=
+  @param {string} rooms - Schluessel, kommagetrennt
+  @param {string} shapes - Schluessel, kommagetrennt
+  @param {string} edges - Schluessel, kommagetrennt
+  @param {string} colors - "Name:#hex|Name:#hex"
+  @param {string} [antislip] - optional | inklusive | nicht_verfuegbar
+  @param {string} [flags] - camper_suitable, outdoor_suitable, object_suitable ...
+  @param {string} [material_key]
+  @param {string} [pile]
+  @param {string} [fiber]
+  @param {string} [loading] - lazy | eager
+  @param {boolean} [test] - Testprodukt markieren
+{%- enddoc -%}
+{%- liquid
+  assign tp_rc_rooms = rooms | split: ','
+  assign tp_rc_shapes = shapes | split: ','
+  assign tp_rc_edges = edges | split: ','
+  assign tp_rc_colors = colors | split: '|'
+  assign tp_rc_flags = flags | default: '' | split: ','
+
+  if url != blank
+    assign tp_rc_url = url
+  else
+    capture tp_rc_q
+      echo 'produkt=' | append: handle
+    endcapture
+    capture tp_rc_url
+      render 'tp-rug-url', key: 'konfigurator', query: tp_rc_q
+    endcapture
+  endif
+
+  assign tp_rc_edge_text = ''
+  for e in tp_rc_edges
+    case e
+      when 'kettel'
+        assign tp_rc_e = 'Kettelung'
+      when 'paspel'
+        assign tp_rc_e = 'Paspel'
+      when 'baumwolle'
+        assign tp_rc_e = 'Baumwolle'
+      when 'cover'
+        assign tp_rc_e = 'Cover'
+      else
+        assign tp_rc_e = ''
+    endcase
+    if tp_rc_e != ''
+      if tp_rc_edge_text != ''
+        assign tp_rc_edge_text = tp_rc_edge_text | append: ' · '
+      endif
+      assign tp_rc_edge_text = tp_rc_edge_text | append: tp_rc_e
+    endif
+  endfor
+
+  assign tp_rc_room_text = ''
+  for r in tp_rc_rooms limit: 3
+    case r
+      when 'wohnzimmer'
+        assign tp_rc_r = 'Wohnzimmer'
+      when 'esszimmer'
+        assign tp_rc_r = 'Esszimmer'
+      when 'schlafzimmer'
+        assign tp_rc_r = 'Schlafzimmer'
+      when 'kueche'
+        assign tp_rc_r = 'Küche'
+      when 'flur'
+        assign tp_rc_r = 'Flur'
+      when 'kinderzimmer'
+        assign tp_rc_r = 'Kinderzimmer'
+      when 'homeoffice'
+        assign tp_rc_r = 'Homeoffice'
+      when 'eingang'
+        assign tp_rc_r = 'Eingang'
+      when 'buero'
+        assign tp_rc_r = 'Büro & Objekt'
+      when 'wohnmobil'
+        assign tp_rc_r = 'Wohnmobil'
+      when 'outdoor'
+        assign tp_rc_r = 'Outdoor'
+      else
+        assign tp_rc_r = ''
+    endcase
+    if tp_rc_r != ''
+      if tp_rc_room_text != ''
+        assign tp_rc_room_text = tp_rc_room_text | append: ', '
+      endif
+      assign tp_rc_room_text = tp_rc_room_text | append: tp_rc_r
+    endif
+  endfor
+
+  assign tp_rc_custom = false
+  if tp_rc_shapes contains 'skizze' or tp_rc_shapes contains 'schablone' or tp_rc_shapes contains 'freiform'
+    assign tp_rc_custom = true
+  endif
+  assign tp_rc_std_shapes = 0
+-%}
+<li
+  class="tp-rug-card"
+  data-tp-rug-card
+  data-handle="{{ handle | escape }}"
+  data-raum="{{ rooms | escape }}"
+  data-form="{{ shapes | escape }}"
+  data-kante="{{ edges | escape }}"
+  data-material="{{ material_key | escape }}"
+  data-flor="{{ pile | escape }}"
+  data-faser="{{ fiber | escape }}"
+  data-antirutsch="{{ antislip | escape }}"
+  data-eigenschaft="{{ flags | escape }}"
+>
+  <a class="tp-rug-card__link" href="{{ tp_rc_url }}">
+    <div class="tp-rug-card__media">
+      {%- if image_obj != blank -%}
+        {{ image_obj | image_url: width: 900 | image_tag: loading: loading, widths: '360, 540, 720, 900', sizes: '(min-width: 1200px) 30vw, (min-width: 750px) 45vw, 92vw', class: 'tp-rug-card__img', alt: title }}
+      {%- elsif image != blank -%}
+        <img
+          class="tp-rug-card__img"
+          src="{{ image | asset_url }}"
+          alt="Illustration: {{ title | escape }} im Raum"
+          width="1200"
+          height="900"
+          loading="{{ loading | default: 'lazy' }}"
+          decoding="async"
+        >
+      {%- endif -%}
+      <ul class="tp-rug-card__badges" role="list">
+        <li class="tp-rug-badge tp-rug-badge--strong">Wunschmaß</li>
+        {%- if antislip == 'inklusive' -%}
+          <li class="tp-rug-badge">inkl. Antirutschvlies</li>
+        {%- elsif antislip == 'optional' -%}
+          <li class="tp-rug-badge">Antirutsch möglich</li>
+        {%- endif -%}
+        {%- if tp_rc_custom -%}
+          <li class="tp-rug-badge">Sonderform</li>
+        {%- endif -%}
+      </ul>
+      {%- if test -%}
+        <span class="tp-rug-card__test">Testprodukt</span>
+      {%- endif -%}
+    </div>
+    <div class="tp-rug-card__body">
+      {%- if subtitle != blank -%}
+        <p class="tp-rug-card__eyebrow">{{ subtitle | escape }}</p>
+      {%- endif -%}
+      <h3 class="tp-rug-card__title">{{ title | escape }}</h3>
+      {%- if tp_rc_edge_text != '' -%}
+        <p class="tp-rug-card__meta">
+          <span class="tp-rug-card__label">Einfassung</span> {{ tp_rc_edge_text }}
+        </p>
+      {%- endif -%}
+      <div class="tp-rug-card__row">
+        <span class="tp-rug-card__swatches" aria-hidden="true">
+          {%- for c in tp_rc_colors limit: 6 -%}
+            {%- assign tp_rc_hex = c | split: ':' | last -%}
+            <span class="tp-rug-card__swatch" style="--sw: {{ tp_rc_hex }}"></span>
+          {%- endfor -%}
+        </span>
+        <span class="tp-rug-card__count">{{ tp_rc_colors.size }} {% if tp_rc_colors.size == 1 %}Farbe{% else %}Farben{% endif %}</span>
+      </div>
+      <div class="tp-rug-card__row tp-rug-card__shapes">
+        {%- for s in tp_rc_shapes -%}
+          {%- if s == 'freiform' or s == 'skizze' or s == 'schablone' -%}{%- continue -%}{%- endif -%}
+          {%- assign tp_rc_std_shapes = tp_rc_std_shapes | plus: 1 -%}
+          {%- if tp_rc_std_shapes <= 5 -%}
+            {%- capture tp_rc_icon -%}form-{{ s }}{%- endcapture -%}
+            <span class="tp-rug-card__shape" title="{{ s | capitalize }}">{% render 'tp-rug-icon', name: tp_rc_icon, size: 20 %}</span>
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if tp_rc_std_shapes > 5 -%}
+          <span class="tp-rug-card__more">+{{ tp_rc_std_shapes | minus: 5 }}</span>
+        {%- endif -%}
+        <span class="visually-hidden">{{ tp_rc_std_shapes }} Formen wählbar</span>
+      </div>
+      {%- if tp_rc_room_text != '' -%}
+        <p class="tp-rug-card__rooms">Für {{ tp_rc_room_text }}</p>
+      {%- endif -%}
+      <span class="tp-rug-card__cta">
+        Konfigurieren
+        {%- render 'tp-rug-icon', name: 'pfeil', size: 18 -%}
+      </span>
+    </div>
+  </a>
+</li>

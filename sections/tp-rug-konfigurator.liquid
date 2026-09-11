@@ -1,0 +1,161 @@
+{%- comment -%}
+  Teppich-Konfigurator: links Galerie, rechts acht Schritte, darunter die
+  Produktinfos. Die Oberflaeche baut assets/tp-rug-configurator.js.
+
+  Zwei Datenquellen, ein Code:
+  - Produkt-Vorlage (product.teppich-konfigurator): Metafeld tp_rug.config (JSON)
+    plus Farben aus der Option "Farbe". Fehlt das Metafeld, gibt es keinen
+    Konfigurator (fail closed) - nur einen Beratungshinweis.
+  - Demo-Vorlage (index.tp-teppich-konfigurator): Demo-Katalog, Auswahl ueber
+    ?produkt=<handle>. Noetig, weil Shopify Entwurfsprodukte nicht im
+    Entwurfstheme rendert (geprueft 2026-09-11).
+
+  Kein Preis, kein Warenkorb, kein Product-JSON-LD.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign tp_kf_mode = 'demo'
+    assign tp_kf_cfg = blank
+    if product != blank
+      assign tp_kf_cfg = product.metafields.tp_rug.config.value
+      if tp_kf_cfg != blank
+        assign tp_kf_mode = 'product'
+      else
+        assign tp_kf_mode = 'none'
+      endif
+    endif
+    assign tp_kf_default = section.settings.default_product | default: 'tp-rug-test-teppich-nach-mass'
+    assign tp_kf_title = 'Teppich nach Maß'
+    if product != blank
+      assign tp_kf_title = product.title
+    endif
+
+    capture u_start
+      render 'tp-rug-url', key: 'start'
+    endcapture
+    capture u_alle
+      render 'tp-rug-url', key: 'alle'
+    endcapture
+    capture u_berater
+      render 'tp-rug-url', key: 'berater'
+    endcapture
+    capture u_finder
+      render 'tp-rug-url', key: 'berater', anchor: 'finder'
+    endcapture
+    capture u_vis
+      render 'tp-rug-url', key: 'visualisierer'
+    endcapture
+    capture u_sonder
+      render 'tp-rug-url', key: 'sonderform'
+    endcapture
+    capture u_muster
+      render 'tp-rug-url', key: 'muster'
+    endcapture
+    capture u_kanten
+      render 'tp-rug-url', key: 'einfassungen'
+    endcapture
+    capture u_faq
+      render 'tp-rug-url', key: 'start', anchor: 'faq'
+    endcapture
+    capture u_kontakt
+      render 'tp-rug-url', key: 'kontakt'
+    endcapture
+  -%}
+  {%- capture tp_kf_routes -%}{"start":{{ u_start | json }},"alle":{{ u_alle | json }},"berater":{{ u_berater | json }},"finder":{{ u_finder | json }},"visualisierer":{{ u_vis | json }},"sonderform":{{ u_sonder | json }},"muster":{{ u_muster | json }},"einfassungen":{{ u_kanten | json }},"faq":{{ u_faq | json }}}{%- endcapture -%}
+  {%- capture tp_kf_assets -%}{"kettel":{{ 'tp-rug-kante-kettel.svg' | asset_url | json }},"paspel":{{ 'tp-rug-kante-paspel.svg' | asset_url | json }},"baumwolle":{{ 'tp-rug-kante-baumwolle.svg' | asset_url | json }},"cover":{{ 'tp-rug-kante-cover.svg' | asset_url | json }}}{%- endcapture -%}
+
+  <link rel="modulepreload" href="{{ 'tp-rug-configurator.js' | asset_url }}">
+  <link rel="modulepreload" href="{{ 'tp-rug-upload.js' | asset_url }}">
+  <link rel="modulepreload" href="{{ 'tp-rug-request.js' | asset_url }}">
+
+  <section class="tp-rug tp-rug-kf" id="konfigurator" aria-label="Teppich-Konfigurator">
+    <div class="tp-rug-wrap">
+      <nav class="tp-rug-crumbs" aria-label="Brotkrumen">
+        <ol role="list">
+          <li><a href="{{ routes.root_url }}">Startseite</a></li>
+          <li><a href="{{ u_start }}">Teppiche</a></li>
+          <li><span aria-current="page" data-crumb>{{ tp_kf_title | escape }}</span></li>
+        </ol>
+      </nav>
+
+      {%- if tp_kf_mode == 'none' -%}
+        <div class="tp-rug-err-box">
+          <p><strong>{{ product.title | escape }}</strong> ist noch nicht als Maßteppich eingerichtet.</p>
+          <p>Wir beraten Sie gern persönlich: <a href="{{ u_kontakt }}">Kontakt aufnehmen</a>.</p>
+        </div>
+      {%- else -%}
+        <tp-rug-configurator
+          class="tp-rug-conf"
+          data-mode="{{ tp_kf_mode }}"
+          data-default="{% if tp_kf_mode == 'product' %}{{ product.handle | escape }}{% else %}{{ tp_kf_default | escape }}{% endif %}"
+          data-routes="{{ tp_kf_routes | escape }}"
+          data-assets="{{ tp_kf_assets | escape }}"
+          data-visualizer="{{ 'tp-rug-visualizer.js' | asset_url }}"
+        >
+          <script type="application/json" data-tp-rug-products>
+            {%- if tp_kf_mode == 'product' -%}
+              {%- assign tp_kf_opt = product.options_with_values | where: 'name', 'Farbe' | first -%}
+              [{"handle":{{ product.handle | json }},"title":{{ product.title | json }},"url":{{ product.url | json }},"description":{{ product.description | strip_html | strip | truncate: 700 | json }},
+                "images":[{%- for m in product.media -%}{%- if m.media_type == 'image' -%}{{ m | image_url: width: 1400 | json }},{%- endif -%}{%- endfor -%}null],
+                "option_colors":[{%- for v in tp_kf_opt.values -%}{"name":{{ v.name | json }}{% if v.swatch.color %},"hex":{{ v.swatch.color | color_to_hex | json }}{% endif %}{% if v.variant.featured_image %},"image":{{ v.variant.featured_image | image_url: width: 160 | json }}{% endif %}},{%- endfor -%}null],
+                "config":{{ tp_kf_cfg | json }}}]
+            {%- else -%}
+              {%- render 'tp-rug-katalog', mode: 'json' -%}
+            {%- endif -%}
+          </script>
+
+          <div class="tp-rug-conf__grid">
+            <div class="tp-rug-conf__gallery tp-rug-gal" data-gallery>
+              <div class="tp-rug-gal__main">
+                {%- if tp_kf_mode == 'product' and product.featured_media -%}
+                  {{ product.featured_media | image_url: width: 1400 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '500, 800, 1100, 1400', sizes: '(min-width: 990px) 50vw, 100vw', alt: product.title }}
+                {%- else -%}
+                  <img src="{{ 'tp-rug-demo-teppich-nach-mass.svg' | asset_url }}" alt="Illustration: Teppich im Raum" width="1200" height="900" fetchpriority="high">
+                {%- endif -%}
+              </div>
+            </div>
+
+            <div class="tp-rug-conf__panel">
+              <header class="tp-rug-conf__head">
+                <p class="tp-rug-kicker">Teppich nach Maß</p>
+                <h1 class="tp-rug-h2" data-title>{{ tp_kf_title | escape }}</h1>
+                <p class="tp-rug-muted" data-subtitle></p>
+                <ul class="tp-rug-conf__badges" role="list">
+                  <li class="tp-rug-badge tp-rug-badge--strong">Wunschmaß</li>
+                  <li class="tp-rug-badge tp-rug-badge--line">Individuell konfigurierbar</li>
+                  <li class="tp-rug-badge tp-rug-badge--line">bis 10 m Länge</li>
+                </ul>
+                <p class="tp-rug-conf__price">{%- render 'tp-rug-icon', name: 'info', size: 18 -%}<span>Preise folgen – Sie fragen Ihre Konfiguration unverbindlich an.</span></p>
+              </header>
+              <div class="tp-rug-conf__app" data-app>
+                <p class="tp-rug-small">Konfigurator wird geladen …</p>
+                <noscript><p class="tp-rug-err-box">Der Konfigurator braucht JavaScript. Wir beraten Sie gern telefonisch unter 03301 573 37 20.</p></noscript>
+              </div>
+            </div>
+          </div>
+
+          <div class="tp-rug-info" data-info></div>
+
+          <div hidden>
+            {%- capture tp_kf_form_id -%}tp-rug-anfrage-{{ section.id }}{%- endcapture -%}
+            {%- render 'tp-rug-anfrageformular', form_id: tp_kf_form_id, subject: 'Teppich-Anfrage aus dem Konfigurator', submit: 'Konfiguration unverbindlich anfragen', message_label: 'Nachricht an uns' -%}
+          </div>
+        </tp-rug-configurator>
+        <script type="module" src="{{ 'tp-rug-configurator.js' | asset_url }}"></script>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Konfigurator",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "default_product", "label": "Demo-Produkt (Handle)", "default": "tp-rug-test-teppich-nach-mass", "info": "Nur in der Demo-Vorlage. Auf Produktseiten gilt das Produkt mit seinem Metafeld tp_rug.config." }
+  ],
+  "presets": [{ "name": "TP Teppich-Konfigurator" }]
+}
+{% endschema %}

@@ -1,0 +1,26 @@
+{
+  "sections": {
+    "test": {
+      "type": "tp-rug-testhinweis",
+      "settings": {}
+    },
+    "liste": {
+      "type": "tp-rug-liste",
+      "settings": {
+        "heading": "Alle Teppiche",
+        "intro": "Jeder Teppich lässt sich in Maß, Form und Einfassung konfigurieren. Filtern Sie nach Raum, Form oder Material."
+      }
+    },
+    "werkzeuge": {
+      "type": "tp-rug-werkzeuge",
+      "settings": { "heading": "Nicht das Richtige dabei?", "text": "Beschreiben Sie Ihren Wunsch – oder lassen Sie sich die passende Größe berechnen.", "sand": true },
+      "blocks": {
+        "w1": { "type": "tool", "settings": { "icon": "raum", "title": "Größen-Berater", "text": "Möbelmaße eingeben, passende Teppichgröße erhalten.", "cta": "Größe berechnen", "key": "berater", "anchor": "groesse" } },
+        "w2": { "type": "tool", "settings": { "icon": "upload", "title": "Sonderform anfragen", "text": "Skizze, Foto oder Schablone hochladen und unverbindlich anfragen.", "cta": "Sonderform anfragen", "key": "sonderform" } },
+        "w3": { "type": "tool", "settings": { "icon": "muster", "title": "Muster anfragen", "text": "Material und Farbe vorab in der Hand halten.", "cta": "Muster anfragen", "key": "muster" } }
+      },
+      "block_order": ["w1", "w2", "w3"]
+    }
+  },
+  "order": ["test", "liste", "werkzeuge"]
+}

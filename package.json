@@ -25,6 +25,8 @@
     "farbcode:guard": "node scripts/farbcode-guard.mjs",
     "unmerged:guard": "node qa/unmerged-changes-guard.mjs",
     "essential:guard": "node qa/essential-files-guard.mjs",
+    "tp-rug:build": "node scripts/tp-rug/build-assets.mjs",
+    "tp-rug:check": "node scripts/tp-rug/build-assets.mjs --check",
     "theme:block": "node automation/scripts/theme-block.mjs",
     "theme:diff": "node automation/scripts/theme-diff.mjs",
     "seo:check": "node qa/run-seo-check.mjs",

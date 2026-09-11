@@ -1,0 +1,148 @@
+{%- doc -%}
+  Setzt "Teppiche" hinter "Teppichboden" in den vorhandenen Header - Desktop
+  (header-menu) und Handy (header-drawer). Eingebunden mit einer Zeile in
+  layout/theme.liquid direkt nach der Header-Gruppe.
+
+  Warum per Skript statt in blocks/_header-menu.liquid und header-drawer:
+  Diese Dateien bearbeiten mehrere Sitzungen parallel im selben Arbeitstheme,
+  und jeder Push setzt dort fremde Aenderungen zurueck (2026-09-11 belegt:
+  Drawer und Vinyl-Menue wurden um 11:50 UTC ueberschrieben). Das Skript klont
+  den Teppichboden-Punkt der gerade aktiven Header-Version. Damit behandelt
+  Horizons eigene Logik (header-menu.js, header-drawer.js) den neuen Punkt wie
+  einen nativen: gleiche Klassen, gleiche on:-Attribute, gleiche refs.
+
+  Laeuft synchron vor dem ersten Rendern - kein Layout-Sprung. Fehlt der
+  Teppichboden-Punkt oder sein Untermenue, wird nichts eingesetzt.
+{%- enddoc -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- capture tp_rni_start -%}{%- render 'tp-rug-url', key: 'start' -%}{%- endcapture -%}
+  <template id="tp-rug-nav-mega">{%- render 'tp-rug-nav', variant: 'megamenu' -%}</template>
+  <template id="tp-rug-nav-drawer">{%- render 'tp-rug-nav', variant: 'drawer' -%}</template>
+  <script>
+    (function () {
+      var START = {{ tp_rni_start | json }};
+      var IMG = {{ 'tp-rug-bild-wohnzimmer.svg' | asset_url | json }};
+      var LABEL = 'Teppiche';
+      var SUB = 'Nach Maß, Läufer, Wohnmobil …';
+
+      function isBoden(href) {
+        try {
+          return /\/collections\/teppichboden\/?$/.test(new URL(href, location.href).pathname);
+        } catch (e) {
+          return false;
+        }
+      }
+      function content(id) {
+        var t = document.getElementById(id);
+        return t ? t.content.cloneNode(true) : document.createDocumentFragment();
+      }
+      function clean(li) {
+        li.setAttribute('data-tp-rug-nav', '');
+        li.querySelectorAll('[aria-current]').forEach(function (el) { el.removeAttribute('aria-current'); });
+        li.querySelectorAll('.menu-list__link--active, .is-active, .menu-drawer__menu-item--active').forEach(function (el) {
+          el.classList.remove('menu-list__link--active', 'is-active', 'menu-drawer__menu-item--active');
+        });
+      }
+
+      // Der Hydrations-Morph gleicht die Liste nach Position ab. Mit dem
+      // zusaetzlichen Punkt verrutscht sie um eins, und der "Mehr"-Eintrag
+      // verliert dabei slot="more" (Horizon uebertraegt slot beim Morph nicht).
+      // Ohne das Attribut stuende "Mehr" als normaler Punkt in der Leiste.
+      function repairMore(menu) {
+        var btn = menu.querySelector('li.menu-list__list-item > button.menu-list__link');
+        var li = btn && btn.parentElement;
+        if (li && li.getAttribute('slot') !== 'more') li.setAttribute('slot', 'more');
+      }
+
+      function desktop() {
+        var menu = document.querySelector('header-menu');
+        if (!menu) return;
+        repairMore(menu);
+        if (menu.querySelector('[data-tp-rug-nav]')) return;
+        var ref = null;
+        menu.querySelectorAll('a.menu-list__link').forEach(function (a) {
+          if (!ref && isBoden(a.getAttribute('href'))) ref = a.closest('li');
+        });
+        if (!ref || !ref.querySelector('.mega-menu__grid')) return;
+        var li = ref.cloneNode(true);
+        clean(li);
+        var a = li.querySelector('a.menu-list__link');
+        a.setAttribute('href', START);
+        a.setAttribute('aria-controls', 'submenu-tp-rug');
+        a.setAttribute('aria-haspopup', 'true');
+        a.setAttribute('aria-expanded', 'false');
+        (a.querySelector('.menu-list__link-title') || a).textContent = LABEL;
+        var inner = li.querySelector('.menu-list__submenu-inner');
+        if (inner) inner.id = 'submenu-tp-rug';
+        var grid = li.querySelector('.mega-menu__grid');
+        grid.innerHTML = '';
+        grid.setAttribute('data-menu-grid-id', 'MegaMenuList-tp-rug');
+        grid.appendChild(content('tp-rug-nav-mega'));
+        ref.parentNode.insertBefore(li, ref.nextSibling);
+      }
+
+      function drawer() {
+        var root = document.querySelector('header-drawer');
+        if (!root || root.querySelector('[data-tp-rug-nav]')) return;
+        var ref = null;
+        root.querySelectorAll('#HeaderDrawer-teppichboden, a.menu-drawer__menu-item--mainlist').forEach(function (el) {
+          if (!ref && (el.id === 'HeaderDrawer-teppichboden' || isBoden(el.getAttribute('href')))) ref = el.closest('li');
+        });
+        if (!ref) return;
+        var li = ref.cloneNode(true);
+        clean(li);
+        li.querySelectorAll('[id]').forEach(function (el) {
+          el.id = el.id.replace(/teppichboden/g, 'tp-teppiche').replace(/item-\d+$/, 'item-tp-rug');
+        });
+        var title = li.querySelector('.tp-dn-row__title') || li.querySelector('.menu-drawer__menu-item--mainlist .menu-drawer__menu-item-text');
+        if (title) title.textContent = LABEL;
+        var sub = li.querySelector('.tp-dn-row__sub');
+        if (sub) sub.textContent = SUB;
+        var media = li.querySelector('.tp-dn-row__media');
+        if (media) media.innerHTML = '<img class="tp-dn-row__img" src="' + IMG + '" alt="" width="56" height="42" loading="lazy">';
+        var head = li.querySelector('.tp-dn-panel__title');
+        if (head) head.textContent = LABEL;
+        var main = li.querySelector('a.menu-drawer__menu-item--mainlist');
+        if (main) main.setAttribute('href', START);
+
+        var body = li.querySelector('.tp-dn-panel__body');
+        var list = li.querySelector('ul.menu-drawer__menu--childlist');
+        if (body) {
+          body.innerHTML = '';
+          body.appendChild(content('tp-rug-nav-drawer'));
+        } else if (list) {
+          list.classList.remove('menu-drawer__menu--grid');
+          list.innerHTML = '';
+          var item = document.createElement('li');
+          item.className = 'menu-drawer__list-item tp-rug-nav-li';
+          item.appendChild(content('tp-rug-nav-drawer'));
+          list.appendChild(item);
+        }
+        ref.parentNode.insertBefore(li, ref.nextSibling);
+      }
+
+      function run() {
+        try { desktop(); } catch (e) { console.warn('tp-rug-nav (Desktop):', e); }
+        try { drawer(); } catch (e) { console.warn('tp-rug-nav (Handy):', e); }
+      }
+      run();
+      document.addEventListener('DOMContentLoaded', run);
+      document.addEventListener('shopify:section:load', run);
+
+      // Horizon hydriert den Header nach dem Laden (section-hydration.js) und
+      // morpht header-menu und Drawer auf den Serverstand - der eingesetzte
+      // Punkt verschwindet dabei. Nach jeder Aenderung im Header deshalb erneut
+      // einsetzen; als Microtask noch vor dem naechsten Zeichnen, ohne Flackern.
+      var group = document.getElementById('header-group');
+      if (group && 'MutationObserver' in window) {
+        var queued = false;
+        new MutationObserver(function () {
+          if (queued) return;
+          queued = true;
+          Promise.resolve().then(function () { queued = false; run(); });
+        }).observe(group, { childList: true, subtree: true });
+      }
+    })();
+  </script>
+{%- endif -%}
