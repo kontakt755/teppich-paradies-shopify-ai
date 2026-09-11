@@ -63,7 +63,8 @@
     /* 44 px je Knopf: empfohlene Mindestgroesse fuer Touch-Ziele */
     grid-template-columns: 44px 1fr auto 44px;
     align-items: center;
-    height: 44px;
+    /* 46 px aussen = 44 px Knopfhoehe innerhalb des 1-px-Rahmens */
+    height: 46px;
     background: var(--cp-surface);
     border: 1px solid var(--cp-border-strong);
     border-radius: 7px;
@@ -191,10 +192,11 @@
     cursor: pointer;
   }
 
+  /* inset bezieht sich auf die Innenflaeche (34 px ohne Rahmen): -5 px ergibt 44 px. */
   .carpet-package__packages-control-{{ package_selector_id }} button::after {
     content: "";
     position: absolute;
-    inset: -4px;
+    inset: -5px;
   }
 
   .carpet-package__packages-control-{{ package_selector_id }} button:hover {
