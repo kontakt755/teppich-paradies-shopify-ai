@@ -598,3 +598,23 @@ Hebel liegen beim Inhaber, bei Shopify oder brauchen echte Kaufdaten.
   - 204168364366 ist weiter unveröffentlicht. 38 von 51 Dateien sind byte-gleich mit dem Branch, 12 davon abweichend sind Menü-Fassungen wie oben.
   - `sections/tp-verlegegebiet.liquid` ist jetzt die zusammengeführte Fassung der Verlegeservice-Sitzung. Die Seite im Entwurf enthält beides: Rollenware-Zonen mit Preisen (`data-basis`, `data-schwelle`, `data-preis`, `data-lose`) und den Organisationsnamen „Teppich Paradies“ im Service-JSON-LD.
   - Der Rückschritt durch den Push um 13:05 UTC ist damit behoben.
+
+### Nachtrag 2: Layout-Sprung im Startseiten-Hero (#27, `23ceaee`)
+
+- **Befund** (von der Menü-Sitzung nachgestellt): Beim kalten Laden sprang die Startseite am Desktop in 3 von 16 Aufrufen um 0,16 / 0,17 / 0,08; Live 0 von 8. Kam Inter erst nach dem ersten Bild, brach der Hero beim Schriftwechsel neu um und wurde 88 px höher.
+- **Änderung:** `snippets/theme-styles-variables.liquid` bekommt eine Ersatzschrift „TP Inter Ersatz“ (lokales Arial/Helvetica) zwischen Inter und der generischen Ersatzschrift.
+  - `size-adjust` ist je Schnitt am echten Startseitentext gemessen: 400 = 105,2 %, 500 = 107,2 %, 600 = 102,3 %, 700 = 95,5 %.
+  - Ein gemeinsamer Wert (107,4 %) ließ die fette Überschrift 12 % zu breit.
+  - Die Ersatzschrift greift nur, wenn im Theme Inter eingestellt ist. Das Endbild bleibt Inter.
+- **Messung mit um 700 ms verzögerten Schriften:**
+
+  | Viewport | vorher | erster Versuch (gemeinsamer Wert) | nachher |
+  |---|---|---|---|
+  | Desktop 1366 px, Entwurf | 0,33 / 0,086 / 0,33 | 0,18 | 0,013 / 0,019 / 0,013 |
+  | Telefon 390 px | ~0,015 | – | 0,001 |
+
+  Breitenverhältnis Inter : Ersatz danach 1,000 in allen vier Schnitten.
+- **Gegenproben:**
+  - Prüfstufe grün: Guards, `validate --static`, Theme Check ohne neue Warnung, `npm test` 154/154.
+  - Dev-Theme: Prüfsumme gleich, Laufzeitprüfung 10/11 (favicon).
+  - Entwurf: Prüfsumme gleich. 5 kalte Aufrufe mit 1 × 0,008 aus dem Header-Bereich (Menü-Sitzung); Live 0.
