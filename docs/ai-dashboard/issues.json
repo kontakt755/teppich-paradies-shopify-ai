@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-11T18:12:33.292Z",
+  "generated_at": "2026-09-11T18:22:06.637Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 76,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-11T18:12:33.292Z",
+    "fetchedAt": "2026-09-11T18:22:06.637Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -118,7 +118,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/204",
       "labels": [
-        "status:eingang",
+        "status:in-arbeit",
         "type:technik",
         "priority:p3",
         "area:operations"
@@ -127,14 +127,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Angebote lassen sich per Lexware-API nur anlegen, abrufen und (finalisiert) als PDF holen; Aendern, Loeschen und Statuswechsel gibt es nicht - fuer kein Werkzeug. Belegte Uebersicht mit Nachpruef-Befehl: domains/lexware/api-funktionsumfang.md",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T15:40:58Z",
-      "updated_at": "2026-09-11T15:40:59Z",
+      "updated_at": "2026-09-11T18:12:33Z",
       "closed_at": null
     },
     {
@@ -216,7 +216,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/199",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:kategorie"
@@ -225,13 +225,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:20:50Z",
-      "updated_at": "2026-09-11T12:32:18Z",
+      "updated_at": "2026-09-11T18:21:48Z",
       "closed_at": null
     },
     {
@@ -299,14 +299,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-11T12:38:09Z",
+      "updated_at": "2026-09-11T18:21:07Z",
       "closed_at": null
     },
     {
