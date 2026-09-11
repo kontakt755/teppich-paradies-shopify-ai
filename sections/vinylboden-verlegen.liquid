@@ -1,12 +1,49 @@
 <!-- Abschnitt: Hero + Einleitung -->
 <section class="vinyl-hero-section">
   <div class="vinyl-hero-wrapper">
+    {%- if section.settings.hero_bild != blank -%}
+      <div class="vinyl-hero-bild">
+        <img
+          src="{{ section.settings.hero_bild | image_url: width: 1200 }}"
+          alt="{{ section.settings.hero_bild_alt | default: 'Von uns verlegter Vinylboden' | escape }}"
+          width="{{ section.settings.hero_bild.width | default: 1200 }}"
+          height="{{ section.settings.hero_bild.height | default: 900 }}"
+          loading="eager"
+          fetchpriority="high"
+        >
+      </div>
+    {%- endif -%}
+
     <div class="vinyl-hero-text">
-      <h1 class="vinyl-hero-title">Vinylboden fachgerecht verlegen lassen</h1>
-      <p class="vinyl-hero-subtext">
-        Entdecken Sie den perfekten Vinylboden für Ihr Zuhause – wir liefern und verlegen Klickvinyl, Klebevinyl und Vinyl-Rollenware. Schnell, sauber und zu fairen Konditionen.
-      </p>
-      <a href="/pages/kontakt" class="vinyl-hero-button">Jetzt Angebot anfordern</a>
+      <h1 class="vinyl-hero-title">{{ section.settings.hero_titel }}</h1>
+      <p class="vinyl-hero-subtext">{{ section.settings.hero_text }}</p>
+
+      {%- comment -%}
+        Ort und kostenloses Aufmass gehoeren in den ersten Bildschirm: ueber
+        Google Ads landet man mit "Vinylboden verlegen lassen" direkt hier und
+        muss sofort sehen, ob wir zu einem kommen. Siehe
+        docs/analyse/entscheidung-zwei-wege-2026-09-10.md
+      {%- endcomment -%}
+      {%- if section.settings.hero_fakten != blank -%}
+        <ul class="vinyl-hero-fakten">
+          {%- assign tp_vv_fakten = section.settings.hero_fakten | split: ',' -%}
+          {%- for tp_vv_faktum in tp_vv_fakten -%}
+            {%- assign tp_vv_label = tp_vv_faktum | strip -%}
+            {%- if tp_vv_label != blank -%}
+              <li>{{ tp_vv_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      <div class="vinyl-hero-actions">
+        <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="vinyl-hero-button">{{ section.settings.hero_cta }}</a>
+        {%- if section.settings.telefon != blank -%}
+          <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="vinyl-hero-tel">
+            {{ section.settings.telefon_label | default: section.settings.telefon }}
+          </a>
+        {%- endif -%}
+      </div>
     </div>
   </div>
 </section>
@@ -228,6 +265,79 @@
 </style>
 
 
+{% stylesheet %}
+  .vinyl-hero-bild {
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+  }
+
+  .vinyl-hero-bild img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Der alte Hero zentriert alles. Eine Haekchenliste zentriert zu lesen ist
+     muehsam - jede Zeile faengt woanders an. Deshalb bleibt der Block mittig,
+     der Text darin aber linksbuendig. */
+  .vinyl-hero-fakten {
+    margin: 0 auto 20px;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+    width: fit-content;
+  }
+
+  .vinyl-hero-fakten li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .vinyl-hero-fakten li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .vinyl-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px 20px;
+  }
+
+  /* Wie auf der Treppenseite: der Button erbt eine grosse Schriftgroesse aus
+     dem alten Seiten-CSS und braucht eine feste Hoehe, sonst wird er auf dem
+     Handy zum Banner. */
+  .vinyl-hero-actions .vinyl-hero-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .vinyl-hero-tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
 {% schema %}
 {
   "name": "Tebo Verlegen Hero",
@@ -235,6 +345,62 @@
     {
       "name": "Vinyl Verlegen Hero",
       "category": "Custom"
+    }
+  ],
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "hero_bild",
+      "label": "Bild",
+      "info": "Ein echtes Projektfoto, kein Stockfoto."
+    },
+    {
+      "type": "text",
+      "id": "hero_bild_alt",
+      "label": "Bildbeschreibung (Alt-Text)",
+      "default": "Von uns verlegter Vinylboden"
+    },
+    {
+      "type": "text",
+      "id": "hero_titel",
+      "label": "Überschrift",
+      "default": "Vinylboden fachgerecht verlegen lassen"
+    },
+    {
+      "type": "textarea",
+      "id": "hero_text",
+      "label": "Text",
+      "default": "Wir prüfen den Untergrund, beraten zu Klick-, Klebe- oder Rollenvinyl und verlegen fachgerecht."
+    },
+    {
+      "type": "text",
+      "id": "hero_fakten",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Untergrundprüfung inklusive, Verlegung durch unser eigenes Team"
+    },
+    {
+      "type": "text",
+      "id": "hero_cta",
+      "label": "Button",
+      "default": "Aufmaß-Termin anfragen"
+    },
+    {
+      "type": "url",
+      "id": "hero_cta_ziel",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
     }
   ]
 }

@@ -1,0 +1,202 @@
+# Entscheidung: Zwei Wege, Startseite und Landingpages — Stand 2026-09-10
+
+Auftrag von Ahmet (2026-09-09 abends): "Schau es dir in Ruhe nochmal insgesamt an und
+stell dir die Frage: macht es Sinn mit den Boxen, oder nicht. Wenn ja, sollten die
+Landingpages beim Klick besser aussehen. Erstmal nur analysieren und Entscheidung
+treffen — Ausfuehrung morgen."
+
+Sein Einwand, der die Analyse traegt: *"Wenn ich Werbung ueber Ads mache, dann finden
+die Leute die Seite eh ueber Keywords — Treppenverlegung — dann kommen sie auf die
+Treppenverlegung-Seite."*
+
+Grundlage: die Seiten im Wegwerf-Theme zu PR #168 (Stand fuenf Commits; ID nicht hier, siehe AGENTS.md),
+die Einstiegszahlen aus `SHOP_ANALYSE_2026-09-09.md`, die Ads-Planung in
+`docs/GOOGLE_ADS_TODAY.md`, die Templates der vier Verlegeseiten.
+
+---
+
+## 1. Ist-Zustand: was PR #168 gebaut hat
+
+| Phase | Baustein | Dateien |
+|---|---|---|
+| 1 | Zwei Boxen unter dem Hero, Hero als Band | `sections/Startseite.liquid`, `snippets/tp-zwei-wege.liquid` |
+| 2 | Service-Startseite mit Produktrastern | `sections/tp-service-start.liquid`, `sections/tp-laden-hinweis.liquid`, `templates/page.verlegeservice.json` |
+| 3 | Modus: `?modus=service`, localStorage, Streifen, Aufmass-Band | `snippets/tp-modus.liquid`, `snippets/tp-modus-band.liquid`, `assets/tp-modus.css`, `blocks/tp-modus-aufmass.liquid`, `layout/theme.liquid` |
+| 4 | Einstiegsblock am Fuss der vier Verlegeseiten | `sections/tp-service-einstieg.liquid`, vier `page.*.json` |
+
+Alles im Entwurf, nichts live.
+
+## 2. Nutzerwege: wo Besucher ankommen und wohin sie gehen
+
+Einstiege in 90 Tagen (ohne Ads, Shop in der Bauphase):
+
+| Einstieg | Sitzungen | Anteil |
+|---|---|---|
+| Startseite `/` | 1.993 | 39 % |
+| `/pages/teppichboden-verlegen-lassen` | 798 | 16 % |
+| `/pages/vinylboden-verlegen` | 672 | 13 % |
+| `/pages/treppenverlegung` | 349 | 7 % |
+| `/pages/liefer-verlegeservice` | 98 | 2 % |
+| alle Kollektions- und Produktseiten zusammen | < 500 | < 10 % |
+
+**Schon heute landen rund 35 % direkt auf den drei Verlegeseiten** (1.819 von 5.136;
+mit der allgemeinen Serviceseite 37 %) — ohne eine einzige Anzeige.
+Mit Ads kippt das weiter: Suchanzeigen fuer "Treppenverlegung Oranienburg" fuehren auf die
+Treppenseite, Shopping-Anzeigen (siehe `GOOGLE_ADS_TODAY.md`, Merchant Center) auf
+Produktseiten. Die Startseite wird zu einem Einstieg unter mehreren, vor allem fuer
+Markensuche und Direktaufrufe.
+
+Drei Wege, die es real gibt:
+
+```
+Markensuche / direkt  ->  Startseite   ->  Box  ->  Sortiment oder Service-Startseite
+Suchanzeige           ->  Verlegeseite ->  Angebot / Anruf / (Produkte?)
+Shopping-Anzeige      ->  Produktseite ->  Warenkorb / (verlegen lassen?)
+```
+
+Die vier Phasen in PR #168 bauen den ersten Weg aus. Die beiden anderen — die mit Ads
+die groesseren werden — beruehren sie kaum.
+
+## 3. Befund je Baustein
+
+### Die zwei Boxen (Phase 1)
+
+**Sichtpruefung am Wegwerf-Theme zu PR #168, 2026-09-09 spaetabends** (Screenshots im Browser bei
+1280 px und 390 px, Klickziele per Skript geprueft):
+
+- 1280 px: Hero-Band 260 px hoch, darunter "Wie sollen wir Ihnen helfen?" und die zwei
+  Boxen nebeneinander (540/540 px, gleich hoch), Boxen ab 377 px von oben. Die Boxen sind
+  Textkaesten mit duennem Rahmen, Kleinzeile in Versalien, Ueberschrift, ein Satz, drei
+  Haekchen-Zeilen, schwarzer Button. Sauber, aber ohne Bild — sie wirken wie ein
+  Formular, nicht wie ein Einstieg.
+- 390 px: einspaltig 326/326 px, Boxen ab 429 px, Touch-Ziele 46/46/44 px, kein
+  Querscroll. Die erste Box endet etwa am unteren Bildschirmrand; die zweite ("Liefern
+  und verlegen lassen") liegt unter der Falz und braucht einen Scroll.
+- Klickziele: `/collections/all` (200) und `/pages/liefer-verlegeservice` (200), beide mit
+  `?modus=…`-Parameter, der nach dem Rueckbau entfaellt.
+
+Die Messwerte stammen aus Browser-Skripten und Screenshots der Sitzung vom 2026-09-09;
+protokolliert sind sie in den Kommentaren zu PR #168 (Phase 1/2 und Phase 3). Sie liegen
+**nicht** als Dateien im Repository und sind damit nicht unabhaengig reproduzierbar — fuer
+die Ausfuehrung sind sie Orientierung, nicht Abnahmegrundlage. Vor dem Livegang misst
+die Deploy-Kette neu.
+
+**Bewertung.** Als Wegweiser fuer Marken- und Direkt-Traffic plausibel — das ist eine
+**Hypothese, keine Messung**; Klicks werden erst mit den Customer Events gezaehlt. Sie
+kosten nichts und sind ueber Editor-Einstellungen reversibel. **Aber sie sind kein
+Hebel** fuer den Traffic, der gekauft wird. Der optische Eindruck ("nicht gelungen") ist
+nachvollziehbar: reine Textkaesten, keine Bilder — der Shop hat noch keine fertigen
+Produktfotos, die Projektfotos aus dem Kundenbilder-Raster waeren die einzige Bildquelle.
+Wenn die Boxen bleiben, ist ein Projektfoto je Box die eine Aenderung, die den Eindruck
+dreht; das ist Kosmetik und wartet, bis die Landingpages stehen.
+
+### Der Modus (Phase 3)
+
+Schaltet sich nur ueber die Startseiten-Box oder einen Link mit `?modus=service` ein.
+Wer per Anzeige auf der Treppenseite landet und dort "Zu Klickvinyl" klickt, kommt
+**ohne Modus** im Shop an; wer per Shopping-Anzeige auf einer Produktseite landet, sieht
+das Aufmass-Band **nie**. Fuer genau den Traffic, um den es geht, ist der Modus
+wirkungslos — und kostet Zustand (localStorage), einen Streifen auf jeder Seite und
+Erklaerungsbedarf.
+
+### Der Block auf den Verlegeseiten (Phase 4)
+
+**Drei** der vier Seiten hatten bereits einen guten Abschluss (`final-cta`):
+*"Teppichboden verlegen lassen? → Angebot anfragen · Direkt anrufen · WhatsApp
+schreiben"* — `teppichboden-verlegen`, `vinylboden-verlegen`, `treppenverlegung`. Dort
+steht der neue Block `tp-service-einstieg` **direkt darunter** mit derselben Botschaft,
+einem zweiten Button und einer zweiten Telefonnummer. Verdopplung, kein Mehrwert.
+
+**`boden-malerarbeiten` ist die Ausnahme.** Das Template hat keinen `final-cta`
+(Aufbau: `main-page` → `_blocks` → `google` → `kundenbilder-grid` → `_blocks`). Dort ist
+`tp-service-einstieg` heute der einzige Sortiments-, Anfrage- und Telefon-Einstieg.
+Ein pauschaler Rueckbau wuerde ihn ersatzlos entfernen. Die erste Fassung dieses
+Dokuments hatte das uebersehen.
+
+### Der Radius
+
+`teppichboden-verlegen-lassen` sagt: *"Lieferung & lose Verlegung kostenlos — im Umkreis
+von 15 km"*. Die neuen Bausteine sagen an 13 Stellen *"50 km Umkreis"* (aus Ahmets
+Nachricht uebernommen). Beides auf einer Seite liest sich als Fehler. Vermutlich meinen
+sie Verschiedenes — 15 km kostenlos ab 649 EUR, 50 km Einsatzgebiet — aber das muss die
+Seite sagen.
+
+### Die drei Verlegeseiten selbst
+
+| Seite | Stand |
+|---|---|
+| `teppichboden-verlegen-lassen` | **gut**: echte Preise ("ab 649 EUR kostenlos geliefert und lose verlegt", "mit Band ab 8,95 EUR/m2"), Projektfotos (KaDeWe, Madame Tussauds, Kirche), klarer Abschluss |
+| `vinylboden-verlegen` | **ordentlich**: drei Vinylarten mit Nutzen und Link, Abschluss; kein Preis, kein Foto im Kopf |
+| `treppenverlegung` | **schwach**: Ueberschrift auf Weiss, drei Textabsaetze (Kokos, Sisal, Teppichlaeufer) ohne einen Produktlink, "Jahrelange Erfahrung" ohne Beleg, kein Preis. Fuer das Keyword mit der klarsten Kaufabsicht. |
+
+## 4. Entscheidung
+
+| Baustein | Entscheidung | Begruendung |
+|---|---|---|
+| Zwei Boxen (Phase 1) | **bleibt**, keine weitere Arbeit | Wegweiser fuer Marken-Traffic, reversibel |
+| Service-Startseite (Phase 2) | **bleibt** als Menue-Ziel, keine weitere Arbeit | ordentlich, kostet nichts |
+| Modus, Streifen, localStorage (Phase 3) | **raus** | erreicht Ads-Traffic nicht, kostet Zustand und Erklaerung |
+| Aufmass-Band auf Produktseiten | **bleibt, immer sichtbar**, ohne Modus | ehrliches Angebot eines Verlegebetriebs, ein Satz mit Ort; Vorbild "Muster · Anfrage · Termin" bei der Teppichscheune |
+| `tp-service-einstieg` auf den drei Verlegeseiten (Phase 4) | **raus** | verdoppelt `final-cta` |
+| `tp-service-einstieg` auf `boden-malerarbeiten` | **bleibt vorerst** | dort gibt es keinen `final-cta`; erst ersetzen, dann entfernen |
+| Die drei Verlegeseiten | **hier gehoert die Arbeit hin** | dort landen die Anzeigen |
+
+## 5. Was eine Landingpage braucht, die aus einer Anzeige traegt
+
+Muster fuer alle drei, Treppenverlegung zuerst:
+
+1. **Ein echtes Projektfoto im Kopf**, nicht eine Ueberschrift auf Weiss. Liegt im
+   Kundenbilder-Raster ("Stufen und Podest verkleiden").
+2. **Ort und Preisrahmen im ersten Bildschirm.** Die Teppichboden-Seite macht es vor.
+   Fuer Treppen fehlt jede Zahl; selbst "ab X EUR pro Stufe" schlaegt "faire Preise".
+3. **Ein Beleg, kein Versprechen:** Google-Bewertung mit Zahl oben, nicht erst unten.
+4. **Produkte als verlinkte Auswahl mit Preis** — Kokos, Sisal, Teppichlaeufer sind heute
+   Text ohne Ziel.
+5. **Ein Weg zum Abschluss, mehrfach wiederholt** — nicht zwei verschiedene Bloecke.
+
+Kein neuer Baustein, keine Architektur. Drei Seiten, jede fuer sich sauber.
+
+## 6. Beantwortet von Ahmet (2026-09-10)
+
+**Radius — drei Stufen, nicht eine Zahl:**
+
+| Stufe | Bedeutung | Formulierung fuer die Seiten |
+|---|---|---|
+| 15 km | das Angebot: Lieferung und lose Verlegung kostenlos ab 649 EUR Warenwert | "kostenlos im Umkreis von 15 km" — nur dort, wo es um den Preis geht |
+| 50 km | Einsatzgebiet, so weit wird gefahren | "in Oranienburg und 50 km Umkreis" — ueberall, wo es um das Ob geht |
+| weiter | auf Anfrage, wenn es sich lohnt | "weiter auf Anfrage" als Nebensatz, kein Versprechen |
+
+Damit ist der Widerspruch keiner: die Teppichboden-Seite spricht vom Angebot (15 km),
+die Bausteine vom Einsatzgebiet (50 km). Beide Zahlen sind richtig — sie brauchen nur
+jeweils das Wort, das sagt, was gemeint ist. Die 13 "50 km"-Stellen bleiben, die
+Preisstellen sagen "15 km".
+
+**Treppen — kein Preisanker.** "Treppen sind sehr unterschiedlich." Dann steht auf der
+Seite auch kein Preis, und das Fehlen wird zum Argument statt zur Luecke:
+*"Jede Treppe ist anders — offene oder geschlossene Stufen, Kanten, Podeste. Deshalb
+schauen wir sie uns an und messen auf."* Das Aufmass ist der naechste Schritt, nicht der
+Preis. Genau so machen es die Wettbewerber mit Massanfertigung (Teppichscheune:
+"Anfrage | Termin" statt Listenpreis).
+
+> **Zum Aufmass — Verlauf:** Die erste Fassung dieses Satzes versprach das Aufmass
+> "kostenlos im Umkreis von 15 km", ohne Beleg; das war erfunden und wurde entfernt.
+> **Am 2026-09-10 hat Ahmet bestaetigt: "Aufmass ist kostenlos."** Einen Radius hat er
+> dazu nicht genannt — deshalb steht auf der Seite "kostenloses Aufmass" ohne
+> Kilometerangabe. Wo ein Radius gebraucht wird, gilt bis auf Widerruf das Einsatzgebiet
+> (50 km); eine eigene Zahl fuer das Aufmass wird nicht behauptet.
+>
+> Satz fuer die Treppenseite damit: *"Jede Treppe ist anders — offene oder geschlossene
+> Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf."*
+
+## 7. Reihenfolge fuer die Ausfuehrung
+
+1. **Rueckbau**: Modus raus (`tp-modus.liquid`, `tp-modus-band.liquid`, `tp-modus.css`,
+   Verdrahtung in `layout/theme.liquid`, `?modus=` aus den Templates), `tp-service-einstieg`
+   aus den **drei** Verlegeseiten mit `final-cta` (nicht aus `boden-malerarbeiten`),
+   Aufmass-Band immer sichtbar, Radius vereinheitlichen.
+2. **Treppenverlegung** neu aufbauen nach Abschnitt 5 (Aufmass kostenlos — bestaetigt).
+3. **Vinylboden-verlegen** nach demselben Muster nachziehen.
+4. **Teppichboden-verlegen** nur angleichen — ist am weitesten.
+
+**Status: Analyse abgeschlossen, alle drei Fragen beantwortet (Radius in drei Stufen, Treppen ohne Preis, Aufmass kostenlos). Ausfuehrung nach Ahmets Freigabe — vorgesehen ab 2026-09-10.**
+Die Kurzfassung steht als Kommentar in Issue #167.
