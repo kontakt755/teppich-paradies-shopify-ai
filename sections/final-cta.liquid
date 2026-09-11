@@ -67,7 +67,8 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
   }
 
   .final-btn-whatsapp {
-    background: #25D366;
+    /* Weiss auf #25D366 hatte 2:1; #0e7a5f erreicht 5,3:1 */
+    background: #0e7a5f;
     color: #fff;
     border: none;
   }
@@ -130,10 +131,13 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
       </a>
     </div>
 
-    <div class="final-cta-phone">
-      {{ section.settings.phone_text }}
-      <a href="tel:{{ section.settings.phone_number }}">{{ section.settings.phone_display }}</a>
-    </div>
+    {%- comment -%} Nur mit Anzeigenummer: sonst entstand ein leerer Telefonlink ohne Namen {%- endcomment -%}
+    {%- if section.settings.phone_display != blank -%}
+      <div class="final-cta-phone">
+        {{ section.settings.phone_text }}
+        <a href="tel:{{ section.settings.phone_number }}">{{ section.settings.phone_display }}</a>
+      </div>
+    {%- endif -%}
   </div>
 </section>
 

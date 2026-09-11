@@ -125,7 +125,7 @@
               "type": "text",
               "name": "t:names.heading",
               "settings": {
-                "text": "<h2>Karriere</h2>",
+                "text": "<h1>Karriere</h1>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "left",
