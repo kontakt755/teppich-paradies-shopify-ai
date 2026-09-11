@@ -98,12 +98,22 @@
     </div>
 
     {%- if hero_image != blank -%}
+      {%- comment -%}
+        Am Telefon entfaellt das Bild wie schon das Mosaik (siehe CSS unten);
+        die leere Quelle verhindert, dass es trotzdem geladen wird.
+      {%- endcomment -%}
       <div class="tp-lh__media tp-lh__media--image">
-        {{
-          hero_image
-          | image_url: width: 1400
-          | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 46vw, 100vw', alt: hero_image_alt
-        }}
+        <picture>
+          <source
+            media="(max-width: 749px)"
+            srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+          >
+          {{
+            hero_image
+            | image_url: width: 1400
+            | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 46vw, 100vw', alt: hero_image_alt
+          }}
+        </picture>
       </div>
     {%- elsif motive != blank -%}
       <div class="tp-lh__media tp-lh__media--mosaic">
@@ -415,7 +425,10 @@
       justify-content: center;
     }
 
-    .tp-lh__media--mosaic {
+    /* Bild wie Mosaik am Telefon ausblenden: die Kategorie beginnt mit H1,
+       Kurztext, Fakten und Knopf; die Leisten selbst zeigen die Karten. */
+    .tp-lh__media--mosaic,
+    .tp-lh__media--image {
       display: none;
     }
   }
