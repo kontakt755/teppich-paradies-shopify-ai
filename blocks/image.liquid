@@ -46,18 +46,43 @@
 
 {% capture image %}
   {%- if block_settings.image -%}
-    {{
-      block_settings.image
-      | image_url: width: 3840
-      | image_tag:
-        width: block_settings.image.width,
-        widths: widths,
-        height: block_settings.image.height,
-        class: 'image-block__image border-style',
-        style: image_border_style,
-        sizes: sizes,
-        alt: image_alt_override
-    }}
+    {%- comment -%}
+      TP: Ohne loading-Attribut luden alle Bildbloecke sofort - auch die
+      Unterkategorie-Kacheln unter dem Produktraster (Section 3/4 der
+      Kategorieseiten), mobil in 832 px Breite, noch vor dem ersten
+      Kartenbild. Ab der dritten Section jetzt lazy; damit greift auch
+      sizes="auto" und der Browser waehlt die Breite nach dem echten Platz.
+      Bloecke in den ersten beiden Sections und in Section-Gruppen
+      (section.index leer) rendern unveraendert.
+    {%- endcomment -%}
+    {%- if section.index > 2 -%}
+      {{
+        block_settings.image
+        | image_url: width: 3840
+        | image_tag:
+          width: block_settings.image.width,
+          widths: widths,
+          height: block_settings.image.height,
+          class: 'image-block__image border-style',
+          style: image_border_style,
+          sizes: sizes,
+          loading: 'lazy',
+          alt: image_alt_override
+      }}
+    {%- else -%}
+      {{
+        block_settings.image
+        | image_url: width: 3840
+        | image_tag:
+          width: block_settings.image.width,
+          widths: widths,
+          height: block_settings.image.height,
+          class: 'image-block__image border-style',
+          style: image_border_style,
+          sizes: sizes,
+          alt: image_alt_override
+      }}
+    {%- endif -%}
   {%- else -%}
     <div class="placeholder-image border-style size-style" style="{{ image_border_style }}">
       {{ 'detailed-apparel-1' | placeholder_svg_tag: 'image-block__placeholder' }}
