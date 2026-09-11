@@ -23,6 +23,18 @@
   @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
 {%- enddoc -%}
 
+{%- comment -%}
+  Muss vor dem Menue stehen: assets/tp-nav.css kommt im Seitenkopf erst nach dem
+  Drawer, bis dahin hatte der Browser schon drei Menuebilder geladen (gemessen
+  2026-09-11). Aufgehoben wird die Regel durch data-tp-bilder (Script unten).
+{%- endcomment -%}
+{% style %}
+  header-drawer:not([data-tp-bilder]) .tp-dn img,
+  header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
+    display: none;
+  }
+{% endstyle %}
+
 <ul class="tp-dn" role="list">
   {%- assign tp_dn_group = '' -%}
   {%- for link in linklist.links -%}
