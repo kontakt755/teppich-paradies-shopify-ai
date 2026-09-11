@@ -173,7 +173,7 @@
     darunter.
   {%- endcomment -%}
   {%- if vg_stufen -%}
-    <ul class="tp-vg__stufen" role="list">
+    <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
         <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos, darunter {{ settings.tp_vs_anfahrt_nah | escape }} für Lieferung und Anfahrt.</span>
@@ -533,6 +533,25 @@
   .tp-vg__stufe-text {
     color: var(--tp-vg-leise);
     font-size: 14px;
+  }
+
+  /* Ohne min-width: 0 zwingt das Raster seine Mindestbreite (alle Spalten
+     nebeneinander) auf die Sektion - mit vier Zonen waren das 950 px, und das
+     Tablet scrollte seitlich. Die Zonen bekommen feste Spalten: 4 am Desktop,
+     2 x 2 auf dem Tablet, darunter eine (Regel im Telefon-Block). */
+  .tp-vg__stufen {
+    min-width: 0;
+  }
+
+  .tp-vg__stufen--zonen {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-vg__stufen--zonen {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px clamp(20px, 3vw, 40px);
+    }
   }
 
   .tp-vg__spalten {
