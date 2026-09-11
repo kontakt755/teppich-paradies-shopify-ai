@@ -49,11 +49,11 @@
     <ul class="tp-vs-kurz" role="list">
       <li>
         <span>Fixierung &amp; Verklebung</span>
-        <span class="tp-vs-kurz__wert">vergünstigt ab {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}</span>
+        <span class="tp-vs-kurz__wert"><span>vergünstigt ab {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}</span></span>
       </li>
       <li>
         <span>Weiter als {{ vss_nah }}&nbsp;km</span>
-        <span class="tp-vs-kurz__wert">Lieferung ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</span>
+        <span class="tp-vs-kurz__wert"><span>Lieferung ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_mitte %}</span></span>
       </li>
     </ul>
 
@@ -67,7 +67,7 @@
     <ul class="tp-vs-kurz" role="list">
       <li>
         <span>Lieferung &amp; Anfahrt</span>
-        <span class="tp-vs-kurz__wert">ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</span>
+        <span class="tp-vs-kurz__wert"><span>ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}</span></span>
       </li>
       <li>
         <span>Lose Verlegung</span>
@@ -79,7 +79,7 @@
       <li>
         <span>Mit Fixierung oder Kleber</span>
         <span class="tp-vs-kurz__wert">
-          ab {% render 'tp-vs-preis', wert: settings.tp_vs_band_basis -%}
+          <span>ab {% render 'tp-vs-preis', wert: settings.tp_vs_band_basis %}</span>
           <small>inkl. Verlegung</small>
         </span>
       </li>
@@ -243,6 +243,11 @@
   .tp-vs-kurz__wert small {
     color: var(--tp-vs-leise);
     font-size: 13px;
+  }
+
+  /* "ab" gehoert zum Preis: in der Spalte stuende es sonst allein darueber. */
+  .tp-vs-kurz__wert > span {
+    white-space: nowrap;
   }
 
   .tp-vs-preis {
