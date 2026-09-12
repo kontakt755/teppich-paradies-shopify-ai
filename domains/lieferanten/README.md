@@ -142,10 +142,26 @@ geloescht. Auch die **Feldwerte** sind neutral: `bevorzugt`/`alternativ` fuehren
 nennt „Lieferant B" statt des Haendlernamens. Die Artikelnummern selbst bleiben unveraendert — sie sind
 Kennungen, keine Namen.
 
-**Theme-Logik spaeter**: Block liest `variant.metafields.lieferant.wunschmass` / `kettelung`; ist beides `false`
-(nur Lieferant B), werden Wunschmass-Rechner und Kettel-Option ausgeblendet und der Hinweis „Fuer diese Farbe ist
-derzeit kein Wunschmass bzw. Kettelservice verfuegbar." gezeigt. Beim Variantenwechsel muss der Block die Werte
-aus einem JSON-Datenblock je Variante nachlesen (wie der Rollenware-Rechner), nicht neu rendern. Noch offen.
+**Theme-Logik (umgesetzt 2026-09-12)**: `blocks/tp-rollware-rechner.liquid` fuehrt `wunschmass` und `kettelung`
+je Variante im vorhandenen JSON-Datenblock mit und blendet Breitenwahl, Laengenfeld, Skizze, Rechenbox und Button
+aus, sobald `wunschmass` ausdruecklich `false` ist. An ihrer Stelle steht ein Hinweis, der die Kettelung mitnennt,
+wenn auch sie fehlt. Der Farbwechsel laeuft ohne Neuladen, weil die Werte schon im Datenblock stehen.
+
+Zwei Entwurfsentscheidungen, die nicht offensichtlich sind:
+
+- **Fehlendes Metafeld heisst „sichtbar".** Nur ein ausdrueckliches `false` sperrt. Ein Produkt, das noch nicht
+  erfasst ist, verhaelt sich damit genau wie vorher — ein unbekannter Zustand darf nichts wegnehmen.
+- **Ausgeblendet wird ueber eine Klasse am Wurzelelement**, nicht ueber `hidden` an den einzelnen Teilen. Sonst
+  muesste die Funktion beim Zurueckschalten entscheiden, welches Teil wieder sichtbar sein darf, und zeigt dabei
+  den Warenkorb-Button, bevor eine Laenge eingegeben ist. So bleibt die normale Sichtbarkeit allein Sache von
+  `calculate()`.
+
+**Wirkung heute: keine.** Alle 926 Varianten auf dem Rollenware-Template haben `wunschmass: true`; die beiden
+Produkte mit `false` (Nadelvlies-Fliese, AW Ganges) nutzen ein anderes Template und haben gar keinen Rechner.
+Die Logik ist die Absicherung fuer den Fall, dass eine Farbe nur noch ueber Lieferant B laeuft.
+
+**Kettelung wird gelesen, aber nur im Hinweistext genutzt**, weil es im Theme noch keine Kettel-Option gibt, die
+man ausblenden koennte. Sobald der Kettelservice gebaut ist, liegt der Wert im selben Datenblock bereit.
 
 ## 6. Vollabgleich Teppichboden (Phase 4, 2026-09-09)
 
@@ -204,9 +220,7 @@ deren gescannte LE Lieferant B selbst als Hersteller nennt, 1 unlesbarer Scan) u
 3. Lieferant-A-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
    Dazu jetzt zwei Fragen aus `kleinmengen-dropshipping-2026-09-10.md`: Mindestabnahme je Artikel (Lieferant A pflegt sie
    nur als Freitext im Feld `Qualitaet`, 1 von 276 Seiten) und die Dropshipping-Konditionen beider Haendler.
-4. Theme-Logik zu Phase 5: Block liest `wunschmass` / `kettelung` je Variante (siehe Abschnitt 5). Die Daten
-   liegen, die Anzeige fehlt.
-5. `lieferant.mindestabnahme_ve` nachziehen, sobald die Zahlen vorliegen: Ohne dieses Feld kann der Shop ein
+4. `lieferant.mindestabnahme_ve` nachziehen, sobald die Zahlen vorliegen: Ohne dieses Feld kann der Shop ein
    Paket verkaufen, das der Lieferant nicht einzeln liefert. Ebenso `kettelleiste` und `dropshipping`.
 
 Die Struktur ist kategorieneutral (`category`, `technical_data` als Schluessel-Wert-Paare je Quelle) und laesst
