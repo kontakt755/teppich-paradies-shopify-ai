@@ -231,7 +231,16 @@ test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage',
 
   assert.equal(ausgabe.attribute['data-status'], 'aussen');
   assert.match(ausgabe.textContent, /prüfen individuell/, 'Der Einzelfall wird nicht angeboten.');
-  assert.match(ausgabe.textContent, /deutschlandweit/, 'Die Lieferung wird nicht erwaehnt.');
+  // Versand und Anfahrt sind zwei Dinge. Versandkostenfrei geht ueberall hin,
+  // anfahren koennen die Bodenleger nur im Gebiet. "Ausserhalb unseres Liefer-
+  // und Verlegegebiets" las sich fuer einen Kunden in Muenchen wie: wir
+  // beliefern Sie nicht.
+  assert.match(ausgabe.textContent, /versandkostenfrei in ganz Deutschland/,
+    'Der kostenfreie Versand wird nicht genannt.');
+  assert.match(ausgabe.textContent, /Paketdienst oder Spedition/,
+    'Womit versendet wird, steht nicht da.');
+  assert.doesNotMatch(ausgabe.textContent, /Liefer- und Verlegegebiet/,
+    'Die Antwort stellt Versand und Anfahrt wieder in einen Topf.');
   assert.doesNotMatch(ausgabe.textContent, /keine Verlegung|nicht möglich/,
     'Die Antwort darf nicht wie eine Absage klingen.');
   assert.equal(weg.hidden, false);
