@@ -728,14 +728,18 @@ Die Menü-Sitzung hat ihre Abnahme am 2026-09-12 auf `e8f1f55` wiederholt und da
 
 Gemeldet von der Menü-Sitzung (Karte 241 px breit, geladene Stufe 197 px), von mir nachgemessen und dabei als breiter bestätigt: Die `sizes`-Angabe kommt aus Horizons `util-mega-menu-img-sizes-attr` und teilt die Inhaltsbreite immer durch **sechs**, unabhängig davon, wie viele Karten das Panel tatsächlich zeigt. Bei 1366 px ergibt das `(1366 − 180) / 6 ≈ 197 px` für jedes Panel.
 
-| Panel | Karten | dargestellt bei 1366 px | dargestellt bei 1440 px | laut `sizes` |
-|---|---|---|---|---|
-| Teppichboden | 7 | 305 px | 323 px | 197 px |
-| Zubehör | 8 | 305 px | 323 px | 197 px |
-| Service & Verlegung | 5 | 239 px | 254 px | 197 px |
-| Vinylboden | 4 | 227 px | 245 px | 197 px |
+| Panel | Karten | dargestellt bei 1366 px | geladen (Messung Menü-Sitzung) | Faktor | laut `sizes` |
+|---|---|---|---|---|---|
+| Teppichboden | 7 | 305 px | 200 px | 1,53× | 197 px |
+| Zubehör | 8 | 305 px | 200 px | 1,53× | 197 px |
+| Service & Verlegung | 5 | 239 px | 200 px | 1,21× | 197 px |
+| Linoleum | 6 | 198 px | 200 px | 0,99× | 197 px |
 
-Der Browser wählt daher die 200er-Stufe aus dem `srcset` (`snippets/tp-menu-bild.liquid`: 200/300/400/600/800) und skaliert sie um 15 bis 55 Prozent hoch; bei DPR 2 liegt der Bedarf bei 490 bis 646 px.
+Der Browser wählt die 200er-Stufe aus dem `srcset` (`snippets/tp-menu-bild.liquid`: 200/300/400/600/800) und skaliert sie hoch; bei DPR 2 liegt der Bedarf bei 490 bis 646 px.
+
+**Korrektur meiner ersten Fassung:** Das Vinyl-Panel gehört *nicht* dazu. Es rendert `snippets/tp-vinyl-nav.liquid` mit eigener `sizes`-Angabe und lädt größer als die Karte (Faktor 0,76). Betroffen sind nur die Panels aus dem Horizon-Zweig von `mega-menu-list.liquid`. Danke an die Menü-Sitzung für den Hinweis — und für die geladenen Stufen, die meiner Messung fehlten, weil `naturalWidth` bei mir noch nicht dekodiert war.
+
+**Eine offene Frage, kein Befund:** Die Menü-Sitzung maß bei 1440 px, dass der Browser zwar die 300er-Stufe anfordert, die dekodierte Breite aber bei 210 px bleibt, und schloss daraus, die hinterlegten Bilder seien selbst nur rund 210 px breit. Das trägt nicht — ich habe die Quellbilder in der Admin API abgefragt: „Alle Teppichböden" 1248 × 832, „Alles Zubehör" 1590 × 1067, „Alle Vinylböden" 1024 × 1024, „Linoleumboden" 1113 × 1590. Keines begrenzt die 300er-Stufe. Die Ursache der 210 px ist damit ungeklärt; ein Verdacht ist der Fallback in `tp-menu-bild.liquid` auf Kollektions- oder Produktbilder, der ein anderes `srcset` mitbringt. Vor einer Korrektur also erst alle Karten je Panel messen, nicht nur die erste.
 
 **Nicht umgesetzt, bewusst.** Drei Gründe, in dieser Reihenfolge:
 
