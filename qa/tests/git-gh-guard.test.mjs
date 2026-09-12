@@ -188,6 +188,36 @@ for (const cmd of [
   `xargs git checkout -- .`,
 ]) test(`blockiert hinter Vorspann: ${cmd}`, () => assert.equal(blockiert(cmd), true));
 
+// --- git-Aufrufe ueber einen Pfad --------------------------------------
+//
+// "/usr/bin/git push --force" ist derselbe Befehl, das Praefix steht aber vor
+// dem Token: die Erkennung sah kein "git" nach Zeilenanfang oder Leerzeichen,
+// und keine Regel mit ^git griff. Am 2026-09-12 aufgefallen (unabhaengige
+// Pruefung) - damit war nicht nur die Sweep-Sperre offen, sondern jede Regel
+// dieser Datei. Der Pfad wird jetzt abgeschnitten und der Rest wie ein nackter
+// Aufruf geprueft.
+for (const cmd of [
+  '/usr/bin/git branch -df feature/alt',
+  '/usr/bin/git branch -fd feature/alt',
+  '/usr/bin/git branch -D $(git branch | grep alt)',
+  '/usr/bin/git push --force origin main',
+  '/usr/bin/git reset --hard',
+  './git branch -df alt',
+  'git for-each-ref --format="%(refname:short)" | xargs /usr/bin/git branch -fd',
+]) test(`blockiert mit Pfadpraefix: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+// Der Pfad darf nichts zusaetzlich sperren: was nackt erlaubt ist, bleibt es.
+for (const cmd of [
+  '/usr/bin/git status',
+  '/usr/bin/git branch -d feature/alt',
+  '/usr/bin/git branch -D feature/alt',
+  '/usr/bin/git branch --delete --force feature/alt',
+]) test(`erlaubt mit Pfadpraefix: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+test('die Ausnahme gilt auch mit Pfadpraefix', () => {
+  assert.equal(blockiert(`/usr/bin/git checkout -- ${BOT}`), false);
+});
+
 test('harmlose Befehle bleiben auch hinter einem Vorspann erlaubt', () => {
   for (const cmd of ['xargs -n1 git status', 'sudo git log --oneline', 'env FOO=1 git diff']) {
     assert.equal(blockiert(cmd), false, cmd);

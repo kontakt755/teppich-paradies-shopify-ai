@@ -158,10 +158,24 @@ function segmente(cmd) {
 // bewusst fail-closed aus: steht "git push --force" nur als Text in einem
 // Befehl, wird auch das blockiert. Ein zu viel blockierter Befehl kostet eine
 // Rueckfrage, ein durchgerutschter kostet Arbeit.
+// Dasselbe gilt fuer den Aufruf ueber einen Pfad. "/usr/bin/git push --force"
+// und "./git branch -df alt" sind derselbe Befehl, das Praefix steht aber vor
+// dem Token - die Erkennung oben sieht kein "git" nach Zeilenanfang, Leerzeichen
+// oder Klammer, und keine Regel mit ^git greift. Am 2026-09-12 ist das an
+// "/usr/bin/git branch -df" aufgefallen (unabhaengige Pruefung): damit war
+// nicht nur die Sweep-Sperre offen, sondern jede Regel dieser Datei.
+// Der Pfad wird deshalb abgeschnitten, sodass der Rest wie ein nackter Aufruf
+// geprueft wird - inklusive der Ausnahmen, "/usr/bin/git branch -D name" bleibt
+// also erlaubt. Nicht abgedeckt: ein Executable in Anfuehrungszeichen
+// ("/usr/bin/git" branch). Fail-closed bleibt die Linie: lieber eine Rueckfrage
+// zu viel als ein durchgerutschter Befehl.
 function kandidaten(segment) {
   const out = [segment];
   for (const m of segment.matchAll(/(?<=^|[\s"'`({=])(?:git|gh)\s/g)) {
     if (m.index > 0) out.push(segment.slice(m.index));
+  }
+  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])[\w.~/-]*\/(git|gh)(?=\s)/g)) {
+    out.push(segment.slice(m.index + m[0].length - m[1].length));
   }
   return out;
 }
