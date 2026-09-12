@@ -189,15 +189,22 @@ function segmente(cmd) {
 // Nur solche Kandidaten duerfen eine Ausnahme in Anspruch nehmen - siehe die
 // Begruendung bei AUSNAHMEN.
 function kandidaten(segment) {
+  // Ein Anfuehrungszeichen direkt hinter dem Befehlsnamen gehoert zur Schreibweise
+  // des Aufrufs, nicht zum Argument: "/usr/bin/git" checkout ist derselbe Befehl
+  // wie /usr/bin/git checkout. Ohne dieses Abstreifen beginnt der Kandidat mit
+  // 'git"' und jedes VERBOTEN-Muster (^git\s) laeuft daneben - gemessen am
+  // 2026-09-12, damals liefen checkout --, restore und branch -D so komplett
+  // am Hook vorbei.
+  const ohneQuote = (t) => t.replace(/^(git|gh)["'`](?=\s)/, '$1');
   const out = [{ teil: segment, nackt: true }];
-  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])(?:git|gh)\s/g)) {
-    if (m.index > 0) out.push({ teil: segment.slice(m.index), nackt: false });
+  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])(?:git|gh)["'`]?\s/g)) {
+    if (m.index > 0) out.push({ teil: ohneQuote(segment.slice(m.index)), nackt: false });
   }
-  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])[\w.~/-]*\/(git|gh)(?=\s)/g)) {
+  for (const m of segment.matchAll(/(?<=^|[\s"'`({=])[\w.~/-]*\/(git|gh)(?=["'`]?\s)/g)) {
     const start = m.index + m[0].length - m[1].length;
     // Ein Pfad am Segmentanfang ist nur eine andere Schreibweise desselben
     // Aufrufs; dahinter steht kein zweiter Befehl, der Argumente nachreicht.
-    out.push({ teil: segment.slice(start), nackt: m.index === 0 });
+    out.push({ teil: ohneQuote(segment.slice(start)), nackt: m.index === 0 });
   }
   return out;
 }
