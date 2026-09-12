@@ -795,3 +795,26 @@ Zuvor hatte ich dieselbe Beobachtung mit einer ebenfalls untauglichen Messung *z
 - **CTA im Bodenleisten-Kopf:** Der Inhaber hat entschieden, ihn bei 58 px zu belassen. Keine Änderung.
 
 **Eine Fast-Kollision, die auffiel, weil zwei Sitzungen sich gegenseitig informierten:** Eine weitere Sitzung hatte vom Inhaber ebenfalls ein „stell es live" erhalten und war dabei, `main` auf das *andere* Theme zu veröffentlichen — mit dem Kenntnisstand, #220 sei noch offen. Sie hatte tatsächlich nichts publiziert (die CLI verweigerte den Push auf das inzwischen veröffentlichte Theme) und stoppte nach dem Hinweis. Die Lehre steht in der Checkliste: vor jedem Deploy die Theme-Rollen frisch abfragen und `origin/main` unmittelbar vorher prüfen.
+
+### Nachtrag 10: Übergebene Inhaberentscheidungen (Stand 2026-09-12, nach dem Livegang)
+
+Damit sie nicht mit den Sitzungen verschwinden, in denen sie aufgekommen sind. Keine davon darf eine KI selbst entscheiden.
+
+**Aus der Referenzgalerie (Galerie-Sitzung, #184 erledigt):**
+
+| Punkt | Warum es beim Inhaber liegt |
+|---|---|
+| Ortsangaben zu den 14 Projekten | Stärkster lokaler SEO-Hebel; die strukturierten Daten geben den Ort bereits aus, die Angaben selbst sind Tatsachen über echte Aufträge und dürfen nicht erfunden werden |
+| Freigabe für Kundennamen (z. B. KaDeWe) | Nennung eines Auftraggebers ist eine Rechts- und Vertrauensfrage, keine Textfrage |
+| Gehören die drei Treppenbilder zu einem Auftrag? | Tatsachenfrage zu echten Projekten; falsche Zuordnung erfindet eine Referenz |
+
+**Aus dem Qualitätsprogramm:**
+
+| Punkt | Stand |
+|---|---|
+| Richtext-Korrektur ausliefern (Hero-Unterzeile 14 statt 18 px) | Fix liegt geprüft in `main`, nicht live. Mitausgeliefert würden #229 (Rollenware-Zuschnitt) und #235 |
+| Ist das Ausblenden des Rollenware-Rechners bei `wunschmass: false` gewollt? | Mechanik geprüft, Kaufwege 3/3 und 3/3. Kein **veröffentlichtes** Produkt gefunden, bei dem es greift — das einzige mit `false` ist nicht im Shop. Ob einzelne Farben veröffentlichter Produkte betroffen sind, muss die Rollenware-Sitzung klären |
+| Favicon | fehlt weiter, 404 auf `/favicon.ico` |
+| `sizes` der Megamenü-Bilder | Befund belegt (Nachtrag 8), Umsetzung bei der Menü-Sitzung, nur nach Freigabe |
+
+**Eine Lehre aus dem Tag, die ins Verfahren gehört:** Die gemeinsame Deploy-Arbeitskopie `mainlane` wurde von einer anderen Sitzung entfernt, während dort ein Deploy lief. Folgen: ein `uv_cwd`-Absturz mitten im Live-Befehl, ein verlorener QA-Bericht und — am gefährlichsten — Lesungen aus einem leeren Verzeichnis, aus denen ich kurzzeitig falsche Schlüsse gezogen und berichtet habe („Datei existiert nicht in main"). **Wer in einer geteilten Arbeitskopie deployt, muss sie vorher für sich beanspruchen; und jede überraschende Leseantwort ist zuerst als Werkzeugfehler zu behandeln, nicht als Befund.**

@@ -42,9 +42,25 @@
 const UMLEITUNG = '(\\s*(?:[12]?>{1,2}\\s*\\/dev\\/null|&>{1,2}\\s*\\/dev\\/null|2>&1))*\\s*$';
 const BOTDATEI = '(?:\\.\\/)?docs\\/ai-dashboard\\/issues\\.json';
 
+// Ein Branchname, wie ihn jemand ausschreibt. Bewusst ohne "$", Backtick, "*"
+// und "?": damit faellt jede Befehlsersetzung und jeder Platzhalter aus der
+// Ausnahme heraus - "git branch -D $(git branch | grep alt)" bleibt blockiert.
+const BRANCHNAME = '[A-Za-z0-9._][A-Za-z0-9._/-]*';
+
 const AUSNAHMEN = [
   new RegExp(`^git\\s+checkout\\s+--\\s+${BOTDATEI}${UMLEITUNG}`),
   new RegExp(`^git\\s+restore\\s+(?:--worktree\\s+|--\\s+)?${BOTDATEI}${UMLEITUNG}`),
+
+  // Erzwungenes Branch-Loeschen mit ausgeschriebenen Namen. Seit 2026-09-12
+  // auf Wunsch des Nutzers erlaubt, weil Aufraeumen sonst nicht geht: manche
+  // Branches sind inhaltlich laengst in main, tragen aber andere Commit-IDs
+  // (Squash-Merge, Neuaufbau) - fuer git bleiben sie "not fully merged", und
+  // "-d" verweigert sie auf Dauer.
+  //
+  // Die Grenze liegt bei "ausgeschrieben": Wer den Namen tippt, hat den Branch
+  // angesehen. Ein Sweep ueber eine Liste hat das nicht - und genau der loescht
+  // im Zweifel die eine Arbeit, die noch nirgends sonst liegt.
+  new RegExp(`^git\\s+branch\\s+(?:-D|--delete\\s+--force|--force\\s+--delete)(?:\\s+${BRANCHNAME})+${UMLEITUNG}`),
 ];
 
 const VERBOTEN = [
@@ -60,7 +76,19 @@ const VERBOTEN = [
   [/^git\s+(.*\s)?clean\b\s+-[a-zA-Z]*[fdx]/,                       'git clean loescht nicht versionierte Dateien'],
   [/^git\s+(.*\s)?restore\b/,                                       'git restore verwirft Aenderungen im Working Tree'],
   [/^git\s+(.*\s)?checkout\b.*(\s--\s|\s\.\s*$)/,                   'git checkout -- verwirft Aenderungen im Working Tree'],
-  [/^git\s+(.*\s)?branch\b.*\s(-D|--delete)\b/,                     'git branch -D loescht einen Branch'],
+  // Branch loeschen ist seit 2026-09-12 auf Wunsch des Nutzers in der sicheren
+  // Form erlaubt: "git branch -d" verweigert git selbst, solange die Commits
+  // nirgends sonst haengen. Die Pruefung macht also git, nicht dieser Hook -
+  // und sie ist genauer, als eine Regex sie treffen koennte.
+  //
+  // Gesperrt bleibt, was genau diese Pruefung aushebelt: "-D" und jedes "-d"
+  // neben "--force". Wer einen ungemergten Branch wegwerfen will, soll vorher
+  // nachsehen, was darauf liegt - am 2026-09-09 lagen auf drei solchen
+  // Branches Fixes, die nur deshalb nicht verloren waren, weil main sie
+  // inzwischen auf anderem Weg trug.
+  [/^git\s+(.*\s)?branch\b.*\s-[a-zA-Z]*D/,                         'git branch -D loescht auch einen ungemergten Branch - mit -d pruefen lassen'],
+  [/^git\s+(.*\s)?branch\b.*\s(-[a-zA-Z]*d\b|--delete\b).*\s(--force\b|-[a-zA-Z]*f\b)/, 'git branch --delete --force hebt die Merge-Pruefung auf'],
+  [/^git\s+(.*\s)?branch\b.*\s(--force\b|-[a-zA-Z]*f\b).*\s(-[a-zA-Z]*d\b|--delete\b)/, 'git branch --force --delete hebt die Merge-Pruefung auf'],
   [/^git\s+(.*\s)?(filter-branch|filter-repo)\b/,                   'filter-branch schreibt die gesamte Historie um'],
   [/^git\s+(.*\s)?reflog\s+(delete|expire)\b/,                      'reflog delete entfernt das letzte Sicherheitsnetz'],
   [/^git\s+(.*\s)?gc\b.*--prune/,                                   'git gc --prune raeumt unerreichbare Objekte endgueltig weg'],
