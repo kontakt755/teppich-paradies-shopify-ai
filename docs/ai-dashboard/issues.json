@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T16:41:00.506Z",
+  "generated_at": "2026-09-12T17:20:59.692Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 80,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T16:41:00.506Z",
+    "fetchedAt": "2026-09-12T17:20:59.692Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -446,13 +446,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-12T16:40:21Z",
+      "updated_at": "2026-09-12T17:04:31Z",
       "closed_at": null
     },
     {
@@ -1986,7 +1986,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/44",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:google"
@@ -1995,7 +1995,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Events testen mit Tag Assistant",
       "fields": {
         "description": "Verknüpfe Google Ads mit GA4 und richte Conversion Tracking ein\n- [ ] GA4 Property erstellt\n- [ ] Verknüpfung mit Google Ads aktiv\n- [ ] Purchase Event konfiguriert\n- [ ] AddToCart Event konfiguriert\n- [ ] ViewItem Event konfiguriert",
@@ -2028,7 +2028,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:23Z",
-      "updated_at": "2026-09-08T14:23:12Z",
+      "updated_at": "2026-09-12T16:41:35Z",
       "closed_at": null
     },
     {
@@ -2037,7 +2037,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/43",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:google"
@@ -2046,7 +2046,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Validierungsbericht dokumentieren",
       "fields": {
         "description": "Überprüfe Google Merchant Center Konto und Product Feed\n- [x] Merchant Center Account Status OK\n- [x] Product Feed Validierung läuft\n- [x] Alle Produkte indexed\n- [x] No data quality issues",
@@ -2075,7 +2075,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:22Z",
-      "updated_at": "2026-09-08T14:23:14Z",
+      "updated_at": "2026-09-12T16:41:32Z",
       "closed_at": null
     },
     {
