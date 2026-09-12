@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T08:56:38.322Z",
+  "generated_at": "2026-09-12T09:10:16.066Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 79,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T08:56:38.322Z",
+    "fetchedAt": "2026-09-12T09:10:16.066Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -68,7 +68,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/230",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -77,13 +77,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-12T08:56:25Z",
-      "updated_at": "2026-09-12T08:56:33Z",
+      "updated_at": "2026-09-12T08:56:39Z",
       "closed_at": null
     },
     {
@@ -335,10 +335,10 @@
     {
       "number": 194,
       "title": "Shop-Qualitaet: Baseline, Erstbefund und P0/P1 im Theme-Entwurf",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/194",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -347,15 +347,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Qualitaetsprogramm Richtung 99/100. Arbeits-Theme = unveroeffentlichte Kopie des Entwurfs, Branch feature/shop-qualitaet. Erstbefund: docs/analyse/qualitaet-erstbefund-2026-09-11.md. Live-Theme wird nicht angefasst, nichts wird veroeffentlicht.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:20:38Z",
-      "updated_at": "2026-09-12T07:04:50Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T09:10:04Z",
+      "closed_at": "2026-09-12T09:10:04Z"
     },
     {
       "number": 193,
