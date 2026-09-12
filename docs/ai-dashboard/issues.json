@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T08:33:49.570Z",
+  "generated_at": "2026-09-12T08:56:38.322Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 78,
+  "count": 79,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T08:33:49.570Z",
+    "fetchedAt": "2026-09-12T08:56:38.322Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 230,
+      "title": "Rollenware-Rechner: Zuschnitt je Farbe ausblenden",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/230",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T08:56:25Z",
+      "updated_at": "2026-09-12T08:56:33Z",
+      "closed_at": null
+    },
     {
       "number": 225,
       "title": "Lieferantenabgleich Teppichboden: Metafelder (Phase 5)",
