@@ -61,6 +61,47 @@ for (const cmd of ['git status', 'npm run task -- list']) {
   test(`unberuehrt erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
 }
 
+// --- Branch loeschen ----------------------------------------------------
+//
+// "git branch -d" darf durch: git selbst verweigert es, solange die Commits
+// nirgends sonst haengen. Die Merge-Pruefung macht damit git und nicht diese
+// Regex. Gesperrt bleibt alles, was genau diese Pruefung aushebelt.
+for (const cmd of [
+  'git branch -d feature/alt',
+  'git branch --delete feature/alt',
+  'git branch -d feature/alt fix/alt',
+  // Branchnamen mit grossem D duerfen nicht als "-D" gelesen werden.
+  'git branch -d fix/ABC-Dev',
+  'git branch --list',
+]) test(`erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+// "-D" mit ausgeschriebenen Namen ist erlaubt: wer den Namen tippt, hat den
+// Branch angesehen. Alles, was ueber eine Liste faehrt, bleibt gesperrt.
+for (const cmd of [
+  'git branch -D feature/alt',
+  'git branch -D feature/alt fix/alt',
+  'git branch --delete --force feature/alt',
+  'git branch --force --delete feature/alt',
+  `git checkout -- ${BOT} && git branch -D feature/alt`,
+]) test(`erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+for (const cmd of [
+  // Ohne Namen: das ist kein gezieltes Loeschen.
+  'git branch -D',
+  // Befehlsersetzung und Platzhalter sind ein Sweep, kein Einzelfall.
+  'git branch -D $(git branch | grep alt)',
+  'git branch -D `git branch --merged`',
+  'git branch -D feature/*',
+  'git branch -D "$BRANCH"',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -D',
+  // Kombinierte Kurzflags sind nicht ausgeschrieben genug.
+  'git branch -rD feature/alt',
+  'git branch -d --force feature/alt',
+  // Die Ausnahme darf nichts decken, was hinter ihr haengt.
+  'git branch -D feature/alt && git reset --hard',
+  'git branch -D feature/alt > wichtig.txt',
+]) test(`blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
 // --- Angehaengte Umleitungen -------------------------------------------
 //
 // Erlaubt sind nur Umleitungen nach /dev/null und 2>&1. Eine Umleitung in
