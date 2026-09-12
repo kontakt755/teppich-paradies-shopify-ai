@@ -17,7 +17,12 @@
     {%- endif -%}
     <h1 class="tp-arbintro__h1">{{ section.settings.heading | escape }}</h1>
     {%- if section.settings.text != blank -%}
-      <p class="tp-arbintro__text">{{ section.settings.text }}</p>
+      {%- comment -%}
+        div statt p: Das Richtext-Feld bringt eigene <p> mit. Ein p im p schliesst
+        der Parser sofort - die Klasse blieb dann auf einem leeren Element und der
+        sichtbare Text stand ohne Typografie da (14 statt 17 px, live belegt).
+      {%- endcomment -%}
+      <div class="tp-arbintro__text">{{ section.settings.text }}</div>
     {%- endif -%}
 
     {%- if section.blocks.size > 0 -%}
@@ -43,6 +48,9 @@
   .tp-arbintro__brot a:hover { color: var(--tp-ink); }
   .tp-arbintro__h1 { font-size: clamp(28px, 3.4vw, 44px); font-weight: 700; line-height: 1.1; letter-spacing: -0.015em; margin: 0; color: var(--tp-ink); text-wrap: balance; }
   .tp-arbintro__text { max-width: 66ch; color: var(--tp-ink-2); font-size: 17px; line-height: 1.6; margin: 14px 0 0; }
+  /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
+  .tp-arbintro__text p { margin: 0; }
+  .tp-arbintro__text p + p { margin-top: 0.7em; }
   .tp-arbintro__punkte { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 26px; }
   .tp-arbintro__punkte li { display: flex; align-items: flex-start; gap: 8px; font-size: 15px; font-weight: 500; color: var(--tp-ink); }
   .tp-arbintro__punkte svg { color: var(--tp-green); }
