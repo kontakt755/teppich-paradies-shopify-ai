@@ -707,3 +707,17 @@ Aus den Gegenprüfungen der drei beteiligten Sitzungen. Die Reihenfolge ist nich
 7. **Favicon** fehlt weiter (404 auf `/favicon.ico`), Entscheidung des Inhabers. Kein Blocker, aber der einzige offene Punkt aus den Laufzeitprüfungen.
 
 **Eine Freigabe wird nicht weitergeleitet.** Drei Sitzungen haben gemeldet, der Inhaber habe den Live-Gang in ihrer Sitzung freigegeben — korrekt jeweils als Information gekennzeichnet. Für `workflow:live` braucht die ausführende Sitzung das Wort des Inhabers in ihrem eigenen Verlauf. Bis dahin bleibt es bei PR und Entwurf.
+
+### Nachtrag 7: Abnahmen der beteiligten Sitzungen
+
+Fremde Messungen, als solche gekennzeichnet — nicht meine eigenen. Sie decken Bereiche ab, die ich bewusst nicht selbst geprüft habe, weil sie mir fachlich nicht gehören.
+
+| Sitzung | Geprüft | Ergebnis |
+|---|---|---|
+| Menü | Dev-Theme 204180619598, frisches Profil je Breite: 375 px (Zweige, Bodenleisten-Panel mit 3 Gruppen/6 Chips, Zurück-Weg, Kontakt-Panel, Chip-Sprung landet beim Raster, Oberkante 88 px) · 768×1024 und 1024×768 (Drawer-Modus, genau eine Lupe, Kopfhöhe 60 px, 13 Trefferflächen alle ≥ 44 px) · 1366 px (alle 7 Untermenüs öffnen und liegen oben, per `elementFromPoint` belegt; Bilder 7/7, 4/4, 6/6, 1/1, 8/8, 5/5, 3/3) · Raster 390/768/820/1024 zweispaltig, 1366 dreispaltig, nirgends Überbreite | kein Befund offen; 15/15 Menü-Dateien byte-gleich mit dem Branch |
+| Galerie | alle acht #186-Commits als Vorfahren, Galerie-Dateien inhaltsgleich, `menu-vorlage-unsere-arbeit.md` byte-gleich | #186 geschlossen mit Verweis auf #220; ein fehlender Doku-Commit nachgezogen |
+| Verlegeservice | `page.verlegeservice.json` mit `main.disabled = true`, 20 Einstellungsgruppen, `tp-verlegegebiet.liquid` = 7e0b566d, keine Pauschalversprechen in den Verlegetexten | passt, keine Rückfälle |
+
+Die Menü-Sitzung bestätigt dabei unabhängig meinen Konsolen-Befund: `401 sf_private_access_tokens` und `404 favicon` treten auch ohne diese Änderungen auf — Plattformmeldungen, keine Regression.
+
+Abgenommen wurde der Stand `af4d2f5` plus der Kachel-Fix `ecb3126`. Danach kamen nur `c62489b` (zweite Bildkachel, im Dev-Theme als wirkungslos belegt, solange der Menüpunkt fehlt) und dieser Bericht.
