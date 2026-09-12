@@ -559,9 +559,14 @@
   }
 </style>
 
-{{ 'tp-rollware-art.js' | asset_url | script_tag }}
+{%- comment -%}
+  defer statt script_tag: nicht parser-blockierend (Theme Check). Deshalb wartet
+  die Initialisierung unten auf DOMContentLoaded, falls das Asset noch nicht da
+  ist - deferred Skripte laufen garantiert davor.
+{%- endcomment -%}
+<script src="{{ 'tp-rollware-art.js' | asset_url }}" defer></script>
 <script>
-(function () {
+function tpRwcInit{{ tp_rc_id }}() {
   var pid = {{ product.id | json }};
   var root = document.getElementById('tp-rwc-{{ tp_rc_id }}');
   var dataEl = document.querySelector('[data-rwc-data-{{ tp_rc_id }}]');
@@ -1180,7 +1185,9 @@
   });
 
   calculate();
-})();
+}
+if (window.TPRollwareArt) { tpRwcInit{{ tp_rc_id }}(); }
+else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
 </script>
 
 {% schema %}
