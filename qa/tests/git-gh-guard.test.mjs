@@ -96,6 +96,16 @@ for (const cmd of [
   'git for-each-ref --format="%(refname:short)" | xargs git branch -D',
   // Kombinierte Kurzflags sind nicht ausgeschrieben genug.
   'git branch -rD feature/alt',
+  // -df und -fd fassen d und f in einem Flag zusammen. Bis 2026-09-12 passierten
+  // sie den Guard, weil kein grosses D und keine zwei Token vorlagen - damit war
+  // auch der Sweep offen, den die Ausnahme gerade verhindern soll.
+  'git branch -df feature/alt',
+  'git branch -fd feature/alt',
+  'git branch -df $(git branch --format="%(refname:short)")',
+  'git branch -fd $(git branch | grep alt)',
+  'git branch -df "$BRANCH"',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -df',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -fd',
   'git branch -d --force feature/alt',
   // Die Ausnahme darf nichts decken, was hinter ihr haengt.
   'git branch -D feature/alt && git reset --hard',

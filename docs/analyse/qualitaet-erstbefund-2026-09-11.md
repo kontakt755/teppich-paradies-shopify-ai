@@ -833,6 +833,21 @@ Gemeldet wurde, `.claude/hooks/git-gh-guard.mjs` habe „ein Loch": `git branch 
 4. **Widerlegt von der Galerie-Sitzung**, indem sie den Hook direkt befragte statt ihn zu lesen: `-d`, `-D`, `-df`, `-fd` und `--delete --force` gehen durch, `git branch -D $(git branch | grep alt)` wird blockiert.
 5. **Gegengeprüft von mir am Quellcode**, was das Verhalten erklärt: Die Blockregel verlangt ein großes `D`, die Regeln für `--delete … --force` verlangen zwei getrennte Token, und die Erlaubnisliste nennt `-D` ausdrücklich und gewinnt.
 
-**Ergebnis: kein Sicherheitsproblem.** Die Absicht des Hooks ist nicht „erzwungenes Löschen sperren", sondern „**Sweeps** sperren, benanntes Löschen erlauben". `-df` verhält sich wie das erlaubte `-D`; die Expansion `$(…)` bleibt gesperrt. Übrig bleibt Kosmetik: Die Erlaubnisliste nennt die Kurzformen nicht, sie passieren durch Abwesenheit einer Blockregel. Wer den Hook pflegt, kann Absicht und Umsetzung angleichen.
+6. **Und dann war es doch ein Befund** — die unabhängige Prüfung hat in der nächsten Runde nachgelegt, und diesmal lag **ich** falsch. Mein Schluss „kein Sicherheitsproblem" stimmte nur für das benannte Löschen. Gemessen (Hook direkt mit JSON auf stdin befragt, Ausgabe über `permissionDecision` gelesen, nicht über den Exit-Code):
+
+| Befehl | Guard vorher |
+|---|---|
+| `git branch -D $(…)` | blockiert |
+| `git branch -df $(…)` | **erlaubt** |
+| `git branch -fd $(…)` | **erlaubt** |
+| `… \| xargs git branch -D` | blockiert |
+| `… \| xargs git branch -df` | **erlaubt** |
+| `git branch -df $ZWEIG` | **erlaubt** |
+
+Der Sweep-Schutz existierte also nur für `-D` und war mit den Kurzformen umgehbar — mehrere ungemergte Branches auf einen Befehl, genau das, was die Ausnahme verhindern soll. **Keine Kosmetik, eine echte Umgehung.**
+
+Dass es ein Versehen und kein Entwurf war, steht in den Tests des Autors selbst: `git branch -rD feature/alt` ist dort ausdrücklich blockiert, mit dem Kommentar „Kombinierte Kurzflags sind nicht ausgeschrieben genug." `-df` und `-fd` fielen nur durch, weil die erste Blockregel ein großes `D` verlangt und die beiden anderen zwei getrennte Token.
+
+Behoben: zwei Blockregeln für Kurzflags, die `d` und `f` zusammenfassen, plus sieben Regressionstests (benannt, Befehlsersetzung, Variable, `xargs`, beide Reihenfolgen). Nach der Änderung sind `-df`/`-fd` in jeder Form gesperrt, während `-d <name>`, `-D <name>` und `--delete --force <name>` unverändert durchgehen. Suite 229/229 und 37/37.
 
 **Das Muster des Tages, drittes Auftreten:** Struktur gelesen statt Verhalten gemessen. Erst bei den Drawer-Bildern (zwei Sitzungen), dann bei `naturalWidth` im Megamenü, dann hier. Jedes Mal war die Messung die Auflösung — und jedes Mal hat erst eine zweite Sitzung nachgerechnet. Mein eigener Anteil ist Schritt 3: einen fremden Befund als gesichert weiterzugeben, ohne ihn zu prüfen, obwohl ich denselben Fehler am selben Tag zweimal angemahnt hatte.
