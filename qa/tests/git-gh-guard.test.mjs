@@ -259,3 +259,27 @@ for (const cmd of [
   '/usr/bin/git branch -D feature/alt',
   'git branch -D feature/alt feature/zwei',
 ]) test(`Ausnahme gilt fuer den nackten Aufruf: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+// Ein Git-Aufruf in Anfuehrungszeichen. Gemessen am 2026-09-12 durch die
+// unabhaengige Pruefung: "/usr/bin/git" checkout -- <datei> lief komplett am
+// Hook vorbei, ebenso restore und branch -D. Zwei Stellen wirkten zusammen -
+// der Kandidatenfilter verlangte Leerraum direkt hinter dem Befehlsnamen
+// (dort stand das schliessende Anfuehrungszeichen), und der Slice begann mit
+// 'git"', woran jedes VERBOTEN-Muster (^git\s) scheiterte.
+//
+// Ohne Anfuehrungszeichen war derselbe Befehl seit jeher blockiert - die
+// Schreibweise allein darf keine Grenze aufheben.
+for (const cmd of [
+  '"/usr/bin/git" checkout -- wichtig.liquid',
+  '"/usr/bin/git" restore --worktree blocks/tp-rollware-rechner.liquid',
+  '"/usr/bin/git" branch -D feature/wichtig',
+  '"/usr/bin/git" reset --hard origin/main',
+  "'/usr/bin/git' checkout -- wichtig.liquid",
+  '"git" checkout -- wichtig.liquid',
+  '"git" push --force origin main',
+]) test(`Anfuehrungszeichen heben die Grenze nicht auf: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+// Gegenprobe: harmlose Befehle bleiben auch in dieser Schreibweise erlaubt.
+for (const cmd of ['"/usr/bin/git" status', '"git" log --oneline']) {
+  test(`harmlos bleibt harmlos in Anfuehrungszeichen: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+}
