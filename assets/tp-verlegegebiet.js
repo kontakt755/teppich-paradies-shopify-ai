@@ -72,8 +72,11 @@
     zoneNah: function (s) {
       return 'Ab ' + s.schwelle + ' € Warenwert sind Lieferung und lose Verlegung hier kostenlos, darunter berechnen wir ' + s.preisNah + ' für Lieferung und Anfahrt und ' + losePreis(s) + ' für die lose Verlegung.';
     },
+    // Ausserhalb der kostenlosen Zone gilt beides unabhaengig vom Warenwert.
+    // Ohne den Nachsatz rechnet jemand mit "ueber der Schwelle, also frei".
     zone: function (preis, s) {
-      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + losePreis(s) + '.';
+      return 'Lieferung und Anfahrt kosten hier ' + preis + ', die lose Verlegung ' + losePreis(s)
+        + ' – auch ab ' + s.schwelle + ' € Warenwert.';
     },
     zoneOffen: 'Was Lieferung und Verlegung kosten, hängt vom Ortsteil ab – mit Ihrer Postleitzahl sagen wir es genau.',
     anfragen: 'Individuell anfragen',
@@ -85,7 +88,7 @@
   /* Preis der losen Verlegung samt Mindestbetrag - wie in der Preistabelle
      der Serviceseite. */
   function losePreis(s) {
-    return s.loseMindest ? s.lose + ' (mind. ' + s.loseMindest + ')' : s.lose;
+    return s.loseMindest ? s.lose + ' (mind. ' + s.loseMindest + ' je Auftrag)' : s.lose;
   }
 
   function normalisieren(wert) {

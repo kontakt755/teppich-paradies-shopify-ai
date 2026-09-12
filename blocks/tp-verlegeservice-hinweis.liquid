@@ -39,14 +39,14 @@
       <dl class="tp-vsh__stufen">
         <div class="tp-vsh__plus">
           <dt>Ab {{ vsh_schwelle }}&nbsp;€ Warenwert</dt>
-          <dd>Lieferung &amp; lose Verlegung bis {{ vsh_nah }}&nbsp;km kostenlos – dazu vergünstigte Fixierungs- und Klebepreise.</dd>
+          <dd>Lieferung &amp; lose Verlegung bis {{ vsh_nah }}&nbsp;km kostenlos. Fixierung und Verklebung sind Zusatzleistungen – hier zu vergünstigten Aufpreisen.</dd>
         </div>
         <div>
           <dt>Unter {{ vsh_schwelle }}&nbsp;€ oder weiter weg</dt>
-          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</dd>
+          <dd>Faire Festpreise: Lieferung &amp; Anfahrt ab {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).</dd>
         </div>
       </dl>
-      <p class="tp-vsh__lose">Lose Verlegung heißt: passend zugeschnitten, ohne Verklebung.</p>
+      <p class="tp-vsh__lose">Lose Verlegung heißt: passend zugeschnitten, ohne Verklebung. Beide Bedingungen – Warenwert und Entfernung – müssen zusammentreffen.</p>
       <a class="tp-vsh__link" href="{{ vsh_seite }}">Alle Preise und Informationen zum Verlegeservice</a>
     </div>
   </details>
