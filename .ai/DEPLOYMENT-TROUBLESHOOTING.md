@@ -20,6 +20,32 @@ Lesereihenfolge laut `.ai/README.md`: erst `AGENTS.md`, dann bei Deploy-Aufgaben
 ### `shopify theme push` hängt / fragt "Push theme files to the live theme...?"
 Shopify CLI verlangt eine interaktive Bestätigung. Piping (`echo "y" | ...`) und `--force` lösen das **nicht** – die CLI erkennt den Non-TTY-Kontext und bricht bewusst ab. Es gibt keinen non-interaktiven Workaround: Der Mensch muss den Befehl im eigenen Terminal ausführen. Immer mit `--only <datei>` scopen, nie ungezielt das ganze Theme pushen.
 
+### PREVIEW_DIFF durch Dateien, die in main geloescht wurden
+
+Der Preview-Push laeuft mit `--nodelete` (`previewPushArgs` in `workflow/core.mjs`). Was in main
+geloescht wurde, bleibt deshalb auf dem Preview-Theme liegen, und `PREVIEW_DIFF` blockiert jeden
+weiteren Lauf — dauerhaft, denn kein Lauf entfernt die Datei je von selbst. Am 2026-09-12 lief das
+zwei Sitzungen am selben Tag: einmal `sections/tp-zwei-wege.liquid` (der Inhalt war nach `snippets/`
+umgezogen), einmal `snippets/tp-drawer-bildraster.liquid` plus sieben JSON-Dateien ohne den
+Shopify-Kommentarkopf.
+
+Erkennen — Theme ziehen und beide Richtungen vergleichen:
+
+```
+shopify theme pull --store <store> --theme <preview-id> --path /tmp/prev
+for d in assets blocks config layout locales sections snippets templates; do diff -rq /tmp/prev/$d $d; done
+```
+
+`Only in /tmp/prev/...` ist die ueberzaehlige Datei auf dem Theme, `Only in <repo>/...` waere eine
+fehlende. `config/settings_data.json` ist vom Vergleich ausgenommen und darf abweichen.
+
+Beheben: die Datei im Shopify-Admin unter Code bearbeiten aus dem Theme loeschen. `themeFilesDelete`
+ueber den MCP ist gesperrt ("Theme deletion is blocked"), und ein Push ohne `--nodelete` ist der
+falsche Weg: Am 2026-09-12 zielte er auf ein Theme, das zwischenzeitlich MAIN geworden war — nur die
+CLI-Sperre gegen Pushes auf das Live-Theme hat das aufgehalten. Deshalb vor jedem Handgriff am Theme
+die Rollen frisch abfragen und sich nicht auf den Stand aus der eigenen Sitzung verlassen; bei
+mehreren parallelen Sitzungen wechselt das Live-Theme im Minutentakt.
+
 ### SEO-Fehlschlag ist oft nicht der eigene Diff
 Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle vorbestanden: Die Google-Rating-API lieferte 404 auf allen PDPs (Desktop + Mobile), völlig unabhängig von der Änderung. `npm run seo:check` laufen lassen, `SEO_REPORT.md` öffnen und die ERROR-Sektion gegen den eigenen Diff halten, bevor Zeit in die falsche Ursache fließt. Ein Override existiert bewusst nicht (`--force-seo-override` wurde ausprobiert, gibt es nicht) – Altfehler müssen behoben werden, und ob trotzdem deployt wird, entscheidet der Mensch, nicht der Agent.
 
