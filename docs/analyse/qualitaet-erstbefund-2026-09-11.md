@@ -721,3 +721,24 @@ Fremde Messungen, als solche gekennzeichnet — nicht meine eigenen. Sie decken 
 Die Menü-Sitzung bestätigt dabei unabhängig meinen Konsolen-Befund: `401 sf_private_access_tokens` und `404 favicon` treten auch ohne diese Änderungen auf — Plattformmeldungen, keine Regression.
 
 Abgenommen wurde der Stand `af4d2f5` plus der Kachel-Fix `ecb3126`. Danach kamen nur `c62489b` (zweite Bildkachel, im Dev-Theme als wirkungslos belegt, solange der Menüpunkt fehlt) und dieser Bericht.
+
+### Nachtrag 8: Offener Befund – `sizes` der Megamenü-Bilder rechnet mit sechs Spalten
+
+Gemeldet von der Menü-Sitzung (Karte 241 px breit, geladene Stufe 197 px), von mir nachgemessen und dabei als breiter bestätigt: Die `sizes`-Angabe kommt aus Horizons `util-mega-menu-img-sizes-attr` und teilt die Inhaltsbreite immer durch **sechs**, unabhängig davon, wie viele Karten das Panel tatsächlich zeigt. Bei 1366 px ergibt das `(1366 − 180) / 6 ≈ 197 px` für jedes Panel.
+
+| Panel | Karten | dargestellt bei 1366 px | dargestellt bei 1440 px | laut `sizes` |
+|---|---|---|---|---|
+| Teppichboden | 7 | 305 px | 323 px | 197 px |
+| Zubehör | 8 | 305 px | 323 px | 197 px |
+| Service & Verlegung | 5 | 239 px | 254 px | 197 px |
+| Vinylboden | 4 | 227 px | 245 px | 197 px |
+
+Der Browser wählt daher die 200er-Stufe aus dem `srcset` (`snippets/tp-menu-bild.liquid`: 200/300/400/600/800) und skaliert sie um 15 bis 55 Prozent hoch; bei DPR 2 liegt der Bedarf bei 490 bis 646 px.
+
+**Nicht umgesetzt, bewusst.** Drei Gründe, in dieser Reihenfolge:
+
+1. Der Befund ist **kein Byte-Problem, sondern ein Schärfe-Problem.** Eine Korrektur lädt größere Bilder, erhöht also die Übertragung. Ob unscharfe Menübilder oder mehr Bytes schlechter sind, ist eine Gestaltungsabwägung — die gehört nicht in eine Performance-Optimierung hineingeschmuggelt.
+2. Die Datei `snippets/mega-menu-list.liquid` und der Helfer sind Horizon-Kern beziehungsweise Gebiet der Menü-Sitzung, nicht meines.
+3. Das Paket ist von allen drei beteiligten Sitzungen abgenommen und wartet nur noch auf die Freigabe des Inhabers. Eine Änderung jetzt würde diese Abnahme entwerten. Ein neuer Schritt gehört hinter das Release, nicht davor.
+
+Die Bilder sind `loading="lazy"` mit `fetchpriority="low"` und laden erst bei der ersten Menüabsicht — der Befund trifft also niemanden beim Seitenaufbau.
