@@ -48,6 +48,13 @@
     display: none !important;
   }
 
+  /* Mobiles Menue offen oder ein Eingabefeld aktiv: die Leiste lag dort ueber
+     Formularfeldern und dem Drawer (Audit B-28). */
+  body:has(#Details-menu-drawer-container[open]) .tp-compare-bar,
+  body:has(:is(input:not([type='checkbox']):not([type='radio']), textarea, select):focus) .tp-compare-bar {
+    display: none !important;
+  }
+
   .tp-compare-bar__full {
     display: flex;
     align-items: center;

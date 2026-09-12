@@ -16,8 +16,25 @@
   <header class="tp-sample__header">
     <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
     <h1>Bis zu 3 <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
-    <p>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
+    <p data-sample-intro>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
   </header>
+  {% comment %}
+    Einstieg ohne ?produkt= (Top-Leiste, Kategorie-Chips, SEO-Links) ist kein
+    Fehler: dann erklaert die Seite den Weg ueber die Produktseite.
+  {% endcomment %}
+  <div class="tp-sample__empty" data-sample-empty hidden>
+    <p><strong>So kommen Sie zu Ihren Mustern:</strong> Öffnen Sie einen Bodenbelag und wählen Sie dort „Kostenloses Muster anfragen“. Produkt und Farbe werden automatisch übernommen.</p>
+    {%- assign tp_sample_links = section.settings.kategorien | newline_to_br | split: '<br />' -%}
+    <ul class="tp-sample__empty-links">
+      {%- for tp_sample_line in tp_sample_links -%}
+        {%- assign tp_sample_parts = tp_sample_line | strip | split: '|' -%}
+        {%- if tp_sample_parts.size == 2 -%}
+          <li><a href="{{ tp_sample_parts[1] | strip }}">{{ tp_sample_parts[0] | strip | escape }}</a></li>
+        {%- endif -%}
+      {%- endfor -%}
+    </ul>
+    <p>Fragen zu Mustern? <a href="/pages/kontakt">Schreiben Sie uns</a> – wir beraten Sie gern.</p>
+  </div>
   <div class="tp-sample__product" data-sample-product hidden>
     <img data-sample-product-image alt="" width="72" height="72">
     <strong data-sample-product-name></strong>
@@ -36,7 +53,15 @@
 {% schema %}
 {
   "name": "TP Musterkonfigurator",
-  "settings": [],
+  "settings": [
+    {
+      "type": "textarea",
+      "id": "kategorien",
+      "label": "Einstiege ohne Produkt",
+      "info": "Eine Zeile je Link: Titel|URL. Erscheint nur, wenn die Seite ohne ?produkt= aufgerufen wird.",
+      "default": "Teppichboden|/collections/teppichboden\nKlickvinyl|/collections/vinylboden-klickvinyl\nKlebevinyl|/collections/vinylboden-klebevinyl\nVinyl von der Rolle|/collections/vinylboden-vinyl-von-der-rolle\nLinoleum|/collections/linoleumboden-1"
+    }
+  ],
   "presets": [
     {
       "name": "TP Musterkonfigurator"

@@ -1,58 +1,85 @@
 {%- doc -%}
-  Kuratiertes Megamenue fuer "Linoleumboden". Der Punkt hat in der Navigation keine
-  Unterpunkte; statt eines leeren Menues zeigt der Entwurf das, was es gibt: die
-  Einstiegskarte "Alle Linoleumboeden" (Bild aus der Bildkachel, sonst Produktbild)
-  und die Produkte der Kollektion als Karten mit ihrem Produktbild. Alles kommt aus
-  der Kollektion, nichts ist fest verdrahtet - neue Produkte erscheinen automatisch.
+  Kuratiertes Menue fuer "Linoleumboden". Der Punkt hat in der Navigation keine
+  Unterpunkte; statt eines leeren Menues zeigt der Entwurf das, was es gibt: den
+  Einstieg "Alle Linoleumboeden" und die Produkte der Kollektion mit ihrem
+  Produktbild. Alles kommt aus der Kollektion, nichts ist fest verdrahtet - neue
+  Produkte erscheinen automatisch.
+
+  Desktop und Handy zeigen dieselben Punkte. Bis 2026-09-11 war Linoleum am Handy
+  ein Direktlink ohne Unterebene, am Desktop ein Megamenue (Audit, Aufgabe #193).
 
   @param {object} parent_link - Menuepunkt (Kollektionslink)
   @param {string} [kacheln] - Datensaetze der Bildkacheln
-  @param {string} id - Menue-ID fuer die Rasterregeln
-  @param {object} settings - Theme-Settings (fuer die sizes-Berechnung)
+  @param {string} [id] - Menue-ID fuer die Rasterregeln (nur Desktop)
+  @param {object} [settings] - Theme-Settings (fuer die sizes-Berechnung, nur Desktop)
+  @param {string} [variant] - 'drawer' fuer das Handy-Menue, sonst Desktop-Megamenue
 {%- enddoc -%}
 
 {%- liquid
   assign tp_li_col = parent_link.object
   assign tp_li_max = 5
   assign tp_li_count = tp_li_col.all_products_count | default: 0
-  assign tp_li_n = tp_li_count | at_most: tp_li_max | plus: 1
-  if tp_li_n > 6
-    assign tp_li_cols = 4
-  else
-    assign tp_li_cols = tp_li_n
-  endif
-  assign tp_li_cols_tablet = tp_li_cols | at_most: 4
-  capture tp_li_sizes
-    render 'util-mega-menu-img-sizes-attr', menu_content_type: 'collection_images', settings: settings, grid_columns: 6, grid_columns_tablet: 4, parent_links_size: 6, columns_per_item: 1
-  endcapture
-  capture tp_li_lead_img
-    render 'tp-menu-bild', link: parent_link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_li_sizes
-  endcapture
-  assign tp_li_sub = ''
-  if tp_li_count == 1
-    assign tp_li_sub = '1 Produkt'
-  elsif tp_li_count > 1
-    assign tp_li_sub = tp_li_count | append: ' Produkte'
-  endif
 -%}
 
-{% style %}
-  .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
-    --tp-mm-cols: {{ tp_li_cols }};
-    --tp-mm-cols-tablet: {{ tp_li_cols_tablet }};
-    --tp-mm-col: minmax(0, 1fr);
-  }
-{% endstyle %}
+{%- if variant == 'drawer' -%}
+  <a class="tp-dn-cta" href="{{ parent_link.url }}">
+    <span class="tp-dn-cta__text">Alle Linoleumböden ansehen</span>
+    {%- if tp_li_count > 0 -%}
+      <span class="tp-dn-cta__count">{{ tp_li_count }}<span class="visually-hidden"> Produkte</span></span>
+    {%- endif -%}
+  </a>
+  <ul class="tp-dn-list" role="list">
+    {%- for tp_li_p in tp_li_col.products limit: tp_li_max -%}
+      {%- capture tp_li_img -%}
+        {%- if tp_li_p.featured_image -%}
+          {{ tp_li_p.featured_image | image_url: width: 160 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '80, 120, 160', class: 'tp-dn-row__img', sizes: '56px', alt: '' }}
+        {%- endif -%}
+      {%- endcapture -%}
+      {%- assign tp_li_title = tp_li_p.title | remove: ' Linoleumboden' | remove: ' 200cm' | strip | escape -%}
+      {%- render 'tp-drawer-zeile', url: tp_li_p.url, title: tp_li_title, sub: 'Linoleum, 200 cm Rolle', image_html: tp_li_img, current: false -%}
+    {%- endfor -%}
+  </ul>
+{%- else -%}
+  {%- liquid
+    assign tp_li_n = tp_li_count | at_most: tp_li_max | plus: 1
+    if tp_li_n > 6
+      assign tp_li_cols = 4
+    else
+      assign tp_li_cols = tp_li_n
+    endif
+    assign tp_li_cols_tablet = tp_li_cols | at_most: 4
+    capture tp_li_sizes
+      render 'util-mega-menu-img-sizes-attr', menu_content_type: 'collection_images', settings: settings, grid_columns: 6, grid_columns_tablet: 4, parent_links_size: 6, columns_per_item: 1
+    endcapture
+    capture tp_li_lead_img
+      render 'tp-menu-bild', link: parent_link, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_li_sizes
+    endcapture
+    assign tp_li_sub = ''
+    if tp_li_count == 1
+      assign tp_li_sub = '1 Produkt'
+    elsif tp_li_count > 1
+      assign tp_li_sub = tp_li_count | append: ' Produkte'
+    endif
+  -%}
 
-<ul data-menu-list-id="{{ id }}" class="mega-menu__list list-unstyled">
-  {%- render 'tp-menu-karte', url: parent_link.url, title: 'Alle Linoleumböden', sub: tp_li_sub, image_html: tp_li_lead_img -%}
-  {%- for tp_li_p in tp_li_col.products limit: tp_li_max -%}
-    {%- capture tp_li_img -%}
-      {%- if tp_li_p.featured_image -%}
-        {{ tp_li_p.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '200, 300, 400, 600, 800', class: 'mega-menu__link-image', sizes: tp_li_sizes, alt: '' }}
-      {%- endif -%}
-    {%- endcapture -%}
-    {%- assign tp_li_title = tp_li_p.title | remove: ' Linoleumboden' | remove: ' 200cm' | strip -%}
-    {%- render 'tp-menu-karte', url: tp_li_p.url, title: tp_li_title, sub: 'Linoleum, 200 cm Rolle', image_html: tp_li_img -%}
-  {%- endfor -%}
-</ul>
+  {% style %}
+    .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
+      --tp-mm-cols: {{ tp_li_cols }};
+      --tp-mm-cols-tablet: {{ tp_li_cols_tablet }};
+      --tp-mm-col: minmax(0, 1fr);
+    }
+  {% endstyle %}
+
+  <ul data-menu-list-id="{{ id }}" class="mega-menu__list list-unstyled">
+    {%- render 'tp-menu-karte', url: parent_link.url, title: 'Alle Linoleumböden', sub: tp_li_sub, image_html: tp_li_lead_img -%}
+    {%- for tp_li_p in tp_li_col.products limit: tp_li_max -%}
+      {%- capture tp_li_img -%}
+        {%- if tp_li_p.featured_image -%}
+          {{ tp_li_p.featured_image | image_url: width: 800 | image_tag: loading: 'lazy', fetchpriority: 'low', widths: '200, 300, 400, 600, 800', class: 'mega-menu__link-image', sizes: tp_li_sizes, alt: '' }}
+        {%- endif -%}
+      {%- endcapture -%}
+      {%- assign tp_li_title = tp_li_p.title | remove: ' Linoleumboden' | remove: ' 200cm' | strip -%}
+      {%- render 'tp-menu-karte', url: tp_li_p.url, title: tp_li_title, sub: 'Linoleum, 200 cm Rolle', image_html: tp_li_img -%}
+    {%- endfor -%}
+  </ul>
+{%- endif -%}

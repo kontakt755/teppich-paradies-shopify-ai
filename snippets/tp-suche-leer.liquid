@@ -7,10 +7,14 @@
 {% enddoc %}
 
 <div class="tp-suche-leer">
-  <h2 class="tp-suche-leer__titel">Dazu haben wir nichts gefunden.</h2>
+  {%- comment -%}
+    Die Zeile "Keine Ergebnisse fuer ..." steht schon unter dem Suchfeld
+    (blocks/_search-input) - hier deshalb nur noch der Weg weiter (Audit B-20).
+  {%- endcomment -%}
+  <h2 class="tp-suche-leer__titel">So finden Sie Ihren Boden trotzdem</h2>
   <p>
-    Zu „{{ terms | escape }}“ gibt es kein Ergebnis. Versuchen Sie es mit „Klickvinyl“, „Teppichboden grau“
-    oder einer Farbnummer. Oder stöbern Sie direkt in unseren Bereichen:
+    Versuchen Sie es mit „Klickvinyl“, „Teppichboden grau“ oder einer Farbnummer – oder stöbern Sie direkt in
+    unseren Bereichen:
   </p>
   <ul class="tp-suche-leer__liste">
     {%- assign tp_sl_handles = 'teppichboden,vinylboden-1,linoleumboden-1,bodenleisten,zubehoer' | split: ',' -%}
@@ -22,27 +26,30 @@
     {%- endfor -%}
   </ul>
   <p class="tp-suche-leer__hilfe">
-    Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 5733720</a>
+    Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 573 37 20</a>
     oder per <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>.
   </p>
 </div>
 
 {% stylesheet %}
+  /* Ueber die ganze Rasterbreite: vorher sass der Block in der 250-px-Filterspalte (Audit B-20) */
   .tp-suche-leer {
+    grid-column: 1 / -1;
     max-width: 44rem;
-    margin: 24px auto 48px;
-    padding: 0 var(--padding-lg, 20px);
-    text-align: center;
+    margin: 8px 0 48px;
+    padding: 0;
+    text-align: left;
   }
 
   .tp-suche-leer__titel {
     margin: 0 0 12px;
+    font-size: clamp(22px, 2.4vw, 28px);
   }
 
   .tp-suche-leer__liste {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 10px;
     margin: 20px 0;
     padding: 0;

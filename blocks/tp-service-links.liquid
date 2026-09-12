@@ -30,10 +30,11 @@
       <p><strong>Lieferzeit:</strong> {{ tp_sl_delivery_time | escape }}</p>
     {%- endif -%}
     {%- comment -%}
-      Versandprofil "Bodenbelaege & Teppiche - kostenlos" (Deutschland): Rollen- und
-      Paketware sind versandkostenfrei. Zubehoer laeuft ueber das allgemeine Profil:
-      4,99 EUR, ab 50 EUR Warenwert kostenlos. Erkennung ueber Rollenbreite/qm-Paket,
-      damit hier nie etwas Falsches versprochen wird.
+      Stand der Versandprofile am 2026-09-11 (Admin API): alle aktiven Produkte,
+      auch Rollen- und Paketware, liegen im allgemeinen Profil - 4,99 EUR, ab
+      50 EUR Bestellwert kostenlos. Das Profil "Bodenbelaege & Teppiche - kostenlos"
+      enthaelt nur ein Entwurfsprodukt. Ein einzelnes Paket (z. B. 34,95 EUR) kostet
+      also Versand - deshalb nennt der Hinweis die 50-EUR-Schwelle (Audit B-18).
     {%- endcomment -%}
     {%- liquid
       assign tp_sl_is_flooring = false
@@ -48,7 +49,7 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland</strong></p>
+      <p><strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert</strong></p>
       <p>Rollen und große Pakete bringt die Spedition bis vor die Haustür. Wir rufen vorher an.</p>
     {%- else -%}
       <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
@@ -70,7 +71,7 @@
   </div>
 
   <div class="tp-service-links__secondary-{{ tp_sl_id }}">
-    <a href="tel:+4933015733720">Beratung: 03301 5733720</a>
+    <a href="tel:+4933015733720">Beratung: 03301 573 37 20</a>
     <span aria-hidden="true">·</span>
     <a href="https://wa.me/4917657931322" target="_blank" rel="noopener">WhatsApp</a>
     <span aria-hidden="true">·</span>
@@ -108,8 +109,9 @@
     width: 100%;
     min-height: 44px;
     padding: 10px 16px;
-    background: #b4976c;
-    border: 1px solid #b4976c;
+    /* #b4976c hatte mit weisser Schrift nur 2,77:1 - #8c6d43 erreicht 4,79:1 (WCAG AA, Audit B-26) */
+    background: #8c6d43;
+    border: 1px solid #8c6d43;
     border-radius: var(--style-border-radius-buttons-primary, 7px);
     color: #ffffff;
     text-decoration: none;

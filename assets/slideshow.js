@@ -931,10 +931,46 @@ export class Slideshow extends Component {
       slides.forEach((slide) => {
         const isVisible = visibleSlides.includes(slide);
         slide.setAttribute('aria-hidden', `${!isVisible}`);
+        this.#syncSlideFocus(slide, !isVisible);
       });
     });
 
     return visibleSlides.length;
+  }
+
+  /**
+   * TP: Folien mit aria-hidden="true" behalten sonst ihre Links im
+   * Tab-Ablauf - Tastatur und Screenreader landen in Inhalten, die als
+   * verborgen gelten. Nur der Tastaturfokus wird entzogen (tabindex -1),
+   * NICHT per inert: angeschnittene Folien gelten ab 70 % Sichtbarkeit als
+   * verborgen, sind aber sichtbar und sollen per Klick/Tipp waehlbar bleiben
+   * (siehe slideshow-styles: cursor: pointer). Der alte tabindex wird
+   * gemerkt und beim Sichtbarwerden exakt wiederhergestellt.
+   * @param {HTMLElement} slide
+   * @param {boolean} hidden
+   */
+  #syncSlideFocus(slide, hidden) {
+    if (hidden) {
+      const focusables = slide.querySelectorAll(
+        'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      for (const element of focusables) {
+        if (element.hasAttribute('data-tp-tabindex')) continue;
+        element.setAttribute('data-tp-tabindex', element.getAttribute('tabindex') ?? '');
+        element.setAttribute('tabindex', '-1');
+      }
+      return;
+    }
+
+    for (const element of slide.querySelectorAll('[data-tp-tabindex]')) {
+      const original = element.getAttribute('data-tp-tabindex');
+      if (original) {
+        element.setAttribute('tabindex', original);
+      } else {
+        element.removeAttribute('tabindex');
+      }
+      element.removeAttribute('data-tp-tabindex');
+    }
   }
 }
 

@@ -1,49 +1,76 @@
 {%- doc -%}
-  Kuratiertes Megamenue fuer "Kontakt": drei Karten - Anrufen, WhatsApp (Logo-Kachel), Standort.
-  Bilder kommen aus den Bildkacheln (Menuepunkt = Kartentitel), Ziel und Kurztext
-  stehen hier. Telefon- und WhatsApp-Nummer sind dieselben wie in
-  sections/tp-shipping-delivery.liquid; Adresse und Zeiten wie auf der Kontaktseite
-  (sections/contact-form.liquid). Aendert sich eine Nummer, hier und dort anpassen.
+  Kuratiertes Menue fuer "Kontakt": Anrufen, WhatsApp, Standort.
 
-  @param {object} parent_link - Menuepunkt (Kontaktseite)
-  @param {string} [kacheln] - Datensaetze der Bildkacheln
-  @param {string} id - Menue-ID fuer die Rasterregeln
+  Desktop: drei Karten mit Symbolkachel (Telefon, WhatsApp, Standort). Bis
+  2026-09-11 zeigten "Anrufen" und "Vor Ort" Fotos aus den Bildkacheln - ein
+  Symbolfoto und ein schraeg aufgenommenes Ladenfoto (Audit B14). Die Kacheln
+  bleiben in sections/header-group.json und lassen sich wieder nutzen.
+  Handy ('drawer'): dieselben drei Punkte als Zeilen mit Symbol. Unter der
+  Hauptebene ('drawer-quick'): die Schnellknoepfe Anrufen und WhatsApp. Bis
+  2026-09-11 war Kontakt am Handy ein Direktlink ohne diese Punkte (Aufgabe #193).
+
+  Telefon- und WhatsApp-Nummer sind dieselben wie in sections/tp-shipping-delivery.liquid;
+  Adresse und Zeiten wie auf der Kontaktseite (sections/contact-form.liquid).
+  Aendert sich eine Nummer, hier und dort anpassen.
+
+  @param {object} [parent_link] - Menuepunkt (Kontaktseite); fuer 'drawer-quick' nicht noetig
+  @param {string} [id] - Menue-ID fuer die Rasterregeln (nur Desktop)
+  @param {string} [variant] - 'drawer' | 'drawer-quick' | leer fuer das Desktop-Megamenue
 {%- enddoc -%}
 
 {%- liquid
   assign tp_kn_titles = 'Anrufen|WhatsApp|Vor Ort in Oranienburg' | split: '|'
-  assign tp_kn_urls = 'tel:+4933015733720|https://wa.me/4917657931322|' | append: parent_link.url | split: '|'
-  assign tp_kn_subs = '03301 5733720 · Mo–Fr 8:30–18:00, Sa 8:30–14:30|0176 57931322 · Foto senden, Beratung erhalten|Saarlandstraße 73, 16515 Oranienburg' | split: '|'
-  assign tp_kn_sizes = '(min-width: 990px) 30vw, (min-width: 750px) 33vw, 100vw'
+  assign tp_kn_page = parent_link.url | default: '/pages/kontakt'
+  assign tp_kn_urls = 'tel:+4933015733720|https://wa.me/4917657931322|' | append: tp_kn_page | split: '|'
+  assign tp_kn_subs = '03301 573 37 20 · Mo–Fr 8:30–18:00, Sa 8:30–14:30|0176 57931322 · Foto senden, Beratung erhalten|Saarlandstraße 73, 16515 Oranienburg' | split: '|'
+  assign tp_kn_icons = 'phone|whatsapp|pin' | split: '|'
 -%}
 
-{% style %}
-  .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
-    --tp-mm-cols: 3;
-    --tp-mm-cols-tablet: 3;
-    --tp-mm-col: minmax(0, 1fr);
-  }
-{% endstyle %}
+{%- if variant == 'drawer-quick' -%}
+  <div class="tp-dn-quick">
+    <a class="tp-dn-quick__btn" href="{{ tp_kn_urls[0] }}">
+      {%- render 'tp-drawer-icon', name: 'phone' -%}
+      <span>Anrufen</span>
+    </a>
+    <a class="tp-dn-quick__btn tp-dn-quick__btn--wa" href="{{ tp_kn_urls[1] }}" target="_blank" rel="noopener">
+      {%- render 'tp-drawer-icon', name: 'whatsapp' -%}
+      <span>WhatsApp</span>
+    </a>
+  </div>
+{%- elsif variant == 'drawer' -%}
+  <ul class="tp-dn-list" role="list">
+    {%- for tp_kn_title in tp_kn_titles -%}
+      {%- liquid
+        assign tp_kn_i = forloop.index0
+        assign tp_kn_attrs = ''
+        if tp_kn_urls[tp_kn_i] contains 'wa.me'
+          assign tp_kn_attrs = 'target="_blank" rel="noopener"'
+        endif
+        assign tp_kn_sub = tp_kn_subs[tp_kn_i] | escape
+      -%}
+      {%- render 'tp-drawer-zeile', url: tp_kn_urls[tp_kn_i], title: tp_kn_title, sub: tp_kn_sub, icon: tp_kn_icons[tp_kn_i], attrs: tp_kn_attrs -%}
+    {%- endfor -%}
+  </ul>
+{%- else -%}
+  {% style %}
+    .mega-menu__grid[data-menu-grid-id="{{ id }}"] {
+      --tp-mm-cols: 3;
+      --tp-mm-cols-tablet: 3;
+      --tp-mm-col: minmax(0, 1fr);
+    }
+  {% endstyle %}
 
-<ul data-menu-list-id="{{ id }}" class="mega-menu__list list-unstyled">
-  {%- for tp_kn_title in tp_kn_titles -%}
-    {%- liquid
-      assign tp_kn_i = forloop.index0
-      assign tp_kn_url = tp_kn_urls[tp_kn_i]
-      assign tp_kn_attrs = ''
-      assign tp_kn_icon = ''
-      if tp_kn_url contains 'wa.me'
-        assign tp_kn_attrs = 'target="_blank" rel="noopener"'
-        assign tp_kn_icon = 'whatsapp'
-      endif
-      # Bildkachel ueber einen Pseudo-Link mit dem Kartentitel finden
-      capture tp_kn_img
-        # Kein link: Die Kontaktkarten sind kuratiert und haben keinen
-        # Navigationspunkt - gefunden wird ueber match_title. Bis 2026-09-10
-        # stand hier tp_kn_link, eine nie zugewiesene Variable.
-        render 'tp-menu-bild', kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_kn_sizes, match_title: tp_kn_title
-      endcapture
-    -%}
-    {%- render 'tp-menu-karte', url: tp_kn_url, title: tp_kn_title, sub: tp_kn_subs[tp_kn_i], image_html: tp_kn_img, attrs: tp_kn_attrs, icon: tp_kn_icon -%}
-  {%- endfor -%}
-</ul>
+  <ul data-menu-list-id="{{ id }}" class="mega-menu__list list-unstyled">
+    {%- for tp_kn_title in tp_kn_titles -%}
+      {%- liquid
+        assign tp_kn_i = forloop.index0
+        assign tp_kn_url = tp_kn_urls[tp_kn_i]
+        assign tp_kn_attrs = ''
+        if tp_kn_url contains 'wa.me'
+          assign tp_kn_attrs = 'target="_blank" rel="noopener"'
+        endif
+      -%}
+      {%- render 'tp-menu-karte', url: tp_kn_url, title: tp_kn_title, sub: tp_kn_subs[tp_kn_i], attrs: tp_kn_attrs, icon: tp_kn_icons[tp_kn_i] -%}
+    {%- endfor -%}
+  </ul>
+{%- endif -%}

@@ -44,9 +44,13 @@
     overflow: hidden;
   }
 
+  /* Das Hochformat-Foto machte den Hero 900 px hoch, die zentrierte H1 begann
+     erst bei 550 px. 4:3 haelt Bild und Text im ersten Bildschirm (Audit B-32). */
   .verlege-hero-img img {
+    display: block;
     width: 100%;
     height: auto;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
   }
 

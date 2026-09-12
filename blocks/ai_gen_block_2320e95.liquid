@@ -151,7 +151,8 @@
 
     <div class="ai-impressum-content-column-{{ ai_gen_id }}">
       {% if block.settings.heading != blank %}
-        <h2 class="ai-impressum-heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h2>
+        {%- comment -%} H1: die Seite hat sonst keine (main-page ist im Template deaktiviert) {%- endcomment -%}
+        <h1 class="ai-impressum-heading-{{ ai_gen_id }}">{{ block.settings.heading }}</h1>
       {% endif %}
 
       {% if block.settings.impressum_content != blank %}

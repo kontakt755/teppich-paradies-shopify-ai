@@ -1,0 +1,118 @@
+{%- comment -%}
+  TP Start-Hero (Konzept C): Text links, echtes Projektfoto rechts, zwei Wege als
+  Buttons, Telefon und WhatsApp als Textlinks. Kein Rendering, kein Overlay auf
+  dem Bild. Das Bild ist das LCP-Element und laedt deshalb eager mit hoher Prioritaet.
+  Die Google-Bewertung wird nur angezeigt, wenn ein Wert eingetragen ist - und dann
+  als Zahl aus dem Unternehmensprofil, die der Betreiber selbst pflegt.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/'
+  assign h1_text = section.settings.headline
+-%}
+
+<section class="tp-hero" aria-labelledby="tp-hero-h1">
+  <div class="tp-s-wrap tp-hero__wrap">
+    <div class="tp-hero__copy">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="tp-s-eyebrow tp-hero__eyebrow">{{ section.settings.eyebrow | escape }}</span>
+      {%- endif -%}
+      <h1 id="tp-hero-h1" class="tp-hero__h1">{{ h1_text }}</h1>
+      {%- if section.settings.subline != blank -%}
+        <p class="tp-hero__sub">{{ section.settings.subline }}</p>
+      {%- endif -%}
+      <div class="tp-hero__ctas">
+        {%- if section.settings.cta1_label != blank -%}
+          <a class="tp-s-btn tp-s-btn--primary" href="{{ section.settings.cta1_link | default: '/collections/all' }}">{{ section.settings.cta1_label | escape }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        {%- endif -%}
+        {%- if section.settings.cta2_label != blank -%}
+          <a class="tp-s-btn tp-s-btn--ghost" href="{{ section.settings.cta2_link | default: '/pages/teppichboden-verlegen-lassen' }}">{{ section.settings.cta2_label | escape }}</a>
+        {%- endif -%}
+      </div>
+      <div class="tp-hero__meta">
+        {%- if section.settings.telefon != blank -%}
+          <a href="tel:{{ tel_raw }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>{{ section.settings.telefon | escape }}</a>
+        {%- endif -%}
+        {%- if section.settings.whatsapp != blank -%}
+          <a href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>WhatsApp</a>
+        {%- endif -%}
+        {%- if section.settings.rating_wert != blank -%}
+          <a class="tp-hero__rating" href="{{ section.settings.rating_link | default: '#' }}" rel="noopener" target="_blank" title="Google-Bewertungen">
+            <span class="tp-hero__stars" aria-hidden="true">★★★★★</span><b>{{ section.settings.rating_wert | escape }}</b><small>· {{ section.settings.rating_text | escape }}</small>
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+    <div class="tp-hero__media">
+      {%- if section.settings.bild != blank -%}
+        {%- comment -%}
+          alt zuerst zuweisen: eine Filterkette im alt-Argument verschluckt alle
+          folgenden Argumente von image_tag - class kam sonst nie am Bild an.
+        {%- endcomment -%}
+        {%- assign hero_alt = section.settings.bild.alt | default: section.settings.bild_caption -%}
+        {{ section.settings.bild | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '640, 960, 1280, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: hero_alt, class: 'tp-hero__img' }}
+      {%- else -%}
+        <div class="tp-hero__platzhalter">{{ 'image' | placeholder_svg_tag }}</div>
+      {%- endif -%}
+      {%- if section.settings.bild_caption != blank -%}
+        <span class="tp-hero__cap">{{ section.settings.bild_caption | escape }}</span>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-hero { background: #f6f2ec; border-bottom: 1px solid #e6e0d8; }
+  .tp-hero__wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; align-items: center; min-height: 480px; padding-top: 40px; padding-bottom: 40px; }
+  .tp-hero__eyebrow { color: #4a443f; }
+  .tp-hero__h1 { font-size: clamp(30px, 3.4vw, 46px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
+  .tp-hero__h1 em { font-style: normal; color: #b73740; }
+  .tp-hero__sub { font-size: 18px; color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
+  .tp-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .tp-hero__meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 22px; font-size: 15px; color: #4a443f; }
+  .tp-hero__meta a { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #1d1a17; text-decoration: none; min-height: 44px; }
+  .tp-hero__meta svg { width: 17px; height: 17px; }
+  .tp-hero__rating { background: #fff; border: 1px solid #e6e0d8; border-radius: 999px; padding: 0 12px 0 8px; font-size: 14px; }
+  .tp-hero__stars { color: #e5a51c; letter-spacing: 1px; font-size: 15px; }
+  .tp-hero__rating small { color: #7a726a; font-size: 12px; font-weight: 400; }
+  .tp-hero__media { position: relative; border-radius: 16px; overflow: hidden; aspect-ratio: 5 / 4; box-shadow: 0 10px 30px rgba(29, 26, 23, 0.1); background: #ede7de; }
+  .tp-hero__img, .tp-hero__platzhalter svg { width: 100%; height: 100%; object-fit: cover; object-position: center 60%; display: block; }
+  .tp-hero__cap { position: absolute; left: 14px; bottom: 14px; background: rgba(29, 26, 23, 0.82); color: #fff; font-size: 13px; padding: 7px 12px; border-radius: 999px; }
+  @media (max-width: 1023px) { .tp-hero__wrap { gap: 28px; min-height: 0; } }
+  @media (max-width: 767px) {
+    .tp-hero__wrap { grid-template-columns: 1fr; padding-top: 20px; padding-bottom: 28px; gap: 20px; }
+    /* Text vor Bild: H1 und Buttons gehoeren in den ersten Bildschirm (Audit B-06) */
+    .tp-hero__media { aspect-ratio: 16 / 10; border-radius: 12px; }
+    .tp-hero__h1 { font-size: 30px; }
+    .tp-hero__sub { font-size: 16.5px; margin: 12px 0 18px; }
+    .tp-hero__ctas .tp-s-btn { flex: 1 1 100%; }
+    .tp-hero__meta { gap: 12px 16px; font-size: 14.5px; }
+  }
+  @media (max-width: 389px) { .tp-hero__h1 { font-size: 27px; } .tp-hero__rating { width: 100%; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Start-Hero",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile darueber", "default": "Fachhandel in Oranienburg" },
+    { "type": "richtext", "id": "headline", "label": "Ueberschrift (H1)", "info": "Rot hervorheben mit <em>…</em>", "default": "<p>Bodenbeläge vom Fachhandel – <em>online kaufen</em> oder <em>verlegen lassen</em>.</p>" },
+    { "type": "richtext", "id": "subline", "label": "Unterzeile", "default": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>" },
+    { "type": "text", "id": "cta1_label", "label": "Button 1", "default": "Bodenbeläge entdecken" },
+    { "type": "url", "id": "cta1_link", "label": "Button 1 Ziel" },
+    { "type": "text", "id": "cta2_label", "label": "Button 2", "default": "Aufmaß & Verlegung anfragen" },
+    { "type": "url", "id": "cta2_link", "label": "Button 2 Ziel" },
+    { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
+    { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
+    { "type": "header", "content": "Google-Bewertung (leer = ausgeblendet)" },
+    { "type": "text", "id": "rating_wert", "label": "Wert, z. B. 4,9", "info": "Aus dem Google-Unternehmensprofil abschreiben, nicht schaetzen." },
+    { "type": "text", "id": "rating_text", "label": "Text daneben", "default": "Google-Bewertungen" },
+    { "type": "url", "id": "rating_link", "label": "Link zum Google-Profil" },
+    { "type": "header", "content": "Bild" },
+    { "type": "image_picker", "id": "bild", "label": "Echtes Projektfoto (Boden im Vordergrund)" },
+    { "type": "text", "id": "bild_caption", "label": "Bildunterschrift", "default": "Echtes Projekt · Teppichboden, von uns verlegt" }
+  ],
+  "presets": [ { "name": "TP Start-Hero" } ]
+}
+{% endschema %}

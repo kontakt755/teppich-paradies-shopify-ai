@@ -4291,7 +4291,8 @@ product-recommendations:has([data-has-recommendations='false']) {
 
 .pd-specs th {
   width: 50%;
-  color: #00000087;
+  /* 0.62 statt 0.53 Deckkraft: 6,2:1 statt 4,4:1 auf Weiss */
+  color: rgb(0 0 0 / 0.62);
   font-weight: 400;
 }
 

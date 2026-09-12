@@ -134,3 +134,39 @@ export function analyzeTemplates(templates, { required = [], optional = [], bewu
 
   return findings;
 }
+
+/** Alle Bloecke eines Typs, in beliebiger Tiefe (Templates und Section-Gruppen). */
+export function findAllBlocks(node, type, out = []) {
+  if (!node || typeof node !== 'object') return out;
+  for (const key of ['sections', 'blocks']) {
+    const group = node[key];
+    if (!group) continue;
+    for (const id of Object.keys(group)) {
+      const child = group[id];
+      if (child?.type === type) out.push(child);
+      findAllBlocks(child, type, out);
+    }
+  }
+  return out;
+}
+
+/**
+ * Blocktypen, die in keiner Produktkarte stecken duerfen, weil der Code
+ * sich darauf verlaesst, dass es sie dort nicht gibt. Anders als die Drift-
+ * Pruefung geht das ueber jedes Template und jede Section-Gruppe - Karten
+ * stehen auch auf Suche, Startseite und in Empfehlungen.
+ *
+ * @param {string} raw  Inhalt einer Template- oder Section-Gruppen-Datei
+ * @param {string} parentType  z. B. "_product-card"
+ * @param {Record<string, string>} verboten  Typ -> Begruendung
+ * @returns {string[]} gefundene verbotene Typen (ohne Doppelte)
+ */
+export function forbiddenCardBlocks(raw, parentType, verboten) {
+  const found = new Set();
+  for (const card of findAllBlocks(JSON.parse(stripHeader(raw)), parentType)) {
+    for (const type of Object.keys(verboten)) {
+      if (findAllBlocks(card, type).length > 0) found.add(type);
+    }
+  }
+  return [...found];
+}
