@@ -38,12 +38,22 @@ test('Raummass faellt geschlossen aus: jede Bedingung einzeln', () => {
   assert.equal(A.wunschOk(null, 1), false);
 });
 
-test('Kleinste passende Rolle', () => {
+test('Kleinste passende Rolle rechnet die Zugabe von 5 cm ein', () => {
+  assert.equal(A.ZUGABE_CM, 5);
   assert.equal(A.rolleFuer(250, [400, 500]), 400);
-  assert.equal(A.rolleFuer(400, [400, 500]), 400);
-  assert.equal(A.rolleFuer(401, [400, 500]), 500);
-  assert.equal(A.rolleFuer(501, [400, 500]), 0);
+  assert.equal(A.rolleFuer(395, [400, 500]), 400, '395 + 5 passt gerade in die 400er');
+  assert.equal(A.rolleFuer(396, [400, 500]), 500, '396 + 5 braucht die 500er');
+  assert.equal(A.rolleFuer(495, [400, 500]), 500);
+  assert.equal(A.rolleFuer(496, [400, 500]), 0, 'passt in keine Rolle');
   assert.equal(A.rolleFuer(100, []), 0);
+  assert.equal(A.rolleFuer(400, [400, 500], 0), 400, 'ohne Zugabe wie frueher');
+});
+
+test('Groesste Raummass-Breite ist die groesste Rolle minus Zugabe', () => {
+  assert.equal(A.maxRaumBreite([400, 500]), 495);
+  assert.equal(A.maxRaumBreite([200]), 195);
+  assert.equal(A.maxRaumBreite([]), 0);
+  assert.equal(A.maxRaumBreite([400], 10), 390, 'Zugabe waehlbar, z. B. 10 cm bei Toleranz');
 });
 
 test('Breitenpruefung: leer, zu schmal, zu breit, gueltig', () => {
@@ -85,5 +95,6 @@ test('Meterware-Vergleich ohne Grundlage liefert null', () => {
   assert.equal(A.meterwareGuenstiger(250, 0, 88.97, [400], rateMeter), null, 'ohne Laenge');
   assert.equal(A.meterwareGuenstiger(250, 550, 0, [400], rateMeter), null, 'ohne Raummass-Preis');
   assert.equal(A.meterwareGuenstiger(600, 550, 88.97, [400, 500], rateMeter), null, 'breiter als jede Rolle');
+  assert.equal(A.meterwareGuenstiger(496, 550, 88.97, [400, 500], rateMeter), null, 'mit Zugabe breiter als jede Rolle');
   assert.equal(A.meterwareGuenstiger(250, 550, 88.97, [400], () => 0), null, 'Rolle ohne Variante');
 });

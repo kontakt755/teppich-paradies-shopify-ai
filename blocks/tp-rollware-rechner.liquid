@@ -641,6 +641,12 @@
   // Breiten, die es fuer die gewaehlte Farbe gibt - gesetzt von syncArtUi().
   var farbBreiten = widths.slice();
   function maxFarbBreite() { return farbBreiten.length ? farbBreiten[farbBreiten.length - 1] : 0; }
+  // Raummass endet 5 cm unter der groessten Rolle - siehe ZUGABE_CM im Asset.
+  function maxRaumBreite() { return ART.maxRaumBreite(farbBreiten); }
+  function selectedMeterWidth() {
+    var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
+    return c && !c.disabled ? parseFloat(c.value) : (farbBreiten[0] || widths[0]);
+  }
 
   function artMode() {
     var r = root.querySelector('input[name="tp-rwc-art-{{ tp_rc_id }}"]:checked');
@@ -785,8 +791,9 @@
     if (!raumOk && artMode() === 'raum') setArt('meter');
     var raum = artMode() === 'raum';
 
-    // Preise auf den Karten kommen aus den echten Variantenpreisen.
-    var meterV = variantFor(t, byWidth(farbBreiten[0] || widths[0]));
+    // Preise auf den Karten kommen aus den echten Variantenpreisen - die
+    // Meterware-Karte von der gewaehlten Rolle, nicht immer von der kleinsten.
+    var meterV = variantFor(t, byWidth(selectedMeterWidth()));
     if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite' + (rateOf(meterV) > 0 ? ' · ' + fmt(rateOf(meterV)) + ' €/m²' : '');
     if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau' + (raumOk ? ' · ' + fmt(rateOf(rv)) + ' €/m²' : '');
 
@@ -801,7 +808,7 @@
       var r = ART.rolleFuer(selectedWidth(), farbBreiten);
       wunschHint.textContent = r
         ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
-        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxFarbBreite() + ' cm.';
+        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxRaumBreite() + ' cm – die volle Rollenbreite gibt es als Meterware.';
     }
   }
 
@@ -909,7 +916,7 @@
     syncArtUi();
     var w = selectedWidth();
     var raum = artMode() === 'raum';
-    var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxFarbBreite()) : '';
+    var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite()) : '';
     if (wunschError) {
       wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
       wunschError.hidden = !wunschError.textContent;
@@ -1086,7 +1093,7 @@
     var len = getEffectiveLengthCm();
     if (len < 100) return;
     var raumOrder = artMode() === 'raum';
-    if (raumOrder && ART.pruefeBreite(w, WUNSCH_MIN_CM, maxFarbBreite())) return;
+    if (raumOrder && ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite())) return;
 
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);

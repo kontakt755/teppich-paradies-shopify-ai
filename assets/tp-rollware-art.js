@@ -68,13 +68,29 @@
     return true;
   }
 
-  // Kleinste Rolle, aus der die Breite geschnitten werden kann.
-  function rolleFuer(wCm, widths) {
+  // Beim Zuschnitt beim Lieferanten kommt keine gerade Kante heraus - der
+  // Kettler schneidet nach. Deshalb wird um diese Zugabe breiter bestellt,
+  // und die Rolle muss Breite plus Zugabe fassen (Inhaber, 2026-09-12:
+  // "der Kunde will 250, wir bestellen 255").
+  var ZUGABE_CM = 5;
+
+  // Kleinste Rolle, aus der die Breite samt Zugabe geschnitten werden kann.
+  function rolleFuer(wCm, widths, zugabe) {
+    var z = typeof zugabe === 'number' ? zugabe : ZUGABE_CM;
     var list = (widths || []).slice().sort(function (a, b) { return a - b; });
     for (var i = 0; i < list.length; i++) {
-      if (list[i] + EPS >= wCm) return list[i];
+      if (list[i] + EPS >= wCm + z) return list[i];
     }
     return 0;
+  }
+
+  // Groesste Breite, die eine Farbe im Raummass hergibt: groesste Rolle
+  // minus Zugabe. Volle Rollenbreite ist Meterware, kein Raummass.
+  function maxRaumBreite(widths, zugabe) {
+    var z = typeof zugabe === 'number' ? zugabe : ZUGABE_CM;
+    var m = 0;
+    (widths || []).forEach(function (w) { if (w > m) m = w; });
+    return m > z ? m - z : 0;
   }
 
   // '' = gueltig, 'leer' = noch nichts eingegeben, sonst der Grund als Text.
@@ -92,8 +108,8 @@
   // Variante fuer diese Rolle).
   // bill: Flaeche -> abgerechnete Flaeche (volle m² oder 0,01 m²), damit der
   // Hinweis dieselben Betraege nennt wie die Preisbox. Ohne bill: exakt.
-  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter, bill) {
-    var rolle = rolleFuer(wCm, widths);
+  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter, bill, zugabe) {
+    var rolle = rolleFuer(wCm, widths, zugabe);
     if (!rolle || !(lenCm > 0) || !(rateRaum > 0)) return null;
     var rm = rateMeter(rolle);
     if (!(rm > 0)) return null;
@@ -116,6 +132,8 @@
     numericWidths: numericWidths,
     wunschOk: wunschOk,
     rolleFuer: rolleFuer,
+    maxRaumBreite: maxRaumBreite,
+    ZUGABE_CM: ZUGABE_CM,
     pruefeBreite: pruefeBreite,
     meterwareGuenstiger: meterwareGuenstiger
   };
