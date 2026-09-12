@@ -207,10 +207,12 @@
       {%- comment -%} Ohne diese Stufe sieht ein Kunde hier nur Anfahrtspreise und
         keinen Versand - obwohl der Versand ueberall hingeht und nichts kostet.
         Die Zonen daneben meinen die Fahrt unserer Bodenleger, nicht den Versand.
+        Die 50-EUR-Schwelle steht im Satz, weil das Versandprofil des Shops sie
+        hat und der uebrige Shop sie ueberall nennt.
       {%- endcomment -%}
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Deutschlandweit</span>
-        <span class="tp-vg__stufe-text">Versandkostenfrei in ganz Deutschland, per Paketdienst oder Spedition – ohne Verlegung.</span>
+        <span class="tp-vg__stufe-text">Versand per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei – ohne Verlegung.</span>
       </li>
     </ul>
   {%- elsif section.blocks.size > 0 -%}
@@ -303,7 +305,7 @@
         {%- if vg_stufen -%}
           <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Im Zweifel fragen Sie uns einfach.</p>
         {%- else -%}
-          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Die Anfahrt unserer Bodenleger klären wir im Angebot; versendet wird deutschlandweit und kostenfrei.</p>
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Die Anfahrt unserer Bodenleger klären wir im Angebot; versendet wird deutschlandweit, ab 50 € Bestellwert kostenfrei.</p>
         {%- endif -%}
       </form>
     {%- endif -%}
@@ -1101,7 +1103,7 @@
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Versandkostenfrei in ganz Deutschland, per Paketdienst oder Spedition – ohne Verlegung."
+            "text": "Versand per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei – ohne Verlegung."
           }
         }
       ]
