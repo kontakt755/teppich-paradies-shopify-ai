@@ -256,6 +256,14 @@
 
 <script>
   // Menuebilder erst bei der ersten Absicht laden (Regel in assets/tp-nav.css).
+  //
+  // BEIM TESTEN: Das Attribut data-tp-bilder setzen nur echte Zeigeereignisse.
+  // Ein programmatischer element.click() oeffnet das Menue, feuert aber weder
+  // pointerdown noch touchstart - die Bilder bleiben dann display:none, und der
+  // Screenshot zeigt leere graue Kaesten. Am 2026-09-12 haben zwei Sitzungen das
+  // unabhaengig voneinander als Live-Defekt gemeldet; beide hatten ihre eigene
+  // Automatisierung gemessen. Richtig ist page.tap() bzw. ein echter Tipp, dann
+  // laden alle sechs Kacheln.
   if (!window.tpDrawerBilder) {
     window.tpDrawerBilder = true;
     var tpDrawerAbsicht = function (event) {
