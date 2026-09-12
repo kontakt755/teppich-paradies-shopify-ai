@@ -2,6 +2,22 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildClaudeContextPack, classifyClaudeRequest, prepareClaudeBridge } from '../core/claude-bridge.mjs';
 
+// Realer Vorfall 2026-09-11: eine Wissensfrage (woertlich, ohne Fragezeichen,
+// mit Zeilenumbruechen) traf "erstell" und "lösch" in IMPLEMENTATION_TERMS und
+// lief als Implementierungsauftrag durch drei Codex-Runden. Die Einstufung wird
+// bewusst NICHT ueber Wortmuster korrigiert: eine Probe am 2026-09-11 ueber 485
+// echte Nutzerprompts haette 36 davon auf "Frage" gekippt, darunter klare
+// Auftraege - die Aenderung waere still ausgefallen. Stattdessen sieht der
+// Reviewer bei leerem Diff die Schlussantwort des Agenten
+// (reviewCandidateFromStop in review-scope.mjs) und kann den No-op bestaetigen.
+// Dieser Test haelt fest, dass die Einstufung dafuer unveraendert bleibt.
+test('der woertliche Lexware-Prompt bleibt IMPLEMENTATION/HEURISTIC wie auf origin/main', () => {
+  const task = 'welche funktionen hast du alles mit lexware api \n\nich hab bei chatgpt schon eingestellt angebote erstellen \nbearbeiten geht aber nicht zum beispiel oder löschen \n\nwie ist dein funktionsumfang';
+  const result = classifyClaudeRequest({ task });
+  assert.equal(result.taskType, 'IMPLEMENTATION');
+  assert.equal(result.taskTypeSource, 'HEURISTIC');
+});
+
 test('bridge classifies ordinary implementation as a low-risk compact handoff', async () => {
   const result = await prepareClaudeBridge({
     taskId: 'bridge 1', task: 'Repariere den kleinen CSS-Abstand im Warenkorb.', outputDir: '/tmp/claude-bridge-fixture',

@@ -26,7 +26,7 @@ jobs:
           python-version: '3.11'
       - run: npm ci
       - run: python3 -m py_compile router_api_migration.py api_cost_monitor.py demo_run.py tests/test_api_router.py
-      - run: python3 -m unittest tests/test_api_router.py
+      - run: python3 -m unittest tests/test_api_router.py tests/test_bild_qualitaetstest.py
       - run: npm run qa:unit:test
       - run: npm run automation:test
       - run: npm run workflow:test

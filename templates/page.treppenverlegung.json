@@ -43,7 +43,22 @@
         "belagsart_JMcTyG"
       ],
       "name": "Treppenverlegung",
-      "settings": {}
+      "settings": {
+        "hero_bild": "shopify://shop_images/PHOTO-2024-10-01-13-53-26_1.jpg",
+        "hero_bild_alt": "Von uns belegte Treppe mit Läufer",
+        "hero_titel": "Treppe neu belegen lassen",
+        "hero_text": "Jede Treppe ist anders – offene oder geschlossene Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf.",
+        "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Beratung zu Belag und Kanten, Verlegung durch unser eigenes Team",
+        "hero_cta": "Aufmaß-Termin anfragen",
+        "hero_cta_ziel": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720",
+        "beleg": "",
+        "belag_titel": "Welcher Belag passt auf Ihre Treppe?",
+        "belag_text": "Wir zeigen Ihnen Muster und beraten, was zu Ihrer Treppe und Ihrem Alltag passt.",
+        "warum_titel": "Was Sie von uns bekommen",
+        "warum_punkte": "Kostenloses Aufmaß vor Ort, Beratung zu Belag und Kantenausführung, Verlegung durch unser eigenes Team, Ein Ansprechpartner von der Beratung bis zur Abnahme"
+      }
     },
     "main": {
       "type": "main-page",
@@ -213,39 +228,31 @@
         "versand_link": "/collections/all"
       },
       "blocks": {
-        "stufe_15km": {
-          "type": "leistung",
-          "settings": {
-            "label": "Im Umkreis von 15 km",
-            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
-          }
-        },
-        "stufe_649": {
-          "type": "leistung",
-          "settings": {
-            "label": "Ab 649 € Warenwert",
-            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
-          }
-        },
         "stufe_50km": {
           "type": "leistung",
           "settings": {
-            "label": "Bis 50 km um Oranienburg",
-            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+            "label": "Bis [km] km um Oranienburg",
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
+          }
+        },
+        "stufe_weiter": {
+          "type": "leistung",
+          "settings": {
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
           }
         },
         "stufe_versand": {
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
           }
         }
       },
       "block_order": [
-        "stufe_15km",
-        "stufe_649",
         "stufe_50km",
+        "stufe_weiter",
         "stufe_versand"
       ]
     }

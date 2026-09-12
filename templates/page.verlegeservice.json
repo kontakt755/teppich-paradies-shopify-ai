@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "main": {
@@ -39,6 +48,7 @@
         "heading",
         "page-content"
       ],
+      "disabled": true,
       "settings": {
         "content_direction": "column",
         "gap": 32,
@@ -47,73 +57,98 @@
         "padding-block-end": 80
       }
     },
+    "tp_verlegeservice": {
+      "type": "tp-verlegeservice",
+      "settings": {
+        "eyebrow": "Liefer- & Verlegeservice für Rollenware",
+        "heading": "Teppichboden & Vinyl von der Rolle – geliefert und verlegt.",
+        "sub": "Sie wählen den Boden aus, wir bringen ihn zu Ihnen nach Hause und verlegen ihn – in Oranienburg, Berlin und Brandenburg.",
+        "image": "shopify://shop_images/PHOTO-2025-06-13-09-30-06.jpg",
+        "produkte_link": "shopify://collections/teppichboden",
+        "color_scheme": "scheme-1",
+        "padding-block-start": 24,
+        "padding-block-end": 40,
+        "knopf": "Teppichboden entdecken",
+        "knopf_2": "Vinyl von der Rolle entdecken",
+        "produkte_link_2": "shopify://collections/vinylboden-vinyl-von-der-rolle",
+        "vertrauen": "Persönliche Beratung im Geschäft · Aufmaß vor Ort · Eigenes Verlegeteam aus Oranienburg"
+      }
+    },
     "tp_verlegegebiet": {
       "type": "tp-verlegegebiet",
       "settings": {
+        "eyebrow": "Liefergebiet",
+        "heading": "Wie weit wir zu Ihnen kommen",
+        "intro": "Von unserem Geschäft in Oranienburg liefern und verlegen wir bis nach Berlin und ins Brandenburger Umland. Prüfen Sie hier Ihren Wohnort.",
+        "rollenware_stufen": true,
+        "hinweis": "",
         "cta_zeigen": false,
         "cta_link": "/pages/kontakt",
         "cta2_link": "https://wa.me/4917657931322",
+        "versand_link": "/collections/all",
         "vertrauen": "",
-        "versand_link": "/collections/all"
+        "padding-block-start": 40,
+        "padding-block-end": 24
+      }
+    },
+    "tp_verlegeservice_kontakt": {
+      "type": "tp-verlegeservice-kontakt",
+      "settings": {
+        "kontakt_link": "/pages/kontakt",
+        "vertrauen": "",
+        "referenzen_titel": "Echte Arbeiten aus der Region"
       },
       "blocks": {
-        "stufe_15km": {
-          "type": "leistung",
+        "ref_kadewe": {
+          "type": "referenz",
           "settings": {
-            "label": "Im Umkreis von 15 km",
-            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
+            "bild": "shopify://shop_images/1000008785.jpg",
+            "unterschrift": "KaDeWe – Premium-Teppichboden",
+            "alt": "Premium-Teppichboden im KaDeWe"
           }
         },
-        "stufe_649": {
-          "type": "leistung",
+        "ref_dachgeschoss": {
+          "type": "referenz",
           "settings": {
-            "label": "Ab 649 € Warenwert",
-            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
+            "bild": "shopify://shop_images/20231129_114941.jpg",
+            "unterschrift": "Dachgeschoss mit gemütlichem Teppichboden",
+            "alt": "Teppichboden in einem Dachgeschoss"
           }
         },
-        "stufe_50km": {
-          "type": "leistung",
+        "ref_treppe": {
+          "type": "referenz",
           "settings": {
-            "label": "Bis 50 km um Oranienburg",
-            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+            "bild": "shopify://shop_images/20231129_114732.jpg",
+            "unterschrift": "Stufen und Podest verkleidet",
+            "alt": "Mit Teppichboden verkleidete Stufen und Podest"
           }
         },
-        "stufe_versand": {
-          "type": "leistung",
+        "ref_nadelvlies": {
+          "type": "referenz",
           "settings": {
-            "label": "Deutschlandweit",
-            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+            "bild": "shopify://shop_images/image-3-compressed.jpg",
+            "unterschrift": "Nadelvlies – über 2.000 m²",
+            "alt": "Nadelvlies auf einer großen Fläche"
           }
         }
       },
       "block_order": [
-        "stufe_15km",
-        "stufe_649",
-        "stufe_50km",
-        "stufe_versand"
+        "ref_kadewe",
+        "ref_dachgeschoss",
+        "ref_treppe",
+        "ref_nadelvlies"
       ]
     },
     "google_bewertungen": {
       "type": "google",
       "settings": {}
-    },
-    "final_cta": {
-      "type": "final-cta",
-      "settings": {
-        "heading": "Boden verlegen lassen?",
-        "text": "Wir messen auf, beraten zur passenden Qualität und verlegen fachgerecht - in Oranienburg, Berlin und Umgebung.",
-        "primary_label": "Angebot anfragen",
-        "primary_link": "/pages/kontakt",
-        "call_label": "Direkt anrufen",
-        "whatsapp_label": "WhatsApp schreiben",
-        "whatsapp_link": "https://wa.me/4917657931322"
-      }
     }
   },
   "order": [
     "main",
+    "tp_verlegeservice",
     "tp_verlegegebiet",
-    "google_bewertungen",
-    "final_cta"
+    "tp_verlegeservice_kontakt",
+    "google_bewertungen"
   ]
 }

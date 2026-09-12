@@ -29,11 +29,36 @@
 {%- liquid
   assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
 
+  # Stufen des Rollenware-Service (Theme-Einstellungen, Gruppe TP Verlegeservice).
+  # Nur auf Teppichboden-Seiten eingeschaltet: auf Vinyl- und Treppenseiten
+  # wuerde "lose Verlegung inklusive" einen Service versprechen, der dort nicht
+  # gilt. Eingeschaltet gilt der Radius von dort fuer alles - Pruefung,
+  # Stufentext, Flaeche und Bildunterschrift. Vorher zeigte die Karte den
+  # Radius der Sektion und die Pruefung den aus den Einstellungen; wichen die
+  # beiden ab, nannte die Seite zwei Grenzen. Die Flaeche gibt es nur in
+  # vorgerenderten 10-km-Stufen, deshalb wird fuer sie gerundet.
+  assign vg_stufen = section.settings.rollenware_stufen
+  assign vg_pruef_radius = vg_radius
+  if vg_stufen and settings.tp_vs_radius_premium != blank
+    assign vg_pruef_radius = settings.tp_vs_radius_premium
+    assign vg_radius = settings.tp_vs_radius_premium | divided_by: 10.0 | round | times: 10 | at_least: 30 | at_most: 50
+  endif
+
+  # Platzhalter [km] in den Stufen-Bloecken: dieselbe Grenze wie die Pruefung,
+  # statt "50" in jedem Template von Hand.
+  assign vg_km = vg_pruef_radius | append: ''
+
   # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
   assign vg_lat = 52.7378
   assign vg_lon = 13.2485
 
-  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Flaeche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern; Berlin und Potsdam liegen darin.'
+  # Der Alt-Text wird vorgelesen, deshalb mit Umlauten. Berlin und Potsdam
+  # liegen erst bei 50 km vollstaendig in der Flaeche - bei 30 oder 40 km waere
+  # der Satz falsch.
+  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Fläche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern.'
+  if vg_radius >= 50
+    assign vg_karte_alt = vg_karte_alt | append: ' Berlin und Potsdam liegen darin.'
+  endif
 
   # Das Ziel fuer "Route planen" entsteht aus derselben Adresse, die auf der
   # Seite steht. Der Link stand vorher als fertige URL in der Voreinstellung
@@ -60,7 +85,17 @@
   class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-verlegegebiet-{{ section.id }}"
-  data-radius="{{ vg_radius }}"
+  data-radius="{{ vg_pruef_radius }}"
+  {%- if vg_stufen %}
+    data-basis="{{ settings.tp_vs_radius_basis }}"
+    data-mitte="{{ settings.tp_vs_radius_mitte }}"
+    data-schwelle="{{ settings.tp_vs_schwelle }}"
+    data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose="{{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose-mindest="{{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }}"
+  {%- endif %}
   data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
 >
   <header class="tp-vg__head">
@@ -135,25 +170,50 @@
     </figure>
   {%- endif -%}
 
-  {%- comment -%} Die Stufen des Verlegeservice, so wie sie auf der Serviceseite
-    stehen. Sie gehoeren neben die Karte, nicht nur auf eine andere Seite: wer
-    hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen, was das
-    einschliesst - sonst erwartet jemand aus 40 km Entfernung die Leistungen,
-    die im Umkreis von 15 km gelten.
+  {%- comment -%} Die Stufen gehoeren neben die Karte, nicht nur auf eine andere
+    Seite: wer hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen,
+    was das einschliesst - sonst erwartet jemand aus 40 km Entfernung die
+    Leistungen, die im Umkreis von 15 km gelten.
 
-    Als Bloecke, damit sich Stufen im Editor aendern lassen, ohne den Code
-    anzufassen. Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben
-    den zweien darunter.
+    Zwei Quellen, je nach Seite:
+    - rollenware_stufen an (Teppichboden-Seiten): die Zonen des
+      Rollenware-Service mit ihren Preisen aus den Theme-Einstellungen -
+      dieselben Zahlen wie auf der Serviceseite und im Produkthinweis, keine
+      Kopie im Template. Kostenlos nur ab der Schwelle in der ersten Zone.
+    - sonst die Bloecke aus dem Template. Auf Vinyl- und Treppenseiten stehen
+      dort bewusst keine Rollenware-Konditionen, weil sie dort nicht gelten.
+
+    Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben den zweien
+    darunter.
   {%- endcomment -%}
-  {%- if section.blocks.size > 0 -%}
+  {%- if vg_stufen -%}
+    <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Weiter entfernt</span>
+        <span class="tp-vg__stufe-text">Auf Anfrage – wir prüfen gern individuell, was möglich ist.</span>
+      </li>
+    </ul>
+  {%- elsif section.blocks.size > 0 -%}
     <ul class="tp-vg__stufen" role="list">
       {%- for block in section.blocks -%}
         <li class="tp-vg__stufe" {{ block.shopify_attributes }}>
           {%- if block.settings.label != blank -%}
-            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape }}</span>
+            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape | replace: '[km]', vg_km }}</span>
           {%- endif -%}
           {%- if block.settings.text != blank -%}
-            <span class="tp-vg__stufe-text">{{ block.settings.text | escape }}</span>
+            <span class="tp-vg__stufe-text">{{ block.settings.text | escape | replace: '[km]', vg_km }}</span>
           {%- endif -%}
         </li>
       {%- endfor -%}
@@ -220,12 +280,23 @@
           >
           <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
         </div>
-        <p class="tp-vg__ergebnis" role="status" aria-live="polite" data-tp-verlegegebiet-result></p>
+        {%- comment -%} Ergebnis und Weg stehen in einem Statusbereich: sonst liest
+          ein Screenreader die Antwort vor, den Link darunter aber nicht.
+        {%- endcomment -%}
+        <div class="tp-vg__ergebnis-box" role="status" aria-live="polite">
+        <p class="tp-vg__ergebnis" data-tp-verlegegebiet-result></p>
         {%- comment -%} Wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen,
           ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
           im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
         <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
-        <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
+        </div>
+        {%- comment -%} Mit Stufen waere "Anfahrt und Preis klaeren wir im Angebot"
+          falsch: die Preise der Zonen stehen darueber. {%- endcomment -%}
+        {%- if vg_stufen -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Im Zweifel fragen Sie uns einfach.</p>
+        {%- else -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
+        {%- endif -%}
       </form>
     {%- endif -%}
   </div>
@@ -483,6 +554,25 @@
     font-size: 14px;
   }
 
+  /* Ohne min-width: 0 zwingt das Raster seine Mindestbreite (alle Spalten
+     nebeneinander) auf die Sektion - mit vier Zonen waren das 950 px, und das
+     Tablet scrollte seitlich. Die Zonen bekommen feste Spalten: 4 am Desktop,
+     2 x 2 auf dem Tablet, darunter eine (Regel im Telefon-Block). */
+  .tp-vg__stufen {
+    min-width: 0;
+  }
+
+  .tp-vg__stufen--zonen {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-vg__stufen--zonen {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px clamp(20px, 3vw, 40px);
+    }
+  }
+
   .tp-vg__spalten {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -602,7 +692,11 @@
     content: '\2139';
   }
 
+  /* Ausserhalb stehen zwei Wege nebeneinander: Anfrage und Shop. */
   .tp-vg__ergebnis-weg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
     margin: 10px 0 0;
   }
 
@@ -809,7 +903,7 @@
       "type": "range",
       "id": "radius",
       "label": "Radius in km",
-      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt.",
+      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt. Mit Rollenware-Stufen gilt stattdessen der Radius aus den Theme-Einstellungen (TP Verlegeservice).",
       "min": 30,
       "max": 50,
       "step": 10,
@@ -843,6 +937,17 @@
       "id": "route_link",
       "label": "Link \"Route planen\" (optional)",
       "info": "Leer lassen: das Ziel entsteht dann aus der Adresse oben. Nur ausfuellen, um stattdessen den Google-Unternehmenseintrag zu verlinken."
+    },
+    {
+      "type": "header",
+      "content": "Stufen"
+    },
+    {
+      "type": "checkbox",
+      "id": "rollenware_stufen",
+      "label": "Stufen des Rollenware-Service zeigen",
+      "info": "Stufen aus den Theme-Einstellungen (TP Verlegeservice) unter der Karte und im Pruefergebnis. Nur auf Teppichboden-Seiten - auf Vinyl- und Treppenseiten gilt der Service nicht.",
+      "default": false
     },
     {
       "type": "header",
@@ -951,7 +1056,7 @@
           "type": "text",
           "id": "label",
           "label": "Stufe",
-          "info": "Die Zahl oder Bedingung, an der die Stufe haengt."
+          "info": "Die Zahl oder Bedingung, an der die Stufe haengt. [km] setzt den Radius dieser Sektion ein."
         },
         {
           "type": "textarea",
@@ -973,29 +1078,22 @@
         {
           "type": "leistung",
           "settings": {
-            "label": "Im Umkreis von 15 km",
-            "text": "Lieferung und lose Verlegung inklusive. Feste Verlegung mit Band, Fixierung oder Kleber gegen Aufpreis."
+            "label": "Bis [km] km um Oranienburg",
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
           }
         },
         {
           "type": "leistung",
           "settings": {
-            "label": "Ab 649 € Warenwert",
-            "text": "Alles inklusive – Anfahrt, Lieferung und feste Verlegung."
-          }
-        },
-        {
-          "type": "leistung",
-          "settings": {
-            "label": "Bis 50 km um Oranienburg",
-            "text": "Verlegeservice inklusive Treppen, Praxen, Büros und Gewerbe. Weiter entfernt auf Anfrage."
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
           }
         },
         {
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Unser Online-Sortiment liefern wir in ganz Deutschland – mit Zuschnitt nach Wunschmaß."
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
           }
         }
       ]

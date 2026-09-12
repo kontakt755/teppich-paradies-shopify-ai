@@ -1,17 +1,18 @@
-// Blockiert zerstoererische git- und gh-Befehle, auch wenn defaultMode auf
-// bypassPermissions steht.
+// Blockiert zerstoererische git- und gh-Befehle - in jedem Berechtigungsmodus,
+// auch unter bypassPermissions.
 //
-// Warum "deny" und nicht "ask": unter bypassPermissions ist am 2026-09-08
-// nachgemessen worden, was tatsaechlich greift.
+// Warum "deny" und nicht "ask": Dieser Hook ist die einzige harte Grenze fuer
+// git/gh. Seit 2026-09-11 gibt es in .claude/settings.json bewusst keine
+// permissions.ask-Liste mehr. Laut Doku (code.claude.com/docs/en/permission-modes)
+// fragt eine ask-Regel in JEDEM Modus nach, auch in Auto und Bypass; die Liste
+// mit git push, gh pr create usw. hat genau die Rueckfragen erzeugt, die der
+// Nutzer abgeschafft haben wollte. Die Messung vom 2026-09-08 ("ask unter
+// bypass wirkungslos") widerspricht der Doku und dem, was in der Desktop-App
+// tatsaechlich passierte.
 //
-//   permissions.allow / permissions.ask   -> wirkungslos, wird nicht befragt
-//   Hook permissionDecision "ask"         -> wirkungslos, Befehl laeuft durch
-//   Hook permissionDecision "deny"        -> greift
-//
-// Deshalb steht hier nur, was hart blockiert gehoert. Alles Uebrige (git push,
-// git rebase, gh pr merge, gh api mit POST ...) liegt in permissions.ask in
-// .claude/settings.json und wird wirksam, sobald defaultMode nicht mehr
-// bypassPermissions ist.
+// Deshalb steht hier nur, was Arbeit unwiederbringlich verwirft oder fremde
+// Commits ueberschreibt. Alles Uebrige (git push, gh pr merge, gh api ...)
+// laeuft ohne Rueckfrage.
 //
 // Kein jq: auf diesem Rechner ist jq nicht installiert, eine jq-Pipeline
 // wuerde still '{}' liefern und den Hook wirkungslos machen.

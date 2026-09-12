@@ -280,6 +280,12 @@
               },
               "blocks": {}
             },
+            "tp_verlegeservice_hinweis": {
+              "type": "tp-verlegeservice-hinweis",
+              "name": "TP Verlegehinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "text_aEtTtq": {
               "type": "text",
               "name": "Product description",
@@ -323,6 +329,17 @@
                 "value_font_size": 14
               },
               "blocks": {}
+            },
+            "tp_verlegen_lassen": {
+              "type": "tp-verlegen-lassen",
+              "settings": {
+                "titel": "Diesen Boden verlegen lassen?",
+                "text": "Wir messen kostenlos auf, liefern und verlegen – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
+                "cta": "Aufmaß anfragen",
+                "ziel": "/pages/kontakt",
+                "telefon": "+4933015733720",
+                "telefon_label": "oder anrufen: 03301 5733720"
+              }
             }
           },
           "block_order": [
@@ -335,9 +352,11 @@
             "color_swatch_picker_f7EyBF",
             "tp_farbanzeige_tp1",
             "tp_roll_order_help_sales1",
+            "tp_verlegen_lassen",
             "tp_rollware_rechner_sales1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
+            "tp_verlegeservice_hinweis",
             "text_aEtTtq",
             "ai_gen_block_b888d9b_CJbJ8X"
           ]
