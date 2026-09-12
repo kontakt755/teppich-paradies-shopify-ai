@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T17:20:59.692Z",
+  "generated_at": "2026-09-12T18:30:58.807Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 80,
+  "count": 81,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T17:20:59.692Z",
+    "fetchedAt": "2026-09-12T18:30:58.807Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 252,
+      "title": "Bewertungsbeleg auf allen Produktvorlagen, Anzahl belegt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/252",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T18:30:44Z",
+      "updated_at": "2026-09-12T18:30:54Z",
+      "closed_at": null
+    },
     {
       "number": 246,
       "title": "Sicherheits-Hook: Git-Aufruf in Anfuehrungszeichen umging den Guard",
