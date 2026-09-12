@@ -21,8 +21,8 @@ const checkPaths = [
   { path: 'workflow', name: 'Workflow directory' },
   { path: 'data', name: 'Data directory' },
   { path: '.sync-reports', name: 'Sync reports directory' },
-  { path: 'workflow/sync-jordanshop.mjs', name: 'Sync script' },
-  { path: '.github/workflows/jordanshop-sync.yml', name: 'GitHub Actions workflow' },
+  { path: 'workflow/sync-grosshandel.mjs', name: 'Sync script' },
+  { path: '.github/workflows/grosshandel-sync.yml', name: 'GitHub Actions workflow' },
 ];
 
 let passed = 0;

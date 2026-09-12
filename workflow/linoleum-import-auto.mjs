@@ -2,7 +2,7 @@
 /**
  * Linoleum Product Image Import — Fully Automated
  *
- * Extracts images from jordanshop.de and attaches them to Shopify products
+ * Extracts images from the supplier shop and attaches them to Shopify products
  * No manual intervention needed after setup
  *
  * Usage:
@@ -12,9 +12,9 @@
  * {
  *   "products": [
  *     {
- *       "name": "Jokalino Concrete",
+ *       "name": "Linie A-3 Concrete",
  *       "shopifyId": "16049267441998",
- *       "jordanshopUrl": "https://www.jordanshop.de/de-DE/product/452953",
+ *       "quelleUrl": "https://lieferant-a.example/de-DE/product/452953",
  *       "colorCount": 6
  *     }
  *   ]
@@ -81,14 +81,14 @@ async function executeImport(config) {
 
   for (const product of config.products) {
     log.info(`Product: ${product.name} (Shopify ID: ${product.shopifyId})`);
-    log.info(`  Source: ${product.jordanshopUrl}`);
+    log.info(`  Source: ${product.quelleUrl}`);
     log.info(`  Colors: ${product.colorCount}`);
     log.warn(`  Ready for: Image extraction → GraphQL batch upload → Verification`);
   }
 
   log.title('Automation Setup Complete');
   log.success('Configuration loaded and validated');
-  log.info('Next: Launch Claude with jordanshop.de URLs for automatic extraction');
+  log.info('Next: Launch Claude with the supplier URLs for automatic extraction');
 
   // Save configuration for next session
   const timestamp = new Date().toISOString().split('T')[0];
@@ -114,9 +114,9 @@ if (!fs.existsSync(configPath)) {
   console.log(JSON.stringify({
     products: [
       {
-        name: "Jokalino Concrete",
+        name: "Linie A-3 Concrete",
         shopifyId: "16049267441998",
-        jordanshopUrl: "https://www.jordanshop.de/de-DE/product/452953",
+        quelleUrl: "https://lieferant-a.example/de-DE/product/452953",
         colorCount: 6
       }
     ]

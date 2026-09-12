@@ -11,7 +11,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 6,
     "farben": ["weiß RAL 9010", "anthrazit", "schwarz", "champagner", "weiß", "lichtgrau"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044391596366"
   },
   {
@@ -25,7 +25,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 2,
     "farben": ["weiß RAL 9010", "anthrazit"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044426920270"
   },
   {
@@ -39,7 +39,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 2,
     "farben": ["weiß RAL 9010", "anthrazit"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044426985806"
   },
   {
@@ -53,7 +53,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 3,
     "farben": ["weiß RAL 9010", "anthrazit", "schwarz"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044427051342"
   },
   {
@@ -68,7 +68,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 2,
     "farben": ["weiß RAL 9010", "platinum silber"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044427116878"
   },
   {
@@ -83,7 +83,7 @@
     "material": "Kunststoff",
     "verfuegbare_farben": 2,
     "farben": ["weiß RAL 9010", "platinum silber"],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044427149646"
   },
   {
@@ -108,7 +108,7 @@
       "nussbaum",
       "mahagoni"
     ],
-    "quelle": "jordanshop.de",
+    "quelle": "Lieferant A",
     "shopify_product_id": "16044427182414"
   }
 ]

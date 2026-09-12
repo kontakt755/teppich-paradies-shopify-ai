@@ -45,8 +45,8 @@ GitHub Issues mit Labels:
 | SHP-015 | Live-Collection-Zuordnungen | HIGH | Blockiert | Codex (Gate: JA) |
 | SHP-016 | Sisal-&-Natur-Spezifikation | LOW | Geplant | ChatGPT Work |
 | SHP-017 | Sisal Dev-Theme-Prototyp | MEDIUM | Eingang | Codex |
-| SHP-018 | Jordan-Pipeline-Validator | LOW | Eingang | Codex |
-| SHP-019 | Jordan Draft Dry Run | MEDIUM | Eingang | Codex |
+| SHP-018 | Lieferanten-Pipeline-Validator | LOW | Eingang | Codex |
+| SHP-019 | Lieferanten-Draft-Dry-Run | MEDIUM | Eingang | Codex |
 | SHP-020 | Bildinventar & Lizenzstatus | LOW | Geplant | ChatGPT Work |
 | SHP-021 | Accessibility-Baseline | LOW | Eingang | Codex |
 | SHP-022 | Kleine Accessibility-Fixes | MEDIUM | Eingang | Codex |

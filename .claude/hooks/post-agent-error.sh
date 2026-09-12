@@ -8,17 +8,17 @@ if [ -z "$CLAUDE_CODE_REMOTE" ] || [ "$CLAUDE_CODE_REMOTE" != "true" ]; then
   exit 0  # Nur in Remote-Sessions
 fi
 
-# Wenn der Fehler jordanshop.de oder "Egress-Policy" erwähnt, log es automatisch
+# Wenn der Fehler "Egress-Policy", eine blockierte externe Domain oder 403 erwähnt, log es automatisch
 ERROR_MESSAGE="${1:-}"
 
-if echo "$ERROR_MESSAGE" | grep -qE "jordanshop|Egress-Policy|external.*blocked|403"; then
+if echo "$ERROR_MESSAGE" | grep -qE "Egress-Policy|external.*blocked|403"; then
   cd "${CLAUDE_PROJECT_DIR:-.}"
 
   # Schreibe den Fehler in die Fehler-Datenbank
   node -e "
     import('./automation/core/remote-session-error-handler.mjs').then(mod => {
       mod.logError({
-        errorId: 'JORDANSHOP_EGRESS_POLICY_BLOCKED',
+        errorId: 'LIEFERANT_EGRESS_POLICY_BLOCKED',
         errorMessage: '$ERROR_MESSAGE',
         errorContext: {
           agentFailed: true,

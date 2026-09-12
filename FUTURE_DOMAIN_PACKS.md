@@ -4,7 +4,7 @@ Der Core bleibt unverändert. Jede Domain liefert eigene Risiko-, Operations-, G
 
 ## 1. Shopify (Pilot)
 
-Module: Theme, Produkte, Merchant, SEO, Jordan, QA.
+Module: Theme, Produkte, Merchant, SEO, Lieferanten-Import, QA.
 
 - Risiken: Live-Preise, Bestand, Cart/Checkout, OPC, Offers, Publishing und Sales Channels HIGH
 - erlaubte autonome Arbeiten: Reports, Tests, begrenzte Theme-Arbeit auf Dev, unveröffentlichte Draft-Vorbereitung
@@ -33,7 +33,7 @@ Module: Katalog, Produktvorbereitung, Preislisten, Transaktionsauswertung.
 
 ## 4. Suppliers
 
-Module: Jordan, Schär, neue Lieferanten, Produkt-, Bild- und Preisdaten.
+Module: bestehende und neue Lieferanten, Produkt-, Bild- und Preisdaten.
 
 - Risiken: Recherche LOW; strukturierte Importvorbereitung MEDIUM; Lieferantenbestellung und Live-Preise HIGH
 - autonome Arbeiten: Quelleninventar, Datenmapping, Draft-Produktpakete, Evidenzberichte
@@ -82,7 +82,7 @@ Eine neue Domain wird erst aktiviert, wenn:
 ## 9. Empfohlene Ausbaufolge
 
 1. Shopify Core-Pilot
-2. Suppliers/Jordan als reversible Draft-Pipeline
+2. Suppliers (Lieferant A) als reversible Draft-Pipeline
 3. Merchant read-only Monitoring
 4. Backoffice Dokumente/Tasks
 5. Lexware read-only

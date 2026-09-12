@@ -1,9 +1,13 @@
-# Lieferantenabgleich Jordan/JOKA vs. M-Plus
+# Lieferantenabgleich Lieferant A (mit Hausmarke) vs. Lieferant B
+
+> Namen sind pseudonymisiert (Lieferant A/B, Hausmarke von A), weil das Repository oeffentlich ist.
+> Ergebnisdateien, Rohdaten und Skripte liegen seit 2026-09-11 nur lokal, siehe `AUSGELAGERT.md`.
+> Feldnamen in den lokalen Dateien tragen noch die echten Namen; der Schluessel steht dort in `INHALT.md`.
 
 Stand 2026-09-09: Phase 1 (Datenquellen), Phase 2 (Testlauf, 10 Qualitaeten) und Phase 4 (Vollabgleich Teppichboden, Abschnitt 6).
 Keine Shopify-Aenderung. Alles hier ist Analyse und Datenbasis.
 
-Ordner: `teppichboden-abgleich/` — Vollabgleich `abgleich-teppichboden.json` (+ zwei CSV), Testlauf `abgleich-testlauf.json`, Rohdaten unter `rohdaten/`,
+Ordner `teppichboden-abgleich/` (lokal) — Vollabgleich `abgleich-teppichboden.json` (+ zwei CSV), Testlauf `abgleich-testlauf.json`, Rohdaten unter `rohdaten/`,
 Skripte unter `scripts/` (Python 3, nur Standardbibliothek plus `pypdf` fuer die PDF-Auswertung).
 
 **Kleinmengen und Dropshipping:** `kleinmengen-dropshipping-2026-09-10.md` beantwortet aus denselben Rohdaten,
@@ -15,71 +19,76 @@ Dropshipping mehr. Rollenware dagegen ist bei beiden nach laufendem Meter bestel
 
 | Quelle | Zugang | Was sie liefert | Grenzen |
 |---|---|---|---|
-| **jordanshop.de Quicksearch** `GET /de-DE/quicksearch?query=…&page=n` | offen, JSON | je Farbartikel: Name, `material_number` (Artikelnummer, z. B. `TEPRIVAO4_098`), Farbe, Produkt-URL, Bild | 4 Treffer je Seite, `per_page` wird ignoriert; Suche findet Qualitaeten nur, wenn der Suchbegriff wie der Artikelname lautet („STRONG 733", nicht „Teppichboden Strong 733") |
-| **jordanshop.de Produktseite** `GET /de-DE/product/<id>` | offen, SSR-HTML per `curl` | komplette Attributtabelle (Polmaterial, Poleinsatz, Gesamtgewicht, Staerke, Polhoehe, Ruecken, NK, Brandklasse, EAN, Art.-Nr., Kollektion, Marke), `<select>` mit allen Farbvarianten derselben Breite (ID + „Farbe NN"), Dokument-Links | Bestand und Preis nur nach Login („Bitte fragen Sie uns nach der Lieferzeit"); `/api/availability` verlangt CSRF + Session |
-| **Jordan PDFs** (TTD = Technisches Datenblatt, DOP/TDOP = Leistungserklaerung, ZGUT = GUT-Zertifikat) | offen | TTD: vollstaendige Technik inkl. Noppenzahl, „Abmessung 400 + 500 + Maßteppich", GUT/PRODIS-Nummer | **Leistungserklaerung nennt als Hersteller immer W. & L. Jordan** (Eigenmarke JOKA) — der echte Produzent steht nirgends |
-| **Jordan Sitemap** | offen | ~490.000 URLs, aber nur `/product/<id>` ohne Namen | fuer Sortimentserfassung unbrauchbar; Kategorie-Sitemap hat 2 Eintraege |
-| **m-plus.de Kategorie** `/de/Bodenbeläge/Textile-Bodenbeläge/c/20.1?q=:relevance:CMSME000670:<Kollektion>&page=5` | offen, SSR | Produktlinks je Farbartikel; Facette `CMSME000670` = Kollektion (Akzente 2029, Ambiente 2025/2029, Analog 2029, Avantgarde 2029, Avantiles 2026, Extrem 2029, Outdoor 2030) | Seite `page=n` liefert kumuliert max. 100 Links; deshalb je Kollektion abfragen. robots.txt bittet um 10 s Abstand — Skripte warten 2,5–3 s |
-| **m-plus.de Produktseite** `/de/…/<Qualitaet>/p/<Art-Nr>` | offen, SSR | Art-Nr, Farbtonliste der ganzen Qualitaet (Code + Name), Breiten, Produkteigenschaften, Spezifikationen (Poleinsatz, Gesamtstaerke, Florhoehe, Faserart, Konstruktion, Ruecken, NK, Brandklasse), Downloads | kein Preis, kein Bestand ohne Haendlerlogin; keine EAN |
-| **M-Plus Leistungserklaerungen** `LE_*.pdf` / `Leistungserklaerung_*.pdf` | offen | **nennen den echten Hersteller** (Vebe, Condor, ITC, Associated Weavers, Das Teppichwerk …) | nicht jede Qualitaet hat eine LE verlinkt |
-| **Shopify** (MCP) | vorhanden | 50 Teppichboden-Produkte, alle aus Jordan; `grosshandel.sku` = Jordan-Kollektion + Qualitaet, Varianten-SKU = Jordan-Artikelnummer, `custom.farbcode` = Jordan-Farbnummer | ein M-Plus-Produkt (AW Ganges, Entwurf) ohne Artikelnummern |
-| **Bestehende Dateien im Repo** | – | `data/jordan-catalog.json` (7 Sockelleisten), `domains/shopify/linoleum-farbdaten/` (Jordan-Produkt-IDs Linoleum), `domains/shopify/zubehoer-daten/jordan-zubehoer.json` | keine M-Plus-Daten, keine Mapping-Datei — hier neu aufgebaut |
+| **Lieferant A Quicksearch** `GET /de-DE/quicksearch?query=…&page=n` | offen, JSON | je Farbartikel: Name, `material_number` (Artikelnummer, z. B. `TEPRIVAO4_098`), Farbe, Produkt-URL, Bild | 4 Treffer je Seite, `per_page` wird ignoriert; Suche findet Qualitaeten nur, wenn der Suchbegriff wie der Artikelname lautet („STRONG 733", nicht „Teppichboden Strong 733") |
+| **Lieferant A Produktseite** `GET /de-DE/product/<id>` | offen, SSR-HTML per `curl` | komplette Attributtabelle (Polmaterial, Poleinsatz, Gesamtgewicht, Staerke, Polhoehe, Ruecken, NK, Brandklasse, EAN, Art.-Nr., Kollektion, Marke), `<select>` mit allen Farbvarianten derselben Breite (ID + „Farbe NN"), Dokument-Links | Bestand und Preis nur nach Login („Bitte fragen Sie uns nach der Lieferzeit"); `/api/availability` verlangt CSRF + Session |
+| **Lieferant A PDFs** (TTD = Technisches Datenblatt, DOP/TDOP = Leistungserklaerung, ZGUT = GUT-Zertifikat) | offen | TTD: vollstaendige Technik inkl. Noppenzahl, „Abmessung 400 + 500 + Maßteppich", GUT/PRODIS-Nummer | **Leistungserklaerung nennt als Hersteller immer Lieferant A** (Hausmarke von A) — der echte Produzent steht nirgends |
+| **Lieferant A Sitemap** | offen | ~490.000 URLs, aber nur `/product/<id>` ohne Namen | fuer Sortimentserfassung unbrauchbar; Kategorie-Sitemap hat 2 Eintraege |
+| **Lieferant B Kategorie** `/de/Bodenbeläge/Textile-Bodenbeläge/c/20.1?q=:relevance:CMSME000670:<Kollektion>&page=5` | offen, SSR | Produktlinks je Farbartikel; Facette `CMSME000670` = Kollektion (Akzente 2029, Ambiente 2025/2029, Analog 2029, Avantgarde 2029, Avantiles 2026, Extrem 2029, Outdoor 2030) | Seite `page=n` liefert kumuliert max. 100 Links; deshalb je Kollektion abfragen. robots.txt bittet um 10 s Abstand — Skripte warten 2,5–3 s |
+| **Lieferant B Produktseite** `/de/…/<Qualitaet>/p/<Art-Nr>` | offen, SSR | Art-Nr, Farbtonliste der ganzen Qualitaet (Code + Name), Breiten, Produkteigenschaften, Spezifikationen (Poleinsatz, Gesamtstaerke, Florhoehe, Faserart, Konstruktion, Ruecken, NK, Brandklasse), Downloads | kein Preis, kein Bestand ohne Haendlerlogin; keine EAN |
+| **Lieferant B Leistungserklaerungen** `LE_*.pdf` / `Leistungserklaerung_*.pdf` | offen | **nennen den echten Hersteller** (Vebe, Condor, ITC, Associated Weavers, Das Teppichwerk …) | nicht jede Qualitaet hat eine LE verlinkt |
+| **Shopify** (MCP) | vorhanden | 50 Teppichboden-Produkte, alle von Lieferant A; `grosshandel.sku` = Lieferant-A-Kollektion + Qualitaet, Varianten-SKU = Lieferant-A-Artikelnummer, `custom.farbcode` = Lieferant-A-Farbnummer | ein Lieferant-B-Produkt (AW Ganges, Entwurf) ohne Artikelnummern |
+| **Bestehende Dateien** | – | `data/grosshandel-catalog.json` (7 Sockelleisten); Linoleum-Farbdaten (Lieferant-A-Produkt-IDs Linoleum) und Zubehoer-Rohdaten, beide seit 2026-09-11 lokal | keine Lieferant-B-Daten, keine Mapping-Datei — hier neu aufgebaut |
 
 **Bestand / ausverkauft:** Beide Shops zeigen Lagerbestand und Preise nur eingeloggt. Die Datei fuehrt deshalb
 je Farbe nur `listed` (im Shop gefuehrt) und `stock: unbekannt (Login)`. Fuer echte Bestandsdaten braucht es
 entweder den Kundenlogin im Browser (dann per Chrome-Erweiterung auslesbar) oder einen Preis-/Bestandsexport
 der Grosshaendler.
 
-**GUT-PRODIS:** Jordan-Datenblaetter tragen eine GUT/PRODIS-Nummer (z. B. Calais `57D5F48E`). Die Abfrage
+**GUT-PRODIS:** Lieferant-A-Datenblaetter tragen eine GUT/PRODIS-Nummer (z. B. Calais `57D5F48E`). Die Abfrage
 auf gut-prodis.eu laeuft ueber ein JavaScript-Bundle, eine URL mit Parameter gibt es nicht — offen, koennte
-den Lizenznehmer (= Hersteller) fuer Jordan-Qualitaeten liefern.
+den Lizenznehmer (= Hersteller) fuer Lieferant-A-Qualitaeten liefern.
 
 ## 2. Matching-Methode (Phase 2)
 
-Namen sind kein Kriterium. `scripts/match.py` vergleicht jede Jordan-Qualitaet mit allen 97 M-Plus-Textilqualitaeten:
+Namen sind kein Kriterium. `scripts/match.py` vergleicht jede Lieferant-A-Qualitaet mit allen 97 Lieferant-B-Textilqualitaeten:
 
 1. Belagsart muss passen (Nadelvlies vs. Tuft) — sonst raus.
 2. Punkte fuer Poleinsatzgewicht (±5 %), Gesamtstaerke (±0,6 mm), Polhoehe (±0,6 mm), Ruecken-Typ
    (Textil vs. Vlies/Comfort), Nutzungsklasse, Brandklasse, Rollenbreite.
-3. **Farbnummern**: beide Grosshaendler uebernehmen die Herstellerfarbnummern (Jordan `Farbe 98` = SKU-Suffix `_098`,
-   M-Plus `733-0021` → 21). Ab drei identischen Nummern zaehlt das stark; untypische Nummern (z. B. 178) wiegen mehr
+3. **Farbnummern**: beide Grosshaendler uebernehmen die Herstellerfarbnummern (Lieferant A `Farbe 98` = SKU-Suffix `_098`,
+   Lieferant B `733-0021` → 21). Ab drei identischen Nummern zaehlt das stark; untypische Nummern (z. B. 178) wiegen mehr
    als 14/22/70.
-4. **Herstellerbeleg** ausschliesslich aus der M-Plus-Leistungserklaerung. Jordan belegt keinen Hersteller.
+4. **Herstellerbeleg** ausschliesslich aus der Lieferant-B-Leistungserklaerung. Lieferant A belegt keinen Hersteller.
 
 Status: CONFIRMED nur, wenn Hersteller belegt **und** Technik **und** Farbnummern passen. PROBABLE, wenn Technik
 und Farbnummern passen, der Herstellerbeleg aber nur auf einer Seite liegt. Bei Widerspruch in NK, Brandklasse
 oder Polhoehe: kein Match, auch wenn einzelne Farbnummern gleich sind.
 
-## 3. Ergebnis Testlauf (10 Jordan-Qualitaeten, alle im Shop)
+## 3. Ergebnis Testlauf (10 Lieferant-A-Qualitaeten, alle im Shop)
 
-| Shop-Produkt | Jordan | M-Plus | Hersteller (Quelle) | Status | Farben gemeinsam / nur Jordan / nur M-Plus |
+| Shop-Produkt | Lieferant A | Lieferant B | Hersteller (Quelle) | Status | Farben gemeinsam / nur Lieferant A / nur Lieferant B |
 |---|---|---|---|---|---|
-| Fortiva Nadelvlies 200cm | Atelier 2030 Strong 733 | Analog 2029 733 Strong | Vebe Floorcoverings bv (M-Plus-LE) | **MATCH_CONFIRMED** | 10 / 3 (16, 24, 120) / 0 |
-| Quadra Nadelvlies Fliese | Atelier 2030 Strong 966 Fliese | Analog 2029 966 Strong Modul | Vebe Floorcoverings bv (M-Plus-LE) | **MATCH_CONFIRMED** | 8 / 2 (24, 181) / 0 |
-| Vantana | Trend 026 Plaza | Akzente 2029 2403-TR | Condor Carpets bv (nur M-Plus-LE) | **MATCH_PROBABLE** | 7 / 11 / 0 |
+| Fortiva Nadelvlies 200cm | Atelier 2030 Strong 733 | Analog 2029 733 Strong | Vebe Floorcoverings bv (Lieferant-B-LE) | **MATCH_CONFIRMED** | 10 / 3 (16, 24, 120) / 0 |
+| Quadra Nadelvlies Fliese | Atelier 2030 Strong 966 Fliese | Analog 2029 966 Strong Modul | Vebe Floorcoverings bv (Lieferant-B-LE) | **MATCH_CONFIRMED** | 8 / 2 (24, 181) / 0 |
+| Vantana | Trend 026 Plaza | Akzente 2029 2403-TR | Condor Carpets bv (nur Lieferant-B-LE) | **MATCH_PROBABLE** | 7 / 11 / 0 |
 | Amara | Sprint 027 Riva | – (naechster: Avantgarde 2205, ITC) | – | NO_MATCH | – |
 | Novaris | Trend 026 Terra | – (naechster: Avantgarde 2210, ITC) | – | NO_MATCH | – |
 | Altessa | Sprint 027 Altro | – | – | NO_MATCH | – |
 | Vallora | Sprint 027 Lara | – (naechster: Akzente 2416-FB, AW) | – | NO_MATCH | – |
 | Reganza | Trend 026 Rigoletto | – | – | NO_MATCH | – |
 | Kontura | Format 028 Omega | – | – | NO_MATCH | – |
-| Callista | 030 Wool & Sisal Calais | – (M-Plus Wolle nur Ambiente 1307/1308) | – | NO_MATCH | – |
+| Callista | 030 Wool & Sisal Calais | – (Lieferant B Wolle nur Ambiente 1307/1308) | – | NO_MATCH | – |
 
 Begruendungen und offene Fragen je Produkt stehen in `abgleich-testlauf.json` (`match_reasoning`, `open_questions`);
 die Kandidatenliste mit Punkten in `rohdaten/match-kandidaten.txt`.
 
-Auffaellig: In allen drei Treffern fuehrt **Jordan mehr Farben** als M-Plus, M-Plus hat keine zusaetzliche Farbe.
-Die M-Plus-Textilkollektionen sind stark mit Fliesen (Avantiles, 28 Qualitaeten) und Objektware belegt.
+Auffaellig: In allen drei Treffern fuehrt **Lieferant A mehr Farben** als Lieferant B, Lieferant B hat keine zusaetzliche Farbe.
+Die Lieferant-B-Textilkollektionen sind stark mit Fliesen (Avantiles, 28 Qualitaeten) und Objektware belegt.
 
 ## 4. Servicefaehigkeit
 
-- **Jordan**: Kettelservice als Serviceartikel „Teppicheinfassung Ketteln" (`TEPKETT_001` bis 4 × 4 m,
+- **Lieferant A**: Kettelservice als Serviceartikel „Teppicheinfassung Ketteln" (`TEPKETT_001` bis 4 × 4 m,
   `TEPKETT_002` bis 6 × 4 m). Abgepasste Maßteppiche (rund/eckig) gibt es als eigene Artikel nur fuer die Kollektion
   **Arriva 027** (Amazing, Ambient, Boho, Fancy, Feel, Gloria, Impression, Lobo). Das Datenblatt Calais nennt
-  „400 + 500 + Maßteppich". Ob Ketteln fuer jede Rollenware-Qualitaet bestellbar ist, muss der Jordan-Vertrieb
+  „400 + 500 + Maßteppich". Ob Ketteln fuer jede Rollenware-Qualitaet bestellbar ist, muss der Lieferant-A-Vertrieb
   bestaetigen — in der Datei steht das als Hinweis, nicht als Ja.
-- **M-Plus**: Die Seiten nennen keinen Zuschnitt- oder Kettelservice. In der Datei: `unbekannt`, niemals `true`.
-- Je Farbe gilt in der Datei: `custom_size_available` und `edging_available` = `jordan_available`.
+- **Lieferant B**: Die Seiten nennen keinen Zuschnitt- oder Kettelservice. In der Datei: `unbekannt`, niemals `true`.
+  Einzige Ausnahme sind die zwei Qualitaeten der Kollektion **Outdoor 2030** (Farbnummernkreise 401 und 402): Laut
+  Produktbeschreibung werden sie als Wunschmaß-Teppich bis max. 4 m Breite „inkl. Kettelung" gefertigt. Das ist ein
+  Fertigprodukt mit eingerechneter Kante, **kein Service**, der sich auf andere Qualitaeten anwenden laesst — es
+  gehoert als Produkteigenschaft ins Datenmodell, nicht nach `edging_available`. Beide Qualitaeten sind nicht im
+  Shop. Fuer „wer kettelt Rollenware ab" bleibt Lieferant A der einzige Weg.
+- Je Farbe gilt in der Datei: `custom_size_available` und `edging_available` = `lieferant_a_available`.
   `kettelleiste_available` und `dropshipping_available` bleiben `null`, bis die Konditionen vorliegen.
 
 ## 5. Vorschlag Shopify-Datenmodell (Phase 5, noch nicht umgesetzt)
@@ -94,57 +103,57 @@ nicht fuer die Faehigkeiten je Farbe.
 
 | Key | Typ | Bedeutung |
 |---|---|---|
-| `jordan_verfuegbar` | boolean | Farbe bei Jordan gelistet |
-| `jordan_artikelnummer` | single_line_text | z. B. `TEPM733L_021` |
-| `jordan_farbnummer` | single_line_text | `21` |
-| `mplus_verfuegbar` | boolean | Farbe bei M-Plus gelistet |
-| `mplus_artikelnummer` | single_line_text | z. B. `2965-000093` |
-| `mplus_farbnummer` | single_line_text | `733-0021` |
-| `bevorzugt` | single_line_text (jordan/mplus) | bevorzugter Lieferant |
+| `lieferant_a_verfuegbar` | boolean | Farbe bei Lieferant A gelistet |
+| `lieferant_a_artikelnummer` | single_line_text | z. B. `TEPM733L_021` |
+| `lieferant_a_farbnummer` | single_line_text | `21` |
+| `lieferant_b_verfuegbar` | boolean | Farbe bei Lieferant B gelistet |
+| `lieferant_b_artikelnummer` | single_line_text | z. B. `2965-000093` |
+| `lieferant_b_farbnummer` | single_line_text | `733-0021` |
+| `bevorzugt` | single_line_text (a/b) | bevorzugter Lieferant |
 | `alternativ` | single_line_text | Zweitlieferant oder leer |
 | `wunschmass` | boolean | Zuschnitt/Wunschmass anzeigen |
 | `kettelung` | boolean | Kettelservice anzeigen |
 | `kettelleiste` | boolean | Kettelleisten anzeigen |
 | `dropshipping` | boolean | Direktversand moeglich |
 
-**Produkt-Metafields, Namespace `lieferant`**: `hersteller`, `hersteller_qualitaet`, `jordan_produktname`,
-`mplus_produktname`, `match_status`, `abgleich_datum`. Der bestehende `grosshandel.sku` bleibt als
-Jordan-Linienname erhalten.
+**Produkt-Metafields, Namespace `lieferant`**: `hersteller`, `hersteller_qualitaet`, `lieferant_a_produktname`,
+`lieferant_b_produktname`, `match_status`, `abgleich_datum`. Der bestehende `grosshandel.sku` bleibt als
+Lieferant-A-Linienname erhalten.
 
-**Metaobject `lieferant`** (jordan, mplus): Name, Shop-URL, Login-Hinweis, Servicekatalog, Lieferzeit — einmal
+**Metaobject `lieferant`** (lieferant_a, lieferant_b): Name, Shop-URL, Login-Hinweis, Servicekatalog, Lieferzeit — einmal
 gepflegt, von Produkt-/Variantenfeldern referenziert (`metaobject_reference`). Das skaliert auf weitere Lieferanten
 ohne neue Keys.
 
 **Theme-Logik spaeter**: Block liest `variant.metafields.lieferant.wunschmass` / `kettelung`; ist beides `false`
-(nur M-Plus), werden Wunschmass-Rechner und Kettel-Option ausgeblendet und der Hinweis „Fuer diese Farbe ist
+(nur Lieferant B), werden Wunschmass-Rechner und Kettel-Option ausgeblendet und der Hinweis „Fuer diese Farbe ist
 derzeit kein Wunschmass bzw. Kettelservice verfuegbar." gezeigt. Beim Variantenwechsel muss der Block die Werte
 aus einem JSON-Datenblock je Variante nachlesen (wie der Rollenware-Rechner), nicht neu rendern.
 
 ## 6. Vollabgleich Teppichboden (Phase 4, 2026-09-09)
 
 Ergebnis in `teppichboden-abgleich/abgleich-teppichboden.json` (Schema 2), dazu zwei CSV fuer die Tabellenkalkulation:
-`abgleich-teppichboden-qualitaeten.csv` (eine Zeile je Qualitaet, inkl. „nur M-Plus") und
+`abgleich-teppichboden-qualitaeten.csv` (eine Zeile je Qualitaet, inkl. „nur Lieferant B") und
 `abgleich-teppichboden-farben.csv` (eine Zeile je Farbe mit Artikelnummern beider Seiten und Servicefaehigkeit).
 
-**Erfassung Jordan:** 20 Quicksearch-Abfragen (Kollektionen, Belagsarten, Breiten) plus automatische Nachsuche
+**Erfassung Lieferant A:** 20 Quicksearch-Abfragen (Kollektionen, Belagsarten, Breiten) plus automatische Nachsuche
 fuer jede auf Produktseiten gefundene Kollektion — die Suche deckelt bei 1.000 Treffern, deshalb je Kollektion.
 Ergebnis: 2.795 Farbartikel, 276 Produktseiten (Qualitaet + Breite), **191 Qualitaeten** in 14 Kollektionen
 (Arriva 027 Maßteppiche 28, Format 028 20, Sprint 027 20, Homeline 27 19, Atelier 30 Nadelvlies 18, Balance 25 17,
 Format Modul 028 Fliesen 15, Trend 026 14, 030 Wool & Sisal 14, Format Modul 25 6, Quattro 028 / Atrium / Central 5,
-15 ohne Kollektionsangabe). **M-Plus:** 97 Textilqualitaeten mit 873 Farben, Herstellerbeleg fuer 63 davon.
+15 ohne Kollektionsangabe). **Lieferant B:** 97 Textilqualitaeten mit 873 Farben, Herstellerbeleg fuer 63 davon.
 
-| Status | Jordan-Qualitaeten | Bedeutung |
+| Status | Lieferant-A-Qualitaeten | Bedeutung |
 |---|---|---|
-| MATCH_CONFIRMED | 2 | Strong 733 und Strong 956 = M-Plus Analog 2029 733/956 (Vebe), Name + Nummer + Technik + alle Farbnummern |
-| MATCH_PROBABLE | 10 | Technik und ≥ 70 % der Farbnummern gleich, Hersteller nur ueber M-Plus-LE belegt |
+| MATCH_CONFIRMED | 2 | Strong 733 und Strong 956 = Lieferant B Analog 2029 733/956 (Vebe), Name + Nummer + Technik + alle Farbnummern |
+| MATCH_PROBABLE | 10 | Technik und ≥ 70 % der Farbnummern gleich, Hersteller nur ueber Lieferant-B-LE belegt |
 | MATCH_POSSIBLE | 7 | Technik ohne Widerspruch, Farbnummern nur teilweise oder Hersteller unbelegt |
 | REVIEW_REQUIRED | 4 | ein technisches Merkmal widerspricht (Poleinsatz, Staerke, Ruecken) trotz gleicher Farbnummern |
-| NO_MATCH | 168 | kein Gegenstueck bei M-Plus |
-| nur M-Plus | 78 Qualitaeten | vor allem Avantiles-Fliesen (19), Ambiente 2025 (12), Avantgarde 2029 (12), Akzente 2029 (11) |
+| NO_MATCH | 168 | kein Gegenstueck bei Lieferant B |
+| nur Lieferant B | 78 Qualitaeten | vor allem Avantiles-Fliesen (19), Ambiente 2025 (12), Avantgarde 2029 (12), Akzente 2029 (11) |
 
-Treffer im Detail (Hersteller laut M-Plus-Leistungserklaerung):
+Treffer im Detail (Hersteller laut Lieferant-B-Leistungserklaerung):
 
-| Jordan | M-Plus | Hersteller | Status |
+| Lieferant A | Lieferant B | Hersteller | Status |
 |---|---|---|---|
 | Atelier 30 Strong 733 / Strong 956 | Analog 2029 733 / 956 | Vebe | CONFIRMED |
 | Atelier 30 Granat / Forte | Analog 2029 911 / 916 | Vebe | PROBABLE |
@@ -160,22 +169,22 @@ Treffer im Detail (Hersteller laut M-Plus-Leistungserklaerung):
 | Format Modul 028 Rapid / Idea Fliese | Extrem Tiles 2157 / Avantiles 214 | Condor / unbelegt | POSSIBLE |
 | Format 028 Oslo, Sprint 027 Doria, Trend 026 Montego, Trend 026 Zirkonia | Akzente 2406 / 2411 / 2401 / 2412 | Condor / ITC / Condor / Lano | REVIEW |
 
-**Befund Jordan-intern:** Jordan fuehrt dieselbe Ware unter mehreren Kollektionsnamen (Plaza = Secrets,
+**Befund Lieferant-A-intern:** Lieferant A fuehrt dieselbe Ware unter mehreren Kollektionsnamen (Plaza = Secrets,
 Derby = Linux, Tempra = Tosca, Solid = Drago; identische Farbnummern und Technik). Die Datei markiert das als
-`jordan_alias_of`. Fuer den Shop heisst das: ein Teppich-Paradies-Produkt, mehrere Jordan-Bezugsquellen.
+`lieferant_a_alias_of`. Fuer den Shop heisst das: ein Teppich-Paradies-Produkt, mehrere Lieferant-A-Bezugsquellen.
 
-**Nicht belegt bleibt der Hersteller** bei 34 M-Plus-Qualitaeten (23 ohne Leistungserklaerung, 12 Ambiente 2025,
-deren gescannte LE M-Plus selbst als Hersteller nennt, 1 unlesbarer Scan) und bei allen Jordan-Qualitaeten
-(Jordan-LE nennt Jordan). Bestand/Preis beider Seiten weiterhin nur mit Login.
+**Nicht belegt bleibt der Hersteller** bei 34 Lieferant-B-Qualitaeten (23 ohne Leistungserklaerung, 12 Ambiente 2025,
+deren gescannte LE Lieferant B selbst als Hersteller nennt, 1 unlesbarer Scan) und bei allen Lieferant-A-Qualitaeten
+(Lieferant-A-LE nennt Lieferant A). Bestand/Preis beider Seiten weiterhin nur mit Login.
 
 ## 7. Naechste Schritte
 
 1. Die 4 REVIEW- und 7 POSSIBLE-Faelle mit den Datenblaettern (TTD bzw. TD) von Hand pruefen; Datenblatt-Links
    stehen je Produkt in der JSON.
 2. Bestand: Kundenlogins beider Shops im Browser, dann Verfuegbarkeit je Farbartikel auslesen
-   (Jordan `/api/availability`, M-Plus Produktseite eingeloggt).
-3. Jordan-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
-   Dazu jetzt zwei Fragen aus `kleinmengen-dropshipping-2026-09-10.md`: Mindestabnahme je Artikel (Jordan pflegt sie
+   (Lieferant A `/api/availability`, Lieferant B Produktseite eingeloggt).
+3. Lieferant-A-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
+   Dazu jetzt zwei Fragen aus `kleinmengen-dropshipping-2026-09-10.md`: Mindestabnahme je Artikel (Lieferant A pflegt sie
    nur als Freitext im Feld `Qualitaet`, 1 von 276 Seiten) und die Dropshipping-Konditionen beider Haendler.
 4. Danach Phase 5 (Metafelder anlegen, Theme-Logik) — nur nach ausdruecklicher Freigabe. Dabei
    `lieferant.mindestabnahme_ve` mit aufnehmen: Ohne dieses Feld kann der Shop ein Paket verkaufen, das der

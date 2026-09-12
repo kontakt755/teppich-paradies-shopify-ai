@@ -98,17 +98,17 @@ Das Mega-Menü steht auf `menu_style: collection_images` und zeigt Kollektionsbi
 erst, wenn die Zubehör-Kollektionen Bilder haben. Bis dahin erscheint der Punkt als
 Textspalte – das ist Absicht, kein Fehler.
 
-## Regeln für den Import von Jordan / M-Plus
+## Regeln für den Import von Lieferant A / B
 
 - **Eigene, neutrale Produktnamen.** Kein Lieferantenname, keine Lieferanten-
   Artikelnummer im Titel. Muster: `<Produktart> <Eigenschaft>`, z. B.
-  „Übergangsprofil Aluminium 40 mm silber", nicht „Jordan Alu-Profil 4711".
+  „Übergangsprofil Aluminium 40 mm silber", nicht „Lieferant A Alu-Profil 4711".
 - **Keine Großhändler-Marken, Logos, Links** in Titel, Beschreibung, Bildern,
   Alt-Texten, Tags oder Metafeldern. Beschreibungen neu formulieren, nicht kopieren.
   Bilder vor dem Upload auf eingebrannte Logos prüfen.
 - `vendor` = „Teppich Paradies" (kein Lieferant).
 - **Echte Herstellernamen bei Zubehör** (Vorgabe 2026-09-08): Titel = `<Hersteller> <Produktbezeichnung>`
-  (z. B. „JOKA JK 27 Universalklebstoff“), Hersteller in Beschreibung, Tag `marke: …` und
+  (z. B. Marke + „JK 27 Universalklebstoff“), Hersteller in Beschreibung, Tag `marke: …` und
   Metafeld `custom.marke`. Keine erfundenen Eigennamen – die gelten nur für Bodenbeläge.
   Generische Profile ohne Hersteller bleiben neutral benannt.
 - Technische Daten nur aus dem Lieferantendatenblatt, nie aus Bildern ableiten.
@@ -116,7 +116,7 @@ Textspalte – das ist Absicht, kein Fehler.
   Optional für Filter: `custom.material`, Tags `material: …`, `raum: …` wie bei
   Bodenleisten.
 - Lieferantenseiten per `curl` lesen, neue Produkte per `productSet`
-  (`produktimport-arbeitsweise.md`, Skill `teppichparadies-jordanshop-import`).
+  (`produktimport-arbeitsweise.md`, Import-Skill für Lieferant A).
 
 ## Offen
 

@@ -1,26 +1,26 @@
 # Skarven Sockelleiste 60mm - Farbbilder vom Grosshaendler
 
-Stand 2026-09-09. Quelle: jordanshop.de (W. & L. Jordan GmbH), Artikel
+Stand 2026-09-09. Quelle: Grosshaendler Lieferant A, Artikel
 "Doellken S 60 TOP Kernsockelleisten". Einstieg z. B.
-https://www.jordanshop.de/de-DE/product/478364, der Farbwaehler dort fuehrt alle
+https://lieferant-a.example/de-DE/product/478364, der Farbwaehler dort fuehrt alle
 62 Werte. Die Suche findet den Artikel nur mit dem Begriff "S60"; "S 60 flex life"
 ergibt keinen Treffer. Die Suche laeuft clientseitig, also im Browser, die
 Detailseiten dann per curl.
 
 ## 1. Sind 62 Farben echt?
 
-Ja. Jordan fuehrt fuer diesen Artikel 62 Farbseiten, jede mit eigener Art.-Nr.
+Ja. Lieferant A fuehrt fuer diesen Artikel 62 Farbseiten, jede mit eigener Art.-Nr.
 (ZUBSCHS60_*), und diese Nummern stimmen eins zu eins mit den 62 Varianten im
 Shop ueberein. Die Nummern sind nicht durchgezaehlt, sondern haben Luecken -
 also abgeschrieben, nicht erfunden. Ob alle 62 aktuell lieferbar sind, sagt die
 Seite nicht; das klaert nur die Preisliste.
 
-## 2. Zwei Bildsorten auf den Jordan-Seiten - nur eine ist brauchbar
+## 2. Zwei Bildsorten auf den Lieferant-A-Seiten - nur eine ist brauchbar
 
 Jede Farbseite zeigt bis zu zwei Produktbilder:
 
 - **525xxx-8FXC-prod.JPG** (grosses Hauptbild): **farblich unzuverlaessig.**
-  Jordan zeigt hier fuer "beige" eine gruene, fuer "lichtgrau" eine blaue und
+  Lieferant A zeigt hier fuer "beige" eine gruene, fuer "lichtgrau" eine blaue und
   fuer "weiss-grau" eine mintfarbene Leiste. Diese Bilder gehoeren nicht zur
   benannten Farbe und duerfen nicht als Farbmuster verwendet werden.
 - **998xxx-8FXC-prod.JPG** (Alt-Text "Sockelleiste Doellken S 60 <Art.-Nr.>"):
@@ -32,11 +32,11 @@ Der Bildpfad steckt base64-kodiert in der intellishop.cloud-URL.
 
 ## 3. Was am 2026-09-09 uebernommen wurde
 
-17 Farben haben bei Jordan ein 998xxx-Farbfoto. Alle 17 wurden per
+17 Farben haben bei Lieferant A ein 998xxx-Farbfoto. Alle 17 wurden per
 `productCreateMedia` + `productVariantsBulkUpdate(mediaId:)` an die passende
 Variante gehaengt und vorher einzeln visuell gegengeprueft.
 
-| Farbe (Jordan) | Art.-Nr. | Bild |
+| Farbe (Lieferant A) | Art.-Nr. | Bild |
 |---|---|---|
 | 1148(4244) beige (B) | ZUBSCHS60_4244 | 998287-8FXC-prod.JPG |
 | 4019/1082 braun (BR) | ZUBSCHS60_4019 | 998291-8FXC-prod.JPG |
@@ -58,7 +58,7 @@ Variante gehaengt und vorher einzeln visuell gegengeprueft.
 
 ## 4. Was der Grosshaendler nicht liefert
 
-Fuer die uebrigen 45 Farben hat Jordan kein farbspezifisches Bild - dort steht
+Fuer die uebrigen 45 Farben hat Lieferant A kein farbspezifisches Bild - dort steht
 nur das generische Serienfoto (660852) bzw. im Shop das Raumfoto S60.jpg:
 
 Sommerbuche natur, Sommereiche Greige, Sommereiche Natur, Natural Place, Grant Oak Brown, Blond Limed Oak, Spirit Oak Silver, Island Oak Honey, Rustic Pine Warm, Chene Gris, Ahorn Natur, Grey Limed Oak, Scandinavian Pine, Esche Blond, Country Oak, Western Oak, Sommereiche, Scandinavian Country Pl., Bleached Ash, Eiche grau, Eiche Classic, pinie, Wild Oak, Calistoga Cream, Aruba, Calistoga Grey, Alba Oak Cottage, Tuscany Walnut, Honigeiche, Eiche Orient, Victoriaeiche, Diele Rustikal, Fruchtbaum Medium, Esche weiss, Goldeiche Rustikal, Light Classic Oak, Twist, Vintage Oak Grey, platinsilber, weiß, (5012) weiß (W), weiß-grau (WG), alumetallic, anthrazit, champagner
@@ -69,7 +69,7 @@ aus einer frueheren Quelle. Die restlichen 38 - fast alle Holzdekore - haben
 kein eigenes Bild. Das Theme zeigt sie deshalb als Namenskachel mit dem Hinweis
 auf die kostenlose Musterbestellung, nicht mit einem fremden Foto.
 
-Fuer Feldwin (Doellken Cubu flex life 40/60/80/100 und XL) fuehrt Jordan
+Fuer Feldwin (Doellken Cubu flex life 40/60/80/100 und XL) fuehrt Lieferant A
 ueberhaupt nur ein Bild je Hoehe - die technische Zeichnung. Dort ist vom
 Grosshaendler nichts zu holen.
 
@@ -86,7 +86,7 @@ zugeordnet waren:
 | 525278-8FXC-prod.jpg | hellblaue Leiste |
 
 Die Originale liegen weiterhin beim Lieferanten unter
-`https://media.jordanshop.de/original/<nummer>-8FXC-prod.JPG` und liessen sich
+`https://media.lieferant-a.example/original/<nummer>-8FXC-prod.JPG` und liessen sich
 jederzeit erneut laden.
 
 ## 6. Nachpruefung der verbliebenen 525xxx-Bilder
@@ -115,11 +115,11 @@ Erhalten bleiben 525248, 525282 und 525284 als zusaetzliche Galeriefotos.
 
 Damit sind aus der 525xxx-Serie sieben Bilder entfernt (drei mit Farben, die es
 in der Serie nicht gibt, vier mit deutlichem Gelb-/Olivstich). Alle Originale
-liegen weiterhin unter `https://media.jordanshop.de/original/<nummer>-8FXC-prod.JPG`.
+liegen weiterhin unter `https://media.lieferant-a.example/original/<nummer>-8FXC-prod.JPG`.
 
 ## 7. Dekorbilder vom Hersteller (2026-09-09)
 
-Fuer die 38 Holzdekore ohne Jordan-Foto liefert der Hersteller selbst ein
+Fuer die 38 Holzdekore ohne Lieferant-A-Foto liefert der Hersteller selbst ein
 Dekormuster: Die Produktseite "S 60 flex life Top" auf doellken-profiles.com
 listet je Dekor ein Bild (915 x 355 px) mit Nummer und Name als Bildunterschrift.
 Zwei Nummern (2487, 2976) stehen dort nicht, wohl aber mit Name auf der Seite
@@ -178,7 +178,7 @@ beim Hersteller falsch. Die 7 Unifarb-Kacheln (RAL-Hex) bleiben deshalb.
 
 Nach Freigabe durch Ahmet per `productDeleteMedia` entfernt: sechs 800x800-PNGs
 (Unifarb-Kacheln fuer beige, braun, lichtgrau, grau, schwarz, schnee-weiss aus der
-Zeit vor dem Jordan-Fotoimport). Sie hingen an keiner Variante mehr und erschienen
+Zeit vor dem Lieferant-A-Fotoimport). Sie hingen an keiner Variante mehr und erschienen
 in der Galerie als leere Farbquadrate. Media-IDs 73579091722574, 73579091755342,
 73579091788110, 73579091820878, 73579091886414, 73579091919182. Die sieben
 Unifarb-Kacheln, die noch an Varianten haengen (champagner, anthrazit, alumetallic,

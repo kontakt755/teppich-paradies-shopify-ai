@@ -1,10 +1,10 @@
-# Kleinmengen und Dropshipping bei Jordan und M-Plus
+# Kleinmengen und Dropshipping bei Lieferant A und Lieferant B
 
 Stand 2026-09-10. Reine Analyse, keine Shopify-Aenderung. Anlass: Die Frage, ob der Shop
 Paketware (Teppichfliesen, Klickvinyl, Klebevinyl) auch unterhalb eines Pakets verkaufen kann,
 insbesondere mit Blick auf Direktversand ab Lieferant.
 
-**Kurzantwort: Nein.** Weder Jordan noch M-Plus liefern Fliesen oder Planken unterhalb einer
+**Kurzantwort: Nein.** Weder Lieferant A noch Lieferant B liefern Fliesen oder Planken unterhalb einer
 Verpackungseinheit. Rollenware dagegen ist bei beiden nach laufendem Meter bestellbar — dort
 existiert die Kleinmenge bereits und wird im Shop bereits genutzt.
 
@@ -12,9 +12,9 @@ existiert die Kleinmenge bereits und wird im Shop bereits genutzt.
 
 ## 1. Was belegt ist, und woran
 
-### Jordan (jordanshop.de, Eigenmarke JOKA)
+### Lieferant A (mit Hausmarke)
 
-Jordan nennt die Bestelleinheit auf der Produktseite nirgends direkt. Sie laesst sich aber aus
+Lieferant A nennt die Bestelleinheit auf der Produktseite nirgends direkt. Sie laesst sich aber aus
 den Palettenangaben eindeutig zurueckrechnen: `Stueck pro Palette` × `Inhalt m² pro Paket`
 ergibt exakt `Inhalt m² pro Palette`, in zwei unabhaengigen Produktfamilien.
 
@@ -26,7 +26,7 @@ ergibt exakt `Inhalt m² pro Palette`, in zwei unabhaengigen Produktfamilien.
 **„Stueck" ist demnach das Paket**, nicht die Fliese und nicht die Planke. Dazu passt, dass jede
 Farbe genau eine EAN traegt — EAN werden auf Handelseinheiten vergeben, nicht auf Einzelteile.
 
-**Mindestabnahmen gehen nach oben, nicht nach unten.** Jordan pflegt sie als Freitext im
+**Mindestabnahmen gehen nach oben, nicht nach unten.** Lieferant A pflegt sie als Freitext im
 Attributfeld `Qualitaet`:
 
 ```
@@ -34,21 +34,21 @@ Teppichboden Maidan Fliese 50 x 50 cm 028 Format Object
   Qualitaet: "Maidan Fliese (mind.Abgabe 5 VE)"     -> mindestens 5 Pakete = 25 m²
 ```
 
-Von 276 ausgewerteten Jordan-Teppichboden-Produktseiten (Datenbestand
-`teppichboden-abgleich/rohdaten/jordan-textil-produktseiten.json`) traegt **genau eine** so einen
+Von 276 ausgewerteten Lieferant-A-Teppichboden-Produktseiten (Datenbestand
+`teppichboden-abgleich/rohdaten/`, lokal) traegt **genau eine** so einen
 Vermerk. Ob das heisst „nur dort gibt es eine Mindestabnahme" oder „nur dort wurde sie
 eingetragen", laesst sich aus den oeffentlichen Daten nicht entscheiden. Das ist eine Frage an den
-Jordan-Vertrieb, keine an die Daten — siehe Abschnitt 5.
+Lieferant-A-Vertrieb, keine an die Daten — siehe Abschnitt 5.
 
-Ein systematisches Feld fuer Verpackungseinheit oder Mindestmenge existiert bei Jordan nicht.
+Ein systematisches Feld fuer Verpackungseinheit oder Mindestmenge existiert bei Lieferant A nicht.
 Vorhanden sind nur `Inhalt m² pro Paket` (4 von 276 Teppichboden-Seiten, bei Planken dagegen
 durchgaengig), `Inhalt m² pro Palette` und `Stueck pro Palette`. Ein einzelnes
 `Verkaufseinheit`-Feld tauchte im gesamten Bestand einmal auf, bei einem Werkzeugartikel.
 
-### M-Plus (m-plus.de)
+### Lieferant B
 
-M-Plus fuehrt die Einheit ausdruecklich, in zwei Feldern, gepflegt bei 92 von 97
-Textilqualitaeten (`teppichboden-abgleich/rohdaten/mplus-textil-qualitaeten.json`, Feld `spec`):
+Lieferant B fuehrt die Einheit ausdruecklich, in zwei Feldern, gepflegt bei 92 von 97
+Textilqualitaeten (`teppichboden-abgleich/rohdaten/`, lokal, Feld `spec`):
 
 | Belagsform | Qualitaeten | `Gebinde` / `Gebinde ME` | Bedeutung |
 |---|---|---|---|
@@ -56,8 +56,8 @@ Textilqualitaeten (`teppichboden-abgleich/rohdaten/mplus-textil-qualitaeten.json
 | Bahnen (Rollenware) | 55 | 200 · 400 · 500 **CM**, oder 1 **LMT** | Laufender Meter — Kleinmenge moeglich. |
 | Massanfertigung | 2 | `abgepasster Teppich` | Zuschnitt nach Wunsch. |
 
-Eine Suche ueber den gesamten M-Plus-Datenbestand nach `mind`, `Abgabe`, `Verpackungseinheit`,
-`Karton`, `pro Paket` und `Palette` liefert **null Treffer**. M-Plus dokumentiert also die
+Eine Suche ueber den gesamten Lieferant-B-Datenbestand nach `mind`, `Abgabe`, `Verpackungseinheit`,
+`Karton`, `pro Paket` und `Palette` liefert **null Treffer**. Lieferant B dokumentiert also die
 Gebindegroesse, aber keine Mindestabnahme.
 
 ---
@@ -68,17 +68,17 @@ Gebindegroesse, aber keine Mindestabnahme.
 
 | Produktgruppe | Lieferant | Kleinste Einheit (MOQ) | Kleinmenge unterhalb? | Dropshipping-tauglich | Lieferfaehigkeit / Bestand | Versandkosten |
 |---|---|---|---|---|---|---|
-| Teppichfliesen 50×50 | Jordan | 1 Paket = 5,00 m² (20 Fliesen); artikelweise 5 VE = 25 m² | **nein** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
-| Teppichfliesen / Planken | M-Plus | 1 Paket = 3,5–6,0 m² | **nein** | ? | nur mit Haendlerlogin | ? |
-| Klickvinyl / Klebevinyl | Jordan | 1 Paket = 0,794–4,86 m² | **nein** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
-| Teppichboden Bahnenware | Jordan | Rollenbreite × lfm | **ja, bereits genutzt** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
-| Teppichboden Bahnenware | M-Plus | 1 LMT bzw. Rollenbreite 200/400/500 cm | **ja** | ? | nur mit Haendlerlogin | ? |
-| Massteppich / Kettelung | Jordan | Serviceartikel `TEPKETT_001/002`, Massteppiche nur Kollektion Arriva 027 | entfaellt | ? | ? | ? |
-| Sockelleisten, Profile, Zubehoer | Jordan | Stueck / Stange / Gebinde | **ja, bereits genutzt** | ja | nur eingeloggt | ? |
+| Teppichfliesen 50×50 | Lieferant A | 1 Paket = 5,00 m² (20 Fliesen); artikelweise 5 VE = 25 m² | **nein** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
+| Teppichfliesen / Planken | Lieferant B | 1 Paket = 3,5–6,0 m² | **nein** | ? | nur mit Haendlerlogin | ? |
+| Klickvinyl / Klebevinyl | Lieferant A | 1 Paket = 0,794–4,86 m² | **nein** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
+| Teppichboden Bahnenware | Lieferant A | Rollenbreite × lfm | **ja, bereits genutzt** | ja, sofern Konditionen stehen | nur eingeloggt | ? |
+| Teppichboden Bahnenware | Lieferant B | 1 LMT bzw. Rollenbreite 200/400/500 cm | **ja** | ? | nur mit Haendlerlogin | ? |
+| Massteppich / Kettelung | Lieferant A | Serviceartikel `TEPKETT_001/002`, Massteppiche nur Kollektion Arriva 027 | entfaellt | ? | ? | ? |
+| Sockelleisten, Profile, Zubehoer | Lieferant A | Stueck / Stange / Gebinde | **ja, bereits genutzt** | ja | nur eingeloggt | ? |
 
-**Bestand und Preis sind bei beiden Haendlern nur eingeloggt sichtbar.** Jordan liefert
+**Bestand und Preis sind bei beiden Haendlern nur eingeloggt sichtbar.** Lieferant A liefert
 ausgeloggt konsequent `availabilityUnknown: "Bitte fragen Sie uns nach der Lieferzeit."`;
-`/api/availability` verlangt CSRF und Session. M-Plus zeigt ohne Haendlerlogin weder Preis noch
+`/api/availability` verlangt CSRF und Session. Lieferant B zeigt ohne Haendlerlogin weder Preis noch
 Bestand. Das steht so bereits im Vollabgleich (`README.md`, Abschnitt 1) und aendert sich hier
 nicht.
 
@@ -141,7 +141,7 @@ eine Zeile, die den Grund nennt: „Teppichfliesen liefert das Werk nur im 20er-
 einzelne Ersatzfliesen sprechen Sie uns an." Nebeneffekt: Diese Anfragen sind die einzige
 belastbare Messung, ob ein Reparatursortiment sich lohnen wuerde.
 
-**L4 — Offenes Risiko, das heute schon besteht.** Liefert Jordan bei einzelnen Artikeln erst ab
+**L4 — Offenes Risiko, das heute schon besteht.** Liefert Lieferant A bei einzelnen Artikeln erst ab
 5 VE, der Shop verkauft dort aber 1 Paket, entsteht eine nicht beschaffbare Bestellung. Bei drei
 Bestellungen bislang nie aufgefallen; mit Dropshipping faellt es beim Kunden auf. Noetig ist ein
 Variant-Metafeld `lieferant.mindestabnahme_ve` (Vorschlag passt in das Datenmodell in
@@ -153,7 +153,7 @@ stehen.**
 
 ## 5. Offene Fakten — nur mit Login oder Vertrieb zu klaeren
 
-1. **Mindestabnahme je Artikel.** Jordan pflegt sie als Freitext und offenbar nicht durchgaengig.
+1. **Mindestabnahme je Artikel.** Lieferant A pflegt sie als Freitext und offenbar nicht durchgaengig.
    Mit Haendlerlogin liesse sich die Schrittweite des Mengenfelds im Bestellformular je Artikel
    auslesen; ohne ihn bleibt es beim Vertriebsgespraech.
 2. **Dropshipping-Konditionen** beider Haendler: Streckengeschaeft an Endkundenadresse,
@@ -171,11 +171,11 @@ haengen an keiner Lieferantenzusage.
 
 ## 6. Datenbasis dieser Analyse
 
-- `teppichboden-abgleich/rohdaten/jordan-textil-produktseiten.json` — 276 Jordan-Produktseiten mit
+- Rohdaten Lieferant A (lokal, `teppichboden-abgleich/rohdaten/`) — 276 Produktseiten mit
   vollstaendiger Attributtabelle (Vollabgleich vom 2026-09-09).
-- `teppichboden-abgleich/rohdaten/mplus-textil-qualitaeten.json` — 97 M-Plus-Textilqualitaeten
+- Rohdaten Lieferant B (lokal, `teppichboden-abgleich/rohdaten/`) — 97 Textilqualitaeten
   inklusive `Gebinde` und `Gebinde ME`.
-- Jordan-Produktseiten `447923` (Rigid Board Click) und `456949` (Evolut Fischgraet Click), am
+- Lieferant-A-Produktseiten `447923` (Rigid Board Click) und `456949` (Evolut Fischgraet Click), am
   2026-09-10 per `curl` ueber `/de-DE/product/<id>` geholt — die beiden Klickvinyl-Linien des
   Shops waren im Teppichboden-Vollabgleich nicht enthalten.
 - Shopify Admin API: `custom.qm_pro_paket` und Variantenpreise aller aktiven Produkte.

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "description": "JordanShop Kategorien für automatische Synchronisation",
+  "description": "Grosshandel-Kategorien für automatische Synchronisation",
   "categories": [
     {
       "id": "kernsockelleisten",
@@ -10,7 +10,7 @@
       "examples": [
         {
           "name": "Döllken CUBU flex life 100",
-          "url_pattern": "jordanshop.de/de-DE/product/",
+          "url_pattern": "/de-DE/product/",
           "search_term": "CUBU flex life"
         }
       ]

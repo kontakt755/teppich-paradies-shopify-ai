@@ -16,8 +16,8 @@ SHP-014;Florhöhen-/ecoVella-Evidenzaudit;Sortiment strukturiert klassifizieren;
 SHP-015;Live-Collection-Zuordnungen;Freigegebene Zuordnungen anwenden;HIGH;Codex;SHP-014;explizite Produkt-/Collection-IDs;nur belegte Freigaben Preise/SKUs gleich;Before-after|Collection-Smokes;JA;M
 SHP-016;Sisal-&-Natur-Spezifikation;Taxonomie und Eligibility finalisieren;LOW;ChatGPT Work;SHP-014;SISAL_NATUR_*.md/csv;eindeutige Regeln und Restliste;Tabellenvalidator;NEIN;S
 SHP-017;Sisal Dev-Theme-Prototyp;Collection-UX nur im Dev Theme;MEDIUM;Codex;SHP-016,SHP-002;definierte Sections/Templates/Snippets;keine Live-Ressource Mobile/Desktop konsistent;Dev-QA|Links|Bilder;NEIN;M
-SHP-018;Jordan-Pipeline-Validator;Quellen Pflichtfelder Fehlerklassen prüfen;LOW;Codex;SHP-001;Jordan-Tooling|Fixtures|Reports;keine erfundenen Daten Restliste;CSV-/JSON-Schema;NEIN;M
-SHP-019;Jordan Draft Dry Run;Unveröffentlichte Drafts reversibel vorbereiten;MEDIUM;Codex;SHP-018,SHP-005;Pipeline|Draft-Fixtures;nur Draft unpublished rollback möglich;Dry-run|Read-back|Rollback;JA;M
+SHP-018;Lieferanten-Pipeline-Validator;Quellen Pflichtfelder Fehlerklassen prüfen;LOW;Codex;SHP-001;Lieferanten-Tooling|Fixtures|Reports;keine erfundenen Daten Restliste;CSV-/JSON-Schema;NEIN;M
+SHP-019;Lieferanten-Draft-Dry-Run;Unveröffentlichte Drafts reversibel vorbereiten;MEDIUM;Codex;SHP-018,SHP-005;Pipeline|Draft-Fixtures;nur Draft unpublished rollback möglich;Dry-run|Read-back|Rollback;JA;M
 SHP-020;Bildinventar & Lizenzstatus;Fotos Quellen und Lücken katalogisieren;LOW;ChatGPT Work;-;Reports|CSV|Read-only Assets;Quelle Produktbezug Lizenzstatus Format;Hash-/Dublettencheck;NEIN;M
 SHP-021;Accessibility-Baseline;Mechanische WCAG-nahe Fehler priorisieren;LOW;Codex;SHP-003;qa/**|Reports;reproduzierbare Selector-Liste;Accessibility-Regeln|Keyboard;NEIN;S
 SHP-022;Kleine Accessibility-Fixes;Isolierte Fixes im Dev Theme;MEDIUM;Codex;SHP-021,SHP-002;explizite Locale/Snippet/CSS-Dateien;keine Kauflogikänderung;Scoped Playwright|QA;NEIN;M
