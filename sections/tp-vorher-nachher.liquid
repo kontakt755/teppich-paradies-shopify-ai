@@ -1,0 +1,122 @@
+{%- comment -%}
+  Vorher/Nachher-Vergleich. Zeigt nur Projekte, bei denen BEIDE Bilder gepflegt
+  sind - halb gefuellte Projekte bleiben aussen vor. Der Regler ist ein echtes
+  input[type=range], damit Tastatur und Screenreader ohne Zusatzcode funktionieren.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'tp-arbeiten.js' | asset_url }}" defer></script>
+
+{%- comment -%} paginate: ohne ihn sieht values nur die ersten 50 Projekte. {%- endcomment -%}
+{%- paginate shop.metaobjects.tp_projekt.values by 250 -%}
+  {%- assign alle = shop.metaobjects.tp_projekt.values | sort: 'handle' -%}
+{%- endpaginate -%}
+{%- liquid
+  assign paare = 0
+  for projekt in alle
+    if projekt.vorher.value != blank and projekt.nachher.value != blank
+      assign paare = paare | plus: 1
+    endif
+  endfor
+-%}
+
+{%- if paare > 0 -%}
+<section class="tp-s-sec tp-s-sec--band tp-vn" aria-labelledby="tp-vn-h2-{{ section.id }}" data-tp-vergleiche>
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head">
+      <div>
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="tp-s-eyebrow">{{ section.settings.eyebrow | escape }}</span>
+        {%- endif -%}
+        <h2 id="tp-vn-h2-{{ section.id }}" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+    </div>
+
+    <div class="tp-vn__reihe">
+      {%- assign gezeigt = 0 -%}
+      {%- for projekt in alle -%}
+        {%- if gezeigt >= section.settings.anzahl -%}{%- break -%}{%- endif -%}
+        {%- if projekt.vorher.value == blank or projekt.nachher.value == blank -%}{%- continue -%}{%- endif -%}
+        {%- liquid
+          assign vor = projekt.vorher.value
+          assign nach = projekt.nachher.value
+          assign alt_vor = vor.alt | default: projekt.titel.value | append: ' - vorher'
+          assign alt_nach = nach.alt | default: projekt.titel.value | append: ' - nachher'
+          assign gezeigt = gezeigt | plus: 1
+        -%}
+        <figure class="tp-vn__karte">
+          <div class="tp-vn__box" data-tp-vergleich>
+            <div class="tp-vn__lage tp-vn__lage--vor">
+              {{ vor | image_url: width: 1000 | image_tag:
+                loading: 'lazy',
+                widths: '500, 750, 1000',
+                sizes: '(max-width: 767px) 92vw, 46vw',
+                alt: alt_vor }}
+              <span class="tp-vn__marke tp-vn__marke--links">Vorher</span>
+            </div>
+            <div class="tp-vn__lage tp-vn__lage--nach">
+              {{ nach | image_url: width: 1000 | image_tag:
+                loading: 'lazy',
+                widths: '500, 750, 1000',
+                sizes: '(max-width: 767px) 92vw, 46vw',
+                alt: alt_nach }}
+              <span class="tp-vn__marke tp-vn__marke--rechts">Nachher</span>
+            </div>
+            <span class="tp-vn__linie" aria-hidden="true"><span class="tp-vn__griff"></span></span>
+            <input class="tp-vn__regler" type="range" min="0" max="100" value="50" step="1"
+              aria-label="Vorher-Nachher-Vergleich {{ projekt.titel.value | escape }}: nach rechts mehr vom Vorher-Bild, nach links mehr vom Nachher-Bild"
+              aria-valuetext="50 Prozent Vorher-Bild">
+          </div>
+          <figcaption class="tp-vn__cap">
+            <b>{{ projekt.titel.value | escape }}</b>
+            {%- if projekt.belag.value != blank %} · {{ projekt.belag.value | escape }}{% endif -%}
+            {%- if projekt.ort.value != blank %} · {{ projekt.ort.value | escape }}{% endif -%}
+          </figcaption>
+        </figure>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-vn__reihe { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+  .tp-vn__karte { margin: 0; }
+  .tp-vn__box { --tp-pos: 50%; position: relative; border-radius: var(--tp-r-lg); overflow: hidden; background: var(--tp-bg-3); aspect-ratio: 4 / 3; }
+  .tp-vn__lage { position: absolute; inset: 0; }
+  .tp-vn__lage img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tp-vn__lage--nach { clip-path: inset(0 0 0 var(--tp-pos)); }
+  .tp-vn__marke { position: absolute; bottom: 12px; background: rgba(20, 18, 16, 0.8); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 11px; border-radius: 999px; }
+  .tp-vn__marke--links { left: 12px; }
+  .tp-vn__marke--rechts { right: 12px; }
+  .tp-vn__linie { position: absolute; top: 0; bottom: 0; left: var(--tp-pos); width: 2px; background: #fff; box-shadow: 0 0 0 1px rgba(20, 18, 16, 0.18); }
+  .tp-vn__griff { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 42px; height: 42px; border-radius: 50%; background: #fff; box-shadow: 0 3px 10px rgba(20, 18, 16, 0.32); }
+  .tp-vn__griff::before, .tp-vn__griff::after { content: ""; position: absolute; top: 50%; width: 0; height: 0; border-block: 5px solid transparent; }
+  .tp-vn__griff::before { left: 10px; border-right: 7px solid var(--tp-ink); transform: translateY(-50%); }
+  .tp-vn__griff::after { right: 10px; border-left: 7px solid var(--tp-ink); transform: translateY(-50%); }
+  .tp-vn__regler { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: ew-resize; appearance: none; background: transparent; }
+  .tp-vn__regler::-webkit-slider-thumb { appearance: none; width: 46px; height: 100%; }
+  .tp-vn__regler::-moz-range-thumb { width: 46px; height: 100%; border: 0; background: transparent; }
+  .tp-vn__regler:focus-visible { opacity: 1; outline: 3px solid var(--tp-red); outline-offset: 2px; }
+  .tp-vn__cap { margin-top: 11px; font-size: 14.5px; color: var(--tp-ink-2); }
+  .tp-vn__cap b { color: var(--tp-ink); }
+  @media (max-width: 767px) {
+    .tp-vn__reihe { grid-template-columns: 1fr; gap: 26px; }
+    .tp-vn__griff { width: 46px; height: 46px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Vorher Nachher",
+  "tag": "section",
+  "settings": [
+    { "type": "paragraph", "content": "Zeigt automatisch die Projekte, bei denen Vorher- UND Nachher-Bild gepflegt sind." },
+    { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Vorher und nachher" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Was sich wirklich verändert" },
+    { "type": "text", "id": "text", "label": "Unterzeile" },
+    { "type": "range", "id": "anzahl", "label": "Maximal so viele Vergleiche", "min": 2, "max": 12, "step": 2, "default": 4 }
+  ],
+  "presets": [ { "name": "TP Vorher Nachher" } ]
+}
+{% endschema %}

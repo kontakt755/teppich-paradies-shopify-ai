@@ -67,7 +67,8 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
   }
 
   .final-btn-whatsapp {
-    background: #25D366;
+    /* Weiss auf #25D366 hatte 2:1; #0e7a5f erreicht 5,3:1 */
+    background: #0e7a5f;
     color: #fff;
     border: none;
   }
@@ -111,6 +112,12 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
   }
 </style>
 
+{%- comment -%}
+  Auf der Startseite steht dieselbe Aufforderung schon als Kontakt-Section
+  ("Eine Frage? Wir antworten persoenlich.") - dort doppelte sich der
+  Abschnitt drei Sections spaeter. Abschaltbar in den Einstellungen.
+{%- endcomment -%}
+{%- unless section.settings.hide_on_home and template.name == 'index' -%}
 <section class="final-cta">
   <div class="final-cta-container">
     <h2>{{ section.settings.heading }}</h2>
@@ -130,12 +137,16 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
       </a>
     </div>
 
-    <div class="final-cta-phone">
-      {{ section.settings.phone_text }}
-      <a href="tel:{{ section.settings.phone_number }}">{{ section.settings.phone_display }}</a>
-    </div>
+    {%- comment -%} Nur mit Anzeigenummer: sonst entstand ein leerer Telefonlink ohne Namen {%- endcomment -%}
+    {%- if section.settings.phone_display != blank -%}
+      <div class="final-cta-phone">
+        {{ section.settings.phone_text }}
+        <a href="tel:{{ section.settings.phone_number }}">{{ section.settings.phone_display }}</a>
+      </div>
+    {%- endif -%}
   </div>
 </section>
+{%- endunless -%}
 
 {% schema %}
 {
@@ -199,6 +210,13 @@ Final CTA Block – wiederverwendbare Section (für Theme Editor)
       "id": "phone_display",
       "label": "Telefonnummer (Anzeige)",
       "default": "03301 / 573 37 20"
+    },
+    {
+      "type": "checkbox",
+      "id": "hide_on_home",
+      "label": "Auf der Startseite ausblenden",
+      "info": "Die Startseite hat eine eigene Kontakt-Section; ohne diese Einstellung stuende die Aufforderung dort doppelt.",
+      "default": true
     }
   ],
   "presets": [

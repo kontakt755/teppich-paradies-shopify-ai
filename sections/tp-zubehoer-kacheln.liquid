@@ -398,14 +398,18 @@
       margin-block-end: 18px;
     }
 
+    /* Am Telefon eine kompakte Liste mit Vorschaubild: Titel und Nutzen
+       reichen zur Wahl, die Karte ist als Ganzes der Link. Beschreibung,
+       Unterlinks und "Ansehen" entfallen hier - die Kacheln standen sonst
+       mit 150-260 px je Eintrag rund 1.500 px vor den Produkten. */
     .tp-zubehoer__grid {
       grid-template-columns: 1fr;
-      gap: 12px;
+      gap: 8px;
     }
 
     .tp-zubehoer__card {
       flex-direction: row;
-      align-items: stretch;
+      align-items: center;
     }
 
     .tp-zubehoer__card:hover,
@@ -414,9 +418,10 @@
     }
 
     .tp-zubehoer__media {
-      flex: 0 0 36%;
-      aspect-ratio: auto;
-      min-height: 8rem;
+      flex: 0 0 76px;
+      align-self: stretch;
+      aspect-ratio: 1;
+      min-height: 76px;
       border-block-end: 0;
       border-inline-end: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
     }
@@ -426,33 +431,29 @@
     }
 
     .tp-zubehoer__icon {
-      width: 2.75rem;
+      width: 2.25rem;
     }
 
     .tp-zubehoer__body {
-      gap: 4px;
-      padding: 14px 16px;
+      gap: 2px;
+      padding: 10px 14px;
+      justify-content: center;
     }
 
     .tp-zubehoer__title {
-      font-size: 1.08rem;
+      font-size: 1.02rem;
     }
 
     .tp-zubehoer__benefit {
-      font-size: 0.92rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: rgb(var(--color-foreground-rgb) / 0.78);
     }
 
-    .tp-zubehoer__text {
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-      overflow: hidden;
-      font-size: 0.86rem;
-    }
-
+    .tp-zubehoer__text,
+    .tp-zubehoer__subs,
     .tp-zubehoer__cta {
-      padding-block-start: 6px;
-      font-size: 0.85rem;
+      display: none;
     }
 
     .tp-zubehoer__intro {

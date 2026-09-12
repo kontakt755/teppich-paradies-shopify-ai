@@ -9,6 +9,8 @@
   position: relative;
   background: url('https://cdn.shopify.com/s/files/1/0875/4852/6926/files/ChatGPT_Image_12._Feb._2026_09_31_42.png?v=1770885222') center/cover no-repeat;
   min-height: 520px;
+  /* Als Band: das Bild bleibt, traegt aber nur noch Ueberschrift und Kontakt.
+     Die Entscheidung faellt in den Boxen darunter, nicht hier. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,19 +416,53 @@
 .category-box a.category-cta:hover svg{
   transform: translateX(2px);
 }
+.hero--band {
+  min-height: 260px;
+  padding: 24px 20px;
+}
+
+.hero--band .hero-content {
+  padding: 20px 24px;
+  max-width: 760px;
+}
+
+.hero--band .hero h1,
+.hero--band h1 {
+  font-size: clamp(22px, 3.2vw, 32px);
+  margin-bottom: 6px;
+}
+
+@media (max-width: 749px) {
+  .hero--band {
+    min-height: 180px;
+    padding: 18px 14px;
+  }
+
+  .hero--band .hero-content {
+    padding: 16px 16px;
+  }
+}
 </style>
 
-<section class="hero">
+<section class="hero hero--{{ section.settings.hero_hoehe }}">
   <div class="hero-content">
     <div class="hero-text">
       <h1>Bodenbeläge vom Fachhandel</h1>
-      <p>Vinylboden, Teppichboden und mehr – online entdecken oder persönlich beraten lassen.</p>
+      <p>{{ section.settings.hero_unterzeile }}</p>
     </div>
 
-    <div class="hero-actions">
-      <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
-      <a href="/pages/boden-malerarbeiten" class="btn-secondary">Beratung & Verlegeservice</a>
-    </div>
+    {%- comment -%}
+      Die beiden alten Hero-Buttons zeigten auf dieselben zwei Wege wie die
+      Boxen darunter. Zwei konkurrierende Aufforderungen direkt uebereinander
+      heben sich gegenseitig auf, deshalb sind sie standardmaessig aus. Die
+      Einstellung holt sie zurueck, falls die Boxen doch nicht ueberzeugen.
+    {%- endcomment -%}
+    {%- if section.settings.hero_buttons_zeigen -%}
+      <div class="hero-actions">
+        <a href="{{ collections['vinylboden-1'].url }}" class="btn-primary">Bodenbeläge entdecken</a>
+        <a href="/pages/boden-malerarbeiten" class="btn-secondary">Beratung &amp; Verlegeservice</a>
+      </div>
+    {%- endif -%}
 
     <div class="hero-contact">
       <a href="tel:+4933015733720">Anrufen: 03301 5733720</a>
@@ -435,6 +471,34 @@
     </div>
   </div>
 </section>
+
+{%- comment -%}
+  Die zwei Einstiege stehen bewusst HIER: unmittelbar nach dem Hero und vor
+  Vertrauensleiste und Kategorienraster. Als eigene Section im Template liessen
+  sie sich nur hinter diese ganze Section haengen - dort lagen sie mobil rund
+  3200 px unter dem Seitenanfang.
+{%- endcomment -%}
+{%- if section.settings.zw_anzeigen -%}
+  {% render 'tp-zwei-wege',
+    gewichtung: section.settings.zw_gewichtung,
+    reihenfolge: section.settings.zw_reihenfolge,
+    frage: section.settings.zw_frage,
+    online_eyebrow: section.settings.zw_online_eyebrow,
+    online_titel: section.settings.zw_online_titel,
+    online_text: section.settings.zw_online_text,
+    online_punkte: section.settings.zw_online_punkte,
+    online_link: section.settings.zw_online_link,
+    online_cta: section.settings.zw_online_cta,
+    service_eyebrow: section.settings.zw_service_eyebrow,
+    service_titel: section.settings.zw_service_titel,
+    service_text: section.settings.zw_service_text,
+    service_punkte: section.settings.zw_service_punkte,
+    service_link: section.settings.zw_service_link,
+    service_cta: section.settings.zw_service_cta,
+    service_telefon: section.settings.zw_service_telefon,
+    service_telefon_label: section.settings.zw_service_telefon_label
+  %}
+{%- endif -%}
 
 <div class="trust-bar">
   <span>
@@ -565,15 +629,347 @@
 
 <script src="{{ 'tp-laufband.js' | asset_url }}" defer></script>
 
+{% stylesheet %}
+  .tp-zw {
+    padding: 40px 20px;
+  }
+
+  .tp-zw__frage {
+    max-width: 1100px;
+    margin: 0 auto 14px;
+    text-align: center;
+    font-size: 16px;
+    color: var(--color-foreground);
+  }
+
+  .tp-zw__grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(var(--tp-zw-online), minmax(0, 1fr)) repeat(var(--tp-zw-service), minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .tp-zw__box {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 28px 24px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+    background: var(--color-background);
+  }
+
+  .tp-zw__box--online {
+    grid-column: span var(--tp-zw-online);
+  }
+
+  .tp-zw__box--service {
+    grid-column: span var(--tp-zw-service);
+  }
+
+  .tp-zw__eyebrow {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-foreground);
+    opacity: 0.65;
+  }
+
+  .tp-zw__title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .tp-zw__text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .tp-zw__list {
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tp-zw__list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .tp-zw__list li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .tp-zw__cta {
+    margin-top: auto;
+    padding-top: 14px;
+  }
+
+  .tp-zw__cta--primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 44 px Mindesthoehe fuer Touch, wie in PR #118 fuer den ganzen Shop gesetzt */
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-zw__phone {
+    margin: 10px 0 0;
+    font-size: 15px;
+  }
+
+  .tp-zw__phone a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-zw {
+      padding: 20px 16px;
+    }
+
+    .tp-zw__frage {
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .tp-zw__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .tp-zw__box--online,
+    .tp-zw__box--service {
+      grid-column: auto;
+    }
+
+    .tp-zw__box {
+      padding: 22px 18px;
+    }
+
+    .tp-zw__title {
+      font-size: 21px;
+    }
+  }
+{% endstylesheet %}
+
 {% schema %}
 {
   "name": "Startseite Kategorien",
   "tag": "section",
   "class": "section",
-  "settings": [],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Hero"
+    },
+    {
+      "type": "select",
+      "id": "hero_hoehe",
+      "label": "Höhe",
+      "info": "Als Band tritt das Bild zurück und die Wahl darunter nach vorn.",
+      "options": [
+        {
+          "value": "band",
+          "label": "Band (schmal)"
+        },
+        {
+          "value": "gross",
+          "label": "Groß (wie vorher)"
+        }
+      ],
+      "default": "band"
+    },
+    {
+      "type": "text",
+      "id": "hero_unterzeile",
+      "label": "Unterzeile",
+      "default": "Vinylboden, Teppichboden und mehr – online kaufen oder von uns verlegen lassen."
+    },
+    {
+      "type": "checkbox",
+      "id": "hero_buttons_zeigen",
+      "label": "Alte Hero-Buttons zeigen",
+      "info": "Standardmäßig aus: sie zeigen auf dieselben zwei Wege wie die Boxen darunter.",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Zwei Einstiege (unter dem Hero)"
+    },
+    {
+      "type": "checkbox",
+      "id": "zw_anzeigen",
+      "label": "Zwei Einstiege zeigen",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "zw_gewichtung",
+      "label": "Verhältnis der beiden Boxen",
+      "info": "Gleich groß sagt dem Besucher: such dir was aus. Wenn ein Weg wichtiger ist, darf er größer sein.",
+      "options": [
+        {
+          "value": "gleich",
+          "label": "Gleich groß"
+        },
+        {
+          "value": "online_groesser",
+          "label": "Online kaufen größer"
+        },
+        {
+          "value": "service_groesser",
+          "label": "Verlegeservice größer"
+        }
+      ],
+      "default": "gleich"
+    },
+    {
+      "type": "select",
+      "id": "zw_reihenfolge",
+      "label": "Reihenfolge der Boxen",
+      "info": "Gilt überall gleich – am Bildschirm links, auf dem Handy oben. Bewusst nicht getrennt: eine nur optische Vertauschung würde Tastatur und Screenreader in der alten Reihenfolge lassen.",
+      "options": [
+        {
+          "value": "online",
+          "label": "Online kaufen zuerst"
+        },
+        {
+          "value": "service",
+          "label": "Verlegeservice zuerst"
+        }
+      ],
+      "default": "online"
+    },
+    {
+      "type": "text",
+      "id": "zw_frage",
+      "label": "Zeile über den Boxen",
+      "info": "Leer lassen blendet sie aus.",
+      "default": "Wie sollen wir Ihnen helfen?"
+    },
+    {
+      "type": "header",
+      "content": "Box 1 – Online kaufen"
+    },
+    {
+      "type": "text",
+      "id": "zw_online_eyebrow",
+      "label": "Kleine Zeile darüber",
+      "default": "Online Shop"
+    },
+    {
+      "type": "text",
+      "id": "zw_online_titel",
+      "label": "Überschrift",
+      "default": "Direkt zu Ihnen geliefert"
+    },
+    {
+      "type": "text",
+      "id": "zw_online_text",
+      "label": "Text",
+      "default": "Boden aussuchen, Wunschmaß angeben, liefern lassen – deutschlandweit."
+    },
+    {
+      "type": "text",
+      "id": "zw_online_punkte",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Versandkostenfrei in Deutschland, Kostenlose Muster, Zuschnitt nach Wunschmaß"
+    },
+    {
+      "type": "url",
+      "id": "zw_online_link",
+      "label": "Ziel"
+    },
+    {
+      "type": "text",
+      "id": "zw_online_cta",
+      "label": "Button",
+      "default": "Zum Sortiment"
+    },
+    {
+      "type": "header",
+      "content": "Box 2 – Liefer- und Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_eyebrow",
+      "label": "Kleine Zeile darüber",
+      "default": "Liefer- und Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_titel",
+      "label": "Überschrift",
+      "default": "Oranienburg und 50 km Umkreis"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_text",
+      "label": "Text",
+      "default": "Wir messen kostenlos auf, liefern und verlegen – mit eigenem Team aus Oranienburg."
+    },
+    {
+      "type": "text",
+      "id": "zw_service_punkte",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Kostenloses Aufmaß vor Ort, Fachgerechte Verlegung, Ein Ansprechpartner"
+    },
+    {
+      "type": "url",
+      "id": "zw_service_link",
+      "label": "Ziel"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_cta",
+      "label": "Button",
+      "default": "Beratung anfragen"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "zw_service_telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "Oder anrufen: 03301 5733720"
+    }
+  ],
   "blocks": [],
   "presets": [
-    { "name": "Startseite Kategorien" }
+    {
+      "name": "Startseite Kategorien"
+    }
   ]
 }
 {% endschema %}

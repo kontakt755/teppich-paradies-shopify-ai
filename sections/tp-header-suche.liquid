@@ -1,0 +1,148 @@
+{%- comment -%}
+  TP Suche + Kategorie-Leiste unter dem Header.
+  Desktop: ein breites Suchfeld mit Beispielbegriffen (GET /search, funktioniert ohne JS).
+  Telefon: Suchfeld in voller Breite, darunter eine scrollbare Kategorie-Leiste,
+  damit das Sortiment ohne Oeffnen des Menues sichtbar ist. Die Leiste scrollt
+  mit dem Inhalt weg, der klebende Header bleibt schlank.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<div class="tp-hs">
+  <div class="tp-s-wrap">
+    <form class="tp-hs__form" role="search" action="{{ routes.search_url }}" method="get">
+      <input type="hidden" name="type" value="product,collection,page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="tp-hs__lupe"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label class="visually-hidden" for="tp-hs-q">Produkte suchen</label>
+      <input id="tp-hs-q" class="tp-hs__input" type="search" name="q" placeholder="{{ section.settings.platzhalter | escape }}" autocomplete="off">
+      <button class="tp-hs__btn" type="submit" aria-label="Suchen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </button>
+    </form>
+  </div>
+  {%- comment -%}
+    Auf Produktseite und Warenkorb keine Kategorie-Leiste: dort zaehlt der
+    Artikel, die Leiste schob ihn am Telefon 56 px nach unten. Brotkrumen
+    und Menue fuehren von dort weiter.
+  {%- endcomment -%}
+  {%- assign tp_hs_ohne_leiste = false -%}
+  {%- if template.name == 'product' or template.name == 'cart' -%}
+    {%- assign tp_hs_ohne_leiste = true -%}
+  {%- endif -%}
+  {%- comment -%}
+    Auch nicht auf den Kategorieseiten mit eigener Unterkategorie-Leiste
+    (Teppichboden, Vinylboden und ihre Unterkategorien, siehe
+    snippets/tp-unterkategorien-leiste.liquid): Dort standen am Telefon zwei
+    Knopfreihen fast uebereinander, "Klickvinyl" doppelt, rund 50 px. Die
+    Leiste unter der H1 ist dort die genauere Navigation, das Menue die
+    uebergreifende.
+  {%- endcomment -%}
+  {%- if template.name == 'collection' -%}
+    {%- assign tp_hs_suffix = template.suffix | default: '' -%}
+    {%- if tp_hs_suffix == 'teppichboden' or tp_hs_suffix == 'vinylboden' or tp_hs_suffix contains 'teppichboden-' or tp_hs_suffix contains 'vinylboden-' -%}
+      {%- assign tp_hs_ohne_leiste = true -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- if section.blocks.size > 0 and tp_hs_ohne_leiste == false -%}
+    <nav class="tp-hs__chips" aria-label="Kategorien">
+      {%- for block in section.blocks -%}
+        <a href="{{ block.settings.link }}" class="tp-hs__chip{% if block.settings.hervorheben %} tp-hs__chip--rot{% endif %}" {{ block.shopify_attributes }}>{{ block.settings.label | escape }}</a>
+      {%- endfor -%}
+    </nav>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  .tp-hs { background: #fff; border-bottom: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-hs__form { display: flex; align-items: center; height: 50px; max-width: 720px; margin: 10px auto; border: 1.5px solid var(--tp-line-2, #d5cec4); border-radius: 999px; background: var(--tp-bg-2, #f6f2ec); padding: 0 6px 0 18px; transition: border-color 0.15s, background 0.15s; }
+  .tp-hs__form:focus-within { border-color: var(--tp-ink, #1d1a17); background: #fff; }
+  .tp-hs__lupe { width: 18px; height: 18px; color: #7a726a; margin-right: 8px; flex: none; }
+  .tp-hs__input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; font-size: 16px; color: var(--tp-ink, #1d1a17); outline: none; }
+  .tp-hs__input::placeholder { color: #7a726a; }
+  .tp-hs__btn { width: 42px; height: 42px; border-radius: 50%; background: var(--tp-ink, #1d1a17); color: #fff; display: grid; place-items: center; border: 0; cursor: pointer; flex: none; }
+  .tp-hs__btn svg { width: 17px; height: 17px; }
+  .tp-hs__chips { display: none; }
+  @media (max-width: 767px) {
+    /* Kompakter Kopfbereich am Telefon: Feld 44 px, Leiste 36 px hoch
+       (vorher 50 + 40 px, zusammen 219 px bis zum Inhalt). Eingabe bleibt
+       16 px, sonst zoomt iOS. */
+    .tp-hs__form { height: 44px; margin: 6px 0; padding: 0 4px 0 16px; }
+    .tp-hs__btn { width: 36px; height: 36px; }
+    .tp-hs__chips { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--tp-pad) 8px; scrollbar-width: none; scroll-snap-type: x proximity; }
+    .tp-hs__chips::-webkit-scrollbar { display: none; }
+    .tp-hs__chip { flex: none; scroll-snap-align: start; min-height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); font-weight: 500; font-size: 14.5px; color: var(--tp-ink, #1d1a17); text-decoration: none; }
+    .tp-hs__chip--rot { background: var(--tp-red-soft, #fbeeef); color: var(--tp-red, #b73740); border-color: transparent; font-weight: 600; }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    // TP: Am Telefon oeffnet das Suchfeld die Schnellsuche mit Vorschlaegen -
+    // dieselbe wie die Lupe im Header. Vorher standen zwei Suchen
+    // untereinander, und nur die Lupe zeigte Vorschlaege. Nur pointerdown,
+    // nicht focus: Beim Schliessen gibt der Dialog den Fokus zurueck, ein
+    // focus-Ausloeser wuerde die Suche sofort wieder oeffnen. Desktop, ohne
+    // JavaScript oder ohne Schnellsuche bleibt es beim normalen Formular.
+    // Die Lupe im Header bleibt: Diese Leiste scrollt weg, der Header nicht.
+    // Gleiche Grenze wie die Telefon-Regeln dieser Section (767 px)
+    var telefon = window.matchMedia('(max-width: 767px)');
+    function oeffnen(event) {
+      if (!telefon.matches) return;
+      var modal = document.getElementById('search-modal');
+      if (!modal || typeof modal.showDialog !== 'function') return;
+      event.preventDefault();
+      var text = event.currentTarget.value;
+      modal.showDialog();
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          var ziel = modal.querySelector('input[type="search"]');
+          if (!ziel) return;
+          if (text) {
+            ziel.value = text;
+            ziel.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+          ziel.focus();
+        });
+      });
+    }
+    document.querySelectorAll('.tp-hs__input').forEach(function (feld) {
+      feld.addEventListener('pointerdown', oeffnen);
+    });
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "TP Suche + Kategorien",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "platzhalter", "label": "Platzhalter im Suchfeld", "default": "Suchen: grauer Teppichboden, Vinyl Eiche, Sockelleiste weiß …" }
+  ],
+  "blocks": [
+    {
+      "type": "chip",
+      "name": "Kategorie (nur Telefon)",
+      "limit": 8,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Bezeichnung", "default": "Teppichboden" },
+        { "type": "url", "id": "link", "label": "Ziel" },
+        { "type": "checkbox", "id": "hervorheben", "label": "Rot hervorheben (Service)", "default": false }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Suche + Kategorien",
+      "blocks": [
+        { "type": "chip", "settings": { "label": "Teppichboden", "link": "shopify://collections/teppichboden" } },
+        { "type": "chip", "settings": { "label": "Vinylboden", "link": "shopify://collections/vinylboden-1" } },
+        { "type": "chip", "settings": { "label": "Klickvinyl", "link": "shopify://collections/vinylboden-klickvinyl" } },
+        { "type": "chip", "settings": { "label": "Linoleum", "link": "shopify://collections/linoleumboden-1" } },
+        { "type": "chip", "settings": { "label": "Bodenleisten", "link": "shopify://collections/bodenleisten" } },
+        { "type": "chip", "settings": { "label": "Zubehör", "link": "shopify://collections/zubehoer" } },
+        { "type": "chip", "settings": { "label": "Verlegung", "link": "shopify://pages/teppichboden-verlegen-lassen", "hervorheben": true } },
+        { "type": "chip", "settings": { "label": "Muster", "link": "shopify://pages/muster" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

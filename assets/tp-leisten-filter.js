@@ -159,4 +159,14 @@
   });
 
   applyFromHash(false);
+
+  // Kommt man ueber einen Menuelink mit Filter-Hash von einer anderen Seite, laedt
+  // die Kategorieseite neu. Ohne Sprung lag das gefilterte Raster unsichtbar unter
+  // dem Einstieg (bei 390 px Breite 1630 px tief, gemessen 2026-09-11, #193).
+  if ((window.location.hash || '').indexOf('#leisten:') === 0) {
+    window.requestAnimationFrame(function () {
+      var grid = document.getElementById('bodenleisten-produkte') || root;
+      if (grid) grid.scrollIntoView({ block: 'start' });
+    });
+  }
 })();

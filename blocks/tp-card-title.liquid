@@ -18,12 +18,14 @@
 {% if closest.product == blank %}
   {% assign text = 'placeholders.product_title' | t %}
   {% assign product_title = '<p role="heading" aria-level="3">' | append: text | append: '</p>' %}
-  {% render 'text', fallback_text: product_title, block: block %}
+  <span class="contents tp-card-title__link">
+    {% render 'text', fallback_text: product_title, block: block %}
+  </span>
 {% else %}
   {% assign tp_card_title_display = closest.product.title | split: ' – ' | first | split: ' Teppichboden' | first %}
   {% assign product_title = '<p role="heading" aria-level="3">' | append: tp_card_title_display | append: '</p>' %}
   <a
-    class="contents user-select-text"
+    class="contents user-select-text tp-card-title__link"
     ref="productTitleLink"
     href="{{ closest.product.selected_or_first_available_variant.url }}"
   >
@@ -32,19 +34,16 @@
   {% render 'tp-card-roll-widths', product_resource: closest.product %}
 {% endif %}
 
-{% style %}
-  .tp-card-title-link {
-    color: var(--color-foreground);
-    text-decoration: none;
-    display: block;
-    transition: color 0.2s ease;
-  }
-
-  .tp-card-title-link:hover {
-    color: var(--color-primary);
-  }
-
-  [role="heading"] {
+{% comment %}
+  Frueher ein style-Block je Karte mit ungebundenem [role="heading"]: jede
+  Ueberschrift dieser Art auf der Seite wurde auf zwei Zeilen gekuerzt, sobald
+  irgendwo eine Karte stand. Die Regeln fuer .tp-card-title-link trafen kein
+  Element. Jetzt einmal pro Seite und nur fuer den Kartentitel; :where haelt
+  die Spezifitaet dort, wo sie war, damit .product-card [role="heading"]
+  weiter gewinnt.
+{% endcomment %}
+{% stylesheet %}
+  :where(.tp-card-title__link) [role='heading'] {
     margin: 0;
     line-height: 1.4;
     /* Feste Hoehe fuer 2 Zeilen, damit Karten mit ein- und zweizeiligen
@@ -58,7 +57,7 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
   }
-{% endstyle %}
+{% endstylesheet %}
 
 {% schema %}
 {

@@ -1,0 +1,607 @@
+{
+  "_hinweis": "Vorlage, NICHT ausgefuehrt. Menues sind storeweit - ein menuUpdate wirkt sofort im Live-Shop. Erst beim Livegang des Verlegeservice ausfuehren (Anleitung: verlegeservice-livegang-vorlage.md).",
+  "_aenderung": [
+    "Oberpunkt \"Service & Verlegung\" (734281072974): von HTTP /pages/boden-malerarbeiten (Gewerbeseite) auf PAGE Liefer- & Verlegeservice",
+    "Neuer erster Unterpunkt \"Liefer- & Verlegeservice\" (PAGE) - im Mobilmenue oeffnet der Oberpunkt nur das Untermenue, ohne Unterpunkt waere die Seite dort nicht erreichbar"
+  ],
+  "_pruefung": {
+    "itemIdsVorher": 40,
+    "neueItems": 1,
+    "regel": "Vor dem Update frisch auslesen und gegen \"vorher\" vergleichen - weicht etwas ab, variables neu erzeugen. Nach dem Update: alle IDs aus \"vorher\" noch da, genau eine neue."
+  },
+  "_stand": "2026-09-11, ausgelesen ueber die Admin API",
+  "vorher": {
+    "id": "gid://shopify/Menu/268032508238",
+    "handle": "main-menu",
+    "title": "Hauptmenü",
+    "items": [
+      {
+        "id": "gid://shopify/MenuItem/730052297038",
+        "title": "Teppichboden",
+        "type": "COLLECTION",
+        "url": "/collections/teppichboden",
+        "resourceId": "gid://shopify/Collection/688863674702",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/734432788814",
+            "title": "Alle Teppichböden",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden",
+            "resourceId": "gid://shopify/Collection/688863674702",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122762062",
+            "title": "Hochflor",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-hochflor",
+            "resourceId": "gid://shopify/Collection/689927618894",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122794830",
+            "title": "Kurzflor",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-kurzflor",
+            "resourceId": "gid://shopify/Collection/689931387214",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122827598",
+            "title": "Velours",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-velours",
+            "resourceId": "gid://shopify/Collection/689931583822",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122860366",
+            "title": "Schlinge",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-schlinge",
+            "resourceId": "gid://shopify/Collection/689931682126",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122893134",
+            "title": "Wolle",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-wolle",
+            "resourceId": "gid://shopify/Collection/689931813198",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122925902",
+            "title": "Nadelvlies & Objekt",
+            "type": "COLLECTION",
+            "url": "/collections/teppichboden-nadelvlies",
+            "resourceId": "gid://shopify/Collection/689932009806",
+            "items": []
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/859123319118",
+        "title": "Vinylboden",
+        "type": "COLLECTION",
+        "url": "/collections/vinylboden-1",
+        "resourceId": "gid://shopify/Collection/688863740238",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/859131380046",
+            "title": "Alle Vinylböden",
+            "type": "COLLECTION",
+            "url": "/collections/vinylboden-1",
+            "resourceId": "gid://shopify/Collection/688863740238",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131412814",
+            "title": "Klickvinyl",
+            "type": "COLLECTION",
+            "url": "/collections/vinylboden-klickvinyl",
+            "resourceId": "gid://shopify/Collection/689934369102",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131445582",
+            "title": "Klebevinyl",
+            "type": "COLLECTION",
+            "url": "/collections/vinylboden-klebevinyl",
+            "resourceId": "gid://shopify/Collection/689934401870",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131478350",
+            "title": "Vinyl von der Rolle",
+            "type": "COLLECTION",
+            "url": "/collections/vinylboden-vinyl-von-der-rolle",
+            "resourceId": "gid://shopify/Collection/689934434638",
+            "items": [
+              {
+                "id": "gid://shopify/MenuItem/868902895950",
+                "title": "Alle Rollenware",
+                "type": "COLLECTION",
+                "url": "/collections/vinylboden-vinyl-von-der-rolle",
+                "resourceId": "gid://shopify/Collection/689934434638"
+              },
+              {
+                "id": "gid://shopify/MenuItem/868902928718",
+                "title": "Holzdekore",
+                "type": "HTTP",
+                "url": "https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392833358",
+                "resourceId": null
+              },
+              {
+                "id": "gid://shopify/MenuItem/868902961486",
+                "title": "Steindekore",
+                "type": "HTTP",
+                "url": "https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392964430",
+                "resourceId": null
+              }
+            ]
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131543886",
+            "title": "Alle Holzdekore",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392833358",
+            "resourceId": null,
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131511118",
+            "title": "Alle Steindekore",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392964430",
+            "resourceId": null,
+            "items": []
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/868188684622",
+        "title": "Linoleumboden",
+        "type": "COLLECTION",
+        "url": "/collections/linoleumboden-1",
+        "resourceId": "gid://shopify/Collection/701795664206",
+        "items": []
+      },
+      {
+        "id": "gid://shopify/MenuItem/859123089742",
+        "title": "Bodenleisten",
+        "type": "COLLECTION",
+        "url": "/collections/bodenleisten",
+        "resourceId": "gid://shopify/Collection/688863773006",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/859123122510",
+            "title": "Alle Bodenleisten",
+            "type": "COLLECTION",
+            "url": "/collections/bodenleisten",
+            "resourceId": "gid://shopify/Collection/688863773006",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123155278",
+            "title": "Sockelleisten",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/bodenleisten?filter.p.m.custom.arten=gid%3A%2F%2Fshopify%2FMetaobject%2F1724386181454",
+            "resourceId": null,
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123188046",
+            "title": "Übergangsprofile",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-uebergangsprofile",
+            "resourceId": "gid://shopify/Collection/701924442446",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123253582",
+            "title": "Abschlussprofile",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-abschlussprofile",
+            "resourceId": "gid://shopify/Collection/701924475214",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123286350",
+            "title": "Kleber & Fixierung",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-kleber-fixierung",
+            "resourceId": "gid://shopify/Collection/701924507982",
+            "items": []
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/868583539022",
+        "title": "Zubehör",
+        "type": "COLLECTION",
+        "url": "/collections/zubehoer",
+        "resourceId": "gid://shopify/Collection/701924376910",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/868583571790",
+            "title": "Alles Zubehör",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer",
+            "resourceId": "gid://shopify/Collection/701924376910",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583604558",
+            "title": "Profile",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-profile",
+            "resourceId": "gid://shopify/Collection/701924409678",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583637326",
+            "title": "Kleber & Fixierung",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-kleber-fixierung",
+            "resourceId": "gid://shopify/Collection/701924507982",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583670094",
+            "title": "Bauchemie",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-bauchemie",
+            "resourceId": "gid://shopify/Collection/701924540750",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583702862",
+            "title": "Verlege- & Dämmunterlagen",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-verlegeunterlagen",
+            "resourceId": "gid://shopify/Collection/701924573518",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583735630",
+            "title": "Reinigungsmittel",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-reinigungsmittel",
+            "resourceId": "gid://shopify/Collection/701924606286",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583768398",
+            "title": "Verlegeband",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-verlegeband",
+            "resourceId": "gid://shopify/Collection/701924639054",
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583801166",
+            "title": "Sauberlauf",
+            "type": "COLLECTION",
+            "url": "/collections/zubehoer-sauberlauf",
+            "resourceId": "gid://shopify/Collection/701924671822",
+            "items": []
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/734281072974",
+        "title": "Service & Verlegung",
+        "type": "HTTP",
+        "url": "https://www.teppich-paradies.net/pages/boden-malerarbeiten",
+        "resourceId": null,
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/859122958670",
+            "title": "Teppichboden verlegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/teppichboden-verlegen-lassen",
+            "resourceId": null,
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122991438",
+            "title": "Vinylboden verlegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/vinylboden-verlegen",
+            "resourceId": null,
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123024206",
+            "title": "Treppen professionell belegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/treppenverlegung",
+            "resourceId": null,
+            "items": []
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123056974",
+            "title": "Für Firmenkunden",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/firmenkunden",
+            "resourceId": null,
+            "items": []
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/734280614222",
+        "title": "Kontakt",
+        "type": "HTTP",
+        "url": "https://www.teppich-paradies.net/pages/kontakt",
+        "resourceId": null,
+        "items": []
+      }
+    ]
+  },
+  "variables": {
+    "id": "gid://shopify/Menu/268032508238",
+    "title": "Hauptmenü",
+    "handle": "main-menu",
+    "items": [
+      {
+        "id": "gid://shopify/MenuItem/730052297038",
+        "title": "Teppichboden",
+        "type": "COLLECTION",
+        "resourceId": "gid://shopify/Collection/688863674702",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/734432788814",
+            "title": "Alle Teppichböden",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/688863674702"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122762062",
+            "title": "Hochflor",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689927618894"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122794830",
+            "title": "Kurzflor",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689931387214"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122827598",
+            "title": "Velours",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689931583822"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122860366",
+            "title": "Schlinge",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689931682126"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122893134",
+            "title": "Wolle",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689931813198"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122925902",
+            "title": "Nadelvlies & Objekt",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689932009806"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/859123319118",
+        "title": "Vinylboden",
+        "type": "COLLECTION",
+        "resourceId": "gid://shopify/Collection/688863740238",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/859131380046",
+            "title": "Alle Vinylböden",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/688863740238"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131412814",
+            "title": "Klickvinyl",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689934369102"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131445582",
+            "title": "Klebevinyl",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689934401870"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131478350",
+            "title": "Vinyl von der Rolle",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/689934434638",
+            "items": [
+              {
+                "id": "gid://shopify/MenuItem/868902895950",
+                "title": "Alle Rollenware",
+                "type": "COLLECTION",
+                "resourceId": "gid://shopify/Collection/689934434638"
+              },
+              {
+                "id": "gid://shopify/MenuItem/868902928718",
+                "title": "Holzdekore",
+                "type": "HTTP",
+                "url": "https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392833358"
+              },
+              {
+                "id": "gid://shopify/MenuItem/868902961486",
+                "title": "Steindekore",
+                "type": "HTTP",
+                "url": "https://www.teppich-paradies.net/collections/vinylboden-vinyl-von-der-rolle?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392964430"
+              }
+            ]
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131543886",
+            "title": "Alle Holzdekore",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392833358"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859131511118",
+            "title": "Alle Steindekore",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/vinylboden-1?filter.p.m.custom.optik=gid%3A%2F%2Fshopify%2FMetaobject%2F1724392964430"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/868188684622",
+        "title": "Linoleumboden",
+        "type": "COLLECTION",
+        "resourceId": "gid://shopify/Collection/701795664206"
+      },
+      {
+        "id": "gid://shopify/MenuItem/859123089742",
+        "title": "Bodenleisten",
+        "type": "COLLECTION",
+        "resourceId": "gid://shopify/Collection/688863773006",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/859123122510",
+            "title": "Alle Bodenleisten",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/688863773006"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123155278",
+            "title": "Sockelleisten",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/collections/bodenleisten?filter.p.m.custom.arten=gid%3A%2F%2Fshopify%2FMetaobject%2F1724386181454"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123188046",
+            "title": "Übergangsprofile",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924442446"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123253582",
+            "title": "Abschlussprofile",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924475214"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123286350",
+            "title": "Kleber & Fixierung",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924507982"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/868583539022",
+        "title": "Zubehör",
+        "type": "COLLECTION",
+        "resourceId": "gid://shopify/Collection/701924376910",
+        "items": [
+          {
+            "id": "gid://shopify/MenuItem/868583571790",
+            "title": "Alles Zubehör",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924376910"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583604558",
+            "title": "Profile",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924409678"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583637326",
+            "title": "Kleber & Fixierung",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924507982"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583670094",
+            "title": "Bauchemie",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924540750"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583702862",
+            "title": "Verlege- & Dämmunterlagen",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924573518"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583735630",
+            "title": "Reinigungsmittel",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924606286"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583768398",
+            "title": "Verlegeband",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924639054"
+          },
+          {
+            "id": "gid://shopify/MenuItem/868583801166",
+            "title": "Sauberlauf",
+            "type": "COLLECTION",
+            "resourceId": "gid://shopify/Collection/701924671822"
+          }
+        ]
+      },
+      {
+        "id": "gid://shopify/MenuItem/734281072974",
+        "title": "Service & Verlegung",
+        "type": "PAGE",
+        "items": [
+          {
+            "title": "Liefer- & Verlegeservice",
+            "type": "PAGE",
+            "resourceId": "gid://shopify/Page/145743577422"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122958670",
+            "title": "Teppichboden verlegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/teppichboden-verlegen-lassen"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859122991438",
+            "title": "Vinylboden verlegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/vinylboden-verlegen"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123024206",
+            "title": "Treppen professionell belegen",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/treppenverlegung"
+          },
+          {
+            "id": "gid://shopify/MenuItem/859123056974",
+            "title": "Für Firmenkunden",
+            "type": "HTTP",
+            "url": "https://www.teppich-paradies.net/pages/firmenkunden"
+          }
+        ],
+        "resourceId": "gid://shopify/Page/145743577422"
+      },
+      {
+        "id": "gid://shopify/MenuItem/734280614222",
+        "title": "Kontakt",
+        "type": "HTTP",
+        "url": "https://www.teppich-paradies.net/pages/kontakt"
+      }
+    ]
+  }
+}

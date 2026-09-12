@@ -1,0 +1,22 @@
+{%- doc -%}
+  Kurztext der Bildkachel (Block _tp-menu-kachel) zu einem Navigationspunkt,
+  bereits HTML-escaped. Gibt nichts aus, wenn keine Kachel passt oder ihr
+  Kurztext leer ist. Gleiche Zuordnung wie tp-menu-bild (tp-menu-kachel-index).
+
+  @param {object} [link] - Navigationspunkt (linklist item)
+  @param {string} kacheln - Datensaetze aus content_for 'blocks'
+  @param {string} [match_title] - Titel statt link.title vergleichen
+{%- enddoc -%}
+
+{%- liquid
+  capture tp_mk_idx
+    render 'tp-menu-kachel-index', link: link, kacheln: kacheln, match_title: match_title
+  endcapture
+  assign tp_mk_idx = tp_mk_idx | strip | plus: 0
+  if tp_mk_idx > 0
+    assign tp_mk_i = tp_mk_idx | minus: 1
+    assign tp_mk_records = kacheln | split: '~~'
+    assign tp_mk_fields = tp_mk_records[tp_mk_i] | split: '|~|'
+    echo tp_mk_fields[2] | strip | escape
+  endif
+-%}

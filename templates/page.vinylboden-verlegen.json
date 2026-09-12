@@ -12,7 +12,17 @@
     "vinylboden_verlegen_8thyEt": {
       "type": "vinylboden-verlegen",
       "name": "Vinyl Verlegen Hero",
-      "settings": {}
+      "settings": {
+        "hero_bild": "shopify://shop_images/20231005_135521.jpg",
+        "hero_bild_alt": "Von uns verlegter Vinylboden",
+        "hero_titel": "Vinylboden fachgerecht verlegen lassen",
+        "hero_text": "Wir prüfen den Untergrund, beraten zu Klick-, Klebe- oder Rollenvinyl und verlegen fachgerecht.",
+        "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Untergrundprüfung inklusive, Verlegung durch unser eigenes Team",
+        "hero_cta": "Aufmaß-Termin anfragen",
+        "hero_cta_ziel": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720"
+      }
     },
     "main": {
       "type": "main-page",
@@ -171,11 +181,50 @@
         "phone_number": "+4933015733720",
         "phone_display": "03301 / 573 37 20"
       }
+    },
+    "tp_verlegegebiet": {
+      "type": "tp-verlegegebiet",
+      "settings": {
+        "cta_zeigen": false,
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322",
+        "vertrauen": "",
+        "versand_link": "/collections/all"
+      },
+      "blocks": {
+        "stufe_50km": {
+          "type": "leistung",
+          "settings": {
+            "label": "Bis [km] km um Oranienburg",
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
+          }
+        },
+        "stufe_weiter": {
+          "type": "leistung",
+          "settings": {
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
+          }
+        },
+        "stufe_versand": {
+          "type": "leistung",
+          "settings": {
+            "label": "Deutschlandweit",
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
+          }
+        }
+      },
+      "block_order": [
+        "stufe_50km",
+        "stufe_weiter",
+        "stufe_versand"
+      ]
     }
   },
   "order": [
     "vinylboden_verlegen_8thyEt",
     "main",
+    "tp_verlegegebiet",
     "final_cta_service",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"

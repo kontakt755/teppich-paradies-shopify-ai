@@ -76,12 +76,41 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
   return { id: compactTaskId(taskId), task: task.trim(), risk, taskType, taskTypeSource };
 }
 
-export function buildClaudeContextPack({ classified, policy, analysis }) {
-  return `# Claude-Code-Hand-off\n\n## Auftrag\n${classified.task}\n\n## Router-Entscheidung\n- Risiko: ${classified.risk}\n- Typ: ${classified.taskType}\n- Modellklasse: ${policy.modelRequirement.class}\n- Aufwand: ${policy.modelRequirement.effortLevel}\n- Autonomie: ${policy.autonomyLevel}\n\n## OpenRouter-Analyse\n${analysis}\n\n## Verbindliche Grenzen\n- Prüfe zuerst den bestehenden Code und die Projektregeln.\n- Führe keine Shopify-Live-Veröffentlichung, Preis-, Checkout-, Produkt-, DNS- oder Löschoperation aus.\n- Bei unklaren Fakten: dokumentieren, nicht raten.\n- Implementiere nur die minimale, testbare Änderung und berichte betroffene Dateien sowie Tests.\n`;
+// Gilt fuer Implementer und Reviewer gleichermassen. Der letzte Punkt lautete
+// bis 2026-09-11 "Implementiere nur ..." und legte auch dann eine Umsetzung
+// nahe, wenn der Auftrag nur eine Antwort verlangte.
+const BINDING_LIMITS = [
+  'Prüfe zuerst den bestehenden Code und die Projektregeln.',
+  'Führe keine Shopify-Live-Veröffentlichung, Preis-, Checkout-, Produkt-, DNS- oder Löschoperation aus.',
+  'Bei unklaren Fakten: dokumentieren, nicht raten.',
+  'Ändere das Repository nur, soweit der Auftrag es verlangt: minimal, testbar, mit Angabe der betroffenen Dateien und Tests.',
+];
+
+function limitsSection() {
+  return `## Verbindliche Grenzen\n${BINDING_LIMITS.map(line => `- ${line}`).join('\n')}\n`;
 }
 
-export function writeClaudeHandoff({ taskId, content, outputDir = '.router/claude-handoffs', io = fs }) {
-  const filePath = path.resolve(outputDir, `${compactTaskId(taskId)}.md`);
+// Die Voranalyse stammt von einem kleinen Drittmodell, das nur den Auftragstext
+// sieht - kein Repository, keine Projektregeln. Am 2026-09-11 stand darin
+// "Claude 3 Opus ist das leistungsfaehigste Modell" samt Plan zum Umschalten.
+// Fuer den Implementer bleibt sie stehen, aber ausdruecklich als ungepruefter
+// Hinweis; der Reviewer bekommt sie gar nicht (buildReviewerTaskPack).
+export function buildClaudeContextPack({ classified, policy, analysis }) {
+  return `# Claude-Code-Hand-off\n\n## Auftrag\n${classified.task}\n\n## Router-Entscheidung\n- Risiko: ${classified.risk}\n- Typ: ${classified.taskType}\n- Modellklasse: ${policy.modelRequirement.class}\n- Aufwand: ${policy.modelRequirement.effortLevel}\n- Autonomie: ${policy.autonomyLevel}\n\n## Ungeprüfte Voranalyse (Hinweis, nicht verbindlich)\nAutomatisch erzeugt von einem kleinen Drittmodell, das nur den Auftragstext kennt, nicht das Repository. Fakten daraus (Modellnamen, Versionen, Pfade, Befehle) vor Verwendung prüfen; maßgeblich sind Auftrag, bestehender Code und AGENTS.md.\n\n${analysis}\n\n${limitsSection()}`;
+}
+
+// Der Reviewer bekommt nur, woran er messen soll: den Wortlaut des Auftrags und
+// die verbindlichen Grenzen. Weder die Voranalyse (siehe oben) noch die
+// Router-Einstufung - "Typ: IMPLEMENTATION" steht auch bei einer reinen Frage
+// darin, und der Reviewer verlangte daraufhin eine Umsetzung. Ob der Auftrag
+// ohne Aenderung erfuellt ist, entscheidet er am Pruefbereich und an der
+// Schlussantwort des Agenten (reviewCandidateFromStop in review-scope.mjs).
+export function buildReviewerTaskPack({ classified }) {
+  return `# Prüfauftrag für die unabhängige Review\n\n## Auftrag\n${classified.task}\n\n${limitsSection()}\n## Prüfmaßstab\nBewerte ausschließlich gegen den Auftrag oben, die Grenzen und die Projektregeln (AGENTS.md, CLAUDE.md). Eine automatische Voranalyse des Routers ist hier bewusst nicht enthalten: Sie stammt von einem Drittmodell ohne Repository-Zugriff, ist ungeprüft und kein Maßstab.\n`;
+}
+
+export function writeClaudeHandoff({ taskId, content, outputDir = '.router/claude-handoffs', suffix = '', io = fs }) {
+  const filePath = path.resolve(outputDir, `${compactTaskId(taskId)}${suffix}.md`);
   io.mkdirSync(path.dirname(filePath), { recursive: true });
   io.writeFileSync(filePath, content, 'utf8');
   return filePath;
@@ -106,5 +135,8 @@ export async function prepareClaudeBridge({ taskId, task, execute = executeBrief
   });
   const content = buildClaudeContextPack({ classified, policy, analysis: result.text });
   const handoffPath = writeClaudeHandoff({ taskId: classified.id, content, outputDir });
-  return { status: 'READY', classified, policy, analysis: result.text, handoffPath, route: result.route, usage: result.usage, attempts: result.attempts };
+  // Eigene Datei fuer den Reviewer (codex-stop-review.mjs, agents:review), damit
+  // er nie gegen die ungepruefte Voranalyse bewertet.
+  const reviewTaskPath = writeClaudeHandoff({ taskId: classified.id, content: buildReviewerTaskPack({ classified }), outputDir, suffix: '.review' });
+  return { status: 'READY', classified, policy, analysis: result.text, handoffPath, reviewTaskPath, route: result.route, usage: result.usage, attempts: result.attempts };
 }

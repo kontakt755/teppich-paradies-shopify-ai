@@ -109,6 +109,11 @@
   if parent_link.title == 'Kontakt'
     assign tp_kontakt_nav = true
   endif
+  # Vinyl: dieselbe Gliederung wie im Handy-Menue, siehe snippets/tp-vinyl-nav.liquid
+  assign tp_vinyl_nav = false
+  if parent_link.type == 'collection_link' and parent_link.object.handle == 'vinylboden-1'
+    assign tp_vinyl_nav = true
+  endif
 -%}
 {%- if tp_leisten_nav -%}
   <div class="mega-menu__intro">
@@ -120,11 +125,16 @@
     <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
   </div>
   {% render 'tp-linoleum-nav', parent_link: parent_link, kacheln: kacheln, id: id, settings: settings %}
+{%- elsif tp_vinyl_nav -%}
+  <div class="mega-menu__intro">
+    <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
+  </div>
+  {% render 'tp-vinyl-nav', variant: 'megamenu', parent_link: parent_link, kacheln: kacheln %}
 {%- elsif tp_kontakt_nav -%}
   <div class="mega-menu__intro">
     <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>
   </div>
-  {% render 'tp-kontakt-nav', parent_link: parent_link, kacheln: kacheln, id: id %}
+  {% render 'tp-kontakt-nav', parent_link: parent_link, id: id %}
 {%- else -%}
 <div class="mega-menu__intro">
   <p class="mega-menu__intro-title">{{ parent_link.title | escape }}</p>

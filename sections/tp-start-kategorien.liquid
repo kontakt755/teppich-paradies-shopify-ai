@@ -1,0 +1,123 @@
+{%- comment -%}
+  TP Start-Kategorien: sechs Karten 4:5 mit echtem Bild, Titel, Untertitel und
+  Produktzahl aus der Kollektion. Desktop 6 in einer Reihe, Telefon horizontaler
+  Slider mit grossen Karten und Punkten. Ohne Bild im Block: Kollektionsbild,
+  sonst Platzhalter.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<section class="tp-s-sec tp-s-sec--tight tp-kat" id="tp-kategorien" aria-labelledby="tp-kat-h2">
+  <div class="tp-s-wrap">
+    <div class="tp-s-sec-head">
+      <div>
+        <h2 id="tp-kat-h2" class="tp-s-h2">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p>{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+      {%- if section.settings.link_label != blank -%}
+        <a class="tp-s-link" href="{{ section.settings.link | default: '/collections/all' }}">{{ section.settings.link_label | escape }}</a>
+      {%- endif -%}
+    </div>
+    <div class="tp-kat__list" id="tp-kat-list">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign col = block.settings.collection
+          assign img = block.settings.bild
+          if img == blank and col != blank
+            assign img = col.image
+          endif
+          assign titel = block.settings.titel
+          if titel == blank and col != blank
+            assign titel = col.title
+          endif
+          assign ziel = block.settings.link
+          if ziel == blank and col != blank
+            assign ziel = col.url
+          endif
+        -%}
+        <a class="tp-kat__card" href="{{ ziel | default: '#' }}" {{ block.shopify_attributes }}>
+          {%- if img != blank -%}
+            {{ img | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: '', class: 'tp-kat__img' }}
+          {%- else -%}
+            {{ 'collection-1' | placeholder_svg_tag: 'tp-kat__img' }}
+          {%- endif -%}
+          {%- if block.settings.zahl_zeigen and col != blank -%}
+            <span class="tp-kat__n">{{ col.products_count }} {{ block.settings.zahl_wort | default: 'Produkte' | escape }}</span>
+          {%- endif -%}
+          <span class="tp-kat__t"><strong>{{ titel | escape }}</strong>{%- if block.settings.untertitel != blank -%}<small>{{ block.settings.untertitel | escape }}</small>{%- endif -%}</span>
+        </a>
+      {%- endfor -%}
+    </div>
+    <div class="tp-kat__dots" id="tp-kat-dots" aria-hidden="true">
+      {%- for block in section.blocks -%}<i{% if forloop.first %} class="on"{% endif %}></i>{%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-kat__list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  .tp-kat__card { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; aspect-ratio: 4 / 5; display: block; color: #fff; text-decoration: none; }
+  .tp-kat__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
+  .tp-kat__card:hover .tp-kat__img { transform: scale(1.05); }
+  .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.78) 0%, rgba(20, 16, 12, 0.25) 45%, rgba(20, 16, 12, 0) 70%); }
+  .tp-kat__t { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1; }
+  .tp-kat__t strong { display: block; font-size: 19px; font-weight: 600; line-height: 1.15; }
+  .tp-kat__t small { display: block; font-size: 13px; opacity: 0.85; margin-top: 3px; }
+  .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; }
+  .tp-kat__dots { display: none; }
+  @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 767px) {
+    .tp-kat__list { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding: 0 var(--tp-pad) 4px; margin: 0 calc(-1 * var(--tp-pad)); scrollbar-width: none; }
+    .tp-kat__list::-webkit-scrollbar { display: none; }
+    .tp-kat__card { flex: 0 0 68%; scroll-snap-align: start; aspect-ratio: 4 / 4.6; }
+    .tp-kat__t strong { font-size: 20px; }
+    .tp-kat__dots { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+    .tp-kat__dots i { width: 6px; height: 6px; border-radius: 50%; background: #d5cec4; transition: width 0.2s; }
+    .tp-kat__dots i.on { background: #1d1a17; width: 18px; border-radius: 3px; }
+  }
+  @media (max-width: 389px) { .tp-kat__card { flex-basis: 76%; } }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    var list = document.getElementById('tp-kat-list');
+    var dots = document.querySelectorAll('#tp-kat-dots i');
+    if (!list || !dots.length) return;
+    list.addEventListener('scroll', function () {
+      var first = list.firstElementChild;
+      if (!first) return;
+      var w = first.offsetWidth + 12;
+      var i = Math.round(list.scrollLeft / w);
+      dots.forEach(function (d, j) { d.classList.toggle('on', j === i); });
+    }, { passive: true });
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "TP Start-Kategorien",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Womit möchten Sie starten?" },
+    { "type": "text", "id": "text", "label": "Unterzeile", "default": "Sechs Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos." },
+    { "type": "text", "id": "link_label", "label": "Link rechts", "default": "Alle Produkte ansehen" },
+    { "type": "url", "id": "link", "label": "Link-Ziel" }
+  ],
+  "blocks": [
+    {
+      "type": "kategorie",
+      "name": "Kategorie",
+      "limit": 6,
+      "settings": [
+        { "type": "collection", "id": "collection", "label": "Kollektion" },
+        { "type": "image_picker", "id": "bild", "label": "Bild (leer = Kollektionsbild)" },
+        { "type": "text", "id": "titel", "label": "Titel (leer = Kollektionstitel)" },
+        { "type": "text", "id": "untertitel", "label": "Untertitel", "default": "Velours, Schlinge, Hochflor, Wolle" },
+        { "type": "url", "id": "link", "label": "Ziel (leer = Kollektion)" },
+        { "type": "checkbox", "id": "zahl_zeigen", "label": "Produktzahl anzeigen", "default": true },
+        { "type": "text", "id": "zahl_wort", "label": "Wort hinter der Zahl", "default": "Qualitäten" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Start-Kategorien" } ]
+}
+{% endschema %}

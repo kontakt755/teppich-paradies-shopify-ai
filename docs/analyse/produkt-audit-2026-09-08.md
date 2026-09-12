@@ -55,7 +55,7 @@ Die 152 typlosen Produkte sind eindeutig zuordenbar: **104 Klebevinyl** (in `vin
 
 Das Bild-Thema ist das größte: **der gesamte aktive Vinyl-Katalog (141 Klebe, 85 Klick, 63 Rolle) hat genau ein Bild**; nur Teppichboden, Linoleum und Teile des Zubehörs haben 5–10+.
 
-**Lieferanten-/Herstellernamen im Titel (41):** `JOKA` 19× (Zubehör: „JOKA PUR Reiniger", „JOKA JK 124 XPS-Trittschalldämmung"), `ASTRA` 17× (Drafts „ASTRA Antea" …), `Forbo` 3× („Forbo Coral Brush Sauberlaufmatte …"), `Coloria`/`Elastium` je 1× (Eigenmarken, in Ordnung). Zusätzlich als Vendor: „ASTRA / Otto Golze & Söhne" (18) und Tag `ASTRA`/`DEKOWE`. Jordan, Jokalino, JAB, Vorwerk kommen nirgends vor. Bei JOKA/Forbo ist die Nennung bei Markenzubehör vermutlich gewollt — klären, ob die Regel „kein Lieferant im Titel" auch für Zubehör gilt.
+**Lieferanten-/Herstellernamen im Titel (41):** `Hausmarke von A` 19× (Zubehör: „[Hausmarke] PUR Reiniger", „[Hausmarke] JK 124 XPS-Trittschalldämmung"), `ASTRA` 17× (Drafts „ASTRA Antea" …), `Forbo` 3× („Forbo Coral Brush Sauberlaufmatte …"), `Coloria`/`Elastium` je 1× (Eigenmarken, in Ordnung). Zusätzlich als Vendor: „ASTRA / Otto Golze & Söhne" (18) und Tag `ASTRA`/`DEKOWE`. Lieferant A, Linie A-3, JAB, Vorwerk kommen nirgends vor. Bei Hausmarke von A/Forbo ist die Nennung bei Markenzubehör vermutlich gewollt — klären, ob die Regel „kein Lieferant im Titel" auch für Zubehör gilt.
 
 **Englische Farbnamen im Titel:** streng nur 4 — `amara-eiche-nordic-klebevinyl-2-5mm`, `selvana-eiche-nordic-klebevinyl-fischgrat-2-5mm` („Nordic"), `dornova-beton-industrial-hell-klebevinyl-2-5mm`, `odense-beton-classic-klickvinyl-5mm`. Taupe/Beige/Gold/Greige (25 Treffer) sind im Deutschen üblich und wurden nicht gezählt.
 
@@ -115,7 +115,7 @@ Alle 85 Klickvinyl und alle 141 Klebevinyl (typisiert + typlos) haben das Metafe
 
 ## 6. Tags
 
-209 verschiedene Tags. **Top 30:** `raum: wohnzimmer` 361 · `material: pvc` 224 · `raum: schlafzimmer` 219 · `raum: flur` 215 · `nutzungsklasse: 23` 212 · `raum: kinderzimmer` 209 · `nutzungsklasse: 33` 158 · `nutzungsklasse: 42` 148 · `raum: arbeitszimmer` 147 · `art: klebevinyl` 141 · `nutzungsklasse: 32` 121 · `raum: küche` 115 · `breite_boden: 400cm` 110 · `art: klickvinyl` 85 · `breite_boden: 200cm` 71 · `raum: kueche` 65 · `art: vinylboden` 63 · `material: vinyl` 63 · `art: teppichboden` 52 · `breite_boden: 500cm` 45 · `zubehoer` 43 · `farbe: beige` 38 · `farbe: braun` 32 · `farbe: grau` 28 · `B2B-Daten-fehlen` 26 · `Supplier-Draft` 26 · `nutzungsklasse: 22` 19 · `marke: joka` 19 · `ASTRA` 18 · `material: polyamid` 16.
+209 verschiedene Tags. **Top 30:** `raum: wohnzimmer` 361 · `material: pvc` 224 · `raum: schlafzimmer` 219 · `raum: flur` 215 · `nutzungsklasse: 23` 212 · `raum: kinderzimmer` 209 · `nutzungsklasse: 33` 158 · `nutzungsklasse: 42` 148 · `raum: arbeitszimmer` 147 · `art: klebevinyl` 141 · `nutzungsklasse: 32` 121 · `raum: küche` 115 · `breite_boden: 400cm` 110 · `art: klickvinyl` 85 · `breite_boden: 200cm` 71 · `raum: kueche` 65 · `art: vinylboden` 63 · `material: vinyl` 63 · `art: teppichboden` 52 · `breite_boden: 500cm` 45 · `zubehoer` 43 · `farbe: beige` 38 · `farbe: braun` 32 · `farbe: grau` 28 · `B2B-Daten-fehlen` 26 · `Supplier-Draft` 26 · `nutzungsklasse: 22` 19 · `marke: <hausmarke-a>` 19 · `ASTRA` 18 · `material: polyamid` 16.
 
 **Inkonsistenzen:**
 
@@ -126,7 +126,7 @@ Alle 85 Klickvinyl und alle 141 Klebevinyl (typisiert + typlos) haben das Metafe
 | Groß-/Kleinschreibung | `Optik: holz` vs `optik: eiche`; `Gesamthöhe: …`, `Nutzschicht: 0`, `Trittschalldämmung integriert: …`, `ASTRA`, `DEKOWE`, `B2B-Daten-fehlen`, `Supplier-Draft` gegen sonst durchgehend kleingeschriebenes `key: value` |
 | Einheiten fehlen/uneinheitlich | `Gesamthöhe: 2`, `Gesamthöhe: 4` vs `Gesamthöhe: 6mm`; `Nutzschicht: 0` |
 | Schlüssellose Tags | `55mm`, `5mm`, `zubehoer`, `ASTRA`, `DEKOWE` |
-| Marken als Tag statt Vendor | `marke: joka`, `marke: forbo coral`, `ASTRA`, `DEKOWE` — Vendorfeld sagt dort oft „TeppichParadies" |
+| Marken als Tag statt Vendor | `marke: <hausmarke-a>`, `marke: forbo coral`, `ASTRA`, `DEKOWE` — Vendorfeld sagt dort oft „TeppichParadies" |
 | `farbe:`-Tag zu feingliedrig | 120 verschiedene `farbe:`-Werte, 90 davon nur 1–2× (z. B. `farbe: eiche wurmstich hell`) — als Filterfacette unbrauchbar; `farbe: weiss` vs `farbe: eiche weiß`, `farbe: gruen` |
 
 Ohne Tags: `kostenloses-muster`, `shipping-weight`.

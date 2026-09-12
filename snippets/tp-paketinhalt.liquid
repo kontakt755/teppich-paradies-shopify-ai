@@ -56,5 +56,5 @@
 {{- tp_pi_flaeche_text }}&nbsp;m²
 {%- if tp_pi_stueck > 0 and nur_flaeche != true -%}
   &nbsp;· {{ tp_pi_stueck }} {{ tp_pi_einheit }}
-  {%- if tp_pi_format != blank %} à {{ tp_pi_format }}{% endif -%}
+  {%- if tp_pi_format != blank %} à&nbsp;{{ tp_pi_format | replace: ' ', '&nbsp;' }}{% endif -%}
 {%- endif -%}

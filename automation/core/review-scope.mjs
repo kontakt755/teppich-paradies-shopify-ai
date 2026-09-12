@@ -12,6 +12,7 @@
 // Ohne sinceRef (z. B. bei `npm run agents:review` ohne Sitzung) bleibt das
 // alte Verhalten unveraendert.
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 export const REVIEW_SCOPE_UNCOMMITTED = 'UNCOMMITTED';
@@ -28,8 +29,18 @@ export const REVIEW_SCOPE_UNKNOWN = 'UNKNOWN';
 // "seit Beginn dieses Tasks" statt "gegenueber origin/main", damit der
 // Reviewer fremde, in einem geteilten Checkout danebenliegende Commits nicht
 // als Teil des zu pruefenden Auftrags missversteht.
-export function describeReviewScope({ porcelain = '', aheadCommits = '', baseRef = 'origin/main', mergeBase = '', taskScoped = false } = {}) {
-  const dirty = String(porcelain ?? '').trim().length > 0;
+//
+// excluded: vorbestehende Pfade, die seit Sitzungsbeginn exakt gleich
+// geblieben sind - sie werden namentlich genannt, damit der Reviewer sie
+// kennt und nicht vermisst. reverted: Pfade, die bei Sitzungsbeginn geaendert
+// oder unversioniert vorlagen und jetzt aus git status verschwunden sind
+// (zurueckgesetzt, geloescht) - das ist eine Aenderung dieser Sitzung.
+export function describeReviewScope({ excluded = [], reverted = [], ...rest } = {}) {
+  return withBaselineNotes(describeTreeScope({ ...rest, forceDirty: reverted.length > 0 }), { excluded, reverted });
+}
+
+function describeTreeScope({ porcelain = '', aheadCommits = '', baseRef = 'origin/main', mergeBase = '', taskScoped = false, forceDirty = false } = {}) {
+  const dirty = forceDirty || String(porcelain ?? '').trim().length > 0;
   const commits = String(aheadCommits ?? '').split('\n').map(line => line.trim()).filter(Boolean);
   const commitLabel = taskScoped ? `seit Beginn dieses Tasks (Commit ${mergeBase || baseRef}) entstandenen` : `noch nicht in ${baseRef} enthaltenen`;
   if (dirty) {
@@ -72,7 +83,45 @@ export function describeReviewScope({ porcelain = '', aheadCommits = '', baseRef
 // faelschlich diesem Task zugerechnet. Loest sinceRef sich nicht auf (z. B.
 // veralteter Session-State nach einem Reset), faellt die Funktion auf das
 // bisherige Verhalten gegenueber baseRef zurueck - kein Fehlerfall.
-export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, exec = execFileSync } = {}) {
+//
+// baseline: Working-Tree-Zustand bei Sitzungsbeginn (captureWorkingTreeSnapshot).
+// Ohne baseline laeuft die Funktion exakt wie vorher, ohne einen einzigen
+// zusaetzlichen git-Aufruf.
+// docs/ai-dashboard/issues.json schreibt der Dashboard-Bot (CLAUDE.md,
+// Abschnitt Dashboard): stuendlich nach main, lokal von `npm run task` und
+// `npm run dashboard`, und sie wird nie mitcommittet. Die Sitzungs-Baseline
+// allein genuegt hier nicht - schreibt der Bot die Datei waehrend der Sitzung
+// neu, weicht sie von der Baseline ab und stuende wieder im Pruefbereich.
+export const BOT_OWNED_PATHS = Object.freeze(['docs/ai-dashboard/issues.json']);
+
+// Eine Zeile ist entweder "XY pfad" aus git status - der Statuscode kann durch
+// das trim() der git-Hilfe sein fuehrendes Leerzeichen verloren haben - oder,
+// nach Abzug der Baseline, der blosse Pfad. Eine Umbenennung ("R  alt -> pfad")
+// zaehlt bewusst nicht: dort ist der Bezug nicht eindeutig, und mehr pruefen
+// ist sicherer als weniger.
+function botOwnedPath(line) {
+  return BOT_OWNED_PATHS.find(file => line === file
+    || (line.endsWith(file) && /^[ ?!ACDMRTU]{1,2} $/.test(line.slice(0, line.length - file.length)))) ?? null;
+}
+
+function withoutBotOwned(tree) {
+  const porcelain = [];
+  const botOwned = [];
+  for (const line of String(tree.porcelain ?? '').split('\n')) {
+    if (!line.trim()) continue;
+    const file = botOwnedPath(line);
+    if (file) botOwned.push(file);
+    else porcelain.push(line);
+  }
+  return { ...tree, porcelain: porcelain.join('\n'), botOwned };
+}
+
+function noteBotOwned(scope, botOwned) {
+  if (!botOwned.length) return scope;
+  return { ...scope, botOwned: [...botOwned], text: `${scope.text}. ${formatPaths(botOwned)} schreibt der Dashboard-Bot und wird nie mitcommittet: gehört nicht zu diesem Auftrag und ist kein Befund` };
+}
+
+export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, exec = execFileSync, io = fs } = {}) {
   const errors = [];
   const git = (...args) => {
     try {
@@ -84,24 +133,30 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   };
   const status = git('status', '--porcelain');
   if (!status.ok) return unknownScope(errors, baseRef);
+  const tree = withoutBotOwned(applyBaseline({ cwd, baseline, porcelain: status.out, exec, io }));
+  const finish = scope => noteBotOwned(tree.status ? { ...scope, baselineStatus: tree.status } : scope, tree.botOwned);
+  // UNKNOWN verlangt ohnehin, alles Uncommittete konservativ zu pruefen - eine
+  // Notiz "kein Befund" zu vorbestehenden Dateien wuerde das nur aufweichen
+  // (Pruefung 2026-09-11). Deshalb hier keine Ausklammerung und keine Notiz.
+  const unknown = errs => ({ ...unknownScope(errs, baseRef), ...(tree.status ? { baselineStatus: tree.status === 'APPLIED' ? 'NOT_APPLIED_UNKNOWN_SCOPE' : tree.status } : {}) });
   if (sinceRef) {
     const since = git('rev-parse', '--verify', '--quiet', `${sinceRef}^{commit}`);
     if (since.ok && since.out) {
       const ahead = git('log', '--format=%h %s', `${since.out}..HEAD`);
       if (ahead.ok) {
-        return describeReviewScope({ porcelain: status.out, aheadCommits: ahead.out, baseRef: since.out.slice(0, 12), mergeBase: since.out.slice(0, 12), taskScoped: true });
+        return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef: since.out.slice(0, 12), mergeBase: since.out.slice(0, 12), taskScoped: true, excluded: tree.excluded, reverted: tree.reverted }));
       }
     }
     // sinceRef nicht nutzbar (Commit weg, git-Fehler): bewusst kein Abbruch,
     // stattdessen unten mit baseRef weiterpruefen statt UNKNOWN zu melden.
   }
   const base = git('rev-parse', '--verify', '--quiet', `${baseRef}^{commit}`);
-  if (!base.ok || !base.out) return unknownScope(errors.length ? errors : [`${baseRef} nicht vorhanden`], baseRef);
+  if (!base.ok || !base.out) return unknown(errors.length ? errors : [`${baseRef} nicht vorhanden`]);
   const mergeBase = git('merge-base', baseRef, 'HEAD');
-  if (!mergeBase.ok || !mergeBase.out) return unknownScope(errors.length ? errors : ['merge-base leer'], baseRef);
+  if (!mergeBase.ok || !mergeBase.out) return unknown(errors.length ? errors : ['merge-base leer']);
   const ahead = git('log', '--format=%h %s', `${mergeBase.out}..HEAD`);
-  if (!ahead.ok) return unknownScope(errors, baseRef);
-  return describeReviewScope({ porcelain: status.out, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12) });
+  if (!ahead.ok) return unknown(errors);
+  return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12), excluded: tree.excluded, reverted: tree.reverted }));
 }
 
 // Dritte Luecke, gefunden am 2026-09-10: Arbeitet eine Sitzung in einem
@@ -156,4 +211,235 @@ function unknownScope(errors, baseRef) {
     errors,
     text: `alle Änderungen dieser Sitzung: die uncommitteten Änderungen (git diff, git diff --cached) und zusätzlich die letzten Commits (git log -10, git show HEAD). Der Vergleich gegen ${baseRef} war nicht möglich (${errors.join(' | ').slice(0, 300)}); prüfe deshalb konservativ und werte fehlende Belege als Befund`,
   };
+}
+
+// Vierte Luecke, belegt am 2026-09-11: sinceRef grenzt nur Commits ab. Dateien,
+// die schon VOR Sitzungsbeginn geaendert oder unversioniert im Working Tree
+// lagen (domains/shopify/bild-qualitaetstest.py, .claude/launch.json), landeten
+// im Pruefbereich, und Codex verlangte, die fremde Datei zu loeschen. Deshalb
+// haelt openrouter-user-prompt.mjs beim ersten Prompt einer Sitzung den Zustand
+// jedes Pfads aus git status fest (Statuscode + Inhalts-Hash); hier wird nur
+// ausgeklammert, was exakt so geblieben ist. Neue, weiter veraenderte,
+// geloeschte und zurueckgesetzte Dateien bleiben im Scope.
+//
+// Fail-safe: Baseline fehlt, ist kaputt, stammt aus einem anderen Repository,
+// git scheitert oder ein Pfad ist nicht hashbar - dann wird NICHTS
+// ausgeklammert. Lieber mehr pruefen als weniger.
+export const WORKING_TREE_BASELINE_VERSION = 1;
+const GIT_MAX_BUFFER = 64 * 1024 * 1024;
+
+// "XY pfad\0" je Eintrag; bei Umbenennung/Kopie folgt der alte Pfad als eigenes
+// Feld ("R  neu\0alt\0"). Ein Pfad kann zweimal vorkommen ("D " und "??", wenn
+// eine gestagte Loeschung neu angelegt wurde) - deshalb eine Liste von Codes.
+export function parsePorcelainZ(raw) {
+  const tokens = String(raw ?? '').split('\0');
+  const byPath = new Map();
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.length < 4) continue;
+    const code = token.slice(0, 2);
+    const file = token.slice(3);
+    const from = /[RC]/.test(code) ? (tokens[++index] ?? '') : null;
+    const codes = byPath.get(file) ?? [];
+    codes.push(from === null ? code : `${code} <- ${from}`);
+    byPath.set(file, codes);
+  }
+  return byPath;
+}
+
+// git hash-object --stdin-paths kennt kein -z: eine Zeile, die mit " beginnt,
+// wird C-entquotet, ein abschliessendes \r abgeschnitten - beides haette den
+// Hash der NACHBARDATEI geliefert, und die Datei waere trotz Aenderung
+// ausgeklammert worden (Pruefung 2026-09-11). Solche Pfade gelten als nicht
+// hashbar und werden nie ausgeklammert.
+function isHashablePath(file) {
+  return !/[\n\r]/.test(file) && !file.startsWith('"');
+}
+
+// "<mode> <hash> <stage>\t<pfad>\0" je Eintrag. Pfade mit Konfliktstufen
+// (stage > 0) sind nicht eindeutig und gelten als nicht hashbar.
+export function parseLsFilesZ(raw) {
+  const index = new Map();
+  for (const token of String(raw ?? '').split('\0')) {
+    const tab = token.indexOf('\t');
+    if (tab < 0) continue;
+    const [, hash, stage] = token.slice(0, tab).split(' ');
+    const file = token.slice(tab + 1);
+    if (stage !== '0' || index.get(file) === null) index.set(file, null);
+    else index.set(file, hash);
+  }
+  return index;
+}
+
+// Zustand jedes Pfads, den git status meldet: Statuscodes plus Inhalts-Hash
+// (git hash-object, ein Aufruf fuer alle Dateien), Symlink-Ziel oder
+// "geloescht". Fuer versionierte Pfade zusaetzlich der Blob-Hash im Index:
+// committet die Sitzung eine vorbestehend geaenderte Datei und stellt danach
+// den alten Working-Tree-Inhalt wieder her, sind Statuscode und Inhalts-Hash
+// wie bei Sitzungsbeginn, der Index aber nicht (Pruefung 2026-09-11).
+// Nie eine Exception - ein Fehler kommt als { ok: false } zurueck.
+export function captureWorkingTreeSnapshot({ cwd = process.cwd(), exec = execFileSync, io = fs } = {}) {
+  try {
+    const run = (args, { dir = cwd, input } = {}) => String(exec('git', args, {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'ignore'],
+      maxBuffer: GIT_MAX_BUFFER,
+      ...(input === undefined ? {} : { input }),
+    }));
+    const root = run(['rev-parse', '--show-toplevel']).trim();
+    if (!root) throw new Error('git rev-parse --show-toplevel lieferte nichts');
+    // Porcelain-Pfade sind relativ zur Repository-Wurzel, deshalb laeuft alles
+    // Weitere dort. Nicht trimmen: der Statuscode beginnt oft mit einem
+    // Leerzeichen (" M", " D"). --no-optional-locks: kein index.lock neben einer
+    // parallel arbeitenden Sitzung.
+    const byPath = parsePorcelainZ(run(['--no-optional-locks', 'status', '--porcelain', '-z', '--untracked-files=all'], { dir: root }));
+    const index = byPath.size ? parseLsFilesZ(run(['--no-optional-locks', 'ls-files', '-s', '-z'], { dir: root })) : new Map();
+    const entries = Object.create(null);
+    const toHash = [];
+    for (const [file, codes] of byPath) {
+      const entry = { codes: [...codes].sort() };
+      const absolute = path.join(root, file);
+      let stat = null;
+      try {
+        stat = io.lstatSync(absolute);
+      } catch (error) {
+        if (error?.code !== 'ENOENT' && error?.code !== 'ENOTDIR') throw error;
+      }
+      if (index.has(file)) {
+        const indexHash = index.get(file);
+        if (indexHash === null) entry.unhashable = true;
+        else entry.index = indexHash;
+      }
+      if (entry.unhashable) { /* Konfliktstufen: nie ausklammern */ }
+      else if (!stat) entry.deleted = true;
+      else if (stat.isSymbolicLink()) entry.link = io.readlinkSync(absolute);
+      else if (stat.isFile() && isHashablePath(file)) toHash.push(file);
+      // Verzeichnis (eingebettetes Repository), nicht hashbarer Pfad o. ae.:
+      // Inhalt nicht belegbar, wird deshalb nie ausgeklammert.
+      else entry.unhashable = true;
+      entries[file] = entry;
+    }
+    if (toHash.length) {
+      const hashes = run(['hash-object', '--stdin-paths'], { dir: root, input: `${toHash.join('\n')}\n` }).split('\n').map(line => line.trim()).filter(Boolean);
+      if (hashes.length !== toHash.length) throw new Error(`git hash-object lieferte ${hashes.length} statt ${toHash.length} Hashes`);
+      toHash.forEach((file, index) => { entries[file].hash = hashes[index]; });
+    }
+    return { ok: true, version: WORKING_TREE_BASELINE_VERSION, root, entries };
+  } catch (error) {
+    return { ok: false, version: WORKING_TREE_BASELINE_VERSION, error: String(error?.message ?? error).slice(0, 300) };
+  }
+}
+
+export function isUsableBaseline(baseline) {
+  return Boolean(baseline) && typeof baseline === 'object' && baseline.ok === true
+    && baseline.version === WORKING_TREE_BASELINE_VERSION
+    && typeof baseline.root === 'string' && baseline.root.length > 0
+    && Boolean(baseline.entries) && typeof baseline.entries === 'object' && !Array.isArray(baseline.entries);
+}
+
+function sameEntry(before, now) {
+  if (!before || typeof before !== 'object' || !Array.isArray(before.codes) || before.unhashable || now.unhashable) return false;
+  if (JSON.stringify([...before.codes].sort()) !== JSON.stringify(now.codes)) return false;
+  // Index-Hash: fehlt er auf einer Seite oder weicht er ab, hat sich der
+  // Vergleichsstand (HEAD/Index) geaendert - dann ist der Diff ein anderer.
+  if ((before.index ?? null) !== (now.index ?? null)) return false;
+  if (before.deleted || now.deleted) return before.deleted === true && now.deleted === true;
+  if (before.link !== undefined || now.link !== undefined) return typeof before.link === 'string' && before.link === now.link;
+  return typeof before.hash === 'string' && before.hash.length > 0 && before.hash === now.hash;
+}
+
+// Reine Entscheidung ohne git: welche aktuellen Pfade sind exakt der
+// vorbestehende Zustand (excluded), welche nicht (remaining), und welche
+// vorbestehenden Pfade sind aus git status verschwunden (reverted).
+export function compareWithBaseline({ baseline, current }) {
+  const excluded = [];
+  const remaining = [];
+  const reverted = [];
+  for (const [file, entry] of Object.entries(current.entries)) {
+    if (Object.hasOwn(baseline.entries, file) && sameEntry(baseline.entries[file], entry)) excluded.push(file);
+    else remaining.push(file);
+  }
+  for (const file of Object.keys(baseline.entries)) {
+    if (!Object.hasOwn(current.entries, file)) reverted.push(file);
+  }
+  return { excluded: excluded.sort(), remaining: remaining.sort(), reverted: reverted.sort() };
+}
+
+function applyBaseline({ cwd, baseline, porcelain, exec, io }) {
+  const untouched = status => ({ porcelain, excluded: [], reverted: [], status });
+  if (baseline == null) return untouched(null);
+  if (!isUsableBaseline(baseline)) return untouched('UNUSABLE');
+  const current = captureWorkingTreeSnapshot({ cwd, exec, io });
+  if (!current.ok) return untouched('CAPTURE_FAILED');
+  if (current.root !== baseline.root) return untouched('ROOT_MISMATCH');
+  const { excluded, remaining, reverted } = compareWithBaseline({ baseline, current });
+  return { porcelain: remaining.join('\n'), excluded, reverted, status: 'APPLIED' };
+}
+
+function formatPaths(files, max = 15) {
+  const shown = files.slice(0, max).join(', ');
+  return files.length > max ? `${shown} und ${files.length - max} weitere` : shown;
+}
+
+function withBaselineNotes(scope, { excluded = [], reverted = [] } = {}) {
+  if (!excluded.length && !reverted.length) return scope;
+  const parts = [scope.text];
+  if (reverted.length) parts.push(`Zusätzlich hat diese Sitzung Dateien zurückgesetzt oder entfernt, die bei Sitzungsbeginn geändert bzw. unversioniert vorlagen: ${formatPaths(reverted)}. Ihr früherer Stand ist per git diff nicht mehr sichtbar; prüfe, ob das zum Auftrag gehört`);
+  if (excluded.length) parts.push(`Vorbestehend, unverändert seit Sitzungsbeginn: ${formatPaths(excluded)}. Diese Dateien lagen schon vor dieser Sitzung geändert oder unversioniert im Working Tree, gehören nicht zu diesem Auftrag und sind kein Befund - verlange weder ihre Änderung noch ihre Entfernung`);
+  return { ...scope, text: parts.join('. '), excluded: [...excluded], reverted: [...reverted] };
+}
+
+// Schlussantwort an den Reviewer (2026-09-11). Eine reine Wissensfrage wurde
+// als IMPLEMENTATION eingestuft, und der Reviewer verlangte fuer einen leeren
+// Diff Code. Die Einstufung wird bewusst NICHT ueber Wortmuster korrigiert:
+// eine Probe ueber 485 echte Nutzerprompts kippte 36 davon auf "Frage",
+// darunter eindeutige Auftraege - die Aenderung waere still ausgefallen.
+// Stattdessen sieht der Reviewer bei leerem Pruefbereich die letzte Antwort
+// des Agenten und entscheidet selbst, ob sie den Auftrag ohne Aenderung
+// erfuellt. Bei jedem anderen Scope (CHANGES, UNKNOWN) bleibt alles wie bisher:
+// dort ist der Diff der Beleg, und der Abschnitt "es gibt keinen Diff" waere
+// falsch.
+//
+// Quelle ist last_assistant_message aus dem Stop-Hook-Input (Hook-Doku von
+// Claude Code), nicht das Transkript: das wird asynchron geschrieben und kann
+// der letzten Antwort hinterherhinken. Fail-safe: fehlt das Feld, ist es leer
+// oder kein String, laeuft das Review wie bisher ohne Schlussantwort - nie
+// wird deshalb uebersprungen oder abgebrochen.
+export const REVIEW_CANDIDATE_MAX_CHARS = 12_000;
+
+export function reviewCandidateFromStop({ input, scope } = {}) {
+  if (scope?.kind !== REVIEW_SCOPE_NONE) return '';
+  const text = sanitizeReviewCandidate(input?.last_assistant_message);
+  if (!text) return '';
+  return truncateKeepingEnds(text, REVIEW_CANDIDATE_MAX_CHARS);
+}
+
+// Steuerzeichen raus (Nachpruefung 2026-09-11): Der Prompt geht als argv an
+// spawnSync, und ein NUL darin wirft ERR_INVALID_ARG_VALUE. Der Stop-Hook
+// landete damit im Infrastrukturfehler-Pfad, und der Turn endete ohne Review -
+// ausgeloest von genau dem Agenten, der geprueft werden soll. Tab, Zeilenumbruch
+// und Wagenruecklauf bleiben; alle anderen C0-Zeichen und DEL werden zu einem
+// Leerzeichen, damit keine Woerter zusammenkleben. Kein String -> ''.
+const CANDIDATE_CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+
+export function sanitizeReviewCandidate(text) {
+  if (typeof text !== 'string') return '';
+  return text.replace(CANDIDATE_CONTROL_CHARS, ' ').trim();
+}
+
+// Anfang UND Ende behalten: am Anfang steht meist die Antwort, am Ende das
+// Fazit bzw. die Belege. Gezaehlt wird in Unicode-Zeichen, damit kein Emoji
+// oder Umlaut-Surrogat mitten durchgeschnitten wird. Das Ergebnis ist nie
+// laenger als maxChars, die Kuerzung steht als Markierung im Text.
+function truncateKeepingEnds(text, maxChars) {
+  const chars = Array.from(text);
+  if (chars.length <= maxChars) return text;
+  const MARK_BUDGET = 100;
+  const budget = Math.max(0, maxChars - MARK_BUDGET);
+  const head = Math.ceil(budget / 2);
+  const tail = budget - head;
+  const omitted = chars.length - head - tail;
+  const mark = `\n\n[… ${omitted} von ${chars.length} Zeichen in der Mitte gekürzt …]\n\n`;
+  return `${chars.slice(0, head).join('')}${mark}${tail ? chars.slice(-tail).join('') : ''}`;
 }

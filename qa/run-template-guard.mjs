@@ -5,7 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { analyzeTemplates, blockTypesOf } from './template-guard.mjs';
+import { analyzeTemplates, blockTypesOf, forbiddenCardBlocks } from './template-guard.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'qa/template-guard.config.json'), 'utf8'));
@@ -18,6 +18,27 @@ for (const name of fs.readdirSync(path.join(root, 'templates')).filter(file => r
 }
 
 const findings = analyzeTemplates(templates, config);
+
+// Verbotene Kartenbloecke: ueber alle Templates und Section-Gruppen, nicht
+// nur ueber die Kategorieseiten, denn Karten gibt es auch auf Suche,
+// Startseite und in Empfehlungen.
+const verboten = config.verbotenInKarte ?? {};
+if (Object.keys(verboten).length > 0) {
+  for (const dir of ['templates', 'sections']) {
+    for (const name of fs.readdirSync(path.join(root, dir)).filter(file => file.endsWith('.json')).sort()) {
+      for (const type of forbiddenCardBlocks(fs.readFileSync(path.join(root, dir, name), 'utf8'), config.parent, verboten)) {
+        findings.push({
+          severity: 'error',
+          rule: 'CARD_BLOCK_VERBOTEN',
+          type,
+          templates: [`${dir}/${name}`],
+          message: `"${type}" steckt in einer Produktkarte in ${dir}/${name}: ${verboten[type]}`,
+        });
+      }
+    }
+  }
+}
+
 const errors = findings.filter(finding => finding.severity === 'error');
 const warnings = findings.filter(finding => finding.severity === 'warn');
 

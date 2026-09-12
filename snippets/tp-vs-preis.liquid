@@ -1,0 +1,9 @@
+{% doc %}
+  Ein Preis aus den Theme-Einstellungen (Gruppe TP Verlegeservice), der nur
+  an sinnvollen Stellen umbricht: Zahl und Einheit bleiben zusammen, "ca. 25 EUR
+  pro Raum" darf hoechstens vor "pro" umbrechen. Ein starres nowrap wuerde
+  auf 320 px breiten Telefonen aus der Preiskarte ragen.
+
+  @param {string} wert - Preistext, z. B. settings.tp_vs_band_basis
+{% enddoc %}
+<span class="tp-vs-preis">{{ wert | escape | replace: ' €', '&nbsp;€' | replace: 'ca. ', 'ca.&nbsp;' | replace: 'pro ', 'pro&nbsp;' }}</span>

@@ -238,7 +238,7 @@
       },
       "name": "Featured collection",
       "settings": {
-        "collection": "all",
+        "collection": "bodenleisten",
         "layout_type": "grid",
         "carousel_on_mobile": false,
         "max_products": 4,

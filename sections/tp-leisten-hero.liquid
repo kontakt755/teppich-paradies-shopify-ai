@@ -33,8 +33,8 @@
     {%- for p in collection.products limit: 24 -%}
       {%- if shown >= max_motive -%}{%- break -%}{%- endif -%}
       {%- if p.featured_image == blank -%}{%- continue -%}{%- endif -%}
-      <li class="tp-lh__tile">
-        <a class="tp-lh__tile-link" href="{{ p.url }}" aria-label="{{ p.title | escape }}">
+      <li class="tp-lhero__tile">
+        <a class="tp-lhero__tile-link" href="{{ p.url }}" aria-label="{{ p.title | escape }}">
           {{ p.featured_image | image_url: width: 600 | image_tag: loading: 'eager', widths: '300, 450, 600', sizes: '(min-width: 990px) 14vw, (min-width: 750px) 22vw, 42vw', alt: p.title }}
         </a>
       </li>
@@ -53,12 +53,12 @@
 
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
-  class="tp-lh section section--page-width color-{{ section.settings.color_scheme }} spacing-style{% unless has_media %} tp-lh--text-only{% endunless %}"
+  class="tp-lhero section section--page-width color-{{ section.settings.color_scheme }} spacing-style{% unless has_media %} tp-lhero--text-only{% endunless %}"
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-leisten-hero-{{ section.id }}"
 >
   {%- if section.settings.show_breadcrumb -%}
-    <nav class="tp-lh__breadcrumb" aria-label="Brotkrumen-Navigation">
+    <nav class="tp-lhero__breadcrumb" aria-label="Brotkrumen-Navigation">
       <ol>
         <li><a href="{{ routes.root_url }}">Startseite</a></li>
         {%- if section.settings.breadcrumb_parent != blank -%}
@@ -69,18 +69,18 @@
     </nav>
   {%- endif -%}
 
-  <div class="tp-lh__grid">
-    <div class="tp-lh__content">
+  <div class="tp-lhero__grid">
+    <div class="tp-lhero__content">
       {%- if section.settings.eyebrow != blank -%}
-        <p class="tp-lh__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+        <p class="tp-lhero__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {%- endif -%}
-      <h1 class="tp-lh__title">{{ heading | escape }}</h1>
+      <h1 class="tp-lhero__title">{{ heading | escape }}</h1>
       {%- if lead != blank -%}
-        <p class="tp-lh__lead">{{ lead | escape }}</p>
+        <p class="tp-lhero__lead">{{ lead | escape }}</p>
       {%- endif -%}
 
       {%- if section.settings.fact_1 != blank or section.settings.fact_2 != blank or section.settings.fact_3 != blank -%}
-        <ul class="tp-lh__facts" role="list">
+        <ul class="tp-lhero__facts" role="list">
           {%- if section.settings.fact_1 != blank -%}<li>{{ section.settings.fact_1 | escape }}</li>{%- endif -%}
           {%- if section.settings.fact_2 != blank -%}<li>{{ section.settings.fact_2 | escape }}</li>{%- endif -%}
           {%- if section.settings.fact_3 != blank -%}<li>{{ section.settings.fact_3 | escape }}</li>{%- endif -%}
@@ -88,26 +88,36 @@
       {%- endif -%}
 
       {%- if section.settings.cta_label != blank -%}
-        <div class="tp-lh__ctas">
-          <a class="button tp-lh__cta" href="{{ cta_link }}">{{ section.settings.cta_label | escape }}</a>
+        <div class="tp-lhero__ctas">
+          <a class="button tp-lhero__cta" href="{{ cta_link }}">{{ section.settings.cta_label | escape }}</a>
           {%- if section.settings.cta_2_label != blank and section.settings.cta_2_link != blank -%}
-            <a class="button button-secondary tp-lh__cta" href="{{ section.settings.cta_2_link }}">{{ section.settings.cta_2_label | escape }}</a>
+            <a class="button button-secondary tp-lhero__cta" href="{{ section.settings.cta_2_link }}">{{ section.settings.cta_2_label | escape }}</a>
           {%- endif -%}
         </div>
       {%- endif -%}
     </div>
 
     {%- if hero_image != blank -%}
-      <div class="tp-lh__media tp-lh__media--image">
-        {{
-          hero_image
-          | image_url: width: 1400
-          | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 46vw, 100vw', alt: hero_image_alt
-        }}
+      {%- comment -%}
+        Am Telefon entfaellt das Bild wie schon das Mosaik (siehe CSS unten);
+        die leere Quelle verhindert, dass es trotzdem geladen wird.
+      {%- endcomment -%}
+      <div class="tp-lhero__media tp-lhero__media--image">
+        <picture>
+          <source
+            media="(max-width: 749px)"
+            srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+          >
+          {{
+            hero_image
+            | image_url: width: 1400
+            | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1400', sizes: '(min-width: 990px) 46vw, 100vw', alt: hero_image_alt
+          }}
+        </picture>
       </div>
     {%- elsif motive != blank -%}
-      <div class="tp-lh__media tp-lh__media--mosaic">
-        <ul class="tp-lh__mosaic" role="list" aria-label="Bodenleisten aus dem Sortiment">
+      <div class="tp-lhero__media tp-lhero__media--mosaic">
+        <ul class="tp-lhero__mosaic" role="list" aria-label="Bodenleisten aus dem Sortiment">
           {{ motive }}
         </ul>
       </div>
@@ -174,13 +184,28 @@
 </style>
 
 {% stylesheet %}
-  .tp-lh__breadcrumb {
+  /* Eigene Innenabstaende. Bis 2026-09-12 hiess das Praefix tp-lh und kollidierte mit
+     sections/tp-laden-hinweis.liquid, das .tp-lh definiert. Jene Section wird in keinem
+     Template gerendert, ihr stylesheet landet aber im gebuendelten Theme-CSS - der Kopf
+     erbte dadurch fremde Abstaende. Die gemessenen Werte stehen jetzt hier, damit das
+     Aussehen unveraendert bleibt und nicht an einer fremden Datei haengt. */
+  .tp-lhero {
+    padding: 8px 20px 40px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-lhero {
+      padding: 4px 16px 28px;
+    }
+  }
+
+  .tp-lhero__breadcrumb {
     margin-block-end: 18px;
     font-size: 0.8125rem;
     color: rgb(var(--color-foreground-rgb) / 0.62);
   }
 
-  .tp-lh__breadcrumb ol {
+  .tp-lhero__breadcrumb ol {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 0;
@@ -189,19 +214,19 @@
     list-style: none;
   }
 
-  .tp-lh__breadcrumb li {
+  .tp-lhero__breadcrumb li {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
   }
 
-  .tp-lh__breadcrumb li + li::before {
+  .tp-lhero__breadcrumb li + li::before {
     content: '/';
     margin: 0 8px;
     opacity: 0.5;
   }
 
-  .tp-lh__breadcrumb a {
+  .tp-lhero__breadcrumb a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -211,29 +236,29 @@
     text-underline-offset: 3px;
   }
 
-  .tp-lh__breadcrumb a:hover,
-  .tp-lh__breadcrumb a:focus-visible {
+  .tp-lhero__breadcrumb a:hover,
+  .tp-lhero__breadcrumb a:focus-visible {
     color: var(--color-foreground);
     text-decoration: underline;
   }
 
-  .tp-lh__breadcrumb [aria-current='page'] {
+  .tp-lhero__breadcrumb [aria-current='page'] {
     color: var(--color-foreground);
     font-weight: 600;
   }
 
-  .tp-lh__grid {
+  .tp-lhero__grid {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 6fr);
     gap: clamp(28px, 5vw, 64px);
     align-items: center;
   }
 
-  .tp-lh--text-only .tp-lh__grid {
+  .tp-lhero--text-only .tp-lhero__grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .tp-lh__content {
+  .tp-lhero__content {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -241,7 +266,7 @@
     max-width: 38rem;
   }
 
-  .tp-lh__eyebrow {
+  .tp-lhero__eyebrow {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.62);
     font-size: 0.75rem;
@@ -251,7 +276,7 @@
     text-transform: uppercase;
   }
 
-  .tp-lh__title {
+  .tp-lhero__title {
     margin: 0;
     font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
     line-height: 1.08;
@@ -259,7 +284,7 @@
     text-wrap: balance;
   }
 
-  .tp-lh__lead {
+  .tp-lhero__lead {
     margin: 0;
     color: rgb(var(--color-foreground-rgb) / 0.78);
     font-size: 1.0625rem;
@@ -267,7 +292,7 @@
     text-wrap: pretty;
   }
 
-  .tp-lh__facts {
+  .tp-lhero__facts {
     display: flex;
     flex-wrap: wrap;
     gap: 8px 22px;
@@ -276,7 +301,7 @@
     list-style: none;
   }
 
-  .tp-lh__facts li {
+  .tp-lhero__facts li {
     display: inline-flex;
     align-items: center;
     gap: 7px;
@@ -285,29 +310,29 @@
     color: var(--color-foreground);
   }
 
-  .tp-lh__facts li::before {
+  .tp-lhero__facts li::before {
     content: '\2713';
     color: #008a2e;
     font-weight: 700;
   }
 
-  .tp-lh__ctas {
+  .tp-lhero__ctas {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin-block-start: 10px;
   }
 
-  .tp-lh__cta {
+  .tp-lhero__cta {
     min-height: 44px;
   }
 
-  .tp-lh__media--image {
+  .tp-lhero__media--image {
     overflow: hidden;
     border-radius: var(--style-border-radius-md);
   }
 
-  .tp-lh__media--image img {
+  .tp-lhero__media--image img {
     display: block;
     width: 100%;
     height: 100%;
@@ -315,7 +340,7 @@
     object-fit: cover;
   }
 
-  .tp-lh__mosaic {
+  .tp-lhero__mosaic {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
@@ -324,7 +349,7 @@
     list-style: none;
   }
 
-  .tp-lh__tile {
+  .tp-lhero__tile {
     position: relative;
     aspect-ratio: 1;
     overflow: hidden;
@@ -334,23 +359,23 @@
     box-shadow: 0 6px 18px rgb(0 0 0 / 0.05);
   }
 
-  .tp-lh__tile:nth-child(2),
-  .tp-lh__tile:nth-child(4) {
+  .tp-lhero__tile:nth-child(2),
+  .tp-lhero__tile:nth-child(4) {
     transform: translateY(18px);
   }
 
-  .tp-lh__tile-link {
+  .tp-lhero__tile-link {
     display: block;
     width: 100%;
     height: 100%;
   }
 
-  .tp-lh__tile-link:focus-visible {
+  .tp-lhero__tile-link:focus-visible {
     outline: 2px solid var(--color-foreground);
     outline-offset: -3px;
   }
 
-  .tp-lh__tile img {
+  .tp-lhero__tile img {
     display: block;
     width: 100%;
     height: 100%;
@@ -359,63 +384,66 @@
     transition: transform var(--animation-speed, 0.25s) var(--animation-easing, ease);
   }
 
-  .tp-lh__tile:hover img,
-  .tp-lh__tile:focus-within img {
+  .tp-lhero__tile:hover img,
+  .tp-lhero__tile:focus-within img {
     transform: scale(1.04);
   }
 
   @media screen and (max-width: 989px) {
-    .tp-lh__grid {
+    .tp-lhero__grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 24px;
     }
 
-    .tp-lh__content {
+    .tp-lhero__content {
       max-width: none;
     }
 
-    .tp-lh__mosaic {
+    .tp-lhero__mosaic {
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 10px;
     }
 
-    .tp-lh__tile:nth-child(2),
-    .tp-lh__tile:nth-child(4) {
+    .tp-lhero__tile:nth-child(2),
+    .tp-lhero__tile:nth-child(4) {
       transform: none;
     }
 
-    .tp-lh__tile img {
+    .tp-lhero__tile img {
       padding: 9%;
     }
   }
 
   @media screen and (max-width: 749px) {
-    .tp-lh__breadcrumb {
+    .tp-lhero__breadcrumb {
       margin-block-end: 4px;
     }
 
-    .tp-lh__lead {
+    .tp-lhero__lead {
       font-size: 1rem;
     }
 
-    .tp-lh__facts {
+    .tp-lhero__facts {
       gap: 6px 16px;
     }
 
-    .tp-lh__facts li {
+    .tp-lhero__facts li {
       font-size: 0.875rem;
     }
 
-    .tp-lh__ctas {
+    .tp-lhero__ctas {
       width: 100%;
     }
 
-    .tp-lh__cta {
+    .tp-lhero__cta {
       flex: 1 1 auto;
       justify-content: center;
     }
 
-    .tp-lh__media--mosaic {
+    /* Bild wie Mosaik am Telefon ausblenden: die Kategorie beginnt mit H1,
+       Kurztext, Fakten und Knopf; die Leisten selbst zeigen die Karten. */
+    .tp-lhero__media--mosaic,
+    .tp-lhero__media--image {
       display: none;
     }
   }

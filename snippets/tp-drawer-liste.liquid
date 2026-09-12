@@ -1,0 +1,91 @@
+{%- doc -%}
+  Inhalt eines Handy-Menue-Panels fuer Bereiche ohne eigene Gliederung
+  (Teppichboden, Zubehoer, Service & Verlegung): "Alle ... ansehen" als eigener
+  Knopf, darunter die Unterpunkte als Zeilen mit Bild, Kurztext und Anzahl.
+  Dieselben Punkte wie im Desktop-Megamenue (snippets/mega-menu-list.liquid).
+
+  Der Einstieg ist der Unterpunkt mit demselben Ziel wie der Oberpunkt oder mit
+  "Alle"/"Alles" am Anfang. Fehlt er, fuehrt der Knopf zum Oberpunkt selbst.
+  Unterpunkte mit eigener dritter Ebene zeigen diese als Chips unter der Zeile.
+
+  @param {object} parent_link - Menuepunkt der ersten Ebene
+  @param {string} [kacheln] - Datensaetze der Bildkacheln
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_dl_all_i = 0
+  for c in parent_link.links
+    assign c_first = c.title | split: ' ' | first
+    if c.url == parent_link.url or c_first == 'Alle' or c_first == 'Alles'
+      assign tp_dl_all_i = forloop.index
+      break
+    endif
+  endfor
+
+  if tp_dl_all_i > 0
+    assign tp_dl_all_idx = tp_dl_all_i | minus: 1
+    assign tp_dl_all = parent_link.links[tp_dl_all_idx]
+    assign tp_dl_cta_url = tp_dl_all.url
+    capture tp_dl_cta_label
+      render 'tp-menu-label', link: tp_dl_all
+    endcapture
+    assign tp_dl_cta_label = tp_dl_cta_label | strip
+    # Nur ergaenzen, wenn tp-menu-label nicht schon einen eigenen Namen vergibt
+    # ("Alles Zubehoer" heisst dort "Zubehoer im Ueberblick").
+    assign tp_dl_raw = tp_dl_all.title | escape
+    if tp_dl_cta_label == tp_dl_raw
+      assign tp_dl_cta_label = tp_dl_cta_label | append: ' ansehen'
+    endif
+  else
+    assign tp_dl_cta_url = parent_link.url
+    assign tp_dl_cta_label = parent_link.title | escape | append: ' im Überblick'
+  endif
+
+  assign tp_dl_count = 0
+  if parent_link.type == 'collection_link'
+    assign tp_dl_count = parent_link.object.all_products_count
+  endif
+-%}
+
+<a class="tp-dn-cta" href="{{ tp_dl_cta_url }}">
+  <span class="tp-dn-cta__text">{{ tp_dl_cta_label }}</span>
+  {%- if tp_dl_count > 0 -%}
+    <span class="tp-dn-cta__count">{{ tp_dl_count }}<span class="visually-hidden"> Produkte</span></span>
+  {%- endif -%}
+</a>
+
+<ul class="tp-dn-list" role="list">
+  {%- for c in parent_link.links -%}
+    {%- if forloop.index == tp_dl_all_i -%}
+      {%- continue -%}
+    {%- endif -%}
+    {%- liquid
+      capture c_sub
+        render 'tp-menu-kurztext', link: c, kacheln: kacheln
+      endcapture
+      assign c_sub = c_sub | strip
+      assign c_count = 0
+      if c.type == 'collection_link'
+        assign c_count = c.object.all_products_count
+      endif
+      capture c_img
+        render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+      endcapture
+      capture c_title
+        render 'tp-menu-label', link: c
+      endcapture
+    -%}
+    {%- render 'tp-drawer-zeile', url: c.url, title: c_title, sub: c_sub, count: c_count, image_html: c_img, current: c.active -%}
+    {%- if c.links != blank -%}
+      <li class="tp-dn-list__sub">
+        <ul class="tp-nav-chips list-unstyled" role="list" aria-label="{{ c.title | escape }}">
+          {%- for g in c.links -%}
+            <li>
+              <a class="tp-nav-chip" href="{{ g.url }}">{%- render 'tp-menu-label', link: g -%}</a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
+</ul>

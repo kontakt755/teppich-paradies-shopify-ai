@@ -84,7 +84,7 @@ sind.
 
 **Der Fallstrick:** Die Import-Skill schreibt vor, das Artikelnummernschema des
 Lieferanten exakt zu übernehmen („match the supplier's own article-number scheme
-exactly as shown on jordanshop.de"). Unsere SKUs *sind* die Lieferantennummern.
+exactly as shown on the supplier shop"). Unsere SKUs *sind* die Lieferantennummern.
 Gehen sie unverändert als `mpn` in den Feed, matchen uns alle anderen Händler
 desselben Lieferanten — die Umbenennung wäre wirkungslos. `mpn` und interne SKU
 dürfen sich unterscheiden; für den Feed braucht es ein eigenes Schema, etwa
@@ -98,7 +98,7 @@ unter eigenem Namen verkaufen.
 1. `vendor` aller aktiven Produkte auf die Hausmarke setzen. Shopify-Write,
    Human Gate. Aktuell uneinheitlich: mal `TeppichParadies`, mal der Linienname
    (`Bergen`, `Palermo`).
-2. Import-Skill `teppichparadies-jordanshop-import` um eine Vendor-Regel
+2. Import-Skill für Lieferant A um eine Vendor-Regel
    ergänzen — sie sagt heute nichts über das Feld, deshalb hat jeder Importlauf
    selbst entschieden. Vorgeschlagener Text:
 

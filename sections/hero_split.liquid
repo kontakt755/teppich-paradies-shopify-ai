@@ -130,6 +130,40 @@
     color: var(--hero-text);
   }
 
+  .hero-feature-split__subcats-{{ hero_id }} {
+    margin-top: 22px;
+    min-width: 0;
+  }
+
+  /* Rasterspalten duerfen nicht breiter als der Platz werden (sonst zieht
+     eine lange, nicht umbrechende Zeile die Spalte auf und schneidet den
+     Text ab). */
+  .hero-feature-split__content-{{ hero_id }},
+  .hero-feature-split__media-{{ hero_id }} {
+    min-width: 0;
+  }
+
+  /* TP: Am Telefon (gestapelt, unter 450 px) beginnt die Kategorie mit H1,
+     Text und Unterkategorien; das Kategoriebild und die Merkmalsliste
+     entfallen dort. Vorher standen 750-830 px vor dem ersten Produkt. Das
+     Bild wird per <picture> gar nicht erst geladen (Quelle unten).
+     Ausserdem der seitliche Rand: "padding: 0 auto" oben ist ungueltig,
+     der Text stand am Telefon bisher direkt am Bildschirmrand. */
+  @media screen and (max-width: 449px) {
+    .hero-feature-split__inner-{{ hero_id }} {
+      padding: 0 16px;
+    }
+
+    .hero-feature-split__grid-{{ hero_id }} {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero-feature-split__media-{{ hero_id }},
+    .hero-feature-split__features-{{ hero_id }} {
+      display: none;
+    }
+  }
+
   .hero-feature-split__placeholder-{{ hero_id }} {
     aspect-ratio: 1.3 / 1;
     display: flex;
@@ -168,16 +202,23 @@
       <div class="hero-feature-split__media-{{ hero_id }}">
         <div class="hero-feature-split__image-wrap-{{ hero_id }}">
           {% if section.settings.image != blank %}
-            {{
-              section.settings.image
-              | image_url: width: 1800
-              | image_tag:
-                class: hero_image_class,
-                widths: '600, 900, 1200, 1500, 1800',
-                loading: hero_loading,
-                fetchpriority: hero_fetch_priority,
-                alt: section.settings.heading
-            }}
+            {%- comment -%} Unter 450 px bekommt das Bild eine leere Quelle: kein Download fuer eine ausgeblendete Flaeche {%- endcomment -%}
+            <picture>
+              <source
+                media="(max-width: 449px)"
+                srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+              >
+              {{
+                section.settings.image
+                | image_url: width: 1800
+                | image_tag:
+                  class: hero_image_class,
+                  widths: '600, 900, 1200, 1500, 1800',
+                  loading: hero_loading,
+                  fetchpriority: hero_fetch_priority,
+                  alt: section.settings.heading
+              }}
+            </picture>
           {% else %}
             <div class="hero-feature-split__placeholder-{{ hero_id }}">
               Bild
@@ -215,6 +256,15 @@
             {% endfor %}
           </ul>
         {% endif %}
+
+        {%- if section.settings.show_subcategories and collection != blank -%}
+          {%- capture tp_hs_subcats -%}
+            {%- render 'tp-unterkategorien-leiste', collection_resource: collection, label: 'Unterkategorien' -%}
+          {%- endcapture -%}
+          {%- if tp_hs_subcats != blank -%}
+            <div class="hero-feature-split__subcats-{{ hero_id }}">{{ tp_hs_subcats }}</div>
+          {%- endif -%}
+        {%- endif -%}
       </div>
     </div>
   </div>
@@ -370,6 +420,13 @@
       "step": 4,
       "unit": "px",
       "default": 24
+    },
+    {
+      "type": "checkbox",
+      "id": "show_subcategories",
+      "label": "Unterkategorien aus dem Menue zeigen",
+      "info": "Auf Kategorieseiten: die Geschwister-Kategorien aus dem Hauptmenue als Leiste unter dem Text.",
+      "default": true
     }
   ],
   "blocks": [
