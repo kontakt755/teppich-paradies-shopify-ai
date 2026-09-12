@@ -10,6 +10,18 @@
   Rendert nur bei belegter custom.rollenbreite (Variante oder Produkt-
   Fallback), exakt dieselbe Erkennung wie in tp-roll-order-help.liquid, damit
   Paketware (Klebevinyl/Klickvinyl) unberuehrt bleibt.
+
+  Schritt 2 ist seit 2026-09-12 die Art: Meterware (volle Rollenbreite, die
+  Breiten als Chips) oder Raummass (eigene Breite in cm). Raummass gibt es
+  nur ueber eine Variante mit Breitenwert "Wunschmaß" - bestellbar, mit
+  Preis, und die Bezugsquelle schliesst den Dienst nicht aus
+  (lieferant.wunschmass == false). Ohne so eine Variante fehlt die Karte,
+  und der Schritt heisst wieder "Breite". Die Regeln dazu liegen ohne DOM in
+  assets/tp-rollware-art.js (Tests: qa/tests/rollware-art.test.mjs).
+
+  Ist ein Raummass-Stueck als Meterware der naechsten Rolle billiger, sagt
+  der Rechner das offen und bietet den Wechsel an - der Vergleich laeuft
+  ueber die echten Variantenpreise, nicht ueber einen Faktor.
 {% enddoc %}
 
 {%- liquid
@@ -74,17 +86,62 @@
   {%- endcomment -%}
   <p class="tp-rwc-service-hint" data-service-hint hidden></p>
 
-  <div class="tp-rwc-field" data-width-field data-rwc-body>
-    {% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}
-    <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
+  {%- comment -%}
+    Schritt 2 ist die Art: Meterware (volle Rollenbreite) oder Raummass
+    (eigene Breite aus einer "Wunschmaß"-Variante). Die Raummass-Karte
+    erscheint nur, wenn die gewaehlte Farbe so eine Variante bestellbar hat -
+    entschieden in syncArtUi() bei jedem Rechnen. Ohne sie bleibt die Karte
+    weg und der Schritt heisst wieder "Breite"; bei einer einzigen Breite
+    ohne Nummer, denn eine Frage mit einer Antwort ist keine.
+  {%- endcomment -%}
+  <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
+    <span data-art-step>{% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Art' %}</span>
+    <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
+      <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
+      <label class="tp-rwc-art-card" for="tp-rwc-art-m-{{ tp_rc_id }}">
+        <svg class="tp-rwc-art-icon" viewBox="0 0 48 40" aria-hidden="true" focusable="false">
+          <rect x="4" y="6" width="30" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+          <circle cx="39" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 20h22" stroke="var(--tp-rwc-accent)" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+        </svg>
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title">Meterware</span>
+          <span class="tp-rwc-art-sub" data-art-sub-meter>volle Rollenbreite</span>
+        </span>
+      </label>
+      <input type="radio" id="tp-rwc-art-r-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="raum">
+      <label class="tp-rwc-art-card" for="tp-rwc-art-r-{{ tp_rc_id }}" data-art-card-raum hidden>
+        <svg class="tp-rwc-art-icon" viewBox="0 0 48 40" aria-hidden="true" focusable="false">
+          <rect x="4" y="6" width="30" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+          <circle cx="39" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 18h14v12" fill="none" stroke="var(--tp-rwc-accent)" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="12" y="15" font-size="8" font-weight="700" fill="currentColor">B</text>
+          <text x="25" y="30" font-size="8" font-weight="700" fill="currentColor">L</text>
+        </svg>
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title">Raummaß</span>
+          <span class="tp-rwc-art-sub" data-art-sub-raum>eigene Breite, zentimetergenau</span>
+        </span>
+      </label>
+    </div>
   </div>
 
-  {%- comment -%}
-    Gibt es nur eine Breite, ist die Auswahl oben keine Entscheidung, sondern
-    eine Scheinfrage. Sie wird dann ausgeblendet und die Breite hier nur noch
-    genannt - der JS-Teil entscheidet das, weil nur er die Breiten kennt.
-  {%- endcomment -%}
-  <p class="tp-rwc-fixed-width" data-width-fixed hidden data-rwc-body></p>
+  <div class="tp-rwc-field" data-width-field data-rwc-body>
+    <span data-width-step hidden>{% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}</span>
+    <span class="tp-rwc-label" data-width-label>Rollenbreite</span>
+    <div class="tp-rwc-seg tp-rwc-seg--width" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
+  </div>
+
+  <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box data-rwc-body hidden>
+    <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Ihre Breite</label>
+    <div class="tp-rwc-input-wrap">
+      <input type="number" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="50" step="1" placeholder="z. B. 250" data-wunsch-input>
+      <span class="tp-rwc-unit">cm</span>
+    </div>
+    <p class="tp-rwc-note" data-wunsch-hint></p>
+    <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
+    <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden></p>
+  </div>
 
   {%- if tp_rc_room_mode_enabled -%}
   <div class="tp-rwc-mode-toggle">
@@ -243,6 +300,7 @@
     --tp-rwc-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
     --tp-rwc-surface: var(--color-background, #fcfcfb);
     --tp-rwc-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
+    --tp-rwc-accent: var(--color-primary, #c8891e);
     margin: 20px 0;
     color: var(--tp-rwc-ink);
   }
@@ -283,11 +341,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 84px;
-    padding: 10px 14px;
+    min-width: 96px;
+    padding: 12px 18px;
     border: 1px solid var(--tp-rwc-line);
     background: var(--tp-rwc-surface);
-    font-size: .9rem;
+    font-size: 1rem;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     border-radius: 6px;
     cursor: pointer;
@@ -298,6 +357,59 @@
     color: var(--tp-rwc-surface);
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:focus-visible + .tp-rwc-opt { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
+
+  /* Art-Karten: zwei gleich hohe Kacheln, gewaehlt = kraeftiger Rahmen plus Haken. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px 14px 12px;
+    border: 1px solid var(--tp-rwc-line);
+    border-radius: 8px;
+    background: var(--tp-rwc-surface);
+    cursor: pointer;
+    min-height: 74px;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 44px; height: 38px; flex-shrink: 0; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
+    border: 2px solid var(--tp-rwc-ink);
+    padding: 13px 13px 13px 11px;
+    background: var(--tp-rwc-material);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 9px;
+    height: 15px;
+    border-right: 3px solid var(--tp-rwc-ink);
+    border-bottom: 3px solid var(--tp-rwc-ink);
+    transform: rotate(45deg);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:focus-visible + .tp-rwc-art-card { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:disabled + .tp-rwc-art-card { display: none; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-tipp { padding: 10px 12px; border-radius: 6px; background: var(--tp-rwc-material); font-size: .85rem; line-height: 1.45; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-linkbtn {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--tp-rwc-ink);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
@@ -331,13 +443,9 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round[hidden] { display: none; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width {
-    margin: 0 0 16px;
-    font-size: .9rem;
-    color: var(--tp-rwc-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width[hidden] { display: none; }
+  /* hidden muss gegen jedes display gewinnen - sonst blitzen Karten und
+     Chips auf, die es fuer diese Farbe gar nicht gibt. */
+  .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
@@ -446,8 +554,12 @@
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { grid-template-columns: 1fr; gap: 10px; }
   }
+  @media screen and (max-width: 479px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { grid-template-columns: 1fr; }
+  }
 </style>
 
+{{ 'tp-rollware-art.js' | asset_url | script_tag }}
 <script>
 (function () {
   var pid = {{ product.id | json }};
@@ -464,13 +576,9 @@
   var options = data.options || [];
   var variants = (data.variants || []).filter(function (v) { return v !== null; });
 
-  var widthPattern = /^\d+([.,]\d+)?\s?cm$/i;
-  var wIdx = -1;
-  options.forEach(function (opt, idx) {
-    var vals = opt.values || [];
-    var hits = vals.filter(function (v) { return widthPattern.test(String(v).trim()); });
-    if (hits.length > 0 && hits.length === vals.length) wIdx = idx;
-  });
+  var ART = window.TPRollwareArt;
+  if (!ART) return;
+  var wIdx = ART.findWidthOption(options);
   if (!variants.length) return;
 
   var fallbackWidthCm = parseFloat(data.fallback_width_cm) || 0;
@@ -480,12 +588,7 @@
 
   var widths;
   if (wIdx !== -1) {
-    var seen = {};
-    variants.forEach(function (v) {
-      var n = parseFloat(String(v.options[wIdx]).replace(',', '.'));
-      if (!isNaN(n)) seen[n] = true;
-    });
-    widths = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+    widths = ART.numericWidths(variants, wIdx);
     if (!widths.length) return;
   } else {
     // Kein separates Rollenbreite-Produktoption vorhanden (z.B. nur eine
@@ -496,43 +599,55 @@
 
   root.style.display = '';
 
-  // Eine einzige Breite ist keine Auswahl. Frueher wurde sie trotzdem als
-  // Schritt 2 mit genau einem Knopf angeboten - eine Frage, die nichts
-  // entscheidet. Ohne Breitenoption (wIdx === -1) blieb ausserdem die
-  // Nummerierung als "1, 3" stehen, weil nur das Feld verschwand.
-  var hasWidthChoice = wIdx !== -1 && widths.length > 1;
+  // Breiten-Chips einmal fuer alle Rollenbreiten anlegen. Welche davon die
+  // gewaehlte Farbe wirklich hat, blendet syncArtUi() bei jedem Rechnen ein
+  // oder aus - eine Farbe mit nur der 400er-Rolle darf keine 500 anbieten.
+  // Auch eine einzige Breite bekommt ihren Chip: als kraeftige Angabe, ohne
+  // Schrittnummer. Vorher stand sie als graue Textzeile da und ging unter.
+  var seg = root.querySelector('[data-width-seg]');
+  var chipByWidth = {};
+  widths.forEach(function (w, i) {
+    var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
+    var input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'tp-rwc-width-{{ tp_rc_id }}';
+    input.id = id;
+    input.value = w;
+    if (i === 0) input.checked = true;
+    var label = document.createElement('label');
+    label.className = 'tp-rwc-opt';
+    label.setAttribute('for', id);
+    label.textContent = w + ' cm';
+    seg.appendChild(input);
+    seg.appendChild(label);
+    chipByWidth[w] = { input: input, label: label };
+  });
 
-  if (hasWidthChoice) {
-    var seg = root.querySelector('[data-width-seg]');
-    widths.forEach(function (w, i) {
-      var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
-      var input = document.createElement('input');
-      input.type = 'radio';
-      input.name = 'tp-rwc-width-{{ tp_rc_id }}';
-      input.id = id;
-      input.value = w;
-      if (i === 0) input.checked = true;
-      var label = document.createElement('label');
-      label.className = 'tp-rwc-opt';
-      label.setAttribute('for', id);
-      label.textContent = w + ' cm';
-      seg.appendChild(input);
-      seg.appendChild(label);
-    });
-  } else {
-    var widthField = root.querySelector('[data-width-field]');
-    if (widthField) widthField.hidden = true;
+  var artField = root.querySelector('[data-art-field]');
+  var artRaumCard = root.querySelector('[data-art-card-raum]');
+  var artRadios = root.querySelectorAll('input[name="tp-rwc-art-{{ tp_rc_id }}"]');
+  var artSubMeter = root.querySelector('[data-art-sub-meter]');
+  var artSubRaum = root.querySelector('[data-art-sub-raum]');
+  var widthField = root.querySelector('[data-width-field]');
+  var widthStep = root.querySelector('[data-width-step]');
+  var widthLabel = root.querySelector('[data-width-label]');
+  var wunschBox = root.querySelector('[data-wunsch-box]');
+  var wunschInput = root.querySelector('[data-wunsch-input]');
+  var wunschHint = root.querySelector('[data-wunsch-hint]');
+  var wunschError = root.querySelector('[data-wunsch-error]');
+  var meterTipp = root.querySelector('[data-meter-tipp]');
+  var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
+  var WUNSCH_MIN_CM = 50;
+  // Breiten, die es fuer die gewaehlte Farbe gibt - gesetzt von syncArtUi().
+  var farbBreiten = widths.slice();
+  function maxFarbBreite() { return farbBreiten.length ? farbBreiten[farbBreiten.length - 1] : 0; }
 
-    // Breite bleibt sichtbar, nur als Angabe statt als Frage.
-    var fixedWidth = root.querySelector('[data-width-fixed]');
-    if (fixedWidth) {
-      fixedWidth.textContent = 'Rollenbreite: ' + widths[0] + ' cm';
-      fixedWidth.hidden = false;
-    }
-
-    // Ohne Breiten-Schritt ist die Laenge Schritt 2, nicht 3.
-    var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
-    if (lengthNumber) lengthNumber.textContent = '2';
+  function artMode() {
+    var r = root.querySelector('input[name="tp-rwc-art-{{ tp_rc_id }}"]:checked');
+    return r && r.value === 'raum' ? 'raum' : 'meter';
+  }
+  function setArt(mode) {
+    artRadios.forEach(function (r) { r.checked = (r.value === mode); });
   }
 
   var modeBtns = root.querySelectorAll('[data-mode-btn]');
@@ -570,8 +685,12 @@
 
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
+    if (artMode() === 'raum') {
+      var raw = ART.toCm(wunschInput && wunschInput.value);
+      return raw > 0 ? Math.ceil(raw) : 0;
+    }
     var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
-    return c ? parseFloat(c.value) : widths[0];
+    return c ? parseFloat(c.value) : (farbBreiten[0] || widths[0]);
   }
 
   function baseOptions() {
@@ -598,20 +717,120 @@
     return first.options.slice();
   }
 
-  function findVariant(w) {
-    var t = baseOptions();
+  // Variante zur gewaehlten Farbe (alle Optionen ausser der Breite), deren
+  // Breitenwert das Praedikat erfuellt - eine Zahl oder "Wunschmaß".
+  function variantFor(t, pred) {
     return variants.filter(function (v) {
       if (v.options.length !== t.length) return false;
       for (var i = 0; i < v.options.length; i++) {
         if (i === wIdx) {
-          var vw = parseFloat(String(v.options[i]).replace(',', '.'));
-          if (vw !== w) return false;
+          if (!pred(v.options[i])) return false;
         } else if (norm(v.options[i]) !== norm(t[i])) {
           return false;
         }
       }
       return true;
     })[0];
+  }
+  function byWidth(w) {
+    return function (val) { return ART.toCm(val) === w; };
+  }
+  function findVariant(w) {
+    var t = baseOptions();
+    if (wIdx !== -1 && artMode() === 'raum') return variantFor(t, ART.isWunsch);
+    return variantFor(t, byWidth(w));
+  }
+  function raumVariant() {
+    return wIdx === -1 ? null : variantFor(baseOptions(), ART.isWunsch);
+  }
+  // EUR je m² aus dem Variantenpreis - im cm-genauen Modus steht dort der
+  // Preis je 0,01 m².
+  function rateOf(v) {
+    if (!v) return 0;
+    return cmExact ? parseFloat(v.price) : parseFloat(v.price) / 100;
+  }
+
+  // Schritt 2 je Farbe neu entscheiden: welche Rollenbreiten es gibt, ob
+  // Raummass angeboten wird, und wie die Schritte heissen und zaehlen.
+  //   Raummass moeglich      -> Art-Karten als Schritt 2, Laenge ist 3
+  //   nur Meterware, >1 Breite -> "Waehlen Sie Ihre Breite" als Schritt 2
+  //   nur Meterware, 1 Breite  -> Chip mit Label "Rollenbreite", Laenge ist 2
+  function syncArtUi() {
+    if (wIdx === -1) {
+      if (artField) artField.hidden = true;
+      if (widthField) widthField.hidden = false;
+      if (widthStep) widthStep.hidden = true;
+      if (widthLabel) widthLabel.hidden = false;
+      if (wunschBox) wunschBox.hidden = true;
+      if (lengthNumber) lengthNumber.textContent = '2';
+      return;
+    }
+    var t = baseOptions();
+    farbBreiten = [];
+    widths.forEach(function (w) {
+      var has = !!variantFor(t, byWidth(w));
+      var chip = chipByWidth[w];
+      if (chip) { chip.input.hidden = !has; chip.label.hidden = !has; chip.input.disabled = !has; }
+      if (has) farbBreiten.push(w);
+    });
+    var checked = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
+    if ((!checked || checked.disabled) && farbBreiten.length) {
+      chipByWidth[farbBreiten[0]].input.checked = true;
+    }
+
+    var rv = raumVariant();
+    var raumOk = ART.wunschOk(rv, wIdx);
+    if (artRaumCard) artRaumCard.hidden = !raumOk;
+    artRadios.forEach(function (r) { if (r.value === 'raum') r.disabled = !raumOk; });
+    if (!raumOk && artMode() === 'raum') setArt('meter');
+    var raum = artMode() === 'raum';
+
+    // Preise auf den Karten kommen aus den echten Variantenpreisen.
+    var meterV = variantFor(t, byWidth(farbBreiten[0] || widths[0]));
+    if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite' + (rateOf(meterV) > 0 ? ' · ' + fmt(rateOf(meterV)) + ' €/m²' : '');
+    if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau' + (raumOk ? ' · ' + fmt(rateOf(rv)) + ' €/m²' : '');
+
+    var multi = farbBreiten.length > 1;
+    if (artField) artField.hidden = !raumOk;
+    if (widthField) widthField.hidden = raum;
+    if (widthStep) widthStep.hidden = !(!raumOk && multi);
+    if (widthLabel) widthLabel.hidden = (!raumOk && multi);
+    if (lengthNumber) lengthNumber.textContent = (raumOk || multi) ? '3' : '2';
+    if (wunschBox) wunschBox.hidden = !raum;
+    if (raum && wunschHint) {
+      var r = ART.rolleFuer(selectedWidth(), farbBreiten);
+      wunschHint.textContent = r
+        ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
+        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxFarbBreite() + ' cm.';
+    }
+  }
+
+  // Im Raummass sagen, wenn dasselbe Stueck als Meterware der naechsten Rolle
+  // weniger kostet - gerechnet aus beiden Variantenpreisen, mit Wechsel-Knopf.
+  function updateMeterTipp(raum, w, len, rateRaum) {
+    if (!meterTipp) return;
+    if (!raum) { meterTipp.hidden = true; return; }
+    var t = baseOptions();
+    var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
+      return rateOf(variantFor(t, byWidth(rolle)));
+    });
+    if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
+    while (meterTipp.firstChild) meterTipp.removeChild(meterTipp.firstChild);
+    meterTipp.appendChild(document.createTextNode(
+      'Günstiger als Meterware? Bei dieser Breite kostet die volle ' + cmp.rolle +
+      '-cm-Rolle nur ' + fmt(cmp.totalMeter) + ' € statt ' + fmt(cmp.totalRaum) + ' €. '));
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tp-rwc-linkbtn';
+    btn.textContent = 'Zu Meterware wechseln';
+    btn.addEventListener('click', function () {
+      setArt('meter');
+      var chip = chipByWidth[cmp.rolle];
+      if (chip) chip.input.checked = true;
+      calculate();
+    });
+    meterTipp.appendChild(btn);
+    meterTipp.hidden = false;
   }
 
   var DRAW_MAX_PX = 280;
@@ -687,11 +906,18 @@
   }
 
   function calculate() {
+    syncArtUi();
     var w = selectedWidth();
+    var raum = artMode() === 'raum';
+    var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxFarbBreite()) : '';
+    if (wunschError) {
+      wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
+      wunschError.hidden = !wunschError.textContent;
+    }
     var len = getEffectiveLengthCm();
     var blocked = (len === -1);
     var tooLong = len > MAX_LENGTH_CM;
-    var valid = !blocked && !tooLong && len >= 100;
+    var valid = !blocked && !tooLong && len >= 100 && !wErr;
 
     // Ein number-Feld liefert bei "150,7" einen leeren Wert - die Seite reagierte
     // dann gar nicht, ohne zu sagen warum. Das Komma ist in Deutschland die
@@ -726,7 +952,7 @@
     // Platzhalter ("L: - cm", "-"), was wie ein defekter Rechner aussah.
     // Beide bleiben deshalb verborgen, bis eine Laenge eingegeben ist -
     // dann erscheinen sie gemeinsam mit echten Werten.
-    var hasLength = len > 0;
+    var hasLength = len > 0 && !wErr;
     calcBox.hidden = !hasLength;
     drawFigure.hidden = !hasLength;
 
@@ -756,7 +982,9 @@
 
       outTotal.textContent = fmt(total) + ' €';
       cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb';
+      updateMeterTipp(raum, w, len, rate);
     } else {
+      updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
@@ -826,7 +1054,9 @@
 
   root.addEventListener('change', function (e) {
     if (e.target.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+    if (e.target.name === 'tp-rwc-art-{{ tp_rc_id }}') calculate();
   });
+  if (wunschInput) wunschInput.addEventListener('input', calculate);
   lengthInput.addEventListener('input', calculate);
   if (roomLengthInput) roomLengthInput.addEventListener('input', calculate);
   if (roomWidthInput) roomWidthInput.addEventListener('input', calculate);
@@ -855,6 +1085,8 @@
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
     if (len < 100) return;
+    var raumOrder = artMode() === 'raum';
+    if (raumOrder && ART.pruefeBreite(w, WUNSCH_MIN_CM, maxFarbBreite())) return;
 
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
@@ -864,10 +1096,11 @@
     // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
     // (z.B. 666 statt 6,66 m²) mit sehr kleinem Stueckpreis. Die Flaeche
     // gehoert deshalb lesbar in die Zeileneigenschaften.
-    var properties = {
-      'Rollenbreite': w + ' cm',
-      'Gewünschte Länge': len + ' cm'
-    };
+    // "Art" zuerst, damit Admin und Kunde sofort sehen, ob aus der vollen
+    // Rolle oder zentimetergenau geschnitten wird - und aus welcher Rolle.
+    var properties = raumOrder
+      ? { 'Art': 'Raummaß', 'Ihre Breite': w + ' cm', 'Aus Rolle': ART.rolleFuer(w, farbBreiten) + ' cm', 'Gewünschte Länge': len + ' cm' }
+      : { 'Art': 'Meterware', 'Rollenbreite': w + ' cm', 'Gewünschte Länge': len + ' cm' };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
