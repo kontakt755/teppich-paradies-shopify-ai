@@ -2381,8 +2381,8 @@
         "type": "text",
         "id": "tp_vs_lieferung_hinweis",
         "label": "Hinweis zur Anlieferung",
-        "info": "Steht bei den Lieferpreisen und unter „Gut zu wissen“. Leer lassen blendet ihn aus.",
-        "default": "Die Preise gelten für ebenerdige Anlieferung. Das Tragen in obere Etagen nennen wir vorab im Angebot."
+        "info": "Steht bei den Lieferpreisen und unter „Gut zu wissen“. Bewusst ohne Betrag: was das Tragen kostet, hängt von Gewicht, Größe und Stückzahl ab und wird je Auftrag eingeschätzt. Leer lassen blendet den Hinweis aus.",
+        "default": "Die Preise gelten für ebenerdige Anlieferung. Was das Tragen in obere Etagen kostet, hängt von Gewicht, Größe und Anzahl der Teile ab – wir schätzen es vorab ein und nennen es Ihnen im Angebot."
       },
       {
         "type": "header",
