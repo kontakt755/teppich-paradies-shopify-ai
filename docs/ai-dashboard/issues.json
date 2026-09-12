@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T01:24:53.358Z",
+  "generated_at": "2026-09-12T06:10:04.708Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 77,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T01:24:53.358Z",
+    "fetchedAt": "2026-09-12T06:10:04.708Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
