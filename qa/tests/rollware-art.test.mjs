@@ -71,6 +71,15 @@ test('Meterware-Vergleich rechnet mit echten Variantenpreisen, nicht mit einem F
   assert.equal(A.meterwareGuenstiger(297, 550, 88.97, [400, 500], rateMeter).guenstiger, true);
 });
 
+test('Meterware-Vergleich mit Abrechnung in vollen m² nennt die Betraege der Preisbox', () => {
+  const rateMeter = () => 65.9;
+  // 3,50 x 5,50 = 19,25 m² -> 20 m² x 89 = 1780; Rolle 4,00 x 5,50 = 22 m² x 65,90 = 1449,80
+  const c = A.meterwareGuenstiger(350, 550, 89, [400, 500], rateMeter, Math.ceil);
+  assert.equal(c.totalRaum, 1780);
+  assert.equal(c.totalMeter.toFixed(2), '1449.80');
+  assert.equal(c.guenstiger, true);
+});
+
 test('Meterware-Vergleich ohne Grundlage liefert null', () => {
   const rateMeter = () => 65.9;
   assert.equal(A.meterwareGuenstiger(250, 0, 88.97, [400], rateMeter), null, 'ohne Laenge');

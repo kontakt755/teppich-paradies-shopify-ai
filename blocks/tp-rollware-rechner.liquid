@@ -366,7 +366,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 14px 14px 12px;
+    padding: 14px 34px 14px 12px;
     border: 1px solid var(--tp-rwc-line);
     border-radius: 8px;
     background: var(--tp-rwc-surface);
@@ -379,7 +379,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
     border: 2px solid var(--tp-rwc-ink);
-    padding: 13px 13px 13px 11px;
+    padding: 13px 33px 13px 11px;
     background: var(--tp-rwc-material);
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card::after {
@@ -813,7 +813,7 @@
     var t = baseOptions();
     var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
       return rateOf(variantFor(t, byWidth(rolle)));
-    });
+    }, cmExact ? function (a) { return Math.round(a * 100) / 100; } : Math.ceil);
     if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
     while (meterTipp.firstChild) meterTipp.removeChild(meterTipp.firstChild);
     meterTipp.appendChild(document.createTextNode(

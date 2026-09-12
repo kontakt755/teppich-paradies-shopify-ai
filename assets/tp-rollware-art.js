@@ -90,13 +90,16 @@
   // werden aus den echten Variantenpreisen gerechnet (EUR je m²), nicht aus
   // einem Faktor. rateMeter ist eine Funktion widthCm -> EUR je m² (0 = keine
   // Variante fuer diese Rolle).
-  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter) {
+  // bill: Flaeche -> abgerechnete Flaeche (volle m² oder 0,01 m²), damit der
+  // Hinweis dieselben Betraege nennt wie die Preisbox. Ohne bill: exakt.
+  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter, bill) {
     var rolle = rolleFuer(wCm, widths);
     if (!rolle || !(lenCm > 0) || !(rateRaum > 0)) return null;
     var rm = rateMeter(rolle);
     if (!(rm > 0)) return null;
-    var totalRaum = (wCm * lenCm / 10000) * rateRaum;
-    var totalMeter = (rolle * lenCm / 10000) * rm;
+    var b = typeof bill === 'function' ? bill : function (a) { return a; };
+    var totalRaum = b(wCm * lenCm / 10000) * rateRaum;
+    var totalMeter = b(rolle * lenCm / 10000) * rm;
     return {
       rolle: rolle,
       totalRaum: totalRaum,
