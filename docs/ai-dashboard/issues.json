@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T18:31:15.142Z",
+  "generated_at": "2026-09-12T18:39:55.104Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 81,
+  "count": 82,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T18:31:15.142Z",
+    "fetchedAt": "2026-09-12T18:39:55.104Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 253,
+      "title": "Verlegeservice-Konditionen live stellen (PR #249 ist in main, Deploy fehlt)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/253",
+      "labels": [
+        "status:blockiert",
+        "type:technik",
+        "priority:p2",
+        "reviewer:mensch"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "goal": "Der Deploy ist aus einer Remote-Session technisch nicht möglich. Alle vier Wege wurden geprüft, nicht vermutet:\n\n1. **Schreiben ins Live-Theme** — von der Sicherheitsrichtlinie des MCP-Servers abgelehnt: `category: live_theme`, `kind: targets_live`. Theme-Datei-Writes sind nur auf unveröffentlichten Themes erlaubt.\n2. **Theme veröffentlichen** — ebenfalls blockiert (`theme publishing`).\n3. **Shopify CLI** — nicht installiert und keine Projekt-Abhängigkeit; `npm install` bringt sie nicht.\n4. **Egress** — `sjjyq1-6w.myshopify.com` und `www.teppich-paradies.net` beide `connect_rejected` (Organisationsrichtlinie).\n\n`npm run workflow:doctor` steht folgerichtig bei 11× OK und zwei offenen Punkten: fehlende Preview-Evidence und fehlende Shopify CLI.\n\n## Was zu tun ist (lokal auf dem Mac)\n\n```\ngit checkout main && git pull origin main\nnpm run workflow:doctor\nnode workflow/cli.mjs preview --theme-id 203690246478 --approve-preview --p0 0 --p1 0\nnode workflow/cli.mjs live --theme-id 203690246478 --approve-live --approval-text \"PUBLISH LIVE\" --execute\n```\n\n`--p0 0 --p1 0` verlangt das Gate ausdrücklich — erst setzen, wenn die Preview gesehen wurde.\n\n## Vor dem Live-Gang ansehen\n\nZwei Stellen s…",
+        "description": "## Stand\n\nPR #249 ist gemergt (`01ccab6`). Der Code liegt vollständig in `main`, ist aber **nicht live** — der Shop zeigt weiterhin die alten Konditionen.\n\nGeänderte Werte (Theme-Einstellungen, Gruppe *TP Verlegeservice*):\n\n| Einstellung | live derzeit | in main |\n|---|---|---|\n| Lose Verlegung | 4,95 €/m² | 8,95 €/m² |\n| Mindestpauschale je Auftrag | 49 € | 129 € |\n| Mit Verlegeband (unter 649 €) | 8,95 €/m² | 9,95 €/m² |\n| Mit Flüssigfixierung (unter 649 €) | 9,95 €/m² | 10,95 €/m² |\n| Vollflächig verklebt (unter 649 €) | 10,95 €/m² | 11,95 €/m² |\n\nDazu: „Zusatz\"-Markierung für Verlegeband/Fixierung/Verklebung, die Und-Bedingung (Warenwert **und** Entfernung) ausdrücklich an allen Stellen, neu gefasster Beispielblock, Hinweis auf ebenerdige Anlieferung."
+      },
+      "created_at": "2026-09-12T18:39:40Z",
+      "updated_at": "2026-09-12T18:39:40Z",
+      "closed_at": null
+    },
     {
       "number": 252,
       "title": "Bewertungsbeleg auf allen Produktvorlagen, Anzahl belegt",
