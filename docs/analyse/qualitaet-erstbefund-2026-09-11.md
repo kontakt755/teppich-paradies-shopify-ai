@@ -693,3 +693,17 @@ Gates nach dem letzten Merge: Liquid-Guard 380 Dateien 0 Fehler · Schema-Guard 
 - Bei Theme Check habe ich `severity` als Zahl ausgewertet und daraufhin „0 Warnungen" gemeldet. Das Feld ist ein String; korrekt sind 41 Warnungen, also unverändert zum Stand vor dem Merge.
 
 **Ergebnis:** `feature/shop-qualitaet` nach `origin` gepusht, PR #220 nach `main` offen, Aufgabe #194 auf Review. Alle 19 Theme-Dateien aus den Qualitätsarbeiten liegen byte-identisch im Entwurf 204168364366 – es musste nichts nachgeladen werden. Es ist nichts veröffentlicht worden; `workflow:preview` und `workflow:live` bleiben ungelaufen, bis der Inhaber „live stellen" sagt.
+
+### Nachtrag 6: Checkliste für den Live-Gang von PR #220
+
+Aus den Gegenprüfungen der drei beteiligten Sitzungen. Die Reihenfolge ist nicht beliebig.
+
+1. **`origin/main` unmittelbar vorher erneut prüfen.** Am 2026-09-12 war main zweimal weitergelaufen, nachdem ich es gemergt hatte — beide Male nur der Dashboard-Bot, aber die Prüfung gehört vor jeden Schritt, nicht einmal pro Tag: `git merge-base --is-ancestor origin/main HEAD`.
+2. **Theme-Rolle aus der Quelle lesen**, nicht aus einer Meldung: `themes(first: 20)`, live ist `role: MAIN`. Stand 2026-09-12: 203690246478, deckungsgleich mit `domains/shopify/live-theme.json`.
+3. **PR #220 nach `main`**, dann `npm run workflow:doctor`, dann `preview`, dann `live`. Kein Gate umbauen.
+4. **Erst das Theme live, dann das Menü.** Der Menüpunkt „Unsere Arbeit" führt so lange auf die B2B-Rückfallseite, wie `templates/page.unsere-arbeit.json` nicht im Live-Theme liegt (Ursache: fehlender Template-Suffix fällt auf `page.json`). Also: Theme live → `menuUpdate` auf `main-menu` nach `domains/shopify/menu-vorlage-unsere-arbeit.md` → Gegenprobe über die **Menge der MenuItem-IDs** vorher/nachher, nicht über `userErrors: []`.
+5. **Bildkacheln**: beide liegen seit `ecb3126`/`c62489b` im Repository (`tp_kachel_service_liefer`, `tp_kachel_service_arbeit`) und werden von der Deploy-Kette mitgetragen. Der verbreitete Satz „die Kacheln hängen am Ziel-Theme" gilt nur für Handänderungen im Theme-Editor — `sections/header-group.json` ist eine Repository-Datei. Nach dem Preview-Schritt trotzdem gegenprüfen, dass im Megamenü kein Buchstabe statt eines Bildes steht.
+6. **Kollektion „Vinylboden – Fischgrät"** ist laut Menü-Sitzung am 2026-09-12 um 06:50 UTC im Kanal Onlineshop veröffentlicht. Beim Live-Gang nur nachprüfen, nicht erneut ändern — storeweit.
+7. **Favicon** fehlt weiter (404 auf `/favicon.ico`), Entscheidung des Inhabers. Kein Blocker, aber der einzige offene Punkt aus den Laufzeitprüfungen.
+
+**Eine Freigabe wird nicht weitergeleitet.** Drei Sitzungen haben gemeldet, der Inhaber habe den Live-Gang in ihrer Sitzung freigegeben — korrekt jeweils als Information gekennzeichnet. Für `workflow:live` braucht die ausführende Sitzung das Wort des Inhabers in ihrem eigenen Verlauf. Bis dahin bleibt es bei PR und Entwurf.
