@@ -47,6 +47,22 @@ const BOTDATEI = '(?:\\.\\/)?docs\\/ai-dashboard\\/issues\\.json';
 // Ausnahme heraus - "git branch -D $(git branch | grep alt)" bleibt blockiert.
 const BRANCHNAME = '[A-Za-z0-9._][A-Za-z0-9._/-]*';
 
+// Jede Ausnahme hier gilt nur fuer einen "nackten" Aufruf: das ganze Segment,
+// hoechstens mit einem Pfad davor. Steht ein anderer Befehl davor, zaehlt sie
+// nicht.
+//
+// Der Grund ist nicht Vorsicht, sondern eine gemessene Luecke vom 2026-09-12:
+// Beide Ausnahmen lesen einen ausgeschriebenen Namen aus dem Befehlstext und
+// schliessen daraus, dass jemand hingesehen hat. Unter xargs stimmt dieser
+// Schluss nicht mehr, weil dort Argumente von stdin angehaengt werden, die im
+// Text nicht vorkommen:
+//
+//   printf 'zweig-b\nzweig-c\n' | xargs echo "branch -D zweig-a"
+//   -> branch -D zweig-a zweig-b zweig-c
+//
+// Der Hook sah "zweig-a", geloescht wurden drei Branches. Dasselbe galt fuer
+// die Bot-Datei: "xargs git checkout -- <botdatei>" haette weitere Pfade von
+// stdin mitverworfen.
 const AUSNAHMEN = [
   new RegExp(`^git\\s+checkout\\s+--\\s+${BOTDATEI}${UMLEITUNG}`),
   new RegExp(`^git\\s+restore\\s+(?:--worktree\\s+|--\\s+)?${BOTDATEI}${UMLEITUNG}`),
@@ -169,13 +185,19 @@ function segmente(cmd) {
 // also erlaubt. Nicht abgedeckt: ein Executable in Anfuehrungszeichen
 // ("/usr/bin/git" branch). Fail-closed bleibt die Linie: lieber eine Rueckfrage
 // zu viel als ein durchgerutschter Befehl.
+// "nackt" heisst: vor dem Aufruf steht nichts ausser hoechstens einem Pfad.
+// Nur solche Kandidaten duerfen eine Ausnahme in Anspruch nehmen - siehe die
+// Begruendung bei AUSNAHMEN.
 function kandidaten(segment) {
-  const out = [segment];
+  const out = [{ teil: segment, nackt: true }];
   for (const m of segment.matchAll(/(?<=^|[\s"'`({=])(?:git|gh)\s/g)) {
-    if (m.index > 0) out.push(segment.slice(m.index));
+    if (m.index > 0) out.push({ teil: segment.slice(m.index), nackt: false });
   }
   for (const m of segment.matchAll(/(?<=^|[\s"'`({=])[\w.~/-]*\/(git|gh)(?=\s)/g)) {
-    out.push(segment.slice(m.index + m[0].length - m[1].length));
+    const start = m.index + m[0].length - m[1].length;
+    // Ein Pfad am Segmentanfang ist nur eine andere Schreibweise desselben
+    // Aufrufs; dahinter steht kein zweiter Befehl, der Argumente nachreicht.
+    out.push({ teil: segment.slice(start), nackt: m.index === 0 });
   }
   return out;
 }
@@ -190,8 +212,8 @@ async function stdinJson() {
 const command = (await stdinJson())?.tool_input?.command ?? '';
 
 for (const segment of segmente(command)) {
- for (const teil of kandidaten(segment)) {
-  if (AUSNAHMEN.some((muster) => muster.test(teil))) continue;
+ for (const { teil, nackt } of kandidaten(segment)) {
+  if (nackt && AUSNAHMEN.some((muster) => muster.test(teil))) continue;
   for (const [muster, grund] of VERBOTEN) {
     if (muster.test(teil)) {
       process.stdout.write(`${JSON.stringify({
