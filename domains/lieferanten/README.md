@@ -91,7 +91,7 @@ Die Lieferant-B-Textilkollektionen sind stark mit Fliesen (Avantiles, 28 Qualita
 - Je Farbe gilt in der Datei: `custom_size_available` und `edging_available` = `lieferant_a_available`.
   `kettelleiste_available` und `dropshipping_available` bleiben `null`, bis die Konditionen vorliegen.
 
-## 5. Vorschlag Shopify-Datenmodell (Phase 5, noch nicht umgesetzt)
+## 5. Shopify-Datenmodell (Phase 5, umgesetzt 2026-09-12)
 
 Die Servicelogik haengt an der **gewaehlten Farbvariante**. Variant-Metafields sind dafuer die richtige Ebene:
 Liquid liest sie ueber `variant.metafields`, der Variantenwechsel ist im Theme bereits verdrahtet
@@ -113,21 +113,39 @@ nicht fuer die Faehigkeiten je Farbe.
 | `alternativ` | single_line_text | Zweitlieferant oder leer |
 | `wunschmass` | boolean | Zuschnitt/Wunschmass anzeigen |
 | `kettelung` | boolean | Kettelservice anzeigen |
-| `kettelleiste` | boolean | Kettelleisten anzeigen |
-| `dropshipping` | boolean | Direktversand moeglich |
+| ~~`kettelleiste`~~ | boolean | Kettelleisten anzeigen — **nicht angelegt**, Konditionen fehlen |
+| ~~`dropshipping`~~ | boolean | Direktversand moeglich — **nicht angelegt**, Konditionen fehlen |
 
-**Produkt-Metafields, Namespace `lieferant`**: `hersteller`, `hersteller_qualitaet`, `lieferant_a_produktname`,
+**Produkt-Metafields, Namespace `lieferant`**: `hersteller`, `lieferant_a_produktname`,
 `lieferant_b_produktname`, `match_status`, `abgleich_datum`. Der bestehende `grosshandel.sku` bleibt als
 Lieferant-A-Linienname erhalten.
 
 **Metaobject `lieferant`** (lieferant_a, lieferant_b): Name, Shop-URL, Login-Hinweis, Servicekatalog, Lieferzeit — einmal
 gepflegt, von Produkt-/Variantenfeldern referenziert (`metaobject_reference`). Das skaliert auf weitere Lieferanten
-ohne neue Keys.
+ohne neue Keys. **Noch nicht angelegt**, siehe Stand unten.
+
+**Stand 2026-09-12** — 15 Definitionen angelegt, Werte auf **52 Produkte und 943 Varianten** geschrieben
+und durch Rueckabfrage gegengeprueft (Zaehlerstaende der Definitionen: 943 `bevorzugt`, 936 `lieferant_a_artikelnummer`,
+123 `lieferant_b_artikelnummer`, 52 `match_status`). Bewusst **nicht** angelegt:
+
+- `kettelleiste` und `dropshipping` — die Konditionen liegen nicht vor, ein Feld mit geratenem Inhalt ist schlechter
+  als kein Feld. Kommt mit den Antworten aus `kleinmengen-dropshipping-2026-09-10.md`.
+- `hersteller_qualitaet` — deckungsgleich mit `hersteller`, solange je Qualitaet nur ein Hersteller belegt ist.
+- Das Metaobject `lieferant` — lohnt erst, wenn Stammdaten (Lieferzeit, Konditionen) tatsaechlich gepflegt werden.
+- `mindestabnahme_ve` — Datenlage offen, siehe Abschnitt 7.
+
+**Warum die Schluessel `lieferant_a_*` / `lieferant_b_*` heissen und nicht die Lieferantennamen tragen:** Am
+2026-09-12 waren sie zuerst mit den Klarnamen angelegt. Das verstoesst gegen Regel 8 in `CLAUDE.md` — das
+Repository ist oeffentlich, und die Theme-Logik wuerde die Schluessel in Liquid nennen, also im ausgelieferten
+Theme. Definitionen wurden neu angelegt, alle 7.131 Werte umgeschrieben, die alten Definitionen samt Werten
+geloescht. Auch die **Feldwerte** sind neutral: `bevorzugt`/`alternativ` fuehren `a` bzw. `b`, `match_status`
+nennt „Lieferant B" statt des Haendlernamens. Die Artikelnummern selbst bleiben unveraendert — sie sind
+Kennungen, keine Namen.
 
 **Theme-Logik spaeter**: Block liest `variant.metafields.lieferant.wunschmass` / `kettelung`; ist beides `false`
 (nur Lieferant B), werden Wunschmass-Rechner und Kettel-Option ausgeblendet und der Hinweis „Fuer diese Farbe ist
 derzeit kein Wunschmass bzw. Kettelservice verfuegbar." gezeigt. Beim Variantenwechsel muss der Block die Werte
-aus einem JSON-Datenblock je Variante nachlesen (wie der Rollenware-Rechner), nicht neu rendern.
+aus einem JSON-Datenblock je Variante nachlesen (wie der Rollenware-Rechner), nicht neu rendern. Noch offen.
 
 ## 6. Vollabgleich Teppichboden (Phase 4, 2026-09-09)
 
@@ -186,9 +204,10 @@ deren gescannte LE Lieferant B selbst als Hersteller nennt, 1 unlesbarer Scan) u
 3. Lieferant-A-Vertrieb: Kettelservice je Rollenware-Qualitaet bestaetigen; Hersteller fuer die PROBABLE-Faelle erfragen.
    Dazu jetzt zwei Fragen aus `kleinmengen-dropshipping-2026-09-10.md`: Mindestabnahme je Artikel (Lieferant A pflegt sie
    nur als Freitext im Feld `Qualitaet`, 1 von 276 Seiten) und die Dropshipping-Konditionen beider Haendler.
-4. Danach Phase 5 (Metafelder anlegen, Theme-Logik) — nur nach ausdruecklicher Freigabe. Dabei
-   `lieferant.mindestabnahme_ve` mit aufnehmen: Ohne dieses Feld kann der Shop ein Paket verkaufen, das der
-   Lieferant nicht einzeln liefert.
+4. Theme-Logik zu Phase 5: Block liest `wunschmass` / `kettelung` je Variante (siehe Abschnitt 5). Die Daten
+   liegen, die Anzeige fehlt.
+5. `lieferant.mindestabnahme_ve` nachziehen, sobald die Zahlen vorliegen: Ohne dieses Feld kann der Shop ein
+   Paket verkaufen, das der Lieferant nicht einzeln liefert. Ebenso `kettelleiste` und `dropshipping`.
 
 Die Struktur ist kategorieneutral (`category`, `technical_data` als Schluessel-Wert-Paare je Quelle) und laesst
 sich auf PVC, Vinyl, Klickvinyl, Laminat, Parkett, Sockelleisten und Zubehoer uebertragen; nur die Vergleichs-
