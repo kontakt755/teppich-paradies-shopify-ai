@@ -1,6 +1,6 @@
 ---
 name: "teppichparadies-color-recognition"
-description: "Analyze floor material color photos and auto-generate human-friendly color names (e.g. 'Beige Warm', 'Anthrazit') with color codes. Use this when importing products from jordanshop.de with generic color codes (4276, 4289, etc.) — instead of keeping 'Farbe 4276', recognize the actual color and assign a descriptive name. Store color code in custom.color_code metafield and upload photo to product variant. Automatically runs during product creation from jordanshop.de or retroactively for existing products with numbered colors."
+description: "Analyze floor material color photos and auto-generate human-friendly color names (e.g. 'Beige Warm', 'Anthrazit') with color codes. Use this when importing products from the supplier shop (supplier A) with generic color codes (4276, 4289, etc.) — instead of keeping 'Farbe 4276', recognize the actual color and assign a descriptive name. Store color code in custom.color_code metafield and upload photo to product variant. Automatically runs during product creation from the supplier shop or retroactively for existing products with numbered colors."
 ---
 
 # TeppichParadies Color Recognition
@@ -9,7 +9,7 @@ Analyze floor material (Linoleum, Vinyl, Carpet) product images and generate hum
 
 ## When to use this skill
 
-- **New product import from jordanshop.de** with color photos: Extract actual color name from image instead of keeping generic "Farbe XXXX" labels
+- **New product import from the supplier shop** with color photos: Extract actual color name from image instead of keeping generic "Farbe XXXX" labels
 - **Bulk color naming** for existing products with numbered colors: Retroactively add descriptive color names
 - **Color code tracking**: Store supplier color code (4276, 4289, etc.) in Shopify metafield for reference
 - **Image upload**: Attach product photo to the specific color variant
@@ -22,7 +22,7 @@ Provide per color:
 ```json
 {
   "colorCode": "4276",
-  "imageUrl": "https://media.jordanshop.de/original/...",
+  "imageUrl": "https://media.lieferant-a.example/original/...",
   "productId": "gid://shopify/Product/...",
   "variantSku": "PVCJOKANEO_4276"
 }
@@ -154,12 +154,13 @@ gewachsen sind — PVCJOKANEO etwa springt 4153 → 4200 → 4215 → 4217.
 > schlicht nichts. Die Anzahl stimmte, der Inhalt nicht: **24 = 24 ist keine
 > Pruefung.** Verglichen werden muessen die Codes selbst.
 
-### Bild-URLs aus der Jordan-Suche holen
+### Bild-URLs aus der Lieferant-A-Suche holen
 
 Die Trefferbilder stehen nicht im ausgelieferten HTML — `curl` liefert 200 und
 175 KB, darin aber nur drei `<img>`-Tags. Die Produktbilder haengt erst
 clientseitiges JavaScript ein, also braucht das Einsammeln einen echten
-Browser. Fertiges Snippet: `node scripts/jordan-media-scrape.mjs snippet <SKU>`.
+Browser. Das fertige Snippet-Werkzeug liegt lokal, nicht im Repo:
+`~/teppich-paradies-analyse/lieferantendaten/INHALT.md`.
 
 Drei Fallen dabei:
 
@@ -185,7 +186,7 @@ Drei Fallen dabei:
   ```
 
   Warum nicht einfach eine Menge eintragen: Rollenware liegt nicht im Lager,
-  sie wird bei Jordan bestellt. Eine ausgedachte Zahl ist eine Behauptung mit
+  sie wird bei Lieferant A bestellt. Eine ausgedachte Zahl ist eine Behauptung mit
   Verfallsdatum — nach ein paar Bestellungen steht das Produkt wieder auf
   ausverkauft. `CONTINUE` gilt dauerhaft. Echte Mengen setzt der Betreiber
   dort, wo er sie tatsächlich führt.
@@ -265,14 +266,14 @@ Bevor ein Produkt als "alle Farben benannt" markiert wird:
 
 ## Elastium Linoleumboden — Farbcode-Referenz
 
-**Produkt:** Linoleum-Boden Jokaleum Neocare 2,5mm Elastic/Linoleum Bahnen 200cm  
-**Lieferant:** Jordan (PVCJOKANEO)  
-**Quelle:** jordanshop.de, erfasst 2026-09-04/05  
-**Status:** 21 von 24 Codes haben Bilder bei Jordan; 3 fehlen
+**Produkt:** Linoleum-Boden Linie A-1 2,5mm Elastic/Linoleum Bahnen 200cm  
+**Lieferant:** Lieferant A (PVCJOKANEO)  
+**Quelle:** Lieferant A, erfasst 2026-09-04/05  
+**Status:** 21 von 24 Codes haben Bilder bei Lieferant A; 3 fehlen
 
 | Code | Bild | Farbe | Status |
 |---|---|---|---|
-| 4153 | ❌ | – | Keine Bild-URL bei Jordan |
+| 4153 | ❌ | – | Keine Bild-URL bei Lieferant A |
 | 4200 | ✅ | Grün Gelb | ✓ Shopify Media hochgeladen |
 | 4215 | ✅ | Beige Grau Hell Meliert | ✓ |
 | 4217 | ✅ | Orange Warm | ✓ |
@@ -289,19 +290,19 @@ Bevor ein Produkt als "alle Farben benannt" markiert wird:
 | 4253 | ✅ | Grau Hell | ✓ |
 | 4254 | ✅ | Grau Mittel | ✓ |
 | 4255 | ✅ | Grau Hell Mittel | ✓ |
-| 4259 | ❌ | – | Keine Bild-URL bei Jordan |
+| 4259 | ❌ | – | Keine Bild-URL bei Lieferant A |
 | 4270 | ✅ | Beige Warm | ✓ |
 | 4272 | ✅ | Gelb Warm | ✓ |
 | 4273 | ✅ | Beige Gelb | ✓ |
 | 4276 | ✅ | Gelb Beige | ✓ |
 | 4289 | ✅ | Braun Dunkel | ✓ |
-| 4296 | ❌ | – | Keine Bild-URL bei Jordan |
+| 4296 | ❌ | – | Keine Bild-URL bei Lieferant A |
 
 **Status 2026-09-05:** Elastium und Fortiva vollständig aufgebaut.
 
 **Elastium Linoleumboden (21 Varianten):**
 - Codes: 4276, 4289, 4200, 4215, 4217, 4218, 4222, 4223, 4226, 4229, 4232, 4236, 4240, 4245, 4252, 4253, 4254, 4255, 4270, 4272, 4273
-- Entfernte Codes: 4153, 4259, 4296 (keine Bilder bei Jordan)
+- Entfernte Codes: 4153, 4259, 4296 (keine Bilder bei Lieferant A)
 - Titel: `Grün Gelb / 200cm`, `Beige Grau Hell Meliert / 200cm`, etc.
 - Metafelder: `color_name`, `supplier_color_code`
 - Policy: CONTINUE (verkäuflich)

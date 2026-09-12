@@ -14,7 +14,7 @@ Live- und Fallback-Theme: siehe `domains/shopify/live-theme.json` (einzige Quell
 - `opc-*` darf nicht als Google Offer erscheinen; Rollenware-Structured-Data ist bereits geschützt
 - strukturierte Quellen: `custom.rollenbreite` und `custom.qm_pro_paket`
 - Universal-OPC für Rollenware vorhanden
-- Sisal & Natur geplant; Jordan-Pipeline separat vorhanden
+- Sisal & Natur geplant; Lieferanten-Pipeline separat vorhanden
 - Produktfotos folgen später
 
 Die Sortierung priorisiert Geschäftswirkung bei geringem Risiko. HIGH-Tasks sind sichtbar, aber nicht Bestandteil autonomer Startblöcke.
@@ -40,8 +40,8 @@ Die Sortierung priorisiert Geschäftswirkung bei geringem Risiko. HIGH-Tasks sin
 | SHP-015 | Live-Collection-Zuordnungen | Freigegebene Hoch-/Mittelflor- und ecoVella-Korrekturen anwenden | HIGH | Codex | SHP-014 | explizite Produkt-/Collection-IDs | nur belegte, freigegebene Zuordnungen; Preise/SKUs unverändert | Before/after Export, Collection-Smokes | JA | M |
 | SHP-016 | Sisal-&-Natur-Spezifikation | Taxonomie, Eligibility und Inhalte ohne Live-Schreibzugriff finalisieren | LOW | ChatGPT Work | SHP-014 | `SISAL_NATUR_*.md/csv` | eindeutige Regeln, Restliste, keine erfundenen Merkmale | Tabellenvalidator | NEIN | S |
 | SHP-017 | Sisal Dev-Theme-Prototyp | Collection-UX ausschließlich im Dev Theme vorbereiten | MEDIUM | Codex | SHP-016, SHP-002 | definierte Sections/Templates/Snippets | keine Live-Ressource; Mobile/Desktop konsistent | QA gegen Dev, Links/Bilder | NEIN | M |
-| SHP-018 | Jordan-Pipeline-Validator | Eingabedaten, Quellen, Pflichtfelder und Fehlerklassen deterministisch validieren | LOW | Codex | SHP-001 | Jordan-Tooling/Fixtures/Reports | keine erfundenen Daten; unklare Fälle separat | Fixture-Suite, JSON/CSV-Schema | NEIN | M |
-| SHP-019 | Jordan Draft Dry Run | Unveröffentlichte Draft-Produkte reversibel in Sandbox/Fixture vorbereiten | MEDIUM | Codex | SHP-018, SHP-005 | Pipeline, Draft-Fixtures; keine Liveprodukte | nur DRAFT/unpublished; keine endgültige Preisfreigabe | Dry-run Diff, read-back, rollback | JA | M |
+| SHP-018 | Lieferanten-Pipeline-Validator | Eingabedaten, Quellen, Pflichtfelder und Fehlerklassen deterministisch validieren | LOW | Codex | SHP-001 | Lieferanten-Tooling/Fixtures/Reports | keine erfundenen Daten; unklare Fälle separat | Fixture-Suite, JSON/CSV-Schema | NEIN | M |
+| SHP-019 | Lieferanten-Draft-Dry-Run | Unveröffentlichte Draft-Produkte reversibel in Sandbox/Fixture vorbereiten | MEDIUM | Codex | SHP-018, SHP-005 | Pipeline, Draft-Fixtures; keine Liveprodukte | nur DRAFT/unpublished; keine endgültige Preisfreigabe | Dry-run Diff, read-back, rollback | JA | M |
 | SHP-020 | Bildinventar & Lizenzstatus | Vorhandene Hersteller-/Produktfotos katalogisieren und Lücken markieren | LOW | ChatGPT Work | – | Reports/CSV, read-only Assets | Quelle, Produktbezug, Lizenzstatus, Format; keine Generierung | Dateihash-/Dublettencheck | NEIN | M |
 | SHP-021 | Accessibility-Baseline | WCAG-nahe mechanische Fehler priorisieren | LOW | Codex | SHP-003 | `qa/**`, Reports | reproduzierbare Liste mit Severity und Selector | axe-ähnliche Regeln, Keyboard-Smoke | NEIN | S |
 | SHP-022 | Kleine Accessibility-Fixes | belegte isolierte LOW-Fixes im Dev Theme umsetzen | MEDIUM | Codex | SHP-021, SHP-002 | explizit benannte Locale/Snippet/CSS-Dateien | keine UX-/Kauflogikänderung; Mobile/Desktop PASS | scoped Playwright, QA | NEIN | M |
@@ -75,7 +75,7 @@ SHP-011 Kategoriebild-Regressionssuite
 SHP-012 Teppichboden-Menü-Audit
 SHP-014 Florhöhen-/ecoVella-Evidenzaudit
 SHP-016 Sisal-&-Natur-Spezifikation
-SHP-018 Jordan-Pipeline-Validator
+SHP-018 Lieferanten-Pipeline-Validator
 SHP-020 Bildinventar & Lizenzstatus
 SHP-021 Accessibility-Baseline
 ```

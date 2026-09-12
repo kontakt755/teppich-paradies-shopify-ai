@@ -172,7 +172,7 @@ Jeder Task definiert `MAX_FILES` und `MAX_CHANGED_LINES`.
 |---|---|---|---|
 | Alt-Text in isoliertem Snippet | `snippets/x.liquid` | Accessibility | LOW |
 | Produktkarten über Blocks und Snippets | mehrere Theme-Dateien | UI | MEDIUM |
-| neues Jordan-Produkt als unveröffentlichter Draft | Admin API | reversible Draft-Daten | MEDIUM |
+| neues Lieferanten-Produkt als unveröffentlichter Draft | Admin API | reversible Draft-Daten | MEDIUM |
 | Preis am bestehenden Live-Produkt | beliebig | Live-Preis | HIGH |
 | JSON-LD Offer-Preis ändern | `snippets/schema.liquid` | Merchant-Preis | HIGH |
 | Theme-Dateien auf Live-ID pushen | Theme | Produktion | HIGH |

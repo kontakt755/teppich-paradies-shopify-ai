@@ -1,6 +1,6 @@
 /**
  * Remote-Session Error Handler
- * Erkennt und loggt Fehler bei jordanshop.de Importen in Remote-Sessions
+ * Erkennt und loggt Fehler bei Lieferanten-Importen in Remote-Sessions
  * (z.B. Egress-Policy blockiert externe Domains)
  */
 import fs from 'node:fs';
@@ -12,18 +12,18 @@ const projectDir = process.env.CLAUDE_PROJECT_DIR || path.resolve(__dirname, '..
 
 const KNOWN_REMOTE_SESSION_ERRORS = [
   {
-    id: 'JORDANSHOP_EGRESS_POLICY_BLOCKED',
-    pattern: /403.*Egress-Policy|jordanshop\.de.*blocked|external.*domain.*blocked/i,
-    title: 'Remote-Session: jordanshop.de Zugriff blockiert',
-    description: `Die Remote-Session (claude.ai/code) blockiert externe Domains wie jordanshop.de per Egress-Policy.
+    id: 'LIEFERANT_EGRESS_POLICY_BLOCKED',
+    pattern: /403.*Egress-Policy|Egress-Policy.*blocked|external.*domain.*blocked/i,
+    title: 'Remote-Session: Lieferanten-Shop blockiert',
+    description: `Die Remote-Session (claude.ai/code) blockiert externe Domains wie den Shop des Lieferanten per Egress-Policy.
 
-**Fehler:** Egress-Policy blocked jordanshop.de
-**Betroffen:** jordanshop.de Produktimport
-**Lösung:** Auf lokal wechseln — der Import braucht Browser-Zugriff auf jordanshop.de
+**Fehler:** Egress-Policy blockiert den Lieferanten-Shop
+**Betroffen:** Produktimport vom Lieferanten
+**Lösung:** Auf lokal wechseln — der Import braucht Zugriff auf den Lieferanten-Shop
 
-Betroffene Skill: \`teppichparadies-jordanshop-import\`
+Betroffener Skill: Import-Skill für Lieferant A
 `,
-    labels: ['type: external-limitation', 'area: jordanshop-import', 'priority: p2'],
+    labels: ['type: external-limitation', 'area: lieferanten-import', 'priority: p2'],
     severity: 'warning',
   },
 ];

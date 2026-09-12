@@ -26,7 +26,7 @@ Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle
 ### Merge-in-Progress beim Session-Start
 Eine vorherige Sitzung kann einen offenen Merge hinterlassen. `git status` gehört als allererster Schritt in jede Deploy-Sitzung. Bei offenem Merge ohne Konflikte erst mit dem Menschen klären, ob `git merge --abort` sicher ist.
 
-### JordanShop Sync ohne Token — nutze MCP statt Node
+### Grosshandel-Sync ohne Token — nutze MCP statt Node
 Der alte Weg (Node-Script mit Token in .env.local) funktioniert nicht:
 - Token-Suche in Shopify Admin ist zeitfressend (wurde zigmal probiert)
 - Node-Script kann MCP nicht nutzen (Architektur-Grenze)
@@ -34,7 +34,7 @@ Der alte Weg (Node-Script mit Token in .env.local) funktioniert nicht:
 
 **Lösung seit 2026-09-04: Pure-Claude-Sync via MCP**
 ```bash
-npm run sync:jordanshop:mcp
+npm run sync:grosshandel:mcp
 ```
 
 Das startet einen Orchestrator, der mich (Claude) auffordert:
@@ -50,7 +50,7 @@ Das startet einen Orchestrator, der mich (Claude) auffordert:
 - Kein Token nötig, kein .env.local, keine Suche
 
 **Alternativen (nicht empfohlen):**
-- GitHub Actions `npm run sync:jordanshop` (läuft tägl. 2 AM, braucht Secret)
+- GitHub Actions `npm run sync:grosshandel` (läuft tägl. 2 AM, braucht Secret)
 - Node mit Token in .env.local (zeitraubend zu finden, nicht wartbar)
 
 Die Pure-Claude-Lösung ist endgültig und wartbar.

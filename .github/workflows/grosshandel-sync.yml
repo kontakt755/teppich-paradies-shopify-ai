@@ -1,4 +1,4 @@
-name: JordanShop Sync (Daily Dry-Run)
+name: Grosshandel-Sync (Daily Dry-Run)
 
 on:
   # Tägliche Dry-Runs um 2 Uhr morgens
@@ -15,7 +15,7 @@ on:
 
 jobs:
   sync:
-    name: JordanShop → Shopify Sync
+    name: Grosshandel → Shopify Sync
     runs-on: ubuntu-latest
 
     steps:
@@ -36,12 +36,12 @@ jobs:
           npm run syncpath:guard
           npm run theme:guard
 
-      - name: 📡 JordanShop Sync (Dry-Run)
+      - name: 📡 Grosshandel-Sync (Dry-Run)
         env:
           SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
           SYNC_APPROVED: ${{ github.event.inputs.approve_sync == 'true' && 'true' || 'false' }}
         run: |
-          node workflow/sync-jordanshop.mjs
+          node workflow/sync-grosshandel.mjs
 
       - name: 📋 Upload Report
         if: always()

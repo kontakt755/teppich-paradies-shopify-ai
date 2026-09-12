@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * JordanShop Kategorien Loader
+ * Grosshandel-Kategorien Loader
  * 
- * Lädt Produkte aus verschiedenen JordanShop-Kategorien
+ * Lädt Produkte aus verschiedenen Kategorien des Grosshaendlers
  * und erstellt einen unified Katalog für die Synchronisation
  * 
  * Usage:
- *   node load-jordan-categories.mjs [--categories=kernsockelleisten,vinyl]
- *   node load-jordan-categories.mjs --active-only
+ *   node load-grosshandel-categories.mjs [--categories=kernsockelleisten,vinyl]
+ *   node load-grosshandel-categories.mjs --active-only
  */
 
 import fs from 'fs';
@@ -19,10 +19,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 const dataDir = path.join(rootDir, 'data');
 
-console.log('🔄 JordanShop Kategorien Loader\n');
+console.log('🔄 Grosshandel-Kategorien Loader\n');
 
 // Load configuration
-const configPath = path.join(dataDir, 'jordan-categories.json');
+const configPath = path.join(dataDir, 'grosshandel-categories.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 console.log('📋 Verfügbare Kategorien:\n');
@@ -61,7 +61,7 @@ activeCategories.forEach(cat => {
 });
 
 if (activeCount === 0) {
-  console.log('  ⚠️  Keine aktiven Kategorien! Aktivieren Sie Kategorien in jordan-categories.json');
+  console.log('  ⚠️  Keine aktiven Kategorien! Aktivieren Sie Kategorien in grosshandel-categories.json');
 }
 
 // Print next steps
@@ -71,7 +71,7 @@ console.log('📝 NÄCHSTE SCHRITTE:\n');
 if (activeCount === 1) {
   console.log('1. System lädt aktuell: Kernsockelleisten (7 Produkte)');
   console.log('2. Um weitere Kategorien zu laden:');
-  console.log('   - Öffne data/jordan-categories.json');
+  console.log('   - Öffne data/grosshandel-categories.json');
   console.log('   - Setze "active": true bei gewünschten Kategorien');
   console.log('   - Führe dieses Script erneut aus');
   console.log('3. Neue Kategorien werden beim nächsten Sync geladen');

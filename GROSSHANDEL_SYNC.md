@@ -1,6 +1,6 @@
-# JordanShop → Shopify API Integration
+# Grosshandel → Shopify API Integration
 
-**Universelles Import-System für Produkte aus JordanShop in Shopify**
+**Universelles Import-System für Produkte aus dem Großhandel in Shopify**
 
 ## 🎯 Überblick
 
@@ -21,26 +21,26 @@ Statt manueller Chrome-Automation:
 # Wert: Dein Shopify Admin API Token (aus Shopify Admin)
 ```
 
-### 2. JordanShop-Daten bereitstellen
+### 2. Katalogdaten bereitstellen
 
 Zwei Optionen:
 
-**Option A: CSV-Export von JordanShop**
+**Option A: CSV-Export des Großhändlers**
 ```bash
-# Datei: data/jordan-catalog.json
+# Datei: data/grosshandel-catalog.json
 # Format: JSON Array mit Artikeln (siehe Template unten)
 ```
 
-**Option B: JordanShop REST API** (falls verfügbar)
+**Option B: REST-API des Großhändlers** (falls verfügbar)
 ```bash
-# Skript erweitern in workflow/sync-jordanshop.mjs
-# - loadJordanshopData() ändern
+# Skript erweitern in workflow/sync-grosshandel.mjs
+# - loadCatalogData() ändern
 # - API-Endpunkt abfragen statt lokale Datei
 ```
 
 ## 📋 Datenformat
 
-`data/jordan-catalog.json`:
+`data/grosshandel-catalog.json`:
 
 ```json
 [
@@ -54,19 +54,19 @@ Zwei Optionen:
     "hoehe_mm": 100,
     "material": "Kunststoff",
     "farbe": "weiß RAL 9010",
-    "quelle": "jordanshop.de"
+    "quelle": "Lieferant A"
   }
 ]
 ```
 
-**Wichtig:** `externe_id` = Unveränderlicher Schlüssel (Jordan-Artikelnummer)
+**Wichtig:** `externe_id` = Unveränderlicher Schlüssel (Artikelnummer des Großhändlers)
 
 ## 🚀 Verwendung
 
 ### Tägliche Dry-Runs (automatisch)
 
 GitHub Actions läuft täglich um 2:00 Uhr:
-- ✅ Lädt JordanShop-Daten
+- ✅ Lädt Katalogdaten
 - ✅ Vergleicht mit Shopify
 - ✅ Erstellt Report (`.sync-reports/`)
 - ❌ Macht KEINE Änderungen (Dry-Run)
@@ -74,7 +74,7 @@ GitHub Actions läuft täglich um 2:00 Uhr:
 ### Manueller Dry-Run (lokal)
 
 ```bash
-SHOPIFY_ADMIN_TOKEN=your_token npm run sync:jordanshop
+SHOPIFY_ADMIN_TOKEN=your_token npm run sync:grosshandel
 ```
 
 Output:
@@ -87,14 +87,14 @@ Output:
 ━━━━━━━━━━━━━━━━━━━━━━
 📄 Report: .sync-reports/sync-1725421200000.json
 
-ℹ️  To apply: SYNC_APPROVED=true npm run sync:jordanshop
+ℹ️  To apply: SYNC_APPROVED=true npm run sync:grosshandel
 ```
 
 ### Live-Sync (explizite Freigabe)
 
 ```bash
 # Lokal
-SYNC_APPROVED=true SHOPIFY_ADMIN_TOKEN=your_token npm run sync:jordanshop
+SYNC_APPROVED=true SHOPIFY_ADMIN_TOKEN=your_token npm run sync:grosshandel
 
 # GitHub Actions: Workflow manuell triggern + "approve_sync" ankreuzen
 ```
@@ -151,7 +151,7 @@ Nach jedem Sync: `.sync-reports/sync-{timestamp}.json`
 ```
 1. Guards (syncpath, workflow, theme)
          ↓
-2. JordanShop-Daten laden
+2. Katalogdaten laden
          ↓
 3. Shopify-Produkte abfragen (GraphQL)
          ↓
@@ -186,7 +186,7 @@ npm run syncpath:guard
 
 ```bash
 # Explizit freigeben:
-SYNC_APPROVED=true npm run sync:jordanshop
+SYNC_APPROVED=true npm run sync:grosshandel
 ```
 
 ## 📝 npm-Skripte
@@ -196,8 +196,8 @@ Füge zu `package.json` hinzu:
 ```json
 {
   "scripts": {
-    "sync:jordanshop": "node workflow/sync-jordanshop.mjs",
-    "sync:jordanshop:live": "SYNC_APPROVED=true node workflow/sync-jordanshop.mjs"
+    "sync:grosshandel": "node workflow/sync-grosshandel.mjs",
+    "sync:grosshandel:live": "SYNC_APPROVED=true node workflow/sync-grosshandel.mjs"
   }
 }
 ```
@@ -205,11 +205,11 @@ Füge zu `package.json` hinzu:
 ## 🎯 Nächste Schritte
 
 1. **Token konfigurieren** → GitHub Secrets
-2. **JordanShop-Daten laden** → `data/jordan-catalog.json`
-3. **Testen lokal** → `SHOPIFY_ADMIN_TOKEN=xxx npm run sync:jordanshop`
+2. **Katalogdaten laden** → `data/grosshandel-catalog.json`
+3. **Testen lokal** → `SHOPIFY_ADMIN_TOKEN=xxx npm run sync:grosshandel`
 4. **GitHub Actions aktiviert** → Tägl. Dry-Runs laufen
 5. **Bei Bedarf freigeben** → `SYNC_APPROVED=true` + Workflow triggern
 
 ---
 
-**Fragen?** Siehe die Inline-Kommentare in `workflow/sync-jordanshop.mjs`.
+**Fragen?** Siehe die Inline-Kommentare in `workflow/sync-grosshandel.mjs`.
