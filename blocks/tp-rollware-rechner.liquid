@@ -1,7 +1,8 @@
 {% doc %}
   Eigener Rollenware-Rechner (ersetzt den App-Preisrechner auf Rollenware-
   Templates). Erkennt die Rollenbreite automatisch aus den Produktoptionen,
-  erfasst Länge direkt oder über Raummaße, berechnet Fläche/Menge/Preis und
+  erfasst die Laenge (bei freigegebenen Farben auch eine eigene Breite =
+  Raummass, Variante "Wunschmaß"), berechnet Fläche/Menge/Preis und
   legt die korrekte Menge zum echten Shopify-Variantenpreis (€/m²) in den
   Warenkorb. Der angezeigte Preis ist nur eine Vorschau - abgerechnet wird
   immer variant.price * quantity durch Shopify selbst, nie ein selbst
@@ -16,10 +17,6 @@
   assign tp_rc_id = block.id | replace: '_', '' | downcase
   assign tp_rc_is_roll = false
   assign tp_rc_fallback_width_cm = 0
-  # Raummaß-Modus vorerst deaktiviert: andere Preislogik, nicht für jeden
-  # Belag freigegeben. Zentrale Bedingung hier umschalten, um ihn kontrolliert
-  # wieder zu aktivieren - Markup/JS bleiben dafür erhalten.
-  assign tp_rc_room_mode_enabled = false
 
   # Zentimetergenaue Abrechnung.
   #
@@ -62,6 +59,21 @@
       assign tp_rc_fallback_width_cm = tp_rc_product_width | times: 100
     endif
   endif
+
+  # Zusaetze im Rechner: nur mit gewaehltem Produkt in den Block-Einstellungen
+  # und nur, wenn die gewaehlte Variante service.einfassen exakt "Verfuegbar"
+  # traegt (JS updateExtras). Sonst erscheint gar nichts.
+  assign tp_rc_leiste = block.settings.kettelleisten_produkt
+  assign tp_rc_haft = block.settings.haftunterlage_produkt
+  assign tp_rc_haft_qm = block.settings.haftunterlage_qm | replace: ',', '.' | times: 1.0
+  assign tp_rc_haft_v = nil
+  if tp_rc_haft != blank and tp_rc_haft_qm > 0
+    assign tp_rc_haft_v = tp_rc_haft.selected_or_first_available_variant
+    unless tp_rc_haft_v.available and tp_rc_haft_v.price > 0
+      assign tp_rc_haft_v = nil
+    endunless
+  endif
+  assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
 <div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
@@ -77,6 +89,7 @@
   <div class="tp-rwc-field" data-width-field data-rwc-body>
     {% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}
     <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
+    <select class="tp-rwc-select" aria-label="Breite" data-width-select hidden></select>
   </div>
 
   {%- comment -%}
@@ -86,12 +99,23 @@
   {%- endcomment -%}
   <p class="tp-rwc-fixed-width" data-width-fixed hidden data-rwc-body></p>
 
-  {%- if tp_rc_room_mode_enabled -%}
-  <div class="tp-rwc-mode-toggle">
-    <button type="button" class="tp-rwc-mode-btn is-active" data-mode-btn="length" aria-pressed="true">Gewünschte Länge</button>
-    <button type="button" class="tp-rwc-mode-btn" data-mode-btn="room" aria-pressed="false">Raummaße</button>
+  {%- comment -%}
+    Raummass: eigene Breite statt Rollenbreite. Die Auswahl gibt es nur, wenn
+    die gewaehlte Farbe eine Variante "Wunschmaß" mit service.raummass exakt
+    "Verfuegbar", Bestand und Preis hat. Gezeigt wird nur der Raummass-Preis
+    je m2, nicht seine Herleitung.
+  {%- endcomment -%}
+  <div class="tp-rwc-wunsch" data-wunsch-box hidden>
+    <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Ihre Breite</label>
+    <div class="tp-rwc-input-wrap">
+      <input type="number" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input tp-rwc-input--length" inputmode="numeric" min="50" step="1" placeholder="Breite eingeben (cm)" data-wunsch-input>
+      <span class="tp-rwc-unit">cm</span>
+    </div>
+    <p class="tp-rwc-note" data-wunsch-hint></p>
+    <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
+    <p class="tp-rwc-wunsch-preis" data-wunsch-preis hidden></p>
   </div>
-  {%- endif -%}
+
 
   <div class="tp-rwc-mode-panel" data-mode-panel="length" data-rwc-body>
     <div class="tp-rwc-field">
@@ -123,49 +147,11 @@
     </div>
   </div>
 
-  {%- if tp_rc_room_mode_enabled -%}
-  <div class="tp-rwc-mode-panel" data-mode-panel="room" hidden>
-    <div class="tp-rwc-room-row">
-      <div class="tp-rwc-field">
-        <label class="tp-rwc-label" for="tp-rwc-room-l-{{ tp_rc_id }}">Raumlänge</label>
-        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
-          <input
-            type="number"
-            id="tp-rwc-room-l-{{ tp_rc_id }}"
-            class="tp-rwc-input"
-            inputmode="decimal"
-            min="0.1"
-            step="0.01"
-            placeholder="4,00"
-            data-room-length-input>
-          <span class="tp-rwc-unit">m</span>
-        </div>
-      </div>
-      <div class="tp-rwc-field">
-        <label class="tp-rwc-label" for="tp-rwc-room-b-{{ tp_rc_id }}">Raumbreite</label>
-        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
-          <input
-            type="number"
-            id="tp-rwc-room-b-{{ tp_rc_id }}"
-            class="tp-rwc-input"
-            inputmode="decimal"
-            min="0.1"
-            step="0.01"
-            placeholder="3,50"
-            data-room-width-input>
-          <span class="tp-rwc-unit">m</span>
-        </div>
-      </div>
-    </div>
-    <p class="tp-rwc-note tp-rwc-note-error" data-error-room-too-wide hidden>
-      Bei mehreren Bahnen oder besonderen Raumformen beraten wir Sie gerne.
-    </p>
-  </div>
-  {%- endif -%}
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
   <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden data-rwc-body>
+    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
     <div class="tp-rwc-stage" data-stage>
       <div class="tp-rwc-piece" data-piece>
         <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
@@ -173,6 +159,41 @@
       </div>
     </div>
   </figure>
+
+  {%- if tp_rc_leiste != blank -%}
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
+      {% render 'tp-step-heading', number: 4, label: 'Kettelleisten' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-leiste-an>
+        <span class="tp-rwc-karte-text"><b>Passende Leisten aus diesem Teppich</b><small>Kante gekettelt</small></span>
+        <span class="tp-rwc-karte-preis" data-leiste-preis></span>
+      </label>
+      <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
+          <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
+        </div>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge</label>
+          <div class="tp-rwc-input-wrap">
+            <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="1" step="1" data-leiste-meter>
+            <span class="tp-rwc-unit">m</span>
+          </div>
+        </div>
+        <p class="tp-rwc-note" data-leiste-hint></p>
+      </div>
+    </div>
+  {%- endif -%}
+  {%- if tp_rc_haft_v -%}
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden data-rwc-body>
+      {% render 'tp-step-heading', number: 5, label: 'Haftunterlage' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-haft-an>
+        <span class="tp-rwc-karte-text"><b>Für die schwimmende Verlegung</b><small data-haft-hint></small></span>
+        <span class="tp-rwc-karte-preis">{{ tp_rc_haft_v.price | money }} / Rolle</span>
+      </label>
+    </div>
+  {%- endif -%}
 
   <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
     <div class="tp-rwc-calc-formula">
@@ -185,6 +206,7 @@
       {%- endcomment -%}
       <div class="tp-rwc-calc-round" data-formula-round hidden></div>
       <div class="tp-rwc-calc-step" data-formula-price>–</div>
+      <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
     </div>
     <div class="tp-rwc-calc-total">
       <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
@@ -200,6 +222,36 @@
   <button type="button" class="tp-rwc-cta" data-cta disabled hidden data-rwc-body>Länge eingeben</button>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
+  {%- comment -%}
+    Auch als fertiger Teppich nach Mass. Welche Produkte, sagt
+    service.einfass_gruppe; welche Farbe es dort gibt, allein
+    service.basisvariante der Varianten. Sichtbar nur, wenn die gewaehlte
+    Variante service.einfassen exakt "Verfuegbar" traegt (JS).
+  {%- endcomment -%}
+  {%- if tp_rc_einfass_gruppe != blank -%}
+    <div class="tp-rwc-einfass" data-einfass-box hidden>
+      <p class="tp-rwc-einfass-titel">Lieber als fertigen Teppich nach Maß?</p>
+      <div class="tp-rwc-einfass-chips">
+        {%- assign tp_rc_arten = 'cover,ketteln,einfassband,paspelband' | split: ',' -%}
+        {%- for tp_rc_art in tp_rc_arten -%}
+          {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
+            {%- assign tp_rc_ea = tp_rc_ep.metafields.service.einfassung.value | strip | downcase -%}
+            {%- if tp_rc_ea == tp_rc_art and tp_rc_ep.available -%}
+              {%- case tp_rc_ea -%}
+                {%- when 'cover' -%}{%- assign tp_rc_el = 'Mit Cover' -%}
+                {%- when 'ketteln' -%}{%- assign tp_rc_el = 'Gekettelt' -%}
+                {%- when 'einfassband' -%}{%- assign tp_rc_el = 'Mit Einfassband' -%}
+                {%- when 'paspelband' -%}{%- assign tp_rc_el = 'Mit Paspelband' -%}
+              {%- endcase -%}
+              <a class="tp-rwc-einfass-chip" href="{{ tp_rc_ep.url }}" data-einfass-ziel="{{ tp_rc_ep.id }}" hidden>{{ tp_rc_el }}</a>
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+
 </div>
 
 <script type="application/json" data-rwc-data-{{ tp_rc_id }}>
@@ -208,6 +260,32 @@
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
   "cm_exact": {{ tp_rc_cm_exact | json }},
+  "product_title": {{ product.title | json }},
+  "leiste": [
+    {%- if tp_rc_leiste != blank -%}
+      {%- for tp_rc_lv in tp_rc_leiste.variants -%}
+        {%- if tp_rc_lv.available and tp_rc_lv.price > 0 -%}
+          { "id": {{ tp_rc_lv.id | json }}, "title": {{ tp_rc_lv.title | json }}, "price": {{ tp_rc_lv.price | json }} },
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    null
+  ],
+  "haft": {% if tp_rc_haft_v %}{ "id": {{ tp_rc_haft_v.id | json }}, "price": {{ tp_rc_haft_v.price | json }}, "qm": {{ tp_rc_haft_qm | json }} }{% else %}null{% endif %},
+  "einfass": {
+    {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
+      "{{ tp_rc_ep.id }}": {
+        {%- for tp_rc_ev in tp_rc_ep.variants -%}
+          {%- assign tp_rc_bv = tp_rc_ev.metafields.service.basisvariante.value -%}
+          {%- if tp_rc_ev.metafields.service.einfassen.value == 'Verfügbar' and tp_rc_ev.available and tp_rc_bv -%}
+            "{{ tp_rc_bv.id }}": "{{ tp_rc_ev.id }}",
+          {%- endif -%}
+        {%- endfor -%}
+        "_": ""
+      },
+    {%- endfor -%}
+    "_": {}
+  },
   "variants": [
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
@@ -220,6 +298,15 @@
           "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
           "available": {{ variant.available | json }},
+          {%- comment -%}
+            Zwei Saetze nebeneinander, bewusst. service.* gehoert zu diesem
+            Zweig und faellt geschlossen aus (nur exakt "Verfuegbar" zaehlt),
+            lieferant.* steht seit #229 live und faellt offen aus (fehlendes
+            Feld = erlaubt). Welches Modell gilt, entscheidet der Inhaber -
+            bis dahin nimmt hier niemand dem anderen die Grundlage weg.
+          {%- endcomment -%}
+          "raummass": {{ variant.metafields.service.raummass.value | default: '' | json }},
+          "einfassen": {{ variant.metafields.service.einfassen.value | default: '' | json }},
           {%- comment -%}
             Nur ein ausdrueckliches false schaltet den Dienst ab. Ein fehlendes
             Metafeld liefert nil und wird unten zu true - so bleibt jedes noch
@@ -247,24 +334,6 @@
     color: var(--tp-rwc-ink);
   }
   .tp-rwc-{{ tp_rc_id }} *, .tp-rwc-{{ tp_rc_id }} *::before, .tp-rwc-{{ tp_rc_id }} *::after { box-sizing: border-box; }
-
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn {
-    flex: 1;
-    padding: 9px 10px;
-    border: 1px solid var(--tp-rwc-line);
-    border-radius: 6px;
-    background: var(--tp-rwc-surface);
-    color: var(--tp-rwc-ink);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn.is-active {
-    background: var(--tp-rwc-ink);
-    border-color: var(--tp-rwc-ink);
-    color: var(--tp-rwc-surface);
-  }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-field { margin-bottom: 16px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label {
@@ -299,10 +368,7 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:focus-visible + .tp-rwc-opt { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { position: relative; max-width: 220px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap--room { max-width: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
     width: 100%;
     padding: 12px 42px 12px 12px;
@@ -441,10 +507,45 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link[hidden] { display: none; }
 
+  .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-select {
+    width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-line); border-radius: 6px;
+    background: var(--tp-rwc-surface); color: var(--tp-rwc-ink); font: inherit; font-size: .95rem;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 16px; padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras { display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte {
+    display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center;
+    padding: 14px 16px; border: 1px solid var(--tp-rwc-line); border-radius: 8px;
+    background: var(--tp-rwc-surface); cursor: pointer; transition: border-color .15s, background-color .15s;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:hover { border-color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: #1d6b47; box-shadow: inset 0 0 0 1px #1d6b47; background: rgb(29 107 71 / 0.05); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .95rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: .8rem; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: .85rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-note { grid-column: 1 / -1; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-titel { margin: 0 0 8px; font-size: .9rem; font-weight: 700; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip {
+    padding: 8px 14px; border: 1px solid var(--tp-rwc-line); border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--tp-rwc-ink); text-decoration: none;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip:hover { border-color: #1d6b47; color: #1d6b47; }
+
   @media screen and (max-width: 749px) {
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 22px 1fr; row-gap: 4px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { grid-column: 2; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { grid-template-columns: 1fr; gap: 10px; }
   }
 </style>
 
@@ -465,11 +566,15 @@
   var variants = (data.variants || []).filter(function (v) { return v !== null; });
 
   var widthPattern = /^\d+([.,]\d+)?\s?cm$/i;
+  // "Wunschmaß" ist der Raummass-Wert derselben Breitenoption.
+  var wunschPattern = /^wunschma(ß|ss)$/i;
+  function isWunsch(v) { return wunschPattern.test(String(v).trim()); }
   var wIdx = -1;
   options.forEach(function (opt, idx) {
     var vals = opt.values || [];
     var hits = vals.filter(function (v) { return widthPattern.test(String(v).trim()); });
-    if (hits.length > 0 && hits.length === vals.length) wIdx = idx;
+    var wunschVals = vals.filter(isWunsch);
+    if (hits.length > 0 && hits.length + wunschVals.length === vals.length) wIdx = idx;
   });
   if (!variants.length) return;
 
@@ -500,7 +605,21 @@
   // Schritt 2 mit genau einem Knopf angeboten - eine Frage, die nichts
   // entscheidet. Ohne Breitenoption (wIdx === -1) blieb ausserdem die
   // Nummerierung als "1, 3" stehen, weil nur das Feld verschwand.
-  var hasWidthChoice = wIdx !== -1 && widths.length > 1;
+  // Fail closed: Raummass nur ueber eine Variante "Wunschmaß" mit
+  // service.raummass exakt "Verfügbar", Bestand und Preis. Ob die gewaehlte
+  // Farbe eine hat, entscheidet syncWidthUi() bei jedem Rechnen neu.
+  function wunschOk(v) {
+    return !!v && wIdx !== -1 && isWunsch(v.options[wIdx]) && v.raummass === 'Verfügbar' &&
+      v.available === true && parseFloat(v.price) > 0;
+  }
+  var hasWunschOption = wIdx !== -1 && variants.some(wunschOk);
+  var useSelect = hasWunschOption;
+  // Breiten, die es fuer die gewaehlte Farbe gibt (syncWidthUi). Hat eine Farbe
+  // nur die 400er-Rolle, darf das Raummass nicht aus einer 500er kommen.
+  var farbBreiten = widths.slice();
+  function maxFarbBreite() { return farbBreiten.length ? farbBreiten[farbBreiten.length - 1] : 0; }
+  var WUNSCH_MIN_CM = 50;
+  var hasWidthChoice = wIdx !== -1 && widths.length > 1 && !useSelect;
 
   if (hasWidthChoice) {
     var seg = root.querySelector('[data-width-seg]');
@@ -519,7 +638,7 @@
       seg.appendChild(input);
       seg.appendChild(label);
     });
-  } else {
+  } else if (!useSelect) {
     var widthField = root.querySelector('[data-width-field]');
     if (widthField) widthField.hidden = true;
 
@@ -535,18 +654,11 @@
     if (lengthNumber) lengthNumber.textContent = '2';
   }
 
-  var modeBtns = root.querySelectorAll('[data-mode-btn]');
-  var modePanels = root.querySelectorAll('[data-mode-panel]');
-  var currentMode = 'length';
-
   var lengthInput = root.querySelector('[data-length-input]');
-  var roomLengthInput = root.querySelector('[data-room-length-input]');
-  var roomWidthInput = root.querySelector('[data-room-width-input]');
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
   var errComma = root.querySelector('[data-error-comma]');
   var MAX_LENGTH_CM = 5000;
-  var errRoomTooWide = root.querySelector('[data-error-room-too-wide]');
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -568,8 +680,25 @@
   // krumme mit zwei ("6,66 m²") - sonst stuende dort "7,00 m²".
   function fmtArea(n) { return Number.isInteger(n) ? String(n) : fmt(n); }
 
+  var widthSelect = root.querySelector('[data-width-select]');
+  var wunschBox = root.querySelector('[data-wunsch-box]');
+  var wunschInput = root.querySelector('[data-wunsch-input]');
+
+  function isWunschMode() {
+    return useSelect && !!widthSelect && !widthSelect.hidden && widthSelect.value === 'wunsch';
+  }
+
+  // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
+    if (useSelect) {
+      if (isWunschMode()) {
+        var raw = parseFloat(wunschInput && wunschInput.value) || 0;
+        return raw > 0 ? Math.ceil(raw) : 0;
+      }
+      var sv = widthSelect ? parseFloat(widthSelect.value) : 0;
+      return sv > 0 ? sv : widths[0];
+    }
     var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
     return c ? parseFloat(c.value) : widths[0];
   }
@@ -600,12 +729,17 @@
 
   function findVariant(w) {
     var t = baseOptions();
+    var wunsch = isWunschMode();
     return variants.filter(function (v) {
       if (v.options.length !== t.length) return false;
       for (var i = 0; i < v.options.length; i++) {
         if (i === wIdx) {
-          var vw = parseFloat(String(v.options[i]).replace(',', '.'));
-          if (vw !== w) return false;
+          if (wunsch) {
+            if (!isWunsch(v.options[i])) return false;
+          } else {
+            var vw = parseFloat(String(v.options[i]).replace(',', '.'));
+            if (vw !== w) return false;
+          }
         } else if (norm(v.options[i]) !== norm(t[i])) {
           return false;
         }
@@ -636,6 +770,18 @@
   }
 
   function draw(w, len) {
+    var rolleSvg = root.querySelector('[data-rolle-svg]');
+    if (rolleSvg) {
+      var mitRolle = isWunschMode();
+      // <svg> kennt die Eigenschaft hidden nicht - nur das Attribut wirkt.
+      if (mitRolle) rolleSvg.removeAttribute('hidden');
+      else rolleSvg.setAttribute('hidden', '');
+      if (stage) stage.hidden = mitRolle;
+      if (mitRolle) {
+        drawRolle(rolleSvg, w, len);
+        return;
+      }
+    }
     var stageW = Math.min(DRAW_MAX_PX, stageWidthPx());
     var pxPerCm = stageW / REFERENCE_CM;
 
@@ -654,31 +800,7 @@
     piece.style.height = heightPx + 'px';
   }
 
-  function setRoomTooWideHidden(hidden) {
-    if (errRoomTooWide) errRoomTooWide.hidden = hidden;
-  }
-
   function getEffectiveLengthCm() {
-    if (currentMode === 'room' && roomLengthInput && roomWidthInput) {
-      var roomL = parseFloat((roomLengthInput.value || '').replace(',', '.')) || 0;
-      var roomB = parseFloat((roomWidthInput.value || '').replace(',', '.')) || 0;
-      var w = selectedWidth();
-
-      if (roomL <= 0 || roomB <= 0) {
-        setRoomTooWideHidden(true);
-        return 0;
-      }
-
-      if ((roomB * 100) > w + 0.001) {
-        setRoomTooWideHidden(false);
-        return -1;
-      }
-
-      setRoomTooWideHidden(true);
-      return Math.round(roomL * 100);
-    }
-
-    setRoomTooWideHidden(true);
     // Nachkommastellen aufrunden statt abschneiden: 150.7 wurde vorher still
     // zu 150, das Stueck waere also kuerzer als gemessen geworden. Aufrunden
     // ist die fuer den Kunden sichere Richtung.
@@ -686,12 +808,296 @@
     return raw > 0 ? Math.ceil(raw) : 0;
   }
 
+  function rolleFuer(w) {
+    for (var i = 0; i < farbBreiten.length; i++) {
+      if (w <= farbBreiten[i]) return farbBreiten[i];
+    }
+    return null;
+  }
+
+  function variantFor(t, widthTest) {
+    return variants.filter(function (v) {
+      if (v.options.length !== t.length) return false;
+      for (var i = 0; i < v.options.length; i++) {
+        if (i === wIdx) {
+          if (!widthTest(v.options[i])) return false;
+        } else if (norm(v.options[i]) !== norm(t[i])) {
+          return false;
+        }
+      }
+      return true;
+    })[0];
+  }
+
+  // Breitenauswahl als Liste: feste Rollenbreiten der gewaehlten Farbe plus
+  // "Wunschmaß", wenn diese Farbe eine gueltige Raummass-Variante hat. Bleibt
+  // nur eine Moeglichkeit, wird sie genannt statt gefragt.
+  var lastSelectKey = '';
+  function syncWidthUi() {
+    if (!useSelect || !widthSelect) return;
+    var t = baseOptions();
+    var choices = [];
+    farbBreiten = [];
+    widths.forEach(function (w) {
+      var v = variantFor(t, function (val) { return parseFloat(String(val).replace(',', '.')) === w; });
+      if (v) {
+        choices.push({ value: String(w), label: w + ' cm' });
+        farbBreiten.push(w);
+      }
+    });
+    if (wunschOk(variantFor(t, isWunsch))) choices.push({ value: 'wunsch', label: 'Wunschmaß – eigene Breite' });
+    var key = choices.map(function (c) { return c.value; }).join('|');
+    if (key !== lastSelectKey) {
+      var prev = widthSelect.value;
+      while (widthSelect.firstChild) widthSelect.removeChild(widthSelect.firstChild);
+      choices.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c.value;
+        o.textContent = c.label;
+        widthSelect.appendChild(o);
+      });
+      if (choices.some(function (c) { return c.value === prev; })) widthSelect.value = prev;
+      lastSelectKey = key;
+    }
+    var multi = choices.length > 1 || (choices.length === 1 && choices[0].value === 'wunsch');
+    var widthField = root.querySelector('[data-width-field]');
+    var fixedWidth = root.querySelector('[data-width-fixed]');
+    var seg = root.querySelector('[data-width-seg]');
+    if (seg) seg.hidden = true;
+    widthSelect.hidden = !multi;
+    if (widthField) widthField.hidden = !multi;
+    if (fixedWidth) {
+      fixedWidth.hidden = multi || !choices.length;
+      if (!multi && choices.length) fixedWidth.textContent = 'Rollenbreite: ' + choices[0].label;
+    }
+    if (wunschBox) wunschBox.hidden = !isWunschMode();
+  }
+
+  var wunschHint = root.querySelector('[data-wunsch-hint]');
+  var wunschError = root.querySelector('[data-wunsch-error]');
+  var wunschPreis = root.querySelector('[data-wunsch-preis]');
+
+  // Liefert '' bei gueltiger Breite (oder ohne Raummass), sonst den Grund.
+  function wunschCheck(w) {
+    if (!isWunschMode()) {
+      if (wunschError) wunschError.hidden = true;
+      return '';
+    }
+    var msg = '';
+    if (w > 0 && w < WUNSCH_MIN_CM) msg = 'Breite mindestens ' + WUNSCH_MIN_CM + ' cm.';
+    else if (w > maxFarbBreite()) msg = 'Breiter als ' + maxFarbBreite() + ' cm geht nicht aus einem Stück – bitte beraten lassen.';
+    if (wunschError) {
+      wunschError.textContent = msg;
+      wunschError.hidden = !msg;
+    }
+    return w > 0 ? msg : 'leer';
+  }
+
+  function updateWunschInfo(w) {
+    if (!isWunschMode()) return;
+    var r = (w >= WUNSCH_MIN_CM && w <= maxFarbBreite()) ? rolleFuer(w) : null;
+    if (wunschHint) {
+      wunschHint.textContent = r
+        ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
+        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxFarbBreite() + ' cm.';
+    }
+    if (wunschPreis) {
+      var ok = wunschOk(target);
+      wunschPreis.hidden = !ok;
+      if (ok) {
+        wunschPreis.textContent = 'Preis bei Raummaß: ' +
+          fmt(cmExact ? parseFloat(target.price) : parseFloat(target.price) / 100) + ' €/m²';
+      }
+    }
+  }
+
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(parent, name, attrs, text) {
+    var el = document.createElementNS(SVG_NS, name);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    if (text) el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  // Rolle von oben: Ihr Stueck, Schnittkanten und der Rest, der bei uns bleibt.
+  function drawRolle(svg, w, len) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var R = (w > 0 && rolleFuer(w)) || maxFarbBreite();
+    var L = len > 0 ? len : 400;
+    var x0 = 46;
+    var y0 = 46;
+    var sx = Math.min(240 / (L * 1.25), 150 / R);
+    var sy = Math.max(sx, 70 / R);
+    var rollH = R * sy;
+    var pieceW = L * sx;
+    var totalW = pieceW * 1.25;
+    var ink = '#1d6b47';
+    var defs = svgEl(svg, 'defs', {});
+    var pat = svgEl(defs, 'pattern', { id: 'rwc-rest-{{ tp_rc_id }}', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+    svgEl(pat, 'line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'currentColor', 'stroke-opacity': '.28', 'stroke-width': 2 });
+
+    svgEl(svg, 'rect', { x: x0, y: y0, width: totalW, height: rollH, fill: 'rgba(0,0,0,.05)', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 });
+    svgEl(svg, 'ellipse', { cx: x0 + totalW, cy: y0 + rollH / 2, rx: 9, ry: rollH / 2, fill: '#e9e5de', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 });
+    svgEl(svg, 'text', { x: x0 + totalW + 16, y: y0 + rollH / 2, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle', transform: 'rotate(90 ' + (x0 + totalW + 16) + ' ' + (y0 + rollH / 2) + ')' }, 'Rolle ' + R + ' cm');
+
+    if (!(w > 0) || w > maxFarbBreite()) {
+      svgEl(svg, 'text', { x: x0 + totalW / 2, y: y0 + rollH / 2 + 4, 'font-size': 13, 'font-weight': 600, fill: 'currentColor', 'text-anchor': 'middle' }, 'Breite eingeben');
+      return;
+    }
+    var ph = w * sy;
+    if (R > w) {
+      svgEl(svg, 'rect', { x: x0, y: y0 + ph, width: pieceW, height: rollH - ph, fill: 'url(#rwc-rest-{{ tp_rc_id }})' });
+      if (rollH - ph >= 16) {
+        svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph + (rollH - ph) / 2 + 4, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' }, 'Rest bleibt bei uns');
+      }
+      svgEl(svg, 'line', { x1: x0 - 6, y1: y0 + ph, x2: x0 + pieceW + 6, y2: y0 + ph, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+    }
+    svgEl(svg, 'rect', { x: x0, y: y0, width: pieceW, height: ph, fill: 'rgba(29,107,71,.16)', stroke: ink, 'stroke-width': 2 });
+    svgEl(svg, 'line', { x1: x0 + pieceW, y1: y0 - 6, x2: x0 + pieceW, y2: y0 + rollH + 6, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+    svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph / 2 + 4, 'font-size': 12, 'font-weight': 700, fill: ink, 'text-anchor': 'middle' }, 'Ihr Stück');
+    svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 - 12, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle' }, 'Länge ' + (len > 0 ? len + ' cm' : '–'));
+    svgEl(svg, 'text', { x: x0 - 14, y: y0 + ph / 2, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle', transform: 'rotate(-90 ' + (x0 - 14) + ' ' + (y0 + ph / 2) + ')' }, w + ' cm');
+  }
+
+  var leisteBox = root.querySelector('[data-extra="leiste"]');
+  var haftBox = root.querySelector('[data-extra="haft"]');
+  var formulaExtras = root.querySelector('[data-formula-extras]');
+  var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
+  var haft = (data.haft && data.haft.id && data.haft.qm > 0 && parseFloat(data.haft.price) > 0) ? data.haft : null;
+
+  // Zusaetze nur fuer freigegebene Teppichboeden - dieselbe Freigabe wie
+  // fuer das Einfassen, damit es genau eine Wahrheit gibt.
+  function extrasAllowed() {
+    return !!(target && target.einfassen === 'Verfügbar');
+  }
+
+  function farbeText() {
+    if (!target) return '';
+    var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
+    return target.farbnummer ? name + ' (' + target.farbnummer + ')' : name;
+  }
+
+  function updateExtras(w, len, area) {
+    var res = { items: [], sum: 0, lines: [] };
+    var allowed = extrasAllowed();
+    if (leisteBox) {
+      var showL = allowed && leisteVarianten.length > 0;
+      leisteBox.hidden = !showL;
+      var sel = leisteBox.querySelector('[data-leiste-hoehe]');
+      if (showL && sel && !sel.options.length) {
+        leisteVarianten.forEach(function (v) {
+          var o = document.createElement('option');
+          o.value = v.id;
+          o.textContent = v.title;
+          sel.appendChild(o);
+        });
+      }
+      var an = showL && leisteBox.querySelector('[data-leiste-an]').checked;
+      leisteBox.querySelector('[data-leiste-felder]').hidden = !an;
+      var meterIn = leisteBox.querySelector('[data-leiste-meter]');
+      // Vorschlag: Umfang des Stuecks, aufgerundet. Eigene Eingabe gewinnt.
+      if (meterIn && !meterIn.getAttribute('data-touched') && w > 0 && len > 0) {
+        meterIn.value = Math.ceil((2 * (w + len)) / 100);
+      }
+      var m = Math.ceil(parseFloat(meterIn && meterIn.value) || 0);
+      var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
+      var lHint = leisteBox.querySelector('[data-leiste-hint]');
+      var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
+      if (lPreisEl && leisteVarianten.length) {
+        lPreisEl.textContent = 'ab ' + fmt(Math.min.apply(null, leisteVarianten.map(function (v) { return parseFloat(v.price); })) / 100) + ' €/m';
+      }
+      if (an && lv && m > 0 && area > 0) {
+        var lPreis = parseFloat(lv.price) / 100;
+        res.items.push({ id: lv.id, quantity: m, properties: { 'Zu Teppichboden': data.product_title, 'Farbe wie Teppichboden': farbeText(), 'Höhe': lv.title } });
+        res.sum += m * lPreis;
+        res.lines.push('+ Kettelleisten ' + lv.title + ': ' + m + ' m × ' + fmt(lPreis) + ' € = ' + fmt(m * lPreis) + ' €');
+        if (lHint) lHint.textContent = 'Vorschlag: Umfang Ihres Stücks. ' + fmt(lPreis) + ' € je Meter.';
+      } else if (lHint) {
+        lHint.textContent = '';
+      }
+    }
+    if (haftBox) {
+      var showH = allowed && !!haft;
+      haftBox.hidden = !showH;
+      var hAn = showH && haftBox.querySelector('[data-haft-an]').checked;
+      var hHint = haftBox.querySelector('[data-haft-hint]');
+      var hPreis = haft ? parseFloat(haft.price) / 100 : 0;
+      var rollen = area > 0 && haft ? Math.max(1, Math.ceil(area / haft.qm - 1e-9)) : 0;
+      if (hHint) {
+        hHint.textContent = rollen
+          ? rollen + (rollen === 1 ? ' Rolle' : ' Rollen') + ' à ' + fmt(haft.qm) + ' m² für ' + fmt(area) + ' m²'
+          : 'Rollen à ' + fmt(haft ? haft.qm : 0) + ' m²';
+      }
+      if (hAn && rollen) {
+        res.items.push({ id: haft.id, quantity: rollen, properties: { 'Zu Teppichboden': data.product_title } });
+        res.sum += rollen * hPreis;
+        res.lines.push('+ Haftunterlage: ' + rollen + ' × ' + fmt(hPreis) + ' € = ' + fmt(rollen * hPreis) + ' €');
+      }
+    }
+    if (formulaExtras) {
+      while (formulaExtras.firstChild) formulaExtras.removeChild(formulaExtras.firstChild);
+      res.lines.forEach(function (l) {
+        var div = document.createElement('div');
+        div.textContent = l;
+        formulaExtras.appendChild(div);
+      });
+      formulaExtras.hidden = !res.lines.length;
+    }
+    return res;
+  }
+
+  var einfassBox = root.querySelector('[data-einfass-box]');
+  function colorKey(v) {
+    return v.options.filter(function (_, i) { return i !== wIdx; }).map(norm).join('|');
+  }
+  // Farbe per service.basisvariante: jede Variante derselben Farbe dieses
+  // Produkts fuehrt zur passenden Variante des Einfassprodukts.
+  function updateEinfassChips() {
+    if (!einfassBox) return;
+    var show = false;
+    var key = target ? colorKey(target) : '';
+    einfassBox.querySelectorAll('[data-einfass-ziel]').forEach(function (a) {
+      var map = (data.einfass || {})[a.getAttribute('data-einfass-ziel')] || {};
+      var ziel = null;
+      if (extrasAllowed()) {
+        Object.keys(map).forEach(function (basisId) {
+          if (ziel || basisId === '_') return;
+          var bv = variants.filter(function (v) { return String(v.id) === basisId; })[0];
+          if (bv && colorKey(bv) === key) ziel = map[basisId];
+        });
+      }
+      a.hidden = !ziel;
+      if (ziel) {
+        var u = new URL(a.getAttribute('href'), window.location.href);
+        u.searchParams.set('variant', ziel);
+        a.setAttribute('href', u.href);
+        show = true;
+      }
+    });
+    einfassBox.hidden = !show;
+  }
+
+  function renumberSteps() {
+    var n = 2;
+    function setNum(scope) {
+      var el = scope && scope.querySelector('.tp-step-heading__number');
+      if (el) el.textContent = String(n++);
+    }
+    var wf = root.querySelector('[data-width-field]');
+    if (wf && !wf.hidden) setNum(wf);
+    setNum(root.querySelector('[data-length-step]'));
+    root.querySelectorAll('[data-extra]').forEach(function (x) { if (!x.hidden) setNum(x); });
+  }
+
   function calculate() {
+    syncWidthUi();
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
     var blocked = (len === -1);
     var tooLong = len > MAX_LENGTH_CM;
-    var valid = !blocked && !tooLong && len >= 100;
+    var wunschFehler = wunschCheck(w);
+    var valid = !blocked && !tooLong && len >= 100 && !wunschFehler;
 
     // Ein number-Feld liefert bei "150,7" einen leeren Wert - die Seite reagierte
     // dann gar nicht, ohne zu sagen warum. Das Komma ist in Deutschland die
@@ -706,7 +1112,9 @@
     }
 
     target = findVariant(w);
-    var ok = !!(target && target.available);
+    var ok = !!(target && target.available) && (!isWunschMode() || wunschOk(target));
+    updateWunschInfo(w);
+    updateEinfassChips();
 
     if (blocked) {
       errStock.hidden = true;
@@ -754,9 +1162,11 @@
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
-      outTotal.textContent = fmt(total) + ' €';
-      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb';
+      var extras = updateExtras(w, len, billedArea);
+      outTotal.textContent = fmt(total + extras.sum) + ' €';
+      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
     } else {
+      updateExtras(w, 0, 0);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
@@ -764,6 +1174,7 @@
       cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
     }
 
+    renumberSteps();
     cta.disabled = !(valid && ok);
     // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
     // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
@@ -805,31 +1216,25 @@
     serviceHint.hidden = false;
   }
 
-  function setMode(mode) {
-    currentMode = mode;
-    modeBtns.forEach(function (btn) {
-      var active = btn.getAttribute('data-mode-btn') === mode;
-      btn.classList.toggle('is-active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    modePanels.forEach(function (panel) {
-      panel.hidden = panel.getAttribute('data-mode-panel') !== mode;
-    });
-    calculate();
-  }
-
-  modeBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      setMode(btn.getAttribute('data-mode-btn'));
-    });
-  });
-
   root.addEventListener('change', function (e) {
-    if (e.target.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+    var el = e.target;
+    if (el.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+    if (el === widthSelect) {
+      if (wunschBox) wunschBox.hidden = !isWunschMode();
+      calculate();
+      if (isWunschMode() && wunschInput && !wunschInput.value) wunschInput.focus();
+    }
+    if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
   });
   lengthInput.addEventListener('input', calculate);
-  if (roomLengthInput) roomLengthInput.addEventListener('input', calculate);
-  if (roomWidthInput) roomWidthInput.addEventListener('input', calculate);
+  if (wunschInput) wunschInput.addEventListener('input', calculate);
+  var leisteMeterInput = root.querySelector('[data-leiste-meter]');
+  if (leisteMeterInput) {
+    leisteMeterInput.addEventListener('input', function () {
+      leisteMeterInput.setAttribute('data-touched', '1');
+      calculate();
+    });
+  }
 
   window.addEventListener('resize', function () {
     var w = selectedWidth();
@@ -855,6 +1260,8 @@
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
     if (len < 100) return;
+    var wunsch = isWunschMode();
+    if (wunsch && (!wunschOk(target) || wunschCheck(w))) return;
 
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
@@ -864,20 +1271,34 @@
     // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
     // (z.B. 666 statt 6,66 m²) mit sehr kleinem Stueckpreis. Die Flaeche
     // gehoert deshalb lesbar in die Zeileneigenschaften.
-    var properties = {
-      'Rollenbreite': w + ' cm',
-      'Gewünschte Länge': len + ' cm'
-    };
+    // Raummass: die eigene Breite ist die Kundenangabe, die Rolle nur fuer
+    // den Zuschnitt (Unterstrich = nur im Admin sichtbar).
+    var properties = {};
+    if (wunsch) {
+      properties['Zuschnitt'] = 'Raummaß';
+      properties['Breite (Raummaß)'] = w + ' cm';
+      properties['_Zuschnitt aus Rolle'] = rolleFuer(w) + ' cm';
+    } else {
+      properties['Rollenbreite'] = w + ' cm';
+    }
+    properties['Gewünschte Länge'] = len + ' cm';
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
     if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;
     if (target.farbe_intern) properties['_Farbe intern'] = target.farbe_intern;
-    if (currentMode === 'room') {
-      properties['Berechnet aus Raummaß'] =
-        (roomLengthInput.value || '').replace('.', ',') + ' × ' +
-        (roomWidthInput.value || '').replace('.', ',') + ' m';
+
+    // Zusaetze gehen im selben Aufruf mit und tragen dieselbe _Gruppe wie der
+    // Teppichboden. Ohne Zusaetze bleibt der Aufruf exakt wie bisher.
+    var extras = updateExtras(w, len, billedArea);
+    var payload = { id: target.id, quantity: qty, properties: properties };
+    if (extras.items.length) {
+      var gruppe = 'T' + Date.now().toString(36);
+      properties['_Gruppe'] = gruppe;
+      extras.items.forEach(function (it) { it.properties['_Gruppe'] = gruppe; });
+      payload = { items: [{ id: target.id, quantity: qty, properties: properties }].concat(extras.items) };
     }
+    var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
     cta.disabled = true;
     cta.textContent = 'Wird hinzugefügt …';
@@ -886,7 +1307,7 @@
     fetch('/cart/add.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: target.id, quantity: qty, properties: properties })
+      body: JSON.stringify(payload)
     })
       .then(function (r) {
         if (!r.ok) throw new Error('add failed');
@@ -915,7 +1336,7 @@
           detail: {
             resource: addedItem,
             sourceId: 'tp-rwc-{{ tp_rc_id }}',
-            data: { itemCount: qty, source: 'product-form-component' }
+            data: { itemCount: addedCount, source: 'product-form-component' }
           }
         }));
 
@@ -947,7 +1368,33 @@
 {
   "name": "TP Rollenware-Rechner",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Zusätze"
+    },
+    {
+      "type": "paragraph",
+      "content": "Kettelleisten und Haftunterlage erscheinen nur, wenn hier ein Produkt gewaehlt ist und die gewaehlte Variante service.einfassen = Verfuegbar traegt."
+    },
+    {
+      "type": "product",
+      "id": "kettelleisten_produkt",
+      "label": "Kettelleisten (Varianten = Höhen, Preis je Meter)"
+    },
+    {
+      "type": "product",
+      "id": "haftunterlage_produkt",
+      "label": "Haftunterlage (Preis je Rolle)"
+    },
+    {
+      "type": "text",
+      "id": "haftunterlage_qm",
+      "label": "m² je Rolle Haftunterlage",
+      "info": "Deckung einer Rolle, z. B. 18,75 - Zahlenfelder erlauben nur eine Nachkommastelle.",
+      "default": "18,75"
+    }
+  ],
   "presets": [
     {
       "name": "TP Rollenware-Rechner"
