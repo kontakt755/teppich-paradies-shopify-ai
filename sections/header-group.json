@@ -269,6 +269,14 @@
             "subtitle": "Sicher & stilvoll belegt"
           }
         },
+        "tp_kachel_service_arbeit": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Unsere Arbeit",
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "subtitle": "Echte Projekte aus der Region"
+          }
+        },
         "tp_kachel_service_firmen": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -367,6 +375,7 @@
         "tp_kachel_service_teppich",
         "tp_kachel_service_vinyl",
         "tp_kachel_service_treppen",
+        "tp_kachel_service_arbeit",
         "tp_kachel_service_firmen",
         "tp_kachel_linoleum",
         "tp_kachel_kontakt_anrufen",
