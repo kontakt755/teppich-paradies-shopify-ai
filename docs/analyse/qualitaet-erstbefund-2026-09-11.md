@@ -757,3 +757,41 @@ Der Browser wählt die 200er-Stufe aus dem `srcset` (`snippets/tp-menu-bild.liqu
 3. Das Paket ist von allen drei beteiligten Sitzungen abgenommen und wartet nur noch auf die Freigabe des Inhabers. Eine Änderung jetzt würde diese Abnahme entwerten. Ein neuer Schritt gehört hinter das Release, nicht davor.
 
 Die Bilder sind `loading="lazy"` mit `fetchpriority="low"` und laden erst bei der ersten Menüabsicht — der Befund trifft also niemanden beim Seitenaufbau.
+
+### Nachtrag 9: Livegang am 2026-09-12
+
+Freigabe des Inhabers in dieser Sitzung: „live stellen". Kette durchlaufen, **live seit 09:07:30Z**, Theme `preview-main-2026-09-04` (203690246478), an der Quelle als `role: MAIN` geprüft. Das bisherige Live-Theme steht wieder auf `UNPUBLISHED` und ist der Rückfallpunkt. Veröffentlicht wurde `bf0104e`: PR #220 plus #227 und #228.
+
+**Zwei Gates haben blockiert — beide mit echtem Befund, keines umgangen.**
+
+1. **`PREVIEW_DIFF`.** Das Gate zieht das Theme nach dem Push zurück und vergleicht byte-genau mit dem Repository. Sieben JSON-Dateien (`index.json`, `header-group.json`, `footer-group.json`, vier `page.*.json`) hatten den Shopify-Kommentarkopf verloren, den `theme pull` zurückliefert — alle anderen Template-Dateien tragen ihn. Damit wäre **jeder** Deploy dauerhaft gescheitert, ohne dass ein inhaltlicher Unterschied bestand. Kopf byte-genau wiederhergestellt (PR #227). Dazu lag die in #220 gelöschte `snippets/tp-drawer-bildraster.liquid` noch auf dem Preview-Theme: Der Workflow pusht mit `--nodelete` und entfernt nie etwas. Einmalig abgeglichen, `settings_data.json` ausgenommen. Der MCP-Server blockt `themeFilesDelete` als destruktiv — das wurde nicht umgangen.
+2. **`FULL QA`.** Eine neue Theme-Check-Warnung gegenüber der Baseline: `UnusedDocParam` in `snippets/tp-suche-leer.liquid`. Der Aufrufer übergab `terms`, das Snippet benutzte es seit Audit B-20 nicht mehr. Parameter und Argument entfernt (PR #228).
+
+**Nach dem Livegang geprüft, ohne Vorschau-Parameter**
+
+| Prüfung | Ergebnis |
+|---|---|
+| Startseite, Teppichboden, Klickvinyl, Bodenleisten, Verlegeservice, Unsere Arbeit | HTTP 200 aus dem neuen Theme, 0 JS-Fehler |
+| `/pages/unsere-arbeit` | eigene H1 statt B2B-Rückfall — #184 damit live erledigt |
+| Verkaufsstrecken Desktop | 3 PASS, 0 FAIL |
+| Kaufwege Telefon | 3/3 |
+| Menü (Menü-Sitzung, live) | kein Befund über 375/768/1024/1366 px, Raster ohne Überbreite |
+| Referenzgalerie (Galerie-Sitzung, live) | 14 Projekte mit Beschreibung, ein H1, JSON-LD mit 14 Bildern, kein Bild ohne Alt-Text, Weiterleitung von `/pages/bisherige-arbeiten` |
+| Theme-Check-Baseline | nach dem Livegang neu erzeugt: 41 → 39 Warnungen, 0 Fehler |
+
+**Ein gemeldeter Live-Defekt, der keiner war — und was daraus zu lernen ist**
+
+Die Galerie-Sitzung meldete sechs leere graue Kästen auf der obersten Ebene des Handy-Menüs. Der Screenshot bestätigte das zunächst, auch bei mir. Ursache ist aber die Messung, nicht der Shop: Die Menübilder sind per CSS ausgeblendet, bis `header-drawer` das Attribut `data-tp-bilder` trägt (Optimierung #14, „Bilder erst bei der ersten Absicht laden"). Gesetzt wird es von `pointerdown`, `touchstart`, `mouseover` oder `focusin` — **ein programmatischer `.click()` feuert keines davon.** Beide Sitzungen hatten ihre eigene Automatisierung gemessen.
+
+Gegenprobe mit echtem Tipp (`page.tap()`) am Live-Shop: Attribut gesetzt, alle sechs Bilder `display: block` und mit 56 px geladen, Screenshot zeigt die Kategoriebilder. Kein Befund.
+
+Zuvor hatte ich dieselbe Beobachtung mit einer ebenfalls untauglichen Messung *zurückgewiesen* — ich hatte die `src`-Attribute im Markup gelesen und daraus auf sichtbare Bilder geschlossen. Richtig war das Ergebnis, falsch der Beleg. Für beide Fälle gilt dieselbe Regel: **Ein Attribut im Markup belegt kein gerendertes Bild; gemessen wird `display`, `naturalWidth` oder das Foto.**
+
+**Offen und bewusst nicht getan**
+
+- **Menüpunkt „Unsere Arbeit".** Die Seite ist live und erreichbar, aber nicht verlinkt. `menuUpdate` ersetzt den gesamten Menübaum und wirkt storeweit; die Freigabe des Inhabers deckt den Theme-Livegang ab, nicht diesen Eingriff. Dafür wurde eine eigene Freigabe erbeten. Ablauf steht fest: Bestand auslesen, alle 41 Einträge mit ihren IDs zurückschreiben, den neuen Punkt unter „Service & Verlegung" ergänzen, Gegenprobe über die Menge der MenuItem-IDs (41 → 42).
+- **`sizes` der Megamenü-Bilder** (Nachtrag 8) — nach dem Release, Sache der Menü-Sitzung.
+- **Favicon** — fehlt weiterhin, Entscheidung des Inhabers.
+- **CTA im Bodenleisten-Kopf:** Der Inhaber hat entschieden, ihn bei 58 px zu belassen. Keine Änderung.
+
+**Eine Fast-Kollision, die auffiel, weil zwei Sitzungen sich gegenseitig informierten:** Eine weitere Sitzung hatte vom Inhaber ebenfalls ein „stell es live" erhalten und war dabei, `main` auf das *andere* Theme zu veröffentlichen — mit dem Kenntnisstand, #220 sei noch offen. Sie hatte tatsächlich nichts publiziert (die CLI verweigerte den Push auf das inzwischen veröffentlichte Theme) und stoppte nach dem Hinweis. Die Lehre steht in der Checkliste: vor jedem Deploy die Theme-Rollen frisch abfragen und `origin/main` unmittelbar vorher prüfen.
