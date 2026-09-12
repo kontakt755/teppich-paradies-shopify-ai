@@ -32,12 +32,28 @@
   {% endunless %}
 {% endcapture %}
 
-{% # Ohne closest.card_index (siehe blocks/_product-card.liquid) ist die
-   # Rasterposition hier nicht mehr bekannt. card_index wird deshalb bewusst
-   # nicht uebergeben: card-gallery faellt dann auf "Position unbekannt" zurueck
-   # und laedt lazy, statt das gesamte Raster einer Kategorieseite vorab zu
-   # laden. %}
-{% render 'card-gallery', children: children %}
+{%- liquid
+  # Ohne closest.card_index (siehe blocks/_product-card.liquid) kommt die
+  # Rasterposition hier nicht an. Ohne Position bleibt jede Karte lazy - auch
+  # die erste, also das LCP-Element der Kategorieseite: der Browser fand sie
+  # erst nach dem Layout (mobil gedrosselt ~1,4 s nach dem Dokument).
+  # Auf Seite 1 einer Kategorie laesst sich die Position aus
+  # collection.products ableiten (dieselbe Sortierung und dieselben Filter wie
+  # das Raster). Gesucht werden nur die ersten vier - mehr laedt card-gallery
+  # ohnehin nicht eager (eager_card_limit). Ueberall sonst (Suche, Startseite,
+  # Empfehlungen, Folgeseiten per Endlos-Scrollen) bleibt card_index leer und
+  # die Karte wie bisher lazy.
+  assign tp_card_index = nil
+  if request.page_type == 'collection' and current_page == 1 and product != blank
+    for tp_listed in collection.products limit: 4
+      if tp_listed.id == product.id
+        assign tp_card_index = forloop.index0
+        break
+      endif
+    endfor
+  endif
+-%}
+{% render 'card-gallery', children: children, card_index: tp_card_index %}
 
 {% # Title and price for the zoomed out grid view %}
 <div class="product-grid-view-zoom-out--details">

@@ -155,7 +155,11 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    height: 100%;
+    /* Inhaltshoehe statt 100 %: eine Karte mit Unterliste (Vinyl von der Rolle)
+       zog sonst alle Karten der Reihe auf 340 px mit leerer Flaeche (Audit B-09).
+       Die Spalte ist ein Grid - ohne align-self wird die Karte trotzdem gestreckt. */
+    height: auto;
+    align-self: start;
     overflow: hidden;
     border: 1px solid var(--tp-mm-border);
     border-radius: var(--tp-mm-radius);
@@ -417,17 +421,6 @@
   gap: 0.4rem;
 }
 
-.tp-lnav__label {
-  margin: 0 0 0.15rem;
-  font-family: var(--menu-child-font-family);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgb(var(--color-foreground-rgb) / 0.55);
-}
-
 .tp-lnav__all {
   display: grid;
   gap: 0.2rem;
@@ -506,63 +499,13 @@
   color: rgb(var(--color-foreground-rgb) / 0.6);
 }
 
-.tp-lnav__list {
-  display: grid;
-  gap: 0.1rem;
-  margin: 0;
-  padding: 0;
-}
-
-.tp-lnav__list--chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.tp-lnav__link {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.3rem 0.4rem;
-  margin-inline-start: -0.4rem;
-  border-radius: 0.35rem;
-  font-family: var(--menu-child-font-family);
-  font-size: var(--menu-child-font-size);
-  line-height: 1.4;
-  color: var(--menu-child-font-color);
-  text-decoration: none;
-  transition: background-color 150ms ease, color 150ms ease;
-}
-
-.tp-lnav__link:hover,
-.tp-lnav__link:focus-visible {
-  background: rgb(var(--color-foreground-rgb) / 0.07);
-  color: var(--menu-child-active-font-color);
-}
-
-.tp-lnav__list--chips .tp-lnav__link {
-  margin-inline-start: 0;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid rgb(var(--color-foreground-rgb) / 0.16);
-  border-radius: 999px;
-  white-space: nowrap;
-}
-
-.tp-lnav__count {
-  font-size: 0.75em;
-  font-variant-numeric: tabular-nums;
-  color: rgb(var(--color-foreground-rgb) / 0.5);
-}
-
-.tp-lnav :is(a):focus-visible,
-.tp-lnav-drawer__group :is(a):focus-visible {
+.tp-lnav :is(a):focus-visible {
   outline: var(--focus-outline-width, 2px) solid currentcolor;
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tp-lnav__all,
-  .tp-lnav__link,
   .tp-lnav__all-media > .tp-lnav__all-image {
     transition: none;
   }
@@ -574,46 +517,6 @@
   .tp-lnav__all--media:hover .tp-lnav__all-image {
     transform: none;
   }
-}
-
-/* Mobiler Drawer: gleiche Gliederung, an die Drawer-Typografie angepasst. */
-.tp-lnav-drawer__group {
-  padding-block: 0.5rem 0.25rem;
-}
-
-.tp-lnav-drawer__group .tp-lnav__label {
-  padding-inline: var(--menu-drawer-padding-inline, 0);
-  margin-block-end: 0.25rem;
-}
-
-.tp-lnav-drawer__group .tp-lnav__list {
-  gap: 0;
-}
-
-.tp-lnav-drawer__group .tp-lnav__link {
-  width: 100%;
-  /* 44 px ist die kleinste Flaeche, die sich auf dem Handy zuverlaessig
-     treffen laesst. Zentriert statt an der Grundlinie, damit der Text in der
-     groesseren Flaeche mittig sitzt. */
-  min-height: 44px;
-  align-items: center;
-  padding-block: 0.55rem;
-  font-size: var(--menu-child-font-size);
-}
-
-.tp-lnav-drawer__group .tp-lnav__list--chips {
-  gap: 0.45rem;
-  padding-block: 0.15rem;
-}
-
-.tp-lnav-drawer__group .tp-lnav__list--chips .tp-lnav__link {
-  width: auto;
-  min-height: 44px;
-  padding-block: 0.35rem;
-}
-
-.tp-lnav-drawer__all .tp-lnav__count {
-  margin-inline-start: 0.4rem;
 }
 
 /* ------------------------------------------------------------------

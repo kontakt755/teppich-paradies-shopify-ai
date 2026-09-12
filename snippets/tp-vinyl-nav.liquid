@@ -1,0 +1,185 @@
+{%- doc -%}
+  Gliederung "Vinylboden" fuer Desktop-Megamenue und Handy-Menue - eine Quelle,
+  damit beide Geraete dieselbe Navigation zeigen (Audit 2026-09-11, Aufgabe #193).
+
+  Warum im Theme und nicht im Shopify-Menue: Das Hauptmenue ist shopweit und wirkt
+  sofort im Live-Theme. Das Menue liefert die Punkte, dieses Snippet ordnet sie:
+
+  - Einstieg: der Unterpunkt mit demselben Ziel wie "Vinylboden" (Alle Vinylboeden).
+  - Nach Verlegeart: Unterpunkte, die auf eine andere Kollektion zeigen (Klickvinyl,
+    Klebevinyl, Vinyl von der Rolle). Die Kurztexte stehen woertlich so auf der
+    Vinyl-Kategorieseite (templates/collection.vinylboden.json, Kategoriekarten),
+    damit Menue und Seite dasselbe sagen. Ein Kurztext in der Bildkachel geht vor.
+  - Nach Optik: Unterpunkte mit Optik-Filter (Holz-, Steindekore) plus Fischgraet.
+    Fischgraet hat weder Kollektion noch Filter; die Shopsuche nach "Fischgraet"
+    lieferte am 2026-09-11 genau die 24 Fischgraet-Vinylprodukte (12 Klebe, 10 Klick,
+    2 Rolle) und sonst nichts. Eine echte Kollektion waere sauberer, ist aber eine
+    storeweite Datenaenderung und braucht eine Freigabe.
+  - Zubehoer fuer die Verlegung: bestehende Kollektionen, nur solange sie Produkte
+    haben. Bewusst ohne "passend zu Vinyl" - die Produkte tragen keine solche Angabe.
+
+  Bewusst nicht: die Rollenware-Dekore als dritte Ebene ("Holzdekore von der Rolle").
+  Sie sind auf der Rollenware-Seite ein Filter und machten die Liste doppeldeutig -
+  "Holzdekore" stand zweimal da, mit verschiedenem Sortiment.
+
+  @param {string} variant - 'megamenu' (Desktop) oder 'drawer' (Handy)
+  @param {object} parent_link - Menuepunkt "Vinylboden"
+  @param {string} [kacheln] - Datensaetze der Bildkacheln
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_vn_count = parent_link.object.all_products_count | default: 0
+  assign tp_vn_all_link = nil
+  for c in parent_link.links
+    if c.url == parent_link.url
+      assign tp_vn_all_link = c
+      break
+    endif
+  endfor
+  assign tp_vn_all_title = 'Alle Vinylböden'
+  if tp_vn_all_link
+    assign tp_vn_all_title = tp_vn_all_link.title
+  endif
+
+  assign tp_vn_b_handles = 'vinylboden-klickvinyl|vinylboden-klebevinyl|vinylboden-vinyl-von-der-rolle' | split: '|'
+  assign tp_vn_b_texts = 'Einfach einklicken. Sofort begehbar.|Extra flach. Dauerhaft verklebt.|Große Flächen. Weniger Fugen.' | split: '|'
+
+  assign tp_vn_z_handles = 'bodenleisten|zubehoer-verlegeunterlagen|zubehoer-kleber-fixierung|zubehoer-profile' | split: '|'
+  assign tp_vn_z_labels = 'Sockelleisten|Verlege- & Dämmunterlagen|Kleber & Fixierung|Profile' | split: '|'
+
+  # Fischgraet: eigene Kollektion vinylboden-fischgraet (angelegt 2026-09-11,
+  # unveroeffentlicht), sobald sie im Onlineshop veroeffentlicht ist. Bis dahin
+  # liefert collections[...] nichts, und der Einstieg bleibt die Shopsuche.
+  assign tp_vn_fg = collections['vinylboden-fischgraet']
+  if tp_vn_fg.all_products_count > 0
+    assign tp_vn_fg_url = tp_vn_fg.url
+  else
+    assign tp_vn_fg_url = routes.search_url | append: '?q=Fischgr%C3%A4t&type=product'
+  endif
+-%}
+
+{%- capture tp_vn_optik -%}
+  {%- for c in parent_link.links -%}
+    {%- if c.url contains 'custom.optik' -%}
+      <li><a class="tp-nav-chip" href="{{ c.url }}">{{ c.title | remove_first: 'Alle ' | escape }}</a></li>
+    {%- endif -%}
+  {%- endfor -%}
+  <li><a class="tp-nav-chip" href="{{ tp_vn_fg_url }}">Fischgrät</a></li>
+{%- endcapture -%}
+
+{%- capture tp_vn_zub -%}
+  {%- for h in tp_vn_z_handles -%}
+    {%- assign z = collections[h] -%}
+    {%- if z.all_products_count > 0 -%}
+      <li>
+        <a class="tp-nav-link" href="{{ z.url }}">
+          <span class="tp-nav-link__text">{{ tp_vn_z_labels[forloop.index0] | escape }}</span>
+          <span class="tp-nav-link__count" aria-hidden="true">{{ z.all_products_count }}</span>
+          <span class="visually-hidden">{{ z.all_products_count }} Produkte</span>
+        </a>
+      </li>
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- if variant == 'drawer' -%}
+  <a class="tp-dn-cta" href="{{ parent_link.url }}">
+    <span class="tp-dn-cta__text">{{ tp_vn_all_title | escape }} ansehen</span>
+    {%- if tp_vn_count > 0 -%}
+      <span class="tp-dn-cta__count">{{ tp_vn_count }}<span class="visually-hidden"> Produkte</span></span>
+    {%- endif -%}
+  </a>
+
+  <p class="tp-nav-group">Nach Verlegeart</p>
+  <ul class="tp-dn-list" role="list" aria-label="Nach Verlegeart">
+    {%- for c in parent_link.links -%}
+      {%- if c.type != 'collection_link' or c.url == parent_link.url -%}
+        {%- continue -%}
+      {%- endif -%}
+      {%- liquid
+        assign c_sub = ''
+        for h in tp_vn_b_handles
+          if h == c.object.handle
+            assign c_sub = tp_vn_b_texts[forloop.index0] | escape
+          endif
+        endfor
+        capture c_kurz
+          render 'tp-menu-kurztext', link: c, kacheln: kacheln
+        endcapture
+        assign c_kurz = c_kurz | strip
+        if c_kurz != blank
+          assign c_sub = c_kurz
+        endif
+        capture c_img
+          render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+        endcapture
+        capture c_title
+          render 'tp-menu-label', link: c
+        endcapture
+      -%}
+      {%- render 'tp-drawer-zeile', url: c.url, title: c_title, sub: c_sub, count: c.object.all_products_count, image_html: c_img, current: c.active -%}
+    {%- endfor -%}
+  </ul>
+
+  <p class="tp-nav-group">Nach Optik</p>
+  <ul class="tp-nav-chips list-unstyled" role="list" aria-label="Nach Optik">
+    {{- tp_vn_optik -}}
+  </ul>
+
+  {%- if tp_vn_zub != blank -%}
+    <p class="tp-nav-group">Zubehör für die Verlegung</p>
+    <ul class="tp-nav-links list-unstyled" role="list" aria-label="Zubehör für die Verlegung">
+      {{- tp_vn_zub -}}
+    </ul>
+  {%- endif -%}
+{%- else -%}
+  <div class="tp-vnav" data-testid="tp-vinyl-nav">
+    {%- liquid
+      assign tp_vn_sizes = '(min-width: 1200px) 18vw, 25vw'
+      assign tp_vn_lead = parent_link
+      if tp_vn_all_link
+        assign tp_vn_lead = tp_vn_all_link
+      endif
+      capture tp_vn_lead_img
+        render 'tp-menu-bild', link: tp_vn_lead, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_vn_sizes
+      endcapture
+      assign tp_vn_lead_sub = tp_vn_count | append: ' Produkte'
+    -%}
+    <ul class="mega-menu__list list-unstyled tp-vnav__cards">
+      {%- render 'tp-menu-karte', url: parent_link.url, title: tp_vn_all_title, sub: tp_vn_lead_sub, image_html: tp_vn_lead_img -%}
+      {%- for c in parent_link.links -%}
+        {%- if c.type != 'collection_link' or c.url == parent_link.url -%}
+          {%- continue -%}
+        {%- endif -%}
+        {%- liquid
+          assign c_sub = c.object.all_products_count | append: ' Produkte'
+          for h in tp_vn_b_handles
+            if h == c.object.handle
+              assign c_sub = c_sub | append: ' · ' | append: tp_vn_b_texts[forloop.index0]
+            endif
+          endfor
+          capture c_img
+            render 'tp-menu-bild', link: c, kacheln: kacheln, class: 'mega-menu__link-image', sizes: tp_vn_sizes
+          endcapture
+        -%}
+        {%- render 'tp-menu-karte', url: c.url, title: c.title, sub: c_sub, image_html: c_img -%}
+      {%- endfor -%}
+    </ul>
+    <div class="tp-vnav__aside">
+      <div class="tp-vnav__group">
+        <p class="tp-nav-group" id="tp-vnav-optik">Nach Optik</p>
+        <ul class="tp-nav-chips list-unstyled" role="list" aria-labelledby="tp-vnav-optik">
+          {{- tp_vn_optik -}}
+        </ul>
+      </div>
+      {%- if tp_vn_zub != blank -%}
+        <div class="tp-vnav__group">
+          <p class="tp-nav-group" id="tp-vnav-zubehoer">Zubehör für die Verlegung</p>
+          <ul class="tp-nav-links list-unstyled" role="list" aria-labelledby="tp-vnav-zubehoer">
+            {{- tp_vn_zub -}}
+          </ul>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endif -%}

@@ -42,7 +42,7 @@
     <span class="cart-items__paket-menge">{{ tp_cz_menge }} {{ tp_cz_wort }}</span>
     {%- if tp_cz_stueck > 0 -%}
       {%- assign tp_cz_stueck_gesamt = tp_cz_stueck | times: tp_cz_menge -%}
-      <span>{{ tp_cz_stueck_gesamt }} {{ tp_cz_einheit }}{% if tp_cz_format != blank %} à {{ tp_cz_format }}{% endif %}</span>
+      <span>{{ tp_cz_stueck_gesamt }} {{ tp_cz_einheit }}{% if tp_cz_format != blank %} à&nbsp;{{ tp_cz_format | replace: ' ', '&nbsp;' }}{% endif %}</span>
     {%- endif -%}
     <span>Gesamtfläche: {{ tp_cz_flaeche }}&nbsp;m²</span>
   </div>

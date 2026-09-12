@@ -295,8 +295,15 @@
       }
     }
 
+    /* Mobil zeigt der Sticky-Button nur das Icon. Der Text bleibt fuer
+       Screenreader lesbar (vorher display:none - Button ohne Namen). */
     .sticky-add-to-cart__bar .add-to-cart-text__content {
-      display: none;
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
     .sticky-add-to-cart__info[data-has-image='false'] {
@@ -321,6 +328,12 @@
 
     sticky-add-to-cart:not([data-variant-available='true']) .add-to-cart-text__content {
       display: initial;
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
     }
 
     sticky-add-to-cart:not([data-variant-available='true']) .sticky-add-to-cart__button {

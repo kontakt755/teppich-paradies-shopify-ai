@@ -78,7 +78,15 @@
 
 <div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
 
-  <div class="tp-rwc-field" data-width-field>
+  {%- comment -%}
+    Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
+    keinen Zuschnitt. Der Rechner verschwindet dann samt Button; der Hinweis
+    unten sagt, was stattdessen geht. Fehlt das Metafeld, bleibt alles wie
+    bisher sichtbar - ein unbekannter Zustand darf nichts wegnehmen.
+  {%- endcomment -%}
+  <p class="tp-rwc-service-hint" data-service-hint hidden></p>
+
+  <div class="tp-rwc-field" data-width-field data-rwc-body>
     {% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}
     <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
     <select class="tp-rwc-select" aria-label="Breite" data-width-select hidden></select>
@@ -89,7 +97,7 @@
     eine Scheinfrage. Sie wird dann ausgeblendet und die Breite hier nur noch
     genannt - der JS-Teil entscheidet das, weil nur er die Breiten kennt.
   {%- endcomment -%}
-  <p class="tp-rwc-fixed-width" data-width-fixed hidden></p>
+  <p class="tp-rwc-fixed-width" data-width-fixed hidden data-rwc-body></p>
 
   {%- comment -%}
     Raummass: eigene Breite statt Rollenbreite. Die Auswahl gibt es nur, wenn
@@ -109,7 +117,7 @@
   </div>
 
 
-  <div class="tp-rwc-mode-panel" data-mode-panel="length">
+  <div class="tp-rwc-mode-panel" data-mode-panel="length" data-rwc-body>
     <div class="tp-rwc-field">
       <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Geben Sie Ihre Länge an' %}</span>
       <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
@@ -142,7 +150,7 @@
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
-  <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden>
+  <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden data-rwc-body>
     <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
     <div class="tp-rwc-stage" data-stage>
       <div class="tp-rwc-piece" data-piece>
@@ -153,7 +161,7 @@
   </figure>
 
   {%- if tp_rc_leiste != blank -%}
-    <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden>
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
       {% render 'tp-step-heading', number: 4, label: 'Kettelleisten' %}
       <label class="tp-rwc-karte">
         <input type="checkbox" data-leiste-an>
@@ -177,7 +185,7 @@
     </div>
   {%- endif -%}
   {%- if tp_rc_haft_v -%}
-    <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden>
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden data-rwc-body>
       {% render 'tp-step-heading', number: 5, label: 'Haftunterlage' %}
       <label class="tp-rwc-karte">
         <input type="checkbox" data-haft-an>
@@ -187,7 +195,7 @@
     </div>
   {%- endif -%}
 
-  <div class="tp-rwc-calc" aria-live="polite" data-calc hidden>
+  <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
     <div class="tp-rwc-calc-formula">
       <div class="tp-rwc-calc-step" data-formula-area>– cm × – cm = –</div>
       {%- comment -%}
@@ -211,7 +219,7 @@
     ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
     Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
   {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta" data-cta disabled hidden>Länge eingeben</button>
+  <button type="button" class="tp-rwc-cta" data-cta disabled hidden data-rwc-body>Länge eingeben</button>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
@@ -290,8 +298,22 @@
           "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
           "available": {{ variant.available | json }},
+          {%- comment -%}
+            Zwei Saetze nebeneinander, bewusst. service.* gehoert zu diesem
+            Zweig und faellt geschlossen aus (nur exakt "Verfuegbar" zaehlt),
+            lieferant.* steht seit #229 live und faellt offen aus (fehlendes
+            Feld = erlaubt). Welches Modell gilt, entscheidet der Inhaber -
+            bis dahin nimmt hier niemand dem anderen die Grundlage weg.
+          {%- endcomment -%}
           "raummass": {{ variant.metafields.service.raummass.value | default: '' | json }},
           "einfassen": {{ variant.metafields.service.einfassen.value | default: '' | json }},
+          {%- comment -%}
+            Nur ein ausdrueckliches false schaltet den Dienst ab. Ein fehlendes
+            Metafeld liefert nil und wird unten zu true - so bleibt jedes noch
+            nicht erfasste Produkt unveraendert.
+          {%- endcomment -%}
+          "wunschmass": {% if variant.metafields.lieferant.wunschmass.value == false %}false{% else %}true{% endif %},
+          "kettelung": {% if variant.metafields.lieferant.kettelung.value == false %}false{% else %}true{% endif %},
           "options": {{ variant.options | json }}
         },
       {%- endunless -%}
@@ -385,6 +407,17 @@
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
+  .tp-rwc-{{ tp_rc_id }}.tp-rwc-no-service [data-rwc-body] { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-hint {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--tp-rwc-line);
+    border-radius: 6px;
+    background: var(--tp-rwc-material);
+    color: var(--tp-rwc-ink);
+    font-size: 14px;
+    line-height: 1.45;
+  }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note[hidden] { display: none; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 18px 0; padding: 20px 14px 14px; border-top: 1px solid var(--tp-rwc-line); }
@@ -725,6 +758,7 @@
   var REFERENCE_CM = Math.max(maxKnownWidth, 600);
 
   var stage = root.querySelector('[data-stage]');
+  var serviceHint = root.querySelector('[data-service-hint]');
 
   function stageWidthPx() {
     if (!stage) return 280;
@@ -1145,6 +1179,41 @@
     // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
     // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
     cta.hidden = cta.disabled;
+
+    applyServiceState();
+  }
+
+  // Zuschnitt und Kettelung haengen an der gewaehlten Farbe, nicht am Produkt:
+  // dieselbe Qualitaet kann in einer Farbe nur noch ueber den Zweitlieferanten
+  // laufen, der keinen Zuschnitt anbietet. Die Werte kommen aus dem
+  // Datenblock oben, damit der Farbwechsel ohne Neuladen auskommt.
+  function serviceFor(variant) {
+    var v = variant || findVariant(selectedWidth());
+    return {
+      wunschmass: !v || v.wunschmass !== false,
+      kettelung: !v || v.kettelung !== false
+    };
+  }
+
+  function applyServiceState() {
+    var svc = serviceFor(target);
+
+    // Ausgeblendet wird ueber eine Klasse am Wurzelelement, nicht ueber
+    // hidden an den einzelnen Teilen. Sonst muesste diese Funktion beim
+    // Zurueckschalten entscheiden, welches Teil wieder sichtbar werden darf -
+    // und wuerde dabei den Button zeigen, bevor eine Laenge eingegeben ist.
+    // So bleibt die Sichtbarkeit im Normalfall allein Sache von calculate().
+    root.classList.toggle('tp-rwc-no-service', !svc.wunschmass);
+
+    if (!serviceHint) return;
+    if (svc.wunschmass) {
+      serviceHint.hidden = true;
+      return;
+    }
+    serviceHint.textContent = svc.kettelung
+      ? 'Diese Farbe gibt es derzeit nur als ganze Rolle, nicht im Zuschnitt nach Wunschmaß. Rufen Sie uns an – wir prüfen, was für Ihren Raum möglich ist.'
+      : 'Diese Farbe gibt es derzeit nur als ganze Rolle. Zuschnitt nach Wunschmaß und Kettelservice sind dafür nicht verfügbar. Rufen Sie uns an – wir prüfen, was für Ihren Raum möglich ist.';
+    serviceHint.hidden = false;
   }
 
   root.addEventListener('change', function (e) {

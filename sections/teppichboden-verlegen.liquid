@@ -1,3 +1,15 @@
+{% comment %}
+  Einstieg und Konditionen der Seite "Teppichboden verlegen lassen".
+
+  Die Konditionen kommen seit 2026-09-11 aus dem Snippet
+  tp-verlegeservice-stufen und damit aus den Theme-Einstellungen
+  (TP Verlegeservice). Vorher standen sie hier von Hand, und der Hinweis
+  "Diese Kosten gelten unabhaengig vom Warenwert" war falsch: die guenstigen
+  Klebepreise gelten erst ab der Warenwert-Schwelle.
+{% endcomment %}
+
+{%- assign vs_seite = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice' -%}
+
 <style>
   .verlege-hero-section {
     max-width: 1300px;
@@ -32,9 +44,13 @@
     overflow: hidden;
   }
 
+  /* Das Hochformat-Foto machte den Hero 900 px hoch, die zentrierte H1 begann
+     erst bei 550 px. 4:3 haelt Bild und Text im ersten Bildschirm (Audit B-32). */
   .verlege-hero-img img {
+    display: block;
     width: 100%;
     height: auto;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
   }
 
@@ -63,50 +79,21 @@
     background: #b4976c;
   }
 
-  .verlegepreise-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 40px;
-    margin-top: 40px;
+  .verlegepreise-stufen {
+    margin-top: 48px;
   }
 
-  .preis-box {
-    flex: 1 1 450px;
-    background: #f5f5f5;
-    padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  .verlegepreise-mehr {
+    margin: 28px 0 0;
+    font-size: 17px;
+    line-height: 1.5;
+    text-align: center;
   }
 
-  .preis-box h3 {
-    font-size: 24px;
-    margin-bottom: 20px;
-    color: #1a1a1a;
-  }
-
-  .preis-box ul {
-    list-style: none;
-    padding: 0;
-    font-size: 18px;
-    line-height: 1.6;
-    color: #333;
-  }
-
-  .preis-box ul li::before {
-    content: "✔";
-    color: #2e7d32;
-    margin-right: 10px;
-  }
-
-  .hinweis-text {
-    margin-top: 30px;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #555;
-    background: #fffbea;
-    padding: 20px;
-    border-left: 4px solid #b4976c;
-    border-radius: 8px;
+  .verlegepreise-mehr a {
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
   }
 
   @media (max-width: 768px) {
@@ -114,8 +101,9 @@
       flex-direction: column;
       gap: 40px;
     }
-    .verlegepreise-grid {
-      flex-direction: column;
+
+    .verlegepreise-bereich h2 {
+      font-size: 26px;
     }
   }
 </style>
@@ -123,7 +111,7 @@
 <section class="verlege-hero-section">
   <div class="verlege-hero-text">
     <h1 class="verlege-hero-title">Ihr Teppichboden. Fachgerecht verlegt. Persönlich beraten.</h1>
-    <p class="verlege-hero-sub">Ab 649 € Einkaufswert bieten wir Ihnen kostenlose Lieferung und lose Verlegung – im Umkreis von 15 km rund um unseren Showroom in Oranienburg. Persönlich. Fair. Transparent.</p>
+    <p class="verlege-hero-sub">Wir liefern Ihren Teppichboden und verlegen ihn bei Ihnen zu Hause – rund um unseren Showroom in Oranienburg. Persönlich. Fair. Transparent.</p>
   </div>
   <div class="verlege-hero-img">
     {%- assign hero_ratio = section.settings.image.aspect_ratio | default: 1.5 -%}
@@ -139,32 +127,15 @@
 </section>
 
 <section class="verlegepreise-bereich">
-  <h2>Unsere Verlegepreise im Überblick</h2>
+  <h2>Lieferung &amp; Verlegung: Ihre Konditionen</h2>
 
-  <div class="verlegepreise-grid">
-    <div class="preis-box">
-      <h3>✅ Ab 649 € Warenwert</h3>
-      <ul>
-        <li>Lieferung & lose Verlegung kostenlos</li>
-        <li>Gilt im Umkreis von 15 km</li>
-        <li>Flure & Küchen pauschal auf Anfrage</li>
-      </ul>
-    </div>
-
-    <div class="preis-box">
-      <h3>💶 Unter 649 € Warenwert</h3>
-      <ul>
-        <li>Mit Band ab 8,95 €/m²</li>
-        <li>Mit Flüssigfixierung ab 9,95 €/m²</li>
-        <li>Mit Kleber ab 10,95 €/m²</li>
-      </ul>
-    </div>
+  <div class="verlegepreise-stufen">
+    {%- render 'tp-verlegeservice-stufen' -%}
   </div>
 
-  <div class="hinweis-text">
-    <strong>Hinweis zu Klebematerialien:</strong><br>
-    Für die feste Verlegung fallen Zusatzkosten an. Band ca. 25 €/Raum, Flüssigfixierung ab 3,95 €/m², Kleber ab 4,95 €/m². Diese Kosten gelten unabhängig vom Warenwert.
-  </div>
+  <p class="verlegepreise-mehr">
+    <a href="{{ vs_seite }}">Alle Details zum Verlegeservice: lose Verlegung, Klebearten und Liefergebiet</a>
+  </p>
 </section>
 
 {% schema %}

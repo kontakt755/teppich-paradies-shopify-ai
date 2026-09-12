@@ -1,0 +1,73 @@
+{%- comment -%}
+  TP Sticky-Kontakt (nur Telefon): Anrufen, WhatsApp, Anfrage. Erscheint nach
+  dem ersten Scrollen, nie im Warenkorb, Checkout oder auf Produktseiten
+  (dort liegt der Kaufbutton). Liegt in der Footer-Gruppe.
+{%- endcomment -%}
+{%- liquid
+  assign zeigen = true
+  if template.name == 'cart' or template.name == 'product' or template.name == 'search'
+    assign zeigen = false
+  endif
+  assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/'
+-%}
+{%- if zeigen -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+<div class="tp-sticky" id="tp-sticky" role="region" aria-label="Schnellkontakt">
+  <a class="tp-s-btn tp-s-btn--ghost" href="tel:{{ tel_raw }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>{{ section.settings.label_tel | escape }}</a>
+  <a class="tp-s-btn tp-s-btn--wa" href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/></svg>{{ section.settings.label_wa | escape }}</a>
+  {%- comment -%}
+    Ein Anker zeigt nur auf der Startseite auf die Kontakt-Section. Ueberall
+    sonst waere der Knopf tot - dort fuehrt er zur Kontaktseite.
+  {%- endcomment -%}
+  {%- liquid
+    assign anfrage = section.settings.anfrage_link | default: '#tp-kontakt'
+    assign erstes_zeichen = anfrage | slice: 0
+    if erstes_zeichen == '#' and template.name != 'index'
+      assign anfrage = routes.root_url | append: 'pages/kontakt' | replace: '//', '/'
+    endif
+  -%}
+  <a class="tp-s-btn tp-s-btn--primary" href="{{ anfrage }}">{{ section.settings.label_anfrage | escape }}</a>
+</div>
+
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: #fff; border-top: 1px solid #e6e0d8; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); display: none; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; transform: translateY(110%); transition: transform 0.25s; }
+  .tp-sticky--show { transform: none; }
+  .tp-sticky .tp-s-btn { min-height: 46px; font-size: 14.5px; padding: 0 10px; }
+  @media (max-width: 767px) { .tp-sticky { display: grid; } body { padding-bottom: 70px; } }
+  @media (prefers-reduced-motion: reduce) { .tp-sticky { transition: none; } }
+{% endstylesheet %}
+
+{% javascript %}
+  (function () {
+    var bar = document.getElementById('tp-sticky');
+    if (!bar) return;
+    var kontakt = document.getElementById('tp-kontakt');
+    function onScroll() {
+      var past = window.scrollY > 600;
+      var near = false;
+      if (kontakt) { var r = kontakt.getBoundingClientRect(); near = r.top < window.innerHeight && r.bottom > 0; }
+      bar.classList.toggle('tp-sticky--show', past && !near);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+{% endjavascript %}
+
+
+{% schema %}
+{
+  "name": "TP Sticky-Kontakt",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "telefon", "label": "Telefon", "default": "03301 573 37 20" },
+    { "type": "url", "id": "whatsapp", "label": "WhatsApp-Link (wa.me/…)" },
+    { "type": "url", "id": "anfrage_link", "label": "Ziel des Anfrage-Buttons (leer = Kontakt-Section)" },
+    { "type": "text", "id": "label_tel", "label": "Beschriftung Anrufen", "default": "Anrufen" },
+    { "type": "text", "id": "label_wa", "label": "Beschriftung WhatsApp", "default": "WhatsApp" },
+    { "type": "text", "id": "label_anfrage", "label": "Beschriftung Anfrage", "default": "Anfrage" }
+  ],
+  "presets": [ { "name": "TP Sticky-Kontakt" } ]
+}
+{% endschema %}

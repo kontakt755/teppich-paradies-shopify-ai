@@ -312,7 +312,9 @@
      zurueckhaltend - der Quadratmeterpreis bleibt die Leitgroesse. */
   .tp-price-card-package {
     margin-top: 2px;
-    font-size: 0.78em;
+    /* Gleiche Groesse wie die Preiszeile darueber (12 px). Mit 0.78em lag sie
+       bei 9,4 px - lesbar nur mit Muehe, obwohl sie die Mindestmenge nennt. */
+    font-size: 1em;
     line-height: 1.3;
     font-weight: 400;
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);

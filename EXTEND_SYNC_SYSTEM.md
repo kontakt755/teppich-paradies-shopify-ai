@@ -1,8 +1,8 @@
-# 🚀 JordanShop Sync System erweitern
+# 🚀 Grosshandel-Sync-System erweitern
 
 ## Status: BEREIT ZUM AKTIVIEREN
 
-Das System unterstützt jetzt **beliebig viele Kategorien** von JordanShop!
+Das System unterstützt jetzt **beliebig viele Kategorien** des Großhändlers!
 
 ---
 
@@ -15,15 +15,15 @@ Das System unterstützt jetzt **beliebig viele Kategorien** von JordanShop!
 
 ### ⏸️ Vinylboden (INAKTIV)
 - **Beschreibung:** Vinyl-Bodenbeläge von der Rolle
-- **Aktivierung:** `data/jordan-categories.json` → `"active": true`
+- **Aktivierung:** `data/grosshandel-categories.json` → `"active": true`
 
 ### ⏸️ Teppichboden (INAKTIV)
 - **Beschreibung:** Teppichboden verschiedener Hersteller
-- **Aktivierung:** `data/jordan-categories.json` → `"active": true`
+- **Aktivierung:** `data/grosshandel-categories.json` → `"active": true`
 
 ### ⏸️ Zubehör & Befestigung (INAKTIV)
 - **Beschreibung:** Kleber, Unterlage, Profile, etc.
-- **Aktivierung:** `data/jordan-categories.json` → `"active": true`
+- **Aktivierung:** `data/grosshandel-categories.json` → `"active": true`
 
 ---
 
@@ -33,7 +33,7 @@ Das System unterstützt jetzt **beliebig viele Kategorien** von JordanShop!
 
 1. **Datei öffnen:**
    ```
-   data/jordan-categories.json
+   data/grosshandel-categories.json
    ```
 
 2. **Bei Kategorie `"active": false` zu `"active": true` ändern**
@@ -59,11 +59,11 @@ Das System unterstützt jetzt **beliebig viele Kategorien** von JordanShop!
 ## 🎯 Wie das System funktioniert
 
 ```
-Kategorien-Konfiguration (jordan-categories.json)
+Kategorien-Konfiguration (grosshandel-categories.json)
   ↓ (nur aktive Kategorien)
-Kategorien-Loader (load-jordan-categories.mjs)
+Kategorien-Loader (load-grosshandel-categories.mjs)
   ↓ (erstellt Katalog)
-JordanShop Katalog (jordan-catalog.json)
+Grosshandel-Katalog (grosshandel-catalog.json)
   ↓ (wird synchronisiert)
 GitHub Actions Workflow
   ↓ (tägl. 2 AM UTC)
@@ -105,15 +105,15 @@ npm run sync:categories
 npm run sync:categories:activate
 
 # Wie immer sync durchführen
-npm run sync:jordanshop          # Dry-Run
-npm run sync:jordanshop:live     # Mit SYNC_APPROVED=true
+npm run sync:grosshandel          # Dry-Run
+npm run sync:grosshandel:live     # Mit SYNC_APPROVED=true
 ```
 
 ---
 
 ## 🎬 Beispiel: Vinylboden hinzufügen
 
-1. Öffne `data/jordan-categories.json`
+1. Öffne `data/grosshandel-categories.json`
 2. Ändere bei "vinylboden": `"active": false` → `"active": true`
 3. Speichern
 4. `npm run sync:categories` → zeigt neue Kategorien

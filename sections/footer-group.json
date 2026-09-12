@@ -18,7 +18,7 @@
         "heading": "Beratung gewünscht?",
         "text": "Wir begleiten Ihr Projekt von der Auswahl bis zur fachgerechten Ausführung – zuverlässig, termintreu und persönlich.",
         "primary_label": "Angebot anfragen",
-        "primary_link": "",
+        "primary_link": "shopify://pages/kontakt",
         "call_label": "Direkt anrufen",
         "whatsapp_label": "WhatsApp schreiben",
         "whatsapp_link": "https://wa.me/4917657931322",
@@ -65,10 +65,22 @@
         "padding-block-start": 36,
         "padding-block-end": 36
       }
+    },
+    "tp_sticky_kontakt": {
+      "type": "tp-sticky-kontakt",
+      "settings": {
+        "telefon": "03301 573 37 20",
+        "whatsapp": "https://wa.me/4917657931322",
+        "anfrage_link": "#tp-kontakt",
+        "label_tel": "Anrufen",
+        "label_wa": "WhatsApp",
+        "label_anfrage": "Anfrage"
+      }
     }
   },
   "order": [
     "final_cta_MwtQiF",
-    "footer_MgRaFN"
+    "footer_MgRaFN",
+    "tp_sticky_kontakt"
   ]
 }

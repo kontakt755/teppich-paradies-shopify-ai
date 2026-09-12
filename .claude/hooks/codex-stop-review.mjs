@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
-import { detectReviewScope, resolveReviewDir, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
-import { clearClaudeSessionState, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
+import { detectReviewScope, resolveReviewDir, reviewCandidateFromStop, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
+import { clearClaudeSessionState, readClaudeSessionBaseline, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
 async function stdinJson() {
@@ -54,6 +54,26 @@ try {
     block('Human Gate: Nach drei unabhängigen Review-Runden bestehen noch Befunde. Berichte die verbleibenden Befunde und stoppe weitere automatische Änderungen.');
     process.exit(0);
   }
+  // Scope erst hinter Codex-Pruefung und Human Gate ermitteln (wie vor dem
+  // Fragen-Skip): beide Gates duerfen nicht von git-Aufrufen abhaengen.
+  // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
+  // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
+  const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
+  // Vorbestehende Dateien (Stand beim ersten Prompt) werden ausgeklammert,
+  // solange sie exakt so geblieben sind. Fehlt die Baseline oder ist sie
+  // kaputt, wird nichts ausgeklammert (siehe review-scope.mjs).
+  const sessionBaseline = readClaudeSessionBaseline({ sessionId: input.session_id, projectDir });
+  // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
+  // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
+  // origin/main - der in einem geteilten Checkout auch von einer anderen,
+  // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
+  // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
+  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
+  // Schlussantwort des Agenten (2026-09-11): nur bei leerem Pruefbereich (nach
+  // Abzug der Baseline), damit der Reviewer eine sachlich beantwortete Frage
+  // als No-op erkennt, statt Code zu verlangen. Bei jedem anderen Scope ''.
+  // Fehlt das Feld, ist es leer oder kein String, laeuft das Review wie bisher.
+  const candidateText = reviewCandidateFromStop({ input, scope });
   // Runde 1 und 2: Reviewer der Matrix. Runde 3: zweiter unabhaengiger Blick
   // (sofern die Klasse einen vorsieht), damit nicht dreimal dasselbe Modell
   // dieselben Befunde wiederholt.
@@ -65,22 +85,17 @@ try {
   // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
   // Auftrag erfuellt. Kein Zustand beendet ohne Modell-Review; nur Klasse A
   // (oben, plan.reviewer fehlt) kommt ohne aus.
-  // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
-  // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
-  // origin/main - der in einem geteilten Checkout auch von einer anderen,
-  // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
-  // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
-  // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
-  // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
-  const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
-  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null });
   if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
+    candidateText,
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
-    taskFile: current.state.handoffPath,
+    // Auftrag und verbindliche Grenzen, nie die ungepruefte Voranalyse aus dem
+    // Handoff des Implementers (buildReviewerTaskPack in claude-bridge.mjs).
+    // handoffPath nur fuer Session-States von vor diesem Feld.
+    taskFile: current.state.reviewTaskPath ?? current.state.handoffPath,
     taskId,
     // Der Reviewer liest den Code im Arbeitsverzeichnis der Sitzung; die
     // Laufprotokolle bleiben absichtlich unter projectDir, weil

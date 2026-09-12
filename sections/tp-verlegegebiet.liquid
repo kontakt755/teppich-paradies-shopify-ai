@@ -1,0 +1,1103 @@
+{% comment %}
+  Verlegegebiet rund um Oranienburg: vorgerenderte Karte mit markierter
+  Flaeche, Standortkarte, optionaler PLZ-Pruefung und zwei Kontaktwegen.
+
+  Warum ein Bild und keine Live-Karte: die Sektion braucht weder Zoom noch
+  Pan. Ein statisches WebP kostet keinen externen Request (damit keine
+  Einwilligung noetig), kein JavaScript fuer die Darstellung, keinen Layout
+  Shift - und es kann auf dem Smartphone das Scrollen nicht abfangen.
+
+  Die Bilder rendert scripts/build-verlegegebiet-karte.mjs, die Ortstabelle
+  baut scripts/build-verlegegebiet-orte.py. Aendert sich der Standort, muessen
+  beide neu laufen.
+
+  Die Flaeche ist kein Kreis, sondern der Umriss der Postleitzahlen, gegen die
+  auch die Pruefung im Formular laeuft - beide stammen aus derselben Quelle und
+  koennen deshalb nicht auseinanderlaufen. Der Pfad kommt fertig aus dem
+  Snippet tp-verlegegebiet-flaeche, je Stufe des Reglers einer.
+
+  Geometrie (Ausgabe des Skripts, Mittelpunkt Saarlandstrasse Oranienburg):
+    desktop  1000 x 700 Bildpunkte, 185.12 m je Punkt
+    mobile    680 x 760 Bildpunkte, 185.12 m je Punkt (halb angezeigt)
+  Der Pfad ist in Desktop-Bildpunkten notiert; die schmale Karte hat den halben
+  Massstab und deshalb eine eigene viewBox ueber den doppelten Ausschnitt. Beide
+  Ausschnitte muessen die groesste Reglerstufe fassen, nicht nur die
+  voreingestellte - sonst wird der Umriss oben und unten abgeschnitten.
+  qa/tests/verlegegebiet-flaeche.test.mjs haelt das fest.
+{% endcomment %}
+
+{%- liquid
+  assign vg_radius = section.settings.radius | at_least: 30 | at_most: 50
+
+  # Stufen des Rollenware-Service (Theme-Einstellungen, Gruppe TP Verlegeservice).
+  # Nur auf Teppichboden-Seiten eingeschaltet: auf Vinyl- und Treppenseiten
+  # wuerde "lose Verlegung inklusive" einen Service versprechen, der dort nicht
+  # gilt. Eingeschaltet gilt der Radius von dort fuer alles - Pruefung,
+  # Stufentext, Flaeche und Bildunterschrift. Vorher zeigte die Karte den
+  # Radius der Sektion und die Pruefung den aus den Einstellungen; wichen die
+  # beiden ab, nannte die Seite zwei Grenzen. Die Flaeche gibt es nur in
+  # vorgerenderten 10-km-Stufen, deshalb wird fuer sie gerundet.
+  assign vg_stufen = section.settings.rollenware_stufen
+  assign vg_pruef_radius = vg_radius
+  if vg_stufen and settings.tp_vs_radius_premium != blank
+    assign vg_pruef_radius = settings.tp_vs_radius_premium
+    assign vg_radius = settings.tp_vs_radius_premium | divided_by: 10.0 | round | times: 10 | at_least: 30 | at_most: 50
+  endif
+
+  # Platzhalter [km] in den Stufen-Bloecken: dieselbe Grenze wie die Pruefung,
+  # statt "50" in jedem Template von Hand.
+  assign vg_km = vg_pruef_radius | append: ''
+
+  # Mittelpunkt der Karte, identisch mit LAT/LON in scripts/build-verlegegebiet-karte.mjs.
+  assign vg_lat = 52.7378
+  assign vg_lon = 13.2485
+
+  # Der Alt-Text wird vorgelesen, deshalb mit Umlauten. Berlin und Potsdam
+  # liegen erst bei 50 km vollstaendig in der Flaeche - bei 30 oder 40 km waere
+  # der Satz falsch.
+  assign vg_karte_alt = 'Karte der Region um Oranienburg. Die markierte Fläche zeigt unser Verlegegebiet im Umkreis von etwa ' | append: vg_radius | append: ' Kilometern.'
+  if vg_radius >= 50
+    assign vg_karte_alt = vg_karte_alt | append: ' Berlin und Potsdam liegen darin.'
+  endif
+
+  # Das Ziel fuer "Route planen" entsteht aus derselben Adresse, die auf der
+  # Seite steht. Der Link stand vorher als fertige URL in der Voreinstellung
+  # und in jedem Template - vier Kopien, und in allen vieren war die Hausnummer
+  # 73 statt 73-81. Abgeleitet kann das nicht mehr auseinanderlaufen.
+  #
+  # Der Gedankenstrich der Hausnummer wird zum Bindestrich: in der Adresszeile
+  # ist er richtig gesetzt, in einer Suchanfrage ist er nur ein Sonderzeichen.
+  #
+  # Wer den Google-Unternehmenseintrag verlinken will, traegt ihn im Editor als
+  # eigenen Link ein; dann gilt dieser.
+  capture vg_adresszeile
+    echo section.settings.standort_adresse | newline_to_br | replace: '<br />', ', ' | replace: '<br/>', ', ' | replace: '<br>', ', ' | strip_html | strip_newlines | strip | replace: '–', '-'
+  endcapture
+  assign vg_route = section.settings.route_link
+  if vg_route == blank and vg_adresszeile != blank
+    assign vg_ziel = vg_adresszeile | url_encode
+    assign vg_route = 'https://www.google.com/maps/dir/?api=1&destination=' | append: vg_ziel
+  endif
+-%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<div
+  class="tp-vg section section--page-width color-{{ section.settings.color_scheme }} spacing-style"
+  style="{% render 'spacing-style', settings: section.settings %}"
+  data-testid="tp-verlegegebiet-{{ section.id }}"
+  data-radius="{{ vg_pruef_radius }}"
+  {%- if vg_stufen %}
+    data-basis="{{ settings.tp_vs_radius_basis }}"
+    data-mitte="{{ settings.tp_vs_radius_mitte }}"
+    data-schwelle="{{ settings.tp_vs_schwelle }}"
+    data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}"
+    data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose="{{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}"
+    data-lose-mindest="{{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }}"
+  {%- endif %}
+  data-orte="{{ 'tp-verlegegebiet-orte.json' | asset_url }}"
+>
+  <header class="tp-vg__head">
+    {%- if section.settings.eyebrow != blank -%}
+      <p class="tp-vg__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+    {%- endif -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="tp-vg__heading h3">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+    {%- if section.settings.intro != blank -%}
+      <p class="tp-vg__intro">{{ section.settings.intro | escape }}</p>
+    {%- endif -%}
+  </header>
+
+  {%- if section.settings.karte_zeigen -%}
+    <figure class="tp-vg__karte">
+      <div class="tp-vg__buehne">
+        <picture>
+          {%- comment -%} Die schmale Karte gibt es nur in einer Fassung: sie
+            kommt aus derselben Zoomstufe wie die breite und wird auf halber
+            Groesse gezeigt. Eine kleinere Datei muesste aus einer groeberen
+            Stufe kommen, in der die Orte im Verlegegebiet fehlen.
+          {%- endcomment -%}
+          <source
+            media="(max-width: 749px)"
+            type="image/webp"
+            srcset="{{ 'tp-verlegegebiet-mobile.webp' | asset_url }}"
+          >
+          <img
+            src="{{ 'tp-verlegegebiet-desktop.webp' | asset_url }}"
+            srcset="
+              {{ 'tp-verlegegebiet-desktop.webp' | asset_url }} 1x,
+              {{ 'tp-verlegegebiet-desktop-2x.webp' | asset_url }} 2x
+            "
+            alt="{{ vg_karte_alt | escape }}"
+            width="1000"
+            height="700"
+            loading="lazy"
+            decoding="async"
+            class="tp-vg__bild"
+          >
+        </picture>
+
+        {%- comment -%} Flaeche und Standort liegen als Markup ueber dem Bild,
+          damit sie in Markenfarbe und bei jeder Breite scharf bleiben. Zwei
+          SVG, weil die beiden Karten verschiedene Massstaebe haben und eine
+          viewBox sich nicht per CSS umschalten laesst. {%- endcomment -%}
+        <svg class="tp-vg__gebiet tp-vg__gebiet--breit" viewBox="-500 -350 1000 700" aria-hidden="true" focusable="false">
+          {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
+        </svg>
+        <svg class="tp-vg__gebiet tp-vg__gebiet--schmal" viewBox="-340 -380 680 760" aria-hidden="true" focusable="false">
+          {%- render 'tp-verlegegebiet-flaeche', radius: vg_radius -%}
+        </svg>
+
+        <span class="tp-vg__marker" aria-hidden="true">
+          <span class="tp-vg__punkt"></span>
+          <span class="tp-vg__marker-name">
+            {{ section.settings.standort_name | escape }}
+            <small>{{ section.settings.standort_ort | escape }}</small>
+          </span>
+        </span>
+      </div>
+
+      {%- comment -%} Bildunterschrift statt Legende: der Standort traegt seinen
+        Namen schon auf der Karte, die Flaeche erklaert diese Zeile. Farbige
+        Punkte davor haetten wie Bedienelemente ausgesehen, ohne welche zu sein.
+      {%- endcomment -%}
+      <figcaption class="tp-vg__legende">
+        <span>Reguläres Verlegegebiet, ca. {{ vg_radius }} km rund um {{ section.settings.standort_ort | escape }}</span>
+        <span>Kartendaten &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener nofollow">OpenStreetMap</a>-Mitwirkende</span>
+      </figcaption>
+    </figure>
+  {%- endif -%}
+
+  {%- comment -%} Die Stufen gehoeren neben die Karte, nicht nur auf eine andere
+    Seite: wer hier "liegt im Verlegegebiet" liest, soll im selben Blick sehen,
+    was das einschliesst - sonst erwartet jemand aus 40 km Entfernung die
+    Leistungen, die im Umkreis von 15 km gelten.
+
+    Zwei Quellen, je nach Seite:
+    - rollenware_stufen an (Teppichboden-Seiten): die Zonen des
+      Rollenware-Service mit ihren Preisen aus den Theme-Einstellungen -
+      dieselben Zahlen wie auf der Serviceseite und im Produkthinweis, keine
+      Kopie im Template. Kostenlos nur ab der Schwelle in der ersten Zone.
+    - sonst die Bloecke aus dem Template. Auf Vinyl- und Treppenseiten stehen
+      dort bewusst keine Rollenware-Konditionen, weil sie dort nicht gelten.
+
+    Keine Karten mit Rahmen: das waeren drei weitere Kaesten neben den zweien
+    darunter.
+  {%- endcomment -%}
+  {%- if vg_stufen -%}
+    <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+      </li>
+      <li class="tp-vg__stufe">
+        <span class="tp-vg__stufe-marke">Weiter entfernt</span>
+        <span class="tp-vg__stufe-text">Auf Anfrage – wir prüfen gern individuell, was möglich ist.</span>
+      </li>
+    </ul>
+  {%- elsif section.blocks.size > 0 -%}
+    <ul class="tp-vg__stufen" role="list">
+      {%- for block in section.blocks -%}
+        <li class="tp-vg__stufe" {{ block.shopify_attributes }}>
+          {%- if block.settings.label != blank -%}
+            <span class="tp-vg__stufe-marke">{{ block.settings.label | escape | replace: '[km]', vg_km }}</span>
+          {%- endif -%}
+          {%- if block.settings.text != blank -%}
+            <span class="tp-vg__stufe-text">{{ block.settings.text | escape | replace: '[km]', vg_km }}</span>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+
+  <div class="tp-vg__spalten">
+    <div class="tp-vg__karte-adresse">
+      <h3 class="tp-vg__sub">{{ section.settings.standort_name | escape }}</h3>
+      <address>
+        {{ section.settings.standort_adresse | escape | newline_to_br }}
+      </address>
+      {%- if vg_route != blank -%}
+        {%- comment -%} Ein gewoehnlicher Link, kein eingebetteter Kartendienst:
+          er sendet erst beim Klick etwas und braucht deshalb keine Einwilligung.
+          Die Universal-Link-Form oeffnet auf dem Telefon die Karten-App, sonst
+          den Browser. {%- endcomment -%}
+        <a
+          class="tp-vg__route"
+          href="{{ vg_route }}"
+          target="_blank"
+          rel="noopener nofollow"
+        >
+          Route planen
+          <span class="tp-vg__weg">(öffnet Google Maps in einem neuen Tab)</span>
+        </a>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.pruefung_zeigen -%}
+      {%- comment -%} Ohne JavaScript bleibt das Feld verborgen, statt tot dazustehen;
+        das Skript nimmt das hidden-Attribut weg. Ueberschrift, Karte, Hinweis und
+        Kontaktwege stehen unabhaengig davon. {%- endcomment -%}
+      <form
+        class="tp-vg__check"
+        data-tp-verlegegebiet-form
+        {%- if section.settings.cta_link != blank and section.settings.cta_label != blank %}
+          data-cta-url="{{ section.settings.cta_link }}"
+          data-cta-text="{{ section.settings.cta_label | escape }}"
+        {%- endif %}
+        {%- comment -%} Der Verlegeservice endet bei 50 km, der Versand nicht.
+          Ohne diesen zweiten Weg waere die Pruefung fuer jeden ausserhalb eine
+          Absage, obwohl er bestellen koennte. {%- endcomment -%}
+        {%- if section.settings.versand_link != blank and section.settings.versand_label != blank %}
+          data-versand-url="{{ section.settings.versand_link }}"
+          data-versand-text="{{ section.settings.versand_label | escape }}"
+        {%- endif %}
+        hidden
+      >
+        <label class="tp-vg__sub" for="tp-vg-plz-{{ section.id }}">
+          Liegt Ihr Wohnort in unserem Verlegegebiet?
+        </label>
+        <div class="tp-vg__check-zeile">
+          <input
+            id="tp-vg-plz-{{ section.id }}"
+            class="tp-vg__input"
+            type="text"
+            name="ort"
+            inputmode="text"
+            autocomplete="postal-code"
+            maxlength="40"
+            placeholder="PLZ oder Ort"
+            data-tp-verlegegebiet-input
+          >
+          <button class="tp-vg__btn tp-vg__btn--check" type="submit">Prüfen</button>
+        </div>
+        {%- comment -%} Ergebnis und Weg stehen in einem Statusbereich: sonst liest
+          ein Screenreader die Antwort vor, den Link darunter aber nicht.
+        {%- endcomment -%}
+        <div class="tp-vg__ergebnis-box" role="status" aria-live="polite">
+        <p class="tp-vg__ergebnis" data-tp-verlegegebiet-result></p>
+        {%- comment -%} Wer gerade bestaetigt bekommen hat, dass wir zu ihm kommen,
+          ist am ehesten bereit anzufragen. Der Weg dorthin steht deshalb direkt
+          im Ergebnis und nicht erst am Ende der Sektion. {%- endcomment -%}
+        <p class="tp-vg__ergebnis-weg" data-tp-verlegegebiet-cta hidden></p>
+        </div>
+        {%- comment -%} Mit Stufen waere "Anfahrt und Preis klaeren wir im Angebot"
+          falsch: die Preise der Zonen stehen darueber. {%- endcomment -%}
+        {%- if vg_stufen -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Im Zweifel fragen Sie uns einfach.</p>
+        {%- else -%}
+          <p class="tp-vg__klein">Luftlinie ab Oranienburg, als Orientierung. Anfahrt und Preis klären wir im Angebot; geliefert wird deutschlandweit.</p>
+        {%- endif -%}
+      </form>
+    {%- endif -%}
+  </div>
+
+  {%- if section.settings.hinweis != blank -%}
+    <p class="tp-vg__hinweis">{{ section.settings.hinweis | escape }}</p>
+  {%- endif -%}
+
+  {%- if section.settings.cta_zeigen -%}
+    <div class="tp-vg__aktionen">
+      {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+        <a class="tp-vg__btn tp-vg__btn--primaer" href="{{ section.settings.cta_link }}">
+          {{ section.settings.cta_label | escape }}
+        </a>
+      {%- endif -%}
+      {%- if section.settings.cta2_label != blank and section.settings.cta2_link != blank -%}
+        <a
+          class="tp-vg__btn tp-vg__btn--sekundaer"
+          href="{{ section.settings.cta2_link }}"
+          {% if section.settings.cta2_link contains 'wa.me' %}target="_blank" rel="noopener"{% endif %}
+        >
+          {%- if section.settings.cta2_link contains 'wa.me' -%}
+            <svg class="tp-vg__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" focusable="false">
+              {%- render 'icon', icon: 'whatsapp' -%}
+            </svg>
+          {%- endif -%}
+          {{ section.settings.cta2_label | escape }}
+        </a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} Kein zweiter LocalBusiness: den Betrieb zeichnet bereits
+    sections/header.liquid auf jeder Seite aus. Hier steht die Leistung mit
+    ihrem Einzugsgebiet, und der Radius kommt aus derselben Einstellung wie
+    die Karte - so koennen Anzeige und Auszeichnung nicht auseinanderlaufen.
+  {%- endcomment -%}
+  {%- if section.settings.karte_zeigen -%}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "serviceType": "Bodenverlegung",
+        "provider": {
+          "@type": "Organization",
+          "name": {{ shop.name | replace: 'TeppichParadies', 'Teppich Paradies' | json }},
+          "url": {{ request.origin | json }}
+        },
+        "areaServed": {
+          "@type": "GeoCircle",
+          "geoMidpoint": {
+            "@type": "GeoCoordinates",
+            "latitude": {{ vg_lat }},
+            "longitude": {{ vg_lon }}
+          },
+          "geoRadius": {{ vg_radius | times: 1000 }}
+        }
+      }
+    </script>
+  {%- endif -%}
+
+  {%- if section.settings.vertrauen != blank -%}
+    <p class="tp-vg__vertrauen">{{ section.settings.vertrauen | escape }}</p>
+  {%- endif -%}
+</div>
+
+<script src="{{ 'tp-verlegegebiet.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .tp-vg {
+    --tp-vg-ton: 141 113 76;
+    --tp-vg-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+    --tp-vg-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .tp-vg__head {
+    max-width: 62ch;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .tp-vg__eyebrow {
+    margin: 0;
+    color: #8d714c;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .tp-vg__heading {
+    margin: 8px 0 12px;
+  }
+
+  .tp-vg__intro {
+    margin: 0;
+    color: var(--tp-vg-leise);
+    line-height: 1.6;
+  }
+
+  /* Karte -------------------------------------------------------------- */
+
+  .tp-vg__karte {
+    max-width: 1000px;
+    margin: clamp(24px, 4vw, 40px) auto 0;
+  }
+
+  .tp-vg__buehne {
+    position: relative;
+    aspect-ratio: 1000 / 700;
+    border: 1px solid var(--tp-vg-linie);
+    border-radius: 14px;
+    overflow: hidden;
+    background: #faf8f5;
+  }
+
+  .tp-vg__bild {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Am Bildrand schneidet die Karte Ortsnamen an. Ein schmaler Verlauf in der
+     Grundfarbe der Karte laesst sie ausklingen, statt sie halb stehen zu lassen.
+     Die Farbe ist die des Kartenbildes, nicht die der Seite - deshalb steht sie
+     hier als fester Wert und nicht als Farbschema-Variable. */
+  .tp-vg__buehne::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 26px),
+      linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 26px),
+      linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 22px),
+      linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 22px);
+  }
+
+  /* Die Flaeche liegt als Vektor ueber dem Bild: in Markenfarbe, bei jeder
+     Breite scharf und ueber den Regler austauschbar, ohne dass die Karte neu
+     gebaut werden muss. */
+  .tp-vg__gebiet {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tp-vg__gebiet--schmal {
+    display: none;
+  }
+
+  .tp-vg__gebiet-form {
+    fill: rgb(var(--tp-vg-ton) / 0.14);
+    stroke: rgb(var(--tp-vg-ton) / 0.85);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* Der Punkt sitzt exakt auf dem Standort, das Schild darueber: neben ihm
+     liegen Hohen Neuendorf, Hennigsdorf und Bernau, oberhalb ist die Karte
+     bis Zehdenick frei. */
+  .tp-vg__marker {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .tp-vg__punkt {
+    display: block;
+    width: 15px;
+    height: 15px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: #1c1917;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+  }
+
+  .tp-vg__marker-name {
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: #1c1917;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .tp-vg__marker-name small {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.75;
+  }
+
+
+  /* Bildunterschrift wie in einem Bericht: links, worum es geht, rechts die
+     Quelle. Keine Farbpunkte davor - die saehen wie Bedienelemente aus. */
+  .tp-vg__legende {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 24px;
+    margin-top: 12px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .tp-vg__legende a {
+    color: inherit;
+    text-underline-offset: 2px;
+  }
+
+  /* Adresse und Pruefung ------------------------------------------------ */
+
+  /* Mitwachsend statt fest dreispaltig: die Zahl der Stufen ist eine
+     Editor-Entscheidung, das Raster darf ihr nicht im Weg stehen. */
+  .tp-vg__stufen {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 0 clamp(20px, 3vw, 40px);
+    max-width: 1000px;
+    margin: clamp(20px, 3vw, 28px) auto 0;
+    padding: clamp(18px, 2.5vw, 22px) 0 0;
+    border-top: 1px solid var(--tp-vg-linie);
+    list-style: none;
+  }
+
+  .tp-vg__stufe {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    line-height: 1.5;
+  }
+
+  .tp-vg__stufe-marke {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .tp-vg__stufe-text {
+    color: var(--tp-vg-leise);
+    font-size: 14px;
+  }
+
+  /* Ohne min-width: 0 zwingt das Raster seine Mindestbreite (alle Spalten
+     nebeneinander) auf die Sektion - mit vier Zonen waren das 950 px, und das
+     Tablet scrollte seitlich. Die Zonen bekommen feste Spalten: 4 am Desktop,
+     2 x 2 auf dem Tablet, darunter eine (Regel im Telefon-Block). */
+  .tp-vg__stufen {
+    min-width: 0;
+  }
+
+  .tp-vg__stufen--zonen {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-vg__stufen--zonen {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px clamp(20px, 3vw, 40px);
+    }
+  }
+
+  .tp-vg__spalten {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    max-width: 1000px;
+    margin: clamp(20px, 3vw, 32px) auto 0;
+  }
+
+  .tp-vg__karte-adresse,
+  .tp-vg__check {
+    padding: clamp(18px, 2.5vw, 24px);
+    border: 1px solid var(--tp-vg-linie);
+    border-radius: 12px;
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+  }
+
+  .tp-vg__sub {
+    display: block;
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .tp-vg__karte-adresse address {
+    margin: 0;
+    color: var(--tp-vg-leise);
+    font-style: normal;
+    line-height: 1.6;
+  }
+
+  .tp-vg__route {
+    display: inline-block;
+    margin-top: 10px;
+    color: inherit;
+    font-weight: 600;
+    text-underline-offset: 3px;
+  }
+
+  /* Fuer Screenreader: der Link verlaesst die Seite. Sichtbar waere der
+     Zusatz nur Text, der die ruhige Karte stoert. */
+  .tp-vg__weg {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tp-vg__check[hidden] {
+    display: none;
+  }
+
+  .tp-vg__check-zeile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tp-vg__input {
+    flex: 1 1 10rem;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.28);
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-size: 16px; /* verhindert das Hineinzoomen von iOS beim Fokus */
+  }
+
+  .tp-vg__input:focus-visible,
+  .tp-vg__btn:focus-visible,
+  .tp-vg__route:focus-visible,
+  .tp-vg__legende a:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  .tp-vg__ergebnis {
+    margin: 12px 0 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .tp-vg__ergebnis:empty {
+    display: none;
+  }
+
+  .tp-vg__ergebnis[data-status='innen'] {
+    color: #1d6b47;
+  }
+
+  .tp-vg__ergebnis[data-status='rand'],
+  .tp-vg__ergebnis[data-status='aussen'],
+  .tp-vg__ergebnis[data-status='unbekannt'] {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .tp-vg__ergebnis::before {
+    margin-right: 6px;
+    font-weight: 700;
+  }
+
+  /* Der Status haengt nicht allein an der Farbe, sondern traegt ein Zeichen. */
+  .tp-vg__ergebnis[data-status='innen']::before {
+    content: '\2713';
+  }
+
+  .tp-vg__ergebnis[data-status='rand']::before,
+  .tp-vg__ergebnis[data-status='aussen']::before,
+  .tp-vg__ergebnis[data-status='unbekannt']::before {
+    content: '\2139';
+  }
+
+  /* Ausserhalb stehen zwei Wege nebeneinander: Anfrage und Shop. */
+  .tp-vg__ergebnis-weg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin: 10px 0 0;
+  }
+
+  .tp-vg__ergebnis-weg[hidden] {
+    display: none;
+  }
+
+  .tp-vg__ergebnis-weg a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+  }
+
+  .tp-vg__klein {
+    margin: 10px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  /* Hinweis und Aktionen ------------------------------------------------ */
+
+  .tp-vg__hinweis {
+    max-width: 62ch;
+    margin: clamp(24px, 3.5vw, 36px) auto 0;
+    color: var(--tp-vg-leise);
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  .tp-vg__aktionen {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .tp-vg__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+  }
+
+  .tp-vg__btn--primaer {
+    background: #1c1917;
+    color: #fff;
+  }
+
+  .tp-vg__btn--sekundaer {
+    border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.35);
+    color: inherit;
+  }
+
+  .tp-vg__btn--check {
+    padding: 12px 20px;
+    background: #1c1917;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .tp-vg__btn:hover {
+    opacity: 0.88;
+  }
+
+  .tp-vg__btn--sekundaer:hover {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    opacity: 1;
+  }
+
+  .tp-vg__icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
+
+  .tp-vg__vertrauen {
+    margin: 16px 0 0;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-align: center;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-vg__buehne {
+      aspect-ratio: 340 / 380;
+      border-radius: 12px;
+    }
+
+    .tp-vg__gebiet--breit {
+      display: none;
+    }
+
+    .tp-vg__gebiet--schmal {
+      display: block;
+    }
+
+    /* Auf der schmalen Karte stehen mehr Namen am Rand an; der Verlauf faellt
+       deshalb breiter aus. Ausserhalb des Kreises geht dabei nichts verloren. */
+    .tp-vg__buehne::after {
+      background:
+        linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 42px),
+        linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 42px),
+        linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 26px),
+        linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 26px);
+    }
+
+    .tp-vg__marker-name {
+      font-size: 12px;
+    }
+
+
+    .tp-vg__legende {
+      gap: 2px;
+      font-size: 12px;
+    }
+
+    /* Drei Spalten pressen die Saetze auf einem Telefon zu Schnueren. */
+    .tp-vg__stufen {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .tp-vg__spalten {
+      grid-template-columns: 1fr;
+    }
+
+    .tp-vg__head,
+    .tp-vg__hinweis {
+      text-align: left;
+    }
+
+    .tp-vg__aktionen {
+      flex-direction: column;
+    }
+
+    .tp-vg__btn--primaer,
+    .tp-vg__btn--sekundaer {
+      width: 100%;
+    }
+
+    .tp-vg__vertrauen {
+      text-align: left;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-vg__btn {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegegebiet",
+  "tag": "section",
+  "class": "section-wrapper",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Kleine Zeile darueber",
+      "default": "Verlegeservice"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Ueberschrift",
+      "default": "Unser Verlegegebiet rund um Oranienburg"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Einleitung",
+      "default": "Von unserem Standort in Oranienburg sind unsere Bodenleger für Sie in einem Umkreis von etwa 50 km unterwegs."
+    },
+    {
+      "type": "header",
+      "content": "Karte"
+    },
+    {
+      "type": "checkbox",
+      "id": "karte_zeigen",
+      "label": "Karte anzeigen",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "radius",
+      "label": "Radius in km",
+      "info": "Bestimmt die markierte Flaeche und die Pruefung im Formular. Nur diese Stufen sind hinterlegt. Mit Rollenware-Stufen gilt stattdessen der Radius aus den Theme-Einstellungen (TP Verlegeservice).",
+      "min": 30,
+      "max": 50,
+      "step": 10,
+      "unit": "km",
+      "default": 50
+    },
+    {
+      "type": "header",
+      "content": "Standort"
+    },
+    {
+      "type": "text",
+      "id": "standort_name",
+      "label": "Name",
+      "default": "Teppich Paradies"
+    },
+    {
+      "type": "text",
+      "id": "standort_ort",
+      "label": "Ort",
+      "default": "Oranienburg"
+    },
+    {
+      "type": "textarea",
+      "id": "standort_adresse",
+      "label": "Adresse",
+      "default": "Teppich Paradies Oranienburg GmbH\nSaarlandstraße 73–81\n16515 Oranienburg"
+    },
+    {
+      "type": "url",
+      "id": "route_link",
+      "label": "Link \"Route planen\" (optional)",
+      "info": "Leer lassen: das Ziel entsteht dann aus der Adresse oben. Nur ausfuellen, um stattdessen den Google-Unternehmenseintrag zu verlinken."
+    },
+    {
+      "type": "header",
+      "content": "Stufen"
+    },
+    {
+      "type": "checkbox",
+      "id": "rollenware_stufen",
+      "label": "Stufen des Rollenware-Service zeigen",
+      "info": "Stufen aus den Theme-Einstellungen (TP Verlegeservice) unter der Karte und im Pruefergebnis. Nur auf Teppichboden-Seiten - auf Vinyl- und Treppenseiten gilt der Service nicht.",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Verfuegbarkeit pruefen"
+    },
+    {
+      "type": "checkbox",
+      "id": "pruefung_zeigen",
+      "label": "PLZ-Pruefung anzeigen",
+      "info": "Prueft offline gegen eine mitgelieferte Tabelle. Kein externer Dienst, keine Kosten.",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Hinweis und Kontakt"
+    },
+    {
+      "type": "textarea",
+      "id": "hinweis",
+      "label": "Hinweis unter der Karte",
+      "default": "Ihr Wohnort liegt etwas weiter entfernt? Fragen Sie uns einfach an – je nach Auftrag sind auch weitere Anfahrten möglich."
+    },
+    {
+      "type": "checkbox",
+      "id": "cta_zeigen",
+      "label": "Kontaktbuttons anzeigen",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button 1 Text",
+      "default": "Verlegung anfragen"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Button 1 Link"
+    },
+    {
+      "type": "text",
+      "id": "cta2_label",
+      "label": "Button 2 Text",
+      "default": "Per WhatsApp fragen"
+    },
+    {
+      "type": "url",
+      "id": "cta2_link",
+      "label": "Button 2 Link"
+    },
+    {
+      "type": "text",
+      "id": "versand_label",
+      "label": "Button im Ergebnis ausserhalb des Gebiets",
+      "info": "Erscheint, wenn ein Ort ausserhalb liegt. Leer lassen, um ihn wegzulassen.",
+      "default": "Zum Sortiment"
+    },
+    {
+      "type": "url",
+      "id": "versand_link",
+      "label": "Ziel dieses Buttons"
+    },
+    {
+      "type": "text",
+      "id": "vertrauen",
+      "label": "Vertrauenszeile",
+      "default": "Beratung · Aufmaß · professionelle Verlegung"
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "t:settings.top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "t:settings.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 56
+    }
+  ],
+  "blocks": [
+    {
+      "type": "leistung",
+      "name": "Leistungsstufe",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Stufe",
+          "info": "Die Zahl oder Bedingung, an der die Stufe haengt. [km] setzt den Radius dieser Sektion ein."
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Was sie umfasst"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Verlegegebiet",
+      "settings": {
+        "cta_link": "/pages/kontakt",
+        "cta2_link": "https://wa.me/4917657931322",
+        "versand_link": "/collections/all"
+      },
+      "blocks": [
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Bis [km] km um Oranienburg",
+            "text": "Unsere Bodenleger kommen zu Ihnen – für Wohnräume, Treppen, Praxen, Büros und Gewerbe."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Weiter entfernt",
+            "text": "Sprechen Sie uns an – wir prüfen gern individuell, was möglich ist."
+          }
+        },
+        {
+          "type": "leistung",
+          "settings": {
+            "label": "Deutschlandweit",
+            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

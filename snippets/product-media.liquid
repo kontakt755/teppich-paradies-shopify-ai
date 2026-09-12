@@ -6,6 +6,7 @@
   @param {string} [widths] - Image widths for responsive images.
   @param {string} [sizes] - Image sizes for responsive images.
   @param {string} [loading] - The loading attribute for the image.
+  @param {string} [fetchpriority] - Optional fetchpriority for the image (default: auto; main product media is always high).
   @param {object} [block] - The block object.
   @param {object} [selected_product] - The currently selected product.
   @param {boolean} [first_3d_model] - Indicates if this is the first 3D model.
@@ -31,7 +32,9 @@
 >
   {% liquid
     assign high_res_url = media.preview_image | image_url: width: 3840
-    assign fetch_priority = 'auto'
+    # TP: fetchpriority optional von aussen (card-gallery setzt "high" fuer das
+    # erste Kartenbild einer Kategorieseite, ihr LCP-Element); Standard bleibt auto.
+    assign fetch_priority = fetchpriority | default: 'auto'
     if is_main_product_media
       assign fetch_priority = 'high'
     endif

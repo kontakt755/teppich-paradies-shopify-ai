@@ -8,7 +8,7 @@
  * ─── Wonach gesucht wird ───────────────────────────────────────────────
  * Lieferantenfarblisten sind gewachsen und haben deshalb Luecken:
  *   Quadra   024, 039, 050, 070, 072, 085, 141, 181
- *   PVCJOKANEO 4153, 4200, 4215, 4217, 4222, 4226, 4276, 4289
+ *   Elastium 4153, 4200, 4215, 4217, 4222, 4226, 4276, 4289
  * Eine lange lueckenlose Folge (4290, 4291, 4292, …) entsteht dagegen nur,
  * wenn jemand weitergezaehlt hat, statt die Quelle abzuschreiben.
  *
@@ -19,7 +19,8 @@
  * erst beim Bilderholen — fuer 21 Codes existierte beim Lieferanten nichts.
  *
  * Der Guard meldet einen Verdacht, keinen Beweis. Bestaetigt wird er nur
- * durch Abgleich mit der Lieferantenliste (siehe jordan-media-scrape.mjs).
+ * durch Abgleich mit der Lieferantenliste. Das Werkzeug dafuer liegt lokal,
+ * nicht im Repo: ~/teppich-paradies-analyse/lieferantendaten/INHALT.md
  */
 
 import { readFileSync } from 'node:fs';
@@ -34,7 +35,7 @@ const SCHWELLE = 6;
  */
 const GEPRUEFT_ECHT = {
   'Cortessa Sockelleiste':
-    'Jordan PAR1902457, geprueft 2026-09-04: L600, L601, L603–L615 stimmen '
+    'Lieferant A PAR1902457, geprueft 2026-09-04: L600, L601, L603–L615 stimmen '
     + 'exakt, L602 fehlt auch beim Lieferanten. Fortlaufende Dekornummern '
     + 'sind bei Sockelleisten normal.',
 };
@@ -110,5 +111,5 @@ for (const { titel, status, folge, gesamt, anteil } of befunde) {
   console.log(`    ${folge.laenge} lueckenlose Codes ${folge.von}–${folge.bis} von ${gesamt} (${prozent} %)`);
 }
 console.log('\nGegen die Lieferantenliste pruefen, bevor etwas geaendert wird:');
-console.log('  node scripts/jordan-media-scrape.mjs snippet <Artikelnummer>');
+console.log('  Werkzeug und Rohdaten liegen lokal: ~/teppich-paradies-analyse/lieferantendaten/INHALT.md');
 process.exit(1);

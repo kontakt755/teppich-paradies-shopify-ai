@@ -182,7 +182,17 @@
   function init() {
     var handle = getParam('produkt');
     if (!handle || !HANDLE_PATTERN.test(handle)) {
+      // Ohne Produkt kommt der Kunde aus Top-Leiste, Chips oder SEO-Links:
+      // Weg erklaeren statt Fehlermeldung und ausgegrautem Button.
       loadingEl.hidden = true;
+      var emptyEl = root.querySelector('[data-sample-empty]');
+      var introEl = root.querySelector('[data-sample-intro]');
+      if (emptyEl) {
+        emptyEl.hidden = false;
+        submitEl.hidden = true;
+        if (introEl) introEl.hidden = true;
+        return;
+      }
       showError('Für dieses Produkt sind aktuell keine Muster hinterlegt.');
       return;
     }

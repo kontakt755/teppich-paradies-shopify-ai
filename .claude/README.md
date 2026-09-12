@@ -4,8 +4,32 @@
 
 | Datei | Zweck |
 |---|---|
-| `settings.json` | registriert den SessionStart-Hook |
+| `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
 | `hooks/session-start.sh` | installiert Abhängigkeiten und zeigt den Projektzustand |
+
+## Berechtigungen: warum es keine `ask`-Liste gibt
+
+Stand 2026-09-11, gegen die offizielle Doku geprüft
+([Permission modes](https://code.claude.com/docs/en/permission-modes)):
+
+- **Eine `permissions.ask`-Regel fragt in jedem Modus nach**, auch in Auto und
+  „Umgehen“ (`bypassPermissions`). Bei einer Befehlskette reicht ein Teilbefehl,
+  und „Immer erlauben“ hilft nicht, weil `ask` vor `allow` ausgewertet wird. Die
+  frühere Liste (`git push`, `gh pr create` …) hat deshalb in der Desktop-App
+  trotz Bypass laufend Rückfragen erzeugt. Sie ist entfernt.
+- **`defaultMode` `auto` oder `bypassPermissions` wirkt aus Projektdateien nicht**
+  (`.claude/settings.json`, `.claude/settings.local.json`). `bypassPermissions`
+  dort lässt die Terminal-Session sogar im Manual-Modus starten. Der
+  Standardmodus gehört nach `~/.claude/settings.json`; die Desktop-App merkt
+  sich den im Modus-Wähler gewählten Modus pro Ordner.
+- **`autoMode` wird aus Projektdateien nicht gelesen**, nur aus
+  `~/.claude/settings.json`, und die Einträge sind Prosa-Regeln, keine
+  Werkzeugnamen.
+
+Harte Grenzen setzt `hooks/git-gh-guard.mjs` mit `deny` (force-push,
+`reset --hard`, Branch löschen …). Das greift in jedem Modus und lässt sich
+durch keine Freigabe aushebeln. Eine neue harte Grenze gehört dorthin, nicht
+als `ask`-Regel in `settings.json`.
 
 ## Netzwerkzugriff wird NICHT hier konfiguriert
 

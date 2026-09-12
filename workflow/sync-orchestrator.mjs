@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * JordanShop Sync Orchestrator
+ * Grosshandel-Sync Orchestrator
  *
  * Diese Datei wird von Claude aus aufgerufen und orchestriert den Sync über MCP.
  * NICHT direkt aus Node ausgeführt — das funktioniert nicht.
  *
  * Der echte Sync läuft über:
- *   npm run sync:jordanshop:mcp
+ *   npm run sync:grosshandel:mcp
  *
  * Das startet eine Claude-Konversation, die:
  * 1. Die Sync-Logik lädt
@@ -25,12 +25,12 @@ const rootDir = path.resolve(__dirname, '..');
 
 export async function orchestrateSync() {
   console.log('╔═════════════════════════════════════════════╗');
-  console.log('║  JordanShop → Shopify Sync (via MCP)        ║');
+  console.log('║  Grosshandel → Shopify Sync (via MCP)       ║');
   console.log('║  Orchestrated by Claude — Kein Token nötig  ║');
   console.log('╚═════════════════════════════════════════════╝\n');
 
-  const catalogPath = path.join(rootDir, 'data', 'jordan-catalog.json');
-  const categoriesPath = path.join(rootDir, 'data', 'jordan-categories.json');
+  const catalogPath = path.join(rootDir, 'data', 'grosshandel-catalog.json');
+  const categoriesPath = path.join(rootDir, 'data', 'grosshandel-categories.json');
 
   if (!fs.existsSync(catalogPath) || !fs.existsSync(categoriesPath)) {
     console.error('❌ Catalog oder Categories nicht vorhanden');
@@ -60,7 +60,7 @@ export async function orchestrateSync() {
 6. Report: Zusammenfassung in .sync-reports/
 
 Diese Datei selbst macht NICHTS — sie ist nur Dokumentation.
-Der echte Sync wird durch "npm run sync:jordanshop:mcp" aufgerufen,
+Der echte Sync wird durch "npm run sync:grosshandel:mcp" aufgerufen,
 was Claude aktiviert, der diese Anweisungen liest und den Sync via MCP macht.
   `);
 

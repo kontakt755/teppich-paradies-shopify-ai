@@ -51,6 +51,27 @@
     assign image_sizes = sizes_attribute | strip
   endif
 
+  # Zweispaltige Mobil-Raster (mobile_columns "2") bekamen "100vw" und luden
+  # damit Bilder in doppelter Breite. Die Desktop-Angabe bleibt unveraendert.
+  if section.settings.mobile_columns == '2'
+    assign image_sizes = image_sizes | replace: ', 100vw', ', 50vw'
+  endif
+
+  # Dasselbe fuer Kategorie-/Suchraster: dort steuert mobile_product_card_size
+  # die Spalten (alles ausser "large" = zwei Spalten, siehe product-grid).
+  # Solange jedes Kartenbild lazy war, entschied sizes="auto" nach der echten
+  # Breite und der Rueckfallwert spielte keine Rolle. Seit die erste Reihe
+  # eager laedt, gilt er: "100vw" holte mobil 832-px-Bilder fuer 173-px-Karten
+  # und verdoppelte den LCP. 24 px = Seitenrand plus halber Spaltenabstand.
+  if section.settings.mobile_product_card_size != blank and section.settings.mobile_product_card_size != 'large'
+    assign image_sizes = image_sizes | replace: ', 100vw', ', calc(50vw - 24px)'
+  endif
+
+  # Kartenbilder brauchen nie mehr als ~1.400 px. Die Horizon-Standardliste
+  # sprang von 352 auf 832 px: eine 500-px-Karte am Desktop lud 832. 352 und
+  # 832 bleiben als Stufen erhalten, damit mobil keine Karte groesser laedt.
+  assign card_image_widths = '240, 352, 480, 600, 720, 832, 1080, 1440'
+
   # Product cards use one stable media frame across collections, search and
   # recommendations. Original ratios remain untouched and are cropped only in
   # this card context; PDP galleries keep their separate media-fit behavior.
@@ -115,6 +136,7 @@
         assign section_is_near_top = true
       endif
 
+      assign rendered_slide_count = 0
       capture slides
         for media in media_list_to_show
           assign loading = 'lazy'
@@ -129,6 +151,18 @@
               # hide all variant images that aren't the first one
               assign hidden = true
             endif
+          endif
+
+          # TP: Versteckte Variantenbilder gar nicht erst rendern. Sie dienen
+          # nur dem Kartenblock "swatches" (product-card.js schaltet damit
+          # das Kartenbild um), und den nutzt keine Karte - Farben laufen
+          # ueber tp-card-color-thumbs, reine Links. Auf /collections/teppichboden
+          # waren das 228 unsichtbare Folien, 412 KB HTML. Das Bild eines per
+          # Filter gewaehlten Farbtons bleibt erhalten: es kommt ueber
+          # product.featured_media als erste Folie. npm run template:guard
+          # meldet, falls "swatches" in eine Karte eingefuegt wird.
+          if hidden
+            continue
           endif
 
           # Performance improvement: don't render more than 5 visible images into the slideshow
@@ -147,9 +181,16 @@
           # row of a grid (real card position, not just section position) and
           # in a section near the very top of the page. Everything else stays
           # lazy so we don't over-fetch images below the fold.
+          assign tp_fetchpriority = nil
           if forloop.first and card_index < eager_card_limit and section_is_near_top
             assign loading = 'eager'
             assign sizes = image_sizes
+            # TP: Das erste Kartenbild ist das LCP-Element der Kategorieseite.
+            # Ohne Hinweis startet es mit Prioritaet "Low" und teilt die Leitung
+            # mit async-Skripten; "high" nur fuer genau dieses eine Bild.
+            if card_index == 0
+              assign tp_fetchpriority = 'high'
+            endif
           endif
 
           assign class = 'product-media-container media-fit product-media-container--[media_type]' | replace: '[media_type]', media.media_type
@@ -158,10 +199,11 @@
           endif
 
           capture slideshow_children
-            render 'product-media', media: media, sizes: sizes, loading: loading, preview_image_only: true
+            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit
+          assign rendered_slide_count = rendered_slide_count | plus: 1
         endfor
       endcapture
 
@@ -180,7 +222,7 @@
         ref: 'slideshow',
         initial_slide: 0,
         slides: slides,
-        slide_count: media_list_to_show.size,
+        slide_count: rendered_slide_count,
         show_arrows: show_arrows,
         attributes: slideshow_attributes
       %}
