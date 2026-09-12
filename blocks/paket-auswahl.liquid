@@ -60,9 +60,11 @@
 
   .carpet-package__input-row-{{ package_selector_id }} {
     display: grid;
-    grid-template-columns: 38px 1fr auto 38px;
+    /* 44 px je Knopf: empfohlene Mindestgroesse fuer Touch-Ziele */
+    grid-template-columns: 44px 1fr auto 44px;
     align-items: center;
-    height: 44px;
+    /* 46 px aussen = 44 px Knopfhoehe innerhalb des 1-px-Rahmens */
+    height: 46px;
     background: var(--cp-surface);
     border: 1px solid var(--cp-border-strong);
     border-radius: 7px;
@@ -175,9 +177,12 @@
     gap: 6px;
   }
 
+  /* Sichtbar 36 px, Trefferflaeche 44 x 44 px ueber ::after - so bleibt die
+     Zeile ruhig und der Knopf trotzdem gut antippbar. */
   .carpet-package__packages-control-{{ package_selector_id }} button {
-    width: 32px;
-    height: 32px;
+    position: relative;
+    width: 36px;
+    height: 36px;
     border: 1px solid var(--cp-border);
     border-radius: 6px;
     background: var(--cp-surface);
@@ -185,6 +190,13 @@
     font-size: 15px;
     line-height: 1;
     cursor: pointer;
+  }
+
+  /* inset bezieht sich auf die Innenflaeche (34 px ohne Rahmen): -5 px ergibt 44 px. */
+  .carpet-package__packages-control-{{ package_selector_id }} button::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
   }
 
   .carpet-package__packages-control-{{ package_selector_id }} button:hover {

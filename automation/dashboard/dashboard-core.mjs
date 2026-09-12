@@ -58,7 +58,7 @@ export function publicRun(run) {
     // erst im Endergebnis. Sonst geht sie bei einem Dashboard-Neustart mitten im
     // Lauf verloren - und ein "Erneut ausführen" müsste den Typ neu raten.
     taskType: ['IMPLEMENTATION', 'ANALYSIS'].includes(run.taskType) ? run.taskType : null,
-    taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'QUESTION_INTENT', 'HEURISTIC'].includes(run.taskTypeSource) ? run.taskTypeSource : null,
+    taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'HEURISTIC'].includes(run.taskTypeSource) ? run.taskTypeSource : null,
     risk: ['HIGH', 'LOW'].includes(run.risk) ? run.risk : null,
     progress: run.progress ? {
       phase: redact(run.progress.phase, 40),
@@ -78,7 +78,7 @@ export function publicRun(run) {
       // Preserved so a follow-up or a review-only retry never has to re-guess the
       // original task type / risk level / task text from a short new prompt.
       taskType: ['IMPLEMENTATION', 'ANALYSIS'].includes(run.result.taskType) ? run.result.taskType : null,
-      taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'QUESTION_INTENT', 'HEURISTIC'].includes(run.result.taskTypeSource) ? run.result.taskTypeSource : null,
+      taskTypeSource: ['DECLARED', 'INHERITED', 'READ_ONLY_INTENT', 'HEURISTIC'].includes(run.result.taskTypeSource) ? run.result.taskTypeSource : null,
       risk: ['HIGH', 'LOW'].includes(run.result.risk) ? run.result.risk : null,
       // Schutzprüfung: nur bekannte Felder, Dateipfade gekappt.
       guard: run.result.guard ? {

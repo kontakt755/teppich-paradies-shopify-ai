@@ -72,9 +72,9 @@ if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
   echo ""
   echo "  ⚠️  WARNUNG:"
   echo "  Storefront (teppich-paradies.net) ist aus Remote-Sessions per Egress-Policy gesperrt."
-  echo "  jordanshop.de Import braucht Browser-Zugriff — funktioniert nur lokal."
+  echo "  Lieferanten-Import braucht Zugriff auf den Lieferanten-Shop — funktioniert nur lokal."
   echo "  Browser-Schritte nutze '--static' flag, oder arbeite lokal mit npm run."
 else
-  echo "  ✓ Lokale Session erkannt — jordanshop.de Import funktioniert"
+  echo "  ✓ Lokale Session erkannt — Lieferanten-Import funktioniert"
 fi
 echo "────────────────────────────────────────────────────────────"

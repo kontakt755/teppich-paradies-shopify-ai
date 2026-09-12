@@ -39,19 +39,17 @@ test('hook context names the matrix routing and skips the brief for class A', ()
   assert.doesNotMatch(context, /Codex-Prüfung/);
 });
 
-// 2026-09-11: Die Voranalyse empfahl "Auf Claude 3 Opus umschalten" und stand
-// als verbindlich wirkender Plan im Kontext.
-test('die Voranalyse steht nur als ungepruefter Hinweis im Kontext, die manuelle Pruefung zeigt auf den Reviewer-Handoff', () => {
-  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW', taskType: 'IMPLEMENTATION' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/flash-lite' }, analysis: 'Auf Claude 3 Opus umschalten', handoffPath: '/tmp/h.md', reviewTaskPath: '/tmp/h.review.md' });
+// 2026-09-11: Die Voranalyse eines kleinen Drittmodells stand als verbindlich
+// wirkender Plan im Kontext ("Auf Claude 3 Opus umschalten"), und die manuelle
+// Pruefung verwies auf das Hand-off mit genau dieser Analyse.
+test('die Voranalyse steht als ungepruefter Hinweis im Kontext, die manuelle Pruefung zeigt auf den Reviewer-Handoff', () => {
+  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/flash-lite' }, analysis: 'Auf Claude 3 Opus umschalten', handoffPath: '/tmp/h.md', reviewTaskPath: '/tmp/h.review.md' });
   assert.match(context, /ungeprüfter Hinweis eines Drittmodells/);
   assert.match(context, /--task-file "\/tmp\/h\.review\.md"/);
   assert.doesNotMatch(context, /Auftrag/);
 });
 
-test('eine Frage oder Diagnose bekommt keinen Implementierungszyklus', () => {
-  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW', taskType: 'ANALYSIS' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/flash-lite' }, analysis: 'Kurzbefund', handoffPath: '/tmp/h.md', reviewTaskPath: '/tmp/h.review.md' });
-  assert.match(context, /Einordnung: Frage oder Diagnose/);
-  assert.match(context, /entfällt die Codex-Prüfung/);
-  assert.doesNotMatch(context, /Implementiere|Fertigstellungszyklus/);
-  assert.doesNotMatch(context, /Auftrag/);
+test('ohne Reviewer-Handoff bleibt die manuelle Pruefung beim Hand-off', () => {
+  const context = buildClaudeHookContext({ status: 'READY', classified: { risk: 'LOW' }, policy: { modelRequirement: { class: 'LIGHT' } }, route: { model: 'fixture/free' }, analysis: 'Kompakter Plan', handoffPath: '/tmp/handoff.md' });
+  assert.match(context, /--task-file "\/tmp\/handoff\.md"/);
 });

@@ -96,7 +96,7 @@ Variantenpreis/SKU: `productVariantsBulkUpdate` (SKU verschachtelt in
 `variantStrategy: LEAVE_AS_IS`. `productVariantUpdate`/`-Create` existieren
 nicht.
 
-Einzige Ausnahme mit echtem Token: `.github/workflows/jordanshop-sync.yml`
+Einzige Ausnahme mit echtem Token: `.github/workflows/grosshandel-sync.yml`
 (Repository-Secret `SHOPIFY_ADMIN_TOKEN`, Präfix `shpat_`). `atkn_…`-Tokens
 sind Automatisierungs-Tokens ohne Admin-GraphQL-Zugriff.
 

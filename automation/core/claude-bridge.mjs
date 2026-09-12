@@ -27,18 +27,6 @@ const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigi
 // aendern" stand - der Prompt kam zu spaet, die Permission-Entscheidung faellt
 // vorher.
 const READ_ONLY_INTENT = /(?<![\p{L}\p{N}])(?:nur lesen|rein lesend|read[- ]?only|nur analysier|nur untersuch|nur pr(ü|ue)f|nur berichte|nur bewert|(?:nichts|nicht|keine[a-z]*|ohne)[\s\S]{0,30}(?:(ä|ae)nder|anpass|schreib|implementier|umsetz)|(?:(ä|ae)nder|anpass|schreib|implementier|umsetz)[\p{L}]*[\s\S]{0,20}(?:nichts|keine)|ver(ä|ae)ndere? (?:keine|nichts)|nichts (?:ver)?(ä|ae)ndern)/iu;
-// Fragen ("Welches Modell ist eingestellt?") und Diagnoseauftraege ("Finde
-// heraus, warum ...") verlangen eine Antwort, keine Repository-Aenderung. Bis
-// 2026-09-11 liefen sie ueber die Wortliste oben als IMPLEMENTATION ("Warum
-// macht der Review ...?" trifft `mach`), und der Reviewer bewertete eine
-// Antwort gegen einen Implementierungsplan. Bewusst eng gefasst: Eine
-// hoefliche Bitte in Frageform ("Kannst du den Button gruen machen?") bleibt
-// Umsetzung, ebenso eine Frage mit angehaengter Anweisung ("Warum ist er grau?
-// Mach ihn gruen."). Eine Fehleinstufung verhindert kein Review: Veraendert
-// die Sitzung trotzdem das Repository, prueft der Stop-Hook wie bei jeder
-// Umsetzung (reviewRequired in review-scope.mjs).
-const REQUEST_OPENER = /^(?:bitte|kannst|kann|k(?:ö|oe)nn(?:test|ten|t|en)|w(?:ü|ue)rd(?:est|en)|magst|m(?:ö|oe)chtest|willst|lass|sorg)(?![\p{L}\p{N}])/iu;
-const DIAGNOSIS_OPENER = /^(?:find(?:e)?\s+(?:heraus|raus)|erkl(?:ä|ae)r(?:e)?|untersuch(?:e)?|diagnostizier(?:e)?|ermittle|kl(?:ä|ae)r(?:e)?|pr(?:ü|ue)f(?:e)?|sag(?:e)?\s+mir|zeig(?:e)?\s+mir)[\s,]+(?:mir[\s,]+)?(?:warum|wieso|weshalb|woran|ob|wie|was|welche[mnrs]?|wer|wo|wann|wof(?:ü|ue)r)(?![\p{L}\p{N}])/iu;
 
 export class ClaudeBridgeError extends Error {
   constructor(message, options = {}) {
@@ -54,21 +42,11 @@ function compactTaskId(value) {
 
 const TASK_TYPES = new Set(['IMPLEMENTATION', 'ANALYSIS']);
 
-function isQuestionOrDiagnosis(task) {
-  const text = task.trim();
-  // "Finde heraus, warum ..., und behebe es" bleibt Umsetzung.
-  if (DIAGNOSIS_OPENER.test(text)) return !IMPLEMENTATION_TERMS.test(text);
-  if (!text.endsWith('?')) return false;
-  // Jeder Satz muss eine Frage sein und darf keine Bitte einleiten.
-  return text.split(/(?<=[.!?])\s+/).every(sentence => sentence.endsWith('?') && !REQUEST_OPENER.test(sentence));
-}
-
 // Reihenfolge der Wahrheit fuer "darf dieser Lauf schreiben?":
 //   1. declaredTaskType - der Mensch hat es im Dashboard/CLI ausdruecklich gesagt
 //   2. READ_ONLY_INTENT - der aktuelle Auftrag sagt ausdruecklich "nur lesen"
 //   3. forceTaskType    - uebernommener Typ eines frueheren Laufs (Wiederholung)
-//   4. QUESTION_INTENT  - reine Frage oder Diagnoseauftrag ohne Anweisung
-//   5. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
+//   4. IMPLEMENTATION_TERMS - Wortliste, nur noch letzter Notnagel
 // Das Veto steht bewusst VOR dem geerbten Typ: ein Folgebefehl "Nur lesen,
 // nichts aendern" nach einem Implementierungs-Lauf haette sonst den alten
 // IMPLEMENTATION-Typ geerbt und trotzdem schreibend ausgefuehrt.
@@ -91,9 +69,6 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
   } else if (TASK_TYPES.has(forceTaskType)) {
     taskType = forceTaskType;
     taskTypeSource = 'INHERITED';
-  } else if (isQuestionOrDiagnosis(task)) {
-    taskType = 'ANALYSIS';
-    taskTypeSource = 'QUESTION_INTENT';
   } else {
     taskType = IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
     taskTypeSource = 'HEURISTIC';
@@ -102,8 +77,8 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
 }
 
 // Gilt fuer Implementer und Reviewer gleichermassen. Der letzte Punkt lautete
-// bis 2026-09-11 "Implementiere nur ..." und legte auch bei einer reinen Frage
-// eine Umsetzung nahe.
+// bis 2026-09-11 "Implementiere nur ..." und legte auch dann eine Umsetzung
+// nahe, wenn der Auftrag nur eine Antwort verlangte.
 const BINDING_LIMITS = [
   'Prüfe zuerst den bestehenden Code und die Projektregeln.',
   'Führe keine Shopify-Live-Veröffentlichung, Preis-, Checkout-, Produkt-, DNS- oder Löschoperation aus.',
@@ -126,10 +101,12 @@ export function buildClaudeContextPack({ classified, policy, analysis }) {
 
 // Der Reviewer bekommt nur, woran er messen soll: den Wortlaut des Auftrags und
 // die verbindlichen Grenzen. Weder die Voranalyse (siehe oben) noch die
-// Router-Einstufung - "Typ: IMPLEMENTATION" stand bis 2026-09-11 auch bei
-// reinen Fragen darin, und der Reviewer verlangte daraufhin eine Umsetzung.
+// Router-Einstufung - "Typ: IMPLEMENTATION" steht auch bei einer reinen Frage
+// darin, und der Reviewer verlangte daraufhin eine Umsetzung. Ob der Auftrag
+// ohne Aenderung erfuellt ist, entscheidet er am Pruefbereich und an der
+// Schlussantwort des Agenten (reviewCandidateFromStop in review-scope.mjs).
 export function buildReviewerTaskPack({ classified }) {
-  return `# Prüfauftrag für die unabhängige Review\n\n## Auftrag\n${classified.task}\n\n${limitsSection()}\n## Prüfmaßstab\nBewerte ausschließlich gegen den Auftrag oben, die Grenzen und die Projektregeln (AGENTS.md, CLAUDE.md). Eine automatische Voranalyse des Routers ist hier bewusst nicht enthalten: Sie stammt von einem Drittmodell ohne Repository-Zugriff, ist ungeprüft und kein Maßstab. Verlangt der Auftrag nur eine Antwort oder Diagnose, ist eine fehlende Repository-Änderung kein Befund.\n`;
+  return `# Prüfauftrag für die unabhängige Review\n\n## Auftrag\n${classified.task}\n\n${limitsSection()}\n## Prüfmaßstab\nBewerte ausschließlich gegen den Auftrag oben, die Grenzen und die Projektregeln (AGENTS.md, CLAUDE.md). Eine automatische Voranalyse des Routers ist hier bewusst nicht enthalten: Sie stammt von einem Drittmodell ohne Repository-Zugriff, ist ungeprüft und kein Maßstab.\n`;
 }
 
 export function writeClaudeHandoff({ taskId, content, outputDir = '.router/claude-handoffs', suffix = '', io = fs }) {

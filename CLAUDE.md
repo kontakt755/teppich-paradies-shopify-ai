@@ -114,8 +114,8 @@ identisch ist — nicht `userErrors: []`.
 
 **7. Ein Produktimport, der ohne geklärte Namensregeln startet, wird zweimal gebaut.**
 Am 2026-09-07 entstanden sieben Linoleum-Produkte mit Lieferantennamen im Titel
-(`Jokalino Vivace`) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
-musste vollständig zurückgebaut werden, obwohl die Regel im jordanshop-Skill stand und die
+(Linienname der Hausmarke von A) und englischen Farbnamen samt Nummer (`1032 green melody`) — beides
+musste vollständig zurückgebaut werden, obwohl die Regel im Import-Skill stand und die
 zwei fertigen Produkte im Shop (Coloria, Elastium) sie vormachten. **Das nächstliegende
 fertige Produkt abfragen und daran entlangbauen** — eine Query gegen eine Sitzung.
 
@@ -125,12 +125,23 @@ Metafeldern ab und lässt die alte Variantenstruktur stehen), und warum nach jed
 Schreibvorgang gegengeprüft wird — `userErrors: []` ist kein Beleg, dass das Ergebnis stimmt.
 → `domains/shopify/produktimport-arbeitsweise.md`
 
-Dieselben Korrekturen stecken im Skill `teppichparadies-jordanshop-import`. Der liegt in einem
-**synchronisierten** Bundle unter `~/Library/Application Support/Claude/…/skills-plugin/` — ein
-Sync von claude.ai setzt ihn zurück. Sicherung und Wiederherstellung:
-`domains/shopify/jordanshop-import-SKILL.md` (der gepatchte Volltext) und
-`domains/shopify/skill-patch.py` (spielt die Patches erneut ein; bricht sauber ab, wenn der
-Skill bereits gepatcht ist oder sich geändert hat).
+Dieselben Korrekturen stecken im Import-Skill für Lieferant A (`teppichparadies-*-import` in der
+Skill-Liste). Der liegt in einem **synchronisierten** Bundle unter
+`~/Library/Application Support/Claude/…/skills-plugin/` — ein Sync von claude.ai setzt ihn zurück.
+Sicherung und Wiederherstellung (der gepatchte Volltext und `skill-patch.py`, das die Patches
+erneut einspielt und sauber abbricht, wenn der Skill bereits gepatcht ist oder sich geändert hat)
+liegen **nur lokal** unter `~/teppich-paradies-analyse/lieferantendaten/` — beide enthalten
+Lieferantendaten, siehe Punkt 8.
+
+**8. Lieferantennamen gehören nicht ins Repository.**
+Repository, Issues und Dashboard sind öffentlich; Bezugsquellen sind Geschäftsgeheimnis
+(Regel des Inhabers, 2026-09-11). In Dateien, Commit- und PR-Texten und `npm run task`-Notizen
+stehen deshalb nur Pseudonyme: **Lieferant A** bis **Lieferant D**, **Hausmarke von A**,
+Linoleum-Linien **A-1** bis **A-3**, URLs als `lieferant-a.example`. Schlüssel, Rohdaten,
+Scraper und Import-Pläne liegen nur lokal unter `~/teppich-paradies-analyse/lieferantendaten/`
+(Übersicht dort in `INHALT.md`, im Repo `domains/lieferanten/AUSGELAGERT.md`). SKUs bleiben
+unverändert — sie sind die Kennungen im Shop und dort ohnehin öffentlich. Die Git-Historie
+enthält ältere Stände mit Namen; sie wird bewusst nicht umgeschrieben.
 
 ## Vor jedem Commit
 
@@ -188,7 +199,7 @@ Umgebungsvariable noch aus einer Datei. Wer in einer Sitzung anfaengt, einen
 `shpat_`-Token zu suchen, verliert Zeit an einem Problem, das nicht existiert.
 
 Der einzige Ort, der einen echten Token braucht, ist der **GitHub-Actions-Job**
-(`.github/workflows/jordanshop-sync.yml`) — dort laeuft kein MCP-Server, deshalb
+(`.github/workflows/grosshandel-sync.yml`) — dort laeuft kein MCP-Server, deshalb
 liegt der Token als Repository-Secret `SHOPIFY_ADMIN_TOKEN`.
 
 Token-Typen nicht verwechseln:
@@ -316,6 +327,13 @@ migrieren, große irreversible Shopify-Datenänderungen ausführen.
 Kleine, getestete Theme-Optimierungen dürfen eigenständig laufen. Große
 architektonische Änderungen erst analysieren und berichten.
 
+**Berechtigungen:** Claude arbeitet im Bypass-Modus ohne Rückfragen
+(Entscheidung Ahmet, 2026-09-11). Die Grenzen oben gelten trotzdem – sie sind
+Verhaltensregeln, keine Rückfragen. **Keine `permissions.ask`-Regeln anlegen:**
+sie fragen in *jedem* Modus nach, auch unter Bypass, und haben genau die
+Dauer-Rückfragen erzeugt, die abgeschafft werden sollten. Harte Grenzen gehören
+als `deny` in `.claude/hooks/git-gh-guard.mjs`. Details: `.claude/README.md`.
+
 `RISK_MODEL_SPEC.md` definiert die Gates, `RISK_MAP.yaml` und
 `domains/shopify/risk-map.json` die Kategorien. Übersteigt das tatsächliche
 Risiko das erlaubte, greift `HARD_STOP`. Review-Schleifen laufen maximal
@@ -393,14 +411,13 @@ Bis 2026-09-10 passierte das in jedem Worktree zuverlässig: Beide Hooks nahmen
 liegen — wohl aber die einer parallel laufenden Sitzung. `resolveReviewDir` in
 `automation/core/review-scope.mjs` behebt das.
 
-Dasselbe galt bis 2026-09-11 für **uncommittete** Arbeit im geteilten Checkout:
-Was eine andere Sitzung schon vor Task-Start liegen hatte, landete komplett im
-Prüfbereich. Seitdem hält der Prompt-Hook die schmutzigen Dateien samt
-Inhalts-Hash fest (`snapshotDirtyFiles`), und der Stop-Hook prüft nur, was
-seitdem neu oder verändert ist; `docs/ai-dashboard/issues.json` gehört nie dazu.
-Der Reviewer liest `.router/claude-handoffs/<TASK-ID>.review.md` — Auftrag und
-Grenzen, ohne die ungeprüfte Voranalyse des Routers. Eine Frage oder Diagnose,
-die das Repository nicht verändert, bekommt kein Review.
+Woran der Reviewer misst, ist seit 2026-09-11 eine eigene Datei:
+`.router/claude-handoffs/<TASK-ID>.review.md` enthält nur Auftrag und
+verbindliche Grenzen. Vorher bekam er das Hand-off des Implementers, in dem die
+Voranalyse des Routers steht — sie stammt von einem kleinen Drittmodell ohne
+Repository-Zugriff und wurde so zum Prüfmaßstab. Ebenfalls nie im Prüfbereich:
+`docs/ai-dashboard/issues.json`. Die Sitzungs-Baseline allein genügt dafür
+nicht, weil der Dashboard-Bot die Datei während der Sitzung neu schreibt.
 
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien

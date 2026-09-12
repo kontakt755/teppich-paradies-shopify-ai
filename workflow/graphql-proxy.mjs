@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * GraphQL-Zugang fuer sync-jordanshop.mjs.
+ * GraphQL-Zugang fuer sync-grosshandel.mjs.
  *
  * Zwei Betriebsarten, entschieden am Token:
  *   - LIVE:    SHOPIFY_ADMIN_TOKEN (shpat_) vorhanden -> echte Aufrufe gegen die

@@ -1,0 +1,187 @@
+{% comment %}
+  "Diesen Boden verlegen lassen?" - der zweite Weg auf der Produktseite.
+
+  Steht IMMER da, nicht nur in einem Modus. Der Modus (?modus=service,
+  localStorage, Streifen) wurde am 2026-09-10 zurueckgebaut: er sprang nur an,
+  wenn jemand ueber die Startseiten-Box kam. Wer per Anzeige auf einer
+  Produktseite landet - der Weg, der mit Google Ads der groesste wird - sah ihn
+  nie. Ein Angebot, das nur die Haelfte der Besucher sieht, ist kein Angebot.
+  Begruendung: docs/analyse/entscheidung-zwei-wege-2026-09-10.md
+
+  Es steht UEBER dem Kaufweg und ersetzt ihn nicht. Die Kaufbuttons bleiben
+  unveraendert an ihrer Stelle; wer selbst verlegen will, kauft ohne Umweg.
+  Bewusst leise gehalten: eine Zeile mit Ort, kein zweiter grosser Kasten. Wer
+  in Hamburg sitzt, liest "Oranienburg" und scrollt weiter, ohne sich gestoert
+  zu fuehlen.
+
+  Zum Radius (Ahmet, 2026-09-10): 15 km ist das Angebot (Lieferung und lose
+  Verlegung kostenlos ab 649 EUR Warenwert), 50 km das Einsatzgebiet, weiter
+  auf Anfrage. Hier geht es um das Ob, also 50 km. Das Aufmass ist kostenlos.
+
+  Vorbefuellung: Produkt und Variante kommen aus Liquid. Breite und Laenge
+  stehen erst nach der Eingabe fest, deshalb haengt ein kleines Skript sie beim
+  Klick an - wenn der Rollenware-Rechner auf der Seite ist und Werte hat.
+{% endcomment %}
+
+{%- liquid
+  assign tp_vl_ziel = block.settings.ziel | default: '/pages/kontakt'
+  assign tp_vl_variante = product.selected_or_first_available_variant
+-%}
+
+<div class="tp-vl" {{ block.shopify_attributes }} data-tp-vl>
+  <p class="tp-vl__titel">{{ block.settings.titel }}</p>
+  <p class="tp-vl__text">{{ block.settings.text }}</p>
+
+  <div class="tp-vl__actions">
+    <a
+      class="tp-vl__cta"
+      data-tp-vl-link
+      href="{{ tp_vl_ziel }}?produkt={{ product.title | url_encode }}{% if tp_vl_variante.title != 'Default Title' %}&variante={{ tp_vl_variante.title | url_encode }}{% endif %}"
+    >
+      {{ block.settings.cta }}
+    </a>
+
+    {%- if block.settings.telefon != blank -%}
+      <a class="tp-vl__tel" href="tel:{{ block.settings.telefon | remove: ' ' | remove: '/' }}">
+        {{ block.settings.telefon_label | default: block.settings.telefon }}
+      </a>
+    {%- endif -%}
+  </div>
+</div>
+
+<script>
+  (function () {
+    var band = document.currentScript && document.currentScript.previousElementSibling;
+    if (!band || !band.hasAttribute('data-tp-vl')) {
+      band = document.querySelector('[data-tp-vl]');
+    }
+    if (!band) return;
+
+    var link = band.querySelector('[data-tp-vl-link]');
+    if (!link) return;
+
+    // Erst beim Klick lesen: vorher sind die Felder oft noch leer, und ein
+    // Listener auf jedem Tastendruck waere Aufwand ohne Nutzen.
+    link.addEventListener('click', function () {
+      try {
+        var url = new URL(link.href, window.location.origin);
+
+        var laenge = document.querySelector('[data-length-input]');
+        if (laenge && laenge.value) url.searchParams.set('laenge_cm', laenge.value);
+
+        var breite = document.querySelector('[data-width-seg] [aria-checked="true"], [data-width-seg] .is-active');
+        if (breite && breite.textContent.trim()) {
+          url.searchParams.set('breite', breite.textContent.trim());
+        }
+
+        link.href = url.pathname + url.search;
+      } catch (e) {
+        /* Vorbefuellung ist Komfort, kein Muss: im Zweifel geht der Link
+           ohne Masse auf die Anfrageseite. */
+      }
+    });
+  })();
+</script>
+
+{% stylesheet %}
+  .tp-vl {
+    margin: 0 0 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+  }
+
+  .tp-vl__titel {
+    margin: 0 0 3px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .tp-vl__text {
+    margin: 0 0 10px;
+    font-size: 14px;
+    line-height: 1.45;
+    opacity: 0.85;
+  }
+
+  .tp-vl__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+  }
+
+  /* Bewusst als Umriss und nicht als Vollflaeche: der Warenkorb-Button
+     darunter bleibt die kraeftigste Schaltflaeche der Seite. */
+  .tp-vl__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid var(--color-foreground);
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--color-foreground);
+  }
+
+  .tp-vl__tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Verlegen lassen",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Diesen Boden verlegen lassen?"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "info": "Der Ort gehört hinein: wer weit weg wohnt, soll es sofort sehen und weiterlesen können.",
+      "default": "Wir messen kostenlos auf, liefern und verlegen – in Oranienburg und 50 km Umkreis, weiter auf Anfrage."
+    },
+    {
+      "type": "text",
+      "id": "cta",
+      "label": "Button",
+      "default": "Aufmaß anfragen"
+    },
+    {
+      "type": "url",
+      "id": "ziel",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
+    }
+  ],
+  "presets": [
+    { "name": "TP Verlegen lassen" }
+  ]
+}
+{% endschema %}

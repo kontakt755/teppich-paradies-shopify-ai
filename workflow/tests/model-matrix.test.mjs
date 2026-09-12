@@ -16,7 +16,7 @@ test('Szenarien 1-7: Klassifikation und Modellplan je Aufgabentyp', () => {
     ['3 Shopify-Bug', 'Bug: Produktkarte zeigt auf Mobile keinen m²-Preis, bitte beheben', 'B', 'claude:fable/medium', 'codex:gpt-5.6-sol/medium', [2, 3]],
     ['4 Shopify-Feature', 'Neues Shopify Feature: Musterbestellung als Block im Produkt-Template', 'B', 'claude:fable/medium', 'codex:gpt-5.6-sol/medium', [2, 3]],
     ['5 Refactoring', 'Komplexes Multi-File-Refactoring des Rollenware-Konfigurators über Sections, Snippets und Assets', 'C', 'claude:fable/high', 'codex:gpt-6-astra/high', [3, 5]],
-    ['6 API-Integration', 'API-Integration des jordanshop-Feeds in den Sync-Orchestrator', 'C', 'claude:fable/high', 'codex:gpt-6-astra/high', [3, 5]],
+    ['6 API-Integration', 'API-Integration des Lieferanten-Feeds in den Sync-Orchestrator', 'C', 'claude:fable/high', 'codex:gpt-6-astra/high', [3, 5]],
     ['7 Security', 'Security-relevante Änderung: Token-Handling im GitHub-Actions-Job absichern', 'D', 'claude:opus/high', 'codex:gpt-6-astra/xhigh', [5, 7]],
   ];
   for (const [label, text, taskClass, primary, reviewer, calls] of cases) {

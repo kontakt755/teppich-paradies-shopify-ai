@@ -1,0 +1,154 @@
+{% comment %}
+  Hinweis auf das Ladengeschaeft, im Template UNTER den Produktrastern.
+
+  Warum unten: Es ist das "und da ist noch mehr" nach dem Blaettern. Ueber den
+  Produkten gelesen wuerde es den Online-Katalog kleinreden, bevor der Kunde
+  ihn ueberhaupt gesehen hat.
+
+  Warum ohne konkrete Ware: Sonderposten wechseln laufend und stehen nicht im
+  Online-Katalog. Der Text laedt deshalb ein, statt eine Liste zu behaupten,
+  die in zwei Wochen falsch waere. Keine Preise, kein Bestand, keine Artikel.
+{% endcomment %}
+
+<div class="tp-lh color-{{ section.settings.color_scheme }}">
+  <div class="tp-lh__inner">
+    <p class="tp-lh__titel">{{ section.settings.titel }}</p>
+    <p class="tp-lh__text">{{ section.settings.text }}</p>
+    <div class="tp-lh__actions">
+      <a href="{{ section.settings.link | default: '/pages/kontakt' }}" class="tp-lh__cta">
+        {{ section.settings.cta }}
+      </a>
+      {%- if section.settings.telefon != blank -%}
+        <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="tp-lh__tel">
+          {{ section.settings.telefon_label | default: section.settings.telefon }}
+        </a>
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-lh {
+    padding: 8px 20px 40px;
+  }
+
+  .tp-lh__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 12px;
+  }
+
+  .tp-lh__titel {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .tp-lh__text {
+    margin: 0 0 14px;
+    font-size: 16px;
+    line-height: 1.5;
+    max-width: 640px;
+  }
+
+  .tp-lh__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+  }
+
+  .tp-lh__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 12px 22px;
+    border-radius: 8px;
+    background: var(--color-foreground);
+    color: var(--color-background);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-lh__tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-lh {
+      padding: 4px 16px 28px;
+    }
+
+    .tp-lh__inner {
+      padding: 18px;
+    }
+
+    .tp-lh__titel {
+      font-size: 18px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Ladengeschäft-Hinweis",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Im Ladengeschäft steht mehr, als hier online zu sehen ist"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Text",
+      "info": "Keine bestimmte Ware versprechen – Sonderposten wechseln laufend und stehen nicht im Online-Katalog.",
+      "default": "Über 1.000 m² Sonderposten und Lagerware, sofort verfügbar. Was gerade da ist, zeigen wir Ihnen am besten vor Ort in Oranienburg."
+    },
+    {
+      "type": "text",
+      "id": "cta",
+      "label": "Button",
+      "default": "Termin vereinbaren"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    { "name": "TP Ladengeschäft-Hinweis" }
+  ]
+}
+{% endschema %}

@@ -1,11 +1,11 @@
 # Linoleum/Rollenware-Import — feste Vorlage
 **Referenz:** Coloria Linoleumboden 200cm (Product ID: 16049177723214) — 9 Varianten,
-Quelle jordanshop.de/de-DE/product/409753, Farbcodes und Bild-IDs einzeln abgeschrieben.
+Quelle lieferant-a.example/de-DE/product/409753, Farbcodes und Bild-IDs einzeln abgeschrieben.
 
 > Elastium Linoleumboden (16045140771150) ist **keine** Referenz fuer Farbdaten: dort waren
 > laut `CLAUDE.md` 21 von 24 Farbcodes hochgezaehlt statt abgeschrieben.
 
-Gilt für: Linoleum, Vinylboden von der Rolle, elastische Bodenbeläge — NICHT für Teppichboden (eigene jordanshop-Skill).
+Gilt für: Linoleum, Vinylboden von der Rolle, elastische Bodenbeläge — NICHT für Teppichboden (eigener Import-Skill).
 
 ---
 
@@ -23,7 +23,7 @@ mutation { productSet(synchronous: true, input: {
     {name: "Farbe",  position: 1, values: [{name: "Farbe 4381"}, ...]}
     {name: "Breite", position: 2, values: [{name: "200cm"}]}
   ]
-  files: [{originalSource: "https://media.jordanshop.de/original/<id>-8FXC-prod.JPG",
+  files: [{originalSource: "https://media.lieferant-a.example/original/<id>-8FXC-prod.JPG",
            contentType: IMAGE, alt: "..."}, ...]
   variants: [{
     optionValues: [{optionName: "Farbe", name: "Farbe 4381"},
@@ -81,7 +81,7 @@ Beispiel: `"Gelb Beige / 200cm"`
 ## 2. Farbnamen & Bildquellen
 
 **Quelle für Farbnamen:**
-- jordanshop.de zeigt bei diesen Linien nur Codes ("Farbe 4381")
+- Lieferant A zeigt bei diesen Linien nur Codes ("Farbe 4381")
 - Existiert im Quelltext ein echtes Feld `Farbe: {Name}` / `Farbintensitaet`, wird dieser Name uebernommen
 - Existiert es nicht, gilt fuer die **ganze** Linie der Fallback `Farbe {code}` — nie mischen
 - **Farbnamen werden NIE aus dem Produktbild abgeleitet.** `AGENTS.md`: „Nie technische
@@ -90,7 +90,7 @@ Beispiel: `"Gelb Beige / 200cm"`
 - Fehlende Farbnamen sind ein offener Fall, den man dem Nutzer meldet — kein Grund, etwas zu erfinden
 
 **Farbcodes und Bild-IDs abschreiben, nie fortzaehlen.**
-Die Bild-IDs einer Linie sind **nicht** fortlaufend. Real gemessen bei Jokaleum Color Neocare:
+Die Bild-IDs einer Linie sind **nicht** fortlaufend. Real gemessen bei Linie A-2:
 
 | Farbe | 4381 | 4380 | 4371 A | 4359 | 4358 | 4352 A |
 |---|---|---|---|---|---|---|
@@ -113,7 +113,7 @@ Wer ab 1127820 hochzaehlt, liegt ab der zweiten Farbe falsch und bei 4358 um 32.
    ```js
    const r = document.querySelector('main img').getAttribute('src');
    atob(r.split('/').pop().split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))
-   // -> https://media.jordanshop.de/original/1127820-8FXC-prod.JPG
+   // -> https://media.lieferant-a.example/original/1127820-8FXC-prod.JPG
    ```
 3. Liefert `atob` Unsinn oder steht in der URL `default-image/gallery_preview`, hat diese Farbe
    **kein echtes Foto**. Die Variante wird dann komplett weggelassen und die Auslassung gemeldet.
@@ -142,12 +142,12 @@ der folgenden Tabelle, die Kategorie-Metafelder fehlen dort komplett.
 
 | Namespace | Key | Typ | Beispiel | Quelle |
 |-----------|-----|-----|----------|--------|
-| `custom` | `starke` | single_line_text_field | `2.5 mm` | jordanshop „Stärke (mm)" |
-| `custom` | `ruckenausstattung` | single_line_text_field | `Elastischer Träger` | jordanshop-Produktaufbau |
+| `custom` | `starke` | single_line_text_field | `2.5 mm` | Lieferant A „Stärke (mm)" |
+| `custom` | `ruckenausstattung` | single_line_text_field | `Elastischer Träger` | Lieferant-A-Produktaufbau |
 | `custom` | `material` | single_line_text_field | `Linoleum elastisch` | fest fuer alle Linoleum-Linien |
-| `custom` | `rollenbreite` | number_decimal | `2` | jordanshop „Breite (mm)" / 1000, z.B. 2000mm → `2` |
+| `custom` | `rollenbreite` | number_decimal | `2` | Lieferant A „Breite (mm)" / 1000, z.B. 2000mm → `2` |
 | `custom` | `brandverhalten` | list.metaobject_reference | `["gid://shopify/Metaobject/1723461796174"]` | Cfl-S 1, siehe Tabelle unten |
-| `grosshandel` | `sku` | single_line_text_field | `Jokaleum Color Neocare` | jordanshop „Qualität" |
+| `grosshandel` | `sku` | single_line_text_field | `Linie A-2` | Lieferant A „Qualität" |
 | `global` | `title_tag` | single_line_text_field | `{Marke} Linoleumboden {Breite} \| TeppichParadies` | generiert |
 | `global` | `description_tag` | single_line_text_field | `{Marke} Linoleumboden in {N} Farben, {Breite} Breite. ...` | generiert |
 | `mm-google-shopping` | `google_product_category` | string | `2826` | fest — Google-Kategorie „Bodenbeläge", quer ueber alle Rollenware wiederverwendbar |
@@ -158,17 +158,17 @@ Je Variante zusaetzlich `custom.farbcode` (single_line_text_field, der reine Zah
 `metaobjects(type: ...)` liefert keine Treffer ueber den Typnamen, nur ueber
 `metaobjectDefinition(id:).metaobjects`):
 
-| Wert auf jordanshop.de | Metaobject-ID |
+| Wert bei Lieferant A | Metaobject-ID |
 |---|---|
 | Cfl-s1 | `gid://shopify/Metaobject/1723461796174` |
 | Bfl-s1 | `gid://shopify/Metaobject/1781884682574` |
 
-Steht auf jordanshop.de ein anderer Code, erst pruefen ob ein passendes Metaobject existiert
+Steht bei Lieferant A ein anderer Code, erst pruefen ob ein passendes Metaobject existiert
 (`metaobjectDefinition(id: "gid://shopify/MetaobjectDefinition/37467554126") { metaobjects(first: 20) { nodes { id fields { key value } } } }`),
 sonst als offenen Fall melden statt zu raten.
 
 **`custom.nutzungsklassen`** (Definition `36984750414`) deckt nur Klasse 21–33 und 42 ab.
-Jokaleum-Linien liefern haeufig Codes wie „43" oder „34" (EN ISO 10874: erste Ziffer =
+Die Linoleum-Linien der Hausmarke von A liefern haeufig Codes wie „43" oder „34" (EN ISO 10874: erste Ziffer =
 Bereich, zweite = Belastung), fuer die **kein Metaobject existiert**. Nicht raten, welchen
 deutschen Beschreibungstext ein neuer Eintrag „Klasse 43" bekommen soll — als offenen Fall
 melden, Feld leer lassen.
@@ -184,7 +184,7 @@ melden, Feld leer lassen.
 | `shopify.pile-type`, `shopify.allergy-friendly-features` | — | Teppichboden-spezifisch (Flor, Staubbindung), fuer glatten Linoleumbelag nicht zutreffend |
 
 **Fußbodenheizung — Entscheidung 2026-09-07:** Das `pd-card`-Template behauptet in Satz und
-Badge „funktioniert mit Fußbodenheizung". jordanshop.de erwaehnt das bei keiner Farbe. Der
+Badge „funktioniert mit Fußbodenheizung". Lieferant A erwaehnt das bei keiner Farbe. Der
 Nutzer hat entschieden, die Aussage trotzdem stehen zu lassen — echtes Leinoel-Linoleum gilt
 in der Baubranche allgemein als fussbodenheizungsgeeignet (gute Waermeleitfaehigkeit), das
 ist als Materialklassen-Wissen akzeptiert, nicht als Produktdatenbeleg verlangt. Es gibt aber
@@ -248,9 +248,9 @@ raum: wohnzimmer
 
 ## 8. Vollständigkeit & Updates
 
-- Farblisten auf jordanshop.de können nachträglich wachsen (neue Produkt-IDs im gleichen Farbwähler)
+- Farblisten bei Lieferant A können nachträglich wachsen (neue Produkt-IDs im gleichen Farbwähler)
 - Bei Re-Importen prüfen: Sind neue Farben seit letztem Import dazugekommen?
-- SKU-Pattern (Supplier-Nummer + Farbcode) befolgen, wie auf jordanshop.de angezeigt
+- SKU-Pattern (Supplier-Nummer + Farbcode) befolgen, wie bei Lieferant A angezeigt
 
 ---
 
@@ -259,7 +259,7 @@ raum: wohnzimmer
 **Zuerst sammeln, dann in EINEM `productSet` anlegen.** Reihenfolge ist Teil der Regel:
 ein Produkt ohne Varianten entsteht gar nicht erst.
 
-Sammeln (jordanshop.de):
+Sammeln (Lieferant A):
 - [ ] Preis live von der Produktseite ablesen (`XX,XX € / m²`) — nie aus dem Gedaechtnis
 - [ ] Artikelnummer-Prefix von der Seite (z.B. `PVCJOKANEC`)
 - [ ] Farbcode-Liste aus dem richtigen Farbwaehler — abgeschrieben, nicht gezaehlt

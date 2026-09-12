@@ -13,7 +13,7 @@ function label(state) { return ({ QUEUED: 'Eingeplant', ROUTING: 'Router entsche
 function intentLabel(taskType, source) {
   if (!taskType) return null;
   const mode = taskType === 'ANALYSIS' ? 'Nur ansehen' : 'Umsetzen';
-  const why = { DECLARED: 'von dir festgelegt', INHERITED: 'aus dem vorherigen Auftrag übernommen', READ_ONLY_INTENT: 'im Auftragstext ausdrücklich als lesend formuliert', QUESTION_INTENT: 'als Frage oder Diagnose erkannt', HEURISTIC: 'automatisch aus dem Text erkannt' }[source];
+  const why = { DECLARED: 'von dir festgelegt', INHERITED: 'aus dem vorherigen Auftrag übernommen', READ_ONLY_INTENT: 'im Auftragstext ausdrücklich als lesend formuliert', HEURISTIC: 'automatisch aus dem Text erkannt' }[source];
   return why ? `${mode} (${why})` : mode;
 }
 function phaseLabel(phase) { return ({ ROUTED: 'Aufgabe klassifiziert', IMPLEMENT: 'Umsetzung & Tests', PROVIDER: 'KI arbeitet', FALLBACK: 'API-Backup aktiv', REVIEW: 'Codex-Review', REVIEW_FINDINGS: 'Befunde erkannt', CORRECTION_REQUIRED: 'Korrektur beauftragt', CORRECT: 'Korrektur & neuer Test', REVIEW_LIMIT_REACHED: 'Review-Limit', HARD_FAIL: 'Schwerer Befund', HUMAN_GATE: 'Freigabe nötig' })[phase] || phase; }

@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
-import { detectReviewScope, resolveReviewDir, reviewRequired, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
-import { clearClaudeSessionState, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
+import { detectReviewScope, resolveReviewDir, reviewCandidateFromStop, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
+import { clearClaudeSessionState, readClaudeSessionBaseline, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
 async function stdinJson() {
@@ -45,53 +45,56 @@ try {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
     process.exit(0);
   }
+  if (!resolveCodexBinary()) {
+    throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
+  }
   const reviews = Number(current.state.reviews ?? 0);
   if (reviews >= 3) {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });
     block('Human Gate: Nach drei unabhängigen Review-Runden bestehen noch Befunde. Berichte die verbleibenden Befunde und stoppe weitere automatische Änderungen.');
     process.exit(0);
   }
-  // Nach einem Commit ist "git diff" leer; der Reviewer bekommt deshalb den
-  // tatsaechlichen Pruefbereich (uncommittet oder Commit-Range gegen origin/main).
-  // Der Pruefbereich wird immer an den Reviewer gegeben: UNKNOWN (git-Fehler)
-  // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
-  // Auftrag erfuellt. Ohne Modell-Review enden nur Klasse A (oben, plan.reviewer
-  // fehlt) und eine Frage oder Diagnose, die nichts veraendert hat (unten,
-  // reviewRequired).
+  // Scope erst hinter Codex-Pruefung und Human Gate ermitteln (wie vor dem
+  // Fragen-Skip): beide Gates duerfen nicht von git-Aufrufen abhaengen.
+  // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
+  // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
+  const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
+  // Vorbestehende Dateien (Stand beim ersten Prompt) werden ausgeklammert,
+  // solange sie exakt so geblieben sind. Fehlt die Baseline oder ist sie
+  // kaputt, wird nichts ausgeklammert (siehe review-scope.mjs).
+  const sessionBaseline = readClaudeSessionBaseline({ sessionId: input.session_id, projectDir });
   // sinceRef = HEAD bei Task-Start (openrouter-user-prompt.mjs). Damit prueft
   // der Reviewer nur Commits dieses Tasks, nicht jeden Commit gegenueber
   // origin/main - der in einem geteilten Checkout auch von einer anderen,
   // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
   // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
-  // baseline = die bei Task-Start schon schmutzigen Dateien samt Inhalts-Hash
-  // (startDirty). Bleiben sie unveraendert, gehoeren sie nicht zu diesem Task.
-  // Fehlt startDirty (aelterer State), zaehlen wie vorher alle uncommitteten
-  // Dateien - ausser docs/ai-dashboard/issues.json, die nie dazugehoert.
-  // Arbeitet die Sitzung in einem Worktree, liegt ihre Arbeit dort und nicht
-  // im Hauptcheckout, auf den CLAUDE_PROJECT_DIR zeigt (siehe resolveReviewDir).
-  const reviewDir = resolveReviewDir({ projectDir, sessionCwd: input.cwd });
-  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: current.state.startDirty ?? null });
-  if (!reviewRequired({ taskType: current.state.taskType, scope })) {
-    clearClaudeSessionState({ sessionId: input.session_id, projectDir });
-    process.exit(0);
-  }
-  if (!resolveCodexBinary()) {
-    throw new Error('codex-Binary nicht gefunden (CODEX_CLI_PATH setzen oder ChatGPT-Desktop installieren)');
-  }
-  if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
+  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
+  // Schlussantwort des Agenten (2026-09-11): nur bei leerem Pruefbereich (nach
+  // Abzug der Baseline), damit der Reviewer eine sachlich beantwortete Frage
+  // als No-op erkennt, statt Code zu verlangen. Bei jedem anderen Scope ''.
+  // Fehlt das Feld, ist es leer oder kein String, laeuft das Review wie bisher.
+  const candidateText = reviewCandidateFromStop({ input, scope });
   // Runde 1 und 2: Reviewer der Matrix. Runde 3: zweiter unabhaengiger Blick
   // (sofern die Klasse einen vorsieht), damit nicht dreimal dasselbe Modell
   // dieselben Befunde wiederholt.
   const reviewStep = reviews >= 2 && plan.secondReviewer ? plan.secondReviewer : plan.reviewer;
   const taskId = `${current.state.taskId}-AUTO-R${reviews + 1}`;
+  // Nach einem Commit ist "git diff" leer; der Reviewer bekommt deshalb den
+  // tatsaechlichen Pruefbereich (uncommittet oder Commit-Range gegen origin/main).
+  // Der Pruefbereich wird immer an den Reviewer gegeben: UNKNOWN (git-Fehler)
+  // mit Fallback-Bereich, NONE (kein Diff) mit der Frage, ob der No-op den
+  // Auftrag erfuellt. Kein Zustand beendet ohne Modell-Review; nur Klasse A
+  // (oben, plan.reviewer fehlt) kommt ohne aus.
+  if (scope.kind === REVIEW_SCOPE_UNKNOWN) process.stderr.write(`Review-Scope unbestimmt, pruefe konservativ: ${(scope.errors ?? []).join(' | ').slice(0, 300)}\n`);
   const result = runReviewStep({
     reviewScope: scope.text,
+    candidateText,
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
-    // Nur Auftrag und verbindliche Grenzen (buildReviewerTaskPack in
-    // claude-bridge.mjs), nie die ungepruefte Voranalyse aus dem Handoff des
-    // Implementers. handoffPath nur fuer States von vor diesem Feld.
+    // Auftrag und verbindliche Grenzen, nie die ungepruefte Voranalyse aus dem
+    // Handoff des Implementers (buildReviewerTaskPack in claude-bridge.mjs).
+    // handoffPath nur fuer Session-States von vor diesem Feld.
     taskFile: current.state.reviewTaskPath ?? current.state.handoffPath,
     taskId,
     // Der Reviewer liest den Code im Arbeitsverzeichnis der Sitzung; die

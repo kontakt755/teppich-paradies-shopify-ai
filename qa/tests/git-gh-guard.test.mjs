@@ -57,9 +57,88 @@ for (const cmd of [
   'gh repo delete',
 ]) test(`weiterhin blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
 
+// --- Kombinierte Kurzflags ----------------------------------------------
+//
+// git fasst Kurzflags zusammen: "-fq" ist dasselbe wie "-f -q". Eine Regel,
+// die ein einzelnes Kurzflag mit "\b" abschliesst, greift dann nicht mehr.
+//
+// Das war am 2026-09-12 zweimal offen: erst bei "git branch" ("-df" statt
+// "-D"), dann bei "git push" ("-fq" statt "-f"). Der Push-Fall ist an einem
+// Wegwerf-Repo belegt - der normale Push wurde als non-fast-forward
+// abgewiesen, "git push -fq" hat den Remote-Commit ueberschrieben.
+for (const cmd of [
+  'git push -fq origin main',
+  'git push -qf origin main',
+  'git push -fu origin main',
+  'git push -f origin main',
+  'git update-ref -zd refs/heads/x',
+  'git update-ref -d refs/heads/x',
+  'git clean -xfd',
+]) test(`kombiniertes Kurzflag blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+// Lange Optionen, die zufaellig ein "f" tragen, duerfen nicht mitgehen.
+for (const cmd of [
+  'git push --follow-tags origin main',
+  'git push origin main',
+  'git push -u origin feature/neu',
+  'git update-ref --stdin',
+  'git branch --list',
+]) test(`kein Fehlalarm: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
 for (const cmd of ['git status', 'npm run task -- list']) {
   test(`unberuehrt erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
 }
+
+// --- Branch loeschen ----------------------------------------------------
+//
+// "git branch -d" darf durch: git selbst verweigert es, solange die Commits
+// nirgends sonst haengen. Die Merge-Pruefung macht damit git und nicht diese
+// Regex. Gesperrt bleibt alles, was genau diese Pruefung aushebelt.
+for (const cmd of [
+  'git branch -d feature/alt',
+  'git branch --delete feature/alt',
+  'git branch -d feature/alt fix/alt',
+  // Branchnamen mit grossem D duerfen nicht als "-D" gelesen werden.
+  'git branch -d fix/ABC-Dev',
+  'git branch --list',
+]) test(`erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+// "-D" mit ausgeschriebenen Namen ist erlaubt: wer den Namen tippt, hat den
+// Branch angesehen. Alles, was ueber eine Liste faehrt, bleibt gesperrt.
+for (const cmd of [
+  'git branch -D feature/alt',
+  'git branch -D feature/alt fix/alt',
+  'git branch --delete --force feature/alt',
+  'git branch --force --delete feature/alt',
+  `git checkout -- ${BOT} && git branch -D feature/alt`,
+]) test(`erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+for (const cmd of [
+  // Ohne Namen: das ist kein gezieltes Loeschen.
+  'git branch -D',
+  // Befehlsersetzung und Platzhalter sind ein Sweep, kein Einzelfall.
+  'git branch -D $(git branch | grep alt)',
+  'git branch -D `git branch --merged`',
+  'git branch -D feature/*',
+  'git branch -D "$BRANCH"',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -D',
+  // Kombinierte Kurzflags sind nicht ausgeschrieben genug.
+  'git branch -rD feature/alt',
+  // -df und -fd fassen d und f in einem Flag zusammen. Bis 2026-09-12 passierten
+  // sie den Guard, weil kein grosses D und keine zwei Token vorlagen - damit war
+  // auch der Sweep offen, den die Ausnahme gerade verhindern soll.
+  'git branch -df feature/alt',
+  'git branch -fd feature/alt',
+  'git branch -df $(git branch --format="%(refname:short)")',
+  'git branch -fd $(git branch | grep alt)',
+  'git branch -df "$BRANCH"',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -df',
+  'git for-each-ref --format="%(refname:short)" | xargs git branch -fd',
+  'git branch -d --force feature/alt',
+  // Die Ausnahme darf nichts decken, was hinter ihr haengt.
+  'git branch -D feature/alt && git reset --hard',
+  'git branch -D feature/alt > wichtig.txt',
+]) test(`blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
 
 // --- Angehaengte Umleitungen -------------------------------------------
 //
@@ -109,12 +188,74 @@ for (const cmd of [
   `xargs git checkout -- .`,
 ]) test(`blockiert hinter Vorspann: ${cmd}`, () => assert.equal(blockiert(cmd), true));
 
+// --- git-Aufrufe ueber einen Pfad --------------------------------------
+//
+// "/usr/bin/git push --force" ist derselbe Befehl, das Praefix steht aber vor
+// dem Token: die Erkennung sah kein "git" nach Zeilenanfang oder Leerzeichen,
+// und keine Regel mit ^git griff. Am 2026-09-12 aufgefallen (unabhaengige
+// Pruefung) - damit war nicht nur die Sweep-Sperre offen, sondern jede Regel
+// dieser Datei. Der Pfad wird jetzt abgeschnitten und der Rest wie ein nackter
+// Aufruf geprueft.
+for (const cmd of [
+  '/usr/bin/git branch -df feature/alt',
+  '/usr/bin/git branch -fd feature/alt',
+  '/usr/bin/git branch -D $(git branch | grep alt)',
+  '/usr/bin/git push --force origin main',
+  '/usr/bin/git reset --hard',
+  './git branch -df alt',
+  'git for-each-ref --format="%(refname:short)" | xargs /usr/bin/git branch -fd',
+]) test(`blockiert mit Pfadpraefix: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+// Der Pfad darf nichts zusaetzlich sperren: was nackt erlaubt ist, bleibt es.
+for (const cmd of [
+  '/usr/bin/git status',
+  '/usr/bin/git branch -d feature/alt',
+  '/usr/bin/git branch -D feature/alt',
+  '/usr/bin/git branch --delete --force feature/alt',
+]) test(`erlaubt mit Pfadpraefix: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
+test('die Ausnahme gilt auch mit Pfadpraefix', () => {
+  assert.equal(blockiert(`/usr/bin/git checkout -- ${BOT}`), false);
+});
+
 test('harmlose Befehle bleiben auch hinter einem Vorspann erlaubt', () => {
   for (const cmd of ['xargs -n1 git status', 'sudo git log --oneline', 'env FOO=1 git diff']) {
     assert.equal(blockiert(cmd), false, cmd);
   }
 });
 
-test('die Ausnahme gilt auch hinter einem Vorspann', () => {
-  assert.equal(blockiert(`xargs -n1 git checkout -- ${BOT}`), false);
-});
+// --- Ausnahmen gelten nur fuer einen nackten Aufruf ---------------------
+//
+// Hier stand bis zum 2026-09-12 das Gegenteil: die Ausnahme sollte auch hinter
+// einem Vorspann gelten. Das war ein Fehler, und zwar ein messbarer.
+//
+// Beide Ausnahmen lesen einen ausgeschriebenen Namen aus dem Befehlstext und
+// schliessen daraus, dass jemand hingesehen hat. Unter xargs traegt dieser
+// Schluss nicht, weil dort Argumente von stdin angehaengt werden, die im Text
+// gar nicht vorkommen:
+//
+//   printf 'zweig-b\nzweig-c\n' | xargs echo "branch -D zweig-a"
+//   -> branch -D zweig-a zweig-b zweig-c
+//
+// Der Hook sah einen Branch, geloescht wuerden drei. Dasselbe gilt fuer die
+// Bot-Datei: weitere Pfade von stdin waeren mitverworfen worden.
+//
+// Ein Pfad vor dem Aufruf ist etwas anderes - er ist nur eine zweite
+// Schreibweise desselben Befehls und reicht nichts nach. Deshalb behaelt er
+// die Ausnahme.
+for (const cmd of [
+  `xargs -n1 git checkout -- ${BOT}`,
+  `xargs git checkout -- ${BOT}`,
+  'xargs git branch -D feature/alt',
+  'git for-each-ref | xargs git branch -D feature/alt',
+  'find . | xargs /usr/bin/git branch -D feature/alt',
+  'sudo git branch -D feature/alt',
+]) test(`Ausnahme gilt nicht hinter einem Vorspann: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+for (const cmd of [
+  `git checkout -- ${BOT}`,
+  `/usr/bin/git checkout -- ${BOT}`,
+  'git branch -D feature/alt',
+  '/usr/bin/git branch -D feature/alt',
+  'git branch -D feature/alt feature/zwei',
+]) test(`Ausnahme gilt fuer den nackten Aufruf: ${cmd}`, () => assert.equal(blockiert(cmd), false));
