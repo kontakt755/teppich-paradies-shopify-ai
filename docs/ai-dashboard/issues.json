@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T19:33:08.667Z",
+  "generated_at": "2026-09-12T19:33:58.461Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 82,
+  "count": 83,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T19:33:08.667Z",
+    "fetchedAt": "2026-09-12T19:33:58.461Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 255,
+      "title": "Rollenware: Art-Wahl Meterware/Raummass, Breite als Chip",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/255",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T19:33:03Z",
+      "updated_at": "2026-09-12T19:33:52Z",
+      "closed_at": null
+    },
     {
       "number": 253,
       "title": "Verlegeservice-Konditionen live stellen (PR #249 ist in main, Deploy fehlt)",
