@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T06:50:15.119Z",
+  "generated_at": "2026-09-12T07:05:01.252Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 77,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T06:50:15.119Z",
+    "fetchedAt": "2026-09-12T07:05:01.252Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -168,7 +168,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/203",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:sicherheit"
@@ -177,13 +177,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:54:35Z",
-      "updated_at": "2026-09-12T06:50:04Z",
+      "updated_at": "2026-09-12T06:50:19Z",
       "closed_at": "2026-09-12T06:50:04Z"
     },
     {
@@ -290,7 +290,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/194",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -299,14 +299,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Qualitaetsprogramm Richtung 99/100. Arbeits-Theme = unveroeffentlichte Kopie des Entwurfs, Branch feature/shop-qualitaet. Erstbefund: docs/analyse/qualitaet-erstbefund-2026-09-11.md. Live-Theme wird nicht angefasst, nichts wird veroeffentlicht.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:20:38Z",
-      "updated_at": "2026-09-11T20:37:31Z",
+      "updated_at": "2026-09-12T07:04:50Z",
       "closed_at": null
     },
     {
@@ -324,14 +324,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 8,
+      "comments": 9,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-12T06:45:40Z",
+      "updated_at": "2026-09-12T06:51:05Z",
       "closed_at": null
     },
     {
