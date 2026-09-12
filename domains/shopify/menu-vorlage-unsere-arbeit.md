@@ -1,4 +1,15 @@
-# Menüpunkt „Unsere Arbeit“ – Vorlage für den Livegang
+# Menüpunkt „Unsere Arbeit“ – ausgeführt am 2026-09-12
+
+> **Erledigt.** Der Menüpunkt steht im Hauptmenü: `gid://shopify/MenuItem/870673121614`,
+> Typ PAGE auf `gid://shopify/Page/146627592526`, unter „Service & Verlegung“ zwischen
+> „Treppen professionell belegen“ und „Für Firmenkunden“. Ausgeführt per `menuUpdate`
+> nach ausdrücklicher Freigabe des Inhabers, Antwort `userErrors: []`.
+> Gegenprobe durch erneutes Auslesen: **41 bestehende MenuItem-IDs unverändert, ein
+> neuer Eintrag, 42 gesamt.** Zusätzlich unabhängig gegengeprüft von der Sitzung
+> „Teppich Paradies Shop auf 99+/100“ (Megamenü Desktop und Drawer mit `tap()`).
+>
+> Der folgende Ablauf bleibt als Vorlage stehen – für den Fall, dass das Menü neu
+> aufgebaut werden muss oder der Punkt in ein weiteres Menü soll.
 
 **Nicht vor dem Livegang der Galerie ausführen.** Live hat `/pages/unsere-arbeit`
 keine eigene Vorlage und zeigt die B2B-Rückfallseite. Ein Menüpunkt dorthin würde
