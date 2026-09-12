@@ -69,6 +69,33 @@ Bei jedem Konflikt plant der Planer für diese Farbe bzw. dieses Produkt nichts.
 
 Die Entscheidung trifft dann ein Mensch.
 
+## Testmatrix (Regel 11)
+
+`qa/tests/masstepich-testmatrix.test.mjs` haelt die 15 Faelle des Inhabers. Erwartung in jedem unklaren
+Fall: **vollstaendig verborgen** - keine Option, kein deaktivierter Knopf, kein "auf Anfrage".
+
+| # | Fall | Erwartung |
+|---|---|---|
+| 1 | freigegebene Bezugsquelle, Wert `Verfügbar` | angeboten |
+| 2-3 | `Ungeklärt`, `Nicht verfügbar` | verborgen |
+| 4 | neues Produkt ohne Freigabe | verborgen, nichts geplant |
+| 5-7 | gesperrte Bezugsquelle | verborgen, als Datenfehler gemeldet |
+| 8 | ohne Kennzeichen | verborgen |
+| 9 | Feld fehlt ganz | verborgen |
+| 10 | Tippfehler, Kleinschreibung, fremder Wert, Preis 0 | verborgen |
+| 11 | eine Farbe frei, die andere nicht | nur die freie Farbe |
+| 12 | Warenkorb in 0,01 m², Mindestpreis | Menge steigt, Preis bleibt |
+| 13-15 | Mobil, Desktop, Testbestellung samt E-Mail | **nur lokal** |
+
+Die Faelle 13 bis 15 brauchen die gerenderte Storefront und den Checkout; per Admin-API sind sie nicht
+pruefbar. Sie stehen als Liste im Test, damit die Matrix nicht still drei Zeilen verliert, und gehoeren
+in den lokalen Lauf vor der Freigabe.
+
+Dazu zwei Vertragstests: der Konfigurator prueft an **jeder** Stelle dieselbe Bedingung
+(`service.einfassen == 'Verfügbar'` und Preis > 0, ohne `downcase`, `contains`, `default` oder
+Vergleich auf Ungleichheit), und er nennt nirgends eine Bezugsquelle. Sonst gaebe es zwei Wahrheiten -
+eine im Liquid, eine im Test.
+
 ## Stolperfallen, die hier schon Zeit gekostet haben
 
 - `<svg>` hat keine Eigenschaft `hidden`. `svg.hidden = false` setzt nur eine JS-Eigenschaft, das Attribut
