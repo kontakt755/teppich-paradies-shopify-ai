@@ -620,6 +620,7 @@ Hebel liegen beim Inhaber, bei Shopify oder brauchen echte Kaufdaten.
   - Prüfstufe grün: Guards, `validate --static`, Theme Check ohne neue Warnung, `npm test` 154/154.
   - Dev-Theme: Prüfsumme gleich, Laufzeitprüfung 10/11 (favicon).
   - Entwurf: Prüfsumme gleich. 5 kalte Aufrufe mit 1 × 0,008 aus dem Header-Bereich (Menü-Sitzung); Live 0.
+  - **Zeitbezug der Live-Werte:** „Live 0 von 8" und „Live 0" entstanden am 2026-09-11 gegen 21:00 UTC gegen das damalige Live-Theme (`window.Shopify.theme.id` = 203690246478). Seit dem 2026-09-12, 07:31:40Z ist ein anderes Theme live. Die Aussage bleibt tragfähig, weil der Sprung aus dem Konzept-C-Hero stammt, den es live gar nicht gibt — für eine tagesaktuelle Zahl müssten die acht kalten Läufe gegen das heutige Live wiederholt werden (Hinweis der Menü-Sitzung).
 
 ### Nachtrag 3: Konfliktauflösung für den späteren Merge nach `main`
 
