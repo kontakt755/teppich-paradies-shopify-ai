@@ -39,6 +39,8 @@
     {%- render 'tp-mobil' -%}
     {%- render 'tp-megamenu' -%}
     {%- render 'tp-verlegeseite' -%}
+    {%- comment -%} Teppichbereich (Entwurf): rendert nur ausserhalb des Live-Themes, siehe tp-rug-gate {%- endcomment -%}
+    {%- render 'tp-rug-head' -%}
 
     {% if request.design_mode %}
       {%- render 'theme-editor' -%}
@@ -54,6 +56,7 @@
     <div id="header-group">
       {% sections 'header-group' %}
     </div>
+    {%- render 'tp-rug-nav-inject' -%}
 
     <script>
       // Inline header height and menu style calculations to prevent layout shift

@@ -1,0 +1,26 @@
+{%- comment -%}
+  Sichtbarer Hinweis oben auf jeder Teppich-Seite: Entwurf, ohne Preise,
+  Testprodukte, Illustrationen. Damit niemand eine Testseite fuer echt haelt.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <div class="tp-rug tp-rug-test" role="note">
+    <div class="tp-rug-wrap">
+      {%- render 'tp-rug-icon', name: 'info', size: 20 -%}
+      <p><strong>{{ section.settings.label | escape }}</strong> {{ section.settings.text | escape }}</p>
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppiche Testhinweis",
+  "tag": "section",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "label", "label": "Kennzeichnung", "default": "Entwurf · Testbereich:" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Teppiche ohne Preise und nicht veröffentlicht. Bilder sind Illustrationen, Produkte sind Testprodukte." }
+  ],
+  "presets": [{ "name": "TP Teppiche Testhinweis" }]
+}
+{% endschema %}

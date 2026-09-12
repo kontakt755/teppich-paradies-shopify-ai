@@ -1,0 +1,59 @@
+{%- comment -%}
+  "In wenigen Schritten": erklaert den Ablauf bis zur unverbindlichen Anfrage.
+  Der letzte Schritt ist bewusst keine Bestellung - es gibt noch keine Preise.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec{% if section.settings.sand %} tp-rug-sec--sand{% endif %}" aria-labelledby="tp-rs-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rs-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+        {%- if section.settings.cta != blank -%}
+          <a class="tp-rug-btn tp-rug-btn--primary" href="{% render 'tp-rug-url', key: 'konfigurator' %}">{{ section.settings.cta | escape }}</a>
+        {%- endif -%}
+      </div>
+      <ol class="tp-rug-steps" role="list">
+        {%- for block in section.blocks -%}
+          <li class="tp-rug-step{% if forloop.last %} tp-rug-step--last{% endif %}" {{ block.shopify_attributes }}>
+            <span class="tp-rug-step__num" aria-hidden="true">{{ forloop.index }}</span>
+            <h3 class="tp-rug-h3"><span class="tp-rug-sr">Schritt {{ forloop.index }}: </span>{{ block.settings.title | escape }}</h3>
+            <p class="tp-rug-small">{{ block.settings.text | escape }}</p>
+          </li>
+        {%- endfor -%}
+      </ol>
+      {%- if section.settings.note != blank -%}
+        <p class="tp-rug-steps__note">{% render 'tp-rug-icon', name: 'info', size: 20 %}<span>{{ section.settings.note | escape }}</span></p>
+      {%- endif -%}
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppiche Schritte",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "In wenigen Schritten zu Ihrem Teppich" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Ein Schritt nach dem anderen – Sie sehen jederzeit, was Sie gewählt haben." },
+    { "type": "text", "id": "cta", "label": "Knopf", "default": "Jetzt konfigurieren" },
+    { "type": "textarea", "id": "note", "label": "Hinweis", "default": "Am Ende steht keine Bestellung, sondern eine unverbindliche Anfrage. Preise für den Teppichbereich folgen – wir melden uns persönlich." },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Schritt",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Titel", "default": "Teppich auswählen" },
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "max_blocks": 10,
+  "presets": [{ "name": "TP Teppiche Schritte" }]
+}
+{% endschema %}

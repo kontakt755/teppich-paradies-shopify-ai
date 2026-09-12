@@ -1,0 +1,71 @@
+{%- comment -%}
+  Bild-Text-Band fuer Schwerpunkte (Wohnmobil, Sonderform, Beratung).
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign s = section.settings
+    capture bu
+      render 'tp-rug-url', key: s.btn_key, query: s.btn_query
+    endcapture
+    assign fimg = 'tp-rug-bild-' | append: s.scene | append: '.svg'
+    assign lines = s.bullets | newline_to_br | split: '<br />'
+  -%}
+  <section class="tp-rug tp-rug-sec{% if s.sand %} tp-rug-sec--sand{% endif %}" aria-labelledby="tp-rft-{{ section.id }}">
+    <div class="tp-rug-wrap tp-rug-feature{% if s.reverse %} tp-rug-feature--reverse{% endif %}">
+      <div class="tp-rug-feature__media">
+        {%- if s.image != blank -%}
+          {{ s.image | image_url: width: 1400 | image_tag: loading: 'lazy', widths: '500, 800, 1100, 1400', sizes: '(min-width: 900px) 50vw, 100vw', alt: s.image.alt }}
+        {%- else -%}
+          <img src="{{ fimg | asset_url }}" alt="Illustration: {{ s.heading | escape }}" width="1200" height="900" loading="lazy" decoding="async">
+        {%- endif -%}
+      </div>
+      <div class="tp-rug-feature__text">
+        {%- if s.kicker != blank -%}<p class="tp-rug-kicker">{{ s.kicker | escape }}</p>{%- endif -%}
+        <h2 class="tp-rug-h2" id="tp-rft-{{ section.id }}">{{ s.heading | escape }}</h2>
+        {%- if s.text != blank -%}<p class="tp-rug-lead">{{ s.text | escape }}</p>{%- endif -%}
+        {%- if s.bullets != blank -%}
+          <ul class="tp-rug-checklist" role="list">
+            {%- for l in lines -%}
+              {%- assign lt = l | strip -%}
+              {%- if lt != blank -%}<li>{% render 'tp-rug-icon', name: 'check', size: 20 %}<span>{{ lt | escape }}</span></li>{%- endif -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+        {%- if s.btn_label != blank -%}
+          <div class="tp-rug-actions"><a class="tp-rug-btn tp-rug-btn--primary" href="{{ bu }}">{{ s.btn_label | escape }}</a></div>
+        {%- endif -%}
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Schwerpunkt",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Dachzeile", "default": "Wohnmobil & Camper" },
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Wohnmobilteppiche nach Maß" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "textarea", "id": "bullets", "label": "Punkte (je Zeile einer)" },
+    { "type": "image_picker", "id": "image", "label": "Foto (ersetzt die Illustration)" },
+    {
+      "type": "select", "id": "scene", "label": "Illustration", "default": "wohnmobil",
+      "options": [
+        { "value": "wohnzimmer", "label": "Wohnzimmer" }, { "value": "esszimmer", "label": "Esszimmer" }, { "value": "schlafzimmer", "label": "Schlafzimmer" },
+        { "value": "kueche", "label": "Küche" }, { "value": "flur", "label": "Flur" }, { "value": "kinderzimmer", "label": "Kinderzimmer" },
+        { "value": "homeoffice", "label": "Homeoffice" }, { "value": "eingang", "label": "Eingang" }, { "value": "buero", "label": "Büro" },
+        { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "outdoor", "label": "Outdoor" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "rund", "label": "Rund" }
+      ]
+    },
+    { "type": "text", "id": "btn_label", "label": "Knopf", "default": "Wohnmobilteppich anfragen" },
+    { "type": "select", "id": "btn_key", "label": "Ziel", "default": "wohnmobil", "options": [{ "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "konfigurator", "label": "Konfigurator" }, { "value": "alle", "label": "Alle Teppiche" }, { "value": "kontakt", "label": "Kontakt" }] },
+    { "type": "text", "id": "btn_query", "label": "Parameter" },
+    { "type": "checkbox", "id": "reverse", "label": "Bild rechts", "default": false },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": false }
+  ],
+  "presets": [{ "name": "TP Teppich-Schwerpunkt" }]
+}
+{% endschema %}

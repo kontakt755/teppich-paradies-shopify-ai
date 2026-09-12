@@ -1,0 +1,35 @@
+{%- comment -%}
+  Musterservice-Hinweis. Bewusst ohne Angaben zu Kosten, Anzahl oder
+  Lieferzeit - der Prozess fuer Teppich-Muster steht noch nicht fest.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec tp-rug-sec--tight" aria-labelledby="tp-rm-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-sample">
+        <div class="tp-rug-sample__swatches" aria-hidden="true">
+          <span style="background:#cdb99a"></span><span style="background:#8fa08a"></span><span style="background:#3b3d40"></span><span style="background:#b5694a"></span>
+        </div>
+        <div style="display:grid;gap:6px">
+          <h2 class="tp-rug-h2" id="tp-rm-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          <p>{{ section.settings.text | escape }}</p>
+        </div>
+        <a class="tp-rug-btn tp-rug-btn--light" href="{% render 'tp-rug-url', key: 'muster' %}">{% render 'tp-rug-icon', name: 'muster', size: 20 %}{{ section.settings.cta | escape }}</a>
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Muster",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Erst Material & Farbe zuhause ansehen" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Farben wirken auf jedem Bildschirm anders. Fordern Sie Muster Ihrer Wunschqualität an – wir melden uns mit den Details." },
+    { "type": "text", "id": "cta", "label": "Knopf", "default": "Muster anfragen" }
+  ],
+  "presets": [{ "name": "TP Teppich-Muster" }]
+}
+{% endschema %}

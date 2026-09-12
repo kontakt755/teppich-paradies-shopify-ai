@@ -1,0 +1,57 @@
+{%- comment -%}
+  Hilfen bei der Auswahl: Groessenberater, Raum-Visualisierer, Einsatzort-Finder.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec{% if section.settings.sand %} tp-rug-sec--sand{% endif %}" aria-labelledby="tp-rw-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rw-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+      </div>
+      <ul class="tp-rug-tools" role="list">
+        {%- for block in section.blocks -%}
+          <li {{ block.shopify_attributes }} style="display:flex">
+            <a class="tp-rug-toolcard" style="width:100%" href="{% render 'tp-rug-url', key: block.settings.key, anchor: block.settings.anchor %}">
+              <span class="tp-rug-toolcard__icon">{%- render 'tp-rug-icon', name: block.settings.icon, size: 26 -%}</span>
+              <h3 class="tp-rug-h3">{{ block.settings.title | escape }}</h3>
+              <p class="tp-rug-small">{{ block.settings.text | escape }}</p>
+              <span class="tp-rug-link">{{ block.settings.cta | escape }} {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Werkzeuge",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Unsicher bei Größe oder Qualität?" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Drei Hilfen, die Ihnen die Entscheidung leichter machen – ohne Anmeldung." },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "tool",
+      "name": "Werkzeug",
+      "settings": [
+        { "type": "select", "id": "icon", "label": "Symbol", "default": "raum", "options": [{ "value": "raum", "label": "Raum" }, { "value": "auge", "label": "Ansehen" }, { "value": "kompass", "label": "Berater" }, { "value": "lineal", "label": "Lineal" }, { "value": "muster", "label": "Muster" }, { "value": "upload", "label": "Hochladen" }] },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Größen-Berater" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "text", "id": "cta", "label": "Linktext", "default": "Starten" },
+        { "type": "select", "id": "key", "label": "Ziel", "default": "berater", "options": [{ "value": "berater", "label": "Berater" }, { "value": "visualisierer", "label": "Visualisierer" }, { "value": "konfigurator", "label": "Konfigurator" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "muster", "label": "Muster" }] },
+        { "type": "text", "id": "anchor", "label": "Sprungmarke" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [{ "name": "TP Teppich-Werkzeuge" }]
+}
+{% endschema %}

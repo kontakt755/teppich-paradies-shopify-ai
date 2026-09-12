@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "berater": { "type": "tp-rug-berater", "settings": {} },
+    "muster": { "type": "tp-rug-muster", "settings": {} }
+  },
+  "order": ["test", "berater", "muster"]
+}

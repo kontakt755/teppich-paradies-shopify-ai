@@ -1,0 +1,29 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "anfrage": {
+      "type": "tp-rug-anfrage",
+      "settings": {
+        "mode": "muster",
+        "kicker": "Muster anfragen",
+        "heading": "Erst Material & Farbe zuhause ansehen",
+        "text": "Wählen Sie die Qualitäten, die Sie interessieren. Wir melden uns mit den Details zum Musterversand.",
+        "subject": "Teppich-Musteranfrage",
+        "submit": "Muster unverbindlich anfragen",
+        "is_page_title": true,
+        "sand": false
+      }
+    },
+    "service": {
+      "type": "tp-rug-vertrauen",
+      "settings": { "heading": "Lieber persönlich beraten lassen?", "sand": true },
+      "blocks": {
+        "v1": { "type": "item", "settings": { "icon": "telefon", "title": "Fachberatung am Telefon", "text": "[telefon]", "link": "telefon" } },
+        "v2": { "type": "item", "settings": { "icon": "whatsapp", "title": "WhatsApp", "text": "Fragen und Fotos einfach per WhatsApp.", "link": "whatsapp" } },
+        "v3": { "type": "item", "settings": { "icon": "standort", "title": "Fachgeschäft in Oranienburg", "text": "Stationärer Fachhandel für Bodenbeläge.", "link": "kontakt" } }
+      },
+      "block_order": ["v1", "v2", "v3"]
+    }
+  },
+  "order": ["test", "anfrage", "service"]
+}

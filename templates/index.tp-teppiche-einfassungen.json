@@ -1,0 +1,28 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "kanten": {
+      "type": "tp-rug-einfassungen",
+      "settings": { "kicker": "Einfassungen", "heading": "Die richtige Kante für Ihren Teppich", "text": "Die Einfassung schützt die Kante und bestimmt den Look. Welche möglich ist, hängt von der Qualität ab – der Konfigurator zeigt je Teppich nur die erlaubten.", "layout": "detail", "is_page_title": true },
+      "blocks": {
+        "e1": { "type": "edge", "settings": { "key": "kettel", "title": "Kettelung", "short": "Kettelung", "text": "Die Kante wird mit Garn umstochen – klassisch, flach und unauffällig.", "width": "schmale Garnkante", "use": "Wohnräume, Läufer, Objektbereich" } },
+        "e2": { "type": "edge", "settings": { "key": "paspel", "title": "Paspel", "short": "Paspel", "pill": "ca. 1 cm", "text": "Ein schmales Band fasst die Kante ein – dezent, mit sauberem Abschluss.", "width": "ca. 1 cm Band, sichtbare Naht", "use": "Wohn- und Schlafräume" } },
+        "e3": { "type": "edge", "settings": { "key": "baumwolle", "title": "Baumwoll-Einfassband", "short": "Baumwollband", "pill": "ca. 3 cm", "text": "Ein breites Baumwollband rahmt den Teppich sichtbar ein – auch in Kontrastfarbe.", "width": "ca. 3 cm Band, verdeckte Naht", "use": "Wohn- und Esszimmer, Rahmenoptik" } },
+        "e4": { "type": "edge", "settings": { "key": "cover", "title": "Cover (Kippkante)", "short": "Cover-Kante", "pill": "inkl. Antirutschvlies", "text": "Die Kante wird nach unten umgeschlagen – kein Band, eine ruhige, durchgehende Fläche.", "width": "kein sichtbares Band", "use": "ruhige, bandlose Optik" } }
+      },
+      "block_order": ["e1", "e2", "e3", "e4"]
+    },
+    "muster": { "type": "tp-rug-muster", "settings": {} },
+    "faq": {
+      "type": "tp-rug-faq",
+      "settings": { "heading": "Fragen zu Einfassungen" },
+      "blocks": {
+        "f1": { "type": "frage", "settings": { "question": "Was bedeutet „Cover (Kippkante)“?", "answer": "<p>Beide Namen meinen dieselbe Ausführung: Die Teppichkante wird nach unten umgeschlagen, ein Antirutschvlies darunter gleicht die Stufe aus. Es gibt kein sichtbares Band.</p>" } },
+        "f2": { "type": "frage", "settings": { "question": "Kann ich die Farbe des Bandes wählen?", "answer": "<p>Ja – bei Paspel und Baumwollband die Bandfarbe, bei der Kettelung die Garnfarbe. Die Auswahl im Entwurf ist eine Demo; die echten Farben folgen.</p>" } },
+        "f3": { "type": "frage", "settings": { "question": "Gibt es jede Einfassung für jeden Teppich?", "answer": "<p>Nein. Welche Einfassung möglich ist, hängt von der Qualität ab. Der Konfigurator zeigt je Teppich nur die erlaubten.</p>" } }
+      },
+      "block_order": ["f1", "f2", "f3"]
+    }
+  },
+  "order": ["test", "kanten", "muster", "faq"]
+}

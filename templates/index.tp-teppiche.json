@@ -1,0 +1,154 @@
+{
+  "sections": {
+    "test": {
+      "type": "tp-rug-testhinweis",
+      "settings": {}
+    },
+    "hero": {
+      "type": "tp-rug-hero",
+      "settings": {
+        "kicker": "Teppiche nach Maß",
+        "heading": "Ihr Teppich. Ihr Maß. Ihre Form.",
+        "text": "Fertig eingefasste Teppiche in Wunschgröße und Wunschform – vom Läufer bis zur Sonderform nach Schablone. Individuell konfigurierbar und unverbindlich anzufragen.",
+        "usps": "Wunschmaß bis 10 m Länge\nVier Einfassungen zur Wahl\nSonderform nach Skizze oder Schablone",
+        "scene": "wohnzimmer",
+        "show_card": true,
+        "btn1_label": "Jetzt konfigurieren",
+        "btn1_key": "konfigurator",
+        "btn2_label": "Passenden Teppich finden",
+        "btn2_key": "berater",
+        "btn2_anchor": "finder",
+        "quick_label": "Direkt einsteigen"
+      },
+      "blocks": {
+        "q1": { "type": "entry", "settings": { "label": "Teppich nach Maß", "icon": "lineal", "key": "konfigurator" } },
+        "q2": { "type": "entry", "settings": { "label": "Wohnzimmer", "icon": "raum", "key": "alle", "query": "raum=wohnzimmer" } },
+        "q3": { "type": "entry", "settings": { "label": "Wohnmobil", "icon": "camper", "key": "wohnmobil" } },
+        "q4": { "type": "entry", "settings": { "label": "Läufer", "icon": "form-laeufer", "key": "alle", "query": "form=laeufer" } },
+        "q5": { "type": "entry", "settings": { "label": "Sonderform", "icon": "form-organisch", "key": "sonderform" } },
+        "q6": { "type": "entry", "settings": { "label": "Teppich visualisieren", "icon": "auge", "key": "visualisierer" } }
+      },
+      "block_order": ["q1", "q2", "q3", "q4", "q5", "q6"]
+    },
+    "unterschied": {
+      "type": "tp-rug-unterschied",
+      "settings": {}
+    },
+    "raeume": {
+      "type": "tp-rug-kacheln",
+      "settings": {
+        "heading": "Teppiche für jeden Raum",
+        "text": "Wählen Sie, wo der Teppich liegen soll – wir zeigen passende Qualitäten, Formen und Einfassungen.",
+        "link_label": "Alle Teppiche",
+        "large_first": true
+      },
+      "blocks": {
+        "t1": { "type": "tile", "settings": { "title": "Wohnzimmer", "sub": "Unter Sofa und Couchtisch", "scene": "wohnzimmer", "key": "alle", "query": "raum=wohnzimmer" } },
+        "t2": { "type": "tile", "settings": { "title": "Esszimmer", "sub": "Unter dem Esstisch", "scene": "esszimmer", "key": "alle", "query": "raum=esszimmer" } },
+        "t3": { "type": "tile", "settings": { "title": "Schlafzimmer", "sub": "Unter oder neben dem Bett", "scene": "schlafzimmer", "key": "alle", "query": "raum=schlafzimmer" } },
+        "t4": { "type": "tile", "settings": { "title": "Küche", "sub": "Läufer vor der Zeile", "scene": "kueche", "key": "alle", "query": "raum=kueche" } },
+        "t5": { "type": "tile", "settings": { "title": "Flur & Diele", "sub": "Läufer bis 10 m", "scene": "flur", "key": "alle", "query": "raum=flur" } },
+        "t6": { "type": "tile", "settings": { "title": "Kinderzimmer", "sub": "Rund oder organisch", "scene": "kinderzimmer", "key": "alle", "query": "raum=kinderzimmer" } },
+        "t7": { "type": "tile", "settings": { "title": "Homeoffice", "sub": "Unter dem Schreibtisch", "scene": "homeoffice", "key": "alle", "query": "raum=homeoffice" } },
+        "t8": { "type": "tile", "settings": { "title": "Eingangsbereich", "sub": "Direkt hinter der Tür", "scene": "eingang", "key": "alle", "query": "raum=eingang" } },
+        "t9": { "type": "tile", "settings": { "title": "Gewerbe & Büro", "sub": "Praxis, Hotel, Objekt", "scene": "buero", "key": "alle", "query": "raum=buero" } },
+        "t10": { "type": "tile", "settings": { "title": "Wohnmobil & Camper", "sub": "Nach Maß oder Schablone", "scene": "wohnmobil", "key": "wohnmobil" } },
+        "t11": { "type": "tile", "settings": { "title": "Terrasse & Outdoor", "sub": "Für draußen", "scene": "outdoor", "key": "alle", "query": "raum=outdoor" } },
+        "t12": { "type": "tile", "settings": { "title": "Rund & oval", "sub": "Kreis, Oval, Ellipse", "scene": "rund", "key": "alle", "query": "form=rund,oval,ellipse" } },
+        "t13": { "type": "tile", "settings": { "title": "Sonderformen", "sub": "Frei geformt oder nach Skizze", "scene": "sonderform", "key": "sonderform" } }
+      },
+      "block_order": ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9", "t10", "t11", "t12", "t13"]
+    },
+    "schritte": {
+      "type": "tp-rug-schritte",
+      "settings": {
+        "heading": "In wenigen Schritten zu Ihrem Teppich",
+        "text": "Ein Schritt nach dem anderen – Sie sehen jederzeit, was Sie gewählt haben.",
+        "cta": "Jetzt konfigurieren",
+        "note": "Am Ende steht keine Bestellung, sondern eine unverbindliche Anfrage. Preise für den Teppichbereich folgen – wir melden uns persönlich.",
+        "sand": true
+      },
+      "blocks": {
+        "s1": { "type": "step", "settings": { "title": "Teppich auswählen", "text": "Qualität nach Raum, Optik und Gefühl – oder den Berater fragen." } },
+        "s2": { "type": "step", "settings": { "title": "Farbe wählen", "text": "Farbfelder mit Namen, die Vorschau färbt sich sofort mit." } },
+        "s3": { "type": "step", "settings": { "title": "Form wählen", "text": "Rechteck, rund, Läufer oder frei geformt – als große Kacheln." } },
+        "s4": { "type": "step", "settings": { "title": "Maße eingeben", "text": "In Zentimetern, bis 10 m Länge. Jedes Feld mit kleiner Zeichnung." } },
+        "s5": { "type": "step", "settings": { "title": "Einfassung wählen", "text": "Kettelung, Paspel, Baumwolle oder Cover – mit Randfarbe." } },
+        "s6": { "type": "step", "settings": { "title": "Extras wählen", "text": "Zum Beispiel Antirutschvlies – nur, wo die Qualität es erlaubt." } },
+        "s7": { "type": "step", "settings": { "title": "Vorschau prüfen", "text": "Maßstäbliche Zeichnung und Zusammenfassung auf einen Blick." } },
+        "s8": { "type": "step", "settings": { "title": "Unverbindlich anfragen", "text": "Sie senden Ihre Konfiguration, wir melden uns persönlich." } }
+      },
+      "block_order": ["s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8"]
+    },
+    "formen": {
+      "type": "tp-rug-formen",
+      "settings": {}
+    },
+    "kanten": {
+      "type": "tp-rug-einfassungen",
+      "settings": { "layout": "teaser" },
+      "blocks": {
+        "e1": { "type": "edge", "settings": { "key": "kettel", "title": "Kettelung", "short": "Kettelung", "text": "Die Kante wird mit Garn umstochen – klassisch, flach und unauffällig.", "width": "schmale Garnkante", "use": "Wohnräume, Läufer, Objektbereich" } },
+        "e2": { "type": "edge", "settings": { "key": "paspel", "title": "Paspel", "short": "Paspel", "pill": "ca. 1 cm", "text": "Ein schmales Band fasst die Kante ein – dezent, mit sauberem Abschluss.", "width": "ca. 1 cm Band, sichtbare Naht", "use": "Wohn- und Schlafräume" } },
+        "e3": { "type": "edge", "settings": { "key": "baumwolle", "title": "Baumwoll-Einfassband", "short": "Baumwollband", "pill": "ca. 3 cm", "text": "Ein breites Baumwollband rahmt den Teppich sichtbar ein – auch in Kontrastfarbe.", "width": "ca. 3 cm Band, verdeckte Naht", "use": "Wohn- und Esszimmer, Rahmenoptik" } },
+        "e4": { "type": "edge", "settings": { "key": "cover", "title": "Cover (Kippkante)", "short": "Cover-Kante", "pill": "inkl. Antirutschvlies", "text": "Die Kante wird nach unten umgeschlagen – kein Band, eine ruhige, durchgehende Fläche.", "width": "kein sichtbares Band", "use": "ruhige, bandlose Optik" } }
+      },
+      "block_order": ["e1", "e2", "e3", "e4"]
+    },
+    "werkzeuge": {
+      "type": "tp-rug-werkzeuge",
+      "settings": { "sand": true },
+      "blocks": {
+        "w1": { "type": "tool", "settings": { "icon": "raum", "title": "Größen-Berater", "text": "Sofa, Esstisch oder Bett eingeben – wir schlagen eine passende Teppichgröße vor und übernehmen sie in den Konfigurator.", "cta": "Größe berechnen", "key": "berater", "anchor": "groesse" } },
+        "w2": { "type": "tool", "settings": { "icon": "auge", "title": "Raum-Visualisierer", "text": "Foto vom eigenen Raum laden, Teppich platzieren, drehen und skalieren. Das Foto bleibt auf Ihrem Gerät.", "cta": "Teppich im Raum ansehen", "key": "visualisierer" } },
+        "w3": { "type": "tool", "settings": { "icon": "kompass", "title": "Welcher Teppich passt?", "text": "Drei kurze Fragen zu Raum, Wünschen und Stil – danach sehen Sie passende Kategorien.", "cta": "Berater starten", "key": "berater", "anchor": "finder" } }
+      },
+      "block_order": ["w1", "w2", "w3"]
+    },
+    "camper": {
+      "type": "tp-rug-feature",
+      "settings": {
+        "kicker": "Wohnmobil & Camper",
+        "heading": "Wohnmobilteppiche nach Maß",
+        "text": "Für Wohnmobil, Wohnwagen und Van – als Rechteck mit Ihren Maßen oder als Sonderform nach Skizze oder Schablone.",
+        "bullets": "Rechteckige Flächen direkt konfigurieren\nSkizze, Foto oder Grundriss hochladen\nSchablone für Rundungen, Schienen und Aussparungen\nEinfassung und Farbe wie bei jedem Teppich",
+        "scene": "wohnmobil",
+        "btn_label": "Zum Wohnmobil-Assistenten",
+        "btn_key": "wohnmobil"
+      }
+    },
+    "muster": {
+      "type": "tp-rug-muster",
+      "settings": {}
+    },
+    "service": {
+      "type": "tp-rug-vertrauen",
+      "settings": { "heading": "Persönlich beraten – vom Fachgeschäft", "sand": true },
+      "blocks": {
+        "v1": { "type": "item", "settings": { "icon": "telefon", "title": "Fachberatung am Telefon", "text": "[telefon] – wir helfen bei Qualität, Maß und Einfassung.", "link": "telefon" } },
+        "v2": { "type": "item", "settings": { "icon": "whatsapp", "title": "WhatsApp", "text": "Fotos und Skizzen einfach per WhatsApp schicken.", "link": "whatsapp" } },
+        "v3": { "type": "item", "settings": { "icon": "muster", "title": "Muster anfragen", "text": "Material und Farbe vorab in der Hand halten.", "link": "muster" } },
+        "v4": { "type": "item", "settings": { "icon": "stift", "title": "Sonderanfertigungen", "text": "Nach Skizze oder Schablone – auch für Fahrzeuge und Nischen.", "link": "sonderform" } },
+        "v5": { "type": "item", "settings": { "icon": "person", "title": "Persönlicher Ansprechpartner", "text": "Wir melden uns persönlich zu Ihrer Anfrage.", "link": "kontakt" } },
+        "v6": { "type": "item", "settings": { "icon": "standort", "title": "Fachgeschäft in Oranienburg", "text": "Stationärer Fachhandel für Bodenbeläge.", "link": "kontakt" } }
+      },
+      "block_order": ["v1", "v2", "v3", "v4", "v5", "v6"]
+    },
+    "faq": {
+      "type": "tp-rug-faq",
+      "settings": { "heading": "Häufige Fragen zu Teppichen nach Maß" },
+      "blocks": {
+        "f1": { "type": "frage", "settings": { "question": "Was ist der Unterschied zwischen Teppich und Teppichboden?", "answer": "<p>Ein Teppich ist ein einzelnes Stück mit fertiger Kante, das lose liegt. Teppichboden ist Meterware und wird von Wand zu Wand verlegt. Beides finden Sie bei uns – Teppichboden im Bereich <a href=\"/collections/teppichboden\" title=\"Teppichboden\">Teppichboden</a>.</p>" } },
+        "f2": { "type": "frage", "settings": { "question": "Wie messe ich richtig?", "answer": "<p>Messen Sie in Zentimetern an der längsten und breitesten Stelle. Bei Formen, Nischen oder Fahrzeugen ist eine Schablone aus Papier oder Folie am sichersten. Der Größen-Berater hilft bei der passenden Größe.</p>" } },
+        "f3": { "type": "frage", "settings": { "question": "Wie groß darf mein Teppich sein?", "answer": "<p>Die Länge ist auf 10 m (1.000 cm) begrenzt. Die mögliche Breite hängt von der Qualität ab – der Konfigurator zeigt die Grenze je Produkt an.</p>" } },
+        "f4": { "type": "frage", "settings": { "question": "Welche Einfassung passt zu mir?", "answer": "<p>Kettelung ist klassisch und unauffällig, Paspel ein schmales Band von etwa 1 cm, das Baumwollband ein breiter Rahmen von etwa 3 cm. Beim Cover wird die Kante umgeschlagen – ganz ohne Band, mit Antirutschvlies darunter.</p>" } },
+        "f5": { "type": "frage", "settings": { "question": "Kann ich eine Sonderform anfragen?", "answer": "<p>Ja – nach Skizze, Schablone oder Foto. Sie beschreiben Ihre Form und senden uns Ihre Unterlagen, wir melden uns mit einer Rückfrage oder einem Vorschlag.</p>" } },
+        "f6": { "type": "frage", "settings": { "question": "Warum sehe ich keine Preise?", "answer": "<p>Der Teppichbereich ist neu, die Preise werden gerade festgelegt. Sie können Ihren Teppich trotzdem vollständig zusammenstellen und unverbindlich anfragen – wir melden uns persönlich.</p>" } },
+        "f7": { "type": "frage", "settings": { "question": "Stimmt die Farbe auf dem Bildschirm?", "answer": "<p>Nicht immer – Bildschirme stellen Farben unterschiedlich dar, und Bilder wie Vorschauen sind unverbindlich. Deshalb empfehlen wir, vorab ein Muster anzufragen.</p>" } },
+        "f8": { "type": "hinweis", "settings": { "text": "Prüfhinweis (vor Livegang): Aussagen zu Widerruf und Rückgabe bei Maßanfertigungen werden erst nach juristischer Prüfung ergänzt." } }
+      },
+      "block_order": ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"]
+    }
+  },
+  "order": ["test", "hero", "unterschied", "raeume", "schritte", "formen", "kanten", "werkzeuge", "camper", "muster", "service", "faq"]
+}

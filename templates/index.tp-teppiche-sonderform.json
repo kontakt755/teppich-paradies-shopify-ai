@@ -1,0 +1,49 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "hero": {
+      "type": "tp-rug-hero",
+      "settings": {
+        "kicker": "Sonderform",
+        "heading": "Ihre Form – nach Skizze oder Schablone",
+        "text": "Nischen, Schrägen, Rundungen oder ganz freie Formen: Sie müssen nichts selbst konstruieren. Beschreiben Sie Ihre Fläche und senden Sie uns eine Skizze, eine Schablone oder ein Foto.",
+        "usps": "Keine Konstruktion im Browser nötig\nSkizze, Foto oder Grundriss genügt\nWir prüfen und melden uns persönlich",
+        "scene": "sonderform",
+        "show_card": false,
+        "compact": true,
+        "btn1_label": "Sonderform anfragen",
+        "btn1_key": "sonderform",
+        "btn2_label": "Organische Formen konfigurieren",
+        "btn2_key": "konfigurator",
+        "btn2_query": "produkt=tp-rug-test-sonderform&form=organisch",
+        "btn2_anchor": "",
+        "quick_label": ""
+      }
+    },
+    "anfrage": {
+      "type": "tp-rug-anfrage",
+      "settings": {
+        "mode": "sonderform",
+        "kicker": "Sonderform anfragen",
+        "heading": "Skizze, Schablone oder Foto senden",
+        "text": "Beschreiben Sie Ihre Form und wählen Sie Ihre Unterlagen aus. Wir prüfen alles und melden uns mit einer Rückfrage oder einem Vorschlag.",
+        "subject": "Teppich-Sonderform",
+        "submit": "Sonderform unverbindlich anfragen",
+        "show_vehicle": false,
+        "sand": true
+      }
+    },
+    "formen": { "type": "tp-rug-formen", "settings": { "heading": "Oder eine fertige Form wählen", "text": "Viele Sonderformen lassen sich direkt konfigurieren – Halbkreis, Viertelkreis, Dreieck, Vieleck oder eine unserer organischen Formen." } },
+    "faq": {
+      "type": "tp-rug-faq",
+      "settings": { "heading": "Fragen zur Sonderform" },
+      "blocks": {
+        "f1": { "type": "frage", "settings": { "question": "Wie genau muss meine Skizze sein?", "answer": "<p>Der Maßstab ist egal – wichtig sind die Maße an jeder Kante in Zentimetern und markierte Besonderheiten wie Türen oder Schrägen.</p>" } },
+        "f2": { "type": "frage", "settings": { "question": "Welche Dateien kann ich auswählen?", "answer": "<p>JPG, PNG oder PDF bis 10 MB je Datei. iPhone-Fotos im HEIC-Format bitte als JPG senden.</p>" } },
+        "f3": { "type": "frage", "settings": { "question": "Werden meine Dateien mit der Anfrage übertragen?", "answer": "<p>Noch nicht – das Formular kann derzeit keine Anhänge senden. Nach dem Absenden zeigen wir Ihnen, wie Sie Ihre Dateien mit Ihrer Referenz per E-Mail oder WhatsApp nachreichen.</p>" } }
+      },
+      "block_order": ["f1", "f2", "f3"]
+    }
+  },
+  "order": ["test", "hero", "anfrage", "formen", "faq"]
+}
