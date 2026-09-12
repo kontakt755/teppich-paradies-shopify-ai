@@ -1,6 +1,7 @@
 import { DialogComponent, DialogOpenEvent, DialogCloseEvent } from '@theme/dialog';
 import { CartAddEvent } from '@theme/events';
 import { isMobileBreakpoint } from '@theme/utilities';
+import { artikelzahlFuer } from '@theme/tp-cart-artikelzahl';
 
 /**
  * A custom element that manages a cart drawer.
@@ -69,12 +70,17 @@ class CartDrawerComponent extends DialogComponent {
    * Handles cart add events - opens drawer if auto-open and announces count when open.
    * @param {CustomEvent<{ resource?: { item_count?: number } }>} event
    */
-  #handleCartAdd = (event) => {
+  #handleCartAdd = async (event) => {
     if (this.hasAttribute('auto-open')) {
       this.showDialog();
     }
 
-    this.#announceCartCount(event.detail.resource?.item_count);
+    const shopifyCount = event.detail.resource?.item_count;
+    if (shopifyCount === undefined) return;
+
+    // Dieselbe Zahl wie die Header-Blase (Flaechenware je Zeile 1) statt
+    // Shopifys Mengensumme, siehe assets/tp-cart-artikelzahl.js.
+    this.#announceCartCount((await artikelzahlFuer(event)) ?? shopifyCount);
   };
 
   /**

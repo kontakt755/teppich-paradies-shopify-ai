@@ -1,0 +1,26 @@
+{%- doc -%}
+  Artikelzahl des Warenkorbs fuer Header-Blase, Warenkorbtitel und Drawer.
+
+  Flaechenware (Metafeld custom.preis_pro_001_qm) wird in 0,01-m2-Einheiten
+  verkauft: Ein Teppich mit 10 m2 hat die Menge 1000, und cart.item_count
+  meldet ihn als 1000 Artikel. Hier zaehlt jede Zeile Flaechenware als ein
+  Artikel, jede andere Zeile weiter nach Menge.
+
+  Gibt nur die Zahl aus. Als Zahl einlesen: den render-Aufruf in ein capture
+  legen, dann strip und plus: 0 (Beispiel in snippets/cart-bubble.liquid).
+
+  Das Metafeld steht nicht im Warenkorb-JSON. Das Frontend liest die Zahl
+  deshalb aus dem Server-HTML (Attribut data-tp-artikelzahl), siehe
+  assets/tp-cart-artikelzahl.js und sections/tp-cart-artikelzahl.liquid.
+{%- enddoc -%}
+{%- liquid
+  assign tp_az_summe = 0
+  for tp_az_zeile in cart.items
+    if tp_az_zeile.product.metafields.custom.preis_pro_001_qm.value == true
+      assign tp_az_summe = tp_az_summe | plus: 1
+    else
+      assign tp_az_summe = tp_az_summe | plus: tp_az_zeile.quantity
+    endif
+  endfor
+  echo tp_az_summe
+-%}
