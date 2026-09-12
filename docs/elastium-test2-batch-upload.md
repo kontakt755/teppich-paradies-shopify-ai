@@ -21,20 +21,26 @@ Elastic/Linoleum Bahnen 200cm" bei Lieferant A. Der Shopname „Elastium" ist
 eine Eigenbezeichnung und taucht beim Lieferanten nicht auf — die Suche muss
 ueber die Artikelnummer laufen, nicht ueber den Produktnamen.
 
-### Naechster Schritt (braucht Freigabe)
+### Korrekturschritt — erledigt und ueberholt
 
-SKU-Aenderungen sind laut CLAUDE.md eine Protected Action. Der fertige
-Korrekturplan liegt bereit und aendert von sich aus nichts:
+**Dieser Abschnitt beschreibt Geschichte, keinen offenen Schritt.** Er stand hier
+als „naechster Schritt" samt dem Befehl `node scripts/elastium-farbcode-korrektur.mjs`.
+Das Skript liegt seit 2026-09-11 nicht mehr im Repository, sondern lokal
+(`domains/lieferanten/AUSGELAGERT.md`, dort in der Werkzeugtabelle als
+„Einmal-Korrektur Elastium vom 2026-09-04 (ausgefuehrt)"). Der Repo-Befehl waere
+seitdem mit `MODULE_NOT_FOUND` gescheitert.
 
-```
-node scripts/elastium-farbcode-korrektur.mjs
-```
+Stand am 2026-09-12 in der Admin API geprueft: „Elastium Linoleumboden 200cm"
+fuehrt **21 Farbwerte mit beschreibenden Namen** („Gelb Beige", „Braun Dunkel",
+„Beige Grau Hell Meliert" …). Die durchgezaehlten Codes sind damit nicht mehr
+vorhanden — weder als Optionswerte noch als offener Fall. Was das Skript leisten
+sollte, ist durch die spaetere Umbenennung der Optionswerte erledigt
+(siehe `domains/shopify/farbverwaltung.md`).
 
-Er druckt die Zuordnung (erfundener → echter Code) und die GraphQL-Variablen
-fuer `productVariantsBulkUpdate`, `productCreateMedia` und
-`productVariantAppendMedia`. Die Zuordnung ist aufsteigend und damit
-willkuerlich — zulaessig, weil die erfundenen Codes keine Information tragen:
-kein Bild, kein Bestand, keine Bestellung haengt daran.
+Der Grund fuer die damalige Vorsicht bleibt lehrreich und gilt weiter: SKU-Aenderungen
+sind laut CLAUDE.md eine Protected Action, und die Zuordnung erfundener auf echte
+Codes war aufsteigend und damit willkuerlich — zulaessig nur, weil an den erfundenen
+Codes nichts hing: kein Bild, kein Bestand, keine Bestellung.
 
 ## Was funktioniert und belegt ist
 
