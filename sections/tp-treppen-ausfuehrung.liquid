@@ -23,7 +23,10 @@
 
 {%- liquid
   assign ta_spalten = 0
-  if section.settings.spalte_kokos_sisal != blank
+  if section.settings.spalte_kokos != blank
+    assign ta_spalten = ta_spalten | plus: 1
+  endif
+  if section.settings.spalte_sisal != blank
     assign ta_spalten = ta_spalten | plus: 1
   endif
   if section.settings.spalte_teppich != blank
@@ -80,10 +83,13 @@
               <p class="tp-treppen-ausf__detail">{{ block.settings.detail }}</p>
             {%- endif -%}
 
-            {%- if block.settings.belag_kokos_sisal or block.settings.belag_teppich or block.settings.belag_vinyl -%}
+            {%- if block.settings.belag_kokos or block.settings.belag_sisal or block.settings.belag_teppich or block.settings.belag_vinyl -%}
               <ul class="tp-treppen-ausf__belaege">
-                {%- if block.settings.belag_kokos_sisal and section.settings.spalte_kokos_sisal != blank -%}
-                  <li>{{ section.settings.spalte_kokos_sisal }}</li>
+                {%- if block.settings.belag_kokos and section.settings.spalte_kokos != blank -%}
+                  <li>{{ section.settings.spalte_kokos }}</li>
+                {%- endif -%}
+                {%- if block.settings.belag_sisal and section.settings.spalte_sisal != blank -%}
+                  <li>{{ section.settings.spalte_sisal }}</li>
                 {%- endif -%}
                 {%- if block.settings.belag_teppich and section.settings.spalte_teppich != blank -%}
                   <li>{{ section.settings.spalte_teppich }}</li>
@@ -110,8 +116,11 @@
           <thead>
             <tr>
               <th scope="col">{{ section.settings.matrix_ecke | default: 'Ausführung' }}</th>
-              {%- if section.settings.spalte_kokos_sisal != blank -%}
-                <th scope="col">{{ section.settings.spalte_kokos_sisal }}</th>
+              {%- if section.settings.spalte_kokos != blank -%}
+                <th scope="col">{{ section.settings.spalte_kokos }}</th>
+              {%- endif -%}
+              {%- if section.settings.spalte_sisal != blank -%}
+                <th scope="col">{{ section.settings.spalte_sisal }}</th>
               {%- endif -%}
               {%- if section.settings.spalte_teppich != blank -%}
                 <th scope="col">{{ section.settings.spalte_teppich }}</th>
@@ -126,9 +135,18 @@
               {%- if block.type == 'ausfuehrung' -%}
                 <tr>
                   <th scope="row">{{ block.settings.titel }}</th>
-                  {%- if section.settings.spalte_kokos_sisal != blank -%}
+                  {%- if section.settings.spalte_kokos != blank -%}
                     <td>
-                      {%- if block.settings.belag_kokos_sisal -%}
+                      {%- if block.settings.belag_kokos -%}
+                        <span class="tp-treppen-ausf__ja">ja</span>
+                      {%- else -%}
+                        <span class="tp-treppen-ausf__nein">–</span>
+                      {%- endif -%}
+                    </td>
+                  {%- endif -%}
+                  {%- if section.settings.spalte_sisal != blank -%}
+                    <td>
+                      {%- if block.settings.belag_sisal -%}
                         <span class="tp-treppen-ausf__ja">ja</span>
                       {%- else -%}
                         <span class="tp-treppen-ausf__nein">–</span>
@@ -492,24 +510,30 @@
     },
     {
       "type": "paragraph",
-      "content": "Diese drei Felder benennen die Belaggruppen. Ein leeres Feld blendet die Spalte in der Tabelle und die Markierung an den Karten aus – so steht nie ein „–\" für etwas, das noch nicht geklärt ist."
+      "content": "Diese vier Felder benennen die Beläge. Ein leeres Feld blendet die Spalte in der Tabelle und die Markierung an den Karten aus – so steht nie ein „–\" für etwas, das noch nicht geklärt ist."
     },
     {
       "type": "text",
-      "id": "spalte_kokos_sisal",
+      "id": "spalte_kokos",
       "label": "Spalte 1",
-      "info": "Leer lassen, solange nicht geklärt ist, welche Ausführungen mit Kokos und Sisal gehen. Ausfüllen schaltet die Spalte frei."
+      "default": "Kokos"
+    },
+    {
+      "type": "text",
+      "id": "spalte_sisal",
+      "label": "Spalte 2",
+      "default": "Sisal"
     },
     {
       "type": "text",
       "id": "spalte_teppich",
-      "label": "Spalte 2",
+      "label": "Spalte 3",
       "default": "Teppichboden"
     },
     {
       "type": "text",
       "id": "spalte_vinyl",
-      "label": "Spalte 3",
+      "label": "Spalte 4",
       "default": "Vinyl"
     },
     {
@@ -538,7 +562,7 @@
       "type": "textarea",
       "id": "matrix_hinweis",
       "label": "Hinweis unter der Tabelle",
-      "default": "Vinyl lässt sich nicht ketteln – alle übrigen Ausführungen sind auch mit Vinyl möglich."
+      "default": "Kokos gibt es nur als gekettelten Läufer. Vinyl lässt sich nicht ketteln – alle übrigen Ausführungen sind auch mit Vinyl möglich."
     },
     {
       "type": "header",
@@ -615,20 +639,26 @@
         },
         {
           "type": "checkbox",
-          "id": "belag_kokos_sisal",
+          "id": "belag_kokos",
           "label": "Spalte 1",
           "default": false
         },
         {
           "type": "checkbox",
-          "id": "belag_teppich",
+          "id": "belag_sisal",
           "label": "Spalte 2",
           "default": true
         },
         {
           "type": "checkbox",
-          "id": "belag_vinyl",
+          "id": "belag_teppich",
           "label": "Spalte 3",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "belag_vinyl",
+          "label": "Spalte 4",
           "default": true
         }
       ]
@@ -646,7 +676,8 @@
             "titel": "Läufer mit seitlicher Kettelung",
             "text": "Eine Bahn läuft mittig über die Stufen, die Längskanten werden gekettelt. Links und rechts bleibt die Stufe sichtbar.",
             "detail": "Breite nach Maß, die Kettelung bestimmt die Optik der Kante.",
-            "belag_kokos_sisal": true,
+            "belag_kokos": true,
+            "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": false
           }
@@ -658,6 +689,8 @@
             "titel": "Einzelne Stufen nach Maß und Schablone",
             "text": "Jede Stufe wird einzeln aufgemessen, von Hand eine Schablone genommen und der Belag danach zugeschnitten.",
             "detail": "Der Weg für gewendelte Treppen – dort hat keine Stufe dasselbe Maß wie die nächste.",
+            "belag_kokos": false,
+            "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": true
           }
@@ -669,6 +702,8 @@
             "titel": "Trittstufe komplett, ohne Setzstufe",
             "text": "Die ganze Trittfläche wird belegt, die senkrechte Setzstufe bleibt frei.",
             "detail": "Der sichtbare Teil der Stufe bleibt sichtbar.",
+            "belag_kokos": false,
+            "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": true
           }
@@ -680,6 +715,8 @@
             "titel": "Tritt- und Setzstufe komplett",
             "text": "Trittfläche und Setzstufe werden belegt, der Belag läuft über die Stufenkante durch.",
             "detail": "An der Stufenkante entscheidet sich die Haltbarkeit – dort läuft man am häufigsten.",
+            "belag_kokos": false,
+            "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": true
           }
@@ -691,6 +728,8 @@
             "titel": "Komplett mit Wange",
             "text": "Zusätzlich zu Tritt- und Setzstufe wird die seitliche Wange belegt. Von der Treppe bleibt dann kein alter Untergrund mehr sichtbar.",
             "detail": "Die aufwendigste Ausführung – und die, bei der eine alte Treppe wirklich wie neu wirkt.",
+            "belag_kokos": false,
+            "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": true
           }
