@@ -87,6 +87,40 @@ function describeTreeScope({ porcelain = '', aheadCommits = '', baseRef = 'origi
 // baseline: Working-Tree-Zustand bei Sitzungsbeginn (captureWorkingTreeSnapshot).
 // Ohne baseline laeuft die Funktion exakt wie vorher, ohne einen einzigen
 // zusaetzlichen git-Aufruf.
+// docs/ai-dashboard/issues.json schreibt der Dashboard-Bot (CLAUDE.md,
+// Abschnitt Dashboard): stuendlich nach main, lokal von `npm run task` und
+// `npm run dashboard`, und sie wird nie mitcommittet. Die Sitzungs-Baseline
+// allein genuegt hier nicht - schreibt der Bot die Datei waehrend der Sitzung
+// neu, weicht sie von der Baseline ab und stuende wieder im Pruefbereich.
+export const BOT_OWNED_PATHS = Object.freeze(['docs/ai-dashboard/issues.json']);
+
+// Eine Zeile ist entweder "XY pfad" aus git status - der Statuscode kann durch
+// das trim() der git-Hilfe sein fuehrendes Leerzeichen verloren haben - oder,
+// nach Abzug der Baseline, der blosse Pfad. Eine Umbenennung ("R  alt -> pfad")
+// zaehlt bewusst nicht: dort ist der Bezug nicht eindeutig, und mehr pruefen
+// ist sicherer als weniger.
+function botOwnedPath(line) {
+  return BOT_OWNED_PATHS.find(file => line === file
+    || (line.endsWith(file) && /^[ ?!ACDMRTU]{1,2} $/.test(line.slice(0, line.length - file.length)))) ?? null;
+}
+
+function withoutBotOwned(tree) {
+  const porcelain = [];
+  const botOwned = [];
+  for (const line of String(tree.porcelain ?? '').split('\n')) {
+    if (!line.trim()) continue;
+    const file = botOwnedPath(line);
+    if (file) botOwned.push(file);
+    else porcelain.push(line);
+  }
+  return { ...tree, porcelain: porcelain.join('\n'), botOwned };
+}
+
+function noteBotOwned(scope, botOwned) {
+  if (!botOwned.length) return scope;
+  return { ...scope, botOwned: [...botOwned], text: `${scope.text}. ${formatPaths(botOwned)} schreibt der Dashboard-Bot und wird nie mitcommittet: gehört nicht zu diesem Auftrag und ist kein Befund` };
+}
+
 export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, exec = execFileSync, io = fs } = {}) {
   const errors = [];
   const git = (...args) => {
@@ -99,8 +133,8 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   };
   const status = git('status', '--porcelain');
   if (!status.ok) return unknownScope(errors, baseRef);
-  const tree = applyBaseline({ cwd, baseline, porcelain: status.out, exec, io });
-  const finish = scope => (tree.status ? { ...scope, baselineStatus: tree.status } : scope);
+  const tree = withoutBotOwned(applyBaseline({ cwd, baseline, porcelain: status.out, exec, io }));
+  const finish = scope => noteBotOwned(tree.status ? { ...scope, baselineStatus: tree.status } : scope, tree.botOwned);
   // UNKNOWN verlangt ohnehin, alles Uncommittete konservativ zu pruefen - eine
   // Notiz "kein Befund" zu vorbestehenden Dateien wuerde das nur aufweichen
   // (Pruefung 2026-09-11). Deshalb hier keine Ausklammerung und keine Notiz.

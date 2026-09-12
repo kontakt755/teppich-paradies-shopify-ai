@@ -79,7 +79,9 @@ try {
     writeClaudeSessionState({
       sessionId: input.session_id,
       projectDir,
-      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit },
+      // reviewTaskPath: Auftrag und Grenzen ohne die ungepruefte Voranalyse -
+      // der Stop-Hook gibt genau diese Datei an den Reviewer (claude-bridge.mjs).
+      state: { taskId: result.classified.id, handoffPath: result.handoffPath, reviewTaskPath: result.reviewTaskPath, reviews: 0, status: 'PENDING_REVIEW', taskClass, plan, startCommit },
     });
   } else {
     clearClaudeSessionState({ sessionId: input.session_id, projectDir });

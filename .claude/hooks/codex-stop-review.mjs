@@ -92,7 +92,10 @@ try {
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
-    taskFile: current.state.handoffPath,
+    // Auftrag und verbindliche Grenzen, nie die ungepruefte Voranalyse aus dem
+    // Handoff des Implementers (buildReviewerTaskPack in claude-bridge.mjs).
+    // handoffPath nur fuer Session-States von vor diesem Feld.
+    taskFile: current.state.reviewTaskPath ?? current.state.handoffPath,
     taskId,
     // Der Reviewer liest den Code im Arbeitsverzeichnis der Sitzung; die
     // Laufprotokolle bleiben absichtlich unter projectDir, weil

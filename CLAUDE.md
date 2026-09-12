@@ -411,6 +411,14 @@ Bis 2026-09-10 passierte das in jedem Worktree zuverlässig: Beide Hooks nahmen
 liegen — wohl aber die einer parallel laufenden Sitzung. `resolveReviewDir` in
 `automation/core/review-scope.mjs` behebt das.
 
+Woran der Reviewer misst, ist seit 2026-09-11 eine eigene Datei:
+`.router/claude-handoffs/<TASK-ID>.review.md` enthält nur Auftrag und
+verbindliche Grenzen. Vorher bekam er das Hand-off des Implementers, in dem die
+Voranalyse des Routers steht — sie stammt von einem kleinen Drittmodell ohne
+Repository-Zugriff und wurde so zum Prüfmaßstab. Ebenfalls nie im Prüfbereich:
+`docs/ai-dashboard/issues.json`. Die Sitzungs-Baseline allein genügt dafür
+nicht, weil der Dashboard-Bot die Datei während der Sitzung neu schreibt.
+
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien
 aufzuräumen. Beides hätte die uncommittete Arbeit anderer Sitzungen zerstört.
