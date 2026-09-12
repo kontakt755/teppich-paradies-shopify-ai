@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T16:40:43.621Z",
+  "generated_at": "2026-09-12T16:41:00.506Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 80,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T16:40:43.621Z",
+    "fetchedAt": "2026-09-12T16:41:00.506Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,7 +65,7 @@
     {
       "number": 246,
       "title": "Sicherheits-Hook: Git-Aufruf in Anfuehrungszeichen umging den Guard",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/246",
       "labels": [
         "status:fertig",
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-12T15:50:05Z",
-      "updated_at": "2026-09-12T16:40:42Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T16:40:44Z",
+      "closed_at": "2026-09-12T16:40:44Z"
     },
     {
       "number": 230,
@@ -322,13 +322,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:20:50Z",
-      "updated_at": "2026-09-11T20:02:58Z",
+      "updated_at": "2026-09-12T16:40:58Z",
       "closed_at": null
     },
     {
