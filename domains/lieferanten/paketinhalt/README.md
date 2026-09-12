@@ -1,6 +1,6 @@
 # Paketinhalt: Stueckzahl und Format je Paketprodukt
 
-Stand 2026-09-10. Gepflegt in Shopify, belegt aus den Jordan-Artikeldaten.
+Stand 2026-09-10. Gepflegt in Shopify, belegt aus den Lieferant-A-Artikeldaten.
 
 Die Produktseite zeigt seit PR #180 „1 Paket = 5,00 m²" und haengt daran, wenn
 vorhanden, „· 20 Fliesen à 50 × 50 cm". Diese Zusatzangabe kommt aus drei
@@ -18,19 +18,20 @@ eine Zusicherung gegenueber dem Kunden, die niemand belegen kann.
 
 ## Woher die Zahlen kommen
 
-Jordan nennt die Stueckzahl je Paket nirgends. Wohl aber Laenge und Breite eines
+Lieferant A nennt die Stueckzahl je Paket nirgends. Wohl aber Laenge und Breite eines
 Stuecks sowie den Paketinhalt in m². Die Stueckzahl ist der Quotient:
 
 ```
 Stueck = (m² pro Paket) / ((Laenge_mm / 1000) × (Breite_mm / 1000))
 ```
 
-`jordan-paketinhalt-2026-09-10.json` fuehrt je Kombination aus Lieferantenlinie
+Die Rohwerttabelle vom 2026-09-10 (seit 2026-09-11 lokal, siehe `../AUSGELAGERT.md`)
+fuehrt je Kombination aus Lieferantenlinie
 und Paketflaeche die Rohwerte, den ungerundeten Quotienten und die Abweichung.
 
 **Toleranzregel:** Die Stueckzahl wird nur uebernommen, wenn der Quotient
 hoechstens **1,5 %** von einer ganzen Zahl abweicht. Damit wird gerundet, was
-offensichtlich ganzzahlig gemeint ist (Jordan rechnet die Paketflaeche selbst
+offensichtlich ganzzahlig gemeint ist (Lieferant A rechnet die Paketflaeche selbst
 gerundet aus), aber nichts erzwungen, was nicht aufgeht.
 
 **Bezeichnung:** Seitenverhaeltnis ab 3:1 heisst `Planken`, darunter `Fliesen`.
@@ -57,8 +58,10 @@ dieselben zwei Artikel mit „2,2 m²/Paket" zu 114,29 € (= 51,95 €/m², die
 unverbindliche Preisempfehlung). Die 1,892 m² der Artikeldaten gehoeren rechnerisch
 zur Planke — 5,164 Fliesen je Paket gibt es nicht. Am 2026-09-11 korrigiert:
 `qm_pro_paket` 2.2, 6 Fliesen à 85,6 × 42,8 cm, Filterwert `bis 3 m²`. Der
-Paketpreis blieb dabei 98,29 € (bisher 1,892 × 51,95 €) und ergibt jetzt
-44,68 €/m² — ob er auf 114,29 € geht, entscheidet der Inhaber.
+Paketpreis stand dabei zunaechst weiter auf 98,29 € (= 1,892 × 51,95 €). Am
+2026-09-12 hat der Inhaber ihn auf **114,29 €** gesetzt: 2,20 m² × 51,95 €/m²,
+also derselbe Quadratmeterpreis wie bei den uebrigen Farben der Qualitaet und wie
+die unverbindliche Preisempfehlung.
 
 Dasselbe Datenblatt nennt fuer die Planke „10 Stueck" bei 1,89 m² — rechnerisch
 sind es 8 (10 Planken waeren 2,36 m²). Artikeldaten und Datenblatt stimmen in
@@ -69,7 +72,7 @@ sie Lieferantendaten enthaelt).
 ## Wenn neue Paketprodukte dazukommen
 
 1. `custom.qm_pro_paket` setzen (ohne das rendert der Paket-Rechner nichts).
-2. Auf der Jordan-Produktseite `Laenge (mm)`, `Breite (mm)` und
+2. Auf der Lieferant-A-Produktseite `Laenge (mm)`, `Breite (mm)` und
    `Inhalt m² pro Paket` ablesen — per `curl` auf `/de-DE/product/<id>`, die ID
    findet die Quicksearch ueber die Artikelnummer.
 3. Stueckzahl rechnen, Toleranz pruefen, erst dann die drei Metafelder setzen.
@@ -97,6 +100,6 @@ nicht nach Metafeldern) — der Filter ist der Ersatz dafuer. Sichtbar ist er er
 wenn er in der App **Search & Discovery** unter Filter angelegt ist (Quelle:
 Produkt-Metafeld „Kleinste Bestellmenge").
 
-Verwandt: `../README.md` (Lieferantenabgleich Jordan/M-Plus) und
+Verwandt: `../README.md` (Lieferantenabgleich Lieferant A/B) und
 `../kleinmengen-dropshipping-2026-09-10.md` (warum das Paket die kleinste
 Einheit ist).

@@ -125,7 +125,7 @@
               "type": "text",
               "name": "t:names.heading",
               "settings": {
-                "text": "<h2>Karriere</h2>",
+                "text": "<h1>Karriere</h1>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "left",
@@ -150,7 +150,7 @@
             "text_4eTMMU": {
               "type": "text",
               "settings": {
-                "text": "<p>Wir suchen engagierte Mitarbeiter für unser Team!</p><p><strong>Verkäufer (m/w/d)</strong> – Sie beraten Kunden im Showroom, präsentieren und verkaufen Teppiche sowie Bodenbeläge, gestalten die Verkaufsfläche und bearbeiten Bestellungen sowie Reklamationen. Erfahrung im Verkauf, Kommunikationsstärke und Begeisterung für Inneneinrichtung sind von Vorteil.</p><p><strong>Bodenleger (m/w/d)</strong> – Sie verlegen Teppiche, Laminat, Vinyl und andere Bodenbeläge, bereiten Untergründe vor, sanieren Böden und arbeiten eng mit Kunden sowie dem Team zusammen. Erfahrung in der Bodenverlegung, präzises Arbeiten und ein Führerschein Klasse B sind erwünscht.</p><p></p><p>Wir suchen Verkäufer (m/w/d) für die Kundenberatung im Showroom und den Verkauf von Teppichen sowie Bodenbelägen sowie Bodenleger (m/w/d) für die Verlegung und Sanierung verschiedener Bodenbeläge. Erfahrung, Teamfähigkeit und selbstständiges Arbeiten sind erwünscht. Ruf uns an unter <strong>03301 / 5733720</strong> oder sende deine Bewerbung an <a><strong>kontakt@teppich-paradies.net</strong></a> mit dem Betreff „Bewerbung [gewünschte Position]“. Alle qualifizierten Bewerber sind willkommen!</p>",
+                "text": "<p>Wir suchen engagierte Mitarbeiter für unser Team!</p><p><strong>Verkäufer (m/w/d)</strong> – Sie beraten Kunden im Showroom, präsentieren und verkaufen Teppiche sowie Bodenbeläge, gestalten die Verkaufsfläche und bearbeiten Bestellungen sowie Reklamationen. Erfahrung im Verkauf, Kommunikationsstärke und Begeisterung für Inneneinrichtung sind von Vorteil.</p><p><strong>Bodenleger (m/w/d)</strong> – Sie verlegen Teppiche, Laminat, Vinyl und andere Bodenbeläge, bereiten Untergründe vor, sanieren Böden und arbeiten eng mit Kunden sowie dem Team zusammen. Erfahrung in der Bodenverlegung, präzises Arbeiten und ein Führerschein Klasse B sind erwünscht.</p><p></p><p>Wir suchen Verkäufer (m/w/d) für die Kundenberatung im Showroom und den Verkauf von Teppichen sowie Bodenbelägen sowie Bodenleger (m/w/d) für die Verlegung und Sanierung verschiedener Bodenbeläge. Erfahrung, Teamfähigkeit und selbstständiges Arbeiten sind erwünscht. Ruf uns an unter <a href=\"tel:+4933015733720\"><strong>03301 / 573 37 20</strong></a> oder sende deine Bewerbung an <a href=\"mailto:kontakt@teppich-paradies.net\"><strong>kontakt@teppich-paradies.net</strong></a> mit dem Betreff „Bewerbung [gewünschte Position]“. Alle qualifizierten Bewerber sind willkommen!</p>",
                 "width": "fit-content",
                 "max_width": "narrow",
                 "alignment": "left",

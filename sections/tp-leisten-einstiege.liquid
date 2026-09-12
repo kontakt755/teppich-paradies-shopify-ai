@@ -441,20 +441,42 @@
       margin-block-end: 14px;
     }
 
+    /* Drei Materialien nebeneinander statt untereinander (vorher 3 x 64 px
+       plus Abstaende, zusammen 238 px vor den Produkten). Bild oben, darunter
+       Name und Anzahl - die Kachel bleibt der Filterknopf. */
     .tp-le__tiles {
-      grid-template-columns: minmax(0, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
     }
 
     .tp-le__tile {
-      min-height: 64px;
-      padding: 10px 12px;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      min-height: 0;
+      padding: 10px 6px;
+      text-align: center;
     }
 
     .tp-le__tile-media {
-      flex-basis: 52px;
-      width: 52px;
-      height: 52px;
+      flex: 0 0 auto;
+      width: 48px;
+      height: 48px;
+    }
+
+    .tp-le__tile-body {
+      align-items: center;
+    }
+
+    .tp-le__tile-title {
+      font-size: 0.875rem;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+
+    .tp-le__tile-count {
+      margin-block-start: 0;
+      font-size: 0.75rem;
     }
 
     .tp-le__tile-text {

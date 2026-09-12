@@ -11,7 +11,37 @@
   "sections": {
     "main": {
       "type": "main-page",
-      "disabled": true,
+      "blocks": {
+        "heading": {
+          "type": "text",
+          "name": "Title",
+          "settings": {
+            "text": "<h1>{{ closest.page.title }}</h1>",
+            "width": "100%",
+            "max_width": "normal",
+            "alignment": "left",
+            "type_preset": "h2",
+            "font": "var(--font-primary--family)",
+            "font_size": "",
+            "line_height": "normal",
+            "letter_spacing": "normal",
+            "case": "none",
+            "wrap": "pretty",
+            "color": "",
+            "background": false,
+            "background_color": "#00000026",
+            "corner_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "heading"
+      ],
       "settings": {
         "content_direction": "column",
         "gap": 32,
@@ -231,11 +261,52 @@
         "padding-block-start": 0,
         "padding-block-end": 0
       }
+    },
+    "tp_service_einstieg": {
+      "type": "tp-service-einstieg",
+      "settings": {
+        "titel": "Boden aussuchen – wir verlegen ihn",
+        "text": "Suchen Sie in Ruhe aus. Aufmaß kostenlos, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
+        "anfrage_cta": "Aufmaß-Termin anfragen",
+        "anfrage_link": "/pages/kontakt",
+        "telefon": "+4933015733720",
+        "telefon_label": "oder anrufen: 03301 5733720",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "z1": {
+          "type": "ziel",
+          "settings": {
+            "label": "Teppichboden ansehen",
+            "ziel": "/collections/teppichboden"
+          }
+        },
+        "z2": {
+          "type": "ziel",
+          "settings": {
+            "label": "Vinylboden ansehen",
+            "ziel": "/collections/vinylboden-1"
+          }
+        },
+        "z3": {
+          "type": "ziel",
+          "settings": {
+            "label": "Alle Böden",
+            "ziel": "/collections/all"
+          }
+        }
+      },
+      "block_order": [
+        "z1",
+        "z2",
+        "z3"
+      ]
     }
   },
   "order": [
     "main",
     "177859431850222fa1",
+    "tp_service_einstieg",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw",
     "1778594052789eab71"

@@ -11,43 +11,6 @@
   "type": "header",
   "name": "Header",
   "sections": {
-    "announcements_tp": {
-      "type": "header-announcements",
-      "blocks": {
-        "usp_versand": {
-          "type": "_announcement",
-          "settings": {
-            "text": "Bodenbeläge versandkostenfrei innerhalb Deutschlands"
-          }
-        },
-        "usp_muster": {
-          "type": "_announcement",
-          "settings": {
-            "text": "Kostenlose Muster bestellen",
-            "link": "shopify://pages/muster"
-          }
-        },
-        "usp_beratung": {
-          "type": "_announcement",
-          "settings": {
-            "text": "Persönliche Fachberatung: 03301 5733720"
-          }
-        }
-      },
-      "block_order": [
-        "usp_versand",
-        "usp_muster",
-        "usp_beratung"
-      ],
-      "settings": {
-        "speed": 5,
-        "section_width": "page-width",
-        "color_scheme": "scheme-1",
-        "divider_width": 0,
-        "padding-block-start": 8,
-        "padding-block-end": 8
-      }
-    },
     "header_section": {
       "type": "header",
       "blocks": {
@@ -283,6 +246,14 @@
             "subtitle": ""
           }
         },
+        "tp_kachel_service_liefer": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Liefer- & Verlegeservice",
+            "image": "shopify://shop_images/20231129_114941.jpg",
+            "subtitle": "Lieferung, Verlegung & Preise"
+          }
+        },
         "tp_kachel_service_teppich": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -305,6 +276,14 @@
             "menu_match": "Treppen professionell belegen",
             "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-25.jpg",
             "subtitle": "Sicher & stilvoll belegt"
+          }
+        },
+        "tp_kachel_service_arbeit": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Unsere Arbeit",
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "subtitle": "Echte Projekte aus der Region"
           }
         },
         "tp_kachel_service_firmen": {
@@ -401,33 +380,130 @@
         "tp_kachel_zubehoer_reinigung",
         "tp_kachel_zubehoer_verlegeband",
         "tp_kachel_zubehoer_sauberlauf",
+        "tp_kachel_service_liefer",
         "tp_kachel_service_teppich",
         "tp_kachel_service_vinyl",
         "tp_kachel_service_treppen",
+        "tp_kachel_service_arbeit",
         "tp_kachel_service_firmen",
         "tp_kachel_linoleum",
         "tp_kachel_kontakt_anrufen",
         "tp_kachel_kontakt_vorort"
       ]
     },
-    "divider_BkWxdN": {
-      "type": "divider",
-      "name": "t:names.divider_section",
+    "tp_topbar": {
+      "type": "tp-topbar",
       "settings": {
-        "color_scheme": "",
-        "section_width": "page-width",
-        "thickness": 1,
-        "corner_radius": "square",
-        "width_percent": 100,
-        "alignment_horizontal": "center",
-        "padding-block-start": 16,
-        "padding-block-end": 16
-      }
+        "telefon": "03301 573 37 20",
+        "telefon_anzeige": "03301 573 37 20",
+        "zeiten": "Mo–Fr 8:30–18 · Sa 8:30–14:30"
+      },
+      "blocks": {
+        "a1": {
+          "type": "aussage",
+          "settings": {
+            "text": "Versandkostenfrei in Deutschland ab 50 €"
+          }
+        },
+        "a2": {
+          "type": "aussage",
+          "settings": {
+            "text": "Bis zu 3 Muster kostenlos",
+            "link": "shopify://pages/muster"
+          }
+        },
+        "a3": {
+          "type": "aussage",
+          "settings": {
+            "text": "Fachgeschäft in Oranienburg · Verlegeservice bis 50 km"
+          }
+        }
+      },
+      "block_order": [
+        "a1",
+        "a2",
+        "a3"
+      ]
+    },
+    "tp_header_suche": {
+      "type": "tp-header-suche",
+      "settings": {
+        "platzhalter": "Suchen: grauer Teppichboden, Vinyl Eiche, Sockelleiste weiß …"
+      },
+      "blocks": {
+        "c1": {
+          "type": "chip",
+          "settings": {
+            "label": "Teppichboden",
+            "link": "shopify://collections/teppichboden"
+          }
+        },
+        "c2": {
+          "type": "chip",
+          "settings": {
+            "label": "Vinylboden",
+            "link": "shopify://collections/vinylboden-1"
+          }
+        },
+        "c3": {
+          "type": "chip",
+          "settings": {
+            "label": "Klickvinyl",
+            "link": "shopify://collections/vinylboden-klickvinyl"
+          }
+        },
+        "c4": {
+          "type": "chip",
+          "settings": {
+            "label": "Linoleum",
+            "link": "shopify://collections/linoleumboden-1"
+          }
+        },
+        "c5": {
+          "type": "chip",
+          "settings": {
+            "label": "Bodenleisten",
+            "link": "shopify://collections/bodenleisten"
+          }
+        },
+        "c6": {
+          "type": "chip",
+          "settings": {
+            "label": "Zubehör",
+            "link": "shopify://collections/zubehoer"
+          }
+        },
+        "c7": {
+          "type": "chip",
+          "settings": {
+            "label": "Verlegung",
+            "link": "shopify://pages/teppichboden-verlegen-lassen",
+            "hervorheben": true
+          }
+        },
+        "c8": {
+          "type": "chip",
+          "settings": {
+            "label": "Muster",
+            "link": "shopify://pages/muster"
+          }
+        }
+      },
+      "block_order": [
+        "c1",
+        "c2",
+        "c3",
+        "c4",
+        "c5",
+        "c6",
+        "c7",
+        "c8"
+      ]
     }
   },
   "order": [
-    "announcements_tp",
+    "tp_topbar",
     "header_section",
-    "divider_BkWxdN"
+    "tp_header_suche"
   ]
 }

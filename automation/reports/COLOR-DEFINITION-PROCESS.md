@@ -3,7 +3,7 @@
 **Status:** 🔄 BEREIT FÜR FARB-AUDIT  
 **Datum:** 2026-08-31  
 **Aufgabe:** Die 33 Farben ohne explizite Namen definieren  
-**Methode:** Shopify Admin + Lieferanten-Katalog + Jordanshop
+**Methode:** Shopify Admin + Lieferanten-Katalog + Lieferant A
 
 ---
 
@@ -66,13 +66,13 @@ Das `analyze_all_colors.py` Skript hat 41 Farbnummern analysiert und folgende Er
 3. Finde die offizielle Farbbezeichnung
 4. Notiere in CSV
 
-### Option 3: Jordanshop-Daten
+### Option 3: Lieferant-A-Daten
 
-**Vorteil:** Original-Daten von Jordanshop (wo Daten importiert wurden)  
+**Vorteil:** Original-Daten von Lieferant A (wo Daten importiert wurden)  
 **Zeit:** Schnell wenn Daten vorhanden
 
 **Aktionen:**
-1. Checke ob Jordanshop-Backup vorhanden ist
+1. Checke ob Lieferant-A-Backup vorhanden ist
 2. Extrahiere Farbbezeichnungen
 3. Mappe zu Farbnummern
 
@@ -156,7 +156,7 @@ python3 automation/scripts/generate_bulk_mutations.py
 
 **Jetzt:**
 1. [ ] CSV-Template öffnen: `automation/data/color_definitions_template.csv`
-2. [ ] Mit Shopify Admin / Katalog / Jordanshop die 33 Farben definieren
+2. [ ] Mit Shopify Admin / Katalog / Lieferant A die 33 Farben definieren
 3. [ ] CSV ausfüllen und speichern
 
 **Dann (nach dem Ausfüllen):**

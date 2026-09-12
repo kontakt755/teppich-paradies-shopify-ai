@@ -1,0 +1,85 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "kopf": {
+      "type": "tp-arbeiten-intro",
+      "settings": {
+        "eyebrow": "Unsere Arbeit",
+        "heading": "Bodenbeläge, die wir selbst verlegt haben",
+        "text": "<p>Treppen, Wohnräume, Ladengeschäfte und Gastronomie – ausgeführt von unserem eigenen Team aus Oranienburg. Jedes Bild auf dieser Seite stammt von einer echten Baustelle, nicht aus einer Bilddatenbank.</p>"
+      },
+      "blocks": {
+        "p1": {
+          "type": "punkt",
+          "settings": {
+            "punkt": "Aufmaß vor Ort in Oranienburg und Umgebung"
+          }
+        },
+        "p2": {
+          "type": "punkt",
+          "settings": {
+            "punkt": "Eigenes Verlegeteam, keine Subunternehmer"
+          }
+        },
+        "p3": {
+          "type": "punkt",
+          "settings": {
+            "punkt": "Teppichboden, Vinyl, Linoleum, PVC und Treppen"
+          }
+        },
+        "p4": {
+          "type": "punkt",
+          "settings": {
+            "punkt": "Fachgeschäft mit Ausstellung, seit Jahren in der Region"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4"
+      ]
+    },
+    "galerie": {
+      "type": "tp-arbeiten-galerie",
+      "settings": {
+        "eyebrow": "Referenzen",
+        "heading": "Ausgeführte Arbeiten",
+        "text": "Nach Kategorie filtern oder direkt ein Projekt öffnen – jedes Projekt zeigt weitere Bilder in der Detailansicht.",
+        "anker": "arbeiten",
+        "pro_schritt": 9,
+        "nur_kategorie": "",
+        "cta_label": "Ähnliches Projekt anfragen",
+        "cta_link": "/pages/kontakt"
+      }
+    },
+    "vorher_nachher": {
+      "type": "tp-vorher-nachher",
+      "settings": {
+        "eyebrow": "Vorher und nachher",
+        "heading": "Was sich wirklich verändert",
+        "text": "Den Regler bewegen, um den alten und den neuen Boden zu vergleichen.",
+        "anzahl": 4
+      }
+    },
+    "bewertungen": {
+      "type": "tp-start-bewertungen",
+      "settings": {}
+    }
+  },
+  "order": [
+    "kopf",
+    "galerie",
+    "vorher_nachher",
+    "bewertungen"
+  ]
+}

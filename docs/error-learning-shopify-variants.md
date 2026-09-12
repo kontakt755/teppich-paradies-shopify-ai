@@ -74,7 +74,7 @@ publishablePublish(input: {
 
 ## Action Items for Skill
 
-1. **Update teppichparadies-jordanshop-import Skill:**
+1. **Update Import-Skill (Lieferant A):**
    - Dokumentiere: "Options müssen beim productCreate definiert werden"
    - Template: productCreate mit `options: ["Farbe"]`
    - Template: productVariantsBulkCreate mit korrekte optionValues-Struktur ({optionName, name})
@@ -303,7 +303,7 @@ Kostenloses Musterset? Kontaktieren Sie uns.
 
 ## Integration in Skill
 
-**Update teppichparadies-jordanshop-import:**
+**Update Import-Skill (Lieferant A):**
 1. Theme-Template per Material (Schritt 4: descriptionHtml)
 2. Tags-Logik (Schritt 5: Tags)
 3. Kollektion-Selection + Create (Schritt 6: Collection mit Fehlerbehandlung)

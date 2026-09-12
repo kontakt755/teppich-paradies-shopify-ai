@@ -27,8 +27,8 @@
             "thumbnail_width": 64,
             "thumbnail_radius": 6,
             "aspect_ratio": "1",
-            "constrain_to_viewport": true,
-            "media_fit": "contain",
+            "constrain_to_viewport": false,
+            "media_fit": "cover",
             "media_radius": 8,
             "extend_media": false,
             "zoom": true,
@@ -181,8 +181,8 @@
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
               "settings": {
-                "rating": "4.8",
-                "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen"
+                "rating": "4,9",
+                "review_link": "https://maps.google.com/?cid=787042219843486388"
               },
               "blocks": {}
             },
@@ -203,7 +203,7 @@
               "name": "TP Schritt-Überschrift",
               "settings": {
                 "number": 1,
-                "label": "Wähle deine Farbe"
+                "label": "Wählen Sie Ihre Farbe"
               },
               "blocks": {}
             },
@@ -329,6 +329,17 @@
                 "value_font_size": 14
               },
               "blocks": {}
+            },
+            "tp_verlegen_lassen": {
+              "type": "tp-verlegen-lassen",
+              "settings": {
+                "titel": "Diesen Boden verlegen lassen?",
+                "text": "Wir messen kostenlos auf, liefern und verlegen – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
+                "cta": "Aufmaß anfragen",
+                "ziel": "/pages/kontakt",
+                "telefon": "+4933015733720",
+                "telefon_label": "oder anrufen: 03301 5733720"
+              }
             }
           },
           "block_order": [
@@ -341,6 +352,7 @@
             "color_swatch_picker_f7EyBF",
             "tp_farbanzeige_tp1",
             "tp_roll_order_help_sales1",
+            "tp_verlegen_lassen",
             "tp_rollware_rechner_sales1",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",

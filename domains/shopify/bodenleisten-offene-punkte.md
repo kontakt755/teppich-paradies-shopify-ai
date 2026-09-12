@@ -2,17 +2,17 @@
 
 Collection „Bodenleisten" (`gid://shopify/Collection/688863773006`, Handle `bodenleisten`).
 
-## Korrektur: jordanshop.de-Suche funktioniert anonym
+## Korrektur: Suche bei Lieferant A funktioniert anonym
 
 Der erste Versuch in dieser Sitzung nutzte den Parameter `q=` und lieferte „Kein
 Suchergebnis" — das erschien wie ein Login-Zwang, war aber ein falscher Parametername.
-Richtig ist `query=` (`https://www.jordanshop.de/de-DE/search?query=...&hitsPerPage=30`),
+Richtig ist `query=` (`https://lieferant-a.example/de-DE/search?query=...&hitsPerPage=30`),
 das liefert ohne Login vollständige Ergebnisse inklusive Artikelnummer, EAN und Bild-URL
-(base64-kodiert im `<img src>`, siehe Skill `teppichparadies-jordanshop-import`). Die
-`data/jordan-catalog.json` (Stand 2026-09-04) war dadurch an mehreren Stellen unvollständig
+(base64-kodiert im `<img src>`, siehe Import-Skill für Lieferant A). Die
+`data/grosshandel-catalog.json` (Stand 2026-09-04) war dadurch an mehreren Stellen unvollständig
 oder falsch — siehe unten.
 
-## Alle 9 Produkte: vollständig mit echten jordanshop.de-Daten
+## Alle 9 Produkte: vollständig mit echten Daten von Lieferant A
 
 | Produkt | Farben | Preis | Bild | SKUs |
 |---|---:|---|---|---|
@@ -29,7 +29,7 @@ oder falsch — siehe unten.
 Alle 9 sind inzwischen **ACTIVE** und in den Kanälen Onlineshop + Shop veröffentlicht
 (Freigabe erfolgte im Gespräch nach Abschluss der Datenvervollständigung).
 
-**Bilder:** jordanshop.de verwendet für Sockelleisten überwiegend **ein Foto je
+**Bilder:** Lieferant A verwendet für Sockelleisten überwiegend **ein Foto je
 Produktlinie**, geteilt über alle Farben (das Profil sieht in jeder Farbe fotografisch
 gleich aus, echte Farbfotos gibt es nur für einen Teil der S-60-TOP-Dekore). Das war kein
 Zuordnungsfehler, sondern das Muster des Lieferanten selbst — die Bilder wurden aber als
@@ -45,17 +45,17 @@ namentlich identisch mit den 7 Shopify-Produkten):
 | CUBU flex life XL 60/19, XL 80/19 | `CubuXL-offen-fern-1132-lo.png` |
 | S 60 TOP (52 von 62 Farben ohne eigenes Foto) | `S60.jpg` (jetzt Hauptbild) |
 
-Die 10 S-60-TOP-Farben mit echtem jordanshop-Farbfoto (smoked oak white, schnee-weiß,
+Die 10 S-60-TOP-Farben mit echtem Lieferant-A-Farbfoto (smoked oak white, schnee-weiß,
 eiche klassisch, country gebeizt, eiche hell, Nussbaum island, schwarz, lichtgrau,
 weiß-grau, beige) blieben unverändert — die sind bereits farbgenau. Alte
-jordanshop-Konstruktionszeichnungen wurden von allen 7 Produkten gelöscht
+Lieferant-A-Konstruktionszeichnungen wurden von allen 7 Produkten gelöscht
 (`productDeleteMedia`).
 
 ## Korrekturen gegenüber dem vorherigen (catalog.json-basierten) Stand
 
-`data/jordan-catalog.json` nannte für alle 6 CUBU-Produkte deutlich weniger Farben als real
+`data/grosshandel-catalog.json` nannte für alle 6 CUBU-Produkte deutlich weniger Farben als real
 verfügbar (z. B. CUBU 60: 2 statt 10) und für CUBU 40 eine Farbe **„schwarz", die bei
-jordanshop.de für dieses Produkt gar nicht existiert** — auf Nutzerfreigabe hin gelöscht.
+Lieferant A für dieses Produkt gar nicht existiert** — auf Nutzerfreigabe hin gelöscht.
 
 **Döllken S 60 TOP** war am stärksten betroffen: Die Katalogdatei nannte 10 pauschale
 Farben (u. a. „eiche", „buche", „mahagoni") und einen Flatpreis von 8,50 €. Real hat diese
@@ -71,7 +71,7 @@ mit anderem Profil, in Shopify bisher nicht angelegt und außerhalb des Auftrags
 
 ## Verbleibend offen
 
-- Keine Bilder je Farbe für die 52 S-60-TOP-Dekore ohne eigenes jordanshop-Foto — die
+- Keine Bilder je Farbe für die 52 S-60-TOP-Dekore ohne eigenes Lieferant-A-Foto — die
   teilen sich jetzt das Döllken-Übersichtsfoto (`S60.jpg`) statt einer Konstruktionszeichnung.
   Bessere, farbspezifische Fotos wären nur mit Gewerbekunden-Login oder direkter
   Döllken-Anfrage zu bekommen.
@@ -109,9 +109,9 @@ Kunde konnte Farben nicht unterscheiden.
 - Skarven (S 60 TOP): „Weiß (5012)" → **Weiß Standard**, „Weiß (1408)" → **Weiß RAL 9016**
   (real, da Code 1408 in der CUBU-60-Linie als RAL 9016 belegt ist).
 - Cortessa Sockelleiste: alle 15 Farben hießen nur `L600`–`L615` (Lieferanten-Artikelcodes
-  als Kundennamen). Jede Farbe hat bei jordanshop.de ein eigenes echtes Foto — daraus
+  als Kundennamen). Jede Farbe hat bei Lieferant A ein eigenes echtes Foto — daraus
   Median-RGB gemessen, nach HLS klassifiziert und in deutsche Grundton+Stufe-Namen
-  übersetzt (Methode wie im jordanshop-Skill vorgeschrieben): Ocker Hell, Taupe Hell, Sand
+  übersetzt (Methode wie im Import-Skill vorgeschrieben): Ocker Hell, Taupe Hell, Sand
   Sehr Hell, Braun Mittel, Grau Hell, Sand Mittel, Braun Mittel Hell, Ocker Dunkel, Braun
   Dunkel, Sand Dunkel, Braun Hell, Sand Hell, Grau Dunkel, Taupe Dunkel, Grau Mittel.
 
@@ -134,12 +134,12 @@ Sitzung (nie `collectionsToJoin` aufgerufen), der erst durch die Veröffentlichu
 wurde, weil die Produkte vorher DRAFT waren. Behoben mit `collectionRemoveProducts` — alle
 7 sind jetzt ausschließlich in „Bodenleisten".
 
-**Hauptbild-Regression.** Beim Ersetzen der jordanshop-Konstruktionszeichnungen durch
+**Hauptbild-Regression.** Beim Ersetzen der Lieferant-A-Konstruktionszeichnungen durch
 Döllken-Fotos (siehe oben) wurde für die CUBU-Familie ein einziges Foto
 (`Cubu60-offen-fern-1132-lo.png`) allen vier Höhen (40/60/80/100mm) als **Hauptbild**
 zugewiesen, ebenso ein Foto für beide XL-Varianten — dadurch sahen unterschiedliche Produkte
 im Kollektionsraster identisch aus. Die ursprünglichen, je Höhe unterschiedlichen
-jordanshop-Fotos (459897/459899/459901/459903 für 40/60/80/100mm,
+Lieferant-A-Fotos (459897/459899/459901/459903 für 40/60/80/100mm,
 645223/459905 für XL 60/80mm) wurden erneut hochgeladen und als Hauptbild (Position 1)
 gesetzt; das Döllken-Foto bleibt als zweites Bild in der Galerie. Damit sind alle 6 Produkte
 im Kollektionsraster wieder visuell unterscheidbar, ohne die schöneren Fotos zu verlieren.

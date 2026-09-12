@@ -10,10 +10,10 @@ Gilt für jeden Import aus einer Lieferantenquelle nach Shopify — Linoleum, Vi
 ## 1. Die Namensregeln vor dem ersten Produkt klären
 
 **Der teuerste Fehler der Sitzung.** Sieben Produkte wurden mit Lieferantennamen angelegt
-(`Jokalino Vivace Linoleumboden`) und mit englischen Farbnamen samt Nummer
+(`Linie A-3 Vivace Linoleumboden`) und mit englischen Farbnamen samt Nummer
 (`1032 green melody`). Beides musste komplett zurückgebaut werden.
 
-Dabei stand die Regel längst im jordanshop-Skill: *"invent a brand name freely per product
+Dabei stand die Regel längst im Import-Skill: *"invent a brand name freely per product
 line — NOT the supplier's own line name"*. Und die zwei fertigen Referenzprodukte im Shop
 zeigten es vor: **Coloria** und **Elastium** tragen Eigennamen, Elastium hat deutsche
 Farbnamen nach dem Schema `Grundton + Stufe`.
@@ -36,7 +36,7 @@ und daran entlangbauen. Das kostet eine Query und spart eine Sitzung.
 
 ## 2. Serverseitig gerenderte Lieferantenseiten mit `curl` lesen, nicht mit dem Browser
 
-jordanshop.de liefert vollständiges SSR-HTML. Die erste Runde lief trotzdem über den Browser:
+Lieferant A liefert vollständiges SSR-HTML. Die erste Runde lief trotzdem über den Browser:
 pro Farbe `navigate` + `wait` + `javascript_tool`, dazu geratene Produkt-IDs, die auf der
 Startseite landeten und `no-image` zurückgaben.
 
@@ -49,7 +49,7 @@ ist sie eingeklappt und wird für nicht eingeloggte Besucher teilweise entfernt.
 
 ```python
 ATTR = re.compile(r'product-attribute-name">(.*?)</div>\s*<div class="col-8 col-lg-9[^"]*">(.*?)</div>', re.S)
-OPT  = re.compile(r'<option[^>]*value="(https://www\.jordanshop\.de/de-DE/product/\d+)"[^>]*>(.*?)</option>', re.S)
+OPT  = re.compile(r'<option[^>]*value="(https://lieferant-a\.example/de-DE/product/\d+)"[^>]*>(.*?)</option>', re.S)
 ```
 
 Der Browser bleibt richtig für alles, was clientseitig rendert (die Suche) und für visuelle
@@ -103,7 +103,7 @@ Auf einem **bestehenden** Produkt bricht `productSet` mit `id:` ab, sobald Metaf
 die dort schon existieren (`grosshandel.sku`, `global.title_tag`):
 `Key must be unique within this namespace on this resource`.
 
-Der Abbruch ist tückisch, weil er die **alte Variantenstruktur stehen lässt**. So trug Jokalino
+Der Abbruch ist tückisch, weil er die **alte Variantenstruktur stehen lässt**. So trug Linie A-3
 nach einem vermeintlich erfolgreichen Lauf sechs Concrete-Varianten statt sechzehn eigener —
 und das fiel erst Stunden später auf.
 
@@ -124,9 +124,9 @@ Für Korrekturen an bestehenden Produkten sind die schmalen Mutationen richtig:
 
 Zwei Fehler blieben lange unbemerkt, weil nach dem Schreiben nichts geprüft wurde:
 
-- Jokalino hatte 6 statt 16 Varianten (abgebrochenes `productSet`)
-- Jokalino und Concrete hatten ihre **Medien vertauscht** — Concrete trug die 16
-  Jokalino-Bilder. Deshalb war bei beiden `variant.image == null`, und die Suche nach der
+- Linie A-3 hatte 6 statt 16 Varianten (abgebrochenes `productSet`)
+- Linie A-3 und Concrete hatten ihre **Medien vertauscht** — Concrete trug die 16
+  Linie A-3-Bilder. Deshalb war bei beiden `variant.image == null`, und die Suche nach der
   Ursache ging zuerst in die falsche Richtung ("Bilder fehlen" statt "Bilder falsch zugeordnet")
 
 Nach jedem Schritt eine Query auf Variantenzahl, SKU, Optionswert und `variant.image`.
@@ -136,8 +136,8 @@ Nach jedem Schritt eine Query auf Variantenzahl, SKU, Optionswert und `variant.i
 
 ## 7. Lieferantenattribute gegen die Realität prüfen
 
-jordanshop pflegt `Farbe` und `Farbintensität` — die Werte sind unzuverlässig. `fresco blue`
-steht dort als „Schwarz", gemessen ist es `#708ca4`. Sechs Jokalino-Farben tragen identisch
+Lieferant A pflegt `Farbe` und `Farbintensität` — die Werte sind unzuverlässig. `fresco blue`
+steht dort als „Schwarz", gemessen ist es `#708ca4`. Sechs Linie A-3-Farben tragen identisch
 „Grau / Mittel" und wären als Optionswerte nicht unterscheidbar; Shopify lehnt Dubletten ab.
 
 Verlässlich ist die **Messung am Produktbild**: Median-RGB des Bildzentrums → HLS →

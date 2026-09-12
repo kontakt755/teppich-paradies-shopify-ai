@@ -23,10 +23,10 @@ mutation CreateProduct($input: ProductInput!) {
 **Input-Struktur:**
 ```json
 {
-  "title": "Linoleumboden — Jokaleum Neocare 200cm",
+  "title": "Linoleumboden — Linie A-1 200cm",
   "productType": "Rollenware",
-  "vendor": "JOKA",
-  "handle": "linoleumboden-jokaleum-neocare",
+  "vendor": "Hausmarke von A",
+  "handle": "linoleumboden-linie-a-1",
   "options": [
     {
       "name": "Farbe",
@@ -67,8 +67,8 @@ mutation CreateMedia($productId: ID!, $media: [CreateMediaInput!]!) {
 # Input: media array mit originalSource URLs
 # Beispiel:
 # "media": [
-#   { "originalSource": "https://media.jordanshop.de/...", "alt": "Grün Gelb", "mediaContentType": "IMAGE" },
-#   { "originalSource": "https://media.jordanshop.de/...", "alt": "Beige Grau", "mediaContentType": "IMAGE" }
+#   { "originalSource": "https://media.lieferant-a.example/...", "alt": "Grün Gelb", "mediaContentType": "IMAGE" },
+#   { "originalSource": "https://media.lieferant-a.example/...", "alt": "Beige Grau", "mediaContentType": "IMAGE" }
 # ]
 
 # 2b: Bild an Variante hängen
@@ -140,7 +140,7 @@ mutation SetMetafields($input: [MetafieldsSetInput!]!) {
 | **Metafeld: color_name** | Deutsche Farbbeschreibung | z.B. "Grün Gelb", "Beige Warm" |
 | **Metafeld: supplier_color_code** | Lieferanten-Farbcode | z.B. "4200" |
 | **Bild pro Farbe** | 1 MediaImage pro Variante | Via productVariantAppendMedia |
-| **inventoryPolicy** | `CONTINUE` | Rollenware wird bei Jordan bestellt, nicht aus Lager |
+| **inventoryPolicy** | `CONTINUE` | Rollenware wird bei Lieferant A bestellt, nicht aus Lager |
 | **Gewicht** | ~3,2 kg (speichern?) | Optional in metafields |
 | **Stärke** | 2,5mm (speichern?) | Optional in metafields |
 
@@ -170,7 +170,7 @@ Erkennt das Zählmuster automatisch.
 |---|---|---|
 | Produkt angelegt | ✅ | 21 Varianten (Farben 4200–4289) |
 | Farbnamen gesetzt | ✅ | z.B. "Grün Gelb", "Beige Warm" |
-| Bilder hochgeladen | ✅ | 19/21 (4153, 4259, 4296 fehlen bei Jordan) |
+| Bilder hochgeladen | ✅ | 19/21 (4153, 4259, 4296 fehlen bei Lieferant A) |
 | Metafelder gesetzt | ✅ | color_name + supplier_color_code auf allen |
 | Inventar CONTINUE | ✅ | Rollenware verkäuflich |
 
@@ -181,9 +181,9 @@ Erkennt das Zählmuster automatisch.
 ## 🚀 Nächste Produkte
 
 Serien für Import:
-1. Jokaleum Neocare (21 Farben) — ✅ Done
-2. Jokalino (16 Farben) — Open
-3. Jokaleum Color Neocare (10 Farben) — Open
+1. Linie A-1 (21 Farben) — ✅ Done
+2. Linie A-3 (16 Farben) — Open
+3. Linie A-2 (10 Farben) — Open
 4. Weitere Serien (je 4–6 Farben) — Open
 
 **Gleiche Struktur für alle — nur Farbliste + Bilder unterscheiden sich.**

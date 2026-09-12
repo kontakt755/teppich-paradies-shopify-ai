@@ -16,25 +16,31 @@ lueckenlos hochgezaehlt. Die **Anzahl** stimmt deshalb (24 = 24), der Inhalt
 nicht. Das Produkt steht mit diesen Daten seit 2026-09-04 20:19 UTC live in
 drei Verkaufskanaelen (Bestand 0).
 
-Echte Quelle: Artikel `PVCJOKANEO`, „Linoleum-Boden Jokaleum Neocare 2,5mm
-Elastic/Linoleum Bahnen 200cm" auf jordanshop.de. Der Shopname „Elastium" ist
+Echte Quelle: Artikel `PVCJOKANEO`, „Linoleum-Boden Linie A-1 2,5mm
+Elastic/Linoleum Bahnen 200cm" bei Lieferant A. Der Shopname „Elastium" ist
 eine Eigenbezeichnung und taucht beim Lieferanten nicht auf — die Suche muss
 ueber die Artikelnummer laufen, nicht ueber den Produktnamen.
 
-### Naechster Schritt (braucht Freigabe)
+### Korrekturschritt — erledigt und ueberholt
 
-SKU-Aenderungen sind laut CLAUDE.md eine Protected Action. Der fertige
-Korrekturplan liegt bereit und aendert von sich aus nichts:
+**Dieser Abschnitt beschreibt Geschichte, keinen offenen Schritt.** Er stand hier
+als „naechster Schritt" samt dem Befehl `node scripts/elastium-farbcode-korrektur.mjs`.
+Das Skript liegt seit 2026-09-11 nicht mehr im Repository, sondern lokal
+(`domains/lieferanten/AUSGELAGERT.md`, dort in der Werkzeugtabelle als
+„Einmal-Korrektur Elastium vom 2026-09-04 (ausgefuehrt)"). Der Repo-Befehl waere
+seitdem mit `MODULE_NOT_FOUND` gescheitert.
 
-```
-node scripts/elastium-farbcode-korrektur.mjs
-```
+Stand am 2026-09-12 in der Admin API geprueft: „Elastium Linoleumboden 200cm"
+fuehrt **21 Farbwerte mit beschreibenden Namen** („Gelb Beige", „Braun Dunkel",
+„Beige Grau Hell Meliert" …). Die durchgezaehlten Codes sind damit nicht mehr
+vorhanden — weder als Optionswerte noch als offener Fall. Was das Skript leisten
+sollte, ist durch die spaetere Umbenennung der Optionswerte erledigt
+(siehe `domains/shopify/farbverwaltung.md`).
 
-Er druckt die Zuordnung (erfundener → echter Code) und die GraphQL-Variablen
-fuer `productVariantsBulkUpdate`, `productCreateMedia` und
-`productVariantAppendMedia`. Die Zuordnung ist aufsteigend und damit
-willkuerlich — zulaessig, weil die erfundenen Codes keine Information tragen:
-kein Bild, kein Bestand, keine Bestellung haengt daran.
+Der Grund fuer die damalige Vorsicht bleibt lehrreich und gilt weiter: SKU-Aenderungen
+sind laut CLAUDE.md eine Protected Action, und die Zuordnung erfundener auf echte
+Codes war aufsteigend und damit willkuerlich — zulaessig nur, weil an den erfundenen
+Codes nichts hing: kein Bild, kein Bestand, keine Bestellung.
 
 ## Was funktioniert und belegt ist
 
@@ -61,9 +67,10 @@ allerdings ein erfundener Wert; sie werden mit der Korrektur ueberschrieben.
 
 Der Input-Typ heisst `MetafieldsSetInput`, nicht `MetafieldInput`.
 
-### Bild-URLs aus der Jordan-Suche
+### Bild-URLs aus der Lieferant-A-Suche
 
-21 der 24 echten Farben haben ein Bild: `data/jokaleum-neocare-images.json`.
+21 der 24 echten Farben haben ein Bild; die Liste (Code → Original-Bild-URL) liegt
+seit 2026-09-11 lokal, siehe `domains/lieferanten/AUSGELAGERT.md`.
 Ohne Bild beim Lieferanten und damit offener Fall: **4153, 4259, 4296**.
 
 Drei Fallen, die je Zeit gekostet haben:
@@ -80,14 +87,15 @@ Ausserdem: Die Trefferbilder stehen nicht im ausgelieferten HTML. `curl`
 bekommt HTTP 200 und 175 KB, darin aber nur drei `<img>`-Tags — den Rest
 haengt clientseitiges JavaScript ein. Das Einsammeln braucht einen Browser:
 
-```
-node scripts/jordan-media-scrape.mjs snippet PVCJOKANEO
-```
+Das Werkzeug dafuer (Browser-Snippet plus Upload-Plan) liegt lokal, nicht im Repo.
 
 ## Werkzeuge
 
-| Datei | Zweck |
+Seit 2026-09-11 lokal unter `~/teppich-paradies-analyse/lieferantendaten/`, nicht im Repo
+(Lieferantendaten, siehe `domains/lieferanten/AUSGELAGERT.md`):
+
+| Werkzeug | Zweck |
 |---|---|
-| `scripts/jordan-media-scrape.mjs` | Browser-Snippet erzeugen, Upload-Plan aus dem Katalog bauen |
-| `scripts/elastium-farbcode-korrektur.mjs` | Korrekturplan drucken (aendert nichts) |
-| `data/jokaleum-neocare-images.json` | 24 echte Farbcodes, 21 mit Original-Bild-URL |
+| Bild-Scraper Lieferant A | Browser-Snippet erzeugen, Upload-Plan aus dem Katalog bauen |
+| Elastium-Farbcode-Korrektur | Korrekturplan drucken (aendert nichts) |
+| Farbcode- und Bildliste Linie A-1 | 24 echte Farbcodes, 21 mit Original-Bild-URL |

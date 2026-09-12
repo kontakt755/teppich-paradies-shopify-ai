@@ -1,30 +1,114 @@
-<!-- Abschnitt: Treppenverlegung -->
+{% comment %}
+  Landingpage Treppenverlegung.
+
+  Umgebaut am 2026-09-10. Grund: ueber Google Ads landen Besucher mit dem
+  Keyword "Treppenverlegung" direkt hier, nicht auf der Startseite. Die Seite
+  muss die Frage "koennt ihr das, bei mir, und wie geht es weiter" im ersten
+  Bildschirm beantworten - vorher stand dort eine Ueberschrift auf Weiss.
+  Begruendung: docs/analyse/entscheidung-zwei-wege-2026-09-10.md
+
+  Kein Preis auf dieser Seite, und das ist Absicht (Ahmet, 2026-09-10):
+  "Treppen sind sehr unterschiedlich." Das Fehlen wird zum Argument fuer das
+  kostenlose Aufmass, statt eine Zahl zu erfinden, die nicht haelt.
+
+  Die drei Belagsarten sind Information, keine Produkte: Kokos-, Sisal- und
+  Teppichlaeufer als fertige Artikel gibt es im Shop nicht (geprueft ueber die
+  Admin API, 2026-09-10). Der Belag wird in der Beratung gewaehlt. Ein Link je
+  Karte ist deshalb optional und standardmaessig leer - lieber kein Link als
+  einer, der auf ein leeres Raster fuehrt.
+{% endcomment %}
+
+<section class="treppen-hero">
+  {%- if section.settings.hero_bild != blank -%}
+    <div class="treppen-hero__bild">
+      <img
+        src="{{ section.settings.hero_bild | image_url: width: 1400 }}"
+        alt="{{ section.settings.hero_bild_alt | default: 'Von uns belegte Treppe' | escape }}"
+        width="{{ section.settings.hero_bild.width | default: 1400 }}"
+        height="{{ section.settings.hero_bild.height | default: 900 }}"
+        loading="eager"
+        fetchpriority="high"
+      >
+    </div>
+  {%- endif -%}
+
+  <div class="treppen-hero__text">
+    <h1>{{ section.settings.hero_titel }}</h1>
+    <p class="treppen-hero__lead">{{ section.settings.hero_text }}</p>
+
+    {%- if section.settings.hero_fakten != blank -%}
+      <ul class="treppen-hero__fakten">
+        {%- assign tp_tv_fakten = section.settings.hero_fakten | split: ',' -%}
+        {%- for tp_tv_faktum in tp_tv_fakten -%}
+          {%- assign tp_tv_label = tp_tv_faktum | strip -%}
+          {%- if tp_tv_label != blank -%}
+            <li>{{ tp_tv_label }}</li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+
+    <div class="treppen-hero__actions">
+      <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="treppen-button">
+        {{ section.settings.hero_cta }}
+      </a>
+      {%- if section.settings.telefon != blank -%}
+        <a href="tel:{{ section.settings.telefon | remove: ' ' | remove: '/' }}" class="treppen-hero__tel">
+          {{ section.settings.telefon_label | default: section.settings.telefon }}
+        </a>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%}
+      Belegzeile: bleibt leer, solange keine belastbare Zahl vorliegt. Eine
+      erfundene Referenz waere schlimmer als gar keine.
+    {%- endcomment -%}
+    {%- if section.settings.beleg != blank -%}
+      <p class="treppen-hero__beleg">{{ section.settings.beleg }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
 <section class="treppen-section">
   <div class="treppen-wrapper">
-    <h1 class="treppen-title">Treppenverlegung – Sicher & Stilvoll</h1>
-    <p class="treppen-einleitung">Entdecken Sie unsere hochwertigen Läufer und Teppichlösungen für Ihre Treppe. Robust, schön und professionell verlegt.</p>
+    {%- if section.settings.belag_titel != blank -%}
+      <h2 class="treppen-belag-titel">{{ section.settings.belag_titel }}</h2>
+    {%- endif -%}
+    {%- if section.settings.belag_text != blank -%}
+      <p class="treppen-belag-text">{{ section.settings.belag_text }}</p>
+    {%- endif -%}
 
     <div class="belagsarten-grid">
       {% for block in section.blocks %}
         {% if block.type == 'belagsart' %}
         <div class="belagsart">
+          {%- if block.settings.ziel != blank -%}<a href="{{ block.settings.ziel }}">{%- endif -%}
           <img src="{{ block.settings.image | image_url: width: 600 }}" alt="{{ block.settings.title | escape }}" width="{{ block.settings.image.width | default: 600 }}" height="{{ block.settings.image.height | default: 450 }}" loading="lazy">
+          {%- if block.settings.ziel != blank -%}</a>{%- endif -%}
           <h3>{{ block.settings.title }}</h3>
           <p>{{ block.settings.text }}</p>
+          {%- if block.settings.ziel != blank -%}
+            <a href="{{ block.settings.ziel }}" class="belagsart__link">{{ block.settings.ziel_label | default: 'Ansehen' }}</a>
+          {%- endif -%}
         </div>
         {% endif %}
       {% endfor %}
     </div>
 
     <div class="treppen-why-highlight">
-      <h2>Warum uns wählen?</h2>
-      <ul>
-        <li>Jahrelange Erfahrung in der Treppenverlegung</li>
-        <li>Individuelle Beratung & Bemusterung</li>
-        <li>Saubere, präzise & termintreue Ausführung</li>
-        <li>Faire Preise & transparente Angebote</li>
-      </ul>
-      <a href="/pages/kontakt" class="treppen-button">Jetzt Termin vereinbaren</a>
+      <h2>{{ section.settings.warum_titel }}</h2>
+      {%- if section.settings.warum_punkte != blank -%}
+        <ul>
+          {%- assign tp_tv_punkte = section.settings.warum_punkte | split: ',' -%}
+          {%- for tp_tv_punkt in tp_tv_punkte -%}
+            {%- assign tp_tv_label = tp_tv_punkt | strip -%}
+            {%- if tp_tv_label != blank -%}
+              <li>{{ tp_tv_label }}</li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+      <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="treppen-button">{{ section.settings.hero_cta }}</a>
     </div>
   </div>
 </section>
@@ -127,10 +211,252 @@
 }
 </style>
 
+{% stylesheet %}
+  .treppen-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 20px 8px;
+  }
+
+  .treppen-hero__bild {
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    /* Feste Proportion, damit beim Laden nichts springt. */
+    aspect-ratio: 4 / 3;
+  }
+
+  .treppen-hero__bild img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .treppen-hero__text h1 {
+    margin: 0 0 10px;
+    font-size: clamp(26px, 3.4vw, 38px);
+    line-height: 1.15;
+  }
+
+  .treppen-hero__lead {
+    margin: 0 0 16px;
+    font-size: 17px;
+    line-height: 1.5;
+    max-width: 46ch;
+  }
+
+  .treppen-hero__fakten {
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .treppen-hero__fakten li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .treppen-hero__fakten li::before {
+    content: '\2713';
+    color: #008a2e;
+    font-weight: 700;
+    flex: 0 0 auto;
+  }
+
+  .treppen-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 20px;
+  }
+
+  /* Der Button erbt 1.6rem aus dem alten Seiten-CSS. Im Hero brach er dadurch
+     auf dem Handy zweizeilig um und wurde 118 px hoch - er sah aus wie ein
+     Banner, nicht wie eine Schaltflaeche. */
+  .treppen-hero__actions .treppen-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 17px;
+    line-height: 1.2;
+  }
+
+  .treppen-hero__tel {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    color: var(--color-foreground);
+  }
+
+  .treppen-hero__beleg {
+    margin: 14px 0 0;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  .treppen-belag-titel {
+    margin: 0 0 8px;
+    font-size: 24px;
+    line-height: 1.2;
+    text-align: left;
+  }
+
+  /* Nicht .treppen-einleitung wiederverwenden: die Klasse stammt vom alten
+     Seitenkopf und ist zentriert bei 1.8rem - neben einer linksbuendigen
+     Ueberschrift sieht das aus wie zwei verschiedene Seiten. */
+  .treppen-belag-text {
+    margin: 0 0 28px;
+    font-size: 16px;
+    line-height: 1.5;
+    max-width: 60ch;
+    text-align: left;
+  }
+
+  .belagsart__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+    text-decoration: underline;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 899px) {
+    .treppen-hero {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 18px;
+      padding: 18px 16px 4px;
+    }
+
+    /* Auf dem Handy zuerst das Bild, dann der Text - so ist im ersten
+       Bildschirm zu sehen, worum es geht, und der Text folgt lesbar. */
+    .treppen-hero__bild {
+      aspect-ratio: 16 / 10;
+    }
+
+    .treppen-hero__lead {
+      font-size: 16px;
+    }
+  }
+{% endstylesheet %}
+
 {% schema %}
 {
   "name": "Treppenverlegung",
-  "settings": [],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Kopf"
+    },
+    {
+      "type": "image_picker",
+      "id": "hero_bild",
+      "label": "Bild",
+      "info": "Eine von uns belegte Treppe. Ein echtes Projektfoto schlägt jedes Stockfoto."
+    },
+    {
+      "type": "text",
+      "id": "hero_bild_alt",
+      "label": "Bildbeschreibung (Alt-Text)",
+      "default": "Von uns belegte Treppe"
+    },
+    {
+      "type": "text",
+      "id": "hero_titel",
+      "label": "Überschrift",
+      "default": "Treppe neu belegen lassen"
+    },
+    {
+      "type": "textarea",
+      "id": "hero_text",
+      "label": "Text",
+      "info": "Kein Preis: Treppen sind zu unterschiedlich. Das kostenlose Aufmaß ist der nächste Schritt.",
+      "default": "Jede Treppe ist anders – offene oder geschlossene Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf."
+    },
+    {
+      "type": "text",
+      "id": "hero_fakten",
+      "label": "Punkte (mit Komma trennen)",
+      "default": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Beratung zu Belag und Kanten, Verlegung durch unser eigenes Team"
+    },
+    {
+      "type": "text",
+      "id": "hero_cta",
+      "label": "Button",
+      "default": "Aufmaß-Termin anfragen"
+    },
+    {
+      "type": "url",
+      "id": "hero_cta_ziel",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "telefon",
+      "label": "Telefonnummer für den Anruf-Link",
+      "info": "Leer lassen blendet die Zeile aus.",
+      "default": "+4933015733720"
+    },
+    {
+      "type": "text",
+      "id": "telefon_label",
+      "label": "Beschriftung der Telefonzeile",
+      "default": "oder anrufen: 03301 5733720"
+    },
+    {
+      "type": "text",
+      "id": "beleg",
+      "label": "Belegzeile unter den Buttons",
+      "info": "Nur ausfüllen, wenn es eine belastbare Zahl gibt – Jahre am Markt, Anzahl Treppen, freigegebene Referenzen. Leer lassen ist besser als eine erfundene Angabe."
+    },
+    {
+      "type": "header",
+      "content": "Belagsarten"
+    },
+    {
+      "type": "text",
+      "id": "belag_titel",
+      "label": "Überschrift",
+      "default": "Welcher Belag passt auf Ihre Treppe?"
+    },
+    {
+      "type": "textarea",
+      "id": "belag_text",
+      "label": "Text",
+      "default": "Wir zeigen Ihnen Muster und beraten, was zu Ihrer Treppe und Ihrem Alltag passt."
+    },
+    {
+      "type": "header",
+      "content": "Warum wir"
+    },
+    {
+      "type": "text",
+      "id": "warum_titel",
+      "label": "Überschrift",
+      "default": "Was Sie von uns bekommen"
+    },
+    {
+      "type": "text",
+      "id": "warum_punkte",
+      "label": "Punkte (mit Komma trennen)",
+      "info": "Konkret statt allgemein: was Sie tatsächlich tun, nicht wie gut Sie sind.",
+      "default": "Kostenloses Aufmaß vor Ort, Beratung zu Belag und Kantenausführung, Verlegung durch unser eigenes Team, Ein Ansprechpartner von der Beratung bis zur Abnahme"
+    }
+  ],
   "blocks": [
     {
       "type": "belagsart",
@@ -152,6 +478,18 @@
           "id": "text",
           "label": "Beschreibung",
           "default": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+        },
+        {
+          "type": "url",
+          "id": "ziel",
+          "label": "Ziel (optional)",
+          "info": "Nur setzen, wenn es dafür wirklich Produkte im Shop gibt. Ein Link auf ein leeres Raster ist schlimmer als kein Link."
+        },
+        {
+          "type": "text",
+          "id": "ziel_label",
+          "label": "Beschriftung des Links",
+          "default": "Ansehen"
         }
       ]
     }

@@ -208,7 +208,7 @@
 
 ---
 
-### 1.15 Zafira Teppichboden (400cm/500cm) ⭐ **JORDANSHOP-IMPORT**
+### 1.15 Zafira Teppichboden (400cm/500cm) ⭐ **LIEFERANTEN-IMPORT**
 - **Status:** ACTIVE
 - **Varianten:** 18 (Farben 250, 260, 400, ...)
 - **SKU-Pattern:** `TEPZIRKON4_[FARBE]` / `TEPZIRKON5_[FARBE]`
@@ -219,7 +219,7 @@
 - **Farbnummern:** 250, 260, 400 (+ weitere 15) ← **BENUTZERERWARTUNG ERFÜLLT**
 - **Struktur:** ✅ Vollständig SKU mit 3-stelliger Farbnummer
 - **Material:** Polyester (Samt-Design)
-- **Hinweis:** Diese Farbnummern (250, 260, 400) sind die Jordanshop-Nummern!
+- **Hinweis:** Diese Farbnummern (250, 260, 400) sind die Lieferant-A-Nummern!
 
 ---
 

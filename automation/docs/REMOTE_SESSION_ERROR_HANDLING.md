@@ -2,7 +2,7 @@
 
 ## Problem
 
-Früher: Wenn ein jordanshop.de Import in Remote-Sessions (claude.ai/code) fehlschlug, blieb der Fehler undokumentiert. Der nächste Arbeiter/Kollege würde auf das gleiche Problem stoßen, ohne zu wissen, dass die Lösung "lokal arbeiten" ist.
+Früher: Wenn ein Lieferanten-Import in Remote-Sessions (claude.ai/code) fehlschlug, blieb der Fehler undokumentiert. Der nächste Arbeiter/Kollege würde auf das gleiche Problem stoßen, ohne zu wissen, dass die Lösung "lokal arbeiten" ist.
 
 ## Lösung — 3 Komponenten
 
@@ -16,9 +16,9 @@ automation/database/remote-session-errors.json
 import { logError } from '../core/remote-session-error-handler.mjs';
 
 logError({
-  errorId: 'JORDANSHOP_EGRESS_POLICY_BLOCKED',
-  errorMessage: 'Egress-Policy blocks jordanshop.de',
-  errorContext: { skill: 'teppichparadies-jordanshop-import' }
+  errorId: 'LIEFERANT_EGRESS_POLICY_BLOCKED',
+  errorMessage: 'Egress-Policy blocks supplier shop',
+  errorContext: { skill: 'lieferanten-import' }
 });
 ```
 
@@ -28,8 +28,8 @@ Erstellt automatisch ein GitHub Issue, wenn:
 - Ein bekannter Fehler in der Error-DB ist
 - Noch kein Issue für diesen Fehler existiert
 
-Titel: `Remote-Session: jordanshop.de Zugriff blockiert`
-Labels: `type: external-limitation`, `area: jordanshop-import`, `priority: p2`
+Titel: `Remote-Session: Lieferanten-Shop blockiert`
+Labels: `type: external-limitation`, `area: lieferanten-import`, `priority: p2`
 
 ### 3. **Auto-Alarm** (`automation/scripts/remote-session-alert.mjs`)
 Sendet einen `CRITICAL_BLOCKER` Notification, wenn der nächste Arbeiter die Session startet.
@@ -45,13 +45,13 @@ Der SessionStart-Hook (`.claude/hooks/session-start.sh`) prüft jetzt automatisc
 3. Warnt vor Egress-Policy Blockade
 ```
 
-**Output bei jordanshop.de Fehler:**
+**Output bei blockiertem Lieferanten-Shop:**
 ```
   Remote-Session Fehler-Check:
-  ✅ Issue #123 erstellt für: JORDANSHOP_EGRESS_POLICY_BLOCKED
+  ✅ Issue #123 erstellt für: LIEFERANT_EGRESS_POLICY_BLOCKED
 
   ⚠️  WARNUNG:
-  jordanshop.de Import braucht Browser-Zugriff — funktioniert nur lokal.
+  Lieferanten-Import braucht Zugriff auf den Lieferanten-Shop — funktioniert nur lokal.
 ```
 
 ## Warum war es nicht automatisch?
@@ -59,7 +59,7 @@ Der SessionStart-Hook (`.claude/hooks/session-start.sh`) prüft jetzt automatisc
 **Die alte Konfiguration hatte keine Integration für:**
 1. **Agent-Fehler-Catching** — wenn ein Subagent fehlschlägt, gibt es keinen globalen Hook
 2. **Remote-Session-Awareness** — der Fehler passiert im Agent, nicht im Hauptprozess
-3. **Skill-Error-Handler** — der Skill `teppichparadies-jordanshop-import` hatte keinen Try-Catch für Egress-Policy
+3. **Skill-Error-Handler** — der Import-Skill für Lieferant A hatte keinen Try-Catch für Egress-Policy
 
 **Neue Implementierung behebt das:** SessionStart prüft jetzt proaktiv, statt reaktiv auf Fehler zu warten.
 
@@ -74,9 +74,9 @@ cd /Pfad/zum/teppich-paradies-shopify-ai
 node -e "
 import('./automation/core/remote-session-error-handler.mjs').then(mod => {
   mod.logError({
-    errorId: 'JORDANSHOP_EGRESS_POLICY_BLOCKED',
-    errorMessage: 'Agent failed: Egress-Policy blocked jordanshop.de',
-    errorContext: { skill: 'teppichparadies-jordanshop-import', agentId: 'xxx' }
+    errorId: 'LIEFERANT_EGRESS_POLICY_BLOCKED',
+    errorMessage: 'Agent failed: Egress-Policy blocked supplier shop',
+    errorContext: { skill: 'lieferanten-import', agentId: 'xxx' }
   });
 });
 "
@@ -94,7 +94,7 @@ Definiert in `automation/core/remote-session-error-handler.mjs`:
 
 | Error ID | Pattern | Lösung |
 |---|---|---|
-| `JORDANSHOP_EGRESS_POLICY_BLOCKED` | `Egress-Policy\|jordanshop\.de.*blocked` | Lokal arbeiten |
+| `LIEFERANT_EGRESS_POLICY_BLOCKED` | `Egress-Policy\|external.*blocked` | Lokal arbeiten |
 
 ## Future: Weitere Fehler hinzufügen
 
