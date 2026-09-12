@@ -818,3 +818,21 @@ Damit sie nicht mit den Sitzungen verschwinden, in denen sie aufgekommen sind. K
 | `sizes` der Megamenü-Bilder | Befund belegt (Nachtrag 8), Umsetzung bei der Menü-Sitzung, nur nach Freigabe |
 
 **Eine Lehre aus dem Tag, die ins Verfahren gehört:** Die gemeinsame Deploy-Arbeitskopie `mainlane` wurde von einer anderen Sitzung entfernt, während dort ein Deploy lief. Folgen: ein `uv_cwd`-Absturz mitten im Live-Befehl, ein verlorener QA-Bericht und — am gefährlichsten — Lesungen aus einem leeren Verzeichnis, aus denen ich kurzzeitig falsche Schlüsse gezogen und berichtet habe („Datei existiert nicht in main"). **Wer in einer geteilten Arbeitskopie deployt, muss sie vorher für sich beanspruchen; und jede überraschende Leseantwort ist zuerst als Werkzeugfehler zu behandeln, nicht als Befund.**
+
+### Nachtrag 11: Ein Befund, der keiner war — die Kette genau
+
+Auf ausdrücklichen Wunsch der Galerie-Sitzung hier mit korrekter Ursachenzuordnung, weil eine falsche Kette im Protokoll schlimmer ist als der Fehler selbst.
+
+Gemeldet wurde, `.claude/hooks/git-gh-guard.mjs` habe „ein Loch": `git branch -df` und `-fd` passierten den Guard, obwohl das erzwungene Branch-Löschungen sind.
+
+**Die Kette:**
+
+1. **Befund von der Galerie-Sitzung** — sie hatte die Blockregeln des Hooks gelesen.
+2. **Falsch bestätigt von der Galerie-Sitzung.** Sie hat ihn dem Inhaber zweimal als geprüft dargestellt („lesend nachgeprüft", „ein Loch"), ohne die **Erlaubnisliste** gegenzurechnen.
+3. **Weitergetragen von mir** — als „P1, klingt ernst", ohne eigene Prüfung.
+4. **Widerlegt von der Galerie-Sitzung**, indem sie den Hook direkt befragte statt ihn zu lesen: `-d`, `-D`, `-df`, `-fd` und `--delete --force` gehen durch, `git branch -D $(git branch | grep alt)` wird blockiert.
+5. **Gegengeprüft von mir am Quellcode**, was das Verhalten erklärt: Die Blockregel verlangt ein großes `D`, die Regeln für `--delete … --force` verlangen zwei getrennte Token, und die Erlaubnisliste nennt `-D` ausdrücklich und gewinnt.
+
+**Ergebnis: kein Sicherheitsproblem.** Die Absicht des Hooks ist nicht „erzwungenes Löschen sperren", sondern „**Sweeps** sperren, benanntes Löschen erlauben". `-df` verhält sich wie das erlaubte `-D`; die Expansion `$(…)` bleibt gesperrt. Übrig bleibt Kosmetik: Die Erlaubnisliste nennt die Kurzformen nicht, sie passieren durch Abwesenheit einer Blockregel. Wer den Hook pflegt, kann Absicht und Umsetzung angleichen.
+
+**Das Muster des Tages, drittes Auftreten:** Struktur gelesen statt Verhalten gemessen. Erst bei den Drawer-Bildern (zwei Sitzungen), dann bei `naturalWidth` im Megamenü, dann hier. Jedes Mal war die Messung die Auflösung — und jedes Mal hat erst eine zweite Sitzung nachgerechnet. Mein eigener Anteil ist Schritt 3: einen fremden Befund als gesichert weiterzugeben, ohne ihn zu prüfen, obwohl ich denselben Fehler am selben Tag zweimal angemahnt hatte.
