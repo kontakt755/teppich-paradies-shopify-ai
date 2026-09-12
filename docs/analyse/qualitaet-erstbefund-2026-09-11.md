@@ -851,3 +851,26 @@ Dass es ein Versehen und kein Entwurf war, steht in den Tests des Autors selbst:
 Behoben: zwei Blockregeln für Kurzflags, die `d` und `f` zusammenfassen, plus sieben Regressionstests (benannt, Befehlsersetzung, Variable, `xargs`, beide Reihenfolgen). Nach der Änderung sind `-df`/`-fd` in jeder Form gesperrt, während `-d <name>`, `-D <name>` und `--delete --force <name>` unverändert durchgehen. Suite 229/229 und 37/37.
 
 **Das Muster des Tages, drittes Auftreten:** Struktur gelesen statt Verhalten gemessen. Erst bei den Drawer-Bildern (zwei Sitzungen), dann bei `naturalWidth` im Megamenü, dann hier. Jedes Mal war die Messung die Auflösung — und jedes Mal hat erst eine zweite Sitzung nachgerechnet. Mein eigener Anteil ist Schritt 3: einen fremden Befund als gesichert weiterzugeben, ohne ihn zu prüfen, obwohl ich denselben Fehler am selben Tag zweimal angemahnt hatte.
+
+### Nachtrag 12: Die zweite, größere Lücke im Guard — Aufruf über einen Pfad
+
+Nach der Kurzflag-Korrektur (Nachtrag 11) hat die unabhängige Prüfung nachgelegt, und der Befund war deutlich breiter.
+
+Die **Kandidatenerkennung** des Guards suchte das Token `git` nur nach Zeilenanfang, Leerzeichen, Klammer oder Anführungszeichen. Steht ein Pfad davor, liegt dort ein Schrägstrich — dann sah der Guard überhaupt keinen git-Aufruf, und keine Regel der Datei griff. Gemessen (Hook mit JSON auf stdin, Auswertung über `permissionDecision`):
+
+| Mit Pfadpräfix | vorher | nachher |
+|---|---|---|
+| erzwungenes Löschen per Kurzflag | erlaubt | blockiert |
+| erzwungenes Pushen | erlaubt | blockiert |
+| hartes Zurücksetzen | erlaubt | blockiert |
+| Verwerfen im Arbeitsbaum | erlaubt | blockiert |
+| Sweep hinter `xargs` | erlaubt | blockiert |
+| relativer Aufruf `./git …` | erlaubt | blockiert |
+
+Es war also **nicht nur die Sweep-Sperre offen, sondern jede Regel dieser Datei** — vorbestehend, älter als die Ausnahme vom 2026-09-12 und älter als die Kurzflag-Korrektur. Der Fehler hing an der Erkennung, nicht an den Mustern, und genau deshalb fand ihn niemand beim Lesen der Regeln.
+
+Behoben (PR #241) durch Abschneiden des Pfades: Der Rest wird wie ein nackter Aufruf geprüft, **einschließlich der Ausnahmen**. Zwölf Regressionstests, Suite 241/241.
+
+**Warum die Gegenrichtung genauso wichtig war:** Hätte das Abschneiden die Ausnahmen mitgeschnitten, wäre `git checkout -- docs/ai-dashboard/issues.json` über einen Pfad plötzlich blockiert. Das hätte niemand als Sicherheitsfehler gemeldet, sondern als „der Hook nervt" — und wäre irgendwann durch eine Aufweichung der Regel repariert worden. Deshalb wurden beide Richtungen geprüft: sechs gesperrte Formen und vier erlaubte, plus die Ausnahme mit Pfad. Die Galerie-Sitzung hat das anschließend unabhängig über 13 Fälle bestätigt.
+
+**Bilanz des Musters an diesem Tag:** viermal „Struktur gelesen statt Verhalten gemessen" — Drawer-Bilder (zwei Sitzungen gleichzeitig), `naturalWidth` im Megamenü, der Kurzflag-Fall, die Pfad-Umgehung. Jedes Mal löste eine Messung es auf, und jedes Mal fand es eine **zweite** Instanz: einmal ein Prüfer, zweimal eine andere Sitzung, einmal ich. Keine der Fehlannahmen hat den Shop erreicht. Das ist das eigentliche Ergebnis des Tages — nicht die einzelnen Fixes, sondern dass die Gegenkontrolle jedes Mal gegriffen hat.
