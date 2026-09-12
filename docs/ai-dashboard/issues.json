@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T19:33:58.461Z",
+  "generated_at": "2026-09-12T19:59:49.563Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 83,
+  "count": 84,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T19:33:58.461Z",
+    "fetchedAt": "2026-09-12T19:59:49.563Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 258,
+      "title": "Produktseite: Stueckzahl (Planken/Fliesen) im Paketrechner anzeigen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/258",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p3",
+        "area:produktseite",
+        "reviewer:mensch"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "description": "Der Warenkorb zeigt je Position \"12 Planken à 152,4 × 22,8 cm\", die Produktseite nicht — vor dem Hinzufuegen war nicht zu sehen, wie viele Planken oder Fliesen in der Bestellung stecken.\n\nDer Paketrechner (`blocks/paket-auswahl.liquid`) zeigt die Zeile jetzt im Ergebnisblock, in derselben Reihenfolge und Formulierung wie `snippets/tp-cart-paketzeile.liquid`:\n\n- 1 Paket: `6 Planken à 152,4 × 22,8 cm`\n- 2 Pakete: `12 Planken à 152,4 × 22,8 cm (6 je Paket)`\n\nQuelle sind `custom.stueck_pro_paket`, `custom.stueck_bezeichnung` und `custom.format_cm`. Ohne Stueckzahl-Metafeld entfaellt die Zeile.\n\nPR: #257\n\nOffen: visuelle Pruefung und Deploy laufen lokal (Storefront ist aus Remote-Sessions gesperrt)."
+      },
+      "created_at": "2026-09-12T19:59:35Z",
+      "updated_at": "2026-09-12T19:59:35Z",
+      "closed_at": null
+    },
     {
       "number": 255,
       "title": "Rollenware: Art-Wahl Meterware/Raummass, Breite als Chip",
