@@ -15,37 +15,52 @@
         "belagsart_gX3rAm": {
           "type": "belagsart",
           "settings": {
-            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26_1.jpg",
-            "title": "Kokosläufer",
-            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+            "title": "Kokos",
+            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokos ist langlebig und pflegeleicht.",
+            "ausfuehrungen_titel": "Möglich als",
+            "ausfuehrungen": "Läufer mit Kettelung"
           }
         },
         "belagsart_8aG4Ad": {
           "type": "belagsart",
           "settings": {
-            "image": "shopify://shop_images/PHOTO-2024-10-01-13-53-26.jpg",
-            "title": "Sisalläufer",
-            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisalläufer sind antistatisch und strapazierfähig."
+            "title": "Sisal",
+            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisal ist antistatisch und strapazierfähig.",
+            "ausfuehrungen_titel": "Möglich als",
+            "ausfuehrungen": "Läufer mit Kettelung"
           }
         },
         "belagsart_JMcTyG": {
           "type": "belagsart",
           "settings": {
             "image": "shopify://shop_images/20230327_132901.jpg",
-            "title": "Teppichläufer",
-            "text": "Komfortabel und vielseitig, in verschiedenen Farben und Mustern erhältlich. Teppichboden bietet eine weiche und gemütliche Oberfläche."
+            "bild_alt": "Von uns mit Teppichboden belegte Treppe",
+            "title": "Teppichboden",
+            "text": "Weich und leise, in vielen Farben und Strukturen. Der Belag, der sich am freiesten an jede Stufenform anpassen lässt.",
+            "ausfuehrungen_titel": "Möglich als",
+            "ausfuehrungen": "Läufer mit Kettelung, Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
+          }
+        },
+        "belagsart_vinyl01": {
+          "type": "belagsart",
+          "settings": {
+            "title": "Vinyl",
+            "text": "Strapazierfähig und leicht zu reinigen, in Holz- und Steindekoren. Auf der Treppe wird jede Stufe einzeln zugeschnitten.",
+            "ausfuehrungen_titel": "Möglich als",
+            "ausfuehrungen": "Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
           }
         }
       },
       "block_order": [
         "belagsart_gX3rAm",
         "belagsart_8aG4Ad",
-        "belagsart_JMcTyG"
+        "belagsart_JMcTyG",
+        "belagsart_vinyl01"
       ],
       "name": "Treppenverlegung",
       "settings": {
         "hero_bild": "shopify://shop_images/PHOTO-2024-10-01-13-53-26_1.jpg",
-        "hero_bild_alt": "Von uns belegte Treppe mit Läufer",
+        "hero_bild_alt": "Von uns belegter Treppenaufgang mit rotem Teppichboden",
         "hero_titel": "Treppe neu belegen lassen",
         "hero_text": "Jede Treppe ist anders – offene oder geschlossene Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf.",
         "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Beratung zu Belag und Kanten, Verlegung durch unser eigenes Team",
@@ -54,8 +69,8 @@
         "telefon": "+4933015733720",
         "telefon_label": "oder anrufen: 03301 5733720",
         "beleg": "",
-        "belag_titel": "Welcher Belag passt auf Ihre Treppe?",
-        "belag_text": "Wir zeigen Ihnen Muster und beraten, was zu Ihrer Treppe und Ihrem Alltag passt.",
+        "belag_titel": "Welches Material soll auf Ihre Treppe?",
+        "belag_text": "Kokos und Sisal, Teppichboden oder Vinyl – jedes Material verhält sich auf der Treppe anders. Wir zeigen Ihnen Muster und beraten, was zu Ihrer Treppe und Ihrem Alltag passt.",
         "warum_titel": "Was Sie von uns bekommen",
         "warum_punkte": "Kostenloses Aufmaß vor Ort, Beratung zu Belag und Kantenausführung, Verlegung durch unser eigenes Team, Ein Ansprechpartner von der Beratung bis zur Abnahme"
       }
@@ -255,10 +270,99 @@
         "stufe_weiter",
         "stufe_versand"
       ]
+    },
+    "tp_treppen_ausfuehrung": {
+      "type": "tp-treppen-ausfuehrung",
+      "name": "Treppe: Ausführungen",
+      "blocks": {
+        "ausf_laeufer": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "laeufer",
+            "titel": "Läufer mit seitlicher Kettelung",
+            "text": "Eine Bahn läuft mittig über die Stufen, die Längskanten werden gekettelt. Links und rechts bleibt die Stufe sichtbar.",
+            "detail": "Breite nach Maß. Die Kettelung bestimmt, wie die Kante später aussieht.",
+            "belag_kokos_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": false
+          }
+        },
+        "ausf_einzelstufe": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "einzelstufe",
+            "titel": "Einzelne Stufen nach Maß und Schablone",
+            "text": "Jede Stufe wird einzeln aufgemessen, von Hand eine Schablone genommen und der Belag danach zugeschnitten.",
+            "detail": "Der Weg für gewendelte Treppen – dort hat keine Stufe dasselbe Maß wie die nächste.",
+            "belag_kokos_sisal": false,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        "ausf_trittstufe": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "trittstufe",
+            "titel": "Trittstufe komplett, ohne Setzstufe",
+            "text": "Die ganze Trittfläche wird belegt, die senkrechte Setzstufe bleibt frei.",
+            "detail": "Passt, wenn die Setzstufen erhalten bleiben sollen.",
+            "belag_kokos_sisal": false,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        "ausf_tritt_setz": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "tritt_setz",
+            "titel": "Tritt- und Setzstufe komplett",
+            "text": "Trittfläche und Setzstufe werden belegt, der Belag läuft über die Stufenkante durch.",
+            "detail": "An der Stufenkante entscheidet sich die Haltbarkeit – dort läuft man am häufigsten.",
+            "belag_kokos_sisal": false,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        "ausf_wange": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "wange",
+            "titel": "Komplett mit Wange",
+            "text": "Zusätzlich zu Tritt- und Setzstufe wird die seitliche Wange belegt. Von der Treppe bleibt dann kein alter Untergrund mehr sichtbar.",
+            "detail": "Die aufwendigste Ausführung – und die, bei der eine alte Treppe wirklich wie neu wirkt.",
+            "belag_kokos_sisal": false,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        }
+      },
+      "block_order": [
+        "ausf_laeufer",
+        "ausf_einzelstufe",
+        "ausf_trittstufe",
+        "ausf_tritt_setz",
+        "ausf_wange"
+      ],
+      "settings": {
+        "titel": "Wie weit soll Ihre Treppe belegt werden?",
+        "text": "Vom schmalen Läufer in der Mitte bis zur komplett belegten Stufe samt Wange ist alles möglich. Was zu Ihrer Treppe passt, hängt von Form, Nutzung und Budget ab – beim kostenlosen Aufmaß zeigen wir Ihnen die Unterschiede.",
+        "legende": "Grün markiert ist jeweils die Fläche, die belegt wird.",
+        "spalte_kokos_sisal": "",
+        "spalte_teppich": "Teppichboden",
+        "spalte_vinyl": "Vinyl",
+        "matrix_zeigen": true,
+        "matrix_titel": "Welche Ausführung geht mit welchem Belag?",
+        "matrix_ecke": "Ausführung",
+        "matrix_hinweis": "Vinyl lässt sich nicht ketteln – alle übrigen Ausführungen sind auch mit Vinyl möglich.",
+        "cta_label": "Aufmaß-Termin anfragen",
+        "cta_ziel": "/pages/kontakt",
+        "cta_zusatz": "Beim Aufmaß sehen wir vor Ort, welche Ausführung auf Ihre Treppe passt."
+      }
     }
   },
   "order": [
     "treppenverlegun_jXADaz",
+    "tp_treppen_ausfuehrung",
     "main",
     "tp_verlegegebiet",
     "final_cta_service",

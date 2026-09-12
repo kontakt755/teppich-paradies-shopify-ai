@@ -66,6 +66,16 @@
         "blocks/tp-farbanzeige.liquid",
         "assets/tp-farbe.js"
       ]
+    },
+    {
+      "name": "Treppenseite",
+      "reason": "Landingpage fuer das Google-Ads-Keyword Treppenverlegung. Das Snippet mit den Schemazeichnungen wird nur aus der Sektion gerendert, nicht aus einem Template - der Template-Verweis-Check findet es deshalb nicht. Fehlt es, rendert jede Ausfuehrungskarte ohne Bild.",
+      "files": [
+        "sections/treppenverlegun.liquid",
+        "sections/tp-treppen-ausfuehrung.liquid",
+        "snippets/tp-treppen-schema.liquid",
+        "templates/page.treppenverlegung.json"
+      ]
     }
   ]
 }
