@@ -2378,6 +2378,13 @@
         "default": "69 €"
       },
       {
+        "type": "text",
+        "id": "tp_vs_lieferung_hinweis",
+        "label": "Hinweis zur Anlieferung",
+        "info": "Steht bei den Lieferpreisen und unter „Gut zu wissen“. Leer lassen blendet ihn aus.",
+        "default": "Die Preise gelten für ebenerdige Anlieferung. Das Tragen in obere Etagen nennen wir vorab im Angebot."
+      },
+      {
         "type": "header",
         "content": "Lose Verlegung, wenn nicht kostenlos"
       },
@@ -2385,13 +2392,14 @@
         "type": "text",
         "id": "tp_vs_lose",
         "label": "Preis",
-        "default": "4,95 €/m²"
+        "default": "8,95 €/m²"
       },
       {
         "type": "text",
         "id": "tp_vs_lose_mindest",
-        "label": "Mindestbetrag je Auftrag",
-        "default": "49 €"
+        "label": "Mindestpauschale je Auftrag",
+        "info": "Kleine Flaechen kosten diesen Betrag, auch wenn der Quadratmeterpreis darunter laege.",
+        "default": "129 €"
       },
       {
         "type": "header",
@@ -2405,19 +2413,19 @@
         "type": "text",
         "id": "tp_vs_band_basis",
         "label": "Mit Verlegeband",
-        "default": "8,95 €/m²"
+        "default": "9,95 €/m²"
       },
       {
         "type": "text",
         "id": "tp_vs_fluessig_basis",
         "label": "Mit Flüssigfixierung",
-        "default": "9,95 €/m²"
+        "default": "10,95 €/m²"
       },
       {
         "type": "text",
         "id": "tp_vs_kleber_basis",
         "label": "Vollflächig verklebt",
-        "default": "10,95 €/m²"
+        "default": "11,95 €/m²"
       },
       {
         "type": "header",
