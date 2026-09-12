@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T09:46:17.225Z",
+  "generated_at": "2026-09-12T09:48:51.542Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 79,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T09:46:17.225Z",
+    "fetchedAt": "2026-09-12T09:48:51.542Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -65,10 +65,10 @@
     {
       "number": 230,
       "title": "Rollenware-Rechner: Zuschnitt je Farbe ausblenden",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/230",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -77,14 +77,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-12T08:56:25Z",
-      "updated_at": "2026-09-12T08:56:39Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T09:48:38Z",
+      "closed_at": "2026-09-12T09:48:38Z"
     },
     {
       "number": 225,
