@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T06:10:04.708Z",
+  "generated_at": "2026-09-12T06:50:15.119Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 77,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T06:10:04.708Z",
+    "fetchedAt": "2026-09-12T06:50:15.119Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -165,7 +165,7 @@
     {
       "number": 203,
       "title": "Bezugsquellen im oeffentlichen Repo-Stand neutralisieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/203",
       "labels": [
         "status:review",
@@ -183,8 +183,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:54:35Z",
-      "updated_at": "2026-09-11T18:22:21Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T06:50:04Z",
+      "closed_at": "2026-09-12T06:50:04Z"
     },
     {
       "number": 202,
@@ -324,14 +324,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-11T20:30:24Z",
+      "updated_at": "2026-09-12T06:45:40Z",
       "closed_at": null
     },
     {
