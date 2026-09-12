@@ -648,3 +648,48 @@ Alle Schritte mit Prüfstufe (Guards, `validate --static`, Theme Check ohne neue
   - Die Handy-Kopie ist 115 KB roh, aber nur 6,8 KB gzip. Entfiele sie ganz, spart die Seite 5,5 KB Übertragung und rund 590 Elemente.
   - Dafür wäre ein Eingriff in Horizons Filterlogik nötig, die beide Formulare synchron hält. Das Risiko für die kaufentscheidenden Filter steht in keinem Verhältnis dazu.
 - **Paketknöpfe** (± 38 × 44 px, Paket-Steller 32 × 32 px): `blocks/paket-auswahl.liquid` liegt im Entwurf in einer fremden Fassung (Fliesen-Reserve-Hinweis, 12:36 UTC). Befund und CSS-Vorschlag gingen an die Paketware-Sitzung, der Paket-Rechner ist geschützt.
+
+### Nachtrag 5: Zusammenführung der drei Stränge (2026-09-12)
+
+Vom Inhaber beauftragt: „Ja, du führst zusammen" – Menü-Branch, #186/Konzept C und `main` in einen Branch, Konflikte auflösen, im eigenen Dev-Theme testen, PR nach `main` öffnen. **Live erst nach ausdrücklicher Freigabe.** Rückholpunkt ist der Tag `vor-integration-2026-09-12` auf `80db603`.
+
+**Merge-Reihenfolge und Konfliktentscheidungen**
+
+| Schritt | Commit | Konflikt | Entscheidung |
+|---|---|---|---|
+| Menü-Branch | `2e2cdfa` | keiner | – |
+| #186/#190 inkl. Konzept C | `9654fcd` | Einstiegstext in `templates/index.json` | PLZ-Text behalten („bis 50 km um Oranienburg"), gedeckt durch `tp_vs_radius_premium` = 50 und `radius: 50` der Section |
+| `origin/main` | `22c8406` | `templates/index.json` | Konzept C behalten |
+| | | `templates/page.verlegeservice.json` | Fassung aus `main` (eine H1, wie `qa/tests/verlegeservice.test.mjs` verlangt) |
+| | | `snippets/header-drawer.liquid` | Fassung der Menü-Sitzung |
+| | | `config/settings_schema.json` | **beide** Gruppen, auf 20 Gruppen geprüft („TP Firmendaten" 2 Einstellungen, „TP Verlegeservice" 31) |
+| | | `sections/tp-zwei-wege.liquid` | behalten – `main` hatte die Datei gelöscht, die Konzept-C-Startseite verweist aber auf `tp_zwei_wege_home`. Entscheidung des Inhabers, nachdem ich den Widerspruch vorgelegt hatte |
+| Nachlauf | `321e1c3` | – | verwaistes `snippets/tp-drawer-bildraster.liquid` entfernt, damit Theme Check wieder bei 41 Warnungen steht |
+| Zweiter `main`-Stand | – | keiner | PR #211 (Neutralisierung der Bezugsquellen) konfliktfrei nachgezogen, betrifft keine Theme-Datei |
+
+Bei `config/settings_schema.json` ging das zweimal schief, bevor es stimmte: zwei naive Verkettungen ergaben ungültiges JSON, und ein `git add` hat die Datei einmal **mit** Konfliktmarkern vorgemerkt. Erst `git checkout --merge`, dann die Konfliktregion mit Zeilennummern lesen und strukturell auflösen, geprüft mit `json.loads`.
+
+**Prüfung im Dev-Theme 204180619598**
+
+Vorab per `checksumMd5` gegen lokale MD5 belegt, dass der gemergte Stand im Theme liegt – sieben Dateien aus allen beteiligten Bereichen, alle byte-identisch.
+
+| Prüflauf | Ergebnis |
+|---|---|
+| Kaufwege am Telefon: Paketware, Rollenware, Sockelleiste | 3/3 PASS, Warenkorb-Eigenschaften korrekt (Rollenbreite, gewünschte Länge, aufgerundete Fläche, Farbnummer) |
+| Verkaufsstrecken Desktop: Paket, Rolle, Muster | 3 PASS, 0 FAIL |
+| Suche Telefon und Desktop | 7/7 PASS |
+| Startseiten-Reiter 390/1440 | nur aktive Liste sichtbar, kein 1080/1440-px-Bild beim Laden, Umschalten in beide Richtungen |
+| Produktkarten: Startseite, Suche, zwei Produktseiten × zwei Breiten | 0 versteckte Folien, alle Karten mit Bild, 0 JS-Fehler |
+| Mobiles Menü (fremder Strang) | öffnet, 7 Zweige mit Produktzahlen, Abstieg in Teppichboden zeigt 6 Unterkategorien, Zurück führt hoch, 0 JS-Fehler |
+| Verlegeservice-Seite (fremder Strang) | HTTP 200, Karte rendert, PLZ-Prüfung antwortet, 22 Leistungsstufen, 0 JS-Fehler |
+| Konzept-C-Startseite | 21 Sections, vier ohne Höhe – alle vier gewollt: zwei inaktive Reiter-Listen, das auf der Startseite ausgeblendete Abschluss-CTA, die fixierte Kontaktleiste |
+| `dev_check` | 10/11 – der eine Fehlschlag ist der 404 auf `/favicon.ico`, ein offener Inhaberpunkt |
+
+Gates nach dem letzten Merge: Liquid-Guard 380 Dateien 0 Fehler · Schema-Guard 228 Schemata 0 Fehler · Template-Guard 0 Fehler, 2 bekannte Drift-Warnungen · Essential-Guard 30 Pflichtdateien und alle Template-Verweise · `validate --static` WORKFLOW PASS · `npm test` 195/195 und 37/37 · `shopify theme check` 0 Fehler, 41 Warnungen (unverändert).
+
+**Zwei eigene Irrtümer, die beim Prüfen auffielen**
+
+- Ich habe `/pages/verlegeservice` getestet und eine 404 gemeldet. Die Seite hat den Handle `liefer-verlegeservice` mit Template-Suffix `verlegeservice` – mein Test-URL war falsch, nicht das Theme.
+- Bei Theme Check habe ich `severity` als Zahl ausgewertet und daraufhin „0 Warnungen" gemeldet. Das Feld ist ein String; korrekt sind 41 Warnungen, also unverändert zum Stand vor dem Merge.
+
+**Ergebnis:** `feature/shop-qualitaet` nach `origin` gepusht, PR #220 nach `main` offen, Aufgabe #194 auf Review. Alle 19 Theme-Dateien aus den Qualitätsarbeiten liegen byte-identisch im Entwurf 204168364366 – es musste nichts nachgeladen werden. Es ist nichts veröffentlicht worden; `workflow:preview` und `workflow:live` bleiben ungelaufen, bis der Inhaber „live stellen" sagt.
