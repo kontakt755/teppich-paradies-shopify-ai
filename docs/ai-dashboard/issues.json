@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T09:10:16.066Z",
+  "generated_at": "2026-09-12T09:13:33.217Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 79,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T09:10:16.066Z",
+    "fetchedAt": "2026-09-12T09:13:33.217Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -360,10 +360,10 @@
     {
       "number": 193,
       "title": "Mobiles Menue neu gliedern: Vinyl und Bodenleisten, Desktop und Handy angleichen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/193",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:navigation"
@@ -372,15 +372,15 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 9,
+      "comments": 10,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Audit vom 2026-09-11 im neuesten Theme-Entwurf (7 Breiten, 18 Seiten). Handy-Menue zeigt jeden Bereich in einem anderen Muster, Vinyl ohne Bilder und Mengen, Linoleum/Kontakt am Handy ohne Untermenue, Profile unter Bodenleisten ausgeblendet, kein aktiver Bereich. Umsetzung nur im Entwurf, Branch feature/mobile-menue-ux. Nichts live.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T11:05:00Z",
-      "updated_at": "2026-09-12T06:51:05Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T09:13:21Z",
+      "closed_at": "2026-09-12T09:13:21Z"
     },
     {
       "number": 189,
