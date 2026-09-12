@@ -1,0 +1,48 @@
+{%- doc -%}
+  Eine Zeile im Handy-Menue: Bild (oder Symbol), Titel, Kurztext, Anzahl, Pfeil.
+  Jede Unterebene benutzt diese Zeile, damit alle Bereiche gleich aussehen.
+  Gestaltung: assets/tp-nav.css.
+
+  title und sub werden unveraendert ausgegeben - der Aufrufer liefert sie bereits
+  escaped (tp-menu-label und tp-menu-kurztext tun das von selbst).
+
+  @param {string} url - Ziel
+  @param {string} title - Titel (escaped)
+  @param {string} [sub] - Kurztext (escaped)
+  @param {number} [count] - Produktanzahl; 0 oder leer blendet sie aus
+  @param {string} [image_html] - fertiges img-Markup; ohne Bild erscheint die Initiale
+  @param {string} [icon] - 'phone' | 'whatsapp' | 'pin' | 'muster' statt eines Bildes
+  @param {boolean} [current] - Zeile fuehrt zur aktuellen Seite
+  @param {string} [attrs] - weitere Attribute fuer den Link (z. B. target/rel)
+{%- enddoc -%}
+
+<li class="tp-dn-list__item">
+  <a
+    href="{{ url }}"
+    class="tp-dn-row{% if current %} is-current{% endif %}"
+    {% if current %}
+      aria-current="page"
+    {% endif %}
+    {{ attrs }}
+  >
+    <span class="tp-dn-row__media{% if icon != blank %} tp-dn-row__media--icon tp-dn-row__media--{{ icon }}{% endif %}" aria-hidden="true">
+      {%- if icon != blank -%}
+        {%- render 'tp-drawer-icon', name: icon -%}
+      {%- elsif image_html contains '<img' -%}
+        {{ image_html }}
+      {%- else -%}
+        <span class="tp-dn-row__initial">{{ title | strip | slice: 0, 1 | upcase }}</span>
+      {%- endif -%}
+    </span>
+    <span class="tp-dn-row__body">
+      <span class="tp-dn-row__title">{{ title }}</span>
+      {%- if sub != blank -%}
+        <span class="tp-dn-row__sub">{{ sub }}</span>
+      {%- endif -%}
+    </span>
+    {%- if count > 0 -%}
+      <span class="tp-dn-row__count">{{ count }}<span class="visually-hidden"> Produkte</span></span>
+    {%- endif -%}
+    <span class="tp-dn-row__chev" aria-hidden="true"></span>
+  </a>
+</li>

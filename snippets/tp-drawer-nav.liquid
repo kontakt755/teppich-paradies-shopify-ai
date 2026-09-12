@@ -1,0 +1,294 @@
+{%- doc -%}
+  Handy-Menue (Drawer) des Headers - Hauptebene und Unterebenen.
+
+  Ersetzt die Horizon-Schleifen in snippets/header-drawer.liquid. Die zeigten jeden
+  Bereich in einem anderen Muster (Bildraster, Textliste, Gruppen) und Vinyl wegen
+  der dritten Menueebene ganz ohne Bilder (Audit 2026-09-11, Aufgabe #193).
+
+  Hauptebene: je Bereich Bild, Titel, Kurzbeschreibung und Pfeil, gruppiert in
+  "Bodenbelaege & Zubehoer" (Kollektionen) und "Service & Beratung" (alles andere).
+  Darunter Muster, Anrufen und WhatsApp - dort, wo der Daumen ohnehin ist.
+
+  Unterebene (Panel): Zurueck, Titel, "Alle ... ansehen" als eigener Knopf, darunter
+  die Gliederung. Vinyl, Bodenleisten, Linoleum und Kontakt teilen ihre Gliederung
+  mit dem Desktop-Megamenue (tp-vinyl-nav, tp-leisten-nav, tp-linoleum-nav,
+  tp-kontakt-nav); alle anderen Bereiche zeigen ihre Menuepunkte (tp-drawer-liste).
+  Damit ist die Navigation auf beiden Geraeten dieselbe.
+
+  Die Mechanik bleibt die von assets/header-drawer.js: summary mit
+  on:click="header-drawer/open/submenu", Zurueck und Schliessen ueber
+  header-drawer/back bzw. header-drawer/close. Gestaltung: assets/tp-nav.css.
+
+  @param {object} linklist - Hauptmenue
+  @param {string} [kacheln] - Datensaetze der Bildkacheln (siehe tp-menu-kachel-index)
+{%- enddoc -%}
+
+{%- comment -%}
+  Muss vor dem Menue stehen: assets/tp-nav.css kommt im Seitenkopf erst nach dem
+  Drawer, bis dahin hatte der Browser schon drei Menuebilder geladen (gemessen
+  2026-09-11). Aufgehoben wird die Regel durch data-tp-bilder (Script unten).
+{%- endcomment -%}
+{% style %}
+  header-drawer:not([data-tp-bilder]) .tp-dn img,
+  header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
+    display: none;
+  }
+{% endstyle %}
+
+<ul class="tp-dn" role="list">
+  {%- assign tp_dn_group = '' -%}
+  {%- for link in linklist.links -%}
+    {%- liquid
+      assign tp_dn_kind = 'liste'
+      if link.type == 'collection_link' and link.object.handle == 'vinylboden-1'
+        assign tp_dn_kind = 'vinyl'
+      elsif link.type == 'collection_link' and link.object.handle == 'bodenleisten'
+        assign tp_dn_kind = 'leisten'
+      elsif link.type == 'collection_link' and link.object.handle == 'linoleumboden-1'
+        assign tp_dn_kind = 'linoleum'
+      elsif link.title == 'Kontakt'
+        assign tp_dn_kind = 'kontakt'
+      elsif link.links == blank
+        assign tp_dn_kind = 'link'
+      endif
+
+      if link.type == 'collection_link' or link.type == 'collections_link' or link.type == 'catalog_link'
+        assign tp_dn_grp = 'sortiment'
+      else
+        assign tp_dn_grp = 'service'
+      endif
+
+      assign tp_dn_active = false
+      if link.active or link.child_active
+        assign tp_dn_active = true
+      endif
+
+      # Kurzbeschreibung: bis zu drei Unterpunkte, ohne den "Alle ..."-Einstieg.
+      # Bodenleisten gliedert das Panel nach Merkmalen statt nach Menuepunkten
+      # (tp-leisten-nav). Die Zeile nennt deshalb dessen Gruppen - und nicht
+      # "Sockelleisten" oder "Kleber & Fixierung", die das Panel bewusst weglaesst
+      # (Review 2026-09-11). Gleiche Bedingungen wie im Panel: Tags material:/hoehe:,
+      # Profil-Unterpunkte mit Produkten.
+      assign tp_dn_sub = ''
+      assign tp_dn_seen = 0
+      if tp_dn_kind == 'kontakt'
+        assign tp_dn_sub = 'Anrufen, WhatsApp, vor Ort'
+      elsif tp_dn_kind == 'leisten'
+        assign tp_dn_tags = link.object.all_tags | join: ',' | downcase
+        if tp_dn_tags contains 'material:' and tp_dn_tags contains 'hoehe:'
+          assign tp_dn_sub = 'Nach Material und Höhe'
+        elsif tp_dn_tags contains 'material:'
+          assign tp_dn_sub = 'Nach Material'
+        elsif tp_dn_tags contains 'hoehe:'
+          assign tp_dn_sub = 'Nach Höhe'
+        endif
+        for c in link.links
+          if c.type == 'collection_link' and c.object.handle contains 'profile' and c.object.all_products_count > 0
+            if tp_dn_sub != ''
+              assign tp_dn_sub = tp_dn_sub | append: ', '
+            endif
+            assign tp_dn_sub = tp_dn_sub | append: 'Profile'
+            break
+          endif
+        endfor
+        if tp_dn_sub == ''
+          assign tp_dn_sub = link.object.all_products_count | append: ' Produkte'
+        endif
+      else
+        for c in link.links
+          assign c_first = c.title | split: ' ' | first
+          if c.url == link.url or c_first == 'Alle' or c_first == 'Alles'
+            continue
+          endif
+          assign tp_dn_seen = tp_dn_seen | plus: 1
+          if tp_dn_seen <= 3
+            capture c_label
+              render 'tp-menu-label', link: c
+            endcapture
+            if tp_dn_sub != ''
+              assign tp_dn_sub = tp_dn_sub | append: ', '
+            endif
+            assign tp_dn_sub = tp_dn_sub | append: c_label
+          endif
+        endfor
+        if tp_dn_seen > 3
+          assign tp_dn_sub = tp_dn_sub | append: ' …'
+        endif
+        if tp_dn_sub == '' and link.type == 'collection_link'
+          assign tp_dn_sub = link.object.all_products_count | append: ' Produkte'
+        endif
+      endif
+
+      # Bild: eigene Bildkachel, sonst die Kachel des ersten Unterpunkts
+      # ("Alle Teppichboeden"), sonst Kollektions- bzw. Produktbild
+      assign tp_dn_hit = 0
+      if tp_dn_kind != 'kontakt'
+        capture tp_dn_hit
+          render 'tp-menu-kachel-index', link: link, kacheln: kacheln
+        endcapture
+        assign tp_dn_hit = tp_dn_hit | strip | plus: 0
+      endif
+      assign tp_dn_img = ''
+      if tp_dn_kind != 'kontakt'
+        if tp_dn_hit == 0 and link.links != blank
+          capture tp_dn_img
+            render 'tp-menu-bild', link: link.links.first, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+          endcapture
+        else
+          capture tp_dn_img
+            render 'tp-menu-bild', link: link, kacheln: kacheln, class: 'tp-dn-row__img', sizes: '56px'
+          endcapture
+        endif
+      endif
+    -%}
+
+    {%- if tp_dn_grp != tp_dn_group -%}
+      <li class="tp-dn__label" role="presentation">
+        {%- if tp_dn_grp == 'sortiment' -%}Bodenbeläge &amp; Zubehör{%- else -%}Service &amp; Beratung{%- endif -%}
+      </li>
+      {%- assign tp_dn_group = tp_dn_grp -%}
+    {%- endif -%}
+
+    {%- capture tp_dn_row -%}
+      <span class="tp-dn-row__media{% if tp_dn_kind == 'kontakt' %} tp-dn-row__media--icon{% endif %}" aria-hidden="true">
+        {%- if tp_dn_kind == 'kontakt' -%}
+          {%- render 'tp-drawer-icon', name: 'phone' -%}
+        {%- elsif tp_dn_img contains '<img' -%}
+          {{ tp_dn_img }}
+        {%- else -%}
+          <span class="tp-dn-row__initial">{{ link.title | strip | slice: 0, 1 | upcase }}</span>
+        {%- endif -%}
+      </span>
+      <span class="tp-dn-row__body">
+        <span class="tp-dn-row__title">{%- render 'tp-menu-label', link: link -%}</span>
+        {%- if tp_dn_sub != blank -%}
+          <span class="tp-dn-row__sub">{{ tp_dn_sub }}</span>
+        {%- endif -%}
+      </span>
+      {%- if tp_dn_active -%}
+        <span class="visually-hidden">(aktueller Bereich)</span>
+      {%- endif -%}
+      <span class="tp-dn-row__chev" aria-hidden="true"></span>
+    {%- endcapture -%}
+
+    <li class="tp-dn__item">
+      {%- if tp_dn_kind == 'link' -%}
+        <a
+          id="HeaderDrawer-{{ link.handle }}"
+          href="{{ link.url }}"
+          class="tp-dn-row tp-dn-row--top focus-inset{% if tp_dn_active %} is-active{% endif %}"
+          {% if link.current %}
+            aria-current="page"
+          {% endif %}
+        >
+          {{- tp_dn_row -}}
+        </a>
+      {%- else -%}
+        <details id="Details-menu-drawer-menu-item-{{ forloop.index }}" class="tp-dn__details">
+          <summary
+            id="HeaderDrawer-{{ link.handle }}"
+            class="tp-dn-row tp-dn-row--top focus-inset{% if tp_dn_active %} is-active{% endif %}"
+            on:click="header-drawer/open/submenu"
+          >
+            {{- tp_dn_row -}}
+          </summary>
+          <div
+            id="link-{{ link.handle | escape }}"
+            class="menu-drawer__submenu has-submenu tp-dn-panel"
+            tabindex="-1"
+          >
+            <div class="menu-drawer__inner-submenu tp-dn-panel__inner">
+              <div class="menu-drawer__nav-buttons tp-dn-panel__bar">
+                <button
+                  class="button menu-drawer__back-button tp-dn-back focus-inset"
+                  type="button"
+                  on:click="header-drawer/back"
+                  aria-label="Zurück zum Hauptmenü"
+                >
+                  <span class="svg-wrapper icon-caret icon-caret--backward">
+                    {{- 'icon-caret.svg' | inline_asset_content -}}
+                  </span>
+                  <span>Zurück</span>
+                </button>
+                <button
+                  class="button button-unstyled close-button menu-drawer__close-button"
+                  type="button"
+                  aria-label="{{ 'actions.close' | t }}"
+                  on:click="header-drawer/close"
+                >
+                  <span class="svg-wrapper header-drawer-icon header-drawer-icon--close">
+                    {{- 'icon-close.svg' | inline_asset_content -}}
+                  </span>
+                </button>
+              </div>
+              <div class="tp-dn-panel__head">
+                <p class="tp-dn-panel__title">{%- render 'tp-menu-label', link: link -%}</p>
+              </div>
+              <div class="tp-dn-panel__body">
+                {%- case tp_dn_kind -%}
+                  {%- when 'vinyl' -%}
+                    {%- render 'tp-vinyl-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
+                  {%- when 'leisten' -%}
+                    {%- render 'tp-leisten-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
+                  {%- when 'linoleum' -%}
+                    {%- render 'tp-linoleum-nav', variant: 'drawer', parent_link: link, kacheln: kacheln -%}
+                  {%- when 'kontakt' -%}
+                    {%- render 'tp-kontakt-nav', variant: 'drawer', parent_link: link -%}
+                  {%- else -%}
+                    {%- render 'tp-drawer-liste', parent_link: link, kacheln: kacheln -%}
+                {%- endcase -%}
+              </div>
+            </div>
+          </div>
+        </details>
+      {%- endif -%}
+    </li>
+  {%- endfor -%}
+</ul>
+
+{%- assign tp_dn_muster_url = pages['muster'].url | default: '/pages/muster' -%}
+<div class="tp-dn-foot">
+  <ul class="tp-dn-list" role="list">
+    {%- render 'tp-drawer-zeile', url: tp_dn_muster_url, title: 'Muster bestellen', sub: 'Bis zu 3 Muster kostenlos', icon: 'muster' -%}
+  </ul>
+  {%- render 'tp-kontakt-nav', variant: 'drawer-quick' -%}
+</div>
+
+<script>
+  // Menuebilder erst bei der ersten Absicht laden (Regel in assets/tp-nav.css).
+  if (!window.tpDrawerBilder) {
+    window.tpDrawerBilder = true;
+    var tpDrawerAbsicht = function (event) {
+      if (!(event.target instanceof Element) || !event.target.closest('.header__icon--menu, #Details-menu-drawer-container')) return;
+      document.querySelectorAll('header-drawer:not([data-tp-bilder])').forEach(function (drawer) {
+        drawer.setAttribute('data-tp-bilder', '');
+      });
+    };
+    ['pointerdown', 'touchstart', 'mouseover', 'focusin'].forEach(function (type) {
+      document.addEventListener(type, tpDrawerAbsicht, { passive: true, capture: true });
+    });
+  }
+
+  // Sprungziel auf derselben Seite (Bodenleisten: #leisten:material=...) laedt die
+  // Seite nicht neu. Das Menue schliesst deshalb selbst, sonst verdeckt es das
+  // gefilterte Ergebnis.
+  if (!window.tpDrawerHashClose) {
+    window.tpDrawerHashClose = true;
+    document.addEventListener('click', function (event) {
+      var anchor = event.target instanceof Element ? event.target.closest('.tp-dn a[href*="#"]') : null;
+      if (!anchor) return;
+      var target = new URL(anchor.href, location.href);
+      if (!target.hash || target.pathname !== location.pathname) return;
+      var drawer = anchor.closest('header-drawer');
+      if (drawer && typeof drawer.close === 'function') {
+        drawer.close();
+        // Solange das Menue schliesst, ist die Seite gesperrt, und die Sperre setzt
+        // die Scrollposition danach zurueck - das Ergebnis blieb unter dem Hero
+        // unsichtbar. Nach dem Schliessen das Sprungziel deshalb erneut melden.
+        setTimeout(function () {
+          window.dispatchEvent(new HashChangeEvent('hashchange'));
+        }, 500);
+      }
+    });
+  }
+</script>
