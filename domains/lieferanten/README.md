@@ -83,6 +83,11 @@ Die Lieferant-B-Textilkollektionen sind stark mit Fliesen (Avantiles, 28 Qualita
   „400 + 500 + Maßteppich". Ob Ketteln fuer jede Rollenware-Qualitaet bestellbar ist, muss der Lieferant-A-Vertrieb
   bestaetigen — in der Datei steht das als Hinweis, nicht als Ja.
 - **Lieferant B**: Die Seiten nennen keinen Zuschnitt- oder Kettelservice. In der Datei: `unbekannt`, niemals `true`.
+  Einzige Ausnahme sind die zwei Qualitaeten der Kollektion **Outdoor 2030** (Farbnummernkreise 401 und 402): Laut
+  Produktbeschreibung werden sie als Wunschmaß-Teppich bis max. 4 m Breite „inkl. Kettelung" gefertigt. Das ist ein
+  Fertigprodukt mit eingerechneter Kante, **kein Service**, der sich auf andere Qualitaeten anwenden laesst — es
+  gehoert als Produkteigenschaft ins Datenmodell, nicht nach `edging_available`. Beide Qualitaeten sind nicht im
+  Shop. Fuer „wer kettelt Rollenware ab" bleibt Lieferant A der einzige Weg.
 - Je Farbe gilt in der Datei: `custom_size_available` und `edging_available` = `lieferant_a_available`.
   `kettelleiste_available` und `dropshipping_available` bleiben `null`, bis die Konditionen vorliegen.
 
