@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T14:17:05.869Z",
+  "generated_at": "2026-09-12T15:50:17.808Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 79,
+  "count": 80,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T14:17:05.869Z",
+    "fetchedAt": "2026-09-12T15:50:17.808Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -62,6 +62,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 246,
+      "title": "Sicherheits-Hook: Git-Aufruf in Anfuehrungszeichen umging den Guard",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/246",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T15:50:05Z",
+      "updated_at": "2026-09-12T15:50:05Z",
+      "closed_at": null
+    },
     {
       "number": 230,
       "title": "Rollenware-Rechner: Zuschnitt je Farbe ausblenden",
