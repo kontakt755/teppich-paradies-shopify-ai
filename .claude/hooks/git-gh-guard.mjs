@@ -89,6 +89,15 @@ const VERBOTEN = [
   [/^git\s+(.*\s)?branch\b.*\s-[a-zA-Z]*D/,                         'git branch -D loescht auch einen ungemergten Branch - mit -d pruefen lassen'],
   [/^git\s+(.*\s)?branch\b.*\s(-[a-zA-Z]*d\b|--delete\b).*\s(--force\b|-[a-zA-Z]*f\b)/, 'git branch --delete --force hebt die Merge-Pruefung auf'],
   [/^git\s+(.*\s)?branch\b.*\s(--force\b|-[a-zA-Z]*f\b).*\s(-[a-zA-Z]*d\b|--delete\b)/, 'git branch --force --delete hebt die Merge-Pruefung auf'],
+  // Ein einzelnes Kurzflag, das d und f zusammenfasst: "-df" und "-fd". Die drei
+  // Regeln darueber greifen dabei nicht - die erste braucht ein grosses D, die
+  // beiden anderen zwei getrennte Token. Bis 2026-09-12 waren damit auch Sweeps
+  // offen ("git branch -df $(git branch ...)", "| xargs git branch -df"),
+  // gemessen durch die unabhaengige Pruefung. Die Absicht war nie eine andere:
+  // Der Test zu "git branch -rD" nennt kombinierte Kurzflags ausdruecklich als
+  // "nicht ausgeschrieben genug". Wer erzwungen loeschen will, schreibt -D <name>.
+  [/^git\s+(.*\s)?branch\b.*\s-[a-zA-Z]*d[a-zA-Z]*f/,               'kombiniertes Kurzflag wie -df hebt die Merge-Pruefung auf - ausgeschrieben loeschen: git branch -D <name>'],
+  [/^git\s+(.*\s)?branch\b.*\s-[a-zA-Z]*f[a-zA-Z]*d/,               'kombiniertes Kurzflag wie -fd hebt die Merge-Pruefung auf - ausgeschrieben loeschen: git branch -D <name>'],
   [/^git\s+(.*\s)?(filter-branch|filter-repo)\b/,                   'filter-branch schreibt die gesamte Historie um'],
   [/^git\s+(.*\s)?reflog\s+(delete|expire)\b/,                      'reflog delete entfernt das letzte Sicherheitsnetz'],
   [/^git\s+(.*\s)?gc\b.*--prune/,                                   'git gc --prune raeumt unerreichbare Objekte endgueltig weg'],
