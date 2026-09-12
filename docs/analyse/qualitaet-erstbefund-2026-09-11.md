@@ -720,7 +720,9 @@ Fremde Messungen, als solche gekennzeichnet — nicht meine eigenen. Sie decken 
 
 Die Menü-Sitzung bestätigt dabei unabhängig meinen Konsolen-Befund: `401 sf_private_access_tokens` und `404 favicon` treten auch ohne diese Änderungen auf — Plattformmeldungen, keine Regression.
 
-Abgenommen wurde der Stand `af4d2f5` plus der Kachel-Fix `ecb3126`. Danach kamen nur `c62489b` (zweite Bildkachel, im Dev-Theme als wirkungslos belegt, solange der Menüpunkt fehlt) und dieser Bericht.
+Die Menü-Sitzung hat ihre Abnahme am 2026-09-12 auf `e8f1f55` wiederholt und damit auch die zweite Bildkachel `c62489b` eingeschlossen: bei 375 px alle sieben Zeilen mit Bild oder Symbol, bei 1366 px Service-Panel mit 5 von 5 Bildern, weiterhin genau 7 Hauptpunkte, „Unsere Arbeit" taucht nirgends auf — die Kachel ist also belegt wirkungslos, solange der Menüpunkt fehlt.
+
+**Zur Prüfmethode:** Die Menü-Sitzung meldete kurzzeitig eine Abweichung bei `sections/header-group.json` und führte sie auf einen Kommentarkopf zurück, den Shopify voranstellt. Nachgeprüft: Der Kopf erscheint in `body.content` der Admin API, **nicht** in `checksumMd5` und nicht in `size`. Für dieselbe Datei gilt lokal 15.918 Byte und MD5 `1c9f0768…`, im Theme `size` 15.918 und `checksumMd5` `1c9f0768…` — mit Kopf wären es 16.281 Byte. Der Abgleich `checksumMd5` gegen `md5 -q` bleibt also gültig und ist weiterhin der richtige Weg; nur wer `body.content` vergleicht, muss den Kopf abziehen.
 
 ### Nachtrag 8: Offener Befund – `sizes` der Megamenü-Bilder rechnet mit sechs Spalten
 
