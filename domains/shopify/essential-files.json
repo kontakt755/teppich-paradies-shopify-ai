@@ -66,6 +66,18 @@
         "blocks/tp-farbanzeige.liquid",
         "assets/tp-farbe.js"
       ]
+    },
+    {
+      "name": "Teppich nach Mass",
+      "reason": "Raummass im Rollenrechner und Einfassprodukte (Cover, gekettelt, Einfassband, Paspelband). Rechenkern und Konfigurator gehoeren zusammen: fehlt das Asset, rechnet der Konfigurator nicht und bleibt fail closed ohne Warenkorb-Knopf; fehlt ein Block, lehnt Shopify product.einfassung.json ab.",
+      "files": [
+        "assets/tp-masstepich-rechnung.js",
+        "assets/tp-einfass-konfigurator.js",
+        "blocks/tp-einfass-konfigurator.liquid",
+        "blocks/tp-einfass-wechsel.liquid",
+        "snippets/tp-bandfarben.liquid",
+        "templates/product.einfassung.json"
+      ]
     }
   ]
 }
