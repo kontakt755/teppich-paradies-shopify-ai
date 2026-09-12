@@ -237,6 +237,14 @@
             "subtitle": ""
           }
         },
+        "tp_kachel_service_liefer": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Liefer- & Verlegeservice",
+            "image": "shopify://shop_images/20231129_114941.jpg",
+            "subtitle": "Lieferung, Verlegung & Preise"
+          }
+        },
         "tp_kachel_service_teppich": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -355,6 +363,7 @@
         "tp_kachel_zubehoer_reinigung",
         "tp_kachel_zubehoer_verlegeband",
         "tp_kachel_zubehoer_sauberlauf",
+        "tp_kachel_service_liefer",
         "tp_kachel_service_teppich",
         "tp_kachel_service_vinyl",
         "tp_kachel_service_treppen",
