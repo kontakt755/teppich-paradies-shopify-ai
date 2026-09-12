@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T20:04:13.583Z",
+  "generated_at": "2026-09-12T21:02:33.076Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 85,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T20:04:13.583Z",
+    "fetchedAt": "2026-09-12T21:02:33.076Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,7 +66,7 @@
     {
       "number": 259,
       "title": "Treppenseite: Ausführungsvarianten von Belagsarten trennen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/259",
       "labels": [
         "status:in-arbeit",
@@ -84,8 +84,8 @@
         "description": "Befund von Ahmet zur Seite `/pages/treppenverlegung` (2026-09-12):\n\n1. Erstes und zweites Bild sind dasselbe Foto.\n2. Die Bereiche sollen als zusammenhängende Blöcke (Bild + Beschreibung) gestaltet sein.\n3. „Teppichläufer\" ist als Kategorie falsch — die Ausführungsvarianten (Läufer mit seitlicher Kettelung, einzelne Stufen nach Schablone, nur Trittstufe, Tritt- und Setzstufe, komplett mit Wange; mit Vinyl dasselbe außer Kettelung) fehlen komplett.\n\nUrsache: Die Seite mischt zwei unabhängige Dimensionen — **Material** (Kokos, Sisal, Teppichboden, Vinyl) und **Umfang der Ausführung**. „Läufer\" ist eine Ausführung, kein Material.\n\nUmsetzung im PR: eigene Sektion für die Ausführungen mit Schemazeichnung je Variante, Matrix zur Verbindung beider Dimensionen, Belagsarten auf reines Material reduziert.\n\n**Offen, braucht Ahmet:**\n- Welche Ausführungen gehen mit Kokos und Sisal? Die Spalte bleibt bis dahin ausgeblendet.\n- Fotos für Kokos, Sisal und Vinyl auf der Treppe fehlen im Shop (nur zwei Treppenprojekte, beide Teppichboden vollflächig)."
       },
       "created_at": "2026-09-12T20:04:01Z",
-      "updated_at": "2026-09-12T20:04:01Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T21:02:20Z",
+      "closed_at": "2026-09-12T21:02:20Z"
     },
     {
       "number": 258,
