@@ -8,7 +8,11 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign tel_raw = section.settings.telefon | remove: ' ' | remove: '/'
-  assign h1_text = section.settings.headline
+  # Das Richtext-Feld liefert den Text in <p>...</p>. In einem h1 ist ein p nicht
+  # zulaessig, deshalb die Absatzhuelle entfernen - <em> und die uebrige Auszeichnung
+  # bleiben erhalten. Mehrere Absaetze wuerden dabei zu einer Zeile verschmelzen;
+  # fuer eine Ueberschrift ist das richtig.
+  assign h1_text = section.settings.headline | replace: '<p>', '' | replace: '</p>', ''
 -%}
 
 <section class="tp-hero" aria-labelledby="tp-hero-h1">
@@ -19,7 +23,12 @@
       {%- endif -%}
       <h1 id="tp-hero-h1" class="tp-hero__h1">{{ h1_text }}</h1>
       {%- if section.settings.subline != blank -%}
-        <p class="tp-hero__sub">{{ section.settings.subline }}</p>
+        {%- comment -%}
+          div statt p: Das Richtext-Feld bringt eigene <p> mit. Ein p im p schliesst
+          der Parser sofort - die Klasse blieb dann auf einem leeren Element und der
+          sichtbare Text stand ohne Typografie da (14 statt 18 px, live belegt).
+        {%- endcomment -%}
+        <div class="tp-hero__sub">{{ section.settings.subline }}</div>
       {%- endif -%}
       <div class="tp-hero__ctas">
         {%- if section.settings.cta1_label != blank -%}
@@ -68,6 +77,9 @@
   .tp-hero__h1 { font-size: clamp(30px, 3.4vw, 46px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; margin: 0; color: #1d1a17; text-wrap: balance; }
   .tp-hero__h1 em { font-style: normal; color: #b73740; }
   .tp-hero__sub { font-size: 18px; color: #4a443f; max-width: 52ch; margin: 16px 0 26px; line-height: 1.5; }
+  /* Die Absaetze kommen aus dem Richtext-Feld; der aeussere Abstand steht oben. */
+  .tp-hero__sub p { margin: 0; }
+  .tp-hero__sub p + p { margin-top: 0.6em; }
   .tp-hero__ctas { display: flex; gap: 12px; flex-wrap: wrap; }
   .tp-hero__meta { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 22px; font-size: 15px; color: #4a443f; }
   .tp-hero__meta a { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #1d1a17; text-decoration: none; min-height: 44px; }
