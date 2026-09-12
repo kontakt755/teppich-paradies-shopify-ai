@@ -65,7 +65,17 @@ const AUSNAHMEN = [
 
 const VERBOTEN = [
   // --- git: verwirft Arbeit oder ueberschreibt fremde Commits ---
-  [/^git\s+(.*\s)?push\b.*(--force\b|--force-with-lease\b|\s-f\b)/, 'git push --force ueberschreibt Commits auf dem Remote'],
+  // "\s-[a-zA-Z]*f" statt "\s-f\b": git fasst Kurzflags zusammen, "-fq" und
+  // "-qf" sind dasselbe wie "-f -q". Mit "\s-f\b" rutschten beide durch -
+  // belegt am 2026-09-12 an einem Wegwerf-Repo: der normale Push wurde als
+  // non-fast-forward abgewiesen, "git push -fq" hat den Remote-Commit
+  // ueberschrieben, und der Hook sagte nichts.
+  //
+  // Dieselbe Luecke hatte kurz zuvor die Branch-Regel ("-df" statt "-D").
+  // Eine Regel, die ein einzelnes Kurzflag mit "\b" abschliesst, ist deshalb
+  // grundsaetzlich verdaechtig - siehe "git clean", das es von Anfang an
+  // richtig machte.
+  [/^git\s+(.*\s)?push\b.*(--force\b|--force-with-lease\b|\s-[a-zA-Z]*f)/, 'git push --force ueberschreibt Commits auf dem Remote'],
   [/^git\s+(.*\s)?push\b.*--mirror\b/,                              'git push --mirror ueberschreibt saemtliche Refs auf dem Remote'],
   // Branch loeschen auf dem Remote ist seit 2026-09-09 auf Wunsch des Nutzers
   // erlaubt: aufgeraeumt wird nach dem Merge, und ein geloeschter Branch laesst
@@ -101,7 +111,8 @@ const VERBOTEN = [
   [/^git\s+(.*\s)?(filter-branch|filter-repo)\b/,                   'filter-branch schreibt die gesamte Historie um'],
   [/^git\s+(.*\s)?reflog\s+(delete|expire)\b/,                      'reflog delete entfernt das letzte Sicherheitsnetz'],
   [/^git\s+(.*\s)?gc\b.*--prune/,                                   'git gc --prune raeumt unerreichbare Objekte endgueltig weg'],
-  [/^git\s+(.*\s)?update-ref\b.*\s-d\b/,                            'update-ref -d loescht eine Referenz'],
+  // Auch hier ohne "\b" am Ende: "git update-ref -zd" waere sonst offen.
+  [/^git\s+(.*\s)?update-ref\b.*\s-[a-zA-Z]*d/,                     'update-ref -d loescht eine Referenz'],
   [/^git\s+(.*\s)?stash\s+(drop|clear)\b/,                          'stash drop verwirft gestashte Aenderungen'],
   [/^git\s+(.*\s)?remote\s+(remove|rm|set-url)\b/,                  'remote set-url aendert das Ziel aller kuenftigen Pushes'],
 

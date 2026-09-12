@@ -57,6 +57,34 @@ for (const cmd of [
   'gh repo delete',
 ]) test(`weiterhin blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
 
+// --- Kombinierte Kurzflags ----------------------------------------------
+//
+// git fasst Kurzflags zusammen: "-fq" ist dasselbe wie "-f -q". Eine Regel,
+// die ein einzelnes Kurzflag mit "\b" abschliesst, greift dann nicht mehr.
+//
+// Das war am 2026-09-12 zweimal offen: erst bei "git branch" ("-df" statt
+// "-D"), dann bei "git push" ("-fq" statt "-f"). Der Push-Fall ist an einem
+// Wegwerf-Repo belegt - der normale Push wurde als non-fast-forward
+// abgewiesen, "git push -fq" hat den Remote-Commit ueberschrieben.
+for (const cmd of [
+  'git push -fq origin main',
+  'git push -qf origin main',
+  'git push -fu origin main',
+  'git push -f origin main',
+  'git update-ref -zd refs/heads/x',
+  'git update-ref -d refs/heads/x',
+  'git clean -xfd',
+]) test(`kombiniertes Kurzflag blockiert: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+// Lange Optionen, die zufaellig ein "f" tragen, duerfen nicht mitgehen.
+for (const cmd of [
+  'git push --follow-tags origin main',
+  'git push origin main',
+  'git push -u origin feature/neu',
+  'git update-ref --stdin',
+  'git branch --list',
+]) test(`kein Fehlalarm: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+
 for (const cmd of ['git status', 'npm run task -- list']) {
   test(`unberuehrt erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
 }
