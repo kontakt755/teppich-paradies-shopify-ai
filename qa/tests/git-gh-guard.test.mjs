@@ -224,6 +224,38 @@ test('harmlose Befehle bleiben auch hinter einem Vorspann erlaubt', () => {
   }
 });
 
-test('die Ausnahme gilt auch hinter einem Vorspann', () => {
-  assert.equal(blockiert(`xargs -n1 git checkout -- ${BOT}`), false);
-});
+// --- Ausnahmen gelten nur fuer einen nackten Aufruf ---------------------
+//
+// Hier stand bis zum 2026-09-12 das Gegenteil: die Ausnahme sollte auch hinter
+// einem Vorspann gelten. Das war ein Fehler, und zwar ein messbarer.
+//
+// Beide Ausnahmen lesen einen ausgeschriebenen Namen aus dem Befehlstext und
+// schliessen daraus, dass jemand hingesehen hat. Unter xargs traegt dieser
+// Schluss nicht, weil dort Argumente von stdin angehaengt werden, die im Text
+// gar nicht vorkommen:
+//
+//   printf 'zweig-b\nzweig-c\n' | xargs echo "branch -D zweig-a"
+//   -> branch -D zweig-a zweig-b zweig-c
+//
+// Der Hook sah einen Branch, geloescht wuerden drei. Dasselbe gilt fuer die
+// Bot-Datei: weitere Pfade von stdin waeren mitverworfen worden.
+//
+// Ein Pfad vor dem Aufruf ist etwas anderes - er ist nur eine zweite
+// Schreibweise desselben Befehls und reicht nichts nach. Deshalb behaelt er
+// die Ausnahme.
+for (const cmd of [
+  `xargs -n1 git checkout -- ${BOT}`,
+  `xargs git checkout -- ${BOT}`,
+  'xargs git branch -D feature/alt',
+  'git for-each-ref | xargs git branch -D feature/alt',
+  'find . | xargs /usr/bin/git branch -D feature/alt',
+  'sudo git branch -D feature/alt',
+]) test(`Ausnahme gilt nicht hinter einem Vorspann: ${cmd}`, () => assert.equal(blockiert(cmd), true));
+
+for (const cmd of [
+  `git checkout -- ${BOT}`,
+  `/usr/bin/git checkout -- ${BOT}`,
+  'git branch -D feature/alt',
+  '/usr/bin/git branch -D feature/alt',
+  'git branch -D feature/alt feature/zwei',
+]) test(`Ausnahme gilt fuer den nackten Aufruf: ${cmd}`, () => assert.equal(blockiert(cmd), false));
