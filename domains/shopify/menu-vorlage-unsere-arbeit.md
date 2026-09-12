@@ -25,18 +25,27 @@ genau den Fehler erzeugen, den #184 behebt.
    „Für Firmenkunden“ (`gid://shopify/MenuItem/859123056974`).
 3. Gegenprobe: Menge der MenuItem-IDs vorher = nachher, plus genau ein neuer Eintrag.
    `userErrors: []` ist kein Beleg (CLAUDE.md 6b).
-4. Im Header des Live-Themes `menu` wieder auf `main-menu` stellen und **beide Kacheln
-   mitnehmen** (siehe „Bildkacheln“). Sie liegen in `sections/header-group.json` des jeweiligen
-   Themes, ziehen also **nicht** automatisch mit um. Ohne sie zeigt das Mega-Menü einen grauen
-   Platzhalter, im Handy-Menü fehlt das Bild ganz.
+4. Im Header prüfen, dass `menu` auf `main-menu` steht – im Repository ist das der Fall,
+   nur das Entwurfs-Theme 204100600142 zeigt auf die Kopie. **Achtung:** Die Menüwahl steckt
+   im selben Block wie die Bildkacheln; ein `--only`-Push von `sections/header-group.json`
+   in ein fremdes Theme ändert sie mit. Vorher beide Fassungen über die Admin API vergleichen.
+   Die Kacheln selbst kommen mit dem Deployment mit.
 5. Menü-Kopie `hauptmenue-entwurf-konzept-c` erst löschen, wenn kein Theme sie mehr nutzt
    (Löschen nur nach Freigabe).
 
-## Bildkacheln (Blöcke in `sections/header-group.json`, Block `header-menu`)
+## Bildkacheln (`sections/header-group.json`)
 
-Beide sind bereits im Entwurf 204100600142 vorhanden. `tp_kachel_service_liefer` ist wertgleich
-mit dem Theme „Qualitaet Arbeitskopie 2026-09-11“ – beim Zusammenführen darf keine der beiden
-Fassungen die andere überschreiben.
+Ziel sind **`sections.header_section.blocks` und `sections.header_section.block_order`** –
+also direkte Blöcke der Header-Section, **nicht** verschachtelt unter `header-menu`.
+`sections/header.liquid` sammelt sie über `content_for 'blocks'`; verschachtelte Kacheln
+würden dort nie ausgegeben, das Menü bliebe ohne Bilder.
+
+Beide Kacheln liegen seit 2026-09-12 im Repository (ecb3126, c62489b) und werden mit dem
+Deployment übertragen – sie müssen also **nicht** von Hand nachgezogen werden. Von Hand
+nachzuziehen ist nur der Menüpunkt selbst (siehe oben).
+
+`tp_kachel_service_liefer` ist wertgleich mit dem Theme „Qualitaet Arbeitskopie 2026-09-11“ –
+beim Zusammenführen darf keine der beiden Fassungen die andere überschreiben.
 
 ```json
 "tp_kachel_service_liefer": {

@@ -53,6 +53,10 @@
 .tp-s-btn--wa { background: #0e7a5f; color: #fff; }
 .tp-s-btn--wa:hover { background: #0b6450; color: #fff; }
 .tp-s-btn--sm { min-height: 42px; padding: 0 16px; font-size: 15px; }
+/* Das Attribut hidden blendet sonst nicht aus: display aus .tp-s-btn gewinnt gegen
+   das display:none des Browsers. Ohne diese Regel bleibt z. B. der Nachladeknopf
+   der Referenzgalerie als "Weitere 0 Arbeiten anzeigen" sichtbar und anklickbar. */
+.tp-s-btn[hidden] { display: none; }
 .tp-s-note { font-size: 12.5px; color: var(--tp-muted); margin: 0; }
 .tp-s-check { width: 18px; height: 18px; flex: none; margin-top: 3px; }
 @media (max-width: 767px) {

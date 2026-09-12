@@ -305,6 +305,10 @@
   .tp-lb__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .tp-lb__thumb.is-aktiv { border-color: var(--tp-red); }
   .tp-lb__cta { margin-top: 6px; align-self: flex-start; }
+  /* Gleicher Grund wie bei .tp-s-btn[hidden]: eigenes display schlaegt das
+     Ausblenden per Attribut. Betrifft Pfeile und Miniaturen bei Projekten
+     mit nur einem Bild. */
+  .tp-lb__pfeil[hidden], .tp-lb__thumbs[hidden] { display: none; }
   .tp-lb__bild { background-size: contain; background-position: center; background-repeat: no-repeat; }
   /* Zwei Klassen, damit die Regel gegen .tp-s-sec aus tp-startseite.css gewinnt. */
   .tp-s-sec.tp-arb { padding-top: 0; }
