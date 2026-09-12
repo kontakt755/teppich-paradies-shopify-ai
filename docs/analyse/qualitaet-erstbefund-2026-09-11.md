@@ -20,6 +20,8 @@ Vormittag übernommen und nicht erneut gemessen wurde, steht das dabei.
 
 Lighthouse 13.4.1, simuliertes Mobilgerät bzw. Desktop-Preset, je ein Lauf.
 
+> **Die Live-Spalte ist seit dem 2026-09-12, 07:31:40Z überholt.** Sie wurde am 11. September gegen das damalige Live-Theme *preview-main-2026-09-04* gemessen. Seitdem hat die Verlegeservice-Sitzung *Preview Gallery V3* (203558781262) live gestellt — mit Verlegeservice-Seite, Ortsprüfung, Produkthinweis und der fehlenden Menü-Bildkachel. Die Live-Werte unten beschreiben also korrekt den Stand vor diesem Wechsel, nicht den heutigen Shop. Die Spalte „Arbeits-Theme" ist davon unberührt. Vor einem Vorher/Nachher-Vergleich nach dem Livegang muss die Live-Seite neu gemessen werden.
+
 | Seite | Live P/A/BP/SEO | Live LCP | Arbeits-Theme P/A/BP/SEO | Arbeits-Theme LCP | Gewicht (Arbeits-Theme) |
 |---|---|---|---|---|---|
 | Startseite mobil | 63/93/73/100 | 11,2 s | 69/91/73/100 | 7,6 s | 3.890 KB, 266 Requests, DOM 2.124 |
