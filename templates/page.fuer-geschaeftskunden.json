@@ -1,6 +1,15 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
-    "b2b_hero_bereich_nfpDbm": {
+    "b2b_hero_bereich_XVkq67": {
       "type": "b2b-hero-bereich",
       "name": "B2B",
       "settings": {
@@ -8,9 +17,9 @@
         "hero_title": "Innenausbau für Praxen & Gewerbe – Boden und Wand aus einer Hand",
         "hero_sub": "Wir unterstützen Praxen, Steuerberater, Kanzleien und Gewerbebetriebe in Berlin & Brandenburg bei Renovierungen und Umgestaltungen. Von hochwertigen Bodenbelägen über Spachtelarbeiten bis hin zu professionellen Maler- und Tapezierarbeiten – zuverlässig geplant und sauber umgesetzt.",
         "primary_btn_text": "Projekt anfragen",
-        "primary_btn_link": "",
-        "secondary_btn_text": "Beratung",
-        "secondary_btn_link": "",
+        "primary_btn_link": "https://www.teppich-paradies.net/pages/kontakt",
+        "secondary_btn_text": "Whatsapp",
+        "secondary_btn_link": "https://wa.me/+4917657931322",
         "benefits_title": "Ihre Vorteile",
         "box1_title": "✅ Alles aus einer Hand",
         "box1_li1": "Bodenbeläge inklusive Verlegung",
@@ -33,7 +42,7 @@
         "cta_text": "Ob Praxis, Kanzlei oder Büro: Wir übernehmen Boden- und Wandarbeiten im Innenbereich – zuverlässig, sauber und professionell. Senden Sie uns kurz die Eckdaten, wir melden uns zeitnah."
       }
     },
-    "b2b_struktur_jLXhqW": {
+    "b2b_struktur_EpcKxN": {
       "type": "b2b-struktur",
       "name": "B2B Struktur",
       "settings": {
@@ -108,32 +117,32 @@
         "kundenbild_DbHcQP": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/1000008785.jpg",
-            "caption": "KaDeWe - Premium Teppichboden",
+            "image": "shopify://shop_images/5e604b3d-3659-4a43-8ab5-ff5b1b738a4e.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_c8rQxK": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/image-2-compressed.jpg",
-            "caption": "Turm Erlebnisbad - Kugelgarn mit Glitzer",
+            "image": "shopify://shop_images/image-4-compressed.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_FxWpW4": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/IMG_20230926_095629.jpg",
-            "caption": "Madame Tussauds Barbereich - Vinyl mit hoher Rutschklasse",
+            "image": "shopify://shop_images/20231005_135521.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_g6HVpi": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/IMG_20230926_095617.jpg",
-            "caption": "Madame Tussauds - Vinyl zum Kleben",
+            "image": "shopify://shop_images/image-0-compressed.jpg",
+            "caption": "",
             "alt": ""
           }
         },
@@ -141,71 +150,39 @@
           "type": "kundenbild",
           "settings": {
             "image": "shopify://shop_images/1000008940.jpg",
-            "caption": "Klickvinyl - Küche + Wohnzimmer",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_mcJqdp": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/1000012408.jpg",
-            "caption": "Evangelische Kirche - Kugelgarn",
+            "image": "shopify://shop_images/20230914_113814.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_QrzDE9": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/image-3-compressed.jpg",
-            "caption": "Nadelvlies - über 2.000 m²",
+            "image": "shopify://shop_images/20221104_122103.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_kNQ6Jz": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/IMG_20221026_162331.jpg",
-            "caption": "Interface - Fliesen mit Wohlfühlfaktor",
+            "image": "shopify://shop_images/image-5-compressed.jpg",
+            "caption": "",
             "alt": ""
           }
         },
         "kundenbild_AtADGP": {
           "type": "kundenbild",
           "settings": {
-            "image": "shopify://shop_images/image-0-compressed.jpg",
-            "caption": "Küche in Fliesenoptik",
-            "alt": ""
-          }
-        },
-        "kundenbild_rjYiD7": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114941.jpg",
-            "caption": "Dachgeschoss mit gemütlichem Teppichboden",
-            "alt": ""
-          }
-        },
-        "kundenbild_UaUD4E": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20231129_114732.jpg",
-            "caption": "Stufen und Podest verkleiden",
-            "alt": ""
-          }
-        },
-        "kundenbild_WbhKBJ": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/20230914_113727.jpg",
-            "caption": "Vinylboden Rollenware",
-            "alt": ""
-          }
-        },
-        "kundenbild_tyYqFQ": {
-          "type": "kundenbild",
-          "settings": {
-            "image": "shopify://shop_images/image-5-compressed.jpg",
-            "caption": "perfekter Gehrungsschnitt",
+            "image": "shopify://shop_images/20220905_122131.jpg",
+            "caption": "",
             "alt": ""
           }
         }
@@ -219,19 +196,15 @@
         "kundenbild_mcJqdp",
         "kundenbild_QrzDE9",
         "kundenbild_kNQ6Jz",
-        "kundenbild_AtADGP",
-        "kundenbild_rjYiD7",
-        "kundenbild_UaUD4E",
-        "kundenbild_WbhKBJ",
-        "kundenbild_tyYqFQ"
+        "kundenbild_AtADGP"
       ],
       "name": "Kundenbilder Grid",
       "settings": {}
     }
   },
   "order": [
-    "b2b_hero_bereich_nfpDbm",
-    "b2b_struktur_jLXhqW",
+    "b2b_hero_bereich_XVkq67",
+    "b2b_struktur_EpcKxN",
     "main",
     "google_MkFfBg",
     "kundenbilder_grid_NJW4hw"

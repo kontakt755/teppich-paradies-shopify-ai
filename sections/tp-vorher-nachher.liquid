@@ -6,8 +6,11 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'tp-arbeiten.js' | asset_url }}" defer></script>
 
+{%- comment -%} paginate: ohne ihn sieht values nur die ersten 50 Projekte. {%- endcomment -%}
+{%- paginate shop.metaobjects.tp_projekt.values by 250 -%}
+  {%- assign alle = shop.metaobjects.tp_projekt.values | sort: 'handle' -%}
+{%- endpaginate -%}
 {%- liquid
-  assign alle = shop.metaobjects.tp_projekt.values
   assign paare = 0
   for projekt in alle
     if projekt.vorher.value != blank and projekt.nachher.value != blank
@@ -61,7 +64,8 @@
             </div>
             <span class="tp-vn__linie" aria-hidden="true"><span class="tp-vn__griff"></span></span>
             <input class="tp-vn__regler" type="range" min="0" max="100" value="50" step="1"
-              aria-label="Vergleich {{ projekt.titel.value | escape }}: Regler nach links zeigt vorher, nach rechts nachher">
+              aria-label="Vorher-Nachher-Vergleich {{ projekt.titel.value | escape }}: nach rechts mehr vom Vorher-Bild, nach links mehr vom Nachher-Bild"
+              aria-valuetext="50 Prozent Vorher-Bild">
           </div>
           <figcaption class="tp-vn__cap">
             <b>{{ projekt.titel.value | escape }}</b>
@@ -109,7 +113,7 @@
   "settings": [
     { "type": "paragraph", "content": "Zeigt automatisch die Projekte, bei denen Vorher- UND Nachher-Bild gepflegt sind." },
     { "type": "text", "id": "eyebrow", "label": "Kleine Zeile", "default": "Vorher und nachher" },
-    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Was sich wirklich veraendert" },
+    { "type": "text", "id": "heading", "label": "Ueberschrift", "default": "Was sich wirklich verändert" },
     { "type": "text", "id": "text", "label": "Unterzeile" },
     { "type": "range", "id": "anzahl", "label": "Maximal so viele Vergleiche", "min": 2, "max": 12, "step": 2, "default": 4 }
   ],
