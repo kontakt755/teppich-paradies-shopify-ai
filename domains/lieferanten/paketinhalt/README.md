@@ -58,8 +58,10 @@ dieselben zwei Artikel mit „2,2 m²/Paket" zu 114,29 € (= 51,95 €/m², die
 unverbindliche Preisempfehlung). Die 1,892 m² der Artikeldaten gehoeren rechnerisch
 zur Planke — 5,164 Fliesen je Paket gibt es nicht. Am 2026-09-11 korrigiert:
 `qm_pro_paket` 2.2, 6 Fliesen à 85,6 × 42,8 cm, Filterwert `bis 3 m²`. Der
-Paketpreis blieb dabei 98,29 € (bisher 1,892 × 51,95 €) und ergibt jetzt
-44,68 €/m² — ob er auf 114,29 € geht, entscheidet der Inhaber.
+Paketpreis stand dabei zunaechst weiter auf 98,29 € (= 1,892 × 51,95 €). Am
+2026-09-12 hat der Inhaber ihn auf **114,29 €** gesetzt: 2,20 m² × 51,95 €/m²,
+also derselbe Quadratmeterpreis wie bei den uebrigen Farben der Qualitaet und wie
+die unverbindliche Preisempfehlung.
 
 Dasselbe Datenblatt nennt fuer die Planke „10 Stueck" bei 1,89 m² — rechnerisch
 sind es 8 (10 Planken waeren 2,36 m²). Artikeldaten und Datenblatt stimmen in
