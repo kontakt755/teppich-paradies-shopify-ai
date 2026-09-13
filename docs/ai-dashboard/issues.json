@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T08:36:15.893Z",
+  "generated_at": "2026-09-13T08:36:46.934Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 88,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T08:36:15.893Z",
+    "fetchedAt": "2026-09-13T08:36:46.934Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,10 +66,10 @@
     {
       "number": 268,
       "title": "Sylvara/Eichenhain: Paket-Metafelder ergaenzt, Produkte publiziert",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/268",
       "labels": [
-        "status:eingang",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:shopify"
@@ -78,14 +78,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-13T08:36:03Z",
-      "updated_at": "2026-09-13T08:36:04Z",
-      "closed_at": null
+      "updated_at": "2026-09-13T08:36:36Z",
+      "closed_at": "2026-09-13T08:36:36Z"
     },
     {
       "number": 265,
