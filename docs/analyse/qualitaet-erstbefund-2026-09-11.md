@@ -802,11 +802,14 @@ Damit sie nicht mit den Sitzungen verschwinden, in denen sie aufgekommen sind. K
 
 **Aus der Referenzgalerie (Galerie-Sitzung, #184 erledigt):**
 
-| Punkt | Warum es beim Inhaber liegt |
-|---|---|
-| Ortsangaben zu den 14 Projekten | Stärkster lokaler SEO-Hebel; die strukturierten Daten geben den Ort bereits aus, die Angaben selbst sind Tatsachen über echte Aufträge und dürfen nicht erfunden werden |
-| Freigabe für Kundennamen (z. B. KaDeWe) | Nennung eines Auftraggebers ist eine Rechts- und Vertrauensfrage, keine Textfrage |
-| Gehören die drei Treppenbilder zu einem Auftrag? | Tatsachenfrage zu echten Projekten; falsche Zuordnung erfindet eine Referenz |
+> **Alle drei am 2026-09-13 vom Inhaber entschieden — siehe Nachtrag 13. Keine davon erfordert eine
+> Änderung; die Tabelle bleibt als Begründung stehen, warum sie nicht von einer KI entschieden wurden.**
+
+| Punkt | Warum es beim Inhaber liegt | Entscheidung 2026-09-13 |
+|---|---|---|
+| Ortsangaben zu den 14 Projekten | Stärkster lokaler SEO-Hebel; die strukturierten Daten geben den Ort bereits aus, die Angaben selbst sind Tatsachen über echte Aufträge und dürfen nicht erfunden werden | **Vorerst keine Orte.** Feld bleibt leer |
+| Freigabe für Kundennamen (z. B. KaDeWe) | Nennung eines Auftraggebers ist eine Rechts- und Vertrauensfrage, keine Textfrage | **Nein, keine Namen** |
+| Gehören die drei Treppenbilder zu einem Auftrag? | Tatsachenfrage zu echten Projekten; falsche Zuordnung erfindet eine Referenz | **Ja, ein Auftrag** — bestehender Eintrag bestätigt |
 
 **Aus dem Qualitätsprogramm:**
 
@@ -874,3 +877,40 @@ Behoben (PR #241) durch Abschneiden des Pfades: Der Rest wird wie ein nackter Au
 **Warum die Gegenrichtung genauso wichtig war:** Hätte das Abschneiden die Ausnahmen mitgeschnitten, wäre `git checkout -- docs/ai-dashboard/issues.json` über einen Pfad plötzlich blockiert. Das hätte niemand als Sicherheitsfehler gemeldet, sondern als „der Hook nervt" — und wäre irgendwann durch eine Aufweichung der Regel repariert worden. Deshalb wurden beide Richtungen geprüft: sechs gesperrte Formen und vier erlaubte, plus die Ausnahme mit Pfad. Die Galerie-Sitzung hat das anschließend unabhängig über 13 Fälle bestätigt.
 
 **Bilanz des Musters an diesem Tag:** viermal „Struktur gelesen statt Verhalten gemessen" — Drawer-Bilder (zwei Sitzungen gleichzeitig), `naturalWidth` im Megamenü, der Kurzflag-Fall, die Pfad-Umgehung. Jedes Mal löste eine Messung es auf, und jedes Mal fand es eine **zweite** Instanz: einmal ein Prüfer, zweimal eine andere Sitzung, einmal ich. Keine der Fehlannahmen hat den Shop erreicht. Das ist das eigentliche Ergebnis des Tages — nicht die einzelnen Fixes, sondern dass die Gegenkontrolle jedes Mal gegriffen hat.
+
+### Nachtrag 13: Die vier übergebenen Punkte aus Nachtrag 10 — Inhaberentscheidungen vom 2026-09-13
+
+Die drei Galerie-Fragen aus Nachtrag 10 waren bewusst offen, weil keine KI sie entscheiden darf: Sie
+sind Tatsachen über echte Aufträge oder Rechtsfragen. Am 2026-09-13 direkt beim Inhaber eingeholt.
+**Alle drei Antworten bedeuten „keine Änderung" — der Shop bleibt unberührt.**
+
+| Punkt | Entscheidung des Inhabers | Folge |
+|---|---|---|
+| Ortsangaben zu den 14 Projekten | **Vorerst gar keine Orte.** | Feld `ort` bleibt bei allen 14 Metaobjekten leer. Kein Dateneingriff. |
+| Kundennamen in der Galerie (z. B. KaDeWe) | **Nein, keine Namen.** | „Ladengeschäft mit Objektteppichboden" behält die neutrale Beschreibung „Ladenfläche in einem Kaufhaus". |
+| Gehören die drei Treppenbilder zu einem Auftrag? | **Ja, ein Auftrag.** | Der bestehende Eintrag ist damit bestätigt korrekt. Keine Aufteilung. |
+
+**Was das für den lokalen SEO-Hebel heißt.** Der Ort war in Nachtrag 10 als stärkster lokaler Hebel
+benannt; die Entscheidung stellt ihn bewusst zurück. Wichtig für spätere Sitzungen: Das ist **kein
+Code-Thema und keine offene Aufgabe.** Die Galerie gibt den Ort bereits aus, sobald das Feld gefüllt
+ist — `sections/tp-arbeiten-galerie.liquid` rendert ihn in der Karte (Zeile 119) und in den
+strukturierten Daten als `contentLocation` (Zeile 212), beides mit `!= blank`-Prüfung. Wird die
+Entscheidung später revidiert, genügt das Pflegen der Metaobjekte im Admin. **Niemand darf Orte
+ergänzen, ohne sie vom Inhaber zu haben** — sie sind Tatsachen über echte Aufträge.
+
+**Punkt 4 (`sizes` der Megamenü-Bilder, Nachtrag 8): unverändert offen, weiterhin bei der
+Menü-Sitzung.** Am 2026-09-13 am Live-Shop gegengemessen statt aus der Erinnerung berichtet — die
+Startseite liefert sechsmal `sizes="(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw"`. Die
+16vw sind genau die Sechstel-Rechnung aus Nachtrag 8; bei 1366 px ergibt das 218 px für eine 305 px
+breite Karte. Im Repository ist seit dem Befund kein Commit auf `snippets/mega-menu-list.liquid` oder
+`snippets/util-mega-menu-img-sizes-attr.liquid` gelandet, `grid_columns: 6` wird weiterhin fest
+übergeben. Die drei Gründe aus Nachtrag 8, es nicht selbst anzufassen, gelten unverändert — vor allem
+der erste: Es ist ein Schärfe-, kein Byte-Problem, und die Abwägung gehört dem Inhaber, nicht einer
+Performance-Optimierung.
+
+**Stand des Shops bei Abschluss dieser Runde.** Live ist das Theme mit `role: MAIN`, frisch an der
+Admin API geprüft und deckungsgleich mit `domains/shopify/live-theme.json` (Stand 2026-09-13T09:15:39Z).
+`npm run workflow:doctor` meldet alle acht Guards grün; die beiden offenen Preflight-Punkte sind
+`HEAD identisch mit origin/main` und die Preview-Evidence — beides erwartbar ohne anstehenden Deploy,
+der erste allein durch den stündlichen Dashboard-Bot. **Es wurde in dieser Runde nichts deployed und
+nichts am Shop geändert**, weil keine der vier Antworten eine Änderung verlangt.
