@@ -65,8 +65,10 @@ fehlt nur der geschlossene Ausfall fuer den unbekannten Fall.
 
 ### Weiter offen
 
-1. **Preise** (Punkt 1): je Einfassart m²-Preis inkl. Kante oder Kante je lfm, Mindestpreis,
-   Sockelleiste je lfm und Hoehe, Haftunterlage je m². Ohne diese Zahlen bleibt jedes Feld leer.
+1. **Preise** (Punkt 1): **Ketteln erledigt** - seit 2026-09-13 live mit 19,00 € je laufendem
+   Meter Kante, Mindestauftragswert 99 € je Auftrag (Teppich und Kante zusammen), Raummass beim
+   Pilotprodukt 89,00 €/m². Offen bleiben Cover, Einfassband und Paspelband (m²-Preis inkl. Kante
+   oder Kante je lfm), dazu Sockelleiste je lfm und Hoehe sowie Haftunterlage je m².
 4. **Band- und Garnfarben** (Punkt 4): welche der 32 Einfassbaender und 8 Paspeln gefuehrt
    werden, und welche Garnfarbe beim Ketteln verwendet wird.
 10. Sammelposten aus dem Befund: Anfrage an A, Zubehoer der Hausmarke, SKU-Korrektur.
