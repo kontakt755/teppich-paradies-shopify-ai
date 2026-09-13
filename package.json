@@ -23,6 +23,8 @@
     "theme:guard": "node qa/run-live-theme-guard.mjs",
     "menu:guard": "node qa/run-menu-link-guard.mjs",
     "farbcode:guard": "node scripts/farbcode-guard.mjs",
+    "masstepich:plan": "node scripts/masstepich/plan.mjs",
+    "masstepich:guard": "node scripts/masstepich/guard.mjs",
     "unmerged:guard": "node qa/unmerged-changes-guard.mjs",
     "essential:guard": "node qa/essential-files-guard.mjs",
     "theme:block": "node automation/scripts/theme-block.mjs",

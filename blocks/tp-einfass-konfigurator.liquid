@@ -1,0 +1,385 @@
+{% doc %}
+  Konfigurator fuer Teppiche nach Mass mit Einfassung (Cover, gekettelt,
+  Einfassband, Paspelband). Rechenkern: assets/tp-masstepich-rechnung.js,
+  Bedienung und Vorschau: assets/tp-einfass-konfigurator.js.
+
+  Fail closed - der Block rendert nichts, sobald eine Angabe fehlt oder
+  unbekannt ist:
+    service.einfassung      Cover | Ketteln | Einfassband | Paspelband
+    service.max_breite_cm   > 0 (Cover: Rollenbreite minus 10 cm)
+    service.max_laenge_cm   > 0
+    custom.preis_pro_001_qm true (Variantenpreis gilt pro 0,01 m2)
+  Angeboten werden nur Varianten mit service.einfassen exakt "Verfuegbar"
+  (mit Umlaut) und Preis > 0. Formen aus service.formen (Rechteck, Rund,
+  Oval, Schablone, Skizze); unbekannte Werte fallen weg, ohne Angabe gibt es
+  nur Rechteck. Schablone und Skizze gehen als Anfrage, nicht in den Warenkorb.
+
+  Abgerechnet wird Variantenpreis x Menge durch Shopify. Menge = abgerechnete
+  Flaeche in 0,01-m2-Einheiten (rund und oval: umschliessendes Rechteck),
+  mindestens service.mindestpreis (EUR).
+{% enddoc %}
+
+{%- liquid
+  assign tp_ek_id = block.id | replace: '_', '' | downcase
+  assign tp_ek_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tp_ek_arten = 'cover,ketteln,einfassband,paspelband' | split: ','
+  assign tp_ek_max_b = product.metafields.service.max_breite_cm.value | times: 1
+  assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
+
+  assign tp_ek_ok = false
+  if tp_ek_arten contains tp_ek_art and tp_ek_max_b > 0 and tp_ek_max_l > 0
+    if product.metafields.custom.preis_pro_001_qm.value == true
+      assign tp_ek_ok = true
+    endif
+  endif
+
+  assign tp_ek_anzahl = 0
+  if tp_ek_ok
+    for tp_ek_v in product.variants
+      if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0
+        assign tp_ek_anzahl = tp_ek_anzahl | plus: 1
+      endif
+    endfor
+  endif
+
+  assign tp_ek_formen = ''
+  for tp_ek_f in product.metafields.service.formen.value
+    assign tp_ek_fk = tp_ek_f | strip | downcase
+    case tp_ek_fk
+      when 'rechteck', 'rund', 'oval', 'schablone', 'skizze'
+        unless tp_ek_formen contains tp_ek_fk
+          assign tp_ek_formen = tp_ek_formen | append: tp_ek_fk | append: ','
+        endunless
+    endcase
+  endfor
+  if tp_ek_formen == blank
+    assign tp_ek_formen = 'rechteck,'
+  endif
+  assign tp_ek_formen = tp_ek_formen | split: ','
+
+  # Mindestpreis als Zahl (EUR) oder als Geldbetrag - beides ergibt Cent.
+  assign tp_ek_mp = product.metafields.service.mindestpreis.value
+  if tp_ek_mp.amount
+    assign tp_ek_mindest_cent = tp_ek_mp.amount | times: 100 | round
+  else
+    assign tp_ek_mindest_cent = tp_ek_mp | times: 100 | round
+  endif
+  assign tp_ek_wa = block.settings.whatsapp | remove: '+' | remove: ' ' | strip
+-%}
+
+{%- if tp_ek_ok and tp_ek_anzahl > 0 -%}
+  {%- liquid
+    assign tp_ek_mit_band = false
+    if tp_ek_art == 'einfassband' or tp_ek_art == 'paspelband'
+      assign tp_ek_mit_band = true
+    endif
+    assign tp_ek_mit_anfrage = false
+    if tp_ek_formen contains 'schablone' or tp_ek_formen contains 'skizze'
+      assign tp_ek_mit_anfrage = true
+    endif
+  -%}
+  {%- if tp_ek_mit_band -%}
+    {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
+  {%- endif -%}
+
+  <div class="tp-ek" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
+    <div class="tp-ek__schritt" data-schritt="form"{% if tp_ek_formen.size < 2 %} hidden{% endif %}>
+      {% render 'tp-step-heading', number: 2, label: 'Form' %}
+      <div class="tp-ek__formen" role="radiogroup" aria-label="Form">
+        {%- for tp_ek_f in tp_ek_formen -%}
+          {%- case tp_ek_f -%}
+            {%- when 'rechteck' -%}{%- assign tp_ek_fl = 'Rechteck' -%}
+            {%- when 'rund' -%}{%- assign tp_ek_fl = 'Rund' -%}
+            {%- when 'oval' -%}{%- assign tp_ek_fl = 'Oval' -%}
+            {%- when 'schablone' -%}{%- assign tp_ek_fl = 'Schablone' -%}
+            {%- when 'skizze' -%}{%- assign tp_ek_fl = 'Skizze' -%}
+          {%- endcase -%}
+          <label class="tp-ek__form">
+            <input type="radio" name="tp-ek-form-{{ tp_ek_id }}" value="{{ tp_ek_f }}"{% if forloop.first %} checked{% endif %}>
+            <span class="tp-ek__form-karte">
+              <svg viewBox="0 0 40 28" aria-hidden="true" focusable="false">
+                {%- case tp_ek_f -%}
+                  {%- when 'rechteck' -%}<rect x="5" y="6" width="30" height="16" rx="1.5"/>
+                  {%- when 'rund' -%}<circle cx="20" cy="14" r="10"/>
+                  {%- when 'oval' -%}<ellipse cx="20" cy="14" rx="15" ry="9"/>
+                  {%- when 'schablone' -%}<path d="M6 22 V7 H17 V12 H34 V22 Z" stroke-dasharray="3 2"/>
+                  {%- when 'skizze' -%}<path d="M6 21 C10 8, 16 24, 21 12 S31 6, 34 18"/><path d="M29 4 l5 5 -11 11 -6 1 1 -6 z"/>
+                {%- endcase -%}
+              </svg>
+              <span>{{ tp_ek_fl }}</span>
+            </span>
+          </label>
+        {%- endfor -%}
+      </div>
+    </div>
+
+    <div class="tp-ek__konfig" data-konfig>
+      <div class="tp-ek__schritt" data-schritt="masse">
+        {% render 'tp-step-heading', number: 3, label: 'Maße' %}
+        <div class="tp-ek__masse">
+          <label class="tp-ek__mass">
+            <span class="tp-ek__mass-label" data-label-breite>Breite</span>
+            <span class="tp-ek__eingabe">
+              <input type="number" inputmode="numeric" min="50" step="1" placeholder="250" data-breite>
+              <span>cm</span>
+            </span>
+          </label>
+          <span class="tp-ek__mal" data-feld-laenge aria-hidden="true">×</span>
+          <label class="tp-ek__mass" data-feld-laenge>
+            <span class="tp-ek__mass-label">Länge</span>
+            <span class="tp-ek__eingabe">
+              <input type="number" inputmode="numeric" min="50" step="1" placeholder="400" data-laenge>
+              <span>cm</span>
+            </span>
+          </label>
+        </div>
+        <div class="tp-ek__groessen" data-groessen></div>
+        <p class="tp-ek__grenzen" data-grenzen></p>
+        <p class="tp-ek__fehler" role="alert" data-fehler hidden></p>
+      </div>
+
+      {%- if tp_ek_mit_band -%}
+        <div class="tp-ek__schritt" data-schritt="band">
+          {% render 'tp-step-heading', number: 4, label: 'Bandfarbe' %}
+          <div class="tp-ek__baender" role="radiogroup" aria-label="Bandfarbe" data-baender></div>
+          <p class="tp-ek__bandname" data-band-name>Bitte eine Farbe wählen</p>
+        </div>
+      {%- endif -%}
+
+      <figure class="tp-ek__vorschau" data-vorschau hidden>
+        <svg class="tp-ek__svg" viewBox="0 0 360 250" role="img" aria-label="Vorschau Ihres Teppichs" data-svg></svg>
+        <figcaption class="tp-ek__legende" data-legende></figcaption>
+      </figure>
+
+      <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
+        <div class="tp-ek__fakten">
+          <span data-flaeche>–</span>
+          <span data-kante>–</span>
+        </div>
+        <div class="tp-ek__summe"><span>Gesamtpreis</span><strong data-summe>–</strong></div>
+        <details class="tp-ek__details">
+          <summary>So rechnen wir</summary>
+          <dl>
+            <div><dt>Maße</dt><dd data-masse>–</dd></div>
+            <div><dt>Preis je m²</dt><dd data-m2preis>–</dd></div>
+          </dl>
+          <p data-rund-hinweis hidden>Rund und oval: berechnet wird das umschließende Rechteck – so viel Teppich wird zugeschnitten.</p>
+          <p data-mindest-hinweis hidden></p>
+        </details>
+      </div>
+
+      <button type="button" class="tp-ek__cta" data-cta disabled hidden>In den Warenkorb</button>
+      <a href="{{ routes.cart_url }}" class="tp-ek__warenkorb" data-warenkorb hidden>Warenkorb ansehen</a>
+    </div>
+
+    {%- if tp_ek_mit_anfrage -%}
+      {%- assign tp_ek_form_id = 'TPEinfassAnfrage-' | append: tp_ek_id -%}
+      <div class="tp-ek__anfrage" data-anfrage hidden>
+        <p class="tp-ek__anfrage-titel" data-anfrage-titel></p>
+        <p class="tp-ek__anfrage-text" data-anfrage-text></p>
+        {%- if tp_ek_wa != blank -%}
+          <a class="tp-ek__whatsapp" href="https://wa.me/{{ tp_ek_wa | url_encode }}" target="_blank" rel="noopener" data-whatsapp data-wa="{{ tp_ek_wa | escape }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c.3 2 2.2 4.1 4.6 4.6l1.2-1.1 2 .9-.5 1.9c-3.9.2-8.1-4-7.9-7.9l1.9-.5.9 2z"/></svg>
+            Foto per WhatsApp senden
+          </a>
+          <p class="tp-ek__oder">oder per E-Mail</p>
+        {%- endif -%}
+        {%- form 'contact', id: tp_ek_form_id, class: 'tp-ek__formular' -%}
+          <input type="hidden" name="contact[id]" value="{{ tp_ek_form_id }}">
+          {%- if form.posted_successfully? and form.id == tp_ek_form_id -%}
+            <p class="tp-ek__erfolg" role="status" data-anfrage-status="ok">Danke! Wir melden uns mit einem Angebot.</p>
+          {%- elsif form.errors and form.id == tp_ek_form_id -%}
+            <p class="tp-ek__fehler" role="alert" data-anfrage-status="fehler">{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+          {%- endif -%}
+          <input type="hidden" name="contact[Produkt]" value="{{ product.title | escape }}">
+          <input type="hidden" name="contact[Farbe]" value="" data-anfrage-farbe>
+          <input type="hidden" name="contact[Form]" value="" data-anfrage-form>
+          <div class="tp-ek__formular-reihe">
+            <input type="text" name="contact[name]" autocomplete="name" placeholder="Name" aria-label="Name" required>
+            <input type="email" name="contact[email]" autocomplete="email" spellcheck="false" autocapitalize="off" placeholder="E-Mail" aria-label="E-Mail" required>
+          </div>
+          <input type="tel" name="contact[phone]" autocomplete="tel" placeholder="Telefon (optional)" aria-label="Telefon">
+          <textarea name="contact[body]" rows="3" placeholder="Ungefähre Maße und Wünsche" aria-label="Ungefähre Maße und Wünsche"></textarea>
+          <button type="submit" class="tp-ek__cta tp-ek__cta--zweit">Anfrage senden</button>
+        {%- endform -%}
+      </div>
+    {%- endif -%}
+
+    <script type="application/json" data-tp-ek-daten>
+      {
+        "art": {{ tp_ek_art | json }},
+        "max_breite_cm": {{ tp_ek_max_b | json }},
+        "max_laenge_cm": {{ tp_ek_max_l | json }},
+        "mindestpreis_cent": {{ tp_ek_mindest_cent | json }},
+        "formen": {{ tp_ek_formen | json }},
+        "produkt": {{ product.title | json }},
+        "selected_id": {{ product.selected_or_first_available_variant.id | json }},
+        "baender": {% if tp_ek_mit_band %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
+        "varianten": [
+          {%- for tp_ek_v in product.variants -%}
+            {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
+              {%- capture tp_ek_v_name -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'name' %}{%- endcapture -%}
+              {%- capture tp_ek_v_nr -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'nummer' %}{%- endcapture -%}
+              {
+                "id": {{ tp_ek_v.id | json }},
+                "price": {{ tp_ek_v.price | json }},
+                "available": {{ tp_ek_v.available | json }},
+                "farbe": {{ tp_ek_v_name | strip | json }},
+                "farbnummer": {{ tp_ek_v_nr | strip | json }},
+                "optionen": {{ tp_ek_v.options | json }},
+                "bild": {% if tp_ek_v.featured_image %}{{ tp_ek_v.featured_image | image_url: width: 480 | json }}{% else %}null{% endif %}
+              },
+            {%- endif -%}
+          {%- endfor -%}
+          null
+        ]
+      }
+    </script>
+    <script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
+    <script src="{{ 'tp-einfass-konfigurator.js' | asset_url }}" defer></script>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-ek {
+    --tp-ek-ink: var(--color-foreground, #15171a);
+    --tp-ek-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    --tp-ek-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
+    --tp-ek-soft: rgb(var(--color-foreground-rgb, 34 34 34) / 0.04);
+    --tp-ek-surface: var(--color-background, #fcfcfb);
+    --tp-ek-green: #1d6b47;
+    --tp-ek-green-soft: rgb(29 107 71 / 0.08);
+    margin: 20px 0;
+    color: var(--tp-ek-ink);
+  }
+  .tp-ek *, .tp-ek *::before, .tp-ek *::after { box-sizing: border-box; }
+  .tp-ek [hidden] { display: none !important; }
+  .tp-ek__schritt { margin-bottom: 22px; }
+
+  .tp-ek__formen { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
+  .tp-ek__form input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-ek__form-karte {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 74px; padding: 10px 4px; border: 1px solid var(--tp-ek-line); border-radius: 8px;
+    background: var(--tp-ek-surface); font-size: .8rem; font-weight: 600; line-height: 1.2; text-align: center; cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+  }
+  .tp-ek__form-karte svg { width: 38px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+  .tp-ek__form:hover .tp-ek__form-karte { border-color: var(--tp-ek-ink); }
+  .tp-ek__form input:checked + .tp-ek__form-karte { border-color: var(--tp-ek-green); background: var(--tp-ek-green-soft); color: var(--tp-ek-green); box-shadow: inset 0 0 0 1px var(--tp-ek-green); }
+  .tp-ek__form input:focus-visible + .tp-ek__form-karte { outline: 2px solid var(--tp-ek-ink); outline-offset: 2px; }
+
+  .tp-ek__masse { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; }
+  .tp-ek__masse:has(> .tp-ek__mal[hidden]) { grid-template-columns: 1fr; max-width: 50%; }
+  .tp-ek__mass { display: grid; gap: 6px; }
+  .tp-ek__mass-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-ek-muted); }
+  .tp-ek__mal { padding-bottom: 14px; font-size: 1.1rem; color: var(--tp-ek-muted); }
+  .tp-ek__eingabe { position: relative; display: block; }
+  .tp-ek__eingabe input {
+    width: 100%; padding: 13px 44px 13px 14px; border: 1px solid var(--tp-ek-line); border-radius: 8px;
+    background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: 1.1rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; -moz-appearance: textfield;
+  }
+  .tp-ek__eingabe input::-webkit-outer-spin-button, .tp-ek__eingabe input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .tp-ek__eingabe input::placeholder { color: var(--tp-ek-muted); opacity: .55; font-weight: 400; }
+  .tp-ek__eingabe input:focus { outline: none; border-color: var(--tp-ek-ink); }
+  .tp-ek__eingabe > span { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: .85rem; color: var(--tp-ek-muted); pointer-events: none; }
+
+  .tp-ek__groessen { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tp-ek__groesse {
+    min-height: 34px; padding: 6px 12px; border: 1px solid var(--tp-ek-line); border-radius: 999px;
+    background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: .82rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; cursor: pointer;
+  }
+  .tp-ek__groesse:hover { border-color: var(--tp-ek-ink); }
+  .tp-ek__groesse[aria-pressed="true"] { border-color: var(--tp-ek-green); background: var(--tp-ek-green-soft); color: var(--tp-ek-green); }
+  .tp-ek__grenzen { margin: 8px 0 0; font-size: .78rem; color: var(--tp-ek-muted); }
+  .tp-ek__fehler { margin: 8px 0 0; font-size: .85rem; color: #a62020; }
+
+  .tp-ek__baender { display: flex; flex-wrap: wrap; gap: 7px; }
+  .tp-ek__band input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-ek__band span { display: block; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--tp-ek-surface); box-shadow: 0 0 0 1px var(--tp-ek-line); cursor: pointer; }
+  .tp-ek__band input:checked + span { box-shadow: 0 0 0 2px var(--tp-ek-green); }
+  .tp-ek__band input:focus-visible + span { outline: 2px solid var(--tp-ek-ink); outline-offset: 3px; }
+  .tp-ek__bandname { margin: 10px 0 0; font-size: .88rem; font-weight: 600; }
+  .tp-ek__bandname:empty { display: none; }
+
+  .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
+  .tp-ek__svg { display: block; width: 100%; height: auto; max-height: 320px; }
+  .tp-ek__legende { margin-top: 6px; font-size: .8rem; color: var(--tp-ek-muted); text-align: center; }
+
+  .tp-ek__preis { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; background: var(--tp-ek-surface); }
+  .tp-ek__fakten { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-ek__fakten span { padding: 3px 10px; border-radius: 999px; background: var(--tp-ek-soft); font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tp-ek__summe { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 10px; }
+  .tp-ek__summe span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-ek-muted); }
+  .tp-ek__summe strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .tp-ek__details { margin-top: 8px; font-size: .82rem; color: var(--tp-ek-muted); }
+  .tp-ek__details summary { cursor: pointer; width: max-content; text-decoration: underline; text-underline-offset: 3px; }
+  .tp-ek__details dl { display: grid; gap: 4px; margin: 8px 0 0; }
+  .tp-ek__details dl > div { display: flex; justify-content: space-between; gap: 12px; }
+  .tp-ek__details dd { margin: 0; font-weight: 600; color: var(--tp-ek-ink); font-variant-numeric: tabular-nums; }
+  .tp-ek__details p { margin: 6px 0 0; line-height: 1.45; }
+
+  .tp-ek__cta {
+    display: block; width: 100%; min-height: 52px; padding: 15px 18px; border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: var(--tp-ek-green); color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+  .tp-ek__cta:hover:not(:disabled) { background: #185a3b; }
+  .tp-ek__cta:disabled { background: var(--tp-ek-soft); color: var(--tp-ek-muted); box-shadow: inset 0 0 0 1px var(--tp-ek-line); cursor: not-allowed; }
+  .tp-ek__cta.is-done { background: #145c38; }
+  .tp-ek__cta.is-error { background: #a62020; }
+  .tp-ek__cta--zweit { background: var(--tp-ek-ink); }
+  .tp-ek__warenkorb { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
+
+  .tp-ek__anfrage { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; }
+  .tp-ek__anfrage-titel { margin: 0; font-size: 1rem; font-weight: 700; }
+  .tp-ek__anfrage-text { margin: 0; font-size: .88rem; line-height: 1.5; color: var(--tp-ek-muted); }
+  .tp-ek__whatsapp {
+    display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 50px; padding: 12px;
+    border-radius: 8px; background: var(--tp-ek-green); color: #fff; font-weight: 700; text-decoration: none;
+  }
+  .tp-ek__whatsapp svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+  .tp-ek__oder { margin: 2px 0 0; font-size: .78rem; color: var(--tp-ek-muted); text-align: center; }
+  .tp-ek__formular { display: grid; gap: 8px; }
+  .tp-ek__formular-reihe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tp-ek__formular input:not([type="hidden"]), .tp-ek__formular textarea {
+    width: 100%; padding: 12px; border: 1px solid var(--tp-ek-line); border-radius: 8px;
+    background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: 1rem;
+  }
+  .tp-ek__formular input:focus, .tp-ek__formular textarea:focus { outline: none; border-color: var(--tp-ek-ink); }
+  .tp-ek__erfolg { margin: 0; font-size: .9rem; font-weight: 600; color: var(--tp-ek-green); }
+
+  @media screen and (max-width: 749px) {
+    .tp-ek__formen { grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; }
+    .tp-ek__form-karte { min-height: 66px; font-size: .74rem; }
+    .tp-ek__masse:has(> .tp-ek__mal[hidden]) { max-width: none; }
+    .tp-ek__formular-reihe { grid-template-columns: 1fr; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Einfass-Konfigurator",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Rendert nur bei vollstaendigen Metafeldern (service.einfassung, service.max_breite_cm, service.max_laenge_cm, custom.preis_pro_001_qm) und nur fuer Varianten mit service.einfassen = Verfuegbar."
+    },
+    {
+      "type": "text",
+      "id": "whatsapp",
+      "label": "WhatsApp-Nummer fuer Fotos",
+      "info": "Nur Ziffern mit Laendervorwahl, z. B. 4917657931322. Leer lassen, um den Link auszublenden.",
+      "default": "4917657931322"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Einfass-Konfigurator"
+    }
+  ]
+}
+{% endschema %}
