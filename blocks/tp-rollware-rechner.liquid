@@ -283,6 +283,14 @@
                 {%- when 'einfassband' -%}{%- assign tp_rc_el = 'Mit Einfassband' -%}
                 {%- when 'paspelband' -%}{%- assign tp_rc_el = 'Mit Paspelband' -%}
               {%- endcase -%}
+              {%- comment -%}
+                Gibt es nur ein Einfassprodukt, sagt die Einfassart allein zu
+                wenig - dann steht auf dem Knopf, wohin er fuehrt. Mit mehreren
+                Arten unterscheiden die Namen die Chips voneinander.
+              {%- endcomment -%}
+              {%- if tp_rc_einfass_gruppe.size == 1 -%}
+                {%- assign tp_rc_el = 'Als Teppich nach Maß konfigurieren' -%}
+              {%- endif -%}
               <a class="tp-rwc-einfass-chip" href="{{ tp_rc_ep.url }}" data-einfass-ziel="{{ tp_rc_ep.id }}" hidden>{{ tp_rc_el }}</a>
               {%- break -%}
             {%- endif -%}
