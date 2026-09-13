@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-12T21:35:08Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-13T08:21:09Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-12T21:35:08Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-13T08:21:09Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -113,6 +113,12 @@
       "name": "Preview Gallery V3",
       "retiredNoticedAt": "2026-09-12",
       "note": "Per workflow:live abgeloest durch 203690246478 (PR #254 + #262: Rollenware Schritt 2 als Art-Wahl Meterware/Raummass, Breite als Chip, Asset tp-rollware-art.js per defer; #260 Treppenseite; #263 Sales-Check gegen Vorschauleiste und Cookie-Banner). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203690246478",
+      "name": "preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-13",
+      "note": "Per workflow:live abgeloest durch 203558781262 (PR #257: Produktseite zeigt Stueckzahl/Planken im Paketrechner, gleiche Formulierung wie im Warenkorb). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
