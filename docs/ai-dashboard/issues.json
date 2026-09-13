@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T09:52:01.237Z",
+  "generated_at": "2026-09-13T10:41:23.486Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 91,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T09:52:01.237Z",
+    "fetchedAt": "2026-09-13T10:41:23.486Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,7 +66,7 @@
     {
       "number": 277,
       "title": "Rollenware-Produktseite: oberer Kaufbereich neu ordnen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/277",
       "labels": [
         "status:review",
@@ -78,14 +78,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-13T09:48:19Z",
-      "updated_at": "2026-09-13T09:51:59Z",
-      "closed_at": null
+      "updated_at": "2026-09-13T10:41:12Z",
+      "closed_at": "2026-09-13T10:41:12Z"
     },
     {
       "number": 274,
@@ -713,13 +713,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-13T08:55:21Z",
+      "updated_at": "2026-09-13T10:07:53Z",
       "closed_at": null
     },
     {
