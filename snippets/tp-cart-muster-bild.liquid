@@ -1,0 +1,56 @@
+{%- doc -%}
+  Kleines Musterfoto in der Warenkorbzeile.
+
+  Zeigt exakt das Bild der auf /pages/muster gewaehlten Farbe/Variante - die
+  Line-Item-Property _Bild aus assets/tp-sample-checkout-core.js (buildCartItems)
+  traegt genau das Variantenbild, nie ein Produkt-Hauptbild als Fallback.
+
+  Nur fuer echte Musterbestellungen: erkannt an der Property _Muster_ID, die
+  ausschliesslich der Musterkonfigurator setzt. Ohne diese Property (normale
+  Produkte) rendert dieser Snippet nichts - der Aufrufer entscheidet dann
+  selbst, ob item.image gezeigt wird.
+
+  Fehlt _Bild (Variante ohne eigenes Bild), wird bewusst kein Bild gezeigt -
+  kein Platzhalter, kein moeglicherweise falsches Produktbild.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- liquid
+  assign tp_mb_ist_muster = false
+  if line_item.properties._Muster_ID != blank
+    assign tp_mb_ist_muster = true
+  endif
+-%}
+{%- if tp_mb_ist_muster and line_item.properties._Bild != blank -%}
+  {%- liquid
+    assign tp_mb_bild = line_item.properties._Bild
+    assign tp_mb_trenner = '?width=160'
+    if tp_mb_bild contains '?'
+      assign tp_mb_trenner = '&width=160'
+    endif
+    assign tp_mb_src = tp_mb_bild | append: tp_mb_trenner
+    assign tp_mb_titel = line_item.properties.Produkt | default: line_item.product.title
+  -%}
+  <img
+    src="{{ tp_mb_src }}"
+    width="80"
+    height="80"
+    loading="lazy"
+    decoding="async"
+    alt="{{ tp_mb_titel | escape }}"
+    class="tp-cart-muster-bild"
+  >
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-cart-muster-bild {
+    display: block;
+    width: 2.25rem;
+    height: 2.25rem;
+    max-width: 100%;
+    object-fit: cover;
+    object-position: center center;
+    border-radius: var(--style-border-radius-inputs, 4px);
+    border: 1px solid var(--color-border);
+  }
+{% endstylesheet %}

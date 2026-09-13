@@ -130,7 +130,15 @@
                   role="cell"
                   headers="productImage"
                 >
-                  {% if item.image -%}
+                  {%- liquid
+                    assign tp_ist_musterzeile = false
+                    if item.properties._Muster_ID != blank
+                      assign tp_ist_musterzeile = true
+                    endif
+                  -%}
+                  {% if tp_ist_musterzeile %}
+                    {%- render 'tp-cart-muster-bild', line_item: item -%}
+                  {% elsif item.image -%}
                     {% liquid
                       assign ratio = 1
                       assign border_opacity = settings.cart_thumbnail_border_opacity | divided_by: 100.0
