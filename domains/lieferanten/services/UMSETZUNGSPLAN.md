@@ -24,6 +24,53 @@ Stand 2026-09-11 · Aufgabe #188 · **Plan zur Freigabe** (Regel 12) · Namen ps
 - Visualisierer fuer die Einfassteppiche.
 - Preise und Vlies-Produkt folgen vom Inhaber.
 
+## Entscheidungen des Inhabers (2026-09-12, Runde 3)
+
+Acht der zehn offenen Punkte sind beantwortet. Grundlage war der Vollabgleich vom
+2026-09-09: Lieferant A fuehrt 191 Qualitaeten (276 Produktseiten, 1.811 Farbartikel),
+Lieferant B 97 - davon 78 exklusiv mit zusammen 733 Farben.
+
+**Massgeblich war die Abfrage im Shop:** alle 51 Teppichboeden der Kollektion tragen
+`lieferant_a_verfuegbar: true` und `bevorzugt: a`. Sieben sind zusaetzlich bei B gelistet,
+**kein einziges ist B-exklusiv**. Ein Ausschluss von B kostet heute also null Produkte -
+die Frage war nie eine Verlust-, sondern eine Wachstumsfrage.
+
+### Grundregel: Whitelist je Bezugsquelle, nicht global
+
+Weder "im Zweifel anbieten" noch "im Zweifel nicht" - entschieden wurde ein drittes
+Modell, das an der Bezugsquelle haengt:
+
+| Herkunft der Variante | Ketteln / Raummass |
+|---|---|
+| bei Lieferant A gelistet | anbieten |
+| nur bei Lieferant B | **nicht anbieten** - Ware muesste erst in den Laden, dann zum Ketteln, dann zurueck |
+| eigene Rollenware im Laden | anbieten, **nur** mit ausdruecklicher Markierung `Sonderposten` |
+| sonst (kein Kennzeichen) | nicht anbieten |
+
+Das ist genau der Mechanismus, den #229 seit dem 2026-09-12 live schon traegt - dort
+fehlt nur der geschlossene Ausfall fuer den unbekannten Fall.
+
+### Die einzelnen Punkte
+
+| # | Frage | Entscheidung |
+|---|---|---|
+| 2 | Haftunterlage | Kandidat bei Lieferant A nehmen; Preis und Verfuegbarkeit vorher pruefen |
+| 3 | Kettelleisten | Auf eine Teppichsockelleiste ausweichen. Die Produktseite muss klar sagen, dass es nicht derselbe Teppich ist |
+| 5 | Maximalgroesse | Auf 6 x 4 m begrenzen und starten, nicht auf die Rueckmeldung von A warten |
+| 6 | Rund und oval | Nach dem **umschliessenden Rechteck** abrechnen - der Verschnitt an den Ecken entsteht real |
+| 7 | Skizzen | Kontaktformular mit Foto, vorerst keine kostenpflichtige Upload-App |
+| 8 | Rundung Raummass | m²-Preis auf einen glatten Wert bringen, Flaeche zentimetergenau |
+| 9 | Neuzugaenge von A | Erben den Service **automatisch** - passt zur Grundregel oben, hebt die bisherige Regel 4 fuer A auf |
+| - | Lieferant B | Jetzt nur A. B spaeter als **eigene Produkte** mit ehrlich laengerer Lieferzeit, nie als zusaetzliche Farben in einem A-Produkt - sonst bricht die Whitelist je Variante |
+
+### Weiter offen
+
+1. **Preise** (Punkt 1): je Einfassart m²-Preis inkl. Kante oder Kante je lfm, Mindestpreis,
+   Sockelleiste je lfm und Hoehe, Haftunterlage je m². Ohne diese Zahlen bleibt jedes Feld leer.
+4. **Band- und Garnfarben** (Punkt 4): welche der 32 Einfassbaender und 8 Paspeln gefuehrt
+   werden, und welche Garnfarbe beim Ketteln verwendet wird.
+10. Sammelposten aus dem Befund: Anfrage an A, Zubehoer der Hausmarke, SKU-Korrektur.
+
 ## Mengengeruest
 
 | | Anzahl |

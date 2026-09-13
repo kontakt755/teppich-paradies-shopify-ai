@@ -182,7 +182,7 @@ test('mit Stufen, erste Zone: kostenlos erst ab der Schwelle, darunter die Pausc
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '16515');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
   assert.match(ausgabe.textContent, /Ab 649 € Warenwert sind Lieferung und lose Verlegung hier kostenlos/);
-  assert.match(ausgabe.textContent, /darunter berechnen wir 39 € für Lieferung und Anfahrt und 4,95 €\/m² \(mind\. 49 €\) für die lose Verlegung/);
+  assert.match(ausgabe.textContent, /darunter berechnen wir 39 € für Lieferung und Anfahrt und 4,95 €\/m² \(mind\. 49 € je Auftrag\) für die lose Verlegung/);
 });
 
 test('mit Stufen: knapp hinter der ersten Zone steht keine Entfernung, die nach Zone 1 aussieht', async () => {
@@ -198,7 +198,7 @@ test('mit Stufen, zweite Zone: nie kostenlos, Pauschale und lose Verlegung', asy
   // Der Kunde aus 29 km Entfernung darf "kostenlos" nicht lesen - auch nicht ab 649 EUR.
   const { ausgabe } = await pruefen(aufbauen({ stufen: true }), '14199');
   assert.equal(ausgabe.attribute['data-status'], 'innen');
-  assert.match(ausgabe.textContent, /Lieferung und Anfahrt kosten hier 49 €, die lose Verlegung 4,95 €\/m²/);
+  assert.match(ausgabe.textContent, /Lieferung und Anfahrt kosten hier 49 €, die lose Verlegung 4,95 €\/m² \(mind\. 49 € je Auftrag\) – auch ab 649 € Warenwert/);
   assert.doesNotMatch(ausgabe.textContent, /kostenlos/);
 });
 

@@ -47,8 +47,16 @@ const SERVICE_DATEIEN = [
 ];
 
 test('Schwelle, Zonen und Preise stehen zentral in den Theme-Einstellungen', () => {
-  // Stand: Vorgabe des Inhabers vom 2026-09-11 - kostenlos nur ab 649 EUR bis
-  // 15 km; sonst Lieferung/Anfahrt 39/49/69 EUR und lose Verlegung 4,95 EUR/m2.
+  // Stand: Vorgabe des Inhabers vom 2026-09-12 - kostenlos nur ab 649 EUR bis
+  // 15 km; sonst Lieferung/Anfahrt 39/49/69 EUR und lose Verlegung 8,95 EUR/m2
+  // mit 129 EUR Mindestpauschale je Auftrag.
+  //
+  // Aenderung gegenueber dem 2026-09-11: die lose Verlegung stand mit
+  // 4,95 EUR/m2 und 49 EUR Mindestbetrag da - beides deckte den Aufwand einer
+  // Anfahrt nicht. Die Komplettpreise unter der Schwelle sind um denselben
+  // Betrag mitgezogen, damit die Staffel (je +1,00 EUR ueber der losen
+  // Verlegung) erhalten bleibt: sonst kostete Verlegeband so viel wie die
+  // Fluessigfixierung.
   assert.ok(GRUPPE, 'Gruppe "TP Verlegeservice" fehlt in config/settings_schema.json.');
   assert.equal(standard('tp_vs_schwelle'), 649);
   assert.equal(standard('tp_vs_radius_basis'), 15);
@@ -57,14 +65,47 @@ test('Schwelle, Zonen und Preise stehen zentral in den Theme-Einstellungen', () 
   assert.equal(standard('tp_vs_anfahrt_nah'), '39 €');
   assert.equal(standard('tp_vs_anfahrt_mitte'), '49 €');
   assert.equal(standard('tp_vs_anfahrt_fern'), '69 €');
-  assert.equal(standard('tp_vs_lose'), '4,95 €/m²');
-  assert.equal(standard('tp_vs_lose_mindest'), '49 €');
-  assert.equal(standard('tp_vs_band_basis'), '8,95 €/m²');
-  assert.equal(standard('tp_vs_fluessig_basis'), '9,95 €/m²');
-  assert.equal(standard('tp_vs_kleber_basis'), '10,95 €/m²');
+  assert.equal(standard('tp_vs_lose'), '8,95 €/m²');
+  assert.equal(standard('tp_vs_lose_mindest'), '129 €');
+  assert.equal(standard('tp_vs_band_basis'), '9,95 €/m²');
+  assert.equal(standard('tp_vs_fluessig_basis'), '10,95 €/m²');
+  assert.equal(standard('tp_vs_kleber_basis'), '11,95 €/m²');
   assert.equal(standard('tp_vs_band_premium'), 'ca. 25 € pro Raum');
   assert.equal(standard('tp_vs_fluessig_premium'), '3,95 €/m²');
   assert.equal(standard('tp_vs_kleber_premium'), '4,95 €/m²');
+  assert.ok(standard('tp_vs_lieferung_hinweis').includes('ebenerdige'),
+    'Der Hinweis zur ebenerdigen Anlieferung fehlt - sonst gilt der Lieferpreis auch fuer die dritte Etage.');
+});
+
+test('unter der Schwelle kostet jede Fixierung mehr als die lose Verlegung', () => {
+  // 2026-09-12: die lose Verlegung stieg von 4,95 auf 8,95 EUR/m2. Waeren die
+  // Komplettpreise stehen geblieben, haette Verlegeband (8,95) genauso viel
+  // gekostet wie die lose Verlegung ohne Fixierung - und die Seite haette wie
+  // ein Tippfehler ausgesehen.
+  const zahl = (id) => Number(standard(id).replace(/[^\d,]/g, '').replace(',', '.'));
+  const lose = zahl('tp_vs_lose');
+  const staffel = ['tp_vs_band_basis', 'tp_vs_fluessig_basis', 'tp_vs_kleber_basis'].map(zahl);
+  assert.ok(staffel[0] > lose, `Verlegeband (${staffel[0]}) kostet nicht mehr als die lose Verlegung (${lose}).`);
+  assert.deepEqual(staffel, [...staffel].sort((a, b) => a - b),
+    'Band, Fluessigfixierung und Verklebung muessen in dieser Reihenfolge teurer werden.');
+  assert.equal(new Set(staffel).size, staffel.length, 'Zwei Verlegearten kosten gleich viel.');
+});
+
+test('ausserhalb der kostenlosen Zone gilt die lose Verlegung auch ab der Schwelle', () => {
+  // Vorgabe des Inhabers (2026-09-12): Warenwert UND Entfernung, nicht oder.
+  // Ohne den Nachsatz lasen Kunden aus 40 km "ich zahle nur die Anfahrt".
+  const zonen = ohneKommentare(lesen('sections', 'tp-verlegegebiet.liquid'))
+    .match(/<ul class="tp-vg__stufen tp-vg__stufen--zonen"[\s\S]*?<\/ul>/)[0]
+    .split('<li')
+    .slice(2, 4);
+  for (const zone of zonen) {
+    assert.match(zone, /auch ab \{\{ settings\.tp_vs_schwelle \}\}/,
+      'Eine Zone jenseits der kostenlosen nennt die Bedingung nicht.');
+  }
+  assert.match(lesen('assets', 'tp-verlegegebiet.js'), /auch ab ' \+ s\.schwelle/,
+    'Die Ortspruefung nennt die Bedingung nicht.');
+  const karte = ohneKommentare(lesen('snippets', 'tp-verlegeservice-stufen.liquid'));
+  assert.match(karte, /Beides muss zusammentreffen/, 'Die Karte ab der Schwelle nennt die Und-Bedingung nicht.');
 });
 
 test('keine Datei des Service schreibt eine Zahl selbst hin', () => {

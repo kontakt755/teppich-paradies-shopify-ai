@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-12T11:10:23Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-12T21:35:08Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-12T11:10:23Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-12T21:35:08Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -95,6 +95,24 @@
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-12",
       "note": "Per workflow:live abgeloest durch 203558781262 (Richtext-Korrektur: Hero-Unterzeile und Galerie-Einleitung verloren ihre Typografie durch p-in-p; dazu PR #229 Rollenware-Zuschnitt je Farbe, #242 Menue-Dokumentation, #239/#241 Guard-Haertung). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203558781262",
+      "name": "Preview Gallery V3",
+      "retiredNoticedAt": "2026-09-12",
+      "note": "Per workflow:live abgeloest durch 203690246478 (PR #251: Bewertungsbeleg auf allen sieben Produktvorlagen statt nur product.rolle, dazu die belegte Bewertungsanzahl - am 2026-09-12 im Google-Unternehmensprofil abgelesen, 4,9 aus 240 Rezensionen. Startseite von 'ueber 230' auf 'ueber 240' nachgezogen). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203690246478",
+      "name": "preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-12",
+      "note": "Am 2026-09-12 um 18:53:47Z von einer anderen Sitzung durch 203558781262 abgeloest - ohne Deploy-Commit in Git; laut Admin API (updatedAt beider Themes 18:53:47Z). Der Live-Shop trug danach weiterhin den Stand von main (Bewertungsbeleg, ueber 240 Bewertungen), es ging nichts verloren. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203558781262",
+      "name": "Preview Gallery V3",
+      "retiredNoticedAt": "2026-09-12",
+      "note": "Per workflow:live abgeloest durch 203690246478 (PR #254 + #262: Rollenware Schritt 2 als Art-Wahl Meterware/Raummass, Breite als Chip, Asset tp-rollware-art.js per defer; #260 Treppenseite; #263 Sales-Check gegen Vorschauleiste und Cookie-Banner). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

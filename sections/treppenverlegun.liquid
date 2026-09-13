@@ -11,11 +11,22 @@
   "Treppen sind sehr unterschiedlich." Das Fehlen wird zum Argument fuer das
   kostenlose Aufmass, statt eine Zahl zu erfinden, die nicht haelt.
 
-  Die drei Belagsarten sind Information, keine Produkte: Kokos-, Sisal- und
+  Die Belagsarten sind Information, keine Produkte: Kokos-, Sisal- und
   Teppichlaeufer als fertige Artikel gibt es im Shop nicht (geprueft ueber die
   Admin API, 2026-09-10). Der Belag wird in der Beratung gewaehlt. Ein Link je
   Karte ist deshalb optional und standardmaessig leer - lieber kein Link als
   einer, der auf ein leeres Raster fuehrt.
+
+  Hier steht nur noch das Material (Umbau 2026-09-12). Wie weit die Treppe
+  belegt wird - Laeufer, Einzelstufe, Trittstufe, Tritt+Setz, Wange - ist eine
+  davon unabhaengige Frage und steht in der Sektion tp-treppen-ausfuehrung.
+  Vorher war beides vermischt: "Teppichlaeufer" stand als Material neben Kokos
+  und Sisal, obwohl "Laeufer" eine Ausfuehrung ist.
+
+  Ein Bild je Karte ist optional und muss den genannten Belag zeigen. Die
+  Kokos- und die Sisalkarte trugen bis 2026-09-12 Fotos von rotem Teppichboden
+  (Alt-Texte in der Admin API belegen es), das Kokosfoto zusaetzlich identisch
+  mit dem Hero-Bild. Beide Felder sind jetzt leer, bis passende Fotos da sind.
 {% endcomment %}
 
 <section class="treppen-hero">
@@ -79,22 +90,63 @@
     {%- endif -%}
 
     <div class="belagsarten-grid">
-      {% for block in section.blocks %}
-        {% if block.type == 'belagsart' %}
-        <div class="belagsart">
-          {%- if block.settings.ziel != blank -%}<a href="{{ block.settings.ziel }}">{%- endif -%}
-          <img src="{{ block.settings.image | image_url: width: 600 }}" alt="{{ block.settings.title | escape }}" width="{{ block.settings.image.width | default: 600 }}" height="{{ block.settings.image.height | default: 450 }}" loading="lazy">
-          {%- if block.settings.ziel != blank -%}</a>{%- endif -%}
-          <h3>{{ block.settings.title }}</h3>
-          <p>{{ block.settings.text }}</p>
-          {%- if block.settings.ziel != blank -%}
-            <a href="{{ block.settings.ziel }}" class="belagsart__link">{{ block.settings.ziel_label | default: 'Ansehen' }}</a>
-          {%- endif -%}
-        </div>
-        {% endif %}
-      {% endfor %}
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'belagsart' -%}
+          <article class="belagsart" {{ block.shopify_attributes }}>
+            {%- comment -%}
+              Ohne Bild faellt nur das Bild weg, nicht die Karte. Ein Foto, das
+              einen anderen Belag zeigt, waere schlimmer als keines - genau das
+              stand hier vorher: unter "Kokoslaeufer" ein roter Teppichboden.
+            {%- endcomment -%}
+            {%- if block.settings.image != blank -%}
+              <div class="belagsart__bild">
+                <img
+                  src="{{ block.settings.image | image_url: width: 700 }}"
+                  alt="{{ block.settings.bild_alt | default: block.settings.title | escape }}"
+                  width="{{ block.settings.image.width | default: 700 }}"
+                  height="{{ block.settings.image.height | default: 500 }}"
+                  loading="lazy"
+                >
+              </div>
+            {%- endif -%}
+
+            <div class="belagsart__inhalt">
+              <h3>{{ block.settings.title }}</h3>
+              {%- if block.settings.text != blank -%}
+                <p class="belagsart__text">{{ block.settings.text }}</p>
+              {%- endif -%}
+
+              {%- if block.settings.ausfuehrungen != blank -%}
+                <p class="belagsart__ausf-titel">{{ block.settings.ausfuehrungen_titel | default: 'Möglich als' }}</p>
+                <ul class="belagsart__ausf">
+                  {%- assign tp_tv_ausf = block.settings.ausfuehrungen | split: ',' -%}
+                  {%- for tp_tv_eintrag in tp_tv_ausf -%}
+                    {%- assign tp_tv_name = tp_tv_eintrag | strip -%}
+                    {%- if tp_tv_name != blank -%}
+                      <li>{{ tp_tv_name }}</li>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+
+              {%- if block.settings.ziel != blank -%}
+                <a href="{{ block.settings.ziel }}" class="belagsart__link">
+                  {{ block.settings.ziel_label | default: 'Ansehen' }}
+                </a>
+              {%- endif -%}
+            </div>
+          </article>
+        {%- endif -%}
+      {%- endfor -%}
     </div>
 
+    {%- comment -%}
+      Abschaltbar, weil die Punkte sich zu drei Vierteln mit den Hero-Punkten
+      decken. Aus dient auch dazu, den Abschnitt "Wie weit belegen" direkt
+      hinter die Belagsarten zu ruecken - beides sind Produktentscheidungen und
+      gehoeren nebeneinander.
+    {%- endcomment -%}
+    {%- if section.settings.warum_zeigen -%}
     <div class="treppen-why-highlight">
       <h2>{{ section.settings.warum_titel }}</h2>
       {%- if section.settings.warum_punkte != blank -%}
@@ -110,6 +162,7 @@
       {%- endif -%}
       <a href="{{ section.settings.hero_cta_ziel | default: '/pages/kontakt' }}" class="treppen-button">{{ section.settings.hero_cta }}</a>
     </div>
+    {%- endif -%}
   </div>
 </section>
 
@@ -134,28 +187,6 @@
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-}
-.belagsarten-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 36px;
-  margin-bottom: 60px;
-}
-.belagsart img {
-  width: 100%;
-  border-radius: 14px;
-  height: 220px;
-  object-fit: cover;
-}
-.belagsart h3 {
-  margin-top: 20px;
-  font-size: 2rem;
-  color: #2a2a2a;
-}
-.belagsart p {
-  font-size: 1.4rem;
-  color: #555;
-  margin-top: 10px;
 }
 .treppen-why-highlight {
   background-color: #f2f4f7;
@@ -326,6 +357,80 @@
     text-align: left;
   }
 
+  /* Bild, Titel, Text und die moeglichen Ausfuehrungen sind eine Karte mit
+     einem Rahmen. Vorher lagen sie als drei lose Elemente untereinander im
+     Raster - auf dem Handy war dadurch nicht zu erkennen, welcher Text zu
+     welchem Bild gehoert. */
+  .belagsarten-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+
+  .belagsart {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--color-background, #fff);
+  }
+
+  .belagsart__bild img {
+    display: block;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+  }
+
+  .belagsart__inhalt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px 18px 20px;
+  }
+
+  .belagsart__inhalt h3 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .belagsart__text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .belagsart__ausf-titel {
+    margin: 4px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+
+  .belagsart__ausf {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .belagsart__ausf li {
+    font-size: 13px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(46, 125, 50, 0.1);
+    color: #1b5e20;
+  }
+
   .belagsart__link {
     display: inline-flex;
     align-items: center;
@@ -425,7 +530,11 @@
     },
     {
       "type": "header",
-      "content": "Belagsarten"
+      "content": "Belagsarten (Material)"
+    },
+    {
+      "type": "paragraph",
+      "content": "Hier steht nur das Material. Wie weit die Treppe belegt wird, steht im Abschnitt „Treppe: Ausführungen\"."
     },
     {
       "type": "text",
@@ -442,6 +551,13 @@
     {
       "type": "header",
       "content": "Warum wir"
+    },
+    {
+      "type": "checkbox",
+      "id": "warum_zeigen",
+      "label": "Abschnitt anzeigen",
+      "info": "Die Punkte überschneiden sich stark mit den Punkten im Kopf der Seite. Aus rückt „Wie weit soll Ihre Treppe belegt werden?\" direkt hinter die Belagsarten.",
+      "default": true
     },
     {
       "type": "text",
@@ -465,7 +581,13 @@
         {
           "type": "image_picker",
           "id": "image",
-          "label": "Bild"
+          "label": "Bild",
+          "info": "Muss genau diesen Belag zeigen. Lieber kein Bild als eines von einem anderen Belag – die Karte sieht auch ohne Bild vollständig aus."
+        },
+        {
+          "type": "text",
+          "id": "bild_alt",
+          "label": "Bildbeschreibung (Alt-Text)"
         },
         {
           "type": "text",
@@ -478,6 +600,18 @@
           "id": "text",
           "label": "Beschreibung",
           "default": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+        },
+        {
+          "type": "text",
+          "id": "ausfuehrungen_titel",
+          "label": "Überschrift über den Ausführungen",
+          "default": "Möglich als"
+        },
+        {
+          "type": "text",
+          "id": "ausfuehrungen",
+          "label": "Mögliche Ausführungen (mit Komma trennen)",
+          "info": "Verweist auf den Abschnitt „Wie weit soll Ihre Treppe belegt werden?\". Nur eintragen, was tatsächlich angeboten wird – hier steht nichts Verneinendes, es fehlt einfach."
         },
         {
           "type": "url",
@@ -502,22 +636,33 @@
         {
           "type": "belagsart",
           "settings": {
-            "title": "Kokosläufer",
-            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokosläufer sind langlebig und pflegeleicht."
+            "title": "Kokos",
+            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokos ist langlebig und pflegeleicht.",
+            "ausfuehrungen": "Läufer mit Kettelung"
           }
         },
         {
           "type": "belagsart",
           "settings": {
-            "title": "Sisalläufer",
-            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisalläufer sind antistatisch und strapazierfähig."
+            "title": "Sisal",
+            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisal ist antistatisch und strapazierfähig.",
+            "ausfuehrungen": "Läufer mit Kettelung"
           }
         },
         {
           "type": "belagsart",
           "settings": {
-            "title": "Teppichläufer",
-            "text": "Komfortabel und vielseitig, in verschiedenen Farben und Mustern erhältlich. Teppichboden bietet eine weiche und gemütliche Oberfläche."
+            "title": "Teppichboden",
+            "text": "Weich und leise, in vielen Farben und Strukturen. Der Belag, der sich am freiesten an jede Stufenform anpassen lässt.",
+            "ausfuehrungen": "Läufer mit Kettelung, Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
+          }
+        },
+        {
+          "type": "belagsart",
+          "settings": {
+            "title": "Vinyl",
+            "text": "Strapazierfähig und leicht zu reinigen, in Holz- und Steindekoren. Auf der Treppe wird jede Stufe einzeln zugeschnitten.",
+            "ausfuehrungen": "Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
           }
         }
       ]

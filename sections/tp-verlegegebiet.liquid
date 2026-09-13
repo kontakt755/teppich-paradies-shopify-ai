@@ -190,15 +190,15 @@
     <ul class="tp-vg__stufen tp-vg__stufen--zonen" role="list">
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_basis }} km</span>
-        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+        <span class="tp-vg__stufe-text">Ab {{ settings.tp_vs_schwelle }} € Warenwert Lieferung und lose Verlegung kostenlos. Darunter Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} (mind. {{ settings.tp_vs_lose_mindest | escape | replace: ' €', '&nbsp;€' }} je Auftrag).</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ settings.tp_vs_radius_mitte }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} – auch ab {{ settings.tp_vs_schwelle }} € Warenwert.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Bis {{ vg_pruef_radius }} km</span>
-        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }}.</span>
+        <span class="tp-vg__stufe-text">Lieferung und Anfahrt {{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}, lose Verlegung {{ settings.tp_vs_lose | escape | replace: ' €', '&nbsp;€' }} – auch ab {{ settings.tp_vs_schwelle }} € Warenwert.</span>
       </li>
       <li class="tp-vg__stufe">
         <span class="tp-vg__stufe-marke">Weiter entfernt</span>
