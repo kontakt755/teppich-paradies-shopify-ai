@@ -62,6 +62,11 @@
     var maxW = d.max_breite_cm;
     var maxL = d.max_laenge_cm;
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
+    // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
+    // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
+    var kettel = (d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
+    // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
+    var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
     var mitBand = !!BAND_CM[art];
     var baender = mitBand ? (d.baender || []).filter(function (b) { return b && b.art === art && /^#[0-9a-f]{6}$/i.test(b.hex); }) : [];
     if (mitBand && !baender.length) return;
@@ -356,9 +361,16 @@
       // die Flaeche aufgerundet auf 0,01 m2 (201 x 301 cm -> 6,06 m2).
       var abgerechnet = M.mengeHundertstelM2(flaeche) / 100;
       var preis = parseInt(target.price, 10);
-      var menge = M.mengeMitMindestpreis(flaeche, preis, mindestCent);
-      var summe = menge * preis;
       var kante = M.umfangM(f, b.wert, l.wert);
+      // Die Kante wird zentimetergenau abgerechnet: Preis je 0,01 lfm mal
+      // Kantenlaenge in 0,01-lfm-Einheiten, als eigene Warenkorbzeile.
+      var kantenEinheiten = kettel ? M.kanteEinheiten(kante) : 0;
+      var kettelCent = kantenEinheiten * (kettel ? parseInt(kettel.price, 10) : 0);
+      // Der Mindestpreis gilt fuer den Auftrag, nicht je Zeile: die Kante zaehlt
+      // mit, nur der Rest hebt die Materialmenge an.
+      var menge = M.mengeMitMindestpreis(flaeche, preis, Math.max(0, mindestCent - kettelCent));
+      var materialCent = menge * preis;
+      var summe = materialCent + kettelCent;
       var mindest = menge > M.mengeHundertstelM2(flaeche);
       var masse = rund ? 'Ø ' + b.wert + ' cm' : b.wert + ' × ' + l.wert + ' cm';
 
@@ -370,10 +382,26 @@
       var mh = q('[data-mindest-hinweis]');
       mh.hidden = !mindest;
       if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
+      var posten = q('[data-posten]');
+      if (posten) {
+        posten.hidden = !kettel;
+        if (kettel) {
+          q('[data-material]').textContent = euro(materialCent);
+          q('[data-kettelpreis]').textContent = fmt(kante) + ' m × ' + euro(parseInt(kettel.price, 10) * 100) + ' = ' + euro(kettelCent);
+        }
+      }
+      var zeileKettel = q('[data-zeile-kettelpreis]');
+      if (zeileKettel) {
+        zeileKettel.hidden = !kettel;
+        if (kettel) q('[data-kettel-meterpreis]').textContent = euro(parseInt(kettel.price, 10) * 100);
+      }
       q('[data-summe]').textContent = euro(summe);
       rechnung.hidden = false;
 
-      stand = { form: f, w: b.wert, l: l.wert, flaeche: abgerechnet, menge: menge, kante: kante, masse: masse, mindest: mindest };
+      stand = {
+        form: f, w: b.wert, l: l.wert, flaeche: abgerechnet, menge: menge,
+        kante: kante, kantenEinheiten: kantenEinheiten, masse: masse, mindest: mindest
+      };
       cta.hidden = false;
       cta.disabled = bandFehlt;
       cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);
@@ -395,6 +423,38 @@
       if (stand.mindest) p['Mindestpreis'] = 'angewendet';
 
       var menge = stand.menge;
+
+      // Intern fuer die Werkstatt: aus welcher Rollenbreite zugeschnitten wird.
+      // Die kuerzere Seite muss in die Rolle passen, der Kunde sieht das nicht.
+      var kurzeSeite = stand.form === 'rund' ? stand.w : Math.min(stand.w, stand.l);
+      var rolle = rollen.length ? M.rolleFuer(kurzeSeite, rollen) : null;
+      if (rolle) p['_Zuschnitt aus Rolle'] = rolle + ' cm';
+
+      // Mit Kettelung zwei Zeilen unter einer Gruppenkennung: Teppich und
+      // Kante gehoeren zusammen, bleiben im Warenkorb aber nachvollziehbar.
+      var koerper = { id: target.id, quantity: menge, properties: p };
+      var gesamtMenge = menge;
+      if (kettel && stand.kantenEinheiten > 0) {
+        var gruppe = 'K' + Date.now().toString(36);
+        p['_Gruppe'] = gruppe;
+        koerper = {
+          items: [
+            { id: target.id, quantity: menge, properties: p },
+            {
+              id: kettel.id,
+              quantity: stand.kantenEinheiten,
+              properties: {
+                'Zu Teppich': d.produkt,
+                'Farbe': target.farbe || '',
+                'Kante umlaufend': fmt(stand.kante) + ' m',
+                '_Gruppe': gruppe
+              }
+            }
+          ]
+        };
+        gesamtMenge = menge + stand.kantenEinheiten;
+      }
+
       var vorher = cta.textContent;
       cta.disabled = true;
       cta.textContent = 'Wird hinzugefügt …';
@@ -403,7 +463,7 @@
       fetch('/cart/add.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ id: target.id, quantity: menge, properties: p })
+        body: JSON.stringify(koerper)
       })
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (item) {
@@ -412,7 +472,7 @@
           warenkorb.hidden = false;
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
-            detail: { resource: item, sourceId: root.id, data: { itemCount: menge, source: 'product-form-component' } }
+            detail: { resource: item, sourceId: root.id, data: { itemCount: gesamtMenge, source: 'product-form-component' } }
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();

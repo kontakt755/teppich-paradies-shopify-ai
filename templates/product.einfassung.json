@@ -316,6 +316,7 @@
               "type": "tp-einfass-konfigurator",
               "name": "TP Einfass-Konfigurator",
               "settings": {
+                "kettelservice_produkt": "kettelservice",
                 "whatsapp": "4917657931322"
               },
               "blocks": {}
