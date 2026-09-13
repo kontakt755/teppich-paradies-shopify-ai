@@ -66,18 +66,27 @@ test('G: Mindestpreis hebt die Menge an, sonst nicht', () => {
   assert.equal(M.mengeMitMindestpreis(1, 50, 0), 100);
 });
 
-test('I: Kettelung - Kante in vollen Metern, Mindestauftragswert', () => {
-  // 4,00 x 2,50 m: Umfang exakt 13 m, kein Aufschlag durch Rundung
-  assert.equal(M.kettelMeter('rechteck', 400, 250), 13);
-  // 2,50 x 1,80 m: 8,60 m -> 9 angefangene Meter
-  assert.equal(M.kettelMeter('rechteck', 250, 180), 9);
-  assert.equal(M.kettelMeter('rund', 200), 7);
-  assert.equal(M.kettelMeter('rechteck', 0, 0), 0);
-  // Mindestauftragswert 99 EUR ueber alle Zeilen
-  assert.equal(M.mindestErreicht(14600, 9900), true);
-  assert.equal(M.mindestErreicht(9900, 9900), true);
-  assert.equal(M.mindestErreicht(9800, 9900), false);
-  assert.equal(M.mindestErreicht(100, 0), true);
+test('I: Kettelteppich - Kante zentimetergenau, Preis aus beiden Zeilen', () => {
+  // 2,00 x 3,00 m: Umfang 10,00 m -> 1000 Einheiten a 0,19 EUR = 190,00 EUR
+  assert.equal(M.kanteEinheiten(M.umfangM('rechteck', 200, 300)), 1000);
+  // 2,37 x 3,68 m: 12,10 m -> 1210 Einheiten, kein Aufrunden auf 13 m
+  assert.equal(M.kanteEinheiten(M.umfangM('rechteck', 237, 368)), 1210);
+  assert.equal(M.kanteEinheiten(0), 0);
+
+  // Material 6,00 m2 zu 0,89 EUR je 0,01 m2 = 534,00 EUR, Kante 190,00 EUR
+  const material = M.mengeHundertstelM2(M.abrechnungsflaecheM2('rechteck', 200, 300)) * 89;
+  const kante = M.kanteEinheiten(M.umfangM('rechteck', 200, 300)) * 19;
+  assert.equal(material, 53400);
+  assert.equal(kante, 19000);
+
+  // Mindestauftragswert 99 EUR gilt fuer beide Zeilen zusammen: die Kante
+  // zaehlt mit, nur der Rest hebt die Materialmenge an.
+  const kleinKante = M.kanteEinheiten(M.umfangM('rechteck', 50, 100)) * 19; // 3,00 m = 57,00 EUR
+  assert.equal(kleinKante, 5700);
+  const menge = M.mengeMitMindestpreis(0.5, 89, Math.max(0, 9900 - kleinKante));
+  assert.equal(menge * 89 + kleinKante >= 9900, true);
+  // ohne Kettelzeile bliebe der volle Mindestpreis stehen
+  assert.ok(M.mengeMitMindestpreis(0.5, 89, 9900) * 89 >= 9900);
 });
 
 test('H: Rolle und Rollenanzahl', () => {

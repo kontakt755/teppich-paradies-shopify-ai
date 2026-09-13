@@ -65,6 +65,39 @@
     assign tp_ek_mindest_cent = tp_ek_mp | times: 100 | round
   endif
   assign tp_ek_wa = block.settings.whatsapp | remove: '+' | remove: ' ' | strip
+
+  # Gekettelt wird zusaetzlich zur Flaeche berechnet: je 0,01 laufendem Meter
+  # Kante, damit der Umfang zentimetergenau aufgeht. Nur bei der Art "ketteln"
+  # und nur mit gewaehltem Service-Produkt; sonst bleibt es bei der reinen
+  # Flaechenrechnung wie bei den Bandarten.
+  assign tp_ek_kettel_v = nil
+  if tp_ek_art == 'ketteln' and block.settings.kettelservice_produkt != blank
+    assign tp_ek_kettel_v = block.settings.kettelservice_produkt.selected_or_first_available_variant
+    unless tp_ek_kettel_v.available and tp_ek_kettel_v.price > 0
+      assign tp_ek_kettel_v = nil
+    endunless
+  endif
+
+  # Rohwarenbreiten der Meterware, aus der zugeschnitten wird - nur fuer die
+  # interne Angabe im Warenkorb. Der Kunde waehlt keine Rolle.
+  assign tp_ek_rollen = ','
+  for tp_ek_bv in product.metafields.service.einfass_basis.value.variants
+    assign tp_ek_rb = tp_ek_bv.metafields.custom.rollenbreite.value | times: 100 | round
+    if tp_ek_rb > 0
+      capture tp_ek_rb_s
+        echo tp_ek_rb
+      endcapture
+      capture tp_ek_rb_key
+        echo ','
+        echo tp_ek_rb_s
+        echo ','
+      endcapture
+      unless tp_ek_rollen contains tp_ek_rb_key
+        assign tp_ek_rollen = tp_ek_rollen | append: tp_ek_rb_s | append: ','
+      endunless
+    endif
+  endfor
+  assign tp_ek_rollen_liste = tp_ek_rollen | split: ','
 -%}
 
 {%- if tp_ek_ok and tp_ek_anzahl > 0 -%}
@@ -156,12 +189,21 @@
           <span data-flaeche>–</span>
           <span data-kante>–</span>
         </div>
+        {%- comment -%}
+          Bei der Kettelung stehen Material und Kante getrennt, darunter eine
+          Summe - sonst bliebe unklar, wofuer der Preis entsteht.
+        {%- endcomment -%}
+        <div class="tp-ek__posten" data-posten hidden>
+          <div><span>Material</span><span data-material>–</span></div>
+          <div><span>Kettelung</span><span data-kettelpreis>–</span></div>
+        </div>
         <div class="tp-ek__summe"><span>Gesamtpreis</span><strong data-summe>–</strong></div>
         <details class="tp-ek__details">
           <summary>So rechnen wir</summary>
           <dl>
             <div><dt>Maße</dt><dd data-masse>–</dd></div>
             <div><dt>Preis je m²</dt><dd data-m2preis>–</dd></div>
+            <div data-zeile-kettelpreis hidden><dt>Kettelung je m</dt><dd data-kettel-meterpreis>–</dd></div>
           </dl>
           <p data-rund-hinweis hidden>Rund und oval: berechnet wird das umschließende Rechteck – so viel Teppich wird zugeschnitten.</p>
           <p data-mindest-hinweis hidden></p>
@@ -211,6 +253,9 @@
         "max_breite_cm": {{ tp_ek_max_b | json }},
         "max_laenge_cm": {{ tp_ek_max_l | json }},
         "mindestpreis_cent": {{ tp_ek_mindest_cent | json }},
+        {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
+        "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},
+        "rollen": {{ tp_ek_rollen_liste | json }},
         "formen": {{ tp_ek_formen | json }},
         "produkt": {{ product.title | json }},
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
@@ -311,6 +356,9 @@
   .tp-ek__preis { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; background: var(--tp-ek-surface); }
   .tp-ek__fakten { display: flex; flex-wrap: wrap; gap: 6px; }
   .tp-ek__fakten span { padding: 3px 10px; border-radius: 999px; background: var(--tp-ek-soft); font-size: .82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tp-ek__posten { display: grid; gap: 4px; margin-top: 10px; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .tp-ek__posten > div { display: flex; justify-content: space-between; gap: 12px; color: var(--tp-ek-muted); }
+  .tp-ek__posten > div span:last-child { color: var(--tp-ek-ink); font-weight: 600; }
   .tp-ek__summe { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 10px; }
   .tp-ek__summe span { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-ek-muted); }
   .tp-ek__summe strong { font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
@@ -367,6 +415,12 @@
     {
       "type": "paragraph",
       "content": "Rendert nur bei vollstaendigen Metafeldern (service.einfassung, service.max_breite_cm, service.max_laenge_cm, custom.preis_pro_001_qm) und nur fuer Varianten mit service.einfassen = Verfuegbar."
+    },
+    {
+      "type": "product",
+      "id": "kettelservice_produkt",
+      "label": "Kettelservice (Preis je 0,01 laufendem Meter Kante)",
+      "info": "Nur fuer die Einfassart Ketteln. Ohne Produkt wird die Kante nicht getrennt berechnet."
     },
     {
       "type": "text",

@@ -264,8 +264,8 @@
               "type": "tp-rollware-rechner",
               "name": "TP Rollenware-Rechner",
               "settings": {
-                "kettelservice_produkt": "kettelservice",
-                "kettelservice_mindest": "99"
+                "kettelleisten_produkt": "teppich-fussleiste-gekettelt",
+                "haftunterlage_produkt": "antirutsch-unterlage-fuer-teppiche-rollenware"
               },
               "blocks": {}
             },
