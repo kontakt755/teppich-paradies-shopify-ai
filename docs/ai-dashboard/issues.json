@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T08:04:35.383Z",
+  "generated_at": "2026-09-13T08:42:43.017Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 87,
+  "count": 89,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T08:04:35.383Z",
+    "fetchedAt": "2026-09-13T08:42:43.017Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,54 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 269,
+      "title": "Neue Kategorie Teppichfliesen im Mega Menu + Landingpage",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/269",
+      "labels": [
+        "status:fertig",
+        "type:verbesserung",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T08:40:40Z",
+      "updated_at": "2026-09-13T08:42:41Z",
+      "closed_at": "2026-09-13T08:42:27Z"
+    },
+    {
+      "number": 268,
+      "title": "Sylvara/Eichenhain: Paket-Metafelder ergaenzt, Produkte publiziert",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/268",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T08:36:03Z",
+      "updated_at": "2026-09-13T08:37:06Z",
+      "closed_at": "2026-09-13T08:36:36Z"
+    },
     {
       "number": 265,
       "title": "Treppenseite: Kokos ist nicht kettelbar, Treppenläuferstange fehlt",
@@ -142,6 +190,7 @@
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/258",
       "labels": [
         "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p3",
         "area:produktseite",
@@ -151,13 +200,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 3,
       "nextStep": null,
       "fields": {
         "description": "Der Warenkorb zeigt je Position \"12 Planken à 152,4 × 22,8 cm\", die Produktseite nicht — vor dem Hinzufuegen war nicht zu sehen, wie viele Planken oder Fliesen in der Bestellung stecken.\n\nDer Paketrechner (`blocks/paket-auswahl.liquid`) zeigt die Zeile jetzt im Ergebnisblock, in derselben Reihenfolge und Formulierung wie `snippets/tp-cart-paketzeile.liquid`:\n\n- 1 Paket: `6 Planken à 152,4 × 22,8 cm`\n- 2 Pakete: `12 Planken à 152,4 × 22,8 cm (6 je Paket)`\n\nQuelle sind `custom.stueck_pro_paket`, `custom.stueck_bezeichnung` und `custom.format_cm`. Ohne Stueckzahl-Metafeld entfaellt die Zeile.\n\nPR: #257\n\nOffen: visuelle Pruefung und Deploy laufen lokal (Storefront ist aus Remote-Sessions gesperrt)."
       },
       "created_at": "2026-09-12T19:59:35Z",
-      "updated_at": "2026-09-13T08:04:18Z",
+      "updated_at": "2026-09-13T08:22:36Z",
       "closed_at": "2026-09-13T08:04:18Z"
     },
     {
