@@ -1227,14 +1227,18 @@ function tpRwcInit{{ tp_rc_id }}() {
     einfassBox.hidden = !show;
   }
 
+  // Nummeriert die sichtbaren Schritte durch. Gezaehlt wird nur, was der Kunde
+  // wirklich sieht: die Art-Karten sind Schritt 2, die Breitenwahl entfaellt im
+  // Raummass, und die Zusaetze zaehlen weiter. Vorher blieb die Art
+  // ungezaehlt - "Art" und "Laenge" trugen beide die 2.
   function renumberSteps() {
     var n = 2;
     function setNum(scope) {
       var el = scope && scope.querySelector('.tp-step-heading__number');
-      if (el) el.textContent = String(n++);
+      if (el && el.offsetParent !== null) el.textContent = String(n++);
     }
-    var wf = root.querySelector('[data-width-field]');
-    if (wf && !wf.hidden) setNum(wf);
+    setNum(root.querySelector('[data-art-field]'));
+    setNum(root.querySelector('[data-width-field]'));
     setNum(root.querySelector('[data-length-step]'));
     root.querySelectorAll('[data-extra]').forEach(function (x) { if (!x.hidden) setNum(x); });
   }
