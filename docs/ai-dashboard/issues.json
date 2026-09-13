@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T08:42:43.017Z",
+  "generated_at": "2026-09-13T09:11:07.918Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 89,
+  "count": 90,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T08:42:43.017Z",
+    "fetchedAt": "2026-09-13T09:11:07.918Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 274,
+      "title": "Musterbestellungen im Warenkorb mit passendem Farbfoto",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/274",
+      "labels": [
+        "status:in-arbeit",
+        "type:verbesserung",
+        "priority:p2",
+        "area:warenkorb"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T09:10:21Z",
+      "updated_at": "2026-09-13T09:11:01Z",
+      "closed_at": null
+    },
+    {
       "number": 269,
       "title": "Neue Kategorie Teppichfliesen im Mega Menu + Landingpage",
       "state": "closed",
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-13T08:40:40Z",
-      "updated_at": "2026-09-13T08:42:41Z",
+      "updated_at": "2026-09-13T08:42:42Z",
       "closed_at": "2026-09-13T08:42:27Z"
     },
     {
@@ -665,13 +689,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-12T17:04:31Z",
+      "updated_at": "2026-09-13T08:55:21Z",
       "closed_at": null
     },
     {
