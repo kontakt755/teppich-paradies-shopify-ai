@@ -812,8 +812,8 @@ Damit sie nicht mit den Sitzungen verschwinden, in denen sie aufgekommen sind. K
 
 | Punkt | Stand |
 |---|---|
-| Richtext-Korrektur ausliefern (Hero-Unterzeile 14 statt 18 px) | Fix liegt geprüft in `main`, nicht live. Mitausgeliefert würden #229 (Rollenware-Zuschnitt) und #235 |
-| Ist das Ausblenden des Rollenware-Rechners bei `wunschmass: false` gewollt? | Mechanik geprüft, Kaufwege 3/3 und 3/3. Kein **veröffentlichtes** Produkt gefunden, bei dem es greift — das einzige mit `false` ist nicht im Shop. Ob einzelne Farben veröffentlichter Produkte betroffen sind, muss die Rollenware-Sitzung klären |
+| Richtext-Korrektur ausliefern (Hero-Unterzeile 14 statt 18 px) | **Erledigt.** Live seit 2026-09-12T11:10:23Z auf Freigabe des Inhabers, siehe Nachtrag 9. Zusammen mit #229 und #235 ausgeliefert, wie angekündigt |
+| Ist das Ausblenden des Rollenware-Rechners bei `wunschmass: false` gewollt? | **Bestätigt vom Inhaber (2026-09-13): „fliese so lassen“.** Betroffen ist ein einziges veröffentlichtes Produkt — „Quadra Nadelvlies Teppichfliese 50×50cm“, alle zehn Farben mit `wunschmass: false` — sachlich richtig, weil eine Fliese nicht von der Rolle zugeschnitten wird. Seite bleibt kaufbar über den Paketweg (58,90 €/m², 294,50 € pro Originalpaket), 0 Rollenware-Produkte betroffen |
 | Favicon | fehlt weiter, 404 auf `/favicon.ico` |
 | `sizes` der Megamenü-Bilder | Befund belegt (Nachtrag 8), Umsetzung bei der Menü-Sitzung, nur nach Freigabe |
 
