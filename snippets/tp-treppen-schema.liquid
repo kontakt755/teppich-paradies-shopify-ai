@@ -17,9 +17,17 @@
   Aufruf aus einer Sektion: das Snippet tp-treppen-schema rendern und dabei
   variante uebergeben (laeufer, einzelstufe, trittstufe, tritt_setz, wange).
 
+  Stange und Kettelung sehen in der Seitenansicht gleich aus und sind trotzdem
+  zwei Varianten: Kokos und Sisal kommen in festen Breiten mit verschweisster
+  Industriekante und werden von einer Treppenlaeuferstange gehalten; gekettelt
+  wird eine Bahn, die auf Mass geschnitten wurde. Unterschieden werden sie in
+  der Draufsicht - Stange durch den Stab in der Stufenkehle, Kettelung durch
+  die beiden gestrichelten Laengskanten.
+
   Geometrie Seitenansicht: Stufe 32 breit, 28 hoch, Antritt bei x=14, Boden
   bei y=142. Die mittlere Stufe (Setzstufe x=46, Trittstufe y=86) ist die, die
-  bei "einzelstufe" allein markiert wird.
+  bei "einzelstufe" allein markiert wird. Die Stangen sitzen in den Kehlen bei
+  (46,114), (78,86) und (110,58).
 {% endcomment %}
 
 {%- liquid
@@ -30,12 +38,20 @@
   assign ts_wange = false
   assign ts_nur_mitte = false
   assign ts_schmal = false
+  assign ts_kettelung = false
+  assign ts_stange = false
 
   case ts_variante
+    when 'stange'
+      assign ts_tritt = true
+      assign ts_setz = true
+      assign ts_schmal = true
+      assign ts_stange = true
     when 'laeufer'
       assign ts_tritt = true
       assign ts_setz = true
       assign ts_schmal = true
+      assign ts_kettelung = true
     when 'einzelstufe'
       assign ts_tritt = true
       assign ts_setz = true
@@ -86,6 +102,12 @@
     <line class="tp-treppen-schema__belag" x1="46" y1="114" x2="46" y2="86" />
   {%- endif -%}
 
+  {%- if ts_stange -%}
+    <circle class="tp-treppen-schema__stange" cx="46" cy="114" r="4" />
+    <circle class="tp-treppen-schema__stange" cx="78" cy="86" r="4" />
+    <circle class="tp-treppen-schema__stange" cx="110" cy="58" r="4" />
+  {%- endif -%}
+
   {%- comment -%}
     Draufsicht: dieselben drei Stufen von oben. Nur hier ist zu sehen, ob der
     Belag ueber die ganze Breite geht oder als Bahn in der Mitte liegt.
@@ -108,10 +130,17 @@
   {%- endunless -%}
   <rect class="tp-treppen-schema__flaeche" x="{{ ts_x }}" y="70" width="{{ ts_breite }}" height="34" rx="2" />
 
-  {%- if ts_schmal -%}
+  {%- if ts_kettelung -%}
     {%- comment -%} Die zwei gekettelten Laengskanten der Bahn. {%- endcomment -%}
     <line class="tp-treppen-schema__kettelung" x1="175" y1="32" x2="175" y2="142" />
     <line class="tp-treppen-schema__kettelung" x1="225" y1="32" x2="225" y2="142" />
+  {%- endif -%}
+
+  {%- if ts_stange -%}
+    {%- comment -%} Je Stufe ein Stab quer ueber die Bahn, etwas breiter als diese. {%- endcomment -%}
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="108" x2="230" y2="108" />
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="70" x2="230" y2="70" />
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="32" x2="230" y2="32" />
   {%- endif -%}
 
   <text class="tp-treppen-schema__legende" x="14" y="160">Seitenansicht</text>

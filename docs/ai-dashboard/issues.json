@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T03:12:00.428Z",
+  "generated_at": "2026-09-13T08:04:35.383Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 85,
+  "count": 87,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T03:12:00.428Z",
+    "fetchedAt": "2026-09-13T08:04:35.383Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,54 @@
   },
   "issues": [
     {
+      "number": 265,
+      "title": "Treppenseite: Kokos ist nicht kettelbar, Treppenläuferstange fehlt",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/265",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": null,
+      "fields": {
+        "description": "Befund von Ahmet an der live stehenden Seite (2026-09-13):\n\n**Fachlich falsch.** Die Seite sagt „Kokos gibt es nur als gekettelten Läufer\". Kokos lässt sich nicht ketteln — das Gewebe ist zu grob. Kokos und Sisal kommen in festen Breiten (z. B. 65 und 90 cm) mit verschweißter Industriekante und werden von einer **Treppenläuferstange** gehalten. Diese Ausführung fehlte auf der Seite komplett.\n\nBei Sisal kommt hinzu: Wird eine Zwischenbreite gebraucht (z. B. 80 cm), wird die 90er Bahn zugeschnitten und die Schnittkante gekettelt.\n\n**Layout.** Der Kasten „Was Sie von uns bekommen\" ist zu groß.\n\nFolgeaufgabe zu #259. Der Rest der Seite ist bestätigt."
+      },
+      "created_at": "2026-09-13T06:46:33Z",
+      "updated_at": "2026-09-13T07:28:53Z",
+      "closed_at": "2026-09-13T07:28:39Z"
+    },
+    {
+      "number": 264,
+      "title": "Kettelservice: Zweig auf aktuellen main-Stand gemergt, Merge-Fehler behoben",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/264",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T06:42:56Z",
+      "updated_at": "2026-09-13T06:42:57Z",
+      "closed_at": null
+    },
+    {
       "number": 259,
       "title": "Treppenseite: Ausführungsvarianten von Belagsarten trennen",
       "state": "closed",
@@ -90,7 +138,7 @@
     {
       "number": 258,
       "title": "Produktseite: Stueckzahl (Planken/Fliesen) im Paketrechner anzeigen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/258",
       "labels": [
         "status:in-arbeit",
@@ -109,8 +157,8 @@
         "description": "Der Warenkorb zeigt je Position \"12 Planken à 152,4 × 22,8 cm\", die Produktseite nicht — vor dem Hinzufuegen war nicht zu sehen, wie viele Planken oder Fliesen in der Bestellung stecken.\n\nDer Paketrechner (`blocks/paket-auswahl.liquid`) zeigt die Zeile jetzt im Ergebnisblock, in derselben Reihenfolge und Formulierung wie `snippets/tp-cart-paketzeile.liquid`:\n\n- 1 Paket: `6 Planken à 152,4 × 22,8 cm`\n- 2 Pakete: `12 Planken à 152,4 × 22,8 cm (6 je Paket)`\n\nQuelle sind `custom.stueck_pro_paket`, `custom.stueck_bezeichnung` und `custom.format_cm`. Ohne Stueckzahl-Metafeld entfaellt die Zeile.\n\nPR: #257\n\nOffen: visuelle Pruefung und Deploy laufen lokal (Storefront ist aus Remote-Sessions gesperrt)."
       },
       "created_at": "2026-09-12T19:59:35Z",
-      "updated_at": "2026-09-12T19:59:35Z",
-      "closed_at": null
+      "updated_at": "2026-09-13T08:04:18Z",
+      "closed_at": "2026-09-13T08:04:18Z"
     },
     {
       "number": 255,

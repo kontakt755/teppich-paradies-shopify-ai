@@ -188,40 +188,6 @@
   margin-left: auto;
   margin-right: auto;
 }
-.treppen-why-highlight {
-  background-color: #f2f4f7;
-  border-radius: 14px;
-  padding: 50px 30px;
-  margin-top: 60px;
-  margin-bottom: 60px;
-  text-align: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-}
-.treppen-why-highlight h2 {
-  font-size: 2.8rem;
-  margin-bottom: 24px;
-  color: #2a2a2a;
-}
-.treppen-why-highlight ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 auto 30px;
-  max-width: 700px;
-  font-size: 1.7rem;
-}
-.treppen-why-highlight li {
-  margin-bottom: 16px;
-  position: relative;
-  padding-left: 28px;
-  color: #444;
-}
-.treppen-why-highlight li::before {
-  content: "✔";
-  position: absolute;
-  left: 0;
-  color: #2e7d32;
-  font-weight: bold;
-}
 .treppen-button {
   display: inline-block;
   background: #2e7d32;
@@ -429,6 +395,66 @@
     border-radius: 999px;
     background: rgba(46, 125, 50, 0.1);
     color: #1b5e20;
+  }
+
+  /* Der Kasten war der groesste Block der Seite, obwohl er am wenigsten Neues
+     sagt: drei seiner vier Punkte stehen wortgleich im Seitenkopf. Jetzt hat
+     er die Schriftgroessen der uebrigen Abschnitte (24 px Ueberschrift,
+     16 px Text) statt 2.8rem und 1.7rem, halb so viel Innenabstand und auf
+     breiten Schirmen zwei Spalten - dadurch bleibt er unter einem Bildschirm.
+     Ganz weg schaltet ihn "Abschnitt anzeigen" in den Einstellungen. */
+  .treppen-why-highlight {
+    background-color: #f2f4f7;
+    border-radius: 12px;
+    padding: 26px 22px;
+    margin: 44px 0;
+    text-align: left;
+  }
+
+  .treppen-why-highlight h2 {
+    margin: 0 0 14px;
+    font-size: clamp(19px, 2.2vw, 22px);
+    line-height: 1.25;
+    color: inherit;
+  }
+
+  .treppen-why-highlight ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 18px;
+    max-width: none;
+    font-size: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 8px 24px;
+  }
+
+  .treppen-why-highlight li {
+    margin: 0;
+    position: relative;
+    padding-left: 24px;
+    line-height: 1.45;
+    color: inherit;
+  }
+
+  .treppen-why-highlight li::before {
+    content: "✔";
+    position: absolute;
+    left: 0;
+    color: #2e7d32;
+    font-weight: bold;
+  }
+
+  /* Ohne das erbt der Knopf 1.6rem aus dem alten Seiten-CSS und wird zweizeilig
+     - derselbe Fehler, der im Hero schon einmal behoben wurde. */
+  .treppen-why-highlight .treppen-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    font-size: 17px;
+    line-height: 1.2;
   }
 
   .belagsart__link {

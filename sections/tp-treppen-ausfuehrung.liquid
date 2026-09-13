@@ -462,6 +462,23 @@
     stroke-dasharray: 5 4;
   }
 
+  /* Stange: durchgezogen und ohne Strichelung, damit sie sich von der
+     Kettelung unterscheidet - in der Seitenansicht sind beide Varianten
+     identisch, die Draufsicht traegt den ganzen Unterschied. */
+  .tp-treppen-schema__stange-stab {
+    stroke: #1b5e20;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  /* Heller Ring, sonst verschwindet der Punkt im gruenen Belagsband - er sitzt
+     genau darauf. */
+  .tp-treppen-schema__stange {
+    fill: #1b5e20;
+    stroke: #f2f4f7;
+    stroke-width: 1.5;
+  }
+
   .tp-treppen-schema__legende {
     fill: currentColor;
     font-size: 10px;
@@ -562,7 +579,7 @@
       "type": "textarea",
       "id": "matrix_hinweis",
       "label": "Hinweis unter der Tabelle",
-      "default": "Kokos gibt es nur als gekettelten Läufer. Vinyl lässt sich nicht ketteln – alle übrigen Ausführungen sind auch mit Vinyl möglich."
+      "default": "Kokos ist zum Ketteln zu grob und kommt deshalb in festen Breiten mit verschweißter Industriekante auf die Stange. Vinyl lässt sich ebenfalls nicht ketteln – alle übrigen Ausführungen sind damit möglich."
     },
     {
       "type": "header",
@@ -597,6 +614,7 @@
           "label": "Zeichnung",
           "info": "Legt fest, welche Flächen die Schemazeichnung grün markiert.",
           "options": [
+            { "value": "stange", "label": "Läufer in fester Breite, auf Treppenläuferstange" },
             { "value": "laeufer", "label": "Läufer als Bahn, seitlich gekettelt" },
             { "value": "einzelstufe", "label": "Einzelne Stufe nach Schablone" },
             { "value": "trittstufe", "label": "Nur Trittstufen" },
@@ -672,11 +690,24 @@
         {
           "type": "ausfuehrung",
           "settings": {
+            "variante": "stange",
+            "titel": "Läufer mit Treppenläuferstange",
+            "text": "Eine Bahn in fester Breite liegt mittig auf den Stufen und wird in jeder Stufenkehle von einer Treppenläuferstange gehalten.",
+            "detail": "Feste Breiten wie 65 oder 90 cm, die Industriekante ist verschweißt.",
+            "belag_kokos": true,
+            "belag_sisal": true,
+            "belag_teppich": false,
+            "belag_vinyl": false
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
             "variante": "laeufer",
             "titel": "Läufer mit seitlicher Kettelung",
             "text": "Eine Bahn läuft mittig über die Stufen, die Längskanten werden gekettelt. Links und rechts bleibt die Stufe sichtbar.",
-            "detail": "Breite nach Maß, die Kettelung bestimmt die Optik der Kante.",
-            "belag_kokos": true,
+            "detail": "Breite nach Maß: Für 80 cm wird die 90er Bahn zugeschnitten und die Schnittkante gekettelt.",
+            "belag_kokos": false,
             "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": false
