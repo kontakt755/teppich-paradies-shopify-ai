@@ -16,18 +16,18 @@
           "type": "belagsart",
           "settings": {
             "title": "Kokos",
-            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokos ist langlebig und pflegeleicht und kommt als gekettelter Läufer auf die Treppe.",
+            "text": "Robust und natürlich, ideal für stark frequentierte Bereiche. Kokos kommt in festen Breiten wie 65 und 90 cm mit verschweißter Industriekante – für eine Kettelung ist das Gewebe zu grob.",
             "ausfuehrungen_titel": "Möglich als",
-            "ausfuehrungen": "Läufer mit Kettelung"
+            "ausfuehrungen": "Läufer mit Treppenläuferstange"
           }
         },
         "belagsart_8aG4Ad": {
           "type": "belagsart",
           "settings": {
             "title": "Sisal",
-            "text": "Elegant und umweltfreundlich, perfekt für eine natürliche und warme Atmosphäre. Sisal ist antistatisch und strapazierfähig – und in jeder Ausführung möglich.",
+            "text": "Elegant, antistatisch und strapazierfähig. Sisal gibt es ebenfalls in festen Breiten mit verschweißter Industriekante – wird eine Zwischenbreite gebraucht, schneiden wir die nächstgrößere Bahn zu und lassen die Kante ketteln.",
             "ausfuehrungen_titel": "Möglich als",
-            "ausfuehrungen": "Läufer mit Kettelung, Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
+            "ausfuehrungen": "Läufer mit Treppenläuferstange, Läufer mit Kettelung, Einzelne Stufen, Nur Trittstufe, Tritt- und Setzstufe, Mit Wange"
           }
         },
         "belagsart_JMcTyG": {
@@ -281,8 +281,8 @@
             "variante": "laeufer",
             "titel": "Läufer mit seitlicher Kettelung",
             "text": "Eine Bahn läuft mittig über die Stufen, die Längskanten werden gekettelt. Links und rechts bleibt die Stufe sichtbar.",
-            "detail": "Breite nach Maß. Die Kettelung bestimmt, wie die Kante später aussieht.",
-            "belag_kokos": true,
+            "detail": "Breite nach Maß: Wird 80 cm gebraucht, schneiden wir die 90er Bahn zu und lassen die Schnittkante ketteln.",
+            "belag_kokos": false,
             "belag_sisal": true,
             "belag_teppich": true,
             "belag_vinyl": false
@@ -339,9 +339,23 @@
             "belag_teppich": true,
             "belag_vinyl": true
           }
+        },
+        "ausf_stange": {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "stange",
+            "titel": "Läufer mit Treppenläuferstange",
+            "text": "Eine Bahn in fester Breite liegt mittig auf den Stufen und wird in jeder Stufenkehle von einer Treppenläuferstange gehalten. Verklebt wird nichts.",
+            "detail": "Feste Breiten wie 65 oder 90 cm. Die Industriekante ist verschweißt und bleibt sichtbar.",
+            "belag_kokos": true,
+            "belag_sisal": true,
+            "belag_teppich": false,
+            "belag_vinyl": false
+          }
         }
       },
       "block_order": [
+        "ausf_stange",
         "ausf_laeufer",
         "ausf_einzelstufe",
         "ausf_trittstufe",
@@ -359,7 +373,7 @@
         "matrix_zeigen": true,
         "matrix_titel": "Welche Ausführung geht mit welchem Belag?",
         "matrix_ecke": "Ausführung",
-        "matrix_hinweis": "Kokos gibt es nur als gekettelten Läufer. Vinyl lässt sich nicht ketteln – alle übrigen Ausführungen sind auch mit Vinyl möglich.",
+        "matrix_hinweis": "Kokos ist zum Ketteln zu grob und kommt deshalb in festen Breiten mit verschweißter Industriekante auf die Stange. Vinyl lässt sich ebenfalls nicht ketteln – alle übrigen Ausführungen sind damit möglich.",
         "cta_label": "Aufmaß-Termin anfragen",
         "cta_ziel": "/pages/kontakt",
         "cta_zusatz": "Beim Aufmaß sehen wir vor Ort, welche Ausführung auf Ihre Treppe passt."
