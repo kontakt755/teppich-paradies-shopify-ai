@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T06:43:10.857Z",
+  "generated_at": "2026-09-13T06:46:46.770Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 86,
+  "count": 87,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T06:43:10.857Z",
+    "fetchedAt": "2026-09-13T06:46:46.770Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 265,
+      "title": "Treppenseite: Kokos ist nicht kettelbar, Treppenläuferstange fehlt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/265",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "description": "Befund von Ahmet an der live stehenden Seite (2026-09-13):\n\n**Fachlich falsch.** Die Seite sagt „Kokos gibt es nur als gekettelten Läufer\". Kokos lässt sich nicht ketteln — das Gewebe ist zu grob. Kokos und Sisal kommen in festen Breiten (z. B. 65 und 90 cm) mit verschweißter Industriekante und werden von einer **Treppenläuferstange** gehalten. Diese Ausführung fehlte auf der Seite komplett.\n\nBei Sisal kommt hinzu: Wird eine Zwischenbreite gebraucht (z. B. 80 cm), wird die 90er Bahn zugeschnitten und die Schnittkante gekettelt.\n\n**Layout.** Der Kasten „Was Sie von uns bekommen\" ist zu groß.\n\nFolgeaufgabe zu #259. Der Rest der Seite ist bestätigt."
+      },
+      "created_at": "2026-09-13T06:46:33Z",
+      "updated_at": "2026-09-13T06:46:33Z",
+      "closed_at": null
+    },
     {
       "number": 264,
       "title": "Kettelservice: Zweig auf aktuellen main-Stand gemergt, Merge-Fehler behoben",
