@@ -100,18 +100,12 @@
     return f;
   }
 
-  // Kettelung wird je laufendem Meter Kante bestellt: der Umfang, aufgerundet.
-  // Angefangene Meter zahlt der Kunde voll - das Garn laesst sich nicht teilen.
-  function kettelMeter(form, wCm, lCm) {
-    var u = umfangM(form, wCm, lCm);
-    return u > 0 ? Math.ceil(u - EPS) : 0;
-  }
-
-  // Mindestauftragswert: gilt fuer die Summe aller Zeilen eines Auftrags,
-  // nicht je Zeile. 0 oder fehlend heisst "keine Grenze".
-  function mindestErreicht(summeCent, mindestCent) {
-    if (!(mindestCent > 0)) return true;
-    return summeCent + EPS >= mindestCent;
+  // Kante in 0,01-lfm-Einheiten. Shopify rechnet ganze Mengen mal
+  // Variantenpreis; mit dem Preis je 0,01 lfm geht jede Kantenlaenge
+  // zentimetergenau auf - 12,10 m sind 1210 Einheiten, nichts wird
+  // aufgerundet (Entscheidung des Inhabers 2026-09-13).
+  function kanteEinheiten(kanteM) {
+    return kanteM > 0 ? Math.round(kanteM * 100) : 0;
   }
 
   // Menge in 0,01-m2-Einheiten inklusive Mindestpreis (alles in Cent).
@@ -128,8 +122,7 @@
     abrechnungsflaecheM2: abrechnungsflaecheM2,
     echteFlaecheM2: echteFlaecheM2,
     umfangM: umfangM,
-    kettelMeter: kettelMeter,
-    mindestErreicht: mindestErreicht,
+    kanteEinheiten: kanteEinheiten,
     mengeVolleM2: mengeVolleM2,
     mengeHundertstelM2: mengeHundertstelM2,
     raummassPreis: raummassPreis,
