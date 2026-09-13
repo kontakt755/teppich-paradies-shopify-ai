@@ -107,7 +107,7 @@
     ohne Nummer, denn eine Frage mit einer Antwort ist keine.
   {%- endcomment -%}
   <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
-    <span data-art-step>{% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Art' %}</span>
+    <span data-art-step>{% render 'tp-step-heading', number: 2, label: 'Art wählen' %}</span>
     <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
       <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
       <label class="tp-rwc-art-card" for="tp-rwc-art-m-{{ tp_rc_id }}">
@@ -138,13 +138,22 @@
     </div>
   </div>
 
-  <div class="tp-rwc-field" data-width-field data-rwc-body>
-    <span data-width-step hidden>{% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}</span>
+  {%- comment -%}
+    Breite und Laenge stehen in einer gemeinsamen Masszeile: auf dem Desktop
+    nebeneinander, weil beide Angaben zusammen eine Frage beantworten und der
+    Platz da ist; auf dem Handy untereinander, weil zwei halbe Spalten das
+    Zahlenfeld quetschen. Die Reihenfolge im DOM bleibt unveraendert, und die
+    Raummass-Box tritt weiterhin an die Stelle der Rollenbreite - im Raster
+    faellt ein verborgenes Feld einfach weg.
+  {%- endcomment -%}
+  <div class="tp-rwc-masse" data-rwc-body>
+  <div class="tp-rwc-field" data-width-field>
+    <span data-width-step hidden>{% render 'tp-step-heading', number: 2, label: 'Breite wählen' %}</span>
     <span class="tp-rwc-label" data-width-label>Rollenbreite</span>
     <div class="tp-rwc-seg tp-rwc-seg--width" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
   </div>
 
-  <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box data-rwc-body hidden>
+  <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
     <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Ihre Breite</label>
     <div class="tp-rwc-input-wrap">
       <input type="number" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="50" step="1" placeholder="z. B. 250" data-wunsch-input>
@@ -155,11 +164,15 @@
     <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden></p>
   </div>
 
-
-  <div class="tp-rwc-mode-panel" data-mode-panel="length" data-rwc-body>
+  <div class="tp-rwc-mode-panel" data-mode-panel="length">
     <div class="tp-rwc-field">
-      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Geben Sie Ihre Länge an' %}</span>
-      <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
+      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Länge eingeben' %}</span>
+      {%- comment -%}
+        Die Schrittzeile darueber sagt bereits "Laenge eingeben"; sichtbar
+        stuende hier zum zweiten Mal dasselbe Wort. Das Label bleibt als
+        Beschriftung des Feldes fuer Screenreader und den Klick aufs Wort.
+      {%- endcomment -%}
+      <label class="tp-rwc-label tp-rwc-label--vorlesen" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
       <div class="tp-rwc-input-wrap">
         <input
           type="number"
@@ -169,7 +182,7 @@
           inputmode="numeric"
           min="100"
           step="1"
-          placeholder="Hier Länge eingeben (cm)"
+          placeholder="z. B. 400"
           data-length-input>
         <span class="tp-rwc-unit">cm</span>
       </div>
@@ -185,7 +198,7 @@
       <p class="tp-rwc-note tp-rwc-note-error" data-error-max hidden></p>
     </div>
   </div>
-
+  </div>
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
@@ -393,7 +406,7 @@
     --tp-rwc-surface: var(--color-background, #fcfcfb);
     --tp-rwc-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
     --tp-rwc-accent: var(--color-primary, #c8891e);
-    margin: 20px 0;
+    margin: 0;
     color: var(--tp-rwc-ink);
   }
   .tp-rwc-{{ tp_rc_id }} *, .tp-rwc-{{ tp_rc_id }} *::before, .tp-rwc-{{ tp_rc_id }} *::after { box-sizing: border-box; }
@@ -487,6 +500,29 @@
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+  /* Masszeile: Breite und Laenge. Auf dem Handy untereinander (Vollbreite je
+     Feld), ab 750 px nebeneinander. Ein verborgenes Feld nimmt keine Spalte
+     ein - im Raummass ruecken damit "Ihre Breite" und "Laenge" zusammen. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse { display: grid; gap: 18px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-label--vorlesen {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > * { margin-bottom: 0; }
+
+  @media screen and (min-width: 750px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px 20px;
+      align-items: start;
+    }
+    /* Ohne eigene Schrittnummer begaenne die Breite 36 px hoeher als die
+       Laenge daneben (Hoehe der Schrittzeile plus deren Abstand). Die Reserve
+       greift genau dann, wenn die Schrittzeile verborgen ist. */
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > [data-width-field] > [data-width-step][hidden] + .tp-rwc-label,
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > .tp-rwc-wunsch { margin-top: 36px; }
+  }
+
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { position: relative; max-width: 220px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
     width: 100%;
@@ -539,6 +575,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stage {
     display: flex;
     justify-content: center;
+    align-items: flex-end;
     /* Platz für die Maßbeschriftungen, die außerhalb der Rechteckkanten
        sitzen (oben mittig, links vertikal) - siehe .tp-rwc-tag-w/-l. */
     padding: 30px 4px 4px 36px;
@@ -584,25 +621,25 @@
     margin-bottom: 12px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-step {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--tp-rwc-ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--tp-rwc-muted);
     font-variant-numeric: tabular-nums;
     font-family: system-ui, -apple-system, sans-serif;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 12px 14px;
-    background: var(--tp-rwc-surface);
-    border: 1px solid var(--tp-rwc-line);
-    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--tp-rwc-material);
+    border: 1px solid transparent;
+    border-radius: 10px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.5rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.75rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details { margin: 0 0 16px; font-size: 12.5px; color: var(--tp-rwc-muted); }
@@ -610,8 +647,9 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details p { margin: 6px 0 0; line-height: 1.5; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta {
-    display: block; width: 100%; padding: 15px 18px; border: 0; border-radius: var(--style-border-radius-buttons-primary, 6px);
-    background: #1d6b47; color: #fff; font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
+    display: block; width: 100%; min-height: 54px; padding: 16px 18px; border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: #1d6b47; color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #185a3b; }
@@ -657,7 +695,12 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip:hover { border-color: #1d6b47; color: #1d6b47; }
 
   @media screen and (max-width: 749px) {
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; min-height: 52px; font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input { min-height: 52px; padding: 14px 46px 14px 14px; font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length { font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length::placeholder { font-size: .95rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-unit { font-size: .9rem; right: 14px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 22px 1fr; row-gap: 4px; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { grid-column: 2; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
@@ -948,7 +991,13 @@ function tpRwcInit{{ tp_rc_id }}() {
     meterTipp.hidden = false;
   }
 
-  var DRAW_MAX_PX = 280;
+  // Groesster Rahmen der Skizze. Auf dem Handy kleiner: dort ist der Platz
+  // knapper, und der Rahmen bestimmt zugleich die feste Hoehe der Buehne
+  // (siehe draw()). Als Funktion, damit ein Drehen des Geraets den Wert neu
+  // holt - der Resize-Zuhoerer weiter unten zeichnet ohnehin neu.
+  function drawMaxPx() {
+    return window.matchMedia('(max-width: 749px)').matches ? 190 : 280;
+  }
   var DRAW_MIN_PX = 40;
   var maxKnownWidth = widths.length ? Math.max.apply(null, widths) : 0;
   // Fester Referenzwert statt "längste aktuell gewählte Seite": so bleibt
@@ -982,7 +1031,13 @@ function tpRwcInit{{ tp_rc_id }}() {
         return;
       }
     }
-    var stageW = Math.min(DRAW_MAX_PX, stageWidthPx());
+    var maxPx = drawMaxPx();
+    // Die Buehne behaelt immer die Hoehe, die das Stueck hoechstens erreichen
+    // kann. Ohne das wuchs sie mit der eingegebenen Laenge mit und schob beim
+    // Tippen alles darunter nach unten - auf dem Handy um bis zu 187 px.
+    // Das Stueck selbst bleibt massstaeblich und sitzt am unteren Rand.
+    if (stage) stage.style.minHeight = maxPx + 'px';
+    var stageW = Math.min(maxPx, stageWidthPx());
     var pxPerCm = stageW / REFERENCE_CM;
 
     var widthPx = Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm)));
@@ -996,7 +1051,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
 
     tagL.textContent = 'L: ' + len + ' cm';
-    var heightPx = Math.max(DRAW_MIN_PX, Math.min(DRAW_MAX_PX, Math.round(len * pxPerCm)));
+    var heightPx = Math.max(DRAW_MIN_PX, Math.min(maxPx, Math.round(len * pxPerCm)));
     piece.style.height = heightPx + 'px';
   }
 
@@ -1223,7 +1278,16 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Raummass, und die Zusaetze zaehlen weiter. Vorher blieb die Art
   // ungezaehlt - "Art" und "Laenge" trugen beide die 2.
   function renumberSteps() {
-    var n = 2;
+    // Vor dem Rechner steht die Farbwahl als eigener Block - die faellt weg,
+    // wenn das Produkt keine Farboption hat. Feste 2 haette dann bei "2"
+    // begonnen, ohne dass es je eine 1 gab. Gezaehlt wird deshalb hinter den
+    // Schrittzeilen, die auf der Seite sichtbar vor dem Rechner stehen.
+    var davor = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('.tp-step-heading'), function (el) {
+      if (el.offsetParent === null || root.contains(el)) return;
+      if (el.compareDocumentPosition(root) & Node.DOCUMENT_POSITION_FOLLOWING) davor++;
+    });
+    var n = davor + 1;
     function setNum(scope) {
       var el = scope && scope.querySelector('.tp-step-heading__number');
       if (el && el.offsetParent !== null) el.textContent = String(n++);
