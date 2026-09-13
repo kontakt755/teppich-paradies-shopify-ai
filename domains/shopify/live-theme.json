@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-13T10:02:00Z",
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-13T12:27:52Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-13T10:02:00Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-13T12:27:52Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -137,6 +137,12 @@
       "name": "Preview Gallery V3",
       "retiredNoticedAt": "2026-09-13",
       "note": "Per workflow:live abgeloest durch 203690246478 (PR #276, Commit a611e03: normaler Teppichboden ist keine gekettelte Ware mehr - Kettel-Schritt aus dem Rollenrechner entfernt, dafuer Fussleiste und Haftunterlage; neues Produkt Piumera Teppich nach Maass mit zentimetergenauer Kettelabrechnung). Rollentausch am 2026-09-13 um 10:00:56Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203690246478",
+      "name": "preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-13",
+      "note": "Per workflow:live abgeloest durch 203558781262 (PR #278, Aufgabe #277: oberer Kaufbereich der Rollenware-Produktseite auf Farbe, Breite, Laenge, Preis, Warenkorb reduziert; Bestellhilfe, Muster/Versand, Aufmass und Verlegeservice in die neue Section product_service_rolle unter dem Produkt). Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
