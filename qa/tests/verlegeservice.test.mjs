@@ -188,10 +188,40 @@ test('den Produkthinweis setzt nur das Rollenware-Template ein', () => {
     assert.equal(setzt, datei === 'product.rolle.json',
       `${datei}: der Hinweis gehoert nur auf die Rollenware-Produktseite.`);
   }
-  const details = vorlage('product.rolle').sections.main.blocks['product-details'];
-  assert.ok(details.block_order.includes('tp_verlegeservice_hinweis'),
+  // Seit dem Umbau des Kaufbereichs (Rollenware) steht der Hinweis nicht mehr
+  // in der Detailspalte, sondern im Service-Bereich unter dem Produkt. Geprueft
+  // wird deshalb die Eigenschaft, auf die es ankommt und die damals verletzt
+  // war: ein Block in "blocks" ohne Eintrag in der zugehoerigen "block_order"
+  // wird von Shopify still verschluckt - egal auf welcher Ebene er liegt.
+  assert.ok(istVerdrahtet(vorlage('product.rolle'), 'tp-verlegeservice-hinweis'),
     'Der Block steht in blocks, aber nicht in block_order - Shopify zeigt ihn dann nicht.');
 });
+
+// Sucht den Block ueber alle Ebenen (Section > Block > Block) und verlangt,
+// dass jeder Knoten auf dem Weg in der block_order seines Elternteils steht.
+function istVerdrahtet(vorlageJson, blockTyp) {
+  const suche = (knoten, order) => {
+    for (const [schluessel, block] of Object.entries(knoten ?? {})) {
+      if (!Array.isArray(order) || !order.includes(schluessel)) continue;
+      if (block.type === blockTyp) return true;
+      if (suche(block.blocks, block.block_order)) return true;
+    }
+    return false;
+  };
+  for (const schluessel of vorlageJson.order ?? Object.keys(vorlageJson.sections)) {
+    const section = vorlageJson.sections[schluessel];
+    if (!section || section.disabled) continue;
+    // Statische Bloecke (product-details) stehen nicht in der block_order der
+    // Section, rendern aber - ihre Kinder brauchen die Ordnung wieder.
+    for (const [bs, block] of Object.entries(section.blocks ?? {})) {
+      const gelistet = Array.isArray(section.block_order) && section.block_order.includes(bs);
+      if (!gelistet && !block.static) continue;
+      if (block.type === blockTyp) return true;
+      if (suche(block.blocks, block.block_order)) return true;
+    }
+  }
+  return false;
+}
 
 test('/pages/liefer-verlegeservice hat ein eigenes Template statt der B2B-Rueckfallseite', () => {
   assert.ok(existsSync(path.join(WURZEL, 'templates', 'page.verlegeservice.json')),

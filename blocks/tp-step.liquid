@@ -11,9 +11,30 @@
   ohne Code-Änderung umstellen lässt.
 {% enddoc %}
 
-<div class="tp-step" {{ block.shopify_attributes }}>
-  {% render 'tp-step-heading', number: block.settings.number, label: block.settings.label %}
-</div>
+{%- liquid
+  # Eine Schrittzeile ohne Bedienelement darunter ist eine Frage ohne Antwort.
+  # Genau das stand auf Rollenware ohne Farboption (z. B. einfarbiges
+  # Rollenvinyl): "1 Farbe waehlen" und darunter nichts. Die Erkennung ist
+  # dieselbe wie in blocks/tp-farbanzeige.liquid. Standard ist aus, damit
+  # bestehende Vorlagen unveraendert bleiben.
+  assign tp_st_zeigen = true
+  if block.settings.nur_mit_farboption
+    assign tp_st_zeigen = false
+    for tp_st_option in product.options_with_values
+      assign tp_st_oname = tp_st_option.name | downcase
+      if tp_st_oname contains 'farbe' or tp_st_oname contains 'color' or tp_st_oname contains 'dekor'
+        assign tp_st_zeigen = true
+        break
+      endif
+    endfor
+  endif
+-%}
+
+{%- if tp_st_zeigen -%}
+  <div class="tp-step" {{ block.shopify_attributes }}>
+    {% render 'tp-step-heading', number: block.settings.number, label: block.settings.label %}
+  </div>
+{%- endif -%}
 
 {% stylesheet %}
   .tp-step {
@@ -44,6 +65,13 @@
       "id": "label",
       "label": "Text",
       "default": "Wählen Sie Ihre Breite"
+    },
+    {
+      "type": "checkbox",
+      "id": "nur_mit_farboption",
+      "label": "Nur anzeigen, wenn das Produkt eine Farboption hat",
+      "info": "Für die Schrittzeile der Farbwahl. Ohne Farboption steht sonst eine Überschrift über einer leeren Stelle.",
+      "default": false
     }
   ],
   "presets": [
