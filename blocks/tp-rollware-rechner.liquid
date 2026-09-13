@@ -86,6 +86,21 @@
     endunless
   endif
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
+
+  # Kettelung der Schnittkante: eigenes, wiederverwendbares Produkt, Preis je
+  # laufendem Meter Kante. Ohne gewaehltes Produkt (oder ohne bestellbare
+  # Variante mit Preis) erscheint der Schritt gar nicht - fail closed.
+  # Nicht zu verwechseln mit den Kettelleisten oben: das ist Sockelleisten-
+  # Ersatz aus demselben Teppich, hier geht es um die Kante des Stuecks selbst.
+  assign tp_rc_kettel = block.settings.kettelservice_produkt
+  assign tp_rc_kettel_v = nil
+  if tp_rc_kettel != blank
+    assign tp_rc_kettel_v = tp_rc_kettel.selected_or_first_available_variant
+    unless tp_rc_kettel_v.available and tp_rc_kettel_v.price > 0
+      assign tp_rc_kettel_v = nil
+    endunless
+  endif
+  assign tp_rc_kettel_mindest = block.settings.kettelservice_mindest | default: '0' | replace: ',', '.' | times: 1.0
 -%}
 
 <div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
@@ -199,6 +214,22 @@
     </div>
   </figure>
 
+  {%- comment -%}
+    Kettelung steht vor den anderen Zusaetzen: sie gehoert zum Stueck selbst,
+    Leisten und Unterlage kommen danach. Sichtbar nur im Raummass (JS), weil
+    nur dort eine Schnittkante entsteht.
+  {%- endcomment -%}
+  {%- if tp_rc_kettel_v -%}
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="kettel" hidden data-rwc-body>
+      {% render 'tp-step-heading', number: 4, label: 'Kettelung' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-kettel-an>
+        <span class="tp-rwc-karte-text"><b>Schnittkante ketteln lassen</b><small data-kettel-hint></small></span>
+        <span class="tp-rwc-karte-preis">{{ tp_rc_kettel_v.price | money }} / m</span>
+      </label>
+      <p class="tp-rwc-note tp-rwc-note-error" data-kettel-mindest hidden></p>
+    </div>
+  {%- endif -%}
   {%- if tp_rc_leiste != blank -%}
     <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
       {% render 'tp-step-heading', number: 4, label: 'Kettelleisten' %}
@@ -311,6 +342,8 @@
     null
   ],
   "haft": {% if tp_rc_haft_v %}{ "id": {{ tp_rc_haft_v.id | json }}, "price": {{ tp_rc_haft_v.price | json }}, "qm": {{ tp_rc_haft_qm | json }} }{% else %}null{% endif %},
+  {%- comment -%} mindest in Euro, Preis wie ueberall in Cent {%- endcomment -%}
+  "kettel": {% if tp_rc_kettel_v %}{ "id": {{ tp_rc_kettel_v.id | json }}, "price": {{ tp_rc_kettel_v.price | json }}, "mindest": {{ tp_rc_kettel_mindest | json }} }{% else %}null{% endif %},
   "einfass": {
     {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
       "{{ tp_rc_ep.id }}": {
@@ -650,6 +683,12 @@
   ist - deferred Skripte laufen garantiert davor.
 {%- endcomment -%}
 <script src="{{ 'tp-rollware-art.js' | asset_url }}" defer></script>
+{%- comment -%}
+  Rechenkern fuer die Kantenlaenge - dieselbe Datei rechnet in den Tests
+  (qa/tests/masstepich-rechnung.test.mjs). Fehlt sie, bleibt der Schritt
+  Kettelung verborgen, statt mit einer zweiten Formel zu rechnen.
+{%- endcomment -%}
+<script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
 <script>
 function tpRwcInit{{ tp_rc_id }}() {
   var pid = {{ product.id | json }};
@@ -1036,9 +1075,13 @@ function tpRwcInit{{ tp_rc_id }}() {
 
   var leisteBox = root.querySelector('[data-extra="leiste"]');
   var haftBox = root.querySelector('[data-extra="haft"]');
+  var kettelBox = root.querySelector('[data-extra="kettel"]');
   var formulaExtras = root.querySelector('[data-formula-extras]');
   var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
   var haft = (data.haft && data.haft.id && data.haft.qm > 0 && parseFloat(data.haft.price) > 0) ? data.haft : null;
+  var kettel = (data.kettel && data.kettel.id && parseFloat(data.kettel.price) > 0) ? data.kettel : null;
+  // Mindestauftragswert in Cent, gilt fuer Teppich und Kettelung zusammen.
+  var kettelMindestCent = kettel ? Math.round((parseFloat(kettel.mindest) || 0) * 100) : 0;
 
   // Zusaetze nur fuer freigegebene Teppichboeden - dieselbe Freigabe wie
   // fuer das Einfassen, damit es genau eine Wahrheit gibt.
@@ -1053,8 +1096,40 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
 
   function updateExtras(w, len, area) {
-    var res = { items: [], sum: 0, lines: [] };
+    var res = { items: [], sum: 0, lines: [], kettel: 0 };
     var allowed = extrasAllowed();
+    // Kettelung der Schnittkante: nur im Raummass, denn nur dort schneiden wir
+    // eine Kante. Zusaetzlich muss die gewaehlte Farbe den Dienst haben
+    // (lieferant.kettelung) und der Rechenkern geladen sein - sonst lieber
+    // nichts anbieten als mit einer zweiten Formel rechnen.
+    if (kettelBox) {
+      var kRaum = artMode() === 'raum';
+      var kMoeglich = !!kettel && kRaum && serviceFor(target).kettelung && !!window.TPMass;
+      kettelBox.hidden = !kMoeglich;
+      var kPreis = kettel ? parseFloat(kettel.price) / 100 : 0;
+      var kAn = kMoeglich && kettelBox.querySelector('[data-kettel-an]').checked;
+      var kMeter = (kMoeglich && w > 0 && len > 0) ? window.TPMass.kettelMeter('rechteck', w, len) : 0;
+      var kHint = kettelBox.querySelector('[data-kettel-hint]');
+      if (kHint) {
+        kHint.textContent = kMeter
+          ? 'Umfang ' + kMeter + ' m · ' + fmt(kPreis) + ' € je Meter'
+          : 'Kante rundum umkettelt, damit nichts ausfranst';
+      }
+      if (kAn && kMeter > 0) {
+        res.kettel = kMeter;
+        res.items.push({
+          id: kettel.id,
+          quantity: kMeter,
+          properties: {
+            'Zu Teppich': data.product_title,
+            'Farbe': farbeText(),
+            'Kante': kMeter + ' m (Umfang ' + w + ' × ' + len + ' cm)'
+          }
+        });
+        res.sum += kMeter * kPreis;
+        res.lines.push('+ Kettelung: ' + kMeter + ' m × ' + fmt(kPreis) + ' € = ' + fmt(kMeter * kPreis) + ' €');
+      }
+    }
     if (leisteBox) {
       var showL = allowed && leisteVarianten.length > 0;
       leisteBox.hidden = !showL;
@@ -1241,10 +1316,19 @@ function tpRwcInit{{ tp_rc_id }}() {
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
       var extras = updateExtras(w, len, billedArea);
-      outTotal.textContent = fmt(total + extras.sum) + ' €';
-      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+      // Auf der Seite steht eine Summe: Teppich plus Kettelung. Die Aufteilung
+      // in zwei Zeilen sieht der Kunde erst im Warenkorb.
+      var summe = total + extras.sum;
+      // var ist funktionsweit - der Wert gilt auch unten beim Knopf.
+      var unterMindest = !!extras.kettel && !!window.TPMass &&
+        !window.TPMass.mindestErreicht(Math.round(summe * 100), kettelMindestCent);
+      outTotal.textContent = fmt(summe) + ' €';
+      cta.textContent = extras.kettel
+        ? fmtArea(billedArea) + ' m² mit Kettelung in den Warenkorb'
+        : fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
       updateMeterTipp(raum, w, len, rate);
     } else {
+      unterMindest = false;
       updateExtras(w, 0, 0);
       updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
@@ -1254,8 +1338,18 @@ function tpRwcInit{{ tp_rc_id }}() {
       cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
     }
 
+    // Unter dem Mindestauftragswert sagen wir das an der Kettelung, statt einen
+    // Knopf anzubieten, der im Warenkorb doch nicht zum Auftrag wird.
+    var kMindestEl = kettelBox && kettelBox.querySelector('[data-kettel-mindest]');
+    if (kMindestEl) {
+      kMindestEl.textContent = unterMindest
+        ? 'Mit Kettelung fertigen wir ab ' + fmt(kettelMindestCent / 100) + ' € je Auftrag (Teppich und Kante zusammen). Bitte Maße anpassen oder kurz anrufen.'
+        : '';
+      kMindestEl.hidden = !unterMindest;
+    }
+
     renumberSteps();
-    cta.disabled = !(valid && ok);
+    cta.disabled = !(valid && ok) || !!unterMindest;
     // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
     // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
     cta.hidden = cta.disabled;
@@ -1300,7 +1394,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var el = e.target;
     if (el.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
     if (el.name === 'tp-rwc-art-{{ tp_rc_id }}') calculate();
-    if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
+    if (el.hasAttribute && (el.hasAttribute('data-kettel-an') || el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
   });
   if (wunschInput) wunschInput.addEventListener('input', calculate);
   lengthInput.addEventListener('input', calculate);
@@ -1362,6 +1456,15 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Zusaetze gehen im selben Aufruf mit und tragen dieselbe _Gruppe wie der
     // Teppichboden. Ohne Zusaetze bleibt der Aufruf exakt wie bisher.
     var extras = updateExtras(w, len, billedArea);
+    if (extras.kettel) {
+      // Zweite Sicherung: der Knopf ist unter dem Mindestwert gesperrt, aber
+      // ein veralteter Zustand darf trotzdem keinen zu kleinen Auftrag ausloesen.
+      var rateNow = cmExact ? parseFloat(target.price) : parseFloat(target.price) / 100;
+      var summeNow = Math.round((billedArea * rateNow + extras.sum) * 100);
+      if (!window.TPMass || !window.TPMass.mindestErreicht(summeNow, kettelMindestCent)) return;
+      // Auch auf der Teppichzeile sichtbar, damit die Werkstatt es an der Ware sieht.
+      properties['Kante'] = 'Gekettelt, ' + extras.kettel + ' m';
+    }
     var payload = { id: target.id, quantity: qty, properties: properties };
     if (extras.items.length) {
       var gruppe = 'T' + Date.now().toString(36);
@@ -1449,6 +1552,22 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
     {
       "type": "paragraph",
       "content": "Kettelleisten und Haftunterlage erscheinen nur, wenn hier ein Produkt gewaehlt ist und die gewaehlte Variante service.einfassen = Verfuegbar traegt."
+    },
+    {
+      "type": "paragraph",
+      "content": "Die Kettelung der Schnittkante erscheint nur im Raummaß und nur, wenn die gewaehlte Farbe den Dienst hat. Sie haengt nicht an service.einfassen."
+    },
+    {
+      "type": "product",
+      "id": "kettelservice_produkt",
+      "label": "Kettelservice (Preis je laufendem Meter Kante)"
+    },
+    {
+      "type": "text",
+      "id": "kettelservice_mindest",
+      "label": "Mindestauftragswert mit Kettelung in €",
+      "info": "Teppich und Kettelung zusammen. 0 = keine Grenze.",
+      "default": "99"
     },
     {
       "type": "product",

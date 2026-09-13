@@ -66,6 +66,20 @@ test('G: Mindestpreis hebt die Menge an, sonst nicht', () => {
   assert.equal(M.mengeMitMindestpreis(1, 50, 0), 100);
 });
 
+test('I: Kettelung - Kante in vollen Metern, Mindestauftragswert', () => {
+  // 4,00 x 2,50 m: Umfang exakt 13 m, kein Aufschlag durch Rundung
+  assert.equal(M.kettelMeter('rechteck', 400, 250), 13);
+  // 2,50 x 1,80 m: 8,60 m -> 9 angefangene Meter
+  assert.equal(M.kettelMeter('rechteck', 250, 180), 9);
+  assert.equal(M.kettelMeter('rund', 200), 7);
+  assert.equal(M.kettelMeter('rechteck', 0, 0), 0);
+  // Mindestauftragswert 99 EUR ueber alle Zeilen
+  assert.equal(M.mindestErreicht(14600, 9900), true);
+  assert.equal(M.mindestErreicht(9900, 9900), true);
+  assert.equal(M.mindestErreicht(9800, 9900), false);
+  assert.equal(M.mindestErreicht(100, 0), true);
+});
+
 test('H: Rolle und Rollenanzahl', () => {
   assert.equal(M.rolleFuer(380, [500, 400, 200]), 400);
   assert.equal(M.rolleFuer(401, [400, 500]), 500);

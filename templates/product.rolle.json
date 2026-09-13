@@ -223,7 +223,10 @@
             "tp_rollware_rechner_sales1": {
               "type": "tp-rollware-rechner",
               "name": "TP Rollenware-Rechner",
-              "settings": {},
+              "settings": {
+                "kettelservice_produkt": "kettelservice",
+                "kettelservice_mindest": "99"
+              },
               "blocks": {}
             },
             "tp_farbanzeige_tp1": {

@@ -100,6 +100,20 @@
     return f;
   }
 
+  // Kettelung wird je laufendem Meter Kante bestellt: der Umfang, aufgerundet.
+  // Angefangene Meter zahlt der Kunde voll - das Garn laesst sich nicht teilen.
+  function kettelMeter(form, wCm, lCm) {
+    var u = umfangM(form, wCm, lCm);
+    return u > 0 ? Math.ceil(u - EPS) : 0;
+  }
+
+  // Mindestauftragswert: gilt fuer die Summe aller Zeilen eines Auftrags,
+  // nicht je Zeile. 0 oder fehlend heisst "keine Grenze".
+  function mindestErreicht(summeCent, mindestCent) {
+    if (!(mindestCent > 0)) return true;
+    return summeCent + EPS >= mindestCent;
+  }
+
   // Menge in 0,01-m2-Einheiten inklusive Mindestpreis (alles in Cent).
   function mengeMitMindestpreis(areaM2, preisJeEinheitCent, mindestCent) {
     var menge = mengeHundertstelM2(areaM2);
@@ -114,6 +128,8 @@
     abrechnungsflaecheM2: abrechnungsflaecheM2,
     echteFlaecheM2: echteFlaecheM2,
     umfangM: umfangM,
+    kettelMeter: kettelMeter,
+    mindestErreicht: mindestErreicht,
     mengeVolleM2: mengeVolleM2,
     mengeHundertstelM2: mengeHundertstelM2,
     raummassPreis: raummassPreis,
