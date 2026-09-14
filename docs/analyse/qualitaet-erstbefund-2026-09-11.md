@@ -1105,3 +1105,35 @@ hat dabei fünf Kategorie-Templates geändert (`bodenleisten`, `vinylboden-rolle
 Erfreulich: Sie kommt beim strukturierten Datensatz unabhängig zum selben Schluss wie Nachtrag 14 —
 **kein `aggregateRating`**, weil die Bewertungen aus dem Google-Unternehmensprofil stammen und nicht von
 dieser Seite.
+
+### Nachtrag 17: Render-blockierendes CSS des Mega-Menues entschaerft (2026-09-14)
+
+Naechster Punkt aus der Prioritaetenliste (Nachtrag 14, Punkt 8): render-blockierendes CSS.
+
+**Geprueft und verworfen:** `assets/tp-startseite.css` (65 Zeilen) sah zunaechst nach dem Kandidaten
+aus, weil der Name Startseite suggeriert, die Datei aber ueber `tp-topbar` und `tp-header-suche` Teil
+der gemeinsamen Kopfzeile ist und damit auf jeder Seite laeuft. Beim Lesen zeigte sich: Es ist eine
+geteilte Token-/Button-Bibliothek (Praefix `tp-s-`), die auch im Header echt gebraucht wird - keine
+Startseiten-Regeln, die auf anderen Seiten verschwendet waeren.
+
+**Umgesetzt: `assets/tp-mega-menu.css`** (21,9 KB, 639 Zeilen), eingebunden in `sections/header.liquid`
+und damit auf jeder Seite render-blockierend, bevor irgendein Inhalt gezeichnet wird. Gepruef: alle
+Top-Level-Selektoren (`.mega-menu__*`, `.menu-drawer__*`, `.tp-lnav*`, `.tp-mm-card__*`) gehoeren
+ausschliesslich zum Menue-Panel - keiner davon stylt die sichtbare Kopfzeile vor dem Oeffnen. Das
+Stylesheet blockierte also das Rendern jeder Seite fuer eine Datei, die vor der ersten Nutzerabsicht gar
+nicht gebraucht wird - dieselbe Ueberlegung, die die Menuebilder schon `loading="lazy"` und
+`fetchpriority="low"` traegt (Optimierung #14 aus dem Schlussbericht).
+
+Umgesetzt mit dem Standard-Preload/Swap-Muster: `<link rel="preload" as="style" onload="this.rel=
+'stylesheet'">` plus `<noscript>`-Rueckfall. **Nicht** Shopifys eigenen `stylesheet_tag: preload: true`
+verwendet, obwohl `theme check` genau das vorschlaegt (`AssetPreload`-Warnung) - dieser Filter-Parameter
+gibt zusaetzlich zum weiterhin blockierenden `<link rel="stylesheet">` einen Preload-Hinweis aus, um den
+Abruf frueher zu starten. Er hebt die Blockierung nicht auf, das waere das Gegenteil des hier gesuchten
+Effekts. Die Warnung ist fuer diesen Fall ein Fehlalarm.
+
+**Geprueft im Development-Theme** (`shopify theme push --development --development-context
+perf-megamenu`, `shopify theme dev` auf einem eigenen Port): Das rohe HTML traegt `rel="preload"`, kein
+blockierendes `rel="stylesheet"` mehr an der Stelle; das `<noscript>` traegt den Rueckfall. Das Menue
+selbst mit einer Zeigergeste geoeffnet (nicht `.click()`, siehe die Drawer-Bild-Falle aus Nachtrag 9):
+das Panel ist vollstaendig gestylt (`border-radius: 14px`, `display: flex`), das Stylesheet also aktiv,
+bevor die Interaktion es braucht.
