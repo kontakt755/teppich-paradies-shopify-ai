@@ -56,6 +56,7 @@ class TpSucheLeiste extends HTMLElement {
     this.input.addEventListener('keydown', this.#onKeyDown, { signal });
     this.addEventListener('focusout', this.#onFocusOut, { signal });
     this.panel.addEventListener('click', this.#onPanelClick, { signal });
+    this.panel.addEventListener('pointerdown', this.#onPanelPointerDown, { signal });
     document.addEventListener('pointerdown', this.#onDocPointerDown, { signal });
     window.addEventListener('pageshow', this.#onPageShow, { signal });
     this.telefon.addEventListener('change', this.#onTelefonWechsel, { signal });
@@ -121,6 +122,15 @@ class TpSucheLeiste extends HTMLElement {
 
   #onTelefonWechsel = () => {
     if (this.telefon.matches) this.#schliessen();
+  };
+
+  #onPanelPointerDown = (event) => {
+    // Klick auf Freiflaeche oder Rollbalken des Dropdowns: Fokus bleibt im
+    // Feld, sonst schloesse focusout das Dropdown. Links und Knoepfe
+    // bekommen den Fokus normal.
+    const ziel = event.target instanceof Element ? event.target : null;
+    if (ziel && ziel.closest('a, button, input')) return;
+    event.preventDefault();
   };
 
   #onPanelClick = (event) => {
@@ -226,6 +236,8 @@ class TpSucheLeiste extends HTMLElement {
 
     const treffer = this.cache.get(schluessel);
     if (treffer) {
+      // Auch eine noch anstehende Ladeanzeige der abgebrochenen Anfrage loeschen.
+      this.#ladeAnzeige(false);
       this.#einsetzen(treffer.cloneNode(true), begriff);
       return;
     }
