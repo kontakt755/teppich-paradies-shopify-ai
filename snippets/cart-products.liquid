@@ -24,6 +24,11 @@
   type="module"
   fetchpriority="low"
 ></script>
+<script
+  src="{{ 'tp-cart-gruppen.js' | asset_url }}"
+  defer
+  fetchpriority="low"
+></script>
 
 <div
   {{ block.shopify_attributes }}
@@ -269,6 +274,8 @@
                     {%- endif -%}
                   </div>
 
+                  {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}
+
                   <div class="cart-items__unit-price-wrapper">
                     <div>
                       {% if item.original_price != item.final_price %}
@@ -308,6 +315,15 @@
                   {% assign can_update_quantity = item.instructions.can_update_quantity
                     | default: true, allow_false: true
                   %}
+                  {%- comment -%}
+                    Berechnete Zeilen (Rollenrechner, Einfass-Konfigurator) haben
+                    keine aenderbare Menge - sie ergibt sich aus den Massen in den
+                    Properties. Erkennung in snippets/tp-cart-gruppe.liquid.
+                  {%- endcomment -%}
+                  {%- capture tp_gz_berechnet -%}{%- render 'tp-cart-gruppe', line_item: item, teil: 'berechnet' -%}{%- endcapture -%}
+                  {%- if tp_gz_berechnet contains 'ja' -%}
+                    {%- assign can_update_quantity = false -%}
+                  {%- endif -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,
@@ -323,6 +339,8 @@
                       class: 'cart-primary-typography',
                       can_update_quantity: can_update_quantity
                     %}
+
+                    {%- render 'tp-cart-gruppe', line_item: item, teil: 'menge' -%}
 
                     <button
                       class="button cart-items__remove"
@@ -383,6 +401,7 @@
             {% endfor %}
           </tbody>
         </table>
+        {%- render 'tp-cart-gruppe', teil: 'sperre' -%}
       </div>
     </form>
   {%- endif -%}

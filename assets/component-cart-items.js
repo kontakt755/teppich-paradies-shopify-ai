@@ -38,6 +38,7 @@ class CartItemsComponent extends Component {
     document.addEventListener(ThemeEvents.cartUpdate, this.#handleCartUpdate);
     document.addEventListener(ThemeEvents.discountUpdate, this.handleDiscountUpdate);
     document.addEventListener(ThemeEvents.quantitySelectorUpdate, this.#debouncedOnChange);
+    this.#checkoutSperreAnwenden();
   }
 
   disconnectedCallback() {
@@ -82,13 +83,32 @@ class CartItemsComponent extends Component {
    * @param {number} line - The line item index.
    */
   onLineItemRemove(line) {
-    this.updateQuantity({
-      line,
-      quantity: 0,
-      action: 'clear',
-    });
-
     const cartItemRowToRemove = this.refs.cartItemRows[line - 1];
+
+    // Gruppen-Bindung: Zeilen mit derselben _Gruppe (Teppich + Kettelservice,
+    // Teppichboden + Fussleiste/Haftunterlage) gehen gemeinsam - sonst bleibt
+    // ein Service ohne Artikel oder ein "gekettelter" Teppich ohne Kettelzeile
+    // bestellbar. Logik in assets/tp-cart-gruppen.js, Marke aus
+    // snippets/tp-cart-gruppe.liquid.
+    const gruppenKeys = cartItemRowToRemove ? this.#gruppenKeys(cartItemRowToRemove) : [];
+    const gruppenRows = gruppenKeys.length > 1
+      ? this.refs.cartItemRows.filter((row) => gruppenKeys.includes(row.dataset.key ?? ''))
+      : [];
+
+    if (gruppenRows.length > 1) {
+      this.updateQuantity({
+        line,
+        quantity: 0,
+        action: 'clear',
+        updates: Object.fromEntries(gruppenKeys.map((key) => [key, 0])),
+      });
+    } else {
+      this.updateQuantity({
+        line,
+        quantity: 0,
+        action: 'clear',
+      });
+    }
 
     if (!cartItemRowToRemove) return;
 
@@ -96,6 +116,7 @@ class CartItemsComponent extends Component {
       cartItemRowToRemove,
       // Get all nested lines of the row to remove
       ...this.refs.cartItemRows.filter((row) => row.dataset.parentKey === cartItemRowToRemove.dataset.key),
+      ...gruppenRows.filter((row) => row !== cartItemRowToRemove),
     ];
 
     // If the cart item row is the last row, optimistically trigger the cart empty state
@@ -138,7 +159,7 @@ class CartItemsComponent extends Component {
 
     this.#disableCartItems();
 
-    const { line, quantity } = config;
+    const { line, quantity, updates } = config;
     const { cartTotal } = this.refs;
 
     const cartItemsComponents = document.querySelectorAll('cart-items-component');
@@ -149,16 +170,18 @@ class CartItemsComponent extends Component {
       }
     });
 
-    const body = JSON.stringify({
-      line: line,
-      quantity: quantity,
-      sections: Array.from(sectionsToUpdate).join(','),
-      sections_url: window.location.pathname,
-    });
+    // Mehrere Zeilen auf einmal (Gruppe) gehen ueber /cart/update.js mit
+    // updates {key: 0}; eine einzelne Zeile weiter ueber /cart/change.js.
+    const body = JSON.stringify(
+      updates
+        ? { updates, sections: Array.from(sectionsToUpdate).join(','), sections_url: window.location.pathname }
+        : { line: line, quantity: quantity, sections: Array.from(sectionsToUpdate).join(','), sections_url: window.location.pathname }
+    );
+    const url = updates ? Theme.routes.cart_update_url : Theme.routes.cart_change_url;
 
     cartTotal?.shimmer();
 
-    fetch(`${Theme.routes.cart_change_url}`, fetchConfig('json', { body }))
+    fetch(`${url}`, fetchConfig('json', { body }))
       .then((response) => {
         return response.text();
       })
@@ -195,6 +218,7 @@ class CartItemsComponent extends Component {
         morphSection(this.sectionId, parsedResponseText.sections[this.sectionId], { mode: this.isDrawer ? 'hydration' : 'full' });
 
         this.#updateCartQuantitySelectorButtonStates();
+        this.#checkoutSperreAnwenden();
       })
       .catch((error) => {
         console.error(error);
@@ -255,10 +279,47 @@ class CartItemsComponent extends Component {
 
       // Update button states for all cart quantity selectors after morph
       this.#updateCartQuantitySelectorButtonStates();
+      this.#checkoutSperreAnwenden();
     } else {
-      sectionRenderer.renderSection(this.sectionId, { cache: false });
+      sectionRenderer.renderSection(this.sectionId, { cache: false }).then(() => this.#checkoutSperreAnwenden());
     }
   };
+
+  /**
+   * Keys aller Zeilen, die mit dieser Zeile eine _Gruppe bilden (inklusive
+   * der Zeile selbst). Ohne Gruppe nur die Zeile selbst.
+   * @param {HTMLElement} row
+   * @returns {string[]}
+   */
+  #gruppenKeys(row) {
+    const zeilen = this.refs.cartItemRows.map((r) => ({
+      key: r.dataset.key ?? '',
+      properties: { _Gruppe: r.querySelector('[data-tp-gruppe]')?.getAttribute('data-tp-gruppe') ?? '' },
+    }));
+    const eigene = zeilen.find((z) => z.key === (row.dataset.key ?? ''));
+    const G = /** @type {any} */ (window).TPCartGruppen;
+    if (G && eigene) return G.zuEntfernen(eigene, zeilen);
+    return eigene?.key ? [eigene.key] : [];
+  }
+
+  /**
+   * Checkout sperren, solange eine Waise im Warenkorb liegt (Marke
+   * data-tp-cart-gesperrt aus snippets/tp-cart-gruppe.liquid). Fail safe:
+   * die Marke kommt vom Server, JS setzt nur disabled nach.
+   */
+  #checkoutSperreAnwenden() {
+    const gesperrt = document.querySelector('[data-tp-cart-gesperrt]') !== null;
+    for (const button of document.querySelectorAll('.cart__checkout-button')) {
+      if (!(button instanceof HTMLButtonElement)) continue;
+      if (gesperrt) {
+        button.disabled = true;
+        button.dataset.tpGesperrt = '1';
+      } else if (button.dataset.tpGesperrt) {
+        delete button.dataset.tpGesperrt;
+        button.disabled = false;
+      }
+    }
+  }
 
   /**
    * Disables the cart items.
