@@ -1030,3 +1030,78 @@ Lighthouse deckt Performance, Accessibility, SEO und Best Practices ab. Die Kate
 Conversion, Design-Konsistenz, Wettbewerbsfähigkeit, Technische Qualität** aus Abschnitt A sind
 Bewertungen, keine Messwerte — sie wurden hier bewusst **nicht** fortgeschrieben, statt sie zu schätzen.
 Für sie gilt weiterhin der Stand vom 2026-09-11.
+
+### Nachtrag 15: Die vier Punkte aus Nachtrag 14 — umgesetzt, verkleinert, zurückgezogen (2026-09-14)
+
+Auftrag: „ja, mach die vier Punkte" — gemeint waren die vier Zeilen aus Nachtrag 14, die beim Theme
+lagen. **Beim Nachmessen haben sich zwei davon aufgelöst oder stark verkleinert.** Das ist das
+eigentliche Ergebnis dieser Runde und der Grund, warum hier weniger Code steht als erwartet.
+
+#### Umgesetzt
+
+| Punkt | Änderung | Im Dev-Theme belegt |
+|---|---|---|
+| Zu lange Seitentitel | `snippets/meta-tags.liquid` hängt die Marke nur noch an, wenn der Titel dadurch nicht über 65 Zeichen wächst | Verlegeservice 76 → **57**, Bodenleisten 74 → **55**, Klebevinyl 72 → **53**, Klickvinyl 67 → **48**; Teppichboden bleibt 55 mit Marke |
+| `/collections/all` ohne Description | gezielter Fallback in `meta-tags.liquid` — die Seite wird von Shopify erzeugt und lässt sich im Admin nicht mit einer Beschreibung versehen | Description jetzt vorhanden |
+| Alt-Texte der Kategoriekacheln | `sections/tp-start-kategorien.liquid` übernimmt den in Shopify gepflegten Alt-Text, statt hart `alt: ''` zu setzen | 7 Kacheln, `object-fit: cover` erhalten, Alt-Texte z. B. „Piumera Teppichboden in Sand Hell (004)" |
+
+Der Fallback für `/collections/all` ist bewusst **nur** dort und nicht allgemein: eine generische
+Beschreibung auf vielen Seiten ist schlechter als gar keine.
+
+Bei den Alt-Texten war die Annahme aus Nachtrag 14 in **beide** Richtungen falsch. Erstens ist der
+Befund kleiner: Von den 74 Bildern mit `alt=""` sind **67 Menübilder im Kopfbereich**, und dort ist der
+leere Alt-Text **richtig** — der Link trägt seinen Namen bereits aus dem Text daneben, ein Alt-Text
+würde ihn für Screenreader verdoppeln. Genau deshalb gibt Lighthouse trotzdem 100. Zweitens ist der
+Rest wertvoller als gedacht: Die sieben Kategoriekacheln sind Produktfotos, und in Shopify sind dort
+sehr wohl Alt-Texte hinterlegt — sie wurden vom Theme nur weggeworfen. Die Änderung erfindet nichts:
+Fehlt ein Alt-Text, bleibt das Bild wie bisher dekorativ.
+
+#### Zurückgezogen: „Kollektionstexte erscheinen nirgends"
+
+**Dieser Befund aus Nachtrag 14 war falsch.** Er stützte sich auf ein `grep` nach
+`collection.description` über `sections/` und `snippets/` — die Templates wurden nicht durchsucht, und
+genau dort steht der Verweis, als Text-Block mit `{{ closest.collection.description }}`.
+
+Die Kategorieseiten haben Einleitungstexte. Sie kommen nur aus zwei verschiedenen Quellen: vier
+Templates nutzen den Description-Block, die übrigen einen `hero_split` mit **fest eingetragenem**
+`body`-Text. Bei „Velours" ist der Hero-Text sogar ausführlicher als die Kollektionsbeschreibung und
+anders formuliert. Hätte man den Description-Block wie geplant in die restlichen Templates eingesetzt,
+stünde auf diesen Seiten künftig **zweimal** ein Einleitungstext.
+
+Was bleibt, ist ein kleinerer, echter Befund: **derselbe Inhalt wird an zwei Orten gepflegt** — in
+Shopify als Kollektionsbeschreibung (wirkt auf SEO-Snippets) und im Template als Hero-Text (sichtbar).
+Beide laufen bereits auseinander. Das zu vereinheitlichen ist eine eigene Aufgabe mit einer
+Gestaltungsentscheidung und gehört nicht in eine Audit-Korrektur.
+
+#### Zwei weitere Messfehler auf dem Weg
+
+1. **Die Titel waren nie 71–91 Zeichen lang.** Diese Zahlen stammten aus einer Messung am rohen HTML,
+   die `&amp;` als fünf Zeichen zählte. Im Browser gemessen waren es 55–76. Der Befund blieb bestehen,
+   aber kleiner — und die Grenze von 65 Zeichen wurde auf die echten Werte gelegt, nicht auf die
+   aufgeblähten.
+2. **Eine curl-Messreihe lief in eine Cloudflare-Challenge.** Nach vielen Anfragen in kurzer Zeit
+   lieferte der Shop statt 962 KB nur noch 9 KB „Your connection needs to be verified". Der darauf
+   gestützte Zwischenbefund „auf allen Kategorieseiten fehlt der Text" war damit wertlos; im Browser
+   wiederholt, zeigten vier der acht Seiten den Text sehr wohl. **Eine Antwort, die plötzlich viel
+   kleiner ausfällt als erwartet, ist zuerst ein Werkzeugbefund.**
+
+#### Geprüft, wie es sich gehört
+
+Getestet wurde in einem eigenen Development-Theme (`shopify theme push --development
+--development-context audit-titel`), also isoliert von den Arbeits-Themes anderer Sitzungen. Dabei
+bestätigt: **Ein Development-Theme ist über `?preview_theme_id=` nicht erreichbar** — es antwortet mit
+404 und hängt an der CLI-Sitzung. Geprüft wird es über `shopify theme dev` und `127.0.0.1:9292`. Der
+Server wurde nach dem Test wieder beendet.
+
+Ebenfalls beachtet: Die Zuweisung des Alt-Textes steht **vor** dem `image_tag`. Eine Filterkette direkt
+hinter `alt:` verschluckt alle folgenden Parameter — das Bild hätte sein `class` und damit `object-fit`
+verloren. Im Test gegengeprüft: `object-fit: cover` steht.
+
+#### Nicht angefasst, weil eine andere Sitzung dort arbeitet
+
+Parallel lief eine Sitzung auf `fix/audit-restpunkte` an den B-Befunden des Audits vom 2026-09-10 und
+hat dabei fünf Kategorie-Templates geändert (`bodenleisten`, `vinylboden-rollenvinyl`, `zubehoer`,
+`zubehoer-profile`, `zubehoer-unterkategorie`). Diese Dateien wurden hier bewusst nicht angefasst.
+Erfreulich: Sie kommt beim strukturierten Datensatz unabhängig zum selben Schluss wie Nachtrag 14 —
+**kein `aggregateRating`**, weil die Bewertungen aus dem Google-Unternehmensprofil stammen und nicht von
+dieser Seite.
