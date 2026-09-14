@@ -914,3 +914,119 @@ Admin API geprüft und deckungsgleich mit `domains/shopify/live-theme.json` (Sta
 `HEAD identisch mit origin/main` und die Preview-Evidence — beides erwartbar ohne anstehenden Deploy,
 der erste allein durch den stündlichen Dashboard-Bot. **Es wurde in dieser Runde nichts deployed und
 nichts am Shop geändert**, weil keine der vier Antworten eine Änderung verlangt.
+
+### Nachtrag 14: Frisches Audit gegen den Live-Shop (2026-09-14)
+
+Auftrag des Inhabers: „mach das frische Audit gegen den Live-Shop und schaue was wir noch besser machen
+können". Anlass war, dass die Kategoriewerte in Abschnitt A und den Zwischenständen **fortgeschriebene**
+Werte vom 2026-09-11 waren, keine gemessenen von heute.
+
+**Methode.** Lighthouse 13.4.1 gegen die Live-Domain ohne Vorschau-Parameter (damit redirect-frei per
+Definition), je Lauf ein frisches Chrome-Profil, mobil 3 Läufe im Median, Desktop 1 Lauf, 5 Seiten = 20
+Berichte, 0 Fehlläufe. Dazu Puppeteer für die gerenderte Struktur, `npm run sales:check` und
+`npm run seo:check` gegen Live. Die Browser-Messungen liefen **nach** den Lighthouse-Läufen, nicht
+parallel — sonst konkurriert die CPU und die Performance-Werte werden falsch.
+
+#### Gemessen, Median
+
+| Seite | Gerät | Perf | A11y | BP | SEO | LCP | CLS | TBT |
+|---|---|---|---|---|---|---|---|---|
+| Startseite | mobil | 66 | **100** | 77 | **100** | 8,01 s | 0,000 | 15 ms |
+| Startseite | Desktop | **96** | 97 | 77 | **100** | 1,29 s | 0,000 | 0 ms |
+| Teppichboden | mobil | 65 | **100** | 77 | **100** | 9,92 s | 0,000 | 26 ms |
+| Teppichboden | Desktop | **95** | 96 | 77 | **100** | 1,37 s | 0,000 | 0 ms |
+| Klickvinyl | mobil | 66 | **100** | 77 | **100** | 7,03 s | 0,000 | 93 ms |
+| Klickvinyl | Desktop | **95** | 96 | 77 | **100** | 1,39 s | 0,019 | 0 ms |
+| Produkt Rollenware | mobil | 65 | **100** | 77 | **100** | 8,36 s | 0,000 | 38 ms |
+| Produkt Rollenware | Desktop | 82 | 97 | 77 | **100** | 2,39 s | 0,000 | 0 ms |
+| Verlegeservice | mobil | **75** | **100** | 77 | **100** | 5,70 s | 0,000 | 8 ms |
+| Verlegeservice | Desktop | 94 | 97 | 77 | **100** | 1,56 s | 0,000 | 0 ms |
+
+Dazu: Kaufwege `6 PASS / 0 FAIL` (Paket, Rolle, Muster je Desktop und mobil), SEO-Check `0 Fehler`,
+Querscrollen `0 px` auf allen sechs geprüften Seiten, TTFB rund 140 ms, H1 genau einmal je Seite,
+Canonical überall, Marke genau einmal im Titel.
+
+**Die Accessibility- und SEO-Werte sind echt und besser als die fortgeschriebenen Schätzungen** — A11y
+stand mit 80 im Bericht, gemessen sind mobil 100 auf allen fünf Seiten.
+
+#### Der zentrale Befund: das LCP-Element ist der Cookie-Banner
+
+Auf **fünf von sechs** gemessenen Seiten ist das größte sichtbare Element beim Laden nicht das Hero-,
+Produkt- oder Kategoriebild, sondern der Textblock des Cookie-Banners. Lighthouse zeigt dazu ein Bild
+ohne Ladeanteil: **TTFB 137–146 ms**, danach **2.306–2.364 ms reine „element render delay"** — es wartet
+nichts auf einen Download, es wartet auf das Einblenden.
+
+Gegenprobe mit gesetztem `_tracking_consent`-Cookie, also aus Sicht eines wiederkehrenden Besuchers:
+
+| Seite | LCP-Element ohne Consent | mit Consent |
+|---|---|---|
+| Startseite | Cookie-Banner @732 ms | `IMG.tp-hero__img` @432 ms |
+| Teppichboden | Cookie-Banner @772 ms | `IMG.product-media__image` @648 ms |
+| Produkt Rollenware | `IMG.product-media__image` @452 ms | dasselbe @248 ms |
+| Verlegeservice | Cookie-Banner @420 ms | `H1` @236 ms |
+| Unsere Arbeit | Cookie-Banner @428 ms | Einleitungstext @384 ms |
+
+(Zeiten ungedrosselt; Lighthouse misst dieselben Elemente unter simulierter Drosselung als 5,7–9,9 s.)
+Der Banner kostet Erstbesucher also **rund die Hälfte der LCP-Zeit** — und Erstbesucher sind genau die
+Gruppe, die über Google kommt. **Das ist kein Bild-, Server- oder Theme-Problem**; Bildgrößen, TTFB und
+CLS sind bereits gut. Ein kompakterer Banner wäre der mit Abstand größte Performance-Hebel, den der Shop
+noch hat.
+
+**Warum hier trotzdem nichts geändert wurde:** Ein Cookie-Banner ist Einwilligungstext. Kürzen heißt
+Rechtstext ändern — das ist ausdrücklich Inhabersache und keine Performance-Optimierung, die eine KI
+nebenbei mitnimmt.
+
+#### Best Practices 77 ist nicht unser Fehler
+
+Der Wert ist auf **allen zehn** Messungen identisch 77 und geht auf genau zwei Abzüge zurück, beide mit
+derselben Quelle: `shop.app` setzt ein Drittanbieter-Cookie (`_shop_app_essential`), und derselbe Vorgang
+erzeugt den Eintrag im Issues-Panel. Das ist Shopifys Shop-Pay-Integration, also Plattform. Abstellen
+ließe es sich nur durch Deaktivieren von Shop Pay, was Conversion kostet. **Der Wert ist eine Konstante,
+kein offener Punkt** — künftige Audits sollten ihn nicht erneut als Befund führen.
+
+#### Was besser werden kann, nach Wirkung geordnet
+
+| # | Punkt | Beleg | Wer |
+|---|---|---|---|
+| 1 | Cookie-Banner kompakter | LCP-Element auf 5 von 6 Seiten, ~50 % der LCP-Zeit | **Inhaber** (Rechtstext) |
+| 2 | Produktbilder tragen `alt=""` | 74 von 100 `img` der Startseite als dekorativ ausgezeichnet, darunter Produktfotos | Theme |
+| 3 | Suche findet gängige Begriffe nicht | „auslegware" 0 Treffer; **„fussleiste" 0 gegen „fußleiste" 8** | Such-App (nur über die Oberfläche) |
+| 4 | Kollektionstexte erscheinen nirgends | 13 Kollektionen haben gepflegten Text, `collection.description` wird nur in `tp-leisten-hero` und `tp-zubehoer-hero` ausgegeben | Theme |
+| 5 | Titel zu lang für die Trefferliste | 71–91 Zeichen auf 6 Seitentypen | Theme/Daten |
+| 6 | Keine Versandrichtlinie | `/policies/shipping-policy` → 404 | **Inhaber** (Rechtstext) |
+| 7 | `/collections/all` ohne Meta-Description | gemessen, alle anderen Kollektionen haben eine | Daten |
+| 8 | Render-blockierendes CSS | `tp-startseite.css` (1,5 KB) und `tp-mega-menu.css` (3,0 KB) | Theme |
+| 9 | Ungenutztes JS/CSS | 39–40 KiB JS, bis 66 KiB CSS je Seite | Theme |
+| 10 | Schwerste Seite | Kategorie Teppichboden 962 KB HTML, DOM 4.099, 2.802 KB gesamt | Theme |
+
+**Ausdrücklich nicht empfohlen:** `aggregateRating` in die strukturierten Daten aufzunehmen. Die 4,9 aus
+240 Bewertungen stammt aus dem Google-Unternehmensprofil; selbst ausgezeichnete Bewertungen sind für
+`LocalBusiness` nach Googles Richtlinien heikel. Das wäre vor einer Umsetzung zu klären und nicht einfach
+zu ergänzen.
+
+#### Drei eigene Fehler, korrigiert bevor sie in den Bericht kamen
+
+Alle drei gehören zum Muster, das dieser Bericht seit Nachtrag 11 verfolgt:
+
+1. Ein `grep` auf `<meta name="description" content="…">` meldete **null** Descriptions und **null**
+   Canonicals auf jeder Seite. Ursache war die Attributreihenfolge im Shopify-Markup, nicht der Shop.
+   Mit echtem Parsen: beide überall vorhanden. Kopfdaten nie per `grep` auf eine feste
+   Attributreihenfolge prüfen.
+2. Geratene Pfade `/pages/datenschutz` und `/pages/agb` lieferten 404 — die Seiten heißen aber
+   `/pages/datenschutzerklarung` und `/pages/agbs` und sind erreichbar. **Eine geratene URL ist kein
+   Befund**; geprüft wird, was der Shop tatsächlich verlinkt.
+3. Der erste Schreibversuch dieses Nachtrags ging verloren, ohne dass es auffiel: Er hing in einer Kette
+   `git pull --rebase … && cat >> …`, der Pull scheiterte an fremden Änderungen im geteilten Checkout,
+   und damit lief das `cat` nie. Das „OK" der Folgezeile lief trotzdem und sah aus wie ein Erfolg.
+   **Eine Erfolgsmeldung aus einem anderen Befehl ist kein Beleg für den eigentlichen Schreibvorgang.**
+
+Ebenfalls scheinbar widersprüchlich, aber beides richtig: Lighthouse gibt Accessibility 100, während der
+SEO-Check Bilder ohne Alt-Text meldet. `alt=""` ist für Lighthouse eine gültige Auszeichnung als
+dekoratives Bild — für ein Produktfoto ist sie sachlich falsch. Punkt 2 der Tabelle oben.
+
+#### Nicht neu gemessen
+
+Lighthouse deckt Performance, Accessibility, SEO und Best Practices ab. Die Kategorien **Vertrauen,
+Conversion, Design-Konsistenz, Wettbewerbsfähigkeit, Technische Qualität** aus Abschnitt A sind
+Bewertungen, keine Messwerte — sie wurden hier bewusst **nicht** fortgeschrieben, statt sie zu schätzen.
+Für sie gilt weiterhin der Stand vom 2026-09-11.
