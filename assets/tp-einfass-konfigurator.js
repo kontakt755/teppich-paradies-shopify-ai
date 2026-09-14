@@ -90,6 +90,9 @@
     var band = null;
     var target = null;
     var stand = null;
+    // Waehrend der Warenkorb-Aufruf laeuft, darf rechnen() den Knopf nicht
+    // wieder freigeben - sonst legt ein zweiter Klick eine zweite Zeile an.
+    var inFlight = false;
     var gewaehlt = null;
     var groessenForm = null;
     var formSchritt = q('[data-schritt="form"]');
@@ -184,11 +187,16 @@
       });
     }
 
+    // wert: ganze cm (aufgerundet), 0 = nichts Brauchbares. komma: "250,5" in
+    // einem number-Feld (badInput). ungueltig: etwas eingegeben, aber keine
+    // positive Zahl ("0", "-5") - das ist keine leere Eingabe und bekommt eine
+    // Meldung statt eines stillen, verborgenen Knopfs.
     function lesen(input) {
-      if (!input) return { wert: 0, komma: false };
+      if (!input) return { wert: 0, komma: false, ungueltig: false };
       var komma = !!(input.validity && input.validity.badInput);
       var roh = parseFloat(input.value);
-      return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma };
+      var leer = String(input.value || '').trim() === '';
+      return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma, ungueltig: !komma && !leer && !(roh > 0) };
     }
 
     function muster(defs, id, groesse) {
@@ -327,7 +335,7 @@
       groessenAufbauen(rund ? 'rund' : 'eckig');
 
       var b = lesen(inBreite);
-      var l = rund ? { wert: b.wert, komma: false } : lesen(inLaenge);
+      var l = rund ? { wert: b.wert, komma: false, ungueltig: false } : lesen(inLaenge);
       if (groessen) {
         groessen.querySelectorAll('button').forEach(function (btn) {
           var aktiv = +btn.getAttribute('data-w') === b.wert && (rund || +btn.getAttribute('data-l') === l.wert);
@@ -336,13 +344,18 @@
       }
       var fehlerListe = [];
       if (b.komma || l.komma) fehlerListe.push('Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.');
+      if (b.ungueltig) fehlerListe.push((rund ? 'Durchmesser' : 'Breite') + ' mindestens 50 cm.');
+      if (l.ungueltig) fehlerListe.push('Länge mindestens 50 cm.');
+      var eingabeFehler = fehlerListe.length > 0;
       var eingegeben = b.wert > 0 && (rund || l.wert > 0);
       if (eingegeben && !fehlerListe.length) {
         fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL });
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
       fehler.textContent = fehlerListe.join(' ');
-      fehler.hidden = !fehlerListe.length || (!eingegeben && !!target && target.available);
+      // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
+      // das Problem (Komma, 0, negativ).
+      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available);
 
       var gueltig = eingegeben && !fehlerListe.length && !!target && target.available && parseInt(target.price, 10) > 0;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
@@ -403,17 +416,23 @@
         kante: kante, kantenEinheiten: kantenEinheiten, masse: masse, mindest: mindest
       };
       cta.hidden = false;
-      cta.disabled = bandFehlt;
-      cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);
+      cta.disabled = inFlight || bandFehlt;
+      if (!inFlight) cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);
     }
 
     function hinzufuegen() {
+      if (inFlight) return;
       if (!stand || !target || !target.available || (mitBand && !band)) return;
       var p = {
         'Einfassung': ART[art],
         'Form': FORM[stand.form],
         'Maße': stand.masse,
-        'Fläche (abgerechnet)': fmt(stand.flaeche) + ' m²',
+        // Bei angewandtem Mindestpreis ist die Warenkorbmenge groesser als die
+        // gewuenschte Flaeche - die Property nennt beides, damit Admin-Menge
+        // und Zeile zusammenpassen (50 x 50: 0,69 m² statt 0,25 m²).
+        'Fläche (abgerechnet)': stand.mindest
+          ? fmt(stand.menge / 100) + ' m² (Mindestpreis, gewünscht ' + fmt(stand.flaeche) + ' m²)'
+          : fmt(stand.flaeche) + ' m²',
         'Kante umlaufend': fmt(stand.kante) + ' m'
       };
       if (target.farbnummer) p['Farbnummer'] = target.farbnummer;
@@ -455,7 +474,7 @@
         gesamtMenge = menge + stand.kantenEinheiten;
       }
 
-      var vorher = cta.textContent;
+      inFlight = true;
       cta.disabled = true;
       cta.textContent = 'Wird hinzugefügt …';
       warenkorb.hidden = true;
@@ -467,6 +486,7 @@
       })
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (item) {
+          inFlight = false;
           cta.textContent = 'Im Warenkorb';
           cta.classList.add('is-done');
           warenkorb.hidden = false;
@@ -476,12 +496,15 @@
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();
-          setTimeout(function () { cta.classList.remove('is-done'); cta.textContent = vorher; cta.disabled = false; }, 3000);
+          // Neu rechnen statt alten Text zurueck: Eingaben koennen sich
+          // inzwischen geaendert haben.
+          setTimeout(function () { cta.classList.remove('is-done'); rechnen(); }, 3000);
         })
         .catch(function () {
+          inFlight = false;
           cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
           cta.classList.add('is-error');
-          setTimeout(function () { cta.classList.remove('is-error'); cta.textContent = vorher; cta.disabled = false; }, 3000);
+          setTimeout(function () { cta.classList.remove('is-error'); rechnen(); }, 3000);
         });
     }
 

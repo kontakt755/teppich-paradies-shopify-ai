@@ -102,25 +102,33 @@
   }
 
   // Vergleich, den der Kunde sonst nicht sehen wuerde: kostet dasselbe Stueck
-  // als Meterware der naechsten Rolle weniger als im Raummass? Beide Betraege
-  // werden aus den echten Variantenpreisen gerechnet (EUR je m²), nicht aus
-  // einem Faktor. rateMeter ist eine Funktion widthCm -> EUR je m² (0 = keine
-  // Variante fuer diese Rolle).
+  // als Meterware weniger als im Raummass? Geprueft werden ALLE Rollen, die
+  // mindestens so breit sind wie das Stueck - Meterware braucht keine Zugabe,
+  // weil die Rolle nicht nachgeschnitten wird. Genannt wird die guenstigste
+  // (399 x 500 -> 400er-Rolle, nicht die 500er, aus der das Raummass kaeme).
+  // Beide Betraege werden aus den echten Variantenpreisen gerechnet (EUR je
+  // m²), nicht aus einem Faktor. rateMeter ist eine Funktion widthCm -> EUR je
+  // m² (0 = keine Variante fuer diese Rolle).
   // bill: Flaeche -> abgerechnete Flaeche (volle m² oder 0,01 m²), damit der
   // Hinweis dieselben Betraege nennt wie die Preisbox. Ohne bill: exakt.
-  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter, bill, zugabe) {
-    var rolle = rolleFuer(wCm, widths, zugabe);
-    if (!rolle || !(lenCm > 0) || !(rateRaum > 0)) return null;
-    var rm = rateMeter(rolle);
-    if (!(rm > 0)) return null;
+  function meterwareGuenstiger(wCm, lenCm, rateRaum, widths, rateMeter, bill) {
+    if (!(wCm > 0) || !(lenCm > 0) || !(rateRaum > 0)) return null;
     var b = typeof bill === 'function' ? bill : function (a) { return a; };
+    var beste = null;
+    (widths || []).forEach(function (rolle) {
+      if (!(rolle + EPS >= wCm)) return;
+      var rm = rateMeter(rolle);
+      if (!(rm > 0)) return;
+      var total = b(rolle * lenCm / 10000) * rm;
+      if (!beste || total + EPS < beste.totalMeter) beste = { rolle: rolle, totalMeter: total };
+    });
+    if (!beste) return null;
     var totalRaum = b(wCm * lenCm / 10000) * rateRaum;
-    var totalMeter = b(rolle * lenCm / 10000) * rm;
     return {
-      rolle: rolle,
+      rolle: beste.rolle,
       totalRaum: totalRaum,
-      totalMeter: totalMeter,
-      guenstiger: totalMeter + EPS < totalRaum
+      totalMeter: beste.totalMeter,
+      guenstiger: beste.totalMeter + EPS < totalRaum
     };
   }
 

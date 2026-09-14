@@ -88,7 +88,7 @@
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
-<div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
+<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
 
   {%- comment -%}
     Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
@@ -272,7 +272,7 @@
     ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
     Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
   {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta" data-cta disabled hidden data-rwc-body>Länge eingeben</button>
+  <button type="button" class="tp-rwc-cta" data-cta data-add-to-cart disabled hidden data-rwc-body>Länge eingeben</button>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
@@ -445,8 +445,19 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:focus-visible + .tp-rwc-opt { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
 
-  /* Art-Karten: zwei gleich hohe Kacheln, gewaehlt = kraeftiger Rahmen plus Haken. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* Art-Karten: zwei gleich hohe Kacheln, gewaehlt = kraeftiger Rahmen plus Haken.
+     minmax(0, 1fr) statt 1fr: eine 1fr-Spalte wird nie schmaler als ihr
+     Inhalt, und bei 768 px ragte die Karte damit 4 px ueber den Viewport
+     (horizontaler Scroll). Zwischen 750 und 1399 px ist die Produktspalte
+     zu schmal fuer zwei Karten nebeneinander - dort stehen sie untereinander
+     wie auf dem Handy. Gemessen 2026-09-14 im Dev-Theme: die Karte braucht
+     184 px, damit "Meterware" in einer Zeile bleibt (204 px fuer
+     "zentimetergenau"); die Spalte gibt bei 990 px 183 px, bei 1280 px
+     181 px (Seitencontainer begrenzt) und erst bei 1440 px 208 px her. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  @media screen and (min-width: 750px) and (max-width: 1399px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { grid-template-columns: minmax(0, 1fr); }
+  }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-card {
     position: relative;
@@ -459,11 +470,12 @@
     background: var(--tp-rwc-surface);
     cursor: pointer;
     min-height: 74px;
+    min-width: 0;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 44px; height: 38px; flex-shrink: 0; color: var(--tp-rwc-ink); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; overflow-wrap: break-word; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; hyphens: auto; overflow-wrap: anywhere; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
     border: 2px solid var(--tp-rwc-ink);
     padding: 13px 33px 13px 11px;
@@ -832,6 +844,10 @@ function tpRwcInit{{ tp_rc_id }}() {
   var cartLink = root.querySelector('[data-cart-link]');
 
   var target = null;
+  // Waehrend der Warenkorb-Aufruf laeuft, darf calculate() den Button nicht
+  // wieder scharf machen - sonst legt ein zweiter Klick nach einer
+  // Eingabeaenderung eine zweite Zeile in den Warenkorb.
+  var inFlight = false;
 
   function norm(s) { return String(s).toLowerCase().replace(/\s/g, ''); }
   function fmt(n) { return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -1303,6 +1319,11 @@ function tpRwcInit{{ tp_rc_id }}() {
     var w = selectedWidth();
     var raum = artMode() === 'raum';
     var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite()) : '';
+    // "250,5" liefert in einem number-Feld einen leeren Wert (badInput) - ohne
+    // diese Pruefung bliebe die Breite still "leer", ohne Meldung. Dieselbe
+    // Meldung wie bei der Laenge.
+    var wBad = !!(raum && wunschInput && wunschInput.validity && wunschInput.validity.badInput);
+    if (wBad) wErr = errComma ? errComma.textContent : 'Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.';
     if (wunschError) {
       wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
       wunschError.hidden = !wunschError.textContent;
@@ -1318,7 +1339,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     var badInput = !!(lengthInput.validity && lengthInput.validity.badInput);
     if (errComma) errComma.hidden = !badInput;
 
-    errMin.hidden = badInput || blocked || tooLong || !(len > 0 && len < 100);
+    // "0" oder "-5" sind keine leere Eingabe: dann Mindestlaenge zeigen.
+    var lenEingegeben = String(lengthInput.value || '').trim() !== '';
+    errMin.hidden = badInput || blocked || tooLong || !((len > 0 && len < 100) || (lenEingegeben && len === 0));
     if (errMax) {
       errMax.textContent = 'Ab ' + (MAX_LENGTH_CM / 100) + ' m Länge beraten wir Sie lieber persönlich – bitte kurz anrufen, damit Zuschnitt und Lieferung passen.';
       errMax.hidden = !tooLong;
@@ -1378,7 +1401,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
       // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
       outTotal.textContent = fmt(total + extras.sum) + ' €';
-      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+      if (!inFlight) cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
       updateMeterTipp(raum, w, len, rate);
     } else {
       updateExtras(w, 0, 0);
@@ -1387,14 +1410,16 @@ function tpRwcInit{{ tp_rc_id }}() {
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
-      cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
+      if (!inFlight) cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
     }
 
     renumberSteps();
-    cta.disabled = !(valid && ok);
+    var kaufbar = valid && ok;
     // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
     // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
-    cta.hidden = cta.disabled;
+    // Waehrend des laufenden Warenkorb-Aufrufs bleibt er gesperrt (inFlight).
+    cta.disabled = inFlight || !kaufbar;
+    cta.hidden = !kaufbar;
 
     applyServiceState();
   }
@@ -1440,7 +1465,6 @@ function tpRwcInit{{ tp_rc_id }}() {
   });
   if (wunschInput) wunschInput.addEventListener('input', calculate);
   lengthInput.addEventListener('input', calculate);
-  if (wunschInput) wunschInput.addEventListener('input', calculate);
   var leisteMeterInput = root.querySelector('[data-leiste-meter]');
   if (leisteMeterInput) {
     leisteMeterInput.addEventListener('input', function () {
@@ -1469,6 +1493,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   });
 
   cta.addEventListener('click', function () {
+    if (inFlight) return;
     if (!target || !target.available) return;
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
@@ -1479,7 +1504,6 @@ function tpRwcInit{{ tp_rc_id }}() {
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
     var billedArea = cmExact ? qty / 100 : qty;
-    var original = cta.textContent;
 
     // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
     // (z.B. 666 statt 6,66 m²) mit sehr kleinem Stueckpreis. Die Flaeche
@@ -1507,6 +1531,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     }
     var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
+    inFlight = true;
     cta.disabled = true;
     cta.textContent = 'Wird hinzugefügt …';
     cartLink.hidden = true;
@@ -1521,6 +1546,7 @@ function tpRwcInit{{ tp_rc_id }}() {
         return r.json();
       })
       .then(function (addedItem) {
+        inFlight = false;
         // billedArea statt qty: im cm-genauen Modus ist qty die Menge in
         // 0,01-m2-Einheiten und wuerde "666 m2" statt "6,66 m2" melden.
         cta.textContent = fmtArea(billedArea) + ' m² hinzugefügt';
@@ -1550,19 +1576,20 @@ function tpRwcInit{{ tp_rc_id }}() {
         var tpRwcDrawer = document.querySelector('cart-drawer-component');
         if (tpRwcDrawer && typeof tpRwcDrawer.open === 'function') tpRwcDrawer.open();
 
+        // Neu rechnen statt alten Text zuruecksetzen: hat der Kunde inzwischen
+        // die Laenge geaendert, stuende sonst 3 s lang die alte Flaeche im Button.
         setTimeout(function () {
-          cta.textContent = original;
           cta.classList.remove('is-done');
-          cta.disabled = false;
+          calculate();
         }, 3000);
       })
       .catch(function () {
+        inFlight = false;
         cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
         cta.classList.add('is-error');
         setTimeout(function () {
-          cta.textContent = original;
           cta.classList.remove('is-error');
-          cta.disabled = false;
+          calculate();
         }, 3000);
       });
   });

@@ -23,6 +23,11 @@
   3. Fehler sind jetzt mit dem Feld verknüpft (aria-describedby) und werden
      angesagt (role=status). Ohne das erfährt ein Screenreader-Nutzer nie,
      warum der Knopf nicht reagiert.
+
+  Greift nur, wo ein Wurzelelement id="tp-rwc-…" sowohl input[data-length-input]
+  als auch [data-error-min] enthält - also ausschließlich im Rollenware-Rechner
+  (Stand 2026-09-14: blocks/tp-rollware-rechner.liquid). Andere Seiten sind
+  unberührt.
 {% enddoc %}
 
 <script>
@@ -59,18 +64,23 @@
         feld.setAttribute('aria-describedby', ids.join(' '));
 
         // --- Fehler erst nach dem Verlassen des Feldes ---
-        // Der Baustein blendet ihn bei jedem Tastendruck ein. Dieser Zuhörer
-        // wird später registriert und läuft deshalb danach; er nimmt die
-        // Einblendung zurück, solange das Feld den Fokus hat.
+        // Ob die Mindestlaenge verletzt ist, entscheidet allein der Rechner
+        // (blocks/tp-rollware-rechner.liquid, calculate): er zeigt die Meldung
+        // auch bei "0" und "-5", verbirgt sie aber bei Komma-, Lager- und
+        // Laengenfehlern zugunsten der passenderen Meldung. Diese Ebene merkt
+        // sich nur seine Entscheidung und haelt die Meldung zurueck, solange
+        // das Feld den Fokus hat. Bis 2026-09-14 rechnete sie selbst
+        // (0 < n < 100) und ueberschrieb damit den Rechner: "0" und "-5"
+        // blieben stumm.
+        //
+        // Der Abgleich laeuft als Microtask, also nach allen Zuhoerern des
+        // Ereignisses - unabhaengig davon, ob der Rechner seinen vor oder nach
+        // diesem registriert hat.
         var wurdeVerlassen = false;
-
-        function zuKurz() {
-          var n = parseInt(feld.value, 10);
-          return !isNaN(n) && n > 0 && n < 100;
-        }
+        var rechnerZeigt = !fehlerMin.hidden;
 
         function abgleichen() {
-          var zeigen = wurdeVerlassen && zuKurz();
+          var zeigen = wurdeVerlassen && rechnerZeigt;
           fehlerMin.hidden = !zeigen;
           if (zeigen) {
             feld.setAttribute('aria-invalid', 'true');
@@ -79,7 +89,14 @@
           }
         }
 
-        feld.addEventListener('input', abgleichen);
+        function nachRechner() {
+          Promise.resolve().then(function () {
+            rechnerZeigt = !fehlerMin.hidden;
+            abgleichen();
+          });
+        }
+
+        feld.addEventListener('input', nachRechner);
 
         feld.addEventListener('blur', function () {
           wurdeVerlassen = true;
