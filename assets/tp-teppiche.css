@@ -55,10 +55,12 @@
   font: inherit; font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap;
   cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease;
 }
-.tp-tep-btn--primary { background: var(--tp-ink); color: #fff; }
-.tp-tep-btn--primary:hover { background: #3a3632; }
-.tp-tep-btn--ghost { background: transparent; border-color: rgb(31 29 27 / 0.28); color: var(--tp-ink); }
-.tp-tep-btn--ghost:hover { border-color: var(--tp-ink); }
+/* Mit .tp-tep davor, sonst gewinnt ".tp-tep a { color: inherit }" und der
+   dunkle Knopf traegt dunkle Schrift. */
+.tp-tep .tp-tep-btn--primary { background: var(--tp-ink); color: #fff; }
+.tp-tep .tp-tep-btn--primary:hover { background: #3a3632; color: #fff; }
+.tp-tep .tp-tep-btn--ghost { background: transparent; border-color: rgb(31 29 27 / 0.28); color: var(--tp-ink); }
+.tp-tep .tp-tep-btn--ghost:hover { border-color: var(--tp-ink); }
 .tp-tep-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* Einstieg */

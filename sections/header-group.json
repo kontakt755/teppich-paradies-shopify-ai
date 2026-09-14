@@ -106,7 +106,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppiche",
-            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige.jpg",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige-kachel.jpg",
             "subtitle": "Nach Maß, gekettelt"
           }
         },
@@ -114,7 +114,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Alle Teppiche",
-            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige.jpg",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige-kachel.jpg",
             "subtitle": ""
           }
         },
@@ -122,7 +122,7 @@
           "type": "_tp-menu-kachel",
           "settings": {
             "menu_match": "Teppich nach Maß",
-            "image": "shopify://shop_images/teppich-nach-mass-piumera-anthrazit.jpg",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-anthrazit-kachel.jpg",
             "subtitle": "Breite und Länge frei"
           }
         },
