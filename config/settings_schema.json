@@ -2298,6 +2298,13 @@
         "label": "Telefon (Festnetz) im LocalBusiness-Schema",
         "info": "Internationales Format. Leer = Telefonnummer aus den Shop-Einstellungen (dort steht die Mobilnummer).",
         "default": "+49 3301 5733720"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_profil",
+        "label": "Google-Unternehmensprofil (sameAs)",
+        "info": "Verknuepft den Shop mit dem Profil. Die Sternebewertung selbst wird bewusst nicht ausgezeichnet, sie stammt nicht von dieser Seite.",
+        "default": "https://maps.google.com/?cid=787042219843486388"
       }
     ]
   },
