@@ -914,3 +914,65 @@ Admin API geprüft und deckungsgleich mit `domains/shopify/live-theme.json` (Sta
 `HEAD identisch mit origin/main` und die Preview-Evidence — beides erwartbar ohne anstehenden Deploy,
 der erste allein durch den stündlichen Dashboard-Bot. **Es wurde in dieser Runde nichts deployed und
 nichts am Shop geändert**, weil keine der vier Antworten eine Änderung verlangt.
+
+### Nachtrag 18: Punkt 9/10 der Prioritaetenliste untersucht — kein sicherer Fix gefunden (2026-09-14)
+
+Naechste zwei Punkte aus Nachtrag 14: ungenutztes JS/CSS (Punkt 9) und Seitengewicht der Kategorie
+Teppichboden (Punkt 10, 2,8 MB / 962 KB HTML). **Ergebnis nach genauer Messung: Alle drei gefundenen
+Gewichtstreiber liegen in Horizon-Kern-Architektur, nicht in TP-eigenem Code — hier wurde bewusst nichts
+gepatcht.**
+
+Vollstaendige Ressourcenaufschluesselung (mobil, gedrosselt, Live-Shop):
+
+| Typ | KB | Anteil |
+|---|---|---|
+| document (HTML) | 976 | 25 % |
+| fetch | 665 | 17 % |
+| script | 1.136 | 29 % |
+| stylesheet | 562 | 14 % |
+| image | 438 | 11 % |
+| font | 115 | 3 % |
+
+**Befund 1: 499 KB Vorab-Fetch von Seite 2, unabhaengig vom Scrollen.** Gemessen: Der Request auf
+`?page=2&section_id=...` feuert 1.317 ms nach Navigationsstart, bei `scrollY: 0`, mit dem Raster-Ende
+bei 6.507 px (weit ausserhalb der 100-px-`rootMargin` des Intersection Observers). Ursache:
+`assets/paginated-list.js` (`@theme/paginated-list`, Horizon-Kern) ruft in `connectedCallback()`
+unconditional `#fetchPage('next')` und `#fetchPage('previous')` auf - unabhaengig von Scrollposition und
+unabhaengig von der Einstellung `enable_infinite_scroll`. Das Attribut `infinite-scroll="..."` wird im
+Markup gesetzt (`sections/main-collection.liquid`), von der Komponente aber nirgends ausgelesen.
+
+**Nicht gepatcht**, aus drei Gruenden: Die Datei ist Shopify-Kernmodul, nicht TP-Praefix, und wird von
+jeder paginierten Liste im Theme genutzt (alle Kollektionen, Suche) - eine Aenderung hat also
+theme-weite Wirkung, nicht nur eine Seite. Sie ist eine bewusste UX-Abwaegung Shopifys (sofortiges
+Nachladen beim Scrollen gegen initiales Gewicht), keine offensichtliche Fehlfunktion - das Entfernen des
+Vorab-Fetches macht das erste Nachladen fuer Besucher, die tatsaechlich scrollen, spuerbar langsamer.
+Das entspricht CLAUDE.md: „Grosse architektonische Aenderungen erst analysieren und berichten", nicht
+eigenstaendig ausfuehren.
+
+**Befund 2: JS-Gewicht ist fast vollstaendig Horizon-eigene Modularchitektur.** Von rund 1.136 KB Skript
+auf der Seite sind **7,6 KB TP-eigen** (`tp-compare.js` 5,8 KB, `tp-carpet-navigation.js` 1,8 KB) - beide
+vermutlich in Gebrauch (Produktvergleich ist ein „fertiges Feature" laut CLAUDE.md). Der Rest sind rund
+50 einzelne Horizon-ES-Module (`product-card.js`, `facets.js`, `slideshow.js`, `variant-picker.js` u.a.),
+Shopifys eigene Architektur mit vielen kleinen Dateien statt einem Bundle. Nichts davon ist mit
+vertretbarem Risiko TP-seitig kuerzbar.
+
+**Befund 3: 184 identische Icon-SVGs, 93 KB, ohne Sprite-Wiederverwendung.** Der haeufigste
+(`icon-checkmark`, 104× auf dieser Seite) kommt inline mit vollem Pfad, nicht als `<use href="#…">`, weil
+Horizon ueberhaupt kein SVG-Sprite-System verwendet - jedes Icon wird an jeder Renderstelle vollstaendig
+neu ausgegeben. Die Renderstellen liegen verstreut in Dutzenden Horizon-Kern-Dateien
+(`add-to-cart-button.liquid`, `sorting.liquid`, `list-filter.liquid`, `localization-form.liquid` u.a.),
+keine zentrale Stelle zum sicheren Patchen. Eine Umstellung auf Sprites waere eine theme-weite
+Architekturaenderung, kein Punkt-Fix.
+
+**Was das fuer die Prioritaetenliste heisst:** Punkt 8 (render-blockierendes Mega-Menue-CSS, Nachtrag
+17) war der einzige der vier Performance-Punkte, der als isolierte, TP-eigene, risikoarme Aenderung
+umsetzbar war. Die Punkte 9 und 10 haetten Substanz - der 499-KB-Vorab-Fetch ist real und betraechtlich -
+aber ihre Behebung ist eine groessere, Horizon-Kern-weite Entscheidung mit einer echten
+Geschwindigkeits-Abwaegung, kein Nebenbei-Fix.
+
+**Empfehlung, falls gewuenscht:** Ein eigener, dedizierter Auftrag mit Freigabe, der `paginated-list.js`
+so anpasst, dass der Vorab-Fetch die Einstellung `enable_infinite_scroll` respektiert (bei deaktivierter
+Infinite-Scroll-Kollektion ergibt der Vorab-Fetch ohnehin keinen Sinn, weil dort ein klassischer
+"Naechste Seite"-Link statt Nachladen erscheint) - das waere der risikoaermste Teilschritt, weil er nur
+einen bereits ungenutzten Fall abschaltet, statt das Verhalten fuer aktives Infinite Scroll zu aendern.
+Muesste aber gegen jede paginierte Seite im Theme getestet werden, nicht nur eine Kollektion.
