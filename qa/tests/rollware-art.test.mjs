@@ -76,9 +76,50 @@ test('Meterware-Vergleich rechnet mit echten Variantenpreisen, nicht mit einem F
   // 3,50 x 5,50: Raummass 1712,67 gegen Meterware 1449,80 - jetzt ist Meterware billiger
   const b = A.meterwareGuenstiger(350, 550, 88.97, [400, 500], rateMeter);
   assert.equal(b.guenstiger, true);
-  // Kipppunkt bei 65,90 x 1,35 = 88,965: ab ~296 cm dreht es sich (ohne Zugabe)
+  // Kipppunkt bei exakter Flaeche: 65,90 x 1,35 = 88,965, ab ~296 cm dreht es
+  // sich. Im Shop wird in vollen m² abgerechnet (bill = Math.ceil), dort liegt
+  // der Kipppunkt tiefer - siehe naechster Test.
   assert.equal(A.meterwareGuenstiger(296, 550, 88.97, [400, 500], rateMeter).guenstiger, false);
   assert.equal(A.meterwareGuenstiger(297, 550, 88.97, [400, 500], rateMeter).guenstiger, true);
+});
+
+test('Meterware-Vergleich nennt die guenstigste Rolle ab Stueckbreite, ohne Zugabe', () => {
+  const rateMeter = (w) => (w === 400 || w === 500 ? 65.9 : 0);
+  // 399 x 500 im Raummass: 19,95 -> 20 m² x 89 = 1780. Raummass selbst kaeme
+  // aus der 500er (399 + 5 > 400), aber als Meterware reicht die 400er:
+  // 20 m² x 65,90 = 1318 - nicht die 500er mit 25 m² = 1647,50.
+  const a = A.meterwareGuenstiger(399, 500, 89, [400, 500], rateMeter, Math.ceil);
+  assert.equal(a.rolle, 400);
+  assert.equal(a.totalRaum, 1780);
+  assert.equal(a.totalMeter.toFixed(2), '1318.00');
+  assert.equal(a.guenstiger, true);
+  // 400 x 500: exakt die Rollenbreite - ebenfalls 400er-Meterware.
+  const b = A.meterwareGuenstiger(400, 500, 89, [400, 500], rateMeter, Math.ceil);
+  assert.equal(b.rolle, 400);
+  assert.equal(b.totalMeter.toFixed(2), '1318.00');
+  // 401 x 500: nur noch die 500er passt (20,05 -> 21 m² x 89 = 1869 vs 1647,50).
+  const c = A.meterwareGuenstiger(401, 500, 89, [400, 500], rateMeter, Math.ceil);
+  assert.equal(c.rolle, 500);
+  assert.equal(c.totalRaum, 1869);
+  assert.equal(c.totalMeter.toFixed(2), '1647.50');
+  assert.equal(c.guenstiger, true);
+  // 352 x 463 (TEST1): 17 m² x 89 = 1513 gegen 400er 19 m² x 65,90 = 1252,10.
+  const d = A.meterwareGuenstiger(352, 463, 89, [400, 500], rateMeter, Math.ceil);
+  assert.equal(d.rolle, 400);
+  assert.equal(d.totalRaum, 1513);
+  assert.equal(d.totalMeter.toFixed(2), '1252.10');
+  // Hat die Farbe nur die 500er, wird auch nur die genannt.
+  assert.equal(A.meterwareGuenstiger(399, 500, 89, [500], rateMeter, Math.ceil).rolle, 500);
+  // Reihenfolge der Rollen spielt keine Rolle.
+  assert.equal(A.meterwareGuenstiger(250, 550, 89, [500, 400], rateMeter, Math.ceil).rolle, 400);
+});
+
+test('Kipppunkt bei Abrechnung in vollen m² (wie im Shop) liegt bei ~290 cm', () => {
+  const rateMeter = () => 65.9;
+  // 2,90 x 5,50 = 15,95 -> 16 m² x 89 = 1424 < 22 m² x 65,90 = 1449,80
+  assert.equal(A.meterwareGuenstiger(290, 550, 89, [400, 500], rateMeter, Math.ceil).guenstiger, false);
+  // 2,91 x 5,50 = 16,005 -> 17 m² x 89 = 1513 > 1449,80
+  assert.equal(A.meterwareGuenstiger(291, 550, 89, [400, 500], rateMeter, Math.ceil).guenstiger, true);
 });
 
 test('Meterware-Vergleich mit Abrechnung in vollen m² nennt die Betraege der Preisbox', () => {
@@ -95,6 +136,9 @@ test('Meterware-Vergleich ohne Grundlage liefert null', () => {
   assert.equal(A.meterwareGuenstiger(250, 0, 88.97, [400], rateMeter), null, 'ohne Laenge');
   assert.equal(A.meterwareGuenstiger(250, 550, 0, [400], rateMeter), null, 'ohne Raummass-Preis');
   assert.equal(A.meterwareGuenstiger(600, 550, 88.97, [400, 500], rateMeter), null, 'breiter als jede Rolle');
-  assert.equal(A.meterwareGuenstiger(496, 550, 88.97, [400, 500], rateMeter), null, 'mit Zugabe breiter als jede Rolle');
+  // 496 cm passt als Meterware noch in die 500er (keine Zugabe noetig) - nicht
+  // null. Dass 496 im Raummass gar nicht geht, entscheidet pruefeBreite.
+  assert.equal(A.meterwareGuenstiger(496, 550, 88.97, [400, 500], rateMeter).rolle, 500);
+  assert.equal(A.meterwareGuenstiger(0, 550, 88.97, [400], rateMeter), null, 'ohne Breite');
   assert.equal(A.meterwareGuenstiger(250, 550, 88.97, [400], () => 0), null, 'Rolle ohne Variante');
 });
