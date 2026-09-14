@@ -87,19 +87,44 @@ test('der Warenkorb rechnet mit der Einstellung, nicht mit einer festen Zahl', (
     'Im Warenkorb steht die Schwelle noch als feste Zahl.');
 });
 
-test('Texte aus JSON kommen ueber den Platzhalter an die Einstellung', () => {
-  // Topbar und Template-Bloecke liegen als JSON-Werte vor, dort greift kein
-  // Liquid. Wer [versandfrei] einsetzt, braucht die Aufloesung in der Sektion.
-  const paare = [
-    ['sections/header-group.json', 'sections/tp-topbar.liquid'],
-    ['templates/page.vinylboden-verlegen.json', 'sections/tp-verlegegebiet.liquid'],
-    ['templates/page.treppenverlegung.json', 'sections/tp-verlegegebiet.liquid'],
-  ];
-  for (const [quelle, sektion] of paare) {
-    const text = readFileSync(path.join(WURZEL, quelle), 'utf8');
-    if (!text.includes('[versandfrei]')) continue;
-    const code = readFileSync(path.join(WURZEL, sektion), 'utf8');
-    assert.match(code, /replace: '\[versandfrei\]', settings\.tp_versand_frei_ab/,
-      `${quelle} nutzt den Platzhalter, aber ${sektion} loest ihn nicht auf - der Kunde liest "[versandfrei]".`);
+test('jeder Platzhalter [versandfrei] wird auch aufgeloest', () => {
+  // Texte aus JSON und aus Schema-Defaults koennen kein Liquid enthalten,
+  // deshalb der Platzhalter. Wer ihn setzt, aber die Aufloesung vergisst,
+  // zeigt dem Kunden woertlich "[versandfrei]".
+  //
+  // Die Pruefung sucht die Paare selbst, statt sie aufzuzaehlen: eine neue
+  // Sektion mit Platzhalter war sonst nicht abgedeckt, und genau das steht
+  // an (die Startseiten-Section bekommt ihn, sobald diese Kette gemergt ist).
+  const loest = (inhalt) => /replace:\s*'\[versandfrei\]',\s*settings\.tp_versand_frei_ab/.test(inhalt);
+  const sektion = (typ) => {
+    try { return readFileSync(path.join(WURZEL, 'sections', `${typ}.liquid`), 'utf8'); } catch { return null; }
+  };
+
+  const funde = [];
+  for (const [name, p] of themeDateien()) {
+    const inhalt = readFileSync(p, 'utf8');
+    if (!inhalt.includes('[versandfrei]')) continue;
+
+    if (name.endsWith('.liquid')) {
+      // Im Liquid steht der Platzhalter nur in Schema-Defaults - aufgeloest
+      // wird er in derselben Datei, beim Rendern der Einstellung.
+      if (!loest(inhalt)) funde.push(`${name}: setzt den Platzhalter, loest ihn aber nicht auf.`);
+      continue;
+    }
+
+    // JSON: der Platzhalter steckt im Abschnitt einer Sektion. Zustaendig ist
+    // die Sektion dieses Abschnitts, nicht irgendeine andere der Datei.
+    const daten = JSON.parse(inhalt.slice(inhalt.indexOf('{')));
+    const abschnitte = Object.entries(daten.sections || {});
+    let gefunden = false;
+    for (const [schluessel, abschnitt] of abschnitte) {
+      if (!JSON.stringify(abschnitt).includes('[versandfrei]')) continue;
+      gefunden = true;
+      const code = sektion(abschnitt.type);
+      if (code === null) funde.push(`${name}/${schluessel}: Sektion "${abschnitt.type}" gibt es nicht.`);
+      else if (!loest(code)) funde.push(`${name}/${schluessel}: sections/${abschnitt.type}.liquid loest den Platzhalter nicht auf - der Kunde liest "[versandfrei]".`);
+    }
+    if (!gefunden) funde.push(`${name}: Platzhalter ausserhalb jedes Abschnitts - niemand loest ihn auf.`);
   }
+  assert.deepEqual(funde, [], `Platzhalter ohne Aufloesung:\n  ${funde.join('\n  ')}`);
 });
