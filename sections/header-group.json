@@ -102,6 +102,30 @@
             "subtitle": ""
           }
         },
+        "tp_kachel_teppiche": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppiche",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige.jpg",
+            "subtitle": "Nach Maß, gekettelt"
+          }
+        },
+        "tp_kachel_teppiche_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Teppiche",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-beige.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_teppiche_mass": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppich nach Maß",
+            "image": "shopify://shop_images/teppich-nach-mass-piumera-anthrazit.jpg",
+            "subtitle": "Breite und Länge frei"
+          }
+        },
         "tp_kachel_vinyl_alle": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -362,6 +386,9 @@
         "tp_kachel_teppich_schlinge",
         "tp_kachel_teppich_wolle",
         "tp_kachel_teppich_nadelvlies",
+        "tp_kachel_teppiche",
+        "tp_kachel_teppiche_alle",
+        "tp_kachel_teppiche_mass",
         "tp_kachel_vinyl_alle",
         "tp_kachel_vinyl_klick",
         "tp_kachel_vinyl_klebe",
