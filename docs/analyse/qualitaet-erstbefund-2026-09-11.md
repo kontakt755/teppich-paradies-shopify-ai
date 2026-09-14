@@ -1106,6 +1106,88 @@ Erfreulich: Sie kommt beim strukturierten Datensatz unabhängig zum selben Schlu
 **kein `aggregateRating`**, weil die Bewertungen aus dem Google-Unternehmensprofil stammen und nicht von
 dieser Seite.
 
+### Nachtrag 16: Aufraeumen und Design-Tokens — kleiner als geplant, mit Begruendung (2026-09-14)
+
+Auftrag: „ja, leg los" auf die Empfehlung, Technische Qualitaet (totes Theme) und Design-Konsistenz
+(Tokens) anzugehen. **Beide Punkte sind beim Nachmessen deutlich kleiner ausgefallen als die grobe
+Schaetzung aus dem letzten Gespraech**, aus zwei verschiedenen Gruenden.
+
+#### Totes Theme: von 34 Kandidaten blieben 2 echte
+
+Die erste Kandidatenliste (Sections, die in keinem Template-`order` referenziert sind) hatte einen
+eigenen Messfehler: Die Gruppen-Dateien `header-group.json` und `footer-group.json` liegen in
+`sections/`, nicht im Repository-Root — ein erster Scan ausserhalb dieses Ordners fand sie nicht und
+zaehlte `header`, `footer` & Co. faelschlich als tot. Mit dem richtigen Pfad blieben 29 Kandidaten.
+
+Davon entfielen zwei Gruppen:
+
+1. **8 werden bereits von PR #285** (`fix/audit-restpunkte`, parallele Sitzung, noch offen) entfernt:
+   `Startseite`, `carpet-style-guide`, `carrousell_custom`, `header-announcements`,
+   `shipping-info-bar`, `tp-fachhandel`, `tp-staerken`, `vinyl-installation-guide`. Hier wurde nichts
+   doppelt gemacht.
+2. **19 sind Horizon-Kern-Sections** (`hero`, `slideshow`, `marquee`, `logo`, `quick-order-list`,
+   `featured-product`, `collection-list`, `password-footer`, `predictive-search`,
+   `predictive-search-empty`, `section-rendering-product-card` und weitere): Standardbausteine, die
+   jeder Horizon-Shop mitbringt und die im Editor jederzeit auf eine Seite gezogen werden koennen. Sie
+   dort zu loeschen waere „Horizon migrieren" — laut CLAUDE.md ausdruecklich nur mit Freigabe. Mehrere
+   davon sind ausserdem bekannte Falsch-Positive: `predictive-search`/`predictive-search-empty` und
+   `section-rendering-product-card` werden ueber die Section Rendering API aufgerufen, nicht ueber ein
+   Template, und `password-footer` kommt aus `layout/password.liquid`.
+
+**Real geloescht wurden zwei zusammengehoerige `tp-`-Sections:** `tp-service-start.liquid` (357 Zeilen)
+und `tp-laden-hinweis.liquid` (154 Zeilen), beide aus demselben Commit (`d982fc4`, „Service-Startseite
+mit Produkten"), beide nur im jeweils anderen Kommentar erwaehnt, keine in einem Template. Der Beleg,
+dass `tp-laden-hinweis` nicht nur ungenutzt, sondern aktiv schaedlich war, steht im Code selbst: Der
+Kommentarkopf von `sections/tp-leisten-hero.liquid` erklaert, dass ein Praefixwechsel am 2026-09-12
+fremde Abstaende geerbt hat, weil `tp-laden-hinweis.liquid` nie gerendert wird, sein `{% stylesheet %}`
+aber trotzdem ins gebuendelte Theme-CSS einfliesst — der bekannte Mechanismus aus
+`css_section_stylesheet_wirkt_global`. Keine der beiden Dateien steht in `essential-files.json` oder
+wird von einer dritten Datei referenziert.
+
+#### Design-Tokens: Vereinheitlichung zurueckgestellt, nicht durchgefuehrt
+
+Vor dem Schreiben geprueft, ob bereits Tokens existieren — und dabei zwei gefunden, die pro Bereich
+eigene Custom Properties definieren: `assets/tp-startseite.css` (`:root`, fuer die `tp-start-*`
+Sections) und `assets/tp-teppiche.css` (`.tp-tep`-gescoped, fuer den Teppiche-Bereich). Beide nutzen
+denselben Namen fuer verschiedene Werte — `--tp-ink: #1d1a17` gegen `#1f1d1b`, `--tp-line` als Hex hier,
+als `rgb()` mit Transparenz dort.
+
+**Das sieht auf den ersten Blick wie der gesuchte Befund aus, ist es aber nicht.** Der Kommentarkopf von
+`tp-teppiche.css` erklaert die Trennung als Absicht: „Alles unter .tp-tep, damit keine andere Seite
+etwas davon erbt … Als Asset geladen, nicht per stylesheet-Tag einer Section - Section-CSS landet sonst
+global im Theme." Es sind zwei bewusst isolierte Mini-Systeme fuer zwei unterschiedliche Bereiche,
+nicht ein Kopierfehler, der beide zufaellig `--tp-ink` nennt.
+
+Eine Vereinheitlichung waere trotzdem moeglich, aber sie ist eine **groessere gestalterische
+Entscheidung**: Beide Bereiche muessten inhaltlich auf denselben Farbton geeinigt werden (das ist eine
+Design-Entscheidung, keine Code-Aufraeumung), und jede betroffene Seite braucht danach eine visuelle
+Kontrolle. Genau das beschreibt CLAUDE.md als „grosse architektonische Aenderung, erst analysieren und
+berichten" statt eigenstaendig auszufuehren. **Deshalb hier zurueckgestellt.** Die 116 verstreuten
+Hex-Werte in den einzelnen `tp-*.liquid`-Dateien wurden aus demselben Grund nicht angefasst: sie in
+einem Durchgang zu ersetzen, ohne jede der rund 30 betroffenen Dateien einzeln visuell zu pruefen, waere
+das Risiko einer stillen Regression wert, das dieser Bericht selbst mehrfach dokumentiert
+(Nachtrag zu `css_section_stylesheet_wirkt_global`).
+
+**Empfehlung fuer einen spaeteren, eigenen Auftrag:** Erst festlegen, ob Startseite und Teppiche-Bereich
+denselben Ink-/Line-Ton tragen sollen oder bewusst verschieden bleiben (Inhaberfrage), dann ein
+gemeinsames Basis-Token-File nur fuer wirklich geteilte Werte (Radius, Schatten-Formel, Abstaende)
+anlegen, und die inline-Hexwerte Datei fuer Datei mit Vorher/Nachher-Screenshot ersetzen statt in einem
+Sweep.
+
+#### Ergebnis dieser Runde
+
+511 Zeilen totes Theme entfernt, 0 Zeilen Risiko fuer sichtbares Verhalten (nichts davon wurde je
+gerendert). Guards gruen (`liquid`, `schema`, `essential-files`; die drei bestehenden
+`BLOCK_DRIFT`-Warnungen im Template-Guard sind vorbestehend und unveraendert). Design-Tokens: keine
+Code-Aenderung, stattdessen eine begruendete Empfehlung fuer eine eigene, groessere Aufgabe.
+
+**Nachtrag zur Dokumentation selbst (2026-09-14, spaeter):** Dieser Abschnitt fehlte urspruenglich in
+`main` — der `git add` beim Commit `0c892e6` hatte die Doku-Datei nicht erfasst (falsches Arbeits-
+verzeichnis zum Zeitpunkt des Commits), sodass nur die beiden Sections geloescht wurden, aber der
+Nachtrag selbst nie committet wurde. Beim Zusammenfuehren mehrerer eigener PRs nach `main` aufgefallen,
+weil eine spätere Nachtrag-Nummer (18) referenziert wurde, ohne dass 16 existierte. Aus dem eigenen
+Gespraechsverlauf wortgleich rekonstruiert und hier nachgetragen.
+
 ### Nachtrag 17: Render-blockierendes CSS des Mega-Menues entschaerft (2026-09-14)
 
 Naechster Punkt aus der Prioritaetenliste (Nachtrag 14, Punkt 8): render-blockierendes CSS.
@@ -1137,3 +1219,65 @@ blockierendes `rel="stylesheet"` mehr an der Stelle; das `<noscript>` traegt den
 selbst mit einer Zeigergeste geoeffnet (nicht `.click()`, siehe die Drawer-Bild-Falle aus Nachtrag 9):
 das Panel ist vollstaendig gestylt (`border-radius: 14px`, `display: flex`), das Stylesheet also aktiv,
 bevor die Interaktion es braucht.
+
+### Nachtrag 18: Punkt 9/10 der Prioritaetenliste untersucht — kein sicherer Fix gefunden (2026-09-14)
+
+Naechste zwei Punkte aus Nachtrag 14: ungenutztes JS/CSS (Punkt 9) und Seitengewicht der Kategorie
+Teppichboden (Punkt 10, 2,8 MB / 962 KB HTML). **Ergebnis nach genauer Messung: Alle drei gefundenen
+Gewichtstreiber liegen in Horizon-Kern-Architektur, nicht in TP-eigenem Code — hier wurde bewusst nichts
+gepatcht.**
+
+Vollstaendige Ressourcenaufschluesselung (mobil, gedrosselt, Live-Shop):
+
+| Typ | KB | Anteil |
+|---|---|---|
+| document (HTML) | 976 | 25 % |
+| fetch | 665 | 17 % |
+| script | 1.136 | 29 % |
+| stylesheet | 562 | 14 % |
+| image | 438 | 11 % |
+| font | 115 | 3 % |
+
+**Befund 1: 499 KB Vorab-Fetch von Seite 2, unabhaengig vom Scrollen.** Gemessen: Der Request auf
+`?page=2&section_id=...` feuert 1.317 ms nach Navigationsstart, bei `scrollY: 0`, mit dem Raster-Ende
+bei 6.507 px (weit ausserhalb der 100-px-`rootMargin` des Intersection Observers). Ursache:
+`assets/paginated-list.js` (`@theme/paginated-list`, Horizon-Kern) ruft in `connectedCallback()`
+unconditional `#fetchPage('next')` und `#fetchPage('previous')` auf - unabhaengig von Scrollposition und
+unabhaengig von der Einstellung `enable_infinite_scroll`. Das Attribut `infinite-scroll="..."` wird im
+Markup gesetzt (`sections/main-collection.liquid`), von der Komponente aber nirgends ausgelesen.
+
+**Nicht gepatcht**, aus drei Gruenden: Die Datei ist Shopify-Kernmodul, nicht TP-Praefix, und wird von
+jeder paginierten Liste im Theme genutzt (alle Kollektionen, Suche) - eine Aenderung hat also
+theme-weite Wirkung, nicht nur eine Seite. Sie ist eine bewusste UX-Abwaegung Shopifys (sofortiges
+Nachladen beim Scrollen gegen initiales Gewicht), keine offensichtliche Fehlfunktion - das Entfernen des
+Vorab-Fetches macht das erste Nachladen fuer Besucher, die tatsaechlich scrollen, spuerbar langsamer.
+Das entspricht CLAUDE.md: „Grosse architektonische Aenderungen erst analysieren und berichten", nicht
+eigenstaendig ausfuehren.
+
+**Befund 2: JS-Gewicht ist fast vollstaendig Horizon-eigene Modularchitektur.** Von rund 1.136 KB Skript
+auf der Seite sind **7,6 KB TP-eigen** (`tp-compare.js` 5,8 KB, `tp-carpet-navigation.js` 1,8 KB) - beide
+vermutlich in Gebrauch (Produktvergleich ist ein „fertiges Feature" laut CLAUDE.md). Der Rest sind rund
+50 einzelne Horizon-ES-Module (`product-card.js`, `facets.js`, `slideshow.js`, `variant-picker.js` u.a.),
+Shopifys eigene Architektur mit vielen kleinen Dateien statt einem Bundle. Nichts davon ist mit
+vertretbarem Risiko TP-seitig kuerzbar.
+
+**Befund 3: 184 identische Icon-SVGs, 93 KB, ohne Sprite-Wiederverwendung.** Der haeufigste
+(`icon-checkmark`, 104× auf dieser Seite) kommt inline mit vollem Pfad, nicht als `<use href="#…">`, weil
+Horizon ueberhaupt kein SVG-Sprite-System verwendet - jedes Icon wird an jeder Renderstelle vollstaendig
+neu ausgegeben. Die Renderstellen liegen verstreut in Dutzenden Horizon-Kern-Dateien
+(`add-to-cart-button.liquid`, `sorting.liquid`, `list-filter.liquid`, `localization-form.liquid` u.a.),
+keine zentrale Stelle zum sicheren Patchen. Eine Umstellung auf Sprites waere eine theme-weite
+Architekturaenderung, kein Punkt-Fix.
+
+**Was das fuer die Prioritaetenliste heisst:** Punkt 8 (render-blockierendes Mega-Menue-CSS, Nachtrag
+17) war der einzige der vier Performance-Punkte, der als isolierte, TP-eigene, risikoarme Aenderung
+umsetzbar war. Die Punkte 9 und 10 haetten Substanz - der 499-KB-Vorab-Fetch ist real und betraechtlich -
+aber ihre Behebung ist eine groessere, Horizon-Kern-weite Entscheidung mit einer echten
+Geschwindigkeits-Abwaegung, kein Nebenbei-Fix.
+
+**Empfehlung, falls gewuenscht:** Ein eigener, dedizierter Auftrag mit Freigabe, der `paginated-list.js`
+so anpasst, dass der Vorab-Fetch die Einstellung `enable_infinite_scroll` respektiert (bei deaktivierter
+Infinite-Scroll-Kollektion ergibt der Vorab-Fetch ohnehin keinen Sinn, weil dort ein klassischer
+"Naechste Seite"-Link statt Nachladen erscheint) - das waere der risikoaermste Teilschritt, weil er nur
+einen bereits ungenutzten Fall abschaltet, statt das Verhalten fuer aktives Infinite Scroll zu aendern.
+Muesste aber gegen jede paginierte Seite im Theme getestet werden, nicht nur eine Kollektion.
