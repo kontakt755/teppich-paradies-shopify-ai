@@ -195,7 +195,32 @@
   endif
 %}
 
-{{ 'tp-mega-menu.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Nicht blockierend geladen: assets/tp-mega-menu.css enthaelt ausschliesslich
+  Regeln fuer das Menue-Panel (.mega-menu__*, .menu-drawer__*, .tp-lnav*) -
+  keine davon betrifft die sichtbare Kopfzeile vor dem Oeffnen. Gemessen
+  (2026-09-14): 21,9 KB, die bisher auf jeder Seite render-blockierend liefen,
+  obwohl sie erst nach einer Zeigergeste gebraucht werden (siehe die gleiche
+  Ueberlegung bei den Menuebildern, Optimierung "Bilder erst bei der ersten
+  Absicht laden"). preload+onload laedt die Datei parallel statt blockierend;
+  <noscript> deckt Faelle ohne JavaScript ab.
+
+  theme-check schlaegt hier stylesheet_tag: preload: true vor (AssetPreload).
+  Das ist fuer diesen Fall ein Fehlalarm: Der Filter fuegt nur einen
+  zusaetzlichen Preload-Hinweis vor einem weiterhin blockierenden
+  <link rel="stylesheet"> ein - er hebt die Blockierung nicht auf, das waere
+  das Gegenteil des hier gesuchten Effekts. Deshalb gezielt unterdrueckt statt
+  den Filter zu uebernehmen und die Optimierung damit zu verlieren.
+{%- endcomment -%}
+{% # theme-check-disable AssetPreload %}
+<link
+  rel="preload"
+  href="{{ 'tp-mega-menu.css' | asset_url }}"
+  as="style"
+  onload="this.onload=null;this.rel='stylesheet'"
+>
+{% # theme-check-enable AssetPreload %}
+<noscript>{{ 'tp-mega-menu.css' | asset_url | stylesheet_tag }}</noscript>
 
 {% capture localization_markup %}
   {% liquid

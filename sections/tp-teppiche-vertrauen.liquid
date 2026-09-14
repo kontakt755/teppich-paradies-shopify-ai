@@ -1,0 +1,84 @@
+{%- comment -%}
+  Service und Vertrauen - nur belegbare Angaben: Telefon und WhatsApp wie im
+  uebrigen Shop, Fachgeschaeft in Oranienburg, kostenlose Muster (Ankuendigung
+  im Shop-Kopf). Keine Bewertungszahlen, keine Garantien, keine Lieferzeiten.
+  Uebernommen aus dem Entwurf (sections/tp-rug-vertrauen.liquid).
+{%- endcomment -%}
+{{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
+<section class="tp-tep tp-tep-sec{% if section.settings.sand %} tp-tep-sec--sand{% endif %}" aria-labelledby="tp-tv-{{ section.id }}">
+  <div class="tp-tep-wrap">
+    <div class="tp-tep-head">
+      <div class="tp-tep-head__text">
+        <h2 class="tp-tep-h2" id="tp-tv-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p class="tp-tep-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+    </div>
+    <ul class="tp-tep-trust" role="list">
+      {%- for block in section.blocks -%}
+        {%- liquid
+          assign b = block.settings
+          assign tp_tv_href = ''
+          assign tp_tv_attrs = ''
+          case b.link
+            when 'telefon'
+              assign tp_tv_href = 'tel:' | append: section.settings.phone_link
+            when 'whatsapp'
+              assign tp_tv_href = 'https://wa.me/' | append: section.settings.whatsapp
+              assign tp_tv_attrs = 'target="_blank" rel="noopener"'
+            when 'url'
+              assign tp_tv_href = b.url
+          endcase
+        -%}
+        <li {{ block.shopify_attributes }} style="display:flex">
+          {%- if tp_tv_href != blank -%}<a class="tp-tep-trust__item" href="{{ tp_tv_href }}" {{ tp_tv_attrs }}>{%- else -%}<div class="tp-tep-trust__item">{%- endif -%}
+            {%- render 'tp-teppiche-icon', name: b.icon, size: 26 -%}
+            <span class="tp-tep-trust__body">
+              <span class="tp-tep-trust__title">{{ b.title | escape }}</span>
+              <span class="tp-tep-small">{{ b.text | replace: '[telefon]', section.settings.phone_label | escape }}</span>
+            </span>
+          {%- if tp_tv_href != blank -%}</a>{%- else -%}</div>{%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TP Teppiche Service",
+  "tag": "div",
+  "class": "tp-tep-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Persönlich beraten – vom Fachgeschäft" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "text", "id": "phone_label", "label": "Telefon (Anzeige)", "default": "03301 573 37 20" },
+    { "type": "text", "id": "phone_link", "label": "Telefon (Wahl)", "default": "+4933015733720" },
+    { "type": "text", "id": "whatsapp", "label": "WhatsApp-Nummer", "default": "4917657931322" },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Punkt",
+      "settings": [
+        { "type": "select", "id": "icon", "label": "Symbol", "default": "telefon", "options": [{ "value": "telefon", "label": "Telefon" }, { "value": "whatsapp", "label": "WhatsApp" }, { "value": "muster", "label": "Muster" }, { "value": "standort", "label": "Standort" }, { "value": "lineal", "label": "Maß" }, { "value": "kante", "label": "Kante" }] },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Fachberatung am Telefon" },
+        { "type": "textarea", "id": "text", "label": "Text ([telefon] = Nummer)" },
+        { "type": "select", "id": "link", "label": "Link", "default": "none", "options": [{ "value": "none", "label": "Kein Link" }, { "value": "telefon", "label": "Anrufen" }, { "value": "whatsapp", "label": "WhatsApp" }, { "value": "url", "label": "Eigene Adresse" }] },
+        { "type": "url", "id": "url", "label": "Adresse (bei „Eigene Adresse“)" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "TP Teppiche Service",
+      "blocks": [
+        { "type": "item", "settings": { "icon": "telefon", "title": "Fachberatung am Telefon", "text": "[telefon] – wir helfen beim Messen und bei der Farbwahl.", "link": "telefon" } },
+        { "type": "item", "settings": { "icon": "whatsapp", "title": "Foto per WhatsApp", "text": "Schicken Sie uns ein Bild Ihres Raums, wir beraten zur passenden Größe.", "link": "whatsapp" } },
+        { "type": "item", "settings": { "icon": "muster", "title": "Muster vor dem Kauf", "text": "Bis zu drei Farbmuster kostenlos – so sehen Sie die Farbe im eigenen Licht.", "link": "none" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

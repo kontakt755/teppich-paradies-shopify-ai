@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-13T10:41:23.486Z",
+  "generated_at": "2026-09-14T10:52:28.979Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 91,
+  "count": 93,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-13T10:41:23.486Z",
+    "fetchedAt": "2026-09-14T10:52:28.979Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,12 +64,60 @@
   },
   "issues": [
     {
+      "number": 287,
+      "title": "Predictive Search: Amazon-aehnliche Schnellsuche unter der Suchleiste (PR #286)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/287",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-14T09:26:08Z",
+      "updated_at": "2026-09-14T09:26:09Z",
+      "closed_at": null
+    },
+    {
+      "number": 282,
+      "title": "Referenzprodukt Piumera: Teppichboden-System fertigstellen (Rechner, Teppich nach Maß, Warenkorb, QA)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/282",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-14T08:44:27Z",
+      "updated_at": "2026-09-14T09:48:20Z",
+      "closed_at": null
+    },
+    {
       "number": 277,
       "title": "Rollenware-Produktseite: oberer Kaufbereich neu ordnen",
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/277",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -78,13 +126,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-13T09:48:19Z",
-      "updated_at": "2026-09-13T10:41:12Z",
+      "updated_at": "2026-09-13T12:29:53Z",
       "closed_at": "2026-09-13T10:41:12Z"
     },
     {
@@ -713,13 +761,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 8,
+      "comments": 10,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-13T10:07:53Z",
+      "updated_at": "2026-09-14T08:59:14Z",
       "closed_at": null
     },
     {

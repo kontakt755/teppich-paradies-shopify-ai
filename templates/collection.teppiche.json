@@ -1,0 +1,324 @@
+/*
+ * -------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * -------------------------------------------------------
+ */
+
+{
+  "sections": {
+    "tp_teppiche_hero": {
+      "type": "tp-teppiche-hero",
+      "settings": {
+        "kicker": "Teppiche nach Maß",
+        "heading": "Ihr Teppich, auf den Zentimeter",
+        "text": "Aus unserem Teppichboden zugeschnitten und rundum gekettelt. Breite und Länge bestimmen Sie – der Preis steht sofort.",
+        "usps": "14 Farben\nBis 400 × 600 cm\nPreis sofort sichtbar",
+        "card_title": "Rundum gekettelt",
+        "card_text": "Kante mit Garn eingefasst, franst nicht aus",
+        "btn1_label": "Jetzt konfigurieren",
+        "btn1_url": "",
+        "btn2_label": "So funktioniert es",
+        "btn2_url": "#so-funktioniert-es"
+      }
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": false,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": false,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_actions_priceEzJzMm": {
+              "type": "tp-card-actions",
+              "name": "TP Card-Aktionen",
+              "settings": {},
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_price_sqm": {
+              "type": "tp-card-price-sqm",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_color_thumbs",
+            "tp_card_actions_priceEzJzMm",
+            "tp_card_price_sqm"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "large",
+        "mobile_product_card_size": "large",
+        "enable_infinite_scroll": true,
+        "products_per_page": 24,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 32,
+        "padding-block-end": 32
+      }
+    },
+    "tp_teppiche_schritte": {
+      "type": "tp-teppiche-schritte",
+      "blocks": {
+        "s1": {
+          "type": "step",
+          "settings": {
+            "title": "Farbe wählen",
+            "text": "14 Farbtöne, jeder mit echtem Foto. Bis zu drei Muster schicken wir kostenlos."
+          }
+        },
+        "s2": {
+          "type": "step",
+          "settings": {
+            "title": "Maße eingeben",
+            "text": "Breite und Länge zentimetergenau, bis 400 × 600 cm."
+          }
+        },
+        "s3": {
+          "type": "step",
+          "settings": {
+            "title": "Preis sehen",
+            "text": "Der Preis erscheint sofort – keine Anfrage, kein Warten."
+          }
+        },
+        "s4": {
+          "type": "step",
+          "settings": {
+            "title": "Bestellen",
+            "text": "Wir schneiden zu, ketteln die Kante rundum und liefern."
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ],
+      "settings": {
+        "heading": "In vier Schritten zu Ihrem Teppich",
+        "text": "Sie sehen jederzeit, was Sie gewählt haben – und was es kostet.",
+        "cta": "",
+        "cta_url": "",
+        "sand": true
+      }
+    },
+    "tp_teppiche_service": {
+      "type": "tp-teppiche-vertrauen",
+      "blocks": {
+        "v1": {
+          "type": "item",
+          "settings": {
+            "icon": "telefon",
+            "title": "Fachberatung am Telefon",
+            "text": "[telefon] – wir helfen beim Messen und bei der Farbwahl.",
+            "link": "telefon"
+          }
+        },
+        "v2": {
+          "type": "item",
+          "settings": {
+            "icon": "whatsapp",
+            "title": "Foto per WhatsApp",
+            "text": "Schicken Sie uns ein Bild Ihres Raums, wir beraten zur passenden Größe.",
+            "link": "whatsapp"
+          }
+        },
+        "v3": {
+          "type": "item",
+          "settings": {
+            "icon": "muster",
+            "title": "Muster vor dem Kauf",
+            "text": "Bis zu drei Farbmuster kostenlos – so sehen Sie die Farbe im eigenen Licht.",
+            "link": "none"
+          }
+        }
+      },
+      "block_order": [
+        "v1",
+        "v2",
+        "v3"
+      ],
+      "settings": {
+        "heading": "Persönlich beraten – vom Fachgeschäft",
+        "text": "",
+        "phone_label": "03301 573 37 20",
+        "phone_link": "+4933015733720",
+        "whatsapp": "4917657931322",
+        "sand": false
+      }
+    },
+    "tp_teppiche_fragen": {
+      "type": "tp-teppiche-faq",
+      "blocks": {
+        "f1": {
+          "type": "frage",
+          "settings": {
+            "question": "Was bedeutet „gekettelt“?",
+            "answer": "<p>Die Schnittkante wird rundum mit Garn umnäht. So franst der Teppich nicht aus und hat einen sauberen, flachen Abschluss – die klassische Einfassung für Teppiche aus Auslegware.</p>"
+          }
+        },
+        "f2": {
+          "type": "frage",
+          "settings": {
+            "question": "Welche Größen sind möglich?",
+            "answer": "<p>Breite und Länge geben Sie zentimetergenau an. Die eine Seite darf bis 400 cm, die andere bis 600 cm messen. Größere Teppiche fragen Sie bitte telefonisch an.</p>"
+          }
+        },
+        "f3": {
+          "type": "frage",
+          "settings": {
+            "question": "Wie messe ich richtig?",
+            "answer": "<p>Messen Sie die Fläche, die der Teppich bedecken soll, an zwei Stellen und nehmen Sie das kleinere Maß. Rechnen Sie zu Möbeln rund 20 cm Abstand ein, damit der Teppich frei liegt. Berechnet wird genau das Maß, das Sie eingeben.</p>"
+          }
+        },
+        "f4": {
+          "type": "frage",
+          "settings": {
+            "question": "Kann ich die Farbe vorher sehen?",
+            "answer": "<p>Ja. Bis zu drei Muster schicken wir kostenlos – die Farbe wirkt im eigenen Licht oft anders als am Bildschirm.</p>"
+          }
+        },
+        "f5": {
+          "type": "frage",
+          "settings": {
+            "question": "Was ist der Unterschied zum Teppichboden?",
+            "answer": "<p>Der Teppichboden wird als Bahn von der Rolle verlegt und deckt den ganzen Raum. Der Teppich nach Maß wird aus demselben Material zugeschnitten, an der Kante gekettelt und liegt frei im Raum – wie ein fertiger Teppich.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "f1",
+        "f2",
+        "f3",
+        "f4",
+        "f5"
+      ],
+      "settings": {
+        "heading": "Häufige Fragen zu Teppichen nach Maß"
+      }
+    }
+  },
+  "order": [
+    "tp_teppiche_hero",
+    "main",
+    "tp_teppiche_schritte",
+    "tp_teppiche_service",
+    "tp_teppiche_fragen"
+  ]
+}

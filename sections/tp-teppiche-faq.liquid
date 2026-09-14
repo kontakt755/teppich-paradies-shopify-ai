@@ -1,0 +1,58 @@
+{%- comment -%}
+  Fragen und Antworten zu Teppichen nach Mass. Antworten nur zu dem, was das
+  Produkt tatsaechlich bietet (gekettelt, bis 400 x 600 cm, 14 Farben, Muster);
+  keine Lieferzeiten, keine rechtlichen Zusagen. Uebernommen aus dem Entwurf
+  (sections/tp-rug-faq.liquid).
+{%- endcomment -%}
+{{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
+<section class="tp-tep tp-tep-sec" id="fragen" aria-labelledby="tp-tq-{{ section.id }}">
+  <div class="tp-tep-wrap">
+    <div class="tp-tep-head">
+      <div class="tp-tep-head__text">
+        <h2 class="tp-tep-h2" id="tp-tq-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+      </div>
+    </div>
+    <div class="tp-tep-faq">
+      {%- for block in section.blocks -%}
+        <details class="tp-tep-acc" {{ block.shopify_attributes }}>
+          <summary>{{ block.settings.question | escape }}</summary>
+          <div class="tp-tep-acc__body">{{ block.settings.answer }}</div>
+        </details>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TP Teppiche Fragen",
+  "tag": "div",
+  "class": "tp-tep-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Häufige Fragen zu Teppichen nach Maß" }
+  ],
+  "blocks": [
+    {
+      "type": "frage",
+      "name": "Frage",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Frage", "default": "Wie messe ich richtig?" },
+        { "type": "richtext", "id": "answer", "label": "Antwort" }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "TP Teppiche Fragen",
+      "blocks": [
+        { "type": "frage", "settings": { "question": "Was bedeutet „gekettelt“?", "answer": "<p>Die Schnittkante wird rundum mit Garn umnäht. So franst der Teppich nicht aus und hat einen sauberen, flachen Abschluss – die klassische Einfassung für Teppiche aus Auslegware.</p>" } },
+        { "type": "frage", "settings": { "question": "Welche Größen sind möglich?", "answer": "<p>Breite und Länge geben Sie zentimetergenau an. Die eine Seite darf bis 400 cm, die andere bis 600 cm messen. Größere Teppiche fragen Sie bitte telefonisch an.</p>" } },
+        { "type": "frage", "settings": { "question": "Wie messe ich richtig?", "answer": "<p>Messen Sie die Fläche, die der Teppich bedecken soll, an zwei Stellen und nehmen Sie das kleinere Maß. Rechnen Sie zu Möbeln rund 20 cm Abstand ein, damit der Teppich frei liegt. Berechnet wird genau das Maß, das Sie eingeben.</p>" } },
+        { "type": "frage", "settings": { "question": "Kann ich die Farbe vorher sehen?", "answer": "<p>Ja. Bis zu drei Muster schicken wir kostenlos – die Farbe wirkt im eigenen Licht oft anders als am Bildschirm.</p>" } },
+        { "type": "frage", "settings": { "question": "Was ist der Unterschied zum Teppichboden?", "answer": "<p>Der Teppichboden wird als Bahn von der Rolle verlegt und deckt den ganzen Raum. Der Teppich nach Maß wird aus demselben Material zugeschnitten, an der Kante gekettelt und liegt frei im Raum – wie ein fertiger Teppich.</p>" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

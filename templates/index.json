@@ -32,7 +32,7 @@
       "type": "tp-start-kategorien",
       "settings": {
         "heading": "Womit möchten Sie starten?",
-        "text": "Sechs Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos.",
+        "text": "Sieben Kategorien, direkt zur Auswahl. Alle Preise pro m², Muster kostenlos.",
         "link_label": "Alle Produkte ansehen",
         "link": "shopify://collections/all"
       },
@@ -45,6 +45,16 @@
             "titel": "Teppichboden",
             "untertitel": "Velours, Schlinge, Hochflor, Wolle",
             "zahl_zeigen": true,
+            "zahl_wort": "Qualitäten"
+          }
+        },
+        "k0": {
+          "type": "kategorie",
+          "settings": {
+            "collection": "teppiche",
+            "titel": "Teppiche",
+            "untertitel": "Nach Maß, gekettelt",
+            "zahl_zeigen": false,
             "zahl_wort": "Qualitäten"
           }
         },
@@ -106,6 +116,7 @@
       },
       "block_order": [
         "k1",
+        "k0",
         "k2",
         "k3",
         "k4",

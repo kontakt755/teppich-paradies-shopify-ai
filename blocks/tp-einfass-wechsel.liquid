@@ -18,11 +18,13 @@
   assign tp_ew_basis = product.metafields.service.einfass_basis.value
 
   assign tp_ew_anzahl = 0
+  assign tp_ew_andere = 0
   if tp_ew_arten contains tp_ew_eigen
     for tp_ew_p in tp_ew_gruppe
       assign tp_ew_a = tp_ew_p.metafields.service.einfassung.value | strip | downcase
       if tp_ew_arten contains tp_ew_a and tp_ew_p.available and tp_ew_p.id != product.id
         assign tp_ew_anzahl = tp_ew_anzahl | plus: 1
+        assign tp_ew_andere = tp_ew_andere | plus: 1
       endif
     endfor
     if tp_ew_basis and tp_ew_basis.available
@@ -33,6 +35,12 @@
 
 {%- if tp_ew_anzahl > 0 -%}
   <nav class="tp-ew" id="tp-ew-{{ tp_ew_id }}" aria-label="Kante wählen" {{ block.shopify_attributes }}>
+    {%- comment -%}
+      Gibt es nur eine Einfassart, ist ein Chip eine Wahl ohne Wahl - dann
+      bleibt nur der Weg zur Meterware (Inhaber 2026-09-13: Fokus auf Farbe
+      und Masse).
+    {%- endcomment -%}
+    {%- if tp_ew_andere > 0 -%}
     <p class="tp-ew__titel">Kante</p>
     <div class="tp-ew__chips">
       {%- for tp_ew_art in tp_ew_arten -%}
@@ -57,6 +65,7 @@
         {%- endfor -%}
       {%- endfor -%}
     </div>
+    {%- endif -%}
     {%- if tp_ew_basis and tp_ew_basis.available -%}
       <a class="tp-ew__basis" href="{{ tp_ew_basis.url }}" data-ew-basis>Lieber als Meterware von der Rolle</a>
     {%- endif -%}

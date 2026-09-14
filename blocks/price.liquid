@@ -64,6 +64,13 @@
       sqm_per_package: sqm_per_package,
       product: product_resource
     %}
+  {% elsif product_resource.metafields.custom.preis_pro_001_qm.value == true %}
+    {%- comment -%}
+      Teppich nach Mass: der Variantenpreis gilt je 0,01 m2 (Abrechnung in
+      Hundertsteln, siehe blocks/tp-einfass-konfigurator.liquid). Auf Karten
+      und in Empfehlungen stuende sonst "0,89 EUR" - hier steht der Preis je m2.
+    {%- endcomment -%}
+    <span class="tp-preis-je-m2">ab {{ product_resource.price_min | times: 100 | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
   {% else %}
     {% render 'price',
       show_unit_price: false,
@@ -130,6 +137,8 @@
   product-price [ref='priceContainer'] .price-card-per-unit {
     font-size: max(0.8125rem, 0.82em);
   }
+  .tp-preis-je-m2 { font-weight: 600; }
+  .tp-preis-je-m2__einheit { font-size: 0.8em; font-weight: 400; opacity: 0.75; }
 {% endstylesheet %}
 
 {% schema %}
