@@ -84,7 +84,7 @@ class Knoten {
 }
 
 /** Baut Sektion und Formular auf und laesst das echte Skript darauf los. */
-function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {}) {
+function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false, versandFreiAb = '50' } = {}) {
   const ctaUrl = ohneCta ? undefined : '/pages/kontakt';
   const ctaText = ohneCta ? undefined : 'Verlegung anfragen';
   const versandUrl = ohneVersand ? undefined : '/collections/all';
@@ -93,7 +93,9 @@ function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {})
   const ausgabe = new Knoten();
   const weg = new Knoten();
   weg.hidden = true;
-  const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json' };
+  // Die Versandschwelle gibt die Sektion immer mit, die Stufen nicht - genau
+  // so steht es im Liquid.
+  const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json', versandFreiAb };
   // So gibt die Sektion die Stufen nur auf Teppichboden-Seiten weiter.
   if (stufen) {
     Object.assign(daten, {
@@ -249,6 +251,25 @@ test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage',
   assert.match(weg.kinder[0].textContent, /Individuell anfragen/);
   assert.equal(weg.kinder[1].href, '/collections/all');
   assert.match(weg.kinder[1].textContent, /Zum Sortiment/);
+});
+
+/*
+ * Die Schwelle hing zuerst am Stufen-Objekt. Auf der Vinyl- und der
+ * Treppenseite sind die Stufen aus, die Pruefung laeuft dort trotzdem - und
+ * damit fiel der Satz auf die im Skript verdrahtete 50 zurueck. Wer die
+ * Einstellung aenderte, bekam auf genau diesen beiden Seiten weiter die alte
+ * Zahl zu sehen, ohne Fehler und ohne roten Test. Beide Faelle stehen hier.
+ */
+test('die Versandschwelle kommt aus der Einstellung, auch ohne Stufen', async () => {
+  const { ausgabe } = await pruefen(aufbauen({ versandFreiAb: '60' }), '39104');
+  assert.match(ausgabe.textContent, /ab 60 € Bestellwert versandkostenfrei/,
+    'Ohne Stufen faellt der Satz auf eine verdrahtete Zahl zurueck.');
+  assert.doesNotMatch(ausgabe.textContent, /ab 50 €/);
+});
+
+test('die Versandschwelle kommt aus der Einstellung, auch mit Stufen', async () => {
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true, versandFreiAb: '60' }), '39104');
+  assert.match(ausgabe.textContent, /ab 60 € Bestellwert versandkostenfrei/);
 });
 
 test('ausserhalb des Gebiets wird auch mit Stufen nichts zugesagt', async () => {

@@ -86,11 +86,16 @@
   style="{% render 'spacing-style', settings: section.settings %}"
   data-testid="tp-verlegegebiet-{{ section.id }}"
   data-radius="{{ vg_pruef_radius }}"
+  {%- comment -%}
+    Die Versandschwelle steht ausserhalb der Stufen: der Satz fuer Kunden
+    ausserhalb des Gebiets nennt sie, und den bekommen auch die Vinyl- und die
+    Treppenseite, auf denen rollenware_stufen aus ist.
+  {%- endcomment -%}
+  data-versand-frei-ab="{{ settings.tp_versand_frei_ab }}"
   {%- if vg_stufen %}
     data-basis="{{ settings.tp_vs_radius_basis }}"
     data-mitte="{{ settings.tp_vs_radius_mitte }}"
     data-schwelle="{{ settings.tp_vs_schwelle }}"
-    data-versand-frei-ab="{{ settings.tp_versand_frei_ab }}"
     data-preis-nah="{{ settings.tp_vs_anfahrt_nah | escape | replace: ' €', '&nbsp;€' }}"
     data-preis-mitte="{{ settings.tp_vs_anfahrt_mitte | escape | replace: ' €', '&nbsp;€' }}"
     data-preis-fern="{{ settings.tp_vs_anfahrt_fern | escape | replace: ' €', '&nbsp;€' }}"
