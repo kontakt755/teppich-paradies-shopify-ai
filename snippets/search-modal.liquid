@@ -246,10 +246,8 @@
     }
   }
 
-  predictive-search-component:has([data-search-results]):not(:has(.predictive-search-results__no-results))
-    .predictive-search-form__footer {
-    display: block;
-  }
+  /* TP: Den Link "Alle Ergebnisse anzeigen" bringt snippets/tp-suche-ergebnisse.liquid
+     selbst mit; der Horizon-Knopf im Fuss bleibt deshalb aus. */
 
   .predictive-search-form {
     position: relative;
@@ -294,10 +292,9 @@
     }
   }
 
-  /* Add new rule to apply bottom padding only when search button exists */
-  .predictive-search-form__content-wrapper:has([data-search-results]):not(:has(.predictive-search-results__no-results))
-    > .predictive-search-form__content {
-    padding-block-end: var(--padding-6xl);
+  /* TP: Ergebnisse mit eigenem Innenabstand (Optik der Schnellsuche) */
+  .predictive-search-form__content .tp-se {
+    padding: var(--padding-md) var(--padding-lg) var(--padding-lg);
   }
 
   .predictive-search-form__header-inner {
