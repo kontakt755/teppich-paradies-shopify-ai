@@ -84,7 +84,7 @@ class Knoten {
 }
 
 /** Baut Sektion und Formular auf und laesst das echte Skript darauf los. */
-function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {}) {
+function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false, versandFreiAb = '50' } = {}) {
   const ctaUrl = ohneCta ? undefined : '/pages/kontakt';
   const ctaText = ohneCta ? undefined : 'Verlegung anfragen';
   const versandUrl = ohneVersand ? undefined : '/collections/all';
@@ -93,7 +93,10 @@ function aufbauen({ ohneCta = false, ohneVersand = false, stufen = false } = {})
   const ausgabe = new Knoten();
   const weg = new Knoten();
   weg.hidden = true;
-  const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json' };
+  // versandFreiAb gibt die Sektion auf jeder Seite aus - es haengt nicht an
+  // den Stufen, sonst versprechen Vinyl- und Treppenseiten eine andere
+  // Schwelle als der Checkout einloest.
+  const daten = { radius: '50', orte: 'tp-verlegegebiet-orte.json', versandFreiAb };
   // So gibt die Sektion die Stufen nur auf Teppichboden-Seiten weiter.
   if (stufen) {
     Object.assign(daten, {
@@ -249,6 +252,15 @@ test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage',
   assert.match(weg.kinder[0].textContent, /Individuell anfragen/);
   assert.equal(weg.kinder[1].href, '/collections/all');
   assert.match(weg.kinder[1].textContent, /Zum Sortiment/);
+});
+
+test('die Versandschwelle kommt aus der Einstellung, auch ohne Rollenware-Stufen', async () => {
+  // Das Attribut hing bis 2026-09-14 im Zweig der Stufen. Auf Vinyl- und
+  // Treppenseiten fehlte es damit, und das Skript nannte seine eingebaute 50 -
+  // unabhaengig davon, was im Theme eingestellt war.
+  const { ausgabe } = await pruefen(aufbauen({ stufen: false, versandFreiAb: '60' }), '39104');
+  assert.match(ausgabe.textContent, /ab 60 € Bestellwert versandkostenfrei/,
+    'Die Pruefung nennt nicht die eingestellte Schwelle.');
 });
 
 test('ausserhalb des Gebiets wird auch mit Stufen nichts zugesagt', async () => {
@@ -536,6 +548,22 @@ test('Basisradius und Schwelle gibt die Sektion nur mit eingeschalteten Stufen w
   }
   assert.match(SEKTION.slice(Math.max(0, stelle - 120), stelle), /if vg_stufen/,
     'data-basis steht ohne Bedingung - dann nennt jede Seite die Rollenware-Stufen.');
+});
+
+test('die Versandschwelle gibt die Sektion unabhaengig von den Stufen aus', () => {
+  // Gegenstueck zum Test oben, auf der Liquid-Seite: das Attribut muss vor der
+  // Bedingung stehen, sonst bekommt das Skript es nur auf Teppichboden-Seiten.
+  const stelle = SEKTION.indexOf('data-versand-frei-ab=');
+  assert.ok(stelle > 0, 'data-versand-frei-ab fehlt in der Sektion.');
+  assert.equal(SEKTION.indexOf('data-versand-frei-ab=', stelle + 1), -1,
+    'data-versand-frei-ab steht mehrfach - eine der Stellen ist tot.');
+  assert.ok(stelle < SEKTION.indexOf('data-basis='),
+    'data-versand-frei-ab steht hinter den Stufen-Attributen, also vermutlich in deren Bedingung.');
+  // Nur der Bereich im Tag zaehlt: weiter oben steht vg_stufen zulaessig in
+  // den Zuweisungen.
+  const imTag = SEKTION.slice(SEKTION.indexOf('data-radius='), stelle);
+  assert.equal(imTag.indexOf('if vg_stufen'), -1,
+    'data-versand-frei-ab steht innerhalb der Stufen-Bedingung.');
 });
 
 test('keine Versandzusage ohne die Schwelle, die der Checkout einloest', () => {
