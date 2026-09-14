@@ -330,9 +330,6 @@
           },
           "block_order": [
             "group_icgrde",
-            "tp_einfass_wechsel_1",
-            "tp_vorteile_sales1",
-            "tp_vertrauen_sales1",
             "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "tp_step_farbe_sales1",
@@ -340,6 +337,9 @@
             "tp_farbanzeige_tp1",
             "tp_einfass_konfigurator_1",
             "buy_buttons_eYQEYi",
+            "tp_einfass_wechsel_1",
+            "tp_vertrauen_sales1",
+            "tp_vorteile_sales1",
             "tp_service_links_sales1",
             "text_aEtTtq",
             "ai_gen_block_b888d9b_CJbJ8X"

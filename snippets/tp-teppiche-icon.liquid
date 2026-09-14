@@ -1,0 +1,22 @@
+{%- doc -%}
+  Symbole des Teppiche-Bereichs (Strichzeichnungen, currentColor).
+  Auszug aus snippets/tp-rug-icon.liquid des Entwurfs - nur die Namen, die die
+  Live-Bausteine verwenden.
+
+  @param {string} name - check, pfeil, telefon, whatsapp, standort, muster, lineal, info, kante
+  @param {number} [size] - Kantenlaenge in px (Standard 24)
+{%- enddoc -%}
+{%- assign tp_ti_size = size | default: 24 -%}
+<svg class="tp-tep-icon" width="{{ tp_ti_size }}" height="{{ tp_ti_size }}" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {%- case name -%}
+    {%- when 'check' -%}<path d="M10 25l9 9 19-20"/>
+    {%- when 'pfeil' -%}<path d="M8 24h30m-10-10 10 10-10 10"/>
+    {%- when 'telefon' -%}<path d="M15 6l5 9-4 3a22 22 0 0 0 14 14l3-4 9 5-3 7C24 42 6 24 8 9z"/>
+    {%- when 'whatsapp' -%}<path d="M24 6a18 18 0 0 0-15.5 27L6 42l9.3-2.4A18 18 0 1 0 24 6z"/><path d="M17 16c0 9 6 15 15 15l2-4-5-2-2 2c-3-1-5-3-6-6l2-2-2-5z"/>
+    {%- when 'standort' -%}<path d="M24 42s13-12 13-22a13 13 0 0 0-26 0c0 10 13 22 13 22z"/><circle cx="24" cy="20" r="5"/>
+    {%- when 'muster' -%}<rect x="8" y="10" width="20" height="28" rx="2"/><path d="M28 14l10 4-8 22-4-1.5"/><path d="M12 30h12"/>
+    {%- when 'lineal' -%}<path d="M6 30 30 6l12 12-24 24z"/><path d="m14 22 3 3m2-8 3 3m2-8 3 3m2-8 3 3"/>
+    {%- when 'info' -%}<circle cx="24" cy="24" r="18"/><path d="M24 22v11m0-17v1"/>
+    {%- when 'kante' -%}<path d="M8 40V8h32" fill="none"/><path d="M13 40V13h27" stroke-dasharray="2.5 2.5"/>
+  {%- endcase -%}
+</svg>
