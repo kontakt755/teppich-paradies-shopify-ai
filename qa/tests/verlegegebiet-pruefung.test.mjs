@@ -261,6 +261,14 @@ test('die Versandschwelle kommt aus der Einstellung, auch ohne Rollenware-Stufen
   const { ausgabe } = await pruefen(aufbauen({ stufen: false, versandFreiAb: '60' }), '39104');
   assert.match(ausgabe.textContent, /ab 60 € Bestellwert versandkostenfrei/,
     'Die Pruefung nennt nicht die eingestellte Schwelle.');
+  assert.doesNotMatch(ausgabe.textContent, /ab 50 €/, 'Die verdrahtete Zahl steht noch im Satz.');
+});
+
+test('die Versandschwelle kommt aus der Einstellung, auch mit Rollenware-Stufen', async () => {
+  // Der Gegenfall, damit die Symmetrie belegt ist: mit Stufen war der Satz
+  // schon vorher richtig, und das muss so bleiben.
+  const { ausgabe } = await pruefen(aufbauen({ stufen: true, versandFreiAb: '60' }), '39104');
+  assert.match(ausgabe.textContent, /ab 60 € Bestellwert versandkostenfrei/);
 });
 
 test('ausserhalb des Gebiets wird auch mit Stufen nichts zugesagt', async () => {
