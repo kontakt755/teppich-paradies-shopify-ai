@@ -184,26 +184,27 @@
         <figcaption class="tp-ek__legende" data-legende></figcaption>
       </figure>
 
+      {%- comment -%}
+        Der Kunde sieht eine Zahl: seinen Preis. Flaeche, Kante, Material und
+        Kettelung bleiben nachpruefbar, aber eingeklappt unter "So rechnen wir"
+        (Entscheidung des Inhabers 2026-09-13: weniger Angaben, Mass rein,
+        Preis erscheint). Die data-Attribute bleiben, das Skript schreibt sie
+        unveraendert.
+      {%- endcomment -%}
       <div class="tp-ek__preis" aria-live="polite" data-rechnung hidden>
-        <div class="tp-ek__fakten">
-          <span data-flaeche>–</span>
-          <span data-kante>–</span>
-        </div>
-        {%- comment -%}
-          Bei der Kettelung stehen Material und Kante getrennt, darunter eine
-          Summe - sonst bliebe unklar, wofuer der Preis entsteht.
-        {%- endcomment -%}
-        <div class="tp-ek__posten" data-posten hidden>
-          <div><span>Material</span><span data-material>–</span></div>
-          <div><span>Kettelung</span><span data-kettelpreis>–</span></div>
-        </div>
-        <div class="tp-ek__summe"><span>Gesamtpreis</span><strong data-summe>–</strong></div>
+        <div class="tp-ek__summe"><span>Ihr Preis</span><strong data-summe>–</strong></div>
         <details class="tp-ek__details">
           <summary>So rechnen wir</summary>
           <dl>
             <div><dt>Maße</dt><dd data-masse>–</dd></div>
+            <div><dt>Fläche</dt><dd data-flaeche>–</dd></div>
+            <div><dt>Kante</dt><dd data-kante>–</dd></div>
             <div><dt>Preis je m²</dt><dd data-m2preis>–</dd></div>
             <div data-zeile-kettelpreis hidden><dt>Kettelung je m</dt><dd data-kettel-meterpreis>–</dd></div>
+          </dl>
+          <dl data-posten hidden>
+            <div><dt>Material</dt><dd data-material>–</dd></div>
+            <div><dt>Kettelung</dt><dd data-kettelpreis>–</dd></div>
           </dl>
           <p data-rund-hinweis hidden>Rund und oval: berechnet wird das umschließende Rechteck – so viel Teppich wird zugeschnitten.</p>
           <p data-mindest-hinweis hidden></p>
