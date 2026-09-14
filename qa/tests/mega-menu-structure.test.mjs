@@ -4,10 +4,21 @@ import test from 'node:test';
 
 const read = relative => fs.readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8');
 
-test('header loads the dedicated mega-menu stylesheet once at section level', () => {
+test('header loads the dedicated mega-menu stylesheet non-blocking, exactly once', () => {
+  // Seit 2026-09-14 (perf/render-blocking-css): tp-mega-menu.css stylt nur das
+  // Menue-Panel, nicht die sichtbare Kopfzeile, deshalb nicht mehr blockierend
+  // geladen. Erwartet werden genau ein preload-Link (aktive Quelle) und genau
+  // ein noscript-Fallback mit dem regulaeren stylesheet_tag-Filter - keine
+  // dritte, unguardete Einbindung, die die Datei erneut blockierend laden
+  // wuerde (der urspruengliche Zweck dieses Tests).
   const header = read('sections/header.liquid');
-  assert.equal((header.match(/tp-mega-menu\.css/g) ?? []).length, 1);
-  assert.match(header, /tp-mega-menu\.css' \| asset_url \| stylesheet_tag/);
+  const preloadLinks = header.match(/<link\s+rel="preload"\s+href="\{\{ *'tp-mega-menu\.css' *\| *asset_url *\}\}"\s+as="style"/gs) ?? [];
+  const noscriptFallbacks = header.match(/<noscript>\{\{ *'tp-mega-menu\.css' *\| *asset_url *\| *stylesheet_tag *\}\}<\/noscript>/g) ?? [];
+  assert.equal(preloadLinks.length, 1);
+  assert.equal(noscriptFallbacks.length, 1);
+  // Ausserhalb des noscript-Blocks darf kein blockierender stylesheet_tag mehr stehen.
+  const withoutNoscript = header.replace(/<noscript>[\s\S]*?<\/noscript>/g, '');
+  assert.doesNotMatch(withoutNoscript, /tp-mega-menu\.css' \| asset_url \| stylesheet_tag/);
 });
 
 test('mega menu exposes a factual heading derived from its parent link', () => {
