@@ -12,7 +12,6 @@
 {%- liquid
   assign tp_cd_product = closest.product
   assign tp_cd_variant = tp_cd_product.selected_or_first_available_variant
-  assign tp_cd_id = block.id | replace: '_', '' | downcase
 
   if tp_cd_product != blank and tp_cd_variant != blank
     # Breite extrahieren (dedupliziert, sortiert)
@@ -61,7 +60,7 @@
 -%}
 
 {%- if tp_cd_widths_count > 0 and tp_cd_length_cm > 0 -%}
-  <div class="tp-card-dimensions-{{ tp_cd_id }}" {{ block.shopify_attributes }}>
+  <div class="tp-card-dimensions" {{ block.shopify_attributes }}>
     <div class="tp-card-dimensions__item">
       <span class="tp-card-dimensions__label">Breite</span>
       <span class="tp-card-dimensions__value">
@@ -86,61 +85,63 @@
     </div>
   </div>
 
-  <style>
-    .tp-card-dimensions-{{ tp_cd_id }} {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 4px;
-      width: 100%;
-      flex-wrap: wrap;
+{%- endif -%}
+
+{% stylesheet %}
+  /* Feste Klassen statt Block-ID: die Regeln stehen einmal pro Seite, nicht einmal pro Karte (Audit 2026-09-11). */
+  .tp-card-dimensions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tp-card-dimensions__item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-body--family);
+    font-size: clamp(0.75rem, 0.72rem + 0.1vw, 0.82rem);
+    line-height: 1.3;
+  }
+
+  .tp-card-dimensions__label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+  }
+
+  .tp-card-dimensions__value {
+    font-weight: 600;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.88);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-card-dimensions__separator {
+    font-weight: 600;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.5);
+    align-self: flex-end;
+    margin-bottom: 4px;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-dimensions {
+      gap: 6px;
     }
 
     .tp-card-dimensions__item {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-family: var(--font-body--family);
-      font-size: clamp(0.75rem, 0.72rem + 0.1vw, 0.82rem);
-      line-height: 1.3;
+      font-size: clamp(0.72rem, 0.7rem + 0.05vw, 0.78rem);
     }
 
     .tp-card-dimensions__label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.65);
+      font-size: 0.6rem;
     }
-
-    .tp-card-dimensions__value {
-      font-weight: 600;
-      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.88);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .tp-card-dimensions__separator {
-      font-weight: 600;
-      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.5);
-      align-self: flex-end;
-      margin-bottom: 4px;
-    }
-
-    @media screen and (max-width: 749px) {
-      .tp-card-dimensions-{{ tp_cd_id }} {
-        gap: 6px;
-      }
-
-      .tp-card-dimensions__item {
-        font-size: clamp(0.72rem, 0.7rem + 0.05vw, 0.78rem);
-      }
-
-      .tp-card-dimensions__label {
-        font-size: 0.6rem;
-      }
-    }
-  </style>
-{%- endif -%}
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
