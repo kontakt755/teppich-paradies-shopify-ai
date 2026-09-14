@@ -245,14 +245,18 @@
   {%- if tp_cart_has_spedition_item -%}
     <p class="tp-cart-shipping-note">
       {%- comment -%}
-        Alle aktiven Produkte liegen im allgemeinen Versandprofil: unter 50 EUR
-        Bestellwert kostet der Versand 4,99 EUR (z. B. ein einzelnes Paket).
+        Alle aktiven Produkte liegen im allgemeinen Versandprofil: unter der
+        Schwelle kostet der Versand extra (z. B. ein einzelnes Paket). Schwelle
+        und Preis stehen in den Theme-Einstellungen unter "TP Versand" - auch
+        die Zahl im Vergleich unten, sonst rechnet der Warenkorb anders, als
+        der Text verspricht.
         Ohne die Schwelle versprach der Warenkorb dort etwas Falsches (Audit B-18).
       {%- endcomment -%}
-      {%- if cart.total_price >= 5000 -%}
+      {%- assign tp_cart_versandfrei_cent = settings.tp_versand_frei_ab | times: 100 -%}
+      {%- if cart.total_price >= tp_cart_versandfrei_cent -%}
         <strong>Versandkostenfrei in Deutschland.</strong>
       {%- else -%}
-        <strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert.</strong>
+        <strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert.</strong>
       {%- endif %}
       Rollen und große Pakete bringt die Spedition bis vor die Haustür, wir rufen vorher an.
     </p>

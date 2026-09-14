@@ -402,7 +402,7 @@
         "a1": {
           "type": "aussage",
           "settings": {
-            "text": "Versandkostenfrei in Deutschland ab 50 €"
+            "text": "Versandkostenfrei in Deutschland ab [versandfrei] €"
           }
         },
         "a2": {

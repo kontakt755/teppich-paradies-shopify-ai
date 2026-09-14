@@ -49,10 +49,10 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert</strong></p>
+      <p><strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
       <p>Rollen und große Pakete bringt die Spedition bis vor die Haustür. Wir rufen vorher an.</p>
     {%- else -%}
-      <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
+      <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
 
     {%- if tp_sl_is_flooring -%}

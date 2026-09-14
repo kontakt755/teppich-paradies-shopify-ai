@@ -539,6 +539,10 @@ test('Basisradius und Schwelle gibt die Sektion nur mit eingeschalteten Stufen w
 });
 
 test('keine Versandzusage ohne die Schwelle, die der Checkout einloest', () => {
+  // Seit der Zentralisierung steht die Zahl nicht mehr im Satz, sondern kommt
+  // aus settings.tp_versand_frei_ab - als Liquid, als Platzhalter [versandfrei]
+  // fuer Texte aus JSON oder als Variable im Skript. Der Test prueft weiter,
+  // dass keine Zusage ohne Schwelle dasteht, akzeptiert aber alle drei Formen.
   // Das Versandprofil des Shops (Admin API, 2026-09-12) hat fuer Deutschland
   // zwei aktive Saetze: 0,00 € ab 50 € und 4,99 € ab 0 €. Ein Satz wie
   // "versandkostenfrei in ganz Deutschland" verspricht einem Kunden mit einem
@@ -551,7 +555,8 @@ test('keine Versandzusage ohne die Schwelle, die der Checkout einloest', () => {
   const ohneSchwelle = [];
   for (const text of texte) {
     for (const satz of text.split(/[.;!?](?=\s|$)|\n/)) {
-      if (/versandkostenfrei|kostenfrei/i.test(satz) && !/50/.test(satz)) ohneSchwelle.push(satz.trim().slice(0, 110));
+      const nenntSchwelle = /50|tp_versand_frei_ab|\[versandfrei\]|schwelle/.test(satz);
+      if (/versandkostenfrei|kostenfrei/i.test(satz) && !nenntSchwelle) ohneSchwelle.push(satz.trim().slice(0, 110));
     }
   }
   assert.deepEqual(ohneSchwelle, [], `Versandzusage ohne Schwelle: ${ohneSchwelle.join(' | ')}`);

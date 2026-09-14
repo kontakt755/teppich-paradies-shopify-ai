@@ -78,8 +78,8 @@
     plzUnbekannt: function (code) {
       return 'Die Postleitzahl ' + code + ' kennen wir nicht. Bitte prüfen Sie die Eingabe.';
     },
-    aussen: function (was) {
-      return was + ' liegt außerhalb des Gebiets, in dem unsere Bodenleger verlegen. Versenden können wir trotzdem – deutschlandweit per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei. Für die Verlegung sprechen Sie uns gern an – wir prüfen individuell, was möglich ist.';
+    aussen: function (was, schwelle) {
+      return was + ' liegt außerhalb des Gebiets, in dem unsere Bodenleger verlegen. Versenden können wir trotzdem – deutschlandweit per Paketdienst oder Spedition, ab ' + schwelle + ' € Bestellwert versandkostenfrei. Für die Verlegung sprechen Sie uns gern an – wir prüfen individuell, was möglich ist.';
     },
     // Unter der Schwelle kostet auch in der ersten Zone die lose Verlegung -
     // steht nur die Anfahrt da, liest man sie als inklusive.
@@ -165,9 +165,16 @@
   /* Eine Spanne [naechster, entferntester] gegen den Radius. Eine angehaengte 1
      heisst: mehrere Orte dieses Namens. Im Gebiet haengt die Zone des
      Rollenware-Service an, wenn die Sektion sie mitgibt. */
+  /* Die Schwelle kommt aus den Theme-Einstellungen ueber ein Attribut der
+     Sektion - JavaScript kann settings nicht selbst lesen. Der Ruecklauf auf
+     50 greift nur, wenn das Attribut fehlt. */
+  function versandSchwelle(stufen) {
+    return (stufen && stufen.versandFreiAb) || '50';
+  }
+
   function einordnen(was, spanne, radius, istPlz, stufen) {
     if (spanne[1] <= radius) return { status: 'innen', text: TEXTE.innen(was, entfernung(spanne)) + zone(spanne[0], spanne[1], stufen) };
-    if (spanne[0] > radius) return { status: 'aussen', text: TEXTE.aussen(was) };
+    if (spanne[0] > radius) return { status: 'aussen', text: TEXTE.aussen(was, versandSchwelle(stufen)) };
     if (spanne[2] === 1) return { status: 'mehrdeutig', text: TEXTE.mehrdeutig(was) };
     return { status: 'rand', text: istPlz ? TEXTE.randPlz(was) : TEXTE.rand(was) };
   }
@@ -185,7 +192,7 @@
       if (spanne) return einordnen(code, spanne, radius, true, stufen);
       // Nicht in der Tabelle: entweder weit weg oder gar keine Postleitzahl.
       return gueltigePlz(code, daten)
-        ? { status: 'aussen', text: TEXTE.aussen(code) }
+        ? { status: 'aussen', text: TEXTE.aussen(code, versandSchwelle(stufen)) }
         : { status: 'unbekannt', text: TEXTE.plzUnbekannt(code) };
     }
 
@@ -229,6 +236,7 @@
     if (!isFinite(basis)) return null;
     var mitte = parseFloat(d.mitte);
     return {
+      versandFreiAb: d.versandFreiAb,
       basis: basis,
       mitte: isFinite(mitte) ? mitte : radius,
       schwelle: d.schwelle || '',

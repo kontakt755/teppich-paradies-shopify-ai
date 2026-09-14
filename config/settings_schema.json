@@ -2302,6 +2302,27 @@
     ]
   },
   {
+    "name": "TP Versand",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Diese Werte muessen zum Versandprofil im Shopify-Adminbereich passen (Versand und Zustellung > Allgemeines Profil, Zone Deutschland). Aendert sich das Profil, gehoeren sie zusammen geaendert - qa/tests/versandschwelle.test.mjs meldet jede Stelle, die dann nicht mehr stimmt."
+      },
+      {
+        "type": "number",
+        "id": "tp_versand_frei_ab",
+        "label": "Versandkostenfrei ab (€ Bestellwert)",
+        "default": 50
+      },
+      {
+        "type": "text",
+        "id": "tp_versand_preis",
+        "label": "Versandkosten darunter",
+        "default": "4,99 €"
+      }
+    ]
+  },
+  {
     "name": "TP Verlegeservice",
     "settings": [
       {

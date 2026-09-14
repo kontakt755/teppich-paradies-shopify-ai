@@ -112,7 +112,7 @@
     <div class="shipping-item">
       <div class="shipping-icon">💳</div>
       <h4>Versandkosten</h4>
-      <p>Ab 50€ versandkostenfrei</p>
+      <p>{{ section.settings.shipping_cost | replace: '[versandfrei]', settings.tp_versand_frei_ab }}</p>
     </div>
 
     <div class="shipping-item">
@@ -154,7 +154,7 @@
       "type": "text",
       "id": "shipping_cost",
       "label": "Versandkosten Text",
-      "default": "Ab 50€ versandkostenfrei"
+      "default": "Ab [versandfrei] € versandkostenfrei"
     },
     {
       "type": "text",
