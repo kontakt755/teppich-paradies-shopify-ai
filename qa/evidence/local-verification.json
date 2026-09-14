@@ -2,7 +2,7 @@
   "workflow": "validate",
   "status": "PASS",
   "validationScope": "FULL",
-  "commit": "6596d68a00be32231a10fb8dd2bb16d7a64d53de",
+  "commit": "a8953a969423fc09b4b2c1877a85fbcf5cd7a912",
   "branch": "main",
   "orderCompleted": false,
   "externalBlock": null,
@@ -109,15 +109,15 @@
     {
       "id": "SALES",
       "status": "PASS",
-      "attempts": 2,
+      "attempts": 1,
       "exitCode": 0,
       "timedOut": false,
       "errorClass": null,
       "blocker": null
     }
   ],
-  "head": "6596d68a00be32231a10fb8dd2bb16d7a64d53de",
-  "originMain": "6596d68a00be32231a10fb8dd2bb16d7a64d53de",
+  "head": "a8953a969423fc09b4b2c1877a85fbcf5cd7a912",
+  "originMain": "a8953a969423fc09b4b2c1877a85fbcf5cd7a912",
   "clean": true,
   "worktreeFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "p0": "0",
