@@ -227,6 +227,10 @@
   @media (min-width: 1024px) {
     .tp-se:has(.tp-se__block--produkte) {
       grid-template-columns: 280px minmax(0, 1fr);
+      /* Erste Zeile nur so hoch wie die Vorschlaege, sonst verteilt das
+         Raster die Produkthoehe auf beide Zeilen und die Kategorien rutschen
+         ans Ende der Spalte. */
+      grid-template-rows: max-content 1fr auto;
       grid-template-areas:
         'vorschlaege produkte'
         'kategorien produkte'
@@ -279,7 +283,10 @@
     transition: border-color 0.15s, background 0.15s;
   }
 
-  .tp-se__chip strong { font-weight: 700; }
+  /* styled_text der Shopify-Vorschlaege markiert den Treffer mit <mark>/<strong>;
+     kein gelber Browser-Hintergrund, nur fett. */
+  .tp-se__chip strong,
+  .tp-se__chip mark { font-weight: 700; background: transparent; color: inherit; }
 
   .tp-se__link {
     display: flex;
@@ -406,8 +413,10 @@
 
   @media (max-width: 767px) {
     .tp-se { gap: 16px; }
-    .tp-se__produkt { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 6px 8px; margin: 0 -8px; }
-    .tp-se__bild { width: 56px; height: 56px; }
+    /* Bild ueber beide Zeilen (Text, Preis), sonst klafft zwischen
+       Untertitel und Preis eine Luecke von der Bildhoehe. */
+    .tp-se__produkt { grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 4px 12px; padding: 8px; margin: 0 -8px; }
+    .tp-se__bild { width: 56px; height: 56px; grid-row: 1 / span 2; }
     .tp-se__preis { grid-column: 2; text-align: left; font-size: 14px; }
     .tp-se__preis .price__sale { flex-direction: row; gap: 8px; align-items: baseline; }
     .tp-se__titel { font-size: 14.5px; }

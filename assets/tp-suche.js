@@ -142,7 +142,7 @@ class TpSucheLeiste extends HTMLElement {
           begriff: this.begriff,
           typ: option.dataset.tpTyp || 'link',
           url: option.href,
-          text: option.textContent.trim(),
+          text: (option.querySelector('[data-tp-titel]') || option).textContent.replace(/\s+/g, ' ').trim(),
         },
       })
     );
