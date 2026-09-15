@@ -494,7 +494,7 @@
     display: none;
   }
 
-  {%- comment -%}
+  /*
     Das waagerechte Menue erscheint erst ab 1100 px, nicht ab 750 px.
 
     Gemessen am 2026-09-15 auf 768 px: die zehn Hauptpunkte brauchen zusammen
@@ -511,7 +511,7 @@
 
     1100 px ist kein runder Wert, sondern der gemessene Bedarf: 808 px Menue
     plus Logo und Kopf-Symbole plus Seitenrand.
-  {%- endcomment -%}
+  */
   @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] :is(.header-menu, .dropdown-localization) {
       display: flex;
@@ -522,12 +522,12 @@
     display: contents;
   }
 
-  {%- comment -%}
+  /*
     Gegenstueck zur Regel oben: solange das waagerechte Menue nicht erscheint,
     muss die Zeile mit dem Schubladen-Knopf stehen bleiben. Beide Grenzen
     gehoeren zusammen - wird nur eine verschoben, hat das Tablet entweder
     zwei Menues oder keins.
-  {%- endcomment -%}
+  */
   @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] .header__navigation-bar-row {
       display: none;
