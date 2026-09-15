@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-15T09:19:13.519Z",
+  "generated_at": "2026-09-15T09:57:26.107Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 95,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-15T09:19:13.519Z",
+    "fetchedAt": "2026-09-15T09:57:26.107Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -78,22 +78,22 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T09:18:19Z",
-      "updated_at": "2026-09-15T09:18:43Z",
+      "updated_at": "2026-09-15T09:55:14Z",
       "closed_at": null
     },
     {
       "number": 297,
       "title": "Interne Bestell-E-Mail mit Grosshaendler-ID im Admin einsetzen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/297",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:shopify"
@@ -102,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T08:23:08Z",
-      "updated_at": "2026-09-15T08:44:15Z",
-      "closed_at": null
+      "updated_at": "2026-09-15T09:57:12Z",
+      "closed_at": "2026-09-15T09:57:12Z"
     },
     {
       "number": 287,
