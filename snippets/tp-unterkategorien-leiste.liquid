@@ -210,8 +210,13 @@
       right: -2px;
       top: 50%;
       transform: translateY(-50%);
-      width: 32px;
-      height: 32px;
+      /* 44 px, nicht 32: der Pfeil ist ein echtes Bedienelement und wurde in
+         der Pruefung vom 2026-09-15 auf zehn Kategorieseiten als zu kleines
+         Trefferziel gemeldet. Apple und Material nennen 44 px, WCAG 2.5.8
+         mindestens 24. Er sitzt als Kreis ueber der Pillenzeile, die 36 px
+         hoch ist - die vier Pixel Ueberstand fallen nicht auf. */
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 1px solid var(--tp-line, #e6e0d8);
       border-radius: 999px;
@@ -234,12 +239,9 @@
   }
 
   /* Auf dem Telefon sind die Pillen kleiner - der Pfeil ebenso. */
-  @media screen and (max-width: 749px) {
-    .tp-uk[data-mehr-rechts='true'] .tp-uk__weiter {
-      width: 28px;
-      height: 28px;
-    }
-  }
+  /* Am Telefon war der Pfeil zuvor auf 28 px verkleinert - dort ist ein
+     ausreichendes Trefferziel am wichtigsten, nicht am unwichtigsten. Die
+     Verkleinerung ist deshalb ersatzlos entfallen; es bleibt bei 44 px. */
 
   @media (prefers-reduced-motion: reduce) {
     .tp-uk__list { scroll-behavior: auto; }

@@ -169,7 +169,7 @@
 
   .color-swatch-picker__suche-{{ color_picker_id }} {
     width: 100%;
-    min-height: 40px;
+    min-height: 44px;
     padding: 8px 12px;
     border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
     border-radius: 8px;
@@ -186,8 +186,10 @@
   }
 
   .color-swatch-picker__familie-{{ color_picker_id }} {
-    min-height: 32px;
-    padding: 4px 12px;
+    /* 44 px: in der Pruefung vom 2026-09-15 als zu kleines Trefferziel
+       gemeldet, auf Desktop und Telefon. */
+    min-height: 44px;
+    padding: 6px 14px;
     border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
     border-radius: 999px;
     background: transparent;
