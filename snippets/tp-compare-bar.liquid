@@ -58,6 +58,14 @@
     display: none !important;
   }
 
+  /* Die Kaufleiste des Rollenware-Rechners liegt an derselben Stelle. Zwei
+     feste Leisten uebereinander waeren auf 375 px die halbe Bildhoehe - der
+     Kauf hat Vorrang, der Vergleich wartet. Das Attribut setzt
+     tp-rollware-rechner.liquid, wenn seine Leiste erscheint. */
+  :root[data-tp-kaufleiste='offen'] .tp-compare-bar {
+    display: none !important;
+  }
+
   .tp-compare-bar__full {
     display: flex;
     align-items: center;

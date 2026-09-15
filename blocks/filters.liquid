@@ -1396,6 +1396,35 @@
     height: var(--font-paragraph--size);
     position: absolute;
   }
+
+  /*
+    Filterbalken auf Tablet und schmalem Laptop.
+
+    Gemessen am 2026-09-15 auf der Suchseite bei 768 px: Die Filterzeile war
+    693 px breit und endete bei 832 px - die Seite liess sich auf jeder
+    Kategorie- und Suchseite 63 px nach rechts schieben, Inhalt lief aus dem
+    Bild. Horizons overflow-list haette die ueberzaehligen Filter in ein
+    "Mehr"-Menue einklappen sollen, blendete aber keinen einzigen aus.
+
+    Statt zu scrollen umbrechen die Filter jetzt in eine zweite Zeile. Ein
+    waagerechter Scrollbereich kam nicht in Frage: die Filter sind
+    Aufklapp-Menues, und overflow-x schneidet das geoeffnete Panel ab.
+
+    Die Regel muss an ::part(list) haengen. Der Host ist display: block, seine
+    Liste liegt im Shadow DOM - flex-wrap am Host bleibt wirkungslos, die
+    Eintraege ragten weiter bis 832 px heraus.
+  */
+  @media screen and (max-width: 1099px) {
+    .facets__overflow-list {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .facets__overflow-list::part(list) {
+      flex-wrap: wrap;
+      max-width: 100%;
+    }
+  }
 {% endstylesheet %}
 
 {% schema %}

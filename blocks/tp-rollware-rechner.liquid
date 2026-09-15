@@ -335,6 +335,28 @@
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
+    Feste Kaufleiste am unteren Rand, nur am Telefon.
+
+    Der Konfigurator ist 1328 px hoch; der Kaufbutton stand am 2026-09-15 bei
+    2330 px - fast drei Bildschirmlaengen unter dem Seitenanfang. Wer Farbe,
+    Breite und Laenge gewaehlt hatte, musste zum Kaufen wieder nach unten
+    suchen. Die Leiste erscheint deshalb, sobald der eigentliche Button aus dem
+    Bild gescrollt ist, und zeigt Summe und Kaufbutton.
+
+    Sie hat bewusst keine eigene Logik: ihr Knopf loest den echten Button aus.
+    Pruefung, Fehlermeldung, Fokus, Warenkorb-Aufruf und Sperre gegen
+    ungueltige Konfigurationen bleiben damit an genau einer Stelle - zwei
+    Kaufwege, die auseinanderlaufen koennen, waren hier nicht gewollt.
+  {%- endcomment -%}
+  <div class="tp-rwc-kaufleiste" data-kaufleiste hidden aria-hidden="true">
+    <div class="tp-rwc-kaufleiste__summe">
+      <span class="tp-rwc-kaufleiste__label">Gesamt</span>
+      <span class="tp-rwc-kaufleiste__wert" data-kaufleiste-summe>–</span>
+    </div>
+    <button type="button" class="tp-rwc-kaufleiste__btn" data-kaufleiste-btn tabindex="-1">In den Warenkorb</button>
+  </div>
+
+  {%- comment -%}
     Auch als fertiger Teppich nach Mass. Welche Produkte, sagt
     service.einfass_gruppe; welche Farbe es dort gibt, allein
     service.basisvariante der Varianten. Sichtbar nur, wenn die gewaehlte
@@ -780,6 +802,71 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link[hidden] { display: none; }
 
+  /* Die Leiste liegt ausserhalb des Rechners im Bildschirm, deshalb ein
+     eigener, nicht auf tp-rwc-ID beschraenkter Selektor mit fester Position.
+     z-index 29 bleibt unter der Vergleichsleiste (30) - beide zugleich gibt es
+     ohnehin nicht, das Skript blendet die Vergleichsleiste solange aus. */
+  .tp-rwc-kaufleiste {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 29;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--tp-rwc-line, #e6e0d8);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 0.1);
+  }
+
+  .tp-rwc-kaufleiste[hidden] { display: none !important; }
+
+  /* Nur am Telefon. Ab Tablet steht genug Platz, dass der Button im Blick
+     bleibt - dort waere die Leiste nur eine Verdeckung. */
+  @media screen and (min-width: 750px) {
+    .tp-rwc-kaufleiste { display: none !important; }
+  }
+
+  .tp-rwc-kaufleiste__summe {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  .tp-rwc-kaufleiste__label {
+    font-size: 11px;
+    color: var(--tp-rwc-muted, #6b655e);
+  }
+
+  .tp-rwc-kaufleiste__wert {
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .tp-rwc-kaufleiste__btn {
+    flex: 1 1 auto;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: #1d6b45;
+    color: #fff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tp-rwc-kaufleiste__btn.is-incomplete {
+    background: #f2efea;
+    color: #6b655e;
+    border: 1px solid var(--tp-rwc-line, #e6e0d8);
+  }
+
   .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-select {
     width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-line); border-radius: 6px;
@@ -952,6 +1039,9 @@ function tpRwcInit{{ tp_rc_id }}() {
   var ctaHint = root.querySelector('[data-cta-hint]');
   var messRaum = root.querySelector('[data-mess-raum]');
   var cartLink = root.querySelector('[data-cart-link]');
+  var kaufleiste = root.querySelector('[data-kaufleiste]');
+  var kaufleisteSumme = root.querySelector('[data-kaufleiste-summe]');
+  var kaufleisteBtn = root.querySelector('[data-kaufleiste-btn]');
   var widthSeg = root.querySelector('[data-width-seg]');
 
   // Rot markiert wird erst, wenn der Kunde den Kauf versucht hat - nicht schon
@@ -1576,6 +1666,13 @@ function tpRwcInit{{ tp_rc_id }}() {
     // der Kunde soll nicht erst erneut klicken muessen, um sie loszuwerden.
     if (ctaReady) clearInvalid();
 
+    if (kaufleisteBtn) {
+      kaufleisteBtn.classList.toggle('is-incomplete', !ctaReady);
+      kaufleisteBtn.textContent = ctaReady ? 'In den Warenkorb' : cta.textContent;
+    }
+    if (kaufleisteSumme) kaufleisteSumme.textContent = outTotal.textContent;
+    aktualisiereKaufleiste();
+
     applyServiceState();
   }
 
@@ -1794,6 +1891,67 @@ function tpRwcInit{{ tp_rc_id }}() {
         }, 3000);
       });
   });
+
+  // Die Leiste erscheint erst, wenn der echte Kaufbutton aus dem Bild ist -
+  // und nur, solange der Konfigurator selbst noch im Blick oder darueber ist.
+  // Unterhalb des Rechners (Serviceteil, Empfehlungen) waere sie eine Leiste
+  // zu einem Bereich, den der Kunde gerade verlassen hat.
+  function aktualisiereKaufleiste() {
+    if (!kaufleiste) return;
+
+    // Am Tablet und Desktop blendet CSS sie ohnehin aus; ohne diese Abfrage
+    // wuerde hidden dort trotzdem staendig hin und her geschrieben.
+    if (window.innerWidth >= 750) { versteckeKaufleiste(); return; }
+
+    // Ist der Rechner ueberhaupt bedienbar? Bei einer Farbe ohne Zuschnitt
+    // versteckt tp-rwc-no-service den ganzen Koerper samt Button.
+    if (root.classList.contains('tp-rwc-no-service')) { versteckeKaufleiste(); return; }
+
+    var ctaRect = cta.getBoundingClientRect();
+    var rootRect = root.getBoundingClientRect();
+    var ctaUnsichtbar = ctaRect.bottom > window.innerHeight || ctaRect.top < 0;
+    var rechnerAngeschnitten = rootRect.bottom > 0 && rootRect.top < window.innerHeight * 1.5;
+
+    if (ctaUnsichtbar && rechnerAngeschnitten) {
+      if (kaufleiste.hidden) {
+        kaufleiste.hidden = false;
+        kaufleiste.setAttribute('aria-hidden', 'false');
+        kaufleisteBtn.removeAttribute('tabindex');
+        // Zwei feste Leisten uebereinander waeren auf 375 px die halbe
+        // Bildhoehe. Der Kauf hat hier Vorrang.
+        document.documentElement.setAttribute('data-tp-kaufleiste', 'offen');
+      }
+    } else {
+      versteckeKaufleiste();
+    }
+  }
+
+  function versteckeKaufleiste() {
+    if (!kaufleiste || kaufleiste.hidden) return;
+    kaufleiste.hidden = true;
+    kaufleiste.setAttribute('aria-hidden', 'true');
+    kaufleisteBtn.setAttribute('tabindex', '-1');
+    document.documentElement.removeAttribute('data-tp-kaufleiste');
+  }
+
+  if (kaufleisteBtn) {
+    // Kein eigener Kaufweg: der echte Button macht die Arbeit, inklusive
+    // Pruefung, Fehlermeldung und Fokus auf das fehlende Feld.
+    kaufleisteBtn.addEventListener('click', function () {
+      cta.click();
+      if (cta.getAttribute('aria-disabled') === 'true') {
+        // Bei fehlender Eingabe hat cta.click() das Feld schon fokussiert -
+        // dorthin scrollen, sonst steht die Meldung ausserhalb des Bildes.
+        var ziel = document.activeElement;
+        if (ziel && typeof ziel.scrollIntoView === 'function') {
+          ziel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
+  window.addEventListener('scroll', aktualisiereKaufleiste, { passive: true });
+  window.addEventListener('resize', aktualisiereKaufleiste);
 
   calculate();
 }
