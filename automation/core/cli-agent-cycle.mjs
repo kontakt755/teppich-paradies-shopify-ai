@@ -87,7 +87,13 @@ export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', 
 export function buildClaudeWorkPrompt(taskText, findings = [], taskType = 'IMPLEMENTATION') {
   const correction = findings.length ? `\n\nUNABHÄNGIGE CODEX-BEFUNDE:\n${JSON.stringify(findings, null, 2)}\nBehebe alle P1/P2-Befunde, führe die passenden Tests erneut aus und hinterlasse die Arbeitskopie in einem prüfbaren Zustand.` : '';
   if (taskType === 'ANALYSIS') return `Analysiere den folgenden Auftrag im aktuellen Repository. Lies zuerst AGENTS.md. Arbeite ausschließlich lesend: verändere keine Dateien und veröffentliche nichts. Begrenze dich auf die wichtigsten belegbaren Fehler, nenne den Prüfweg, Schweregrad und eine konkrete Empfehlung. Nutze vorhandene QA-Skripte nur, wenn sie rein lesend sind. Gib am Ende einen kompakten deutschen Abschlussbericht aus.\n\nAUFTRAG:\n${taskText}${correction}`;
-  return `Arbeite den folgenden Auftrag im aktuellen Repository vollständig ab. Lies zuerst AGENTS.md. Untersuche vorhandenen Code, implementiere minimal und robust, führe passende Tests aus, behebe Fehler und teste erneut. Veröffentliche nichts live und führe keine geschäftskritischen Änderungen aus. Stoppe nur bei fertigem, getestetem Stand oder einem echten Human Gate.\n\nAUFTRAG:\n${taskText}${correction}`;
+  // "Veroeffentliche nichts live" allein reichte nicht: Am 2026-09-15 las ein
+  // Worker das als Shopify-Livegang, legte einen Branch an, committete, pushte
+  // und eroeffnete einen Pull Request - beauftragt war das Anlegen einer Datei.
+  // Der Guard blockiert das inzwischen hart (.claude/hooks/git-gh-guard.mjs);
+  // hier steht es zusaetzlich im Klartext, damit der Worker es gar nicht erst
+  // versucht und seine Arbeit dort liegen laesst, wo der Review sie sieht.
+  return `Arbeite den folgenden Auftrag im aktuellen Repository vollständig ab. Lies zuerst AGENTS.md. Untersuche vorhandenen Code, implementiere minimal und robust, führe passende Tests aus, behebe Fehler und teste erneut. Veröffentliche nichts live und führe keine geschäftskritischen Änderungen aus. Lass deine Änderungen im Working Tree liegen: committe nicht, pushe nicht, lege keinen Branch an und eröffne keinen Pull Request - darüber entscheidet ein Mensch nach der unabhängigen Prüfung. Stoppe nur bei fertigem, getestetem Stand oder einem echten Human Gate.\n\nAUFTRAG:\n${taskText}${correction}`;
 }
 
 export function parseReviewResult(text) {
