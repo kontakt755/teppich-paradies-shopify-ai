@@ -36,11 +36,14 @@ export const REVIEW_SCOPE_UNKNOWN = 'UNKNOWN';
 // oder unversioniert vorlagen und jetzt aus git status verschwunden sind
 // (zurueckgesetzt, geloescht) - das ist eine Aenderung dieser Sitzung.
 export function describeReviewScope({ excluded = [], reverted = [], ownPaths = null, ownPathsTruncated = false, ...rest } = {}) {
-  const scope = describeTreeScope({ ...rest, forceDirty: reverted.length > 0 });
+  // Erst die Zuordnung: Was diese Sitzung nachweislich nicht geschrieben hat,
+  // verlaesst den Pruefbereich, bevor entschieden wird, ob er "dirty" ist.
+  const own = splitByOwnership({ porcelain: rest.porcelain, reverted, ownPaths, truncated: ownPathsTruncated });
+  const scope = describeTreeScope({ ...rest, porcelain: own.porcelain, forceDirty: own.reverted.length > 0 });
   // Welche Pfade liegen ueberhaupt im Bereich? Nur die uncommitteten aus
   // git status; Commits sind bereits durch sinceRef auf diesen Auftrag begrenzt.
-  const scopePaths = porcelainPaths(rest.porcelain);
-  return withOwnPathNotes(withBaselineNotes({ ...scope, scopePaths }, { excluded, reverted }), { ownPaths, truncated: ownPathsTruncated });
+  const scopePaths = porcelainPaths(own.porcelain);
+  return withForeignNotes(withBaselineNotes({ ...scope, scopePaths }, { excluded, reverted: own.reverted }), own);
 }
 
 // Eine Zeile aus `git status --porcelain` ist "XY pfad". Umbenennungen
@@ -242,6 +245,11 @@ function unknownScope(errors, baseRef) {
 // Fail-safe: Baseline fehlt, ist kaputt, stammt aus einem anderen Repository,
 // git scheitert oder ein Pfad ist nicht hashbar - dann wird NICHTS
 // ausgeklammert. Lieber mehr pruefen als weniger.
+//
+// Grenze der Baseline (fuenfte Luecke, 2026-09-15): Sie kennt nur den Stand
+// beim ersten Prompt. Was andere Sitzungen danach schreiben, ist ihr gegenueber
+// neu. Dafuer ist die Zuordnung nach Urheber zustaendig (splitByOwnership,
+// gespeist aus session-writes.mjs), die nach der Baseline greift.
 export const WORKING_TREE_BASELINE_VERSION = 1;
 const GIT_MAX_BUFFER = 64 * 1024 * 1024;
 
@@ -399,28 +407,73 @@ function formatPaths(files, max = 15) {
   return files.length > max ? `${shown} und ${files.length - max} weitere` : shown;
 }
 
-// Kennzeichnet Pfade, die im Pruefbereich liegen, aber nachweislich NICHT von
-// dieser Sitzung geschrieben wurden (siehe automation/core/session-writes.mjs).
+// Fuenfte Luecke, belegt am 2026-09-15 (Sitzung 413c819c, Hauptcheckout):
+// Die Baseline haelt nur den Stand beim ERSTEN Prompt fest. Was andere
+// Sitzungen im geteilten Checkout SPAETER schreiben (assets/tp-einfass-
+// konfigurator.js, domains/shopify/benachrichtigungen/, .claude/launch.json,
+// SEO_REPORT.md), ist ihr gegenueber neu und stand vollstaendig im
+// Pruefbereich. Codex verlangte zwei Runden lang, diese fremde Arbeit zu
+// "isolieren" - stashen oder zuruecksetzen, was CLAUDE.md verbietet -, waehrend
+// die eigene Arbeit der Sitzung auf Remote-Branches lag und ungelesen blieb.
 //
-// Bewusst nur ein Vermerk, kein Filter: Erfasst werden nur Schreibvorgaenge
-// ueber Edit/Write/MultiEdit/NotebookEdit. Wer per Bash schreibt (`cat >>`,
-// `chmod`, ein Generator), taucht in ownPaths nicht auf - ein harter Filter
-// wuerde solche eigene Arbeit ungeprueft durchlassen. Der Reviewer bekommt die
-// Information und entscheidet selbst.
+// Seit 2026-09-14 gab es dafuer nur einen Vermerk ("stammen nicht aus dieser
+// Sitzung"), keinen Filter: Die Erfassung kannte nur Edit/Write, nicht Bash.
+// Der Vermerk hat nichts geaendert - und im Hauptcheckout lief er nicht
+// einmal, weil dessen HEAD den Commit nicht enthielt. Seit 2026-09-15 erfasst
+// record-bash-write.mjs auch Shell-Befehle (siehe session-writes.mjs), und
+// hier wird gefiltert: Ein Pfad im Working Tree, den diese Sitzung
+// nachweislich nicht geschrieben hat, gehoert nicht in den Pruefbereich.
+// Das gilt auch fuer "reverted": ein vorbestehender Pfad, der aus git status
+// verschwand, ohne dass diese Sitzung ihn anfasste, wurde von jemand anderem
+// zurueckgesetzt.
 //
-// Fail-safe: ohne ownPaths, mit leerer Liste oder bei unvollstaendiger
-// Erfassung (truncated) bleibt der Pruefbereich Wort fuer Wort wie bisher.
+// Fail-safe: ohne Bestand (ownPaths null) oder bei gedeckelter Erfassung
+// (truncated) wird NICHT gefiltert, der Pruefbereich bleibt Wort fuer Wort wie
+// bisher. Eine LEERE Liste ist dagegen ein Beleg: Der Bestand existiert, die
+// Sitzung hat nichts geschrieben - alles im Working Tree ist fremd.
+function splitByOwnership({ porcelain = '', reverted = [], ownPaths = null, truncated = false } = {}) {
+  const untouched = { porcelain, reverted: [...reverted], foreignPaths: [], foreignReverted: [], ownPaths: null, filtered: false };
+  if (!Array.isArray(ownPaths) || truncated) return untouched;
+  const eigene = new Set(ownPaths);
+  // Ohne Baseline meldet git status ein neues Verzeichnis als eine Zeile
+  // ("?? assets/"). Liegt darin ein eigener Pfad, ist die Zeile eigen.
+  const eigenesVerzeichnis = dir => dir.endsWith('/') && ownPaths.some(file => file.startsWith(dir));
+  const kept = [];
+  const foreign = [];
+  for (const line of String(porcelain ?? '').split('\n')) {
+    if (!line.trim()) continue;
+    const [file] = porcelainPaths(line);
+    if (eigene.has(file) || eigenesVerzeichnis(file)) kept.push(line);
+    else foreign.push(file);
+  }
+  return {
+    porcelain: kept.join('\n'),
+    reverted: reverted.filter(file => eigene.has(file)),
+    foreignPaths: foreign.sort(),
+    foreignReverted: reverted.filter(file => !eigene.has(file)).sort(),
+    ownPaths: [...ownPaths],
+    filtered: true,
+  };
+}
+
+function withForeignNotes(scope, own) {
+  if (!own.filtered) return scope;
+  const result = { ...scope, ownPaths: own.ownPaths, foreignPaths: own.foreignPaths };
+  const fremde = [...own.foreignPaths, ...own.foreignReverted];
+  if (!fremde.length) return result;
+  return {
+    ...result,
+    text: `${scope.text}. Nicht im Prüfbereich, weil nachweislich nicht von dieser Sitzung geschrieben: ${formatPaths(fremde)}. Erfasst werden alle Schreibvorgänge dieser Sitzung über Datei-Werkzeuge und Shell-Befehle; diese Pfade stammen aus einer anderen, parallel im selben Checkout laufenden Sitzung. Sie gehören nicht zu diesem Auftrag und sind kein Befund - verlange weder ihre Änderung, Entfernung noch Isolierung`,
+  };
+}
+
+// Bis 2026-09-15: nur ein Vermerk statt eines Filters. Bleibt als Export fuer
+// aeltere Aufrufer erhalten, liefert aber dieselbe Zuordnung wie der Filter.
 export function withOwnPathNotes(scope, { ownPaths = null, truncated = false } = {}) {
-  if (!Array.isArray(ownPaths) || ownPaths.length === 0 || truncated) return scope;
+  if (!Array.isArray(ownPaths) || truncated) return scope;
   const eigene = new Set(ownPaths);
   const fremde = (scope.scopePaths ?? []).filter(file => !eigene.has(file));
-  if (!fremde.length) return { ...scope, ownPaths: [...ownPaths] };
-  return {
-    ...scope,
-    ownPaths: [...ownPaths],
-    foreignPaths: fremde,
-    text: `${scope.text}. Diese Sitzung hat nachweislich nur ${formatPaths([...eigene])} selbst geschrieben. ${formatPaths(fremde)} stammen nicht aus dieser Sitzung - in einem geteilten Checkout arbeiten mehrere Sitzungen gleichzeitig im selben Verzeichnis. Sie gehören nicht zu diesem Auftrag und sind kein Befund; verlange weder ihre Änderung noch ihre Entfernung. Hinweis: Erfasst werden nur Schreibvorgänge über die Datei-Werkzeuge, nicht solche über Shell-Befehle`,
-  };
+  return withForeignNotes({ ...scope, scopePaths: (scope.scopePaths ?? []).filter(file => eigene.has(file)) }, { filtered: true, ownPaths: [...ownPaths], foreignPaths: fremde, foreignReverted: [] });
 }
 
 function withBaselineNotes(scope, { excluded = [], reverted = [] } = {}) {
