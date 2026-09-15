@@ -1,0 +1,34 @@
+#!/bin/sh
+# Kurzbefehl fuer den Orchestrator: tp "Aufgabentext"
+#
+# Reicht den Aufgabentext an npm run agents:loop weiter. Der stuft die Aufgabe
+# selbst als Klasse A-D ein und startet den Arbeiter mit dem dazu passenden
+# Modell (workflow/model-matrix.mjs), statt sie im teuren Default-Modell einer
+# interaktiven Sitzung zu erledigen.
+#
+# Repository-Wurzel ueber den eigenen Skriptpfad aufloesen, nie ueber einen
+# absoluten Pfad: das Repo laeuft auf macOS, Linux und Windows.
+set -eu
+
+WURZEL=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+if [ "$#" -eq 0 ]; then
+  echo "Aufruf: tp \"Aufgabentext\"" >&2
+  echo "Beispiel: tp \"Abstand der Produktkarte auf Mobil korrigieren\"" >&2
+  exit 1
+fi
+
+# Alle Argumente zu einem Text zusammenfassen, damit sowohl
+# tp "Text mit Leerzeichen" als auch tp Text mit Leerzeichen funktioniert.
+AUFGABE="$*"
+
+# Leerer oder reiner Leerzeichen-Text ist keine Aufgabe - sonst startet der
+# Orchestrator einen Lauf ohne Auftrag.
+case "$AUFGABE" in
+  *[![:space:]]*) ;;
+  *) echo "Aufgabentext ist leer." >&2; exit 1 ;;
+esac
+
+cd -- "$WURZEL"
+# exec reicht den Exit-Code des Orchestrators unveraendert durch.
+exec npm run --silent agents:loop -- --task "$AUFGABE"
