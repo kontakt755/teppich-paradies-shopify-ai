@@ -28,7 +28,7 @@
 {%- unless product.tags contains 'zubehoer' -%}
   <div class="tp-muster-cta-{{ tp_mc_id }}" {{ block.shopify_attributes }}>
     <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}">
-      {{ block.settings.label | default: 'Erst Muster bestellen – kostenlos' | escape }}
+      {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
     </a>
     {%- if block.settings.hinweis != blank -%}
       <p class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</p>
@@ -83,7 +83,7 @@
       "type": "text",
       "id": "label",
       "label": "Beschriftung",
-      "default": "Erst Muster bestellen – kostenlos"
+      "default": "Kostenloses Muster anfragen"
     },
     {
       "type": "text",

@@ -314,7 +314,7 @@
             "tp_muster_cta_1": {
               "type": "tp-muster-cta",
               "settings": {
-                "label": "Erst Muster bestellen – kostenlos",
+                "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
               }
             }
