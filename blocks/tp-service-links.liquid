@@ -50,7 +50,15 @@
     -%}
     {%- if tp_sl_is_flooring -%}
       <p><strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert</strong></p>
-      <p>Rollen und große Pakete bringt die Spedition bis vor die Haustür. Wir rufen vorher an.</p>
+      {%- comment -%}
+        "Bis vor die Haustuer" stand hier im Widerspruch zur Erklaerung direkt
+        darunter, die frei Bordsteinkante definiert - "Weitertransport ins
+        Gebaeude oder in die Wohnung ist nicht Bestandteil der Lieferung". Zwei
+        verschiedene Zusagen an derselben Stelle, und die groessere davon stand
+        oben. Angeglichen an den Begriff, den ausserdem tp-teppich-versand und
+        tp-shipping-delivery verwenden; erfunden wird damit nichts.
+      {%- endcomment -%}
+      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
     {%- else -%}
       <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
     {%- endif -%}

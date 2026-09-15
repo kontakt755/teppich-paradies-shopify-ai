@@ -233,6 +233,54 @@
     }
   }
 
+  {%- comment -%}
+    Kaufbereich auf dem Telefon zusammenruecken (2026-09-15 gemessen, 375x812).
+    Vor der Aenderung begann der Titel erst bei 580 px und der Kaufbutton bei
+    2384 px - drei Bildschirmlaengen. Die Hoehe steckte nicht im Inhalt, sondern
+    in den Abstaenden: 22 px Fuge zwischen jedem Baustein, 20 px Innenabstand
+    oben und unten an der Gruppe, und mehrere einzeilige Textzeilen, die durch
+    eine globale 44-px-Regel fuer Links auf Fingerhoehe aufgeblasen wurden.
+
+    Geaendert werden bewusst nur Abstaende - kein Bild wird kleiner, kein Text
+    verschwindet. Die Reihenfolge Bild, Titel, Preis, Bewertung, Farbe, Mass,
+    Preis, Kaufbutton bleibt unveraendert.
+
+    Warum ueber die verbrauchende Eigenschaft und nicht ueber die Variable:
+    Horizon setzt --gap und --padding-block-* als Inline-Style am Element.
+    Eine Regel, die dieselbe Variable setzt, verliert dagegen immer. Die
+    Selektoren unten sind deshalb je eine Stufe spezifischer als die
+    Horizon-Klasse und ueberschreiben row-gap bzw. padding direkt.
+  {%- endcomment -%}
+  @media screen and (max-width: 749px) {
+    /* 22 px -> 14 px zwischen den Bausteinen des Kaufbereichs. Bei sechs
+       Fugen sind das rund 48 px, ohne dass etwas enger zusammenklebt. */
+    .product-details .group-block-content.layout-panel-flex--column {
+      row-gap: 14px;
+    }
+
+    /* Der Rahmen um den Kaufbereich braucht am Telefon keine 20 px oben und
+       unten - der Abstand zum Bild darueber entsteht ohnehin schon. */
+    .product-details > .group-block {
+      padding-block-start: 12px;
+      padding-block-end: 12px;
+    }
+
+    /* Die globale 44-px-Mindesthoehe fuer Links ist fuer Menuepunkte gedacht.
+       In einer Textzeile - Breadcrumb, "Auf Google lesen" - blaeht sie die
+       Zeile auf mehr als das Doppelte auf, obwohl der Link mitten im Fliesstext
+       steht. 32 px bleiben bequem treffbar und liegen deutlich ueber den 24 px,
+       die WCAG 2.5.8 als Mindestmass nennt. */
+    .tp-product-breadcrumb a,
+    .product-details [class*='tp-bewertungsbeleg'] a {
+      /* !important, weil die 44-px-Regel aus dem kompilierten Stylesheet-Bundle
+         kommt und sich per Spezifitaet nicht zuverlaessig schlagen laesst -
+         welche Datei sie beisteuert, war ueber die CSSOM nicht aufzuloesen.
+         Der Geltungsbereich ist eng: nur Links in der Breadcrumb und im
+         Bewertungsbeleg der Produktseite, nur unter 750 px. */
+      min-height: 32px !important;
+    }
+  }
+
   .product-information {
     gap: var(--gap) 0;
   }
