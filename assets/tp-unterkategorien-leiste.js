@@ -56,8 +56,29 @@
         // Knapp eine Bildschirmbreite weiter, damit die angeschnittene Pille
         // am Rand nicht uebersprungen wird.
         var schritt = Math.max(liste.clientWidth - 64, 120);
-        var sanft = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        liste.scrollBy({ left: schritt, behavior: sanft ? 'smooth' : 'auto' });
+
+        // Auf das verbleibende Stueck begrenzen - ein Ziel hinter dem Ende
+        // braucht niemand.
+        var maxScroll = liste.scrollWidth - liste.clientWidth;
+        var ziel = Math.min(liste.scrollLeft + schritt, maxScroll);
+
+        // Bewusst ohne behavior: 'smooth'. Auf diesem Container (scroll-snap-type
+        // x mit scroll-snap-align: start je Pille) macht Chromium jede
+        // programmatische sanfte Bewegung rueckgaengig: die Snap-Neuausrichtung
+        // zieht den Container waehrend der Animation auf den Ausgangspunkt
+        // zurueck. Am 2026-09-15 auf dem Tablet-Viewport gemessen - scrollTo und
+        // scrollBy mit 'smooth' landeten beide wieder bei 0, mit 'auto' sauber
+        // am Ziel. Ein Pfeil, der nichts tut, ist schlechter als einer, der
+        // hart springt; durch das Snapping landet der Sprung ohnehin genau auf
+        // einer Pillenkante und sieht dadurch gewollt aus.
+        liste.scrollTo({ left: ziel, behavior: 'auto' });
+
+        // Zustand sofort selbst nachziehen, statt auf das scroll-Ereignis zu
+        // warten. Beim Wischen liefert es der Browser, nach einem
+        // programmatischen Sprung aber nicht verlaesslich - in der Messung vom
+        // 2026-09-15 kam es gar nicht an, und Pfeil und Randverlauf blieben
+        // stehen, obwohl die Leiste schon am Ende war.
+        zustand(nav);
       });
     }
   }

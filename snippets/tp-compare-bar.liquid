@@ -86,6 +86,16 @@
     .tp-compare-bar__nutzen { display: none; }
   }
 
+  /* Am Telefon ein volles Fingerziel. "Vergleichen anzeigen" war 27 px hoch -
+     die umgebende Leiste hielt zwar ihre 44 px ein, der Knopf darin nicht,
+     und getroffen wird der Knopf. Gemessen am 2026-09-15 bei 375 px. */
+  @media (pointer: coarse), (max-width: 749px) {
+    .tp-compare-bar .tp-compare-bar__full > button[data-tp-compare-open] {
+      min-height: 44px;
+      padding: 6px 16px;
+    }
+  }
+
   .tp-compare-bar__compact {
     display: none;
     align-items: center;
