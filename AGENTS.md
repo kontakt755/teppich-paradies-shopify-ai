@@ -40,7 +40,11 @@ Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hi
 - Nach Theme-Änderungen Shopify Theme Check verwenden, wenn sinnvoll.
 - Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
 - Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
-- Fallback-Theme erhalten; Theme-ID `196301750606` niemals löschen oder überschreiben.
+- Fallback- und Rückfall-Theme erhalten: niemals löschen oder überschreiben. Die IDs
+  stehen in `domains/shopify/live-theme.json` unter `fallback` und `preview` – hier
+  bewusst keine Zahl. Genau so ist die alte Fallback-ID still veraltet und das
+  Theme am 2026-09-15 unbemerkt gelöscht worden; gemerkt hat es erst die
+  Bestandsprüfung im Deploy-Preflight.
 - Bei kleinen, sicheren und getesteten Theme-Optimierungen darf direkt live veröffentlicht werden, sofern der Auftrag nichts anderes sagt.
 - Bei größeren riskanten Architekturänderungen zuerst analysieren und berichten.
 - Wenn eine irreversible oder geschäftskritische Änderung notwendig wäre, vorher fragen.
