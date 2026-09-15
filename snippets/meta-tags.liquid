@@ -60,7 +60,12 @@
         # Fuellwort oder Trennzeichen ("Vinylboden von der online kaufen").
         # Mehrfach, weil am Ende auch zwei Fuellwoerter stehen koennen
         # ("... Vinylboden von der").
-        assign tp_title_fillers = 'von,der,die,das,den,dem,und,mit,aus,fuer,für,im,in,am,zum,zur,-,–,|' | split: ','
+        # "als" fehlte und wurde am 2026-09-15 sichtbar: "Sylvara 655 -
+        # Design-Klebevinyl als Einzelplanken" (48 Zeichen) brach auf 45
+        # Zeichen ab und stand als "Sylvara 655 - Design-Klebevinyl als |
+        # Teppich Paradies" im Browser-Tab. Die uebrigen Ergaenzungen sind
+        # dieselbe Sorte Wort und kosten nichts.
+        assign tp_title_fillers = 'von,der,die,das,den,dem,und,mit,aus,fuer,für,im,in,am,zum,zur,als,wie,bei,auf,an,ohne,pro,je,zu,-,–,|' | split: ','
         for tp_title_pass in (1..3)
           assign tp_title_last = product_title | split: ' ' | last | downcase
           unless tp_title_fillers contains tp_title_last
@@ -92,12 +97,41 @@
       # Zeichen gestutzter Name waere der schlechtere Tausch; bis zu 64 Zeichen
       # sind in der Anzeige nur knapp ueber der Grenze, ein halber Produktname
       # ist im Ergebnis dagegen wertlos.
-      assign tp_title_max = 60
-      assign tp_title_lang = product_title | append: ' online kaufen | ' | append: tp_marke
-      if tp_title_lang.size > tp_title_max
-        assign optimized_page_title = product_title | append: ' | ' | append: tp_marke
+      # Ein im Shopify-Admin gepflegter SEO-Titel gewinnt.
+      #
+      # Vorher hat dieser Block ihn kommentarlos ueberschrieben. Beim
+      # Kontura-Teppichboden stand im Admin "Kontura Teppichboden 400cm - 19
+      # Farben"; ausgeliefert wurde "Kontura Teppichboden 400cm online kaufen |
+      # Teppich Paradies". Die Zahl der Farben ist genau das Argument, das zum
+      # Klick fuehrt - sie hat Google nie erreicht. Betroffen war fast jedes
+      # Produkt, denn die Titel sind gepflegt. Die Meta-Description kam schon
+      # immer aus dem Admin; nur der Titel wurde verworfen.
+      #
+      # page_title liefert bei Produkten den SEO-Titel, sonst den Produktnamen.
+      # Der Vergleich mit product.title unterscheidet beide Faelle, ohne ein
+      # Metafeld zu brauchen.
+      #
+      # Laenge wird hier bewusst NICHT geprueft: Ein eigener Titel ist eine
+      # redaktionelle Entscheidung. Ihn zu kuerzen waere derselbe Fehler noch
+      # einmal, nur subtiler.
+      assign tp_seo_titel = ''
+      if page_title != blank and page_title != product.title
+        assign tp_seo_titel = page_title | replace: 'TeppichParadies', 'Teppich Paradies'
+      endif
+
+      if tp_seo_titel != blank
+        assign optimized_page_title = tp_seo_titel
       else
-        assign optimized_page_title = tp_title_lang
+        # Ohne eigenen Titel baut das Theme ihn aus dem Produktnamen. "online
+        # kaufen" bleibt nur, solange der Titel in die Google-Anzeige passt -
+        # sonst faellt der Zusatz weg, damit der Markenname sichtbar bleibt.
+        assign tp_title_max = 60
+        assign tp_title_lang = product_title | append: ' online kaufen | ' | append: tp_marke
+        if tp_title_lang.size > tp_title_max
+          assign optimized_page_title = product_title | append: ' | ' | append: tp_marke
+        else
+          assign optimized_page_title = tp_title_lang
+        endif
       endif
       assign og_title = optimized_page_title
     endif
