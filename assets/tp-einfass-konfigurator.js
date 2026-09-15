@@ -8,6 +8,10 @@
   'use strict';
 
   var ART = { cover: 'Cover', ketteln: 'Gekettelt', einfassband: 'Einfassband', paspelband: 'Paspelband' };
+  // Vergroesserung in der Kantenlupe und Rand, damit die Kachel auch die
+  // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
+  var LUPE_ZOOM = 3.4;
+  var MUSTER_RAND = 12;
   var KANTE = {
     cover: 'Kante umgeschlagen, mit Vlies',
     ketteln: 'Garn Ton in Ton',
@@ -191,13 +195,38 @@
       return { wert: roh > 0 ? Math.ceil(roh) : 0, komma: komma };
     }
 
-    function muster(defs, id, groesse) {
+    /*
+      Eine Kachel, nie mehrere. patternUnits userSpaceOnUse wiederholt die Kachel,
+      sobald die gefuellte Flaeche groesser ist als width/height - genau so entstand
+      das Kachelraster statt einer zusammenhaengenden Teppichflaeche. Deshalb wird
+      die Kachel hier auf den Bereich gelegt, den sie fuellen soll (x/y/w/h), und ist
+      damit deckungsgleich mit ihm. 'slice' skaliert das Bild seitenverhaeltnistreu
+      auf, schneidet den Ueberstand ab und verzerrt dadurch nichts.
+
+      Fuer die Lupe wird bewusst eine groessere Kachel auf den kleinen Kreisbereich
+      gelegt: auch das ist genau eine Kachel, nur staerker vergroessert.
+    */
+    function muster(defs, id, x, y, breite, hoehe) {
       if (!target || !target.bild) return '#d9d4cb';
-      var pat = svgEl('pattern', { id: id, patternUnits: 'userSpaceOnUse', width: groesse, height: groesse }, defs);
-      var img = svgEl('image', { width: groesse, height: groesse, preserveAspectRatio: 'xMidYMid slice' }, pat);
+      var pat = svgEl('pattern', {
+        id: id, patternUnits: 'userSpaceOnUse',
+        x: x, y: y, width: breite, height: hoehe
+      }, defs);
+      var img = svgEl('image', {
+        x: 0, y: 0, width: breite, height: hoehe,
+        preserveAspectRatio: 'xMidYMid slice'
+      }, pat);
       img.setAttribute('href', target.bild);
       img.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', target.bild);
       return 'url(#' + id + ')';
+    }
+
+    // Die Lupenkachel ist groesser als der Kreis und wird auf ihm zentriert:
+    // dadurch zeigt sie die Mitte des Materials vergroessert, nicht dessen Ecke.
+    function lupenMuster(defs, x, y, kante) {
+      var gross = kante * LUPE_ZOOM;
+      var versatz = (gross - kante) / 2;
+      return muster(defs, uid + '-gross', x - versatz, y - versatz, gross, gross);
     }
 
     function masslinie(x1, y1, x2, y2, text) {
@@ -225,7 +254,7 @@
       svgEl('circle', { cx: lx, cy: ly, r: r }, clip);
       var g = svgEl('g', { 'clip-path': 'url(#' + uid + '-lupe)' }, svg);
       svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: 2 * r, fill: '#efece6' }, g);
-      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: muster(defs, uid + '-gross', 240) }, g);
+      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: lupenMuster(defs, lx - r, ly - r, 2 * r) }, g);
       if (art === 'cover') {
         svgEl('rect', { x: lx - r, y: ky - 12, width: 2 * r, height: 12, fill: 'rgba(0,0,0,.22)' }, g);
         svgEl('line', { x1: lx - r, y1: ky - 12, x2: lx + r, y2: ky - 12, stroke: 'rgba(255,255,255,.7)', 'stroke-width': 1.2 }, g);
@@ -251,7 +280,8 @@
       var pw = horiz * s, ph = w * s;
       var x = 46 + (270 - pw) / 2, y = 44 + (170 - ph) / 2;
       var defs = svgEl('defs', {}, svg);
-      var fuellung = muster(defs, uid + '-muster', 110);
+      var fuellung = muster(defs, uid + '-muster',
+        x - MUSTER_RAND, y - MUSTER_RAND, pw + 2 * MUSTER_RAND, ph + 2 * MUSTER_RAND);
 
       function umriss(extra) {
         var a = extra || {};
