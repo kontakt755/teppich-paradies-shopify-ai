@@ -72,21 +72,28 @@ function runHook(script, { dir, codexStub, marker, codex, input }) {
 
 // Session-State eines Implementierungsauftrags (Klasse B) nach `reviews`
 // Review-Runden. Das Hand-off liegt unter .router/ (gitignored), damit es den
-// Pruefbereich nicht veraendert.
-function reviewZustand({ dir, head }, { reviews }) {
+// Pruefbereich nicht veraendert. Der Implementer-Handoff traegt die ungepruefte
+// Voranalyse, der Reviewer-Handoff nur Auftrag und Grenzen (2026-09-11) - der
+// Stop-Hook muss den zweiten waehlen. Ohne reviewTaskPath, also mit einem
+// Session-State von vor diesem Feld, bleibt es beim Implementer-Handoff.
+const VORANALYSE = 'Auf Claude 3 Opus umschalten';
+
+function reviewZustand({ dir, head }, { reviews, mitReviewHandoff = true }) {
   const handoffPath = path.join(dir, '.router', 'handoff.md');
+  const reviewTaskPath = path.join(dir, '.router', 'handoff.review.md');
   fs.mkdirSync(path.dirname(handoffPath), { recursive: true });
-  fs.writeFileSync(handoffPath, 'AUFTRAG: Kann ich mit der Lexware-API Angebote bearbeiten?\n');
+  fs.writeFileSync(handoffPath, `AUFTRAG: Kann ich mit der Lexware-API Angebote bearbeiten?\n\n## Ungeprüfte Voranalyse (Hinweis, nicht verbindlich)\n${VORANALYSE}\n`);
+  if (mitReviewHandoff) fs.writeFileSync(reviewTaskPath, 'AUFTRAG: Kann ich mit der Lexware-API Angebote bearbeiten?\n');
   writeClaudeSessionState({ sessionId: SESSION, projectDir: dir, state: {
-    taskId: 'CLAUDE-HOOK-TEST', handoffPath, reviews, status: 'PENDING_REVIEW', taskClass: 'B', startCommit: head,
+    taskId: 'CLAUDE-HOOK-TEST', handoffPath, ...(mitReviewHandoff ? { reviewTaskPath } : {}), reviews, status: 'PENDING_REVIEW', taskClass: 'B', startCommit: head,
   } });
 }
 
 // Sitzung starten (Baseline mit fremd.py), dann Stop mit Schlussantwort.
-function stopNachErstemPrompt(projektDir, { reviews, stopInput, vorStop = () => {} }) {
+function stopNachErstemPrompt(projektDir, { reviews, stopInput, vorStop = () => {}, mitReviewHandoff = true }) {
   const prompt = runHook(PROMPT_HOOK, { ...projektDir, input: { hook_event_name: 'UserPromptSubmit', prompt: 'ok' } });
   assert.equal(prompt.status, 0, prompt.stderr);
-  reviewZustand(projektDir, { reviews });
+  reviewZustand(projektDir, { reviews, mitReviewHandoff });
   vorStop();
   return runHook(STOP_HOOK, { ...projektDir, input: { hook_event_name: 'Stop', ...stopInput } });
 }
@@ -131,7 +138,8 @@ test('Stop-Hook: leerer Pruefbereich reicht die Schlussantwort an den Reviewer w
   assert.match(prompt, /SCHLUSSANTWORT DES AGENTEN \(es gibt keinen Diff/);
   assert.ok(prompt.includes(`<<<SCHLUSSANTWORT\n${LEXWARE_ANTWORT}\nSCHLUSSANTWORT>>>`), 'die Antwort steht im Block');
   assert.match(prompt, /Vorbestehend, unverändert seit Sitzungsbeginn: fremd\.py/, 'die Baseline kommt beim Scope an');
-  assert.match(prompt, /Lexware-API Angebote bearbeiten\?/, 'der Auftrag aus dem Hand-off');
+  assert.match(prompt, /Lexware-API Angebote bearbeiten\?/, 'der Auftrag aus dem Reviewer-Hand-off');
+  assert.doesNotMatch(prompt, new RegExp(VORANALYSE), 'die ungepruefte Voranalyse bleibt draussen');
   assert.equal(fs.existsSync(claudeSessionStatePath({ sessionId: SESSION, projectDir: projektDir.dir })), false, 'PASS loescht den Zustand');
   assert.ok(readClaudeSessionBaseline({ sessionId: SESSION, projectDir: projektDir.dir }), 'die Baseline ueberlebt');
 });
@@ -168,6 +176,15 @@ test('Stop-Hook: ein NUL in der Schlussantwort verhindert das Review nicht', () 
   assert.doesNotMatch(result.stderr, /nicht verfuegbar/);
   assert.equal(result.stdout, '');
   assert.match(reviewPrompt(projektDir), /<<<SCHLUSSANTWORT\nAntwort mit NUL\nSCHLUSSANTWORT>>>/);
+});
+
+// Ein Session-State von vor dem Feld reviewTaskPath darf das Review nicht
+// verhindern - dann bekommt der Reviewer wie bisher das Implementer-Hand-off.
+test('Stop-Hook: ohne reviewTaskPath im Zustand bleibt es beim Implementer-Handoff', () => {
+  const projektDir = projekt({ codex: 'pass' });
+  const result = stopNachErstemPrompt(projektDir, { reviews: 0, mitReviewHandoff: false, stopInput: { last_assistant_message: LEXWARE_ANTWORT } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(reviewPrompt(projektDir), new RegExp(VORANALYSE));
 });
 
 test('Stop-Hook: nach drei Runden Human Gate ohne Codex-Aufruf, die Baseline ueberlebt', () => {

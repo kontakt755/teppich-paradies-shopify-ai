@@ -130,7 +130,15 @@
                   role="cell"
                   headers="productImage"
                 >
-                  {% if item.image -%}
+                  {%- liquid
+                    assign tp_ist_musterzeile = false
+                    if item.properties._Muster_ID != blank
+                      assign tp_ist_musterzeile = true
+                    endif
+                  -%}
+                  {% if tp_ist_musterzeile %}
+                    {%- render 'tp-cart-muster-bild', line_item: item -%}
+                  {% elsif item.image -%}
                     {% liquid
                       assign ratio = 1
                       assign border_opacity = settings.cart_thumbnail_border_opacity | divided_by: 100.0
@@ -300,6 +308,23 @@
                   {% assign can_update_quantity = item.instructions.can_update_quantity
                     | default: true, allow_false: true
                   %}
+                  {%- comment -%}
+                    Zuschnittware: Die Menge ist hier die Flaeche in ganzen
+                    Quadratmetern, berechnet aus Rollenbreite mal gewuenschter
+                    Laenge. Wer sie mit Plus und Minus veraendert, bestellt eine
+                    andere Flaeche - die Eigenschaft "Gewuenschte Laenge" bleibt
+                    dabei stehen. Bestellung und Zuschnittauftrag widersprechen
+                    sich dann, und das faellt erst im Lager auf (Audit B-25).
+                    Deshalb ist die Menge bei diesen Zeilen gesperrt; geaendert
+                    wird das Mass auf der Produktseite.
+                  {%- endcomment -%}
+                  {%- liquid
+                    assign tp_cart_zuschnitt = false
+                    if item.properties['Gewünschte Länge'] != blank
+                      assign tp_cart_zuschnitt = true
+                      assign can_update_quantity = false
+                    endif
+                  -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,
@@ -330,6 +355,12 @@
                       <span class="visually-hidden">{{ 'accessibility.remove' | t }}</span>
                     </button>
                   </div>
+                  {%- if tp_cart_zuschnitt -%}
+                    <p class="cart-items__zuschnitt-hinweis">
+                      Zuschnitt nach Maß.
+                      <a href="{{ item.url }}">Maß ändern</a>
+                    </p>
+                  {%- endif -%}
                 </td>
                 <td
                   class="cart-items__error hidden"
@@ -843,6 +874,20 @@
     100% {
       transform: translate(0, 0);
     }
+  }
+
+  /* Hinweis unter der gesperrten Mengensteuerung bei Zuschnittware (B-25). */
+  .cart-items__zuschnitt-hinweis {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .cart-items__zuschnitt-hinweis a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 
   .cart-items__properties {

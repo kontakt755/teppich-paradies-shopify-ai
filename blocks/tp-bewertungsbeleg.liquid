@@ -3,10 +3,14 @@
   Google-Bewertungen. Ergaenzt tp-vertrauen.liquid (das nur Fliesstext zeigt)
   um eine konkrete, glaubwuerdige Zahl.
 
-  Zeigt bewusst KEINE Bewertungsanzahl. "1.200+" stand hier als Platzhalter-
-  Default und wurde nie durch eine echte Zahl ersetzt - am 2026-09-05 als
-  falsche Angabe erkannt und entfernt. Erst nach echter Elfsight/Reviews-
-  API-Anbindung wieder mit echtem Wert ergaenzen, nie mit einer Schaetzung.
+  Die Bewertungsanzahl war lange gesperrt: "1.200+" stand hier als Platzhalter-
+  Default, wurde nie durch eine echte Zahl ersetzt und am 2026-09-05 als falsche
+  Angabe entfernt. Seit 2026-09-12 ist sie wieder erlaubt, aber nur abgeschrieben
+  - an dem Tag im Google-Unternehmensprofil abgelesen: 4,9 aus 240 Rezensionen.
+  Leeres Feld blendet die Anzahl aus; geschaetzt wird nie.
+
+  Warum die Anzahl zaehlt: "4,9/5" allein koennten drei Bewertungen sein. Erst
+  die Zahl macht aus der Note einen Beleg.
 
   Dasselbe galt fuer die Sterne: "4.8" war Schema-Default, nie gegen das
   Google-Profil geprueft, waehrend Startseite und Trust-Streifen bewusst leer
@@ -16,6 +20,7 @@
 {%- liquid
   assign tp_bb_id = block.id | replace: '_', '' | downcase
   assign tp_bb_rating = block.settings.rating | strip
+  assign tp_bb_count = block.settings.review_count | strip
   assign tp_bb_link = block.settings.review_link
 -%}
 
@@ -30,6 +35,9 @@
       {%- endfor -%}
     </span>
     <span class="tp-bewertungsbeleg__score-{{ tp_bb_id }}">{{ tp_bb_rating }}/5</span>
+    {%- if tp_bb_count != blank -%}
+      <span class="tp-bewertungsbeleg__count-{{ tp_bb_id }}">aus {{ tp_bb_count }} Bewertungen</span>
+    {%- endif -%}
   {%- endif -%}
   {%- if tp_bb_link != blank -%}
     <a class="tp-bewertungsbeleg__link-{{ tp_bb_id }}" href="{{ tp_bb_link }}" target="_blank" rel="noopener noreferrer">{% if tp_bb_rating != blank %}Auf Google lesen{% else %}Kundenbewertungen auf Google lesen{% endif %}</a>
@@ -57,6 +65,11 @@
     font-weight: 650;
   }
 
+  {%- comment -%} Die Anzahl belegt die Note, ohne sie zu ueberstrahlen {%- endcomment -%}
+  .tp-bewertungsbeleg__count-{{ tp_bb_id }} {
+    opacity: .75;
+  }
+
   .tp-bewertungsbeleg__link-{{ tp_bb_id }} {
     color: var(--color-foreground);
     font-weight: 600;
@@ -81,6 +94,12 @@
       "id": "rating",
       "label": "Sternebewertung (leer = ausgeblendet)",
       "info": "Nur aus dem Google-Unternehmensprofil abschreiben, nie schaetzen."
+    },
+    {
+      "type": "text",
+      "id": "review_count",
+      "label": "Anzahl der Bewertungen (leer = ausgeblendet)",
+      "info": "Nur aus dem Google-Unternehmensprofil abschreiben, nie schaetzen oder aufrunden."
     },
     {
       "type": "url",

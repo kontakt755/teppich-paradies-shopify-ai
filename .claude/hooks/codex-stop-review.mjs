@@ -3,6 +3,7 @@ import path from 'node:path';
 import { runCodexReview, runReviewStep } from '../../automation/core/cli-agent-cycle.mjs';
 import { detectReviewScope, resolveReviewDir, reviewCandidateFromStop, REVIEW_SCOPE_UNKNOWN } from '../../automation/core/review-scope.mjs';
 import { clearClaudeSessionState, readClaudeSessionBaseline, readClaudeSessionState, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
+import { readSessionWrites } from '../../automation/core/session-writes.mjs';
 import { buildModelPlan, describeStep, resolveCodexBinary } from '../../workflow/model-matrix.mjs';
 
 async function stdinJson() {
@@ -68,7 +69,14 @@ try {
   // origin/main - der in einem geteilten Checkout auch von einer anderen,
   // parallel laufenden Sitzung stammen kann. Fehlt startCommit (aelterer
   // Session-State ohne das Feld), verhaelt sich das wie vor diesem Fix.
-  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline });
+  // Welche Pfade hat DIESE Sitzung selbst geschrieben (2026-09-14)? Die
+  // Baseline allein reicht nicht: Sie haelt nur den Stand beim ERSTEN Prompt
+  // fest. Fremde Aenderungen, die waehrend einer langen Sitzung entstehen,
+  // gelten ihr gegenueber als neu und landeten deshalb im Pruefbereich - der
+  // Reviewer verlangte daraufhin Korrekturen an fremder Arbeit.
+  // Die Liste kennzeichnet nur, sie filtert nicht (siehe session-writes.mjs).
+  const sessionWrites = readSessionWrites({ sessionId: input.session_id, projectDir });
+  const scope = detectReviewScope({ cwd: reviewDir, sinceRef: current.state.startCommit ?? null, baseline: sessionBaseline, ownPaths: sessionWrites?.paths ?? null, ownPathsTruncated: sessionWrites?.truncated ?? false });
   // Schlussantwort des Agenten (2026-09-11): nur bei leerem Pruefbereich (nach
   // Abzug der Baseline), damit der Reviewer eine sachlich beantwortete Frage
   // als No-op erkennt, statt Code zu verlangen. Bei jedem anderen Scope ''.
@@ -92,7 +100,10 @@ try {
     review: runCodexReview,
     reviewStep,
     authorModel: plan.primary?.model ?? null,
-    taskFile: current.state.handoffPath,
+    // Auftrag und verbindliche Grenzen, nie die ungepruefte Voranalyse aus dem
+    // Handoff des Implementers (buildReviewerTaskPack in claude-bridge.mjs).
+    // handoffPath nur fuer Session-States von vor diesem Feld.
+    taskFile: current.state.reviewTaskPath ?? current.state.handoffPath,
     taskId,
     // Der Reviewer liest den Code im Arbeitsverzeichnis der Sitzung; die
     // Laufprotokolle bleiben absichtlich unter projectDir, weil

@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-12T09:46:17.225Z",
+  "generated_at": "2026-09-15T09:57:26.107Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 79,
+  "count": 95,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-12T09:46:17.225Z",
+    "fetchedAt": "2026-09-15T09:57:26.107Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -25,6 +25,7 @@
       "area:produktseite",
       "area:seo",
       "area:service",
+      "area:shopify",
       "area:sicherheit",
       "area:sonstiges",
       "area:technik",
@@ -63,14 +64,86 @@
   },
   "issues": [
     {
-      "number": 230,
-      "title": "Rollenware-Rechner: Zuschnitt je Farbe ausblenden",
+      "number": 309,
+      "title": "UX-Kaufbereich, Farbauswahl, Kaufleiste, Tablet-Ueberlauf",
       "state": "open",
-      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/230",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/309",
       "labels": [
         "status:review",
         "type:technik",
         "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T09:18:19Z",
+      "updated_at": "2026-09-15T09:55:14Z",
+      "closed_at": null
+    },
+    {
+      "number": 297,
+      "title": "Interne Bestell-E-Mail mit Grosshaendler-ID im Admin einsetzen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/297",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T08:23:08Z",
+      "updated_at": "2026-09-15T09:57:12Z",
+      "closed_at": "2026-09-15T09:57:12Z"
+    },
+    {
+      "number": 287,
+      "title": "Predictive Search: Amazon-aehnliche Schnellsuche unter der Suchleiste (PR #286)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/287",
+      "labels": [
+        "status:eingang",
+        "type:verbesserung",
+        "priority:p2",
+        "area:navigation"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-14T09:26:08Z",
+      "updated_at": "2026-09-14T09:26:09Z",
+      "closed_at": null
+    },
+    {
+      "number": 282,
+      "title": "Referenzprodukt Piumera: Teppichboden-System fertigstellen (Rechner, Teppich nach Maß, Warenkorb, QA)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/282",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p1",
         "area:produktseite"
       ],
       "assignee": "kontakt755",
@@ -82,9 +155,323 @@
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
-      "created_at": "2026-09-12T08:56:25Z",
-      "updated_at": "2026-09-12T08:56:39Z",
+      "created_at": "2026-09-14T08:44:27Z",
+      "updated_at": "2026-09-14T09:48:20Z",
       "closed_at": null
+    },
+    {
+      "number": 277,
+      "title": "Rollenware-Produktseite: oberer Kaufbereich neu ordnen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/277",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T09:48:19Z",
+      "updated_at": "2026-09-13T12:29:53Z",
+      "closed_at": "2026-09-13T10:41:12Z"
+    },
+    {
+      "number": 274,
+      "title": "Musterbestellungen im Warenkorb mit passendem Farbfoto",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/274",
+      "labels": [
+        "status:fertig",
+        "type:verbesserung",
+        "priority:p2",
+        "area:warenkorb"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T09:10:21Z",
+      "updated_at": "2026-09-13T09:18:50Z",
+      "closed_at": "2026-09-13T09:18:50Z"
+    },
+    {
+      "number": 269,
+      "title": "Neue Kategorie Teppichfliesen im Mega Menu + Landingpage",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/269",
+      "labels": [
+        "status:fertig",
+        "type:verbesserung",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T08:40:40Z",
+      "updated_at": "2026-09-13T08:42:42Z",
+      "closed_at": "2026-09-13T08:42:27Z"
+    },
+    {
+      "number": 268,
+      "title": "Sylvara/Eichenhain: Paket-Metafelder ergaenzt, Produkte publiziert",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/268",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T08:36:03Z",
+      "updated_at": "2026-09-13T08:37:06Z",
+      "closed_at": "2026-09-13T08:36:36Z"
+    },
+    {
+      "number": 265,
+      "title": "Treppenseite: Kokos ist nicht kettelbar, Treppenläuferstange fehlt",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/265",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": null,
+      "fields": {
+        "description": "Befund von Ahmet an der live stehenden Seite (2026-09-13):\n\n**Fachlich falsch.** Die Seite sagt „Kokos gibt es nur als gekettelten Läufer\". Kokos lässt sich nicht ketteln — das Gewebe ist zu grob. Kokos und Sisal kommen in festen Breiten (z. B. 65 und 90 cm) mit verschweißter Industriekante und werden von einer **Treppenläuferstange** gehalten. Diese Ausführung fehlte auf der Seite komplett.\n\nBei Sisal kommt hinzu: Wird eine Zwischenbreite gebraucht (z. B. 80 cm), wird die 90er Bahn zugeschnitten und die Schnittkante gekettelt.\n\n**Layout.** Der Kasten „Was Sie von uns bekommen\" ist zu groß.\n\nFolgeaufgabe zu #259. Der Rest der Seite ist bestätigt."
+      },
+      "created_at": "2026-09-13T06:46:33Z",
+      "updated_at": "2026-09-13T07:28:53Z",
+      "closed_at": "2026-09-13T07:28:39Z"
+    },
+    {
+      "number": 264,
+      "title": "Kettelservice: Zweig auf aktuellen main-Stand gemergt, Merge-Fehler behoben",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/264",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-13T06:42:56Z",
+      "updated_at": "2026-09-13T06:42:57Z",
+      "closed_at": null
+    },
+    {
+      "number": 259,
+      "title": "Treppenseite: Ausführungsvarianten von Belagsarten trennen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/259",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": null,
+      "fields": {
+        "description": "Befund von Ahmet zur Seite `/pages/treppenverlegung` (2026-09-12):\n\n1. Erstes und zweites Bild sind dasselbe Foto.\n2. Die Bereiche sollen als zusammenhängende Blöcke (Bild + Beschreibung) gestaltet sein.\n3. „Teppichläufer\" ist als Kategorie falsch — die Ausführungsvarianten (Läufer mit seitlicher Kettelung, einzelne Stufen nach Schablone, nur Trittstufe, Tritt- und Setzstufe, komplett mit Wange; mit Vinyl dasselbe außer Kettelung) fehlen komplett.\n\nUrsache: Die Seite mischt zwei unabhängige Dimensionen — **Material** (Kokos, Sisal, Teppichboden, Vinyl) und **Umfang der Ausführung**. „Läufer\" ist eine Ausführung, kein Material.\n\nUmsetzung im PR: eigene Sektion für die Ausführungen mit Schemazeichnung je Variante, Matrix zur Verbindung beider Dimensionen, Belagsarten auf reines Material reduziert.\n\n**Offen, braucht Ahmet:**\n- Welche Ausführungen gehen mit Kokos und Sisal? Die Spalte bleibt bis dahin ausgeblendet.\n- Fotos für Kokos, Sisal und Vinyl auf der Treppe fehlen im Shop (nur zwei Treppenprojekte, beide Teppichboden vollflächig)."
+      },
+      "created_at": "2026-09-12T20:04:01Z",
+      "updated_at": "2026-09-12T21:02:33Z",
+      "closed_at": "2026-09-12T21:02:20Z"
+    },
+    {
+      "number": 258,
+      "title": "Produktseite: Stueckzahl (Planken/Fliesen) im Paketrechner anzeigen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/258",
+      "labels": [
+        "status:in-arbeit",
+        "status:fertig",
+        "type:technik",
+        "priority:p3",
+        "area:produktseite",
+        "reviewer:mensch"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": null,
+      "fields": {
+        "description": "Der Warenkorb zeigt je Position \"12 Planken à 152,4 × 22,8 cm\", die Produktseite nicht — vor dem Hinzufuegen war nicht zu sehen, wie viele Planken oder Fliesen in der Bestellung stecken.\n\nDer Paketrechner (`blocks/paket-auswahl.liquid`) zeigt die Zeile jetzt im Ergebnisblock, in derselben Reihenfolge und Formulierung wie `snippets/tp-cart-paketzeile.liquid`:\n\n- 1 Paket: `6 Planken à 152,4 × 22,8 cm`\n- 2 Pakete: `12 Planken à 152,4 × 22,8 cm (6 je Paket)`\n\nQuelle sind `custom.stueck_pro_paket`, `custom.stueck_bezeichnung` und `custom.format_cm`. Ohne Stueckzahl-Metafeld entfaellt die Zeile.\n\nPR: #257\n\nOffen: visuelle Pruefung und Deploy laufen lokal (Storefront ist aus Remote-Sessions gesperrt)."
+      },
+      "created_at": "2026-09-12T19:59:35Z",
+      "updated_at": "2026-09-13T08:22:36Z",
+      "closed_at": "2026-09-13T08:04:18Z"
+    },
+    {
+      "number": 255,
+      "title": "Rollenware: Art-Wahl Meterware/Raummass, Breite als Chip",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/255",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T19:33:03Z",
+      "updated_at": "2026-09-12T21:35:15Z",
+      "closed_at": "2026-09-12T21:35:15Z"
+    },
+    {
+      "number": 253,
+      "title": "Verlegeservice-Konditionen live stellen (PR #249 ist in main, Deploy fehlt)",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/253",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": null,
+      "fields": {
+        "goal": "Der Deploy ist aus einer Remote-Session technisch nicht möglich. Alle vier Wege wurden geprüft, nicht vermutet:\n\n1. **Schreiben ins Live-Theme** — von der Sicherheitsrichtlinie des MCP-Servers abgelehnt: `category: live_theme`, `kind: targets_live`. Theme-Datei-Writes sind nur auf unveröffentlichten Themes erlaubt.\n2. **Theme veröffentlichen** — ebenfalls blockiert (`theme publishing`).\n3. **Shopify CLI** — nicht installiert und keine Projekt-Abhängigkeit; `npm install` bringt sie nicht.\n4. **Egress** — `sjjyq1-6w.myshopify.com` und `www.teppich-paradies.net` beide `connect_rejected` (Organisationsrichtlinie).\n\n`npm run workflow:doctor` steht folgerichtig bei 11× OK und zwei offenen Punkten: fehlende Preview-Evidence und fehlende Shopify CLI.\n\n## Was zu tun ist (lokal auf dem Mac)\n\n```\ngit checkout main && git pull origin main\nnpm run workflow:doctor\nnode workflow/cli.mjs preview --theme-id 203690246478 --approve-preview --p0 0 --p1 0\nnode workflow/cli.mjs live --theme-id 203690246478 --approve-live --approval-text \"PUBLISH LIVE\" --execute\n```\n\n`--p0 0 --p1 0` verlangt das Gate ausdrücklich — erst setzen, wenn die Preview gesehen wurde.\n\n## Vor dem Live-Gang ansehen\n\nZwei Stellen s…",
+        "description": "## Stand\n\nPR #249 ist gemergt (`01ccab6`). Der Code liegt vollständig in `main`, ist aber **nicht live** — der Shop zeigt weiterhin die alten Konditionen.\n\nGeänderte Werte (Theme-Einstellungen, Gruppe *TP Verlegeservice*):\n\n| Einstellung | live derzeit | in main |\n|---|---|---|\n| Lose Verlegung | 4,95 €/m² | 8,95 €/m² |\n| Mindestpauschale je Auftrag | 49 € | 129 € |\n| Mit Verlegeband (unter 649 €) | 8,95 €/m² | 9,95 €/m² |\n| Mit Flüssigfixierung (unter 649 €) | 9,95 €/m² | 10,95 €/m² |\n| Vollflächig verklebt (unter 649 €) | 10,95 €/m² | 11,95 €/m² |\n\nDazu: „Zusatz\"-Markierung für Verlegeband/Fixierung/Verklebung, die Und-Bedingung (Warenwert **und** Entfernung) ausdrücklich an allen Stellen, neu gefasster Beispielblock, Hinweis auf ebenerdige Anlieferung."
+      },
+      "created_at": "2026-09-12T18:39:40Z",
+      "updated_at": "2026-09-12T19:09:04Z",
+      "closed_at": "2026-09-12T19:08:46Z"
+    },
+    {
+      "number": 252,
+      "title": "Bewertungsbeleg auf allen Produktvorlagen, Anzahl belegt",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/252",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T18:30:44Z",
+      "updated_at": "2026-09-12T18:47:04Z",
+      "closed_at": "2026-09-12T18:47:04Z"
+    },
+    {
+      "number": 246,
+      "title": "Sicherheits-Hook: Git-Aufruf in Anfuehrungszeichen umging den Guard",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/246",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T15:50:05Z",
+      "updated_at": "2026-09-12T16:40:44Z",
+      "closed_at": "2026-09-12T16:40:44Z"
+    },
+    {
+      "number": 230,
+      "title": "Rollenware-Rechner: Zuschnitt je Farbe ausblenden",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/230",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-12T08:56:25Z",
+      "updated_at": "2026-09-12T09:48:38Z",
+      "closed_at": "2026-09-12T09:48:38Z"
     },
     {
       "number": 225,
@@ -237,10 +624,10 @@
     {
       "number": 202,
       "title": "Live-Seiten zeigen B2B-Kopf: Vorlagen-Rueckfall reparieren",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/202",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:content"
@@ -249,23 +636,23 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Seiten mit einem Template-Suffix ohne passende Vorlage fallen still auf templates/page.json zurueck - und page.json ist auf main und live die B2B-Seite (Hauptbereich abgeschaltet). Live geprueft am 2026-09-11: 9 veroeffentlichte Seiten zeigen den Firmenkunden-Kopf, u. a. uber-uns, liefer-verlegeservice, unsere-arbeit, hochflor-teppichboden; firmenkunden und fur-geschaftskunden nur zufaellig richtig. Fix: page.json neutral (Horizon-Standard), B2B-Inhalt in Vorlagen passend zu den echten Suffixen.",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:47:11Z",
-      "updated_at": "2026-09-11T18:22:36Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T09:49:40Z",
+      "closed_at": "2026-09-12T09:49:26Z"
     },
     {
       "number": 201,
       "title": "Review-Scope: fremde uncommittete Aenderungen und Voranalyse aus der Pruefung halten",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/201",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
@@ -274,14 +661,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:41:30Z",
-      "updated_at": "2026-09-11T18:22:17Z",
-      "closed_at": null
+      "updated_at": "2026-09-12T16:30:28Z",
+      "closed_at": "2026-09-12T16:30:13Z"
     },
     {
       "number": 199,
@@ -298,13 +685,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T12:20:50Z",
-      "updated_at": "2026-09-11T20:02:58Z",
+      "updated_at": "2026-09-12T16:40:58Z",
       "closed_at": null
     },
     {
@@ -413,7 +800,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/188",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p2",
         "area:produktseite"
@@ -422,13 +809,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 10,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-11T10:42:07Z",
+      "updated_at": "2026-09-14T08:59:14Z",
       "closed_at": null
     },
     {
@@ -1962,7 +2349,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/44",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:google"
@@ -1971,7 +2358,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Events testen mit Tag Assistant",
       "fields": {
         "description": "Verknüpfe Google Ads mit GA4 und richte Conversion Tracking ein\n- [ ] GA4 Property erstellt\n- [ ] Verknüpfung mit Google Ads aktiv\n- [ ] Purchase Event konfiguriert\n- [ ] AddToCart Event konfiguriert\n- [ ] ViewItem Event konfiguriert",
@@ -2004,7 +2391,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:23Z",
-      "updated_at": "2026-09-08T14:23:12Z",
+      "updated_at": "2026-09-12T16:41:35Z",
       "closed_at": null
     },
     {
@@ -2013,7 +2400,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/43",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:google"
@@ -2022,7 +2409,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Validierungsbericht dokumentieren",
       "fields": {
         "description": "Überprüfe Google Merchant Center Konto und Product Feed\n- [x] Merchant Center Account Status OK\n- [x] Product Feed Validierung läuft\n- [x] Alle Produkte indexed\n- [x] No data quality issues",
@@ -2051,7 +2438,7 @@
         }
       },
       "created_at": "2026-09-03T09:40:22Z",
-      "updated_at": "2026-09-08T14:23:14Z",
+      "updated_at": "2026-09-12T16:41:32Z",
       "closed_at": null
     },
     {

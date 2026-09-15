@@ -1,0 +1,242 @@
+/*
+ * -------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * -------------------------------------------------------
+ */
+
+{
+  "sections": {
+    "hero_split_pQ8mRt": {
+      "type": "hero_split",
+      "blocks": {
+        "feature_aX4kLp": {
+          "type": "feature",
+          "settings": {
+            "marker_type": "emoji",
+            "emoji": "◻",
+            "text": "Einzeln austauschbar bei Verschleiß"
+          }
+        },
+        "feature_bY7nQw": {
+          "type": "feature",
+          "settings": {
+            "marker_type": "emoji",
+            "emoji": "✂",
+            "text": "Ohne Verschnitt verlegbar"
+          }
+        },
+        "feature_cZ2mVs": {
+          "type": "feature",
+          "settings": {
+            "marker_type": "emoji",
+            "emoji": "⌂",
+            "text": "Für Wohn- und Objektbereiche geeignet"
+          }
+        }
+      },
+      "block_order": [
+        "feature_aX4kLp",
+        "feature_bY7nQw",
+        "feature_cZ2mVs"
+      ],
+      "name": "Hero Split Features",
+      "settings": {
+        "heading": "Teppichfliesen",
+        "subheading": "Modulare Teppichfliesen für Wohn- und Objektbereiche",
+        "body": "<p>Teppichfliesen werden einzeln verlegt und lassen sich bei Bedarf punktuell austauschen – ganz ohne Verschnitt beim Zuschnitt. Geeignet für Wohn- und Objektbereiche.</p>",
+        "content_width": 1440,
+        "column_gap": 48,
+        "image_radius": 14,
+        "heading_size_desktop": 58,
+        "heading_size_mobile": 32,
+        "subheading_size": 22,
+        "body_size": 18,
+        "feature_size": 18,
+        "accent_color": "#7d9480",
+        "text_color": "#111111",
+        "muted_color": "#8d8d8d",
+        "background_color": "#ffffff",
+        "padding_top": 24,
+        "padding_bottom": 24
+      }
+    },
+    "main": {
+      "type": "main-collection",
+      "blocks": {
+        "filters": {
+          "type": "filters",
+          "static": true,
+          "settings": {
+            "enable_filtering": true,
+            "filter_style": "vertical",
+            "filter_width": "centered",
+            "text_label_case": "default",
+            "show_swatch_label": false,
+            "show_filter_label": false,
+            "enable_sorting": true,
+            "enable_grid_density": false,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "padding-block-start": 8,
+            "padding-block-end": 8,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0,
+            "facets_margin_bottom": 8,
+            "facets_margin_right": 20
+          },
+          "blocks": {}
+        },
+        "product-card": {
+          "type": "_product-card",
+          "static": true,
+          "settings": {
+            "product_card_gap": 4,
+            "inherit_color_scheme": true,
+            "color_scheme": "",
+            "border": "none",
+            "border_width": 1,
+            "border_opacity": 100,
+            "border_radius": 0,
+            "padding-block-start": 0,
+            "padding-block-end": 0,
+            "padding-inline-start": 0,
+            "padding-inline-end": 0
+          },
+          "blocks": {
+            "card-gallery": {
+              "type": "_product-card-gallery",
+              "settings": {
+                "image_ratio": "adapt",
+                "border": "none",
+                "border_width": 1,
+                "border_opacity": 100,
+                "border_radius": 0,
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "product_title_4nY4eT": {
+              "type": "tp-card-title",
+              "name": "t:names.product_title",
+              "settings": {
+                "width": "100%",
+                "max_width": "normal",
+                "alignment": "left",
+                "type_preset": "custom",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "wrap": "pretty",
+                "color": "var(--color-foreground)",
+                "background": false,
+                "background_color": "#00000026",
+                "corner_radius": 0,
+                "padding-block-start": 4,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "price_EzJzMm": {
+              "type": "price",
+              "settings": {
+                "show_sale_price_first": true,
+                "show_installments": false,
+                "show_tax_info": false,
+                "type_preset": "h6",
+                "width": "100%",
+                "alignment": "left",
+                "font": "var(--font-body--family)",
+                "font_size": "1rem",
+                "line_height": "normal",
+                "letter_spacing": "normal",
+                "case": "none",
+                "color": "var(--color-foreground)",
+                "padding-block-start": 0,
+                "padding-block-end": 0,
+                "padding-inline-start": 0,
+                "padding-inline-end": 0
+              },
+              "blocks": {}
+            },
+            "tp_card_color_thumbs": {
+              "type": "tp-card-color-thumbs",
+              "settings": {}
+            },
+            "tp_card_specs": {
+              "type": "tp-card-specs",
+              "settings": {}
+            },
+            "tp_card_actions": {
+              "type": "tp-card-actions",
+              "settings": {}
+            },
+            "tp_card_dimensions": {
+              "type": "tp-card-dimensions",
+              "settings": {}
+            },
+            "tp_card_price_sqm": {
+              "type": "tp-card-price-sqm",
+              "settings": {}
+            }
+          },
+          "block_order": [
+            "card-gallery",
+            "product_title_4nY4eT",
+            "price_EzJzMm",
+            "tp_card_color_thumbs",
+            "tp_card_specs",
+            "tp_card_actions",
+            "tp_card_dimensions",
+            "tp_card_price_sqm"
+          ]
+        }
+      },
+      "settings": {
+        "layout_type": "grid",
+        "product_card_size": "medium",
+        "mobile_product_card_size": "small",
+        "enable_infinite_scroll": true,
+        "products_per_page": 24,
+        "product_grid_width": "centered",
+        "full_width_on_mobile": false,
+        "columns_gap_horizontal": 16,
+        "columns_gap_vertical": 24,
+        "padding-inline-start": 0,
+        "padding-inline-end": 0,
+        "color_scheme": "scheme-1",
+        "padding-block-start": 0,
+        "padding-block-end": 32
+      }
+    },
+    "divider_dW5tRk": {
+      "type": "divider",
+      "name": "t:names.divider_section",
+      "settings": {
+        "color_scheme": "",
+        "section_width": "full-width",
+        "thickness": 1,
+        "corner_radius": "square",
+        "width_percent": 100,
+        "alignment_horizontal": "center",
+        "padding-block-start": 16,
+        "padding-block-end": 16
+      }
+    }
+  },
+  "order": [
+    "hero_split_pQ8mRt",
+    "divider_dW5tRk",
+    "main"
+  ]
+}

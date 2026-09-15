@@ -8,3 +8,8 @@
 # nicht angewendet.
 theme/*
 theme/**/*
+
+# domains/ traegt Dokumentation und Vorlagen fuer den Shopify-Admin (etwa den
+# Block der internen Bestellmail). Nichts davon gehoert ins Theme.
+domains/*
+domains/**/*

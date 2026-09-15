@@ -214,6 +214,17 @@
     font-weight: 400;
   }
 
+  /* Untergeordnete Zeile direkt unter "Sie bestellen": gleiche Groesse und
+     Farbe wie die uebrigen Ergebniszeilen, aber ohne zweite Spalte, weil
+     "12 Planken à 152,4 × 22,8 cm" rechtsbuendig umbrechen wuerde. */
+  .carpet-package__pieces-{{ package_selector_id }} {
+    margin: 0;
+    padding: 2px 0 4px;
+    font-size: 15px;
+    line-height: 1.35;
+    color: var(--cp-muted);
+  }
+
   .carpet-package__unit-hint-{{ package_selector_id }} {
     margin: 14px 0 0;
     padding: 10px 12px;
@@ -314,8 +325,8 @@
     die niemand belegen kann.
   {%- endcomment -%}
   data-piece-count="{{ product.metafields.custom.stueck_pro_paket.value }}"
-  data-piece-label="{{ product.metafields.custom.stueck_bezeichnung.value | default: 'Stück' }}"
-  data-piece-format="{{ product.metafields.custom.format_cm.value }}"
+  data-piece-label="{{ product.metafields.custom.stueck_bezeichnung.value | default: 'Stück' | escape }}"
+  data-piece-format="{{ product.metafields.custom.format_cm.value | escape }}"
   {{ block.shopify_attributes }}
 >
   <div class="carpet-package__primary-{{ package_selector_id }}">
@@ -409,6 +420,29 @@
       </span>
     </div>
 
+    {% comment %}
+      Stueckzahl der Bestellung, in derselben Reihenfolge und Formulierung wie
+      im Warenkorb (snippets/tp-cart-paketzeile.liquid): Paketzahl, Stueckzahl,
+      Gesamtflaeche. Bis 2026-09-12 stand die Zeile nur im Warenkorb - auf der
+      Produktseite war vor dem Hinzufuegen nicht zu sehen, wie viele Planken
+      man bekommt. Ohne custom.stueck_pro_paket bleibt die Zeile weg; eine aus
+      der Flaeche geschaetzte Stueckzahl waere eine Zusicherung ohne Beleg.
+    {% endcomment %}
+    {%- assign tp_pa_stueck = product.metafields.custom.stueck_pro_paket.value | times: 1 -%}
+    {%- if tp_pa_stueck > 0 -%}
+      {%- comment -%}
+        Der Ruhezustand ist ein Paket, deshalb steht die Zeile schon im HTML -
+        sie ist damit auch ohne JavaScript und vor dem ersten renderResults
+        gefuellt, statt als leerer Absatz Platz zu belegen.
+      {%- endcomment -%}
+      {%- assign tp_pa_einheit = product.metafields.custom.stueck_bezeichnung.value | strip | default: 'Stück' -%}
+      {%- assign tp_pa_format = product.metafields.custom.format_cm.value | strip -%}
+      <p class="carpet-package__pieces-{{ package_selector_id }}" data-pieces-line>
+        {{- tp_pa_stueck }} {{ tp_pa_einheit }}
+        {%- if tp_pa_format != blank %} à&nbsp;{{ tp_pa_format | replace: ' ', '&nbsp;' }}{% endif -%}
+      </p>
+    {%- endif -%}
+
     <div class="carpet-package__results-row-{{ package_selector_id }}">
       <span>Gesamtfläche</span>
       <span data-sqm-display>–</span>
@@ -495,7 +529,17 @@
     const packageDisplay = component.querySelector('[data-package-display]');
     const packageWord = component.querySelector('[data-package-word]');
     const unitHint = component.querySelector('[data-unit-hint]');
+    const piecesLine = component.querySelector('[data-pieces-line]');
     const totalDisplay = component.querySelector('[data-total-display]');
+
+    // Stueckangaben kommen aus den Metafeldern am Element. Fehlt die
+    // Stueckzahl, ist piecesLine gar nicht gerendert - die Zeile entfaellt
+    // dann still, statt eine geschaetzte Zahl zu zeigen.
+    const piecesPerPackage = parseInt(component.dataset.pieceCount || '0', 10) || 0;
+    const pieceLabel = (component.dataset.pieceLabel || '').trim() || 'Stück';
+    // Geschuetzte Leerzeichen: "à 152,4 × 22,8 cm" soll nie mitten im Format
+    // umbrechen - dieselbe Regel wie im Warenkorb.
+    const pieceFormat = (component.dataset.pieceFormat || '').trim().replace(/ /g, '\u00a0');
     const wasteCheckbox = component.querySelector('[data-waste-checkbox]');
     const addToCartButton = component.querySelector('[data-add-to-cart]');
     const cartMessage = component.querySelector('[data-cart-message]');
@@ -591,6 +635,22 @@
 
       if (packageWord) {
         packageWord.textContent = packages === 1 ? 'Originalpaket' : 'Originalpakete';
+      }
+
+      // Stueckzahl der Bestellung, wie im Warenkorb aus der tatsaechlichen
+      // Paketzahl gerechnet. Ab dem zweiten Paket steht der Inhalt eines
+      // einzelnen Pakets dahinter - sonst bliebe offen, ob sich "12 Planken"
+      // auf ein Paket oder auf die ganze Bestellung bezieht.
+      if (piecesLine && piecesPerPackage > 0) {
+        const piecesTotal = piecesPerPackage * packages;
+        let piecesText = piecesTotal + ' ' + pieceLabel;
+        if (pieceFormat) {
+          piecesText += ' à\u00a0' + pieceFormat;
+        }
+        if (packages > 1) {
+          piecesText += ' (' + piecesPerPackage + ' je Paket)';
+        }
+        piecesLine.textContent = piecesText;
       }
 
       // Der Hinweis auf die Verkaufseinheit erscheint genau dann, wenn der

@@ -7,6 +7,12 @@ Welche Freigaben fehlen? Was wurde verändert?
 Öffentlich (read-only): https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/
 Lokal mit Aktionen: `npm run dashboard` → http://localhost:8001
 
+8001 ist die Vorgabe, keine Bedingung: `scripts/serve-dashboard.mjs` liest `process.env.PORT`,
+das Frontend ruft `/api/*` relativ auf, und im Startbefehl steht kein Port-Flag — es haengt also
+kein OAuth-Rueckruf, kein Webhook und keine CORS-Regel an dieser Nummer. Ist 8001 belegt, weicht
+der Start deshalb auf einen freien Port aus (`autoPort` in `.claude/launch.json`) und nennt ihn.
+Wer 8001 zwingend braucht, setzt dort `autoPort` auf `false` und gibt den Port vorher frei.
+
 Konzept, Statusmodell, Datenhoheit: [`docs/control-center/`](../control-center/) (Bestandsaufnahme,
 Architektur, Changelog).
 

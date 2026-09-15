@@ -1,0 +1,772 @@
+{% comment %}
+  Treppenverlegung: Wie weit soll belegt werden.
+
+  Warum diese Sektion existiert (Ahmet, 2026-09-12): Die Seite hat vorher zwei
+  voellig verschiedene Fragen in eine Reihe aus drei Karten gepresst -
+  "Kokoslaeufer, Sisallaeufer, Teppichlaeufer". Kokos und Sisal sind ein
+  Material, "Laeufer" dagegen eine Ausfuehrung. Dadurch stand "Teppichlaeufer"
+  als Material da, und die eigentlich verkaufsentscheidende Frage - wie viel
+  der Treppe belegt wird - kam auf der Seite gar nicht vor.
+
+  Die zwei Fragen sind unabhaengig voneinander und stehen deshalb in zwei
+  Abschnitten:
+    diese Sektion   Umfang: Laeufer, Einzelstufe, Trittstufe, Tritt+Setz, Wange
+    treppenverlegun Material: Kokos, Sisal, Teppichboden, Vinyl
+
+  Die Matrix unten verbindet beide wieder. Sie wird aus den Haken an den
+  Bloecken gebaut, nicht aus einer zweiten Liste - sonst laufen Karten und
+  Tabelle auseinander, sobald jemand eine Variante aendert.
+
+  Kein Preis, wie auf der ganzen Seite: Treppen sind zu unterschiedlich. Der
+  naechste Schritt ist das kostenlose Aufmass.
+{% endcomment %}
+
+{%- liquid
+  assign ta_spalten = 0
+  if section.settings.spalte_kokos != blank
+    assign ta_spalten = ta_spalten | plus: 1
+  endif
+  if section.settings.spalte_sisal != blank
+    assign ta_spalten = ta_spalten | plus: 1
+  endif
+  if section.settings.spalte_teppich != blank
+    assign ta_spalten = ta_spalten | plus: 1
+  endif
+  if section.settings.spalte_vinyl != blank
+    assign ta_spalten = ta_spalten | plus: 1
+  endif
+-%}
+
+<section class="tp-treppen-ausf">
+  <div class="tp-treppen-ausf__kopf">
+    {%- if section.settings.titel != blank -%}
+      <h2 class="tp-treppen-ausf__titel">{{ section.settings.titel }}</h2>
+    {%- endif -%}
+    {%- if section.settings.text != blank -%}
+      <p class="tp-treppen-ausf__text">{{ section.settings.text }}</p>
+    {%- endif -%}
+    <p class="tp-treppen-ausf__legende">
+      <span class="tp-treppen-ausf__legende-marke" aria-hidden="true"></span>
+      {{ section.settings.legende | default: 'Markiert ist jeweils die Flaeche, die belegt wird.' }}
+    </p>
+  </div>
+
+  <div class="tp-treppen-ausf__raster">
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'ausfuehrung' -%}
+        <article class="tp-treppen-ausf__karte" {{ block.shopify_attributes }}>
+          <div class="tp-treppen-ausf__bild">
+            {%- comment -%}
+              Ein echtes Foto schlaegt die Zeichnung - aber nur, wenn es diese
+              Variante zeigt. Solange keines existiert, bleibt das Feld leer
+              und die Zeichnung steht.
+            {%- endcomment -%}
+            {%- if block.settings.bild != blank -%}
+              <img
+                src="{{ block.settings.bild | image_url: width: 640 }}"
+                alt="{{ block.settings.bild_alt | default: block.settings.titel | escape }}"
+                width="{{ block.settings.bild.width | default: 640 }}"
+                height="{{ block.settings.bild.height | default: 400 }}"
+                loading="lazy"
+              >
+            {%- else -%}
+              {% render 'tp-treppen-schema', variante: block.settings.variante %}
+            {%- endif -%}
+          </div>
+
+          <div class="tp-treppen-ausf__inhalt">
+            <h3 class="tp-treppen-ausf__karte-titel">{{ block.settings.titel }}</h3>
+            {%- if block.settings.text != blank -%}
+              <p class="tp-treppen-ausf__karte-text">{{ block.settings.text }}</p>
+            {%- endif -%}
+            {%- if block.settings.detail != blank -%}
+              <p class="tp-treppen-ausf__detail">{{ block.settings.detail }}</p>
+            {%- endif -%}
+
+            {%- if block.settings.belag_kokos or block.settings.belag_sisal or block.settings.belag_teppich or block.settings.belag_vinyl -%}
+              <ul class="tp-treppen-ausf__belaege">
+                {%- if block.settings.belag_kokos and section.settings.spalte_kokos != blank -%}
+                  <li>{{ section.settings.spalte_kokos }}</li>
+                {%- endif -%}
+                {%- if block.settings.belag_sisal and section.settings.spalte_sisal != blank -%}
+                  <li>{{ section.settings.spalte_sisal }}</li>
+                {%- endif -%}
+                {%- if block.settings.belag_teppich and section.settings.spalte_teppich != blank -%}
+                  <li>{{ section.settings.spalte_teppich }}</li>
+                {%- endif -%}
+                {%- if block.settings.belag_vinyl and section.settings.spalte_vinyl != blank -%}
+                  <li>{{ section.settings.spalte_vinyl }}</li>
+                {%- endif -%}
+              </ul>
+            {%- endif -%}
+          </div>
+        </article>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+
+  {%- if section.settings.matrix_zeigen and ta_spalten > 0 -%}
+    <div class="tp-treppen-ausf__matrix-block">
+      {%- if section.settings.matrix_titel != blank -%}
+        <h3 class="tp-treppen-ausf__matrix-titel">{{ section.settings.matrix_titel }}</h3>
+      {%- endif -%}
+
+      <div class="tp-treppen-ausf__matrix-scroll">
+        <table class="tp-treppen-ausf__matrix">
+          <thead>
+            <tr>
+              <th scope="col">{{ section.settings.matrix_ecke | default: 'Ausführung' }}</th>
+              {%- if section.settings.spalte_kokos != blank -%}
+                <th scope="col">{{ section.settings.spalte_kokos }}</th>
+              {%- endif -%}
+              {%- if section.settings.spalte_sisal != blank -%}
+                <th scope="col">{{ section.settings.spalte_sisal }}</th>
+              {%- endif -%}
+              {%- if section.settings.spalte_teppich != blank -%}
+                <th scope="col">{{ section.settings.spalte_teppich }}</th>
+              {%- endif -%}
+              {%- if section.settings.spalte_vinyl != blank -%}
+                <th scope="col">{{ section.settings.spalte_vinyl }}</th>
+              {%- endif -%}
+            </tr>
+          </thead>
+          <tbody>
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'ausfuehrung' -%}
+                <tr>
+                  <th scope="row">{{ block.settings.titel }}</th>
+                  {%- if section.settings.spalte_kokos != blank -%}
+                    <td>
+                      {%- if block.settings.belag_kokos -%}
+                        <span class="tp-treppen-ausf__ja">ja</span>
+                      {%- else -%}
+                        <span class="tp-treppen-ausf__nein">–</span>
+                      {%- endif -%}
+                    </td>
+                  {%- endif -%}
+                  {%- if section.settings.spalte_sisal != blank -%}
+                    <td>
+                      {%- if block.settings.belag_sisal -%}
+                        <span class="tp-treppen-ausf__ja">ja</span>
+                      {%- else -%}
+                        <span class="tp-treppen-ausf__nein">–</span>
+                      {%- endif -%}
+                    </td>
+                  {%- endif -%}
+                  {%- if section.settings.spalte_teppich != blank -%}
+                    <td>
+                      {%- if block.settings.belag_teppich -%}
+                        <span class="tp-treppen-ausf__ja">ja</span>
+                      {%- else -%}
+                        <span class="tp-treppen-ausf__nein">–</span>
+                      {%- endif -%}
+                    </td>
+                  {%- endif -%}
+                  {%- if section.settings.spalte_vinyl != blank -%}
+                    <td>
+                      {%- if block.settings.belag_vinyl -%}
+                        <span class="tp-treppen-ausf__ja">ja</span>
+                      {%- else -%}
+                        <span class="tp-treppen-ausf__nein">–</span>
+                      {%- endif -%}
+                    </td>
+                  {%- endif -%}
+                </tr>
+              {%- endif -%}
+            {%- endfor -%}
+          </tbody>
+        </table>
+      </div>
+
+      {%- if section.settings.matrix_hinweis != blank -%}
+        <p class="tp-treppen-ausf__matrix-hinweis">{{ section.settings.matrix_hinweis }}</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- if section.settings.cta_label != blank -%}
+    <div class="tp-treppen-ausf__aktion">
+      <a href="{{ section.settings.cta_ziel | default: '/pages/kontakt' }}" class="tp-treppen-ausf__button">
+        {{ section.settings.cta_label }}
+      </a>
+      {%- if section.settings.cta_zusatz != blank -%}
+        <p class="tp-treppen-ausf__zusatz">{{ section.settings.cta_zusatz }}</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+</section>
+
+{% stylesheet %}
+  .tp-treppen-ausf {
+    max-width: 1200px;
+    margin: 72px auto;
+    padding: 0 20px;
+  }
+
+  .tp-treppen-ausf__kopf {
+    max-width: 62ch;
+    margin-bottom: 32px;
+  }
+
+  .tp-treppen-ausf__titel {
+    margin: 0 0 8px;
+    font-size: clamp(22px, 2.6vw, 30px);
+    line-height: 1.2;
+  }
+
+  .tp-treppen-ausf__text {
+    margin: 0 0 14px;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .tp-treppen-ausf__legende {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .tp-treppen-ausf__legende-marke {
+    display: inline-block;
+    width: 22px;
+    height: 6px;
+    border-radius: 3px;
+    background: #2e7d32;
+    flex: 0 0 auto;
+  }
+
+  .tp-treppen-ausf__raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  /* Bild und Text gehoeren sichtbar zusammen: eine Karte mit einem Rahmen,
+     nicht ein Bild und darunter loser Text. Genau das war der Befund zur
+     alten Belagsarten-Reihe. */
+  .tp-treppen-ausf__karte {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--color-background, #fff);
+  }
+
+  .tp-treppen-ausf__bild {
+    background: #f2f4f7;
+    padding: 12px 12px 4px;
+  }
+
+  .tp-treppen-ausf__bild img {
+    display: block;
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .tp-treppen-ausf__inhalt {
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tp-treppen-ausf__karte-titel {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .tp-treppen-ausf__karte-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .tp-treppen-ausf__detail {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  .tp-treppen-ausf__belaege {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-treppen-ausf__belaege li {
+    font-size: 13px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(46, 125, 50, 0.1);
+    color: #1b5e20;
+  }
+
+  .tp-treppen-ausf__matrix-block {
+    margin-top: 40px;
+  }
+
+  .tp-treppen-ausf__matrix-titel {
+    margin: 0 0 12px;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  /* Die Tabelle darf schmaler werden als der Text, aber nie den Seitenrahmen
+     sprengen - deshalb scrollt sie in ihrem eigenen Kasten. */
+  .tp-treppen-ausf__matrix-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tp-treppen-ausf__matrix {
+    width: 100%;
+    min-width: 440px;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+
+  .tp-treppen-ausf__matrix th,
+  .tp-treppen-ausf__matrix td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+
+  .tp-treppen-ausf__matrix thead th {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .tp-treppen-ausf__matrix tbody th {
+    font-weight: 600;
+  }
+
+  .tp-treppen-ausf__matrix td {
+    text-align: center;
+  }
+
+  .tp-treppen-ausf__ja {
+    color: #1b5e20;
+    font-weight: 600;
+  }
+
+  .tp-treppen-ausf__nein {
+    opacity: 0.45;
+  }
+
+  .tp-treppen-ausf__matrix-hinweis {
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: 0.8;
+  }
+
+  .tp-treppen-ausf__aktion {
+    margin-top: 32px;
+  }
+
+  .tp-treppen-ausf__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background: #2e7d32;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+
+  .tp-treppen-ausf__button:hover,
+  .tp-treppen-ausf__button:focus {
+    background: #1b5e20;
+    border-color: #b4976c;
+    outline: none;
+  }
+
+  .tp-treppen-ausf__zusatz {
+    margin: 10px 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  /* Schemazeichnung */
+  .tp-treppen-schema {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 190px;
+  }
+
+  .tp-treppen-schema__koerper {
+    fill: rgba(0, 0, 0, 0.06);
+    stroke: none;
+  }
+
+  /* Bei "mit Wange" ist die Seitenflaeche der einzige Unterschied zu
+     "Tritt- und Setzstufe". Sie braucht deshalb genug Kontrast, sonst sehen
+     die beiden Zeichnungen nebeneinander gleich aus. */
+  .tp-treppen-schema__koerper.is-belegt {
+    fill: rgba(46, 125, 50, 0.3);
+    stroke: #2e7d32;
+    stroke-width: 2;
+  }
+
+  .tp-treppen-schema__kante,
+  .tp-treppen-schema__boden {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    opacity: 0.55;
+  }
+
+  .tp-treppen-schema__stufe {
+    fill: rgba(0, 0, 0, 0.05);
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.55;
+  }
+
+  .tp-treppen-schema__flaeche {
+    fill: rgba(46, 125, 50, 0.22);
+    stroke: none;
+  }
+
+  .tp-treppen-schema__belag {
+    stroke: #2e7d32;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  /* Die Kettelung ist die Kante, die den Laeufer ueberhaupt erst zum Laeufer
+     macht - sie bekommt deshalb eine eigene, kraeftige Linie. */
+  .tp-treppen-schema__kettelung {
+    stroke: #1b5e20;
+    stroke-width: 3;
+    stroke-dasharray: 5 4;
+  }
+
+  /* Stange: durchgezogen und ohne Strichelung, damit sie sich von der
+     Kettelung unterscheidet - in der Seitenansicht sind beide Varianten
+     identisch, die Draufsicht traegt den ganzen Unterschied. */
+  .tp-treppen-schema__stange-stab {
+    stroke: #1b5e20;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  /* Heller Ring, sonst verschwindet der Punkt im gruenen Belagsband - er sitzt
+     genau darauf. */
+  .tp-treppen-schema__stange {
+    fill: #1b5e20;
+    stroke: #f2f4f7;
+    stroke-width: 1.5;
+  }
+
+  .tp-treppen-schema__legende {
+    fill: currentColor;
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-treppen-ausf {
+      margin: 48px auto;
+      padding: 0 16px;
+    }
+
+    .tp-treppen-ausf__raster {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Treppe: Ausführungen",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Wie weit soll Ihre Treppe belegt werden?"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Text",
+      "default": "Vom schmalen Läufer in der Mitte bis zur komplett belegten Stufe samt Wange ist alles möglich. Was zu Ihrer Treppe passt, hängt von Form, Nutzung und Budget ab – wir zeigen Ihnen die Unterschiede beim Aufmaß."
+    },
+    {
+      "type": "text",
+      "id": "legende",
+      "label": "Legende unter dem Text",
+      "info": "Erklärt die grüne Markierung in den Zeichnungen.",
+      "default": "Grün markiert ist jeweils die Fläche, die belegt wird."
+    },
+    {
+      "type": "header",
+      "content": "Belagsspalten"
+    },
+    {
+      "type": "paragraph",
+      "content": "Diese vier Felder benennen die Beläge. Ein leeres Feld blendet die Spalte in der Tabelle und die Markierung an den Karten aus – so steht nie ein „–\" für etwas, das noch nicht geklärt ist."
+    },
+    {
+      "type": "text",
+      "id": "spalte_kokos",
+      "label": "Spalte 1",
+      "default": "Kokos"
+    },
+    {
+      "type": "text",
+      "id": "spalte_sisal",
+      "label": "Spalte 2",
+      "default": "Sisal"
+    },
+    {
+      "type": "text",
+      "id": "spalte_teppich",
+      "label": "Spalte 3",
+      "default": "Teppichboden"
+    },
+    {
+      "type": "text",
+      "id": "spalte_vinyl",
+      "label": "Spalte 4",
+      "default": "Vinyl"
+    },
+    {
+      "type": "header",
+      "content": "Übersichtstabelle"
+    },
+    {
+      "type": "checkbox",
+      "id": "matrix_zeigen",
+      "label": "Tabelle anzeigen",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "matrix_titel",
+      "label": "Überschrift der Tabelle",
+      "default": "Welche Ausführung geht mit welchem Belag?"
+    },
+    {
+      "type": "text",
+      "id": "matrix_ecke",
+      "label": "Beschriftung der ersten Spalte",
+      "default": "Ausführung"
+    },
+    {
+      "type": "textarea",
+      "id": "matrix_hinweis",
+      "label": "Hinweis unter der Tabelle",
+      "default": "Kokos ist zum Ketteln zu grob und kommt deshalb in festen Breiten mit verschweißter Industriekante auf die Stange. Vinyl lässt sich ebenfalls nicht ketteln – alle übrigen Ausführungen sind damit möglich."
+    },
+    {
+      "type": "header",
+      "content": "Abschluss"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Button",
+      "default": "Verlegung anfragen"
+    },
+    {
+      "type": "url",
+      "id": "cta_ziel",
+      "label": "Ziel des Buttons"
+    },
+    {
+      "type": "text",
+      "id": "cta_zusatz",
+      "label": "Zeile unter dem Button",
+      "default": "Beim Aufmaß sehen wir vor Ort, welche Ausführung auf Ihre Treppe passt."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "ausfuehrung",
+      "name": "Ausführung",
+      "settings": [
+        {
+          "type": "select",
+          "id": "variante",
+          "label": "Zeichnung",
+          "info": "Legt fest, welche Flächen die Schemazeichnung grün markiert.",
+          "options": [
+            { "value": "stange", "label": "Läufer in fester Breite, auf Treppenläuferstange" },
+            { "value": "laeufer", "label": "Läufer als Bahn, seitlich gekettelt" },
+            { "value": "einzelstufe", "label": "Einzelne Stufe nach Schablone" },
+            { "value": "trittstufe", "label": "Nur Trittstufen" },
+            { "value": "tritt_setz", "label": "Tritt- und Setzstufe" },
+            { "value": "wange", "label": "Tritt-, Setzstufe und Wange" }
+          ],
+          "default": "tritt_setz"
+        },
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Titel",
+          "default": "Tritt- und Setzstufe komplett"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Beschreibung"
+        },
+        {
+          "type": "text",
+          "id": "detail",
+          "label": "Zusatzzeile",
+          "info": "Eine konkrete Angabe, die im Beratungsgespräch immer kommt."
+        },
+        {
+          "type": "image_picker",
+          "id": "bild",
+          "label": "Foto statt Zeichnung (optional)",
+          "info": "Nur setzen, wenn das Foto genau diese Ausführung zeigt. Ein Foto einer anderen Ausführung ist schlechter als die Zeichnung."
+        },
+        {
+          "type": "text",
+          "id": "bild_alt",
+          "label": "Bildbeschreibung (Alt-Text)"
+        },
+        {
+          "type": "header",
+          "content": "Mit welchem Belag möglich"
+        },
+        {
+          "type": "checkbox",
+          "id": "belag_kokos",
+          "label": "Spalte 1",
+          "default": false
+        },
+        {
+          "type": "checkbox",
+          "id": "belag_sisal",
+          "label": "Spalte 2",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "belag_teppich",
+          "label": "Spalte 3",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "belag_vinyl",
+          "label": "Spalte 4",
+          "default": true
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Treppe: Ausführungen",
+      "category": "Custom",
+      "blocks": [
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "stange",
+            "titel": "Läufer mit Treppenläuferstange",
+            "text": "Eine Bahn in fester Breite liegt mittig auf den Stufen und wird in jeder Stufenkehle von einer Treppenläuferstange gehalten.",
+            "detail": "Feste Breiten wie 65 oder 90 cm, die Industriekante ist verschweißt.",
+            "belag_kokos": true,
+            "belag_sisal": true,
+            "belag_teppich": false,
+            "belag_vinyl": false
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "laeufer",
+            "titel": "Läufer mit seitlicher Kettelung",
+            "text": "Eine Bahn läuft mittig über die Stufen, die Längskanten werden gekettelt. Links und rechts bleibt die Stufe sichtbar.",
+            "detail": "Breite nach Maß: Für 80 cm wird die 90er Bahn zugeschnitten und die Schnittkante gekettelt.",
+            "belag_kokos": false,
+            "belag_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": false
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "einzelstufe",
+            "titel": "Einzelne Stufen nach Maß und Schablone",
+            "text": "Jede Stufe wird einzeln aufgemessen, von Hand eine Schablone genommen und der Belag danach zugeschnitten.",
+            "detail": "Der Weg für gewendelte Treppen – dort hat keine Stufe dasselbe Maß wie die nächste.",
+            "belag_kokos": false,
+            "belag_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "trittstufe",
+            "titel": "Trittstufe komplett, ohne Setzstufe",
+            "text": "Die ganze Trittfläche wird belegt, die senkrechte Setzstufe bleibt frei.",
+            "detail": "Der sichtbare Teil der Stufe bleibt sichtbar.",
+            "belag_kokos": false,
+            "belag_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "tritt_setz",
+            "titel": "Tritt- und Setzstufe komplett",
+            "text": "Trittfläche und Setzstufe werden belegt, der Belag läuft über die Stufenkante durch.",
+            "detail": "An der Stufenkante entscheidet sich die Haltbarkeit – dort läuft man am häufigsten.",
+            "belag_kokos": false,
+            "belag_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        },
+        {
+          "type": "ausfuehrung",
+          "settings": {
+            "variante": "wange",
+            "titel": "Komplett mit Wange",
+            "text": "Zusätzlich zu Tritt- und Setzstufe wird die seitliche Wange belegt. Von der Treppe bleibt dann kein alter Untergrund mehr sichtbar.",
+            "detail": "Die aufwendigste Ausführung – und die, bei der eine alte Treppe wirklich wie neu wirkt.",
+            "belag_kokos": false,
+            "belag_sisal": true,
+            "belag_teppich": true,
+            "belag_vinyl": true
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -795,3 +795,489 @@ Zuvor hatte ich dieselbe Beobachtung mit einer ebenfalls untauglichen Messung *z
 - **CTA im Bodenleisten-Kopf:** Der Inhaber hat entschieden, ihn bei 58 px zu belassen. Keine Änderung.
 
 **Eine Fast-Kollision, die auffiel, weil zwei Sitzungen sich gegenseitig informierten:** Eine weitere Sitzung hatte vom Inhaber ebenfalls ein „stell es live" erhalten und war dabei, `main` auf das *andere* Theme zu veröffentlichen — mit dem Kenntnisstand, #220 sei noch offen. Sie hatte tatsächlich nichts publiziert (die CLI verweigerte den Push auf das inzwischen veröffentlichte Theme) und stoppte nach dem Hinweis. Die Lehre steht in der Checkliste: vor jedem Deploy die Theme-Rollen frisch abfragen und `origin/main` unmittelbar vorher prüfen.
+
+### Nachtrag 10: Übergebene Inhaberentscheidungen (Stand 2026-09-12, nach dem Livegang)
+
+Damit sie nicht mit den Sitzungen verschwinden, in denen sie aufgekommen sind. Keine davon darf eine KI selbst entscheiden.
+
+**Aus der Referenzgalerie (Galerie-Sitzung, #184 erledigt):**
+
+> **Alle drei am 2026-09-13 vom Inhaber entschieden — siehe Nachtrag 13. Keine davon erfordert eine
+> Änderung; die Tabelle bleibt als Begründung stehen, warum sie nicht von einer KI entschieden wurden.**
+
+| Punkt | Warum es beim Inhaber liegt | Entscheidung 2026-09-13 |
+|---|---|---|
+| Ortsangaben zu den 14 Projekten | Stärkster lokaler SEO-Hebel; die strukturierten Daten geben den Ort bereits aus, die Angaben selbst sind Tatsachen über echte Aufträge und dürfen nicht erfunden werden | **Vorerst keine Orte.** Feld bleibt leer |
+| Freigabe für Kundennamen (z. B. KaDeWe) | Nennung eines Auftraggebers ist eine Rechts- und Vertrauensfrage, keine Textfrage | **Nein, keine Namen** |
+| Gehören die drei Treppenbilder zu einem Auftrag? | Tatsachenfrage zu echten Projekten; falsche Zuordnung erfindet eine Referenz | **Ja, ein Auftrag** — bestehender Eintrag bestätigt |
+
+**Aus dem Qualitätsprogramm:**
+
+| Punkt | Stand |
+|---|---|
+| Richtext-Korrektur ausliefern (Hero-Unterzeile 14 statt 18 px) | **Erledigt.** Live seit 2026-09-12T11:10:23Z auf Freigabe des Inhabers, siehe Nachtrag 9. Zusammen mit #229 und #235 ausgeliefert, wie angekündigt |
+| Ist das Ausblenden des Rollenware-Rechners bei `wunschmass: false` gewollt? | **Bestätigt vom Inhaber (2026-09-13): „fliese so lassen“.** Betroffen ist ein einziges veröffentlichtes Produkt — „Quadra Nadelvlies Teppichfliese 50×50cm“, alle zehn Farben mit `wunschmass: false` — sachlich richtig, weil eine Fliese nicht von der Rolle zugeschnitten wird. Seite bleibt kaufbar über den Paketweg (58,90 €/m², 294,50 € pro Originalpaket), 0 Rollenware-Produkte betroffen |
+| Favicon | **Erledigt (PR #271, in `main`, noch nicht live).** Vorhandenes Logo taugt nicht als Quelle (Wortmarke, bei 16–32 px unleserlich); Shop-Datei-Upload per `stagedUploadsCreate` ist mit dem aktuellen Admin-API-Zugang gesperrt. Vier Entwürfe mit den echten Markenfarben vorgeschlagen, Inhaber hat gewählt: rotes Rund, weißes „P“. Als Theme-Asset mit Fallback gelöst — sobald im Theme-Editor ein echtes Bild hinterlegt wird, übernimmt automatisch der bestehende `settings.favicon`-Zweig |
+| `sizes` der Megamenü-Bilder | Befund belegt (Nachtrag 8), Umsetzung bei der Menü-Sitzung, nur nach Freigabe |
+
+**Eine Lehre aus dem Tag, die ins Verfahren gehört:** Die gemeinsame Deploy-Arbeitskopie `mainlane` wurde von einer anderen Sitzung entfernt, während dort ein Deploy lief. Folgen: ein `uv_cwd`-Absturz mitten im Live-Befehl, ein verlorener QA-Bericht und — am gefährlichsten — Lesungen aus einem leeren Verzeichnis, aus denen ich kurzzeitig falsche Schlüsse gezogen und berichtet habe („Datei existiert nicht in main"). **Wer in einer geteilten Arbeitskopie deployt, muss sie vorher für sich beanspruchen; und jede überraschende Leseantwort ist zuerst als Werkzeugfehler zu behandeln, nicht als Befund.**
+
+### Nachtrag 11: Ein Befund, der keiner war — die Kette genau
+
+Auf ausdrücklichen Wunsch der Galerie-Sitzung hier mit korrekter Ursachenzuordnung, weil eine falsche Kette im Protokoll schlimmer ist als der Fehler selbst.
+
+Gemeldet wurde, `.claude/hooks/git-gh-guard.mjs` habe „ein Loch": `git branch -df` und `-fd` passierten den Guard, obwohl das erzwungene Branch-Löschungen sind.
+
+**Die Kette:**
+
+1. **Befund von der Galerie-Sitzung** — sie hatte die Blockregeln des Hooks gelesen.
+2. **Falsch bestätigt von der Galerie-Sitzung.** Sie hat ihn dem Inhaber zweimal als geprüft dargestellt („lesend nachgeprüft", „ein Loch"), ohne die **Erlaubnisliste** gegenzurechnen.
+3. **Weitergetragen von mir** — als „P1, klingt ernst", ohne eigene Prüfung.
+4. **Widerlegt von der Galerie-Sitzung**, indem sie den Hook direkt befragte statt ihn zu lesen: `-d`, `-D`, `-df`, `-fd` und `--delete --force` gehen durch, `git branch -D $(git branch | grep alt)` wird blockiert.
+5. **Gegengeprüft von mir am Quellcode**, was das Verhalten erklärt: Die Blockregel verlangt ein großes `D`, die Regeln für `--delete … --force` verlangen zwei getrennte Token, und die Erlaubnisliste nennt `-D` ausdrücklich und gewinnt.
+
+6. **Und dann war es doch ein Befund** — die unabhängige Prüfung hat in der nächsten Runde nachgelegt, und diesmal lag **ich** falsch. Mein Schluss „kein Sicherheitsproblem" stimmte nur für das benannte Löschen. Gemessen (Hook direkt mit JSON auf stdin befragt, Ausgabe über `permissionDecision` gelesen, nicht über den Exit-Code):
+
+| Befehl | Guard vorher |
+|---|---|
+| `git branch -D $(…)` | blockiert |
+| `git branch -df $(…)` | **erlaubt** |
+| `git branch -fd $(…)` | **erlaubt** |
+| `… \| xargs git branch -D` | blockiert |
+| `… \| xargs git branch -df` | **erlaubt** |
+| `git branch -df $ZWEIG` | **erlaubt** |
+
+Der Sweep-Schutz existierte also nur für `-D` und war mit den Kurzformen umgehbar — mehrere ungemergte Branches auf einen Befehl, genau das, was die Ausnahme verhindern soll. **Keine Kosmetik, eine echte Umgehung.**
+
+Dass es ein Versehen und kein Entwurf war, steht in den Tests des Autors selbst: `git branch -rD feature/alt` ist dort ausdrücklich blockiert, mit dem Kommentar „Kombinierte Kurzflags sind nicht ausgeschrieben genug." `-df` und `-fd` fielen nur durch, weil die erste Blockregel ein großes `D` verlangt und die beiden anderen zwei getrennte Token.
+
+Behoben: zwei Blockregeln für Kurzflags, die `d` und `f` zusammenfassen, plus sieben Regressionstests (benannt, Befehlsersetzung, Variable, `xargs`, beide Reihenfolgen). Nach der Änderung sind `-df`/`-fd` in jeder Form gesperrt, während `-d <name>`, `-D <name>` und `--delete --force <name>` unverändert durchgehen. Suite 229/229 und 37/37.
+
+**Das Muster des Tages, drittes Auftreten:** Struktur gelesen statt Verhalten gemessen. Erst bei den Drawer-Bildern (zwei Sitzungen), dann bei `naturalWidth` im Megamenü, dann hier. Jedes Mal war die Messung die Auflösung — und jedes Mal hat erst eine zweite Sitzung nachgerechnet. Mein eigener Anteil ist Schritt 3: einen fremden Befund als gesichert weiterzugeben, ohne ihn zu prüfen, obwohl ich denselben Fehler am selben Tag zweimal angemahnt hatte.
+
+### Nachtrag 12: Die zweite, größere Lücke im Guard — Aufruf über einen Pfad
+
+Nach der Kurzflag-Korrektur (Nachtrag 11) hat die unabhängige Prüfung nachgelegt, und der Befund war deutlich breiter.
+
+Die **Kandidatenerkennung** des Guards suchte das Token `git` nur nach Zeilenanfang, Leerzeichen, Klammer oder Anführungszeichen. Steht ein Pfad davor, liegt dort ein Schrägstrich — dann sah der Guard überhaupt keinen git-Aufruf, und keine Regel der Datei griff. Gemessen (Hook mit JSON auf stdin, Auswertung über `permissionDecision`):
+
+| Mit Pfadpräfix | vorher | nachher |
+|---|---|---|
+| erzwungenes Löschen per Kurzflag | erlaubt | blockiert |
+| erzwungenes Pushen | erlaubt | blockiert |
+| hartes Zurücksetzen | erlaubt | blockiert |
+| Verwerfen im Arbeitsbaum | erlaubt | blockiert |
+| Sweep hinter `xargs` | erlaubt | blockiert |
+| relativer Aufruf `./git …` | erlaubt | blockiert |
+
+Es war also **nicht nur die Sweep-Sperre offen, sondern jede Regel dieser Datei** — vorbestehend, älter als die Ausnahme vom 2026-09-12 und älter als die Kurzflag-Korrektur. Der Fehler hing an der Erkennung, nicht an den Mustern, und genau deshalb fand ihn niemand beim Lesen der Regeln.
+
+Behoben (PR #241) durch Abschneiden des Pfades: Der Rest wird wie ein nackter Aufruf geprüft, **einschließlich der Ausnahmen**. Zwölf Regressionstests, Suite 241/241.
+
+**Warum die Gegenrichtung genauso wichtig war:** Hätte das Abschneiden die Ausnahmen mitgeschnitten, wäre `git checkout -- docs/ai-dashboard/issues.json` über einen Pfad plötzlich blockiert. Das hätte niemand als Sicherheitsfehler gemeldet, sondern als „der Hook nervt" — und wäre irgendwann durch eine Aufweichung der Regel repariert worden. Deshalb wurden beide Richtungen geprüft: sechs gesperrte Formen und vier erlaubte, plus die Ausnahme mit Pfad. Die Galerie-Sitzung hat das anschließend unabhängig über 13 Fälle bestätigt.
+
+**Bilanz des Musters an diesem Tag:** viermal „Struktur gelesen statt Verhalten gemessen" — Drawer-Bilder (zwei Sitzungen gleichzeitig), `naturalWidth` im Megamenü, der Kurzflag-Fall, die Pfad-Umgehung. Jedes Mal löste eine Messung es auf, und jedes Mal fand es eine **zweite** Instanz: einmal ein Prüfer, zweimal eine andere Sitzung, einmal ich. Keine der Fehlannahmen hat den Shop erreicht. Das ist das eigentliche Ergebnis des Tages — nicht die einzelnen Fixes, sondern dass die Gegenkontrolle jedes Mal gegriffen hat.
+
+### Nachtrag 13: Die vier übergebenen Punkte aus Nachtrag 10 — Inhaberentscheidungen vom 2026-09-13
+
+Die drei Galerie-Fragen aus Nachtrag 10 waren bewusst offen, weil keine KI sie entscheiden darf: Sie
+sind Tatsachen über echte Aufträge oder Rechtsfragen. Am 2026-09-13 direkt beim Inhaber eingeholt.
+**Alle drei Antworten bedeuten „keine Änderung" — der Shop bleibt unberührt.**
+
+| Punkt | Entscheidung des Inhabers | Folge |
+|---|---|---|
+| Ortsangaben zu den 14 Projekten | **Vorerst gar keine Orte.** | Feld `ort` bleibt bei allen 14 Metaobjekten leer. Kein Dateneingriff. |
+| Kundennamen in der Galerie (z. B. KaDeWe) | **Nein, keine Namen.** | „Ladengeschäft mit Objektteppichboden" behält die neutrale Beschreibung „Ladenfläche in einem Kaufhaus". |
+| Gehören die drei Treppenbilder zu einem Auftrag? | **Ja, ein Auftrag.** | Der bestehende Eintrag ist damit bestätigt korrekt. Keine Aufteilung. |
+
+**Was das für den lokalen SEO-Hebel heißt.** Der Ort war in Nachtrag 10 als stärkster lokaler Hebel
+benannt; die Entscheidung stellt ihn bewusst zurück. Wichtig für spätere Sitzungen: Das ist **kein
+Code-Thema und keine offene Aufgabe.** Die Galerie gibt den Ort bereits aus, sobald das Feld gefüllt
+ist — `sections/tp-arbeiten-galerie.liquid` rendert ihn in der Karte (Zeile 119) und in den
+strukturierten Daten als `contentLocation` (Zeile 212), beides mit `!= blank`-Prüfung. Wird die
+Entscheidung später revidiert, genügt das Pflegen der Metaobjekte im Admin. **Niemand darf Orte
+ergänzen, ohne sie vom Inhaber zu haben** — sie sind Tatsachen über echte Aufträge.
+
+**Punkt 4 (`sizes` der Megamenü-Bilder, Nachtrag 8): unverändert offen, weiterhin bei der
+Menü-Sitzung.** Am 2026-09-13 am Live-Shop gegengemessen statt aus der Erinnerung berichtet — die
+Startseite liefert sechsmal `sizes="(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw"`. Die
+16vw sind genau die Sechstel-Rechnung aus Nachtrag 8; bei 1366 px ergibt das 218 px für eine 305 px
+breite Karte. Im Repository ist seit dem Befund kein Commit auf `snippets/mega-menu-list.liquid` oder
+`snippets/util-mega-menu-img-sizes-attr.liquid` gelandet, `grid_columns: 6` wird weiterhin fest
+übergeben. Die drei Gründe aus Nachtrag 8, es nicht selbst anzufassen, gelten unverändert — vor allem
+der erste: Es ist ein Schärfe-, kein Byte-Problem, und die Abwägung gehört dem Inhaber, nicht einer
+Performance-Optimierung.
+
+**Stand des Shops bei Abschluss dieser Runde.** Live ist das Theme mit `role: MAIN`, frisch an der
+Admin API geprüft und deckungsgleich mit `domains/shopify/live-theme.json` (Stand 2026-09-13T09:15:39Z).
+`npm run workflow:doctor` meldet alle acht Guards grün; die beiden offenen Preflight-Punkte sind
+`HEAD identisch mit origin/main` und die Preview-Evidence — beides erwartbar ohne anstehenden Deploy,
+der erste allein durch den stündlichen Dashboard-Bot. **Es wurde in dieser Runde nichts deployed und
+nichts am Shop geändert**, weil keine der vier Antworten eine Änderung verlangt.
+
+### Nachtrag 14: Frisches Audit gegen den Live-Shop (2026-09-14)
+
+Auftrag des Inhabers: „mach das frische Audit gegen den Live-Shop und schaue was wir noch besser machen
+können". Anlass war, dass die Kategoriewerte in Abschnitt A und den Zwischenständen **fortgeschriebene**
+Werte vom 2026-09-11 waren, keine gemessenen von heute.
+
+**Methode.** Lighthouse 13.4.1 gegen die Live-Domain ohne Vorschau-Parameter (damit redirect-frei per
+Definition), je Lauf ein frisches Chrome-Profil, mobil 3 Läufe im Median, Desktop 1 Lauf, 5 Seiten = 20
+Berichte, 0 Fehlläufe. Dazu Puppeteer für die gerenderte Struktur, `npm run sales:check` und
+`npm run seo:check` gegen Live. Die Browser-Messungen liefen **nach** den Lighthouse-Läufen, nicht
+parallel — sonst konkurriert die CPU und die Performance-Werte werden falsch.
+
+#### Gemessen, Median
+
+| Seite | Gerät | Perf | A11y | BP | SEO | LCP | CLS | TBT |
+|---|---|---|---|---|---|---|---|---|
+| Startseite | mobil | 66 | **100** | 77 | **100** | 8,01 s | 0,000 | 15 ms |
+| Startseite | Desktop | **96** | 97 | 77 | **100** | 1,29 s | 0,000 | 0 ms |
+| Teppichboden | mobil | 65 | **100** | 77 | **100** | 9,92 s | 0,000 | 26 ms |
+| Teppichboden | Desktop | **95** | 96 | 77 | **100** | 1,37 s | 0,000 | 0 ms |
+| Klickvinyl | mobil | 66 | **100** | 77 | **100** | 7,03 s | 0,000 | 93 ms |
+| Klickvinyl | Desktop | **95** | 96 | 77 | **100** | 1,39 s | 0,019 | 0 ms |
+| Produkt Rollenware | mobil | 65 | **100** | 77 | **100** | 8,36 s | 0,000 | 38 ms |
+| Produkt Rollenware | Desktop | 82 | 97 | 77 | **100** | 2,39 s | 0,000 | 0 ms |
+| Verlegeservice | mobil | **75** | **100** | 77 | **100** | 5,70 s | 0,000 | 8 ms |
+| Verlegeservice | Desktop | 94 | 97 | 77 | **100** | 1,56 s | 0,000 | 0 ms |
+
+Dazu: Kaufwege `6 PASS / 0 FAIL` (Paket, Rolle, Muster je Desktop und mobil), SEO-Check `0 Fehler`,
+Querscrollen `0 px` auf allen sechs geprüften Seiten, TTFB rund 140 ms, H1 genau einmal je Seite,
+Canonical überall, Marke genau einmal im Titel.
+
+**Die Accessibility- und SEO-Werte sind echt und besser als die fortgeschriebenen Schätzungen** — A11y
+stand mit 80 im Bericht, gemessen sind mobil 100 auf allen fünf Seiten.
+
+#### Der zentrale Befund: das LCP-Element ist der Cookie-Banner
+
+Auf **fünf von sechs** gemessenen Seiten ist das größte sichtbare Element beim Laden nicht das Hero-,
+Produkt- oder Kategoriebild, sondern der Textblock des Cookie-Banners. Lighthouse zeigt dazu ein Bild
+ohne Ladeanteil: **TTFB 137–146 ms**, danach **2.306–2.364 ms reine „element render delay"** — es wartet
+nichts auf einen Download, es wartet auf das Einblenden.
+
+Gegenprobe mit gesetztem `_tracking_consent`-Cookie, also aus Sicht eines wiederkehrenden Besuchers:
+
+| Seite | LCP-Element ohne Consent | mit Consent |
+|---|---|---|
+| Startseite | Cookie-Banner @732 ms | `IMG.tp-hero__img` @432 ms |
+| Teppichboden | Cookie-Banner @772 ms | `IMG.product-media__image` @648 ms |
+| Produkt Rollenware | `IMG.product-media__image` @452 ms | dasselbe @248 ms |
+| Verlegeservice | Cookie-Banner @420 ms | `H1` @236 ms |
+| Unsere Arbeit | Cookie-Banner @428 ms | Einleitungstext @384 ms |
+
+(Zeiten ungedrosselt; Lighthouse misst dieselben Elemente unter simulierter Drosselung als 5,7–9,9 s.)
+Der Banner kostet Erstbesucher also **rund die Hälfte der LCP-Zeit** — und Erstbesucher sind genau die
+Gruppe, die über Google kommt. **Das ist kein Bild-, Server- oder Theme-Problem**; Bildgrößen, TTFB und
+CLS sind bereits gut. Ein kompakterer Banner wäre der mit Abstand größte Performance-Hebel, den der Shop
+noch hat.
+
+**Warum hier trotzdem nichts geändert wurde:** Ein Cookie-Banner ist Einwilligungstext. Kürzen heißt
+Rechtstext ändern — das ist ausdrücklich Inhabersache und keine Performance-Optimierung, die eine KI
+nebenbei mitnimmt.
+
+#### Best Practices 77 ist nicht unser Fehler
+
+Der Wert ist auf **allen zehn** Messungen identisch 77 und geht auf genau zwei Abzüge zurück, beide mit
+derselben Quelle: `shop.app` setzt ein Drittanbieter-Cookie (`_shop_app_essential`), und derselbe Vorgang
+erzeugt den Eintrag im Issues-Panel. Das ist Shopifys Shop-Pay-Integration, also Plattform. Abstellen
+ließe es sich nur durch Deaktivieren von Shop Pay, was Conversion kostet. **Der Wert ist eine Konstante,
+kein offener Punkt** — künftige Audits sollten ihn nicht erneut als Befund führen.
+
+#### Was besser werden kann, nach Wirkung geordnet
+
+| # | Punkt | Beleg | Wer |
+|---|---|---|---|
+| 1 | Cookie-Banner kompakter | LCP-Element auf 5 von 6 Seiten, ~50 % der LCP-Zeit | **Inhaber** (Rechtstext) |
+| 2 | Produktbilder tragen `alt=""` | 74 von 100 `img` der Startseite als dekorativ ausgezeichnet, darunter Produktfotos | Theme |
+| 3 | Suche findet gängige Begriffe nicht | „auslegware" 0 Treffer; **„fussleiste" 0 gegen „fußleiste" 8** | Such-App (nur über die Oberfläche) |
+| 4 | Kollektionstexte erscheinen nirgends | 13 Kollektionen haben gepflegten Text, `collection.description` wird nur in `tp-leisten-hero` und `tp-zubehoer-hero` ausgegeben | Theme |
+| 5 | Titel zu lang für die Trefferliste | 71–91 Zeichen auf 6 Seitentypen | Theme/Daten |
+| 6 | Keine Versandrichtlinie | `/policies/shipping-policy` → 404 | **Inhaber** (Rechtstext) |
+| 7 | `/collections/all` ohne Meta-Description | gemessen, alle anderen Kollektionen haben eine | Daten |
+| 8 | Render-blockierendes CSS | `tp-startseite.css` (1,5 KB) und `tp-mega-menu.css` (3,0 KB) | Theme |
+| 9 | Ungenutztes JS/CSS | 39–40 KiB JS, bis 66 KiB CSS je Seite | Theme |
+| 10 | Schwerste Seite | Kategorie Teppichboden 962 KB HTML, DOM 4.099, 2.802 KB gesamt | Theme |
+
+**Ausdrücklich nicht empfohlen:** `aggregateRating` in die strukturierten Daten aufzunehmen. Die 4,9 aus
+240 Bewertungen stammt aus dem Google-Unternehmensprofil; selbst ausgezeichnete Bewertungen sind für
+`LocalBusiness` nach Googles Richtlinien heikel. Das wäre vor einer Umsetzung zu klären und nicht einfach
+zu ergänzen.
+
+#### Drei eigene Fehler, korrigiert bevor sie in den Bericht kamen
+
+Alle drei gehören zum Muster, das dieser Bericht seit Nachtrag 11 verfolgt:
+
+1. Ein `grep` auf `<meta name="description" content="…">` meldete **null** Descriptions und **null**
+   Canonicals auf jeder Seite. Ursache war die Attributreihenfolge im Shopify-Markup, nicht der Shop.
+   Mit echtem Parsen: beide überall vorhanden. Kopfdaten nie per `grep` auf eine feste
+   Attributreihenfolge prüfen.
+2. Geratene Pfade `/pages/datenschutz` und `/pages/agb` lieferten 404 — die Seiten heißen aber
+   `/pages/datenschutzerklarung` und `/pages/agbs` und sind erreichbar. **Eine geratene URL ist kein
+   Befund**; geprüft wird, was der Shop tatsächlich verlinkt.
+3. Der erste Schreibversuch dieses Nachtrags ging verloren, ohne dass es auffiel: Er hing in einer Kette
+   `git pull --rebase … && cat >> …`, der Pull scheiterte an fremden Änderungen im geteilten Checkout,
+   und damit lief das `cat` nie. Das „OK" der Folgezeile lief trotzdem und sah aus wie ein Erfolg.
+   **Eine Erfolgsmeldung aus einem anderen Befehl ist kein Beleg für den eigentlichen Schreibvorgang.**
+
+Ebenfalls scheinbar widersprüchlich, aber beides richtig: Lighthouse gibt Accessibility 100, während der
+SEO-Check Bilder ohne Alt-Text meldet. `alt=""` ist für Lighthouse eine gültige Auszeichnung als
+dekoratives Bild — für ein Produktfoto ist sie sachlich falsch. Punkt 2 der Tabelle oben.
+
+#### Nicht neu gemessen
+
+Lighthouse deckt Performance, Accessibility, SEO und Best Practices ab. Die Kategorien **Vertrauen,
+Conversion, Design-Konsistenz, Wettbewerbsfähigkeit, Technische Qualität** aus Abschnitt A sind
+Bewertungen, keine Messwerte — sie wurden hier bewusst **nicht** fortgeschrieben, statt sie zu schätzen.
+Für sie gilt weiterhin der Stand vom 2026-09-11.
+
+### Nachtrag 15: Die vier Punkte aus Nachtrag 14 — umgesetzt, verkleinert, zurückgezogen (2026-09-14)
+
+Auftrag: „ja, mach die vier Punkte" — gemeint waren die vier Zeilen aus Nachtrag 14, die beim Theme
+lagen. **Beim Nachmessen haben sich zwei davon aufgelöst oder stark verkleinert.** Das ist das
+eigentliche Ergebnis dieser Runde und der Grund, warum hier weniger Code steht als erwartet.
+
+#### Umgesetzt
+
+| Punkt | Änderung | Im Dev-Theme belegt |
+|---|---|---|
+| Zu lange Seitentitel | `snippets/meta-tags.liquid` hängt die Marke nur noch an, wenn der Titel dadurch nicht über 65 Zeichen wächst | Verlegeservice 76 → **57**, Bodenleisten 74 → **55**, Klebevinyl 72 → **53**, Klickvinyl 67 → **48**; Teppichboden bleibt 55 mit Marke |
+| `/collections/all` ohne Description | gezielter Fallback in `meta-tags.liquid` — die Seite wird von Shopify erzeugt und lässt sich im Admin nicht mit einer Beschreibung versehen | Description jetzt vorhanden |
+| Alt-Texte der Kategoriekacheln | `sections/tp-start-kategorien.liquid` übernimmt den in Shopify gepflegten Alt-Text, statt hart `alt: ''` zu setzen | 7 Kacheln, `object-fit: cover` erhalten, Alt-Texte z. B. „Piumera Teppichboden in Sand Hell (004)" |
+
+Der Fallback für `/collections/all` ist bewusst **nur** dort und nicht allgemein: eine generische
+Beschreibung auf vielen Seiten ist schlechter als gar keine.
+
+Bei den Alt-Texten war die Annahme aus Nachtrag 14 in **beide** Richtungen falsch. Erstens ist der
+Befund kleiner: Von den 74 Bildern mit `alt=""` sind **67 Menübilder im Kopfbereich**, und dort ist der
+leere Alt-Text **richtig** — der Link trägt seinen Namen bereits aus dem Text daneben, ein Alt-Text
+würde ihn für Screenreader verdoppeln. Genau deshalb gibt Lighthouse trotzdem 100. Zweitens ist der
+Rest wertvoller als gedacht: Die sieben Kategoriekacheln sind Produktfotos, und in Shopify sind dort
+sehr wohl Alt-Texte hinterlegt — sie wurden vom Theme nur weggeworfen. Die Änderung erfindet nichts:
+Fehlt ein Alt-Text, bleibt das Bild wie bisher dekorativ.
+
+#### Zurückgezogen: „Kollektionstexte erscheinen nirgends"
+
+**Dieser Befund aus Nachtrag 14 war falsch.** Er stützte sich auf ein `grep` nach
+`collection.description` über `sections/` und `snippets/` — die Templates wurden nicht durchsucht, und
+genau dort steht der Verweis, als Text-Block mit `{{ closest.collection.description }}`.
+
+Die Kategorieseiten haben Einleitungstexte. Sie kommen nur aus zwei verschiedenen Quellen: vier
+Templates nutzen den Description-Block, die übrigen einen `hero_split` mit **fest eingetragenem**
+`body`-Text. Bei „Velours" ist der Hero-Text sogar ausführlicher als die Kollektionsbeschreibung und
+anders formuliert. Hätte man den Description-Block wie geplant in die restlichen Templates eingesetzt,
+stünde auf diesen Seiten künftig **zweimal** ein Einleitungstext.
+
+Was bleibt, ist ein kleinerer, echter Befund: **derselbe Inhalt wird an zwei Orten gepflegt** — in
+Shopify als Kollektionsbeschreibung (wirkt auf SEO-Snippets) und im Template als Hero-Text (sichtbar).
+Beide laufen bereits auseinander. Das zu vereinheitlichen ist eine eigene Aufgabe mit einer
+Gestaltungsentscheidung und gehört nicht in eine Audit-Korrektur.
+
+#### Zwei weitere Messfehler auf dem Weg
+
+1. **Die Titel waren nie 71–91 Zeichen lang.** Diese Zahlen stammten aus einer Messung am rohen HTML,
+   die `&amp;` als fünf Zeichen zählte. Im Browser gemessen waren es 55–76. Der Befund blieb bestehen,
+   aber kleiner — und die Grenze von 65 Zeichen wurde auf die echten Werte gelegt, nicht auf die
+   aufgeblähten.
+2. **Eine curl-Messreihe lief in eine Cloudflare-Challenge.** Nach vielen Anfragen in kurzer Zeit
+   lieferte der Shop statt 962 KB nur noch 9 KB „Your connection needs to be verified". Der darauf
+   gestützte Zwischenbefund „auf allen Kategorieseiten fehlt der Text" war damit wertlos; im Browser
+   wiederholt, zeigten vier der acht Seiten den Text sehr wohl. **Eine Antwort, die plötzlich viel
+   kleiner ausfällt als erwartet, ist zuerst ein Werkzeugbefund.**
+
+#### Geprüft, wie es sich gehört
+
+Getestet wurde in einem eigenen Development-Theme (`shopify theme push --development
+--development-context audit-titel`), also isoliert von den Arbeits-Themes anderer Sitzungen. Dabei
+bestätigt: **Ein Development-Theme ist über `?preview_theme_id=` nicht erreichbar** — es antwortet mit
+404 und hängt an der CLI-Sitzung. Geprüft wird es über `shopify theme dev` und `127.0.0.1:9292`. Der
+Server wurde nach dem Test wieder beendet.
+
+Ebenfalls beachtet: Die Zuweisung des Alt-Textes steht **vor** dem `image_tag`. Eine Filterkette direkt
+hinter `alt:` verschluckt alle folgenden Parameter — das Bild hätte sein `class` und damit `object-fit`
+verloren. Im Test gegengeprüft: `object-fit: cover` steht.
+
+#### Nicht angefasst, weil eine andere Sitzung dort arbeitet
+
+Parallel lief eine Sitzung auf `fix/audit-restpunkte` an den B-Befunden des Audits vom 2026-09-10 und
+hat dabei fünf Kategorie-Templates geändert (`bodenleisten`, `vinylboden-rollenvinyl`, `zubehoer`,
+`zubehoer-profile`, `zubehoer-unterkategorie`). Diese Dateien wurden hier bewusst nicht angefasst.
+Erfreulich: Sie kommt beim strukturierten Datensatz unabhängig zum selben Schluss wie Nachtrag 14 —
+**kein `aggregateRating`**, weil die Bewertungen aus dem Google-Unternehmensprofil stammen und nicht von
+dieser Seite.
+
+### Nachtrag 16: Aufraeumen und Design-Tokens — kleiner als geplant, mit Begruendung (2026-09-14)
+
+Auftrag: „ja, leg los" auf die Empfehlung, Technische Qualitaet (totes Theme) und Design-Konsistenz
+(Tokens) anzugehen. **Beide Punkte sind beim Nachmessen deutlich kleiner ausgefallen als die grobe
+Schaetzung aus dem letzten Gespraech**, aus zwei verschiedenen Gruenden.
+
+#### Totes Theme: von 34 Kandidaten blieben 2 echte
+
+Die erste Kandidatenliste (Sections, die in keinem Template-`order` referenziert sind) hatte einen
+eigenen Messfehler: Die Gruppen-Dateien `header-group.json` und `footer-group.json` liegen in
+`sections/`, nicht im Repository-Root — ein erster Scan ausserhalb dieses Ordners fand sie nicht und
+zaehlte `header`, `footer` & Co. faelschlich als tot. Mit dem richtigen Pfad blieben 29 Kandidaten.
+
+Davon entfielen zwei Gruppen:
+
+1. **8 werden bereits von PR #285** (`fix/audit-restpunkte`, parallele Sitzung, noch offen) entfernt:
+   `Startseite`, `carpet-style-guide`, `carrousell_custom`, `header-announcements`,
+   `shipping-info-bar`, `tp-fachhandel`, `tp-staerken`, `vinyl-installation-guide`. Hier wurde nichts
+   doppelt gemacht.
+2. **19 sind Horizon-Kern-Sections** (`hero`, `slideshow`, `marquee`, `logo`, `quick-order-list`,
+   `featured-product`, `collection-list`, `password-footer`, `predictive-search`,
+   `predictive-search-empty`, `section-rendering-product-card` und weitere): Standardbausteine, die
+   jeder Horizon-Shop mitbringt und die im Editor jederzeit auf eine Seite gezogen werden koennen. Sie
+   dort zu loeschen waere „Horizon migrieren" — laut CLAUDE.md ausdruecklich nur mit Freigabe. Mehrere
+   davon sind ausserdem bekannte Falsch-Positive: `predictive-search`/`predictive-search-empty` und
+   `section-rendering-product-card` werden ueber die Section Rendering API aufgerufen, nicht ueber ein
+   Template, und `password-footer` kommt aus `layout/password.liquid`.
+
+**Real geloescht wurden zwei zusammengehoerige `tp-`-Sections:** `tp-service-start.liquid` (357 Zeilen)
+und `tp-laden-hinweis.liquid` (154 Zeilen), beide aus demselben Commit (`d982fc4`, „Service-Startseite
+mit Produkten"), beide nur im jeweils anderen Kommentar erwaehnt, keine in einem Template. Der Beleg,
+dass `tp-laden-hinweis` nicht nur ungenutzt, sondern aktiv schaedlich war, steht im Code selbst: Der
+Kommentarkopf von `sections/tp-leisten-hero.liquid` erklaert, dass ein Praefixwechsel am 2026-09-12
+fremde Abstaende geerbt hat, weil `tp-laden-hinweis.liquid` nie gerendert wird, sein `{% stylesheet %}`
+aber trotzdem ins gebuendelte Theme-CSS einfliesst — der bekannte Mechanismus aus
+`css_section_stylesheet_wirkt_global`. Keine der beiden Dateien steht in `essential-files.json` oder
+wird von einer dritten Datei referenziert.
+
+#### Design-Tokens: Vereinheitlichung zurueckgestellt, nicht durchgefuehrt
+
+Vor dem Schreiben geprueft, ob bereits Tokens existieren — und dabei zwei gefunden, die pro Bereich
+eigene Custom Properties definieren: `assets/tp-startseite.css` (`:root`, fuer die `tp-start-*`
+Sections) und `assets/tp-teppiche.css` (`.tp-tep`-gescoped, fuer den Teppiche-Bereich). Beide nutzen
+denselben Namen fuer verschiedene Werte — `--tp-ink: #1d1a17` gegen `#1f1d1b`, `--tp-line` als Hex hier,
+als `rgb()` mit Transparenz dort.
+
+**Das sieht auf den ersten Blick wie der gesuchte Befund aus, ist es aber nicht.** Der Kommentarkopf von
+`tp-teppiche.css` erklaert die Trennung als Absicht: „Alles unter .tp-tep, damit keine andere Seite
+etwas davon erbt … Als Asset geladen, nicht per stylesheet-Tag einer Section - Section-CSS landet sonst
+global im Theme." Es sind zwei bewusst isolierte Mini-Systeme fuer zwei unterschiedliche Bereiche,
+nicht ein Kopierfehler, der beide zufaellig `--tp-ink` nennt.
+
+Eine Vereinheitlichung waere trotzdem moeglich, aber sie ist eine **groessere gestalterische
+Entscheidung**: Beide Bereiche muessten inhaltlich auf denselben Farbton geeinigt werden (das ist eine
+Design-Entscheidung, keine Code-Aufraeumung), und jede betroffene Seite braucht danach eine visuelle
+Kontrolle. Genau das beschreibt CLAUDE.md als „grosse architektonische Aenderung, erst analysieren und
+berichten" statt eigenstaendig auszufuehren. **Deshalb hier zurueckgestellt.** Die 116 verstreuten
+Hex-Werte in den einzelnen `tp-*.liquid`-Dateien wurden aus demselben Grund nicht angefasst: sie in
+einem Durchgang zu ersetzen, ohne jede der rund 30 betroffenen Dateien einzeln visuell zu pruefen, waere
+das Risiko einer stillen Regression wert, das dieser Bericht selbst mehrfach dokumentiert
+(Nachtrag zu `css_section_stylesheet_wirkt_global`).
+
+**Empfehlung fuer einen spaeteren, eigenen Auftrag:** Erst festlegen, ob Startseite und Teppiche-Bereich
+denselben Ink-/Line-Ton tragen sollen oder bewusst verschieden bleiben (Inhaberfrage), dann ein
+gemeinsames Basis-Token-File nur fuer wirklich geteilte Werte (Radius, Schatten-Formel, Abstaende)
+anlegen, und die inline-Hexwerte Datei fuer Datei mit Vorher/Nachher-Screenshot ersetzen statt in einem
+Sweep.
+
+#### Ergebnis dieser Runde
+
+511 Zeilen totes Theme entfernt, 0 Zeilen Risiko fuer sichtbares Verhalten (nichts davon wurde je
+gerendert). Guards gruen (`liquid`, `schema`, `essential-files`; die drei bestehenden
+`BLOCK_DRIFT`-Warnungen im Template-Guard sind vorbestehend und unveraendert). Design-Tokens: keine
+Code-Aenderung, stattdessen eine begruendete Empfehlung fuer eine eigene, groessere Aufgabe.
+
+**Nachtrag zur Dokumentation selbst (2026-09-14, spaeter):** Dieser Abschnitt fehlte urspruenglich in
+`main` — der `git add` beim Commit `0c892e6` hatte die Doku-Datei nicht erfasst (falsches Arbeits-
+verzeichnis zum Zeitpunkt des Commits), sodass nur die beiden Sections geloescht wurden, aber der
+Nachtrag selbst nie committet wurde. Beim Zusammenfuehren mehrerer eigener PRs nach `main` aufgefallen,
+weil eine spätere Nachtrag-Nummer (18) referenziert wurde, ohne dass 16 existierte. Aus dem eigenen
+Gespraechsverlauf wortgleich rekonstruiert und hier nachgetragen.
+
+### Nachtrag 17: Render-blockierendes CSS des Mega-Menues entschaerft (2026-09-14)
+
+Naechster Punkt aus der Prioritaetenliste (Nachtrag 14, Punkt 8): render-blockierendes CSS.
+
+**Geprueft und verworfen:** `assets/tp-startseite.css` (65 Zeilen) sah zunaechst nach dem Kandidaten
+aus, weil der Name Startseite suggeriert, die Datei aber ueber `tp-topbar` und `tp-header-suche` Teil
+der gemeinsamen Kopfzeile ist und damit auf jeder Seite laeuft. Beim Lesen zeigte sich: Es ist eine
+geteilte Token-/Button-Bibliothek (Praefix `tp-s-`), die auch im Header echt gebraucht wird - keine
+Startseiten-Regeln, die auf anderen Seiten verschwendet waeren.
+
+**Umgesetzt: `assets/tp-mega-menu.css`** (21,9 KB, 639 Zeilen), eingebunden in `sections/header.liquid`
+und damit auf jeder Seite render-blockierend, bevor irgendein Inhalt gezeichnet wird. Gepruef: alle
+Top-Level-Selektoren (`.mega-menu__*`, `.menu-drawer__*`, `.tp-lnav*`, `.tp-mm-card__*`) gehoeren
+ausschliesslich zum Menue-Panel - keiner davon stylt die sichtbare Kopfzeile vor dem Oeffnen. Das
+Stylesheet blockierte also das Rendern jeder Seite fuer eine Datei, die vor der ersten Nutzerabsicht gar
+nicht gebraucht wird - dieselbe Ueberlegung, die die Menuebilder schon `loading="lazy"` und
+`fetchpriority="low"` traegt (Optimierung #14 aus dem Schlussbericht).
+
+Umgesetzt mit dem Standard-Preload/Swap-Muster: `<link rel="preload" as="style" onload="this.rel=
+'stylesheet'">` plus `<noscript>`-Rueckfall. **Nicht** Shopifys eigenen `stylesheet_tag: preload: true`
+verwendet, obwohl `theme check` genau das vorschlaegt (`AssetPreload`-Warnung) - dieser Filter-Parameter
+gibt zusaetzlich zum weiterhin blockierenden `<link rel="stylesheet">` einen Preload-Hinweis aus, um den
+Abruf frueher zu starten. Er hebt die Blockierung nicht auf, das waere das Gegenteil des hier gesuchten
+Effekts. Die Warnung ist fuer diesen Fall ein Fehlalarm.
+
+**Geprueft im Development-Theme** (`shopify theme push --development --development-context
+perf-megamenu`, `shopify theme dev` auf einem eigenen Port): Das rohe HTML traegt `rel="preload"`, kein
+blockierendes `rel="stylesheet"` mehr an der Stelle; das `<noscript>` traegt den Rueckfall. Das Menue
+selbst mit einer Zeigergeste geoeffnet (nicht `.click()`, siehe die Drawer-Bild-Falle aus Nachtrag 9):
+das Panel ist vollstaendig gestylt (`border-radius: 14px`, `display: flex`), das Stylesheet also aktiv,
+bevor die Interaktion es braucht.
+
+### Nachtrag 18: Punkt 9/10 der Prioritaetenliste untersucht — kein sicherer Fix gefunden (2026-09-14)
+
+Naechste zwei Punkte aus Nachtrag 14: ungenutztes JS/CSS (Punkt 9) und Seitengewicht der Kategorie
+Teppichboden (Punkt 10, 2,8 MB / 962 KB HTML). **Ergebnis nach genauer Messung: Alle drei gefundenen
+Gewichtstreiber liegen in Horizon-Kern-Architektur, nicht in TP-eigenem Code — hier wurde bewusst nichts
+gepatcht.**
+
+Vollstaendige Ressourcenaufschluesselung (mobil, gedrosselt, Live-Shop):
+
+| Typ | KB | Anteil |
+|---|---|---|
+| document (HTML) | 976 | 25 % |
+| fetch | 665 | 17 % |
+| script | 1.136 | 29 % |
+| stylesheet | 562 | 14 % |
+| image | 438 | 11 % |
+| font | 115 | 3 % |
+
+**Befund 1: 499 KB Vorab-Fetch von Seite 2, unabhaengig vom Scrollen.** Gemessen: Der Request auf
+`?page=2&section_id=...` feuert 1.317 ms nach Navigationsstart, bei `scrollY: 0`, mit dem Raster-Ende
+bei 6.507 px (weit ausserhalb der 100-px-`rootMargin` des Intersection Observers). Ursache:
+`assets/paginated-list.js` (`@theme/paginated-list`, Horizon-Kern) ruft in `connectedCallback()`
+unconditional `#fetchPage('next')` und `#fetchPage('previous')` auf - unabhaengig von Scrollposition und
+unabhaengig von der Einstellung `enable_infinite_scroll`. Das Attribut `infinite-scroll="..."` wird im
+Markup gesetzt (`sections/main-collection.liquid`), von der Komponente aber nirgends ausgelesen.
+
+**Nicht gepatcht**, aus drei Gruenden: Die Datei ist Shopify-Kernmodul, nicht TP-Praefix, und wird von
+jeder paginierten Liste im Theme genutzt (alle Kollektionen, Suche) - eine Aenderung hat also
+theme-weite Wirkung, nicht nur eine Seite. Sie ist eine bewusste UX-Abwaegung Shopifys (sofortiges
+Nachladen beim Scrollen gegen initiales Gewicht), keine offensichtliche Fehlfunktion - das Entfernen des
+Vorab-Fetches macht das erste Nachladen fuer Besucher, die tatsaechlich scrollen, spuerbar langsamer.
+Das entspricht CLAUDE.md: „Grosse architektonische Aenderungen erst analysieren und berichten", nicht
+eigenstaendig ausfuehren.
+
+**Befund 2: JS-Gewicht ist fast vollstaendig Horizon-eigene Modularchitektur.** Von rund 1.136 KB Skript
+auf der Seite sind **7,6 KB TP-eigen** (`tp-compare.js` 5,8 KB, `tp-carpet-navigation.js` 1,8 KB) - beide
+vermutlich in Gebrauch (Produktvergleich ist ein „fertiges Feature" laut CLAUDE.md). Der Rest sind rund
+50 einzelne Horizon-ES-Module (`product-card.js`, `facets.js`, `slideshow.js`, `variant-picker.js` u.a.),
+Shopifys eigene Architektur mit vielen kleinen Dateien statt einem Bundle. Nichts davon ist mit
+vertretbarem Risiko TP-seitig kuerzbar.
+
+**Befund 3: 184 identische Icon-SVGs, 93 KB, ohne Sprite-Wiederverwendung.** Der haeufigste
+(`icon-checkmark`, 104× auf dieser Seite) kommt inline mit vollem Pfad, nicht als `<use href="#…">`, weil
+Horizon ueberhaupt kein SVG-Sprite-System verwendet - jedes Icon wird an jeder Renderstelle vollstaendig
+neu ausgegeben. Die Renderstellen liegen verstreut in Dutzenden Horizon-Kern-Dateien
+(`add-to-cart-button.liquid`, `sorting.liquid`, `list-filter.liquid`, `localization-form.liquid` u.a.),
+keine zentrale Stelle zum sicheren Patchen. Eine Umstellung auf Sprites waere eine theme-weite
+Architekturaenderung, kein Punkt-Fix.
+
+**Was das fuer die Prioritaetenliste heisst:** Punkt 8 (render-blockierendes Mega-Menue-CSS, Nachtrag
+17) war der einzige der vier Performance-Punkte, der als isolierte, TP-eigene, risikoarme Aenderung
+umsetzbar war. Die Punkte 9 und 10 haetten Substanz - der 499-KB-Vorab-Fetch ist real und betraechtlich -
+aber ihre Behebung ist eine groessere, Horizon-Kern-weite Entscheidung mit einer echten
+Geschwindigkeits-Abwaegung, kein Nebenbei-Fix.
+
+**Empfehlung, falls gewuenscht:** Ein eigener, dedizierter Auftrag mit Freigabe, der `paginated-list.js`
+so anpasst, dass der Vorab-Fetch die Einstellung `enable_infinite_scroll` respektiert (bei deaktivierter
+Infinite-Scroll-Kollektion ergibt der Vorab-Fetch ohnehin keinen Sinn, weil dort ein klassischer
+"Naechste Seite"-Link statt Nachladen erscheint) - das waere der risikoaermste Teilschritt, weil er nur
+einen bereits ungenutzten Fall abschaltet, statt das Verhalten fuer aktives Infinite Scroll zu aendern.
+Muesste aber gegen jede paginierte Seite im Theme getestet werden, nicht nur eine Kollektion.

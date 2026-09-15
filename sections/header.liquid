@@ -195,7 +195,32 @@
   endif
 %}
 
-{{ 'tp-mega-menu.css' | asset_url | stylesheet_tag }}
+{%- comment -%}
+  Nicht blockierend geladen: assets/tp-mega-menu.css enthaelt ausschliesslich
+  Regeln fuer das Menue-Panel (.mega-menu__*, .menu-drawer__*, .tp-lnav*) -
+  keine davon betrifft die sichtbare Kopfzeile vor dem Oeffnen. Gemessen
+  (2026-09-14): 21,9 KB, die bisher auf jeder Seite render-blockierend liefen,
+  obwohl sie erst nach einer Zeigergeste gebraucht werden (siehe die gleiche
+  Ueberlegung bei den Menuebildern, Optimierung "Bilder erst bei der ersten
+  Absicht laden"). preload+onload laedt die Datei parallel statt blockierend;
+  <noscript> deckt Faelle ohne JavaScript ab.
+
+  theme-check schlaegt hier stylesheet_tag: preload: true vor (AssetPreload).
+  Das ist fuer diesen Fall ein Fehlalarm: Der Filter fuegt nur einen
+  zusaetzlichen Preload-Hinweis vor einem weiterhin blockierenden
+  <link rel="stylesheet"> ein - er hebt die Blockierung nicht auf, das waere
+  das Gegenteil des hier gesuchten Effekts. Deshalb gezielt unterdrueckt statt
+  den Filter zu uebernehmen und die Optimierung damit zu verlieren.
+{%- endcomment -%}
+{% # theme-check-disable AssetPreload %}
+<link
+  rel="preload"
+  href="{{ 'tp-mega-menu.css' | asset_url }}"
+  as="style"
+  onload="this.onload=null;this.rel='stylesheet'"
+>
+{% # theme-check-enable AssetPreload %}
+<noscript>{{ 'tp-mega-menu.css' | asset_url | stylesheet_tag }}</noscript>
 
 {% capture localization_markup %}
   {% liquid
@@ -327,6 +352,33 @@
       { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "08:30", "closes": "18:00" },
       { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "08:30", "closes": "14:30" }
     ],
+    {%- comment -%}
+      Standort und Einzugsgebiet. Dieselben Werte wie die Karte in
+      sections/tp-verlegegebiet.liquid - dort stehen sie als vg_lat/vg_lon und
+      als Radius-Einstellung. Wird der Radius dort geaendert, gehoert er auch
+      hier nachgezogen; beides beschreibt dieselbe Zusage.
+    {%- endcomment -%}
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 52.7378,
+      "longitude": 13.2485
+    },
+    "areaServed": {
+      "@type": "GeoCircle",
+      "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 52.7378, "longitude": 13.2485 },
+      "geoRadius": 50000
+    },
+    {%- comment -%}
+      sameAs verbindet den Shop mit den Profilen, auf denen dasselbe
+      Unternehmen belegt ist. Bewusst KEIN aggregateRating: Die 4,9 Sterne
+      stammen aus dem Google-Unternehmensprofil, nicht aus Bewertungen auf
+      dieser Seite. Fremde Bewertungen als eigene auszuzeichnen verstoesst
+      gegen die Richtlinien fuer strukturierte Daten und kann eine manuelle
+      Massnahme ausloesen. Sichtbar steht der Wert mit Quelle und Link zum
+      Profil auf der Startseite - das ist der erlaubte Weg (Audit B-15).
+    {%- endcomment -%}
+    {%- assign tp_schema_profil = settings.tp_google_profil -%}
+    {% if tp_schema_profil != blank %}"sameAs": [{{ tp_schema_profil | json }}],{% endif %}
     "priceRange": "€€"
   }
 </script>
@@ -469,7 +521,25 @@
     display: none;
   }
 
-  @media screen and (min-width: 750px) {
+  /*
+    Das waagerechte Menue erscheint erst ab 1100 px, nicht ab 750 px.
+
+    Gemessen am 2026-09-15 auf 768 px: die zehn Hauptpunkte brauchen zusammen
+    808 px, der Kopfbereich bot 757 px. Die Punkte liefen rechts aus der Seite
+    heraus, die Seite scrollte 63 px waagerecht - auf jeder Seite des Shops.
+    Horizons overflow-list haette die ueberzaehligen Punkte in ein "Mehr"-Menue
+    einklappen sollen, tat es aber nicht: sie blendete keinen einzigen Punkt
+    aus (versteckt: 0) und ihre Eintraege ragten bis 978 px.
+
+    Zwischen 750 und 1099 px uebernimmt deshalb die Schublade - dieselbe, die
+    das Telefon ohnehin benutzt, vollstaendig gebaut und mit Unterkategorien.
+    Sie war in diesem Bereich nur ausgeblendet. Damit ist die Navigation auf
+    dem Tablet vollstaendig statt abgeschnitten.
+
+    1100 px ist kein runder Wert, sondern der gemessene Bedarf: 808 px Menue
+    plus Logo und Kopf-Symbole plus Seitenrand.
+  */
+  @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] :is(.header-menu, .dropdown-localization) {
       display: flex;
     }
@@ -479,7 +549,13 @@
     display: contents;
   }
 
-  @media screen and (min-width: 750px) {
+  /*
+    Gegenstueck zur Regel oben: solange das waagerechte Menue nicht erscheint,
+    muss die Zeile mit dem Schubladen-Knopf stehen bleiben. Beide Grenzen
+    gehoeren zusammen - wird nur eine verschoben, hat das Tablet entweder
+    zwei Menues oder keins.
+  */
+  @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] .header__navigation-bar-row {
       display: none;
     }

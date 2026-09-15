@@ -223,6 +223,48 @@ test('compareWithBaseline trennt ausgeklammert, verbleibend und zurueckgesetzt',
   assert.deepEqual(compareWithBaseline({ baseline, current }), { excluded: ['a', 'c'], remaining: ['b', 'neu'], reverted: ['weg'] });
 });
 
+// --- Datei des Dashboard-Bots (2026-09-11) ---
+// Die Sitzungs-Baseline allein genuegt nicht: schreibt der Bot
+// docs/ai-dashboard/issues.json waehrend der Sitzung neu, weicht sie von der
+// Baseline ab und stuende wieder im Pruefbereich.
+
+function botExec(porcelain) {
+  return (command, args) => {
+    if (args[0] === 'status') return porcelain;
+    if (args[0] === 'rev-parse') return 'abc1234567890\n';
+    if (args[0] === 'merge-base') return 'abc1234567890\n';
+    if (args[0] === 'log') return '';
+    return '';
+  };
+}
+
+test('Bot-Datei: issues.json bleibt aus dem Pruefbereich und wird als kein Befund genannt', () => {
+  const scope = detectReviewScope({ cwd: '/repo', exec: botExec(' M docs/ai-dashboard/issues.json\n M automation/core/x.mjs') });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.botOwned, ['docs/ai-dashboard/issues.json']);
+  assert.match(scope.text, /schreibt der Dashboard-Bot und wird nie mitcommittet/);
+  assert.match(scope.text, /kein Befund/);
+});
+
+test('Bot-Datei: ist sie die einzige Aenderung, bleibt nichts zu pruefen', () => {
+  const scope = detectReviewScope({ cwd: '/repo', exec: botExec(' M docs/ai-dashboard/issues.json') });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.match(scope.text, /Entscheide, ob der Auftrag ohne Änderung erfüllt ist/);
+  assert.match(scope.text, /schreibt der Dashboard-Bot/);
+});
+
+// Der Statuscode der ersten Zeile verliert durch trim() sein fuehrendes
+// Leerzeichen; ein fremder Pfad, der nur auf denselben Namen endet, darf
+// trotzdem nicht ausgeklammert werden.
+test('Bot-Datei: getrimmter Statuscode zaehlt, ein gleichnamiger Pfad woanders nicht', () => {
+  const getrimmt = detectReviewScope({ cwd: '/repo', exec: botExec('M docs/ai-dashboard/issues.json') });
+  assert.deepEqual(getrimmt.botOwned, ['docs/ai-dashboard/issues.json']);
+  assert.equal(getrimmt.kind, REVIEW_SCOPE_NONE);
+  const fremd = detectReviewScope({ cwd: '/repo', exec: botExec(' M kopie/docs/ai-dashboard/issues.json') });
+  assert.equal(fremd.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.equal(fremd.botOwned, undefined);
+});
+
 test('describeReviewScope nennt ausgeklammerte Pfade auch im No-op-Fall', () => {
   const scope = describeReviewScope({ porcelain: '', aheadCommits: '', mergeBase: 'deadbee', taskScoped: true, excluded: ['domains/shopify/bild-qualitaetstest.py'] });
   assert.equal(scope.kind, REVIEW_SCOPE_NONE);

@@ -52,12 +52,19 @@
       if (isTechnicalVariant(variant, value)) return colors;
       if (!variant.available || !value || seen[value]) return colors;
       seen[value] = true;
+      // "image" darf auf das Produkt-Hauptbild zurueckfallen - das traegt die
+      // Auswahlkarte auf /pages/muster, wo jede Farbe ohnehin ein Bild zeigen
+      // soll. "exactImage" bleibt leer, wenn die Variante kein eigenes Bild
+      // hat: das ist die Grundlage fuer das Warenkorb-Musterfoto, das lieber
+      // gar kein Bild zeigt als moeglicherweise die falsche Farbe.
+      var exactImage = variant.featured_image && variant.featured_image.src
+        ? variant.featured_image.src
+        : '';
       colors.push({
         value: value,
         variantId: variant.id,
-        image: variant.featured_image && variant.featured_image.src
-          ? variant.featured_image.src
-          : product.featured_image || '',
+        image: exactImage || product.featured_image || '',
+        exactImage: exactImage,
       });
       return colors;
     }, []);
@@ -115,7 +122,10 @@
         _Quellprodukt: args.product.handle,
         _Quellprodukt_ID: String(args.product.id),
         _Quellvariante_ID: String(color.variantId),
-        _Bild: color.image || '',
+        // Nur das eigene Variantenbild, nie der Produkt-Fallback von
+        // "image" - der Warenkorb soll kein Bild zeigen, statt moeglicherweise
+        // die falsche Farbe.
+        _Bild: color.exactImage || '',
         _Produktlink: args.origin + '/products/' + args.product.handle,
       };
       // Der Optionsname wird zur Warenkorbzeile: "Dekor: Sand Hell" statt

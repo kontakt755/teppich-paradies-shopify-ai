@@ -51,6 +51,7 @@
   <nav
     class="tp-uk"
     aria-label="{{ label | default: 'Unterkategorien' | escape }}"
+    data-tp-uk
     {{ attributes }}
   >
     <ul class="tp-uk__list" role="list">
@@ -72,7 +73,25 @@
         </li>
       {%- endfor -%}
     </ul>
+    {%- comment -%}
+      Pfeil als Wisch-Hinweis. Steht ausserhalb der scrollenden Liste, sonst
+      wuerde er mitwandern.
+
+      Er war zuerst als reine Deko gebaut - aria-hidden und tabindex="-1", mit
+      der Begruendung, die Links dahinter wuerden ohnehin vorgelesen. Der
+      SEO-/A11y-Check hat das zu Recht als BUTTON_NAME_MISSING gemeldet, auf
+      zehn Kategorieseiten: ein sichtbares, anklickbares Bedienelement ohne
+      zugaenglichen Namen. Wer per Sprachsteuerung oder Screenreader arbeitet,
+      sieht den Pfeil und kann ihn nicht ansprechen. Jetzt ein normaler Knopf
+      mit Namen; nur das Icon darin bleibt ausgeblendet.
+    {%- endcomment -%}
+    <button type="button" class="tp-uk__weiter" data-tp-uk-weiter aria-label="Weitere Unterkategorien anzeigen">
+      <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
   </nav>
+  <script src="{{ 'tp-unterkategorien-leiste.js' | asset_url }}" defer="defer"></script>
 {%- endif -%}
 
 {% stylesheet %}
@@ -128,16 +147,30 @@
     color: #fff;
   }
 
-  @media screen and (max-width: 749px) {
-    /* Am Telefon eine waagerecht wischbare Zeile statt mehrerer Zeilen.
-       Sie bleibt innerhalb des Inhaltsrands, der erste Eintrag steht
-       buendig mit der Ueberschrift. */
+  /* Der Wisch-Hinweis haengt am nav, nicht an der Liste: er soll beim Scrollen
+     stehen bleiben. position: relative traegt Verlauf und Pfeil. */
+  .tp-uk[data-tp-uk] {
+    position: relative;
+  }
+
+  .tp-uk__weiter {
+    display: none;
+  }
+
+  /* Bis einschliesslich Tablet eine waagerecht wischbare Zeile statt mehrerer
+     Zeilen. Die Grenze lag bei 749 px - auf dem Tablet brach die Leiste
+     deshalb um und sah aus wie abgeschnitten, ohne Hinweis, dass es weitergeht.
+     Sie bleibt innerhalb des Inhaltsrands, der erste Eintrag steht buendig
+     mit der Ueberschrift. */
+  @media screen and (max-width: 1024px) {
     .tp-uk__list {
       flex-wrap: nowrap;
       overflow-x: auto;
       scrollbar-width: none;
       scroll-snap-type: x proximity;
       padding-bottom: 2px;
+      /* -webkit-overflow-scrolling fuer aelteres iPad-Safari. */
+      -webkit-overflow-scrolling: touch;
     }
 
     .tp-uk__list::-webkit-scrollbar {
@@ -149,10 +182,68 @@
       scroll-snap-align: start;
     }
 
+    /* Weicher Randverlauf statt harter Kante. Als Maske statt Farbverlauf,
+       weil die Leiste auf verschiedenen Hintergruenden sitzt (Kategorieseite
+       hell, hero_split abgesetzt) - eine Farbe waere dort jeweils falsch.
+       Die Maske liegt nur an, solange wirklich etwas ausserhalb steht;
+       data-* setzt tp-unterkategorien-leiste.js. */
+    .tp-uk[data-mehr-rechts='true'] .tp-uk__list {
+      mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent 100%);
+    }
+
+    .tp-uk[data-mehr-links='true'][data-mehr-rechts='true'] .tp-uk__list {
+      mask-image: linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 48px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px, #000 calc(100% - 48px), transparent 100%);
+    }
+
+    .tp-uk[data-mehr-links='true']:not([data-mehr-rechts='true']) .tp-uk__list {
+      mask-image: linear-gradient(to right, transparent 0, #000 40px);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 40px);
+    }
+
+    .tp-uk[data-mehr-rechts='true'] .tp-uk__weiter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      right: -2px;
+      top: 50%;
+      transform: translateY(-50%);
+      /* 44 px, nicht 32: der Pfeil ist ein echtes Bedienelement und wurde in
+         der Pruefung vom 2026-09-15 auf zehn Kategorieseiten als zu kleines
+         Trefferziel gemeldet. Apple und Material nennen 44 px, WCAG 2.5.8
+         mindestens 24. Er sitzt als Kreis ueber der Pillenzeile, die 36 px
+         hoch ist - die vier Pixel Ueberstand fallen nicht auf. */
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--tp-line, #e6e0d8);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--tp-ink, #1d1a17);
+      box-shadow: 0 1px 6px rgb(0 0 0 / 0.14);
+      cursor: pointer;
+    }
+
+    .tp-uk__weiter svg {
+      width: 18px;
+      height: 18px;
+    }
+
     .tp-uk__pill {
       min-height: 36px;
       padding: 0 14px;
       font-size: 14.5px;
     }
+  }
+
+  /* Auf dem Telefon sind die Pillen kleiner - der Pfeil ebenso. */
+  /* Am Telefon war der Pfeil zuvor auf 28 px verkleinert - dort ist ein
+     ausreichendes Trefferziel am wichtigsten, nicht am unwichtigsten. Die
+     Verkleinerung ist deshalb ersatzlos entfallen; es bleibt bei 44 px. */
+
+  @media (prefers-reduced-motion: reduce) {
+    .tp-uk__list { scroll-behavior: auto; }
   }
 {% endstylesheet %}

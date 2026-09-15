@@ -11,7 +11,17 @@
  * Konkret durchgerutscht:
  *   "target": "product_cards"  - Key existiert in Horizon nicht, wird ignoriert
  *   fehlendes "presets"        - ohne presets keine Aufnahme in die Auswahl
+ *   "name" laenger als 25 Zeichen - Shopify lehnt den ganzen Push ab
  */
+
+/**
+ * Shopify begrenzt schema.name auf 25 Zeichen. Anders als die Faelle oben wird
+ * das nicht stillschweigend ignoriert, sondern bricht den Push ab - mit einer
+ * Meldung, die nur die Datei nennt. Am 2026-09-15 kostete genau das einen
+ * fehlgeschlagenen Theme-Push ("TP Google-Bewertung (inaktiv)", 29 Zeichen),
+ * weil der Guard die Grenze nicht kannte und lokal alles gruen war.
+ */
+export const MAX_SCHEMA_NAME = 25;
 
 export const SCHEMA_RX = /\{%-?\s*schema\s*-?%\}([\s\S]*?)\{%-?\s*endschema\s*-?%\}/;
 
@@ -64,6 +74,33 @@ export function analyzeSchemaSource({ source, dir, name }) {
   for (const key of Object.keys(schema)) {
     if (!allowed.has(key)) {
       add('error', 'SCHEMA_UNKNOWN_KEY', `Unbekannter Schema-Key "${key}" - Shopify ignoriert ihn stillschweigend.`);
+    }
+  }
+
+  // Nur Bloecke, und nur fest geschriebene Namen: Sections kamen im Bestand
+  // mit 30 Zeichen problemlos durch den Push, und ein "t:"-Name ist ein
+  // Uebersetzungsschluessel, der erst beim Rendern aufgeloest wird - gemessen
+  // wird dann der uebersetzte Text, nicht der Schluessel.
+  const nameGeprueft = (wert) => typeof wert === 'string' && !wert.startsWith('t:');
+
+  if (dir === 'blocks' && nameGeprueft(schema.name) && schema.name.length > MAX_SCHEMA_NAME) {
+    add(
+      'error',
+      'SCHEMA_NAME_TOO_LONG',
+      `"name" hat ${schema.name.length} Zeichen, Shopify erlaubt ${MAX_SCHEMA_NAME} - der Push bricht ab.`
+    );
+  }
+
+  // Ein Preset ohne Namen erscheint im Editor als leerer Eintrag; auch hier
+  // gilt die 25-Zeichen-Grenze.
+  for (const preset of Array.isArray(schema.presets) ? schema.presets : []) {
+    if (!preset || typeof preset !== 'object') continue;
+    if (dir === 'blocks' && nameGeprueft(preset.name) && preset.name.length > MAX_SCHEMA_NAME) {
+      add(
+        'error',
+        'PRESET_NAME_TOO_LONG',
+        `Preset-Name "${preset.name}" hat ${preset.name.length} Zeichen, Shopify erlaubt ${MAX_SCHEMA_NAME} - der Push bricht ab.`
+      );
     }
   }
 

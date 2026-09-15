@@ -1,0 +1,424 @@
+{%- doc -%}
+  Ergebnisse der Schnellsuche (Shopify Predictive Search), gemeinsame Optik
+  fuer das Dropdown unter der grossen Suchleiste (Desktop, assets/tp-suche.js)
+  und das Horizon-Suchfenster (Lupe im Header, Telefon). Beide laden
+  sections/predictive-search.liquid ueber die Section Rendering API; dieses
+  Snippet ist die einzige Stelle, die das Markup erzeugt.
+
+  Datenquelle ist ausschliesslich das Objekt predictive_search. Ausgegeben
+  werden nur Titel, Produkttyp, Preis, Bild, URL und Verfuegbarkeit - keine
+  Tags, keine Metafelder, kein Hersteller. Kategorien kommen aus den
+  Kollektionen, die Shopify zum Begriff findet, plus den Kollektionen der
+  gefundenen Produkte (so erscheint bei "sockel" die Kategorie Bodenleisten,
+  obwohl der Kollektionstitel den Begriff nicht enthaelt).
+
+  Tastatur: jeder Link ist eine role="option"; das <li> traegt
+  ref="resultsItems[]" und die Liste die Klasse predictive-search-results__list,
+  damit die Pfeiltasten des Horizon-Suchfensters (assets/predictive-search.js)
+  weiter funktionieren. Das Dropdown der Suchleiste steuert die Optionen selbst.
+{%- enddoc -%}
+{%- liquid
+  # predictive_search.terms kommt von Shopify bereits HTML-escaped (Beleg
+  # 2026-09-14: "<script>" erschien mit "| escape" als "&lt;script&gt;").
+  # Fuer URL und Attribut wird der Rohtext zurueckgewonnen, fuer die Anzeige
+  # in Textknoten genuegt der escaped Wert - so bleibt jede Ausgabe sicher.
+  assign tp_se_begriff = predictive_search.terms | strip
+  assign tp_se_begriff_roh = tp_se_begriff | replace: '&quot;', '"' | replace: '&#39;', "'" | replace: '&lt;', '<' | replace: '&gt;', '>' | replace: '&amp;', '&'
+  assign tp_se_q = tp_se_begriff_roh | url_encode
+  assign tp_se_alle_url = routes.search_url | append: '?q=' | append: tp_se_q | append: '&type=product,collection,page'
+
+  # Produkte: Entwuerfe, Lieferantenentwuerfe und Serviceartikel bleiben
+  # draussen, auch wenn Shopify sie liefern sollte. Zaehlung vorab, damit die
+  # Ueberschrift und der Leerzustand stimmen.
+  assign tp_se_p_max = 8
+  assign tp_se_p_anzahl = 0
+  for tp_se_p in predictive_search.resources.products
+    assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase
+    if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service'
+      continue
+    endif
+    assign tp_se_p_anzahl = tp_se_p_anzahl | plus: 1
+  endfor
+  if tp_se_p_anzahl > tp_se_p_max
+    assign tp_se_p_anzahl = tp_se_p_max
+  endif
+
+  # Suchvorschlaege ohne Dubletten (Shopify liefert "teppichboden" zweimal).
+  assign tp_se_q_gesehen = '|'
+  assign tp_se_q_anzahl = 0
+  capture tp_se_vorschlaege
+    for tp_se_v in predictive_search.resources.queries
+      assign tp_se_vt = tp_se_v.text | downcase | strip
+      assign tp_se_vkey = '|' | append: tp_se_vt | append: '|'
+      if tp_se_vt == blank or tp_se_q_gesehen contains tp_se_vkey
+        continue
+      endif
+      assign tp_se_q_gesehen = tp_se_q_gesehen | append: tp_se_vt | append: '|'
+      assign tp_se_q_anzahl = tp_se_q_anzahl | plus: 1
+      if tp_se_q_anzahl > 5
+        break
+      endif
+      echo '<li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__chip" data-tp-typ="vorschlag" href="'
+      echo tp_se_v.url | escape
+      echo '">'
+      echo tp_se_v.styled_text
+      echo '</a></li>'
+    endfor
+  endcapture
+  if tp_se_q_anzahl > 5
+    assign tp_se_q_anzahl = 5
+  endif
+
+  # Kategorien: erst die von Shopify gefundenen Kollektionen, dann die
+  # Kollektionen der Treffer. Handles als Liste, damit nichts doppelt steht.
+  assign tp_se_k_aus = '|all|frontpage|'
+  assign tp_se_k_handles = '|'
+  for tp_se_k in predictive_search.resources.collections
+    assign tp_se_kkey = '|' | append: tp_se_k.handle | append: '|'
+    if tp_se_k_aus contains tp_se_kkey or tp_se_k_handles contains tp_se_kkey
+      continue
+    endif
+    assign tp_se_k_handles = tp_se_k_handles | append: tp_se_k.handle | append: '|'
+  endfor
+  for tp_se_p in predictive_search.resources.products
+    assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase
+    if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service'
+      continue
+    endif
+    for tp_se_k in tp_se_p.collections limit: 4
+      assign tp_se_kkey = '|' | append: tp_se_k.handle | append: '|'
+      if tp_se_k_aus contains tp_se_kkey or tp_se_k_handles contains tp_se_kkey or tp_se_k.handle contains 'test'
+        continue
+      endif
+      assign tp_se_k_handles = tp_se_k_handles | append: tp_se_k.handle | append: '|'
+    endfor
+  endfor
+  assign tp_se_k_liste = tp_se_k_handles | remove_first: '|' | split: '|'
+  assign tp_se_k_anzahl = tp_se_k_liste.size
+  if tp_se_k_anzahl > 6
+    assign tp_se_k_anzahl = 6
+  endif
+
+  assign tp_se_s_anzahl = predictive_search.resources.pages.size
+  if tp_se_s_anzahl > 2
+    assign tp_se_s_anzahl = 2
+  endif
+
+  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl
+-%}
+
+<div class="tp-se" role="listbox" aria-label="Suchvorschläge" data-tp-begriff="{{ tp_se_begriff_roh | escape }}" data-tp-produkte="{{ tp_se_p_anzahl }}">
+  {%- if tp_se_gesamt == 0 -%}
+    <div class="tp-se__leer predictive-search-results__no-results">
+      <p class="tp-se__leer-titel">Leider haben wir für „{{ tp_se_begriff }}“ nichts Passendes gefunden.</p>
+      <p class="tp-se__leer-text">Prüfen Sie die Schreibweise oder stöbern Sie direkt in unseren Bereichen:</p>
+      <ul class="tp-se__liste tp-se__liste--chips predictive-search-results__list" role="presentation">
+        {%- assign tp_se_leer_handles = 'teppichboden,vinylboden-1,linoleumboden-1,bodenleisten,zubehoer' | split: ',' -%}
+        {%- for tp_se_lh in tp_se_leer_handles -%}
+          {%- assign tp_se_lk = collections[tp_se_lh] -%}
+          {%- if tp_se_lk != blank -%}
+            <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__chip" data-tp-typ="kategorie" href="{{ tp_se_lk.url }}">{{ tp_se_lk.title | escape }}</a></li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+      <p class="tp-se__leer-hilfe">Wir helfen auch persönlich: <a href="tel:+4933015733720">03301 573 37 20</a></p>
+    </div>
+  {%- else -%}
+    {%- if tp_se_q_anzahl > 0 -%}
+      <div class="tp-se__block tp-se__block--vorschlaege" role="group" aria-label="Suchvorschläge">
+        <h3 class="tp-se__h">Vorschläge</h3>
+        <ul class="tp-se__liste tp-se__liste--chips predictive-search-results__list" role="presentation">
+          {{ tp_se_vorschlaege }}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if tp_se_p_anzahl > 0 -%}
+      <div class="tp-se__block tp-se__block--produkte" role="group" aria-label="Passende Produkte">
+        <h3 class="tp-se__h">Produkte</h3>
+        <ul class="tp-se__liste tp-se__liste--produkte predictive-search-results__list" role="presentation">
+          {%- assign tp_se_p_ausgegeben = 0 -%}
+          {%- for tp_se_p in predictive_search.resources.products -%}
+            {%- assign tp_se_p_tags = tp_se_p.tags | join: '|' | downcase -%}
+            {%- if tp_se_p_tags contains 'nicht-veroeffentlichen' or tp_se_p_tags contains 'supplier-draft' or tp_se_p.type == 'Service' -%}
+              {%- continue -%}
+            {%- endif -%}
+            {%- assign tp_se_p_ausgegeben = tp_se_p_ausgegeben | plus: 1 -%}
+            {%- if tp_se_p_ausgegeben > tp_se_p_max -%}
+              {%- break -%}
+            {%- endif -%}
+            {%- liquid
+              assign tp_se_farben = 0
+              for tp_se_opt in tp_se_p.options_with_values
+                if tp_se_opt.name == 'Farbe'
+                  assign tp_se_farben = tp_se_opt.values.size
+                endif
+              endfor
+            -%}
+            <li ref="resultsItems[]" role="presentation" class="tp-se__item">
+              <a role="option" class="tp-se__produkt" data-tp-typ="produkt" href="{{ tp_se_p.url }}">
+                <span class="tp-se__bild" aria-hidden="true">
+                  {%- if tp_se_p.featured_image -%}
+                    {{ tp_se_p.featured_image | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '80px', loading: 'lazy', class: 'tp-se__img', alt: '' }}
+                  {%- endif -%}
+                </span>
+                <span class="tp-se__text">
+                  <span class="tp-se__titel" data-tp-titel>{{ tp_se_p.title | escape }}</span>
+                  <span class="tp-se__sub">
+                    {{- tp_se_p.type | escape -}}
+                    {%- if tp_se_farben > 1 %} · {{ tp_se_farben }} Farben{% endif -%}
+                    {%- unless tp_se_p.available %} · Derzeit nicht lieferbar{% endunless -%}
+                  </span>
+                </span>
+                <span class="tp-se__preis">{% render 'price', product_resource: tp_se_p %}</span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+
+    {%- if tp_se_k_anzahl > 0 or tp_se_s_anzahl > 0 -%}
+      <div class="tp-se__block tp-se__block--kategorien" role="group" aria-label="Passende Kategorien">
+        {%- if tp_se_k_anzahl > 0 -%}
+          <h3 class="tp-se__h">Kategorien</h3>
+          <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
+            {%- for tp_se_kh in tp_se_k_liste limit: 6 -%}
+              {%- assign tp_se_kk = collections[tp_se_kh] -%}
+              {%- if tp_se_kk == blank -%}{%- continue -%}{%- endif -%}
+              <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="kategorie" href="{{ tp_se_kk.url }}"><span data-tp-titel>{{ tp_se_kk.title | escape }}</span></a></li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+        {%- if tp_se_s_anzahl > 0 -%}
+          <h3 class="tp-se__h">Ratgeber &amp; Service</h3>
+          <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
+            {%- for tp_se_s in predictive_search.resources.pages limit: 2 -%}
+              <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="seite" href="{{ tp_se_s.url }}"><span data-tp-titel>{{ tp_se_s.title | escape }}</span></a></li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="tp-se__fuss">
+      <a role="option" class="tp-se__alle" data-tp-typ="alle" href="{{ tp_se_alle_url }}">Alle Ergebnisse für „{{ tp_se_begriff }}“ anzeigen<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+  {%- endif -%}
+</div>
+
+{% stylesheet %}
+  /* Gemeinsame Optik der Schnellsuche. Tokens aus assets/tp-startseite.css,
+     jeweils mit Ersatzwert, weil das Suchfenster auf jeder Seite steht. */
+  .tp-se {
+    --tp-se-ink: var(--tp-ink, #1d1a17);
+    --tp-se-muted: var(--tp-muted, #655e57);
+    --tp-se-line: var(--tp-line, #e6e0d8);
+    --tp-se-bg-2: var(--tp-bg-2, #f6f2ec);
+    --tp-se-red: var(--tp-red, #b73740);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px 32px;
+    color: var(--tp-se-ink);
+    font-family: var(--font-body--family, inherit);
+    text-align: left;
+  }
+
+  @media (min-width: 1024px) {
+    .tp-se:has(.tp-se__block--produkte) {
+      grid-template-columns: 280px minmax(0, 1fr);
+      /* Erste Zeile nur so hoch wie die Vorschlaege, sonst verteilt das
+         Raster die Produkthoehe auf beide Zeilen und die Kategorien rutschen
+         ans Ende der Spalte. */
+      grid-template-rows: max-content 1fr auto;
+      grid-template-areas:
+        'vorschlaege produkte'
+        'kategorien produkte'
+        'fuss fuss';
+      align-content: start;
+    }
+    .tp-se__block--vorschlaege { grid-area: vorschlaege; }
+    .tp-se__block--kategorien { grid-area: kategorien; align-self: start; }
+    .tp-se__block--produkte { grid-area: produkte; }
+    .tp-se__fuss { grid-area: fuss; }
+  }
+
+  .tp-se__h {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tp-se-muted);
+  }
+
+  .tp-se__h + .tp-se__liste + .tp-se__h { margin-top: 18px; }
+
+  /* Horizon setzt auf .predictive-search-results__list Slide-Variablen und
+     Innenabstand; hier gilt die eigene Liste - auch fuer die Startinhalte
+     des Dropdowns ausserhalb von .tp-se (ul-Selektor fuer die Spezifitaet). */
+  ul.tp-se__liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tp-se__liste--chips { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+
+  .tp-se__chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--tp-se-line);
+    background: var(--tp-se-bg-2);
+    color: var(--tp-se-ink);
+    font-size: 14.5px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  /* styled_text der Shopify-Vorschlaege markiert den Treffer mit <mark>/<strong>;
+     kein gelber Browser-Hintergrund, nur fett. */
+  .tp-se__chip strong,
+  .tp-se__chip mark { font-weight: 700; background: transparent; color: inherit; }
+
+  .tp-se__link {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 10px;
+    margin: 0 -10px;
+    border-radius: 8px;
+    color: var(--tp-se-ink);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .tp-se__produkt {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 10px;
+    margin: 0 -10px;
+    border-radius: 10px;
+    color: var(--tp-se-ink);
+    text-decoration: none;
+  }
+
+  .tp-se__bild {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--tp-se-bg-2);
+    flex: none;
+  }
+
+  .tp-se__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tp-se__text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+  .tp-se__titel {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .tp-se__sub { font-size: 13px; color: var(--tp-se-muted); line-height: 1.3; }
+
+  .tp-se mark.tp-se__mark {
+    background: transparent;
+    color: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: rgb(183 55 64 / 0.55);
+    text-underline-offset: 3px;
+  }
+
+  .tp-se__preis {
+    font-size: 15px;
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+
+  .tp-se__preis .price__sale { display: flex; flex-direction: column; align-items: flex-end; }
+  .tp-se__preis .compare-at-price { font-size: 12px; font-weight: 400; color: var(--tp-se-muted); }
+  .tp-se__preis .tp-price-card-package,
+  .tp-se__preis .volume-pricing-note { display: none; }
+
+  .tp-se__chip:hover,
+  .tp-se__link:hover,
+  .tp-se__produkt:hover { background: var(--tp-se-bg-2); border-color: var(--tp-se-ink); }
+
+  /* Aktive Option per Tastatur (Dropdown: aria-selected auf dem Link,
+     Horizon-Fenster: auf dem li). Rahmen statt Farbfeld, damit das
+     Produktbild unveraendert bleibt. */
+  .tp-se [role='option'][aria-selected='true'],
+  .tp-se li[aria-selected='true'] > [role='option'],
+  .tp-se [role='option']:focus-visible {
+    background: var(--tp-se-bg-2);
+    outline: 2px solid var(--tp-se-ink);
+    outline-offset: -2px;
+  }
+
+  .tp-se__fuss {
+    border-top: 1px solid var(--tp-se-line);
+    padding-top: 10px;
+    margin-top: 2px;
+  }
+
+  .tp-se__alle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 12px;
+    margin: 0 -12px;
+    border-radius: 8px;
+    color: var(--tp-se-red);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .tp-se__alle svg { width: 18px; height: 18px; }
+
+  /* Horizon zentriert .predictive-search-results__no-results:last-child;
+     hier bleibt alles linksbuendig wie der Rest der Schnellsuche. */
+  .tp-se .tp-se__leer { padding: 6px 0 2px; margin: 0; text-align: left; }
+  .tp-se__leer-titel { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  .tp-se__leer-text,
+  .tp-se__leer-hilfe { margin: 0 0 12px; font-size: 14px; color: var(--tp-se-muted); }
+  .tp-se__leer-hilfe { margin: 14px 0 0; }
+  .tp-se__leer-hilfe a { color: var(--tp-se-ink); }
+
+  @media (max-width: 767px) {
+    .tp-se { gap: 16px; }
+    /* Bild ueber beide Zeilen (Text, Preis), sonst klafft zwischen
+       Untertitel und Preis eine Luecke von der Bildhoehe. */
+    .tp-se__produkt { grid-template-columns: 56px minmax(0, 1fr); align-items: start; gap: 4px 12px; padding: 8px; margin: 0 -8px; }
+    .tp-se__bild { width: 56px; height: 56px; grid-row: 1 / span 2; }
+    .tp-se__preis { grid-column: 2; text-align: left; font-size: 14px; }
+    .tp-se__preis .price__sale { flex-direction: row; gap: 8px; align-items: baseline; }
+    .tp-se__titel { font-size: 14.5px; }
+  }
+{% endstylesheet %}
