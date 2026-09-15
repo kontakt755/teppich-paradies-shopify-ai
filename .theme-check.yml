@@ -5,6 +5,14 @@ ignore:
   - theme/**
   - theme/*
   - theme/**/*
+  # domains/ ist Dokumentation und Vorlagen fuer den Shopify-Admin, kein
+  # Theme-Liquid. Die Bestellmail-Vorlage laeuft in einer
+  # Benachrichtigungsvorlage und benutzt deren Objekte (name, line_items,
+  # customer ...). Theme-Check kennt die nicht und meldet sie reihenweise als
+  # UndefinedObject - ein Fehlalarm, der sonst jeden Deploy blockiert.
+  - domains/**
+  - domains/*
+  - domains/**/*
 
 JSONMissingBlock:
   # Lokal grundsaetzlich nicht aufloesbar, zwei Ursachen:
