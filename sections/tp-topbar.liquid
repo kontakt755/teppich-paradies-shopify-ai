@@ -12,9 +12,9 @@
         <li class="tp-tb__item" {{ block.shopify_attributes }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
           {%- if block.settings.link != blank -%}
-            <a href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>
+            <a href="{{ block.settings.link }}">{{ block.settings.text | escape | replace: '[versandfrei]', settings.tp_versand_frei_ab }}</a>
           {%- else -%}
-            <span>{{ block.settings.text | escape }}</span>
+            <span>{{ block.settings.text | escape | replace: '[versandfrei]', settings.tp_versand_frei_ab }}</span>
           {%- endif -%}
         </li>
       {%- endfor -%}
