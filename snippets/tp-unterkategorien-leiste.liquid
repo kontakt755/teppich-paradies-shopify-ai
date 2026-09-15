@@ -75,11 +75,17 @@
     </ul>
     {%- comment -%}
       Pfeil als Wisch-Hinweis. Steht ausserhalb der scrollenden Liste, sonst
-      wuerde er mitwandern. Nur Deko: die Liste ist mit Wischen, Tastatur und
-      Mausrad bedienbar, der Pfeil ist zusaetzlich anklickbar und fuer
-      Screenreader ausgeblendet - die Links selbst sind ja schon vorgelesen.
+      wuerde er mitwandern.
+
+      Er war zuerst als reine Deko gebaut - aria-hidden und tabindex="-1", mit
+      der Begruendung, die Links dahinter wuerden ohnehin vorgelesen. Der
+      SEO-/A11y-Check hat das zu Recht als BUTTON_NAME_MISSING gemeldet, auf
+      zehn Kategorieseiten: ein sichtbares, anklickbares Bedienelement ohne
+      zugaenglichen Namen. Wer per Sprachsteuerung oder Screenreader arbeitet,
+      sieht den Pfeil und kann ihn nicht ansprechen. Jetzt ein normaler Knopf
+      mit Namen; nur das Icon darin bleibt ausgeblendet.
     {%- endcomment -%}
-    <button type="button" class="tp-uk__weiter" data-tp-uk-weiter tabindex="-1" aria-hidden="true">
+    <button type="button" class="tp-uk__weiter" data-tp-uk-weiter aria-label="Weitere Unterkategorien anzeigen">
       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
         <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
