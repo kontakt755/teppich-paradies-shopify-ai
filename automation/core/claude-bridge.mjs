@@ -20,7 +20,34 @@ const DESTRUCTIVE_TERMS = /(?<![\p{L}\p{N}])(?:(?:lösch|loesch|delete|entfern|r
 const GIT_WRITE_TERMS = term('merge|rebase|force[- ]?push|push|commit|cherry[- ]?pick|revert');
 // "beheben" und "korrigieren" fehlten: "Bug beheben" lief dadurch als ANALYSIS mit
 // Haiku statt als Implementierung mit dem Matrix-Modell.
-const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push');
+// Ergaenzt am 2026-09-15 nach einer Messung an neun alltaeglichen Auftraegen:
+// fuenf davon landeten faelschlich im Lesemodus und schrieben stillschweigend
+// nichts - "Lege die Datei an", "Ergaenze einen Hinweis", "Benenne um",
+// "Verschiebe die Preislogik". Da ANALYSIS der Rueckfall ist, wenn kein Wort
+// trifft, ist jede Luecke in dieser Liste ein stiller Leerlauf.
+const IMPLEMENTATION_TERMS = term('(ä|ae)nder|anpass|fix|reparier|beheb|korrigier|implement|bau|erstell|update|add|entfern|gestalt|optimier|verbesser|versch(ö|oe)ner|mach|l(ö|oe)sch|schreib|setz|f(ü|ue)g|leg an|installier|deploy|push|erg(ä|ae)nz|verschieb|ersetz|aktualisier|refactor|refaktor|migrier|generier|konfigurier|(de)?aktivier|sortier|umbenenn|dokumentier|erweiter|bereinig|vereinheitlich|umstell|umziehen|portier');
+
+// Trennbare Verben: Der Wortstamm steht vorn, die Vorsilbe am Satzende. In der
+// Wortliste oben steht "leg an" als ein Stueck - "Lege DIE DATEI an" schiebt
+// aber Woerter dazwischen und traf deshalb nie.
+//
+// Bewusst eng: nur diese Verbstaemme mit genau diesen Partikeln, und die
+// Vorsilbe muss im selben Satz stehen. Sonst haette "Lege dar, welche Optionen
+// es gibt" ueber ein spaeteres "an" irgendwo im Text getroffen.
+//
+// Satzende heisst: . ! ? gefolgt von Leerraum oder Textende. Ein Punkt MITTEN
+// in einem Wort trennt keinen Satz - sonst scheitert genau der haeufigste Fall,
+// "Lege die Datei docs/probe.md an" (im Test 2026-09-15 als einziger uebrig
+// geblieben, weil der Dateiname Punkte enthaelt).
+const SATZZEICHEN = '(?:[!?](?=\\s|$)|\\.(?=\\s|$))';
+const SEPARABLE_IMPLEMENTATION = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:leg|f(ü|ue)g|benenn|stell|trag|bau|setz|richt|schreib)[\\p{L}]*(?:(?!${SATZZEICHEN})[^\\n]){0,80}?\\s(?:an|hinzu|um|ein|auf|fest)(?![\\p{L}\\p{N}])`,
+  'iu',
+);
+
+function verlangtUmsetzung(task) {
+  return IMPLEMENTATION_TERMS.test(task) || SEPARABLE_IMPLEMENTATION.test(task);
+}
 // Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
 // Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
 // und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts
@@ -70,7 +97,7 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
     taskType = forceTaskType;
     taskTypeSource = 'INHERITED';
   } else {
-    taskType = IMPLEMENTATION_TERMS.test(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
+    taskType = verlangtUmsetzung(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
     taskTypeSource = 'HEURISTIC';
   }
   return { id: compactTaskId(taskId), task: task.trim(), risk, taskType, taskTypeSource };
