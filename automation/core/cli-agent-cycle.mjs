@@ -55,7 +55,7 @@ function readTaskSource(taskFile, io = fs) {
 // trotzdem korrekte Ergebnisse. Am 2026-09-06 las ein Reviewer das als Abbruch und
 // meldete P1 "Diff nicht ermittelbar", obwohl der Diff im selben Lauf ausgegeben wurde.
 // Pruefbereich fuer jeden Implementierungs-Review zentral hier, nicht nur im Stop-Hook.
-import { detectReviewScope, sanitizeReviewCandidate } from './review-scope.mjs';
+import { captureWorkingTreeSnapshot, currentCommit, detectReviewScope, sanitizeReviewCandidate } from './review-scope.mjs';
 
 const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git auf stderr "confstr() failed ... DARWIN_USER_TEMP_DIR" und "couldn\'t create cache file \'/tmp/xcrun_db-...\'". Das ist bekanntes Rauschen des macOS-git-Shims; git liefert trotzdem vollstaendige, korrekte Ausgaben. Diese Zeilen sind kein Befund und kein Grund, die Pruefung abzubrechen. Nur wenn ein git-Befehl tatsaechlich keine Ausgabe liefert, ist das ein echtes Problem.';
 
@@ -115,20 +115,32 @@ function recordReviewUsage({ recordUsage, taskId, provider, model, effort, start
 // Ohne expliziten reviewScope wird er direkt vor dem Review aus dem Repository
 // ermittelt - damit sehen runCliAgentCycle, runReviewOnly, createReviewExecutor
 // und agents:review nach einem Commit denselben Pruefbereich wie der Stop-Hook.
-function resolveReviewScope({ reviewScope, taskType, cwd, detectScope }) {
+// sinceRef und baseline grenzen den Pruefbereich auf DIESEN Auftrag ein, genau
+// wie im interaktiven Stop-Hook (.claude/hooks/codex-stop-review.mjs).
+//
+// Warum das noetig ist (belegt am 2026-09-14): Ohne die beiden vergleicht
+// detectReviewScope gegen origin/main. In einem geteilten Checkout, in dem
+// mehrere Sitzungen gleichzeitig arbeiten, zieht das jeden fremden Commit in
+// die Pruefung - der Reviewer bewertete Commit 93501f4 einer fremden Sitzung
+// statt des eigenen Auftrags und verlangte Korrekturen an fremder Arbeit.
+//
+// Beide sind optional und stehen auf null: ohne sie verhaelt sich die Funktion
+// exakt wie vorher, damit runReviewOnly, createReviewExecutor und
+// `npm run agents:review` unveraendert bleiben.
+function resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef = null, baseline = null }) {
   if (String(reviewScope ?? '').trim()) return reviewScope;
   if (taskType === 'ANALYSIS' || typeof detectScope !== 'function') return '';
-  try { return detectScope({ cwd })?.text ?? ''; } catch { return ''; }
+  try { return detectScope({ cwd, sinceRef, baseline })?.text ?? ''; } catch { return ''; }
 }
 
-export function runCodexReview({ reviewScope = '', detectScope = detectReviewScope, taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
+export function runCodexReview({ reviewScope = '', detectScope = detectReviewScope, sinceRef = null, baseline = null, taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
   const source = taskFile ? readTaskSource(taskFile, io) : { text: taskText, absolutePath: null };
   if (!source.text?.trim()) throw new CliAgentError('A task or task file is required');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'codex-review.json');
-  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef, baseline });
   // Absoluter Pfad statt blossem "codex": das Desktop-Bundle liegt nicht im PATH.
   const binary = resolveCodexBinary() ?? 'codex';
   const startedAt = new Date().toISOString();
@@ -153,14 +165,14 @@ function extractJsonObject(text) {
 // Cross-Provider-Fallback des Reviews: faellt Codex wegen Rate Limit oder
 // erschoepftem Kontingent aus, prueft ein anderes Claude-Modell als der Autor.
 // Read-only ueber --permission-mode plan; Ergebnis im selben Review-Schema.
-export function runClaudeReview({ reviewScope = '', detectScope = detectReviewScope, taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
+export function runClaudeReview({ reviewScope = '', detectScope = detectReviewScope, sinceRef = null, baseline = null, taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
   if (!taskText?.trim()) throw new CliAgentError('A task is required');
   if (!reviewStep?.model) throw new CliAgentError('Claude review requires an explicit model that differs from the author');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'claude-review.json');
-  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef, baseline });
   const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText, reviewScope: scopeText })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
   const env = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
   delete env.ANTHROPIC_API_KEY;
@@ -640,6 +652,19 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
   // veraendert, darf ihm angelastet werden.
   const riskMap = guardsEnabled ? loadDashboardRiskMap({ cwd }) : null;
   const baseline = riskMap ? snapshotWorkingTree({ cwd }) : null;
+  // Bezugspunkt fuer den REVIEW - nicht zu verwechseln mit `baseline` darueber:
+  // das ist die Momentaufnahme fuer die Risiko-Guards (dashboard-guards.mjs) mit
+  // anderer Datenform. Diese beiden hier haben dieselbe Aufgabe wie im
+  // interaktiven Stop-Hook: den Pruefbereich auf DIESEN Auftrag begrenzen.
+  //
+  // Ohne sie prueft der Reviewer alles gegenueber origin/main - in einem
+  // geteilten Checkout also auch jeden Commit einer parallel laufenden Sitzung
+  // (belegt am 2026-09-14: bewertet wurde Commit 93501f4 einer fremden Sitzung).
+  //
+  // Beide sind fail-safe: liefert git nichts, bleibt der Wert null und der
+  // Reviewer verhaelt sich exakt wie vorher.
+  const reviewSinceRef = currentCommit({ cwd });
+  const reviewBaseline = captureWorkingTreeSnapshot({ cwd });
   // Prueft den tatsaechlichen Diff gegen Risiko-Karte und Umfang. `BLOCKED` ist
   // in review-cycle bereits ein Terminal-Status, der das Worker-Ergebnis behaelt
   // - es geht also nichts verloren, es wird nur nicht als fertig ausgegeben.
@@ -670,7 +695,7 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
         // Das Worker-Ergebnis geht wie bisher nur bei ANALYSIS an den Reviewer.
         // Bei IMPLEMENTATION ist der Diff der Beleg; der Abschnitt SCHLUSSANTWORT
         // ("es gibt keinen Diff") in buildCodexReviewPrompt waere hier falsch.
-        result = runReviewStep({ review, reviewStep: plan.reviewer, authorModel: currentStep?.model ?? plan.primary.model, onState, taskText: classified.task, taskType: classified.taskType, candidateText: classified.taskType === 'ANALYSIS' ? (candidate.result ?? '') : '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, timeoutMs, spawn: spawn ?? spawnSync, recordUsage });
+        result = runReviewStep({ review, reviewStep: plan.reviewer, authorModel: currentStep?.model ?? plan.primary.model, onState, taskText: classified.task, taskType: classified.taskType, candidateText: classified.taskType === 'ANALYSIS' ? (candidate.result ?? '') : '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, sinceRef: reviewSinceRef, baseline: reviewBaseline, timeoutMs, spawn: spawn ?? spawnSync, recordUsage });
       } catch (error) {
         // A technical reviewer failure (e.g. a broken codex CLI invocation) is not a
         // review finding: Claude's already-completed work must not be discarded, and
