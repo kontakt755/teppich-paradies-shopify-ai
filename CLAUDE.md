@@ -157,6 +157,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 
 | Befehl | Zweck |
 |---|---|
+| `bin/tp "Aufgabentext"` | Aufgabe an den Orchestrator geben, der die Klasse bestimmt und das passende Modell waehlt |
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf, statt sechsmal nacheinander an je einem Gate zu scheitern |
 | `npm run router:status` | **bevor jemand behauptet, der Router laufe nicht**: Hooks, Keys und letzter Provider-Aufruf in einem Lauf |
 | `npm run router:setup` | **auf einem neuen Rechner**: legt `.env.local` aus `.env.example` an und nennt die zwei fehlenden Keys |
