@@ -216,12 +216,40 @@ async function stdinJson() {
   return JSON.parse(input || '{}');
 }
 
+// --- Nur fuer unbeaufsichtigte Worker-Laeufe (agents:loop) ---
+//
+// agents:loop setzt TP_AGENT_LOOP_ACTIVE=1 fuer den Worker-Unterprozess. Dort
+// sitzt kein Mensch davor, der eine Veroeffentlichung noch abfangen koennte.
+//
+// Belegt am 2026-09-15: Beauftragt war "erstelle die Datei X". Der Worker legte
+// einen Branch an, committete, pushte und eroeffnete PR #306 - alles ungefragt.
+// Der Prompt sagte nur "Veroeffentliche nichts live", was ein Modell
+// nachvollziehbar als Shopify-Livegang liest, nicht als git push.
+//
+// Der Worker soll seine Arbeit im Working Tree liegen lassen: Genau darauf
+// schaut der unabhaengige Review, und ein Mensch entscheidet, was daraus ein
+// Commit oder ein PR wird. Nebeneffekt: der Guard-Diff des Zyklus misst wieder
+// richtig, was der Lauf veraendert hat - committete Arbeit sah er als "nichts".
+//
+// Gilt ausschliesslich bei gesetztem TP_AGENT_LOOP_ACTIVE. Interaktive
+// Sitzungen bleiben unveraendert; dort darf gepusht und ein PR eroeffnet werden.
+const NUR_UNBEAUFSICHTIGT = [
+  [/^git\s+(.*\s)?commit\b/,      'ein unbeaufsichtigter Lauf committet nicht selbst - die Arbeit bleibt im Working Tree, damit Review und Mensch sie sehen'],
+  [/^git\s+(.*\s)?push\b/,        'ein unbeaufsichtigter Lauf veroeffentlicht nichts - kein git push ohne Menschen'],
+  [/^gh\s+pr\s+create\b/,        'ein unbeaufsichtigter Lauf eroeffnet keinen Pull Request'],
+  [/^gh\s+pr\s+merge\b/,         'ein unbeaufsichtigter Lauf merged keinen Pull Request'],
+  [/^gh\s+release\s+create\b/,   'ein unbeaufsichtigter Lauf erstellt keine Release'],
+];
+
+// Im unbeaufsichtigten Lauf gelten beide Regelsaetze, sonst nur der bisherige.
+const REGELN = process.env.TP_AGENT_LOOP_ACTIVE === '1' ? [...VERBOTEN, ...NUR_UNBEAUFSICHTIGT] : VERBOTEN;
+
 const command = (await stdinJson())?.tool_input?.command ?? '';
 
 for (const segment of segmente(command)) {
  for (const { teil, nackt } of kandidaten(segment)) {
   if (nackt && AUSNAHMEN.some((muster) => muster.test(teil))) continue;
-  for (const [muster, grund] of VERBOTEN) {
+  for (const [muster, grund] of REGELN) {
     if (muster.test(teil)) {
       process.stdout.write(`${JSON.stringify({
         hookSpecificOutput: {
