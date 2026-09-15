@@ -218,6 +218,50 @@ function recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, fi
   });
 }
 
+// Belegt je Arbeitsschritt, was der Worker getan hat: Status, benutztes Modell,
+// Guard-Urteil und vor allem die tatsaechlich veraenderten Dateien.
+//
+// Warum das noetig ist (belegt am 2026-09-14): In .router/agent-runs/<id>/ lag
+// bis dahin nur codex-review.json. Ein Lauf meldete "completed", schrieb aber
+// keine einzige Datei - und hinterliess keinerlei Spur. Im Nachhinein war nicht
+// mehr zu unterscheiden, ob der Worker nichts tat, ob ein Guard sein Ergebnis
+// verwarf oder ob er am falschen Ort arbeitete. Ohne diesen Beleg ist jede
+// weitere Fehlersuche am Orchestrator Raterei.
+//
+// Ein Fehler beim Schreiben darf den Lauf nie stoppen: Protokollieren ist
+// Nebensache, die Arbeit des Workers ist die Hauptsache.
+export const WORKER_RECORD_MAX_CHARS = 4_000;
+
+export function writeWorkerRecord({ cwd = process.cwd(), runDir = '.router/agent-runs', taskId, phase = 'IMPLEMENT', round = 1, candidate = {}, io = fs, now = () => new Date().toISOString() }) {
+  try {
+    const dir = path.resolve(cwd, runDir, compactId(taskId));
+    io.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `worker-${String(phase).toLowerCase()}-r${round}.json`);
+    io.writeFileSync(file, `${JSON.stringify({
+      timestamp: now(),
+      taskId: compactId(taskId),
+      phase,
+      round,
+      status: candidate.status ?? null,
+      reason: candidate.reason ?? null,
+      authMode: candidate.authMode ?? null,
+      model: candidate.model ?? null,
+      effort: candidate.effort ?? null,
+      guardStatus: candidate.guard?.status ?? null,
+      guardMessage: candidate.guard?.message ?? null,
+      // Der eigentliche Beleg: hat dieser Schritt ueberhaupt Dateien veraendert?
+      // null bedeutet "nicht ermittelt" (Guards abgeschaltet), [] bedeutet
+      // belegt "nichts veraendert" - der Unterschied ist bei der Fehlersuche
+      // entscheidend.
+      changedFiles: Array.isArray(candidate.changes) ? candidate.changes.map(change => change.file) : null,
+      result: safeActivityText(candidate.result ?? '', WORKER_RECORD_MAX_CHARS),
+    }, null, 2)}\n`, 'utf8');
+    return file;
+  } catch {
+    return null;
+  }
+}
+
 function safeActivityText(value, maximum = 180) {
   return String(value ?? '')
     .replace(/(?:sk-(?:or|ant)-[A-Za-z0-9_-]+|AIza[A-Za-z0-9_-]{20,})/g, '[geschützt]')
@@ -603,15 +647,22 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
     if (!riskMap || !baseline) return candidate;
     const changes = diffSinceSnapshot(baseline, snapshotWorkingTree({ cwd }));
     const verdict = evaluateDashboardGuards({ taskType: classified.taskType, risk: classified.risk, changes, riskMap });
-    if (verdict.status === 'PASS') return { ...candidate, guard: verdict };
+    // changes wandert mit: writeWorkerRecord belegt damit, ob der Schritt
+    // ueberhaupt Dateien angefasst hat.
+    if (verdict.status === 'PASS') return { ...candidate, guard: verdict, changes };
     onState?.({ status: 'GUARD_BLOCKED', guardStatus: verdict.status, message: verdict.message });
-    return { ...candidate, status: 'BLOCKED', guard: verdict, reason: verdict.status };
+    return { ...candidate, status: 'BLOCKED', guard: verdict, changes, reason: verdict.status };
+  };
+  // Jeder Arbeitsschritt hinterlaesst eine Spur, auch ein gescheiterter.
+  const recordWorker = (candidate, workerPhase, round) => {
+    writeWorkerRecord({ cwd, taskId: classified.id, phase: workerPhase, round, candidate, io });
+    return candidate;
   };
   const result = await runReviewCorrectionCycle({
     task: classified,
     maxReviewRounds,
     providerTimeoutMs: timeoutMs,
-    implement: async () => guardCandidate(await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass })),
+    implement: async () => recordWorker(guardCandidate(await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass })), 'IMPLEMENT', 1),
     // Klasse A: deterministische Pruefung reicht, kein Modell-Review.
     review: plan.reviewer === null ? null : async (_task, candidate, metadata) => {
       let result;
@@ -667,7 +718,7 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
       }
       const corrected = await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass, escalation: escalated.reason ?? null });
       if (corrected?.authMode === 'API') apiCorrections += 1;
-      return guardCandidate(corrected);
+      return recordWorker(guardCandidate(corrected), 'CORRECT', metadata.reviewRound);
     },
     onState,
   });

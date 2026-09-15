@@ -468,3 +468,28 @@ test('runCliAgentCycle gibt bei IMPLEMENTATION kein Worker-Ergebnis als Schlussa
   assert.equal(result.status, 'PASS');
   assert.deepEqual(seen, [{ candidateText: '', taskType: 'IMPLEMENTATION' }]);
 });
+
+// Nachvollziehbarkeit (2026-09-14): Ein Lauf meldete "completed", schrieb aber
+// keine Datei - und hinterliess ausser codex-review.json keinerlei Spur. Seitdem
+// belegt je Arbeitsschritt eine worker-*.json, was der Worker getan hat.
+test('jeder Arbeitsschritt hinterlaesst ein Worker-Protokoll', async () => {
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    return { status: 0, stdout: JSON.stringify({ result: 'Datei bin/tp angelegt', usage: { input_tokens: 10, output_tokens: 5 } }), stderr: '' };
+  };
+  const result = await runCliAgentCycle({
+    cwd: scratch,
+    taskId: 'AGENT-PROTOKOLL',
+    task: 'Repariere einen kleinen lokalen Testfehler',
+    spawn,
+    review: () => ({ status: 'PASS', findings: [] }),
+    recordUsage: () => {},
+  });
+  assert.equal(result.status, 'PASS');
+  const datei = path.join(scratch, '.router', 'agent-runs', 'AGENT-PROTOKOLL', 'worker-implement-r1.json');
+  assert.ok(fs.existsSync(datei), 'worker-implement-r1.json fehlt');
+  const protokoll = JSON.parse(fs.readFileSync(datei, 'utf8'));
+  assert.equal(protokoll.phase, 'IMPLEMENT');
+  assert.equal(protokoll.status, 'PASS');
+  assert.match(protokoll.result, /bin\/tp/);
+});
