@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-15T09:57:26.107Z",
+  "generated_at": "2026-09-15T10:27:42.284Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 95,
+  "count": 96,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-15T09:57:26.107Z",
+    "fetchedAt": "2026-09-15T10:27:42.284Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 322,
+      "title": "Alt-PRs #279/#280/#256: Konflikte geloest, drei Entscheidungen offen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/322",
+      "labels": [
+        "status:blockiert",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T10:26:52Z",
+      "updated_at": "2026-09-15T10:27:08Z",
+      "closed_at": null
+    },
     {
       "number": 309,
       "title": "UX-Kaufbereich, Farbauswahl, Kaufleiste, Tablet-Ueberlauf",
