@@ -305,6 +305,13 @@
                 }
               },
               "block_order": []
+            },
+            "tp_muster_cta_1": {
+              "type": "tp-muster-cta",
+              "settings": {
+                "label": "Erst Muster bestellen – kostenlos",
+                "hinweis": "Bis zu 3 Farben, versandkostenfrei"
+              }
             }
           },
           "block_order": [
@@ -312,6 +319,7 @@
             "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "group_farbwahl",
+            "tp_muster_cta_1",
             "tp_rollware_rechner_sales1",
             "buy_buttons_eYQEYi"
           ]
