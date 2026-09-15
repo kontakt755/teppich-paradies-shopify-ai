@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-15T11:31:05.181Z",
+  "generated_at": "2026-09-15T11:40:36.823Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 98,
+  "count": 99,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-15T11:31:05.181Z",
+    "fetchedAt": "2026-09-15T11:40:36.823Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 332,
+      "title": "SEO-Titel und Alt-Texte: gepflegte Daten erreichen Google",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/332",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:seo"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T11:40:22Z",
+      "updated_at": "2026-09-15T11:40:34Z",
+      "closed_at": null
+    },
+    {
       "number": 324,
       "title": "Codex-Review: Pruefbereich nach Urheber filtern (Bash-Schreibvorgaenge erfassen)",
       "state": "closed",
@@ -102,13 +126,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T10:29:35Z",
-      "updated_at": "2026-09-15T11:31:04Z",
+      "updated_at": "2026-09-15T11:31:05Z",
       "closed_at": "2026-09-15T11:30:51Z"
     },
     {
@@ -126,13 +150,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T10:26:52Z",
-      "updated_at": "2026-09-15T11:24:47Z",
+      "updated_at": "2026-09-15T11:31:35Z",
       "closed_at": null
     },
     {
