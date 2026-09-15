@@ -493,3 +493,47 @@ test('jeder Arbeitsschritt hinterlaesst ein Worker-Protokoll', async () => {
   assert.equal(protokoll.status, 'PASS');
   assert.match(protokoll.result, /bin\/tp/);
 });
+
+// Pruefbereich (2026-09-14): Ohne sinceRef/baseline vergleicht detectReviewScope
+// gegen origin/main und zieht in einem geteilten Checkout fremde Commits in die
+// Pruefung - belegt durch einen Lauf, der Commit 93501f4 einer fremden Sitzung
+// bewertete. runCliAgentCycle reicht beide jetzt durch, wie der Stop-Hook.
+test('der Loop grenzt den Pruefbereich auf diesen Auftrag ein', async () => {
+  const gesehen = [];
+  const spawn = (_command, args) => {
+    if (args[0] === 'auth') return { status: 0, stdout: JSON.stringify({ loggedIn: true, authMethod: 'oauth' }), stderr: '' };
+    return { status: 0, stdout: JSON.stringify({ result: 'fertig', usage: { input_tokens: 1, output_tokens: 1 } }), stderr: '' };
+  };
+  await runCliAgentCycle({
+    cwd: scratch,
+    taskId: 'AGENT-SCOPE',
+    task: 'Repariere einen kleinen lokalen Testfehler',
+    spawn,
+    review: options => { gesehen.push(options); return { status: 'PASS', findings: [] }; },
+    recordUsage: () => {},
+  });
+  assert.equal(gesehen.length, 1);
+  // Die Felder muessen ankommen - ihr Wert darf null sein (kein Repo im Scratch),
+  // entscheidend ist, dass sie ueberhaupt durchgereicht werden.
+  assert.ok('sinceRef' in gesehen[0], 'sinceRef wird nicht an den Reviewer durchgereicht');
+  assert.ok('baseline' in gesehen[0], 'baseline wird nicht an den Reviewer durchgereicht');
+});
+
+// Rueckwaertskompatibilitaet: runReviewOnly und agents:review rufen ohne die
+// beiden Felder auf und muessen sich exakt wie vorher verhalten.
+test('ohne sinceRef und baseline bleibt der Pruefbereich unveraendert', () => {
+  const aufrufe = [];
+  const detectScope = argumente => { aufrufe.push(argumente); return { text: 'die aktuell uncommitteten Änderungen' }; };
+  runCodexReview({
+    taskText: 'Irgendein Auftrag',
+    cwd: scratch,
+    taskId: 'REVIEW-ALTBESTAND',
+    detectScope,
+    spawn: () => ({ status: 0, stdout: '', stderr: '' }),
+    io: { ...fs, readFileSync: () => JSON.stringify({ status: 'PASS', summary: 'ok', findings: [] }) },
+    recordUsage: () => {},
+  });
+  assert.equal(aufrufe.length, 1);
+  assert.equal(aufrufe[0].sinceRef, null);
+  assert.equal(aufrufe[0].baseline, null);
+});
