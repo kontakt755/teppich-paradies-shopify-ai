@@ -7,9 +7,9 @@
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-15T10:39:16Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-15T11:20:00Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -155,6 +155,18 @@
       "name": "Preview Gallery V3",
       "retiredNoticedAt": "2026-09-15",
       "note": "Per workflow:live abgeloest durch 203690246478 (Commit ef1843d: Musterservice auf der Startseite, Farbnamen und Farbfilter, mobile Kaufleiste, Pflichtfeld-Meldungen im Rollenrechner, Trefferflaechen auf 44 px, Tablet-Ueberlauf in Menue und Filterbalken, Produkttitel in der Google-Anzeige). Rollentausch am 2026-09-15 um 10:39:16Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203558781262",
+      "name": "Preview Gallery V3",
+      "retiredNoticedAt": "2026-09-15",
+      "note": "Existiert in der Admin API nicht mehr - am 2026-09-15 von einer anderen Sitzung geloescht, zusammen mit allen uebrigen unpublished Themes. Damit war kein Preview-Theme und kein Rueckfallpunkt mehr vorhanden; workflow:preview brach mit THEME_ID_AMBIGUOUS ab. Ersetzt durch 204438208846."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-15",
+      "note": "Existiert in der Admin API nicht mehr - am 2026-09-15 geloescht, zusammen mit allen uebrigen unpublished Themes. Damit war weder ein Preview-Theme noch ein Rueckfallpunkt vorhanden; workflow:preview brach mit THEME_ID_AMBIGUOUS ab. Ersetzt durch 204438208846."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
