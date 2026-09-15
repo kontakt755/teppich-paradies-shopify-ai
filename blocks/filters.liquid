@@ -1425,6 +1425,22 @@
       max-width: 100%;
     }
   }
+
+  /*
+    "Mehr anzeigen" blendet die restlichen Farben und Breiten ein und stand bei
+    20 px Hoehe - unter den 24 px, die WCAG 2.5.8 als Mindestmass fuer ein
+    Bedienelement nennt. Die Ausnahme fuer Ziele im Fliesstext greift nicht:
+    der Knopf steht allein unter der Filterliste.
+
+    snippets/tp-mobil.liquid zieht ihn am Telefon bereits auf 44 px; diese
+    Regel gilt zusaetzlich fuer Tablet und Desktop. Sie steht hier und nicht in
+    assets/base.css, weil der Horizon-Kern im Projekt unveraendert bleibt.
+  */
+  .facets__inputs .show-more__button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 {% endstylesheet %}
 
 {% schema %}
