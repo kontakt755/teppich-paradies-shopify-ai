@@ -233,7 +233,7 @@
     }
   }
 
-  {%- comment -%}
+  /*
     Kaufbereich auf dem Telefon zusammenruecken (2026-09-15 gemessen, 375x812).
     Vor der Aenderung begann der Titel erst bei 580 px und der Kaufbutton bei
     2384 px - drei Bildschirmlaengen. Die Hoehe steckte nicht im Inhalt, sondern
@@ -250,7 +250,7 @@
     Eine Regel, die dieselbe Variable setzt, verliert dagegen immer. Die
     Selektoren unten sind deshalb je eine Stufe spezifischer als die
     Horizon-Klasse und ueberschreiben row-gap bzw. padding direkt.
-  {%- endcomment -%}
+  */
   @media screen and (max-width: 749px) {
     /* 22 px -> 14 px zwischen den Bausteinen des Kaufbereichs. Bei sechs
        Fugen sind das rund 48 px, ohne dass etwas enger zusammenklebt. */
