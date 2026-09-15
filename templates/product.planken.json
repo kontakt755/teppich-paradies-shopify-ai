@@ -310,6 +310,13 @@
                 "review_link": "https://maps.google.com/?cid=787042219843486388"
               },
               "blocks": {}
+            },
+            "tp_muster_cta_1": {
+              "type": "tp-muster-cta",
+              "settings": {
+                "label": "Erst Muster bestellen – kostenlos",
+                "hinweis": "Bis zu 3 Farben, versandkostenfrei"
+              }
             }
           },
           "block_order": [
@@ -319,6 +326,7 @@
             "divider_VJhene",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_muster_cta_1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
             "tp_compare_toggle_night3",

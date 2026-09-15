@@ -326,6 +326,13 @@
               "name": "TP Einfass-Wechsel",
               "settings": {},
               "blocks": {}
+            },
+            "tp_muster_cta_1": {
+              "type": "tp-muster-cta",
+              "settings": {
+                "label": "Erst Muster bestellen – kostenlos",
+                "hinweis": "Bis zu 3 Farben, versandkostenfrei"
+              }
             }
           },
           "block_order": [
@@ -335,6 +342,7 @@
             "tp_step_farbe_sales1",
             "color_swatch_picker_f7EyBF",
             "tp_farbanzeige_tp1",
+            "tp_muster_cta_1",
             "tp_einfass_konfigurator_1",
             "buy_buttons_eYQEYi",
             "tp_einfass_wechsel_1",
