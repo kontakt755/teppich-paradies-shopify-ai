@@ -12,6 +12,15 @@
   // aussen liegende Cover-Kontur (stroke-width 9) noch mit abdeckt.
   var LUPE_ZOOM = 3.4;
   var MUSTER_RAND = 12;
+  /*
+    Produktfotos zeigen den Belag nicht randlos: sie haben weissen Hintergrund,
+    einen Schlagschatten und oft die sichtbare Kante des fotografierten Stuecks.
+    Voll eingepasst entsteht daraus ein Teppich im Teppich - der fremde Rahmen
+    laeuft mitten durch die Flaeche des Kunden. Deshalb wird nur die Mitte des
+    Fotos genommen: das Bild wird ueber die Flaeche hinaus vergroessert und
+    zentriert, der Rand faellt heraus. Uebrig bleibt reines Material.
+  */
+  var MATERIAL_ZOOM = 1.9;
   var KANTE = {
     cover: 'Kante umgeschlagen, mit Vlies',
     ketteln: 'Garn Ton in Ton',
@@ -206,14 +215,18 @@
       Fuer die Lupe wird bewusst eine groessere Kachel auf den kleinen Kreisbereich
       gelegt: auch das ist genau eine Kachel, nur staerker vergroessert.
     */
-    function muster(defs, id, x, y, breite, hoehe) {
+    function muster(defs, id, x, y, breite, hoehe, zoom) {
       if (!target || !target.bild) return '#d9d4cb';
+      // Groesser rendern und auf die Flaeche zentrieren: der Ausschnitt bleibt
+      // die Bildmitte, die Kachel selbst bleibt genau eine.
+      var z = zoom || 1;
+      var bw = breite * z, bh = hoehe * z;
       var pat = svgEl('pattern', {
         id: id, patternUnits: 'userSpaceOnUse',
-        x: x, y: y, width: breite, height: hoehe
+        x: x - (bw - breite) / 2, y: y - (bh - hoehe) / 2, width: bw, height: bh
       }, defs);
       var img = svgEl('image', {
-        x: 0, y: 0, width: breite, height: hoehe,
+        x: 0, y: 0, width: bw, height: bh,
         preserveAspectRatio: 'xMidYMid slice'
       }, pat);
       img.setAttribute('href', target.bild);
@@ -221,28 +234,35 @@
       return 'url(#' + id + ')';
     }
 
-    // Die Lupenkachel ist groesser als der Kreis und wird auf ihm zentriert:
-    // dadurch zeigt sie die Mitte des Materials vergroessert, nicht dessen Ecke.
-    function lupenMuster(defs, x, y, kante) {
-      var gross = kante * LUPE_ZOOM;
-      var versatz = (gross - kante) / 2;
-      return muster(defs, uid + '-gross', x - versatz, y - versatz, gross, gross);
+    // Weicher Schlagschatten: laesst den Zuschnitt auf dem Boden liegen statt
+    // als Flaeche im Nichts zu schweben.
+    function schatten(defs) {
+      var f = svgEl('filter', { id: uid + '-schatten', x: '-20%', y: '-20%', width: '140%', height: '150%' }, defs);
+      svgEl('feDropShadow', { dx: 0, dy: 4, stdDeviation: 5, 'flood-color': '#2b2622', 'flood-opacity': 0.24 }, f);
+      return 'url(#' + uid + '-schatten)';
     }
 
+    /*
+      Bemassung wie in einer technischen Zeichnung: duenne Hilfslinien, kurze
+      Anschlagstriche, die Zahl auf der Linie und in normaler Staerke. Die
+      fette Beschriftung von vorher zog den Blick vom Produkt weg - gemessen
+      wird hier der Teppich, nicht der Text.
+    */
     function masslinie(x1, y1, x2, y2, text) {
       var ink = 'currentColor';
       var senkrecht = x1 === x2;
-      svgEl('line', { x1: x1, y1: y1, x2: x2, y2: y2, stroke: ink, 'stroke-width': 1 }, svg);
+      var g = svgEl('g', { opacity: 0.62 }, svg);
+      svgEl('line', { x1: x1, y1: y1, x2: x2, y2: y2, stroke: ink, 'stroke-width': 0.9 }, g);
       if (senkrecht) {
-        svgEl('line', { x1: x1 - 5, y1: y1, x2: x1 + 5, y2: y1, stroke: ink, 'stroke-width': 1 }, svg);
-        svgEl('line', { x1: x1 - 5, y1: y2, x2: x1 + 5, y2: y2, stroke: ink, 'stroke-width': 1 }, svg);
+        svgEl('line', { x1: x1 - 3.5, y1: y1, x2: x1 + 3.5, y2: y1, stroke: ink, 'stroke-width': 0.9 }, g);
+        svgEl('line', { x1: x1 - 3.5, y1: y2, x2: x1 + 3.5, y2: y2, stroke: ink, 'stroke-width': 0.9 }, g);
         var ym = (y1 + y2) / 2;
-        var t = svgEl('text', { x: x1 - 11, y: ym, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: ink, transform: 'rotate(-90 ' + (x1 - 11) + ' ' + ym + ')' }, svg);
+        var t = svgEl('text', { x: x1 - 9, y: ym, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 500, 'letter-spacing': 0.2, fill: ink, transform: 'rotate(-90 ' + (x1 - 9) + ' ' + ym + ')' }, g);
         t.textContent = text;
       } else {
-        svgEl('line', { x1: x1, y1: y1 - 5, x2: x1, y2: y1 + 5, stroke: ink, 'stroke-width': 1 }, svg);
-        svgEl('line', { x1: x2, y1: y1 - 5, x2: x2, y2: y1 + 5, stroke: ink, 'stroke-width': 1 }, svg);
-        var t2 = svgEl('text', { x: (x1 + x2) / 2, y: y1 - 9, 'text-anchor': 'middle', 'font-size': 12.5, 'font-weight': 600, fill: ink }, svg);
+        svgEl('line', { x1: x1, y1: y1 - 3.5, x2: x1, y2: y1 + 3.5, stroke: ink, 'stroke-width': 0.9 }, g);
+        svgEl('line', { x1: x2, y1: y1 - 3.5, x2: x2, y2: y1 + 3.5, stroke: ink, 'stroke-width': 0.9 }, g);
+        var t2 = svgEl('text', { x: (x1 + x2) / 2, y: y1 - 7, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 500, 'letter-spacing': 0.2, fill: ink }, g);
         t2.textContent = text;
       }
     }
@@ -254,23 +274,27 @@
       svgEl('circle', { cx: lx, cy: ly, r: r }, clip);
       var g = svgEl('g', { 'clip-path': 'url(#' + uid + '-lupe)' }, svg);
       svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: 2 * r, fill: '#efece6' }, g);
-      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: lupenMuster(defs, lx - r, ly - r, 2 * r) }, g);
+      svgEl('rect', { x: lx - r, y: ly - r, width: 2 * r, height: ky - (ly - r), fill: muster(defs, uid + '-gross', lx - r, ly - r, 2 * r, 2 * r, LUPE_ZOOM) }, g);
       if (art === 'cover') {
         svgEl('rect', { x: lx - r, y: ky - 12, width: 2 * r, height: 12, fill: 'rgba(0,0,0,.22)' }, g);
         svgEl('line', { x1: lx - r, y1: ky - 12, x2: lx + r, y2: ky - 12, stroke: 'rgba(255,255,255,.7)', 'stroke-width': 1.2 }, g);
         svgEl('rect', { x: lx - r, y: ky, width: 2 * r, height: 3, fill: 'rgba(0,0,0,.18)' }, g);
       } else if (art === 'ketteln') {
-        for (var x = lx - r; x < lx + r; x += 4) {
-          svgEl('line', { x1: x, y1: ky - 7, x2: x + 3, y2: ky, stroke: 'rgba(0,0,0,.45)', 'stroke-width': 1.4 }, g);
+        // Nahaufnahme der Wicklung: dicht stehende Garnschlingen ueber der
+        // Materialkante, in derselben Handschrift wie die Kante in der Flaeche.
+        svgEl('rect', { x: lx - r, y: ky - 8, width: 2 * r, height: 8, fill: 'rgba(0,0,0,.10)' }, g);
+        for (var x = lx - r; x < lx + r; x += 3) {
+          svgEl('line', { x1: x, y1: ky - 8, x2: x + 1.6, y2: ky, stroke: 'rgba(0,0,0,.34)', 'stroke-width': 1.7, 'stroke-linecap': 'round' }, g);
         }
+        svgEl('line', { x1: lx - r, y1: ky, x2: lx + r, y2: ky, stroke: 'rgba(0,0,0,.30)', 'stroke-width': 0.9 }, g);
       } else {
         var hoehe = art === 'einfassband' ? 11 : 4;
         svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: band ? band.hex : 'rgba(255,255,255,.65)' }, g);
         if (!band) svgEl('rect', { x: lx - r, y: ky - hoehe, width: 2 * r, height: hoehe, fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-dasharray': '4 3' }, g);
         if (art === 'einfassband') svgEl('line', { x1: lx - r, y1: ky - hoehe + 2, x2: lx + r, y2: ky - hoehe + 2, stroke: 'rgba(255,255,255,.55)', 'stroke-dasharray': '3 2' }, g);
       }
-      svgEl('circle', { cx: lx, cy: ly, r: r, fill: 'none', stroke: '#fff', 'stroke-width': 4 }, svg);
-      svgEl('circle', { cx: lx, cy: ly, r: r + 2, fill: 'none', stroke: 'rgba(0,0,0,.18)', 'stroke-width': 1 }, svg);
+      svgEl('circle', { cx: lx, cy: ly, r: r, fill: 'none', stroke: '#fff', 'stroke-width': 2.5 }, svg);
+      svgEl('circle', { cx: lx, cy: ly, r: r + 1.25, fill: 'none', stroke: 'rgba(0,0,0,.14)', 'stroke-width': 0.9 }, svg);
     }
 
     function zeichnen(f, w, l, beispiel) {
@@ -281,7 +305,8 @@
       var x = 46 + (270 - pw) / 2, y = 44 + (170 - ph) / 2;
       var defs = svgEl('defs', {}, svg);
       var fuellung = muster(defs, uid + '-muster',
-        x - MUSTER_RAND, y - MUSTER_RAND, pw + 2 * MUSTER_RAND, ph + 2 * MUSTER_RAND);
+        x - MUSTER_RAND, y - MUSTER_RAND, pw + 2 * MUSTER_RAND, ph + 2 * MUSTER_RAND,
+        MATERIAL_ZOOM);
 
       function umriss(extra) {
         var a = extra || {};
@@ -290,15 +315,44 @@
         return svgEl('rect', Object.assign({ x: x, y: y, width: pw, height: ph, rx: 2 }, a), svg);
       }
 
-      umriss({ fill: fuellung, opacity: beispiel ? 0.4 : 1 });
+      /*
+        Das Produkt ist immer zu sehen, auch bevor Masse eingegeben sind: der
+        Kunde soll den Belag beurteilen koennen, nicht eine blasse Platzhalter-
+        flaeche. Frueher lag der Beispielzustand auf 40 % Deckkraft und sah
+        nach Fehler aus. Was fehlt, sagt jetzt der Hinweis unter der Flaeche.
+      */
+      /*
+        Die Kante darf nicht breiter wirken als sie ist. Bei einem Laeufer
+        80 x 2000 cm ist die kurze Seite nur rund 30 px hoch - eine feste
+        Naht von 4,5 px entspraeche dort etwa 15 cm Kettelrand. Deshalb an der
+        schmalen Seite mitskalieren, mit einer Untergrenze, damit die Kante
+        bei grossen Teppichen nicht verschwindet.
+      */
+      var schmal = Math.min(pw, ph);
+      function kantePx(basis) {
+        return Math.max(1.6, Math.min(basis, schmal * 0.13));
+      }
+
+      umriss({ fill: fuellung, filter: schatten(defs) });
       if (art === 'cover') {
-        umriss({ fill: 'none', stroke: fuellung, 'stroke-width': 9 });
-        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.22)', 'stroke-width': 9 });
+        umriss({ fill: 'none', stroke: fuellung, 'stroke-width': kantePx(9) });
+        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.22)', 'stroke-width': kantePx(9) });
         umriss({ fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1 });
       } else if (art === 'ketteln') {
-        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.38)', 'stroke-width': 4, 'stroke-dasharray': '1.4 1.4' });
+        /*
+          Kettelung ist kein Strichrand, sondern Garn, das dicht um die Kante
+          gewickelt ist - Ton in Ton mit dem Belag. Deshalb erst ein Streifen
+          aus dem Material selbst, darauf die feine Wicklung und aussen eine
+          duenne Abgrenzung. Die grobe gestrichelte Linie von vorher las sich
+          wie eine Schnittmarkierung, nicht wie eine fertige Kante.
+        */
+        var kn = kantePx(4.5);
+        umriss({ fill: 'none', stroke: fuellung, 'stroke-width': kn });
+        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.17)', 'stroke-width': kn, 'stroke-dasharray': '0.9 1.7', 'stroke-linecap': 'butt' });
+        umriss({ fill: 'none', stroke: 'rgba(255,255,255,.28)', 'stroke-width': kn * 0.31, 'stroke-dasharray': '0.9 1.7' });
+        umriss({ fill: 'none', stroke: 'rgba(0,0,0,.26)', 'stroke-width': 0.8 });
       } else {
-        var px = Math.max(art === 'einfassband' ? 6 : 3, BAND_CM[art] * s * 2);
+        var px = Math.min(kantePx(art === 'einfassband' ? 11 : 5), Math.max(art === 'einfassband' ? 6 : 3, BAND_CM[art] * s * 2));
         umriss(band
           ? { fill: 'none', stroke: band.hex, 'stroke-width': px }
           : { fill: 'none', stroke: 'rgba(0,0,0,.35)', 'stroke-width': 2, 'stroke-dasharray': '6 4' });
@@ -307,13 +361,27 @@
       masslinie(x, 28, x + pw, 28, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
       if (f !== 'rund') masslinie(28, y, 28, y + ph, w + ' cm');
       if (beispiel) {
-        var tb = svgEl('text', { x: x + pw / 2, y: y + ph / 2 + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700, fill: 'currentColor' }, svg);
-        tb.textContent = 'Maße eingeben';
+        // Dezenter Chip am oberen Rand statt Schrift quer ueber dem Belag.
+        var tw = 104, tx = x + pw / 2 - tw / 2, ty = y + 8;
+        svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.88)' }, svg);
+        var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: '#3b3733' }, svg);
+        tb.textContent = 'Beispielmaß';
       } else {
         lupe(defs);
       }
 
-      legende.textContent = ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' · ' + KANTE[art];
+      /*
+        Die Legende beantwortet, was der Kunde gerade konfiguriert: welches
+        Produkt, welche Farbe, welches Mass, welche Kante. Vorher stand dort
+        nur die Kantenart - das Produkt selbst kam gar nicht vor.
+      */
+      var teile = [];
+      if (d.produkt) teile.push(d.produkt);
+      var farbe = target ? [target.farbnummer, target.farbe].filter(Boolean).join(' ') : '';
+      if (farbe) teile.push(farbe);
+      teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
+      teile.push(ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' (' + KANTE[art] + ')');
+      legende.textContent = teile.join(' · ');
       vorschau.hidden = false;
     }
 
