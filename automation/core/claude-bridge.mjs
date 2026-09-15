@@ -48,6 +48,49 @@ const SEPARABLE_IMPLEMENTATION = new RegExp(
 function verlangtUmsetzung(task) {
   return IMPLEMENTATION_TERMS.test(task) || SEPARABLE_IMPLEMENTATION.test(task);
 }
+
+// "Aendere SONST nichts" ist keine Leseabsicht, sondern eine Begrenzung des
+// Auftrags: gemeint ist "aendere nichts ANDERES".
+//
+// Belegt am 2026-09-15 an einem echten Lauf: Der Auftrag "Ergaenze eine Zeile
+// in CLAUDE.md. Aendere sonst nichts." lief vollstaendig im Lesemodus und
+// schrieb nichts. Fuenf von fuenf solcher Formulierungen kippten den Auftrag.
+// Das ist heikler als eine Luecke in der Verbliste, weil man genau solche
+// Saetze anhaengt, wenn man einen Auftrag ENG halten will - sorgfaeltiges
+// Formulieren wurde damit bestraft.
+const UMFANG_EINSCHRAENKUNG = /(?<![\p{L}\p{N}])(?:sonst|ansonsten|dar(ü|ue)ber hinaus|weiter(?:e|es|en)?|au(ß|ss)erdem|anderes|andere[nsr]?)(?![\p{L}\p{N}])/iu;
+
+// Wie weit vor dem Treffer noch nach der Einschraenkung gesucht wird. "Sonst
+// nichts aendern" trifft das Muster erst ab "nichts" - das "Sonst" steht davor.
+const EINSCHRAENKUNG_VORLAUF = 30;
+
+// Liefert den Treffer des Leseverbots, wenn es ein echtes ist - und null, wenn
+// es nur eine Umfangsbegrenzung war.
+function leseverbotTreffer(task) {
+  const treffer = String(task ?? '').match(READ_ONLY_INTENT);
+  if (!treffer) return null;
+  const start = Math.max(0, treffer.index - EINSCHRAENKUNG_VORLAUF);
+  const umfeld = String(task).slice(start, treffer.index + treffer[0].length);
+  return UMFANG_EINSCHRAENKUNG.test(umfeld) ? null : treffer;
+}
+
+export function nurLesenGemeint(task) {
+  return leseverbotTreffer(task) !== null;
+}
+
+// Bei einer Umfangsbegrenzung entscheidet die normale Verb-Heuristik - aber
+// erst, nachdem die verneinte Stelle selbst herausgeschnitten wurde.
+//
+// Ohne diesen Schnitt kippte "Pruefe die Struktur und aendere sonst nichts" in
+// die Gegenrichtung: Das VERNEINTE "aendere" zaehlte als Umsetzungsverb, und
+// aus einem Pruefauftrag wurde ein schreibender Lauf. Ein zu weites Muster ist
+// hier gefaehrlicher als das urspruengliche Problem.
+function textFuerVerbsuche(task) {
+  const text = String(task ?? '');
+  const treffer = text.match(READ_ONLY_INTENT);
+  if (!treffer || leseverbotTreffer(task)) return text;
+  return text.slice(0, treffer.index) + ' ' + text.slice(treffer.index + treffer[0].length);
+}
 // Ein ausdruecklich lesender Auftrag schlaegt jede Verb-Heuristik. Grund: ein
 // Substantiv wie "Verbesserungsmoeglichkeiten" traf frueher IMPLEMENTATION_TERMS
 // und startete den Worker schreibend, obwohl im Auftrag "Nur lesen, nichts
@@ -90,14 +133,14 @@ export function classifyClaudeRequest({ taskId = 'CLAUDE-TASK', task, declaredTa
   if (TASK_TYPES.has(declaredTaskType)) {
     taskType = declaredTaskType;
     taskTypeSource = 'DECLARED';
-  } else if (READ_ONLY_INTENT.test(task)) {
+  } else if (nurLesenGemeint(task)) {
     taskType = 'ANALYSIS';
     taskTypeSource = 'READ_ONLY_INTENT';
   } else if (TASK_TYPES.has(forceTaskType)) {
     taskType = forceTaskType;
     taskTypeSource = 'INHERITED';
   } else {
-    taskType = verlangtUmsetzung(task) ? 'IMPLEMENTATION' : 'ANALYSIS';
+    taskType = verlangtUmsetzung(textFuerVerbsuche(task)) ? 'IMPLEMENTATION' : 'ANALYSIS';
     taskTypeSource = 'HEURISTIC';
   }
   return { id: compactTaskId(taskId), task: task.trim(), risk, taskType, taskTypeSource };

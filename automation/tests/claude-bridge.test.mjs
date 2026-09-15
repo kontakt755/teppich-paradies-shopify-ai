@@ -178,3 +178,42 @@ test('ausdrueckliches "nichts aendern" schlaegt die erweiterte Wortliste', () =>
   assert.equal(result.taskType, 'ANALYSIS');
   assert.equal(result.taskTypeSource, 'READ_ONLY_INTENT');
 });
+
+// Umfangsbegrenzung ist kein Leseverbot (2026-09-15, an einem echten Lauf
+// gefunden). "Aendere SONST nichts" heisst "aendere nichts ANDERES" - der
+// Auftrag lief trotzdem vollstaendig im Lesemodus und schrieb nichts.
+//
+// Das ist heikler als eine Luecke in der Verbliste: Solche Saetze haengt man
+// an, wenn man einen Auftrag ENG halten will. Sorgfaeltiges Formulieren wurde
+// damit bestraft.
+for (const auftrag of [
+  'Ergaenze eine Zeile in CLAUDE.md. Aendere sonst nichts.',
+  'Korrigiere den Tippfehler. Sonst nichts aendern.',
+  'Fuege das Feld hinzu und aendere darueber hinaus nichts.',
+  'Repariere den Zaehler, aber aendere sonst keine Dateien.',
+  'Setze den Wert auf 5. Weiter nichts aendern.',
+  'Erstelle die Datei. Aendere ansonsten nichts.',
+  'Lege die Datei docs/x.md an, sonst nichts aendern.',
+]) {
+  test(`Umfangsbegrenzung kippt den Auftrag nicht: ${auftrag}`, () => {
+    assert.equal(classifyClaudeRequest({ taskId: 'T', task: auftrag }).taskType, 'IMPLEMENTATION');
+  });
+}
+
+// Die Gegenrichtung ist die eigentliche Gefahr: Ein zu weit gefasster Fix
+// wuerde Pruefauftraege schreibend ausfuehren. "Pruefe die Struktur und aendere
+// sonst nichts" enthaelt eine Einschraenkung UND ein verneintes "aendere" -
+// ohne das Herausschneiden der verneinten Stelle kippte genau dieser Fall.
+for (const auftrag of [
+  'Pruefe die Struktur und aendere nichts.',
+  'Nur lesen, nichts aendern.',
+  'Analysiere den Aufbau, ohne etwas zu aendern.',
+  'Schau dir das an, aber aendere keine Dateien.',
+  'Pruefe die Struktur und aendere sonst nichts.',
+  'Untersuche den Fehler, aendere aber nichts.',
+  'Berichte ueber den Aufbau. Aendere sonst nichts.',
+]) {
+  test(`echtes Leseverbot bleibt Analyse: ${auftrag}`, () => {
+    assert.equal(classifyClaudeRequest({ taskId: 'T', task: auftrag }).taskType, 'ANALYSIS');
+  });
+}
