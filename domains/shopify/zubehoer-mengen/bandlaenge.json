@@ -1,0 +1,11 @@
+{
+  "_comment": "Rollenlaenge je Klebe-/Verlegeband-Produkt in Metern. Erhoben 2026-09-11 ueber die Admin API (nur lesend). Quelle je Zeile - nichts geschaetzt, nichts fortgeschrieben. Zielfeld: Produkt-Metafeld custom.bandlaenge (number_decimal), Definition in metafeld-definitionen.json. NICHT geschrieben; nur Zeilen mit status 'belegt' nach Freigabe uebernehmen.",
+  "metafeld": "custom.bandlaenge",
+  "stand": "2026-09-11",
+  "produkte": [
+    { "handle": "verlegeband-fuer-textil-und-elastische-belaege", "productId": "gid://shopify/Product/16052347208014", "bandlaenge_m": "50", "status": "belegt", "quelle": "eigene Produktbeschreibung: 'Varianten 3 Breiten Verkaufseinheit Rolle 50 m'" },
+    { "handle": "trockenkleber-band-fuer-sockelleisten", "productId": "gid://shopify/Product/16052347175246", "bandlaenge_m": "50", "status": "belegt", "quelle": "eigene Produktbeschreibung: 'Varianten 2 Breiten Verkaufseinheit Rolle 50 m'" },
+    { "handle": "sockelklebeband-doppelseitig", "productId": "gid://shopify/Product/16052344226126", "bandlaenge_m": "50", "status": "belegt", "quelle": "eigene Produktbeschreibung: 'Varianten 8 Breiten Verkaufseinheit Rolle 50 m'" },
+    { "handle": "universal-verlegeband-70-mm", "productId": "gid://shopify/Product/16052347306318", "bandlaenge_m": null, "status": "bezeichnung", "quelle": "Variantenbezeichnung 'Rolle 70 mm × 25 m' - der Block liest die 25 m bereits daraus, ein Metafeld ist nicht noetig" }
+  ]
+}
