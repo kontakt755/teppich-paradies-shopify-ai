@@ -35,8 +35,25 @@ export const REVIEW_SCOPE_UNKNOWN = 'UNKNOWN';
 // kennt und nicht vermisst. reverted: Pfade, die bei Sitzungsbeginn geaendert
 // oder unversioniert vorlagen und jetzt aus git status verschwunden sind
 // (zurueckgesetzt, geloescht) - das ist eine Aenderung dieser Sitzung.
-export function describeReviewScope({ excluded = [], reverted = [], ...rest } = {}) {
-  return withBaselineNotes(describeTreeScope({ ...rest, forceDirty: reverted.length > 0 }), { excluded, reverted });
+export function describeReviewScope({ excluded = [], reverted = [], ownPaths = null, ownPathsTruncated = false, ...rest } = {}) {
+  const scope = describeTreeScope({ ...rest, forceDirty: reverted.length > 0 });
+  // Welche Pfade liegen ueberhaupt im Bereich? Nur die uncommitteten aus
+  // git status; Commits sind bereits durch sinceRef auf diesen Auftrag begrenzt.
+  const scopePaths = porcelainPaths(rest.porcelain);
+  return withOwnPathNotes(withBaselineNotes({ ...scope, scopePaths }, { excluded, reverted }), { ownPaths, truncated: ownPathsTruncated });
+}
+
+// Eine Zeile aus `git status --porcelain` ist "XY pfad". Umbenennungen
+// ("R  neu -> alt") liefern den neuen Pfad; er ist der, der im Diff auftaucht.
+export function porcelainPaths(porcelain) {
+  return String(porcelain ?? '').split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    // Nach Abzug der Baseline steht in porcelain nur noch der blosse Pfad,
+    // davor die Form "XY pfad" - beide Faelle abdecken.
+    .map(line => (/^[ ?!ACDMRTU]{1,2}\s/.test(line) ? line.replace(/^[ ?!ACDMRTU]{1,2}\s+/, '') : line))
+    .map(line => line.split(' -> ').pop().trim())
+    .filter(Boolean);
 }
 
 function describeTreeScope({ porcelain = '', aheadCommits = '', baseRef = 'origin/main', mergeBase = '', taskScoped = false, forceDirty = false } = {}) {
@@ -121,7 +138,7 @@ function noteBotOwned(scope, botOwned) {
   return { ...scope, botOwned: [...botOwned], text: `${scope.text}. ${formatPaths(botOwned)} schreibt der Dashboard-Bot und wird nie mitcommittet: gehört nicht zu diesem Auftrag und ist kein Befund` };
 }
 
-export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, exec = execFileSync, io = fs } = {}) {
+export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, ownPaths = null, ownPathsTruncated = false, exec = execFileSync, io = fs } = {}) {
   const errors = [];
   const git = (...args) => {
     try {
@@ -144,7 +161,7 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
     if (since.ok && since.out) {
       const ahead = git('log', '--format=%h %s', `${since.out}..HEAD`);
       if (ahead.ok) {
-        return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef: since.out.slice(0, 12), mergeBase: since.out.slice(0, 12), taskScoped: true, excluded: tree.excluded, reverted: tree.reverted }));
+        return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef: since.out.slice(0, 12), mergeBase: since.out.slice(0, 12), taskScoped: true, excluded: tree.excluded, reverted: tree.reverted, ownPaths, ownPathsTruncated }));
       }
     }
     // sinceRef nicht nutzbar (Commit weg, git-Fehler): bewusst kein Abbruch,
@@ -156,7 +173,7 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   if (!mergeBase.ok || !mergeBase.out) return unknown(errors.length ? errors : ['merge-base leer']);
   const ahead = git('log', '--format=%h %s', `${mergeBase.out}..HEAD`);
   if (!ahead.ok) return unknown(errors);
-  return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12), excluded: tree.excluded, reverted: tree.reverted }));
+  return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12), excluded: tree.excluded, reverted: tree.reverted, ownPaths, ownPathsTruncated }));
 }
 
 // Dritte Luecke, gefunden am 2026-09-10: Arbeitet eine Sitzung in einem
@@ -380,6 +397,30 @@ function applyBaseline({ cwd, baseline, porcelain, exec, io }) {
 function formatPaths(files, max = 15) {
   const shown = files.slice(0, max).join(', ');
   return files.length > max ? `${shown} und ${files.length - max} weitere` : shown;
+}
+
+// Kennzeichnet Pfade, die im Pruefbereich liegen, aber nachweislich NICHT von
+// dieser Sitzung geschrieben wurden (siehe automation/core/session-writes.mjs).
+//
+// Bewusst nur ein Vermerk, kein Filter: Erfasst werden nur Schreibvorgaenge
+// ueber Edit/Write/MultiEdit/NotebookEdit. Wer per Bash schreibt (`cat >>`,
+// `chmod`, ein Generator), taucht in ownPaths nicht auf - ein harter Filter
+// wuerde solche eigene Arbeit ungeprueft durchlassen. Der Reviewer bekommt die
+// Information und entscheidet selbst.
+//
+// Fail-safe: ohne ownPaths, mit leerer Liste oder bei unvollstaendiger
+// Erfassung (truncated) bleibt der Pruefbereich Wort fuer Wort wie bisher.
+export function withOwnPathNotes(scope, { ownPaths = null, truncated = false } = {}) {
+  if (!Array.isArray(ownPaths) || ownPaths.length === 0 || truncated) return scope;
+  const eigene = new Set(ownPaths);
+  const fremde = (scope.scopePaths ?? []).filter(file => !eigene.has(file));
+  if (!fremde.length) return { ...scope, ownPaths: [...ownPaths] };
+  return {
+    ...scope,
+    ownPaths: [...ownPaths],
+    foreignPaths: fremde,
+    text: `${scope.text}. Diese Sitzung hat nachweislich nur ${formatPaths([...eigene])} selbst geschrieben. ${formatPaths(fremde)} stammen nicht aus dieser Sitzung - in einem geteilten Checkout arbeiten mehrere Sitzungen gleichzeitig im selben Verzeichnis. Sie gehören nicht zu diesem Auftrag und sind kein Befund; verlange weder ihre Änderung noch ihre Entfernung. Hinweis: Erfasst werden nur Schreibvorgänge über die Datei-Werkzeuge, nicht solche über Shell-Befehle`,
+  };
 }
 
 function withBaselineNotes(scope, { excluded = [], reverted = [] } = {}) {
