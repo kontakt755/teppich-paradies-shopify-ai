@@ -69,6 +69,12 @@
   data-tp-compare-handle="{{ product.handle }}"
   data-tp-compare-snapshot="{{ tp_cmp_snapshot | strip | escape }}"
   aria-pressed="false"
+  {%- comment -%}
+    Der Titel nennt, was der Vergleich tatsaechlich zeigt. Die Felder stehen
+    in FIELDS in assets/tp-compare.js - Florhoehe und Rollenbreite sind NICHT
+    darunter und duerfen hier nicht versprochen werden.
+  {%- endcomment -%}
+  title="Produkte vergleichen: Preis je m², Belagsart & Nutzungsklasse"
   {{ block.shopify_attributes }}
 >
   Zum Vergleich hinzufügen

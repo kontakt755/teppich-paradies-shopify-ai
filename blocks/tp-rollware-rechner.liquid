@@ -99,6 +99,13 @@
   <p class="tp-rwc-service-hint" data-service-hint hidden></p>
 
   {%- comment -%}
+    Kurzanleitung vor dem ersten Schritt: der Konfigurator hat vier Stationen,
+    und wer nur den ersten Schritt sieht, weiss nicht, wie weit es noch geht.
+    Eine Zeile, kein Kasten - der Rechner selbst soll die Aufmerksamkeit haben.
+  {%- endcomment -%}
+  <p class="tp-rwc-anleitung" data-rwc-body>Farbe wählen → Maß eingeben → Preis prüfen → bequem liefern lassen.</p>
+
+  {%- comment -%}
     Schritt 2 ist die Art: Meterware (volle Rollenbreite) oder Raummass
     (eigene Breite aus einer "Wunschmaß"-Variante). Die Raummass-Karte
     erscheint nur, wenn die gewaehlte Farbe so eine Variante bestellbar hat -
@@ -186,6 +193,21 @@
           data-length-input>
         <span class="tp-rwc-unit">cm</span>
       </div>
+      {%- comment -%}
+        Messhinweis. Bewusst NICHT "der Shop rechnet 5 cm Zugabe in der Breite
+        ein": die Zugabe (ZUGABE_CM in tp-rollware-art.js) entscheidet nur,
+        aus welcher Rolle geschnitten wird, und begrenzt die groesste
+        bestellbare Breite auf Rolle minus 5 cm. Berechnet wird dem Kunden
+        seine angegebene Breite - 250 cm eingegeben heisst 250 cm bezahlt,
+        auch wenn der Lieferant 255 cm schneidet. Die andere Formulierung
+        klingt nach 5 cm Material oder 5 cm Aufpreis; beides waere falsch.
+        Der Satz erscheint nur im Raummass, wo die Zugabe ueberhaupt greift -
+        bei Meterware bekommt der Kunde die volle Rollenbreite.
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-note-mess" data-mess-hint>
+        Messen Sie an der längsten Stelle.
+        <span data-mess-raum hidden>Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
+      </p>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.</p>
       {%- comment -%}
@@ -272,7 +294,44 @@
     ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
     Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
   {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta" data-cta disabled hidden data-rwc-body>Länge eingeben</button>
+  {%- comment -%}
+    Vertrauenszeile direkt am Kaufbutton - die drei Punkte, die beim Zuschnitt
+    die Kaufangst nehmen: vorher anfassen, keine Versandkosten, jemand am
+    Telefon. Die 50-Euro-Schwelle steht genauso in Topbar, Warenkorb und
+    tp-service-links; sie darf nur gemeinsam mit denen geaendert werden.
+  {%- endcomment -%}
+  <ul class="tp-rwc-trust" data-rwc-body>
+    <li>Bis zu 3 Muster kostenlos</li>
+    <li>Versandkostenfrei in Deutschland ab 50 €</li>
+    <li>Persönliche Fachberatung</li>
+  </ul>
+
+  {%- comment -%}
+    Lieferart am Kaufbutton. Rollenware geht per Spedition - das ist die Frage,
+    die sonst erst im Warenkorb auftaucht ("wie kommt eine 4 m breite Rolle zu
+    mir?"). Eine Lieferzeit in Tagen steht hier bewusst NICHT: die pflegt
+    tp-service-links als Block-Einstellung, und eine zweite, hart verdrahtete
+    Zahl im Theme waere genau die Sorte Angabe, die still veraltet.
+
+    Verlegeservice und Aufmass bleiben in der Section product_service_rolle
+    unter dem Produkt (PR #278 hat sie bewusst dorthin verlegt, um den oberen
+    Kaufbereich schlank zu halten). Hier steht nur der Verweis darauf - das
+    haelt den Kaufbereich kompakt und beantwortet die Frage trotzdem.
+  {%- endcomment -%}
+  <p class="tp-rwc-liefern" data-rwc-body>
+    Lieferung per Spedition bis vor die Haustür – wir melden uns vorher telefonisch.
+    Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.
+  </p>
+
+  {%- comment -%}
+    Der Button bleibt sichtbar und anklickbar, auch solange Breite oder Laenge
+    fehlen. Vorher verschwand er (cta.hidden = cta.disabled) - der Kunde sah an
+    der Stelle nichts und hatte keinen Anhaltspunkt, was noch fehlt. Ein echtes
+    disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
+    dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
+  {%- endcomment -%}
+  <button type="button" class="tp-rwc-cta is-incomplete" data-cta aria-disabled="true" data-rwc-body>Breite und Länge eingeben</button>
+  <p class="tp-rwc-note tp-rwc-note-error tp-rwc-cta-hint" data-cta-hint role="alert" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
@@ -654,6 +713,67 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #185a3b; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
+
+  /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
+     Ziel erkennbar und sagt beim Klick, was fehlt. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete {
+    background: var(--tp-rwc-surface);
+    color: var(--tp-rwc-muted);
+    border: 1px solid var(--tp-rwc-line);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: var(--tp-rwc-surface); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-weight: 600; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-anleitung {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--tp-rwc-muted);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0 0 10px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--tp-rwc-muted);
+  }
+  /* Der Mittelpunkt ist Dekoration und gehoert nicht in den Vorlesefluss. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before {
+    content: '\00b7';
+    margin-right: 14px;
+    speak: never;
+  }
+  @media (max-width: 480px) {
+    /* Auf dem Handy untereinander: drei umbrechende Halbzeilen mit
+       wandernden Trennpunkten sind schlechter lesbar als drei Zeilen. */
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust { display: block; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before { content: none; margin: 0; }
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-mess { color: var(--tp-rwc-muted); }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-liefern {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--tp-rwc-muted);
+  }
+
+  /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
+     Meldung unter dem Button nicht die einzige Spur ist. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid {
+    border-color: #a62020;
+    box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg.is-invalid {
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.35);
+  }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #145c38; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-error { background: #a62020; }
 
@@ -829,7 +949,48 @@ function tpRwcInit{{ tp_rc_id }}() {
   var formulaPrice = root.querySelector('[data-formula-price]');
   var outTotal = root.querySelector('[data-total]');
   var cta = root.querySelector('[data-cta]');
+  var ctaHint = root.querySelector('[data-cta-hint]');
+  var messRaum = root.querySelector('[data-mess-raum]');
   var cartLink = root.querySelector('[data-cart-link]');
+  var widthSeg = root.querySelector('[data-width-seg]');
+
+  // Rot markiert wird erst, wenn der Kunde den Kauf versucht hat - nicht schon
+  // beim Laden. Ein Formular, das sofort rot ist, bevor irgendetwas eingegeben
+  // wurde, liest sich als Fehler des Shops.
+  function markInvalid(el, on) {
+    if (!el) return;
+    el.classList.toggle('is-invalid', !!on);
+    if (el.tagName === 'INPUT') {
+      if (on) el.setAttribute('aria-invalid', 'true');
+      else el.removeAttribute('aria-invalid');
+    }
+  }
+
+  function clearInvalid() {
+    markInvalid(lengthInput, false);
+    markInvalid(wunschInput, false);
+    markInvalid(widthSeg, false);
+    if (ctaHint) { ctaHint.textContent = ''; ctaHint.hidden = true; }
+  }
+
+  // Welches Pflichtfeld fehlt? Reihenfolge wie im Formular, damit der Fokus
+  // nach oben springt und nicht ueber ein noch leeres Feld hinweg.
+  function fehlendesFeld() {
+    var raum = artMode() === 'raum';
+    if (raum) {
+      var wRaw = wunschInput ? wunschInput.value.trim() : '';
+      if (!wRaw || ART.pruefeBreite(selectedWidth(), WUNSCH_MIN_CM, maxRaumBreite())) {
+        return { el: wunschInput, feld: 'breite' };
+      }
+    } else if (!selectedWidth()) {
+      return { el: widthSeg, feld: 'breite' };
+    }
+    var len = getEffectiveLengthCm();
+    if (!lengthInput.value.trim() || len === -1 || len < 100 || len > MAX_LENGTH_CM) {
+      return { el: lengthInput, feld: 'laenge' };
+    }
+    return null;
+  }
 
   var target = null;
 
@@ -1302,6 +1463,9 @@ function tpRwcInit{{ tp_rc_id }}() {
     syncArtUi();
     var w = selectedWidth();
     var raum = artMode() === 'raum';
+    // Die Zugabe greift nur im Raummass - bei Meterware bekommt der Kunde die
+    // volle Rollenbreite, ein Zugabe-Satz waere dort schlicht falsch.
+    if (messRaum) messRaum.hidden = !raum;
     var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite()) : '';
     if (wunschError) {
       wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
@@ -1387,14 +1551,30 @@ function tpRwcInit{{ tp_rc_id }}() {
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
-      cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
+      // Die Beschriftung nennt das naechste fehlende Feld statt pauschal
+      // "Laenge eingeben" - im Raummass-Modus fehlt oft zuerst die Breite.
+      if (blocked || tooLong) {
+        cta.textContent = 'Bitte beraten lassen';
+      } else {
+        var fehlt = fehlendesFeld();
+        cta.textContent = (fehlt && fehlt.feld === 'breite') ? 'Breite eingeben' : 'Länge eingeben';
+      }
     }
 
     renumberSteps();
-    cta.disabled = !(valid && ok);
-    // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
-    // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
-    cta.hidden = cta.disabled;
+
+    // Der Button bleibt stehen. Bereit oder nicht steckt in aria-disabled und
+    // der Klasse - so bleibt er fokussierbar und sein Klick meldet, was fehlt.
+    // Waehrend eines laufenden /cart/add.js setzt der Klick-Handler ein echtes
+    // disabled; das darf calculate() nicht ueberschreiben.
+    var ctaReady = !!(valid && ok);
+    if (!cta.disabled) {
+      cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
+      cta.classList.toggle('is-incomplete', !ctaReady);
+    }
+    // Sobald die Eingabe stimmt, verschwindet die rote Markierung von selbst -
+    // der Kunde soll nicht erst erneut klicken muessen, um sie loszuwerden.
+    if (ctaReady) clearInvalid();
 
     applyServiceState();
   }
@@ -1469,12 +1649,56 @@ function tpRwcInit{{ tp_rc_id }}() {
   });
 
   cta.addEventListener('click', function () {
-    if (!target || !target.available) return;
+    // Echtes disabled gibt es nur waehrend eines laufenden Warenkorb-Aufrufs.
+    if (cta.disabled) return;
+
+    // Jeder Abbruchgrund bekommt eine sichtbare Antwort. Vorher kehrten alle
+    // vier Pruefungen stumm zurueck - ein Klick tat dann schlicht nichts.
+    var fehlt = fehlendesFeld();
+    if (fehlt) {
+      clearInvalid();
+      markInvalid(fehlt.el, true);
+      if (ctaHint) {
+        var lenRaw = lengthInput.value.trim();
+        var breiteFehlt = fehlt.feld === 'breite';
+        // Sind beide Felder leer, nennt die Meldung auch beide - sonst tippt
+        // der Kunde die Breite ein und stoesst sofort auf die naechste Huerde.
+        ctaHint.textContent = (breiteFehlt && !lenRaw)
+          ? 'Bitte Breite und Länge eingeben.'
+          : (breiteFehlt ? 'Bitte Breite eingeben.' : 'Bitte Länge eingeben.');
+        ctaHint.hidden = false;
+      }
+      if (fehlt.el && typeof fehlt.el.focus === 'function') {
+        fehlt.el.focus({ preventScroll: false });
+      }
+      return;
+    }
+
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
-    if (len < 100) return;
     var raumOrder = artMode() === 'raum';
-    if (raumOrder && ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite())) return;
+
+    // Letzte Sperre vor dem Warenkorb: Verfuegbarkeit haengt an der Variante,
+    // nicht an der Eingabe, und fehlendesFeld() prueft sie deshalb nicht mit.
+    if (!target || !target.available) {
+      if (ctaHint) {
+        ctaHint.textContent = target
+          ? 'Diese Breite ist derzeit nicht lieferbar. Bitte eine andere Breite wählen.'
+          : 'Diese Kombination ist nicht verfügbar. Bitte Farbe oder Breite ändern.';
+        ctaHint.hidden = false;
+      }
+      markInvalid(raumOrder ? wunschInput : widthSeg, true);
+      return;
+    }
+    if (raumOrder && !ART.wunschOk(target, wIdx)) {
+      if (ctaHint) {
+        ctaHint.textContent = 'Für diese Breite ist kein Zuschnitt nach Raummaß möglich. Bitte rufen Sie uns kurz an.';
+        ctaHint.hidden = false;
+      }
+      markInvalid(wunschInput, true);
+      return;
+    }
+    clearInvalid();
 
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
@@ -1554,6 +1778,9 @@ function tpRwcInit{{ tp_rc_id }}() {
           cta.textContent = original;
           cta.classList.remove('is-done');
           cta.disabled = false;
+          // Nach dem echten disabled den Zustand neu bestimmen, sonst bliebe
+          // aria-disabled auf dem Stand von vor dem Warenkorb-Aufruf stehen.
+          calculate();
         }, 3000);
       })
       .catch(function () {
@@ -1563,6 +1790,7 @@ function tpRwcInit{{ tp_rc_id }}() {
           cta.textContent = original;
           cta.classList.remove('is-error');
           cta.disabled = false;
+          calculate();
         }, 3000);
       });
   });

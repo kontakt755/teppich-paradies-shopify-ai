@@ -1,195 +1,73 @@
 {% doc %}
-  Dynamische Google-Bewertung vom Google-Unternehmensprofil.
-  Lädt Rating und UserRatingCount über einen sicheren Backend-Endpunkt,
-  um den API-Key zu schützen. Zeigt keine Fallback-Werte bei Fehler.
+  Platzhalter fuer eine automatisch aktualisierte Google-Bewertung.
+
+  STATUS: NICHT AKTIV. Dieser Block rendert absichtlich nichts.
+
+  Was frueher hier stand: ein Spinner, ein leerer Content-Container und
+  JavaScript, das einen Endpunkt /api/store/google-rating abfragen sollte. Der
+  Endpunkt ist von der Storefront aus nicht erreichbar (Begruendung unten), das
+  JavaScript blendete den Spinner deshalb sofort wieder aus und rief
+  renderRating() nie auf. Uebrig blieb ein leeres div auf der Seite - ein
+  eingebauter Block, der aussieht, als wuerde gleich etwas nachgeladen, und es
+  nie tut. Das ist entfernt.
+
+  WAS STATTDESSEN ZU BENUTZEN IST
+  Die belegte, statische Anzeige ist blocks/tp-bewertungsbeleg.liquid: Note,
+  Anzahl und Link stehen dort als Block-Einstellungen, sind im Theme-Editor
+  pflegbar und liegen auf allen acht Produktvorlagen. Die Werte werden im
+  Google-Unternehmensprofil abgelesen und abgeschrieben, nie geschaetzt
+  (zuletzt am 2026-09-12: 4,9 aus 240 Rezensionen). Ein leeres Feld blendet die
+  Angabe aus. Dieser Block hier ist KEIN Ersatz dafuer und darf ihn nicht
+  verdraengen - sonst stuenden zwei Quellen fuer dieselbe Zahl im Theme.
+
+  WARUM ES KEINE LIVE-AKTUALISIERUNG GIBT
+  Nicht, weil der Code fehlt - server/google-rating-api.js und server/index.js
+  sind vorhanden und fragen die Google Places API mit einer Stunde Cache ab.
+  Es fehlt der Ort, an dem das laeuft: Shopify hostet die Storefront, ein Theme
+  kann keine eigene Route bedienen. Ein fetch('/api/store/google-rating') aus
+  dem Theme trifft deshalb Shopify und liefert 404, egal wie gut der Node-Server
+  geschrieben ist. Das ist eine Architekturluecke, kein Bug.
+
+  WAS FUER EINE SICHERE UMSETZUNG NOETIG WAERE
+  1. Hosting: server/ als eigener Dienst deployen (z. B. Fly.io, Render,
+     Cloudflare Worker). Der Dienst haelt GOOGLE_PLACES_API_KEY und
+     GOOGLE_BUSINESS_PLACE_ID als Umgebungsvariablen.
+  2. Anbindung: eine Shopify App Proxy einrichten, die /apps/bewertung auf
+     diesen Dienst leitet. Erst dadurch wird der Aufruf same-origin und
+     funktioniert ohne CORS-Ausnahme und ohne Drittanbieter-Cookie. Der
+     Theme-Aufruf lautet dann fetch('/apps/bewertung'), nicht /api/store/...
+  3. Schluessel: Der Places-Key bleibt ausschliesslich im Dienst. Er darf
+     weder in Liquid noch in einem Asset noch in einer Block-Einstellung
+     stehen - Theme-Dateien sind ueber die Storefront abrufbar, ein Key dort
+     waere oeffentlich. Der Key wird zusaetzlich in der Google Cloud Console
+     auf die Places API und die Server-IP eingeschraenkt.
+  4. Zwischenspeicher: Antwort serverseitig cachen (die vorhandene Stunde
+     genuegt). Google Places kostet je Abfrage; ohne Cache zahlt jeder
+     Seitenaufruf.
+  5. Fehlerfall: Faellt der Dienst aus, bleibt tp-bewertungsbeleg stehen. Die
+     Live-Anzeige darf den statischen Beleg ueberschreiben, aber nie loeschen -
+     sonst verschwindet die Bewertung bei jeder Stoerung.
+  6. Nutzungsbedingungen: Googles Bedingungen verlangen die Attribution "Google"
+     an der Bewertung und verbieten laengeres Vorhalten der Werte.
+
+  Ausfuehrlicher Stand und Architekturskizze: GOOGLE_RATING_IMPLEMENTATION.md
+
+  Solange Schritt 1 und 2 nicht erledigt sind, bleibt dieser Block leer. Er ist
+  bewusst nicht geloescht: die Begruendung oben soll auffindbar bleiben, damit
+  nicht zum dritten Mal jemand ein Live-Widget baut, das nicht laufen kann.
 {% enddoc %}
 
-{%- liquid
-  assign tp_gr_id = block.id | replace: '_', '' | downcase
--%}
-
-<div
-  class="tp-google-rating-{{ tp_gr_id }}"
-  id="tp-google-rating-{{ tp_gr_id }}"
-  data-block-id="{{ block.id }}"
-  {{ block.shopify_attributes }}
->
-  <div class="tp-google-rating__container-{{ tp_gr_id }}">
-    <div class="tp-google-rating__loading-{{ tp_gr_id }}" aria-label="Lädt Google-Bewertung">
-      <div class="tp-google-rating__spinner"></div>
-    </div>
-    <div class="tp-google-rating__content-{{ tp_gr_id }}" style="display: none;">
-      <!-- Stars und Bewertung werden per JavaScript eingefügt -->
-    </div>
-    <div class="tp-google-rating__error-{{ tp_gr_id }}" style="display: none;" role="alert">
-      <!-- Fehler werden hier angezeigt, aber ohne Fallback-Werte -->
-    </div>
-  </div>
-</div>
-
-<script>
-(function() {
-  const blockId = 'tp-google-rating-{{ tp_gr_id }}';
-  const container = document.getElementById(blockId);
-  if (!container) return;
-
-  const loadingEl = container.querySelector('.tp-google-rating__loading-{{ tp_gr_id }}');
-  const contentEl = container.querySelector('.tp-google-rating__content-{{ tp_gr_id }}');
-  const errorEl = container.querySelector('.tp-google-rating__error-{{ tp_gr_id }}');
-
-  async function fetchGoogleRating() {
-    // Backend-Endpunkt /api/store/google-rating ist noch nicht implementiert.
-    // Ein Fetch dorthin würde immer 404 liefern und dabei einen Browser-Konsolenfehler
-    // erzeugen, der sich per try/catch nicht unterdrücken lässt. Widget bleibt bis
-    // zur Implementierung des Endpunkts inaktiv.
-    if (loadingEl) loadingEl.style.display = 'none';
-    if (errorEl) errorEl.style.display = 'none';
-  }
-
-  function renderRating(rating, count) {
-    const starsHtml = '★★★★★';
-
-    const ratingText = rating.toLocaleString('de-DE', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1
-    });
-
-    const countText = count.toLocaleString('de-DE');
-
-    const html = `
-      <div class="tp-google-rating__stars-{{ tp_gr_id }}">
-        ${starsHtml}
-      </div>
-      <div class="tp-google-rating__text-{{ tp_gr_id }}">
-        <span class="tp-google-rating__score-{{ tp_gr_id }}">${ratingText}/5</span>
-        <span class="tp-google-rating__count-{{ tp_gr_id }}">(${countText} Bewertungen)</span>
-        <span class="tp-google-rating__separator-{{ tp_gr_id }}">·</span>
-        <a
-          href="https://www.google.com/maps/place/Teppich+Paradies+Oranienburg+GmbH/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="tp-google-rating__link-{{ tp_gr_id }}"
-        >Auf Google lesen</a>
-      </div>
-    `;
-
-    contentEl.innerHTML = html;
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', fetchGoogleRating);
-  } else {
-    fetchGoogleRating();
-  }
-})();
-</script>
-
-<style>
-  .tp-google-rating-{{ tp_gr_id }} {
-    margin: 12px 0;
-  }
-
-  .tp-google-rating__container-{{ tp_gr_id }} {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .tp-google-rating__loading-{{ tp_gr_id }} {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 24px;
-  }
-
-  .tp-google-rating__spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-top: 2px solid var(--color-foreground);
-    border-radius: 50%;
-    animation: tp-spin 0.8s linear infinite;
-  }
-
-  @keyframes tp-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  .tp-google-rating__content-{{ tp_gr_id }} {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-  }
-
-  .tp-google-rating__stars-{{ tp_gr_id }} {
-    font-size: 14px;
-    color: #ffa500;
-    letter-spacing: -2px;
-    font-weight: bold;
-  }
-
-  .tp-google-rating__text-{{ tp_gr_id }} {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 3px;
-    align-items: center;
-    font-size: 14px;
-    color: var(--color-foreground);
-    line-height: 1.4;
-  }
-
-  .tp-google-rating__score-{{ tp_gr_id }} {
-    font-weight: 600;
-  }
-
-  .tp-google-rating__count-{{ tp_gr_id }} {
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
-  }
-
-  .tp-google-rating__separator-{{ tp_gr_id }} {
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.3);
-  }
-
-  .tp-google-rating__link-{{ tp_gr_id }} {
-    color: var(--color-link, #0066cc);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    white-space: nowrap;
-  }
-
-  .tp-google-rating__link-{{ tp_gr_id }}:hover {
-    opacity: 0.8;
-  }
-
-  .tp-google-rating__error-{{ tp_gr_id }} {
-    font-size: 12px;
-    color: #d32f2f;
-  }
-
-  @media screen and (max-width: 749px) {
-    .tp-google-rating__text-{{ tp_gr_id }} {
-      font-size: 13px;
-    }
-
-    .tp-google-rating__stars-{{ tp_gr_id }} {
-      font-size: 13px;
-    }
-  }
-</style>
+{%- comment -%}
+  Kein Markup, kein JavaScript, keine Block-Einstellungen. Ein Block ohne
+  presets erscheint nicht in der Block-Auswahl des Editors (siehe CLAUDE.md,
+  Punkt 2) - genau das ist hier gewollt: er soll nicht versehentlich auf eine
+  Seite geraten, solange er nichts anzeigen kann.
+{%- endcomment -%}
 
 {% schema %}
 {
-  "name": "TP Google-Bewertung",
+  "name": "TP Google-Bewertung (inaktiv)",
   "tag": null,
-  "settings": [],
-  "presets": [
-    {
-      "name": "TP Google-Bewertung"
-    }
-  ]
+  "settings": []
 }
 {% endschema %}

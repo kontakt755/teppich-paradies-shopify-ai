@@ -4,6 +4,10 @@
   var COLLAPSE_DELAY = 5000;
   var collapseTimer;
 
+  // Wird am Vergleichen-Button und in der Leiste gezeigt. Nennt bewusst nur
+  // Felder, die FIELDS unten wirklich enthaelt.
+  var NUTZEN_TEXT = 'Produkte vergleichen: Preis je m², Belagsart & Nutzungsklasse';
+
   var FIELDS = [
     { key: 'pricePerSqm', label: '€/m²' },
     { key: 'belagsart', label: 'Belagsart' },
@@ -53,6 +57,11 @@
       // seinen vollen Text.
       if (btn.hasAttribute('data-tp-compare-compact')) {
         btn.textContent = active ? 'Verglichen' : 'Vergleichen';
+        // "Vergleichen" allein sagt nicht, was verglichen wird. Auf der Karte
+        // ist kein Platz fuer den ganzen Satz - er steht deshalb als Titel und
+        // als aria-label daran. Genannt werden nur Felder aus FIELDS oben.
+        btn.setAttribute('title', active ? 'Aus dem Vergleich entfernen' : NUTZEN_TEXT);
+        btn.setAttribute('aria-label', active ? 'Aus dem Vergleich entfernen' : NUTZEN_TEXT);
       } else {
         btn.textContent = active ? 'Von Vergleich entfernen' : 'Zum Vergleich hinzufügen';
       }
