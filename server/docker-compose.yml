@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  google-rating-api:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-demo}
+      GOOGLE_BUSINESS_PLACE_ID: ${GOOGLE_BUSINESS_PLACE_ID:-demo}
+      SHOPIFY_STORE_URL: ${SHOPIFY_STORE_URL:-https://teppich-paradies-live.myshopify.com}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+# Verwendung:
+# docker-compose up
+#
+# Oder mit Umgebungsvariablen:
+# export GOOGLE_PLACES_API_KEY=AIzaSyD...
+# docker-compose up
+#
+# API verfügbar unter: http://localhost:3001/api/store/google-rating

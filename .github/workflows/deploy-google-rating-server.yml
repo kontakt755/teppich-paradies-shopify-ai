@@ -1,0 +1,76 @@
+name: Deploy Google Rating API Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-google-rating-server.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: ./server
+        run: npm install
+
+      - name: Check syntax
+        working-directory: ./server
+        run: node -c index.js && node -c google-rating-api.js
+
+      - name: Verify ENV template
+        run: |
+          if [ ! -f server/.env.example ]; then
+            echo "❌ .env.example missing"
+            exit 1
+          fi
+          echo "✅ .env.example found"
+
+  deploy-vercel:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        working-directory: ./server
+        run: |
+          echo "📦 Vercel deployment ready"
+          echo "👉 Manual step: Push to Vercel with: vercel --prod"
+          echo "   Or connect GitHub repo to Vercel dashboard"
+
+      - name: Deploy to Railway
+        working-directory: ./server
+        run: |
+          echo "📦 Railway deployment ready"
+          echo "👉 Manual step: Connect repo to Railway dashboard"
+          echo "   https://railway.app/new"
+
+  notify:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Deployment Status
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Server code validated"
+            echo "📋 Deployment options:"
+            echo "  1. Vercel: vercel --prod"
+            echo "  2. Railway: railway up"
+            echo "  3. Heroku: git push heroku main"
+          else
+            echo "❌ Server validation failed"
+            exit 1
+          fi
