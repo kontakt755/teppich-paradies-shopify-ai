@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-15T10:27:42.284Z",
+  "generated_at": "2026-09-15T10:29:49.750Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 96,
+  "count": 97,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-15T10:27:42.284Z",
+    "fetchedAt": "2026-09-15T10:29:49.750Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 323,
+      "title": "Admin nachziehen: Bestellmail escapen + Produkt-Tag-Spalte entfernen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/323",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T10:29:35Z",
+      "updated_at": "2026-09-15T10:29:36Z",
+      "closed_at": null
+    },
+    {
       "number": 322,
       "title": "Alt-PRs #279/#280/#256: Konflikte geloest, drei Entscheidungen offen",
       "state": "open",
@@ -102,13 +126,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T09:18:19Z",
-      "updated_at": "2026-09-15T09:55:14Z",
+      "updated_at": "2026-09-15T10:28:28Z",
       "closed_at": null
     },
     {
