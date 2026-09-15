@@ -130,3 +130,51 @@ test('risk can only escalate on a repeat run, never be silently downgraded', () 
   const escalatesOnItsOwnText = classifyClaudeRequest({ task: 'Ändere den Preis der Kollektion.', previousRisk: null });
   assert.equal(escalatesOnItsOwnText.risk, 'HIGH');
 });
+
+// Wortliste und trennbare Verben (2026-09-15).
+//
+// ANALYSIS ist der Rueckfall, wenn kein Wort trifft - jede Luecke in der Liste
+// ist deshalb ein STILLER Leerlauf: Der Lauf startet im Lesemodus, meldet
+// "completed" und schreibt nichts. Eine Messung an neun alltaeglichen
+// Auftraegen ergab fuenf solche Faelle.
+//
+// Der haerteste war "Lege die Datei docs/probe.md an": Das trennbare Verb
+// stand als "leg an" am Stueck in der Liste, und der Dateiname enthaelt Punkte,
+// an denen die Satzgrenze falsch erkannt wurde.
+for (const auftrag of [
+  'Lege die Datei docs/probe.md an.',
+  'Lege eine neue Section fuer die Startseite an.',
+  'Ergaenze einen Hinweis in der README.',
+  'Benenne den Block tp-alt in tp-neu um.',
+  'Verschiebe die Preislogik in ein Snippet.',
+  'Fuege dem Formular ein Pflichtfeld hinzu.',
+  'Trage den neuen Wert in die Konfiguration ein.',
+  'Aktualisiere die Versandschwelle im Theme.',
+  'Ersetze den alten Filter durch den neuen.',
+]) {
+  test(`schreibender Auftrag wird als Umsetzung erkannt: ${auftrag}`, () => {
+    assert.equal(classifyClaudeRequest({ taskId: 'T', task: auftrag }).taskType, 'IMPLEMENTATION');
+  });
+}
+
+// Die Gegenrichtung ist genauso wichtig: Ein zu weites Muster wuerde Fragen und
+// Analysen schreibend ausfuehren. "Lege dar, welche Optionen es gibt" ist die
+// Falle - Verbstamm "leg" und spaeter ein "an" im Text.
+for (const auftrag of [
+  'Analysiere die Startseite und berichte.',
+  'Welche Produkte haben kein Bild?',
+  'Erklaere mir, wie der Router funktioniert.',
+  'Lege dar, welche Optionen es gibt.',
+  'Pruefe den Aufbau. Und nenne die Ursachen an dieser Stelle.',
+]) {
+  test(`lesender Auftrag bleibt Analyse: ${auftrag}`, () => {
+    assert.equal(classifyClaudeRequest({ taskId: 'T', task: auftrag }).taskType, 'ANALYSIS');
+  });
+}
+
+// Das ausdrueckliche Veto schlaegt auch die neuen Muster.
+test('ausdrueckliches "nichts aendern" schlaegt die erweiterte Wortliste', () => {
+  const result = classifyClaudeRequest({ taskId: 'T', task: 'Lege dir die Struktur zurecht an, aber aendere nichts.' });
+  assert.equal(result.taskType, 'ANALYSIS');
+  assert.equal(result.taskTypeSource, 'READ_ONLY_INTENT');
+});
