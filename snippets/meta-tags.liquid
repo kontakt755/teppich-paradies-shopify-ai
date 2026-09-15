@@ -75,7 +75,30 @@
           assign product_title = product_title | strip
         endfor
       endif
-      assign optimized_page_title = product_title | append: ' online kaufen | ' | append: tp_marke
+      # "online kaufen" ist ein Suchbegriff, den wir gern im Titel haetten -
+      # aber der Zusatz kostet zusammen mit dem Markennamen 33 Zeichen. Bei
+      # einem 45 Zeichen langen Produktnamen stehen damit 78 Zeichen im Titel,
+      # und Google zeigt rund 60: der Rest wird durch "..." ersetzt. Gemessen
+      # am 2026-09-15: "Alvora Eiche Bernstein - Klebevinyl 2,5mm online kaufen
+      # | Teppich Paradies" = 74 Zeichen, abgeschnitten wurde ausgerechnet der
+      # Markenname.
+      #
+      # Deshalb keine feste Entscheidung, sondern eine gerechnete: Passt die
+      # lange Fassung in die Anzeige, bleibt sie. Sonst faellt "online kaufen"
+      # weg - der Produktname ist fuer Relevanz und Klick wichtiger als das
+      # Fuellwort.
+      #
+      # Der Produktname wird dabei bewusst NICHT weiter gekuerzt. Ein auf 41
+      # Zeichen gestutzter Name waere der schlechtere Tausch; bis zu 64 Zeichen
+      # sind in der Anzeige nur knapp ueber der Grenze, ein halber Produktname
+      # ist im Ergebnis dagegen wertlos.
+      assign tp_title_max = 60
+      assign tp_title_lang = product_title | append: ' online kaufen | ' | append: tp_marke
+      if tp_title_lang.size > tp_title_max
+        assign optimized_page_title = product_title | append: ' | ' | append: tp_marke
+      else
+        assign optimized_page_title = tp_title_lang
+      endif
       assign og_title = optimized_page_title
     endif
   elsif request.page_type == 'article'
