@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-15T11:38:55Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-15T12:37:49Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-15T11:38:55Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-15T12:37:49Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -181,6 +181,12 @@
       "name": "Horizon",
       "retiredNoticedAt": "2026-09-15",
       "note": "Existiert in der Admin API nicht mehr. Stand hier seit jeher mit dem Vermerk 'Niemals loeschen oder ueberschreiben' und wurde trotzdem geloescht - der Vermerk war reiner Text und hat nichts aufgehalten. Bemerkt erst am 2026-09-15 durch die neue Bestandspruefung im Deploy-Preflight. Ersetzt durch 204440699214."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-15",
+      "note": "Per workflow:live abgeloest durch 203690246478 (Commit 98a19e7: Musterseite ohne Produkt wird zur Bestellseite statt Sackgasse (#333), Muster-Aufruf hinter die Farbauswahl statt ans Seitenende (#335), Wortlaut-Korrektur (#337)). Rollentausch am 2026-09-15 um 12:37:49Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
