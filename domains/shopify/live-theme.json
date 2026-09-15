@@ -13,9 +13,11 @@
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
-    "themeId": "196301750606",
-    "name": "Horizon",
-    "note": "Niemals loeschen oder ueberschreiben."
+    "themeId": "204440699214",
+    "name": "Fallback 2026-09-15 - nicht loeschen",
+    "verifiedAt": "2026-09-15T12:05:00Z",
+    "verifiedBy": "Shopify Admin API, role UNPUBLISHED",
+    "note": "Niemals loeschen oder ueberschreiben. Kopie des Live-Themes 204438208846 vom 2026-09-15, angelegt per themeDuplicate - enthaelt damit auch config/settings_data.json, die im Repository nicht gepflegt wird und aus git allein nicht wiederherstellbar waere."
   },
   "retired": [
     {
@@ -173,6 +175,12 @@
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-15",
       "note": "Per workflow:live abgeloest durch 204438208846 (Commit acac4f9: im Admin gepflegte SEO-Titel gewinnen wieder gegenueber dem vom Theme gebauten Titel, Fuellwortliste um als/wie/bei/auf/an/ohne/pro/je/zu ergaenzt). Rollentausch am 2026-09-15 um 11:38:55Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "196301750606",
+      "name": "Horizon",
+      "retiredNoticedAt": "2026-09-15",
+      "note": "Existiert in der Admin API nicht mehr. Stand hier seit jeher mit dem Vermerk 'Niemals loeschen oder ueberschreiben' und wurde trotzdem geloescht - der Vermerk war reiner Text und hat nichts aufgehalten. Bemerkt erst am 2026-09-15 durch die neue Bestandspruefung im Deploy-Preflight. Ersetzt durch 204440699214."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",

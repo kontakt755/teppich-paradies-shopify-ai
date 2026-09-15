@@ -97,7 +97,9 @@ Live Backup -> Git Tag -> unveröffentlichtes Dev Theme
 -> menschliche Prüfung -> separater HIGH-Publish-Task
 ```
 
-`theme publish` bleibt immer ein menschliches Gate. Fallback-Theme `196301750606` ist technisch deny-listed.
+`theme publish` bleibt immer ein menschliches Gate. Fallback- und Rückfall-Theme sind
+gegen Löschen gesperrt (`.claude/hooks/theme-delete-guard.mjs`); die IDs stehen in
+`domains/shopify/live-theme.json`.
 
 Auch `git push`, Force Push, PR-Erstellung/-Merge, Merge nach `main`, Releases und Tags sind immer separate HIGH-Operationen mit Human Gate. Read-only Git (`status`, `diff`, `log`, `fetch`) bleibt zulässig. Shopify `theme_push`, `theme_publish`, Produkt-, Preis-, SKU-, Varianten-, Checkout-, Payment-, Versand-, DNS- und Paid-App-Änderungen bleiben unabhängig von Modell-Confidence HIGH.
 

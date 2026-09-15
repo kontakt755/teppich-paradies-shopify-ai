@@ -66,6 +66,10 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-gh-guard.mjs\"",
             "statusMessage": "git/gh-Befehl pruefen"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/theme-delete-guard.mjs\""
           }
         ]
       },
