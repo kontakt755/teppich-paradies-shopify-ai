@@ -1,0 +1,298 @@
+{%- comment -%}
+  Einstieg in den kostenlosen Musterservice auf der Startseite.
+
+  Warum es die Section gibt: Muster kamen auf der Startseite nur als Textzeile
+  vor - im Trust-Streifen, in einer FAQ-Antwort und als Fussnotenlink. Der
+  Musterservice ist aber der Schritt mit der kleinsten Huerde: Ein Bodenbelag
+  laesst sich am Bildschirm nicht beurteilen, Farbe und Flor entscheidet man
+  im eigenen Licht. Wer unsicher ist, kauft sonst gar nicht - statt erst ein
+  Muster zu bestellen und spaeter wiederzukommen.
+
+  Die drei Schritte geben den tatsaechlichen Ablauf wieder, wie ihn
+  sections/tp-sample-checkout.liquid auf /pages/muster beschreibt: Der
+  Konfigurator braucht ein Produkt und uebernimmt Farbe und Belag von dort.
+  Sie sind bewusst keine Werbeversprechen, sondern eine Wegbeschreibung -
+  wer hier etwas aendert, muss den Ablauf dort gegenpruefen.
+
+  "Bis zu 3" ist die im Shop durchgaengige Zusage (Topbar, Warenkorb,
+  tp-service-links, tp-rollware-rechner, page.muster). Sie darf nur gemeinsam
+  mit diesen Stellen geaendert werden.
+
+  Gestaltung bewusst wie tp-start-trust: dieselben Linien, dieselbe
+  Schriftskala, derselbe Akzentton. Der Abschnitt soll als Teil der Seite
+  gelesen werden und nicht als eingekaufte Werbeflaeche.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign tp_sm_ziel = section.settings.cta_link | default: '/pages/muster'
+-%}
+
+<section class="tp-muster" role="region" aria-labelledby="tp-muster-titel-{{ section.id }}">
+  <div class="tp-s-wrap tp-muster__wrap">
+    <div class="tp-muster__text">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-muster__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h2 class="tp-muster__titel" id="tp-muster-titel-{{ section.id }}">{{ section.settings.titel | escape }}</h2>
+      {%- if section.settings.text != blank -%}
+        <p class="tp-muster__lead">{{ section.settings.text | escape }}</p>
+      {%- endif -%}
+
+      <a class="tp-muster__cta" href="{{ tp_sm_ziel }}">
+        {{ section.settings.cta_text | escape }}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+
+      {%- if section.settings.hinweis != blank -%}
+        <p class="tp-muster__hinweis">{{ section.settings.hinweis | escape }}</p>
+      {%- endif -%}
+    </div>
+
+    {%- if section.blocks.size > 0 -%}
+      <ol class="tp-muster__schritte">
+        {%- for block in section.blocks -%}
+          <li {{ block.shopify_attributes }}>
+            <span class="tp-muster__nr" aria-hidden="true">{{ forloop.index }}</span>
+            <span class="tp-muster__schritt-text">
+              <b>{{ block.settings.titel | escape }}</b>
+              {%- if block.settings.text != blank -%}
+                <small>{{ block.settings.text | escape }}</small>
+              {%- endif -%}
+            </span>
+          </li>
+        {%- endfor -%}
+      </ol>
+    {%- endif -%}
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-muster {
+    border-top: 1px solid #e6e0d8;
+    border-bottom: 1px solid #e6e0d8;
+    background: #faf7f3;
+  }
+
+  .tp-muster__wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 40px;
+    align-items: center;
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+
+  .tp-muster__eyebrow {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b73740;
+  }
+
+  .tp-muster__titel {
+    margin: 0 0 10px;
+    font-size: 26px;
+    line-height: 1.22;
+    color: #1d1a17;
+  }
+
+  .tp-muster__lead {
+    margin: 0 0 18px;
+    font-size: 15.5px;
+    line-height: 1.55;
+    color: #4a443f;
+  }
+
+  .tp-muster__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    /* 44 px Mindesthoehe - dieselbe Regel, die am 2026-09-15 fuer die
+       uebrigen Bedienelemente nachgezogen wurde. */
+    min-height: 44px;
+    padding: 0 22px;
+    border-radius: 999px;
+    background: #b73740;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .tp-muster__cta svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+
+  .tp-muster__cta:hover {
+    background: #9e2d36;
+  }
+
+  .tp-muster__cta:focus-visible {
+    outline: 2px solid #1d1a17;
+    outline-offset: 3px;
+  }
+
+  .tp-muster__hinweis {
+    margin: 10px 0 0;
+    font-size: 12.5px;
+    color: #7a726a;
+  }
+
+  .tp-muster__schritte {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .tp-muster__schritte li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .tp-muster__nr {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid #e6e0d8;
+    display: grid;
+    place-items: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #b73740;
+  }
+
+  .tp-muster__schritt-text b {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1d1a17;
+    line-height: 1.35;
+  }
+
+  .tp-muster__schritt-text small {
+    display: block;
+    margin-top: 2px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: #7a726a;
+  }
+
+  /* Am Telefon untereinander: zwei Spalten quetschen die Schrittzeilen auf
+     zwei Woerter je Zeile. Die Schritte stehen unter dem Knopf, weil der
+     Knopf die Handlung ist und die Schritte nur erklaeren, was danach kommt. */
+  @media (max-width: 767px) {
+    .tp-muster__wrap {
+      grid-template-columns: 1fr;
+      gap: 22px;
+      padding-top: 26px;
+      padding-bottom: 26px;
+    }
+
+    .tp-muster__titel {
+      font-size: 21px;
+    }
+
+    .tp-muster__lead {
+      font-size: 14.5px;
+    }
+
+    .tp-muster__cta {
+      width: 100%;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Musterservice",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Überzeile",
+      "default": "Kostenloser Musterservice"
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Überschrift",
+      "default": "Farbe zu Hause sehen, dann entscheiden"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Einleitung",
+      "default": "Bildschirme zeigen Farben unterschiedlich. Bestellen Sie bis zu drei Muster kostenlos nach Hause und vergleichen Sie sie in Ihrem eigenen Licht."
+    },
+    {
+      "type": "text",
+      "id": "cta_text",
+      "label": "Knopfbeschriftung",
+      "default": "Muster bestellen"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "Ziel des Knopfes",
+      "info": "Standard ist /pages/muster. Die Seite führt ohne Produkt zu den Kategorien."
+    },
+    {
+      "type": "text",
+      "id": "hinweis",
+      "label": "Hinweis unter dem Knopf",
+      "default": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "schritt",
+      "name": "Schritt",
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel", "default": "Schritt" },
+        { "type": "textarea", "id": "text", "label": "Erklärung" }
+      ]
+    }
+  ],
+  "max_blocks": 4,
+  "presets": [
+    {
+      "name": "TP Musterservice",
+      "blocks": [
+        {
+          "type": "schritt",
+          "settings": {
+            "titel": "Bodenbelag aussuchen",
+            "text": "Teppichboden, Vinyl oder Linoleum – öffnen Sie das Produkt, das Sie interessiert."
+          }
+        },
+        {
+          "type": "schritt",
+          "settings": {
+            "titel": "Muster anfragen",
+            "text": "Auf der Produktseite „Kostenloses Muster anfragen“ wählen. Belag und Farbe werden übernommen."
+          }
+        },
+        {
+          "type": "schritt",
+          "settings": {
+            "titel": "Zu Hause vergleichen",
+            "text": "Bis zu drei Farben kommen zu Ihnen – in Ruhe im eigenen Raum vergleichen."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
