@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203558781262",
-    "name": "Preview Gallery V3",
-    "verifiedAt": "2026-09-15T09:53:10Z",
-    "verifiedBy": "Shopify Admin API, role MAIN (nach workflow live)"
-  },
-  "preview": {
     "themeId": "203690246478",
     "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-15T09:53:10Z",
-    "verifiedBy": "Shopify Admin API, role UNPUBLISHED (war bis dahin MAIN)"
+    "verifiedAt": "2026-09-15T10:39:16Z",
+    "verifiedBy": "Shopify Admin API, role MAIN"
+  },
+  "preview": {
+    "themeId": "203558781262",
+    "name": "Preview Gallery V3",
+    "verifiedAt": "2026-09-15T10:39:16Z",
+    "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
     "themeId": "196301750606",
@@ -149,6 +149,12 @@
       "name": "Preview Gallery V3",
       "retiredNoticedAt": "2026-09-14",
       "note": "Per workflow:live abgeloest durch 203690246478 (PR #281, Commit ebac129: Teppich nach Mass zeigt nur den Gesamtpreis, Vertrauensblock unter dem Konfigurator, Karten mit Preis je m2; Bereich Teppiche mit Kollektion teppiche, Startseiten-Kategorie und Menuekacheln). Rollentausch am 2026-09-14 um 08:54:18Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203558781262",
+      "name": "Preview Gallery V3",
+      "retiredNoticedAt": "2026-09-15",
+      "note": "Per workflow:live abgeloest durch 203690246478 (Commit ef1843d: Musterservice auf der Startseite, Farbnamen und Farbfilter, mobile Kaufleiste, Pflichtfeld-Meldungen im Rollenrechner, Trefferflaechen auf 44 px, Tablet-Ueberlauf in Menue und Filterbalken, Produkttitel in der Google-Anzeige). Rollentausch am 2026-09-15 um 10:39:16Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
