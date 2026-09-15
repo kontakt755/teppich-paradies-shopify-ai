@@ -11,6 +11,12 @@
   eingebaut, geht an niemanden ausser den eigenen Benachrichtigungsempfaenger,
   gibt keine Daten an Dritte weiter und hat keine laufenden Kosten.
 
+  WARUM JEDER WERT DURCH escape LAEUFT:
+  Liquid escaped von sich aus nicht. Mehrere Werte hier stammen aus
+  Kundeneingaben - Name und Anschrift aus dem Checkout, vor allem aber die
+  Line-Item-Properties, die sich ueber die Cart-API frei setzen lassen. Ohne
+  escape koennte ein Besteller Markup in unsere interne Mail schreiben.
+
   WARUM DAS KUNDENSEITIG NICHTS AENDERT:
   Die Vorlage "Neue Bestellung" unter Mitarbeiterbenachrichtigungen ist eine
   eigene Vorlage. Die Kundenvorlagen (Bestellbestaetigung, Versand, Rechnung)
@@ -27,19 +33,19 @@
   <p style="margin:0 0 4px;font-size:16px;font-weight:bold;">Interne Bestellübersicht</p>
   <p style="margin:0 0 16px;color:#6b6b6b;font-size:12px;">Nur für den internen Gebrauch. Diese Angaben gehen nicht an den Kunden.</p>
 
-  <p style="margin:0 0 4px;"><strong>Bestellnummer:</strong> {{ name }}</p>
+  <p style="margin:0 0 4px;"><strong>Bestellnummer:</strong> {{ name | escape }}</p>
   <p style="margin:0 0 16px;"><strong>Bestellt am:</strong> {{ created_at | date: "%d.%m.%Y %H:%M" }}</p>
 
   <p style="margin:0 0 4px;font-weight:bold;">Kunde</p>
   <p style="margin:0 0 16px;line-height:1.5;">
-    {% if customer %}{{ customer.name }}{% elsif billing_address %}{{ billing_address.name }}{% else %}Gastbestellung{% endif %}<br>
-    {% if email %}E-Mail: {{ email }}<br>{% endif %}
-    {% if billing_address.phone %}Telefon: {{ billing_address.phone }}<br>
-    {% elsif shipping_address.phone %}Telefon: {{ shipping_address.phone }}<br>{% endif %}
+    {% if customer %}{{ customer.name | escape }}{% elsif billing_address %}{{ billing_address.name | escape }}{% else %}Gastbestellung{% endif %}<br>
+    {% if email %}E-Mail: {{ email | escape }}<br>{% endif %}
+    {% if billing_address.phone %}Telefon: {{ billing_address.phone | escape }}<br>
+    {% elsif shipping_address.phone %}Telefon: {{ shipping_address.phone | escape }}<br>{% endif %}
     {% if shipping_address %}
       Lieferadresse:<br>
-      {{ shipping_address.address1 }}{% if shipping_address.address2 != blank %}, {{ shipping_address.address2 }}{% endif %}<br>
-      {{ shipping_address.zip }} {{ shipping_address.city }}{% if shipping_address.country %}, {{ shipping_address.country }}{% endif %}
+      {{ shipping_address.address1 | escape }}{% if shipping_address.address2 != blank %}, {{ shipping_address.address2 | escape }}{% endif %}<br>
+      {{ shipping_address.zip | escape }} {{ shipping_address.city | escape }}{% if shipping_address.country %}, {{ shipping_address.country | escape }}{% endif %}
     {% endif %}
   </p>
 
@@ -72,14 +78,14 @@
       <tr>
         <td style="padding:6px;border:1px solid #d8d6d2;">{{ line.quantity }} ×</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">
-          {{ line.title }}
-          {% if line.variant_title and line.variant_title != "Default Title" %}<br><span style="color:#6b6b6b;">{{ line.variant_title }}</span>{% endif %}
-          {% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first }}: {{ p.last }}</span>{% endunless %}{% endfor %}
+          {{ line.title | escape }}
+          {% if line.variant_title and line.variant_title != "Default Title" %}<br><span style="color:#6b6b6b;">{{ line.variant_title | escape }}</span>{% endif %}
+          {% for p in line.properties %}{% unless p.first contains '_' or p.last == blank %}<br><span style="color:#6b6b6b;font-size:12px;">{{ p.first | escape }}: {{ p.last | escape }}</span>{% endunless %}{% endfor %}
         </td>
-        <td style="padding:6px;border:1px solid #d8d6d2;">{% if line.sku != blank %}{{ line.sku }}{% else %}–{% endif %}</td>
+        <td style="padding:6px;border:1px solid #d8d6d2;">{% if line.sku != blank %}{{ line.sku | escape }}{% else %}–{% endif %}</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">
-          {% if gh_id != blank %}{{ gh_id }}
-          {% elsif quelle != '' %}<span style="color:#6b6b6b;">Muster – ID am Quellprodukt:</span><br>{{ quelle }}
+          {% if gh_id != blank %}{{ gh_id | escape }}
+          {% elsif quelle != '' %}<strong style="color:#8a6a12;">Muster – keine eigene ID</strong><br><span style="color:#6b6b6b;font-size:12px;">ID am Quellprodukt nachsehen:</span><br>{{ quelle | escape }}
           {% else %}<strong style="color:#a62020;">Großhändler-ID fehlt</strong>{% endif %}
         </td>
       </tr>

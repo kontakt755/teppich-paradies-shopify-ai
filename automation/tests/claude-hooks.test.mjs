@@ -19,6 +19,7 @@ import { claudeSessionBaselinePath, claudeSessionStatePath, readClaudeSessionBas
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const PROMPT_HOOK = path.join(REPO_ROOT, '.claude', 'hooks', 'openrouter-user-prompt.mjs');
 const STOP_HOOK = path.join(REPO_ROOT, '.claude', 'hooks', 'codex-stop-review.mjs');
+const BASH_HOOK = path.join(REPO_ROOT, '.claude', 'hooks', 'record-bash-write.mjs');
 const SESSION = 'hook-test-session-' + process.pid;
 const LEXWARE_ANTWORT = 'Mit der Lexware-API kann ich Angebote erstellen, aber nicht bearbeiten oder löschen.';
 
@@ -144,18 +145,49 @@ test('Stop-Hook: leerer Pruefbereich reicht die Schlussantwort an den Reviewer w
   assert.ok(readClaudeSessionBaseline({ sessionId: SESSION, projectDir: projektDir.dir }), 'die Baseline ueberlebt');
 });
 
-test('Stop-Hook: mit eigener Aenderung bleibt die Schlussantwort draussen', () => {
+// Eigene Aenderung ueber einen Shell-Befehl: der Bash-Hook (Pre/Post) traegt
+// den Pfad in den Bestand der Sitzung ein, der Stop-Hook prueft ihn.
+function perBash(projektDir, schreiben) {
+  const pre = runHook(BASH_HOOK, { ...projektDir, input: { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo' } } });
+  assert.equal(pre.status, 0, pre.stderr);
+  schreiben();
+  const post = runHook(BASH_HOOK, { ...projektDir, input: { hook_event_name: 'PostToolUse', tool_name: 'Bash', tool_input: { command: 'echo' } } });
+  assert.equal(post.status, 0, post.stderr);
+}
+
+test('Stop-Hook: mit eigener Aenderung (per Bash geschrieben) bleibt die Schlussantwort draussen', () => {
   const projektDir = projekt({ codex: 'pass' });
   const result = stopNachErstemPrompt(projektDir, {
     reviews: 0,
     stopInput: { last_assistant_message: 'Erledigt, alles umgesetzt.' },
-    vorStop: () => fs.writeFileSync(path.join(projektDir.dir, 'neu.mjs'), 'export {};\n'),
+    vorStop: () => perBash(projektDir, () => fs.writeFileSync(path.join(projektDir.dir, 'neu.mjs'), 'export {};\n')),
   });
   assert.equal(result.status, 0, result.stderr);
   const prompt = reviewPrompt(projektDir);
   assert.match(prompt, /uncommitteten Änderungen/);
+  assert.doesNotMatch(prompt, /neu\.mjs/, 'die eigene Datei ist im Bereich, nicht in der Fremd-Liste');
   assert.doesNotMatch(prompt, /SCHLUSSANTWORT/);
   assert.doesNotMatch(prompt, /Erledigt, alles umgesetzt/);
+});
+
+// Fuenfte Luecke (2026-09-15): Eine andere Sitzung schreibt WAEHREND dieser
+// Sitzung eine Datei - kein Hook dieser Sitzung sieht das. Sie ist gegenueber
+// der Baseline neu, darf aber nicht im Pruefbereich landen: Der Bereich ist
+// leer, die Schlussantwort geht an den Reviewer, die fremde Datei wird als
+// "nicht von dieser Sitzung" genannt.
+test('Stop-Hook: eine waehrend der Sitzung fremd geschriebene Datei ist nicht im Pruefbereich', () => {
+  const projektDir = projekt({ codex: 'pass' });
+  const result = stopNachErstemPrompt(projektDir, {
+    reviews: 0,
+    stopInput: { last_assistant_message: LEXWARE_ANTWORT },
+    vorStop: () => fs.writeFileSync(path.join(projektDir.dir, 'assets-fremd.js'), 'fremd\n'),
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const prompt = reviewPrompt(projektDir);
+  assert.match(prompt, /SCHLUSSANTWORT DES AGENTEN \(es gibt keinen Diff/);
+  assert.match(prompt, /nicht von dieser Sitzung geschrieben: assets-fremd\.js/);
+  assert.match(prompt, /weder ihre Änderung, Entfernung noch Isolierung/);
+  assert.match(prompt, /Vorbestehend, unverändert seit Sitzungsbeginn: fremd\.py/, 'die Baseline wirkt weiterhin');
 });
 
 test('Stop-Hook: eine Schlussantwort, die kein String ist, bricht den Hook nicht ab', () => {
