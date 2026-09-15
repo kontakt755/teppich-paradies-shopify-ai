@@ -1,0 +1,27 @@
+{
+  "sections": {
+    "test": {
+      "type": "tp-rug-testhinweis",
+      "settings": {}
+    },
+    "konfigurator": {
+      "type": "tp-rug-konfigurator",
+      "settings": {}
+    },
+    "muster": {
+      "type": "tp-rug-muster",
+      "settings": {}
+    },
+    "service": {
+      "type": "tp-rug-vertrauen",
+      "settings": { "heading": "Fragen zur Konfiguration? Wir helfen persönlich.", "sand": true },
+      "blocks": {
+        "v1": { "type": "item", "settings": { "icon": "telefon", "title": "Fachberatung am Telefon", "text": "[telefon] – wir helfen bei Qualität, Maß und Einfassung.", "link": "telefon" } },
+        "v2": { "type": "item", "settings": { "icon": "whatsapp", "title": "WhatsApp", "text": "Fotos und Skizzen einfach per WhatsApp schicken.", "link": "whatsapp" } },
+        "v3": { "type": "item", "settings": { "icon": "stift", "title": "Sonderanfertigungen", "text": "Nach Skizze oder Schablone – auch für Fahrzeuge und Nischen.", "link": "sonderform" } }
+      },
+      "block_order": ["v1", "v2", "v3"]
+    }
+  },
+  "order": ["test", "konfigurator", "muster", "service"]
+}

@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "test": { "type": "tp-rug-testhinweis", "settings": {} },
+    "visualisierer": { "type": "tp-rug-visualisierer", "settings": {} },
+    "muster": { "type": "tp-rug-muster", "settings": {} }
+  },
+  "order": ["test", "visualisierer", "muster"]
+}

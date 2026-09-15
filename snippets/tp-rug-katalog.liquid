@@ -1,0 +1,406 @@
+{%- doc -%}
+  GENERIERT von scripts/tp-rug/build-assets.mjs aus
+  domains/shopify/teppiche/demo-katalog.json - nicht von Hand aendern.
+
+  Theme-interne Demo-Daten: Entwurfsprodukte (status DRAFT) lassen sich in der
+  Theme-Vorschau nicht rendern (Shopify zeigt products_preview nur im Live-Theme,
+  geprueft 2026-09-11). Deshalb liegen die TEST-Teppiche hier.
+
+  @param {string} mode - 'cards' | 'json' | 'count'
+  @param {string} [only] - Handles, kommagetrennt (cards)
+  @param {number} [limit] - hoechstens so viele Karten (cards)
+  @param {string} [loading] - 'lazy' (Standard) oder 'eager'
+{%- enddoc -%}
+{%- if mode == 'json' -%}
+[{%- capture tp_rk_img -%}{{ 'tp-rug-demo-teppich-nach-mass.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-teppich-nach-mass","title":"TEST Teppich nach Maß","subtitle":"Velours · kurzer Flor","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnzimmer","schlafzimmer","esszimmer","kinderzimmer","homeoffice"],"shapes":["rechteck","quadrat","rund","oval","ellipse","laeufer","halbkreis","viertelkreis","dreieck","vieleck","organisch","freiform","skizze","schablone"],"edges":["kettel","paspel","baumwolle","cover"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Graphit","hex":"#55585c"},{"name":"Steingrau","hex":"#8b8a86"},{"name":"Silbergrau","hex":"#b9b8b3"},{"name":"Sand","hex":"#cdb99a"},{"name":"Beige","hex":"#d9c9ad"},{"name":"Creme","hex":"#ece3d0"},{"name":"Taupe","hex":"#9c8b7a"},{"name":"Mokka","hex":"#6e5746"},{"name":"Terrakotta","hex":"#b5694a"},{"name":"Salbei","hex":"#8fa08a"},{"name":"Petrol","hex":"#2f5d62"},{"name":"Nachtblau","hex":"#2c3a55"},{"name":"Rosé","hex":"#d4a79b"},{"name":"Senf","hex":"#c9a13b"},{"name":"Olive","hex":"#6f7552"},{"name":"Rost","hex":"#9c4f33"},{"name":"Bordeaux","hex":"#6e2f38"}],"scene":"wohnzimmer","max_width_cm":null,"max_length_cm":1000,"description":"Testprodukt für den Konfigurator: alle Formen, alle vier Einfassungen und viele Farben. Material-, Pflege- und Produktdaten folgen mit der echten Qualität.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-wohnzimmer.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-wohnzimmer","title":"TEST Wohnzimmer","subtitle":"Hochflor · weich","material":"Hochflor","material_key":"hochflor","pile":"hoch","fiber":"kunstfaser","texture":"hochflor","rooms":["wohnzimmer","schlafzimmer"],"shapes":["rechteck","quadrat","rund","oval","organisch","freiform","skizze"],"edges":["baumwolle","paspel","kettel"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Creme","hex":"#ece3d0"},{"name":"Sand","hex":"#cdb99a"},{"name":"Taupe","hex":"#9c8b7a"},{"name":"Steingrau","hex":"#8b8a86"},{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Salbei","hex":"#8fa08a"}],"scene":"wohnzimmer","description":"Testprodukt für Wohnräume mit hohem Flor. Echte Produktangaben folgen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-esszimmer.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-esszimmer","title":"TEST Esszimmer","subtitle":"Schlinge · flach","material":"Schlinge","material_key":"schlinge","pile":"kurz","fiber":"kunstfaser","texture":"schlinge","rooms":["esszimmer","kueche","wohnzimmer"],"shapes":["rechteck","rund","oval","ellipse"],"edges":["kettel","baumwolle"],"edge_widths":{"baumwolle":3},"antislip":"optional","colors":[{"name":"Beige","hex":"#d9c9ad"},{"name":"Taupe","hex":"#9c8b7a"},{"name":"Graphit","hex":"#55585c"},{"name":"Olive","hex":"#6f7552"},{"name":"Terrakotta","hex":"#b5694a"}],"scene":"esszimmer","description":"Testprodukt für den Essbereich mit flacher Schlingenoberfläche. Echte Produktangaben folgen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-schlafzimmer.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-schlafzimmer","title":"TEST Schlafzimmer","subtitle":"Velours · mittlerer Flor","material":"Velours","material_key":"velours","pile":"mittel","fiber":"kunstfaser","texture":"velours","rooms":["schlafzimmer","kinderzimmer"],"shapes":["rechteck","laeufer","oval","organisch"],"edges":["baumwolle","paspel","cover"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Rosé","hex":"#d4a79b"},{"name":"Creme","hex":"#ece3d0"},{"name":"Silbergrau","hex":"#b9b8b3"},{"name":"Nachtblau","hex":"#2c3a55"},{"name":"Salbei","hex":"#8fa08a"}],"scene":"schlafzimmer","description":"Testprodukt für Schlafräume. Echte Produktangaben folgen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-kueche.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-kueche","title":"TEST Küche","subtitle":"Flachgewebe","material":"Flachgewebe","material_key":"flachgewebe","pile":"flach","fiber":"kunstfaser","texture":"flach","rooms":["kueche","flur","esszimmer"],"shapes":["laeufer","rechteck","halbkreis"],"edges":["kettel","paspel"],"edge_widths":{"paspel":1},"antislip":"optional","colors":[{"name":"Steingrau","hex":"#8b8a86"},{"name":"Graphit","hex":"#55585c"},{"name":"Sand","hex":"#cdb99a"},{"name":"Petrol","hex":"#2f5d62"}],"scene":"kueche","description":"Testprodukt als Küchenläufer. Echte Produktangaben, auch zur Reinigung, folgen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-flur-laeufer.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-flur-laeufer","title":"TEST Flur / Läufer","subtitle":"Schlinge · strapazierfähig","material":"Schlinge","material_key":"schlinge","pile":"kurz","fiber":"kunstfaser","texture":"schlinge","rooms":["flur","eingang","kueche"],"shapes":["laeufer","rechteck","halbkreis","skizze"],"edges":["kettel","baumwolle","paspel","cover"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Mokka","hex":"#6e5746"},{"name":"Beige","hex":"#d9c9ad"},{"name":"Nachtblau","hex":"#2c3a55"},{"name":"Rost","hex":"#9c4f33"}],"scene":"flur","description":"Testprodukt für Flur und Diele. Echte Produktangaben folgen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-kinderzimmer.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-kinderzimmer","title":"TEST Kinderzimmer","subtitle":"Velours · kurzer Flor","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["kinderzimmer"],"shapes":["rund","organisch","rechteck","oval"],"edges":["paspel","baumwolle"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Salbei","hex":"#8fa08a"},{"name":"Senf","hex":"#c9a13b"},{"name":"Rosé","hex":"#d4a79b"},{"name":"Creme","hex":"#ece3d0"},{"name":"Petrol","hex":"#2f5d62"}],"scene":"kinderzimmer","description":"Testprodukt für Kinderzimmer. Angaben zu Schadstoffprüfung und Pflege folgen nur mit echten Produktdaten.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-homeoffice.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-homeoffice","title":"TEST Homeoffice","subtitle":"Schlinge · dicht","material":"Schlinge","material_key":"schlinge","pile":"kurz","fiber":"kunstfaser","texture":"schlinge","rooms":["homeoffice","buero"],"shapes":["rechteck","quadrat","rund"],"edges":["kettel","cover"],"antislip":"optional","colors":[{"name":"Graphit","hex":"#55585c"},{"name":"Steingrau","hex":"#8b8a86"},{"name":"Nachtblau","hex":"#2c3a55"}],"scene":"homeoffice","description":"Testprodukt für den Arbeitsplatz. Ob eine Qualität für Stuhlrollen geeignet ist, wird nur mit echten Produktdaten angegeben.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-wohnmobil.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-wohnmobil","title":"TEST Wohnmobil / Camper","subtitle":"Velours · leicht","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnmobil"],"shapes":["rechteck","laeufer","freiform","skizze","schablone"],"edges":["kettel","paspel","baumwolle","cover"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","camper_suitable":true,"colors":[{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Taupe","hex":"#9c8b7a"},{"name":"Sand","hex":"#cdb99a"},{"name":"Graphit","hex":"#55585c"}],"scene":"wohnmobil","description":"Testprodukt für Wohnmobil, Wohnwagen und Van. Sonderformen per Skizze oder Schablone.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-gewerbe.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-gewerbe","title":"TEST Gewerbe / Objekt","subtitle":"Schlinge · Objektqualität","material":"Schlinge","material_key":"objekt","pile":"kurz","fiber":"kunstfaser","texture":"schlinge","rooms":["buero","eingang","homeoffice"],"shapes":["rechteck","quadrat","rund","laeufer","freiform","skizze"],"edges":["kettel","cover"],"antislip":"optional","object_suitable":true,"colors":[{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Graphit","hex":"#55585c"},{"name":"Nachtblau","hex":"#2c3a55"},{"name":"Bordeaux","hex":"#6e2f38"}],"scene":"buero","description":"Testprodukt für Büro, Praxis, Hotel und Objekt. Objekt-Kennwerte folgen nur mit echten Produktdaten.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-outdoor.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-outdoor","title":"TEST Outdoor","subtitle":"Flachgewebe · Kunstfaser","material":"Flachgewebe","material_key":"outdoor","pile":"flach","fiber":"kunstfaser","texture":"flach","rooms":["outdoor"],"shapes":["rechteck","rund","laeufer"],"edges":["kettel","paspel"],"edge_widths":{"paspel":1},"antislip":"nicht_verfuegbar","outdoor_suitable":true,"colors":[{"name":"Graphit","hex":"#55585c"},{"name":"Sand","hex":"#cdb99a"},{"name":"Olive","hex":"#6f7552"}],"scene":"outdoor","description":"Testprodukt für Terrasse und Balkon. Angaben zur Wetterbeständigkeit folgen nur mit echten Produktdaten.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-sonderform.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-sonderform","title":"TEST Sonderform","subtitle":"Velours · freie Form","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnzimmer","kinderzimmer","schlafzimmer"],"shapes":["organisch","halbkreis","viertelkreis","dreieck","vieleck","ellipse","freiform","skizze","schablone"],"edges":["kettel","paspel","baumwolle"],"edge_widths":{"paspel":1,"baumwolle":3},"antislip":"optional","colors":[{"name":"Terrakotta","hex":"#b5694a"},{"name":"Salbei","hex":"#8fa08a"},{"name":"Creme","hex":"#ece3d0"},{"name":"Senf","hex":"#c9a13b"},{"name":"Anthrazit","hex":"#3b3d40"}],"scene":"sonderform","description":"Testprodukt für organische Formen, Vielecke und Sonderanfertigungen.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-kettelteppich.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-kettelteppich","title":"TEST Kettelteppich","subtitle":"Schlinge · gekettelte Kante","material":"Schlinge","material_key":"schlinge","pile":"kurz","fiber":"wolle","texture":"wolle","rooms":["wohnzimmer","schlafzimmer","flur"],"shapes":["rechteck","quadrat","rund","laeufer"],"edges":["kettel"],"antislip":"optional","colors":[{"name":"Creme","hex":"#ece3d0"},{"name":"Sand","hex":"#cdb99a"},{"name":"Steingrau","hex":"#8b8a86"},{"name":"Mokka","hex":"#6e5746"}],"scene":"rund","description":"Testprodukt nur mit Kettelung.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-paspelteppich.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-paspelteppich","title":"TEST Paspelteppich","subtitle":"Velours · Paspel ca. 1 cm","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnzimmer","schlafzimmer","esszimmer"],"shapes":["rechteck","quadrat","rund","oval","ellipse","organisch"],"edges":["paspel"],"edge_widths":{"paspel":1},"antislip":"optional","colors":[{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Beige","hex":"#d9c9ad"},{"name":"Grau","hex":"#8b8a86"},{"name":"Senf","hex":"#c9a13b"},{"name":"Petrol","hex":"#2f5d62"},{"name":"Rosé","hex":"#d4a79b"}],"scene":"wohnzimmer","description":"Testprodukt nur mit Paspel.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-baumwolleinfassung.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-baumwolleinfassung","title":"TEST Baumwolleinfassung","subtitle":"Velours · Band ca. 3 cm","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnzimmer","esszimmer"],"shapes":["rechteck","quadrat","rund","oval"],"edges":["baumwolle"],"edge_widths":{"baumwolle":3},"antislip":"optional","colors":[{"name":"Graphit","hex":"#55585c"},{"name":"Sand","hex":"#cdb99a"},{"name":"Olive","hex":"#6f7552"},{"name":"Creme","hex":"#ece3d0"}],"scene":"esszimmer","description":"Testprodukt nur mit Baumwoll-Einfassband.","test":true,"image":{{ tp_rk_img | json }}},
+{%- capture tp_rk_img -%}{{ 'tp-rug-demo-cover-kippkante.svg' | asset_url }}{%- endcapture -%}{"handle":"tp-rug-test-cover-kippkante","title":"TEST Cover / Kippkante","subtitle":"Velours · umgeschlagene Kante","material":"Velours","material_key":"velours","pile":"kurz","fiber":"kunstfaser","texture":"velours","rooms":["wohnzimmer","schlafzimmer","homeoffice"],"shapes":["rechteck","quadrat","laeufer"],"edges":["cover"],"antislip":"inklusive","max_width_cm":390,"max_width_note":"Testwert: Rollenbreite 400 cm minus 10 cm (Regel für Cover). Je Qualität pflegen.","colors":[{"name":"Taupe","hex":"#9c8b7a"},{"name":"Anthrazit","hex":"#3b3d40"},{"name":"Beige","hex":"#d9c9ad"}],"scene":"schlafzimmer","description":"Testprodukt nur mit Cover-Kante (Kippkante), Antirutschvlies inklusive.","test":true,"image":{{ tp_rk_img | json }}}]
+{%- elsif mode == 'count' -%}
+16
+{%- else -%}
+  {%- assign tp_rk_only = only | default: '' | split: ',' -%}
+  {%- assign tp_rk_limit = limit | default: 0 -%}
+  {%- assign tp_rk_loading = loading | default: 'lazy' -%}
+  {%- assign tp_rk_n = 0 -%}
+  {%- comment -%} 1: tp-rug-test-teppich-nach-mass {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-teppich-nach-mass' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-teppich-nach-mass',
+        title: 'TEST Teppich nach Maß',
+        subtitle: 'Velours · kurzer Flor',
+        image: 'tp-rug-demo-teppich-nach-mass.svg',
+        rooms: 'wohnzimmer,schlafzimmer,esszimmer,kinderzimmer,homeoffice',
+        shapes: 'rechteck,quadrat,rund,oval,ellipse,laeufer,halbkreis,viertelkreis,dreieck,vieleck,organisch,freiform,skizze,schablone',
+        edges: 'kettel,paspel,baumwolle,cover',
+        colors: 'Anthrazit:#3b3d40|Graphit:#55585c|Steingrau:#8b8a86|Silbergrau:#b9b8b3|Sand:#cdb99a|Beige:#d9c9ad|Creme:#ece3d0|Taupe:#9c8b7a|Mokka:#6e5746|Terrakotta:#b5694a|Salbei:#8fa08a|Petrol:#2f5d62|Nachtblau:#2c3a55|Rosé:#d4a79b|Senf:#c9a13b|Olive:#6f7552|Rost:#9c4f33|Bordeaux:#6e2f38',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 2: tp-rug-test-wohnzimmer {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-wohnzimmer' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-wohnzimmer',
+        title: 'TEST Wohnzimmer',
+        subtitle: 'Hochflor · weich',
+        image: 'tp-rug-demo-wohnzimmer.svg',
+        rooms: 'wohnzimmer,schlafzimmer',
+        shapes: 'rechteck,quadrat,rund,oval,organisch,freiform,skizze',
+        edges: 'baumwolle,paspel,kettel',
+        colors: 'Creme:#ece3d0|Sand:#cdb99a|Taupe:#9c8b7a|Steingrau:#8b8a86|Anthrazit:#3b3d40|Salbei:#8fa08a',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'hochflor',
+        pile: 'hoch',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 3: tp-rug-test-esszimmer {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-esszimmer' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-esszimmer',
+        title: 'TEST Esszimmer',
+        subtitle: 'Schlinge · flach',
+        image: 'tp-rug-demo-esszimmer.svg',
+        rooms: 'esszimmer,kueche,wohnzimmer',
+        shapes: 'rechteck,rund,oval,ellipse',
+        edges: 'kettel,baumwolle',
+        colors: 'Beige:#d9c9ad|Taupe:#9c8b7a|Graphit:#55585c|Olive:#6f7552|Terrakotta:#b5694a',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'schlinge',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 4: tp-rug-test-schlafzimmer {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-schlafzimmer' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-schlafzimmer',
+        title: 'TEST Schlafzimmer',
+        subtitle: 'Velours · mittlerer Flor',
+        image: 'tp-rug-demo-schlafzimmer.svg',
+        rooms: 'schlafzimmer,kinderzimmer',
+        shapes: 'rechteck,laeufer,oval,organisch',
+        edges: 'baumwolle,paspel,cover',
+        colors: 'Rosé:#d4a79b|Creme:#ece3d0|Silbergrau:#b9b8b3|Nachtblau:#2c3a55|Salbei:#8fa08a',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'mittel',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 5: tp-rug-test-kueche {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-kueche' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-kueche',
+        title: 'TEST Küche',
+        subtitle: 'Flachgewebe',
+        image: 'tp-rug-demo-kueche.svg',
+        rooms: 'kueche,flur,esszimmer',
+        shapes: 'laeufer,rechteck,halbkreis',
+        edges: 'kettel,paspel',
+        colors: 'Steingrau:#8b8a86|Graphit:#55585c|Sand:#cdb99a|Petrol:#2f5d62',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'flachgewebe',
+        pile: 'flach',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 6: tp-rug-test-flur-laeufer {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-flur-laeufer' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-flur-laeufer',
+        title: 'TEST Flur / Läufer',
+        subtitle: 'Schlinge · strapazierfähig',
+        image: 'tp-rug-demo-flur-laeufer.svg',
+        rooms: 'flur,eingang,kueche',
+        shapes: 'laeufer,rechteck,halbkreis,skizze',
+        edges: 'kettel,baumwolle,paspel,cover',
+        colors: 'Anthrazit:#3b3d40|Mokka:#6e5746|Beige:#d9c9ad|Nachtblau:#2c3a55|Rost:#9c4f33',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'schlinge',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 7: tp-rug-test-kinderzimmer {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-kinderzimmer' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-kinderzimmer',
+        title: 'TEST Kinderzimmer',
+        subtitle: 'Velours · kurzer Flor',
+        image: 'tp-rug-demo-kinderzimmer.svg',
+        rooms: 'kinderzimmer',
+        shapes: 'rund,organisch,rechteck,oval',
+        edges: 'paspel,baumwolle',
+        colors: 'Salbei:#8fa08a|Senf:#c9a13b|Rosé:#d4a79b|Creme:#ece3d0|Petrol:#2f5d62',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 8: tp-rug-test-homeoffice {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-homeoffice' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-homeoffice',
+        title: 'TEST Homeoffice',
+        subtitle: 'Schlinge · dicht',
+        image: 'tp-rug-demo-homeoffice.svg',
+        rooms: 'homeoffice,buero',
+        shapes: 'rechteck,quadrat,rund',
+        edges: 'kettel,cover',
+        colors: 'Graphit:#55585c|Steingrau:#8b8a86|Nachtblau:#2c3a55',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'schlinge',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 9: tp-rug-test-wohnmobil {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-wohnmobil' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-wohnmobil',
+        title: 'TEST Wohnmobil / Camper',
+        subtitle: 'Velours · leicht',
+        image: 'tp-rug-demo-wohnmobil.svg',
+        rooms: 'wohnmobil',
+        shapes: 'rechteck,laeufer,freiform,skizze,schablone',
+        edges: 'kettel,paspel,baumwolle,cover',
+        colors: 'Anthrazit:#3b3d40|Taupe:#9c8b7a|Sand:#cdb99a|Graphit:#55585c',
+        antislip: 'optional',
+        flags: 'camper_suitable',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 10: tp-rug-test-gewerbe {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-gewerbe' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-gewerbe',
+        title: 'TEST Gewerbe / Objekt',
+        subtitle: 'Schlinge · Objektqualität',
+        image: 'tp-rug-demo-gewerbe.svg',
+        rooms: 'buero,eingang,homeoffice',
+        shapes: 'rechteck,quadrat,rund,laeufer,freiform,skizze',
+        edges: 'kettel,cover',
+        colors: 'Anthrazit:#3b3d40|Graphit:#55585c|Nachtblau:#2c3a55|Bordeaux:#6e2f38',
+        antislip: 'optional',
+        flags: 'object_suitable',
+        material_key: 'objekt',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 11: tp-rug-test-outdoor {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-outdoor' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-outdoor',
+        title: 'TEST Outdoor',
+        subtitle: 'Flachgewebe · Kunstfaser',
+        image: 'tp-rug-demo-outdoor.svg',
+        rooms: 'outdoor',
+        shapes: 'rechteck,rund,laeufer',
+        edges: 'kettel,paspel',
+        colors: 'Graphit:#55585c|Sand:#cdb99a|Olive:#6f7552',
+        antislip: 'nicht_verfuegbar',
+        flags: 'outdoor_suitable',
+        material_key: 'outdoor',
+        pile: 'flach',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 12: tp-rug-test-sonderform {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-sonderform' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-sonderform',
+        title: 'TEST Sonderform',
+        subtitle: 'Velours · freie Form',
+        image: 'tp-rug-demo-sonderform.svg',
+        rooms: 'wohnzimmer,kinderzimmer,schlafzimmer',
+        shapes: 'organisch,halbkreis,viertelkreis,dreieck,vieleck,ellipse,freiform,skizze,schablone',
+        edges: 'kettel,paspel,baumwolle',
+        colors: 'Terrakotta:#b5694a|Salbei:#8fa08a|Creme:#ece3d0|Senf:#c9a13b|Anthrazit:#3b3d40',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 13: tp-rug-test-kettelteppich {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-kettelteppich' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-kettelteppich',
+        title: 'TEST Kettelteppich',
+        subtitle: 'Schlinge · gekettelte Kante',
+        image: 'tp-rug-demo-kettelteppich.svg',
+        rooms: 'wohnzimmer,schlafzimmer,flur',
+        shapes: 'rechteck,quadrat,rund,laeufer',
+        edges: 'kettel',
+        colors: 'Creme:#ece3d0|Sand:#cdb99a|Steingrau:#8b8a86|Mokka:#6e5746',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'schlinge',
+        pile: 'kurz',
+        fiber: 'wolle',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 14: tp-rug-test-paspelteppich {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-paspelteppich' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-paspelteppich',
+        title: 'TEST Paspelteppich',
+        subtitle: 'Velours · Paspel ca. 1 cm',
+        image: 'tp-rug-demo-paspelteppich.svg',
+        rooms: 'wohnzimmer,schlafzimmer,esszimmer',
+        shapes: 'rechteck,quadrat,rund,oval,ellipse,organisch',
+        edges: 'paspel',
+        colors: 'Anthrazit:#3b3d40|Beige:#d9c9ad|Grau:#8b8a86|Senf:#c9a13b|Petrol:#2f5d62|Rosé:#d4a79b',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 15: tp-rug-test-baumwolleinfassung {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-baumwolleinfassung' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-baumwolleinfassung',
+        title: 'TEST Baumwolleinfassung',
+        subtitle: 'Velours · Band ca. 3 cm',
+        image: 'tp-rug-demo-baumwolleinfassung.svg',
+        rooms: 'wohnzimmer,esszimmer',
+        shapes: 'rechteck,quadrat,rund,oval',
+        edges: 'baumwolle',
+        colors: 'Graphit:#55585c|Sand:#cdb99a|Olive:#6f7552|Creme:#ece3d0',
+        antislip: 'optional',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- comment -%} 16: tp-rug-test-cover-kippkante {%- endcomment -%}
+  {%- if tp_rk_only.size == 0 or tp_rk_only contains 'tp-rug-test-cover-kippkante' -%}
+    {%- assign tp_rk_n = tp_rk_n | plus: 1 -%}
+    {%- if tp_rk_limit == 0 or tp_rk_n <= tp_rk_limit -%}
+      {%- render 'tp-rug-card',
+        handle: 'tp-rug-test-cover-kippkante',
+        title: 'TEST Cover / Kippkante',
+        subtitle: 'Velours · umgeschlagene Kante',
+        image: 'tp-rug-demo-cover-kippkante.svg',
+        rooms: 'wohnzimmer,schlafzimmer,homeoffice',
+        shapes: 'rechteck,quadrat,laeufer',
+        edges: 'cover',
+        colors: 'Taupe:#9c8b7a|Anthrazit:#3b3d40|Beige:#d9c9ad',
+        antislip: 'inklusive',
+        flags: '',
+        material_key: 'velours',
+        pile: 'kurz',
+        fiber: 'kunstfaser',
+        loading: tp_rk_loading,
+        test: true
+      -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endif -%}

@@ -1,0 +1,14 @@
+{%- doc -%}
+  Veroeffentlichungssperre des Teppichbereichs.
+
+  Gibt "1" aus, solange das Theme NICHT das veroeffentlichte ist (theme.role
+  ist dann unpublished, development oder demo). Jeder tp-rug-Baustein rendert
+  nur dann - auch wenn diese Dateien spaeter versehentlich per Merge in ein
+  Live-Theme gelangen, erscheint dort nichts.
+
+  Den Bereich live zu schalten ist damit eine bewusste Entscheidung an genau
+  dieser Stelle, keine Nebenwirkung eines Deploys.
+
+  Aufruf: capture tp_rug_on, render 'tp-rug-gate', endcapture; dann auf '1' pruefen.
+{%- enddoc -%}
+{%- if theme.role != 'main' -%}1{%- endif -%}

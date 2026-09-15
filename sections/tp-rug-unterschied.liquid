@@ -1,0 +1,38 @@
+{%- comment -%}
+  Klaert in zwei Saetzen Teppich gegen Teppichboden - die haeufigste
+  Verwechslung, seit beide Bereiche im Hauptmenue nebeneinander stehen.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- capture u_boden -%}{%- render 'tp-rug-url', key: 'teppichboden' -%}{%- endcapture -%}
+  <section class="tp-rug tp-rug-sec tp-rug-sec--tight" aria-label="Teppich oder Teppichboden">
+    <div class="tp-rug-wrap tp-rug-diff">
+      <div class="tp-rug-diff__item tp-rug-diff__item--here">
+        <p class="tp-rug-diff__tag">Sie sind hier</p>
+        <h2 class="tp-rug-h3">{{ section.settings.here_title | escape }}</h2>
+        <p class="tp-rug-muted">{{ section.settings.here_text | escape }}</p>
+      </div>
+      <a class="tp-rug-diff__item" href="{{ u_boden }}" style="text-decoration:none">
+        <p class="tp-rug-diff__tag">Anderer Bereich</p>
+        <h2 class="tp-rug-h3">{{ section.settings.other_title | escape }}</h2>
+        <p class="tp-rug-muted">{{ section.settings.other_text | escape }}</p>
+        <span class="tp-rug-link">Zu Teppichboden {% render 'tp-rug-icon', name: 'pfeil', size: 18 %}</span>
+      </a>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich vs. Boden",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "here_title", "label": "Titel Teppiche", "default": "Teppiche" },
+    { "type": "textarea", "id": "here_text", "label": "Text Teppiche", "default": "Ein einzelnes Stück mit fertiger Kante – in Ihrem Maß und Ihrer Form. Liegt lose und lässt sich mitnehmen." },
+    { "type": "text", "id": "other_title", "label": "Titel Teppichboden", "default": "Teppichboden" },
+    { "type": "textarea", "id": "other_text", "label": "Text Teppichboden", "default": "Meterware von der Rolle für die ganze Fläche – von Wand zu Wand verlegt." }
+  ],
+  "presets": [{ "name": "TP Teppich vs. Boden" }]
+}
+{% endschema %}

@@ -1,0 +1,55 @@
+{%- doc -%}
+  Einzige Stelle, an der die Adressen des Teppichbereichs stehen.
+
+  Entwurf: Die Seiten sind alternative Vorlagen der Startseite (/?view=...).
+  So muss im Shop weder eine Seite noch eine Kollektion angelegt werden, und
+  die Canonical-URL zeigt auf die Startseite statt auf eine Testseite.
+  Beim Livegang werden hier echte Seiten/Kollektionen eingetragen - sonst
+  nirgends (Menue, Karten, Konfigurator und Berater lesen alle diese Datei).
+
+  Ausgabe ohne Escaping; der Aufrufer escaped beim Einsetzen in Attribute.
+
+  @param {string} key - start | alle | konfigurator | wohnmobil | sonderform | berater | visualisierer | einfassungen | muster | kontakt | teppichboden
+  @param {string} [query] - weitere Parameter ohne ?, z. B. 'raum=wohnzimmer'
+  @param {string} [anchor] - Sprungmarke ohne #
+{%- enddoc -%}
+{%- liquid
+  assign tp_ru_root = routes.root_url
+  case key
+    when 'start'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche'
+    when 'alle'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-alle'
+    when 'konfigurator'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppich-konfigurator'
+    when 'wohnmobil'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-wohnmobil'
+    when 'sonderform'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-sonderform'
+    when 'berater'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-berater'
+    when 'visualisierer'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-visualisierer'
+    when 'einfassungen'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-einfassungen'
+    when 'muster'
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche-muster'
+    when 'kontakt'
+      assign tp_ru = pages['kontakt'].url | default: '/pages/kontakt'
+    when 'teppichboden'
+      assign tp_ru = collections['teppichboden'].url | default: '/collections/teppichboden'
+    else
+      assign tp_ru = tp_ru_root | append: '?view=tp-teppiche'
+  endcase
+  if query != blank
+    if tp_ru contains '?'
+      assign tp_ru = tp_ru | append: '&' | append: query
+    else
+      assign tp_ru = tp_ru | append: '?' | append: query
+    endif
+  endif
+  if anchor != blank
+    assign tp_ru = tp_ru | append: '#' | append: anchor
+  endif
+-%}
+{{- tp_ru -}}

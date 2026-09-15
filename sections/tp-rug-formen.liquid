@@ -1,0 +1,63 @@
+{%- comment -%}
+  Formen als grosse Kacheln mit Symbol - fuehrt direkt in den Konfigurator
+  mit vorgewaehlter Form. Symbole aus snippets/tp-rug-icon.liquid (gleiche
+  Geometrie wie die Konfigurator-Vorschau).
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign keys = 'rechteck|quadrat|rund|oval|ellipse|laeufer|halbkreis|viertelkreis|dreieck|vieleck|organisch' | split: '|'
+    assign labels = 'Rechteck|Quadrat|Rund|Oval|Ellipse|Läufer|Halbkreis|Viertelkreis|Dreieck|Vieleck|Organisch' | split: '|'
+    assign subs = 'Breite × Länge|eine Seitenlänge|Durchmesser|Breite × Länge|Breite × Länge|Breite × Länge|Durchmesser|Radius|drei Seiten|Ecken + Seite|5 eigene Formen' | split: '|'
+  -%}
+  <section class="tp-rug tp-rug-sec" aria-labelledby="tp-rf-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rf-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+      </div>
+      <ul class="tp-rug-shapes" role="list">
+        {%- for k in keys -%}
+          {%- capture q -%}form={{ k }}{%- endcapture -%}
+          {%- capture ic -%}form-{{ k }}{%- endcapture -%}
+          <li>
+            <a class="tp-rug-shape" href="{% render 'tp-rug-url', key: 'konfigurator', query: q %}">
+              {%- render 'tp-rug-icon', name: ic, size: 44 -%}
+              <span class="tp-rug-shape__label">{{ labels[forloop.index0] }}</span>
+              <span class="tp-rug-shape__sub">{{ subs[forloop.index0] }}</span>
+            </a>
+          </li>
+        {%- endfor -%}
+        <li>
+          <a class="tp-rug-shape" href="{% render 'tp-rug-url', key: 'sonderform', query: 'weg=skizze' %}">
+            {%- render 'tp-rug-icon', name: 'form-skizze', size: 44 -%}
+            <span class="tp-rug-shape__label">Nach Skizze</span>
+            <span class="tp-rug-shape__sub">Foto hochladen</span>
+          </a>
+        </li>
+        <li>
+          <a class="tp-rug-shape" href="{% render 'tp-rug-url', key: 'sonderform', query: 'weg=schablone' %}">
+            {%- render 'tp-rug-icon', name: 'form-schablone', size: 44 -%}
+            <span class="tp-rug-shape__label">Nach Schablone</span>
+            <span class="tp-rug-shape__sub">für Nischen &amp; Fahrzeuge</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppiche Formen",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Welche Form darf es sein?" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Tippen Sie auf eine Form – der Konfigurator öffnet sich mit genau dieser Form und fragt nur die Maße ab, die sie braucht." }
+  ],
+  "presets": [{ "name": "TP Teppiche Formen" }]
+}
+{% endschema %}

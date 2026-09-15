@@ -1,0 +1,77 @@
+{%- comment -%}
+  Beratung: Groessenberater (#groesse) und Einsatzort-Finder (#finder).
+  Regeln des Groessenberaters stehen in assets/tp-rug-core.js (adviseSize) und
+  sind getestet (qa/tests/tp-rug-core.test.mjs). Der Finder ordnet Antworten
+  Kategorien zu - feste Regeln, keine KI, keine erfundenen Eigenschaften.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    capture u_konf
+      render 'tp-rug-url', key: 'konfigurator'
+    endcapture
+    capture u_alle
+      render 'tp-rug-url', key: 'alle'
+    endcapture
+    capture tp_rb_cat
+      render 'tp-rug-katalog', mode: 'json'
+    endcapture
+  -%}
+  <section class="tp-rug tp-rug-sec tp-rug-sec--tight" id="groesse" aria-labelledby="tp-rb-g-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <nav class="tp-rug-crumbs" aria-label="Brotkrumen">
+        <ol role="list">
+          <li><a href="{{ routes.root_url }}">Startseite</a></li>
+          <li><a href="{% render 'tp-rug-url', key: 'start' %}">Teppiche</a></li>
+          <li><span aria-current="page">Beratung</span></li>
+        </ol>
+      </nav>
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <p class="tp-rug-kicker">Größen-Berater &amp; Raummaß-Hilfe</p>
+          <h1 class="tp-rug-h1" id="tp-rb-g-{{ section.id }}">{{ section.settings.heading | escape }}</h1>
+          <p class="tp-rug-lead">{{ section.settings.text | escape }}</p>
+        </div>
+      </div>
+      <div class="tp-rug-card-box">
+        <tp-rug-size-advisor data-konf-url="{{ u_konf | escape }}" data-products="{{ section.settings.products | escape }}">
+          <p class="tp-rug-small">Berater wird geladen …</p>
+        </tp-rug-size-advisor>
+      </div>
+    </div>
+  </section>
+
+  <section class="tp-rug tp-rug-sec tp-rug-sec--sand" id="finder" aria-labelledby="tp-rb-f-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <p class="tp-rug-kicker">Einsatzort-Berater</p>
+          <h2 class="tp-rug-h2" id="tp-rb-f-{{ section.id }}">{{ section.settings.finder_heading | escape }}</h2>
+          <p class="tp-rug-lead">{{ section.settings.finder_text | escape }}</p>
+        </div>
+      </div>
+      <div class="tp-rug-card-box">
+        <tp-rug-finder data-list-url="{{ u_alle | escape }}" data-konf-url="{{ u_konf | escape }}" data-catalog="{{ tp_rb_cat | strip | escape }}">
+          <p class="tp-rug-small">Berater wird geladen …</p>
+        </tp-rug-finder>
+      </div>
+    </div>
+  </section>
+  <script type="module" src="{{ 'tp-rug-tools.js' | asset_url }}"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Berater",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift Größe", "default": "Welche Teppichgröße passt?" },
+    { "type": "textarea", "id": "text", "label": "Text Größe", "default": "Wählen Sie, wo der Teppich liegen soll, und geben Sie ein paar Möbelmaße ein. Die Empfehlung übernehmen Sie mit einem Klick in den Konfigurator." },
+    { "type": "text", "id": "finder_heading", "label": "Überschrift Finder", "default": "Welcher Teppich passt zu mir?" },
+    { "type": "textarea", "id": "finder_text", "label": "Text Finder", "default": "Drei kurze Fragen zu Raum, Wünschen und Stil – danach sehen Sie passende Kategorien." },
+    { "type": "textarea", "id": "products", "label": "Produkt je Einsatzort (JSON)", "default": "{\"wohnzimmer\":\"tp-rug-test-wohnzimmer\",\"esszimmer\":\"tp-rug-test-esszimmer\",\"schlafzimmer\":\"tp-rug-test-schlafzimmer\",\"flur\":\"tp-rug-test-flur-laeufer\",\"kueche\":\"tp-rug-test-kueche\",\"homeoffice\":\"tp-rug-test-homeoffice\",\"wohnmobil\":\"tp-rug-test-wohnmobil\",\"frei\":\"tp-rug-test-teppich-nach-mass\"}", "info": "Welcher Teppich im Konfigurator geöffnet wird. Testprodukte, bis echte Produkte feststehen." }
+  ],
+  "presets": [{ "name": "TP Teppich-Berater" }]
+}
+{% endschema %}

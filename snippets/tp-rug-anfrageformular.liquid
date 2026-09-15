@@ -1,0 +1,72 @@
+{%- doc -%}
+  Anfrageformular des Teppichbereichs - das Shopify-Kontaktformular, kein Kauf.
+
+  Sichtbar: Name, E-Mail, optional Telefon, Nachricht (plus Zusatzfelder aus
+  "extra"). Versteckt: Betreff, Referenz, Konfiguration, Dateien - die fuellt
+  assets/tp-rug-request.js vor dem Versand. Dateien werden NICHT uebertragen;
+  das Formular nennt nur ihre Namen (siehe assets/tp-rug-upload.js).
+
+  Genutzt vom Konfigurator (Schritt 8) und von sections/tp-rug-anfrage.liquid.
+
+  @param {string} form_id
+  @param {string} subject - vorbelegter Betreff
+  @param {string} submit - Knopftext
+  @param {string} [extra] - weitere Felder als fertiges HTML
+  @param {string} [message_label]
+  @param {boolean} [message_required]
+  @param {string} [whatsapp] - Nummer ohne +, Standard wie im uebrigen Shop
+{%- enddoc -%}
+{%- liquid
+  assign tp_af_wa = whatsapp | default: '4917657931322'
+  assign tp_af_msg = message_label | default: 'Nachricht'
+  assign tp_af_privacy = pages['datenschutzerklarung'].url | default: '/pages/datenschutzerklarung'
+-%}
+{%- form 'contact', id: form_id, class: 'tp-rug-form', novalidate: 'novalidate', data-tp-rug-request: 'true', data-shop-email: shop.email, data-whatsapp: tp_af_wa -%}
+  {%- if form.posted_successfully? -%}
+    <div class="tp-rug-ok" role="status" data-posted>
+      <p class="tp-rug-ok__title">Vielen Dank – Ihre Anfrage ist bei uns angekommen.</p>
+      <p>Wir prüfen Ihre Angaben und melden uns persönlich.</p>
+    </div>
+  {%- endif -%}
+  {%- if form.errors -%}
+    <div class="tp-rug-err-box" role="alert">{{ form.errors | default_errors }}</div>
+  {%- endif -%}
+  <input type="hidden" name="contact[Betreff]" value="{{ subject | escape }}" data-h="betreff">
+  <input type="hidden" name="contact[Referenz]" value="" data-h="referenz">
+  <input type="hidden" name="contact[Konfiguration]" value="" data-h="konfiguration">
+  <input type="hidden" name="contact[Dateien]" value="" data-h="dateien">
+  <input type="hidden" name="contact[Quelle]" value="Teppichbereich (Entwurf) – {{ template.suffix | default: template.name | escape }}">
+
+  <div class="tp-rug-form__grid">
+    <div class="tp-rug-field">
+      <label for="{{ form_id }}-name">Name <span aria-hidden="true">*</span></label>
+      <input id="{{ form_id }}-name" type="text" name="contact[name]" autocomplete="name" data-required data-msg="Bitte geben Sie Ihren Namen ein." aria-describedby="{{ form_id }}-name-err">
+      <p class="tp-rug-err" id="{{ form_id }}-name-err" data-err-for="{{ form_id }}-name" hidden></p>
+    </div>
+    <div class="tp-rug-field">
+      <label for="{{ form_id }}-email">E-Mail <span aria-hidden="true">*</span></label>
+      <input id="{{ form_id }}-email" type="email" name="contact[email]" autocomplete="email" inputmode="email" data-required data-msg="Bitte geben Sie Ihre E-Mail-Adresse ein." aria-describedby="{{ form_id }}-email-err">
+      <p class="tp-rug-err" id="{{ form_id }}-email-err" data-err-for="{{ form_id }}-email" hidden></p>
+    </div>
+    <div class="tp-rug-field">
+      <label for="{{ form_id }}-tel">Telefon <span class="tp-rug-field__unit">optional</span></label>
+      <input id="{{ form_id }}-tel" type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel">
+    </div>
+  </div>
+
+  {{- extra -}}
+
+  <div class="tp-rug-field">
+    <label for="{{ form_id }}-msg">{{ tp_af_msg | escape }}{% if message_required %} <span aria-hidden="true">*</span>{% else %} <span class="tp-rug-field__unit">optional</span>{% endif %}</label>
+    <textarea id="{{ form_id }}-msg" name="contact[body]" rows="4" maxlength="3000"{% if message_required %} data-required data-msg="Bitte beschreiben Sie kurz Ihr Anliegen."{% endif %} aria-describedby="{{ form_id }}-msg-err"></textarea>
+    <p class="tp-rug-err" id="{{ form_id }}-msg-err" data-err-for="{{ form_id }}-msg" hidden></p>
+  </div>
+
+  <p class="tp-rug-small tp-rug-form__privacy">
+    Mit dem Absenden werden Ihre Angaben per E-Mail an uns übermittelt, damit wir Ihre Anfrage bearbeiten können.
+    Mehr dazu in der <a href="{{ tp_af_privacy }}">Datenschutzerklärung</a>.
+  </p>
+  <p class="tp-rug-demo">Testbetrieb: Anfragen aus diesem Entwurf gehen als E-Mail an den Shop.</p>
+  <button type="submit" class="tp-rug-btn tp-rug-btn--primary tp-rug-form__submit">{{ submit | escape }}</button>
+  <p class="tp-rug-status" data-status role="status" aria-live="polite"></p>
+{%- endform -%}

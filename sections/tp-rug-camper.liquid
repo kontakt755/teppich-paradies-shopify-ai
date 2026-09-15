@@ -1,0 +1,93 @@
+{%- comment -%}
+  Wohnmobil-Assistent: Fahrzeug waehlen, dann den Weg - Rechteck direkt im
+  Konfigurator oder Skizze, Schablone, Foto/Grundriss als Anfrage (fuehrt zum
+  Formular sections/tp-rug-anfrage.liquid weiter unten). Dazu die Anleitung.
+  Ein Schablonenservice ist vorbereitet, aber noch nicht angeboten.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- capture u_rect -%}{%- render 'tp-rug-url', key: 'konfigurator', query: 'produkt=tp-rug-test-wohnmobil&form=rechteck&raum=wohnmobil' -%}{%- endcapture -%}
+  {%- assign vehicles = 'wohnmobil:Wohnmobil|wohnwagen:Wohnwagen|kastenwagen:Camper & Kastenwagen|van:Van|sonstiges:Sonstiges Fahrzeug' | split: '|' -%}
+  <section class="tp-rug tp-rug-sec" id="assistent" aria-labelledby="tp-rc-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <tp-rug-camper class="tp-rug-camper">
+        <div class="tp-rug-head">
+          <div class="tp-rug-head__text">
+            <p class="tp-rug-kicker">Wohnmobil-Assistent</p>
+            <h2 class="tp-rug-h2" id="tp-rc-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+            <p class="tp-rug-lead">{{ section.settings.text | escape }}</p>
+          </div>
+        </div>
+        <fieldset class="tp-rug-fs">
+          <legend class="tp-rug-fs__legend">1 · Ihr Fahrzeug</legend>
+          <div class="tp-rug-stiles tp-rug-stiles--places">
+            {%- for v in vehicles -%}
+              {%- assign vk = v | split: ':' | first -%}{%- assign vl = v | split: ':' | last -%}
+              <label class="tp-rug-stile"><input type="radio" name="fahrzeug" value="{{ vk }}" data-label="{{ vl | escape }}" {% if forloop.first %}checked{% endif %}>
+                <span class="tp-rug-stile__icon">{% render 'tp-rug-icon', name: 'camper', size: 34 %}</span><span class="tp-rug-stile__label">{{ vl | escape }}</span></label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+
+        <p class="tp-rug-fs__legend">2 · Wie zeigen Sie uns die Fläche?</p>
+        <ul class="tp-rug-ways" role="list">
+          <li><a class="tp-rug-way" href="{{ u_rect }}" data-weg="rechteck">
+            <span class="tp-rug-way__tag">A</span>{% render 'tp-rug-icon', name: 'form-rechteck', size: 36 %}
+            <span class="tp-rug-way__title">Rechteckige Fläche</span><span class="tp-rug-small">Breite und Länge messen, direkt im Konfigurator eingeben.</span>
+            <span class="tp-rug-link">Zum Konfigurator {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</span></a></li>
+          <li><a class="tp-rug-way" href="#anfrage" data-weg="skizze">
+            <span class="tp-rug-way__tag">B</span>{% render 'tp-rug-icon', name: 'form-skizze', size: 36 %}
+            <span class="tp-rug-way__title">Eigene Skizze</span><span class="tp-rug-small">Form zeichnen, Maße eintragen, Foto hochladen.</span>
+            <span class="tp-rug-link">Skizze senden {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</span></a></li>
+          <li><a class="tp-rug-way" href="#anfrage" data-weg="schablone">
+            <span class="tp-rug-way__tag">C</span>{% render 'tp-rug-icon', name: 'form-schablone', size: 36 %}
+            <span class="tp-rug-way__title">Schablone</span><span class="tp-rug-small">Am genauesten bei Rundungen, Schienen und Sitzkonsolen.</span>
+            <span class="tp-rug-link">Schablone anmelden {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</span></a></li>
+          <li><a class="tp-rug-way" href="#anfrage" data-weg="foto">
+            <span class="tp-rug-way__tag">D</span>{% render 'tp-rug-icon', name: 'upload', size: 36 %}
+            <span class="tp-rug-way__title">Foto oder Grundriss</span><span class="tp-rug-small">Grundriss aus dem Handbuch oder Foto der Fläche mit Maßen.</span>
+            <span class="tp-rug-link">Unterlagen senden {% render 'tp-rug-icon', name: 'pfeil', size: 16 %}</span></a></li>
+        </ul>
+
+        <div class="tp-rug-guide">
+          <div>
+            <h3 class="tp-rug-h3">So funktioniert Ihre Sonderanfertigung</h3>
+            <ol class="tp-rug-guide__steps" role="list">
+              <li><span>1</span>Fläche ausmessen – an der breitesten und längsten Stelle.</li>
+              <li><span>2</span>Skizze oder Schablone anfertigen.</li>
+              <li><span>3</span>Maße eindeutig in Zentimetern eintragen.</li>
+              <li><span>4</span>Türen, Sitzkonsolen, Schienen und Ausschnitte markieren.</li>
+              <li><span>5</span>Foto oder Datei hochladen.</li>
+              <li><span>6</span>Wunschqualität, Farbe und Einfassung wählen.</li>
+              <li><span>7</span>Anfrage absenden – wir melden uns persönlich.</li>
+            </ol>
+          </div>
+          <div class="tp-rug-guide__tips">
+            <h3 class="tp-rug-h3">Tipps für die Schablone</h3>
+            <ul class="tp-rug-checklist tp-rug-checklist--small" role="list">
+              <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Packpapier oder feste Folie verwenden, Kanten sauber anlegen.</span></li>
+              <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Eine Kontrollstrecke von 50 cm einzeichnen und beschriften.</span></li>
+              <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Fahrtrichtung und „Oberseite“ kennzeichnen.</span></li>
+              <li>{% render 'tp-rug-icon', name: 'check', size: 18 %}<span>Aussparungen für Schienen und Konsolen mit einzeichnen.</span></li>
+            </ul>
+            <p class="tp-rug-demo">Ein Schablonen-Service (Versand, Abholung, Aufmaß) ist vorbereitet, wird aber noch nicht angeboten.</p>
+          </div>
+        </div>
+      </tp-rug-camper>
+    </div>
+  </section>
+  <script type="module" src="{{ 'tp-rug-tools.js' | asset_url }}"></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Wohnmobil-Assistent",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "In zwei Schritten zum Wohnmobilteppich" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Wählen Sie Ihr Fahrzeug und wie Sie uns die Fläche zeigen möchten – als Maß, Skizze, Schablone oder Foto." }
+  ],
+  "presets": [{ "name": "TP Wohnmobil-Assistent" }]
+}
+{% endschema %}

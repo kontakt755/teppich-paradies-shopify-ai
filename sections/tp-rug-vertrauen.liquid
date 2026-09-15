@@ -1,0 +1,79 @@
+{%- comment -%}
+  Service und Vertrauen - nur belegbare Angaben: Telefon und WhatsApp wie im
+  uebrigen Shop (snippets/tp-kontakt-nav.liquid), Fachgeschaeft in Oranienburg.
+  Keine Bewertungszahlen, keine Garantien, keine Lieferzeiten.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec{% if section.settings.sand %} tp-rug-sec--sand{% endif %}" aria-labelledby="tp-rv-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rv-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+      </div>
+      <ul class="tp-rug-trust" role="list">
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign b = block.settings
+            case b.link
+              when 'telefon'
+                assign href = 'tel:' | append: section.settings.phone_link
+                assign attrs = ''
+              when 'whatsapp'
+                assign href = 'https://wa.me/' | append: section.settings.whatsapp
+                assign attrs = 'target="_blank" rel="noopener"'
+              when 'none'
+                assign href = ''
+              else
+                capture href
+                  render 'tp-rug-url', key: b.link
+                endcapture
+                assign attrs = ''
+            endcase
+          -%}
+          <li {{ block.shopify_attributes }} style="display:flex">
+            {%- if href != blank -%}<a class="tp-rug-trust__item" style="width:100%" href="{{ href }}" {{ attrs }}>{%- else -%}<div class="tp-rug-trust__item" style="width:100%">{%- endif -%}
+              {%- render 'tp-rug-icon', name: b.icon, size: 26 -%}
+              <span style="display:grid;gap:4px">
+                <span class="tp-rug-trust__title">{{ b.title | escape }}</span>
+                <span class="tp-rug-small">{{ b.text | replace: '[telefon]', section.settings.phone_label | escape }}</span>
+              </span>
+            {%- if href != blank -%}</a>{%- else -%}</div>{%- endif -%}
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-Service",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Persönlich beraten – vom Fachgeschäft" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "text", "id": "phone_label", "label": "Telefon (Anzeige)", "default": "03301 573 37 20" },
+    { "type": "text", "id": "phone_link", "label": "Telefon (Wahl)", "default": "+4933015733720" },
+    { "type": "text", "id": "whatsapp", "label": "WhatsApp-Nummer", "default": "4917657931322" },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Punkt",
+      "settings": [
+        { "type": "select", "id": "icon", "label": "Symbol", "default": "telefon", "options": [{ "value": "telefon", "label": "Telefon" }, { "value": "whatsapp", "label": "WhatsApp" }, { "value": "muster", "label": "Muster" }, { "value": "stift", "label": "Sonderanfertigung" }, { "value": "person", "label": "Ansprechpartner" }, { "value": "standort", "label": "Standort" }, { "value": "chat", "label": "Beratung" }] },
+        { "type": "text", "id": "title", "label": "Titel", "default": "Fachberatung am Telefon" },
+        { "type": "textarea", "id": "text", "label": "Text ([telefon] = Nummer)" },
+        { "type": "select", "id": "link", "label": "Link", "default": "none", "options": [{ "value": "none", "label": "Kein Link" }, { "value": "telefon", "label": "Anrufen" }, { "value": "whatsapp", "label": "WhatsApp" }, { "value": "muster", "label": "Muster" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "kontakt", "label": "Kontakt" }] }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [{ "name": "TP Teppich-Service" }]
+}
+{% endschema %}

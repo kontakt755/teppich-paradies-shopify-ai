@@ -1,0 +1,287 @@
+/*
+ * Teppichbereich (Entwurf) - Gestaltung aller tp-rug-Sections.
+ * Geladen nur auf den Teppich-Vorlagen (snippets/tp-rug-head.liquid).
+ * Alles unter .tp-rug bzw. tp-rug-*, damit bestehende Seiten unberuehrt bleiben.
+ */
+
+/* --- Grundlagen ------------------------------------------------------- */
+.tp-rug {
+  --tp-ink: #1f1d1b;
+  --tp-ink-2: rgb(31 29 27 / 0.72);
+  --tp-ink-3: rgb(31 29 27 / 0.66); /* ca. 5:1 auf Weiss - AA auch fuer kleine Schrift */
+  --tp-line: rgb(31 29 27 / 0.12);
+  --tp-line-2: rgb(31 29 27 / 0.22);
+  --tp-bg: #fff;
+  --tp-sand: #f4efe7;
+  --tp-sand-2: #ebe2d4;
+  --tp-accent: #8a5a3c;
+  --tp-accent-soft: #f3e7dd;
+  --tp-ok: #2f6b4f;
+  --tp-ok-soft: #e6f1eb;
+  --tp-err: #a3342b;
+  --tp-err-soft: #fbecea;
+  --tp-info-soft: #eef3f4;
+  --tp-r: 16px;
+  --tp-r-s: 10px;
+  --tp-shadow: 0 1px 2px rgb(31 29 27 / 0.06), 0 8px 28px rgb(31 29 27 / 0.08);
+  color: var(--tp-ink);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.tp-rug *, .tp-rug *::before, .tp-rug *::after { box-sizing: border-box; }
+/* hidden muss gewinnen, auch gegen display:flex/grid einzelner Bausteine */
+.tp-rug [hidden] { display: none !important; }
+.tp-rug h1, .tp-rug h2, .tp-rug h3, .tp-rug h4 { margin: 0; color: var(--tp-ink); letter-spacing: -0.015em; line-height: 1.12; }
+.tp-rug p { margin: 0; }
+.tp-rug ul, .tp-rug ol { margin: 0; padding: 0; list-style: none; }
+.tp-rug a { color: inherit; }
+.tp-rug img { max-width: 100%; }
+.tp-rug :focus-visible { outline: 2px solid var(--tp-ink); outline-offset: 3px; }
+.tp-rug .visually-hidden, .tp-rug-sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.tp-rug-wrap { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+.tp-rug-sec { padding: clamp(40px, 6vw, 84px) 0; }
+.tp-rug-sec--tight { padding: clamp(24px, 4vw, 48px) 0; }
+.tp-rug-sec--sand { background: var(--tp-sand); }
+.tp-rug-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: clamp(20px, 3vw, 36px); }
+.tp-rug-head__text { max-width: 720px; display: grid; gap: 10px; }
+.tp-rug-kicker { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tp-accent); }
+.tp-rug-h1 { font-size: clamp(34px, 5.2vw, 60px); font-weight: 750; }
+.tp-rug-h2 { font-size: clamp(26px, 3.4vw, 40px); font-weight: 700; }
+.tp-rug-h3 { font-size: clamp(19px, 2vw, 22px); font-weight: 650; }
+.tp-rug-lead { font-size: clamp(16px, 1.6vw, 19px); color: var(--tp-ink-2); max-width: 640px; }
+.tp-rug-muted { color: var(--tp-ink-2); }
+.tp-rug-small { font-size: 14px; color: var(--tp-ink-2); }
+.tp-rug-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; }
+.tp-rug-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tp-rug-icon { display: inline-block; flex: none; vertical-align: middle; }
+
+/* Knoepfe */
+.tp-rug-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 22px; border: 1px solid transparent; border-radius: 999px;
+  font: inherit; font-size: 15px; font-weight: 600; line-height: 1.2; text-decoration: none; white-space: nowrap;
+  cursor: pointer; transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+.tp-rug .tp-rug-btn--primary, .tp-rug-btn--primary { background: var(--tp-ink, #1f1d1b); color: #fff; }
+.tp-rug .tp-rug-btn--primary:hover { background: #3a3632; }
+.tp-rug .tp-rug-btn--ghost, .tp-rug-btn--ghost { background: transparent; border-color: rgb(31 29 27 / 0.28); color: var(--tp-ink, #1f1d1b); }
+.tp-rug .tp-rug-btn--ghost:hover { border-color: var(--tp-ink, #1f1d1b); }
+.tp-rug .tp-rug-btn--light, .tp-rug-btn--light { background: #fff; color: var(--tp-ink, #1f1d1b); }
+.tp-rug-btn--small { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.tp-rug-btn[disabled], .tp-rug-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.tp-rug-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Chips */
+.tp-rug-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-rug-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px 0 12px;
+  border: 1px solid var(--tp-line-2); border-radius: 999px; background: #fff;
+  font-size: 14px; font-weight: 500; line-height: 1.2; text-decoration: none; white-space: nowrap; color: var(--tp-ink);
+  transition: border-color .2s ease, background-color .2s ease;
+}
+.tp-rug-chip:hover { border-color: var(--tp-ink); }
+.tp-rug-chip .tp-rug-icon { color: var(--tp-accent); }
+.tp-rug-badge {
+  display: inline-flex; align-items: center; min-height: 24px; padding: 2px 10px; border-radius: 999px;
+  background: rgb(255 255 255 / 0.92); color: var(--tp-ink); font-size: 12px; font-weight: 600; line-height: 1.2;
+  box-shadow: 0 1px 2px rgb(0 0 0 / .08);
+}
+.tp-rug-badge--strong { background: var(--tp-ink); color: #fff; }
+
+/* --- Testhinweis ------------------------------------------------------ */
+.tp-rug-test { background: #fff7e0; border-bottom: 1px solid #f0dfa8; color: #5c4a12; font-size: 14px; }
+.tp-rug-test .tp-rug-wrap { display: flex; align-items: center; gap: 10px; min-height: 44px; padding-top: 8px; padding-bottom: 8px; }
+.tp-rug-test strong { font-weight: 700; }
+
+/* --- Hero ------------------------------------------------------------- */
+.tp-rug-hero { padding: clamp(28px, 4vw, 56px) 0 clamp(36px, 5vw, 64px); background: linear-gradient(180deg, var(--tp-sand) 0%, #fff 100%); }
+.tp-rug-hero__grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.tp-rug-hero__text { display: grid; gap: 18px; align-content: start; }
+.tp-rug-hero--compact { padding: clamp(20px, 3vw, 36px) 0 clamp(24px, 3vw, 40px); }
+.tp-rug-hero--compact .tp-rug-h1 { font-size: clamp(30px, 4vw, 48px); }
+.tp-rug-hero--compact .tp-rug-hero__media { aspect-ratio: 16 / 10; }
+.tp-rug-hero__media { position: relative; border-radius: 24px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--tp-sand-2); box-shadow: var(--tp-shadow); }
+.tp-rug-hero__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tp-rug-hero__note { position: absolute; left: 12px; bottom: 12px; padding: 4px 10px; border-radius: 999px; background: rgb(255 255 255 / .85); font-size: 12px; color: var(--tp-ink-2); }
+.tp-rug-hero__card {
+  position: absolute; right: 16px; top: 16px; display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px;
+  background: rgb(255 255 255 / 0.94); box-shadow: var(--tp-shadow); font-size: 13px; max-width: 220px;
+}
+.tp-rug-hero__card strong { font-size: 14px; }
+.tp-rug-hero__quick { display: grid; gap: 10px; margin-top: 6px; }
+.tp-rug-hero__quick-label { font-size: 13px; font-weight: 600; color: var(--tp-ink-3); }
+.tp-rug-usps { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 4px; font-size: 14px; color: var(--tp-ink-2); }
+.tp-rug-usps li { display: inline-flex; align-items: center; gap: 8px; }
+.tp-rug-usps .tp-rug-icon { color: var(--tp-ok); }
+
+/* --- Unterschied Teppich / Teppichboden -------------------------------- */
+.tp-rug-diff { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.tp-rug-diff__item { display: grid; gap: 8px; padding: 22px 24px; border-radius: var(--tp-r); border: 1px solid var(--tp-line); background: #fff; }
+.tp-rug-diff__item--here { border-color: var(--tp-ink); box-shadow: var(--tp-shadow); }
+.tp-rug-diff__tag { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tp-ink-3); }
+
+/* --- Kacheln ---------------------------------------------------------- */
+.tp-rug-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.tp-rug-tile { position: relative; display: block; border-radius: var(--tp-r); overflow: hidden; background: var(--tp-sand-2); text-decoration: none; color: #fff; isolation: isolate; }
+.tp-rug-tile__img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transition: transform .5s ease; }
+.tp-rug-tile:hover .tp-rug-tile__img { transform: scale(1.05); }
+.tp-rug-tile__body { position: absolute; inset: auto 0 0 0; display: grid; gap: 2px; padding: 40px 16px 14px; background: linear-gradient(180deg, rgb(20 18 16 / 0) 0%, rgb(20 18 16 / .72) 100%); }
+.tp-rug-tile__title { font-size: 17px; font-weight: 650; line-height: 1.2; color: #fff; }
+.tp-rug-tile__sub { font-size: 13px; color: rgb(255 255 255 / .86); }
+/* Die li-Huellen sind display:contents - Kachel ist das a; "erste" daher ueber das li waehlen. */
+.tp-rug-tiles--large > li:first-child > .tp-rug-tile { grid-column: span 2; grid-row: span 2; }
+.tp-rug-tiles--large > li:first-child > .tp-rug-tile .tp-rug-tile__img { aspect-ratio: auto; height: 100%; }
+.tp-rug-tiles--large > li:first-child > .tp-rug-tile .tp-rug-tile__title { font-size: 24px; }
+
+/* --- Schritte --------------------------------------------------------- */
+.tp-rug-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: tpstep; }
+.tp-rug-step { position: relative; display: grid; gap: 8px; align-content: start; padding: 20px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); }
+.tp-rug-step__num { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tp-ink); color: #fff; font-weight: 700; font-size: 15px; }
+.tp-rug-step--last { background: var(--tp-ink); color: #fff; border-color: var(--tp-ink); }
+.tp-rug-step--last .tp-rug-h3, .tp-rug-step--last p { color: #fff; }
+.tp-rug-step--last .tp-rug-step__num { background: #fff; color: var(--tp-ink); }
+.tp-rug-steps__note { margin-top: 18px; display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--tp-ink-2); }
+
+/* --- Formen ----------------------------------------------------------- */
+.tp-rug-shapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+.tp-rug-shape { display: grid; justify-items: center; gap: 8px; padding: 18px 10px 14px; border: 1px solid var(--tp-line); border-radius: var(--tp-r-s); background: #fff; text-decoration: none; text-align: center; transition: border-color .2s ease, transform .2s ease; }
+.tp-rug-shape:hover { border-color: var(--tp-ink); transform: translateY(-2px); }
+.tp-rug-shape .tp-rug-icon { color: var(--tp-accent); }
+.tp-rug-shape__label { font-size: 14px; font-weight: 600; }
+.tp-rug-shape__sub { font-size: 12px; color: var(--tp-ink-3); }
+
+/* --- Einfassungen ----------------------------------------------------- */
+.tp-rug-edges { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.tp-rug-edge { display: grid; grid-template-rows: auto 1fr; border-radius: var(--tp-r); overflow: hidden; border: 1px solid var(--tp-line); background: #fff; }
+.tp-rug-edge__img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.tp-rug-edge__body { display: grid; gap: 8px; align-content: start; padding: 16px 18px 20px; }
+.tp-rug-edge__meta { display: grid; gap: 4px; font-size: 14px; color: var(--tp-ink-2); }
+.tp-rug-edge__meta b { color: var(--tp-ink); font-weight: 600; }
+.tp-rug-edge__pill { justify-self: start; padding: 3px 10px; border-radius: 999px; background: var(--tp-accent-soft); color: var(--tp-accent); font-size: 12px; font-weight: 700; }
+.tp-rug-compare { width: 100%; border-collapse: collapse; font-size: 14px; background: #fff; border-radius: var(--tp-r); overflow: hidden; }
+.tp-rug-compare th, .tp-rug-compare td { padding: 12px 14px; border-bottom: 1px solid var(--tp-line); text-align: left; vertical-align: top; }
+.tp-rug-compare thead th { background: var(--tp-sand); font-weight: 700; }
+.tp-rug-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--tp-r); border: 1px solid var(--tp-line); }
+
+/* --- Werkzeuge / Feature / Muster / Vertrauen -------------------------- */
+.tp-rug-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.tp-rug-toolcard { display: grid; gap: 10px; align-content: start; padding: 24px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); text-decoration: none; transition: border-color .2s ease, box-shadow .2s ease; }
+.tp-rug-toolcard:hover { border-color: var(--tp-ink); box-shadow: var(--tp-shadow); }
+.tp-rug-toolcard__icon { display: inline-grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: var(--tp-accent-soft); color: var(--tp-accent); }
+
+.tp-rug-feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 56px); align-items: center; }
+.tp-rug-feature--reverse .tp-rug-feature__media { order: 2; }
+.tp-rug-feature__media { border-radius: 24px; overflow: hidden; aspect-ratio: 4 / 3; background: var(--tp-sand-2); }
+.tp-rug-feature__media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tp-rug-feature__text { display: grid; gap: 16px; }
+.tp-rug-checklist { display: grid; gap: 10px; }
+.tp-rug-checklist li { display: flex; gap: 10px; align-items: flex-start; }
+.tp-rug-checklist .tp-rug-icon { color: var(--tp-ok); margin-top: 2px; }
+
+.tp-rug-sample { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 20px 28px; align-items: center; padding: clamp(22px, 3vw, 36px); border-radius: 24px; background: var(--tp-ink); color: #fff; }
+.tp-rug-sample .tp-rug-h2, .tp-rug-sample p { color: #fff; }
+.tp-rug-sample__swatches { display: flex; }
+.tp-rug-sample__swatches span { width: 46px; height: 64px; border-radius: 8px; margin-left: -14px; border: 3px solid var(--tp-ink); box-shadow: 0 4px 10px rgb(0 0 0 / .3); }
+.tp-rug-sample__swatches span:first-child { margin-left: 0; }
+
+.tp-rug-trust { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.tp-rug-trust__item { display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: var(--tp-r); background: #fff; border: 1px solid var(--tp-line); text-decoration: none; }
+.tp-rug-trust__item .tp-rug-icon { color: var(--tp-accent); margin-top: 2px; }
+a.tp-rug-trust__item:hover { border-color: var(--tp-ink); }
+.tp-rug-trust__title { font-weight: 650; }
+
+/* --- FAQ / Akkordeon -------------------------------------------------- */
+.tp-rug-faq { display: grid; gap: 10px; max-width: 880px; }
+.tp-rug-acc { border: 1px solid var(--tp-line); border-radius: var(--tp-r-s); background: #fff; }
+.tp-rug-acc > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 14px 18px; cursor: pointer; font-weight: 600; list-style: none; }
+.tp-rug-acc > summary::-webkit-details-marker { display: none; }
+.tp-rug-acc > summary::after { content: ''; flex: none; width: 10px; height: 10px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-3px); transition: transform .2s ease; }
+.tp-rug-acc[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.tp-rug-acc__body { padding: 0 18px 18px; color: var(--tp-ink-2); display: grid; gap: 10px; }
+.tp-rug-acc__body a { font-weight: 600; }
+.tp-rug-legal { padding: 12px 14px; border-radius: var(--tp-r-s); background: #fff7e0; color: #5c4a12; font-size: 14px; }
+
+/* --- Karten und Liste ------------------------------------------------- */
+.tp-rug-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 18px; }
+.tp-rug-card { display: flex; }
+.tp-rug-card[hidden] { display: none !important; }
+.tp-rug-card__link { display: flex; flex-direction: column; width: 100%; border-radius: var(--tp-r); overflow: hidden; background: #fff; border: 1px solid var(--tp-line); text-decoration: none; color: var(--tp-ink); transition: box-shadow .25s ease, border-color .25s ease, transform .25s ease; }
+.tp-rug-card__link:hover { border-color: var(--tp-line-2); box-shadow: var(--tp-shadow); transform: translateY(-2px); }
+.tp-rug-card__media { position: relative; aspect-ratio: 4 / 3; background: var(--tp-sand-2); overflow: hidden; }
+.tp-rug-card__img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.tp-rug-card__link:hover .tp-rug-card__img { transform: scale(1.04); }
+.tp-rug-card__badges { position: absolute; left: 10px; top: 10px; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100% - 20px); }
+.tp-rug-card__test { position: absolute; right: 10px; bottom: 10px; padding: 2px 8px; border-radius: 6px; background: #fff7e0; color: #5c4a12; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.tp-rug-card__body { display: grid; gap: 8px; align-content: start; flex: 1; padding: 16px 18px 18px; }
+.tp-rug-card__eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .03em; color: var(--tp-ink-3); }
+.tp-rug-card__title { font-size: 19px; font-weight: 700; line-height: 1.2; }
+.tp-rug-card__meta { font-size: 14px; color: var(--tp-ink-2); }
+.tp-rug-card__label { font-weight: 600; color: var(--tp-ink); }
+.tp-rug-card__row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--tp-ink-2); }
+.tp-rug-card__swatches { display: inline-flex; }
+.tp-rug-card__swatch { width: 18px; height: 18px; border-radius: 50%; background: var(--sw); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--tp-line-2); margin-left: -5px; }
+.tp-rug-card__swatch:first-child { margin-left: 0; }
+.tp-rug-card__shapes { gap: 4px; color: var(--tp-accent); }
+.tp-rug-card__shape { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--tp-sand); }
+.tp-rug-card__more { font-size: 12px; font-weight: 600; color: var(--tp-ink-2); margin-left: 2px; }
+.tp-rug-card__rooms { font-size: 13px; color: var(--tp-ink-3); }
+.tp-rug-card__cta { display: inline-flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 6px; font-weight: 700; font-size: 15px; }
+
+.tp-rug-list__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; }
+.tp-rug-list__count { font-size: 14px; color: var(--tp-ink-2); }
+.tp-rug-filter { display: grid; gap: 14px; margin-bottom: 24px; padding: 18px; border-radius: var(--tp-r); background: var(--tp-sand); }
+.tp-rug-filter__group { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px; align-items: start; }
+.tp-rug-filter__label { font-size: 13px; font-weight: 700; color: var(--tp-ink-2); padding-top: 9px; }
+.tp-rug-filter__opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.tp-rug-fchip { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px 0 12px; border: 1px solid var(--tp-line-2); border-radius: 999px; background: #fff; font: inherit; font-size: 14px; color: var(--tp-ink); cursor: pointer; }
+.tp-rug-fchip[aria-pressed="true"] { background: var(--tp-ink); border-color: var(--tp-ink); color: #fff; }
+.tp-rug-fchip[aria-pressed="true"] .tp-rug-icon { color: #fff; }
+.tp-rug-fchip .tp-rug-icon { color: var(--tp-accent); }
+.tp-rug-fchip__n { font-size: 12px; opacity: .65; }
+.tp-rug-fchip__sw { flex: none; width: 16px; height: 16px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgb(0 0 0 / .18); }
+.tp-rug-filter__toggle { display: none; }
+.tp-rug-filter__more { display: grid; gap: 14px; }
+.tp-rug-filter__morebtn { justify-self: start; }
+.tp-rug-empty { display: grid; gap: 12px; justify-items: start; padding: 28px; border-radius: var(--tp-r); border: 1px dashed var(--tp-line-2); }
+
+/* --- Responsiv -------------------------------------------------------- */
+@media (max-width: 1099px) {
+  .tp-rug-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tp-rug-edges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-rug-trust { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-rug-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 899px) {
+  .tp-rug-hero__grid, .tp-rug-feature { grid-template-columns: minmax(0, 1fr); }
+  .tp-rug-hero__media { order: -1; }
+  .tp-rug-feature--reverse .tp-rug-feature__media { order: 0; }
+  .tp-rug-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-rug-tools { grid-template-columns: minmax(0, 1fr); }
+  .tp-rug-sample { grid-template-columns: minmax(0, 1fr); }
+  .tp-rug-filter__group { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .tp-rug-filter__label { padding-top: 0; }
+}
+@media (max-width: 699px) {
+  .tp-rug-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .tp-rug-tiles--large > li:first-child > .tp-rug-tile { grid-column: span 2; grid-row: auto; }
+  .tp-rug-tiles--large > li:first-child > .tp-rug-tile .tp-rug-tile__img { aspect-ratio: 16 / 10; }
+  .tp-rug-tile__title { font-size: 15px; }
+  .tp-rug-tile__sub { display: none; }
+  .tp-rug-diff { grid-template-columns: minmax(0, 1fr); }
+  .tp-rug-edges, .tp-rug-trust, .tp-rug-grid { grid-template-columns: minmax(0, 1fr); }
+  .tp-rug-steps { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .tp-rug-step { grid-template-columns: 34px minmax(0, 1fr); column-gap: 14px; padding: 16px; }
+  .tp-rug-step > :not(.tp-rug-step__num) { grid-column: 2; }
+  .tp-rug-step__num { grid-row: span 3; }
+  .tp-rug-hero__card { display: none; }
+  .tp-rug-btn { width: 100%; }
+  .tp-rug-actions .tp-rug-btn { flex: 1 1 100%; }
+  .tp-rug-shapes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tp-rug-filter { padding: 14px; }
+  .tp-rug-filter__toggle { display: inline-flex; }
+  .tp-rug-filter[data-collapsed="true"] .tp-rug-filter__group { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-rug *, .tp-rug *::before, .tp-rug *::after { transition: none !important; animation: none !important; }
+}

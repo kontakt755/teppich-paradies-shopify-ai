@@ -1,0 +1,85 @@
+{%- comment -%}
+  Visuelle Einstiege (Raum, Form, Fahrzeug). Jede Kachel ist ein Link.
+  Bild: Foto aus dem Editor oder Illustration aus assets/tp-rug-bild-*.svg.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec{% if section.settings.sand %} tp-rug-sec--sand{% endif %}" aria-labelledby="tp-rk-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rk-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {%- if section.settings.text != blank -%}<p class="tp-rug-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+        </div>
+        {%- if section.settings.link_label != blank -%}
+          <a class="tp-rug-link" href="{% render 'tp-rug-url', key: 'alle' %}">{{ section.settings.link_label | escape }} {% render 'tp-rug-icon', name: 'pfeil', size: 18 %}</a>
+        {%- endif -%}
+      </div>
+      <ul class="tp-rug-tiles{% if section.settings.large_first %} tp-rug-tiles--large{% endif %}" role="list">
+        {%- for block in section.blocks -%}
+          {%- capture bu -%}{%- render 'tp-rug-url', key: block.settings.key, query: block.settings.query -%}{%- endcapture -%}
+          {%- assign bimg = 'tp-rug-bild-' | append: block.settings.scene | append: '.svg' -%}
+          <li class="tp-rug-tile-wrap" {{ block.shopify_attributes }} style="display:contents">
+            <a class="tp-rug-tile" href="{{ bu }}">
+              {%- if block.settings.image != blank -%}
+                {{ block.settings.image | image_url: width: 900 | image_tag: loading: 'lazy', widths: '300, 450, 600, 900', sizes: '(min-width: 1100px) 25vw, (min-width: 700px) 33vw, 50vw', class: 'tp-rug-tile__img', alt: '' }}
+              {%- else -%}
+                <img class="tp-rug-tile__img" src="{{ bimg | asset_url }}" alt="" width="1200" height="900" loading="lazy" decoding="async">
+              {%- endif -%}
+              <span class="tp-rug-tile__body">
+                <span class="tp-rug-tile__title">{{ block.settings.title | escape }}</span>
+                {%- if block.settings.sub != blank -%}<span class="tp-rug-tile__sub">{{ block.settings.sub | escape }}</span>{%- endif -%}
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppiche Kacheln",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Teppiche für jeden Raum" },
+    { "type": "textarea", "id": "text", "label": "Text" },
+    { "type": "text", "id": "link_label", "label": "Link rechts", "default": "Alle Teppiche" },
+    { "type": "checkbox", "id": "large_first", "label": "Erste Kachel groß", "default": true },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": false }
+  ],
+  "blocks": [
+    {
+      "type": "tile",
+      "name": "Kachel",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Titel", "default": "Wohnzimmer" },
+        { "type": "text", "id": "sub", "label": "Unterzeile" },
+        { "type": "image_picker", "id": "image", "label": "Foto (ersetzt die Illustration)" },
+        {
+          "type": "select", "id": "scene", "label": "Illustration", "default": "wohnzimmer",
+          "options": [
+            { "value": "wohnzimmer", "label": "Wohnzimmer" }, { "value": "esszimmer", "label": "Esszimmer" }, { "value": "schlafzimmer", "label": "Schlafzimmer" },
+            { "value": "kueche", "label": "Küche" }, { "value": "flur", "label": "Flur" }, { "value": "kinderzimmer", "label": "Kinderzimmer" },
+            { "value": "homeoffice", "label": "Homeoffice" }, { "value": "eingang", "label": "Eingang" }, { "value": "buero", "label": "Büro" },
+            { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "outdoor", "label": "Outdoor" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "rund", "label": "Rund" }
+          ]
+        },
+        {
+          "type": "select", "id": "key", "label": "Ziel", "default": "alle",
+          "options": [
+            { "value": "start", "label": "Teppiche Start" }, { "value": "alle", "label": "Alle Teppiche" }, { "value": "konfigurator", "label": "Konfigurator" },
+            { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "berater", "label": "Berater" },
+            { "value": "visualisierer", "label": "Visualisierer" }, { "value": "einfassungen", "label": "Einfassungen" }, { "value": "muster", "label": "Muster" }
+          ]
+        },
+        { "type": "text", "id": "query", "label": "Parameter (z. B. raum=wohnzimmer)" }
+      ]
+    }
+  ],
+  "max_blocks": 16,
+  "presets": [{ "name": "TP Teppiche Kacheln" }]
+}
+{% endschema %}

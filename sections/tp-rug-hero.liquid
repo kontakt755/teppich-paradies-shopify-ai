@@ -1,0 +1,145 @@
+{%- comment -%}
+  Einstieg einer Teppich-Seite: Botschaft, zwei Handlungen, Schnelleinstiege.
+  Bild: echtes Foto aus dem Editor oder - bis es Fotos gibt - eine Illustration
+  aus assets/tp-rug-bild-*.svg (als solche gekennzeichnet).
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  {%- liquid
+    assign s = section.settings
+    capture u1
+      render 'tp-rug-url', key: s.btn1_key, query: s.btn1_query
+    endcapture
+    capture u2
+      render 'tp-rug-url', key: s.btn2_key, query: s.btn2_query, anchor: s.btn2_anchor
+    endcapture
+    assign tp_rh_img = 'tp-rug-bild-' | append: s.scene | append: '.svg'
+  -%}
+  <section class="tp-rug tp-rug-hero{% if s.compact %} tp-rug-hero--compact{% endif %}" aria-labelledby="tp-rh-{{ section.id }}">
+    <div class="tp-rug-wrap tp-rug-hero__grid">
+      <div class="tp-rug-hero__text">
+        {%- if s.kicker != blank -%}<p class="tp-rug-kicker">{{ s.kicker | escape }}</p>{%- endif -%}
+        <h1 class="tp-rug-h1" id="tp-rh-{{ section.id }}">{{ s.heading | escape }}</h1>
+        {%- if s.text != blank -%}<p class="tp-rug-lead">{{ s.text | escape }}</p>{%- endif -%}
+        <div class="tp-rug-actions">
+          {%- if s.btn1_label != blank -%}<a class="tp-rug-btn tp-rug-btn--primary" href="{{ u1 }}">{{ s.btn1_label | escape }}</a>{%- endif -%}
+          {%- if s.btn2_label != blank -%}<a class="tp-rug-btn tp-rug-btn--ghost" href="{{ u2 }}">{{ s.btn2_label | escape }}</a>{%- endif -%}
+        </div>
+        {%- assign tp_rh_usps = s.usps | newline_to_br | split: '<br />' -%}
+        {%- if s.usps != blank -%}
+          <ul class="tp-rug-usps" role="list">
+            {%- for u in tp_rh_usps -%}
+              {%- assign ut = u | strip -%}
+              {%- if ut != blank -%}<li>{% render 'tp-rug-icon', name: 'check', size: 18 %}{{ ut | escape }}</li>{%- endif -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+        {%- if section.blocks.size > 0 -%}
+          <div class="tp-rug-hero__quick">
+            {%- if s.quick_label != blank -%}<p class="tp-rug-hero__quick-label" id="tp-rhq-{{ section.id }}">{{ s.quick_label | escape }}</p>{%- endif -%}
+            <ul class="tp-rug-chips" role="list" aria-labelledby="tp-rhq-{{ section.id }}">
+              {%- for block in section.blocks -%}
+                {%- capture bu -%}{%- render 'tp-rug-url', key: block.settings.key, query: block.settings.query, anchor: block.settings.anchor -%}{%- endcapture -%}
+                <li {{ block.shopify_attributes }}><a class="tp-rug-chip" href="{{ bu }}">{% render 'tp-rug-icon', name: block.settings.icon, size: 20 %}{{ block.settings.label | escape }}</a></li>
+              {%- endfor -%}
+            </ul>
+          </div>
+        {%- endif -%}
+      </div>
+      <div class="tp-rug-hero__media">
+        {%- if s.image != blank -%}
+          {{ s.image | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '600, 900, 1200, 1600', sizes: '(min-width: 900px) 50vw, 100vw', alt: s.image.alt }}
+        {%- else -%}
+          <img src="{{ tp_rh_img | asset_url }}" alt="Illustration: Raum mit Teppich nach Maß" width="1200" height="900" fetchpriority="high">
+          <span class="tp-rug-hero__note">Illustration – Fotos folgen</span>
+        {%- endif -%}
+        {%- if s.show_card -%}
+          <div class="tp-rug-hero__card" aria-hidden="true">
+            {%- render 'tp-rug-icon', name: 'form-rechteck', size: 28 -%}
+            <strong>Rechteck · 200 × 300 cm</strong>
+            <span>Einfassung Baumwolle, Randfarbe Beige</span>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppiche Einstieg",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "kicker", "label": "Dachzeile", "default": "Teppiche nach Maß" },
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Ihr Teppich. Ihr Maß. Ihre Form." },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Fertig eingefasste Teppiche in Wunschgröße und Wunschform – vom Läufer bis zur Sonderform nach Schablone. Individuell konfigurierbar und unverbindlich anzufragen." },
+    { "type": "textarea", "id": "usps", "label": "Vorteile (je Zeile einer)", "default": "Wunschmaß bis 10 m Länge\nVier Einfassungen zur Wahl\nSonderform nach Skizze oder Schablone" },
+    { "type": "image_picker", "id": "image", "label": "Foto (ersetzt die Illustration)" },
+    {
+      "type": "select", "id": "scene", "label": "Illustration", "default": "wohnzimmer",
+      "options": [
+        { "value": "wohnzimmer", "label": "Wohnzimmer" }, { "value": "esszimmer", "label": "Esszimmer" }, { "value": "schlafzimmer", "label": "Schlafzimmer" },
+        { "value": "kueche", "label": "Küche" }, { "value": "flur", "label": "Flur" }, { "value": "kinderzimmer", "label": "Kinderzimmer" },
+        { "value": "homeoffice", "label": "Homeoffice" }, { "value": "eingang", "label": "Eingang" }, { "value": "buero", "label": "Büro" },
+        { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "outdoor", "label": "Outdoor" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "rund", "label": "Rund" }
+      ]
+    },
+    { "type": "checkbox", "id": "show_card", "label": "Beispiel-Konfiguration zeigen", "default": true },
+    { "type": "checkbox", "id": "compact", "label": "Kompakt (für Unterseiten)", "default": false },
+    { "type": "header", "content": "Knöpfe" },
+    { "type": "text", "id": "btn1_label", "label": "Knopf 1", "default": "Jetzt konfigurieren" },
+    {
+      "type": "select", "id": "btn1_key", "label": "Ziel Knopf 1", "default": "konfigurator",
+      "options": [
+        { "value": "start", "label": "Teppiche Start" }, { "value": "alle", "label": "Alle Teppiche" }, { "value": "konfigurator", "label": "Konfigurator" },
+        { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "berater", "label": "Berater" },
+        { "value": "visualisierer", "label": "Visualisierer" }, { "value": "einfassungen", "label": "Einfassungen" }, { "value": "muster", "label": "Muster" }, { "value": "kontakt", "label": "Kontakt" }
+      ]
+    },
+    { "type": "text", "id": "btn1_query", "label": "Parameter Knopf 1" },
+    { "type": "text", "id": "btn2_label", "label": "Knopf 2", "default": "Passenden Teppich finden" },
+    {
+      "type": "select", "id": "btn2_key", "label": "Ziel Knopf 2", "default": "berater",
+      "options": [
+        { "value": "start", "label": "Teppiche Start" }, { "value": "alle", "label": "Alle Teppiche" }, { "value": "konfigurator", "label": "Konfigurator" },
+        { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "berater", "label": "Berater" },
+        { "value": "visualisierer", "label": "Visualisierer" }, { "value": "einfassungen", "label": "Einfassungen" }, { "value": "muster", "label": "Muster" }, { "value": "kontakt", "label": "Kontakt" }
+      ]
+    },
+    { "type": "text", "id": "btn2_query", "label": "Parameter Knopf 2" },
+    { "type": "text", "id": "btn2_anchor", "label": "Sprungmarke Knopf 2", "default": "finder" },
+    { "type": "text", "id": "quick_label", "label": "Titel Schnelleinstiege", "default": "Direkt einsteigen" }
+  ],
+  "blocks": [
+    {
+      "type": "entry",
+      "name": "Schnelleinstieg",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Text", "default": "Teppich nach Maß" },
+        {
+          "type": "select", "id": "icon", "label": "Symbol", "default": "lineal",
+          "options": [
+            { "value": "lineal", "label": "Lineal" }, { "value": "raum", "label": "Raum" }, { "value": "camper", "label": "Wohnmobil" },
+            { "value": "form-laeufer", "label": "Läufer" }, { "value": "form-organisch", "label": "Sonderform" }, { "value": "form-rund", "label": "Rund" },
+            { "value": "auge", "label": "Ansehen" }, { "value": "muster", "label": "Muster" }, { "value": "upload", "label": "Hochladen" },
+            { "value": "kompass", "label": "Berater" }, { "value": "chat", "label": "Beratung" }
+          ]
+        },
+        {
+          "type": "select", "id": "key", "label": "Ziel", "default": "konfigurator",
+          "options": [
+            { "value": "start", "label": "Teppiche Start" }, { "value": "alle", "label": "Alle Teppiche" }, { "value": "konfigurator", "label": "Konfigurator" },
+            { "value": "wohnmobil", "label": "Wohnmobil" }, { "value": "sonderform", "label": "Sonderform" }, { "value": "berater", "label": "Berater" },
+            { "value": "visualisierer", "label": "Visualisierer" }, { "value": "einfassungen", "label": "Einfassungen" }, { "value": "muster", "label": "Muster" }, { "value": "kontakt", "label": "Kontakt" }
+          ]
+        },
+        { "type": "text", "id": "query", "label": "Parameter (z. B. raum=wohnzimmer)" },
+        { "type": "text", "id": "anchor", "label": "Sprungmarke" }
+      ]
+    }
+  ],
+  "max_blocks": 8,
+  "presets": [{ "name": "TP Teppiche Einstieg" }]
+}
+{% endschema %}

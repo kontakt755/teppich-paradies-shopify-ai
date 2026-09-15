@@ -1,0 +1,59 @@
+{%- comment -%}
+  Fragen und Antworten zum Teppichbereich. Antworten ohne Preise, Lieferzeiten
+  oder rechtliche Zusagen; Rechtsfragen als markierter Pruefhinweis.
+  Kein FAQ-Schema, solange der Bereich Entwurf ist.
+{%- endcomment -%}
+{%- capture tp_rug_on -%}{%- render 'tp-rug-gate' -%}{%- endcapture -%}
+{%- if tp_rug_on == '1' -%}
+  <section class="tp-rug tp-rug-sec" id="faq" aria-labelledby="tp-rq-{{ section.id }}">
+    <div class="tp-rug-wrap">
+      <div class="tp-rug-head">
+        <div class="tp-rug-head__text">
+          <h2 class="tp-rug-h2" id="tp-rq-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+        </div>
+      </div>
+      <div class="tp-rug-faq">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'hinweis' -%}
+            <p class="tp-rug-legal" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</p>
+          {%- else -%}
+            <details class="tp-rug-acc" {{ block.shopify_attributes }}>
+              <summary>{{ block.settings.question | escape }}</summary>
+              <div class="tp-rug-acc__body">{{ block.settings.answer }}</div>
+            </details>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TP Teppich-FAQ",
+  "tag": "div",
+  "class": "tp-rug-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "Häufige Fragen zu Teppichen nach Maß" }
+  ],
+  "blocks": [
+    {
+      "type": "frage",
+      "name": "Frage",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Frage", "default": "Wie messe ich richtig?" },
+        { "type": "richtext", "id": "answer", "label": "Antwort" }
+      ]
+    },
+    {
+      "type": "hinweis",
+      "name": "Prüfhinweis",
+      "settings": [
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "max_blocks": 16,
+  "presets": [{ "name": "TP Teppich-FAQ" }]
+}
+{% endschema %}
