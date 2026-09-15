@@ -96,6 +96,13 @@
     var fehler = q('[data-fehler]');
     var vorschau = q('[data-vorschau]');
     var svg = q('[data-svg]');
+    var buehne = q('[data-buehne]');
+    var raumbild = q('[data-raumbild]');
+    var kulisse = q('[data-kulisse]');
+    var bodenEbene = q('[data-boden]');
+    var teppich = q('[data-teppich]');
+    var raeumeBox = q('[data-raeume]');
+    var ansichtBox = root.querySelector('.tp-ek__ansicht');
     var legende = q('[data-legende]');
     var rechnung = q('[data-rechnung]');
     var cta = q('[data-cta]');
@@ -105,6 +112,12 @@
     var stand = null;
     var gewaehlt = null;
     var groessenForm = null;
+    // Raumansicht: Liste aus dem Block, Massstab aus den Einstellungen.
+    var raeume = (d.raeume || []).filter(Boolean);
+    var raum = raeume.length ? raeume[0].key : null;
+    var ansicht = raeume.length ? 'raum' : 'plan';
+    var bodenProzent = Number(d.boden_prozent) > 0 ? Number(d.boden_prozent) : 34;
+    var raumBreiteCm = Number(d.raum_breite_cm) > 0 ? Number(d.raum_breite_cm) : 420;
     var formSchritt = q('[data-schritt="form"]');
     var formSchrittAus = formSchritt ? formSchritt.hidden : true;
 
@@ -297,6 +310,123 @@
       svgEl('circle', { cx: lx, cy: ly, r: r + 1.25, fill: 'none', stroke: 'rgba(0,0,0,.14)', 'stroke-width': 0.9 }, svg);
     }
 
+    /*
+      Raumansicht. Das Foto (oder ersatzweise eine gezeichnete Kulisse) liefert
+      nur die Umgebung; der Teppich selbst wird aus der aktuellen Auswahl
+      aufgebaut - Textur der Variante, Mass aus den Feldern, Kante aus der Art.
+      Damit gilt die Ansicht fuer jedes Produkt, das diesen Block verwendet,
+      ohne ein einziges fertiges Raumbild je Farbe.
+    */
+    function raumDaten() {
+      for (var i = 0; i < raeume.length; i++) if (raeume[i].key === raum) return raeume[i];
+      return null;
+    }
+
+    function kulisseZeichnen() {
+      if (!kulisse) return;
+      leeren(kulisse);
+      var hy = 240 * (bodenProzent / 100);
+      svgEl('rect', { x: 0, y: 0, width: 360, height: 240, fill: raum === 'kinderzimmer' ? '#f8f1e7' : '#efe9df' }, kulisse);
+      svgEl('rect', { x: 0, y: hy, width: 360, height: 240 - hy, fill: '#e3d8c8' }, kulisse);
+      // Dielen laufen auf den Fluchtpunkt zu und machen die Tiefe lesbar.
+      for (var px = -120; px < 480; px += 40) {
+        svgEl('line', { x1: px, y1: 240, x2: 180 + (px - 180) * 0.34, y2: hy, stroke: 'rgba(132,91,47,.18)', 'stroke-width': 1 }, kulisse);
+      }
+      svgEl('line', { x1: 0, y1: hy, x2: 360, y2: hy, stroke: 'rgba(132,91,47,.28)', 'stroke-width': 1.2 }, kulisse);
+      if (raum === 'esszimmer') {
+        svgEl('ellipse', { cx: 180, cy: hy + 6, rx: 78, ry: 17, fill: '#9a704c' }, kulisse);
+        svgEl('rect', { x: 118, y: hy - 22, width: 20, height: 28, rx: 4, fill: '#b88c63' }, kulisse);
+        svgEl('rect', { x: 222, y: hy - 22, width: 20, height: 28, rx: 4, fill: '#b88c63' }, kulisse);
+      } else if (raum === 'schlafzimmer') {
+        svgEl('rect', { x: 76, y: hy - 48, width: 208, height: 48, rx: 5, fill: '#dce1df' }, kulisse);
+        svgEl('rect', { x: 89, y: hy - 38, width: 74, height: 20, rx: 4, fill: '#f5f3ee' }, kulisse);
+        svgEl('rect', { x: 197, y: hy - 38, width: 74, height: 20, rx: 4, fill: '#f5f3ee' }, kulisse);
+      } else if (raum === 'kinderzimmer') {
+        svgEl('circle', { cx: 86, cy: hy - 28, r: 18, fill: '#e8c76b' }, kulisse);
+        svgEl('rect', { x: 196, y: hy - 40, width: 84, height: 40, rx: 6, fill: '#a8c8c2' }, kulisse);
+      } else if (raum === 'flur') {
+        svgEl('rect', { x: 112, y: hy - 62, width: 136, height: 62, rx: 3, fill: '#e2dbd0' }, kulisse);
+        svgEl('rect', { x: 128, y: hy - 52, width: 104, height: 52, fill: '#d0c1af' }, kulisse);
+      } else {
+        svgEl('rect', { x: 44, y: hy - 46, width: 272, height: 46, rx: 10, fill: '#e8e1d5' }, kulisse);
+        svgEl('rect', { x: 58, y: hy - 33, width: 90, height: 33, rx: 8, fill: '#d6cbbd' }, kulisse);
+        svgEl('rect', { x: 212, y: hy - 33, width: 90, height: 33, rx: 8, fill: '#d6cbbd' }, kulisse);
+      }
+    }
+
+    function raumZeichnen(f, w, l) {
+      if (!buehne || !teppich || !raum) return;
+      var r = raumDaten();
+      var foto = r && r.bild;
+      if (raumbild) {
+        if (foto) { raumbild.src = foto; raumbild.alt = 'Beispielraum ' + r.label; }
+        raumbild.hidden = !foto;
+      }
+      if (kulisse) kulisse.style.display = foto ? 'none' : '';
+      if (!foto) kulisseZeichnen();
+
+      if (bodenEbene) bodenEbene.style.setProperty('--tp-ek-horizont', bodenProzent + '%');
+      // Waagerechte Ausdehnung im Raum ist die lange Seite, wie in der Zeichnung.
+      var quer = f === 'rund' ? w : l;
+      var tief = w;
+      var breiteProzent = Math.max(8, Math.min(86, (quer / raumBreiteCm) * 100));
+      teppich.style.setProperty('--tp-ek-breite', breiteProzent.toFixed(2) + '%');
+      teppich.style.setProperty('--tp-ek-seiten', (quer / tief).toFixed(3));
+      teppich.style.setProperty('--tp-ek-liegt', (bodenProzent + (100 - bodenProzent) * 0.52).toFixed(1) + '%');
+      teppich.style.setProperty('--tp-ek-radius', f === 'rund' || f === 'oval' ? '50%' : '2px');
+      teppich.style.setProperty('--tp-ek-textur', target && target.bild ? 'url("' + target.bild + '")' : 'none');
+
+      if (BAND_CM[art]) {
+        // Bandbreite im gleichen Massstab wie der Teppich, Untergrenze fuer Sichtbarkeit.
+        var proCm = (buehne.clientWidth || 360) / raumBreiteCm;
+        teppich.setAttribute('data-tp-kante', 'band');
+        teppich.style.setProperty('--tp-ek-bandbreite', Math.max(2, BAND_CM[art] * proCm).toFixed(1) + 'px');
+        teppich.style.setProperty('--tp-ek-bandfarbe', band ? band.hex : 'rgba(255,255,255,.75)');
+      } else {
+        teppich.setAttribute('data-tp-kante', art);
+        teppich.style.removeProperty('--tp-ek-bandbreite');
+        teppich.style.removeProperty('--tp-ek-bandfarbe');
+      }
+    }
+
+    function ansichtSetzen(wahl) {
+      ansicht = raeume.length ? wahl : 'plan';
+      if (ansichtBox) {
+        ansichtBox.hidden = !raeume.length;
+        ansichtBox.querySelectorAll('button').forEach(function (b) {
+          b.setAttribute('aria-pressed', b.getAttribute('data-ansicht') === ansicht ? 'true' : 'false');
+        });
+      }
+      // Umschalten ueber eine eigene Klasse: das hidden-Attribut verliert gegen
+      // die display-Regeln des Themes, die Ansicht bliebe dann stumm leer.
+      if (buehne) buehne.classList.toggle('is-aus', ansicht !== 'raum');
+      if (raeumeBox) raeumeBox.classList.toggle('is-aus', ansicht !== 'raum');
+      if (svg) svg.classList.toggle('is-aus', ansicht === 'raum');
+    }
+
+    function raeumeAufbauen() {
+      if (!raeumeBox || !raeume.length) return;
+      raeume.forEach(function (r) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = r.label;
+        b.setAttribute('aria-pressed', r.key === raum ? 'true' : 'false');
+        b.addEventListener('click', function () {
+          raum = r.key;
+          raeumeBox.querySelectorAll('button').forEach(function (el) {
+            el.setAttribute('aria-pressed', el === b ? 'true' : 'false');
+          });
+          rechnen();
+        });
+        raeumeBox.appendChild(b);
+      });
+      if (ansichtBox) {
+        ansichtBox.querySelectorAll('button').forEach(function (b) {
+          b.addEventListener('click', function () { ansichtSetzen(b.getAttribute('data-ansicht')); });
+        });
+      }
+    }
+
     function zeichnen(f, w, l, beispiel) {
       leeren(svg);
       var horiz = f === 'rund' ? w : l;
@@ -360,15 +490,12 @@
 
       masslinie(x, 28, x + pw, 28, f === 'rund' ? 'Ø ' + w + ' cm' : l + ' cm');
       if (f !== 'rund') masslinie(28, y, 28, y + ph, w + ' cm');
-      if (beispiel) {
-        // Dezenter Chip am oberen Rand statt Schrift quer ueber dem Belag.
-        var tw = 104, tx = x + pw / 2 - tw / 2, ty = y + 8;
-        svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.88)' }, svg);
-        var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: '#3b3733' }, svg);
-        tb.textContent = 'Beispielmaß';
-      } else {
-        lupe(defs);
-      }
+      // Der Chip benennt, was gerade zu sehen ist - eigenes Mass oder Beispiel.
+      var tw = beispiel ? 104 : 88, tx = x + pw / 2 - tw / 2, ty = y + 8;
+      svgEl('rect', { x: tx, y: ty, width: tw, height: 21, rx: 10.5, fill: 'rgba(255,255,255,.90)' }, svg);
+      var tb = svgEl('text', { x: x + pw / 2, y: ty + 14.5, 'text-anchor': 'middle', 'font-size': 11.5, 'font-weight': 600, fill: beispiel ? '#3b3733' : '#244d31' }, svg);
+      tb.textContent = beispiel ? 'Beispielmaß' : 'Dein Maß';
+      if (!beispiel) lupe(defs);
 
       /*
         Die Legende beantwortet, was der Kunde gerade konfiguriert: welches
@@ -382,6 +509,7 @@
       teile.push(f === 'rund' ? 'Ø ' + w + ' cm' : w + ' × ' + l + ' cm');
       teile.push(ART[art] + (band ? ' ' + band.nr + ' ' + band.name : '') + ' (' + KANTE[art] + ')');
       legende.textContent = teile.join(' · ');
+      raumZeichnen(f, w, l);
       vorschau.hidden = false;
     }
 
@@ -583,6 +711,8 @@
         });
     }
 
+    raeumeAufbauen();
+    ansichtSetzen(ansicht);
     baenderAufbauen();
     root.addEventListener('change', function (e) {
       if (e.target && e.target.name && e.target.name.indexOf('tp-ek-form-') === 0) rechnen();
