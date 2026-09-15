@@ -1,17 +1,52 @@
 # Dynamische Google-Bewertungen Implementation
 
-## Überblick
+> **Status am 2026-09-15: NICHT AKTIV — Entwurf, nicht in Betrieb.**
+>
+> Dieses Dokument beschrieb die Loesung bis heute als fertig ("Rating wird live
+> geladen"). Das stimmte nie. Tatsaechlich:
+>
+> | Teil | Stand |
+> |---|---|
+> | `server/google-rating-api.js`, `server/index.js` | vorhanden, lauffaehig, **nirgends deployed** |
+> | Endpunkt `/api/store/google-rating` | von der Storefront aus **nicht erreichbar** |
+> | Block `blocks/tp-google-rating.liquid` | rendert **nichts**; das tote Widget wurde am 2026-09-15 entfernt |
+> | Sichtbare Bewertung im Shop | kommt aus `blocks/tp-bewertungsbeleg.liquid` (statisch, abgelesen) |
+>
+> **Die Luecke ist nicht der Code, sondern das Hosting.** Shopify hostet die
+> Storefront; ein Theme kann keine eigene Route bedienen. Ein
+> `fetch('/api/store/google-rating')` aus dem Theme trifft Shopify und liefert
+> 404 — unabhaengig davon, wie gut der Node-Server geschrieben ist.
+>
+> **Was fehlt, damit es laufen kann:**
+> 1. `server/` als eigenen Dienst deployen (Fly.io, Render, Cloudflare Worker).
+> 2. Eine **Shopify App Proxy** einrichten (`/apps/bewertung` -> Dienst). Erst
+>    dadurch wird der Aufruf same-origin: kein CORS, kein Drittanbieter-Cookie.
+>    Der Theme-Aufruf heisst dann `/apps/bewertung`, nicht `/api/store/...`.
+> 3. `GOOGLE_PLACES_API_KEY` und `GOOGLE_BUSINESS_PLACE_ID` bleiben
+>    ausschliesslich Umgebungsvariablen des Dienstes. **Nie** in Liquid, Asset
+>    oder Block-Einstellung — Theme-Dateien sind ueber die Storefront abrufbar.
+>    Key zusaetzlich in der Google Cloud Console auf Places API + Server-IP
+>    einschraenken.
+> 4. Serverseitiger Cache (die vorhandene Stunde genuegt) — Places kostet je
+>    Abfrage.
+> 5. Ausfall: `tp-bewertungsbeleg` bleibt stehen. Die Live-Anzeige darf den
+>    statischen Beleg ueberschreiben, aber nie loeschen.
+> 6. Googles Nutzungsbedingungen verlangen die Attribution "Google" und
+>    verbieten laengeres Vorhalten der Werte.
+>
+> Bis Schritt 1 und 2 erledigt sind, ist die statische Anzeige die richtige
+> Loesung — nicht ein Widget, das so aussieht, als wuerde es laden.
 
-Diese Implementierung ersetzt die hartcodierte Google-Bewertung `4.8/5 (1.200+ Bewertungen)` durch dynamisch geladene Daten aus dem Google-Unternehmensprofil von **Teppich Paradies Oranienburg GmbH**.
+Der folgende Text beschreibt den **geplanten** Aufbau. Die Haken bedeuten
+"im Entwurf vorgesehen", nicht "in Betrieb".
 
-### Features
+### Vorgesehene Eigenschaften
 
-✅ **Dynamische Bewertungen**: Rating und UserRatingCount werden live aus der Google Places API geladen  
-✅ **Sicherer API-Zugriff**: Der API-Key wird nicht öffentlich im Theme hinterlegt  
-✅ **Caching**: 1-stundiges Caching reduziert API-Anfragen  
-✅ **Keine Fallback-Werte**: Bei API-Fehlern wird keine erfundene Bewertung angezeigt  
-✅ **Responsive Design**: Funktioniert auf Desktop und Mobile  
-✅ **Zentrale Lösung**: Ein Block funktioniert auf allen Produktseiten  
+- Rating und UserRatingCount aus der Google Places API
+- API-Key nur serverseitig
+- 1 Stunde Cache
+- Keine erfundenen Fallback-Werte bei API-Fehlern
+- Ein Block fuer alle Produktseiten
 
 ---
 

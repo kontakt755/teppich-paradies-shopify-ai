@@ -494,7 +494,25 @@
     display: none;
   }
 
-  @media screen and (min-width: 750px) {
+  {%- comment -%}
+    Das waagerechte Menue erscheint erst ab 1100 px, nicht ab 750 px.
+
+    Gemessen am 2026-09-15 auf 768 px: die zehn Hauptpunkte brauchen zusammen
+    808 px, der Kopfbereich bot 757 px. Die Punkte liefen rechts aus der Seite
+    heraus, die Seite scrollte 63 px waagerecht - auf jeder Seite des Shops.
+    Horizons overflow-list haette die ueberzaehligen Punkte in ein "Mehr"-Menue
+    einklappen sollen, tat es aber nicht: sie blendete keinen einzigen Punkt
+    aus (versteckt: 0) und ihre Eintraege ragten bis 978 px.
+
+    Zwischen 750 und 1099 px uebernimmt deshalb die Schublade - dieselbe, die
+    das Telefon ohnehin benutzt, vollstaendig gebaut und mit Unterkategorien.
+    Sie war in diesem Bereich nur ausgeblendet. Damit ist die Navigation auf
+    dem Tablet vollstaendig statt abgeschnitten.
+
+    1100 px ist kein runder Wert, sondern der gemessene Bedarf: 808 px Menue
+    plus Logo und Kopf-Symbole plus Seitenrand.
+  {%- endcomment -%}
+  @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] :is(.header-menu, .dropdown-localization) {
       display: flex;
     }
@@ -504,7 +522,13 @@
     display: contents;
   }
 
-  @media screen and (min-width: 750px) {
+  {%- comment -%}
+    Gegenstueck zur Regel oben: solange das waagerechte Menue nicht erscheint,
+    muss die Zeile mit dem Schubladen-Knopf stehen bleiben. Beide Grenzen
+    gehoeren zusammen - wird nur eine verschoben, hat das Tablet entweder
+    zwei Menues oder keins.
+  {%- endcomment -%}
+  @media screen and (min-width: 1100px) {
     #header-component[data-menu-style='menu'] .header__navigation-bar-row {
       display: none;
     }
