@@ -231,7 +231,16 @@ test('ausserhalb des Gebiets: zuerst die Anfrage, dann der Shop - keine Absage',
 
   assert.equal(ausgabe.attribute['data-status'], 'aussen');
   assert.match(ausgabe.textContent, /prüfen individuell/, 'Der Einzelfall wird nicht angeboten.');
-  assert.match(ausgabe.textContent, /deutschlandweit/, 'Die Lieferung wird nicht erwaehnt.');
+  // Versand und Anfahrt sind zwei Dinge. Versandkostenfrei geht ueberall hin,
+  // anfahren koennen die Bodenleger nur im Gebiet. "Ausserhalb unseres Liefer-
+  // und Verlegegebiets" las sich fuer einen Kunden in Muenchen wie: wir
+  // beliefern Sie nicht.
+  assert.match(ausgabe.textContent, /ab 50 € Bestellwert versandkostenfrei/,
+    'Der kostenfreie Versand wird nicht mit seiner Schwelle genannt.');
+  assert.match(ausgabe.textContent, /Paketdienst oder Spedition/,
+    'Womit versendet wird, steht nicht da.');
+  assert.doesNotMatch(ausgabe.textContent, /Liefer- und Verlegegebiet/,
+    'Die Antwort stellt Versand und Anfahrt wieder in einen Topf.');
   assert.doesNotMatch(ausgabe.textContent, /keine Verlegung|nicht möglich/,
     'Die Antwort darf nicht wie eine Absage klingen.');
   assert.equal(weg.hidden, false);
@@ -527,6 +536,25 @@ test('Basisradius und Schwelle gibt die Sektion nur mit eingeschalteten Stufen w
   }
   assert.match(SEKTION.slice(Math.max(0, stelle - 120), stelle), /if vg_stufen/,
     'data-basis steht ohne Bedingung - dann nennt jede Seite die Rollenware-Stufen.');
+});
+
+test('keine Versandzusage ohne die Schwelle, die der Checkout einloest', () => {
+  // Das Versandprofil des Shops (Admin API, 2026-09-12) hat fuer Deutschland
+  // zwei aktive Saetze: 0,00 € ab 50 € und 4,99 € ab 0 €. Ein Satz wie
+  // "versandkostenfrei in ganz Deutschland" verspricht einem Kunden mit einem
+  // Paket Klickvinyl fuer 34,95 € etwas, das er im Checkout nicht bekommt.
+  const quellen = [['sections', 'tp-verlegegebiet.liquid'], ['assets', 'tp-verlegegebiet.js']];
+  const texte = quellen.map(([o, d]) => readFileSync(path.join(WURZEL, o, d), 'utf8'));
+  for (const name of ['page.vinylboden-verlegen', 'page.treppenverlegung']) {
+    texte.push(readFileSync(path.join(WURZEL, 'templates', `${name}.json`), 'utf8'));
+  }
+  const ohneSchwelle = [];
+  for (const text of texte) {
+    for (const satz of text.split(/[.;!?](?=\s|$)|\n/)) {
+      if (/versandkostenfrei|kostenfrei/i.test(satz) && !/50/.test(satz)) ohneSchwelle.push(satz.trim().slice(0, 110));
+    }
+  }
+  assert.deepEqual(ohneSchwelle, [], `Versandzusage ohne Schwelle: ${ohneSchwelle.join(' | ')}`);
 });
 
 test('der Link oeffnet in einem neuen Tab und sagt das auch an', () => {

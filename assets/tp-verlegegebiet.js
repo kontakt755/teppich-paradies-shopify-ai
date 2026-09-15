@@ -20,6 +20,20 @@
  * kein totes Eingabefeld dasteht. Ueberschrift, Karte, Hinweis und die
  * Kontaktwege stehen unabhaengig davon.
  *
+ * Versand und Anfahrt sind zwei verschiedene Dinge, und die Antwort muss das
+ * trennen: versendet wird deutschlandweit per Paketdienst oder Spedition,
+ * kostenfrei ab 50 EUR Bestellwert; anfahren koennen unsere Bodenleger nur im
+ * Verlegegebiet.
+ *
+ * Die Schwelle gehoert in den Satz. Das Versandprofil des Shops (Admin API,
+ * 2026-09-12: "Allgemeines Profil", Zone Deutschland) hat zwei aktive Saetze -
+ * 0,00 EUR ab 50 EUR und 4,99 EUR ab 0 EUR. Ohne die Schwelle liest jemand mit
+ * einem Paket Klickvinyl fuer 34,95 EUR eine Zusage, die der Checkout nicht
+ * einloest; der uebrige Shop nennt sie ueberall (Topbar, Warenkorb,
+ * Versandseite). "Liegt
+ * ausserhalb unseres Liefer- und Verlegegebiets" las sich wie eine Absage ans
+ * Liefern - fuer einen Kunden in Muenchen also: wir beliefern Sie nicht.
+ *
  * Jede Antwort fuehrt weiter, keine endet in einer Absage. Wer im Gebiet
  * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, bekommt weder eine
  * Absage noch eine Zusage: zuerst den Weg zur Anfrage - wir pruefen den
@@ -65,7 +79,7 @@
       return 'Die Postleitzahl ' + code + ' kennen wir nicht. Bitte prüfen Sie die Eingabe.';
     },
     aussen: function (was) {
-      return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
+      return was + ' liegt außerhalb des Gebiets, in dem unsere Bodenleger verlegen. Versenden können wir trotzdem – deutschlandweit per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei. Für die Verlegung sprechen Sie uns gern an – wir prüfen individuell, was möglich ist.';
     },
     // Unter der Schwelle kostet auch in der ersten Zone die lose Verlegung -
     // steht nur die Anfahrt da, liest man sie als inklusive.
