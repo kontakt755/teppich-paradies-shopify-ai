@@ -1,6 +1,7 @@
 import { Component } from '@theme/component';
 import { onAnimationEnd } from '@theme/utilities';
 import { ThemeEvents, CartUpdateEvent } from '@theme/events';
+import { artikelzahlFuer } from '@theme/tp-cart-artikelzahl';
 
 /**
  * A custom element that displays a cart icon.
@@ -14,6 +15,9 @@ import { ThemeEvents, CartUpdateEvent } from '@theme/events';
  */
 class CartIcon extends Component {
   requiredRefs = ['cartBubble', 'cartBubbleText', 'cartBubbleCount'];
+
+  /** Zaehlt cart:update-Ereignisse, damit eine spaete Antwort keine neuere ueberschreibt. */
+  #artikelzahlLauf = 0;
 
   /** @type {number} */
   get currentCartCount() {
@@ -57,7 +61,23 @@ class CartIcon extends Component {
     const itemCount = event.detail.data?.itemCount ?? 0;
     const comingFromProductForm = event.detail.data?.source === 'product-form-component';
 
-    this.renderCartBubble(itemCount, comingFromProductForm);
+    // Artikelzahl vom Server: Eine Zeile Flaechenware zaehlt als 1, nicht als
+    // ihre Menge in 0,01 m² (assets/tp-cart-artikelzahl.js). Nur wenn sie
+    // nicht zu bekommen ist, bleibt es beim Horizon-Verhalten mit der Menge
+    // des Senders.
+    const lauf = ++this.#artikelzahlLauf;
+    const artikelzahl = await artikelzahlFuer(event);
+
+    if (artikelzahl === null) {
+      this.renderCartBubble(itemCount, comingFromProductForm);
+      return;
+    }
+
+    // Eine neuere Warenkorbaenderung ist schon unterwegs und bringt die
+    // aktuellere Zahl mit.
+    if (lauf !== this.#artikelzahlLauf) return;
+
+    this.renderCartBubble(artikelzahl, false);
   };
 
   /**

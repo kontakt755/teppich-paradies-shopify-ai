@@ -1,0 +1,18 @@
+{%- comment -%}
+  Endpunkt fuer die Section Rendering API (/cart?section_id=tp-cart-artikelzahl):
+  liefert die Artikelzahl des Warenkorbs im Attribut data-tp-artikelzahl.
+
+  Kein Template bindet diese Section ein, ohne presets taucht sie auch nicht
+  in der Editor-Auswahl auf. assets/tp-cart-artikelzahl.js fragt sie nach
+  jeder Warenkorbaenderung ab, die ihre Zahl nicht selbst mitbringt - etwa
+  bei den Konfiguratoren, die direkt /cart/add.js aufrufen.
+{%- endcomment -%}
+{%- capture tp_az_zahl -%}{%- render 'tp-cart-artikelzahl' -%}{%- endcapture -%}
+<span data-tp-artikelzahl="{{ tp_az_zahl | strip }}" hidden></span>
+
+{% schema %}
+{
+  "name": "TP Artikelzahl",
+  "settings": []
+}
+{% endschema %}

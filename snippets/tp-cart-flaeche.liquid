@@ -1,0 +1,77 @@
+{%- doc -%}
+  Lesbare Flaeche in der Mengenspalte einer Warenkorbzeile mit Flaechenware
+  (Metafeld custom.preis_pro_001_qm): "10,00 m2" statt der Menge 1000.
+
+  Vorrang hat die Flaeche, die der Konfigurator in die Zeile geschrieben hat.
+  Die Menge ist nicht immer Flaeche mal 100: Greift beim Teppich nach Mass der
+  Mindestpreis, liegt sie hoeher. Nur ohne Flaechen-Property wird aus der
+  Menge gerechnet. Legt ein Kunde dieselben Masse zweimal in den Warenkorb,
+  fuehrt Shopify beide zu einer Zeile zusammen - dann steht "2 x 10,00 m2" da.
+
+  Der Mengenwaehler bleibt im Formular und wird nur ausgeblendet. Er traegt
+  updates[] fuer den Checkout-Knopf; fehlte er, verschoebe sich die Menge
+  jeder folgenden Zeile. Schritte von 0,01 m2 wuerden ausserdem die Zeile von
+  ihren Massangaben loesen.
+
+  Gibt nichts aus, wenn das Produkt keine Flaechenware ist.
+
+  @param {object} line_item - Warenkorbposition
+{%- enddoc -%}
+{%- if line_item.product.metafields.custom.preis_pro_001_qm.value == true -%}
+  {%- liquid
+    assign tp_fl_menge = line_item.quantity | times: 1
+
+    assign tp_fl_text = line_item.properties['Fläche (abgerechnet)']
+    if tp_fl_text == blank
+      assign tp_fl_text = line_item.properties['Fläche']
+    endif
+    if tp_fl_text == blank
+      assign tp_fl_text = line_item.properties['Fläche (berechnet)']
+    endif
+
+    assign tp_fl_stueck = 1
+    if tp_fl_text == blank
+      # Deutsches Komma, ueber ganze Hundertstel gerechnet wie in
+      # snippets/tp-cart-paketzeile.liquid - kein Gleitkomma-Rest.
+      assign tp_fl_ganz = tp_fl_menge | divided_by: 100
+      assign tp_fl_rest = tp_fl_menge | modulo: 100
+      if tp_fl_rest < 10
+        assign tp_fl_rest = tp_fl_rest | prepend: '0'
+      endif
+      assign tp_fl_text = tp_fl_ganz | append: ',' | append: tp_fl_rest | append: ' m²'
+    else
+      # "10,00 m2" als Hundertstel (1000). Ist die Menge ein ganzes Vielfaches
+      # davon, wurden dieselben Masse mehrfach bestellt.
+      assign tp_fl_einzeln = tp_fl_text | remove: 'm²' | remove: '.' | replace: ',', '.' | strip | times: 100 | round
+      if tp_fl_einzeln > 0 and tp_fl_menge > tp_fl_einzeln
+        assign tp_fl_rest = tp_fl_menge | modulo: tp_fl_einzeln
+        if tp_fl_rest == 0
+          assign tp_fl_stueck = tp_fl_menge | divided_by: tp_fl_einzeln
+        endif
+      endif
+    endif
+  -%}
+  <span class="cart-items__flaeche cart-primary-typography">
+    <span class="visually-hidden">Fläche:</span>
+    {%- if tp_fl_stueck > 1 %} {{ tp_fl_stueck }}&nbsp;×{% endif %}
+    {{ tp_fl_text | escape }}
+  </span>
+{%- endif -%}
+
+{% stylesheet %}
+  .cart-items__flaeche {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    min-height: var(--minimum-touch-target);
+    font-size: var(--font-size--sm);
+    font-weight: 600;
+    color: var(--color-foreground);
+    white-space: nowrap;
+  }
+
+  /* Mengenwaehler bleibt im Formular (updates[] je Zeile), nur unsichtbar. */
+  .cart-items__quantity-controls:has(> .cart-items__flaeche) > .quantity-selector-wrapper {
+    display: none;
+  }
+{% endstylesheet %}
