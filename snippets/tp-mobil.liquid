@@ -175,4 +175,20 @@
       align-items: center;
     }
   }
+
+  /* Die Einstiegslinks in den Kategoriekarten ("Klickvinyl entdecken" und so
+     weiter) lagen bei 26 px. Sie sind der Weg von der Oberkategorie in die
+     Unterkategorie - also kein Nebenweg, sondern der Hauptweg der Seite.
+
+     Wie bei der Regel zu .group-block-content > a.link gilt: geprueft, dass
+     kein Vorkommen im Fliesstext steht (am 2026-09-15 auf
+     /collections/vinylboden-1 gemessen, alle drei stehen allein in einer
+     Kartenspalte). Sonst wuerde die Mindesthoehe den Zeilenfall zerreissen. */
+  @media screen and (max-width: 749px) {
+    body .card__inner > a.link {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+    }
+  }
 </style>
