@@ -1,0 +1,73 @@
+{% doc %}
+  Platzhalter fuer eine automatisch aktualisierte Google-Bewertung.
+
+  STATUS: NICHT AKTIV. Dieser Block rendert absichtlich nichts.
+
+  Was frueher hier stand: ein Spinner, ein leerer Content-Container und
+  JavaScript, das einen Endpunkt /api/store/google-rating abfragen sollte. Der
+  Endpunkt ist von der Storefront aus nicht erreichbar (Begruendung unten), das
+  JavaScript blendete den Spinner deshalb sofort wieder aus und rief
+  renderRating() nie auf. Uebrig blieb ein leeres div auf der Seite - ein
+  eingebauter Block, der aussieht, als wuerde gleich etwas nachgeladen, und es
+  nie tut. Das ist entfernt.
+
+  WAS STATTDESSEN ZU BENUTZEN IST
+  Die belegte, statische Anzeige ist blocks/tp-bewertungsbeleg.liquid: Note,
+  Anzahl und Link stehen dort als Block-Einstellungen, sind im Theme-Editor
+  pflegbar und liegen auf allen acht Produktvorlagen. Die Werte werden im
+  Google-Unternehmensprofil abgelesen und abgeschrieben, nie geschaetzt
+  (zuletzt am 2026-09-12: 4,9 aus 240 Rezensionen). Ein leeres Feld blendet die
+  Angabe aus. Dieser Block hier ist KEIN Ersatz dafuer und darf ihn nicht
+  verdraengen - sonst stuenden zwei Quellen fuer dieselbe Zahl im Theme.
+
+  WARUM ES KEINE LIVE-AKTUALISIERUNG GIBT
+  Nicht, weil der Code fehlt - server/google-rating-api.js und server/index.js
+  sind vorhanden und fragen die Google Places API mit einer Stunde Cache ab.
+  Es fehlt der Ort, an dem das laeuft: Shopify hostet die Storefront, ein Theme
+  kann keine eigene Route bedienen. Ein fetch('/api/store/google-rating') aus
+  dem Theme trifft deshalb Shopify und liefert 404, egal wie gut der Node-Server
+  geschrieben ist. Das ist eine Architekturluecke, kein Bug.
+
+  WAS FUER EINE SICHERE UMSETZUNG NOETIG WAERE
+  1. Hosting: server/ als eigener Dienst deployen (z. B. Fly.io, Render,
+     Cloudflare Worker). Der Dienst haelt GOOGLE_PLACES_API_KEY und
+     GOOGLE_BUSINESS_PLACE_ID als Umgebungsvariablen.
+  2. Anbindung: eine Shopify App Proxy einrichten, die /apps/bewertung auf
+     diesen Dienst leitet. Erst dadurch wird der Aufruf same-origin und
+     funktioniert ohne CORS-Ausnahme und ohne Drittanbieter-Cookie. Der
+     Theme-Aufruf lautet dann fetch('/apps/bewertung'), nicht /api/store/...
+  3. Schluessel: Der Places-Key bleibt ausschliesslich im Dienst. Er darf
+     weder in Liquid noch in einem Asset noch in einer Block-Einstellung
+     stehen - Theme-Dateien sind ueber die Storefront abrufbar, ein Key dort
+     waere oeffentlich. Der Key wird zusaetzlich in der Google Cloud Console
+     auf die Places API und die Server-IP eingeschraenkt.
+  4. Zwischenspeicher: Antwort serverseitig cachen (die vorhandene Stunde
+     genuegt). Google Places kostet je Abfrage; ohne Cache zahlt jeder
+     Seitenaufruf.
+  5. Fehlerfall: Faellt der Dienst aus, bleibt tp-bewertungsbeleg stehen. Die
+     Live-Anzeige darf den statischen Beleg ueberschreiben, aber nie loeschen -
+     sonst verschwindet die Bewertung bei jeder Stoerung.
+  6. Nutzungsbedingungen: Googles Bedingungen verlangen die Attribution "Google"
+     an der Bewertung und verbieten laengeres Vorhalten der Werte.
+
+  Ausfuehrlicher Stand und Architekturskizze: GOOGLE_RATING_IMPLEMENTATION.md
+
+  Solange Schritt 1 und 2 nicht erledigt sind, bleibt dieser Block leer. Er ist
+  bewusst nicht geloescht: die Begruendung oben soll auffindbar bleiben, damit
+  nicht zum dritten Mal jemand ein Live-Widget baut, das nicht laufen kann.
+{% enddoc %}
+
+{%- comment -%}
+  Kein Markup, kein JavaScript, keine Block-Einstellungen. Ein Block ohne
+  presets erscheint nicht in der Block-Auswahl des Editors (siehe CLAUDE.md,
+  Punkt 2) - genau das ist hier gewollt: er soll nicht versehentlich auf eine
+  Seite geraten, solange er nichts anzeigen kann.
+{%- endcomment -%}
+
+{% schema %}
+{
+  "name": "TP Google inaktiv",
+  "tag": null,
+  "settings": []
+}
+{% endschema %}

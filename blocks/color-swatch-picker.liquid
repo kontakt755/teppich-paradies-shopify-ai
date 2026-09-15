@@ -124,6 +124,96 @@
   .color-swatch-picker__fallback-{{ color_picker_id }} {
     background: var(--swatch-color, #d8d8d8);
   }
+
+  /* Farbname unter dem Feld. Zwei Zeilen genuegen fuer die laengsten Namen
+     ("Anthrazit Warm Meliert"); alles darueber wird abgeschnitten - der volle
+     Name steht weiterhin in title und aria-label. */
+  .color-swatch-picker__name-{{ color_picker_id }} {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.25;
+    text-align: center;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .color-swatch-picker__input-{{ color_picker_id }}:checked ~ .color-swatch-picker__name-{{ color_picker_id }} {
+    color: var(--color-foreground, #111);
+    font-weight: 600;
+  }
+
+  .color-swatch-picker__werkzeuge-{{ color_picker_id }} {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .color-swatch-picker__suche-wrap-{{ color_picker_id }} {
+    display: block;
+  }
+
+  .color-swatch-picker__suche-label-{{ color_picker_id }} {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .color-swatch-picker__suche-{{ color_picker_id }} {
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .color-swatch-picker__familien-{{ color_picker_id }} {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .color-swatch-picker__familie-{{ color_picker_id }} {
+    /* 44 px: in der Pruefung vom 2026-09-15 als zu kleines Trefferziel
+       gemeldet, auf Desktop und Telefon. */
+    min-height: 44px;
+    padding: 6px 14px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+
+  .color-swatch-picker__familie-{{ color_picker_id }}[aria-pressed='true'] {
+    background: var(--color-foreground, #111);
+    border-color: var(--color-foreground, #111);
+    color: var(--color-background, #fff);
+  }
+
+  .color-swatch-picker__zaehler-{{ color_picker_id }} {
+    margin: 0;
+    font-size: 12px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+  }
+
+  .color-swatch-picker__item-{{ color_picker_id }}[hidden] {
+    display: none;
+  }
 {% endstyle %}
 
 {% if color_option != blank %}
@@ -140,7 +230,31 @@
     {%- endcomment -%}
     <p class="color-swatch-picker__active-{{ color_picker_id }}" data-active-color aria-live="polite">{{ selected_color }}</p>
 
-    <div class="color-swatch-picker__list-{{ color_picker_id }}">
+    {%- comment -%}
+      Werkzeugleiste erst ab 8 Farben. Darunter sieht man alles auf einen Blick,
+      und eine Suche ueber sechs Felder waere mehr Bedienung als Hilfe. Die
+      Leiste steht ausserhalb der Liste und ruehrt kein Radio-Feld an - sie
+      blendet nur Eintraege aus. Ohne JavaScript bleibt sie unsichtbar
+      (hidden wird erst vom Skript entfernt), dann sind schlicht alle Farben da.
+    {%- endcomment -%}
+    {%- if color_option.values.size >= 8 -%}
+      <div class="color-swatch-picker__werkzeuge-{{ color_picker_id }}" data-farb-werkzeuge hidden>
+        <label class="color-swatch-picker__suche-wrap-{{ color_picker_id }}">
+          <span class="color-swatch-picker__suche-label-{{ color_picker_id }}">Farbe suchen</span>
+          <input
+            type="search"
+            class="color-swatch-picker__suche-{{ color_picker_id }}"
+            data-farb-suche
+            placeholder="z. B. Grau oder Taupe"
+            autocomplete="off"
+          >
+        </label>
+        <div class="color-swatch-picker__familien-{{ color_picker_id }}" data-farb-familien role="group" aria-label="Nach Farbfamilie filtern"></div>
+        <p class="color-swatch-picker__zaehler-{{ color_picker_id }}" data-farb-zaehler aria-live="polite"></p>
+      </div>
+    {%- endif -%}
+
+    <div class="color-swatch-picker__list-{{ color_picker_id }}" data-farb-liste>
       {% for value in color_option.values %}
         {% assign value_name = value | append: '' %}
         {% assign swatch_image = blank %}
@@ -216,7 +330,49 @@
           %}
         {% endif %}
 
-        <label class="color-swatch-picker__item-{{ color_picker_id }}">
+        {%- comment -%}
+          Farbfamilie aus dem Namen ableiten. Sie ist nur ein Filter fuer die
+          Anzeige - Variante, Preis und Verfuegbarkeit haengen weiter allein am
+          Optionswert im Radio-Feld darunter. Faellt die Zuordnung aus (neuer
+          Farbname, den keine Regel kennt), landet der Wert in "uebrige" und
+          bleibt ueber "Alle" und die Suche erreichbar; verschwinden kann eine
+          Farbe dadurch nie.
+        {%- endcomment -%}
+        {%- liquid
+          assign tp_cs_low = value_name | downcase
+          assign tp_cs_familie = 'uebrige'
+          assign tp_cs_familie_label = 'Uebrige'
+
+          if tp_cs_low contains 'grau' or tp_cs_low contains 'anthrazit' or tp_cs_low contains 'schwarz' or tp_cs_low contains 'silber'
+            assign tp_cs_familie = 'grau'
+            assign tp_cs_familie_label = 'Grau & Schwarz'
+          elsif tp_cs_low contains 'beige' or tp_cs_low contains 'sand' or tp_cs_low contains 'creme' or tp_cs_low contains 'taupe' or tp_cs_low contains 'greige' or tp_cs_low contains 'braun' or tp_cs_low contains 'ocker' or tp_cs_low contains 'nuss' or tp_cs_low contains 'eiche'
+            assign tp_cs_familie = 'beige'
+            assign tp_cs_familie_label = 'Beige & Braun'
+          elsif tp_cs_low contains 'blau' or tp_cs_low contains 'petrol' or tp_cs_low contains 'tuerkis' or tp_cs_low contains 'türkis'
+            assign tp_cs_familie = 'blau'
+            assign tp_cs_familie_label = 'Blau'
+          elsif tp_cs_low contains 'gruen' or tp_cs_low contains 'grün' or tp_cs_low contains 'oliv' or tp_cs_low contains 'salbei'
+            assign tp_cs_familie = 'gruen'
+            assign tp_cs_familie_label = 'Gruen'
+          elsif tp_cs_low contains 'rot' or tp_cs_low contains 'bordeaux' or tp_cs_low contains 'orange' or tp_cs_low contains 'terra'
+            assign tp_cs_familie = 'rot'
+            assign tp_cs_familie_label = 'Rot & Orange'
+          elsif tp_cs_low contains 'gelb' or tp_cs_low contains 'senf'
+            assign tp_cs_familie = 'gelb'
+            assign tp_cs_familie_label = 'Gelb'
+          elsif tp_cs_low contains 'weiss' or tp_cs_low contains 'weiß'
+            assign tp_cs_familie = 'weiss'
+            assign tp_cs_familie_label = 'Weiss'
+          endif
+        -%}
+        <label
+          class="color-swatch-picker__item-{{ color_picker_id }}"
+          data-farb-item
+          data-farb-name="{{ value_name | downcase | escape }}"
+          data-farb-familie="{{ tp_cs_familie }}"
+          data-farb-familie-label="{{ tp_cs_familie_label | escape }}"
+        >
           <input
             class="color-swatch-picker__input-{{ color_picker_id }}"
             type="radio"
@@ -248,6 +404,13 @@
               ></span>
             {% endif %}
           </span>
+          {%- comment -%}
+            Der Name stand bisher nur in title und aria-label. Auf dem Telefon
+            gibt es kein Hover - bei 20 Farben, von denen mehrere "Taupe Dunkel
+            Heller" und "Taupe Dunkel Dunkler" heissen, war die Auswahl ein
+            Ratespiel. Jetzt steht er sichtbar unter dem Feld.
+          {%- endcomment -%}
+          <span class="color-swatch-picker__name-{{ color_picker_id }}">{{ value_name }}</span>
         </label>
       {% endfor %}
     </div>
@@ -449,6 +612,111 @@
     })();
   </script>
 {% endif %}
+
+{%- comment -%}
+  Farbfilter. Bewusst ein eigener script-Block NACH der Variantenlogik: faellt
+  hier etwas aus, bleibt die Farbauswahl selbst voll funktionsfaehig. Dieser
+  Code liest nur Namen und setzt hidden - er fasst weder ein Radio-Feld noch
+  die URL noch den Warenkorb an.
+{%- endcomment -%}
+{%- if color_option != blank and color_option.values.size >= 8 -%}
+<script>
+  (function () {
+    var wurzel = document.querySelector('color-swatch-picker-{{ color_picker_id }}');
+    if (!wurzel || wurzel.dataset.filterBereit === '1') return;
+    wurzel.dataset.filterBereit = '1';
+
+    var werkzeuge = wurzel.querySelector('[data-farb-werkzeuge]');
+    var suche = wurzel.querySelector('[data-farb-suche]');
+    var familienBox = wurzel.querySelector('[data-farb-familien]');
+    var zaehler = wurzel.querySelector('[data-farb-zaehler]');
+    var eintraege = Array.prototype.slice.call(wurzel.querySelectorAll('[data-farb-item]'));
+    if (!werkzeuge || !eintraege.length) return;
+
+    var aktiveFamilie = 'alle';
+
+    // Familien in der Reihenfolge ihres ersten Auftretens - so stehen die
+    // Toene, die das Produkt praegen, vorn statt einer festen Liste.
+    var familien = [];
+    eintraege.forEach(function (el) {
+      var key = el.getAttribute('data-farb-familie');
+      var label = el.getAttribute('data-farb-familie-label');
+      if (!familien.some(function (f) { return f.key === key; })) {
+        familien.push({ key: key, label: label, anzahl: 0 });
+      }
+      familien.filter(function (f) { return f.key === key; })[0].anzahl++;
+    });
+
+    function knopf(key, label) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'color-swatch-picker__familie-{{ color_picker_id }}';
+      b.textContent = label;
+      b.setAttribute('aria-pressed', key === aktiveFamilie ? 'true' : 'false');
+      b.addEventListener('click', function () {
+        aktiveFamilie = (aktiveFamilie === key && key !== 'alle') ? 'alle' : key;
+        Array.prototype.forEach.call(familienBox.children, function (k) {
+          k.setAttribute('aria-pressed', k.dataset.key === aktiveFamilie ? 'true' : 'false');
+        });
+        anwenden();
+      });
+      b.dataset.key = key;
+      return b;
+    }
+
+    familienBox.appendChild(knopf('alle', 'Alle (' + eintraege.length + ')'));
+    // Eine Familie, die alles enthaelt, ist kein Filter - dann bleibt es bei
+    // der Suche.
+    if (familien.length > 1) {
+      familien.forEach(function (f) {
+        familienBox.appendChild(knopf(f.key, f.label + ' (' + f.anzahl + ')'));
+      });
+    }
+
+    function anwenden() {
+      var q = (suche.value || '').trim().toLowerCase();
+      var sichtbar = 0;
+
+      eintraege.forEach(function (el) {
+        var name = el.getAttribute('data-farb-name') || '';
+        var gewaehlt = !!el.querySelector('input:checked');
+        var passtFamilie = aktiveFamilie === 'alle' || el.getAttribute('data-farb-familie') === aktiveFamilie;
+        var passtSuche = !q || name.indexOf(q) !== -1;
+
+        // Die gewaehlte Farbe bleibt immer stehen. Sonst verschwaende sie beim
+        // Tippen aus dem Raster, und der Kunde saehe nicht mehr, was im
+        // Warenkorb landet - obwohl sich an der Auswahl nichts geaendert hat.
+        var zeigen = (passtFamilie && passtSuche) || gewaehlt;
+        el.hidden = !zeigen;
+        if (zeigen) sichtbar++;
+      });
+
+      // "1 von 20" waere irrefuehrend, wenn dieses eine Feld nur die weiterhin
+      // eingeblendete Auswahl ist und zur Suche gar nicht passt.
+      var trefferOhneAuswahl = eintraege.filter(function (el) {
+        var name = el.getAttribute('data-farb-name') || '';
+        var passtFamilie = aktiveFamilie === 'alle' || el.getAttribute('data-farb-familie') === aktiveFamilie;
+        return passtFamilie && (!q || name.indexOf(q) !== -1);
+      }).length;
+
+      if (trefferOhneAuswahl === 0) {
+        zaehler.textContent = 'Keine Farbe passt – unten bleibt Ihre gewählte Farbe stehen.';
+      } else if (sichtbar === eintraege.length) {
+        zaehler.textContent = eintraege.length + ' Farben';
+      } else {
+        zaehler.textContent = trefferOhneAuswahl + ' von ' + eintraege.length + ' Farben';
+      }
+    }
+
+    suche.addEventListener('input', anwenden);
+
+    // Erst jetzt sichtbar machen: ohne JavaScript waeren Suchfeld und Chips
+    // ein totes Bedienelement.
+    werkzeuge.hidden = false;
+    anwenden();
+  })();
+</script>
+{%- endif -%}
 
 <script>
   (function () {

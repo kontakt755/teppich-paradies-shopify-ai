@@ -1074,6 +1074,45 @@
         "l1",
         "l2"
       ]
+    },
+    "tp_start_muster": {
+      "type": "tp-start-muster",
+      "blocks": {
+        "schritt_1": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Bodenbelag aussuchen",
+            "text": "Teppichboden, Vinyl oder Linoleum – öffnen Sie das Produkt, das Sie interessiert."
+          }
+        },
+        "schritt_2": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Muster anfragen",
+            "text": "Auf der Produktseite „Kostenloses Muster anfragen“ wählen. Belag und Farbe werden übernommen."
+          }
+        },
+        "schritt_3": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Zu Hause vergleichen",
+            "text": "Bis zu drei Farben kommen zu Ihnen – in Ruhe im eigenen Raum vergleichen."
+          }
+        }
+      },
+      "block_order": [
+        "schritt_1",
+        "schritt_2",
+        "schritt_3"
+      ],
+      "settings": {
+        "eyebrow": "Kostenloser Musterservice",
+        "titel": "Farbe zu Hause sehen, dann entscheiden",
+        "text": "Bildschirme zeigen Farben unterschiedlich. Bestellen Sie bis zu drei Muster kostenlos nach Hause und vergleichen Sie sie in Ihrem eigenen Licht.",
+        "cta_text": "Muster bestellen",
+        "cta_link": "/pages/muster",
+        "hinweis": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
+      }
     }
   },
   "order": [
@@ -1084,6 +1123,7 @@
     "product_list_fa6P9H",
     "product_list_8rDkXg",
     "product_list_linoleum_DxYpK2",
+    "tp_start_muster",
     "tp_zwei_wege_home",
     "tp_verlegegebiet_home",
     "tp_start_projekte",
