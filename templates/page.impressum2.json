@@ -61,7 +61,7 @@
       "type": "_blocks",
       "blocks": {
         "ai_gen_block_2320e95_6rW8W6": {
-          "type": "ai_gen_block_2320e95",
+          "type": "tp-bild-impressum",
           "settings": {
             "image": "shopify://shop_images/2022-08-15.jpg",
             "image_width": 45,

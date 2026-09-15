@@ -54,7 +54,7 @@
       "type": "_blocks",
       "blocks": {
         "ai_gen_block_18d894e_Mipttw": {
-          "type": "ai_gen_block_18d894e",
+          "type": "tp-kachel-raster",
           "settings": {
             "columns_desktop": 3,
             "columns_mobile": "1",
@@ -267,7 +267,7 @@
       "settings": {
         "titel": "Boden aussuchen – wir verlegen ihn",
         "text": "Suchen Sie in Ruhe aus. Aufmaß kostenlos, Lieferung und Verlegung übernehmen wir – in Oranienburg und 50 km Umkreis, weiter auf Anfrage.",
-        "anfrage_cta": "Aufmaß-Termin anfragen",
+        "anfrage_cta": "Angebot anfragen",
         "anfrage_link": "/pages/kontakt",
         "telefon": "+4933015733720",
         "telefon_label": "oder anrufen: 03301 5733720",

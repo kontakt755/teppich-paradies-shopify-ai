@@ -67,7 +67,32 @@
 {"handle":{{ tp_ca_product.handle | json }},"title":{{ tp_ca_product.title | json }},"url":{{ tp_ca_url | json }},"image":{{ tp_ca_image | json }},"pricePerSqm":{{ tp_ca_price_per_sqm | json }},"belagsart":{{ tp_ca_belagsart | json }},"staerke":{{ tp_ca_staerke | json }},"nutzschicht":"","nutzungsklasse":{{ tp_ca_nutzungsklasse | json }},"trittschall":{{ tp_ca_trittschall | json }},"fussbodenheizung":{{ tp_ca_heating | json }},"feuchtraum":"","paketinhalt":{{ tp_ca_paketinhalt | json }}}
   {%- endcapture -%}
 
+  {%- comment -%}
+    Reihenfolge und Gewicht: Das Muster ist der Verkaufsweg - bei Bodenbelaegen
+    bestellt fast niemand mehrere Quadratmeter, ohne die Farbe vorher zu Hause
+    gesehen zu haben. Der Vergleich ist eine Nebenfunktion. Bis zum Audit vom
+    2026-09-10 war es umgekehrt: "Vergleichen" war auf jeder Karte der breite
+    Hauptknopf, "Muster" ein schmaler Anhang (Befund B-08).
+  {%- endcomment -%}
   <div class="tp-card-actions" {{ block.shopify_attributes }}>
+    {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
+    {%- unless tp_ca_product.tags contains 'zubehoer' -%}
+      {%- comment -%} Ziel des Muster-Links: siehe snippets/tp-musteroption {%- endcomment -%}
+      {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}
+      {%- assign tp_ca_sample_url = tp_ca_sample_url | strip -%}
+      <a
+        class="tp-card-actions__sample"
+        href="{{ tp_ca_sample_url }}"
+      >
+        {%- comment -%}
+          Am Telefon stehen zwei Karten nebeneinander, die Zeile ist dann rund
+          170 px breit. Dort bleibt "Muster"; erst ab 480 px kommt das Verb
+          dazu. Ein Wort per CSS auszublenden ist hier richtig, weil beide
+          Fassungen denselben Link meinen - Screenreader lesen die lange.
+        {%- endcomment -%}
+        Muster<span class="tp-card-actions__sample-verb">&nbsp;anfordern</span>
+      </a>
+    {%- endunless -%}
     <button
       type="button"
       class="tp-card-actions__compare"
@@ -79,18 +104,6 @@
     >
       Vergleichen
     </button>
-    {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
-    {%- unless tp_ca_product.tags contains 'zubehoer' -%}
-      {%- comment -%} Ziel des Muster-Links: siehe snippets/tp-musteroption {%- endcomment -%}
-      {%- capture tp_ca_sample_url -%}{%- render 'tp-musteroption', product: tp_ca_product -%}{%- endcapture -%}
-      {%- assign tp_ca_sample_url = tp_ca_sample_url | strip -%}
-      <a
-        class="tp-card-actions__sample"
-        href="{{ tp_ca_sample_url }}"
-      >
-        Muster
-      </a>
-    {%- endunless -%}
   </div>
 
 {%- endif -%}
@@ -106,18 +119,19 @@
     z-index: 1;
   }
 
+  /* Der Vergleich ist die Nebenfunktion: feste Breite, ruhige Kontur. */
   .tp-card-actions__compare {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
     min-height: 44px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 8px;
+    padding: 8px 10px;
     background: transparent;
     border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
     border-radius: 6px;
-    color: var(--color-foreground);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78);
     font: inherit;
     font-size: 13px;
     font-weight: 600;
@@ -129,37 +143,57 @@
   .tp-card-actions__compare[aria-pressed='true'] {
     background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
     border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.4);
+    color: var(--color-foreground);
   }
 
+  /* Zubehoer hat kein Muster - dann traegt der Vergleich die Zeile allein. */
+  .tp-card-actions__compare:only-child {
+    flex: 1 1 auto;
+  }
+
+  /* Das Muster ist die Hauptaktion der Karte. Dasselbe Braun wie der
+     Muster-Knopf der Produktseite (blocks/tp-service-links.liquid), damit der
+     Weg ueber den ganzen Shop dieselbe Farbe hat. Kontrast Weiss auf #8c6d43
+     ist 4,79:1 und damit ueber der Grenze von 4,5:1 (Audit B-26). */
   .tp-card-actions__sample {
     display: inline-flex;
     align-items: center;
-    flex: 0 0 auto;
+    justify-content: center;
+    flex: 1 1 auto;
+    min-width: 0;
     min-height: 44px;
     padding: 8px 10px;
-    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    background: #8c6d43;
+    border: 1px solid #8c6d43;
     border-radius: 6px;
-    color: var(--color-foreground);
+    color: #ffffff;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     text-decoration: none;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .tp-card-actions__sample:hover {
-    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+    background: #7a5e3a;
+    border-color: #7a5e3a;
   }
 
   /* Sehr schmale Geraete: Beschriftung nicht abschneiden. Weniger Innenabstand
      und eine Spur kleinere Schrift genuegen, damit "Vergleichen" vollstaendig
      neben "Muster" passt - beide bleiben 44 px hoch. */
-  @media screen and (max-width: 400px) {
+  @media screen and (max-width: 479px) {
     .tp-card-actions {
       gap: 4px;
     }
 
+    .tp-card-actions__sample-verb {
+      display: none;
+    }
+
     .tp-card-actions__compare {
-      padding-inline: 4px;
+      padding-inline: 6px;
       font-size: 12.5px;
     }
 

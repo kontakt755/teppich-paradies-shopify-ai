@@ -332,6 +332,10 @@
             "tp_card_groessen": {
               "type": "tp-card-groessen",
               "settings": {}
+            },
+            "tp_card_dimensions": {
+              "type": "tp-card-dimensions",
+              "settings": {}
             }
           },
           "block_order": [
@@ -341,7 +345,8 @@
             "tp_card_groessen",
             "tp_card_color_thumbs",
             "tp_card_specs",
-            "tp_card_actions"
+            "tp_card_actions",
+            "tp_card_dimensions"
           ]
         }
       },
