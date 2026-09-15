@@ -201,6 +201,83 @@ test('Baseline: bei UNKNOWN (git-Fehler) wird nichts ausgeklammert und nichts al
   assert.doesNotMatch(scope.text, /Vorbestehend/);
 });
 
+// --- Zuordnung nach Urheber (fuenfte Luecke, 2026-09-15) ------------------
+// Realer Vorfall (Sitzung 413c819c, Hauptcheckout): Nach Aufnahme der Baseline
+// schrieben andere Sitzungen assets/tp-einfass-konfigurator.js und weitere
+// Dateien. Gegenueber der Baseline waren sie neu und standen im Pruefbereich;
+// Codex verlangte zwei Runden lang, fremde Arbeit zu "isolieren". ownPaths
+// (session-writes.mjs, Edit/Write UND Bash) entscheidet jetzt nach Urheber.
+
+function fremdeUndEigeneAenderungNachBaseline() {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.mkdirSync(path.join(dir, 'assets'));
+  // (fremd) eine andere Sitzung schreibt nach Aufnahme der Baseline
+  fs.writeFileSync(path.join(dir, 'assets/tp-einfass-konfigurator.js'), 'fremd\n');
+  fs.writeFileSync(path.join(dir, 'SEO_REPORT.md'), 'fremd\n');
+  // (eigen) diese Sitzung schreibt
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme, eigene Aenderung\n');
+  return { dir, baseline, startCommit };
+}
+
+test('(a) nach der Baseline fremd geaenderte Dateien sind nicht im Scope, wenn die Sitzung sie nie beruehrt hat', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md'] });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.scopePaths, ['README.md']);
+  assert.deepEqual(scope.foreignPaths, ['SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js']);
+  assert.match(scope.text, /assets\/tp-einfass-konfigurator\.js/);
+  assert.match(scope.text, /nicht von dieser Sitzung geschrieben/);
+  assert.match(scope.text, /kein Befund/);
+  // Die Baseline wirkt weiterhin: vorbestehend und unveraendert bleibt ausgeklammert.
+  assert.deepEqual(scope.excluded, ['.claude/launch.json', 'domains/shopify/bild-qualitaetstest.py']);
+});
+
+test('(b) eine eigene Aenderung nach der Baseline bleibt im Scope - auch wenn sie per Bash geschrieben wurde', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  // Der Bash-Hook traegt den Pfad genauso ein wie der Edit-Hook: ownPaths
+  // unterscheidet nicht nach Werkzeug.
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md', 'SEO_REPORT.md'] });
+  assert.deepEqual(scope.scopePaths, ['README.md', 'SEO_REPORT.md']);
+  assert.deepEqual(scope.foreignPaths, ['assets/tp-einfass-konfigurator.js']);
+  assert.match(scope.text, /uncommitteten Änderungen/);
+});
+
+test('(b2) nur fremde Aenderungen: der Pruefbereich ist leer, nicht "die fremde Arbeit"', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: [] });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.deepEqual(scope.foreignPaths, ['SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js']);
+});
+
+test('(c) ohne Bestand oder ohne Baseline wird fail-safe alles geprueft', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  const alle = ['README.md', 'SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js'];
+  // kein Bestand (ownPaths null): nichts wird nach Urheber gefiltert
+  const ohneBestand = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: null });
+  assert.deepEqual(ohneBestand.scopePaths, alle);
+  assert.equal(ohneBestand.foreignPaths, undefined);
+  // gedeckelter Bestand: ebenso
+  const gedeckelt = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md'], ownPathsTruncated: true });
+  assert.deepEqual(gedeckelt.scopePaths, alle);
+  // keine Baseline UND kein Bestand: alles inklusive vorbestehender Dateien
+  // (ohne Baseline meldet git status neue Verzeichnisse als eine Zeile)
+  const nichts = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: null, ownPaths: null });
+  assert.deepEqual(nichts.scopePaths, ['.claude/launch.json', 'README.md', 'SEO_REPORT.md', 'assets/', 'domains/']);
+  // keine Baseline, aber Bestand: der Urheber entscheidet trotzdem - und ein
+  // neues Verzeichnis mit eigener Datei darin bleibt eigen
+  const nurBestand = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: null, ownPaths: ['README.md', 'assets/tp-einfass-konfigurator.js'] });
+  assert.deepEqual(nurBestand.scopePaths, ['README.md', 'assets/']);
+  assert.deepEqual(nurBestand.foreignPaths, ['.claude/launch.json', 'SEO_REPORT.md', 'domains/']);
+});
+
+test('Urheber-Filter: bei UNKNOWN (git-Fehler) wird nichts gefiltert', () => {
+  const exec = () => { throw new Error('git kaputt'); };
+  const scope = detectReviewScope({ cwd: '/nirgendwo', ownPaths: [], exec });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNKNOWN);
+  assert.equal(scope.foreignPaths, undefined);
+});
+
 test('captureWorkingTreeSnapshot wirft nie, sondern meldet ok:false', () => {
   const snapshot = captureWorkingTreeSnapshot({ cwd: '/nowhere', exec: () => { throw new Error('not a git repository'); } });
   assert.equal(snapshot.ok, false);

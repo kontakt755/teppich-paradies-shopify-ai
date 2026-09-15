@@ -420,6 +420,27 @@ Repository-Zugriff und wurde so zum Prüfmaßstab. Ebenfalls nie im Prüfbereich
 `docs/ai-dashboard/issues.json`. Die Sitzungs-Baseline allein genügt dafür
 nicht, weil der Dashboard-Bot die Datei während der Sitzung neu schreibt.
 
+Seit 2026-09-15 entscheidet der **Urheber**, nicht der Zeitpunkt: Zwei Hooks
+(`record-session-write.mjs` für Edit/Write, `record-bash-write.mjs` für jeden
+Shell-Befehl, per `git status` vorher/nachher plus mtime) halten unter
+`.router/claude-writes/` fest, welche Pfade die eigene Sitzung geschrieben hat.
+Der Stop-Hook nimmt nur diese in den Prüfbereich; alles andere im Working Tree
+wird dem Reviewer als „nicht von dieser Sitzung geschrieben, kein Befund"
+genannt. Die Baseline vom ersten Prompt reichte dafür nicht — sie kannte nicht,
+was andere Sitzungen *während* einer langen Sitzung schreiben (Sitzung 413c819c:
+Einfass-Konfigurator, Bestellmail, `launch.json`, `SEO_REPORT.md` standen
+komplett im Prüfbereich, Codex verlangte zweimal, sie zu „isolieren"). Fehlt
+der Bestand (ältere Hooks) oder ist er gedeckelt, wird weiter alles geprüft.
+
+Zwei Grenzen, die man kennen muss: **Die Hooks laufen immer aus dem
+Hauptcheckout** (`CLAUDE_PROJECT_DIR`), egal in welchem Worktree die Sitzung
+arbeitet. Steht der Hauptcheckout auf einem Branch ohne diese Commits, läuft
+die alte Logik — genau so lief am 2026-09-15 ein Fix vom Vortag nicht, weil
+der Hauptcheckout auf `feature/ux-kaufbereich-2026-09-15` stand. Prüfen:
+`ls <hauptcheckout>/.router/claude-writes/` muss Einträge haben. Und: Arbeit,
+die nur auf Remote-Branches oder in einem anderen Worktree liegt, sieht der
+Reviewer nicht — er liest den Working Tree des Sitzungsverzeichnisses.
+
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien
 aufzuräumen. Beides hätte die uncommittete Arbeit anderer Sitzungen zerstört.
