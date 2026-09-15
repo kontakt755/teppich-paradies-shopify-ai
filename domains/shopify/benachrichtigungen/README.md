@@ -34,7 +34,7 @@ ob es überhaupt eine eigene Großhändler-ID bekommt, ist eine Einkaufsfrage.
    für den Klartext der Großhändler-ID und 0 Treffer für die Feldnamen. Das
    öffentliche `/products/<handle>.js` enthält überhaupt keine Metafelder.
 
-### Offener Befund: die Varianten-SKU trägt denselben Code
+### Entschieden: die Varianten-SKU bleibt, wie sie ist
 
 Die Großhändler-ID setzt sich bei den Rollenware-Produkten aus den
 Artikelnummern zusammen, die zugleich als **Varianten-SKU** im Shop stehen
@@ -45,10 +45,12 @@ und in `/products/<handle>.js`. Belegt am 2026-09-15 an zwei Produktseiten.
 Der *beschreibende* Teil der Großhändler-ID (Produktlinie, Qualität, Farbnummer
 des Lieferanten) tritt **nicht** aus. Der Artikelcode selbst schon.
 
-SKUs zu ändern ist ohne ausdrückliche Freigabe untersagt, deshalb steht das
-hier als Befund und nicht als Änderung. Zu entscheiden ist, ob das stört: eine
-SKU ist nur dann ein Hinweis auf die Bezugsquelle, wenn jemand den Code
-zuordnen kann.
+**Entscheidung des Inhabers am 2026-09-15: bleibt unverändert.** Ein solcher
+Code ist ohne den passenden Lieferantenkatalog bedeutungslos, und die SKUs
+hängen am Lieferantenabgleich, am Google-Feed und an den eigenen
+Bestellprozessen. Der Punkt ist damit geschlossen und nicht erneut
+aufzuwerfen — wer ihn wieder findet, findet einen bekannten und bewusst
+akzeptierten Zustand, keinen neuen Befund.
 
 ## Wie die interne Bestell-E-Mail funktioniert
 
