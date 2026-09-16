@@ -20,6 +20,7 @@
     "liquid:guard": "node qa/run-liquid-guard.mjs",
     "schema:guard": "node qa/run-schema-guard.mjs",
     "template:guard": "node qa/run-template-guard.mjs",
+    "bewertung:guard": "node qa/run-bewertung-guard.mjs",
     "theme:guard": "node qa/run-live-theme-guard.mjs",
     "menu:guard": "node qa/run-menu-link-guard.mjs",
     "farbcode:guard": "node scripts/farbcode-guard.mjs",

@@ -2492,5 +2492,42 @@
         "default": "Saarlandstraße 73–81, 16515 Oranienburg"
       }
     ]
+  },
+  {
+    "name": "TP Google-Bewertung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Wert und Anzahl standen bis 2026-09-16 an zehn Stellen einzeln: in zwei Startseiten-Abschnitten und in acht Produktvorlagen. Sie waren bereits auseinandergelaufen – sieben Vorlagen nannten 4,9, eine 4.8. Hier eingetragen gilt der Wert überall, wo am Abschnitt selbst nichts steht."
+      },
+      {
+        "type": "text",
+        "id": "tp_google_wert",
+        "label": "Bewertung, z. B. 4,9",
+        "info": "Aus dem Google-Unternehmensprofil abschreiben, nicht schätzen oder runden.",
+        "default": "4,9"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_anzahl",
+        "label": "Anzahl, z. B. über 240",
+        "info": "Ohne Anzahl könnten 4,9 auch drei Bewertungen sein. Beim Ablesen des Werts mit aktualisieren.",
+        "default": "über 240"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_link",
+        "label": "Link zum Google-Unternehmensprofil",
+        "info": "Bewusst ein Textfeld und kein Link-Feld: nur so kann hier ein Standard stehen, sodass der Link ohne Zutun funktioniert. Die acht Produktvorlagen zeigten zuvor zwei verschiedene Ziele - sieben das Unternehmensprofil, eine eine Google-Suche.",
+        "default": "https://maps.google.com/?cid=787042219843486388"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_stand",
+        "label": "Zuletzt abgelesen am",
+        "info": "Datum im Format 2026-09-16. Nur zur eigenen Erinnerung, erscheint nicht im Shop.",
+        "default": "2026-09-12"
+      }
+    ]
   }
 ]

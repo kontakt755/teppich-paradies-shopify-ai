@@ -13,6 +13,17 @@
   # bleiben erhalten. Mehrere Absaetze wuerden dabei zu einer Zeile verschmelzen;
   # fuer eine Ueberschrift ist das richtig.
   assign h1_text = section.settings.headline | replace: '<p>', '' | replace: '</p>', ''
+
+  # Google-Bewertung aus einer Quelle. Steht am Abschnitt selbst nichts, gilt
+  # die Theme-Einstellung (TP Google-Bewertung). Bis 2026-09-16 wurde der Wert
+  # an zehn Stellen einzeln gepflegt und war auseinandergelaufen.
+  assign tp_rating_wert = section.settings.rating_wert | strip | default: settings.tp_google_wert
+  assign tp_rating_link = section.settings.rating_link | default: settings.tp_google_link
+  capture tp_rating_standard
+    echo settings.tp_google_anzahl
+    echo ' Google-Bewertungen'
+  endcapture
+  assign tp_rating_text = section.settings.rating_text | strip | default: tp_rating_standard | strip
 -%}
 
 <section class="tp-hero" aria-labelledby="tp-hero-h1">
@@ -45,9 +56,9 @@
         {%- if section.settings.whatsapp != blank -%}
           <a href="{{ section.settings.whatsapp }}" rel="noopener" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>WhatsApp</a>
         {%- endif -%}
-        {%- if section.settings.rating_wert != blank -%}
-          <a class="tp-hero__rating" href="{{ section.settings.rating_link | default: '#' }}" rel="noopener" target="_blank" title="Google-Bewertungen">
-            <span class="tp-hero__stars" aria-hidden="true">★★★★★</span><b>{{ section.settings.rating_wert | escape }}</b><small>· {{ section.settings.rating_text | escape }}</small>
+        {%- if tp_rating_wert != blank -%}
+          <a class="tp-hero__rating" href="{{ tp_rating_link | default: '#' }}" rel="noopener" target="_blank" title="Google-Bewertungen">
+            <span class="tp-hero__stars" aria-hidden="true">★★★★★</span><b>{{ tp_rating_wert | escape }}</b><small>· {{ tp_rating_text | escape }}</small>
           </a>
         {%- endif -%}
       </div>

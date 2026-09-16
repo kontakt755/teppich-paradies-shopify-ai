@@ -181,8 +181,8 @@
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
               "settings": {
-                "rating": "4.8",
-                "review_link": "https://www.google.com/search?q=teppich+paradies+oranienburg+bewertungen"
+                "rating": "",
+                "review_link": ""
               },
               "blocks": {}
             },
