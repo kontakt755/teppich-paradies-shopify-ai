@@ -143,6 +143,28 @@ Scraper und Import-Pläne liegen nur lokal unter `~/teppich-paradies-analyse/lie
 unverändert — sie sind die Kennungen im Shop und dort ohnehin öffentlich. Die Git-Historie
 enthält ältere Stände mit Namen; sie wird bewusst nicht umgeschrieben.
 
+**9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden.**
+Drei Faelle aus einer Woche (2026-09-09 bis -15), alle von Hand geloest, alle mechanisch:
+
+| Fall | Symptom | Ursache |
+|---|---|---|
+| gestapelter PR (#280) | „MERGEABLE/CLEAN" ohne einen einzigen Check | Basis war nicht `main`; der Validierungs-Workflow feuert nur gegen `main` |
+| Basis geloescht (#280) | PR ploetzlich **geschlossen** | `--delete-branch` beim Merge der Basis schliesst gestapelte PRs, statt sie umzuzielen; ein geschlossener PR nimmt keine neue Basis mehr an |
+| ueberkreuzte Historie (#328) | GitHub „dirty" ohne `merge_commit_sha`, obwohl `git merge` sauber laeuft | mehrere Merge-Basen (`git merge-base --all`); ohne Merge-Ref startet kein `pull_request`-Workflow |
+
+Dazu kommt: **jeder Merge nach `main` erzeugt neue Konflikte in anderen PRs** (#285 → vier PRs,
+#236 + #320 → zwei). Deshalb nach jedem Merge neu rechnen, nie eine Stichprobe.
+
+```
+npm run pr:doctor              # alle offenen PRs: Basis, Merge-Basen, Konflikte, Checks
+npm run pr:doctor -- --fix     # umzielen auf main, ueberkreuzte Historie begradigen
+```
+
+`--fix` erledigt nur, was ohne Urteil geht. Echte Inhaltskonflikte bleiben ein Befund: aufloesen
+in einem Wegwerf-Worktree unter dem System-Temp, nie im geteilten Checkout; hat `main` eine
+Datei als toten Code entfernt und der Branch sie nur kosmetisch angefasst, gilt die Loeschung.
+Gestapelte PRs **vor** dem Merge ihrer Basis auf `main` umzielen.
+
 ## Vor jedem Commit
 
 ```
@@ -169,6 +191,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run menu:guard` | Menuelinks, die auf ein leeres Produktraster oder ins Nichts zeigen (braucht Netz) |
 | `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise — findet verlorene Bausteine vor dem Push |
+| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte — `--fix` zielt um und begradigt |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
