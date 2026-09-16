@@ -78,14 +78,53 @@
     return slug(handle) + '--' + slug(color);
   }
 
-  function getSampleState(cart, sampleVariantId) {
+  // Musterzeilen erkennt man an der Property _Muster_ID, nicht an einer
+  // Varianten-ID: seit 2026-09-16 hat jedes Muster eine eigene Variante im
+  // Musterprodukt seiner Qualitaet ("Muster Piumera Teppichboden" / Farbe).
+  // Das Sammelprodukt "Kostenloses Muster" bleibt nur als Rueckfall.
+  function getSampleState(cart) {
     var keys = new Set();
     var count = (cart.items || []).reduce(function (total, item) {
-      if (Number(item.variant_id) !== Number(sampleVariantId)) return total;
-      if (item.properties && item.properties._Muster_ID) keys.add(item.properties._Muster_ID);
+      if (!item.properties || !item.properties._Muster_ID) return total;
+      keys.add(item.properties._Muster_ID);
       return total + Number(item.quantity || 0);
     }, 0);
     return { count: count, remaining: Math.max(0, MAX_SAMPLES - count), keys: keys };
+  }
+
+  // Handle des Musterprodukts einer Qualitaet. Angelegt wird es je
+  // Quellprodukt mit einer Variante pro Farbe, SKU "M-<Quell-SKU>"; so steht
+  // die Farbe im Variantentitel und damit auf Lieferschein, Kommissionierliste,
+  // in beiden Bestellmails und im Admin - ohne Sonderlogik.
+  function sampleProductHandle(productHandle) {
+    return 'muster-' + slug(productHandle);
+  }
+
+  // Ordnet jeder Farbe die passende Variante des Musterprodukts zu. Fehlt
+  // dort eine Farbe (Farbe im Quellprodukt neu, Musterprodukt noch nicht
+  // nachgezogen), bleibt sampleVariantId leer und buildCartItems nimmt den
+  // Rueckfall - das Muster ist dann weiter bestellbar, nur ohne eigene SKU.
+  function assignSampleVariants(colors, sampleProduct, optionName) {
+    var index = Object.create(null);
+    var position = 0;
+    (sampleProduct && sampleProduct.options || []).forEach(function (entry) {
+      if (String(entry.name || '').trim().toLowerCase() === String(optionName || '').trim().toLowerCase()) {
+        position = Number(entry.position);
+      }
+    });
+    if (position) {
+      (sampleProduct.variants || []).forEach(function (variant) {
+        var value = String(variant['option' + position] || '').trim().toLowerCase();
+        if (value && variant.available) index[value] = variant.id;
+      });
+    }
+    return colors.map(function (color) {
+      var hit = index[String(color.value || '').trim().toLowerCase()];
+      var copy = {};
+      Object.keys(color).forEach(function (key) { copy[key] = color[key]; });
+      copy.sampleVariantId = hit || null;
+      return copy;
+    });
   }
 
   function getSelectionStatus(cartCount, selectedCount) {
@@ -116,8 +155,8 @@
   function buildCartItems(args) {
     var optionName = args.optionName || getOptionName(args.product);
     return args.colors.map(function (color) {
+      var eigeneVariante = Boolean(color.sampleVariantId);
       var properties = {
-        Produkt: args.product.title,
         _Muster_ID: sampleKey(args.product.handle, color.value),
         _Quellprodukt: args.product.handle,
         _Quellprodukt_ID: String(args.product.id),
@@ -128,11 +167,16 @@
         _Bild: color.exactImage || '',
         _Produktlink: args.origin + '/products/' + args.product.handle,
       };
-      // Der Optionsname wird zur Warenkorbzeile: "Dekor: Sand Hell" statt
-      // "Farbe: Sand Hell" bei folierten Leisten.
-      properties[optionName] = color.value;
+      // Mit eigener Variante stehen Produkt und Farbe im Titel der Zeile
+      // ("Muster Piumera Teppichboden - Taupe Dunkel"). Nur der Rueckfall auf
+      // das Sammelprodukt "Kostenloses Muster" braucht sie als Properties,
+      // sonst wuesste niemand, welches Muster gemeint ist.
+      if (!eigeneVariante) {
+        properties.Produkt = args.product.title;
+        properties[optionName] = color.value;
+      }
       return {
-        id: Number(args.sampleVariantId),
+        id: Number(eigeneVariante ? color.sampleVariantId : args.sampleVariantId),
         quantity: 1,
         properties: properties,
       };
@@ -147,6 +191,8 @@
     getOptionTerm: getOptionTerm,
     sampleKey: sampleKey,
     getSampleState: getSampleState,
+    sampleProductHandle: sampleProductHandle,
+    assignSampleVariants: assignSampleVariants,
     getSelectionStatus: getSelectionStatus,
     buildCartItems: buildCartItems,
   };

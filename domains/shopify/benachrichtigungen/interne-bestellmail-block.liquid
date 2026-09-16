@@ -72,9 +72,24 @@
       {%- for p in line.properties -%}
         {%- if p.first == '_Quellprodukt' and p.last != blank -%}{%- assign quelle = p.last -%}{%- endif -%}
       {%- endfor -%}
+      {%- comment -%}
+        Musterartikel tragen die Lieferantennummer in ihrer eigenen SKU:
+        "M-" plus die Artikelnummer der Quellvariante (siehe
+        domains/shopify/benachrichtigungen/musterartikel.md). Nur wo die
+        Quellvariante gar keine SKU hatte, steht dort ein Handle-Slug - der
+        enthaelt immer einen Bindestrich, echte Artikelnummern nie. Daran
+        unterscheiden wir beides, ohne ein zweites Metafeld zu pflegen.
+      {%- endcomment -%}
+      {%- assign muster_id = '' -%}
+      {%- assign sku_kopf = line.sku | slice: 0, 2 -%}
+      {%- if sku_kopf == 'M-' -%}
+        {%- assign sku_rest = line.sku | remove_first: 'M-' -%}
+        {%- unless sku_rest contains '-' -%}{%- assign muster_id = sku_rest -%}{%- endunless -%}
+      {%- endif -%}
       {%- assign gh_id = line.variant.metafields.lieferant.lieferant_a_artikelnummer -%}
       {%- if gh_id == blank -%}{%- assign gh_id = line.variant.metafields.lieferant.lieferant_b_artikelnummer -%}{%- endif -%}
       {%- if gh_id == blank -%}{%- assign gh_id = line.product.metafields.grosshandel.sku -%}{%- endif -%}
+      {%- if gh_id == blank and muster_id != '' -%}{%- assign gh_id = muster_id -%}{%- endif -%}
       <tr>
         <td style="padding:6px;border:1px solid #d8d6d2;">{{ line.quantity }} ×</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">
