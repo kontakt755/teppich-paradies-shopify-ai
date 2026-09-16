@@ -1,0 +1,45 @@
+name: PR-Doctor
+
+# Findet bei jedem Push auf main - und alle sechs Stunden - offene PRs, die so
+# nicht mergebar sind: Konflikte gegen main, Basis nicht main, ueberkreuzte
+# Historie. Meldet das idempotent als Kommentar am betroffenen PR.
+#
+# Nur melden, nicht reparieren: Aenderungen mit dem Workflow-Token loesen auf
+# GitHub keine weiteren Workflows aus. Ein Begradigen oder Umzielen aus der CI
+# wuerde also genau die PR-Validierung nicht starten, die es erreichen soll.
+# Reparatur: eine Sitzung mit `npm run pr:doctor -- --fix` (CLAUDE.md Punkt 9).
+#
+# Exit ist immer 0 - Befunde gehoeren an den PR, nicht als rotes Kreuz an main.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: pr-doctor
+  cancel-in-progress: false
+
+jobs:
+  melden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # merge-base und merge-tree brauchen die volle Historie.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run pr:doctor:melden
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -165,6 +165,14 @@ in einem Wegwerf-Worktree unter dem System-Temp, nie im geteilten Checkout; hat 
 Datei als toten Code entfernt und der Branch sie nur kosmetisch angefasst, gilt die Loeschung.
 Gestapelte PRs **vor** dem Merge ihrer Basis auf `main` umzielen.
 
+**Von selbst laeuft die Erkennung** in `.github/workflows/pr-doctor.yml`: bei jedem Push auf
+`main` und alle sechs Stunden, mit einem idempotenten Kommentar am betroffenen PR
+(`npm run pr:doctor:melden`, Marker `<!-- tp-pr-doctor -->`, gleicher Befund wird nicht doppelt
+gepostet, ein wieder sauberer PR bekommt eine Entwarnung). Die CI **repariert bewusst nicht**:
+Aenderungen mit dem Workflow-Token loesen auf GitHub keine weiteren Workflows aus, ein Begradigen
+aus der CI wuerde also genau die PR-Validierung nicht starten, die es erreichen soll. Reparieren
+tut eine Sitzung mit `--fix`.
+
 ## Vor jedem Commit
 
 ```
@@ -192,6 +200,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise — findet verlorene Bausteine vor dem Push |
 | `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte — `--fix` zielt um und begradigt |
+| `npm run pr:doctor:melden` | dasselbe als PR-Kommentar, idempotent — laeuft in der CI bei jedem Push auf `main` und alle 6 h |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
