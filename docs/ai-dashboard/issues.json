@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-16T04:12:29.082Z",
+  "generated_at": "2026-09-16T08:39:58.983Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 100,
+  "count": 101,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-16T04:12:29.082Z",
+    "fetchedAt": "2026-09-16T08:39:58.983Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 342,
+      "title": "Kunden-Bestellbestaetigung zeigt Zeilenangaben nicht (Muster, Wunschmass)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/342",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T08:39:41Z",
+      "updated_at": "2026-09-16T08:39:41Z",
+      "closed_at": null
+    },
     {
       "number": 339,
       "title": "Visualisierer: Teppich im Raum ansehen (PR #338)",
