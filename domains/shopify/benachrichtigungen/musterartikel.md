@@ -65,6 +65,13 @@ allgemeine Profil und der Kunde zahlt bei einer reinen Musterbestellung
 ploetzlich Versand. Das ist beim Anlegen der 87 Musterprodukte beinahe
 passiert und wurde nachgezogen: das Profil enthaelt jetzt 88 Produkte.
 
+**Nur Deutschland, und das ist Absicht.** Das Profil hat genau eine Zone
+(Deutschland, 0,00 EUR). Der Inhaber hat am 2026-09-16 bestaetigt: Muster und
+Produkte gehen ausschliesslich nach Deutschland. Wer aus dem Ausland
+ausschliesslich Muster bestellt, bekommt deshalb keine Versandart angeboten -
+gewollt, keine Fehlkonfiguration. Wer die Zone spaeter erweitert, verschickt
+Muster gratis ins Ausland; das ist eine Preisentscheidung, keine technische.
+
 Nachtragen ueber die Admin API:
 
 ```graphql
