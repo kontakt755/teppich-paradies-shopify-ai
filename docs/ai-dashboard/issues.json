@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-16T10:27:38.215Z",
+  "generated_at": "2026-09-16T10:35:43.874Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 106,
+  "count": 107,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-16T10:27:38.215Z",
+    "fetchedAt": "2026-09-16T10:35:43.874Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 355,
+      "title": "Rechnung und Versandprofil zur Musterumstellung nachgezogen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/355",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T10:35:25Z",
+      "updated_at": "2026-09-16T10:35:42Z",
+      "closed_at": null
+    },
     {
       "number": 354,
       "title": "Musterbestellung: eigene Variante je Muster statt Sammelartikel",
