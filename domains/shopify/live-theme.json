@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "203690246478",
-    "name": "preview-main-2026-09-04",
-    "verifiedAt": "2026-09-15T12:37:49Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-16T10:07:55Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-15T12:37:49Z",
+    "themeId": "203690246478",
+    "name": "preview-main-2026-09-04",
+    "verifiedAt": "2026-09-16T10:07:55Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED"
   },
   "fallback": {
@@ -187,6 +187,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-15",
       "note": "Per workflow:live abgeloest durch 203690246478 (Commit 98a19e7: Musterseite ohne Produkt wird zur Bestellseite statt Sackgasse (#333), Muster-Aufruf hinter die Farbauswahl statt ans Seitenende (#335), Wortlaut-Korrektur (#337)). Rollentausch am 2026-09-15 um 12:37:49Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
+    {
+      "themeId": "203690246478",
+      "name": "preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-16",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #353: Musterbestellung mit eigener Variante je Muster - Musterprodukt je Qualitaet, SKU M-<Quell-SKU>, Farbe damit im variant_title auf Lieferschein, Kommissionierliste und in beiden Bestellmails). Rollentausch am 2026-09-16 um 10:07:55Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
