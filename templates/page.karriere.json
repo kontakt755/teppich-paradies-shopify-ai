@@ -64,6 +64,7 @@
           "type": "image",
           "settings": {
             "image": "shopify://shop_images/teamwork-makes-the-dream-work.jpg",
+            "alt": "Ein Team legt am Besprechungstisch die Hände übereinander",
             "link": "",
             "image_ratio": "square",
             "width": "fill",

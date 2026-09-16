@@ -652,3 +652,36 @@ header-drawer:not([data-tp-bilder]) .tp-dn-foot img {
     transition: none;
   }
 }
+
+/* Cookie-Banner nicht ueber einem geoeffneten Menue.
+   ------------------------------------------------------------------
+   Shopifys Einwilligungsbanner (section.shopify-pc__banner__dialog) haengt
+   direkt am body, liegt fixed und traegt z-index: 2000000. Auf dem Handy ist
+   es ein Blatt ueber der halben Hoehe - und damit ueber dem Menue-Drawer, der
+   den Bildschirm fuellt. Gemessen am 2026-09-16 auf der Live-Seite:
+
+     375x667   verdeckt ab "Teppichfliesen"
+     390x664   verdeckt ab "Teppiche"        <- der gemeldete Fall
+     414x715   verdeckt ab "Teppichfliesen"
+     375x600   verdeckt alles ausser "Kontakt"
+
+   Auf dem Desktop faellt es nicht auf: das Megamenue klappt oben auf, das
+   Banner sitzt unten. Genau daher der Eindruck, Handy und Desktop haetten
+   verschiedene Menues - der Inhalt ist identisch, nur die obersten Eintraege
+   waren am Handy zugedeckt.
+
+   :root[scroll-lock] setzt das Theme, solange ein Drawer oder Modal offen ist,
+   und nimmt es beim Schliessen wieder weg (gemessen: gesetzt beim Oeffnen,
+   entfernt beim Schliessen). Das Banner ist damit nur waehrend des offenen
+   Menues weg und steht danach unveraendert wieder da - die Einwilligung wird
+   weder erteilt noch uebergangen, nur nicht mitten ins Menue gelegt.
+   display: none statt eines niedrigeren z-index ist Absicht: sonst blieben die
+   Banner-Knoepfe unsichtbar fokussierbar hinter dem Menue liegen.
+
+   !important ist hier noetig und nicht Bequemlichkeit: Shopifys Consent-Skript
+   setzt display am Element selbst (style="display: block"). Ein Inline-Stil
+   schlaegt jede Regel ohne !important - ohne das Schluesselwort laedt die Regel,
+   passt auch, und bleibt wirkungslos (gemessen im Dev-Theme am 2026-09-16). */
+:root[scroll-lock] .shopify-pc__banner__dialog {
+  display: none !important;
+}

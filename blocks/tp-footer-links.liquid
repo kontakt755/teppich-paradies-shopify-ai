@@ -50,13 +50,22 @@
 
   .tp-footer-links ul {
     display: grid;
-    gap: 8px;
+    gap: 0;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  /* Trefferflaeche: die Links waren 20 px hoch, weniger als das Mindestmass
+     von 24 px und weit unter den 44 px, die der Rest des Shops einhaelt -
+     ausgerechnet bei Impressum, Datenschutz und AGB, die jemand antippt, wenn
+     er unsicher ist (gemessen 2026-09-16, alle Seiten, Handy und Desktop).
+     Die Hoehe kommt aus min-height, nicht aus Abstand: der Zeilenabstand der
+     Liste bleibt optisch gleich, weil der Listen-gap darunter kleiner wird. */
   .tp-footer-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
     color: inherit;
     text-decoration: none;
   }
@@ -70,6 +79,10 @@
     .tp-footer-links {
       grid-template-columns: 1fr;
       gap: 22px;
+    }
+
+    .tp-footer-links a {
+      min-height: 44px;
     }
   }
 {% endstylesheet %}

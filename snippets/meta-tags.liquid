@@ -163,22 +163,47 @@
   content="{{ og_description | escape }}"
 >
 
-{%- if page_image -%}
+{%- liquid
+  # Vorschaubild beim Teilen. page_image ist auf Produkt- und Artikelseiten
+  # gesetzt, auf Kollektionen nur bei gepflegtem Kollektionsbild und auf
+  # normalen Seiten nie. Gemessen am 2026-09-16 hatten Startseite, alle acht
+  # Kategorien und alle Seiten kein og:image - ein per WhatsApp geteilter Link
+  # kam als graue Textzeile an. WhatsApp ist hier kein Randkanal: der Shop
+  # bewirbt ihn im Kopf, in der Fusszeile und auf jeder Produktseite.
+  #
+  # Reihenfolge bewusst von konkret nach allgemein. Das erste Produktbild der
+  # Kollektion zeigt den Belag, um den es geht; das Logo zeigt nur, dass es
+  # den Shop gibt. Es steht deshalb am Ende und nicht am Anfang.
+  assign tp_og_bild = page_image
+  if tp_og_bild == blank and collection and collection.products.first
+    assign tp_og_bild = collection.products.first.featured_media.preview_image
+  endif
+  # shop.brand.cover_image und shop.brand.square_logo stehen in diesem Shop
+  # nicht zur Verfuegung (am 2026-09-16 im Theme gemessen, beide leer) - sie
+  # waeren die schoenere Quelle, sind hier aber tote Zweige. Bleibt das Logo:
+  # als Vorschau schwach, aber der Unterschied zwischen "Shop erkennbar" und
+  # "graue Textzeile" im Chat.
+  if tp_og_bild == blank
+    assign tp_og_bild = settings.logo
+  endif
+-%}
+
+{%- if tp_og_bild -%}
   <meta
     property="og:image"
-    content="http:{{ page_image | image_url }}"
+    content="http:{{ tp_og_bild | image_url }}"
   >
   <meta
     property="og:image:secure_url"
-    content="https:{{ page_image | image_url }}"
+    content="https:{{ tp_og_bild | image_url }}"
   >
   <meta
     property="og:image:width"
-    content="{{ page_image.width }}"
+    content="{{ tp_og_bild.width }}"
   >
   <meta
     property="og:image:height"
-    content="{{ page_image.height }}"
+    content="{{ tp_og_bild.height }}"
   >
 {%- endif -%}
 
