@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-16T09:25:04.716Z",
+  "generated_at": "2026-09-16T10:13:43.192Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 105,
+  "count": 106,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-16T09:25:04.716Z",
+    "fetchedAt": "2026-09-16T10:13:43.192Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 354,
+      "title": "Musterbestellung: eigene Variante je Muster statt Sammelartikel",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/354",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T10:12:53Z",
+      "updated_at": "2026-09-16T10:13:27Z",
+      "closed_at": "2026-09-16T10:13:27Z"
+    },
     {
       "number": 350,
       "title": "Lieferschein zeigt keine Zeilenangaben (welches Muster liegt im Paket?)",
@@ -198,13 +222,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T13:02:06Z",
-      "updated_at": "2026-09-15T13:03:04Z",
+      "updated_at": "2026-09-16T10:04:28Z",
       "closed_at": null
     },
     {
