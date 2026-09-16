@@ -39,7 +39,18 @@ Produkte wegen fehlender Attribute abgelehnt sind.
 **3. Conversion-Aktionen anlegen und prüfen.** Ob im Konto schon welche
 existieren, ist von außen nicht sichtbar. Vorschlag in Abschnitt 3.
 
-**4. Zwei Kleinigkeiten in den Rechtstexten** (siehe
+**4. Versand- und Rückgabedaten im Merchant Center hinterlegen.** Im
+JSON-LD der Produktseiten fehlen `shippingDetails` und
+`hasMerchantReturnPolicy`. Das wurde **bewusst nicht im Theme ergänzt**:
+Shopifys `structured_data`-Filter erzeugt das Product-Schema als Ganzes,
+und es zu ersetzen, um zwei Felder anzuhängen, wäre ein Eingriff mit
+Merchant-Center-Folgen an genau der Stelle, die das Repository als
+Schutzschicht führt (`GOOGLE_SHOPPING_SAFETY_REPORT.md`). Für
+Shopping-Anzeigen zieht Google diese Daten ohnehin aus den
+Kontoeinstellungen, nicht aus dem Seiten-Schema – dort gehören sie hin.
+Das Seiten-Schema beeinflusst nur organische Rich Results.
+
+**5. Zwei Kleinigkeiten in den Rechtstexten** (siehe
 `domains/shopify/versandrichtlinie-vorlage.md`): stehengebliebene
 Markdown-Sternchen in der Widerrufsbelehrung und zwei verschiedene
 Telefonnummern zwischen Kontakt-Richtlinie und Impressum.
