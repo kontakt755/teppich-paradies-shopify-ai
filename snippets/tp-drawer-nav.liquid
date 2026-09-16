@@ -92,7 +92,9 @@
           endif
         endfor
         if tp_dn_sub == ''
-          assign tp_dn_sub = link.object.all_products_count | append: ' Produkte'
+          capture tp_dn_sub
+            render 'tp-produktzahl', anzahl: link.object.all_products_count
+          endcapture
         endif
       else
         for c in link.links
@@ -115,7 +117,9 @@
           assign tp_dn_sub = tp_dn_sub | append: ' …'
         endif
         if tp_dn_sub == '' and link.type == 'collection_link'
-          assign tp_dn_sub = link.object.all_products_count | append: ' Produkte'
+          capture tp_dn_sub
+            render 'tp-produktzahl', anzahl: link.object.all_products_count
+          endcapture
         endif
       endif
 
