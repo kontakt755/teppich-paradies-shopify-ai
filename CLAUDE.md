@@ -463,6 +463,13 @@ der Hauptcheckout auf `feature/ux-kaufbereich-2026-09-15` stand. Prüfen:
 `ls <hauptcheckout>/.router/claude-writes/` muss Einträge haben. Und: Arbeit,
 die nur auf Remote-Branches oder in einem anderen Worktree liegt, sieht der
 Reviewer nicht — er liest den Working Tree des Sitzungsverzeichnisses.
+Ausnahme seit 2026-09-16: Liegt das Ergebnis als gemergter Commit vor (gebaut im
+Wegwerf-Worktree, Sitzungsordner auf fremdem Branch — Sitzung 413c819c, PR #343),
+hinterlegt die Sitzung `.router/claude-handoffs/<TASK-ID>.ergebnis.json` mit
+`{ "commit": "<sha>", "basis": "<sha>", "pr": <nummer> }`, und der Prüfbereich wird
+`git diff <basis> <commit>` statt des Working Trees, sichtbar in der `.review.md`.
+Angenommen werden nur Commits, die von `origin/main` oder einem anderen `origin/*`-Branch
+erreichbar sind; ein Zeiger, der das nicht erfüllt, wird verworfen und genannt.
 
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien
