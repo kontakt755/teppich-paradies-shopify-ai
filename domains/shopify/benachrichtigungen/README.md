@@ -8,7 +8,7 @@ Sie existierte bereits — es musste nichts neu angelegt werden.
 
 | Ebene | Feld | Typ | Storefront-Zugriff |
 |---|---|---|---|
-| Produkt | `grosshandel.sku` („Großhandels-ID") | Einzeltext | **NONE** |
+| Produkt | `grosshandel.sku` („Großhändler-ID") | Einzeltext | **NONE** |
 | Variante | `lieferant.lieferant_a_artikelnummer` | Einzeltext | **NONE** |
 | Variante | `lieferant.lieferant_b_artikelnummer` | Einzeltext | **NONE** |
 
@@ -113,3 +113,22 @@ rutschte in den Muster-Zweig. Seither wird mit einem leeren String gearbeitet.
 
 Nicht geprüft ist der tatsächliche Versand: dafür braucht es die
 Testbenachrichtigung aus Schritt 4.
+
+## Der Feldname steht an drei Stellen und muss überall gleich sein
+
+Der Anzeigename der Definition heißt seit 2026-09-16 **„Großhändler-ID"**.
+Vorher hieß er „Großhandels-ID", während die E-Mail-Vorlage schon
+„Großhändler-ID" sagte — zwei Namen für dasselbe Feld, einer davon auf dem
+Lagerausdruck.
+
+Wer den Namen erneut ändert, muss an drei Stellen denken:
+
+1. **Die Metafeld-Definition** (Admin → Einstellungen → Metafelder und
+   Metaobjekte). Ändert die Beschriftung auf der Produktseite.
+2. **Die E-Mail-Vorlage** in `interne-bestellmail-block.liquid` — dort steht
+   der Name als Überschrift und als Spaltentitel fest im Text.
+3. **Die Kommissionierliste.** Und hier die Falle: Shopify speichert den
+   Spaltennamen zum Zeitpunkt des Hinzufügens. Eine spätere Umbenennung der
+   Definition wirkt dort **nicht** rückwirkend — die Spalte muss entfernt und
+   neu hinzugefügt werden, sonst steht der alte Name weiter auf dem Ausdruck.
+   Genau so ist es am 2026-09-16 aufgefallen.
