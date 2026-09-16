@@ -22,6 +22,10 @@ export const REVIEW_SCOPE_NONE = 'NONE';
 // fehlgeschlagen). Das ist bewusst KEIN NONE: der Hook prueft dann fail-closed
 // mit einem expliziten Fallback-Bereich weiter, statt still zu beenden.
 export const REVIEW_SCOPE_UNKNOWN = 'UNKNOWN';
+// Das Ergebnis liegt als Commit vor, den die Sitzung per Ergebnis-Zeiger
+// benannt hat (siehe readResultPointer). Der Working Tree ist dann nicht der
+// Pruefbereich - der Diff zwischen Basis und Commit ist es.
+export const REVIEW_SCOPE_RESULT = 'RESULT';
 
 // Reine Entscheidung ohne git - testbar mit Strings.
 // taskScoped=true bedeutet: baseRef/mergeBase beschreiben nicht origin/main,
@@ -141,7 +145,7 @@ function noteBotOwned(scope, botOwned) {
   return { ...scope, botOwned: [...botOwned], text: `${scope.text}. ${formatPaths(botOwned)} schreibt der Dashboard-Bot und wird nie mitcommittet: gehört nicht zu diesem Auftrag und ist kein Befund` };
 }
 
-export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, ownPaths = null, ownPathsTruncated = false, exec = execFileSync, io = fs } = {}) {
+export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main', sinceRef = null, baseline = null, ownPaths = null, ownPathsTruncated = false, resultPointer = null, exec = execFileSync, io = fs } = {}) {
   const errors = [];
   const git = (...args) => {
     try {
@@ -151,14 +155,20 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
       return { ok: false, out: '' };
     }
   };
+  // Ergebnis-Zeiger zuerst: Ist er belegt, ist der Working Tree dieses
+  // Verzeichnisses nicht der Pruefbereich. Ein verworfener Zeiger wird unten
+  // im Text genannt, der Pruefbereich bleibt dann wie bisher.
+  const pointer = resultPointer ? verifyResultPointer({ pointer: resultPointer, cwd, exec }) : null;
+  if (pointer?.ok) return resultScope(pointer);
+  const notePointer = scope => (pointer ? { ...scope, resultPointer: { rejected: pointer.error }, text: `${scope.text}. Ein hinterlegter Ergebnis-Zeiger wurde verworfen (${pointer.error}); geprüft wird deshalb wie ohne Zeiger` } : scope);
   const status = git('status', '--porcelain');
-  if (!status.ok) return unknownScope(errors, baseRef);
+  if (!status.ok) return notePointer(unknownScope(errors, baseRef));
   const tree = withoutBotOwned(applyBaseline({ cwd, baseline, porcelain: status.out, exec, io }));
-  const finish = scope => noteBotOwned(tree.status ? { ...scope, baselineStatus: tree.status } : scope, tree.botOwned);
+  const finish = scope => notePointer(noteBotOwned(tree.status ? { ...scope, baselineStatus: tree.status } : scope, tree.botOwned));
   // UNKNOWN verlangt ohnehin, alles Uncommittete konservativ zu pruefen - eine
   // Notiz "kein Befund" zu vorbestehenden Dateien wuerde das nur aufweichen
   // (Pruefung 2026-09-11). Deshalb hier keine Ausklammerung und keine Notiz.
-  const unknown = errs => ({ ...unknownScope(errs, baseRef), ...(tree.status ? { baselineStatus: tree.status === 'APPLIED' ? 'NOT_APPLIED_UNKNOWN_SCOPE' : tree.status } : {}) });
+  const unknown = errs => notePointer({ ...unknownScope(errs, baseRef), ...(tree.status ? { baselineStatus: tree.status === 'APPLIED' ? 'NOT_APPLIED_UNKNOWN_SCOPE' : tree.status } : {}) });
   if (sinceRef) {
     const since = git('rev-parse', '--verify', '--quiet', `${sinceRef}^{commit}`);
     if (since.ok && since.out) {
@@ -177,6 +187,139 @@ export function detectReviewScope({ cwd = process.cwd(), baseRef = 'origin/main'
   const ahead = git('log', '--format=%h %s', `${mergeBase.out}..HEAD`);
   if (!ahead.ok) return unknown(errors);
   return finish(describeReviewScope({ porcelain: tree.porcelain, aheadCommits: ahead.out, baseRef, mergeBase: mergeBase.out.slice(0, 12), excluded: tree.excluded, reverted: tree.reverted, ownPaths, ownPathsTruncated }));
+}
+
+// Sechste Luecke, belegt am 2026-09-16 (Sitzung 413c819c): Das Ergebnis eines
+// Auftrags entstand in einem Wegwerf-Worktree, ging als PR #343 nach main
+// (Commit d14d822). Der Sitzungsordner stand die ganze Zeit auf einem fremden
+// Branch mit 16 uncommitteten fremden Dateien. Der Reviewer las drei Runden
+// lang den Working Tree und meldete korrekt "kein Diff, kein Commit" - die
+// Arbeit lag nur woanders. Beide von ihm empfohlenen Auswege (im fremden
+// Arbeitsstand nochmal implementieren, geteilten Checkout auf main drehen)
+// verbietet CLAUDE.md.
+//
+// Deshalb kann eine Sitzung einen Ergebnis-Zeiger hinterlegen:
+// .router/claude-handoffs/<TASK-ID>.ergebnis.json mit
+// { "commit": "<sha>", "basis": "<sha>", "pr": <nummer> }. Liegt er vor und
+// haelt er der Pruefung stand, ist "git diff <basis> <commit>" der
+// Pruefbereich statt des Working Trees. Ohne Zeiger aendert sich nichts.
+//
+// Ein frei erfundener SHA wird nicht angenommen: Commit und Basis muessen
+// von origin/main oder einem anderen origin/*-Branch erreichbar sein, und die
+// Basis muss ein Vorfahr des Commits sein. Ein Zeiger, der das nicht erfuellt,
+// wird verworfen und im Pruefbereich genannt - dann gilt wieder der Working
+// Tree. Fail-safe in beide Richtungen: nie eine Exception, nie ein stiller
+// Wechsel des Pruefbereichs.
+const SHA_PATTERN = /^[0-9a-f]{7,40}$/;
+
+export function resultPointerPath({ projectDir, taskId, reviewTaskPath = null }) {
+  if (reviewTaskPath && /\.review\.md$/.test(reviewTaskPath)) return reviewTaskPath.replace(/\.review\.md$/, '.ergebnis.json');
+  if (!projectDir || !taskId) return null;
+  const compact = String(taskId).trim().toUpperCase().replace(/[^A-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'CLAUDE-TASK';
+  return path.join(projectDir, '.router', 'claude-handoffs', `${compact}.ergebnis.json`);
+}
+
+// Liest den Zeiger. Fehlt die Datei: null (kein Zeiger, kein Vermerk). Ist sie
+// da, aber unbrauchbar: { error } - das wird als verworfener Zeiger genannt,
+// damit ein Tippfehler nicht still im alten Verhalten verschwindet.
+export function readResultPointer({ filePath, io = fs } = {}) {
+  if (!filePath) return null;
+  let raw;
+  try {
+    if (!io.existsSync(filePath)) return null;
+    raw = io.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    return { error: `Ergebnis-Zeiger nicht lesbar: ${String(error?.message ?? error).slice(0, 120)}` };
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { error: `Ergebnis-Zeiger ${path.basename(filePath)} ist kein gültiges JSON` };
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { error: `Ergebnis-Zeiger ${path.basename(filePath)} ist kein Objekt` };
+  const commit = String(parsed.commit ?? '').trim().toLowerCase();
+  const basis = String(parsed.basis ?? '').trim().toLowerCase();
+  if (!SHA_PATTERN.test(commit) || !SHA_PATTERN.test(basis)) return { error: 'Ergebnis-Zeiger braucht "commit" und "basis" als SHA (7-40 Hex-Zeichen)' };
+  const pr = Number.isInteger(parsed.pr) && parsed.pr > 0 ? parsed.pr : null;
+  return { commit, basis, pr, filePath };
+}
+
+// Prueft den Zeiger gegen das Repository. ok:true nur, wenn beide SHAs
+// aufloesbar, von einem origin/*-Ref erreichbar und die Basis Vorfahr des
+// Commits ist. Sonst ok:false mit Begruendung - nie eine Exception.
+export function verifyResultPointer({ pointer, cwd = process.cwd(), exec = execFileSync } = {}) {
+  if (!pointer || pointer.error) return { ok: false, error: pointer?.error ?? 'kein Zeiger' };
+  const git = (...args) => {
+    try {
+      return String(exec('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })).trim();
+    } catch {
+      return null;
+    }
+  };
+  const resolved = {};
+  for (const key of ['commit', 'basis']) {
+    const sha = git('rev-parse', '--verify', '--quiet', `${pointer[key]}^{commit}`);
+    if (!sha) return { ok: false, error: `${key} ${pointer[key]} ist kein Commit in diesem Repository` };
+    const refs = git('for-each-ref', '--format=%(refname:short)', `--contains=${sha}`, 'refs/remotes/origin/');
+    if (refs === null) return { ok: false, error: `Erreichbarkeit von ${key} ${pointer[key]} nicht prüfbar (git for-each-ref fehlgeschlagen)` };
+    const reachable = refs.split('\n').map(line => line.trim()).filter(line => line && line !== 'origin/HEAD');
+    if (!reachable.length) return { ok: false, error: `${key} ${pointer[key]} ist von keinem origin/*-Branch erreichbar` };
+    resolved[key] = { sha, refs: reachable };
+  }
+  try {
+    exec('git', ['merge-base', '--is-ancestor', resolved.basis.sha, resolved.commit.sha], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  } catch {
+    return { ok: false, error: `basis ${pointer.basis} ist kein Vorfahr von commit ${pointer.commit}` };
+  }
+  const log = git('log', '--format=%h %s', `${resolved.basis.sha}..${resolved.commit.sha}`);
+  const stat = git('diff', '--stat', resolved.basis.sha, resolved.commit.sha);
+  return {
+    ok: true,
+    commit: resolved.commit.sha,
+    basis: resolved.basis.sha,
+    pr: pointer.pr ?? null,
+    reachableVia: resolved.commit.refs,
+    commits: String(log ?? '').split('\n').map(line => line.trim()).filter(Boolean),
+    diffStat: stat ?? '',
+    filePath: pointer.filePath ?? null,
+  };
+}
+
+// Ein Satz fuer Reviewer und Handoff - dieselbe Formulierung an beiden Stellen.
+export function describeResultPointer(pointer) {
+  const pr = pointer.pr ? `, PR #${pointer.pr}` : '';
+  const via = pointer.reachableVia?.length ? `, erreichbar über ${formatPaths(pointer.reachableVia, 5)}` : '';
+  return `Commit ${pointer.commit.slice(0, 12)} gegenüber Basis ${pointer.basis.slice(0, 12)}${pr}${via}`;
+}
+
+function resultScope(pointer) {
+  const commits = pointer.commits ?? [];
+  return {
+    kind: REVIEW_SCOPE_RESULT,
+    commits,
+    resultPointer: pointer,
+    text: `das per Ergebnis-Zeiger benannte Ergebnis dieses Auftrags: ${describeResultPointer(pointer)}. Der zu prüfende Diff ist "git diff ${pointer.basis} ${pointer.commit}"${commits.length ? ` (${commits.length} Commits: ${commits.join('; ')})` : ''}. Der Working Tree dieses Verzeichnisses gehört NICHT zum Prüfbereich: Er kann auf einem anderen Branch stehen und uncommittete Dateien anderer Sitzungen enthalten - beides ist kein Befund, verlange weder ihre Änderung, Entfernung noch Isolierung. Ein leerer "git diff" und ein Branch ohne diese Commits sind hier erwartet; lies den Diff ausschließlich über die beiden SHAs`,
+  };
+}
+
+// Traegt den Zeiger sichtbar in den Pruefauftrag (<TASK-ID>.review.md) ein,
+// idempotent: ein zweiter Stop ersetzt den Abschnitt statt ihn zu doppeln.
+const HANDOFF_POINTER_MARK = '\n## Ergebnis-Zeiger\n';
+
+export function noteResultPointerInHandoff({ reviewTaskPath, pointer, io = fs } = {}) {
+  if (!reviewTaskPath || !pointer?.ok) return false;
+  try {
+    if (!io.existsSync(reviewTaskPath)) return false;
+    const current = io.readFileSync(reviewTaskPath, 'utf8');
+    const index = current.indexOf(HANDOFF_POINTER_MARK);
+    const base = index >= 0 ? current.slice(0, index) : current.replace(/\n*$/, '\n');
+    const section = `${HANDOFF_POINTER_MARK}Die Sitzung hat ihr Ergebnis als Commit hinterlegt: ${describeResultPointer(pointer)}. Prüfbereich ist "git diff ${pointer.basis} ${pointer.commit}", nicht der Working Tree.\n`;
+    io.writeFileSync(reviewTaskPath, `${base}${section}`, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Dritte Luecke, gefunden am 2026-09-10: Arbeitet eine Sitzung in einem
