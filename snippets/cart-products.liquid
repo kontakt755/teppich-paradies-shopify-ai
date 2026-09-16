@@ -269,6 +269,13 @@
                     {%- endif -%}
                   </div>
 
+                  {%- comment -%}
+                    Zusatzzeilen nennen ihren Teppich; Waisen (Service ohne
+                    Hauptzeile) werden hier rot gemeldet. Regeln zentral in
+                    snippets/tp-cart-gruppe.liquid.
+                  {%- endcomment -%}
+                  {%- render 'tp-cart-gruppe', line_item: item, teil: 'hinweis' -%}
+
                   <div class="cart-items__unit-price-wrapper">
                     <div>
                       {% if item.original_price != item.final_price %}
@@ -440,6 +447,13 @@
             {% endfor %}
           </tbody>
         </table>
+        {%- comment -%}
+          Waise im Warenkorb (z. B. Kettelservice, dessen Teppich geloescht
+          wurde): sichtbare Meldung plus Pflichtfeld im Formular. Der
+          Kasse-Knopf ist ein submit auf genau dieses Formular, die
+          Browser-Pruefung blockiert damit auch ohne JS.
+        {%- endcomment -%}
+        {%- render 'tp-cart-gruppe', teil: 'sperre' -%}
       </div>
     </form>
   {%- endif -%}
