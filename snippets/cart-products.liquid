@@ -335,11 +335,14 @@
                   {%- endcomment -%}
                   {%- liquid
                     assign tp_cart_zuschnitt = false
+                    assign tp_cart_hauptzeile = false
                     if item.properties['Gewünschte Länge'] != blank
                       assign tp_cart_zuschnitt = true
+                      assign tp_cart_hauptzeile = true
                       assign can_update_quantity = false
                     elsif item.product.metafields.custom.preis_pro_001_qm.value
                       assign tp_cart_zuschnitt = true
+                      assign tp_cart_hauptzeile = true
                       assign can_update_quantity = false
                     elsif item.properties['_Gruppe'] != blank
                       assign tp_cart_zuschnitt = true
@@ -376,10 +379,20 @@
                       <span class="visually-hidden">{{ 'accessibility.remove' | t }}</span>
                     </button>
                   </div>
-                  {%- if tp_cart_zuschnitt -%}
+                  {%- comment -%}
+                    Den Rueckweg "Mass aendern" gibt es nur an der Hauptzeile:
+                    item.url der Zusatzzeile (Kettelservice, Fussleiste,
+                    Haftunterlage) fuehrt zum Zusatzprodukt, nicht zum Rechner
+                    des Teppichs. Die Zusatzzeile nennt stattdessen ihre Herkunft.
+                  {%- endcomment -%}
+                  {%- if tp_cart_hauptzeile -%}
                     <p class="cart-items__zuschnitt-hinweis">
                       Menge ergibt sich aus dem Maß.
                       <a href="{{ item.url }}">Maß ändern</a>
+                    </p>
+                  {%- elsif tp_cart_zuschnitt -%}
+                    <p class="cart-items__zuschnitt-hinweis">
+                      Menge ergibt sich aus dem Maß des zugehörigen Teppichs.
                     </p>
                   {%- endif -%}
                 </td>
