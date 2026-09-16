@@ -53,10 +53,40 @@ Properties. Bestellbar bleibt es also immer — nur ohne eigene SKU.
 Das Sammelprodukt `kostenloses-muster` bleibt deshalb bestehen und darf nicht
 geloescht werden.
 
+## Versandprofil - der Schritt, den man vergisst
+
+Musterbestellungen sind versandkostenfrei, und das haengt **nicht** am Preis 0,00
+EUR, sondern am Versandprofil **"Kostenlose Muster"** (Zone Deutschland, Methode
+"Kostenloser Musterversand", 0,00 EUR). Bis 2026-09-16 lag darin nur das
+Sammelprodukt `kostenloses-muster`.
+
+**Jedes neue Musterprodukt muss in dieses Profil**, sonst faellt es ins
+allgemeine Profil und der Kunde zahlt bei einer reinen Musterbestellung
+ploetzlich Versand. Das ist beim Anlegen der 87 Musterprodukte beinahe
+passiert und wurde nachgezogen: das Profil enthaelt jetzt 88 Produkte.
+
+Nachtragen ueber die Admin API:
+
+```graphql
+mutation { deliveryProfileUpdate(
+  id: "gid://shopify/DeliveryProfile/<Profil-ID>",
+  profile: { variantsToAssociate: ["gid://shopify/ProductVariant/<id>", ...] }
+) { profile { id } userErrors { field message } } }
+```
+
+Die Profil-ID nie aus dieser Datei abschreiben, sondern frisch abfragen:
+`query { deliveryProfiles(first: 10) { nodes { id name } } }`.
+
+Gegenprobe ist `deliveryProfile.profileItems`, **nicht**
+`productVariantsCount` - das Feld deckelt bei 500 und sieht dadurch auch dann
+richtig aus, wenn Varianten fehlen.
+
 ## Wenn eine Farbe dazukommt
 
 Musterprodukt der Qualitaet um dieselbe Option/Variante ergaenzen, SKU nach dem
-Schema oben. Ohne das faellt genau diese Farbe auf den Rueckfall zurueck.
+Schema oben, **und die neue Variante dem Versandprofil zuordnen**. Ohne das
+Erste faellt die Farbe auf den Rueckfall zurueck, ohne das Zweite kostet sie
+Versand.
 
 ## Was NICHT geaendert wurde
 
