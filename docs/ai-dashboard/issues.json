@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-16T10:37:41.215Z",
+  "generated_at": "2026-09-16T11:05:36.168Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 108,
+  "count": 109,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-16T10:37:41.215Z",
+    "fetchedAt": "2026-09-16T11:05:36.168Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 358,
+      "title": "Musterabdeckung vervollstaendigt und Zuschnitt-Angaben auf den Dokumenten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/358",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T11:05:21Z",
+      "updated_at": "2026-09-16T11:05:34Z",
+      "closed_at": null
+    },
     {
       "number": 357,
       "title": "Warenkorb serverseitig gegen Mengenmanipulation absichern (Entscheidung Inhaber)",
@@ -1119,13 +1143,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 10,
+      "comments": 11,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-14T08:59:14Z",
+      "updated_at": "2026-09-16T10:37:42Z",
       "closed_at": null
     },
     {
