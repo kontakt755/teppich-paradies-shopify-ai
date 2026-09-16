@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-16T09:15:34.480Z",
+  "generated_at": "2026-09-16T09:21:03.130Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 104,
+  "count": 105,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-16T09:15:34.480Z",
+    "fetchedAt": "2026-09-16T09:21:03.130Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 350,
+      "title": "Lieferschein zeigt keine Zeilenangaben (welches Muster liegt im Paket?)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/350",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T09:20:49Z",
+      "updated_at": "2026-09-16T09:20:50Z",
+      "closed_at": null
+    },
     {
       "number": 349,
       "title": "PR-Doctor als CI-Workflow: Befunde automatisch am PR melden",
