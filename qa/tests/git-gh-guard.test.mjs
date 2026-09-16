@@ -283,3 +283,50 @@ for (const cmd of [
 for (const cmd of ['"/usr/bin/git" status', '"git" log --oneline']) {
   test(`harmlos bleibt harmlos in Anfuehrungszeichen: ${cmd}`, () => assert.equal(blockiert(cmd), false));
 }
+
+/**
+ * Unbeaufsichtigte Worker-Laeufe (agents:loop, TP_AGENT_LOOP_ACTIVE=1) duerfen
+ * nichts veroeffentlichen.
+ *
+ * Belegt am 2026-09-15: Beauftragt war "erstelle die Datei X". Der Worker legte
+ * einen Branch an, committete, pushte und eroeffnete einen Pull Request.
+ *
+ * Die Grenze steht hier in beide Richtungen: Der interaktive Fall MUSS
+ * unveraendert bleiben - eine Regel, die auch dort greift, wuerde dem Nutzer
+ * das Arbeiten abschneiden.
+ */
+const blockiertUnbeaufsichtigt = (command) => {
+  const out = execFileSync('node', [hook], {
+    input: JSON.stringify({ tool_input: { command } }),
+    encoding: 'utf8',
+    env: { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' },
+  });
+  return out.trim().length > 0;
+};
+
+for (const cmd of [
+  'git commit -m "Zwischenstand"',
+  'git commit -am x',
+  'git push -u origin feature/x',
+  'git push',
+  'gh pr create --title x --body y',
+  'gh pr merge 306 --merge',
+  'gh release create v1',
+]) {
+  test(`unbeaufsichtigt blockiert: ${cmd}`, () => assert.equal(blockiertUnbeaufsichtigt(cmd), true));
+  test(`interaktiv weiterhin erlaubt: ${cmd}`, () => assert.equal(blockiert(cmd), false));
+}
+
+// Lesende und vorbereitende Befehle bleiben auch unbeaufsichtigt erlaubt -
+// der Worker muss seine Arbeit ja pruefen koennen.
+for (const cmd of [
+  'git status --porcelain',
+  'git diff',
+  'git add bin/tp',
+  'gh pr view 306',
+]) test(`unbeaufsichtigt erlaubt: ${cmd}`, () => assert.equal(blockiertUnbeaufsichtigt(cmd), false));
+
+// Die bisherigen harten Sperren gelten unbeaufsichtigt selbstverstaendlich weiter.
+test('unbeaufsichtigt bleibt auch git reset --hard gesperrt', () => {
+  assert.equal(blockiertUnbeaufsichtigt('git reset --hard origin/main'), true);
+});

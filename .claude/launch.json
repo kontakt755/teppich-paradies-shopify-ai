@@ -17,7 +17,8 @@
         "run",
         "dashboard"
       ],
-      "port": 8001
+      "port": 8001,
+      "autoPort": true
     },
     {
       "name": "dashboard-static",

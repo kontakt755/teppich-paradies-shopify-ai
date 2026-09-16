@@ -3,7 +3,11 @@
   "domain": "shopify",
   "defaultPathRisk": "MEDIUM",
   "defaultResourceRisk": "MEDIUM",
-  "risks": ["LOW", "MEDIUM", "HIGH"],
+  "risks": [
+    "LOW",
+    "MEDIUM",
+    "HIGH"
+  ],
   "operations": {
     "read": "LOW",
     "git_status": "LOW",
@@ -60,28 +64,81 @@
     "paid_app_install": "HIGH"
   },
   "paths": [
-    { "pattern": "automation/**", "risk": "LOW" },
-    { "pattern": "qa/**", "risk": "LOW" },
-    { "pattern": "reports/**", "risk": "LOW" },
-    { "pattern": "locales/**", "risk": "LOW" },
-    { "pattern": "assets/**/*.css", "risk": "LOW" },
-    { "pattern": "snippets/**", "risk": "LOW" },
-    { "pattern": "sections/**", "risk": "MEDIUM" },
-    { "pattern": "blocks/**", "risk": "MEDIUM" },
-    { "pattern": "templates/collection*.json", "risk": "MEDIUM" },
-    { "pattern": "templates/product*.json", "risk": "HIGH" },
-    { "pattern": "config/settings_data.json", "risk": "HIGH" },
-    { "pattern": "layout/checkout*", "risk": "HIGH" },
-    { "pattern": "**/*cart*price*", "risk": "HIGH" },
-    { "pattern": "**/*opc*price*", "risk": "HIGH" },
-    { "pattern": "**/*merchant*price*", "risk": "HIGH" },
-    { "pattern": "**/*structured-data*", "risk": "HIGH" },
-    { "pattern": "**/*json-ld*offer*", "risk": "HIGH" }
+    {
+      "pattern": "automation/**",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "qa/**",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "reports/**",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "locales/**",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "assets/**/*.css",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "snippets/**",
+      "risk": "LOW"
+    },
+    {
+      "pattern": "sections/**",
+      "risk": "MEDIUM"
+    },
+    {
+      "pattern": "blocks/**",
+      "risk": "MEDIUM"
+    },
+    {
+      "pattern": "templates/collection*.json",
+      "risk": "MEDIUM"
+    },
+    {
+      "pattern": "templates/product*.json",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "config/settings_data.json",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "layout/checkout*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "**/*cart*price*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "**/*opc*price*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "**/*merchant*price*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "**/*structured-data*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "**/*json-ld*offer*",
+      "risk": "HIGH"
+    }
   ],
   "protectedResources": {
+    "theme:204440699214": "HIGH",
+    "theme:203690246478": "HIGH",
+    "theme:204438208846": "HIGH",
     "theme:196301750606": "HIGH",
     "theme:203558781262": "HIGH",
-    "theme:203690246478": "HIGH",
     "theme:203556880718": "HIGH",
     "theme:203639456078": "HIGH",
     "theme:202917118286": "HIGH",
@@ -94,9 +151,21 @@
     "settings:shipping": "HIGH"
   },
   "resourcePatterns": [
-    { "pattern": "theme:live:*", "risk": "HIGH" },
-    { "pattern": "theme:published:*", "risk": "HIGH" },
-    { "pattern": "theme:fallback:*", "risk": "HIGH" },
-    { "pattern": "theme:*", "risk": "MEDIUM" }
+    {
+      "pattern": "theme:live:*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "theme:published:*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "theme:fallback:*",
+      "risk": "HIGH"
+    },
+    {
+      "pattern": "theme:*",
+      "risk": "MEDIUM"
+    }
   ]
 }

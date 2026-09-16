@@ -23,16 +23,84 @@
     Fehler: dann erklaert die Seite den Weg ueber die Produktseite.
   {% endcomment %}
   <div class="tp-sample__empty" data-sample-empty hidden>
-    <p><strong>So kommen Sie zu Ihren Mustern:</strong> Öffnen Sie einen Bodenbelag und wählen Sie dort „Kostenloses Muster anfragen“. Produkt und Farbe werden automatisch übernommen.</p>
+    {%- comment -%}
+      Bis 2026-09-15 stand hier nur eine Anleitung ("Oeffnen Sie einen Bodenbelag
+      und waehlen Sie dort ...") plus Kategorielinks. Das war eine Sackgasse an
+      der meistbeworbenen Stelle des Shops: Die Top-Leiste wirbt auf JEDER Seite
+      mit "Bis zu 3 Muster kostenlos" und verlinkt genau hierher. Wer klickte,
+      wurde weggeschickt, statt bestellen zu koennen.
+
+      Jetzt stehen die Produkte direkt hier. Ein Tipp fuehrt in den
+      Konfigurator derselben Seite - kein Umweg ueber Kollektion und
+      Produktseite mehr.
+
+      Gezeigt wird nur, was der Konfigurator auch bedienen kann: Produkte mit
+      einer Farb- oder Dekoroption. Darueber entscheidet ausschliesslich
+      snippets/tp-musteroption - liefert es eine /pages/muster-URL, passt das
+      Produkt; liefert es das Kontaktformular, bleibt es hier aussen vor,
+      damit kein Link ein Muster verspricht, das der Konfigurator nicht kennt.
+    {%- endcomment -%}
+    <p class="tp-sample__empty-intro"><strong>Wählen Sie einen Belag</strong> – danach suchen Sie bis zu drei Farben aus.</p>
+
     {%- assign tp_sample_links = section.settings.kategorien | newline_to_br | split: '<br />' -%}
-    <ul class="tp-sample__empty-links">
-      {%- for tp_sample_line in tp_sample_links -%}
-        {%- assign tp_sample_parts = tp_sample_line | strip | split: '|' -%}
-        {%- if tp_sample_parts.size == 2 -%}
-          <li><a href="{{ tp_sample_parts[1] | strip }}">{{ tp_sample_parts[0] | strip | escape }}</a></li>
-        {%- endif -%}
-      {%- endfor -%}
-    </ul>
+    {%- for tp_sample_line in tp_sample_links -%}
+      {%- assign tp_sample_parts = tp_sample_line | strip | split: '|' -%}
+      {%- if tp_sample_parts.size == 2 -%}
+        {%- liquid
+          assign tp_sample_titel = tp_sample_parts[0] | strip
+          assign tp_sample_url = tp_sample_parts[1] | strip
+          assign tp_sample_handle = tp_sample_url | split: '/collections/' | last | split: '?' | first | strip
+          assign tp_sample_coll = collections[tp_sample_handle]
+        -%}
+        <section class="tp-sample__gruppe">
+          <h2 class="tp-sample__gruppe-titel">{{ tp_sample_titel | escape }}</h2>
+          {%- assign tp_sample_gezeigt = 0 -%}
+          {%- if tp_sample_coll != blank and tp_sample_coll.products.size > 0 -%}
+            <ul class="tp-sample__produkte">
+              {%- for tp_sample_p in tp_sample_coll.products limit: 12 -%}
+                {%- if tp_sample_gezeigt >= 4 -%}{%- break -%}{%- endif -%}
+                {%- unless tp_sample_p.tags contains 'zubehoer' -%}
+                  {%- capture tp_sample_ziel -%}{%- render 'tp-musteroption', product: tp_sample_p -%}{%- endcapture -%}
+                  {%- assign tp_sample_ziel = tp_sample_ziel | strip -%}
+                  {%- if tp_sample_ziel contains '/pages/muster' -%}
+                    {%- assign tp_sample_gezeigt = tp_sample_gezeigt | plus: 1 -%}
+                    {%- assign tp_sample_alt = tp_sample_p.title -%}
+                    <li class="tp-sample__produkt">
+                      <a href="{{ tp_sample_ziel }}">
+                        {%- if tp_sample_p.featured_image != blank -%}
+                          {{ tp_sample_p.featured_image | image_url: width: 200 | image_tag: loading: 'lazy', widths: '100, 150, 200', sizes: '84px', alt: tp_sample_alt, class: 'tp-sample__produkt-bild' }}
+                        {%- endif -%}
+                        <span class="tp-sample__produkt-name">{{ tp_sample_p.title | escape }}</span>
+                      </a>
+                    </li>
+                  {%- endif -%}
+                {%- endunless -%}
+              {%- endfor -%}
+            </ul>
+          {%- endif -%}
+          {%- if tp_sample_gezeigt == 0 -%}
+            {%- comment -%}
+              Kategorien wie Klick- und Klebevinyl fuehren hier keine Produkte:
+              Dort ist jedes Dekor ein eigenes Produkt mit einer einzigen
+              Variante, es gibt also keine Farboption, die der Konfigurator
+              auflisten koennte (Stand 2026-09-15 ueber die Admin-API geprueft:
+              Optionen heissen "Title" oder "Breite").
+
+              Die Produktseite schickt genau diese Faelle ins Kontaktformular -
+              siehe snippets/tp-musteroption. Derselbe Weg steht deshalb auch
+              hier, statt die Gruppe leer zu lassen. Keine neue Zusage: der
+              Text verspricht kein Selbstbedienungs-Muster, sondern Beratung.
+            {%- endcomment -%}
+            <p class="tp-sample__gruppe-hinweis">
+              Hier ist jedes Dekor ein eigener Belag.
+              <a href="/pages/kontakt?thema=muster">Schreiben Sie uns kurz, welches Sie sehen möchten</a> – wir schicken das Muster zu.
+            </p>
+          {%- endif -%}
+          <a class="tp-sample__gruppe-alle" href="{{ tp_sample_url }}">Alle {{ tp_sample_titel | escape }} ansehen</a>
+        </section>
+      {%- endif -%}
+    {%- endfor -%}
+
     <p>Fragen zu Mustern? <a href="/pages/kontakt">Schreiben Sie uns</a> – wir beraten Sie gern.</p>
   </div>
   <div class="tp-sample__product" data-sample-product hidden>

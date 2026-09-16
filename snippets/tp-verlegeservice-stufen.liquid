@@ -46,9 +46,15 @@
       <p><strong>Lieferung &amp; lose Verlegung kostenlos</strong> <span>im Umkreis von {{ vss_nah }}&nbsp;km</span></p>
     </div>
 
+    {%- comment -%} Beide Bedingungen, ausdruecklich. Ohne diesen Satz lasen
+      Kunden aus 40 km Entfernung "ab der Schwelle ist die Verlegung frei, ich
+      zahle nur die Anfahrt" - das ist die Lesart, die am Telefon die
+      Diskussion ausloest. {%- endcomment -%}
+    <p class="tp-vs-stufe__bedingung">Beides muss zusammentreffen: <strong>ab {{ vss_schwelle }}&nbsp;€ Warenwert und innerhalb von {{ vss_nah }}&nbsp;km.</strong> Weiter entfernt berechnen wir Anfahrt und lose Verlegung zu den Festpreisen.</p>
+
     <ul class="tp-vs-kurz" role="list">
       <li>
-        <span>Fixierung &amp; Verklebung</span>
+        <span>Fixierung &amp; Verklebung <small class="tp-vs-zusatz">Zusatzleistung</small></span>
         <span class="tp-vs-kurz__wert"><span>vergünstigt ab {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}</span></span>
       </li>
       <li>
@@ -76,14 +82,14 @@
         <span>Lose Verlegung</span>
         <span class="tp-vs-kurz__wert">
           {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
-          <small>mind. {{ vss_mindest }}</small>
+          <small>mind. {{ vss_mindest }} je Auftrag</small>
         </span>
       </li>
       <li>
         <span>Mit Fixierung oder Kleber</span>
         <span class="tp-vs-kurz__wert">
           <span>ab {% render 'tp-vs-preis', wert: settings.tp_vs_band_basis %}</span>
-          <small>inkl. Verlegung</small>
+          <small>Komplettpreis statt loser Verlegung</small>
         </span>
       </li>
     </ul>
@@ -167,6 +173,36 @@
     color: var(--tp-vs-leise);
     font-size: 16px;
     line-height: 1.5;
+  }
+
+  /* Die Und-Bedingung direkt unter der gruenen Flaeche, nicht im Kleingedruckten:
+     sie schraenkt genau die Aussage darueber ein. */
+  .tp-vs-stufe__bedingung {
+    margin: 0;
+    color: var(--tp-vs-leise);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .tp-vs-stufe__bedingung strong {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.92);
+  }
+
+  /* "Zusatzleistung" als Marke am Namen - sonst liest sich die Zeile wie ein
+     weiterer Bestandteil des Angebots. */
+  .tp-vs-zusatz {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border: 1px solid rgb(var(--tp-vs-ton) / 0.4);
+    border-radius: 999px;
+    color: #6d5536;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    vertical-align: 1px;
+    white-space: nowrap;
   }
 
   /* Die Kernaussage der besseren Stufe in der hellgruenen Flaeche des Themes

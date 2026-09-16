@@ -132,9 +132,41 @@ function doctor() {
     'Preview-Evidence passt zum aktuellen origin/main',
     remediationFor('PREVIEW_EVIDENCE')?.fix);
 
-  add(run(commandName('shopify'), ['version'], { timeoutMs: 60_000 }).exitCode === 0,
-    'Shopify CLI im PATH',
-    remediationFor('MISSING_SHOPIFY')?.fix);
+  const cliDa = run(commandName('shopify'), ['version'], { timeoutMs: 60_000 }).exitCode === 0;
+  add(cliDa, 'Shopify CLI im PATH', remediationFor('MISSING_SHOPIFY')?.fix);
+
+  // Existieren die in live-theme.json eingetragenen Themes ueberhaupt noch?
+  //
+  // Am 2026-09-15 waren mehrere Themes aus der Admin API verschwunden - auch
+  // das damalige Preview-Theme und "Horizon", das dort seit jeher mit dem
+  // Vermerk "Niemals loeschen oder ueberschreiben" steht. Gemerkt hat es
+  // niemand: theme:guard prueft nur, ob die Datei zu den Anweisungstexten
+  // passt, nicht ob die IDs noch ein Theme treffen. Aufgefallen ist es erst,
+  // als workflow:preview mit THEME_ID_AMBIGUOUS abbrach - mitten im Deploy.
+  //
+  // Ein fehlender Rueckfallpunkt ist kein Schoenheitsfehler: Zurueckschalten
+  // ist ein Publish, Wiederherstellen dagegen ein Neuaufbau aus git - und der
+  // trifft nie config/settings_data.json, die auf dem Theme liegt und nicht
+  // im Repository gepflegt wird.
+  if (cliDa) {
+    let bestand = null;
+    try {
+      const ids = new Set(themeList(String(args.store ?? DEFAULT_STORE)).map((t) => String(t.id)));
+      const eingetragen = JSON.parse(fs.readFileSync(path.join(root, 'domains/shopify/live-theme.json'), 'utf8'));
+      bestand = ['live', 'preview', 'fallback']
+        .map((rolle) => ({ rolle, id: String(eingetragen?.[rolle]?.themeId ?? '') }))
+        .filter((e) => e.id && !ids.has(e.id));
+    } catch {
+      bestand = null;
+    }
+    add(Array.isArray(bestand) && bestand.length === 0,
+      'Eingetragene Themes (live, preview, fallback) existieren noch',
+      bestand === null
+        ? 'Theme-Liste oder live-theme.json nicht lesbar - Netz und Shopify-Login pruefen.'
+        : `Fehlt in der Admin API: ${bestand.map((e) => `${e.rolle} ${e.id}`).join(', ')}. `
+          + 'Ein geloeschtes Theme laesst sich nicht wiederherstellen; Eintrag in '
+          + 'domains/shopify/live-theme.json unter retired ausbuchen und Ersatz anlegen.');
+  }
 
   const failed = checks.filter(check => !check.ok);
   console.log('── Deploy-Preflight ────────────────────────────────────────');

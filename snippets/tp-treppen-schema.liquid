@@ -1,0 +1,148 @@
+{% comment %}
+  Schemazeichnung einer Treppe fuer die Ausfuehrungsvarianten.
+
+  Warum gezeichnet und nicht fotografiert: Fuer die Varianten gibt es keine
+  Fotos. In der Referenzgalerie liegen genau zwei Treppenprojekte, beide
+  Teppichboden vollflaechig (Metaobjekte tp_projekt, geprueft 2026-09-12).
+  Kokos, Sisal und Vinyl auf der Treppe sind nicht fotografiert. Ein Foto zu
+  nehmen, das etwas anderes zeigt, waere schlimmer als eine Zeichnung - genau
+  dieser Fehler stand vorher auf der Seite: die Karte "Kokoslaeufer" zeigte
+  einen roten Teppichboden.
+
+  Zwei Ansichten in einer Grafik, weil eine allein die Frage nicht beantwortet:
+  die Seitenansicht zeigt, welche Flaechen der Stufe belegt werden (Tritt,
+  Setz, Wange), die Draufsicht zeigt die Breite - und nur daran unterscheidet
+  sich ein gekettelter Laeufer von einer vollflaechigen Belegung.
+
+  Aufruf aus einer Sektion: das Snippet tp-treppen-schema rendern und dabei
+  variante uebergeben (laeufer, einzelstufe, trittstufe, tritt_setz, wange).
+
+  Stange und Kettelung sehen in der Seitenansicht gleich aus und sind trotzdem
+  zwei Varianten: Kokos und Sisal kommen in festen Breiten mit verschweisster
+  Industriekante und werden von einer Treppenlaeuferstange gehalten; gekettelt
+  wird eine Bahn, die auf Mass geschnitten wurde. Unterschieden werden sie in
+  der Draufsicht - Stange durch den Stab in der Stufenkehle, Kettelung durch
+  die beiden gestrichelten Laengskanten.
+
+  Geometrie Seitenansicht: Stufe 32 breit, 28 hoch, Antritt bei x=14, Boden
+  bei y=142. Die mittlere Stufe (Setzstufe x=46, Trittstufe y=86) ist die, die
+  bei "einzelstufe" allein markiert wird. Die Stangen sitzen in den Kehlen bei
+  (46,114), (78,86) und (110,58).
+{% endcomment %}
+
+{%- liquid
+  assign ts_variante = variante | default: 'tritt_setz'
+
+  assign ts_tritt = false
+  assign ts_setz = false
+  assign ts_wange = false
+  assign ts_nur_mitte = false
+  assign ts_schmal = false
+  assign ts_kettelung = false
+  assign ts_stange = false
+
+  case ts_variante
+    when 'stange'
+      assign ts_tritt = true
+      assign ts_setz = true
+      assign ts_schmal = true
+      assign ts_stange = true
+    when 'laeufer'
+      assign ts_tritt = true
+      assign ts_setz = true
+      assign ts_schmal = true
+      assign ts_kettelung = true
+    when 'einzelstufe'
+      assign ts_tritt = true
+      assign ts_setz = true
+      assign ts_nur_mitte = true
+    when 'trittstufe'
+      assign ts_tritt = true
+    when 'tritt_setz'
+      assign ts_tritt = true
+      assign ts_setz = true
+    when 'wange'
+      assign ts_tritt = true
+      assign ts_setz = true
+      assign ts_wange = true
+  endcase
+-%}
+
+<svg
+  class="tp-treppen-schema"
+  viewBox="0 0 260 164"
+  xmlns="http://www.w3.org/2000/svg"
+  aria-hidden="true"
+  focusable="false"
+>
+  {%- comment -%} Seitenansicht: drei Stufen, Treppe steigt nach rechts. {%- endcomment -%}
+  <polygon
+    class="tp-treppen-schema__koerper{% if ts_wange %} is-belegt{% endif %}"
+    points="14,142 14,114 46,114 46,86 78,86 78,58 110,58 110,142"
+  />
+  <polyline
+    class="tp-treppen-schema__kante"
+    points="14,142 14,114 46,114 46,86 78,86 78,58 110,58 110,30"
+  />
+  <line class="tp-treppen-schema__boden" x1="6" y1="142" x2="124" y2="142" />
+
+  {%- if ts_tritt -%}
+    {%- unless ts_nur_mitte -%}
+      <line class="tp-treppen-schema__belag" x1="14" y1="114" x2="46" y2="114" />
+      <line class="tp-treppen-schema__belag" x1="78" y1="58" x2="110" y2="58" />
+    {%- endunless -%}
+    <line class="tp-treppen-schema__belag" x1="46" y1="86" x2="78" y2="86" />
+  {%- endif -%}
+
+  {%- if ts_setz -%}
+    {%- unless ts_nur_mitte -%}
+      <line class="tp-treppen-schema__belag" x1="14" y1="142" x2="14" y2="114" />
+      <line class="tp-treppen-schema__belag" x1="78" y1="86" x2="78" y2="58" />
+    {%- endunless -%}
+    <line class="tp-treppen-schema__belag" x1="46" y1="114" x2="46" y2="86" />
+  {%- endif -%}
+
+  {%- if ts_stange -%}
+    <circle class="tp-treppen-schema__stange" cx="46" cy="114" r="4" />
+    <circle class="tp-treppen-schema__stange" cx="78" cy="86" r="4" />
+    <circle class="tp-treppen-schema__stange" cx="110" cy="58" r="4" />
+  {%- endif -%}
+
+  {%- comment -%}
+    Draufsicht: dieselben drei Stufen von oben. Nur hier ist zu sehen, ob der
+    Belag ueber die ganze Breite geht oder als Bahn in der Mitte liegt.
+  {%- endcomment -%}
+  <rect class="tp-treppen-schema__stufe" x="150" y="108" width="100" height="34" rx="2" />
+  <rect class="tp-treppen-schema__stufe" x="150" y="70" width="100" height="34" rx="2" />
+  <rect class="tp-treppen-schema__stufe" x="150" y="32" width="100" height="34" rx="2" />
+
+  {%- if ts_schmal -%}
+    {%- assign ts_x = 175 -%}
+    {%- assign ts_breite = 50 -%}
+  {%- else -%}
+    {%- assign ts_x = 150 -%}
+    {%- assign ts_breite = 100 -%}
+  {%- endif -%}
+
+  {%- unless ts_nur_mitte -%}
+    <rect class="tp-treppen-schema__flaeche" x="{{ ts_x }}" y="108" width="{{ ts_breite }}" height="34" rx="2" />
+    <rect class="tp-treppen-schema__flaeche" x="{{ ts_x }}" y="32" width="{{ ts_breite }}" height="34" rx="2" />
+  {%- endunless -%}
+  <rect class="tp-treppen-schema__flaeche" x="{{ ts_x }}" y="70" width="{{ ts_breite }}" height="34" rx="2" />
+
+  {%- if ts_kettelung -%}
+    {%- comment -%} Die zwei gekettelten Laengskanten der Bahn. {%- endcomment -%}
+    <line class="tp-treppen-schema__kettelung" x1="175" y1="32" x2="175" y2="142" />
+    <line class="tp-treppen-schema__kettelung" x1="225" y1="32" x2="225" y2="142" />
+  {%- endif -%}
+
+  {%- if ts_stange -%}
+    {%- comment -%} Je Stufe ein Stab quer ueber die Bahn, etwas breiter als diese. {%- endcomment -%}
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="108" x2="230" y2="108" />
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="70" x2="230" y2="70" />
+    <line class="tp-treppen-schema__stange-stab" x1="170" y1="32" x2="230" y2="32" />
+  {%- endif -%}
+
+  <text class="tp-treppen-schema__legende" x="14" y="160">Seitenansicht</text>
+  <text class="tp-treppen-schema__legende" x="150" y="160">Von oben</text>
+</svg>

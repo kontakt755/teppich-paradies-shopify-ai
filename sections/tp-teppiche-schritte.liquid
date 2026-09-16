@@ -1,0 +1,66 @@
+{%- comment -%}
+  "In vier Schritten": Farbe, Masse, Preis, Bestellung. Uebernommen aus dem
+  Entwurf (sections/tp-rug-schritte.liquid); dort endete der Ablauf in einer
+  Anfrage ohne Preis, hier endet er in der Bestellung - der Preis steht im
+  Konfigurator. Keine Lieferzeiten, keine Zusagen ausserhalb des Angebots.
+{%- endcomment -%}
+{{ 'tp-teppiche.css' | asset_url | stylesheet_tag }}
+<section class="tp-tep tp-tep-sec{% if section.settings.sand %} tp-tep-sec--sand{% endif %}" id="so-funktioniert-es" aria-labelledby="tp-ts-{{ section.id }}">
+  <div class="tp-tep-wrap">
+    <div class="tp-tep-head">
+      <div class="tp-tep-head__text">
+        <h2 class="tp-tep-h2" id="tp-ts-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+        {%- if section.settings.text != blank -%}<p class="tp-tep-lead">{{ section.settings.text | escape }}</p>{%- endif -%}
+      </div>
+      {%- if section.settings.cta != blank and section.settings.cta_url != blank -%}
+        <a class="tp-tep-btn tp-tep-btn--primary" href="{{ section.settings.cta_url }}">{{ section.settings.cta | escape }}</a>
+      {%- endif -%}
+    </div>
+    <ol class="tp-tep-steps" role="list">
+      {%- for block in section.blocks -%}
+        <li class="tp-tep-step{% if forloop.last %} tp-tep-step--last{% endif %}" {{ block.shopify_attributes }}>
+          <span class="tp-tep-step__num" aria-hidden="true">{{ forloop.index }}</span>
+          <h3 class="tp-tep-h3"><span class="tp-tep-sr">Schritt {{ forloop.index }}: </span>{{ block.settings.title | escape }}</h3>
+          <p class="tp-tep-small">{{ block.settings.text | escape }}</p>
+        </li>
+      {%- endfor -%}
+    </ol>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TP Teppiche Schritte",
+  "tag": "div",
+  "class": "tp-tep-section",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Überschrift", "default": "In vier Schritten zu Ihrem Teppich" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Sie sehen jederzeit, was Sie gewählt haben – und was es kostet." },
+    { "type": "text", "id": "cta", "label": "Knopf" },
+    { "type": "url", "id": "cta_url", "label": "Ziel des Knopfs" },
+    { "type": "checkbox", "id": "sand", "label": "Sandfarbener Hintergrund", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Schritt",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Titel", "default": "Farbe wählen" },
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "max_blocks": 6,
+  "presets": [
+    {
+      "name": "TP Teppiche Schritte",
+      "blocks": [
+        { "type": "step", "settings": { "title": "Farbe wählen", "text": "14 Farbtöne, jeder mit echtem Foto. Bis zu drei Muster schicken wir kostenlos." } },
+        { "type": "step", "settings": { "title": "Maße eingeben", "text": "Breite und Länge zentimetergenau, bis 400 × 600 cm." } },
+        { "type": "step", "settings": { "title": "Preis sehen", "text": "Der Preis erscheint sofort – keine Anfrage, kein Warten." } },
+        { "type": "step", "settings": { "title": "Bestellen", "text": "Wir schneiden zu, ketteln die Kante rundum und liefern." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

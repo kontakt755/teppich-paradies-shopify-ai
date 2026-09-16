@@ -1,7 +1,8 @@
 {% doc %}
   Eigener Rollenware-Rechner (ersetzt den App-Preisrechner auf Rollenware-
   Templates). Erkennt die Rollenbreite automatisch aus den Produktoptionen,
-  erfasst Länge direkt oder über Raummaße, berechnet Fläche/Menge/Preis und
+  erfasst die Laenge (bei freigegebenen Farben auch eine eigene Breite =
+  Raummass, Variante "Wunschmaß"), berechnet Fläche/Menge/Preis und
   legt die korrekte Menge zum echten Shopify-Variantenpreis (€/m²) in den
   Warenkorb. Der angezeigte Preis ist nur eine Vorschau - abgerechnet wird
   immer variant.price * quantity durch Shopify selbst, nie ein selbst
@@ -10,16 +11,24 @@
   Rendert nur bei belegter custom.rollenbreite (Variante oder Produkt-
   Fallback), exakt dieselbe Erkennung wie in tp-roll-order-help.liquid, damit
   Paketware (Klebevinyl/Klickvinyl) unberuehrt bleibt.
+
+  Schritt 2 ist seit 2026-09-12 die Art: Meterware (volle Rollenbreite, die
+  Breiten als Chips) oder Raummass (eigene Breite in cm). Raummass gibt es
+  nur ueber eine Variante mit Breitenwert "Wunschmaß" - bestellbar, mit
+  Preis, und die Bezugsquelle schliesst den Dienst nicht aus
+  (lieferant.wunschmass == false). Ohne so eine Variante fehlt die Karte,
+  und der Schritt heisst wieder "Breite". Die Regeln dazu liegen ohne DOM in
+  assets/tp-rollware-art.js (Tests: qa/tests/rollware-art.test.mjs).
+
+  Ist ein Raummass-Stueck als Meterware der naechsten Rolle billiger, sagt
+  der Rechner das offen und bietet den Wechsel an - der Vergleich laeuft
+  ueber die echten Variantenpreise, nicht ueber einen Faktor.
 {% enddoc %}
 
 {%- liquid
   assign tp_rc_id = block.id | replace: '_', '' | downcase
   assign tp_rc_is_roll = false
   assign tp_rc_fallback_width_cm = 0
-  # Raummaß-Modus vorerst deaktiviert: andere Preislogik, nicht für jeden
-  # Belag freigegeben. Zentrale Bedingung hier umschalten, um ihn kontrolliert
-  # wieder zu aktivieren - Markup/JS bleiben dafür erhalten.
-  assign tp_rc_room_mode_enabled = false
 
   # Zentimetergenaue Abrechnung.
   #
@@ -62,6 +71,21 @@
       assign tp_rc_fallback_width_cm = tp_rc_product_width | times: 100
     endif
   endif
+
+  # Zusaetze im Rechner: nur mit gewaehltem Produkt in den Block-Einstellungen
+  # und nur, wenn die gewaehlte Variante service.einfassen exakt "Verfuegbar"
+  # traegt (JS updateExtras). Sonst erscheint gar nichts.
+  # Zusaetze zum Teppichboden: gekettelte Fussleiste aus demselben Material
+  # (Varianten = Hoehen, Preis je laufendem Meter) und Haftunterlage von der
+  # Rolle (Varianten = Breiten, Preis je laufendem Meter).
+  #
+  # Die Kante des Teppichbodens selbst wird hier NICHT eingefasst - ein
+  # zugeschnittener Teppichboden bleibt Auslegware. Wer einen fertigen,
+  # umlaufend gekettelten Teppich will, kommt ueber service.einfass_gruppe
+  # zum eigenen Produkt "Teppich nach Mass".
+  assign tp_rc_leiste = block.settings.kettelleisten_produkt
+  assign tp_rc_haft = block.settings.haftunterlage_produkt
+  assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
 <div class="tp-rwc-{{ tp_rc_id }}" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
@@ -74,29 +98,88 @@
   {%- endcomment -%}
   <p class="tp-rwc-service-hint" data-service-hint hidden></p>
 
-  <div class="tp-rwc-field" data-width-field data-rwc-body>
-    {% render 'tp-step-heading', number: 2, label: 'Wählen Sie Ihre Breite' %}
-    <div class="tp-rwc-seg" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
+  {%- comment -%}
+    Kurzanleitung vor dem ersten Schritt: der Konfigurator hat vier Stationen,
+    und wer nur den ersten Schritt sieht, weiss nicht, wie weit es noch geht.
+    Eine Zeile, kein Kasten - der Rechner selbst soll die Aufmerksamkeit haben.
+  {%- endcomment -%}
+  <p class="tp-rwc-anleitung" data-rwc-body>Farbe wählen → Maß eingeben → Preis prüfen → bequem liefern lassen.</p>
+
+  {%- comment -%}
+    Schritt 2 ist die Art: Meterware (volle Rollenbreite) oder Raummass
+    (eigene Breite aus einer "Wunschmaß"-Variante). Die Raummass-Karte
+    erscheint nur, wenn die gewaehlte Farbe so eine Variante bestellbar hat -
+    entschieden in syncArtUi() bei jedem Rechnen. Ohne sie bleibt die Karte
+    weg und der Schritt heisst wieder "Breite"; bei einer einzigen Breite
+    ohne Nummer, denn eine Frage mit einer Antwort ist keine.
+  {%- endcomment -%}
+  <div class="tp-rwc-field" data-art-field data-rwc-body hidden>
+    <span data-art-step>{% render 'tp-step-heading', number: 2, label: 'Art wählen' %}</span>
+    <div class="tp-rwc-art" role="radiogroup" aria-label="Art des Zuschnitts">
+      <input type="radio" id="tp-rwc-art-m-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="meter" checked>
+      <label class="tp-rwc-art-card" for="tp-rwc-art-m-{{ tp_rc_id }}">
+        <svg class="tp-rwc-art-icon" viewBox="0 0 48 40" aria-hidden="true" focusable="false">
+          <rect x="4" y="6" width="30" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+          <circle cx="39" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 20h22" stroke="var(--tp-rwc-accent)" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round"/>
+        </svg>
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title">Meterware</span>
+          <span class="tp-rwc-art-sub" data-art-sub-meter>volle Rollenbreite</span>
+        </span>
+      </label>
+      <input type="radio" id="tp-rwc-art-r-{{ tp_rc_id }}" name="tp-rwc-art-{{ tp_rc_id }}" value="raum">
+      <label class="tp-rwc-art-card" for="tp-rwc-art-r-{{ tp_rc_id }}" data-art-card-raum hidden>
+        <svg class="tp-rwc-art-icon" viewBox="0 0 48 40" aria-hidden="true" focusable="false">
+          <rect x="4" y="6" width="30" height="28" rx="2" fill="none" stroke="currentColor" stroke-width="3"/>
+          <circle cx="39" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="3"/>
+          <path d="M8 18h14v12" fill="none" stroke="var(--tp-rwc-accent)" stroke-width="3.5" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="12" y="15" font-size="8" font-weight="700" fill="currentColor">B</text>
+          <text x="25" y="30" font-size="8" font-weight="700" fill="currentColor">L</text>
+        </svg>
+        <span class="tp-rwc-art-text">
+          <span class="tp-rwc-art-title">Raummaß</span>
+          <span class="tp-rwc-art-sub" data-art-sub-raum>eigene Breite, zentimetergenau</span>
+        </span>
+      </label>
+    </div>
   </div>
 
   {%- comment -%}
-    Gibt es nur eine Breite, ist die Auswahl oben keine Entscheidung, sondern
-    eine Scheinfrage. Sie wird dann ausgeblendet und die Breite hier nur noch
-    genannt - der JS-Teil entscheidet das, weil nur er die Breiten kennt.
+    Breite und Laenge stehen in einer gemeinsamen Masszeile: auf dem Desktop
+    nebeneinander, weil beide Angaben zusammen eine Frage beantworten und der
+    Platz da ist; auf dem Handy untereinander, weil zwei halbe Spalten das
+    Zahlenfeld quetschen. Die Reihenfolge im DOM bleibt unveraendert, und die
+    Raummass-Box tritt weiterhin an die Stelle der Rollenbreite - im Raster
+    faellt ein verborgenes Feld einfach weg.
   {%- endcomment -%}
-  <p class="tp-rwc-fixed-width" data-width-fixed hidden data-rwc-body></p>
-
-  {%- if tp_rc_room_mode_enabled -%}
-  <div class="tp-rwc-mode-toggle">
-    <button type="button" class="tp-rwc-mode-btn is-active" data-mode-btn="length" aria-pressed="true">Gewünschte Länge</button>
-    <button type="button" class="tp-rwc-mode-btn" data-mode-btn="room" aria-pressed="false">Raummaße</button>
+  <div class="tp-rwc-masse" data-rwc-body>
+  <div class="tp-rwc-field" data-width-field>
+    <span data-width-step hidden>{% render 'tp-step-heading', number: 2, label: 'Breite wählen' %}</span>
+    <span class="tp-rwc-label" data-width-label>Rollenbreite</span>
+    <div class="tp-rwc-seg tp-rwc-seg--width" role="radiogroup" aria-label="Rollenbreite" data-width-seg></div>
   </div>
-  {%- endif -%}
 
-  <div class="tp-rwc-mode-panel" data-mode-panel="length" data-rwc-body>
+  <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
+    <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Ihre Breite</label>
+    <div class="tp-rwc-input-wrap">
+      <input type="number" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="50" step="1" placeholder="z. B. 250" data-wunsch-input>
+      <span class="tp-rwc-unit">cm</span>
+    </div>
+    <p class="tp-rwc-note" data-wunsch-hint></p>
+    <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
+    <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden></p>
+  </div>
+
+  <div class="tp-rwc-mode-panel" data-mode-panel="length">
     <div class="tp-rwc-field">
-      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Geben Sie Ihre Länge an' %}</span>
-      <label class="tp-rwc-label" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
+      <span data-length-step>{% render 'tp-step-heading', number: 3, label: 'Länge eingeben' %}</span>
+      {%- comment -%}
+        Die Schrittzeile darueber sagt bereits "Laenge eingeben"; sichtbar
+        stuende hier zum zweiten Mal dasselbe Wort. Das Label bleibt als
+        Beschriftung des Feldes fuer Screenreader und den Klick aufs Wort.
+      {%- endcomment -%}
+      <label class="tp-rwc-label tp-rwc-label--vorlesen" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
       <div class="tp-rwc-input-wrap">
         <input
           type="number"
@@ -106,10 +189,25 @@
           inputmode="numeric"
           min="100"
           step="1"
-          placeholder="Hier Länge eingeben (cm)"
+          placeholder="z. B. 400"
           data-length-input>
         <span class="tp-rwc-unit">cm</span>
       </div>
+      {%- comment -%}
+        Messhinweis. Bewusst NICHT "der Shop rechnet 5 cm Zugabe in der Breite
+        ein": die Zugabe (ZUGABE_CM in tp-rollware-art.js) entscheidet nur,
+        aus welcher Rolle geschnitten wird, und begrenzt die groesste
+        bestellbare Breite auf Rolle minus 5 cm. Berechnet wird dem Kunden
+        seine angegebene Breite - 250 cm eingegeben heisst 250 cm bezahlt,
+        auch wenn der Lieferant 255 cm schneidet. Die andere Formulierung
+        klingt nach 5 cm Material oder 5 cm Aufpreis; beides waere falsch.
+        Der Satz erscheint nur im Raummass, wo die Zugabe ueberhaupt greift -
+        bei Meterware bekommt der Kunde die volle Rollenbreite.
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-note-mess" data-mess-hint>
+        Messen Sie an der längsten Stelle.
+        <span data-mess-raum hidden>Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
+      </p>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.</p>
       {%- comment -%}
@@ -122,50 +220,12 @@
       <p class="tp-rwc-note tp-rwc-note-error" data-error-max hidden></p>
     </div>
   </div>
-
-  {%- if tp_rc_room_mode_enabled -%}
-  <div class="tp-rwc-mode-panel" data-mode-panel="room" hidden>
-    <div class="tp-rwc-room-row">
-      <div class="tp-rwc-field">
-        <label class="tp-rwc-label" for="tp-rwc-room-l-{{ tp_rc_id }}">Raumlänge</label>
-        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
-          <input
-            type="number"
-            id="tp-rwc-room-l-{{ tp_rc_id }}"
-            class="tp-rwc-input"
-            inputmode="decimal"
-            min="0.1"
-            step="0.01"
-            placeholder="4,00"
-            data-room-length-input>
-          <span class="tp-rwc-unit">m</span>
-        </div>
-      </div>
-      <div class="tp-rwc-field">
-        <label class="tp-rwc-label" for="tp-rwc-room-b-{{ tp_rc_id }}">Raumbreite</label>
-        <div class="tp-rwc-input-wrap tp-rwc-input-wrap--room">
-          <input
-            type="number"
-            id="tp-rwc-room-b-{{ tp_rc_id }}"
-            class="tp-rwc-input"
-            inputmode="decimal"
-            min="0.1"
-            step="0.01"
-            placeholder="3,50"
-            data-room-width-input>
-          <span class="tp-rwc-unit">m</span>
-        </div>
-      </div>
-    </div>
-    <p class="tp-rwc-note tp-rwc-note-error" data-error-room-too-wide hidden>
-      Bei mehreren Bahnen oder besonderen Raumformen beraten wir Sie gerne.
-    </p>
   </div>
-  {%- endif -%}
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
   <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden data-rwc-body>
+    <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
     <div class="tp-rwc-stage" data-stage>
       <div class="tp-rwc-piece" data-piece>
         <span class="tp-rwc-tag tp-rwc-tag-w" data-tag-width>–</span>
@@ -173,6 +233,42 @@
       </div>
     </div>
   </figure>
+
+  {%- if tp_rc_leiste != blank -%}
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
+      {% render 'tp-step-heading', number: 4, label: 'Passende Teppich-Fußleiste' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-leiste-an>
+        <span class="tp-rwc-karte-text"><b>Gekettelte Fußleiste aus Ihrem Teppich</b><small>Auf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.</small></span>
+        <span class="tp-rwc-karte-preis" data-leiste-preis></span>
+      </label>
+      <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
+          <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
+        </div>
+        <div>
+          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Benötigte Länge</label>
+          <div class="tp-rwc-input-wrap">
+            <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" min="0.5" step="0.1" placeholder="z. B. 18,5" data-leiste-meter>
+            <span class="tp-rwc-unit">m</span>
+          </div>
+        </div>
+        <p class="tp-rwc-note" data-leiste-hint></p>
+      </div>
+    </div>
+  {%- endif -%}
+  {%- if tp_rc_haft != blank -%}
+    <div class="tp-rwc-field tp-rwc-extra" data-extra="haft" hidden data-rwc-body>
+      {% render 'tp-step-heading', number: 5, label: 'Haftunterlage für Teppichboden' %}
+      <label class="tp-rwc-karte">
+        <input type="checkbox" data-haft-an>
+        <span class="tp-rwc-karte-text"><b>Dünne Antirutsch-Unterlage von der Rolle</b><small data-haft-hint></small></span>
+        <span class="tp-rwc-karte-preis" data-haft-preis></span>
+      </label>
+      <p class="tp-rwc-note" data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</p>
+    </div>
+  {%- endif -%}
 
   <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
     <div class="tp-rwc-calc-formula">
@@ -185,6 +281,7 @@
       {%- endcomment -%}
       <div class="tp-rwc-calc-round" data-formula-round hidden></div>
       <div class="tp-rwc-calc-step" data-formula-price>–</div>
+      <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
     </div>
     <div class="tp-rwc-calc-total">
       <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
@@ -197,8 +294,105 @@
     ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
     Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
   {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta" data-cta disabled hidden data-rwc-body>Länge eingeben</button>
+  {%- comment -%}
+    Vertrauenszeile direkt am Kaufbutton - die drei Punkte, die beim Zuschnitt
+    die Kaufangst nehmen: vorher anfassen, keine Versandkosten, jemand am
+    Telefon. Die 50-Euro-Schwelle steht genauso in Topbar, Warenkorb und
+    tp-service-links; sie darf nur gemeinsam mit denen geaendert werden.
+  {%- endcomment -%}
+  <ul class="tp-rwc-trust" data-rwc-body>
+    <li>Bis zu 3 Muster kostenlos</li>
+    <li>Versandkostenfrei in Deutschland ab 50 €</li>
+    <li>Persönliche Fachberatung</li>
+  </ul>
+
+  {%- comment -%}
+    Lieferart am Kaufbutton. Rollenware geht per Spedition - das ist die Frage,
+    die sonst erst im Warenkorb auftaucht ("wie kommt eine 4 m breite Rolle zu
+    mir?"). Eine Lieferzeit in Tagen steht hier bewusst NICHT: die pflegt
+    tp-service-links als Block-Einstellung, und eine zweite, hart verdrahtete
+    Zahl im Theme waere genau die Sorte Angabe, die still veraltet.
+
+    Verlegeservice und Aufmass bleiben in der Section product_service_rolle
+    unter dem Produkt (PR #278 hat sie bewusst dorthin verlegt, um den oberen
+    Kaufbereich schlank zu halten). Hier steht nur der Verweis darauf - das
+    haelt den Kaufbereich kompakt und beantwortet die Frage trotzdem.
+  {%- endcomment -%}
+  <p class="tp-rwc-liefern" data-rwc-body>
+    Lieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an.
+    Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.
+  </p>
+
+  {%- comment -%}
+    Der Button bleibt sichtbar und anklickbar, auch solange Breite oder Laenge
+    fehlen. Vorher verschwand er (cta.hidden = cta.disabled) - der Kunde sah an
+    der Stelle nichts und hatte keinen Anhaltspunkt, was noch fehlt. Ein echtes
+    disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
+    dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
+  {%- endcomment -%}
+  <button type="button" class="tp-rwc-cta is-incomplete" data-cta aria-disabled="true" data-rwc-body>Breite und Länge eingeben</button>
+  <p class="tp-rwc-note tp-rwc-note-error tp-rwc-cta-hint" data-cta-hint role="alert" hidden data-rwc-body></p>
   <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+  {%- comment -%}
+    Feste Kaufleiste am unteren Rand, nur am Telefon.
+
+    Der Konfigurator ist 1328 px hoch; der Kaufbutton stand am 2026-09-15 bei
+    2330 px - fast drei Bildschirmlaengen unter dem Seitenanfang. Wer Farbe,
+    Breite und Laenge gewaehlt hatte, musste zum Kaufen wieder nach unten
+    suchen. Die Leiste erscheint deshalb, sobald der eigentliche Button aus dem
+    Bild gescrollt ist, und zeigt Summe und Kaufbutton.
+
+    Sie hat bewusst keine eigene Logik: ihr Knopf loest den echten Button aus.
+    Pruefung, Fehlermeldung, Fokus, Warenkorb-Aufruf und Sperre gegen
+    ungueltige Konfigurationen bleiben damit an genau einer Stelle - zwei
+    Kaufwege, die auseinanderlaufen koennen, waren hier nicht gewollt.
+  {%- endcomment -%}
+  <div class="tp-rwc-kaufleiste" data-kaufleiste hidden aria-hidden="true">
+    <div class="tp-rwc-kaufleiste__summe">
+      <span class="tp-rwc-kaufleiste__label">Gesamt</span>
+      <span class="tp-rwc-kaufleiste__wert" data-kaufleiste-summe>–</span>
+    </div>
+    <button type="button" class="tp-rwc-kaufleiste__btn" data-kaufleiste-btn tabindex="-1">In den Warenkorb</button>
+  </div>
+
+  {%- comment -%}
+    Auch als fertiger Teppich nach Mass. Welche Produkte, sagt
+    service.einfass_gruppe; welche Farbe es dort gibt, allein
+    service.basisvariante der Varianten. Sichtbar nur, wenn die gewaehlte
+    Variante service.einfassen exakt "Verfuegbar" traegt (JS).
+  {%- endcomment -%}
+  {%- if tp_rc_einfass_gruppe != blank -%}
+    <div class="tp-rwc-einfass" data-einfass-box hidden>
+      <p class="tp-rwc-einfass-titel">Lieber als fertigen Teppich nach Maß?</p>
+      <div class="tp-rwc-einfass-chips">
+        {%- assign tp_rc_arten = 'cover,ketteln,einfassband,paspelband' | split: ',' -%}
+        {%- for tp_rc_art in tp_rc_arten -%}
+          {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
+            {%- assign tp_rc_ea = tp_rc_ep.metafields.service.einfassung.value | strip | downcase -%}
+            {%- if tp_rc_ea == tp_rc_art and tp_rc_ep.available -%}
+              {%- case tp_rc_ea -%}
+                {%- when 'cover' -%}{%- assign tp_rc_el = 'Mit Cover' -%}
+                {%- when 'ketteln' -%}{%- assign tp_rc_el = 'Gekettelt' -%}
+                {%- when 'einfassband' -%}{%- assign tp_rc_el = 'Mit Einfassband' -%}
+                {%- when 'paspelband' -%}{%- assign tp_rc_el = 'Mit Paspelband' -%}
+              {%- endcase -%}
+              {%- comment -%}
+                Gibt es nur ein Einfassprodukt, sagt die Einfassart allein zu
+                wenig - dann steht auf dem Knopf, wohin er fuehrt. Mit mehreren
+                Arten unterscheiden die Namen die Chips voneinander.
+              {%- endcomment -%}
+              {%- if tp_rc_einfass_gruppe.size == 1 -%}
+                {%- assign tp_rc_el = 'Als Teppich nach Maß konfigurieren' -%}
+              {%- endif -%}
+              <a class="tp-rwc-einfass-chip" href="{{ tp_rc_ep.url }}" data-einfass-ziel="{{ tp_rc_ep.id }}" hidden>{{ tp_rc_el }}</a>
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
 
 </div>
 
@@ -208,6 +402,46 @@
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
   "cm_exact": {{ tp_rc_cm_exact | json }},
+  "product_title": {{ product.title | json }},
+  "leiste": [
+    {%- if tp_rc_leiste != blank -%}
+      {%- for tp_rc_lv in tp_rc_leiste.variants -%}
+        {%- if tp_rc_lv.available and tp_rc_lv.price > 0 -%}
+          { "id": {{ tp_rc_lv.id | json }}, "title": {{ tp_rc_lv.title | json }}, "price": {{ tp_rc_lv.price | json }} },
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    null
+  ],
+  {%- comment -%}
+    Haftunterlage: alle bestellbaren Breiten mit Preis je laufendem Meter. Die
+    Breite steht im Variantentitel ("1 mm, 180 cm breit (je lfm)"); ohne
+    erkennbare Breite faellt die Variante weg, statt eine Menge zu raten.
+  {%- endcomment -%}
+  "haft": [
+    {%- if tp_rc_haft != blank -%}
+      {%- for tp_rc_hv in tp_rc_haft.variants -%}
+        {%- if tp_rc_hv.available and tp_rc_hv.price > 0 -%}
+          { "id": {{ tp_rc_hv.id | json }}, "title": {{ tp_rc_hv.title | json }}, "price": {{ tp_rc_hv.price | json }} },
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endif -%}
+    null
+  ],
+  "einfass": {
+    {%- for tp_rc_ep in tp_rc_einfass_gruppe -%}
+      "{{ tp_rc_ep.id }}": {
+        {%- for tp_rc_ev in tp_rc_ep.variants -%}
+          {%- assign tp_rc_bv = tp_rc_ev.metafields.service.basisvariante.value -%}
+          {%- if tp_rc_ev.metafields.service.einfassen.value == 'Verfügbar' and tp_rc_ev.available and tp_rc_bv -%}
+            "{{ tp_rc_bv.id }}": "{{ tp_rc_ev.id }}",
+          {%- endif -%}
+        {%- endfor -%}
+        "_": ""
+      },
+    {%- endfor -%}
+    "_": {}
+  },
   "variants": [
     {%- for variant in product.variants -%}
       {%- assign tp_rc_v_title = variant.title | downcase -%}
@@ -220,6 +454,15 @@
           "farbe_intern": {{ tp_rc_v_farbe_intern | strip | json }},
           "price": {{ variant.price | json }},
           "available": {{ variant.available | json }},
+          {%- comment -%}
+            Zwei Saetze nebeneinander, bewusst. service.* gehoert zu diesem
+            Zweig und faellt geschlossen aus (nur exakt "Verfuegbar" zaehlt),
+            lieferant.* steht seit #229 live und faellt offen aus (fehlendes
+            Feld = erlaubt). Welches Modell gilt, entscheidet der Inhaber -
+            bis dahin nimmt hier niemand dem anderen die Grundlage weg.
+          {%- endcomment -%}
+          "raummass": {{ variant.metafields.service.raummass.value | default: '' | json }},
+          "einfassen": {{ variant.metafields.service.einfassen.value | default: '' | json }},
           {%- comment -%}
             Nur ein ausdrueckliches false schaltet den Dienst ab. Ein fehlendes
             Metafeld liefert nil und wird unten zu true - so bleibt jedes noch
@@ -243,28 +486,11 @@
     --tp-rwc-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
     --tp-rwc-surface: var(--color-background, #fcfcfb);
     --tp-rwc-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
-    margin: 20px 0;
+    --tp-rwc-accent: var(--color-primary, #c8891e);
+    margin: 0;
     color: var(--tp-rwc-ink);
   }
   .tp-rwc-{{ tp_rc_id }} *, .tp-rwc-{{ tp_rc_id }} *::before, .tp-rwc-{{ tp_rc_id }} *::after { box-sizing: border-box; }
-
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-toggle { display: flex; gap: 6px; margin-bottom: 16px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn {
-    flex: 1;
-    padding: 9px 10px;
-    border: 1px solid var(--tp-rwc-line);
-    border-radius: 6px;
-    background: var(--tp-rwc-surface);
-    color: var(--tp-rwc-ink);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-mode-btn.is-active {
-    background: var(--tp-rwc-ink);
-    border-color: var(--tp-rwc-ink);
-    color: var(--tp-rwc-surface);
-  }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-field { margin-bottom: 16px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label {
@@ -283,11 +509,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 84px;
-    padding: 10px 14px;
+    min-width: 96px;
+    padding: 12px 18px;
     border: 1px solid var(--tp-rwc-line);
     background: var(--tp-rwc-surface);
-    font-size: .9rem;
+    font-size: 1rem;
+    font-weight: 600;
     font-variant-numeric: tabular-nums;
     border-radius: 6px;
     cursor: pointer;
@@ -299,10 +526,85 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg input:focus-visible + .tp-rwc-opt { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
 
+  /* Art-Karten: zwei gleich hohe Kacheln, gewaehlt = kraeftiger Rahmen plus Haken. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 34px 14px 12px;
+    border: 1px solid var(--tp-rwc-line);
+    border-radius: 8px;
+    background: var(--tp-rwc-surface);
+    cursor: pointer;
+    min-height: 74px;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 44px; height: 38px; flex-shrink: 0; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
+    border: 2px solid var(--tp-rwc-ink);
+    padding: 13px 33px 13px 11px;
+    background: var(--tp-rwc-material);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card::after {
+    content: "";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 9px;
+    height: 15px;
+    border-right: 3px solid var(--tp-rwc-ink);
+    border-bottom: 3px solid var(--tp-rwc-ink);
+    transform: rotate(45deg);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:focus-visible + .tp-rwc-art-card { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:disabled + .tp-rwc-art-card { display: none; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-tipp { padding: 10px 12px; border-radius: 6px; background: var(--tp-rwc-material); font-size: .85rem; line-height: 1.45; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-linkbtn {
+    display: inline;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--tp-rwc-ink);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+  /* Masszeile: Breite und Laenge. Auf dem Handy untereinander (Vollbreite je
+     Feld), ab 750 px nebeneinander. Ein verborgenes Feld nimmt keine Spalte
+     ein - im Raummass ruecken damit "Ihre Breite" und "Laenge" zusammen. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse { display: grid; gap: 18px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-label--vorlesen {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > * { margin-bottom: 0; }
+
+  @media screen and (min-width: 750px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px 20px;
+      align-items: start;
+    }
+    /* Ohne eigene Schrittnummer begaenne die Breite 36 px hoeher als die
+       Laenge daneben (Hoehe der Schrittzeile plus deren Abstand). Die Reserve
+       greift genau dann, wenn die Schrittzeile verborgen ist. */
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > [data-width-field] > [data-width-step][hidden] + .tp-rwc-label,
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > .tp-rwc-wunsch { margin-top: 36px; }
+  }
+
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { position: relative; max-width: 220px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap--room { max-width: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
     width: 100%;
     padding: 12px 42px 12px 12px;
@@ -331,13 +633,9 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-round[hidden] { display: none; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width {
-    margin: 0 0 16px;
-    font-size: .9rem;
-    color: var(--tp-rwc-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-fixed-width[hidden] { display: none; }
+  /* hidden muss gegen jedes display gewinnen - sonst blitzen Karten und
+     Chips auf, die es fuer diese Farbe gar nicht gibt. */
+  .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
@@ -358,6 +656,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stage {
     display: flex;
     justify-content: center;
+    align-items: flex-end;
     /* Platz für die Maßbeschriftungen, die außerhalb der Rechteckkanten
        sitzen (oben mittig, links vertikal) - siehe .tp-rwc-tag-w/-l. */
     padding: 30px 4px 4px 36px;
@@ -403,25 +702,25 @@
     margin-bottom: 12px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-step {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--tp-rwc-ink);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--tp-rwc-muted);
     font-variant-numeric: tabular-nums;
     font-family: system-ui, -apple-system, sans-serif;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 12px 14px;
-    background: var(--tp-rwc-surface);
-    border: 1px solid var(--tp-rwc-line);
-    border-radius: 8px;
+    padding: 14px 16px;
+    background: var(--tp-rwc-material);
+    border: 1px solid transparent;
+    border-radius: 10px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.5rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.75rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details { margin: 0 0 16px; font-size: 12.5px; color: var(--tp-rwc-muted); }
@@ -429,27 +728,203 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details p { margin: 6px 0 0; line-height: 1.5; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta {
-    display: block; width: 100%; padding: 15px 18px; border: 0; border-radius: var(--style-border-radius-buttons-primary, 6px);
-    background: #1d6b47; color: #fff; font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer;
+    display: block; width: 100%; min-height: 54px; padding: 16px 18px; border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: #1d6b47; color: #fff; font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta[hidden] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:hover:not(:disabled) { background: #185a3b; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta:disabled { background: var(--tp-rwc-surface); color: var(--tp-rwc-muted); border: 1px solid var(--tp-rwc-line); cursor: not-allowed; }
+
+  /* Unvollstaendig heisst gedaempft, nicht unsichtbar: der Button bleibt als
+     Ziel erkennbar und sagt beim Klick, was fehlt. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete {
+    background: var(--tp-rwc-surface);
+    color: var(--tp-rwc-muted);
+    border: 1px solid var(--tp-rwc-line);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: var(--tp-rwc-surface); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-weight: 600; }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-anleitung {
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--tp-rwc-muted);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0 0 10px;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--tp-rwc-muted);
+  }
+  /* Der Mittelpunkt ist Dekoration und gehoert nicht in den Vorlesefluss. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before {
+    content: '\00b7';
+    margin-right: 14px;
+    speak: never;
+  }
+  @media (max-width: 480px) {
+    /* Auf dem Handy untereinander: drei umbrechende Halbzeilen mit
+       wandernden Trennpunkten sind schlechter lesbar als drei Zeilen. */
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust { display: block; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-trust li + li::before { content: none; margin: 0; }
+  }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-mess { color: var(--tp-rwc-muted); }
+
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-liefern {
+    margin: 0 0 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--tp-rwc-muted);
+  }
+
+  /* Fehlendes Pflichtfeld: roter Rahmen am Eingabefeld selbst, damit die
+     Meldung unter dem Button nicht die einzige Spur ist. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-input.is-invalid {
+    border-color: #a62020;
+    box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.18);
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg.is-invalid {
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px rgba(166, 32, 32, 0.35);
+  }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-done { background: #145c38; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-error { background: #a62020; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link { display: block; margin-top: 10px; text-align: center; font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cart-link[hidden] { display: none; }
 
+  /* Die Leiste liegt ausserhalb des Rechners im Bildschirm, deshalb ein
+     eigener, nicht auf tp-rwc-ID beschraenkter Selektor mit fester Position.
+     z-index 29 bleibt unter der Vergleichsleiste (30) - beide zugleich gibt es
+     ohnehin nicht, das Skript blendet die Vergleichsleiste solange aus. */
+  .tp-rwc-kaufleiste {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 29;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+    background: #fff;
+    border-top: 1px solid var(--tp-rwc-line, #e6e0d8);
+    box-shadow: 0 -4px 16px rgb(0 0 0 / 0.1);
+  }
+
+  .tp-rwc-kaufleiste[hidden] { display: none !important; }
+
+  /* Nur am Telefon. Ab Tablet steht genug Platz, dass der Button im Blick
+     bleibt - dort waere die Leiste nur eine Verdeckung. */
+  @media screen and (min-width: 750px) {
+    .tp-rwc-kaufleiste { display: none !important; }
+  }
+
+  .tp-rwc-kaufleiste__summe {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  .tp-rwc-kaufleiste__label {
+    font-size: 11px;
+    color: var(--tp-rwc-muted, #6b655e);
+  }
+
+  .tp-rwc-kaufleiste__wert {
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .tp-rwc-kaufleiste__btn {
+    flex: 1 1 auto;
+    min-height: 48px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: #1d6b45;
+    color: #fff;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .tp-rwc-kaufleiste__btn.is-incomplete {
+    background: #f2efea;
+    color: #6b655e;
+    border: 1px solid var(--tp-rwc-line, #e6e0d8);
+  }
+
+  .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-select {
+    width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-line); border-radius: 6px;
+    background: var(--tp-rwc-surface); color: var(--tp-rwc-ink); font: inherit; font-size: .95rem;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 16px; padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras { display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte {
+    display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center;
+    padding: 14px 16px; border: 1px solid var(--tp-rwc-line); border-radius: 8px;
+    background: var(--tp-rwc-surface); cursor: pointer; transition: border-color .15s, background-color .15s;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:hover { border-color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: #1d6b47; box-shadow: inset 0 0 0 1px #1d6b47; background: rgb(29 107 71 / 0.05); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .95rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: .8rem; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: .85rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-note { grid-column: 1 / -1; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-titel { margin: 0 0 8px; font-size: .9rem; font-weight: 700; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip {
+    padding: 8px 14px; border: 1px solid var(--tp-rwc-line); border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--tp-rwc-ink); text-decoration: none;
+  }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip:hover { border-color: #1d6b47; color: #1d6b47; }
+
   @media screen and (max-width: 749px) {
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; min-height: 52px; font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input { min-height: 52px; padding: 14px 46px 14px 14px; font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length { font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length::placeholder { font-size: .95rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-unit { font-size: .9rem; right: 14px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 22px 1fr; row-gap: 4px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { grid-column: 2; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-room-row { grid-template-columns: 1fr; gap: 10px; }
+  }
+  @media screen and (max-width: 479px) {
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { grid-template-columns: 1fr; }
   }
 </style>
 
+{%- comment -%}
+  defer statt script_tag: nicht parser-blockierend (Theme Check). Deshalb wartet
+  die Initialisierung unten auf DOMContentLoaded, falls das Asset noch nicht da
+  ist - deferred Skripte laufen garantiert davor.
+{%- endcomment -%}
+<script src="{{ 'tp-rollware-art.js' | asset_url }}" defer></script>
 <script>
-(function () {
+function tpRwcInit{{ tp_rc_id }}() {
   var pid = {{ product.id | json }};
   var root = document.getElementById('tp-rwc-{{ tp_rc_id }}');
   var dataEl = document.querySelector('[data-rwc-data-{{ tp_rc_id }}]');
@@ -464,13 +939,9 @@
   var options = data.options || [];
   var variants = (data.variants || []).filter(function (v) { return v !== null; });
 
-  var widthPattern = /^\d+([.,]\d+)?\s?cm$/i;
-  var wIdx = -1;
-  options.forEach(function (opt, idx) {
-    var vals = opt.values || [];
-    var hits = vals.filter(function (v) { return widthPattern.test(String(v).trim()); });
-    if (hits.length > 0 && hits.length === vals.length) wIdx = idx;
-  });
+  var ART = window.TPRollwareArt;
+  if (!ART) return;
+  var wIdx = ART.findWidthOption(options);
   if (!variants.length) return;
 
   var fallbackWidthCm = parseFloat(data.fallback_width_cm) || 0;
@@ -480,12 +951,7 @@
 
   var widths;
   if (wIdx !== -1) {
-    var seen = {};
-    variants.forEach(function (v) {
-      var n = parseFloat(String(v.options[wIdx]).replace(',', '.'));
-      if (!isNaN(n)) seen[n] = true;
-    });
-    widths = Object.keys(seen).map(Number).sort(function (a, b) { return a - b; });
+    widths = ART.numericWidths(variants, wIdx);
     if (!widths.length) return;
   } else {
     // Kein separates Rollenbreite-Produktoption vorhanden (z.B. nur eine
@@ -496,57 +962,69 @@
 
   root.style.display = '';
 
-  // Eine einzige Breite ist keine Auswahl. Frueher wurde sie trotzdem als
-  // Schritt 2 mit genau einem Knopf angeboten - eine Frage, die nichts
-  // entscheidet. Ohne Breitenoption (wIdx === -1) blieb ausserdem die
-  // Nummerierung als "1, 3" stehen, weil nur das Feld verschwand.
-  var hasWidthChoice = wIdx !== -1 && widths.length > 1;
 
-  if (hasWidthChoice) {
-    var seg = root.querySelector('[data-width-seg]');
-    widths.forEach(function (w, i) {
-      var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
-      var input = document.createElement('input');
-      input.type = 'radio';
-      input.name = 'tp-rwc-width-{{ tp_rc_id }}';
-      input.id = id;
-      input.value = w;
-      if (i === 0) input.checked = true;
-      var label = document.createElement('label');
-      label.className = 'tp-rwc-opt';
-      label.setAttribute('for', id);
-      label.textContent = w + ' cm';
-      seg.appendChild(input);
-      seg.appendChild(label);
-    });
-  } else {
-    var widthField = root.querySelector('[data-width-field]');
-    if (widthField) widthField.hidden = true;
+  // Breiten-Chips einmal fuer alle Rollenbreiten anlegen. Welche davon die
+  // gewaehlte Farbe wirklich hat, blendet syncArtUi() bei jedem Rechnen ein
+  // oder aus - eine Farbe mit nur der 400er-Rolle darf keine 500 anbieten.
+  // Auch eine einzige Breite bekommt ihren Chip: als kraeftige Angabe, ohne
+  // Schrittnummer. Vorher stand sie als graue Textzeile da und ging unter.
+  var seg = root.querySelector('[data-width-seg]');
+  var chipByWidth = {};
+  widths.forEach(function (w, i) {
+    var id = 'tp-rwc-w-{{ tp_rc_id }}-' + w;
+    var input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'tp-rwc-width-{{ tp_rc_id }}';
+    input.id = id;
+    input.value = w;
+    if (i === 0) input.checked = true;
+    var label = document.createElement('label');
+    label.className = 'tp-rwc-opt';
+    label.setAttribute('for', id);
+    label.textContent = w + ' cm';
+    seg.appendChild(input);
+    seg.appendChild(label);
+    chipByWidth[w] = { input: input, label: label };
+  });
 
-    // Breite bleibt sichtbar, nur als Angabe statt als Frage.
-    var fixedWidth = root.querySelector('[data-width-fixed]');
-    if (fixedWidth) {
-      fixedWidth.textContent = 'Rollenbreite: ' + widths[0] + ' cm';
-      fixedWidth.hidden = false;
-    }
-
-    // Ohne Breiten-Schritt ist die Laenge Schritt 2, nicht 3.
-    var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
-    if (lengthNumber) lengthNumber.textContent = '2';
+  var artField = root.querySelector('[data-art-field]');
+  var artRaumCard = root.querySelector('[data-art-card-raum]');
+  var artRadios = root.querySelectorAll('input[name="tp-rwc-art-{{ tp_rc_id }}"]');
+  var artSubMeter = root.querySelector('[data-art-sub-meter]');
+  var artSubRaum = root.querySelector('[data-art-sub-raum]');
+  var widthField = root.querySelector('[data-width-field]');
+  var widthStep = root.querySelector('[data-width-step]');
+  var widthLabel = root.querySelector('[data-width-label]');
+  var wunschBox = root.querySelector('[data-wunsch-box]');
+  var wunschInput = root.querySelector('[data-wunsch-input]');
+  var wunschHint = root.querySelector('[data-wunsch-hint]');
+  var wunschError = root.querySelector('[data-wunsch-error]');
+  var meterTipp = root.querySelector('[data-meter-tipp]');
+  var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
+  var WUNSCH_MIN_CM = 50;
+  // Breiten, die es fuer die gewaehlte Farbe gibt - gesetzt von syncArtUi().
+  var farbBreiten = widths.slice();
+  function maxFarbBreite() { return farbBreiten.length ? farbBreiten[farbBreiten.length - 1] : 0; }
+  // Raummass endet 5 cm unter der groessten Rolle - siehe ZUGABE_CM im Asset.
+  function maxRaumBreite() { return ART.maxRaumBreite(farbBreiten); }
+  function selectedMeterWidth() {
+    var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
+    return c && !c.disabled ? parseFloat(c.value) : (farbBreiten[0] || widths[0]);
   }
 
-  var modeBtns = root.querySelectorAll('[data-mode-btn]');
-  var modePanels = root.querySelectorAll('[data-mode-panel]');
-  var currentMode = 'length';
+  function artMode() {
+    var r = root.querySelector('input[name="tp-rwc-art-{{ tp_rc_id }}"]:checked');
+    return r && r.value === 'raum' ? 'raum' : 'meter';
+  }
+  function setArt(mode) {
+    artRadios.forEach(function (r) { r.checked = (r.value === mode); });
+  }
 
   var lengthInput = root.querySelector('[data-length-input]');
-  var roomLengthInput = root.querySelector('[data-room-length-input]');
-  var roomWidthInput = root.querySelector('[data-room-width-input]');
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
   var errComma = root.querySelector('[data-error-comma]');
   var MAX_LENGTH_CM = 5000;
-  var errRoomTooWide = root.querySelector('[data-error-room-too-wide]');
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -558,7 +1036,51 @@
   var formulaPrice = root.querySelector('[data-formula-price]');
   var outTotal = root.querySelector('[data-total]');
   var cta = root.querySelector('[data-cta]');
+  var ctaHint = root.querySelector('[data-cta-hint]');
+  var messRaum = root.querySelector('[data-mess-raum]');
   var cartLink = root.querySelector('[data-cart-link]');
+  var kaufleiste = root.querySelector('[data-kaufleiste]');
+  var kaufleisteSumme = root.querySelector('[data-kaufleiste-summe]');
+  var kaufleisteBtn = root.querySelector('[data-kaufleiste-btn]');
+  var widthSeg = root.querySelector('[data-width-seg]');
+
+  // Rot markiert wird erst, wenn der Kunde den Kauf versucht hat - nicht schon
+  // beim Laden. Ein Formular, das sofort rot ist, bevor irgendetwas eingegeben
+  // wurde, liest sich als Fehler des Shops.
+  function markInvalid(el, on) {
+    if (!el) return;
+    el.classList.toggle('is-invalid', !!on);
+    if (el.tagName === 'INPUT') {
+      if (on) el.setAttribute('aria-invalid', 'true');
+      else el.removeAttribute('aria-invalid');
+    }
+  }
+
+  function clearInvalid() {
+    markInvalid(lengthInput, false);
+    markInvalid(wunschInput, false);
+    markInvalid(widthSeg, false);
+    if (ctaHint) { ctaHint.textContent = ''; ctaHint.hidden = true; }
+  }
+
+  // Welches Pflichtfeld fehlt? Reihenfolge wie im Formular, damit der Fokus
+  // nach oben springt und nicht ueber ein noch leeres Feld hinweg.
+  function fehlendesFeld() {
+    var raum = artMode() === 'raum';
+    if (raum) {
+      var wRaw = wunschInput ? wunschInput.value.trim() : '';
+      if (!wRaw || ART.pruefeBreite(selectedWidth(), WUNSCH_MIN_CM, maxRaumBreite())) {
+        return { el: wunschInput, feld: 'breite' };
+      }
+    } else if (!selectedWidth()) {
+      return { el: widthSeg, feld: 'breite' };
+    }
+    var len = getEffectiveLengthCm();
+    if (!lengthInput.value.trim() || len === -1 || len < 100 || len > MAX_LENGTH_CM) {
+      return { el: lengthInput, feld: 'laenge' };
+    }
+    return null;
+  }
 
   var target = null;
 
@@ -568,10 +1090,15 @@
   // krumme mit zwei ("6,66 m²") - sonst stuende dort "7,00 m²".
   function fmtArea(n) { return Number.isInteger(n) ? String(n) : fmt(n); }
 
+  // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
+    if (artMode() === 'raum') {
+      var raw = ART.toCm(wunschInput && wunschInput.value);
+      return raw > 0 ? Math.ceil(raw) : 0;
+    }
     var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
-    return c ? parseFloat(c.value) : widths[0];
+    return c ? parseFloat(c.value) : (farbBreiten[0] || widths[0]);
   }
 
   function baseOptions() {
@@ -598,14 +1125,14 @@
     return first.options.slice();
   }
 
-  function findVariant(w) {
-    var t = baseOptions();
+  // Variante zur gewaehlten Farbe (alle Optionen ausser der Breite), deren
+  // Breitenwert das Praedikat erfuellt - eine Zahl oder "Wunschmaß".
+  function variantFor(t, pred) {
     return variants.filter(function (v) {
       if (v.options.length !== t.length) return false;
       for (var i = 0; i < v.options.length; i++) {
         if (i === wIdx) {
-          var vw = parseFloat(String(v.options[i]).replace(',', '.'));
-          if (vw !== w) return false;
+          if (!pred(v.options[i])) return false;
         } else if (norm(v.options[i]) !== norm(t[i])) {
           return false;
         }
@@ -613,8 +1140,115 @@
       return true;
     })[0];
   }
+  function byWidth(w) {
+    return function (val) { return ART.toCm(val) === w; };
+  }
+  function findVariant(w) {
+    var t = baseOptions();
+    if (wIdx !== -1 && artMode() === 'raum') return variantFor(t, ART.isWunsch);
+    return variantFor(t, byWidth(w));
+  }
+  function raumVariant() {
+    return wIdx === -1 ? null : variantFor(baseOptions(), ART.isWunsch);
+  }
+  // EUR je m² aus dem Variantenpreis - im cm-genauen Modus steht dort der
+  // Preis je 0,01 m².
+  function rateOf(v) {
+    if (!v) return 0;
+    return cmExact ? parseFloat(v.price) : parseFloat(v.price) / 100;
+  }
 
-  var DRAW_MAX_PX = 280;
+  // Schritt 2 je Farbe neu entscheiden: welche Rollenbreiten es gibt, ob
+  // Raummass angeboten wird, und wie die Schritte heissen und zaehlen.
+  //   Raummass moeglich      -> Art-Karten als Schritt 2, Laenge ist 3
+  //   nur Meterware, >1 Breite -> "Waehlen Sie Ihre Breite" als Schritt 2
+  //   nur Meterware, 1 Breite  -> Chip mit Label "Rollenbreite", Laenge ist 2
+  function syncArtUi() {
+    if (wIdx === -1) {
+      if (artField) artField.hidden = true;
+      if (widthField) widthField.hidden = false;
+      if (widthStep) widthStep.hidden = true;
+      if (widthLabel) widthLabel.hidden = false;
+      if (wunschBox) wunschBox.hidden = true;
+      if (lengthNumber) lengthNumber.textContent = '2';
+      return;
+    }
+    var t = baseOptions();
+    farbBreiten = [];
+    widths.forEach(function (w) {
+      var has = !!variantFor(t, byWidth(w));
+      var chip = chipByWidth[w];
+      if (chip) { chip.input.hidden = !has; chip.label.hidden = !has; chip.input.disabled = !has; }
+      if (has) farbBreiten.push(w);
+    });
+    var checked = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
+    if ((!checked || checked.disabled) && farbBreiten.length) {
+      chipByWidth[farbBreiten[0]].input.checked = true;
+    }
+
+    var rv = raumVariant();
+    var raumOk = ART.wunschOk(rv, wIdx);
+    if (artRaumCard) artRaumCard.hidden = !raumOk;
+    artRadios.forEach(function (r) { if (r.value === 'raum') r.disabled = !raumOk; });
+    if (!raumOk && artMode() === 'raum') setArt('meter');
+    var raum = artMode() === 'raum';
+
+    // Preise auf den Karten kommen aus den echten Variantenpreisen - die
+    // Meterware-Karte von der gewaehlten Rolle, nicht immer von der kleinsten.
+    var meterV = variantFor(t, byWidth(selectedMeterWidth()));
+    if (artSubMeter) artSubMeter.textContent = 'volle Rollenbreite' + (rateOf(meterV) > 0 ? ' · ' + fmt(rateOf(meterV)) + ' €/m²' : '');
+    if (artSubRaum) artSubRaum.textContent = 'eigene Breite, zentimetergenau' + (raumOk ? ' · ' + fmt(rateOf(rv)) + ' €/m²' : '');
+
+    var multi = farbBreiten.length > 1;
+    if (artField) artField.hidden = !raumOk;
+    if (widthField) widthField.hidden = raum;
+    if (widthStep) widthStep.hidden = !(!raumOk && multi);
+    if (widthLabel) widthLabel.hidden = (!raumOk && multi);
+    if (lengthNumber) lengthNumber.textContent = (raumOk || multi) ? '3' : '2';
+    if (wunschBox) wunschBox.hidden = !raum;
+    if (raum && wunschHint) {
+      var r = ART.rolleFuer(selectedWidth(), farbBreiten);
+      wunschHint.textContent = r
+        ? 'Wir schneiden Ihr Stück zentimetergenau aus der ' + r + '-cm-Rolle.'
+        : 'Breite von ' + WUNSCH_MIN_CM + ' bis ' + maxRaumBreite() + ' cm – die volle Rollenbreite gibt es als Meterware.';
+    }
+  }
+
+  // Im Raummass sagen, wenn dasselbe Stueck als Meterware der naechsten Rolle
+  // weniger kostet - gerechnet aus beiden Variantenpreisen, mit Wechsel-Knopf.
+  function updateMeterTipp(raum, w, len, rateRaum) {
+    if (!meterTipp) return;
+    if (!raum) { meterTipp.hidden = true; return; }
+    var t = baseOptions();
+    var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
+      return rateOf(variantFor(t, byWidth(rolle)));
+    }, cmExact ? function (a) { return Math.round(a * 100) / 100; } : Math.ceil);
+    if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
+    while (meterTipp.firstChild) meterTipp.removeChild(meterTipp.firstChild);
+    meterTipp.appendChild(document.createTextNode(
+      'Günstiger als Meterware? Bei dieser Breite kostet die volle ' + cmp.rolle +
+      '-cm-Rolle nur ' + fmt(cmp.totalMeter) + ' € statt ' + fmt(cmp.totalRaum) + ' €. '));
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tp-rwc-linkbtn';
+    btn.textContent = 'Zu Meterware wechseln';
+    btn.addEventListener('click', function () {
+      setArt('meter');
+      var chip = chipByWidth[cmp.rolle];
+      if (chip) chip.input.checked = true;
+      calculate();
+    });
+    meterTipp.appendChild(btn);
+    meterTipp.hidden = false;
+  }
+
+  // Groesster Rahmen der Skizze. Auf dem Handy kleiner: dort ist der Platz
+  // knapper, und der Rahmen bestimmt zugleich die feste Hoehe der Buehne
+  // (siehe draw()). Als Funktion, damit ein Drehen des Geraets den Wert neu
+  // holt - der Resize-Zuhoerer weiter unten zeichnet ohnehin neu.
+  function drawMaxPx() {
+    return window.matchMedia('(max-width: 749px)').matches ? 190 : 280;
+  }
   var DRAW_MIN_PX = 40;
   var maxKnownWidth = widths.length ? Math.max.apply(null, widths) : 0;
   // Fester Referenzwert statt "längste aktuell gewählte Seite": so bleibt
@@ -636,7 +1270,25 @@
   }
 
   function draw(w, len) {
-    var stageW = Math.min(DRAW_MAX_PX, stageWidthPx());
+    var rolleSvg = root.querySelector('[data-rolle-svg]');
+    if (rolleSvg) {
+      var mitRolle = artMode() === 'raum';
+      // <svg> kennt die Eigenschaft hidden nicht - nur das Attribut wirkt.
+      if (mitRolle) rolleSvg.removeAttribute('hidden');
+      else rolleSvg.setAttribute('hidden', '');
+      if (stage) stage.hidden = mitRolle;
+      if (mitRolle) {
+        drawRolle(rolleSvg, w, len);
+        return;
+      }
+    }
+    var maxPx = drawMaxPx();
+    // Die Buehne behaelt immer die Hoehe, die das Stueck hoechstens erreichen
+    // kann. Ohne das wuchs sie mit der eingegebenen Laenge mit und schob beim
+    // Tippen alles darunter nach unten - auf dem Handy um bis zu 187 px.
+    // Das Stueck selbst bleibt massstaeblich und sitzt am unteren Rand.
+    if (stage) stage.style.minHeight = maxPx + 'px';
+    var stageW = Math.min(maxPx, stageWidthPx());
     var pxPerCm = stageW / REFERENCE_CM;
 
     var widthPx = Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm)));
@@ -650,35 +1302,11 @@
     }
 
     tagL.textContent = 'L: ' + len + ' cm';
-    var heightPx = Math.max(DRAW_MIN_PX, Math.min(DRAW_MAX_PX, Math.round(len * pxPerCm)));
+    var heightPx = Math.max(DRAW_MIN_PX, Math.min(maxPx, Math.round(len * pxPerCm)));
     piece.style.height = heightPx + 'px';
   }
 
-  function setRoomTooWideHidden(hidden) {
-    if (errRoomTooWide) errRoomTooWide.hidden = hidden;
-  }
-
   function getEffectiveLengthCm() {
-    if (currentMode === 'room' && roomLengthInput && roomWidthInput) {
-      var roomL = parseFloat((roomLengthInput.value || '').replace(',', '.')) || 0;
-      var roomB = parseFloat((roomWidthInput.value || '').replace(',', '.')) || 0;
-      var w = selectedWidth();
-
-      if (roomL <= 0 || roomB <= 0) {
-        setRoomTooWideHidden(true);
-        return 0;
-      }
-
-      if ((roomB * 100) > w + 0.001) {
-        setRoomTooWideHidden(false);
-        return -1;
-      }
-
-      setRoomTooWideHidden(true);
-      return Math.round(roomL * 100);
-    }
-
-    setRoomTooWideHidden(true);
     // Nachkommastellen aufrunden statt abschneiden: 150.7 wurde vorher still
     // zu 150, das Stueck waere also kuerzer als gemessen geworden. Aufrunden
     // ist die fuer den Kunden sichere Richtung.
@@ -686,12 +1314,257 @@
     return raw > 0 ? Math.ceil(raw) : 0;
   }
 
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(parent, name, attrs, text) {
+    var el = document.createElementNS(SVG_NS, name);
+    Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+    if (text) el.textContent = text;
+    parent.appendChild(el);
+    return el;
+  }
+
+  // Rolle von oben: Ihr Stueck, Schnittkanten und der Rest, der bei uns bleibt.
+  function drawRolle(svg, w, len) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    var R = (w > 0 && ART.rolleFuer(w, farbBreiten)) || maxFarbBreite();
+    var L = len > 0 ? len : 400;
+    var x0 = 46;
+    var y0 = 46;
+    var sx = Math.min(240 / (L * 1.25), 150 / R);
+    var sy = Math.max(sx, 70 / R);
+    var rollH = R * sy;
+    var pieceW = L * sx;
+    var totalW = pieceW * 1.25;
+    var ink = '#1d6b47';
+    var defs = svgEl(svg, 'defs', {});
+    var pat = svgEl(defs, 'pattern', { id: 'rwc-rest-{{ tp_rc_id }}', width: 6, height: 6, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' });
+    svgEl(pat, 'line', { x1: 0, y1: 0, x2: 0, y2: 6, stroke: 'currentColor', 'stroke-opacity': '.28', 'stroke-width': 2 });
+
+    svgEl(svg, 'rect', { x: x0, y: y0, width: totalW, height: rollH, fill: 'rgba(0,0,0,.05)', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 });
+    svgEl(svg, 'ellipse', { cx: x0 + totalW, cy: y0 + rollH / 2, rx: 9, ry: rollH / 2, fill: '#e9e5de', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 });
+    svgEl(svg, 'text', { x: x0 + totalW + 16, y: y0 + rollH / 2, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle', transform: 'rotate(90 ' + (x0 + totalW + 16) + ' ' + (y0 + rollH / 2) + ')' }, 'Rolle ' + R + ' cm');
+
+    if (!(w > 0) || w > maxFarbBreite()) {
+      svgEl(svg, 'text', { x: x0 + totalW / 2, y: y0 + rollH / 2 + 4, 'font-size': 13, 'font-weight': 600, fill: 'currentColor', 'text-anchor': 'middle' }, 'Breite eingeben');
+      return;
+    }
+    var ph = w * sy;
+    if (R > w) {
+      svgEl(svg, 'rect', { x: x0, y: y0 + ph, width: pieceW, height: rollH - ph, fill: 'url(#rwc-rest-{{ tp_rc_id }})' });
+      if (rollH - ph >= 16) {
+        svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph + (rollH - ph) / 2 + 4, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' }, 'Rest bleibt bei uns');
+      }
+      svgEl(svg, 'line', { x1: x0 - 6, y1: y0 + ph, x2: x0 + pieceW + 6, y2: y0 + ph, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+    }
+    svgEl(svg, 'rect', { x: x0, y: y0, width: pieceW, height: ph, fill: 'rgba(29,107,71,.16)', stroke: ink, 'stroke-width': 2 });
+    svgEl(svg, 'line', { x1: x0 + pieceW, y1: y0 - 6, x2: x0 + pieceW, y2: y0 + rollH + 6, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
+    svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph / 2 + 4, 'font-size': 12, 'font-weight': 700, fill: ink, 'text-anchor': 'middle' }, 'Ihr Stück');
+    svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 - 12, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle' }, 'Länge ' + (len > 0 ? len + ' cm' : '–'));
+    svgEl(svg, 'text', { x: x0 - 14, y: y0 + ph / 2, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle', transform: 'rotate(-90 ' + (x0 - 14) + ' ' + (y0 + ph / 2) + ')' }, w + ' cm');
+  }
+
+  var leisteBox = root.querySelector('[data-extra="leiste"]');
+  var haftBox = root.querySelector('[data-extra="haft"]');
+  var formulaExtras = root.querySelector('[data-formula-extras]');
+  var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
+  // Breite der Haftunterlage steht im Variantentitel ("1 mm, 180 cm breit
+  // (je lfm)"). Ohne erkennbare Breite faellt die Variante weg - lieber keine
+  // Unterlage anbieten als eine geratene Menge berechnen.
+  var haftVarianten = (data.haft || []).filter(Boolean).map(function (v) {
+    var m = String(v.title || '').match(/(\d{2,3})\s*cm/);
+    return m ? { id: v.id, title: v.title, price: parseFloat(v.price), breite: parseInt(m[1], 10) } : null;
+  }).filter(function (v) { return v && v.breite > 0 && v.price > 0; });
+
+  // Zusaetze nur fuer freigegebene Teppichboeden - dieselbe Freigabe wie
+  // fuer das Einfassen, damit es genau eine Wahrheit gibt.
+  function extrasAllowed() {
+    return !!(target && target.einfassen === 'Verfügbar');
+  }
+
+  function farbeText() {
+    if (!target) return '';
+    var name = target.options.filter(function (_, i) { return i !== wIdx; }).join(' ');
+    return target.farbnummer ? name + ' (' + target.farbnummer + ')' : name;
+  }
+
+  function updateExtras(w, len, area) {
+    var res = { items: [], sum: 0, lines: [] };
+    var allowed = extrasAllowed();
+    if (leisteBox) {
+      var showL = allowed && leisteVarianten.length > 0;
+      leisteBox.hidden = !showL;
+      var sel = leisteBox.querySelector('[data-leiste-hoehe]');
+      if (showL && sel && !sel.options.length) {
+        leisteVarianten.forEach(function (v) {
+          var o = document.createElement('option');
+          o.value = v.id;
+          o.textContent = v.title;
+          sel.appendChild(o);
+        });
+      }
+      var an = showL && leisteBox.querySelector('[data-leiste-an]').checked;
+      leisteBox.querySelector('[data-leiste-felder]').hidden = !an;
+      var meterIn = leisteBox.querySelector('[data-leiste-meter]');
+      // Vorschlag: Umfang des Stuecks, aufgerundet. Eigene Eingabe gewinnt.
+      if (meterIn && !meterIn.getAttribute('data-touched') && w > 0 && len > 0) {
+        meterIn.value = Math.ceil((2 * (w + len)) / 100);
+      }
+      // Eingabe mit Komma oder Punkt. Abgerechnet werden volle Meter - der
+      // Preis gilt je laufendem Meter, eine halbe Leiste gibt es nicht.
+      // Aufgerundet wird sichtbar, nicht still.
+      var eingabe = parseFloat(String((meterIn && meterIn.value) || '').replace(',', '.')) || 0;
+      var m = eingabe > 0 ? Math.ceil(eingabe - 1e-9) : 0;
+      var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
+      var lHint = leisteBox.querySelector('[data-leiste-hint]');
+      var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
+      if (lPreisEl && leisteVarianten.length) {
+        lPreisEl.textContent = fmt(Math.min.apply(null, leisteVarianten.map(function (v) { return parseFloat(v.price); })) / 100) + ' € / m';
+      }
+      if (an && lv && m > 0) {
+        var lPreis = parseFloat(lv.price) / 100;
+        res.items.push({
+          id: lv.id,
+          quantity: m,
+          properties: {
+            'Zu Teppichboden': data.product_title,
+            'Farbe wie Teppichboden': farbeText(),
+            'Höhe': lv.title,
+            'Länge': m + ' m'
+          }
+        });
+        res.sum += m * lPreis;
+        res.lines.push('+ Fußleiste ' + lv.title + ': ' + m + ' m × ' + fmt(lPreis) + ' € = ' + fmt(m * lPreis) + ' €');
+        if (lHint) {
+          lHint.textContent = (m !== eingabe ? fmt(eingabe) + ' m werden als ' + m + ' volle Meter berechnet. ' : '') +
+            fmt(lPreis) + ' € je Meter, Farbe wie Ihr Teppichboden.';
+        }
+      } else if (lHint) {
+        lHint.textContent = an ? 'Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.' : '';
+      }
+    }
+    if (haftBox) {
+      var showH = allowed && haftVarianten.length > 0;
+      haftBox.hidden = !showH;
+      var hAn = showH && haftBox.querySelector('[data-haft-an]').checked;
+      var hHint = haftBox.querySelector('[data-haft-hint]');
+      var hPreisEl = haftBox.querySelector('[data-haft-preis]');
+      if (hPreisEl && haftVarianten.length) {
+        hPreisEl.textContent = 'ab ' + fmt(Math.min.apply(null, haftVarianten.map(function (v) { return v.price; })) / 100) + ' € / m';
+      }
+      // Bahnen nebeneinander, jede in voller Laenge; abgerechnet je laufendem
+      // Meter. Von den vorhandenen Breiten gewinnt die guenstigste Variante.
+      var beste = null;
+      if (showH && w > 0 && len > 0) {
+        haftVarianten.forEach(function (v) {
+          var bahnen = Math.ceil(w / v.breite - 1e-9);
+          var meter = bahnen * Math.ceil(len / 100 - 1e-9);
+          var summe = meter * (v.price / 100);
+          if (!beste || summe < beste.summe) beste = { v: v, bahnen: bahnen, meter: meter, summe: summe };
+        });
+      }
+      if (hHint) {
+        hHint.textContent = beste
+          ? beste.v.breite + ' cm breit · ' + beste.bahnen + (beste.bahnen === 1 ? ' Bahn' : ' Bahnen') + ' = ' + beste.meter + ' lfm'
+          : 'Von der Rolle, Preis je laufendem Meter';
+      }
+      if (hAn && beste) {
+        res.items.push({
+          id: beste.v.id,
+          quantity: beste.meter,
+          properties: {
+            'Zu Teppichboden': data.product_title,
+            'Ausführung': beste.v.title,
+            'Bahnen': String(beste.bahnen)
+          }
+        });
+        res.sum += beste.summe;
+        res.lines.push('+ Haftunterlage: ' + beste.meter + ' m × ' + fmt(beste.v.price / 100) + ' € = ' + fmt(beste.summe) + ' €');
+      }
+    }
+    if (formulaExtras) {
+      while (formulaExtras.firstChild) formulaExtras.removeChild(formulaExtras.firstChild);
+      res.lines.forEach(function (l) {
+        var div = document.createElement('div');
+        div.textContent = l;
+        formulaExtras.appendChild(div);
+      });
+      formulaExtras.hidden = !res.lines.length;
+    }
+    return res;
+  }
+
+  var einfassBox = root.querySelector('[data-einfass-box]');
+  function colorKey(v) {
+    return v.options.filter(function (_, i) { return i !== wIdx; }).map(norm).join('|');
+  }
+  // Farbe per service.basisvariante: jede Variante derselben Farbe dieses
+  // Produkts fuehrt zur passenden Variante des Einfassprodukts.
+  function updateEinfassChips() {
+    if (!einfassBox) return;
+    var show = false;
+    var key = target ? colorKey(target) : '';
+    einfassBox.querySelectorAll('[data-einfass-ziel]').forEach(function (a) {
+      var map = (data.einfass || {})[a.getAttribute('data-einfass-ziel')] || {};
+      var ziel = null;
+      if (extrasAllowed()) {
+        Object.keys(map).forEach(function (basisId) {
+          if (ziel || basisId === '_') return;
+          var bv = variants.filter(function (v) { return String(v.id) === basisId; })[0];
+          if (bv && colorKey(bv) === key) ziel = map[basisId];
+        });
+      }
+      a.hidden = !ziel;
+      if (ziel) {
+        var u = new URL(a.getAttribute('href'), window.location.href);
+        u.searchParams.set('variant', ziel);
+        a.setAttribute('href', u.href);
+        show = true;
+      }
+    });
+    einfassBox.hidden = !show;
+  }
+
+  // Nummeriert die sichtbaren Schritte durch. Gezaehlt wird nur, was der Kunde
+  // wirklich sieht: die Art-Karten sind Schritt 2, die Breitenwahl entfaellt im
+  // Raummass, und die Zusaetze zaehlen weiter. Vorher blieb die Art
+  // ungezaehlt - "Art" und "Laenge" trugen beide die 2.
+  function renumberSteps() {
+    // Vor dem Rechner steht die Farbwahl als eigener Block - die faellt weg,
+    // wenn das Produkt keine Farboption hat. Feste 2 haette dann bei "2"
+    // begonnen, ohne dass es je eine 1 gab. Gezaehlt wird deshalb hinter den
+    // Schrittzeilen, die auf der Seite sichtbar vor dem Rechner stehen.
+    var davor = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('.tp-step-heading'), function (el) {
+      if (el.offsetParent === null || root.contains(el)) return;
+      if (el.compareDocumentPosition(root) & Node.DOCUMENT_POSITION_FOLLOWING) davor++;
+    });
+    var n = davor + 1;
+    function setNum(scope) {
+      var el = scope && scope.querySelector('.tp-step-heading__number');
+      if (el && el.offsetParent !== null) el.textContent = String(n++);
+    }
+    setNum(root.querySelector('[data-art-field]'));
+    setNum(root.querySelector('[data-width-field]'));
+    setNum(root.querySelector('[data-length-step]'));
+    root.querySelectorAll('[data-extra]').forEach(function (x) { if (!x.hidden) setNum(x); });
+  }
+
   function calculate() {
+    syncArtUi();
     var w = selectedWidth();
+    var raum = artMode() === 'raum';
+    // Die Zugabe greift nur im Raummass - bei Meterware bekommt der Kunde die
+    // volle Rollenbreite, ein Zugabe-Satz waere dort schlicht falsch.
+    if (messRaum) messRaum.hidden = !raum;
+    var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite()) : '';
+    if (wunschError) {
+      wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
+      wunschError.hidden = !wunschError.textContent;
+    }
     var len = getEffectiveLengthCm();
     var blocked = (len === -1);
     var tooLong = len > MAX_LENGTH_CM;
-    var valid = !blocked && !tooLong && len >= 100;
+    var valid = !blocked && !tooLong && len >= 100 && !wErr;
 
     // Ein number-Feld liefert bei "150,7" einen leeren Wert - die Seite reagierte
     // dann gar nicht, ohne zu sagen warum. Das Komma ist in Deutschland die
@@ -706,7 +1579,8 @@
     }
 
     target = findVariant(w);
-    var ok = !!(target && target.available);
+    var ok = !!(target && target.available) && (!raum || ART.wunschOk(target, wIdx));
+    updateEinfassChips();
 
     if (blocked) {
       errStock.hidden = true;
@@ -726,7 +1600,7 @@
     // Platzhalter ("L: - cm", "-"), was wie ein defekter Rechner aussah.
     // Beide bleiben deshalb verborgen, bis eine Laenge eingegeben ist -
     // dann erscheinen sie gemeinsam mit echten Werten.
-    var hasLength = len > 0;
+    var hasLength = len > 0 && !wErr;
     calcBox.hidden = !hasLength;
     drawFigure.hidden = !hasLength;
 
@@ -754,20 +1628,50 @@
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
-      outTotal.textContent = fmt(total) + ' €';
-      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb';
+      var extras = updateExtras(w, len, billedArea);
+      // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
+      // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
+      outTotal.textContent = fmt(total + extras.sum) + ' €';
+      cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+      updateMeterTipp(raum, w, len, rate);
     } else {
+      updateExtras(w, 0, 0);
+      updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
-      cta.textContent = (blocked || tooLong) ? 'Bitte beraten lassen' : 'Länge eingeben';
+      // Die Beschriftung nennt das naechste fehlende Feld statt pauschal
+      // "Laenge eingeben" - im Raummass-Modus fehlt oft zuerst die Breite.
+      if (blocked || tooLong) {
+        cta.textContent = 'Bitte beraten lassen';
+      } else {
+        var fehlt = fehlendesFeld();
+        cta.textContent = (fehlt && fehlt.feld === 'breite') ? 'Breite eingeben' : 'Länge eingeben';
+      }
     }
 
-    cta.disabled = !(valid && ok);
-    // Sichtbarkeit folgt der Gueltigkeit: kein Button vor der Laengeneingabe,
-    // und er verschwindet wieder, sobald die Laenge geloescht oder ungueltig wird.
-    cta.hidden = cta.disabled;
+    renumberSteps();
+
+    // Der Button bleibt stehen. Bereit oder nicht steckt in aria-disabled und
+    // der Klasse - so bleibt er fokussierbar und sein Klick meldet, was fehlt.
+    // Waehrend eines laufenden /cart/add.js setzt der Klick-Handler ein echtes
+    // disabled; das darf calculate() nicht ueberschreiben.
+    var ctaReady = !!(valid && ok);
+    if (!cta.disabled) {
+      cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
+      cta.classList.toggle('is-incomplete', !ctaReady);
+    }
+    // Sobald die Eingabe stimmt, verschwindet die rote Markierung von selbst -
+    // der Kunde soll nicht erst erneut klicken muessen, um sie loszuwerden.
+    if (ctaReady) clearInvalid();
+
+    if (kaufleisteBtn) {
+      kaufleisteBtn.classList.toggle('is-incomplete', !ctaReady);
+      kaufleisteBtn.textContent = ctaReady ? 'In den Warenkorb' : cta.textContent;
+    }
+    if (kaufleisteSumme) kaufleisteSumme.textContent = outTotal.textContent;
+    aktualisiereKaufleiste();
 
     applyServiceState();
   }
@@ -805,31 +1709,22 @@
     serviceHint.hidden = false;
   }
 
-  function setMode(mode) {
-    currentMode = mode;
-    modeBtns.forEach(function (btn) {
-      var active = btn.getAttribute('data-mode-btn') === mode;
-      btn.classList.toggle('is-active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    });
-    modePanels.forEach(function (panel) {
-      panel.hidden = panel.getAttribute('data-mode-panel') !== mode;
-    });
-    calculate();
-  }
-
-  modeBtns.forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      setMode(btn.getAttribute('data-mode-btn'));
-    });
-  });
-
   root.addEventListener('change', function (e) {
-    if (e.target.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+    var el = e.target;
+    if (el.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
+    if (el.name === 'tp-rwc-art-{{ tp_rc_id }}') calculate();
+    if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
   });
+  if (wunschInput) wunschInput.addEventListener('input', calculate);
   lengthInput.addEventListener('input', calculate);
-  if (roomLengthInput) roomLengthInput.addEventListener('input', calculate);
-  if (roomWidthInput) roomWidthInput.addEventListener('input', calculate);
+  if (wunschInput) wunschInput.addEventListener('input', calculate);
+  var leisteMeterInput = root.querySelector('[data-leiste-meter]');
+  if (leisteMeterInput) {
+    leisteMeterInput.addEventListener('input', function () {
+      leisteMeterInput.setAttribute('data-touched', '1');
+      calculate();
+    });
+  }
 
   window.addEventListener('resize', function () {
     var w = selectedWidth();
@@ -851,10 +1746,56 @@
   });
 
   cta.addEventListener('click', function () {
-    if (!target || !target.available) return;
+    // Echtes disabled gibt es nur waehrend eines laufenden Warenkorb-Aufrufs.
+    if (cta.disabled) return;
+
+    // Jeder Abbruchgrund bekommt eine sichtbare Antwort. Vorher kehrten alle
+    // vier Pruefungen stumm zurueck - ein Klick tat dann schlicht nichts.
+    var fehlt = fehlendesFeld();
+    if (fehlt) {
+      clearInvalid();
+      markInvalid(fehlt.el, true);
+      if (ctaHint) {
+        var lenRaw = lengthInput.value.trim();
+        var breiteFehlt = fehlt.feld === 'breite';
+        // Sind beide Felder leer, nennt die Meldung auch beide - sonst tippt
+        // der Kunde die Breite ein und stoesst sofort auf die naechste Huerde.
+        ctaHint.textContent = (breiteFehlt && !lenRaw)
+          ? 'Bitte Breite und Länge eingeben.'
+          : (breiteFehlt ? 'Bitte Breite eingeben.' : 'Bitte Länge eingeben.');
+        ctaHint.hidden = false;
+      }
+      if (fehlt.el && typeof fehlt.el.focus === 'function') {
+        fehlt.el.focus({ preventScroll: false });
+      }
+      return;
+    }
+
     var w = selectedWidth();
     var len = getEffectiveLengthCm();
-    if (len < 100) return;
+    var raumOrder = artMode() === 'raum';
+
+    // Letzte Sperre vor dem Warenkorb: Verfuegbarkeit haengt an der Variante,
+    // nicht an der Eingabe, und fehlendesFeld() prueft sie deshalb nicht mit.
+    if (!target || !target.available) {
+      if (ctaHint) {
+        ctaHint.textContent = target
+          ? 'Diese Breite ist derzeit nicht lieferbar. Bitte eine andere Breite wählen.'
+          : 'Diese Kombination ist nicht verfügbar. Bitte Farbe oder Breite ändern.';
+        ctaHint.hidden = false;
+      }
+      markInvalid(raumOrder ? wunschInput : widthSeg, true);
+      return;
+    }
+    if (raumOrder && !ART.wunschOk(target, wIdx)) {
+      if (ctaHint) {
+        ctaHint.textContent = 'Für diese Breite ist kein Zuschnitt nach Raummaß möglich. Bitte rufen Sie uns kurz an.';
+        ctaHint.hidden = false;
+      }
+      markInvalid(wunschInput, true);
+      return;
+    }
+    clearInvalid();
 
     var area = (w * len) / 10000;
     var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
@@ -864,20 +1805,28 @@
     // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
     // (z.B. 666 statt 6,66 m²) mit sehr kleinem Stueckpreis. Die Flaeche
     // gehoert deshalb lesbar in die Zeileneigenschaften.
-    var properties = {
-      'Rollenbreite': w + ' cm',
-      'Gewünschte Länge': len + ' cm'
-    };
+    // "Art" zuerst, damit Admin und Kunde sofort sehen, ob aus der vollen
+    // Rolle oder zentimetergenau geschnitten wird - und aus welcher Rolle.
+    var properties = raumOrder
+      ? { 'Art': 'Raummaß', 'Ihre Breite': w + ' cm', 'Aus Rolle': ART.rolleFuer(w, farbBreiten) + ' cm', 'Gewünschte Länge': len + ' cm' }
+      : { 'Art': 'Meterware', 'Rollenbreite': w + ' cm', 'Gewünschte Länge': len + ' cm' };
     properties[cmExact ? 'Fläche' : 'Fläche (aufgerundet)'] = fmt(billedArea) + ' m²';
     // Farbnummer (intern) mitgeben - siehe domains/shopify/farbverwaltung.md.
     // Unterstrich-Property sieht nur der Admin, "Farbnummer" auch der Kunde im Warenkorb.
     if (target.farbnummer) properties['Farbnummer'] = target.farbnummer;
     if (target.farbe_intern) properties['_Farbe intern'] = target.farbe_intern;
-    if (currentMode === 'room') {
-      properties['Berechnet aus Raummaß'] =
-        (roomLengthInput.value || '').replace('.', ',') + ' × ' +
-        (roomWidthInput.value || '').replace('.', ',') + ' m';
+
+    // Zusaetze gehen im selben Aufruf mit und tragen dieselbe _Gruppe wie der
+    // Teppichboden. Ohne Zusaetze bleibt der Aufruf exakt wie bisher.
+    var extras = updateExtras(w, len, billedArea);
+    var payload = { id: target.id, quantity: qty, properties: properties };
+    if (extras.items.length) {
+      var gruppe = 'T' + Date.now().toString(36);
+      properties['_Gruppe'] = gruppe;
+      extras.items.forEach(function (it) { it.properties['_Gruppe'] = gruppe; });
+      payload = { items: [{ id: target.id, quantity: qty, properties: properties }].concat(extras.items) };
     }
+    var addedCount = qty + extras.items.reduce(function (sum, it) { return sum + it.quantity; }, 0);
 
     cta.disabled = true;
     cta.textContent = 'Wird hinzugefügt …';
@@ -886,7 +1835,7 @@
     fetch('/cart/add.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: target.id, quantity: qty, properties: properties })
+      body: JSON.stringify(payload)
     })
       .then(function (r) {
         if (!r.ok) throw new Error('add failed');
@@ -915,7 +1864,7 @@
           detail: {
             resource: addedItem,
             sourceId: 'tp-rwc-{{ tp_rc_id }}',
-            data: { itemCount: qty, source: 'product-form-component' }
+            data: { itemCount: addedCount, source: 'product-form-component' }
           }
         }));
 
@@ -926,6 +1875,9 @@
           cta.textContent = original;
           cta.classList.remove('is-done');
           cta.disabled = false;
+          // Nach dem echten disabled den Zustand neu bestimmen, sonst bliebe
+          // aria-disabled auf dem Stand von vor dem Warenkorb-Aufruf stehen.
+          calculate();
         }, 3000);
       })
       .catch(function () {
@@ -935,19 +1887,103 @@
           cta.textContent = original;
           cta.classList.remove('is-error');
           cta.disabled = false;
+          calculate();
         }, 3000);
       });
   });
 
+  // Die Leiste erscheint erst, wenn der echte Kaufbutton aus dem Bild ist -
+  // und nur, solange der Konfigurator selbst noch im Blick oder darueber ist.
+  // Unterhalb des Rechners (Serviceteil, Empfehlungen) waere sie eine Leiste
+  // zu einem Bereich, den der Kunde gerade verlassen hat.
+  function aktualisiereKaufleiste() {
+    if (!kaufleiste) return;
+
+    // Am Tablet und Desktop blendet CSS sie ohnehin aus; ohne diese Abfrage
+    // wuerde hidden dort trotzdem staendig hin und her geschrieben.
+    if (window.innerWidth >= 750) { versteckeKaufleiste(); return; }
+
+    // Ist der Rechner ueberhaupt bedienbar? Bei einer Farbe ohne Zuschnitt
+    // versteckt tp-rwc-no-service den ganzen Koerper samt Button.
+    if (root.classList.contains('tp-rwc-no-service')) { versteckeKaufleiste(); return; }
+
+    var ctaRect = cta.getBoundingClientRect();
+    var rootRect = root.getBoundingClientRect();
+    var ctaUnsichtbar = ctaRect.bottom > window.innerHeight || ctaRect.top < 0;
+    var rechnerAngeschnitten = rootRect.bottom > 0 && rootRect.top < window.innerHeight * 1.5;
+
+    if (ctaUnsichtbar && rechnerAngeschnitten) {
+      if (kaufleiste.hidden) {
+        kaufleiste.hidden = false;
+        kaufleiste.setAttribute('aria-hidden', 'false');
+        kaufleisteBtn.removeAttribute('tabindex');
+        // Zwei feste Leisten uebereinander waeren auf 375 px die halbe
+        // Bildhoehe. Der Kauf hat hier Vorrang.
+        document.documentElement.setAttribute('data-tp-kaufleiste', 'offen');
+      }
+    } else {
+      versteckeKaufleiste();
+    }
+  }
+
+  function versteckeKaufleiste() {
+    if (!kaufleiste || kaufleiste.hidden) return;
+    kaufleiste.hidden = true;
+    kaufleiste.setAttribute('aria-hidden', 'true');
+    kaufleisteBtn.setAttribute('tabindex', '-1');
+    document.documentElement.removeAttribute('data-tp-kaufleiste');
+  }
+
+  if (kaufleisteBtn) {
+    // Kein eigener Kaufweg: der echte Button macht die Arbeit, inklusive
+    // Pruefung, Fehlermeldung und Fokus auf das fehlende Feld.
+    kaufleisteBtn.addEventListener('click', function () {
+      cta.click();
+      if (cta.getAttribute('aria-disabled') === 'true') {
+        // Bei fehlender Eingabe hat cta.click() das Feld schon fokussiert -
+        // dorthin scrollen, sonst steht die Meldung ausserhalb des Bildes.
+        var ziel = document.activeElement;
+        if (ziel && typeof ziel.scrollIntoView === 'function') {
+          ziel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }
+      }
+    });
+  }
+
+  window.addEventListener('scroll', aktualisiereKaufleiste, { passive: true });
+  window.addEventListener('resize', aktualisiereKaufleiste);
+
   calculate();
-})();
+}
+if (window.TPRollwareArt) { tpRwcInit{{ tp_rc_id }}(); }
+else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
 </script>
 
 {% schema %}
 {
   "name": "TP Rollenware-Rechner",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Zusätze"
+    },
+    {
+      "type": "paragraph",
+      "content": "Fussleiste und Haftunterlage erscheinen nur, wenn hier ein Produkt gewaehlt ist und die gewaehlte Variante service.einfassen = Verfuegbar traegt. Die Kante des Teppichbodens wird hier nicht eingefasst - dafuer gibt es das eigene Produkt Teppich nach Mass."
+    },
+    {
+      "type": "product",
+      "id": "kettelleisten_produkt",
+      "label": "Teppich-Fußleiste (Varianten = Höhen, Preis je laufendem Meter)"
+    },
+    {
+      "type": "product",
+      "id": "haftunterlage_produkt",
+      "label": "Haftunterlage (Varianten = Breiten, Preis je laufendem Meter)",
+      "info": "Die Breite muss im Variantentitel stehen, z. B. \"1 mm, 180 cm breit (je lfm)\"."
+    }
+  ],
   "presets": [
     {
       "name": "TP Rollenware-Rechner"

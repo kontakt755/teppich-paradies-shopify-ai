@@ -1,0 +1,102 @@
+{% doc %}
+  Muster-Aufruf direkt unter dem Kaufknopf.
+
+  Warum hier und nicht nur in blocks/tp-service-links: Dort sitzt derselbe
+  Link, aber in einer eigenen Section UNTERHALB der Produktinformation. Am
+  2026-09-15 gemessen lag er auf der Rollenware-Seite bei 2.170 px, der
+  Kaufknopf bei 909 px - also 1.261 px darunter. Wer unsicher ueber die Farbe
+  ist, steht aber am Kaufknopf und sieht das Musterangebot dort gar nicht.
+
+  Bewusst sekundaer gestaltet (Kontur statt Flaeche): Der Block steht direkt
+  unter "In den Warenkorb" und soll die Hauptaktion nicht verdraengen,
+  sondern den Zweifelnden auffangen.
+
+  Ziel entscheidet ausschliesslich snippets/tp-musteroption - Konfigurator,
+  wenn das Produkt eine Farb- oder Dekoroption hat, sonst Kontaktformular.
+  Kein zweites Regelwerk, das auseinanderlaufen koennte.
+{% enddoc %}
+
+{%- liquid
+  assign tp_mc_id = block.id | replace: '_', '' | downcase
+  capture tp_mc_url
+    render 'tp-musteroption', product: product
+  endcapture
+  assign tp_mc_url = tp_mc_url | strip
+-%}
+
+{%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster {%- endcomment -%}
+{%- unless product.tags contains 'zubehoer' -%}
+  <div class="tp-muster-cta-{{ tp_mc_id }}" {{ block.shopify_attributes }}>
+    <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}">
+      {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
+    </a>
+    {%- if block.settings.hinweis != blank -%}
+      <p class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</p>
+    {%- endif -%}
+  </div>
+
+  <style>
+    .tp-muster-cta-{{ tp_mc_id }} {
+      margin-top: 10px;
+    }
+
+    .tp-muster-cta__link-{{ tp_mc_id }} {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 16px;
+      /* Kontur statt Flaeche: Die Hauptaktion darueber bleibt dominant.
+         #8c6d43 traegt 4,79:1 auf Weiss (WCAG AA), gleicher Ton wie der
+         Muster-Knopf in blocks/tp-service-links. */
+      background: transparent;
+      border: 1.5px solid #8c6d43;
+      border-radius: var(--style-border-radius-buttons-primary, 7px);
+      color: #8c6d43;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .tp-muster-cta__link-{{ tp_mc_id }}:hover,
+    .tp-muster-cta__link-{{ tp_mc_id }}:focus-visible {
+      background: rgb(140 109 67 / 0.08);
+    }
+
+    .tp-muster-cta__hinweis-{{ tp_mc_id }} {
+      margin: 6px 0 0;
+      font-size: 13px;
+      line-height: 1.4;
+      text-align: center;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+    }
+  </style>
+{%- endunless -%}
+
+{% schema %}
+{
+  "name": "TP Muster-Aufruf",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Beschriftung",
+      "default": "Kostenloses Muster anfragen"
+    },
+    {
+      "type": "text",
+      "id": "hinweis",
+      "label": "Zeile darunter (leer = ausgeblendet)",
+      "info": "Nur Zusagen nennen, die auch gelten. Der kostenlose Musterversand liegt im Versandprofil \"Kostenlose Muster\".",
+      "default": "Bis zu 3 Farben, versandkostenfrei"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Muster-Aufruf"
+    }
+  ]
+}
+{% endschema %}

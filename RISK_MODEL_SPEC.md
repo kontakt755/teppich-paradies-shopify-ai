@@ -109,7 +109,7 @@ domains:
       dns_change: HIGH
       paid_app_install: HIGH
     protected_resources:
-      fallback_theme_196301750606: HIGH
+      fallback_theme: HIGH   # ID: domains/shopify/live-theme.json -> fallback
       customer_data: HIGH
       payment_and_shipping_settings: HIGH
 ```
@@ -179,7 +179,9 @@ Jeder Task definiert `MAX_FILES` und `MAX_CHANGED_LINES`.
 
 ## 7. Unveränderliche Sicherheitsregeln
 
-- Fallback-Theme `196301750606` niemals beschreiben oder löschen.
+- Fallback- und Rückfall-Theme niemals beschreiben oder löschen (IDs in
+  `domains/shopify/live-theme.json`). Durchgesetzt von
+  `.claude/hooks/theme-delete-guard.mjs`; der Bestand wird im Deploy-Preflight geprüft.
 - Keine Secrets im Task Context Pack.
 - Kein Publish-Schritt darf Teil eines LOW-/MEDIUM-Workers sein.
 - Tatsächlicher Diff ist maßgeblich, nicht die Absichtsbeschreibung.

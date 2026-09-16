@@ -34,9 +34,22 @@
             assign ziel = col.url
           endif
         -%}
+        {%- comment -%}
+          Der Alt-Text kommt aus der Bilddatei, wenn dort einer gepflegt ist.
+          Vorher stand hier hart alt: '' - fuer die Barrierefreiheit richtig,
+          weil der Link seinen Namen schon aus dem Titel daneben bezieht, aber
+          fuer die Bildersuche eine verschenkte Angabe. Ein leerer Wert bleibt
+          der Rueckfall, damit nichts erfunden wird: Ist in Shopify kein
+          Alt-Text hinterlegt, bleibt das Bild wie bisher dekorativ.
+
+          Die Zuweisung steht bewusst vor dem Tag. Eine Filterkette direkt
+          hinter alt: (alt: img.alt | default: '') verschluckt alle folgenden
+          Parameter - das Bild verloere sein class und damit object-fit.
+        {%- endcomment -%}
+        {%- assign kat_alt = img.alt | default: '' -%}
         <a class="tp-kat__card" href="{{ ziel | default: '#' }}" {{ block.shopify_attributes }}>
           {%- if img != blank -%}
-            {{ img | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: '', class: 'tp-kat__img' }}
+            {{ img | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
           {%- else -%}
             {{ 'collection-1' | placeholder_svg_tag: 'tp-kat__img' }}
           {%- endif -%}
@@ -54,17 +67,19 @@
 </section>
 
 {% stylesheet %}
-  .tp-kat__list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+  /* Sieben Kategorien in einer Reihe; ab Tablet vier, dann drei je Zeile. */
+  .tp-kat__list { display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; }
   .tp-kat__card { position: relative; border-radius: 14px; overflow: hidden; background: #ede7de; aspect-ratio: 4 / 5; display: block; color: #fff; text-decoration: none; }
   .tp-kat__img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s; }
   .tp-kat__card:hover .tp-kat__img { transform: scale(1.05); }
   .tp-kat__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(20, 16, 12, 0.78) 0%, rgba(20, 16, 12, 0.25) 45%, rgba(20, 16, 12, 0) 70%); }
   .tp-kat__t { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1; }
-  .tp-kat__t strong { display: block; font-size: 19px; font-weight: 600; line-height: 1.15; }
+  .tp-kat__t strong { display: block; font-size: 17px; font-weight: 600; line-height: 1.15; }
   .tp-kat__t small { display: block; font-size: 13px; opacity: 0.85; margin-top: 3px; }
   .tp-kat__n { position: absolute; top: 12px; right: 12px; z-index: 1; background: rgba(255, 255, 255, 0.92); color: #1d1a17; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 999px; }
   .tp-kat__dots { display: none; }
-  @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 1279px) { .tp-kat__list { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 991px) { .tp-kat__list { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 767px) {
     .tp-kat__list { display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding: 0 var(--tp-pad) 4px; margin: 0 calc(-1 * var(--tp-pad)); scrollbar-width: none; }
     .tp-kat__list::-webkit-scrollbar { display: none; }
@@ -106,7 +121,7 @@
     {
       "type": "kategorie",
       "name": "Kategorie",
-      "limit": 6,
+      "limit": 7,
       "settings": [
         { "type": "collection", "id": "collection", "label": "Kollektion" },
         { "type": "image_picker", "id": "bild", "label": "Bild (leer = Kollektionsbild)" },

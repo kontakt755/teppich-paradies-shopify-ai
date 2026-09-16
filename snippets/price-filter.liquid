@@ -84,6 +84,18 @@
         data-currency="{{ localization.country.currency.iso_code }}"
         on:change="/updatePriceFilterAndResults"
       >
+        {%- comment -%}
+          Der Filter arbeitet immer mit dem hinterlegten Variantenpreis - das
+          ist bei Meterware der Quadratmeterpreis und bei Paketware der Preis
+          je Paket. Auf der Karte steht dagegen ueberall der Preis je m².
+          Ohne diesen Satz sucht jemand bei Klickvinyl nach "bis 40 Euro" und
+          bekommt kein Ergebnis, obwohl der m²-Preis darunter liegt
+          (Audit B-27). Die Einheit laesst sich nicht umstellen, sie kommt aus
+          Shopify - benannt werden kann sie aber.
+        {%- endcomment -%}
+        <p class="price-facet__einheit">
+          Bei Meterware je m², bei Paketware je Paket.
+        </p>
         <div class="facets__inputs-wrapper facets__inputs-wrapper--row">
           <div
             class="price-facet__inputs-wrapper"
@@ -189,6 +201,14 @@
 %}
 
 {% stylesheet %}
+  /* Einheitshinweis ueber den Preisfeldern (Audit B-27). */
+  .price-facet__einheit {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    line-height: 1.35;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
   /* Price filter */
   .price-facet {
     container-type: inline-size;

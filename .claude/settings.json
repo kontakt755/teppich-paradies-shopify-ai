@@ -66,6 +66,10 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-gh-guard.mjs\"",
             "statusMessage": "git/gh-Befehl pruefen"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/theme-delete-guard.mjs\""
           }
         ]
       },
@@ -77,6 +81,24 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/deploy-command-guard.mjs\" PreToolUse \"Shopify-Deploy-Befehl erkannt: zuerst npm run workflow:doctor laufen lassen - der meldet alle Blocker in einem Durchlauf statt sechsmal nacheinander. Bei Fehlern zusaetzlich .ai/DEPLOYMENT-TROUBLESHOOTING.md lesen, dort stehen bereits geloeste Faelle mit funktionierendem Fix.\""
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/model-gate.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -86,6 +108,26 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/deploy-command-guard.mjs\" PostToolUseFailure \"Dieser Shopify-Deploy-Befehl ist fehlgeschlagen. Zuerst .ai/DEPLOYMENT-TROUBLESHOOTING.md pruefen, ob der Fehler dort schon dokumentiert ist. Falls nicht: nach dem Beheben dort als neuen Eintrag ergaenzen (Fehlercode, Ursache, funktionierender Fix) - Format wie die bestehenden Eintraege.\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-session-write.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
           }
         ]
       }

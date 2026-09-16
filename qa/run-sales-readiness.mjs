@@ -3,12 +3,63 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { resolveBrowserExecutable } from './browser-resolver.mjs';
-import { closeBrowserSafely, closeContextSafely, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
+import { closeBrowserSafely, closeContextSafely, dismissPreviewBar, installHardProcessTimeout, withTimeout } from './browser-lifecycle.mjs';
 import { isKnownShopifyLoginXFrameWarning } from './console-classification.mjs';
 import { sanitizeDeep, sanitizeText, sanitizeUrl } from '../automation/core/url-sanitizer.mjs';
 import { configuredBaseUrl, targetUrl } from './target-url.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
+
+// Auf Mobil fingen drei Ueberlagerungen den Klick auf "In den Warenkorb" ab:
+// Shopifys Vorschauleiste (#PBarNextFrame, nur auf Preview-URLs), das
+// Cookie-Banner und das klebende Header-Logo - Playwright meldete
+// "subtree intercepts pointer events" bis zum Timeout, waehrend derselbe
+// Ablauf auf Live durchlief. Echte Besucher sehen keine Vorschauleiste und
+// haben das Banner beantwortet; genau diesen Zustand stellt das hier her.
+// Das Banner wird abgelehnt (datensparsam), nicht akzeptiert.
+async function freieSicht(page) {
+  await dismissPreviewBar(page);
+  await page.evaluate(() => {
+    const decline = document.querySelector('#shopify-pc__banner__btn-decline');
+    if (decline) decline.click();
+    document.querySelector('#shopify-pc__banner')?.remove();
+  }).catch(() => {});
+}
+
+// Ein vorab erzeugtes waitForResponse lehnt ab, sobald die Seite geschlossen
+// wird - z. B. nach einem Klick-Timeout. Ohne Handler ist das eine unbehandelte
+// Ablehnung, die den ganzen Runner beendet, bevor der Bericht geschrieben ist;
+// der Workflow sah dann "extern blockiert" statt des echten Fehlers. Der
+// Noop-Catch markiert das Promise als behandelt; ein spaeteres await wirft
+// weiterhin und landet im catch des Ablaufs.
+// Shopify injiziert das Cookie-Banner erst nach dem Laden - ein einmaliges
+// Aufraeumen davor greift ins Leere. Der Beobachter entfernt Leiste und
+// Banner, sobald sie auftauchen, auf jeder Seite des Kontexts.
+const UEBERLAGERUNGEN_WEG = () => {
+  const weg = () => {
+    document.querySelector('#PBarNextFrameWrapper')?.remove();
+    document.querySelector('#PBarNextFrame')?.remove();
+    const decline = document.querySelector('#shopify-pc__banner__btn-decline');
+    if (decline) decline.click();
+    document.querySelector('#shopify-pc__banner')?.remove();
+  };
+  new MutationObserver(weg).observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener('DOMContentLoaded', weg);
+};
+
+// Der klebende Header verdeckt ein Ziel, das Playwright gerade so in den
+// Viewport gescrollt hat ("header-logo intercepts pointer events"). Mittig
+// scrollen, dann klicken - so, wie ein Besucher es sieht.
+async function zentriertKlicken(locator, options) {
+  await locator.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' })).catch(() => {});
+  await locator.click(options);
+}
+
+function erwarteAntwort(page, pruefung, options) {
+  const antwort = page.waitForResponse(pruefung, options);
+  antwort.catch(() => {});
+  return antwort;
+}
 const hardTimeout = installHardProcessTimeout({ timeoutMs: 15 * 60_000, label: 'Sales-Check' });
 const resultsDir = path.join(root, 'qa', 'results');
 const outputPath = path.join(resultsDir, 'sales-readiness.json');
@@ -114,7 +165,8 @@ async function reachCheckout(page, setPhase) {
   if (!(await button.count())) return { reachable: false, url: sanitizeUrl(page.url()), reason: 'Checkout-Button fehlt', cartHealth };
   setPhase('checkout');
   const navigation = page.waitForURL(/checkout|checkouts/i, { timeout: 15_000 }).catch(() => {});
-  await button.click({ noWaitAfter: true, timeout: 10_000 });
+  await freieSicht(page);
+  await zentriertKlicken(button, { noWaitAfter: true, timeout: 10_000 });
   await navigation;
   const url = page.url();
   return { reachable: /checkout|checkouts/i.test(url), url: sanitizeUrl(url), cartHealth };
@@ -170,8 +222,9 @@ async function packageFlow({ page, context, result, setPhase }) {
   }));
   result.health = await pageHealth(page);
   setPhase('add-to-cart');
-  const addResponse = page.waitForResponse(response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
-  await page.getByRole('button', { name: 'In den Warenkorb', exact: true }).click({ timeout: 15_000 });
+  await freieSicht(page);
+  const addResponse = erwarteAntwort(page, response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
+  await zentriertKlicken(page.getByRole('button', { name: 'In den Warenkorb', exact: true }), { timeout: 15_000 });
   await addResponse;
   const cart = await getCart(context);
   const line = cart.items[0];
@@ -224,8 +277,9 @@ async function rollFlow({ page, context, result, setPhase }) {
   const calculatorText = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
   result.health = await pageHealth(page);
   setPhase('add-to-cart');
-  const addResponse = page.waitForResponse(response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
-  await addToCart.click({ timeout: 15_000 });
+  await freieSicht(page);
+  const addResponse = erwarteAntwort(page, response => response.url().includes('/cart/add') && response.status() === 200, { timeout: 30_000 });
+  await zentriertKlicken(addToCart, { timeout: 15_000 });
   await addResponse;
   const cart = await getCart(context);
   const line = cart.items[0];
@@ -274,7 +328,8 @@ async function sampleFlow({ page, context, result, setPhase }) {
   const sourceHandle = 'piumera-teppichboden-400cm-500cm';
   await page.goto(targetUrl(`/products/${sourceHandle}`, baseUrl), { waitUntil: 'domcontentloaded', timeout: 30_000 });
   setPhase('sample-configurator');
-  await page.getByRole('link', { name: /Kostenloses Muster anfragen/i }).click({ timeout: 10_000 });
+  await freieSicht(page);
+  await zentriertKlicken(page.getByRole('link', { name: /Kostenloses Muster anfragen/i }), { timeout: 10_000 });
   // Seit c1c5185 (snippets/tp-musteroption) entscheidet das Produkt ueber das
   // Ziel: mit Farb- oder Dekoroption der Musterkonfigurator /pages/muster,
   // sonst das Kontaktformular im Musterbestellungs-Modus. Piumera hat eine
@@ -365,6 +420,7 @@ async function runFlow(browser, { flow, productType, viewportName, viewport, exe
   try {
     context = await browser.newContext({ viewport, locale: 'de-DE' });
     const page = await context.newPage();
+    await page.addInitScript(UEBERLAGERUNGEN_WEG);
     page.setDefaultTimeout(15_000);
     page.setDefaultNavigationTimeout(30_000);
     const diagnostics = attachDiagnostics(page);

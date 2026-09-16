@@ -79,7 +79,8 @@
         <span class="tp-vs__angebot-zeichen">{% render 'tp-vs-icon', name: 'check' %}</span>
         <div>
           <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km</span></p>
-          <p class="tp-vs__angebot-text">Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt. Fixierung oder Verklebung auf Wunsch.</p>
+          <p class="tp-vs__angebot-text">Beides muss zusammenkommen. Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt.</p>
+          <p class="tp-vs__angebot-zusatz"><span class="tp-vs__zusatz-marke">Zusatz</span> Verlegeband, Fixierung und vollflächige Verklebung sind nicht enthalten – die buchen Sie zu festen Aufpreisen dazu.</p>
         </div>
       </div>
 
@@ -234,7 +235,7 @@
               <span class="tp-vs-tabelle__symbol">{% render 'tp-vs-icon', name: 'truck' %}</span>
               <span>
                 <span class="tp-vs-tabelle__name">Lieferung &amp; Anfahrt</span>
-                <span class="tp-vs-tabelle__info">Nach Entfernung von unserem Geschäft in Oranienburg.</span>
+                <span class="tp-vs-tabelle__info">Nach Entfernung von unserem Geschäft in Oranienburg.{% if settings.tp_vs_lieferung_hinweis != blank %} Preise für ebenerdige Anlieferung – siehe „Gut zu wissen“.{% endif %}</span>
               </span>
             </span>
           </th>
@@ -265,13 +266,14 @@
           </th>
           <td role="cell" data-label="Unter {{ vs_schwelle }} €">
             {%- render 'tp-vs-preis', wert: settings.tp_vs_lose -%}
-            <span class="tp-vs-klein">mind. {{ vs_mindest }}</span>
+            <span class="tp-vs-klein">mind. {{ vs_mindest }} je Auftrag</span>
           </td>
           <td role="cell" data-label="Ab {{ vs_schwelle }} €" class="tp-vs-tabelle__plus">
             <ul class="tp-vs-zonen" role="list">
               <li><span>bis {{ vs_nah }}&nbsp;km</span><span class="tp-vs-preis tp-vs-gratis">kostenlos</span></li>
               <li><span>darüber</span>{% render 'tp-vs-preis', wert: settings.tp_vs_lose %}</li>
             </ul>
+            <span class="tp-vs-klein tp-vs-zonen__fussnote">auch ab {{ vs_schwelle }}&nbsp;€ Warenwert</span>
           </td>
         </tr>
         <tr role="row">
@@ -335,10 +337,19 @@
     </table>
     {%- comment -%} Der Beispielsatz macht den Preisvorteil greifbar. Er gilt
       nur in der kostenlosen Zone - dort ist die lose Verlegung ab der
-      Schwelle kostenlos und der Aufpreis damit der ganze Preis. {%- endcomment -%}
-    <p class="tp-vs-tabelle__beispiel">
-      <strong>Beispiel im Umkreis von {{ vs_nah }}&nbsp;km:</strong> Verlegung mit Flüssigfixierung kostet unter {{ vs_schwelle }}&nbsp;€ Warenwert {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %}, ab {{ vs_schwelle }}&nbsp;€ nur {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %} – die lose Verlegung ist dann kostenlos.
-    </p>
+      Schwelle kostenlos und der Aufpreis damit der ganze Preis.
+
+      Vorher stand das als ein Satz mit drei eingeschobenen Zahlen da und las
+      sich abgehackt. Jetzt zuerst die Ausgangslage, dann je ein Satz pro Fall
+      - dieselben Werte, nur in der Reihenfolge, in der ein Kunde fragt.
+    {%- endcomment -%}
+    <div class="tp-vs-tabelle__beispiel">
+      <p class="tp-vs-tabelle__beispiel-kopf">Ein Beispiel: Sie wohnen im Umkreis von {{ vs_nah }}&nbsp;km und möchten Ihren Boden mit Flüssigfixierung verlegen lassen.</p>
+      <ul class="tp-vs-tabelle__beispiel-faelle" role="list">
+        <li><strong>Unter {{ vs_schwelle }}&nbsp;€ Warenwert:</strong> Die Verlegung kostet {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_basis %} inklusive Fixierung, dazu kommt die Lieferung mit {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %}.</li>
+        <li><strong>Ab {{ vs_schwelle }}&nbsp;€ Warenwert:</strong> Lieferung und lose Verlegung sind im Umkreis von {{ vs_nah }}&nbsp;km kostenlos. Es bleibt der Aufpreis für die Fixierung – {% render 'tp-vs-preis', wert: settings.tp_vs_fluessig_premium %}.</li>
+      </ul>
+    </div>
   </div>
 
   <div class="tp-vs__teil tp-vs__wissen">
@@ -346,7 +357,7 @@
     <ul class="tp-vs__wissen-liste" role="list">
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
-        <span><strong>Kostenlos</strong> sind Lieferung und lose Verlegung ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km. Alles andere berechnen wir zu den Festpreisen oben.</span>
+        <span><strong>Kostenlos</strong> sind Lieferung und lose Verlegung nur, wenn beides zusammentrifft: ab {{ vs_schwelle }}&nbsp;€ Warenwert <em>und</em> im Umkreis von {{ vs_nah }}&nbsp;km. Wohnen Sie weiter entfernt, berechnen wir Anfahrt und lose Verlegung auch dann, wenn Ihr Warenwert über {{ vs_schwelle }}&nbsp;€ liegt – die längere Fahrzeit steckt nicht in der Anfahrtspauschale.</span>
       </li>
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
@@ -360,6 +371,16 @@
         {%- render 'tp-vs-icon', name: 'info' -%}
         <span><strong>Die endgültige Verlegeart</strong> hängt auch von Bodenbelag, Untergrund und Nutzung des Raumes ab.</span>
       </li>
+      <li>
+        {%- render 'tp-vs-icon', name: 'info' -%}
+        <span><strong>Die lose Verlegung hat eine Mindestpauschale</strong> von {{ vs_mindest }} je Auftrag – auch bei kleinen Flächen wie einem Flur. Aufwendige Zuschnitte, etwa an Treppen oder Podesten, rechnen wir nach Aufwand.</span>
+      </li>
+      {%- if settings.tp_vs_lieferung_hinweis != blank -%}
+        <li>
+          {%- render 'tp-vs-icon', name: 'info' -%}
+          <span><strong>Anlieferung:</strong> {{ settings.tp_vs_lieferung_hinweis | escape }}</span>
+        </li>
+      {%- endif -%}
       <li>
         {%- render 'tp-vs-icon', name: 'info' -%}
         <span><strong>Zusatzarbeiten</strong> wie besondere Untergrundarbeiten, Möbelräumung oder das Entfernen des alten Belags können weitere Leistungen erfordern.</span>
@@ -484,6 +505,39 @@
 
   .tp-vs__angebot-text .tp-vs-preis {
     color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.9);
+  }
+
+  /* Was NICHT inklusive ist, steht abgesetzt auf weissem Grund: in der
+     gruenen Flaeche haette es wie ein weiterer Bestandteil des Angebots
+     ausgesehen. Die Marke "Zusatz" sagt es in einem Wort. */
+  .tp-vs__angebot-zusatz {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgb(255 255 255 / 0.75);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .tp-vs__zusatz-marke {
+    flex: none;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: #8d714c;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tp-vs__zusatz-marke::before {
+    content: '+ ';
   }
 
   .tp-vs__aktionen {
@@ -854,6 +908,15 @@
     font-size: 14px;
   }
 
+  /* Die Bedingung zur Zeile "darueber": kein Preis, deshalb kein
+     Listeneintrag, sondern eine Fussnote wie in der Zelle daneben. */
+  .tp-vs-zonen__fussnote {
+    display: block;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--tp-vs-linie);
+  }
+
   .tp-vs-tabelle__beispiel {
     max-width: 980px;
     margin: 18px auto 0;
@@ -862,6 +925,33 @@
     background: #eef1ea;
     font-size: 16px;
     line-height: 1.55;
+  }
+
+  .tp-vs-tabelle__beispiel-kopf {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  /* Die zwei Faelle untereinander statt in einem Satz: der Unterschied
+     zwischen ihnen ist die eigentliche Aussage. */
+  .tp-vs-tabelle__beispiel-faelle {
+    display: grid;
+    gap: 6px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+  }
+
+  .tp-vs-tabelle__beispiel-faelle li {
+    padding-left: 16px;
+    text-indent: -16px;
+  }
+
+  .tp-vs-tabelle__beispiel-faelle li::before {
+    content: '– ';
+    color: rgb(var(--tp-vs-gruen));
+    font-weight: 700;
   }
 
   /* Gut zu wissen ----------------------------------------------------- */

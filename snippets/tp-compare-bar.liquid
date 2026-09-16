@@ -11,7 +11,10 @@
     <span>Vergleich <span data-tp-compare-count>0</span></span>
   </button>
   <div class="tp-compare-bar__full">
-    <span>⇄ Vergleich <span data-tp-compare-count>0</span></span>
+    <span class="tp-compare-bar__label">
+      ⇄ Vergleich <span data-tp-compare-count>0</span>
+      <small class="tp-compare-bar__nutzen">Preis je m², Belagsart &amp; Nutzungsklasse</small>
+    </span>
     <button type="button" data-tp-compare-open>Vergleichen anzeigen</button>
     <button class="tp-compare-bar__dismiss" type="button" data-tp-compare-collapse aria-label="Vergleichsleiste minimieren">×</button>
   </div>
@@ -55,12 +58,50 @@
     display: none !important;
   }
 
+  /* Die Kaufleiste des Rollenware-Rechners liegt an derselben Stelle. Zwei
+     feste Leisten uebereinander waeren auf 375 px die halbe Bildhoehe - der
+     Kauf hat Vorrang, der Vergleich wartet. Das Attribut setzt
+     tp-rollware-rechner.liquid, wenn seine Leiste erscheint. */
+  :root[data-tp-kaufleiste='offen'] .tp-compare-bar {
+    display: none !important;
+  }
+
   .tp-compare-bar__full {
     display: flex;
     align-items: center;
     gap: 12px;
     min-height: 44px;
     padding-left: 10px;
+  }
+
+  .tp-compare-bar__label {
+    display: inline-flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  /* Erklaert den Nutzen in der Leiste selbst. Unter 430 px reicht der Platz im
+     Pill nicht - dort bleibt es bei der Zaehlung, den Nutzen nennt dann der
+     Titel am Vergleichen-Button. */
+  .tp-compare-bar__nutzen {
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 430px) {
+    .tp-compare-bar__nutzen { display: none; }
+  }
+
+  /* Am Telefon ein volles Fingerziel. "Vergleichen anzeigen" war 27 px hoch -
+     die umgebende Leiste hielt zwar ihre 44 px ein, der Knopf darin nicht,
+     und getroffen wird der Knopf. Gemessen am 2026-09-15 bei 375 px. */
+  @media (pointer: coarse), (max-width: 749px) {
+    .tp-compare-bar .tp-compare-bar__full > button[data-tp-compare-open] {
+      min-height: 44px;
+      padding: 6px 16px;
+    }
   }
 
   .tp-compare-bar__compact {

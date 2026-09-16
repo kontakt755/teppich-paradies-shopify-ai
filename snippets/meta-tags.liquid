@@ -60,7 +60,12 @@
         # Fuellwort oder Trennzeichen ("Vinylboden von der online kaufen").
         # Mehrfach, weil am Ende auch zwei Fuellwoerter stehen koennen
         # ("... Vinylboden von der").
-        assign tp_title_fillers = 'von,der,die,das,den,dem,und,mit,aus,fuer,für,im,in,am,zum,zur,-,–,|' | split: ','
+        # "als" fehlte und wurde am 2026-09-15 sichtbar: "Sylvara 655 -
+        # Design-Klebevinyl als Einzelplanken" (48 Zeichen) brach auf 45
+        # Zeichen ab und stand als "Sylvara 655 - Design-Klebevinyl als |
+        # Teppich Paradies" im Browser-Tab. Die uebrigen Ergaenzungen sind
+        # dieselbe Sorte Wort und kosten nichts.
+        assign tp_title_fillers = 'von,der,die,das,den,dem,und,mit,aus,fuer,für,im,in,am,zum,zur,als,wie,bei,auf,an,ohne,pro,je,zu,-,–,|' | split: ','
         for tp_title_pass in (1..3)
           assign tp_title_last = product_title | split: ' ' | last | downcase
           unless tp_title_fillers contains tp_title_last
@@ -75,7 +80,59 @@
           assign product_title = product_title | strip
         endfor
       endif
-      assign optimized_page_title = product_title | append: ' online kaufen | ' | append: tp_marke
+      # "online kaufen" ist ein Suchbegriff, den wir gern im Titel haetten -
+      # aber der Zusatz kostet zusammen mit dem Markennamen 33 Zeichen. Bei
+      # einem 45 Zeichen langen Produktnamen stehen damit 78 Zeichen im Titel,
+      # und Google zeigt rund 60: der Rest wird durch "..." ersetzt. Gemessen
+      # am 2026-09-15: "Alvora Eiche Bernstein - Klebevinyl 2,5mm online kaufen
+      # | Teppich Paradies" = 74 Zeichen, abgeschnitten wurde ausgerechnet der
+      # Markenname.
+      #
+      # Deshalb keine feste Entscheidung, sondern eine gerechnete: Passt die
+      # lange Fassung in die Anzeige, bleibt sie. Sonst faellt "online kaufen"
+      # weg - der Produktname ist fuer Relevanz und Klick wichtiger als das
+      # Fuellwort.
+      #
+      # Der Produktname wird dabei bewusst NICHT weiter gekuerzt. Ein auf 41
+      # Zeichen gestutzter Name waere der schlechtere Tausch; bis zu 64 Zeichen
+      # sind in der Anzeige nur knapp ueber der Grenze, ein halber Produktname
+      # ist im Ergebnis dagegen wertlos.
+      # Ein im Shopify-Admin gepflegter SEO-Titel gewinnt.
+      #
+      # Vorher hat dieser Block ihn kommentarlos ueberschrieben. Beim
+      # Kontura-Teppichboden stand im Admin "Kontura Teppichboden 400cm - 19
+      # Farben"; ausgeliefert wurde "Kontura Teppichboden 400cm online kaufen |
+      # Teppich Paradies". Die Zahl der Farben ist genau das Argument, das zum
+      # Klick fuehrt - sie hat Google nie erreicht. Betroffen war fast jedes
+      # Produkt, denn die Titel sind gepflegt. Die Meta-Description kam schon
+      # immer aus dem Admin; nur der Titel wurde verworfen.
+      #
+      # page_title liefert bei Produkten den SEO-Titel, sonst den Produktnamen.
+      # Der Vergleich mit product.title unterscheidet beide Faelle, ohne ein
+      # Metafeld zu brauchen.
+      #
+      # Laenge wird hier bewusst NICHT geprueft: Ein eigener Titel ist eine
+      # redaktionelle Entscheidung. Ihn zu kuerzen waere derselbe Fehler noch
+      # einmal, nur subtiler.
+      assign tp_seo_titel = ''
+      if page_title != blank and page_title != product.title
+        assign tp_seo_titel = page_title | replace: 'TeppichParadies', 'Teppich Paradies'
+      endif
+
+      if tp_seo_titel != blank
+        assign optimized_page_title = tp_seo_titel
+      else
+        # Ohne eigenen Titel baut das Theme ihn aus dem Produktnamen. "online
+        # kaufen" bleibt nur, solange der Titel in die Google-Anzeige passt -
+        # sonst faellt der Zusatz weg, damit der Markenname sichtbar bleibt.
+        assign tp_title_max = 60
+        assign tp_title_lang = product_title | append: ' online kaufen | ' | append: tp_marke
+        if tp_title_lang.size > tp_title_max
+          assign optimized_page_title = product_title | append: ' | ' | append: tp_marke
+        else
+          assign optimized_page_title = tp_title_lang
+        endif
+      endif
       assign og_title = optimized_page_title
     endif
   elsif request.page_type == 'article'
@@ -177,8 +234,18 @@
     {{ page_title }}
     {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
     {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
-    {%- comment -%} Marke nur anhaengen, wenn sie nicht schon im Titel steht (sonst "… | Teppich Paradies – TeppichParadies") {%- endcomment -%}
-    {%- unless page_title contains tp_marke or page_title contains shop.name %} &ndash; {{ tp_marke }}{% endunless -%}
+    {%- comment -%}
+      Marke nur anhaengen, wenn sie nicht schon im Titel steht (sonst
+      "… | Teppich Paradies – TeppichParadies") und wenn der Titel dadurch
+      nicht ueber 65 Zeichen waechst. Google schneidet laengere Titel ab, und
+      abgeschnitten wird immer das Ende - also genau die Marke. Ohne sie bleibt
+      der aussagekraeftige Teil vollstaendig sichtbar. Am 2026-09-14 gemessen:
+      sechs Seitentypen lagen zwischen 67 und 76 Zeichen.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_title_gesamt = page_title.size | plus: tp_marke.size | plus: 3
+    -%}
+    {%- unless page_title contains tp_marke or page_title contains shop.name or tp_title_gesamt > 65 %} &ndash; {{ tp_marke }}{% endunless -%}
   {%- endif -%}
 </title>
 
@@ -191,5 +258,17 @@
   <meta
     name="description"
     content="{{ page_description | escape }}"
+  >
+{%- elsif request.page_type == 'collection' and collection.handle == 'all' -%}
+  {%- comment -%}
+    /collections/all ist eine von Shopify erzeugte Kollektion und laesst sich
+    im Admin nicht mit einer Beschreibung versehen - sie war am 2026-09-14 die
+    einzige indexierbare Seite ganz ohne Description. Bewusst nur hier und
+    nicht als allgemeiner Fallback: eine generische Beschreibung auf vielen
+    Seiten ist schlechter als gar keine.
+  {%- endcomment -%}
+  <meta
+    name="description"
+    content="Alle Bodenbeläge auf einen Blick: Teppichboden, Vinyl, Linoleum, Teppichfliesen, Sockelleisten und Zubehör – mit Musterservice und Fachberatung."
   >
 {% endif %}

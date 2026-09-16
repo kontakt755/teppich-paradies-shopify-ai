@@ -143,6 +143,28 @@ Scraper und Import-Pläne liegen nur lokal unter `~/teppich-paradies-analyse/lie
 unverändert — sie sind die Kennungen im Shop und dort ohnehin öffentlich. Die Git-Historie
 enthält ältere Stände mit Namen; sie wird bewusst nicht umgeschrieben.
 
+**9. Ein PR, der gegen `main` sauber ist, kann trotzdem nie geprueft werden.**
+Drei Faelle aus einer Woche (2026-09-09 bis -15), alle von Hand geloest, alle mechanisch:
+
+| Fall | Symptom | Ursache |
+|---|---|---|
+| gestapelter PR (#280) | „MERGEABLE/CLEAN" ohne einen einzigen Check | Basis war nicht `main`; der Validierungs-Workflow feuert nur gegen `main` |
+| Basis geloescht (#280) | PR ploetzlich **geschlossen** | `--delete-branch` beim Merge der Basis schliesst gestapelte PRs, statt sie umzuzielen; ein geschlossener PR nimmt keine neue Basis mehr an |
+| ueberkreuzte Historie (#328) | GitHub „dirty" ohne `merge_commit_sha`, obwohl `git merge` sauber laeuft | mehrere Merge-Basen (`git merge-base --all`); ohne Merge-Ref startet kein `pull_request`-Workflow |
+
+Dazu kommt: **jeder Merge nach `main` erzeugt neue Konflikte in anderen PRs** (#285 → vier PRs,
+#236 + #320 → zwei). Deshalb nach jedem Merge neu rechnen, nie eine Stichprobe.
+
+```
+npm run pr:doctor              # alle offenen PRs: Basis, Merge-Basen, Konflikte, Checks
+npm run pr:doctor -- --fix     # umzielen auf main, ueberkreuzte Historie begradigen
+```
+
+`--fix` erledigt nur, was ohne Urteil geht. Echte Inhaltskonflikte bleiben ein Befund: aufloesen
+in einem Wegwerf-Worktree unter dem System-Temp, nie im geteilten Checkout; hat `main` eine
+Datei als toten Code entfernt und der Branch sie nur kosmetisch angefasst, gilt die Loeschung.
+Gestapelte PRs **vor** dem Merge ihrer Basis auf `main` umzielen.
+
 ## Vor jedem Commit
 
 ```
@@ -157,6 +179,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 
 | Befehl | Zweck |
 |---|---|
+| `bin/tp "Aufgabentext"` | Aufgabe an den Orchestrator geben, der die Klasse bestimmt und das passende Modell waehlt |
 | `npm run workflow:doctor` | **vor jedem Deploy**: alle Voraussetzungen in einem Lauf, statt sechsmal nacheinander an je einem Gate zu scheitern |
 | `npm run router:status` | **bevor jemand behauptet, der Router laufe nicht**: Hooks, Keys und letzter Provider-Aufruf in einem Lauf |
 | `npm run router:setup` | **auf einem neuen Rechner**: legt `.env.local` aus `.env.example` an und nennt die zwei fehlenden Keys |
@@ -168,6 +191,7 @@ lokal auf dem Mac. Unbekannte Flags brechen ab, statt still ignoriert zu werden.
 | `npm run menu:guard` | Menuelinks, die auf ein leeres Produktraster oder ins Nichts zeigen (braucht Netz) |
 | `npm run unmerged:guard` | Blöcke/Templates auf ungemergten Branches erkennen, die nicht deployed werden |
 | `npm run essential:guard` | Pflichtdateien und Template-Verweise — findet verlorene Bausteine vor dem Push |
+| `npm run pr:doctor [-- --fix]` | offene PRs: falsche Basis, ueberkreuzte Historie, Konflikte — `--fix` zielt um und begradigt |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezählt statt abgeschrieben wurden |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
@@ -418,6 +442,27 @@ Voranalyse des Routers steht — sie stammt von einem kleinen Drittmodell ohne
 Repository-Zugriff und wurde so zum Prüfmaßstab. Ebenfalls nie im Prüfbereich:
 `docs/ai-dashboard/issues.json`. Die Sitzungs-Baseline allein genügt dafür
 nicht, weil der Dashboard-Bot die Datei während der Sitzung neu schreibt.
+
+Seit 2026-09-15 entscheidet der **Urheber**, nicht der Zeitpunkt: Zwei Hooks
+(`record-session-write.mjs` für Edit/Write, `record-bash-write.mjs` für jeden
+Shell-Befehl, per `git status` vorher/nachher plus mtime) halten unter
+`.router/claude-writes/` fest, welche Pfade die eigene Sitzung geschrieben hat.
+Der Stop-Hook nimmt nur diese in den Prüfbereich; alles andere im Working Tree
+wird dem Reviewer als „nicht von dieser Sitzung geschrieben, kein Befund"
+genannt. Die Baseline vom ersten Prompt reichte dafür nicht — sie kannte nicht,
+was andere Sitzungen *während* einer langen Sitzung schreiben (Sitzung 413c819c:
+Einfass-Konfigurator, Bestellmail, `launch.json`, `SEO_REPORT.md` standen
+komplett im Prüfbereich, Codex verlangte zweimal, sie zu „isolieren"). Fehlt
+der Bestand (ältere Hooks) oder ist er gedeckelt, wird weiter alles geprüft.
+
+Zwei Grenzen, die man kennen muss: **Die Hooks laufen immer aus dem
+Hauptcheckout** (`CLAUDE_PROJECT_DIR`), egal in welchem Worktree die Sitzung
+arbeitet. Steht der Hauptcheckout auf einem Branch ohne diese Commits, läuft
+die alte Logik — genau so lief am 2026-09-15 ein Fix vom Vortag nicht, weil
+der Hauptcheckout auf `feature/ux-kaufbereich-2026-09-15` stand. Prüfen:
+`ls <hauptcheckout>/.router/claude-writes/` muss Einträge haben. Und: Arbeit,
+die nur auf Remote-Branches oder in einem anderen Worktree liegt, sieht der
+Reviewer nicht — er liest den Working Tree des Sitzungsverzeichnisses.
 
 **Die empfohlenen Korrekturen niemals blind ausführen.** Sie lauteten dreimal
 hintereinander, fremde Commits „herauszulösen" und fremde ungetrackte Dateien

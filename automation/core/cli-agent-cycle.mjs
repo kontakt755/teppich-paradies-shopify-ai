@@ -55,7 +55,7 @@ function readTaskSource(taskFile, io = fs) {
 // trotzdem korrekte Ergebnisse. Am 2026-09-06 las ein Reviewer das als Abbruch und
 // meldete P1 "Diff nicht ermittelbar", obwohl der Diff im selben Lauf ausgegeben wurde.
 // Pruefbereich fuer jeden Implementierungs-Review zentral hier, nicht nur im Stop-Hook.
-import { detectReviewScope, sanitizeReviewCandidate } from './review-scope.mjs';
+import { captureWorkingTreeSnapshot, currentCommit, detectReviewScope, sanitizeReviewCandidate } from './review-scope.mjs';
 
 const SANDBOX_GIT_NOISE = 'Hinweis zur Umgebung: In dieser Sandbox meldet git auf stderr "confstr() failed ... DARWIN_USER_TEMP_DIR" und "couldn\'t create cache file \'/tmp/xcrun_db-...\'". Das ist bekanntes Rauschen des macOS-git-Shims; git liefert trotzdem vollstaendige, korrekte Ausgaben. Diese Zeilen sind kein Befund und kein Grund, die Pruefung abzubrechen. Nur wenn ein git-Befehl tatsaechlich keine Ausgabe liefert, ist das ein echtes Problem.';
 
@@ -87,7 +87,13 @@ export function buildCodexReviewPrompt(taskText, { taskType = 'IMPLEMENTATION', 
 export function buildClaudeWorkPrompt(taskText, findings = [], taskType = 'IMPLEMENTATION') {
   const correction = findings.length ? `\n\nUNABHÄNGIGE CODEX-BEFUNDE:\n${JSON.stringify(findings, null, 2)}\nBehebe alle P1/P2-Befunde, führe die passenden Tests erneut aus und hinterlasse die Arbeitskopie in einem prüfbaren Zustand.` : '';
   if (taskType === 'ANALYSIS') return `Analysiere den folgenden Auftrag im aktuellen Repository. Lies zuerst AGENTS.md. Arbeite ausschließlich lesend: verändere keine Dateien und veröffentliche nichts. Begrenze dich auf die wichtigsten belegbaren Fehler, nenne den Prüfweg, Schweregrad und eine konkrete Empfehlung. Nutze vorhandene QA-Skripte nur, wenn sie rein lesend sind. Gib am Ende einen kompakten deutschen Abschlussbericht aus.\n\nAUFTRAG:\n${taskText}${correction}`;
-  return `Arbeite den folgenden Auftrag im aktuellen Repository vollständig ab. Lies zuerst AGENTS.md. Untersuche vorhandenen Code, implementiere minimal und robust, führe passende Tests aus, behebe Fehler und teste erneut. Veröffentliche nichts live und führe keine geschäftskritischen Änderungen aus. Stoppe nur bei fertigem, getestetem Stand oder einem echten Human Gate.\n\nAUFTRAG:\n${taskText}${correction}`;
+  // "Veroeffentliche nichts live" allein reichte nicht: Am 2026-09-15 las ein
+  // Worker das als Shopify-Livegang, legte einen Branch an, committete, pushte
+  // und eroeffnete einen Pull Request - beauftragt war das Anlegen einer Datei.
+  // Der Guard blockiert das inzwischen hart (.claude/hooks/git-gh-guard.mjs);
+  // hier steht es zusaetzlich im Klartext, damit der Worker es gar nicht erst
+  // versucht und seine Arbeit dort liegen laesst, wo der Review sie sieht.
+  return `Arbeite den folgenden Auftrag im aktuellen Repository vollständig ab. Lies zuerst AGENTS.md. Untersuche vorhandenen Code, implementiere minimal und robust, führe passende Tests aus, behebe Fehler und teste erneut. Veröffentliche nichts live und führe keine geschäftskritischen Änderungen aus. Lass deine Änderungen im Working Tree liegen: committe nicht, pushe nicht, lege keinen Branch an und eröffne keinen Pull Request - darüber entscheidet ein Mensch nach der unabhängigen Prüfung. Stoppe nur bei fertigem, getestetem Stand oder einem echten Human Gate.\n\nAUFTRAG:\n${taskText}${correction}`;
 }
 
 export function parseReviewResult(text) {
@@ -115,20 +121,32 @@ function recordReviewUsage({ recordUsage, taskId, provider, model, effort, start
 // Ohne expliziten reviewScope wird er direkt vor dem Review aus dem Repository
 // ermittelt - damit sehen runCliAgentCycle, runReviewOnly, createReviewExecutor
 // und agents:review nach einem Commit denselben Pruefbereich wie der Stop-Hook.
-function resolveReviewScope({ reviewScope, taskType, cwd, detectScope }) {
+// sinceRef und baseline grenzen den Pruefbereich auf DIESEN Auftrag ein, genau
+// wie im interaktiven Stop-Hook (.claude/hooks/codex-stop-review.mjs).
+//
+// Warum das noetig ist (belegt am 2026-09-14): Ohne die beiden vergleicht
+// detectReviewScope gegen origin/main. In einem geteilten Checkout, in dem
+// mehrere Sitzungen gleichzeitig arbeiten, zieht das jeden fremden Commit in
+// die Pruefung - der Reviewer bewertete Commit 93501f4 einer fremden Sitzung
+// statt des eigenen Auftrags und verlangte Korrekturen an fremder Arbeit.
+//
+// Beide sind optional und stehen auf null: ohne sie verhaelt sich die Funktion
+// exakt wie vorher, damit runReviewOnly, createReviewExecutor und
+// `npm run agents:review` unveraendert bleiben.
+function resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef = null, baseline = null }) {
   if (String(reviewScope ?? '').trim()) return reviewScope;
   if (taskType === 'ANALYSIS' || typeof detectScope !== 'function') return '';
-  try { return detectScope({ cwd })?.text ?? ''; } catch { return ''; }
+  try { return detectScope({ cwd, sinceRef, baseline })?.text ?? ''; } catch { return ''; }
 }
 
-export function runCodexReview({ reviewScope = '', detectScope = detectReviewScope, taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
+export function runCodexReview({ reviewScope = '', detectScope = detectReviewScope, sinceRef = null, baseline = null, taskText = null, taskFile = null, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep = null, recordUsage = appendUsageRecord }) {
   const source = taskFile ? readTaskSource(taskFile, io) : { text: taskText, absolutePath: null };
   if (!source.text?.trim()) throw new CliAgentError('A task or task file is required');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'codex-review.json');
-  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef, baseline });
   // Absoluter Pfad statt blossem "codex": das Desktop-Bundle liegt nicht im PATH.
   const binary = resolveCodexBinary() ?? 'codex';
   const startedAt = new Date().toISOString();
@@ -153,14 +171,14 @@ function extractJsonObject(text) {
 // Cross-Provider-Fallback des Reviews: faellt Codex wegen Rate Limit oder
 // erschoepftem Kontingent aus, prueft ein anderes Claude-Modell als der Autor.
 // Read-only ueber --permission-mode plan; Ergebnis im selben Review-Schema.
-export function runClaudeReview({ reviewScope = '', detectScope = detectReviewScope, taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
+export function runClaudeReview({ reviewScope = '', detectScope = detectReviewScope, sinceRef = null, baseline = null, taskText, taskType = 'IMPLEMENTATION', candidateText = '', taskId = `REVIEW-${Date.now()}`, cwd = process.cwd(), runDir = '.router/agent-runs', timeoutMs = 15 * 60_000, io = fs, spawn = spawnSync, reviewStep, recordUsage = appendUsageRecord }) {
   if (!taskText?.trim()) throw new CliAgentError('A task is required');
   if (!reviewStep?.model) throw new CliAgentError('Claude review requires an explicit model that differs from the author');
   const id = compactId(taskId);
   const outputDir = path.resolve(cwd, runDir, id);
   io.mkdirSync(outputDir, { recursive: true });
   const outputPath = path.join(outputDir, 'claude-review.json');
-  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope });
+  const scopeText = resolveReviewScope({ reviewScope, taskType, cwd, detectScope, sinceRef, baseline });
   const prompt = `${buildCodexReviewPrompt(taskText, { taskType, candidateText, reviewScope: scopeText })}\n\nAntworte ausschliesslich mit einem JSON-Objekt nach diesem Schema, ohne Markdown:\n${REVIEW_SCHEMA_TEXT}`;
   const env = { ...process.env, TP_AGENT_LOOP_ACTIVE: '1' };
   delete env.ANTHROPIC_API_KEY;
@@ -216,6 +234,50 @@ function recordClaudeUsage({ response, taskId, taskType, authMode, startedAt, fi
       costUsd: authMode === 'API' && Number.isFinite(response.total_cost_usd) ? response.total_cost_usd : 0,
     },
   });
+}
+
+// Belegt je Arbeitsschritt, was der Worker getan hat: Status, benutztes Modell,
+// Guard-Urteil und vor allem die tatsaechlich veraenderten Dateien.
+//
+// Warum das noetig ist (belegt am 2026-09-14): In .router/agent-runs/<id>/ lag
+// bis dahin nur codex-review.json. Ein Lauf meldete "completed", schrieb aber
+// keine einzige Datei - und hinterliess keinerlei Spur. Im Nachhinein war nicht
+// mehr zu unterscheiden, ob der Worker nichts tat, ob ein Guard sein Ergebnis
+// verwarf oder ob er am falschen Ort arbeitete. Ohne diesen Beleg ist jede
+// weitere Fehlersuche am Orchestrator Raterei.
+//
+// Ein Fehler beim Schreiben darf den Lauf nie stoppen: Protokollieren ist
+// Nebensache, die Arbeit des Workers ist die Hauptsache.
+export const WORKER_RECORD_MAX_CHARS = 4_000;
+
+export function writeWorkerRecord({ cwd = process.cwd(), runDir = '.router/agent-runs', taskId, phase = 'IMPLEMENT', round = 1, candidate = {}, io = fs, now = () => new Date().toISOString() }) {
+  try {
+    const dir = path.resolve(cwd, runDir, compactId(taskId));
+    io.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `worker-${String(phase).toLowerCase()}-r${round}.json`);
+    io.writeFileSync(file, `${JSON.stringify({
+      timestamp: now(),
+      taskId: compactId(taskId),
+      phase,
+      round,
+      status: candidate.status ?? null,
+      reason: candidate.reason ?? null,
+      authMode: candidate.authMode ?? null,
+      model: candidate.model ?? null,
+      effort: candidate.effort ?? null,
+      guardStatus: candidate.guard?.status ?? null,
+      guardMessage: candidate.guard?.message ?? null,
+      // Der eigentliche Beleg: hat dieser Schritt ueberhaupt Dateien veraendert?
+      // null bedeutet "nicht ermittelt" (Guards abgeschaltet), [] bedeutet
+      // belegt "nichts veraendert" - der Unterschied ist bei der Fehlersuche
+      // entscheidend.
+      changedFiles: Array.isArray(candidate.changes) ? candidate.changes.map(change => change.file) : null,
+      result: safeActivityText(candidate.result ?? '', WORKER_RECORD_MAX_CHARS),
+    }, null, 2)}\n`, 'utf8');
+    return file;
+  } catch {
+    return null;
+  }
 }
 
 function safeActivityText(value, maximum = 180) {
@@ -596,6 +658,19 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
   // veraendert, darf ihm angelastet werden.
   const riskMap = guardsEnabled ? loadDashboardRiskMap({ cwd }) : null;
   const baseline = riskMap ? snapshotWorkingTree({ cwd }) : null;
+  // Bezugspunkt fuer den REVIEW - nicht zu verwechseln mit `baseline` darueber:
+  // das ist die Momentaufnahme fuer die Risiko-Guards (dashboard-guards.mjs) mit
+  // anderer Datenform. Diese beiden hier haben dieselbe Aufgabe wie im
+  // interaktiven Stop-Hook: den Pruefbereich auf DIESEN Auftrag begrenzen.
+  //
+  // Ohne sie prueft der Reviewer alles gegenueber origin/main - in einem
+  // geteilten Checkout also auch jeden Commit einer parallel laufenden Sitzung
+  // (belegt am 2026-09-14: bewertet wurde Commit 93501f4 einer fremden Sitzung).
+  //
+  // Beide sind fail-safe: liefert git nichts, bleibt der Wert null und der
+  // Reviewer verhaelt sich exakt wie vorher.
+  const reviewSinceRef = currentCommit({ cwd });
+  const reviewBaseline = captureWorkingTreeSnapshot({ cwd });
   // Prueft den tatsaechlichen Diff gegen Risiko-Karte und Umfang. `BLOCKED` ist
   // in review-cycle bereits ein Terminal-Status, der das Worker-Ergebnis behaelt
   // - es geht also nichts verloren, es wird nur nicht als fertig ausgegeben.
@@ -603,15 +678,22 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
     if (!riskMap || !baseline) return candidate;
     const changes = diffSinceSnapshot(baseline, snapshotWorkingTree({ cwd }));
     const verdict = evaluateDashboardGuards({ taskType: classified.taskType, risk: classified.risk, changes, riskMap });
-    if (verdict.status === 'PASS') return { ...candidate, guard: verdict };
+    // changes wandert mit: writeWorkerRecord belegt damit, ob der Schritt
+    // ueberhaupt Dateien angefasst hat.
+    if (verdict.status === 'PASS') return { ...candidate, guard: verdict, changes };
     onState?.({ status: 'GUARD_BLOCKED', guardStatus: verdict.status, message: verdict.message });
-    return { ...candidate, status: 'BLOCKED', guard: verdict, reason: verdict.status };
+    return { ...candidate, status: 'BLOCKED', guard: verdict, changes, reason: verdict.status };
+  };
+  // Jeder Arbeitsschritt hinterlaesst eine Spur, auch ein gescheiterter.
+  const recordWorker = (candidate, workerPhase, round) => {
+    writeWorkerRecord({ cwd, taskId: classified.id, phase: workerPhase, round, candidate, io });
+    return candidate;
   };
   const result = await runReviewCorrectionCycle({
     task: classified,
     maxReviewRounds,
     providerTimeoutMs: timeoutMs,
-    implement: async () => guardCandidate(await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass })),
+    implement: async () => recordWorker(guardCandidate(await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass })), 'IMPLEMENT', 1),
     // Klasse A: deterministische Pruefung reicht, kein Modell-Review.
     review: plan.reviewer === null ? null : async (_task, candidate, metadata) => {
       let result;
@@ -619,7 +701,7 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
         // Das Worker-Ergebnis geht wie bisher nur bei ANALYSIS an den Reviewer.
         // Bei IMPLEMENTATION ist der Diff der Beleg; der Abschnitt SCHLUSSANTWORT
         // ("es gibt keinen Diff") in buildCodexReviewPrompt waere hier falsch.
-        result = runReviewStep({ review, reviewStep: plan.reviewer, authorModel: currentStep?.model ?? plan.primary.model, onState, taskText: classified.task, taskType: classified.taskType, candidateText: classified.taskType === 'ANALYSIS' ? (candidate.result ?? '') : '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, timeoutMs, spawn: spawn ?? spawnSync, recordUsage });
+        result = runReviewStep({ review, reviewStep: plan.reviewer, authorModel: currentStep?.model ?? plan.primary.model, onState, taskText: classified.task, taskType: classified.taskType, candidateText: classified.taskType === 'ANALYSIS' ? (candidate.result ?? '') : '', taskId: `${classified.id}-R${metadata.reviewRound}`, cwd, sinceRef: reviewSinceRef, baseline: reviewBaseline, timeoutMs, spawn: spawn ?? spawnSync, recordUsage });
       } catch (error) {
         // A technical reviewer failure (e.g. a broken codex CLI invocation) is not a
         // review finding: Claude's already-completed work must not be discarded, and
@@ -667,7 +749,7 @@ export async function runCliAgentCycle({ task, taskId = `AGENT-${Date.now()}`, c
       }
       const corrected = await runWorkStep({ taskText: classified.task, taskId: classified.id, taskType: classified.taskType, findings, cwd, timeoutMs, budgetUsd, spawn, recordUsage, onState, io, implementStep: currentStep, taskClass, escalation: escalated.reason ?? null });
       if (corrected?.authMode === 'API') apiCorrections += 1;
-      return guardCandidate(corrected);
+      return recordWorker(guardCandidate(corrected), 'CORRECT', metadata.reviewRound);
     },
     onState,
   });
