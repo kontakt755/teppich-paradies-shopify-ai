@@ -1,0 +1,222 @@
+{%- doc -%}
+  Zusammengehoerige Warenkorbzeilen (Rollenrechner, Einfass-Konfigurator) und
+  ihre Waisen - reine Server-Seite, kein JS noetig.
+
+    Service:   Zu Teppich/Zu Teppichboden, Kante umlaufend ohne Masse,
+               oder Produkttyp "Service" (Kettelservice, Fussleiste)
+    Hauptzeile einer Gruppe: erste Zeile der Gruppe ohne Service-Property
+    Waise:     Service mit _Gruppe ohne Hauptzeile | Service ohne _Gruppe
+               | Flaechenware/Wunschmass ohne Mass-Property
+
+  Warum: Wer den Teppich aus dem Warenkorb loescht, hatte bisher die Kettelung
+  allein stehen - 190 EUR fuer die Kante eines Teppichs, den niemand kauft.
+
+  Fail safe: Waisen sperren den Checkout (teil 'sperre'). Wird nur aus
+  snippets/cart-products.liquid gerendert, in Drawer und Warenkorbseite.
+
+  @param {object} [line_item] - Warenkorbposition (fuer teil 'hinweis')
+  @param {string} teil - 'hinweis' (Gruppenhinweis / Waisenwarnung an einer
+    Zeile) oder 'sperre' (Checkout-Sperre fuer den ganzen Warenkorb, ohne
+    line_item)
+{%- enddoc -%}
+{%- liquid
+  if teil == 'sperre'
+    # Ganzer Warenkorb: gibt es eine Waise? Gleiche Regeln wie unten, ohne
+    # Rekursion (render in sich selbst vermeidet dieses Snippet bewusst).
+    assign tp_gz_gesperrt = false
+    assign tp_gz_sperr_text = ''
+    for tp_gz_it in cart.items
+      assign tp_gz_it_p = tp_gz_it.properties
+      assign tp_gz_it_g = tp_gz_it_p._Gruppe | default: '' | strip
+      assign tp_gz_it_service = false
+      if tp_gz_it_p['Zu Teppich'] != blank or tp_gz_it_p['Zu Teppichboden'] != blank
+        assign tp_gz_it_service = true
+      elsif tp_gz_it_p['Kante umlaufend'] != blank and tp_gz_it_p['Maße'] == blank
+        assign tp_gz_it_service = true
+      elsif tp_gz_it.product.type == 'Service'
+        assign tp_gz_it_service = true
+      endif
+      assign tp_gz_it_fw = false
+      if tp_gz_it.product.metafields.custom.preis_pro_001_qm.value == true
+        assign tp_gz_it_fw = true
+      endif
+      for tp_gz_opt in tp_gz_it.variant.options
+        assign tp_gz_optv = tp_gz_opt | strip | downcase
+        if tp_gz_optv == 'wunschmaß' or tp_gz_optv == 'wunschmass'
+          assign tp_gz_it_fw = true
+        endif
+      endfor
+      assign tp_gz_it_mass = false
+      if tp_gz_it_p['Fläche (abgerechnet)'] != blank or tp_gz_it_p['Fläche'] != blank or tp_gz_it_p['Fläche (aufgerundet)'] != blank or tp_gz_it_p['Fläche (berechnet)'] != blank or tp_gz_it_p['Ihre Breite'] != blank or tp_gz_it_p['Rollenbreite'] != blank or tp_gz_it_p['Breite'] != blank or tp_gz_it_p['Maße'] != blank
+        assign tp_gz_it_mass = true
+      endif
+
+      assign tp_gz_it_waise = ''
+      if tp_gz_it_service and tp_gz_it_g != blank
+        assign tp_gz_it_haupt = false
+        for tp_gz_it2 in cart.items
+          assign tp_gz_it2_g = tp_gz_it2.properties._Gruppe | default: '' | strip
+          if tp_gz_it2_g != tp_gz_it_g
+            continue
+          endif
+          assign tp_gz_it2_p = tp_gz_it2.properties
+          if tp_gz_it2_p['Zu Teppich'] == blank and tp_gz_it2_p['Zu Teppichboden'] == blank and tp_gz_it2.product.type != 'Service'
+            if tp_gz_it2_p['Kante umlaufend'] == blank or tp_gz_it2_p['Maße'] != blank
+              assign tp_gz_it_haupt = true
+            endif
+          endif
+        endfor
+        if tp_gz_it_haupt == false
+          assign tp_gz_it_waise = 'Dieser Service gehört zu einem Artikel, der nicht mehr im Warenkorb ist – bitte entfernen'
+        endif
+      elsif tp_gz_it_service
+        assign tp_gz_it_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+      elsif tp_gz_it_fw and tp_gz_it_mass == false
+        assign tp_gz_it_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+      endif
+      if tp_gz_it_waise != blank
+        assign tp_gz_gesperrt = true
+        if tp_gz_sperr_text == blank
+          assign tp_gz_sperr_text = tp_gz_it_waise
+        endif
+      endif
+    endfor
+  else
+    assign tp_gz_p = line_item.properties
+    assign tp_gz_gruppe = tp_gz_p._Gruppe | default: '' | strip
+    assign tp_gz_flaechenware = false
+    if line_item.product.metafields.custom.preis_pro_001_qm.value == true
+      assign tp_gz_flaechenware = true
+    endif
+
+    assign tp_gz_service = false
+    if tp_gz_p['Zu Teppich'] != blank or tp_gz_p['Zu Teppichboden'] != blank
+      assign tp_gz_service = true
+    elsif tp_gz_p['Kante umlaufend'] != blank and tp_gz_p['Maße'] == blank
+      assign tp_gz_service = true
+    elsif line_item.product.type == 'Service'
+      assign tp_gz_service = true
+    endif
+
+    assign tp_gz_wunsch = false
+    for tp_gz_opt in line_item.variant.options
+      assign tp_gz_optv = tp_gz_opt | strip | downcase
+      if tp_gz_optv == 'wunschmaß' or tp_gz_optv == 'wunschmass'
+        assign tp_gz_wunsch = true
+      endif
+    endfor
+
+    assign tp_gz_flaeche = tp_gz_p['Fläche (abgerechnet)'] | default: tp_gz_p['Fläche'] | default: tp_gz_p['Fläche (aufgerundet)'] | default: tp_gz_p['Fläche (berechnet)'] | default: '' | strip
+    assign tp_gz_hat_mass = false
+    if tp_gz_flaeche != blank or tp_gz_p['Ihre Breite'] != blank or tp_gz_p['Rollenbreite'] != blank or tp_gz_p['Breite'] != blank or tp_gz_p['Maße'] != blank
+      assign tp_gz_hat_mass = true
+    endif
+
+    # Hauptzeile der Gruppe: erste Zeile mit derselben _Gruppe ohne Service-Property.
+    assign tp_gz_haupt_titel = ''
+    if tp_gz_gruppe != blank
+      for tp_gz_it in cart.items
+        assign tp_gz_it_g = tp_gz_it.properties._Gruppe | default: '' | strip
+        if tp_gz_it_g != tp_gz_gruppe
+          continue
+        endif
+        assign tp_gz_it_p = tp_gz_it.properties
+        assign tp_gz_it_service = false
+        if tp_gz_it_p['Zu Teppich'] != blank or tp_gz_it_p['Zu Teppichboden'] != blank
+          assign tp_gz_it_service = true
+        elsif tp_gz_it_p['Kante umlaufend'] != blank and tp_gz_it_p['Maße'] == blank
+          assign tp_gz_it_service = true
+        endif
+        if tp_gz_it.product.type == 'Service'
+          assign tp_gz_it_service = true
+        endif
+        if tp_gz_it_service == false and tp_gz_haupt_titel == blank
+          assign tp_gz_haupt_titel = tp_gz_it.product.title
+        endif
+      endfor
+    endif
+
+    assign tp_gz_waise = ''
+    if tp_gz_gruppe != blank and tp_gz_service and tp_gz_haupt_titel == blank
+      assign tp_gz_waise = 'Dieser Service gehört zu einem Artikel, der nicht mehr im Warenkorb ist – bitte entfernen'
+    elsif tp_gz_gruppe == blank and tp_gz_service
+      assign tp_gz_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+    elsif tp_gz_hat_mass == false
+      if tp_gz_flaechenware or tp_gz_wunsch
+        assign tp_gz_waise = 'Dieser Artikel braucht eine Maßangabe – bitte über die Produktseite konfigurieren'
+      endif
+    endif
+  endif
+-%}
+{%- if teil == 'hinweis' -%}
+  {%- if tp_gz_waise != blank -%}
+    <p class="tp-cart-waise" role="alert" data-tp-waise="1">{{ tp_gz_waise }}</p>
+  {%- elsif tp_gz_gruppe != blank and tp_gz_service and tp_gz_haupt_titel != blank -%}
+    <p class="tp-cart-gruppenhinweis">Gehört zu {{ tp_gz_haupt_titel | escape }}</p>
+  {%- endif -%}
+{%- elsif teil == 'sperre' and tp_gz_gesperrt -%}
+  {%- comment -%}
+    Checkout-Sperre: sichtbare Meldung plus ein leeres Pflichtfeld im
+    Warenkorbformular. Der Kasse-Knopf ist ein submit auf genau dieses Formular
+    (id cart-form), die Browser-Pruefung blockiert die Absendung damit auch
+    ohne JS. Express-Knoepfe (Shop Pay usw.) laufen am Formular vorbei - die
+    bleiben ein offener Punkt.
+  {%- endcomment -%}
+  <div class="tp-cart-sperre" role="alert" data-tp-cart-gesperrt="1">
+    <span class="svg-wrapper">{{- 'icon-error.svg' | inline_asset_content -}}</span>
+    <span>Bestellung nicht möglich: {{ tp_gz_sperr_text }}.</span>
+    <input
+      type="text"
+      class="tp-cart-sperre__feld"
+      name="tp_cart_sperre"
+      value=""
+      required
+      aria-label="Bestellung gesperrt"
+      tabindex="-1"
+    >
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-cart-gruppenhinweis {
+    margin: var(--margin-2xs) 0 0;
+    font-size: var(--font-size--xs);
+    color: rgb(var(--color-foreground-rgb) / 0.7);
+  }
+
+  .tp-cart-waise {
+    margin: var(--margin-2xs) 0 0;
+    font-size: var(--font-size--xs);
+    font-weight: 600;
+    color: var(--color-error, #b3261e);
+  }
+
+  .tp-cart-sperre {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--gap-xs);
+    margin-block-start: var(--margin-sm);
+    padding: var(--padding-sm);
+    border: 1px solid var(--color-error, #b3261e);
+    border-radius: var(--style-border-radius-inputs, 4px);
+    color: var(--color-error, #b3261e);
+    font-size: var(--font-size--sm);
+  }
+
+  .tp-cart-sperre__feld {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    border: 0;
+  }
+
+  body:has([data-tp-cart-gesperrt]) .cart__checkout-button,
+  body:has([data-tp-cart-gesperrt]) .additional-checkout-buttons {
+    pointer-events: none;
+    opacity: 0.4;
+  }
+{% endstylesheet %}
