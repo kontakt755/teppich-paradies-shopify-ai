@@ -81,7 +81,8 @@
         unterscheiden wir beides, ohne ein zweites Metafeld zu pflegen.
       {%- endcomment -%}
       {%- assign muster_id = '' -%}
-      {%- if line.sku contains 'M-' and line.sku != blank -%}
+      {%- assign sku_kopf = line.sku | slice: 0, 2 -%}
+      {%- if sku_kopf == 'M-' -%}
         {%- assign sku_rest = line.sku | remove_first: 'M-' -%}
         {%- unless sku_rest contains '-' -%}{%- assign muster_id = sku_rest -%}{%- endunless -%}
       {%- endif -%}
