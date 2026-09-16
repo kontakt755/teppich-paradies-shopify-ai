@@ -166,7 +166,7 @@
     .tp-hs__panel { display: none; }
     .tp-hs__chips { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--tp-pad) 8px; scrollbar-width: none; scroll-snap-type: x proximity; }
     .tp-hs__chips::-webkit-scrollbar { display: none; }
-    .tp-hs__chip { flex: none; scroll-snap-align: start; min-height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); font-weight: 500; font-size: 14.5px; color: var(--tp-ink, #1d1a17); text-decoration: none; }
+    .tp-hs__chip { flex: none; scroll-snap-align: start; min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); font-weight: 500; font-size: 14.5px; color: var(--tp-ink, #1d1a17); text-decoration: none; }
     .tp-hs__chip--rot { background: var(--tp-red-soft, #fbeeef); color: var(--tp-red, #b73740); border-color: transparent; font-weight: 600; }
   }
 {% endstylesheet %}
@@ -185,7 +185,7 @@
     {
       "type": "chip",
       "name": "Kategorie",
-      "limit": 8,
+      "limit": 12,
       "settings": [
         { "type": "paragraph", "content": "Am Telefon als Leiste unter dem Suchfeld, am Desktop als „Beliebte Bereiche“ im leeren Suchfeld." },
         { "type": "text", "id": "label", "label": "Bezeichnung", "default": "Teppichboden" },
@@ -199,6 +199,8 @@
       "name": "TP Suche + Kategorien",
       "blocks": [
         { "type": "chip", "settings": { "label": "Teppichboden", "link": "shopify://collections/teppichboden" } },
+        { "type": "chip", "settings": { "label": "Teppiche", "link": "shopify://collections/teppiche" } },
+        { "type": "chip", "settings": { "label": "Teppichfliesen", "link": "shopify://collections/teppichfliesen" } },
         { "type": "chip", "settings": { "label": "Vinylboden", "link": "shopify://collections/vinylboden-1" } },
         { "type": "chip", "settings": { "label": "Klickvinyl", "link": "shopify://collections/vinylboden-klickvinyl" } },
         { "type": "chip", "settings": { "label": "Linoleum", "link": "shopify://collections/linoleumboden-1" } },
