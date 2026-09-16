@@ -45,8 +45,22 @@ test('keine Erkennung ueber Handle oder Produktnamen', () => {
   assert.doesNotMatch(block[0], /handle|product\.title|contains 'Kettel|contains "Kettel/i);
 });
 
-test('gesperrte Zeilen zeigen den Hinweis mit Link zurueck zur Produktseite', () => {
-  assert.match(liquid, /tp_cart_zuschnitt[\s\S]*?cart-items__zuschnitt-hinweis[\s\S]*?Menge ergibt sich aus dem Maß[\s\S]*?item\.url/);
+test('die Hauptzeile zeigt den Hinweis mit Link zurueck zur Produktseite', () => {
+  assert.match(liquid, /if tp_cart_hauptzeile[\s\S]*?cart-items__zuschnitt-hinweis[\s\S]*?Menge ergibt sich aus dem Maß\.[\s\S]*?item\.url/);
+});
+
+// item.url einer Zusatzzeile (Kettelservice, Fussleiste, Haftunterlage) fuehrt zum
+// Zusatzprodukt, nicht zum Rechner des Teppichs - dort darf kein "Mass aendern" stehen.
+test('Zusatzzeilen bekommen den Hinweis ohne Link', () => {
+  const zusatz = liquid.match(/elsif tp_cart_zuschnitt -%\}[\s\S]*?\{%- endif -%\}/);
+  assert.ok(zusatz, 'Zweig fuer Zusatzzeilen fehlt');
+  assert.match(zusatz[0], /Menge ergibt sich aus dem Maß des zugehörigen Teppichs/);
+  assert.doesNotMatch(zusatz[0], /<a\s|item\.url/);
+});
+
+test('nur Hauptzeilen-Regeln setzen tp_cart_hauptzeile', () => {
+  const treffer = block[0].match(/assign tp_cart_hauptzeile = true/g) || [];
+  assert.equal(treffer.length, 2, 'Gewuenschte Laenge und preis_pro_001_qm sind Hauptzeilen, _Gruppe nicht');
 });
 
 // Bewusst dokumentierte Grenze: Die Sperre wirkt nur in der Bedienoberflaeche.
