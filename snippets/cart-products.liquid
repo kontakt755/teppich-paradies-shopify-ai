@@ -317,10 +317,31 @@
                     sich dann, und das faellt erst im Lager auf (Audit B-25).
                     Deshalb ist die Menge bei diesen Zeilen gesperrt; geaendert
                     wird das Mass auf der Produktseite.
+
+                    Dieselbe Luecke gilt fuer Teppich nach Mass und den
+                    Kettelservice: die Menge steht dort in Hundertstel-
+                    Quadratmetern bzw. Hundertstel-Metern Kante, nicht in
+                    Stueck. Zwei weitere, datengetriebene Erkennungswege
+                    ergaenzen den bestehenden:
+                    - das Produkt traegt custom.preis_pro_001_qm (Wunschmass-
+                      und Teppich-nach-Mass-Produkte, siehe
+                      snippets/tp-product-structured-data.liquid);
+                    - die Zeile traegt die Eigenschaft "_Gruppe" (jede vom
+                      Rechner erzeugte Zeile, auch Kettelservice, Fussleiste,
+                      Haftunterlage - siehe blocks/tp-rollware-rechner.liquid).
+                    Keine Erkennung ueber Handle oder Produktname (Regel siehe
+                    oben). Schliesst nur die Bedienoberflaeche; ein direkter
+                    Aufruf von /cart/change.js bleibt moeglich, siehe PR-Text.
                   {%- endcomment -%}
                   {%- liquid
                     assign tp_cart_zuschnitt = false
                     if item.properties['Gewünschte Länge'] != blank
+                      assign tp_cart_zuschnitt = true
+                      assign can_update_quantity = false
+                    elsif item.product.metafields.custom.preis_pro_001_qm.value
+                      assign tp_cart_zuschnitt = true
+                      assign can_update_quantity = false
+                    elsif item.properties['_Gruppe'] != blank
                       assign tp_cart_zuschnitt = true
                       assign can_update_quantity = false
                     endif
@@ -357,7 +378,7 @@
                   </div>
                   {%- if tp_cart_zuschnitt -%}
                     <p class="cart-items__zuschnitt-hinweis">
-                      Zuschnitt nach Maß.
+                      Menge ergibt sich aus dem Maß.
                       <a href="{{ item.url }}">Maß ändern</a>
                     </p>
                   {%- endif -%}
