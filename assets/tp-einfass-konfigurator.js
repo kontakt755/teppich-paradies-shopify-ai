@@ -505,6 +505,48 @@
       cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);
     }
 
+    // Der Lieferschein kennt line_item.properties nicht - das Feld ist dort NIL
+    // (belegt am 2026-09-16, siehe domains/shopify/benachrichtigungen/
+    // bestelldokumente.md). Was mit ins Paket soll, muss deshalb Auftragsdaten
+    // sein: order.attributes ist im Lieferschein vorhanden. Jede Konfiguration
+    // schreibt hier eine Zeile "Zuschnitt N" in die Warenkorbattribute; die
+    // Lieferscheinvorlage gibt alle Zeilen aus, deren Schluessel mit
+    // "Zuschnitt" beginnt. Die Rollenbreite bleibt bewusst draussen - sie ist
+    // eine interne Angabe fuer die Werkstatt.
+    function zuschnittNotieren(text) {
+      if (!text) return Promise.resolve();
+      return fetch('/cart.js', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (cart) {
+          var vorhanden = (cart && cart.attributes) || {};
+          var hoechste = 0;
+          Object.keys(vorhanden).forEach(function (k) {
+            var m = /^Zuschnitt (\d+)$/.exec(k);
+            if (m) hoechste = Math.max(hoechste, Number(m[1]));
+          });
+          var attribute = {};
+          attribute['Zuschnitt ' + (hoechste + 1)] = text;
+          return fetch('/cart/update.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ attributes: attribute }),
+          });
+        })
+        // Die Notiz ist eine Beigabe, kein Teil des Kaufs: schlaegt sie fehl,
+        // bleibt der Artikel trotzdem im Warenkorb.
+        .catch(function () {});
+    }
+
+    function zuschnittText(p) {
+      var teile = [d.produkt];
+      if (target && target.farbe) teile.push(target.farbe);
+      if (p['Maße']) teile.push(p['Maße']);
+      if (p['Einfassung']) teile.push(p['Einfassung']);
+      if (p['Bandfarbe']) teile.push('Band ' + p['Bandfarbe']);
+      if (p['Fläche (abgerechnet)']) teile.push(p['Fläche (abgerechnet)']);
+      return teile.filter(Boolean).join(' · ');
+    }
+
     function hinzufuegen() {
       if (!stand || !target || !target.available || (mitBand && !band)) return;
       var p = {
@@ -565,6 +607,7 @@
       })
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (item) {
+          zuschnittNotieren(zuschnittText(p));
           cta.textContent = 'Im Warenkorb';
           cta.classList.add('is-done');
           warenkorb.hidden = false;
