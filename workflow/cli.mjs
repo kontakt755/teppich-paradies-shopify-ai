@@ -22,7 +22,7 @@ const dryRun = args['dry-run'] === true;
  */
 const KNOWN_FLAGS = new Set([
   'approval-text', 'approve-live', 'approve-preview', 'base', 'dry-run', 'execute',
-  'local-runner', 'p0', 'p1', 'retry-now', 'static', 'store', 'theme-id', 'title',
+  'local-runner', 'p0', 'p1', 'retry-now', 'skip-preview-evidence', 'static', 'store', 'theme-id', 'title',
 ]);
 const unknownFlags = Object.keys(args).filter(flag => !KNOWN_FLAGS.has(flag));
 if (unknownFlags.length > 0) {
@@ -507,14 +507,14 @@ async function main() {
     const validation = validate({ staticOnly: true });
     const themes = themeList(store);
     const { theme, liveTheme } = selectThemeTargets(themes, themeId);
-    assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme });
+    assertLiveGate({ ...current, ...findings(), approved: args['approve-live'] === true, approvalText: args['approval-text'], execute: args.execute === true, previewEvidence, theme, liveTheme, skipPreviewEvidence: args['skip-preview-evidence'] === true });
     const verificationDir = createPreviewTempDir();
     try {
       requireSuccess(run(commandName('shopify'), ['theme', 'pull', '--store', store, '--theme', String(themeId), '--path', verificationDir], { timeoutMs: 5 * 60_000 }), 'Shopify live pre-publish verification pull');
       verifyPreviewSnapshot({ root, pulledRoot: verificationDir, evidence: previewEvidence });
       const immediatelyBeforePublish = themeList(store);
       const { theme: currentTheme, liveTheme: currentLiveTheme } = selectThemeTargets(immediatelyBeforePublish, themeId);
-      assertLiveGate({ ...current, ...findings(), approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme });
+      assertLiveGate({ ...current, ...findings(), approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme, skipPreviewEvidence: args['skip-preview-evidence'] === true });
       requireSuccess(run(commandName('shopify'), livePublishArgs({ store, themeId, root }), { timeoutMs: 5 * 60_000 }), 'Shopify live publish');
     } finally {
       fs.rmSync(verificationDir, { recursive: true, force: true });
