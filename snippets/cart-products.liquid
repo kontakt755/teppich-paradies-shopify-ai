@@ -19,6 +19,11 @@
   type="module"
   fetchpriority="low"
 ></script>
+{%- comment -%}
+  Zuschnittangaben (Warenkorbattribute) mit den Zeilen abgleichen - siehe
+  assets/tp-zuschnitt-abgleich.js und die Sperre in snippets/tp-cart-gruppe.liquid.
+{%- endcomment -%}
+<script src="{{ 'tp-zuschnitt-abgleich.js' | asset_url }}" defer></script>
 <script
   src="{{ 'component-cart-quantity-selector.js' | asset_url }}"
   type="module"

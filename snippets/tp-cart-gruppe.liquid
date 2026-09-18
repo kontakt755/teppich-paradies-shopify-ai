@@ -81,6 +81,49 @@
         endif
       endif
     endfor
+
+    # Zuschnittangaben: Der Lieferschein liest nur cart.attributes. Jede Zeile
+    # mit _Zuschnitt braucht genau ihr Attribut "Zuschnitt <_Gruppe>" mit
+    # demselben Text; jedes andere Zuschnitt-Attribut ist veraltet (Zeile
+    # entfernt oder neu konfiguriert). Beides sperrt - fail closed, der
+    # Abgleich in assets/tp-zuschnitt-abgleich.js hebt die Sperre auf.
+    assign tp_gz_zs_offen = false
+    assign tp_gz_zs_alt = false
+    assign tp_gz_zs_soll = '|'
+    for tp_gz_it in cart.items
+      assign tp_gz_zs_text = tp_gz_it.properties._Zuschnitt | default: ''
+      assign tp_gz_zs_g = tp_gz_it.properties._Gruppe | default: '' | strip
+      if tp_gz_zs_text != blank
+        assign tp_gz_zs_key = 'Zuschnitt ' | append: tp_gz_zs_g
+        if tp_gz_zs_g == blank or cart.attributes[tp_gz_zs_key] != tp_gz_zs_text
+          assign tp_gz_zs_offen = true
+        endif
+        assign tp_gz_zs_soll = tp_gz_zs_soll | append: tp_gz_zs_key | append: '|'
+      elsif tp_gz_it.properties['Einfassung'] != blank and tp_gz_it.properties['Maße'] != blank
+        # Konfiguration aus der Zeit vor _Zuschnitt: Angabe nicht rekonstruierbar.
+        assign tp_gz_zs_alt = true
+      endif
+    endfor
+    for tp_gz_attr in cart.attributes
+      assign tp_gz_attr_k = tp_gz_attr | first
+      assign tp_gz_attr_v = tp_gz_attr | last
+      assign tp_gz_attr_pre = tp_gz_attr_k | slice: 0, 10
+      assign tp_gz_attr_such = '|' | append: tp_gz_attr_k | append: '|'
+      if tp_gz_attr_pre == 'Zuschnitt ' and tp_gz_attr_v != blank
+        unless tp_gz_zs_soll contains tp_gz_attr_such
+          assign tp_gz_zs_offen = true
+        endunless
+      endif
+    endfor
+    if tp_gz_zs_alt
+      assign tp_gz_gesperrt = true
+      assign tp_gz_sperr_text = 'Ein konfigurierter Teppich hat keine Zuschnittangabe – bitte entfernen und neu konfigurieren'
+    elsif tp_gz_zs_offen
+      assign tp_gz_gesperrt = true
+      if tp_gz_sperr_text == blank
+        assign tp_gz_sperr_text = 'Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen'
+      endif
+    endif
   else
     assign tp_gz_p = line_item.properties
     assign tp_gz_gruppe = tp_gz_p._Gruppe | default: '' | strip
@@ -174,6 +217,11 @@
       aria-label="Bestellung gesperrt"
       tabindex="-1"
     >
+    {%- if tp_gz_zs_offen and tp_gz_zs_alt == false -%}
+      <button type="button" class="button-secondary tp-cart-sperre__knopf" data-tp-zuschnitt-abgleich>
+        Erneut abgleichen
+      </button>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -194,6 +242,7 @@
   .tp-cart-sperre {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--gap-xs);
     margin-block-start: var(--margin-sm);
@@ -212,6 +261,17 @@
     opacity: 0;
     pointer-events: none;
     border: 0;
+  }
+
+  .tp-cart-sperre__knopf {
+    position: relative;
+    z-index: 1;
+    margin-inline-start: auto;
+  }
+
+  .tp-cart-sperre__fehler {
+    flex-basis: 100%;
+    margin: 0;
   }
 
   body:has([data-tp-cart-gesperrt]) .cart__checkout-button,

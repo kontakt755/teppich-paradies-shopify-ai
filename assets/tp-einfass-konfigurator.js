@@ -507,34 +507,16 @@
 
     // Der Lieferschein kennt line_item.properties nicht - das Feld ist dort NIL
     // (belegt am 2026-09-16, siehe domains/shopify/benachrichtigungen/
-    // bestelldokumente.md). Was mit ins Paket soll, muss deshalb Auftragsdaten
-    // sein: order.attributes ist im Lieferschein vorhanden. Jede Konfiguration
-    // schreibt hier eine Zeile "Zuschnitt N" in die Warenkorbattribute; die
-    // Lieferscheinvorlage gibt alle Zeilen aus, deren Schluessel mit
-    // "Zuschnitt" beginnt. Die Rollenbreite bleibt bewusst draussen - sie ist
-    // eine interne Angabe fuer die Werkstatt.
-    function zuschnittNotieren(text) {
-      if (!text) return Promise.resolve();
-      return fetch('/cart.js', { headers: { Accept: 'application/json' } })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (cart) {
-          var vorhanden = (cart && cart.attributes) || {};
-          var hoechste = 0;
-          Object.keys(vorhanden).forEach(function (k) {
-            var m = /^Zuschnitt (\d+)$/.exec(k);
-            if (m) hoechste = Math.max(hoechste, Number(m[1]));
-          });
-          var attribute = {};
-          attribute['Zuschnitt ' + (hoechste + 1)] = text;
-          return fetch('/cart/update.js', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ attributes: attribute }),
-          });
-        })
-        // Die Notiz ist eine Beigabe, kein Teil des Kaufs: schlaegt sie fehl,
-        // bleibt der Artikel trotzdem im Warenkorb.
-        .catch(function () {});
+    // bestelldokumente.md). Was mit ins Paket soll, muss Auftragsdaten sein:
+    // order.attributes. Die Zeile traegt ihre Zuschnittangabe selbst
+    // (_Zuschnitt unter ihrer _Gruppe); assets/tp-zuschnitt-abgleich.js macht
+    // daraus genau ein Attribut "Zuschnitt <Gruppe>" je Zeile und raeumt
+    // Attribute entfernter Zeilen ab. Solange beides nicht passt, sperrt
+    // snippets/tp-cart-gruppe.liquid den Checkout. Die Rollenbreite bleibt
+    // bewusst draussen - sie ist eine interne Angabe fuer die Werkstatt.
+    function zuschnittAbgleichen() {
+      if (window.TPZuschnitt) return window.TPZuschnitt.abgleichen();
+      return Promise.reject(new Error('Abgleich-Skript fehlt'));
     }
 
     function zuschnittText(p) {
@@ -570,13 +552,15 @@
       var rolle = rollen.length ? M.rolleFuer(kurzeSeite, rollen) : null;
       if (rolle) p['_Zuschnitt aus Rolle'] = rolle + ' cm';
 
-      // Mit Kettelung zwei Zeilen unter einer Gruppenkennung: Teppich und
-      // Kante gehoeren zusammen, bleiben im Warenkorb aber nachvollziehbar.
+      // Jede Konfiguration bekommt eine eigene Gruppenkennung; an ihr haengt
+      // das Zuschnitt-Attribut. Mit Kettelung teilen sich Teppich und Kante
+      // die Kennung, bleiben im Warenkorb aber zwei nachvollziehbare Zeilen.
+      var gruppe = 'K' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+      p['_Gruppe'] = gruppe;
+      p['_Zuschnitt'] = zuschnittText(p);
       var koerper = { id: target.id, quantity: menge, properties: p };
       var gesamtMenge = menge;
       if (kettel && stand.kantenEinheiten > 0) {
-        var gruppe = 'K' + Date.now().toString(36);
-        p['_Gruppe'] = gruppe;
         koerper = {
           items: [
             { id: target.id, quantity: menge, properties: p },
@@ -607,9 +591,23 @@
       })
         .then(function (r) { if (!r.ok) throw new Error('add'); return r.json(); })
         .then(function (item) {
-          zuschnittNotieren(zuschnittText(p));
-          cta.textContent = 'Im Warenkorb';
-          cta.classList.add('is-done');
+          // Erst wenn das Zuschnitt-Attribut nachweislich steht, geht der
+          // Warenkorb auf. Schlaegt es fehl, bleibt der Artikel im Warenkorb,
+          // der Checkout ist serverseitig gesperrt und der Kunde sieht es.
+          return zuschnittAbgleichen().then(
+            function () { return { item: item, ok: true }; },
+            function () { return { item: item, ok: false }; }
+          );
+        })
+        .then(function (erg) {
+          var item = erg.item;
+          if (!erg.ok) {
+            cta.textContent = 'Im Warenkorb – Zuschnittangabe nicht gespeichert, bitte im Warenkorb erneut abgleichen';
+            cta.classList.add('is-error');
+          } else {
+            cta.textContent = 'Im Warenkorb';
+            cta.classList.add('is-done');
+          }
           warenkorb.hidden = false;
           document.dispatchEvent(new CustomEvent('cart:update', {
             bubbles: true,
@@ -617,7 +615,11 @@
           }));
           var drawer = document.querySelector('cart-drawer-component');
           if (drawer && typeof drawer.open === 'function') drawer.open();
-          setTimeout(function () { cta.classList.remove('is-done'); cta.textContent = vorher; cta.disabled = false; }, 3000);
+          setTimeout(function () {
+            cta.classList.remove('is-done', 'is-error');
+            cta.textContent = vorher;
+            cta.disabled = false;
+          }, erg.ok ? 3000 : 8000);
         })
         .catch(function () {
           cta.textContent = 'Nicht hinzugefügt – erneut versuchen';
