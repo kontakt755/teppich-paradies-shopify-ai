@@ -261,7 +261,7 @@
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Versand per Paketdienst oder Spedition, ab 50 € Bestellwert versandkostenfrei – ohne Verlegung."
+            "text": "Versand per Paketdienst oder Spedition, ab [versandfrei] € Bestellwert versandkostenfrei – ohne Verlegung."
           }
         }
       },

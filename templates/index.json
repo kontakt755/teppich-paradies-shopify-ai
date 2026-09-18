@@ -832,7 +832,7 @@
         "service_link": "/pages/liefer-verlegeservice",
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
-        "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab 50 € Bestellwert versandkostenfrei.",
+        "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab [versandfrei] € Bestellwert versandkostenfrei.",
         "online_punkte": "Rollenware im Wunschmaß, Bis zu 3 Muster kostenlos, Versand deutschlandweit",
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",

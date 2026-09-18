@@ -27,10 +27,11 @@
     {%- endif -%}
     {%- comment -%}
       Stand der Versandprofile am 2026-09-11 (Admin API): alle aktiven Produkte,
-      auch Rollen- und Paketware, liegen im allgemeinen Profil - 4,99 EUR, ab
-      50 EUR Bestellwert kostenlos. Das Profil "Bodenbelaege & Teppiche - kostenlos"
-      enthaelt nur ein Entwurfsprodukt. Ein einzelnes Paket (z. B. 34,95 EUR) kostet
-      also Versand - deshalb nennt der Hinweis die 50-EUR-Schwelle (Audit B-18).
+      auch Rollen- und Paketware, liegen im allgemeinen Profil - Preis und
+      Schwelle stehen in den Theme-Einstellungen unter "TP Versand" und muessen
+      zum Profil passen. Das Profil "Bodenbelaege & Teppiche - kostenlos"
+      enthaelt nur ein Entwurfsprodukt. Ein einzelnes Paket (z. B. 34,95 EUR)
+      kostet also Versand - deshalb nennt der Hinweis die Schwelle (Audit B-18).
     {%- endcomment -%}
     {%- liquid
       assign tp_sl_is_flooring = false
@@ -45,7 +46,7 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert</strong></p>
+      <p><strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
       {%- comment -%}
         "Bis vor die Haustuer" stand hier im Widerspruch zur Erklaerung direkt
         darunter, die frei Bordsteinkante definiert - "Weitertransport ins
@@ -64,7 +65,7 @@
       {%- endcomment -%}
       <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
     {%- else -%}
-      <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
+      <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
 
     {%- if tp_sl_is_flooring -%}
