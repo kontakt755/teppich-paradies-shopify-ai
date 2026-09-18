@@ -16,11 +16,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const snippet = readFileSync(join(root, 'snippets', 'tp-cart-gruppe.liquid'), 'utf8');
 const cart = readFileSync(join(root, 'snippets', 'cart-products.liquid'), 'utf8');
 
-test('das Snippet kennt genau die zwei benutzten Teile', () => {
-  assert.match(snippet, /\{%- if teil == 'hinweis' -%\}/);
-  assert.match(snippet, /\{%- elsif teil == 'sperre' and tp_gz_gesperrt -%\}/);
-  // Die ungenutzten Zweige der Vorlage sind entfernt - kein toter Code.
-  assert.doesNotMatch(snippet, /teil == 'berechnet'|teil == 'menge'/);
+// Das Snippet ist die einzige Stelle mit Erkennungsregeln; cart-products rendert
+// alle fuenf Teile und klassifiziert nicht selbst (cart-mengensperre.test.mjs).
+test('das Snippet kennt genau die benutzten Teile', () => {
+  const teile = [...snippet.matchAll(/teil == '([a-z]+)'/g)].map((m) => m[1]);
+  assert.deepEqual([...new Set(teile)].sort(), ['berechnet', 'hinweis', 'menge', 'mengenhinweis', 'sperre']);
+  for (const teil of new Set(teile)) {
+    assert.match(cart, new RegExp(`render 'tp-cart-gruppe',[^%]*teil: '${teil}'`), `Teil ${teil} wird nicht gerendert - toter Code`);
+  }
 });
 
 test('cart-products bindet beide Teile ein', () => {
@@ -71,9 +74,12 @@ test('die Sperre nennt den Grund im Text', () => {
 });
 
 // Der Hinweis an der Zusatzzeile darf nichts versprechen, was nicht passiert:
-// gemeinsames Loeschen ist NICHT umgesetzt (dafuer braeuchte es den
-// JS-Umbau aus PR #288).
-test('der Gruppenhinweis verspricht kein gemeinsames Entfernen', () => {
-  assert.match(snippet, /Gehört zu \{\{ tp_gz_haupt_titel \| escape \}\}/);
-  assert.doesNotMatch(snippet, /gemeinsam entfernt/);
+// "wird gemeinsam entfernt" steht nur da, solange component-cart-items.js die
+// Gruppe tatsaechlich ueber /cart/update.js loescht (cart-gruppen.test.mjs, J).
+test('der Gruppenhinweis verspricht gemeinsames Entfernen nur, wenn es umgesetzt ist', () => {
+  assert.match(snippet, /Gehört zu \{\{ tp_gz_haupt_titel \| escape \}\}; wird gemeinsam entfernt/);
+  const js = readFileSync(join(root, 'assets', 'component-cart-items.js'), 'utf8');
+  assert.match(js, /TPCartGruppen/);
+  assert.match(js, /zuEntfernen/);
+  assert.match(js, /Theme\.routes\.cart_update_url/);
 });

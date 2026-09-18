@@ -322,27 +322,13 @@
                   {%- comment -%}
                     Berechnete Zeilen (Rollenrechner, Einfass-Konfigurator) haben
                     keine aenderbare Menge - sie ergibt sich aus den Massen in den
-                    Properties. UI-Sperre: can_update_quantity deaktiviert den Waehler.
-                    Hinweis: Ein direkter POST auf /cart/change.js umgeht diese UI-Sperre.
-                    Eine echte serverseitige Integritätskontrolle braucht eine Shopify
-                    Cart/Checkout Validation Function.
+                    Properties. Erkennung ausschliesslich in snippets/tp-cart-gruppe.liquid;
+                    hier wird nur gerendert. Die Sperre wirkt nur in der Bedienoberflaeche:
+                    ein direkter POST auf /cart/change.js umgeht sie, serverseitig braucht
+                    es eine Shopify Cart/Checkout Validation Function (#357).
                   {%- endcomment -%}
                   {%- capture tp_gz_berechnet -%}{%- render 'tp-cart-gruppe', line_item: item, teil: 'berechnet' -%}{%- endcapture -%}
                   {%- if tp_gz_berechnet contains 'ja' -%}
-                    {%- assign can_update_quantity = false -%}
-                  {%- endif -%}
-                  {%- assign tp_cart_zuschnitt = false -%}
-                  {%- assign tp_cart_hauptzeile = false -%}
-                  {%- if item.properties['Gewünschte Länge'] != blank -%}
-                    {%- assign tp_cart_zuschnitt = true -%}
-                    {%- assign tp_cart_hauptzeile = true -%}
-                    {%- assign can_update_quantity = false -%}
-                  {%- elsif item.product.metafields.custom.preis_pro_001_qm.value -%}
-                    {%- assign tp_cart_zuschnitt = true -%}
-                    {%- assign tp_cart_hauptzeile = true -%}
-                    {%- assign can_update_quantity = false -%}
-                  {%- elsif item.properties['_Gruppe'] != blank -%}
-                    {%- assign tp_cart_zuschnitt = true -%}
                     {%- assign can_update_quantity = false -%}
                   {%- endif -%}
                   <div class="cart-items__quantity-controls">
@@ -377,16 +363,7 @@
                       <span class="visually-hidden">{{ 'accessibility.remove' | t }}</span>
                     </button>
                   </div>
-                  {%- if tp_cart_hauptzeile -%}
-                    <p class="cart-items__zuschnitt-hinweis">
-                      Menge ergibt sich aus dem Maß.
-                      <a href="{{ item.url }}">Zum Produkt</a>
-                    </p>
-                  {%- elsif tp_cart_zuschnitt -%}
-                    <p class="cart-items__zuschnitt-hinweis">
-                      Menge ergibt sich aus dem Maß des zugehörigen Teppichs.
-                    </p>
-                  {%- endif -%}
+                  {%- render 'tp-cart-gruppe', line_item: item, teil: 'mengenhinweis' -%}
                 </td>
                 <td
                   class="cart-items__error hidden"
@@ -984,20 +961,5 @@
       filter: none;
       opacity: 1;
     }
-  }
-
-  .cart-items__zuschnitt-hinweis {
-    margin-block-start: 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.4;
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
-    display: block;
-    width: 100%;
-  }
-
-  .cart-items__zuschnitt-hinweis a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 0.25em;
   }
 {% endstylesheet %}

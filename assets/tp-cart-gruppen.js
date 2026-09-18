@@ -99,6 +99,7 @@
     if (!zeile) return false;
     if (gruppe(zeile)) return true;
     if (ART_WERTE.test(prop(zeile, 'Art'))) return true;
+    if (hatProp(zeile, 'Gewünschte Länge')) return true;
     if (istFlaechenware(zeile)) return true;
     if (istService(zeile)) return true;
     if (hatProp(zeile, 'Kante umlaufend')) return true;

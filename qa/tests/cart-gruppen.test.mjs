@@ -49,6 +49,7 @@ test('A: berechnete Zeilen werden datengetrieben erkannt, Stueckware nicht', () 
   assert.equal(G.istBerechnet(fussleiste('T1')), true, 'Zu Teppichboden');
   // Wunschmass-Variante ohne Rechner (direkt per /cart/add.js)
   assert.equal(G.istBerechnet({ key: 'w', quantity: 1, optionen: ['Sand Hell', 'Wunschmaß'], properties: {} }), true);
+  assert.equal(G.istBerechnet({ key: 'z', quantity: 12, properties: { 'Gewünschte Länge': '300 cm' } }), true, 'Gewuenschte Laenge');
   assert.equal(G.istBerechnet(stueck()), false);
   assert.equal(G.istBerechnet(null), false);
 });
