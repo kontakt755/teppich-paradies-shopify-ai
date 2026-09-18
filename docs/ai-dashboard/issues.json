@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-18T18:04:36.989Z",
+  "generated_at": "2026-09-18T20:13:14.215Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 110,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-18T18:04:36.989Z",
+    "fetchedAt": "2026-09-18T20:13:14.215Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -3218,7 +3218,7 @@
     {
       "number": 34,
       "title": "🚧 Shopify Admin API Integration",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
       "labels": [
         "status:blockiert",
@@ -3230,7 +3230,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -3239,8 +3239,8 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-09T11:30:08Z",
-      "closed_at": null
+      "updated_at": "2026-09-18T20:12:58Z",
+      "closed_at": "2026-09-18T20:12:58Z"
     },
     {
       "number": 33,
