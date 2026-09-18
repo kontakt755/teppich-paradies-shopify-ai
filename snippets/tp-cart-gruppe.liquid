@@ -87,9 +87,7 @@
       endif
       if tp_gz_it_waise != blank
         assign tp_gz_gesperrt = true
-        if tp_gz_sperr_text == blank
-          assign tp_gz_sperr_text = tp_gz_it_waise
-        endif
+        assign tp_gz_sperr_text = tp_gz_sperr_text | default: tp_gz_it_waise
       endif
     endfor
 
@@ -131,9 +129,7 @@
       assign tp_gz_sperr_text = 'Ein konfigurierter Teppich hat keine Zuschnittangabe – bitte entfernen und neu konfigurieren'
     elsif tp_gz_zs_offen
       assign tp_gz_gesperrt = true
-      if tp_gz_sperr_text == blank
-        assign tp_gz_sperr_text = 'Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen'
-      endif
+      assign tp_gz_sperr_text = tp_gz_sperr_text | default: 'Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen'
     endif
   else
     assign tp_gz_p = line_item.properties
