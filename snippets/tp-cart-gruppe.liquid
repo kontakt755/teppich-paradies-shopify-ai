@@ -2,7 +2,8 @@
   Berechnete Warenkorbzeilen (Rollenrechner, Einfass-Konfigurator) und ihre
   Gruppen - Server-Seite. Dieselben Regeln wie assets/tp-cart-gruppen.js:
 
-    berechnet: _Gruppe | Art = Meterware/Raummass | custom.preis_pro_001_qm
+    berechnet: _Gruppe | Art = Meterware/Raummass | Gewuenschte Laenge
+               | custom.preis_pro_001_qm
                | Service-Property (Zu Teppich, Zu Teppichboden, Kante umlaufend)
                | Optionswert Wunschmass
     Service:   Zu Teppich/Zu Teppichboden, Kante umlaufend ohne Masse,
@@ -11,12 +12,22 @@
     Waise:     Service mit _Gruppe ohne Hauptzeile | Service ohne _Gruppe
                | Flaechenware/Wunschmass ohne Mass-Property
 
-  Fail safe: Waisen sperren den Checkout (teil 'sperre'). Wird nur aus
-  snippets/cart-products.liquid gerendert, in Drawer und Warenkorbseite.
+  Fail safe: Waisen sperren den Checkout (teil 'sperre'), ebenso fehlende,
+  abweichende oder veraltete Zuschnitt-Attribute (Lieferschein liest nur
+  cart.attributes, Abgleich in assets/tp-zuschnitt-abgleich.js).
+
+  Dies ist die einzige Stelle mit Erkennungsregeln. snippets/cart-products.liquid
+  rendert nur die Teile und klassifiziert nicht selbst (Drawer und Warenkorbseite).
+
+  Grenze: Die Mengensperre wirkt nur in der Bedienoberflaeche. Ein direkter
+  POST auf /cart/change.js aendert die Menge weiterhin; serverseitig braucht es
+  eine Shopify Cart/Checkout Validation Function (Inhaberentscheidung, #357).
 
   @param {object} [line_item] - Warenkorbposition (fuer teil berechnet|menge|hinweis)
   @param {string} teil - 'berechnet' (gibt "ja" aus), 'menge' (Mengentext +
-    updates[]-Ersatz), 'hinweis' (Gruppenhinweis / Waisenwarnung), 'sperre'
+    updates[]-Ersatz), 'mengenhinweis' (Hinweis unter der gesperrten Menge,
+    Link zur Produktseite nur an der Hauptzeile),
+    'hinweis' (Gruppenhinweis / Waisenwarnung), 'sperre'
     (Checkout-Sperre fuer den ganzen Warenkorb, ohne line_item)
 {%- enddoc -%}
 {%- liquid
@@ -81,6 +92,49 @@
         endif
       endif
     endfor
+
+    # Zuschnittangaben: Der Lieferschein liest nur cart.attributes. Jede Zeile
+    # mit _Zuschnitt braucht genau ihr Attribut "Zuschnitt <_Gruppe>" mit
+    # demselben Text; jedes andere Zuschnitt-Attribut ist veraltet (Zeile
+    # entfernt oder neu konfiguriert). Beides sperrt - fail closed, der
+    # Abgleich in assets/tp-zuschnitt-abgleich.js hebt die Sperre auf.
+    assign tp_gz_zs_offen = false
+    assign tp_gz_zs_alt = false
+    assign tp_gz_zs_soll = '|'
+    for tp_gz_it in cart.items
+      assign tp_gz_zs_text = tp_gz_it.properties._Zuschnitt | default: ''
+      assign tp_gz_zs_g = tp_gz_it.properties._Gruppe | default: '' | strip
+      if tp_gz_zs_text != blank
+        assign tp_gz_zs_key = 'Zuschnitt ' | append: tp_gz_zs_g
+        if tp_gz_zs_g == blank or cart.attributes[tp_gz_zs_key] != tp_gz_zs_text
+          assign tp_gz_zs_offen = true
+        endif
+        assign tp_gz_zs_soll = tp_gz_zs_soll | append: tp_gz_zs_key | append: '|'
+      elsif tp_gz_it.properties['Einfassung'] != blank and tp_gz_it.properties['Maße'] != blank
+        # Konfiguration aus der Zeit vor _Zuschnitt: Angabe nicht rekonstruierbar.
+        assign tp_gz_zs_alt = true
+      endif
+    endfor
+    for tp_gz_attr in cart.attributes
+      assign tp_gz_attr_k = tp_gz_attr | first
+      assign tp_gz_attr_v = tp_gz_attr | last
+      assign tp_gz_attr_pre = tp_gz_attr_k | slice: 0, 10
+      assign tp_gz_attr_such = '|' | append: tp_gz_attr_k | append: '|'
+      if tp_gz_attr_pre == 'Zuschnitt ' and tp_gz_attr_v != blank
+        unless tp_gz_zs_soll contains tp_gz_attr_such
+          assign tp_gz_zs_offen = true
+        endunless
+      endif
+    endfor
+    if tp_gz_zs_alt
+      assign tp_gz_gesperrt = true
+      assign tp_gz_sperr_text = 'Ein konfigurierter Teppich hat keine Zuschnittangabe – bitte entfernen und neu konfigurieren'
+    elsif tp_gz_zs_offen
+      assign tp_gz_gesperrt = true
+      if tp_gz_sperr_text == blank
+        assign tp_gz_sperr_text = 'Die Zuschnittangaben werden noch mit dem Warenkorb abgeglichen'
+      endif
+    endif
   else
     assign tp_gz_p = line_item.properties
     assign tp_gz_gruppe = tp_gz_p._Gruppe | default: '' | strip
@@ -114,7 +168,7 @@
     endif
 
     assign tp_gz_berechnet = false
-    if tp_gz_gruppe != blank or tp_gz_art == 'meterware' or tp_gz_art == 'raummaß' or tp_gz_art == 'raummass' or tp_gz_flaechenware or tp_gz_service or tp_gz_wunsch or tp_gz_p['Kante umlaufend'] != blank
+    if tp_gz_gruppe != blank or tp_gz_art == 'meterware' or tp_gz_art == 'raummaß' or tp_gz_art == 'raummass' or tp_gz_p['Gewünschte Länge'] != blank or tp_gz_flaechenware or tp_gz_service or tp_gz_wunsch or tp_gz_p['Kante umlaufend'] != blank
       assign tp_gz_berechnet = true
     endif
 
@@ -200,6 +254,20 @@
     <span class="visually-hidden">Menge:</span>
     {{- tp_gz_text | escape -}}
   </span>
+{%- elsif teil == 'mengenhinweis' and tp_gz_berechnet and tp_gz_waise == blank -%}
+  {%- comment -%}
+    Den Rueckweg zur Produktseite gibt es nur an der Hauptzeile: line_item.url
+    einer Service-Zeile (Kettelservice, Fussleiste, Haftunterlage) fuehrt zum
+    Zusatzprodukt, nicht zum Rechner des Teppichs.
+  {%- endcomment -%}
+  {%- if tp_gz_service -%}
+    <p class="tp-cart-mengenhinweis">Menge ergibt sich aus dem Maß des zugehörigen Teppichs.</p>
+  {%- else -%}
+    <p class="tp-cart-mengenhinweis">
+      Menge ergibt sich aus dem Maß.
+      <a href="{{ line_item.url }}">Zum Produkt</a>
+    </p>
+  {%- endif -%}
 {%- elsif teil == 'hinweis' -%}
   {%- if tp_gz_waise != blank -%}
     <p class="tp-cart-waise" role="alert" data-tp-waise="1">{{ tp_gz_waise }}</p>
@@ -225,6 +293,11 @@
       aria-label="Bestellung gesperrt"
       tabindex="-1"
     >
+    {%- if tp_gz_zs_offen and tp_gz_zs_alt == false -%}
+      <button type="button" class="button-secondary tp-cart-sperre__knopf" data-tp-zuschnitt-abgleich>
+        Erneut abgleichen
+      </button>
+    {%- endif -%}
   </div>
 {%- endif -%}
 
@@ -247,6 +320,21 @@
     display: none;
   }
 
+  .tp-cart-mengenhinweis {
+    display: block;
+    width: 100%;
+    margin-block-start: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+  }
+
+  .tp-cart-mengenhinweis a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
   .tp-cart-gruppenhinweis {
     margin: var(--margin-2xs) 0 0;
     font-size: var(--font-size--xs);
@@ -263,6 +351,7 @@
   .tp-cart-sperre {
     position: relative;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--gap-xs);
     margin-block-start: var(--margin-sm);
@@ -281,6 +370,17 @@
     opacity: 0;
     pointer-events: none;
     border: 0;
+  }
+
+  .tp-cart-sperre__knopf {
+    position: relative;
+    z-index: 1;
+    margin-inline-start: auto;
+  }
+
+  .tp-cart-sperre__fehler {
+    flex-basis: 100%;
+    margin: 0;
   }
 
   body:has([data-tp-cart-gesperrt]) .cart__checkout-button,
