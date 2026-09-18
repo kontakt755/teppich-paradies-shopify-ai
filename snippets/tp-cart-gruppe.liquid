@@ -316,8 +316,15 @@
     display: none;
   }
 
+  /* Die Mengenzelle ist ein Flex-Container ohne Umbruch: ohne diese Regel
+     klemmt der Hinweis als schmale Spalte neben der Menge statt darunter. */
+  .cart-items__quantity:has(> .tp-cart-mengenhinweis) {
+    flex-wrap: wrap;
+  }
+
   .tp-cart-mengenhinweis {
     display: block;
+    flex-basis: 100%;
     width: 100%;
     margin-block-start: 0.5rem;
     font-size: 0.875rem;
