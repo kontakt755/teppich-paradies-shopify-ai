@@ -8,6 +8,7 @@ Startdatum: 2026-09-18 · Mac: kontakt755@teppich (main) · Phase: Leer-Session 
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-09-11…2026-09-18 | kontakt755@teppich | — | Gemini (47), GPT-5.6-sol (20), Sonnet (9), andere (1) | Router-Anteil seit 2026-09-11 (Ledger) | 77 | — | — | 0 | 0 | — | — |
 | 2026-09-18 | kontakt755@teppich | A | Haiku 4.5 | Leer-Session / Startkontext | 1 | 134 | 37 | 1.2M | 44k | 1m | 1% |
+| 2026-09-18 | Mac-mini-von-Ahmet.local | A | Haiku 4.5 | Leer-Session / Startkontext | 1 | 50 | 10 | 399.6k | 45.2k | — | <0.1% |
 
 ## Ledger-Quelle
 
