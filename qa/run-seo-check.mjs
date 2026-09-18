@@ -329,8 +329,20 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       const offers = [...directOffers, ...variants.flatMap(variant => Array.isArray(variant.offers) ? variant.offers : variant.offers ? [variant.offers] : [])];
       if (!offers.length) add('ERROR', 'OFFER_MISSING', pageConfig.name, viewportName, 'Product-JSON-LD ohne Offer');
       offers.forEach((offer, index) => {
-        for (const key of ['price', 'priceCurrency', 'availability']) if (offer[key] === undefined || offer[key] === '') add('ERROR', 'OFFER_FIELD', pageConfig.name, viewportName, `Offer #${index + 1} ohne ${key}`);
-        if (offer.price !== undefined && !/^\d+(?:[.,]\d{1,2})?$/.test(String(offer.price))) add('ERROR', 'OFFER_PRICE_FORMAT', pageConfig.name, viewportName, `Ungültiges Offer-Preisformat: ${offer.price}`);
+        // Flaechenware traegt den m2-Preis bewusst NUR in der
+        // UnitPriceSpecification (snippets/tp-product-structured-data.liquid):
+        // stuende er zusaetzlich in offers.price, naehme Google diesen. Google
+        // verlangt offers.price ODER offers.priceSpecification.price - geprueft
+        // wird deshalb der Preis, der tatsaechlich am Offer steht, mit
+        // demselben Formatmassstab.
+        const spec = Array.isArray(offer.priceSpecification) ? offer.priceSpecification[0] : offer.priceSpecification;
+        const angebot = {
+          price: offer.price ?? spec?.price,
+          priceCurrency: offer.priceCurrency ?? spec?.priceCurrency,
+          availability: offer.availability,
+        };
+        for (const key of ['price', 'priceCurrency', 'availability']) if (angebot[key] === undefined || angebot[key] === '') add('ERROR', 'OFFER_FIELD', pageConfig.name, viewportName, `Offer #${index + 1} ohne ${key}`);
+        if (angebot.price !== undefined && !/^\d+(?:[.,]\d{1,2})?$/.test(String(angebot.price))) add('ERROR', 'OFFER_PRICE_FORMAT', pageConfig.name, viewportName, `Ungültiges Offer-Preisformat: ${angebot.price}`);
         if (/opc-/i.test(JSON.stringify(offer))) add('WARN', 'OFFER_OPC_VARIANT', pageConfig.name, viewportName, 'OPC-generierte Variante im öffentlichen Offer-Markup erkennbar');
       });
       if (variants.some(variant => /opc-/i.test(JSON.stringify(variant)))) add('WARN', 'OFFER_OPC_VARIANT', pageConfig.name, viewportName, 'OPC-generierte Variante im öffentlichen ProductGroup-Markup erkennbar');
