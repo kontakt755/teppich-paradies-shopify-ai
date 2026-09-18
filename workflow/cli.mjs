@@ -511,7 +511,7 @@ async function main() {
     const verificationDir = createPreviewTempDir();
     try {
       requireSuccess(run(commandName('shopify'), ['theme', 'pull', '--store', store, '--theme', String(themeId), '--path', verificationDir], { timeoutMs: 5 * 60_000 }), 'Shopify live pre-publish verification pull');
-      verifyPreviewSnapshot({ root, pulledRoot: verificationDir, evidence: previewEvidence });
+      verifyPreviewSnapshot({ root, pulledRoot: verificationDir, evidence: previewEvidence, skipPreviewEvidence: args['skip-preview-evidence'] === true });
       const immediatelyBeforePublish = themeList(store);
       const { theme: currentTheme, liveTheme: currentLiveTheme } = selectThemeTargets(immediatelyBeforePublish, themeId);
       assertLiveGate({ ...current, ...findings(), approved: true, approvalText: args['approval-text'], execute: true, previewEvidence, theme: currentTheme, liveTheme: currentLiveTheme, skipPreviewEvidence: args['skip-preview-evidence'] === true });

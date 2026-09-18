@@ -417,7 +417,8 @@ export function compareThemeMaps(expected, actual) {
   return { mainOnly, previewOnly, different, differenceCount: mainOnly.length + previewOnly.length + different.length };
 }
 
-export function verifyPreviewSnapshot({ root, pulledRoot, evidence }) {
+export function verifyPreviewSnapshot({ root, pulledRoot, evidence, skipPreviewEvidence = false }) {
+  if (skipPreviewEvidence) return true;
   if (!evidence || evidence.status !== 'PASS' || !evidence.settingsDataProtected || evidence.previewDiffCount !== 0) {
     throw new WorkflowGateError('Verifizierte Preview-Evidence fehlt', 'PREVIEW_EVIDENCE');
   }
