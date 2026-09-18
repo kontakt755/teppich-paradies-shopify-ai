@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { captureWorkingTreeSnapshot, compareWithBaseline, currentCommit, describeReviewScope, detectReviewScope, isUsableBaseline, parsePorcelainZ, resolveReviewDir, reviewCandidateFromStop, REVIEW_CANDIDATE_MAX_CHARS, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
+import { captureWorkingTreeSnapshot, compareWithBaseline, currentCommit, describeReviewScope, detectReviewScope, isUsableBaseline, noteResultPointerInHandoff, parsePorcelainZ, readResultPointer, resolveReviewDir, resultPointerPath, reviewCandidateFromStop, verifyResultPointer, REVIEW_CANDIDATE_MAX_CHARS, REVIEW_SCOPE_COMMITTED, REVIEW_SCOPE_NONE, REVIEW_SCOPE_RESULT, REVIEW_SCOPE_UNCOMMITTED, REVIEW_SCOPE_UNKNOWN } from '../core/review-scope.mjs';
 
 // --- Baseline vorbestehender Dateien (2026-09-11) --------------------------
 // Realer Vorfall: domains/shopify/bild-qualitaetstest.py lag schon VOR
@@ -199,6 +199,83 @@ test('Baseline: bei UNKNOWN (git-Fehler) wird nichts ausgeklammert und nichts al
   assert.equal(scope.excluded, undefined);
   assert.doesNotMatch(scope.text, /kein Befund/);
   assert.doesNotMatch(scope.text, /Vorbestehend/);
+});
+
+// --- Zuordnung nach Urheber (fuenfte Luecke, 2026-09-15) ------------------
+// Realer Vorfall (Sitzung 413c819c, Hauptcheckout): Nach Aufnahme der Baseline
+// schrieben andere Sitzungen assets/tp-einfass-konfigurator.js und weitere
+// Dateien. Gegenueber der Baseline waren sie neu und standen im Pruefbereich;
+// Codex verlangte zwei Runden lang, fremde Arbeit zu "isolieren". ownPaths
+// (session-writes.mjs, Edit/Write UND Bash) entscheidet jetzt nach Urheber.
+
+function fremdeUndEigeneAenderungNachBaseline() {
+  const { dir, baseline, startCommit } = vorbestehenderStand();
+  fs.mkdirSync(path.join(dir, 'assets'));
+  // (fremd) eine andere Sitzung schreibt nach Aufnahme der Baseline
+  fs.writeFileSync(path.join(dir, 'assets/tp-einfass-konfigurator.js'), 'fremd\n');
+  fs.writeFileSync(path.join(dir, 'SEO_REPORT.md'), 'fremd\n');
+  // (eigen) diese Sitzung schreibt
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme, eigene Aenderung\n');
+  return { dir, baseline, startCommit };
+}
+
+test('(a) nach der Baseline fremd geaenderte Dateien sind nicht im Scope, wenn die Sitzung sie nie beruehrt hat', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md'] });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.deepEqual(scope.scopePaths, ['README.md']);
+  assert.deepEqual(scope.foreignPaths, ['SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js']);
+  assert.match(scope.text, /assets\/tp-einfass-konfigurator\.js/);
+  assert.match(scope.text, /nicht von dieser Sitzung geschrieben/);
+  assert.match(scope.text, /kein Befund/);
+  // Die Baseline wirkt weiterhin: vorbestehend und unveraendert bleibt ausgeklammert.
+  assert.deepEqual(scope.excluded, ['.claude/launch.json', 'domains/shopify/bild-qualitaetstest.py']);
+});
+
+test('(b) eine eigene Aenderung nach der Baseline bleibt im Scope - auch wenn sie per Bash geschrieben wurde', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  // Der Bash-Hook traegt den Pfad genauso ein wie der Edit-Hook: ownPaths
+  // unterscheidet nicht nach Werkzeug.
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md', 'SEO_REPORT.md'] });
+  assert.deepEqual(scope.scopePaths, ['README.md', 'SEO_REPORT.md']);
+  assert.deepEqual(scope.foreignPaths, ['assets/tp-einfass-konfigurator.js']);
+  assert.match(scope.text, /uncommitteten Änderungen/);
+});
+
+test('(b2) nur fremde Aenderungen: der Pruefbereich ist leer, nicht "die fremde Arbeit"', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme\n');
+  const scope = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: [] });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.deepEqual(scope.foreignPaths, ['SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js']);
+});
+
+test('(c) ohne Bestand oder ohne Baseline wird fail-safe alles geprueft', () => {
+  const { dir, baseline, startCommit } = fremdeUndEigeneAenderungNachBaseline();
+  const alle = ['README.md', 'SEO_REPORT.md', 'assets/tp-einfass-konfigurator.js'];
+  // kein Bestand (ownPaths null): nichts wird nach Urheber gefiltert
+  const ohneBestand = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: null });
+  assert.deepEqual(ohneBestand.scopePaths, alle);
+  assert.equal(ohneBestand.foreignPaths, undefined);
+  // gedeckelter Bestand: ebenso
+  const gedeckelt = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline, ownPaths: ['README.md'], ownPathsTruncated: true });
+  assert.deepEqual(gedeckelt.scopePaths, alle);
+  // keine Baseline UND kein Bestand: alles inklusive vorbestehender Dateien
+  // (ohne Baseline meldet git status neue Verzeichnisse als eine Zeile)
+  const nichts = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: null, ownPaths: null });
+  assert.deepEqual(nichts.scopePaths, ['.claude/launch.json', 'README.md', 'SEO_REPORT.md', 'assets/', 'domains/']);
+  // keine Baseline, aber Bestand: der Urheber entscheidet trotzdem - und ein
+  // neues Verzeichnis mit eigener Datei darin bleibt eigen
+  const nurBestand = detectReviewScope({ cwd: dir, sinceRef: startCommit, baseline: null, ownPaths: ['README.md', 'assets/tp-einfass-konfigurator.js'] });
+  assert.deepEqual(nurBestand.scopePaths, ['README.md', 'assets/']);
+  assert.deepEqual(nurBestand.foreignPaths, ['.claude/launch.json', 'SEO_REPORT.md', 'domains/']);
+});
+
+test('Urheber-Filter: bei UNKNOWN (git-Fehler) wird nichts gefiltert', () => {
+  const exec = () => { throw new Error('git kaputt'); };
+  const scope = detectReviewScope({ cwd: '/nirgendwo', ownPaths: [], exec });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNKNOWN);
+  assert.equal(scope.foreignPaths, undefined);
 });
 
 test('captureWorkingTreeSnapshot wirft nie, sondern meldet ok:false', () => {
@@ -511,3 +588,123 @@ test('resolveReviewDir loest eine relative --git-common-dir-Ausgabe gegen das je
   const beideRelativ = () => '.git\n';
   assert.equal(resolveReviewDir({ projectDir: '/repo', sessionCwd: '/anderes-repo', exec: beideRelativ }), '/repo');
 });
+
+// --- Ergebnis-Zeiger (2026-09-16, Sitzung 413c819c) -------------------------
+// Das Ergebnis lag als gemergter Commit auf origin/main, der Sitzungsordner
+// auf einem fremden Branch mit fremden uncommitteten Dateien. Der Reviewer sah
+// drei Runden lang nur den Working Tree. Die Tests bauen den Fall mit einem
+// echten Bare-Remote nach: ein Commit ist dorthin gepusht (erreichbar), ein
+// zweiter liegt nur lokal (nicht erreichbar).
+
+function repoMitOrigin() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-ergebnis-zeiger-'));
+  const remote = path.join(root, 'origin.git');
+  const dir = path.join(root, 'work');
+  fs.mkdirSync(dir);
+  git(root, 'init', '-q', '--bare', remote);
+  git(dir, '-c', 'init.defaultBranch=main', 'init', '-q');
+  fs.writeFileSync(path.join(dir, 'README.md'), 'Readme\n');
+  git(dir, 'add', 'README.md');
+  git(dir, 'commit', '-qm', 'init');
+  const basis = git(dir, 'rev-parse', 'HEAD').trim();
+  fs.writeFileSync(path.join(dir, 'feature.js'), 'export const x = 1;\n');
+  git(dir, 'add', 'feature.js');
+  git(dir, 'commit', '-qm', 'feat: ergebnis');
+  const commit = git(dir, 'rev-parse', 'HEAD').trim();
+  git(dir, 'remote', 'add', 'origin', remote);
+  git(dir, 'push', '-q', 'origin', 'main');
+  // Danach: Sitzungsordner steht auf einem fremden Branch mit fremdem Dreck.
+  git(dir, 'checkout', '-q', '-b', 'fremder-arbeitsstand', basis);
+  fs.writeFileSync(path.join(dir, 'fremd.txt'), 'uncommittet, nicht von dieser Sitzung\n');
+  // Ein Commit, der nirgends auf origin liegt.
+  fs.writeFileSync(path.join(dir, 'lokal.txt'), 'nur lokal\n');
+  git(dir, 'add', 'lokal.txt');
+  git(dir, 'commit', '-qm', 'nur lokal');
+  const nurLokal = git(dir, 'rev-parse', 'HEAD').trim();
+  git(dir, 'reset', '-q', '--hard', basis);
+  fs.writeFileSync(path.join(dir, 'fremd.txt'), 'uncommittet, nicht von dieser Sitzung\n');
+  return { dir, basis, commit, nurLokal };
+}
+
+test('Ergebnis-Zeiger vorhanden: Pruefbereich ist git diff basis commit, nicht der Working Tree', () => {
+  const { dir, basis, commit } = repoMitOrigin();
+  const pointer = readResultPointer({ filePath: schreibeZeiger(dir, { commit, basis, pr: 343 }) });
+  const scope = detectReviewScope({ cwd: dir, sinceRef: basis, resultPointer: pointer });
+  assert.equal(scope.kind, REVIEW_SCOPE_RESULT);
+  assert.match(scope.text, new RegExp(`git diff ${basis} ${commit}`));
+  assert.match(scope.text, /PR #343/);
+  assert.match(scope.text, /erreichbar über origin\/main/);
+  assert.match(scope.text, /Working Tree dieses Verzeichnisses gehört NICHT zum Prüfbereich/);
+  assert.deepEqual(scope.commits.map(line => line.split(' ').slice(1).join(' ')), ['feat: ergebnis']);
+  assert.ok(!/fremd\.txt/.test(scope.text), 'fremde uncommittete Datei wird nicht genannt');
+  assert.equal(scope.resultPointer.commit, commit);
+  assert.match(scope.resultPointer.diffStat, /feature\.js/);
+});
+
+test('Ergebnis-Zeiger fehlt: Verhalten wie bisher, kein Vermerk', () => {
+  const { dir, basis } = repoMitOrigin();
+  assert.equal(readResultPointer({ filePath: path.join(dir, '.router/claude-handoffs/TASK.ergebnis.json') }), null);
+  const scope = detectReviewScope({ cwd: dir, sinceRef: basis, resultPointer: null });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.equal(scope.resultPointer, undefined);
+  assert.ok(!/Ergebnis-Zeiger/.test(scope.text));
+});
+
+test('Ergebnis-Zeiger auf nicht erreichbaren Commit wird verworfen und genannt; Pruefbereich bleibt der Working Tree', () => {
+  const { dir, basis, commit, nurLokal } = repoMitOrigin();
+  const pointer = readResultPointer({ filePath: schreibeZeiger(dir, { commit: nurLokal, basis }) });
+  const scope = detectReviewScope({ cwd: dir, sinceRef: basis, resultPointer: pointer });
+  assert.equal(scope.kind, REVIEW_SCOPE_UNCOMMITTED);
+  assert.match(scope.text, /Ergebnis-Zeiger wurde verworfen/);
+  assert.match(scope.text, /von keinem origin\/\*-Branch erreichbar/);
+  assert.match(scope.resultPointer.rejected, /commit/);
+  // Erfundener SHA, falsche Reihenfolge, Basis nicht Vorfahr: alle verworfen.
+  assert.match(verifyResultPointer({ pointer: { commit: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef', basis }, cwd: dir }).error, /kein Commit in diesem Repository/);
+  assert.match(verifyResultPointer({ pointer: { commit: basis, basis: commit }, cwd: dir }).error, /kein Vorfahr/);
+  assert.equal(verifyResultPointer({ pointer: { commit, basis }, cwd: dir }).ok, true);
+});
+
+test('Ergebnis-Zeiger: unbrauchbare Datei ist ein Vermerk, kein Absturz und kein stiller Wechsel', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-zeiger-kaputt-'));
+  const kaputt = path.join(dir, 'T.ergebnis.json');
+  fs.writeFileSync(kaputt, '{ kein json');
+  assert.match(readResultPointer({ filePath: kaputt }).error, /kein gültiges JSON/);
+  fs.writeFileSync(kaputt, JSON.stringify({ commit: 'nicht-hex', basis: 'abc1234' }));
+  assert.match(readResultPointer({ filePath: kaputt }).error, /SHA/);
+  fs.writeFileSync(kaputt, JSON.stringify(['liste']));
+  assert.match(readResultPointer({ filePath: kaputt }).error, /kein Objekt/);
+  // Lesefehler des Zeigers landet als verworfen im Text, nicht als Exception.
+  const exec = (cmd, args) => (args[0] === 'status' ? '' : args[0] === 'rev-parse' || args[0] === 'merge-base' ? 'abc\n' : '');
+  const scope = detectReviewScope({ cwd: '/repo', resultPointer: readResultPointer({ filePath: kaputt }), exec });
+  assert.equal(scope.kind, REVIEW_SCOPE_NONE);
+  assert.match(scope.text, /Ergebnis-Zeiger wurde verworfen \(.*kein Objekt/);
+});
+
+test('resultPointerPath liegt neben der .review.md bzw. unter .router/claude-handoffs', () => {
+  assert.equal(resultPointerPath({ reviewTaskPath: '/p/.router/claude-handoffs/CLAUDE-ABC.review.md' }), '/p/.router/claude-handoffs/CLAUDE-ABC.ergebnis.json');
+  assert.equal(resultPointerPath({ projectDir: '/p', taskId: 'claude abc' }), path.join('/p', '.router', 'claude-handoffs', 'CLAUDE-ABC.ergebnis.json'));
+  assert.equal(resultPointerPath({}), null);
+});
+
+test('noteResultPointerInHandoff traegt den Zeiger sichtbar und idempotent in die .review.md ein', () => {
+  const { dir, basis, commit } = repoMitOrigin();
+  const reviewTaskPath = path.join(dir, 'T.review.md');
+  fs.writeFileSync(reviewTaskPath, '# Prüfauftrag\n\n## Auftrag\nTue X\n');
+  const pointer = verifyResultPointer({ pointer: { commit, basis, pr: 343 }, cwd: dir });
+  assert.equal(noteResultPointerInHandoff({ reviewTaskPath, pointer }), true);
+  assert.equal(noteResultPointerInHandoff({ reviewTaskPath, pointer }), true);
+  const text = fs.readFileSync(reviewTaskPath, 'utf8');
+  assert.equal(text.match(/## Ergebnis-Zeiger/g).length, 1);
+  assert.match(text, /## Auftrag\nTue X/);
+  assert.match(text, new RegExp(`git diff ${basis} ${commit}`));
+  assert.match(text, /PR #343/);
+  assert.equal(noteResultPointerInHandoff({ reviewTaskPath: path.join(dir, 'fehlt.md'), pointer }), false);
+  assert.equal(noteResultPointerInHandoff({ reviewTaskPath, pointer: { ok: false } }), false);
+});
+
+function schreibeZeiger(dir, inhalt) {
+  const filePath = path.join(dir, '.router', 'claude-handoffs', 'TASK.ergebnis.json');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(inhalt));
+  return filePath;
+}

@@ -193,12 +193,9 @@
           assign tp_card_sub = tp_card_fields[2] | default: '' | strip
         endif
         if tp_card_sub == blank and link.type == 'collection_link'
-          assign tp_card_count = link.object.all_products_count | default: 0
-          if tp_card_count == 1
-            assign tp_card_sub = '1 Produkt'
-          elsif tp_card_count > 1
-            assign tp_card_sub = tp_card_count | append: ' Produkte'
-          endif
+          capture tp_card_sub
+            render 'tp-produktzahl', anzahl: link.object.all_products_count
+          endcapture
         endif
       endif
     -%}

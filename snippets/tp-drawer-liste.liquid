@@ -50,7 +50,8 @@
 <a class="tp-dn-cta" href="{{ tp_dl_cta_url }}">
   <span class="tp-dn-cta__text">{{ tp_dl_cta_label }}</span>
   {%- if tp_dl_count > 0 -%}
-    <span class="tp-dn-cta__count">{{ tp_dl_count }}<span class="visually-hidden"> Produkte</span></span>
+    <span class="tp-dn-cta__count" aria-hidden="true">{{ tp_dl_count }}</span>
+    <span class="visually-hidden">{%- render 'tp-produktzahl', anzahl: tp_dl_count -%}</span>
   {%- endif -%}
 </a>
 

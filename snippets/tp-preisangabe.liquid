@@ -1,0 +1,43 @@
+{%- doc -%}
+  Pflichtangabe zum Preis nach § 3 Preisangabenverordnung.
+
+  Warum es das gibt: Auf den Produktseiten stand bis 2026-09-16 zwar
+  "Versandkostenfrei in Deutschland ab 50 EUR", aber nirgends, dass die
+  Umsatzsteuer im Preis enthalten ist. § 3 Abs. 2 PAngV verlangt gegenueber
+  Verbrauchern beides - dass die Preise die Umsatzsteuer enthalten UND ob
+  zusaetzlich Versandkosten anfallen. Fehlt das, ist es in Deutschland
+  abmahnfaehig, und Google Ads beanstandet es unter "unzureichende Angaben".
+
+  Die Aussage ist belegt und nicht geraten: shop.taxesIncluded ist true
+  (Admin API, 2026-09-16), die Preise enthalten die Steuer also tatsaechlich.
+
+  Eine Stelle fuer alle acht Produktvorlagen: das Snippet haengt am Capture
+  product_details in sections/product-information.liquid und erscheint damit
+  unter dem Kaufbereich jeder Produktseite - Rollenware, Paketware,
+  Fixpreis, Teppichfliese und Wunschmass gleichermassen.
+
+  Bewusst nicht in snippets/price.liquid: das rendert auch jede Produktkarte
+  im Raster und die klebende Kaufleiste. Der Hinweis stuende dann dutzendfach
+  auf einer Kategorieseite und zweimal auf der Produktseite.
+{%- enddoc -%}
+{%- liquid
+  assign tp_pa_versand = pages['versand-lieferung'].url | default: '/pages/versand-lieferung'
+-%}
+<p class="tp-preisangabe">
+  Alle Preise inkl. MwSt., zzgl. <a href="{{ tp_pa_versand }}">Versandkosten</a>.
+</p>
+
+{% stylesheet %}
+  .tp-preisangabe {
+    margin: 4px 0 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--tp-muted, #655e57);
+  }
+
+  .tp-preisangabe a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+{% endstylesheet %}

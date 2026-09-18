@@ -6,24 +6,20 @@
 
 {%- liquid
   assign tp_sl_id = block.id | replace: '_', '' | downcase
-  # Ziel des Muster-Links entscheidet snippets/tp-musteroption: der
-  # Konfigurator, wenn das Produkt eine Farb- oder Dekoroption hat, sonst das
-  # Kontaktformular (z. B. Klick-/Klebevinyl als Einzeldekor).
-  capture tp_sl_sample_url
-    render 'tp-musteroption', product: product
-  endcapture
-  assign tp_sl_sample_url = tp_sl_sample_url | strip
   assign tp_sl_delivery_time = block.settings.delivery_time | strip
   assign tp_sl_shipping_page = pages['versand-lieferung']
 -%}
 
 <div class="tp-service-links-{{ tp_sl_id }}" {{ block.shopify_attributes }}>
-  {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster {%- endcomment -%}
-  {%- unless product.tags contains 'zubehoer' -%}
-    <a class="tp-service-links__sample-{{ tp_sl_id }}" href="{{ tp_sl_sample_url }}">
-      Kostenloses Muster anfragen
-    </a>
-  {%- endunless -%}
+  {%- comment -%}
+    Der Muster-Aufruf ist am 2026-09-15 von hier nach blocks/tp-muster-cta
+    gewandert und steht jetzt direkt unter dem Kaufknopf. Grund: Hier sass er
+    in einer eigenen Section UNTERHALB der Produktinformation - gemessen
+    2.170 px, waehrend der Kaufknopf bei 909 px liegt. Wer wegen der Farbe
+    zoegert, steht am Kaufknopf und sah das Angebot dort nicht.
+
+    Diese Zone behaelt Lieferzeit und Versandhinweis.
+  {%- endcomment -%}
 
   <div class="tp-service-links__shipping-{{ tp_sl_id }}" aria-label="Lieferung und Versand">
     {%- if tp_sl_delivery_time != blank -%}
@@ -31,10 +27,11 @@
     {%- endif -%}
     {%- comment -%}
       Stand der Versandprofile am 2026-09-11 (Admin API): alle aktiven Produkte,
-      auch Rollen- und Paketware, liegen im allgemeinen Profil - 4,99 EUR, ab
-      50 EUR Bestellwert kostenlos. Das Profil "Bodenbelaege & Teppiche - kostenlos"
-      enthaelt nur ein Entwurfsprodukt. Ein einzelnes Paket (z. B. 34,95 EUR) kostet
-      also Versand - deshalb nennt der Hinweis die 50-EUR-Schwelle (Audit B-18).
+      auch Rollen- und Paketware, liegen im allgemeinen Profil - Preis und
+      Schwelle stehen in den Theme-Einstellungen unter "TP Versand" und muessen
+      zum Profil passen. Das Profil "Bodenbelaege & Teppiche - kostenlos"
+      enthaelt nur ein Entwurfsprodukt. Ein einzelnes Paket (z. B. 34,95 EUR)
+      kostet also Versand - deshalb nennt der Hinweis die Schwelle (Audit B-18).
     {%- endcomment -%}
     {%- liquid
       assign tp_sl_is_flooring = false
@@ -49,10 +46,26 @@
       endfor
     -%}
     {%- if tp_sl_is_flooring -%}
-      <p><strong>Versandkostenfrei in Deutschland ab 50 € Bestellwert</strong></p>
-      <p>Rollen und große Pakete bringt die Spedition bis vor die Haustür. Wir rufen vorher an.</p>
+      <p><strong>Versandkostenfrei in Deutschland ab {{ settings.tp_versand_frei_ab }} € Bestellwert</strong></p>
+      {%- comment -%}
+        "Bis vor die Haustuer" stand hier im Widerspruch zur Erklaerung direkt
+        darunter, die frei Bordsteinkante definiert - "Weitertransport ins
+        Gebaeude oder in die Wohnung ist nicht Bestandteil der Lieferung". Zwei
+        verschiedene Zusagen an derselben Stelle, und die groessere davon stand
+        oben. Angeglichen an den Begriff, den ausserdem tp-teppich-versand und
+        tp-shipping-delivery verwenden.
+
+        Vom Inhaber am 2026-09-15 ausdruecklich bestaetigt: frei Bordsteinkante
+        ist der tatsaechlich vereinbarte Lieferumfang. Das ist keine
+        Formulierungsfrage, sondern die Zusage selbst - wer hier wieder "bis vor
+        die Haustuer" schreibt, verspricht eine Leistung, die nicht erbracht
+        wird. Aendern nur nach Ruecksprache, und dann in allen vier Dateien
+        gemeinsam (hier, tp-rollware-rechner, tp-teppich-versand,
+        tp-shipping-delivery).
+      {%- endcomment -%}
+      <p>Rollen und große Pakete kommen per Spedition frei Bordsteinkante. Wir rufen vor der Lieferung an.</p>
     {%- else -%}
-      <p><strong>Versand in Deutschland 4,99 €, ab 50 € Bestellwert kostenlos</strong></p>
+      <p><strong>Versand in Deutschland {{ settings.tp_versand_preis }}, ab {{ settings.tp_versand_frei_ab }} € Bestellwert kostenlos</strong></p>
     {%- endif -%}
 
     {%- if tp_sl_is_flooring -%}
@@ -102,26 +115,7 @@
     margin-top: 12px;
   }
 
-  .tp-service-links__sample-{{ tp_sl_id }} {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 44px;
-    padding: 10px 16px;
-    /* #b4976c hatte mit weisser Schrift nur 2,77:1 - #8c6d43 erreicht 4,79:1 (WCAG AA, Audit B-26) */
-    background: #8c6d43;
-    border: 1px solid #8c6d43;
-    border-radius: var(--style-border-radius-buttons-primary, 7px);
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
-  }
 
-  .tp-service-links__sample-{{ tp_sl_id }}:hover {
-    opacity: 0.9;
-  }
 
   .tp-service-links__shipping-{{ tp_sl_id }} {
     margin-top: 12px;
@@ -186,10 +180,6 @@
   }
 
   @media screen and (max-width: 749px) {
-    .tp-service-links__sample-{{ tp_sl_id }} {
-      font-size: 14px;
-    }
-
     .tp-service-links__shipping-{{ tp_sl_id }},
     .tp-service-links__secondary-{{ tp_sl_id }} {
       font-size: 12.5px;

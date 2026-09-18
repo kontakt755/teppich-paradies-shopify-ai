@@ -197,14 +197,23 @@
       return;
     }
 
+    // Musterprodukt der Qualitaet zuerst (eigene Variante je Farbe), das
+    // Sammelprodukt "Kostenloses Muster" nur als Rueckfall, falls es fuer
+    // dieses Produkt noch kein Musterprodukt gibt.
+    function fetchOptional(url) {
+      return fetchJson(url).catch(function () { return null; });
+    }
+
     Promise.all([
       fetchJson('/products/' + handle + '.js'),
       fetchJson('/products/kostenloses-muster.js'),
       fetchJson('/cart.js'),
+      fetchOptional('/products/' + core.sampleProductHandle(handle) + '.js'),
     ]).then(function (results) {
       product = results[0];
       var sampleProduct = results[1];
       var cart = results[2];
+      var musterProdukt = results[3];
 
       var sampleVariant = (sampleProduct.variants || []).find(function (variant) {
         return variant.available;
@@ -217,11 +226,12 @@
 
       // Beschriftungen an das Sortiment anpassen: "Farben" oder "Dekore".
       optionName = core.getOptionName(product);
+      colors = core.assignSampleVariants(colors, musterProdukt, optionName);
       root.querySelectorAll('[data-sample-term]').forEach(function (el) {
         el.textContent = core.getOptionTerm(product, el.getAttribute('data-sample-term'));
       });
 
-      var state = core.getSampleState(cart, sampleVariantId);
+      var state = core.getSampleState(cart);
       existingKeys = state.keys;
       cartSampleCount = state.count;
       remaining = state.remaining;

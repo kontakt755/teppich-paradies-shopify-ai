@@ -17,12 +17,12 @@
         "subline": "<p>Teppichboden, Vinyl und Linoleum als Meterware oder Paket – deutschlandweit geliefert. In Oranienburg und Umgebung messen wir auf, liefern und verlegen.</p>",
         "cta1_label": "Bodenbeläge entdecken",
         "cta1_link": "#tp-kategorien",
-        "cta2_label": "Aufmaß & Verlegung anfragen",
+        "cta2_label": "Verlegung anfragen",
         "cta2_link": "#tp-kontakt",
         "telefon": "03301 573 37 20",
         "whatsapp": "https://wa.me/4917657931322",
-        "rating_wert": "4,9",
-        "rating_text": "über 240 Google-Bewertungen",
+        "rating_wert": "",
+        "rating_text": "",
         "rating_link": "https://maps.google.com/?cid=787042219843486388",
         "bild": "shopify://shop_images/1000012408.jpg",
         "bild_caption": "Echtes Projekt · Teppichboden, von uns verlegt"
@@ -127,8 +127,8 @@
     "tp_start_trust": {
       "type": "tp-start-trust",
       "settings": {
-        "rating_wert": "4,9",
-        "rating_text": "über 240 Bewertungen · Google-Unternehmensprofil",
+        "rating_wert": "",
+        "rating_text": "",
         "rating_link": "https://maps.google.com/?cid=787042219843486388"
       },
       "blocks": {
@@ -832,14 +832,14 @@
         "service_link": "/pages/liefer-verlegeservice",
         "online_eyebrow": "Online-Shop · deutschlandweit",
         "online_titel": "Boden aussuchen, Maß eingeben, liefern lassen",
-        "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab 50 € Bestellwert versandkostenfrei.",
+        "online_text": "Rollenware im Wunschmaß zugeschnitten, Paketware nach Fläche berechnet. Versand in ganz Deutschland, Rollenware per Spedition frei Bordsteinkante. In Deutschland ab [versandfrei] € Bestellwert versandkostenfrei.",
         "online_punkte": "Rollenware im Wunschmaß, Bis zu 3 Muster kostenlos, Versand deutschlandweit",
         "online_cta": "Zum Sortiment",
         "service_eyebrow": "Verlegeservice · bis 50 km um Oranienburg",
         "service_titel": "Aufmaß, Lieferung, Untergrund, Verlegung, Leisten",
         "service_text": "Teppichboden von der Rolle liefern und verlegen wir rund um Oranienburg – ab 649 € Warenwert im Nahbereich kostenlos, sonst zu fairen Festpreisen. Fixierung oder Verklebung auf Wunsch.",
         "service_punkte": "Beratung im Fachgeschäft oder bei Ihnen zu Hause, Fester Ansprechpartner und transparentes Angebot, Bis 50 km regulär – weiter entfernt auf Anfrage",
-        "service_cta": "Aufmaß & Verlegung anfragen",
+        "service_cta": "Verlegung anfragen",
         "service_telefon": "03301 573 37 20",
         "service_telefon_label": "03301 573 37 20"
       }
@@ -1074,6 +1074,45 @@
         "l1",
         "l2"
       ]
+    },
+    "tp_start_muster": {
+      "type": "tp-start-muster",
+      "blocks": {
+        "schritt_1": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Bodenbelag aussuchen",
+            "text": "Teppichboden, Vinyl oder Linoleum – öffnen Sie das Produkt, das Sie interessiert."
+          }
+        },
+        "schritt_2": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Muster anfragen",
+            "text": "Auf der Produktseite „Kostenloses Muster anfragen“ wählen. Belag und Farbe werden übernommen."
+          }
+        },
+        "schritt_3": {
+          "type": "schritt",
+          "settings": {
+            "titel": "Zu Hause vergleichen",
+            "text": "Bis zu drei Farben kommen zu Ihnen – in Ruhe im eigenen Raum vergleichen."
+          }
+        }
+      },
+      "block_order": [
+        "schritt_1",
+        "schritt_2",
+        "schritt_3"
+      ],
+      "settings": {
+        "eyebrow": "Kostenloser Musterservice",
+        "titel": "Farbe zu Hause sehen, dann entscheiden",
+        "text": "Bildschirme zeigen Farben unterschiedlich. Bestellen Sie bis zu drei Muster kostenlos nach Hause und vergleichen Sie sie in Ihrem eigenen Licht.",
+        "cta_text": "Muster bestellen",
+        "cta_link": "/pages/muster",
+        "hinweis": "Bis zu 3 Muster kostenlos · Versand innerhalb Deutschlands"
+      }
     }
   },
   "order": [
@@ -1084,6 +1123,7 @@
     "product_list_fa6P9H",
     "product_list_8rDkXg",
     "product_list_linoleum_DxYpK2",
+    "tp_start_muster",
     "tp_zwei_wege_home",
     "tp_verlegegebiet_home",
     "tp_start_projekte",

@@ -15,7 +15,6 @@
 {%- liquid
   assign tp_cps_product = closest.product
   assign tp_cps_variant = tp_cps_product.selected_or_first_available_variant
-  assign tp_cps_id = block.id | replace: '_', '' | downcase
 
   # Prüfe ob Paketprodukt (nutzt anderen Block)
   assign tp_cps_sqm_per_package = tp_cps_product.metafields.custom.qm_pro_paket.value
@@ -83,41 +82,43 @@
   -%}
 
   {%- if tp_cps_price_per_sqm != blank and tp_cps_price_per_sqm != '' -%}
-    <div class="tp-card-price-sqm-{{ tp_cps_id }}" {{ block.shopify_attributes }}>
+    <div class="tp-card-price-sqm" {{ block.shopify_attributes }}>
       <span class="tp-card-price-sqm__label">€/m²:</span>
       <span class="tp-card-price-sqm__value">{{ tp_cps_price_per_sqm }}</span>
     </div>
 
-    <style>
-      .tp-card-price-sqm-{{ tp_cps_id }} {
-        display: flex;
-        align-items: baseline;
-        gap: 4px;
-        margin-top: 2px;
-        font-family: var(--font-body--family);
-        font-size: 0.82rem;
-        line-height: 1.3;
-        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
-      }
-
-      .tp-card-price-sqm__label {
-        font-weight: 600;
-        color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
-      }
-
-      .tp-card-price-sqm__value {
-        font-weight: 700;
-        color: var(--color-foreground);
-      }
-
-      @media screen and (max-width: 749px) {
-        .tp-card-price-sqm-{{ tp_cps_id }} {
-          font-size: 0.75rem;
-        }
-      }
-    </style>
   {%- endif -%}
 {%- endif -%}
+
+{% stylesheet %}
+  /* Feste Klassen statt Block-ID: die Regeln stehen einmal pro Seite, nicht einmal pro Karte (Audit 2026-09-11). */
+  .tp-card-price-sqm {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-top: 2px;
+    font-family: var(--font-body--family);
+    font-size: 0.82rem;
+    line-height: 1.3;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+  }
+
+  .tp-card-price-sqm__label {
+    font-weight: 600;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.82);
+  }
+
+  .tp-card-price-sqm__value {
+    font-weight: 700;
+    color: var(--color-foreground);
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-card-price-sqm {
+      font-size: 0.75rem;
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

@@ -142,17 +142,20 @@
 
   <style>
     .tp-teppich-aeb-{{ tp_aeb_id }} {
-      margin-top: 8px;
-      padding: 18px 20px;
-      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
-      border-radius: 10px;
-      background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+      margin-top: 32px;
+      padding: 32px;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 245, 240, 0.6) 100%);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     }
 
     .tp-teppich-aeb__heading-{{ tp_aeb_id }} {
-      margin: 0 0 14px;
-      font-size: 17px;
+      margin: 0 0 24px;
+      font-size: 20px;
       font-weight: 700;
+      letter-spacing: -0.3px;
       color: var(--color-foreground);
     }
 
@@ -162,48 +165,86 @@
       list-style: none;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px 20px;
+      gap: 20px 32px;
     }
 
     .tp-teppich-aeb__item-{{ tp_aeb_id }} {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 12px;
       min-width: 0;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 12px;
+      border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.04);
+      transition: all 0.3s ease;
+    }
+
+    .tp-teppich-aeb__item-{{ tp_aeb_id }}:hover {
+      background: rgba(255, 255, 255, 0.8);
+      border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
     }
 
     .tp-teppich-aeb__icon-{{ tp_aeb_id }} {
-      flex: 0 0 auto;
-      margin-top: 1px;
-      color: #8d714c;
+      flex: 0 0 24px;
+      margin-top: 2px;
+      color: #b4976c;
+      width: 24px;
+      height: 24px;
     }
 
     .tp-teppich-aeb__text-{{ tp_aeb_id }} {
       display: flex;
       flex-direction: column;
       min-width: 0;
+      gap: 4px;
     }
 
     .tp-teppich-aeb__label-{{ tp_aeb_id }} {
       font-size: 12px;
-      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
     }
 
     .tp-teppich-aeb__value-{{ tp_aeb_id }} {
-      font-size: 14.5px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--color-foreground);
       overflow-wrap: break-word;
+      line-height: 1.4;
     }
 
     @media screen and (max-width: 749px) {
       .tp-teppich-aeb-{{ tp_aeb_id }} {
-        padding: 16px;
+        margin-top: 24px;
+        padding: 20px;
+      }
+
+      .tp-teppich-aeb__heading-{{ tp_aeb_id }} {
+        margin-bottom: 16px;
+        font-size: 18px;
       }
 
       .tp-teppich-aeb__grid-{{ tp_aeb_id }} {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 12px;
+      }
+
+      .tp-teppich-aeb__item-{{ tp_aeb_id }} {
+        padding: 10px;
+      }
+
+      .tp-teppich-aeb__icon-{{ tp_aeb_id }} {
+        width: 20px;
+        height: 20px;
+      }
+
+      .tp-teppich-aeb__value-{{ tp_aeb_id }} {
+        font-size: 14px;
       }
     }
   </style>

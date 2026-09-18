@@ -64,7 +64,7 @@
         "hero_titel": "Treppe neu belegen lassen",
         "hero_text": "Jede Treppe ist anders – offene oder geschlossene Stufen, Kanten, Podeste. Deshalb schauen wir sie uns an und messen kostenlos auf.",
         "hero_fakten": "Kostenloses Aufmaß vor Ort, Oranienburg und 50 km Umkreis – weiter auf Anfrage, Beratung zu Belag und Kanten, Verlegung durch unser eigenes Team",
-        "hero_cta": "Aufmaß-Termin anfragen",
+        "hero_cta": "Verlegung anfragen",
         "hero_cta_ziel": "/pages/kontakt",
         "telefon": "+4933015733720",
         "telefon_label": "oder anrufen: 03301 5733720",
@@ -261,7 +261,7 @@
           "type": "leistung",
           "settings": {
             "label": "Deutschlandweit",
-            "text": "Das reguläre Online-Sortiment liefern wir in ganz Deutschland."
+            "text": "Versand per Paketdienst oder Spedition, ab [versandfrei] € Bestellwert versandkostenfrei – ohne Verlegung."
           }
         }
       },
@@ -374,7 +374,7 @@
         "matrix_titel": "Welche Ausführung geht mit welchem Belag?",
         "matrix_ecke": "Ausführung",
         "matrix_hinweis": "Kokos ist zum Ketteln zu grob und kommt deshalb in festen Breiten mit verschweißter Industriekante auf die Stange. Vinyl lässt sich ebenfalls nicht ketteln – alle übrigen Ausführungen sind damit möglich.",
-        "cta_label": "Aufmaß-Termin anfragen",
+        "cta_label": "Verlegung anfragen",
         "cta_ziel": "/pages/kontakt",
         "cta_zusatz": "Beim Aufmaß sehen wir vor Ort, welche Ausführung auf Ihre Treppe passt."
       }

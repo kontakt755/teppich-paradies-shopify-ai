@@ -429,7 +429,7 @@
         "a1": {
           "type": "aussage",
           "settings": {
-            "text": "Versandkostenfrei in Deutschland ab 50 €"
+            "text": "Versandkostenfrei in Deutschland ab [versandfrei] €"
           }
         },
         "a2": {
@@ -463,6 +463,20 @@
           "settings": {
             "label": "Teppichboden",
             "link": "shopify://collections/teppichboden"
+          }
+        },
+        "c9": {
+          "type": "chip",
+          "settings": {
+            "label": "Teppiche",
+            "link": "shopify://collections/teppiche"
+          }
+        },
+        "c10": {
+          "type": "chip",
+          "settings": {
+            "label": "Teppichfliesen",
+            "link": "shopify://collections/teppichfliesen"
           }
         },
         "c2": {
@@ -518,6 +532,8 @@
       },
       "block_order": [
         "c1",
+        "c9",
+        "c10",
         "c2",
         "c3",
         "c4",

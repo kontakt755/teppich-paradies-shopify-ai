@@ -1,0 +1,26 @@
+{%- doc -%}
+  Produktanzahl einer Kollektion als deutscher Text: "1 Produkt", "9 Produkte".
+
+  Warum als eigenes Snippet: Die Regel stand doppelt im Baum - das
+  Desktop-Megamenue (snippets/mega-menu-list.liquid) unterschied Einzahl und
+  Mehrzahl, das Handy-Menue (snippets/tp-drawer-nav.liquid) nicht. Live stand
+  deshalb am 2026-09-16 unter "Teppichfliesen" auf dem Handy "1 Produkte" und
+  auf dem Desktop "1 Produkt". Zwei Kopien derselben Regel laufen
+  auseinander; eine Quelle nicht.
+
+  Gibt bei 0 Produkten bewusst nichts zurueck - "0 Produkte" unter einem
+  Menuepunkt ist keine Hilfe, sondern eine Absage.
+
+  @param {number} anzahl - all_products_count der Kollektion
+
+  @example
+  {%- capture tp_sub -%}{%- render 'tp-produktzahl', anzahl: link.object.all_products_count -%}{%- endcapture -%}
+{%- enddoc -%}
+{%- liquid
+  assign tp_pz = anzahl | default: 0 | plus: 0
+  if tp_pz == 1
+    echo '1 Produkt'
+  elsif tp_pz > 1
+    echo tp_pz | append: ' Produkte'
+  endif
+-%}

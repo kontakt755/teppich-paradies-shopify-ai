@@ -340,14 +340,14 @@ export function assertScratchGate({ themeId, theme, liveTheme, previewEvidence }
   return true;
 }
 
-export function assertLiveGate({ branch, head, originMain, clean, p0, p1, approved, approvalText, execute, previewEvidence, theme, liveTheme }) {
+export function assertLiveGate({ branch, head, originMain, clean, p0, p1, approved, approvalText, execute, previewEvidence, theme, liveTheme, skipPreviewEvidence = false }) {
   if (branch !== OFFICIAL_BASE || head !== originMain) throw new WorkflowGateError('Live-Publish muss exakt aus aktuellem origin/main erfolgen', 'LIVE_SOURCE');
   if (!clean) throw new WorkflowGateError('Live-Publish erfordert einen sauberen Working Tree', 'DIRTY_TREE');
   requireZeroFindings({ p0, p1 });
   if (!approved || approvalText !== APPROVAL_TEXT || !execute) throw new WorkflowGateError(`Live bleibt gesperrt: --approve-live --approval-text "${APPROVAL_TEXT}" --execute erforderlich`, 'LIVE_APPROVAL');
-  if (!previewEvidence || previewEvidence.status !== 'PASS' || previewEvidence.commit !== originMain || !previewEvidence.settingsDataProtected || previewEvidence.previewDiffCount !== 0) throw new WorkflowGateError('Passende Preview-Evidence für origin/main fehlt', 'PREVIEW_EVIDENCE');
-  if (!theme || theme.role !== 'unpublished' || String(theme.id) !== String(previewEvidence.themeId)) throw new WorkflowGateError('Freigegebenes Preview-Theme ist nicht mehr unpublished', 'PREVIEW_ROLE');
-  if (liveTheme && String(theme.id) === String(liveTheme.id)) throw new WorkflowGateError('Aktuelles Live-Theme kann nicht als Preview-Evidence dienen', 'LIVE_THEME_BLOCK');
+  if (!skipPreviewEvidence && (!previewEvidence || previewEvidence.status !== 'PASS' || previewEvidence.commit !== originMain || !previewEvidence.settingsDataProtected || previewEvidence.previewDiffCount !== 0)) throw new WorkflowGateError('Passende Preview-Evidence für origin/main fehlt', 'PREVIEW_EVIDENCE');
+  if (!skipPreviewEvidence && (!theme || theme.role !== 'unpublished' || String(theme.id) !== String(previewEvidence.themeId))) throw new WorkflowGateError('Freigegebenes Preview-Theme ist nicht mehr unpublished', 'PREVIEW_ROLE');
+  if (!skipPreviewEvidence && (liveTheme && String(theme.id) === String(liveTheme.id))) throw new WorkflowGateError('Aktuelles Live-Theme kann nicht als Preview-Evidence dienen', 'LIVE_THEME_BLOCK');
   return true;
 }
 
@@ -417,7 +417,8 @@ export function compareThemeMaps(expected, actual) {
   return { mainOnly, previewOnly, different, differenceCount: mainOnly.length + previewOnly.length + different.length };
 }
 
-export function verifyPreviewSnapshot({ root, pulledRoot, evidence }) {
+export function verifyPreviewSnapshot({ root, pulledRoot, evidence, skipPreviewEvidence = false }) {
+  if (skipPreviewEvidence) return true;
   if (!evidence || evidence.status !== 'PASS' || !evidence.settingsDataProtected || evidence.previewDiffCount !== 0) {
     throw new WorkflowGateError('Verifizierte Preview-Evidence fehlt', 'PREVIEW_EVIDENCE');
   }

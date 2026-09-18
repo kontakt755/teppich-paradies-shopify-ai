@@ -123,6 +123,22 @@
     elsif tp_pr_art == 'rolle'
       assign is_roll_card = true
       assign is_sqm_card = true
+    elsif product_resource.metafields.custom.preis_pro_001_qm.value == true
+      # Wunschmass-Teppiche sind weder Paket noch Rolle: sie tragen kein
+      # custom.rollenbreite, weil die Breite der Kunde bestimmt. Damit fiel
+      # is_sqm_card hier durch, und die Umrechnung "Preis pro 0,01 m2 mal 100"
+      # weiter unten lief nie - die Sticky-Leiste zeigte 0,89 EUR statt
+      # 89,00 EUR/m2.
+      #
+      # Das war kein Schoenheitsfehler: Am 2026-09-14 stehen zwei
+      # abgebrochene Warenkoerbe ueber genau 0,89 EUR fuer "Piumera Teppich
+      # nach Mass" in der Admin API. Der Preis war also nicht nur sichtbar,
+      # er ist bis in den Checkout gelangt.
+      #
+      # Das Metafeld sagt fuer sich genommen schon alles, was hier gebraucht
+      # wird: der Variantenpreis ist ein Preis je 0,01 m2. Es darf deshalb
+      # nicht von der Warenart abhaengen.
+      assign is_sqm_card = true
     endif
   endif
 

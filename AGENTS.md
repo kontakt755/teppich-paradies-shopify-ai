@@ -21,7 +21,7 @@ Arbeite immer im aktuellen Repository Root und verlasse dich nicht auf fest codi
 
 Vor Änderungen, bei denen der aktuelle Live-Theme-Stand relevant ist, zuerst prüfen, welches Theme tatsächlich live ist. Nicht dauerhaft darauf vertrauen, dass eine gespeicherte Theme-ID aktuell bleibt.
 
-Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hier bewusst nicht, weil genau diese Doppelung schon einmal schiefging: Als das Live-Theme wechselte, blieb die alte ID in dieser Datei stehen, und Agenten nannten monatelang ein Theme als Live-Stand, das in der Admin API gar nicht mehr existierte.
+Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hier bewusst nicht (Vorfall: `docs/lessons/theme-id-drift.md`).
 
 - Aktueller Stand: `domains/shopify/live-theme.json` lesen
 - Nachprüfen über den Shopify-MCP: `query { themes(first: 20) { nodes { id name role updatedAt } } }` — live ist der Knoten mit `role: MAIN`
@@ -40,7 +40,9 @@ Die Theme-IDs stehen ausschließlich in `domains/shopify/live-theme.json` — hi
 - Nach Theme-Änderungen Shopify Theme Check verwenden, wenn sinnvoll.
 - Vor dem Livegang die konkret betroffenen Funktionen risikobasiert testen.
 - Nach dem Livegang den echten öffentlichen Shop ohne Preview-Parameter kontrollieren.
-- Fallback-Theme erhalten; Theme-ID `196301750606` niemals löschen oder überschreiben.
+- Fallback- und Rückfall-Theme erhalten: niemals löschen oder überschreiben. Die IDs
+  stehen in `domains/shopify/live-theme.json` unter `fallback` und `preview` – hier
+  bewusst keine Zahl (Vorfall: `docs/lessons/theme-id-drift.md`).
 - Bei kleinen, sicheren und getesteten Theme-Optimierungen darf direkt live veröffentlicht werden, sofern der Auftrag nichts anderes sagt.
 - Bei größeren riskanten Architekturänderungen zuerst analysieren und berichten.
 - Wenn eine irreversible oder geschäftskritische Änderung notwendig wäre, vorher fragen.
@@ -208,7 +210,8 @@ Neue Aufgaben zuerst mit `npm run workflow:route -- "Neue Aufgabe: ..."` routen.
 - Maximal drei autonome Reparaturrunden pro identischem Fehler; ein unklassifizierter Testfehler geht zunächst zur Diagnose zurück an den Implementer statt sofort zum Menschen. Reviewer erhalten bevorzugt nur Diff, Testreport und Findings.
 - Human Approval wird nie gespeichert und gilt nur für den konkret geprüften Commit. Lokale Implementierung, Tests, Commit und Draft-PR dürfen bis zur prüfbaren Übergabe weiterlaufen. Merge nach `main`, Live-Publish, Shopify Writes an Preisen/SKUs/Varianten, Massenanlage, Checkout/Payment/Shipping, DNS und irreversible Änderungen bleiben bis zu ihrer konkreten Freigabe gesperrt.
 - Der Router darf reale Claude-Code- und Codex-Sessions über die Executor-Adapter starten (freigegeben 2026-09-06). Die Freigabe-Gates aus dem vorigen Punkt bleiben davon unberührt: Merge, Live-Publish und geschützte Shopify-Writes brauchen weiterhin ihre konkrete Freigabe.
-- Ob der Router in der aktuellen Arbeitskopie überhaupt aktiv ist, beantwortet `npm run router:status` — nicht schätzen. In einem Worktree fehlen `.router/` und die Hooks regelmäßig; das ist kein Defekt des Routers.
+- Ob der Router in der aktuellen Arbeitskopie überhaupt aktiv ist, beantwortet `npm run router:status` — nicht schätzen. In einem Worktree fehlen `.router/` und die Hooks regelmäßig; das ist kein Defekt des Routers (`docs/lessons/router-belege.md`).
+- Ein Modell pro Session: der Prompt-Cache ist modellgebunden, ein Wechsel mitten in der Session lädt den gesamten Kontext neu. Modell am Anfang über `workflow:route` wählen.
 
 ## Aktueller wichtiger Backlog
 

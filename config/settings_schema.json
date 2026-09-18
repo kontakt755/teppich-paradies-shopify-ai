@@ -2298,6 +2298,34 @@
         "label": "Telefon (Festnetz) im LocalBusiness-Schema",
         "info": "Internationales Format. Leer = Telefonnummer aus den Shop-Einstellungen (dort steht die Mobilnummer).",
         "default": "+49 3301 5733720"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_profil",
+        "label": "Google-Unternehmensprofil (sameAs)",
+        "info": "Verknuepft den Shop mit dem Profil. Die Sternebewertung selbst wird bewusst nicht ausgezeichnet, sie stammt nicht von dieser Seite.",
+        "default": "https://maps.google.com/?cid=787042219843486388"
+      }
+    ]
+  },
+  {
+    "name": "TP Versand",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Diese Werte muessen zum Versandprofil im Shopify-Adminbereich passen (Versand und Zustellung > Allgemeines Profil, Zone Deutschland). Aendert sich das Profil, gehoeren sie zusammen geaendert - qa/tests/versandschwelle.test.mjs meldet jede Stelle, die dann nicht mehr stimmt."
+      },
+      {
+        "type": "number",
+        "id": "tp_versand_frei_ab",
+        "label": "Versandkostenfrei ab (€ Bestellwert)",
+        "default": 50
+      },
+      {
+        "type": "text",
+        "id": "tp_versand_preis",
+        "label": "Versandkosten darunter",
+        "default": "4,99 €"
       }
     ]
   },
@@ -2483,6 +2511,43 @@
         "label": "Adresse des Geschäfts",
         "info": "Für „Im Geschäft beraten lassen“ und die Route dorthin.",
         "default": "Saarlandstraße 73–81, 16515 Oranienburg"
+      }
+    ]
+  },
+  {
+    "name": "TP Google-Bewertung",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Wert und Anzahl standen bis 2026-09-16 an zehn Stellen einzeln: in zwei Startseiten-Abschnitten und in acht Produktvorlagen. Sie waren bereits auseinandergelaufen – sieben Vorlagen nannten 4,9, eine 4.8. Hier eingetragen gilt der Wert überall, wo am Abschnitt selbst nichts steht."
+      },
+      {
+        "type": "text",
+        "id": "tp_google_wert",
+        "label": "Bewertung, z. B. 4,9",
+        "info": "Aus dem Google-Unternehmensprofil abschreiben, nicht schätzen oder runden.",
+        "default": "4,9"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_anzahl",
+        "label": "Anzahl, z. B. über 240",
+        "info": "Ohne Anzahl könnten 4,9 auch drei Bewertungen sein. Beim Ablesen des Werts mit aktualisieren.",
+        "default": "über 240"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_link",
+        "label": "Link zum Google-Unternehmensprofil",
+        "info": "Bewusst ein Textfeld und kein Link-Feld: nur so kann hier ein Standard stehen, sodass der Link ohne Zutun funktioniert. Die acht Produktvorlagen zeigten zuvor zwei verschiedene Ziele - sieben das Unternehmensprofil, eine eine Google-Suche.",
+        "default": "https://maps.google.com/?cid=787042219843486388"
+      },
+      {
+        "type": "text",
+        "id": "tp_google_stand",
+        "label": "Zuletzt abgelesen am",
+        "info": "Datum im Format 2026-09-16. Nur zur eigenen Erinnerung, erscheint nicht im Shop.",
+        "default": "2026-09-12"
       }
     ]
   }

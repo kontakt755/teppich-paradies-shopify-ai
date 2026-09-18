@@ -5,6 +5,7 @@ import { buildClaudeHookContext, shouldRouteClaudePrompt } from '../../automatio
 import { loadLocalOpenRouterEnvironment } from '../../automation/core/local-openrouter-env.mjs';
 import { clearClaudeSessionState, ensureClaudeSessionBaseline, writeClaudeSessionState } from '../../automation/core/claude-session-state.mjs';
 import { captureWorkingTreeSnapshot, currentCommit, resolveReviewDir } from '../../automation/core/review-scope.mjs';
+import { recordSessionWrites } from '../../automation/core/session-writes.mjs';
 import { classifyTask } from '../../workflow/router.mjs';
 import { buildModelPlan } from '../../workflow/model-matrix.mjs';
 
@@ -44,6 +45,12 @@ try {
       capture: () => captureWorkingTreeSnapshot({ cwd: resolveReviewDir({ projectDir, sessionCwd: input.cwd }) }),
     });
   } catch { /* fail-safe, siehe oben */ }
+  // Bestand der eigenen Schreibvorgaenge anlegen (2026-09-15), noch bevor die
+  // Sitzung etwas schreibt: Existiert er, filtert der Stop-Hook fremde Pfade
+  // aus dem Pruefbereich; eine Sitzung, die nur liest, bekommt so einen leeren
+  // Pruefbereich statt der fremden Arbeit anderer Sitzungen. Fehlt der
+  // Bestand (aeltere Hooks, Schreibfehler), wird nichts gefiltert.
+  recordSessionWrites({ sessionId: input.session_id, projectDir, files: [] });
   if (!shouldRouteClaudePrompt(prompt)) process.exit(0);
   loadLocalOpenRouterEnvironment({ filePath: path.join(projectDir, '.env.local') });
   const digest = crypto.createHash('sha256').update(`${input.session_id ?? 'session'}\0${prompt}`).digest('hex').slice(0, 12);

@@ -20,6 +20,20 @@
  * kein totes Eingabefeld dasteht. Ueberschrift, Karte, Hinweis und die
  * Kontaktwege stehen unabhaengig davon.
  *
+ * Versand und Anfahrt sind zwei verschiedene Dinge, und die Antwort muss das
+ * trennen: versendet wird deutschlandweit per Paketdienst oder Spedition,
+ * kostenfrei ab 50 EUR Bestellwert; anfahren koennen unsere Bodenleger nur im
+ * Verlegegebiet.
+ *
+ * Die Schwelle gehoert in den Satz. Das Versandprofil des Shops (Admin API,
+ * 2026-09-12: "Allgemeines Profil", Zone Deutschland) hat zwei aktive Saetze -
+ * 0,00 EUR ab 50 EUR und 4,99 EUR ab 0 EUR. Ohne die Schwelle liest jemand mit
+ * einem Paket Klickvinyl fuer 34,95 EUR eine Zusage, die der Checkout nicht
+ * einloest; der uebrige Shop nennt sie ueberall (Topbar, Warenkorb,
+ * Versandseite). "Liegt
+ * ausserhalb unseres Liefer- und Verlegegebiets" las sich wie eine Absage ans
+ * Liefern - fuer einen Kunden in Muenchen also: wir beliefern Sie nicht.
+ *
  * Jede Antwort fuehrt weiter, keine endet in einer Absage. Wer im Gebiet
  * wohnt, sieht den Weg zur Anfrage. Wer ausserhalb wohnt, bekommt weder eine
  * Absage noch eine Zusage: zuerst den Weg zur Anfrage - wir pruefen den
@@ -64,8 +78,8 @@
     plzUnbekannt: function (code) {
       return 'Die Postleitzahl ' + code + ' kennen wir nicht. Bitte prüfen Sie die Eingabe.';
     },
-    aussen: function (was) {
-      return was + ' liegt außerhalb unseres regulären Liefer- und Verlegegebiets. Sprechen Sie uns gern an – wir prüfen individuell, was möglich ist. Ihren Boden liefern wir auch per Versand, deutschlandweit.';
+    aussen: function (was, schwelle) {
+      return was + ' liegt außerhalb des Gebiets, in dem unsere Bodenleger verlegen. Versenden können wir trotzdem – deutschlandweit per Paketdienst oder Spedition, ab ' + schwelle + ' € Bestellwert versandkostenfrei. Für die Verlegung sprechen Sie uns gern an – wir prüfen individuell, was möglich ist.';
     },
     // Unter der Schwelle kostet auch in der ersten Zone die lose Verlegung -
     // steht nur die Anfahrt da, liest man sie als inklusive.
@@ -154,15 +168,15 @@
   /* Eine Spanne [naechster, entferntester] gegen den Radius. Eine angehaengte 1
      heisst: mehrere Orte dieses Namens. Im Gebiet haengt die Zone des
      Rollenware-Service an, wenn die Sektion sie mitgibt. */
-  function einordnen(was, spanne, radius, istPlz, stufen) {
+  function einordnen(was, spanne, radius, istPlz, stufen, schwelle) {
     if (spanne[1] <= radius) return { status: 'innen', text: TEXTE.innen(was, entfernung(spanne)) + zone(spanne[0], spanne[1], stufen) };
-    if (spanne[0] > radius) return { status: 'aussen', text: TEXTE.aussen(was) };
+    if (spanne[0] > radius) return { status: 'aussen', text: TEXTE.aussen(was, schwelle) };
     if (spanne[2] === 1) return { status: 'mehrdeutig', text: TEXTE.mehrdeutig(was) };
     return { status: 'rand', text: istPlz ? TEXTE.randPlz(was) : TEXTE.rand(was) };
   }
 
   /* Liefert {status, text} - die Entscheidung steckt hier, nicht in der Ausgabe. */
-  function bewerten(eingabe, daten, radius, stufen) {
+  function bewerten(eingabe, daten, radius, stufen, schwelle) {
     var roh = eingabe.trim();
     if (!roh) return { status: '', text: TEXTE.leer };
 
@@ -171,16 +185,16 @@
       var code = plz[1];
       var spanne = daten.plz[code];
       if (typeof spanne === 'number') spanne = [spanne, spanne];
-      if (spanne) return einordnen(code, spanne, radius, true, stufen);
+      if (spanne) return einordnen(code, spanne, radius, true, stufen, schwelle);
       // Nicht in der Tabelle: entweder weit weg oder gar keine Postleitzahl.
       return gueltigePlz(code, daten)
-        ? { status: 'aussen', text: TEXTE.aussen(code) }
+        ? { status: 'aussen', text: TEXTE.aussen(code, schwelle) }
         : { status: 'unbekannt', text: TEXTE.plzUnbekannt(code) };
     }
 
     var eintrag = daten.orte[normalisieren(roh)];
     if (!eintrag) return { status: 'unbekannt', text: TEXTE.unbekannt };
-    return einordnen(roh.replace(/\s+/g, ' '), eintrag, radius, false, stufen);
+    return einordnen(roh.replace(/\s+/g, ' '), eintrag, radius, false, stufen, schwelle);
   }
 
   function anzeigen(feld, status, text) {
@@ -241,6 +255,11 @@
     var weg = formular.querySelector('[data-tp-verlegegebiet-cta]');
     var radius = parseFloat(sektion.dataset.radius) || 50;
     var stufen = stufenLesen(sektion.dataset, radius);
+    // Getrennt von den Zonen gelesen: die Pruefung laeuft auch auf Seiten ohne
+    // Rollenware-Stufen, und dort gibt stufenLesen null zurueck. Der Ruecklauf
+    // ist nur eine Notbremse, falls das Attribut fehlt - im Theme steht es
+    // immer, unabhaengig von den Stufen.
+    var versandFreiAb = sektion.dataset.versandFreiAb || '50';
     var lauf = 0;
     formular.hidden = false;
 
@@ -256,7 +275,7 @@
       tabelleLaden(sektion).then(
         function (daten) {
           if (meine !== lauf) return;
-          var ergebnis = bewerten(wert, daten, radius, stufen);
+          var ergebnis = bewerten(wert, daten, radius, stufen, versandFreiAb);
           anzeigen(ausgabe, ergebnis.status, ergebnis.text);
           if (weg) wegAnzeigen(weg, formular, ergebnis.status);
         },

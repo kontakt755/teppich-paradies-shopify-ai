@@ -38,11 +38,11 @@
     <div class="tp-zw__box tp-zw__box--online">
       <p class="tp-zw__eyebrow">{{ section.settings.online_eyebrow }}</p>
       <h2 class="tp-zw__title">{{ section.settings.online_titel }}</h2>
-      <p class="tp-zw__text">{{ section.settings.online_text }}</p>
+      <p class="tp-zw__text">{{ section.settings.online_text | replace: '[versandfrei]', settings.tp_versand_frei_ab }}</p>
 
       {%- if section.settings.online_punkte != blank -%}
         <ul class="tp-zw__list">
-          {%- assign tp_zw_online_items = section.settings.online_punkte | split: ',' -%}
+          {%- assign tp_zw_online_items = section.settings.online_punkte | replace: '[versandfrei]', settings.tp_versand_frei_ab | split: ',' -%}
           {%- for tp_zw_item in tp_zw_online_items -%}
             {%- assign tp_zw_label = tp_zw_item | strip -%}
             {%- if tp_zw_label != blank -%}
@@ -298,7 +298,7 @@
       "type": "text",
       "id": "online_punkte",
       "label": "Punkte (mit Komma trennen)",
-      "default": "Ab 50 € versandkostenfrei in Deutschland, Kostenlose Muster, Zuschnitt nach Wunschmaß"
+      "default": "Ab [versandfrei] € versandkostenfrei in Deutschland, Kostenlose Muster, Zuschnitt nach Wunschmaß"
     },
     {
       "type": "url",

@@ -26,6 +26,11 @@
   assign tp_ek_max_b = product.metafields.service.max_breite_cm.value | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
 
+  assign tp_ek_raum_keys = 'wohnzimmer,esszimmer,schlafzimmer,kinderzimmer,flur' | split: ','
+  assign tp_ek_raum_namen = 'Wohnzimmer,Esszimmer,Schlafzimmer,Kinderzimmer,Flur' | split: ','
+  assign tp_ek_boden = block.settings.boden_prozent | default: 34 | times: 1
+  assign tp_ek_raumbreite = block.settings.raum_breite_cm | default: 420 | times: 1
+
   assign tp_ek_ok = false
   if tp_ek_arten contains tp_ek_art and tp_ek_max_b > 0 and tp_ek_max_l > 0
     if product.metafields.custom.preis_pro_001_qm.value == true
@@ -180,7 +185,26 @@
       {%- endif -%}
 
       <figure class="tp-ek__vorschau" data-vorschau hidden>
-        <svg class="tp-ek__svg" viewBox="0 0 360 250" role="img" aria-label="Vorschau Ihres Teppichs" data-svg></svg>
+        {%- comment -%}
+          Zwei Ansichten auf dieselbe Konfiguration: der Teppich im Raum (Groessenwirkung)
+          und die Masszeichnung mit Bemassung und Kantenlupe (Nachpruefbarkeit). Beide
+          zeigen immer denselben Stand - Farbe, Mass und Kante kommen aus einer Rechnung.
+        {%- endcomment -%}
+        <div class="tp-ek__ansicht" role="group" aria-label="Ansicht wählen">
+          <button type="button" data-ansicht="raum" aria-pressed="true">Im Raum</button>
+          <button type="button" data-ansicht="plan" aria-pressed="false">Maßzeichnung</button>
+        </div>
+
+        <div class="tp-ek__buehne" data-buehne>
+          <img class="tp-ek__raumbild" data-raumbild alt="" hidden>
+          <svg class="tp-ek__kulisse" viewBox="0 0 360 240" preserveAspectRatio="none" aria-hidden="true" data-kulisse></svg>
+          <div class="tp-ek__boden" data-boden>
+            <div class="tp-ek__teppich" data-teppich></div>
+          </div>
+        </div>
+        <div class="tp-ek__raeume" role="group" aria-label="Raum wählen" data-raeume></div>
+
+        <svg class="tp-ek__svg is-aus" viewBox="0 0 360 250" role="img" aria-label="Vorschau Ihres Teppichs" data-svg></svg>
         <figcaption class="tp-ek__legende" data-legende></figcaption>
       </figure>
 
@@ -259,6 +283,27 @@
         "rollen": {{ tp_ek_rollen_liste | json }},
         "formen": {{ tp_ek_formen | json }},
         "produkt": {{ product.title | json }},
+        {%- comment -%}
+          Raumansicht: Foto je Raum kommt aus den Block-Einstellungen, damit es ohne
+          Code-Deploy austauschbar ist. Ohne Foto zeichnet das Skript eine Kulisse -
+          die Raumwahl funktioniert in beiden Faellen. "boden_prozent" ist die Hoehe
+          der Bodenlinie im Bild, "raum_breite_cm" die Breite des Raums an der
+          vorderen Bildkante; beide zusammen geben dem Teppich seinen Massstab.
+        {%- endcomment -%}
+        "boden_prozent": {{ tp_ek_boden | json }},
+        "raum_breite_cm": {{ tp_ek_raumbreite | json }},
+        "raeume": [
+          {%- for tp_ek_r_key in tp_ek_raum_keys -%}
+            {%- capture tp_ek_r_feld -%}raum_{{ tp_ek_r_key }}{%- endcapture -%}
+            {%- assign tp_ek_r_bild = block.settings[tp_ek_r_feld] -%}
+            {
+              "key": {{ tp_ek_r_key | json }},
+              "label": {{ tp_ek_raum_namen[forloop.index0] | json }},
+              "bild": {% if tp_ek_r_bild %}{{ tp_ek_r_bild | image_url: width: 1200 | json }}{% else %}null{% endif %}
+            },
+          {%- endfor -%}
+          null
+        ],
         "selected_id": {{ product.selected_or_first_available_variant.id | json }},
         "baender": {% if tp_ek_mit_band %}{{ tp_ek_baender | strip }}{% else %}[]{% endif %},
         "varianten": [
@@ -282,6 +327,7 @@
       }
     </script>
     <script src="{{ 'tp-masstepich-rechnung.js' | asset_url }}" defer></script>
+    <script src="{{ 'tp-zuschnitt-abgleich.js' | asset_url }}" defer></script>
     <script src="{{ 'tp-einfass-konfigurator.js' | asset_url }}" defer></script>
   </div>
 {%- endif -%}
@@ -352,6 +398,46 @@
 
   .tp-ek__vorschau { margin: 0 0 14px; padding: 12px 12px 10px; border-radius: 10px; background: var(--tp-ek-soft); }
   .tp-ek__svg { display: block; width: 100%; height: auto; max-height: 320px; }
+
+  .tp-ek__vorschau .is-aus { display: none !important; }
+  .tp-ek__ansicht { display: flex; gap: 4px; margin: 0 0 10px; padding: 3px; border-radius: 999px; background: var(--tp-ek-surface); box-shadow: inset 0 0 0 1px var(--tp-ek-line); }
+  .tp-ek__ansicht button { flex: 1; padding: 7px 10px; border: 0; border-radius: 999px; background: none; color: var(--tp-ek-muted); font: inherit; font-size: .84rem; font-weight: 600; cursor: pointer; }
+  .tp-ek__ansicht button[aria-pressed="true"] { background: var(--tp-ek-green); color: #fff; }
+  .tp-ek__ansicht button:focus-visible { outline: 2px solid var(--tp-ek-ink); outline-offset: 2px; }
+
+  /* Buehne: Foto oder gezeichnete Kulisse, darauf der Teppich in der Bodenebene. */
+  .tp-ek__buehne { position: relative; aspect-ratio: 3 / 2; border-radius: 8px; overflow: hidden; background: #efe9df; }
+  .tp-ek__raumbild, .tp-ek__kulisse { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tp-ek__boden { position: absolute; inset: 0; perspective: 620px; perspective-origin: 50% var(--tp-ek-horizont, 34%); pointer-events: none; }
+  /*
+    Der Teppich liegt als eigene Ebene in der Bodenflaeche: rotateX kippt ihn
+    aus der Bildebene in den Boden. Breite und Hoehe kommen aus dem Massstab
+    (Raumbreite in cm), die Textur ist das Bild der gewaehlten Variante - so
+    stimmen Farbe, Mass und Kante immer mit der Auswahl ueberein.
+  */
+  .tp-ek__teppich {
+    position: absolute; left: 50%; top: var(--tp-ek-liegt, 74%);
+    width: var(--tp-ek-breite, 40%); aspect-ratio: var(--tp-ek-seiten, 1.5);
+    transform: translate(-50%, -50%) rotateX(66deg);
+    transform-origin: 50% 50%;
+    background-image: var(--tp-ek-textur, none);
+    background-size: 168% auto; background-position: center;
+    background-color: #d9d4cb;
+    border-radius: var(--tp-ek-radius, 2px);
+    box-shadow: 0 26px 30px rgb(43 38 34 / .32);
+    transition: width .18s ease, top .18s ease;
+  }
+  .tp-ek__teppich[data-tp-kante="cover"] { box-shadow: 0 26px 30px rgb(43 38 34 / .32), inset 0 0 0 3px rgb(0 0 0 / .22); }
+  .tp-ek__teppich[data-tp-kante="ketteln"] { box-shadow: 0 26px 30px rgb(43 38 34 / .32), inset 0 0 0 2px rgb(0 0 0 / .20); }
+  .tp-ek__teppich[data-tp-kante="band"] { border: var(--tp-ek-bandbreite, 4px) solid var(--tp-ek-bandfarbe, #fff); box-sizing: border-box; }
+
+  .tp-ek__raeume { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+  .tp-ek__raeume::-webkit-scrollbar { display: none; }
+  .tp-ek__raeume button { flex: 0 0 auto; padding: 7px 12px; border: 1px solid var(--tp-ek-line); border-radius: 999px; background: var(--tp-ek-surface); color: var(--tp-ek-ink); font: inherit; font-size: .8rem; cursor: pointer; }
+  .tp-ek__raeume button[aria-pressed="true"] { border-color: var(--tp-ek-green); background: var(--tp-ek-green-soft); font-weight: 700; }
+  .tp-ek__raeume button:focus-visible { outline: 2px solid var(--tp-ek-ink); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) { .tp-ek__teppich { transition: none; } }
   .tp-ek__legende { margin-top: 6px; font-size: .8rem; color: var(--tp-ek-muted); text-align: center; }
 
   .tp-ek__preis { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--tp-ek-line); border-radius: 10px; background: var(--tp-ek-surface); }
@@ -429,6 +515,61 @@
       "label": "WhatsApp-Nummer fuer Fotos",
       "info": "Nur Ziffern mit Laendervorwahl, z. B. 4917657931322. Leer lassen, um den Link auszublenden.",
       "default": "4917657931322"
+    },
+    {
+      "type": "header",
+      "content": "Raumansicht"
+    },
+    {
+      "type": "paragraph",
+      "content": "Fotos leerer Raeume mit freier Bodenflaeche, alle aus derselben Hoehe fotografiert. Ohne Foto zeichnet der Konfigurator eine schlichte Kulisse - die Raumwahl funktioniert trotzdem."
+    },
+    {
+      "type": "image_picker",
+      "id": "raum_wohnzimmer",
+      "label": "Foto Wohnzimmer"
+    },
+    {
+      "type": "image_picker",
+      "id": "raum_esszimmer",
+      "label": "Foto Esszimmer"
+    },
+    {
+      "type": "image_picker",
+      "id": "raum_schlafzimmer",
+      "label": "Foto Schlafzimmer"
+    },
+    {
+      "type": "image_picker",
+      "id": "raum_kinderzimmer",
+      "label": "Foto Kinderzimmer"
+    },
+    {
+      "type": "image_picker",
+      "id": "raum_flur",
+      "label": "Foto Flur"
+    },
+    {
+      "type": "range",
+      "id": "boden_prozent",
+      "label": "Bodenlinie im Foto",
+      "unit": "%",
+      "min": 20,
+      "max": 60,
+      "step": 1,
+      "default": 34,
+      "info": "Hoehe der Kante zwischen Wand und Boden, gemessen von oben."
+    },
+    {
+      "type": "range",
+      "id": "raum_breite_cm",
+      "label": "Raumbreite an der vorderen Bildkante",
+      "unit": "cm",
+      "min": 250,
+      "max": 700,
+      "step": 10,
+      "default": 420,
+      "info": "Gibt dem Teppich seinen Massstab im Foto."
     }
   ],
   "presets": [

@@ -43,8 +43,9 @@ fi
 echo ""
 echo "── Projektzustand ──────────────────────────────────────────"
 
-# Die drei Guards fangen genau die Fehler ab, die hier mehrfach bis in den
+# Die Guards fangen genau die Fehler ab, die hier mehrfach bis in den
 # Shop gelangt sind. Der Hook meldet nur die Zusammenfassungszeile.
+template_out=""
 for guard in liquid schema template live-theme; do
   if out=$(node "qa/run-${guard}-guard.mjs" 2>&1); then
     echo "  ${out##*$'\n'}"
@@ -52,13 +53,20 @@ for guard in liquid schema template live-theme; do
     echo "  FEHLER im ${guard}-guard:"
     echo "$out" | sed 's/^/    /'
   fi
+  [ "$guard" = template ] && template_out="$out"
 done
 
 # Blockdrift ueber die Kollektions-Templates - die haeufigste stille Ursache
-# dafuer, dass Kategorieseiten unterschiedlich aussehen.
+# dafuer, dass Kategorieseiten unterschiedlich aussehen. Die volle Liste
+# (eine Zeile je Template) kostete jede Session Kontext, obwohl die
+# WARN-Zeilen des Guards bereits nennen, welcher Block wo fehlt.
 echo ""
-echo "  Produktkarten-Bloecke je Template:"
-node automation/scripts/theme-block.mjs list 2>/dev/null | sed 's/^/    /' || true
+if printf '%s\n' "$template_out" | grep -q 'BLOCK_DRIFT'; then
+  echo "  Produktkarten-Bloecke: Drift gemeldet (volle Liste: npm run theme:block list)"
+  printf '%s\n' "$template_out" | grep 'BLOCK_DRIFT' | sed 's/^/    /'
+else
+  echo "  Produktkarten-Bloecke: keine Drift ueber die Templates."
+fi
 
 echo ""
 echo "  Router-Klassifizierung (Fehler-Datenbank):"

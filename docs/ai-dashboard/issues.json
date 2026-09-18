@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-14T09:26:24.315Z",
+  "generated_at": "2026-09-18T20:13:14.215Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 93,
+  "count": 110,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-14T09:26:24.315Z",
+    "fetchedAt": "2026-09-18T20:13:14.215Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,434 @@
   },
   "issues": [
     {
+      "number": 361,
+      "title": "Claude-Code-Verbrauch senken: Startkontext kuerzen, Baseline messen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/361",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": null,
+      "fields": {
+        "goal": "Den Verbrauch von Claude Code auf beiden Macs senken, ohne Regeln oder Qualitaet zu verlieren. Reihenfolge: Kontext → Messung → Pilot → gezielte Skills.\n\n## Phasen\n\n- [x] **Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360.\n- [ ] **Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil.\n- [ ] **Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz.\n- [ ] **Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline.\n\n## Offen (Entscheidung Inhaber)\n\nCLAUDE.md liegt bei 19,9 KB statt der angepeilten 15 KB. Der Rest sind Befehle, Guard-Tabelle, Sicherheitsgrenzen und Modell-Matrix. Kandidaten fuer weitere ~2 KB: `theme:diff`-Manifest-Block und …",
+        "acceptance": {
+          "total": 4,
+          "done": 1,
+          "items": [
+            {
+              "done": true,
+              "text": "**Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360."
+            },
+            {
+              "done": false,
+              "text": "**Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil."
+            },
+            {
+              "done": false,
+              "text": "**Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz."
+            },
+            {
+              "done": false,
+              "text": "**Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline."
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-18T17:26:32Z",
+      "updated_at": "2026-09-18T17:29:42Z",
+      "closed_at": null
+    },
+    {
+      "number": 358,
+      "title": "Musterabdeckung vervollstaendigt und Zuschnitt-Angaben auf den Dokumenten",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/358",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T11:05:21Z",
+      "updated_at": "2026-09-16T11:05:52Z",
+      "closed_at": "2026-09-16T11:05:52Z"
+    },
+    {
+      "number": 357,
+      "title": "Warenkorb serverseitig gegen Mengenmanipulation absichern (Entscheidung Inhaber)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/357",
+      "labels": [
+        "type:technik",
+        "priority:p1",
+        "area:produktseite",
+        "status:freigabe"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "description": "Refs #188, #282 · Nachlauf zu #345\n\n## Worum es geht\n\nBei Teppich nach Maß, Kettelservice und Zuschnittware steckt das Maß **in der Menge** der Warenkorbzeile (0,01 m² bzw. 0,01 lfm). Die Menge ist im Shopify-Warenkorb grundsätzlich vom Kunden änderbar — über die Oberfläche oder direkt über `/cart/change.js`.\n\n**Reproduziert am 16.09.:** Ein fertiger Teppich für 724,00 € ließ sich per direktem Aufruf auf **90,89 €** herunterdrücken. Danach sofort geleert, kein Kauf.\n\n## Was schon getan ist\n\n#345 sperrt die Mengenfelder aller berechneten Zeilen in der Oberfläche (vorher galt das nur für Zuschnittware). Das hält Gelegenheitsklicks ab und schützt vor versehentlichem Verstellen.\n\n**Es ist aber keine Sicherheitsgrenze.** Wer die Entwicklerkonsole öffnet, kommt weiterhin durch. Clientseitig lässt sich das prinzipiell nicht schließen: Die Menge *ist* die Preisgrundlage, es gibt keinen zweiten, „echten\" Preis zum Abgleich.\n\n## Die Entscheidung\n\nDer saubere Weg ist eine **Shopify Cart/Checkout Validation Function**: Sie läuft auf Shopifys Servern, rechnet Menge gegen die Maßangaben in den Zeileneigenschaften nach und blockiert den Checkout bei Abweichung.\n\nWas das mitbringt:\n- eigene App-Ex…"
+      },
+      "created_at": "2026-09-16T10:37:25Z",
+      "updated_at": "2026-09-16T10:37:25Z",
+      "closed_at": null
+    },
+    {
+      "number": 355,
+      "title": "Rechnung und Versandprofil zur Musterumstellung nachgezogen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/355",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T10:35:25Z",
+      "updated_at": "2026-09-16T10:35:51Z",
+      "closed_at": "2026-09-16T10:35:51Z"
+    },
+    {
+      "number": 354,
+      "title": "Musterbestellung: eigene Variante je Muster statt Sammelartikel",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/354",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T10:12:53Z",
+      "updated_at": "2026-09-16T10:13:27Z",
+      "closed_at": "2026-09-16T10:13:27Z"
+    },
+    {
+      "number": 350,
+      "title": "Lieferschein zeigt keine Zeilenangaben (welches Muster liegt im Paket?)",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/350",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T09:20:49Z",
+      "updated_at": "2026-09-16T10:27:35Z",
+      "closed_at": "2026-09-16T10:27:22Z"
+    },
+    {
+      "number": 349,
+      "title": "PR-Doctor als CI-Workflow: Befunde automatisch am PR melden",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/349",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T09:13:29Z",
+      "updated_at": "2026-09-16T09:15:16Z",
+      "closed_at": "2026-09-16T09:15:16Z"
+    },
+    {
+      "number": 346,
+      "title": "Codex-Review: Ergebnis-Zeiger fuer Arbeit ausserhalb des Sitzungs-Working-Trees",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/346",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T08:59:17Z",
+      "updated_at": "2026-09-16T09:00:36Z",
+      "closed_at": null
+    },
+    {
+      "number": 344,
+      "title": "pr:doctor - offene PRs pruefen und gefahrlos reparieren",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/344",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T08:45:51Z",
+      "updated_at": "2026-09-16T09:02:59Z",
+      "closed_at": "2026-09-16T08:46:14Z"
+    },
+    {
+      "number": 342,
+      "title": "Kunden-Bestellbestaetigung zeigt Zeilenangaben nicht (Muster, Wunschmass)",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/342",
+      "labels": [
+        "status:fertig",
+        "type:bug",
+        "priority:p1",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-16T08:39:41Z",
+      "updated_at": "2026-09-16T08:56:38Z",
+      "closed_at": "2026-09-16T08:56:20Z"
+    },
+    {
+      "number": 339,
+      "title": "Visualisierer: Teppich im Raum ansehen (PR #338)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/339",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T13:02:06Z",
+      "updated_at": "2026-09-16T10:04:28Z",
+      "closed_at": null
+    },
+    {
+      "number": 332,
+      "title": "SEO-Titel und Alt-Texte: gepflegte Daten erreichen Google",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/332",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:seo"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T11:40:22Z",
+      "updated_at": "2026-09-15T11:40:44Z",
+      "closed_at": "2026-09-15T11:40:44Z"
+    },
+    {
+      "number": 324,
+      "title": "Codex-Review: Pruefbereich nach Urheber filtern (Bash-Schreibvorgaenge erfassen)",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/324",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T10:32:01Z",
+      "updated_at": "2026-09-15T10:42:48Z",
+      "closed_at": "2026-09-15T10:42:30Z"
+    },
+    {
+      "number": 323,
+      "title": "Admin nachziehen: Bestellmail escapen + Produkt-Tag-Spalte entfernen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/323",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T10:29:35Z",
+      "updated_at": "2026-09-15T11:31:05Z",
+      "closed_at": "2026-09-15T11:30:51Z"
+    },
+    {
+      "number": 322,
+      "title": "Alt-PRs #279/#280/#256: Konflikte geloest, drei Entscheidungen offen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/322",
+      "labels": [
+        "status:blockiert",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T10:26:52Z",
+      "updated_at": "2026-09-15T11:31:35Z",
+      "closed_at": null
+    },
+    {
+      "number": 309,
+      "title": "UX-Kaufbereich, Farbauswahl, Kaufleiste, Tablet-Ueberlauf",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/309",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 6,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T09:18:19Z",
+      "updated_at": "2026-09-15T10:40:42Z",
+      "closed_at": "2026-09-15T10:40:42Z"
+    },
+    {
+      "number": 297,
+      "title": "Interne Bestell-E-Mail mit Grosshaendler-ID im Admin einsetzen",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/297",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-15T08:23:08Z",
+      "updated_at": "2026-09-15T09:57:12Z",
+      "closed_at": "2026-09-15T09:57:12Z"
+    },
+    {
       "number": 287,
       "title": "Predictive Search: Amazon-aehnliche Schnellsuche unter der Suchleiste (PR #286)",
       "state": "open",
@@ -93,7 +521,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/282",
       "labels": [
-        "status:in-arbeit",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:produktseite"
@@ -102,13 +530,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-14T08:44:27Z",
-      "updated_at": "2026-09-14T09:02:51Z",
+      "updated_at": "2026-09-14T09:48:20Z",
       "closed_at": null
     },
     {
@@ -761,13 +1189,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 10,
+      "comments": 11,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-14T08:59:14Z",
+      "updated_at": "2026-09-16T10:37:42Z",
       "closed_at": null
     },
     {
@@ -2790,7 +3218,7 @@
     {
       "number": 34,
       "title": "🚧 Shopify Admin API Integration",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/34",
       "labels": [
         "status:blockiert",
@@ -2802,7 +3230,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Ahmet bitte Admin API Key + Scopes geben",
       "fields": {
         "goal": "Brauchen Admin API Access um Orders zu synchronisieren.",
@@ -2811,8 +3239,8 @@
         "statusText": "BLOCKIERT** - Warte auf Shopify API Credentials von Ahmet"
       },
       "created_at": "2026-09-03T09:16:54Z",
-      "updated_at": "2026-09-09T11:30:08Z",
-      "closed_at": null
+      "updated_at": "2026-09-18T20:12:58Z",
+      "closed_at": "2026-09-18T20:12:58Z"
     },
     {
       "number": 33,

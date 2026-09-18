@@ -280,11 +280,18 @@
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
               "settings": {
-                "rating": "4,9",
-                "review_count": "über 240",
-                "review_link": "https://maps.google.com/?cid=787042219843486388"
+                "rating": "",
+                "review_count": "",
+                "review_link": ""
               },
               "blocks": {}
+            },
+            "tp_muster_cta_1": {
+              "type": "tp-muster-cta",
+              "settings": {
+                "label": "Kostenloses Muster anfragen",
+                "hinweis": "Bis zu 3 Farben, versandkostenfrei"
+              }
             }
           },
           "block_order": [
@@ -294,6 +301,7 @@
             "tp_groessen_auswahl",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
+            "tp_muster_cta_1",
             "tp_zubehoer_menge",
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",

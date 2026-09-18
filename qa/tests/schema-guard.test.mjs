@@ -70,3 +70,35 @@ test('G: Datei ohne Schema wird uebersprungen', () => {
   assert.equal(result.hasSchema, false);
   assert.deepEqual(result.findings, []);
 });
+
+test('H: Block-Name ueber 25 Zeichen bricht den Push ab', () => {
+  // Der echte Fall vom 2026-09-15: 29 Zeichen, lokal gruen, Push abgelehnt.
+  const source = wrap({ name: 'TP Google-Bewertung (inaktiv)', tag: null, settings: [] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source, dir: 'blocks', name: 'tp-x.liquid' })), [
+    'SCHEMA_NAME_TOO_LONG',
+    'SCHEMA_NO_PRESETS',
+  ]);
+});
+
+test('H2: genau 25 Zeichen sind erlaubt', () => {
+  const name = 'x'.repeat(25);
+  const source = wrap({ name, tag: null, settings: [], presets: [{ name: 'k' }] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source, dir: 'blocks', name: 'tp-x.liquid' })), []);
+});
+
+test('H3: langer Preset-Name im Block wird gemeldet', () => {
+  const source = wrap({ name: 'TP Kurz', tag: null, settings: [], presets: [{ name: 'y'.repeat(26) }] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source, dir: 'blocks', name: 'tp-x.liquid' })), [
+    'PRESET_NAME_TOO_LONG',
+  ]);
+});
+
+test('H4: Sections und t:-Schluessel bleiben unangetastet', () => {
+  // Sections mit 30 Zeichen liegen im Bestand und pushen sauber; ein
+  // "t:"-Name wird erst beim Rendern aufgeloest und ist hier nicht messbar.
+  const lang = wrap({ name: 'Section rendering product card', settings: [], presets: [{ name: 'a' }] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source: lang, dir: 'sections', name: 's.liquid' })), []);
+
+  const key = wrap({ name: 't:names.product_recommendations', settings: [], presets: [{ name: 'a' }] });
+  assert.deepEqual(rules(analyzeSchemaSource({ source: key, dir: 'blocks', name: 'b.liquid' })), []);
+});

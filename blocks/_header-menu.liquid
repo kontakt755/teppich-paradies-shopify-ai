@@ -164,7 +164,14 @@
         on:pointerenter="/activate"
         on:pointerleave="/deactivate"
       >
-        <button role="listitem" class="menu-list__link button-unstyled">
+        {%- comment -%}
+          Kein role="listitem" am button: die Rolle ist auf einem button nicht
+          zulaessig (Lighthouse aria-allowed-role, 2026-09-16 auf der
+          Produktseite gemessen). Das umgebende li traegt role="presentation"
+          wie alle uebrigen Menuepunkte auch - die Liste ist damit bewusst
+          praesentational, und der button bleibt schlicht ein button.
+        {%- endcomment -%}
+        <button class="menu-list__link button-unstyled">
           <span class="menu-list__link-title">{{ 'actions.more' | t }}</span>
         </button>
       </li>
