@@ -1,40 +1,51 @@
 {% doc %}
   Mengenhilfe fuer Zubehoer-Produkte.
 
-  Zubehoer wird nicht einheitlich in Stueck verkauft. Vier Faelle, vier
-  Umrechnungen - mehr macht der Block nicht:
+  Zubehoer wird nicht einheitlich in Stueck verkauft. Vier Umrechnungen -
+  mehr macht der Block nicht:
 
     lfm     Preis je laufendem Meter, Bahnenbreite bekannt. Eingabe m2.
     qm      Preis je Quadratmeter. Eingabe m2.
-    gebinde Rolle/Faltplatte mit bekanntem Flaecheninhalt. Eingabe m2.
+    gebinde Gebinde mit bekannter Flaeche - Rolle oder Faltplatte mit
+            Flaecheninhalt, oder ein Gebinde mit belegter Reichweite laut
+            Hersteller. Eingabe m2.
     stange  Stueckware bekannter Laenge - Sockelleiste je Stange, Profil je
-            Schiene. Eingabe Meter.
+            Schiene, Klebeband je Rolle. Eingabe Meter.
 
-  Die ersten drei stehen bereits in der Variantenbezeichnung ("... 80 cm breit
-  (je lfm)", "... (je m2)", "Rolle 30,14 m2", "Faltplatte 15 m2",
-  "Rolle 50 m x 100 cm") - dafuer wurde kein Metafeld gebraucht.
+  Woher die Menge je Einheit kommt, in dieser Reihenfolge - die erste
+  belegte Quelle gilt:
 
-  Der vierte Fall hat zwei Datenquellen, weil die Laenge zwei Orte hat:
+    1. custom.stangenlaenge (Produkt)   Sockelleisten, Meter je Stange
+    2. custom.bandlaenge (Produkt)      Klebe- und Verlegebaender, Meter je Rolle
+    3. Option "Laenge" (Variante)       Profile und Uebergangsschienen
+    4. custom.reichweite_m2 (Variante)  m2 je Gebinde laut Herstellerangabe
+    5. Variantenbezeichnung             "... 80 cm breit (je lfm)", "(je m2)",
+                                        "Rolle 30,14 m2", "Faltplatte 15 m2",
+                                        "Rolle 50 m x 100 cm", "Rolle 70 mm x 25 m"
 
-  Bei Sockelleisten gilt eine Laenge fuers ganze Produkt (jede Farbe dieselbe
-  Stange), und sie steht in keiner Bezeichnung und keinem Tag. Sie liegt
-  deshalb seit 2026-09-09 in custom.stangenlaenge (Meter, je Produkt). Belegte
-  Quelle je Produkt: domains/shopify/leisten-stangenlaenge/stangenlaenge.json.
+  Sockelleisten und Baender tragen die Laenge je Produkt, weil sie fuer jede
+  Farbe bzw. Breite gleich ist und in keiner Bezeichnung steht. Belegte
+  Quellen: domains/shopify/leisten-stangenlaenge/stangenlaenge.json und
+  domains/shopify/zubehoer-mengen/bandlaenge.json.
 
-  Bei Profilen und Uebergangsschienen ist die Laenge dagegen eine echte
-  Produktoption ("Laenge": 270 cm / 100 cm / 90 cm) und damit je Variante
-  verschieden. Dafuer braucht es kein Metafeld - der Block liest den
-  Optionswert. Gelesen wird nur eine Option, die exakt "Laenge" heisst; ein
-  Wert ohne Einheit cm oder m wird nicht verwendet.
+  Profile tragen die Laenge dagegen als echte Produktoption ("Laenge": 270 cm /
+  100 cm / 90 cm), also je Variante verschieden. Gelesen wird nur eine Option,
+  die exakt "Laenge" heisst; ein Wert ohne Einheit cm oder m wird nicht
+  verwendet.
 
-  Das Metafeld hat Vorrang vor der Option: Traegt ein Produkt beides, gilt die
-  gepflegte Produktlaenge.
+  Die Reichweite haengt an der Variante, weil jede Gebindegroesse eine eigene
+  hat (750 ml / 5 l / 10 l). Sie ist nur dann belegt, wenn der Hersteller
+  genau einen Wert je Gebinde nennt - Spannen, "1.) 300 2.) 350 g/m2" oder ein
+  Verbrauch je mm Schichtdicke bleiben leer. Kandidaten und offene Faelle:
+  domains/shopify/zubehoer-mengen/reichweite.json.
 
-  Ehrlichkeitsregel: Trifft keiner der vier Faelle zu - Kleber, Reinigungs-
-  mittel, Dichtstoffe, Profile, Verlegebaender, Sauberlaufmatten - rendert der
-  Block still nichts. Es gibt keinen Fallback und keine Pauschalannahme; ohne
-  belegte Mengeneinheit gibt es keinen Rechner. Insbesondere wird eine fehlende
-  Stangenlaenge nie durch einen Standardwert ersetzt.
+  Ehrlichkeitsregel: Trifft keine Quelle zu - Kleber mit mehrdeutigem
+  Verbrauch, Reinigungsmittel ohne Reichweite, Dichtstoffe, Spachtelmassen,
+  Sauberlaufmatten - rendert der Block still nichts. Es gibt keinen Fallback
+  und keine Pauschalannahme. Eine fehlende Laenge oder Reichweite wird nie
+  durch einen Standardwert ersetzt, und eine Bezeichnung, die sich selbst
+  widerspricht ("Rolle 75 cm x 25 m (20 m2)" sind 18,75 m2), bekommt ebenfalls
+  keinen Rechner.
 
   Der Block legt nichts selbst in den Warenkorb. Er schreibt ausschliesslich in
   das vorhandene Mengenfeld der Kaufbuttons, damit es genau einen Kaufweg und
@@ -52,6 +63,11 @@
   # Metafeld bleibt der Stangenmodus aus, und das Produkt faellt auf die
   # Variantenerkennung darunter zurueck - die bei Leisten nichts findet.
   assign tp_zm_stange = tp_zm_product.metafields.custom.stangenlaenge.value | times: 1.0
+
+  # Klebe- und Verlegebaender werden je Rolle verkauft, die Variante ist die
+  # Breite. Die Rollenlaenge gilt fuers ganze Produkt ("Verkaufseinheit Rolle
+  # 50 m") und steht in keiner Bezeichnung - deshalb ein Metafeld in Metern.
+  assign tp_zm_band = tp_zm_product.metafields.custom.bandlaenge.value | times: 1.0
 
   # Profile und Uebergangsschienen tragen die Laenge als Produktoption. Nur
   # eine Option, die exakt "Laenge" heisst, wird gelesen - "Breite" (Verlege-
@@ -77,10 +93,18 @@
 
     assign tp_zm_noun = ''
 
+    # Reichweite je Gebinde laut Herstellerangabe. Ein gepflegter Wert hat
+    # Vorrang vor der Bezeichnung, so wie die Stangenlaenge vor der Option.
+    assign tp_zm_reich = tp_zm_v.metafields.custom.reichweite_m2.value | times: 1.0
+
     if tp_zm_stange > 0
       assign tp_zm_mode = 'stange'
       assign tp_zm_noun = 'stange'
       assign tp_zm_area = tp_zm_stange
+    elsif tp_zm_band > 0
+      assign tp_zm_mode = 'stange'
+      assign tp_zm_noun = 'rolle'
+      assign tp_zm_area = tp_zm_band
     elsif tp_zm_len_pos > 0
       # Optionswert der Laengenoption dieser Variante, z. B. "270 cm".
       if tp_zm_len_pos == 1
@@ -103,6 +127,10 @@
         assign tp_zm_noun = 'profil'
         assign tp_zm_area = tp_zm_len_m
       endif
+    elsif tp_zm_reich > 0
+      assign tp_zm_mode = 'gebinde'
+      assign tp_zm_noun = 'reichweite'
+      assign tp_zm_area = tp_zm_reich
     elsif tp_zm_t contains 'je lfm'
       assign tp_zm_mode = 'lfm'
       if tp_zm_t contains 'cm breit'
@@ -115,6 +143,31 @@
       assign tp_zm_mode = 'gebinde'
       assign tp_zm_a = tp_zm_t | split: 'm2' | first | split: '(' | last | strip | split: ' ' | last | replace: ',', '.'
       assign tp_zm_area = tp_zm_a | times: 1.0
+
+      # Nennt die Bezeichnung zusaetzlich Breite x Laenge, muessen beide
+      # Angaben zusammenpassen. "Rolle 75 cm x 25 m (20 m2)" ergibt 18,75 m2,
+      # nicht 20 - welche Zahl stimmt, ist offen, also ist keine belegt und es
+      # gibt keinen Rechner. 2 Prozent Toleranz fuer gerundete Flaechen.
+      assign tp_zm_norm = tp_zm_t | replace: ' × ', ' x '
+      if tp_zm_norm contains ' x '
+        assign tp_zm_lt = tp_zm_norm | split: ' x ' | first | strip | split: ' '
+        assign tp_zm_rt = tp_zm_norm | split: ' x ' | last | strip | split: ' '
+        assign tp_zm_li = tp_zm_lt.size | minus: 2
+        assign tp_zm_lv = tp_zm_lt[tp_zm_li] | replace: ',', '.' | times: 1.0
+        assign tp_zm_rv = tp_zm_rt.first | replace: ',', '.' | times: 1.0
+        assign tp_zm_masse = 0
+        if tp_zm_lt.last == 'cm' and tp_zm_rt[1] == 'm'
+          assign tp_zm_masse = tp_zm_lv | divided_by: 100.0 | times: tp_zm_rv
+        elsif tp_zm_lt.last == 'm' and tp_zm_rt[1] == 'cm'
+          assign tp_zm_masse = tp_zm_rv | divided_by: 100.0 | times: tp_zm_lv
+        endif
+        if tp_zm_masse > 0 and tp_zm_area > 0
+          assign tp_zm_abw = tp_zm_masse | minus: tp_zm_area | abs | divided_by: tp_zm_area
+          if tp_zm_abw > 0.02
+            assign tp_zm_mode = ''
+          endif
+        endif
+      endif
     elsif tp_zm_t contains ' m x ' or tp_zm_t contains ' m × '
       assign tp_zm_norm = tp_zm_t | replace: ' × ', ' x '
       if tp_zm_norm contains 'cm x ' or tp_zm_norm contains 'x 100 cm' or tp_zm_norm contains 'cm'
@@ -123,6 +176,19 @@
         if tp_zm_len > 0 and tp_zm_wcm > 0
           assign tp_zm_mode = 'gebinde'
           assign tp_zm_area = tp_zm_wcm | divided_by: 100.0 | times: tp_zm_len
+        endif
+      endif
+    elsif tp_zm_t contains ' mm x ' or tp_zm_t contains ' mm × '
+      # Klebeband mit der Laenge in der Bezeichnung: "Rolle 70 mm x 25 m".
+      # Nur genau dieses Muster - Breite in mm, danach "<Zahl> m" und nichts
+      # weiter.
+      assign tp_zm_rt = tp_zm_t | replace: ' × ', ' x ' | split: ' mm x ' | last | strip | split: ' '
+      if tp_zm_rt.size == 2 and tp_zm_rt[1] == 'm'
+        assign tp_zm_len_m = tp_zm_rt.first | replace: ',', '.' | times: 1.0
+        if tp_zm_len_m > 0
+          assign tp_zm_mode = 'stange'
+          assign tp_zm_noun = 'rolle'
+          assign tp_zm_area = tp_zm_len_m
         endif
       endif
     endif
@@ -192,27 +258,43 @@
 
       const nf = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 });
 
+      // Aufrunden mit kleiner Toleranz: 7,2 / 2,4 ist in Gleitkomma
+      // 3,0000000000000004 und wuerde sonst 4 statt 3 Stangen bestellen.
+      const aufrunden = (menge, je) => Math.ceil(menge / je - 1e-9);
+
       // Die Eingabe soll einen Re-Render ueberstehen, deshalb liegt sie
       // ausserhalb des Elements.
       const eingaben = new Map();
 
-      // Sockelleiste und Profil rechnen gleich, heissen aber nicht gleich.
-      const words = (info) =>
-        info.n === 'profil'
-          ? {
-              label: 'Benötigte Länge',
-              eines: 'Ein Profil',
-              eine: 'Profil',
-              viele: 'Profile',
-              abzug: 'Zuschnitt und Verschnitt bitte selbst einplanen.',
-            }
-          : {
-              label: 'Benötigte Wandlänge',
-              eines: 'Eine Stange',
-              eine: 'Stange',
-              viele: 'Stangen',
-              abzug: 'Türen und Durchgänge bitte selbst abziehen.',
-            };
+      // Sockelleiste, Profil und Klebeband rechnen gleich, heissen aber nicht
+      // gleich.
+      const words = (info) => {
+        if (info.n === 'profil') {
+          return {
+            label: 'Benötigte Länge',
+            eines: 'Ein Profil',
+            eine: 'Profil',
+            viele: 'Profile',
+            abzug: 'Zuschnitt und Verschnitt bitte selbst einplanen.',
+          };
+        }
+        if (info.n === 'rolle') {
+          return {
+            label: 'Benötigte Bandlänge',
+            eines: 'Eine Rolle',
+            eine: 'Rolle',
+            viele: 'Rollen',
+            abzug: 'Überlappungen und Verschnitt bitte selbst einplanen.',
+          };
+        }
+        return {
+          label: 'Benötigte Wandlänge',
+          eines: 'Eine Stange',
+          eine: 'Stange',
+          viele: 'Stangen',
+          abzug: 'Türen und Durchgänge bitte selbst abziehen.',
+        };
+      };
 
       class TpZubehoerMenge extends HTMLElement {
         connectedCallback() {
@@ -306,6 +388,10 @@
               : 'Abgerechnet wird je laufendem Meter.';
           } else if (info.m === 'qm') {
             this.hint.textContent = 'Abgerechnet wird je Quadratmeter.';
+          } else if (info.n === 'reichweite') {
+            // Herstellerangabe, keine Flaeche zum Nachmessen - so auch benennen.
+            this.hint.textContent = 'Laut Herstellerangabe reicht ein Gebinde für etwa '
+              + nf.format(Number(info.a) || 0) + ' m².';
           } else {
             this.hint.textContent = 'Ein Gebinde reicht für ' + nf.format(Number(info.a) || 0) + ' m².';
           }
@@ -327,22 +413,25 @@
             const len = Number(info.a) || 0;
             if (!(len > 0)) return void (this.result.textContent = '');
             const w = words(info);
-            need = Math.ceil(menge / len);
+            need = aufrunden(menge, len);
             text = need + ' ' + (need === 1 ? w.eine : w.viele)
               + ' bestellen (ergibt ' + nf.format(need * len) + ' m).';
           } else if (info.m === 'lfm') {
             const b = Number(info.w) || 0;
             if (!(b > 0)) return void (this.result.textContent = '');
-            need = Math.ceil(menge / (b / 100));
+            need = aufrunden(menge, b / 100);
             text = need + ' lfd. Meter bestellen (deckt ' + nf.format(need * (b / 100)) + ' m²).';
           } else if (info.m === 'qm') {
-            need = Math.ceil(menge);
+            need = aufrunden(menge, 1);
             text = need + ' m² bestellen.';
           } else {
             const a = Number(info.a) || 0;
             if (!(a > 0)) return void (this.result.textContent = '');
-            need = Math.ceil(menge / a);
-            text = need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
+            need = aufrunden(menge, a);
+            text = info.n === 'reichweite'
+              ? need + ' Gebinde bestellen (reicht laut Herstellerangabe für etwa '
+                + nf.format(need * a) + ' m²).'
+              : need + ' Gebinde bestellen (deckt ' + nf.format(need * a) + ' m²).';
           }
 
           this.result.textContent = this.setQuantity(need)
