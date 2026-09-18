@@ -328,6 +328,11 @@
                   {%- if tp_gz_berechnet contains 'ja' -%}
                     {%- assign can_update_quantity = false -%}
                   {%- endif -%}
+                  {%- comment -%}
+                    Mengensperre für berechnete Zeilen (Rollenware, Teppich nach Maß, Kettelservice).
+                    Die Sperre wirkt durch das Shopify-Gate bei /cart/change.js, das
+                    can_update_quantity prüft und die Mengenänderung abbricht.
+                  {%- endcomment -%}
                   {%- assign tp_cart_zuschnitt = false -%}
                   {%- if item.properties['Gewünschte Länge'] != blank -%}
                     {%- assign tp_cart_zuschnitt = true -%}
