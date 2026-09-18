@@ -6,7 +6,8 @@ Startdatum: 2026-09-18 · Mac: kontakt755@teppich (main) · Phase: Leer-Session 
 
 | Datum | Mac | Klasse | Modell | Aufgabe (kurz) | Requests | Input-Tokens | Output-Tokens | Cache-Read | Cache-Write | Dauer | Nutzung Woche % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-09-18 | kontakt755@teppich | Leer-Session / Startkontext | Gemini (47), GPT-5.6-sol (20), Sonnet (9), andere (1) | Phase-0-Setup | 77 | 71.315* | — | 0 | 0 | — | 0% |
+| 2026-09-11…2026-09-18 | kontakt755@teppich | — | Gemini (47), GPT-5.6-sol (20), Sonnet (9), andere (1) | Router-Anteil seit 2026-09-11 (Ledger) | 77 | — | — | 0 | 0 | — | — |
+| 2026-09-18 | kontakt755@teppich | A | Haiku 4.5 | Leer-Session / Startkontext | 1 | 134 | 37 | 1.2M | 44k | 1m | 1% |
 
 ## Ledger-Quelle
 
