@@ -25,6 +25,8 @@ Startdatum: 2026-09-18 · Aufgabe: #361 · Vergleich folgt in Phase 3, sobald 5 
 | 2026-09-18 | kontakt755@teppich | B | Haiku 4.5 | Teppichrechner: Kostenaufteilung entfernen | 1 | — | — | 1.7M | 68.7k | 2m | 7% |
 | 2026-09-18 | kontakt755@teppich | B | Haiku 4.5 | Teppich-Produktseite UI/UX Redesign | 272 | 991 | 45.8k | 15.6M | 367.8k | 17m | — |
 | 2026-09-18 | Mac-mini-von-Ahmet | D | Opus 5 | Zuschnitt-Attribute an Warenkorbzeilen binden (#363), Vorschau + Live, Live-Test — **ohne /cost, nicht vergleichbar** | — | — | — | — | — | 25m | — |
+| 2026-09-18 | Cloud (claude.ai/code, headless `claude -p`) | A | Haiku 4.5 | Startkontext normal, keine MCP-Server in der CLI konfiguriert | 1 | 10 | 66 | 23.8k | 13.4k | 2s | — |
+| 2026-09-18 | Cloud (claude.ai/code, headless `claude -p`) | A | Haiku 4.5 | Startkontext mit `--strict-mcp-config`, 0 MCP-Server | 1 | 10 | 92 | 37.2k | 0 | 3s | — |
 
 ## Ledger-Quelle (Router-/Codex-Anteil)
 
@@ -40,9 +42,16 @@ nichts ueber das Caching in Claude Code.
 ## Zwischenbefunde (Stand 2026-09-18)
 
 - **Startkontext auf beiden Macs gleich: rund 45k Tokens.** CLAUDE.md (19,9 KB ≈ 5k Tokens)
-  ist davon nur etwa ein Zehntel. Der Rest sind Systemprompt und die Tool-Schemata der
-  eingebundenen MCP-Server. Naechster Messpunkt: eine Session mit deaktivierten MCP-Servern,
-  die das Projekt nicht braucht (alles ausser Shopify und GitHub), Cache-Write vergleichen.
+  ist davon nur etwa ein Zehntel.
+- **MCP-Server sind nicht der Hebel.** Headless-Messung in der Cloud (`claude -p`, gleiche
+  CLAUDE.md, keine MCP-Server konfiguriert): Startkontext 37,2k Tokens, mit und ohne
+  `--strict-mcp-config` identisch. Das ist der Sockel von Claude Code selbst (Systemprompt,
+  eingebaute Tools, CLAUDE.md, Hook-Ausgabe). Die Differenz zu den Macs (~8k) ist die Obergrenze
+  fuer MCP-Server plus globale `~/.claude/CLAUDE.md` — zu klein fuer einen Umbau.
+- **Was der Cache wert ist:** derselbe Aufruf kostete 0,030 $ beim Schreiben des Caches und
+  0,004 $ beim Treffer — Faktor 7. Ein Modellwechsel mitten in der Session wirft genau das weg.
+- **Folgerung:** Kontext je Runde ist zu ~85 % fix. Die beiden Hebel, die bleiben, sind die
+  Anzahl der Runden je Aufgabe und die Modellwahl je Klasse.
 - **Runden treiben den Verbrauch:** PDP-Redesign mit 272 Requests in 17 Minuten, rund 57k
   Tokens Cache-Read je Runde. Cache-Trefferquote 97,7 % — das Caching selbst ist nicht das Problem.
 - Zeilen 4 und 5 liefen als Klasse B auf Haiku; die Matrix sieht fuer B Fable vor. Fuer den
