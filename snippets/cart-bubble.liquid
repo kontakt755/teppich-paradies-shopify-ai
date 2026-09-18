@@ -5,10 +5,16 @@
   count will be displayed as "99+".
 {%- enddoc -%}
 
+{%- comment -%}
+  Artikelzahl statt cart.item_count: Eine Zeile Flaechenware zaehlt als ein
+  Artikel, nicht als ihre Menge in 0,01 m2 (snippets/tp-cart-artikelzahl.liquid).
+{%- endcomment -%}
+{%- capture item_count -%}{%- render 'tp-cart-artikelzahl' -%}{%- endcapture -%}
+{%- assign item_count = item_count | strip | plus: 0 -%}
+
 <div
   ref="cartBubble"
   class="cart-bubble{% if cart == empty %} visually-hidden{% endif %}"
-  {% assign item_count = cart.item_count %}
   {% if item_count <= 99 %}
     data-maintain-ratio
   {% endif %}
@@ -25,8 +31,8 @@
       aria-hidden="true"
       data-testid="cart-bubble"
     >
-      {%- if limit == blank or cart.item_count < limit %}
-        {{- cart.item_count -}}
+      {%- if limit == blank or item_count < limit %}
+        {{- item_count -}}
       {%- endif -%}
     </span>
   </span>
