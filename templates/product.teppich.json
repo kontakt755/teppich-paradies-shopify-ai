@@ -273,6 +273,12 @@
               "settings": {},
               "blocks": {}
             },
+            "tp_teppich_description_style": {
+              "type": "_tp-description-style",
+              "name": "TP Teppich - Beschreibungs-Styling",
+              "settings": {},
+              "blocks": {}
+            },
             "text_description_teppich_main": {
               "type": "text",
               "name": "Product description",
@@ -292,8 +298,8 @@
                 "background": false,
                 "background_color": "#00000026",
                 "corner_radius": 0,
-                "padding-block-start": 8,
-                "padding-block-end": 0,
+                "padding-block-start": 32,
+                "padding-block-end": 32,
                 "padding-inline-start": 0,
                 "padding-inline-end": 0
               },
@@ -331,6 +337,7 @@
             "buy_buttons_teppich_main",
             "tp_teppich_versand_main",
             "tp_teppich_auf_einen_blick_main",
+            "tp_teppich_description_style",
             "text_description_teppich_main"
           ]
         }
