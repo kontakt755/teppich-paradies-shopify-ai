@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-18T14:46:57.100Z",
+  "generated_at": "2026-09-18T17:26:47.082Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 109,
+  "count": 110,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-18T14:46:57.100Z",
+    "fetchedAt": "2026-09-18T17:26:47.082Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,52 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 361,
+      "title": "Claude-Code-Verbrauch senken: Startkontext kuerzen, Baseline messen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/361",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "goal": "Den Verbrauch von Claude Code auf beiden Macs senken, ohne Regeln oder Qualitaet zu verlieren. Reihenfolge: Kontext → Messung → Pilot → gezielte Skills.\n\n## Phasen\n\n- [x] **Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360.\n- [ ] **Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil.\n- [ ] **Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz.\n- [ ] **Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline.\n\n## Offen (Entscheidung Inhaber)\n\nCLAUDE.md liegt bei 19,9 KB statt der angepeilten 15 KB. Der Rest sind Befehle, Guard-Tabelle, Sicherheitsgrenzen und Modell-Matrix. Kandidaten fuer weitere ~2 KB: `theme:diff`-Manifest-Block und …",
+        "acceptance": {
+          "total": 4,
+          "done": 1,
+          "items": [
+            {
+              "done": true,
+              "text": "**Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360."
+            },
+            {
+              "done": false,
+              "text": "**Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil."
+            },
+            {
+              "done": false,
+              "text": "**Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz."
+            },
+            {
+              "done": false,
+              "text": "**Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline."
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-18T17:26:32Z",
+      "updated_at": "2026-09-18T17:26:32Z",
+      "closed_at": null
+    },
     {
       "number": 358,
       "title": "Musterabdeckung vervollstaendigt und Zuschnitt-Angaben auf den Dokumenten",
