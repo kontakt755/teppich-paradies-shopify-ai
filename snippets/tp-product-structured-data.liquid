@@ -1,46 +1,182 @@
 {% comment %}
-  Google Shopping safety layer.
+  Product-JSON-LD (Google Product Snippets / Merchant Listings).
 
-  Shopify's native structured_data output is kept unchanged for regular and
-  package products. It is intentionally suppressed when either:
-  - a genuine (non-OPC) variant has custom.rollenbreite > 0, because its
-    Shopify price is a non-purchasable square-metre base price; or
-  - an opc-* calculator variant exists, because technical calculator variants
-    must never become Merchant offers; or
-  - the product is a Wunschmaß-Teppich (custom.wunschmass_mindestbreite_cm
-    set), because its Shopify variant price is a technical price per 0,01 m²
-    (see blocks/tp-teppich-wunschmass.liquid), not a purchasable offer price.
+  Drei Faelle, alle datengetrieben (keine Titel-/Tag-Heuristik fuer Preise):
 
-  Product titles, tags and descriptions are deliberately not used for roll
-  detection. Do not add a guessed minimum price here.
+  1. Service- und Hilfsprodukte (Typ "Service"/"Musterservice" oder Tag
+     "service": Kettelservice, Fussleiste, kostenloses Muster) bekommen
+     KEIN JSON-LD. Ihre Variantenpreise sind Rechengroessen (0,19 EUR je
+     0,01 lfm, 0,00 EUR) und duerfen nie als Angebot erscheinen.
+
+  2. Flaechenware wird als ProductGroup mit einem Offer je Variante
+     ausgegeben, Preis als UnitPriceSpecification je Quadratmeter
+     (referenceQuantity 1 MTK) - so, wie die Seite ihn zeigt (EUR/m2).
+     Erkannt wird sie an
+     - custom.preis_pro_001_qm == true (Variantenpreis gilt je 0,01 m2,
+       z. B. Teppich nach Mass: 0,89 -> 89,00 EUR/m2), oder
+     - einer echten Variante mit custom.rollenbreite > 0 (Meterware,
+       Variantenpreis = Preis je m2, seit dem Rollenware-Kaufbereich
+       direkt bestellbar).
+     Ausgeschlossen aus den Offers: Varianten mit Breitenwert "Wunschmass"
+     (Zuschnittpreis, kein eigenstaendiges Angebot), opc-*-Rechnervarianten
+     und Varianten ohne Preis. Bleibt kein Offer uebrig, wird nichts
+     ausgegeben.
+     Google nimmt bei gleichzeitigem offers.price und priceSpecification
+     nur offers.price - deshalb steht der Preis hier NUR in der
+     priceSpecification.
+
+  3. Alle anderen Produkte behalten Shopifys natives structured_data.
+
+  Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
+  Marke, SKU (nur wenn vorhanden), Farbe. Keine lieferant.*-Metafelder.
 {% endcomment %}
 
 {%- liquid
-  assign tp_schema_is_roll = false
-  assign tp_schema_has_opc_variant = false
+  assign tp_sd_skip = false
+  if product_resource.type == 'Service' or product_resource.type == 'Musterservice' or product_resource.tags contains 'service'
+    assign tp_sd_skip = true
+  endif
 
-  for tp_schema_variant in product_resource.variants
-    assign tp_schema_variant_title = tp_schema_variant.title | downcase | strip
+  assign tp_sd_per_001 = false
+  if product_resource.metafields.custom.preis_pro_001_qm.value == true
+    assign tp_sd_per_001 = true
+  endif
 
-    if tp_schema_variant_title contains 'opc-'
-      assign tp_schema_has_opc_variant = true
-    else
-      assign tp_schema_roll_width = tp_schema_variant.metafields.custom.rollenbreite.value | times: 1
-      if tp_schema_roll_width > 0
-        assign tp_schema_is_roll = true
+  assign tp_sd_is_roll = false
+  for tp_sd_variant in product_resource.variants
+    assign tp_sd_vtitle = tp_sd_variant.title | downcase | strip
+    unless tp_sd_vtitle contains 'opc-'
+      assign tp_sd_roll_width = tp_sd_variant.metafields.custom.rollenbreite.value | times: 1
+      if tp_sd_roll_width > 0
+        assign tp_sd_is_roll = true
       endif
+    endunless
+  endfor
+
+  assign tp_sd_is_wunschmass_legacy = false
+  assign tp_sd_wm_width = product_resource.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1
+  if tp_sd_wm_width > 0
+    assign tp_sd_is_wunschmass_legacy = true
+  endif
+
+  assign tp_sd_color_index = -1
+  for tp_sd_option in product_resource.options
+    if tp_sd_option == 'Farbe'
+      assign tp_sd_color_index = forloop.index0
     endif
   endfor
 
-  assign tp_schema_is_wunschmass = false
-  assign tp_schema_wunschmass_width = product_resource.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1
-  if tp_schema_wunschmass_width > 0
-    assign tp_schema_is_wunschmass = true
-  endif
+  assign tp_sd_product_url = request.origin | append: product_resource.url
 -%}
 
-{%- unless tp_schema_is_roll or tp_schema_has_opc_variant or tp_schema_is_wunschmass -%}
+{%- if tp_sd_skip -%}
+  {%- comment -%} Service-/Hilfsprodukt: bewusst kein JSON-LD {%- endcomment -%}
+{%- elsif tp_sd_per_001 or tp_sd_is_roll -%}
+  {%- capture tp_sd_offers -%}
+    {%- assign tp_sd_first = true -%}
+    {%- for tp_sd_variant in product_resource.variants -%}
+      {%- liquid
+        assign tp_sd_include = true
+        assign tp_sd_vtitle = tp_sd_variant.title | downcase | strip
+        if tp_sd_vtitle contains 'opc-'
+          assign tp_sd_include = false
+        endif
+        if tp_sd_variant.options contains 'Wunschmaß'
+          assign tp_sd_include = false
+        endif
+        if tp_sd_variant.price <= 0
+          assign tp_sd_include = false
+        endif
+        assign tp_sd_cents = tp_sd_variant.price
+        if tp_sd_per_001
+          assign tp_sd_cents = tp_sd_cents | times: 100
+        endif
+        assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
+        assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
+        assign tp_sd_image = tp_sd_variant.featured_image | default: product_resource.featured_image
+      -%}
+      {%- if tp_sd_include -%}
+        {%- unless tp_sd_first -%},{%- endunless -%}
+        {%- assign tp_sd_first = false -%}
+        {
+          "@type": "Product",
+          "@id": {{ tp_sd_variant_url | append: '#variant' | json }},
+          "name": {{ product_resource.title | append: ' - ' | append: tp_sd_variant.title | json }},
+          "url": {{ tp_sd_variant_url | json }}
+          {%- if tp_sd_image -%},
+          "image": {{ tp_sd_image | image_url: width: 1920 | prepend: 'https:' | json }}
+          {%- endif -%}
+          {%- if tp_sd_variant.sku != blank -%},
+          "sku": {{ tp_sd_variant.sku | json }}
+          {%- endif -%}
+          {%- if tp_sd_color_index >= 0 -%},
+          "color": {{ tp_sd_variant.options[tp_sd_color_index] | json }}
+          {%- endif -%},
+          "offers": {
+            "@type": "Offer",
+            "@id": {{ tp_sd_variant_url | append: '#offer' | json }},
+            "url": {{ tp_sd_variant_url | json }},
+            "priceCurrency": {{ cart.currency.iso_code | json }},
+            "priceSpecification": {
+              "@type": "UnitPriceSpecification",
+              "price": {{ tp_sd_price }},
+              "priceCurrency": {{ cart.currency.iso_code | json }},
+              "referenceQuantity": {
+                "@type": "QuantitativeValue",
+                "value": 1,
+                "unitCode": "MTK"
+              }
+            },
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": {% if tp_sd_variant.available %}"https://schema.org/InStock"{% else %}"https://schema.org/OutOfStock"{% endif %},
+            "seller": {
+              "@type": "Organization",
+              "name": {{ shop.name | json }}
+            }
+          }
+        }
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+  {%- assign tp_sd_offers = tp_sd_offers | strip -%}
+  {%- if tp_sd_offers != blank -%}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "ProductGroup",
+        "@id": {{ tp_sd_product_url | append: '#product' | json }},
+        "productGroupID": {{ product_resource.id | json }},
+        "name": {{ product_resource.title | json }},
+        "description": {{ product_resource.description | strip_html | strip_newlines | truncate: 5000 | json }},
+        "url": {{ tp_sd_product_url | json }},
+        "brand": {
+          "@type": "Brand",
+          "name": {{ product_resource.vendor | json }}
+        },
+        {%- if product_resource.images.size > 0 -%}
+        "image": [
+          {%- for tp_sd_img in product_resource.images -%}
+            {{ tp_sd_img | image_url: width: 1920 | prepend: 'https:' | json }}{%- unless forloop.last -%},{%- endunless -%}
+          {%- endfor -%}
+        ],
+        {%- endif -%}
+        {%- if tp_sd_color_index >= 0 -%}
+        "variesBy": ["https://schema.org/color"],
+        {%- endif -%}
+        "hasVariant": [
+          {{ tp_sd_offers }}
+        ]
+      }
+    </script>
+  {%- endif -%}
+{%- elsif tp_sd_is_wunschmass_legacy -%}
+  {%- comment -%}
+    Alte Wunschmass-Vorlage (blocks/tp-teppich-wunschmass.liquid, kein
+    aktives Produkt): Variantenpreis ist ein Rechenpreis je 0,01 m2 ohne
+    das Metafeld custom.preis_pro_001_qm - weiterhin kein JSON-LD.
+  {%- endcomment -%}
+{%- else -%}
   <script type="application/ld+json">
     {{ product_resource | structured_data }}
   </script>
-{%- endunless -%}
+{%- endif -%}

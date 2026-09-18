@@ -28,6 +28,19 @@
   else
     assign min_quantity = variant.quantity_rule.min | default: 1
   endif
+
+  # Gesperrte Warenkorbzeilen (can_update_quantity: false, siehe
+  # snippets/cart-products.liquid + snippets/tp-cart-gruppe.liquid): der
+  # cart-quantity-selector-component ignoriert das statische disabled-Attribut
+  # der Plus/Minus-Buttons und berechnet es bei jeder Aktualisierung neu aus
+  # min/max des Eingabefelds (assets/component-cart-quantity-selector.js).
+  # Ohne Klammerung auf denselben Wert bleiben die Buttons klickbar, auch wenn
+  # das Feld selbst disabled ist. min = max = aktuelle Menge sperrt beide.
+  assign tp_qty_locked = false
+  if can_update_quantity == false and in_cart_quantity != null
+    assign tp_qty_locked = true
+    assign min_quantity = in_cart_quantity
+  endif
 %}
 
 <div
@@ -74,7 +87,9 @@
       {% if line_index %}
         data-cart-line="{{ line_index | plus: 1 }}"
       {% endif %}
-      {% if variant.quantity_rule.max %}
+      {% if tp_qty_locked %}
+        max="{{ in_cart_quantity }}"
+      {% elsif variant.quantity_rule.max %}
         max="{{ variant.quantity_rule.max }}"
       {% endif %}
       step="{{ variant.quantity_rule.increment | default: 1 }}"

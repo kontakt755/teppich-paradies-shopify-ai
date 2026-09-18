@@ -88,6 +88,15 @@
         "snippets/tp-treppen-schema.liquid",
         "templates/page.treppenverlegung.json"
       ]
+    },
+    {
+      "name": "Warenkorb-Gruppenbindung",
+      "reason": "Berechnete Zeilen (Rollenrechner, Einfass-Konfigurator) haben im Warenkorb keinen Mengenwaehler, Gruppen (Teppich + Kettelservice, Teppichboden + Fussleiste) werden gemeinsam entfernt, Waisen sperren den Checkout. Fehlt das Snippet, bricht snippets/cart-products.liquid in Drawer und Warenkorbseite mit 'Could not find asset'; fehlt das Asset, loescht der Warenkorb wieder einzelne Gruppenzeilen.",
+      "files": [
+        "snippets/tp-cart-gruppe.liquid",
+        "assets/tp-cart-gruppen.js",
+        "assets/component-cart-items.js"
+      ]
     }
   ]
 }

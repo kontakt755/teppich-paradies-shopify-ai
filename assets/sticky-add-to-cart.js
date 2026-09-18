@@ -68,6 +68,23 @@ class StickyAddToCartComponent extends Component {
   /** @type {boolean} */
   #hiddenByBottom = false;
 
+  /** @type {MutationObserver | null} */
+  #targetStateObserver = null;
+
+  /**
+   * Der Kaufweg-Anker (Kaufblock, Paket-Rechner oder .tp-kaufweg), an dem sich
+   * das Ein- und Ausblenden orientiert.
+   * @type {Element | null}
+   */
+  #anchorElement = null;
+
+  /**
+   * false, solange der Rechner seinen Kaufbutton verbirgt (keine gueltige
+   * Laenge bzw. keine gueltigen Masse). Dann bleibt auch die Leiste aus.
+   * @type {boolean}
+   */
+  #targetUsable = true;
+
   connectedCallback() {
     super.connectedCallback();
 
@@ -89,6 +106,7 @@ class StickyAddToCartComponent extends Component {
     super.disconnectedCallback();
     this.#buyButtonsIntersectionObserver?.disconnect();
     this.#mainBottomObserver?.disconnect();
+    this.#targetStateObserver?.disconnect();
     this.#abortController.abort();
     if (this.#animationTimeout) {
       clearTimeout(this.#animationTimeout);
@@ -105,9 +123,14 @@ class StickyAddToCartComponent extends Component {
     // Ein- und Ausblenden der Leiste und Ziel des Sticky-Buttons. Ohne diesen
     // Rueckfall bliebe die Sticky-Leiste auf genau den Produkten aus, auf
     // denen sie mobil am meisten traegt.
+    // Dritter Fall (Rollenware-Rechner, Einfass-Konfigurator): Root .tp-kaufweg
+    // mit Button [data-add-to-cart]. Dort ist der Kaufblock im Template
+    // deaktiviert, der Rechner ist der einzige Kaufweg.
     const productForm = this.#getProductForm();
-    const buyButtonsBlock = productForm?.closest('.buy-buttons-block') ?? this.#getPackageSelector();
+    const buyButtonsBlock =
+      productForm?.closest('.buy-buttons-block') ?? this.#getPackageSelector() ?? this.#getKaufweg();
     if (!buyButtonsBlock) return;
+    this.#anchorElement = buyButtonsBlock;
 
     // In themes migrated from 2.0, the footer element doesn't exist
     const footer = document.querySelector('footer') ?? document.querySelector('[class*="footer-group"]');
@@ -159,7 +182,107 @@ class StickyAddToCartComponent extends Component {
 
     this.#buyButtonsIntersectionObserver.observe(buyButtonsBlock);
     this.#mainBottomObserver.observe(footer);
-    this.#targetAddToCartButton = this.#getTargetAddToCartButton();
+    this.#setTargetAddToCartButton(this.#getTargetAddToCartButton());
+  }
+
+  /**
+   * Der Rechner-Kaufweg (Rollenware-Rechner, Einfass-Konfigurator), sofern die
+   * Seite einen hat.
+   * @returns {HTMLElement | null}
+   */
+  #getKaufweg() {
+    const sectionElement = this.closest('.shopify-section');
+    return sectionElement?.querySelector('.tp-kaufweg') ?? null;
+  }
+
+  /**
+   * Merkt sich den Zielbutton und spiegelt bei Rechner-Buttons dessen
+   * hidden/disabled-Zustand auf die Leiste. Der Rechner verbirgt seinen Button,
+   * solange keine gueltige Laenge eingegeben ist, und sperrt ihn waehrend des
+   * Warenkorb-Aufrufs (inFlight). Ohne Spiegelung wuerde die Leiste einen
+   * Klick anbieten, den der Rechner stillschweigend verwirft.
+   * @param {HTMLButtonElement | null} button
+   */
+  #setTargetAddToCartButton(button) {
+    if (button === this.#targetAddToCartButton && this.#targetStateObserver) return;
+    this.#targetAddToCartButton = button;
+    this.#targetStateObserver?.disconnect();
+    this.#targetStateObserver = null;
+    this.#targetUsable = true;
+
+    if (!button || !button.closest('.tp-kaufweg')) {
+      this.#syncTargetState();
+      return;
+    }
+
+    this.#targetStateObserver = new MutationObserver(() => this.#syncTargetState());
+    this.#targetStateObserver.observe(button, {
+      attributes: true,
+      attributeFilter: ['hidden', 'disabled'],
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    this.#syncTargetState();
+  }
+
+  /**
+   * Uebertraegt hidden/disabled und die Beschriftung des Rechner-Buttons auf
+   * den Sticky-Button. Ist der Rechner-Button verborgen, verschwindet die
+   * Leiste; sie kommt wieder, sobald eine gueltige Eingabe vorliegt und der
+   * Kaufweg oberhalb des Viewports liegt.
+   */
+  #syncTargetState() {
+    const target = this.#targetAddToCartButton;
+    const { addToCartButton } = this.refs;
+    if (!addToCartButton) return;
+
+    if (!target || !target.closest('.tp-kaufweg')) {
+      this.#targetUsable = true;
+      return;
+    }
+
+    const usable = !target.hidden;
+    addToCartButton.disabled = target.hidden || target.disabled;
+
+    const label = addToCartButton.querySelector('.add-to-cart-text__content > span');
+    if (label) {
+      const text = (target.textContent || '').trim();
+      if (usable && text) {
+        label.textContent = text;
+      } else {
+        label.textContent = target.closest('[data-tp-ek]') ? 'Maße eingeben' : 'Länge eingeben';
+      }
+    }
+
+    // Der Variantenpreis passt auf Rechner-Seiten nicht zur Bestellung: im
+    // Raummass gilt die Wunschmass-Variante (89 €/m²), die Leiste nennt aber
+    // die Rollenvariante (65,90 €/m²); der Einfass-Konfigurator fuehrt den
+    // Preis je 0,01 m² (0,89 €), den snippets/price.liquid ausserhalb der
+    // Produktkarte nicht umrechnet. Deshalb steht hier der Gesamtpreis des
+    // Rechners ([data-total]); der Konfigurator traegt ihn schon im Button.
+    const priceElement = this.querySelector('.sticky-add-to-cart__price');
+    if (priceElement) {
+      const kaufweg = target.closest('.tp-kaufweg');
+      const total = kaufweg?.querySelector('[data-total]');
+      const totalText = (total?.textContent || '').trim();
+      if (target.closest('[data-tp-ek]') || !usable || !totalText || totalText === '–') {
+        priceElement.style.display = 'none';
+      } else {
+        priceElement.textContent = totalText;
+        priceElement.style.display = '';
+      }
+    }
+
+    this.#targetUsable = usable;
+    if (!usable) {
+      if (this.#isStuck) this.#hideStickyBar();
+    } else if (!this.#isStuck && !this.#hiddenByBottom && this.#anchorElement) {
+      const rect = this.#anchorElement.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top < 0) this.#showStickyBar();
+    }
+
+    this.#updateButtonText();
   }
 
   /**
@@ -181,7 +304,7 @@ class StickyAddToCartComponent extends Component {
     const productForm = this.#getProductForm();
     const button = productForm
       ? productForm.querySelector('[ref="addToCartButton"]')
-      : this.#getPackageSelector()?.querySelector('[data-add-to-cart]');
+      : (this.#getPackageSelector() ?? this.#getKaufweg())?.querySelector('[data-add-to-cart]');
 
     return /** @type {HTMLButtonElement | null} */ (button ?? null);
   }
@@ -191,17 +314,31 @@ class StickyAddToCartComponent extends Component {
    * Handles the add to cart button click in the sticky bar
    */
   handleAddToCartClick = async () => {
-    if (!this.#targetAddToCartButton) return;
-    this.#targetAddToCartButton.dataset.puppet = 'true';
-    this.#targetAddToCartButton.click();
+    const target = this.#targetAddToCartButton;
+    if (!target) return;
+    // Rechner-Buttons: verborgen oder gesperrt (keine gueltige Laenge, Aufruf
+    // laeuft) heisst kein Klick - der Rechner wuerde ihn ohnehin verwerfen, die
+    // Leiste zeigte aber die "Hinzugefuegt"-Animation.
+    if (target.hidden || target.disabled) return;
+    target.dataset.puppet = 'true';
+    target.click();
     const cartIcon = document.querySelector('.header-actions__cart-icon');
 
     if (this.refs.addToCartButton.dataset.added !== 'true') {
       this.refs.addToCartButton.dataset.added = 'true';
     }
 
-    if (!cartIcon || !this.refs.addToCartButton || !this.refs.productImage) return;
     if (this.#resetTimeout) clearTimeout(this.#resetTimeout);
+
+    // Ohne Produktbild (z. B. Wunschmass-Varianten ohne Bild) gibt es nichts,
+    // das zum Warenkorb fliegen koennte - dann nur die Button-Animation.
+    if (!cartIcon || !this.refs.productImage) {
+      await onAnimationEnd([this.refs.addToCartButton]);
+      this.#resetTimeout = setTimeout(() => {
+        this.refs.addToCartButton.removeAttribute('data-added');
+      }, 800);
+      return;
+    }
 
     const flyToCartElement = /** @type {FlyToCart} */ (document.createElement('fly-to-cart'));
     const sourceStyles = getComputedStyle(this.refs.productImage);
@@ -255,8 +392,11 @@ class StickyAddToCartComponent extends Component {
     // Re-cache the target add to cart button after morphing
     const nextTarget = this.#getTargetAddToCartButton();
     if (nextTarget) {
-      this.#targetAddToCartButton = nextTarget;
+      this.#setTargetAddToCartButton(nextTarget);
     }
+    // Der Morph hat die Beschriftung des Sticky-Buttons auf den Serverstand
+    // gesetzt - bei Rechner-Buttons den Rechnerstand erneut uebertragen.
+    this.#syncTargetState();
 
     if (variant == null) {
       this.#handleVariantUnavailable();
@@ -323,6 +463,7 @@ class StickyAddToCartComponent extends Component {
    */
   #showStickyBar() {
     const { stickyBar } = this.refs;
+    if (!this.#targetUsable) return;
     this.#isStuck = true;
     stickyBar.dataset.stuck = 'true';
   }

@@ -89,6 +89,35 @@ test('I: Kettelteppich - Kante zentimetergenau, Preis aus beiden Zeilen', () => 
   assert.ok(M.mengeMitMindestpreis(0.5, 89, 9900) * 89 >= 9900);
 });
 
+test('J: Piumera-Faelle - Mindestpreis 50x50, Kettel 200x300, Rotation 350x420', () => {
+  // 50 x 50 cm: 0,25 m² = 25 x 0,89 = 22,25 EUR, Kante 2,00 m = 38,00 EUR.
+  // 60,25 < 99 -> Material auf ceil((9900 - 3800) / 89) = 69 Einheiten
+  // (0,69 m²) angehoben; 69 x 0,89 + 38,00 = 99,41 EUR.
+  const fl = M.abrechnungsflaecheM2('rechteck', 50, 50);
+  assert.equal(M.mengeHundertstelM2(fl), 25);
+  const kante = M.kanteEinheiten(M.umfangM('rechteck', 50, 50));
+  assert.equal(kante, 200);
+  const menge = M.mengeMitMindestpreis(fl, 89, Math.max(0, 9900 - kante * 19));
+  assert.equal(menge, 69);
+  assert.equal(menge * 89 + kante * 19, 9941);
+  // Abgerechnete Flaeche (Warenkorb-Property) ist die Menge, nicht der Wunsch.
+  assert.equal(menge / 100, 0.69);
+  assert.equal(menge > M.mengeHundertstelM2(fl), true, 'Mindestpreis angewendet');
+
+  // 200 x 300 gekettelt: 600 Einheiten Material, 1000 Einheiten Kante.
+  assert.equal(M.mengeMitMindestpreis(M.abrechnungsflaecheM2('rechteck', 200, 300), 89, 9900), 600);
+  assert.equal(M.kanteEinheiten(M.umfangM('rechteck', 200, 300)), 1000);
+
+  // 350 x 420 und 420 x 350 bei max 400 x 600: beide gueltig (kurze Seite in
+  // die Rolle), 14,70 m² = 1470 Einheiten, Kante 15,40 m = 1540 Einheiten.
+  const g = { maxW: 400, maxL: 600 };
+  assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 350, l: 420, ...g }), []);
+  assert.deepEqual(M.pruefeMasse({ form: 'rechteck', w: 420, l: 350, ...g }), []);
+  assert.equal(M.mengeHundertstelM2(M.abrechnungsflaecheM2('rechteck', 350, 420)), 1470);
+  assert.equal(M.kanteEinheiten(M.umfangM('rechteck', 420, 350)), 1540);
+  assert.equal(M.pruefeMasse({ form: 'rechteck', w: 401, l: 420, ...g }).length, 1);
+});
+
 test('H: Rolle und Rollenanzahl', () => {
   assert.equal(M.rolleFuer(380, [500, 400, 200]), 400);
   assert.equal(M.rolleFuer(401, [400, 500]), 500);

@@ -120,7 +120,7 @@
     {%- capture tp_ek_baender -%}{% render 'tp-bandfarben' %}{%- endcapture -%}
   {%- endif -%}
 
-  <div class="tp-ek" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
+  <div class="tp-ek tp-kaufweg" id="tp-ek-{{ tp_ek_id }}" data-tp-ek {{ block.shopify_attributes }}>
     <div class="tp-ek__schritt" data-schritt="form"{% if tp_ek_formen.size < 2 %} hidden{% endif %}>
       {% render 'tp-step-heading', number: 2, label: 'Form' %}
       <div class="tp-ek__formen" role="radiogroup" aria-label="Form">
@@ -235,7 +235,7 @@
         </details>
       </div>
 
-      <button type="button" class="tp-ek__cta" data-cta disabled hidden>In den Warenkorb</button>
+      <button type="button" class="tp-ek__cta" data-cta data-add-to-cart disabled hidden>In den Warenkorb</button>
       <a href="{{ routes.cart_url }}" class="tp-ek__warenkorb" data-warenkorb hidden>Warenkorb ansehen</a>
     </div>
 
