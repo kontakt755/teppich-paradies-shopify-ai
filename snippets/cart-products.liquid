@@ -29,6 +29,10 @@
   defer
   fetchpriority="low"
 ></script>
+<script
+  src="{{ 'tp-zuschnitt-abgleich.js' | asset_url }}"
+  defer
+></script>
 
 <div
   {{ block.shopify_attributes }}
@@ -324,6 +328,17 @@
                   {%- if tp_gz_berechnet contains 'ja' -%}
                     {%- assign can_update_quantity = false -%}
                   {%- endif -%}
+                  {%- assign tp_cart_zuschnitt = false -%}
+                  {%- if item.properties['Gewünschte Länge'] != blank -%}
+                    {%- assign tp_cart_zuschnitt = true -%}
+                    {%- assign can_update_quantity = false -%}
+                  {%- elsif item.product.metafields.custom.preis_pro_001_qm.value -%}
+                    {%- assign tp_cart_zuschnitt = true -%}
+                    {%- assign can_update_quantity = false -%}
+                  {%- elsif item.properties['_Gruppe'] != blank -%}
+                    {%- assign tp_cart_zuschnitt = true -%}
+                    {%- assign can_update_quantity = false -%}
+                  {%- endif -%}
                   <div class="cart-items__quantity-controls">
                     {% render 'volume-pricing-info',
                       variant: item.variant,
@@ -341,6 +356,22 @@
                     %}
 
                     {%- render 'tp-cart-gruppe', line_item: item, teil: 'menge' -%}
+
+                    {%- assign tp_cart_hauptzeile = false -%}
+                    {%- if tp_cart_zuschnitt and item.properties['_Gruppe'] == blank -%}
+                      {%- assign tp_cart_hauptzeile = true -%}
+                    {%- endif -%}
+
+                    {%- if tp_cart_hauptzeile -%}
+                      <p class="cart-items__zuschnitt-hinweis">
+                        Menge ergibt sich aus dem Maß.
+                        <a href="{{ item.url }}">Zum Produkt</a>
+                      </p>
+                    {%- elsif tp_cart_zuschnitt -%}
+                      <p class="cart-items__zuschnitt-hinweis">
+                        Menge ergibt sich aus dem Maß des zugehörigen Teppichs.
+                      </p>
+                    {%- endif -%}
 
                     <button
                       class="button cart-items__remove"
