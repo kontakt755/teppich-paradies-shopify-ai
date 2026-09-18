@@ -55,35 +55,55 @@
     .tp-teppich-vorteile-{{ tp_tv_id }} {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 14px;
-      margin: 0;
+      gap: 10px 16px;
+      margin: 12px 0 0 0;
       padding: 0;
       list-style: none;
     }
 
     .tp-teppich-vorteile-{{ tp_tv_id }} li {
       display: flex;
-      align-items: baseline;
-      gap: 5px;
+      align-items: center;
+      gap: 8px;
       font-size: 15px;
-      line-height: 1.45;
-      color: var(--color-foreground);
+      font-weight: 500;
+      line-height: 1.5;
+      color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
     }
 
     .tp-teppich-vorteile-{{ tp_tv_id }} li::before {
-      content: '\2713';
-      color: #008a2e;
+      content: '';
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #008a2e 0%, #006b23 100%);
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 12px;
       font-weight: 700;
       flex: 0 0 auto;
     }
 
+    .tp-teppich-vorteile-{{ tp_tv_id }} li::before {
+      content: '✓';
+    }
+
     @media screen and (max-width: 749px) {
       .tp-teppich-vorteile-{{ tp_tv_id }} {
-        gap: 5px 12px;
+        gap: 8px 12px;
+        margin-top: 8px;
       }
 
       .tp-teppich-vorteile-{{ tp_tv_id }} li {
-        font-size: 14.5px;
+        font-size: 14px;
+      }
+
+      .tp-teppich-vorteile-{{ tp_tv_id }} li::before {
+        width: 18px;
+        height: 18px;
+        font-size: 11px;
       }
     }
   </style>

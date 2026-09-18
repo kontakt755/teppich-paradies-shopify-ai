@@ -1,0 +1,66 @@
+{% doc %}
+  CSS-Styling fuer die Produktbeschreibung im Teppich-Template.
+  Dieser Block rendert keinen Inhalt, sondern appliziert nur Styling auf die RTE.
+{% enddoc %}
+
+<style>
+  {% comment %} Produktbeschreibung im Teppich-Template: Bessere Lesbarkeit {% endcomment %}
+  .text-block--text_description_teppich_main {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .text-block--text_description_teppich_main .rte {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+  }
+
+  .text-block--text_description_teppich_main .rte h2,
+  .text-block--text_description_teppich_main .rte h3 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+
+  .text-block--text_description_teppich_main .rte ul,
+  .text-block--text_description_teppich_main .rte ol {
+    margin: 16px 0;
+    padding-left: 24px;
+  }
+
+  .text-block--text_description_teppich_main .rte li {
+    margin: 6px 0;
+    line-height: 1.6;
+  }
+
+  .text-block--text_description_teppich_main .rte p {
+    margin: 12px 0;
+  }
+
+  @media screen and (max-width: 749px) {
+    .text-block--text_description_teppich_main {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .text-block--text_description_teppich_main .rte {
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "TP Desc Style",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Desc Style"
+    }
+  ]
+}
+{% endschema %}

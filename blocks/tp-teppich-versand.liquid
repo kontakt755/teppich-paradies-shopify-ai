@@ -72,7 +72,11 @@
 
 <style>
   .tp-teppich-versand-{{ tp_tv2_id }} {
-    margin-top: 12px;
+    margin-top: 32px;
+    padding: 32px;
+    background: linear-gradient(135deg, #f8f5f0 0%, #faf8f4 100%);
+    border-radius: 16px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
   }
 
   .tp-teppich-versand__sample-{{ tp_tv2_id }} {
@@ -80,64 +84,92 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 44px;
-    padding: 10px 16px;
-    background: #b4976c;
-    border: 1px solid #b4976c;
-    border-radius: var(--style-border-radius-buttons-primary, 7px);
+    min-height: 48px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #b4976c 0%, #a0855a 100%);
+    border: none;
+    border-radius: 8px;
     color: #ffffff;
     text-decoration: none;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 8px rgba(180, 151, 108, 0.15);
+    transition: all 0.3s ease;
   }
 
   .tp-teppich-versand__sample-{{ tp_tv2_id }}:hover {
-    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(180, 151, 108, 0.25);
   }
 
   .tp-teppich-versand__shipping-{{ tp_tv2_id }} {
-    margin-top: 12px;
-    padding: 12px 14px;
-    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.14);
-    border-radius: 8px;
-    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.025);
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.76);
-    font-size: 13px;
-    line-height: 1.45;
+    margin-top: 28px;
+    padding: 24px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.8);
+    font-size: 14px;
+    line-height: 1.6;
   }
 
   .tp-teppich-versand__shipping-{{ tp_tv2_id }} p {
     margin: 0;
   }
 
+  .tp-teppich-versand__shipping-{{ tp_tv2_id }} p strong {
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.95);
+    font-weight: 600;
+  }
+
   .tp-teppich-versand__shipping-{{ tp_tv2_id }} p + p {
-    margin-top: 3px;
+    margin-top: 12px;
   }
 
   .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} {
-    margin-top: 8px;
+    margin-top: 16px;
   }
 
   .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} summary {
     width: fit-content;
     cursor: pointer;
-    color: inherit;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.8);
     font-weight: 600;
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-underline-offset: 3px;
+    transition: color 0.2s ease;
+    padding: 4px 0;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} summary:hover {
+    color: #b4976c;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }}[open] summary {
+    color: #b4976c;
   }
 
   .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} p {
-    margin-top: 8px;
+    margin-top: 12px;
     max-width: 64ch;
   }
 
   .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} a {
     display: inline-block;
-    margin-top: 8px;
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    margin-top: 12px;
+    color: #b4976c;
+    font-weight: 500;
+    text-decoration: none;
+    border-bottom: 2px solid #b4976c;
+    padding-bottom: 2px;
+    transition: all 0.2s ease;
+  }
+
+  .tp-teppich-versand__shipping-details-{{ tp_tv2_id }} a:hover {
+    color: #a0855a;
+    border-bottom-color: #a0855a;
   }
 
   .tp-teppich-versand__secondary-{{ tp_tv2_id }} {
@@ -145,26 +177,46 @@
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 5px 8px;
-    margin-top: 10px;
+    gap: 8px 12px;
+    margin-top: 20px;
     font-size: 13px;
-    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
   }
 
   .tp-teppich-versand__secondary-{{ tp_tv2_id }} a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.7);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1.5px solid #b4976c;
+    padding-bottom: 1px;
+    transition: color 0.2s ease;
+  }
+
+  .tp-teppich-versand__secondary-{{ tp_tv2_id }} a:hover {
+    color: #b4976c;
   }
 
   @media screen and (max-width: 749px) {
-    .tp-teppich-versand__sample-{{ tp_tv2_id }} {
-      font-size: 14px;
+    .tp-teppich-versand-{{ tp_tv2_id }} {
+      margin-top: 24px;
+      padding: 20px;
     }
 
-    .tp-teppich-versand__shipping-{{ tp_tv2_id }},
+    .tp-teppich-versand__sample-{{ tp_tv2_id }} {
+      font-size: 15px;
+      min-height: 44px;
+      padding: 10px 16px;
+    }
+
+    .tp-teppich-versand__shipping-{{ tp_tv2_id }} {
+      margin-top: 20px;
+      padding: 16px;
+      font-size: 13px;
+    }
+
     .tp-teppich-versand__secondary-{{ tp_tv2_id }} {
-      font-size: 12.5px;
+      font-size: 12px;
+      margin-top: 16px;
     }
   }
 </style>
