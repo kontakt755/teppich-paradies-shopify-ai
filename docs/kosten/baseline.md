@@ -22,3 +22,4 @@ Letzter Aufruf: 2026-09-11T20:15:05.793Z (GEMINI_FREE/gemini-3.5-flash-lite)
 - Modell-Breakdown zeigt Router-Einsatz über Gemini (Voranalyse), Codex (Review), Subscription-Modelle
 - Cache-Metriken: 0 gelesen, 0 geschrieben → noch nicht aktiv
 - Baseline gilt als Referenzmessung; genaue Token pro Aufgabe folgen in Phase 1
+- **2026-09-18**: Router repariert, stale Review-Lauf entfernt, Voranalyse wieder aktiv
