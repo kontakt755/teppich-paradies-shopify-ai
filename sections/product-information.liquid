@@ -16,13 +16,55 @@
     id: 'product-details',
     closest.product: closest.product
   %}
+  {%- comment -%}
+    Pflichtangabe nach PAngV direkt unter dem Kaufbereich - siehe
+    snippets/tp-preisangabe.liquid. Hier und nicht in price.liquid, damit sie
+    einmal je Produktseite steht und nicht an jeder Karte im Raster.
+  {%- endcomment -%}
+  {% render 'tp-preisangabe' %}
 {% endcapture %}
 
 {% capture additional_blocks %}
   {% content_for 'blocks' %}
 {% endcapture %}
 
-{% if section.settings.enable_sticky_add_to_cart %}
+{%- comment -%}
+  Horizons klebende Kaufleiste nur dort, wo sie tatsaechlich kaufen kann.
+
+  Bei Rollenware und Wunschmass entsteht der Preis erst aus dem Mass, und
+  gekauft wird ueber den Konfigurator. Die Leiste hat dort kein Formular
+  (gemessen 2026-09-16: formulare = 0), ihr Knopf loest also nichts aus - er
+  war sichtbar, nicht deaktiviert und ohne Wirkung. Ein Klick darauf fuehrte
+  zu genau dem stummen Nichts, das am 2026-09-15 schon einmal im Konfigurator
+  behoben wurde. Gegenprobe im Wegwerf-Theme:
+
+    Wunschmass    Knopf aktiv, 0 Aufrufe an /cart/add, Warenkorb leer
+    Rollenware    Knopf aktiv, 0 Aufrufe an /cart/add, Warenkorb leer
+    Paketware     Knopf aktiv, 1 Aufruf,  Artikel im Warenkorb
+    Fixpreis      Knopf aktiv, 1 Aufruf,  Artikel im Warenkorb
+
+  Dazu kaeme eine zweite klebende Leiste uebereinander: der
+  Rollenware-Rechner bringt seine eigene mit (data-kaufleiste), die den
+  gerechneten Gesamtpreis zeigt statt des m2-Preises.
+
+  Dieselbe Erkennung wie in snippets/tp-product-structured-data.liquid -
+  Variante mit custom.rollenbreite oder Produkt mit preis_pro_001_qm. Titel
+  und Tags werden bewusst nicht befragt.
+{%- endcomment -%}
+{%- liquid
+  assign tp_sticky_konfigurator = false
+  for tp_sticky_variant in product.variants
+    assign tp_sticky_breite = tp_sticky_variant.metafields.custom.rollenbreite.value | times: 1
+    if tp_sticky_breite > 0
+      assign tp_sticky_konfigurator = true
+      break
+    endif
+  endfor
+  if product.metafields.custom.preis_pro_001_qm.value == true
+    assign tp_sticky_konfigurator = true
+  endif
+-%}
+{% if section.settings.enable_sticky_add_to_cart and tp_sticky_konfigurator == false %}
   {% liquid
     assign current_variant = product.selected_or_first_available_variant
     # Get the initial quantity based on quantity rules

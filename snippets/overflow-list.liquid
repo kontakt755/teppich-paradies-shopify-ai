@@ -29,7 +29,21 @@
   <template shadowrootmode="open">
     {{ 'overflow-list.css' | asset_url | stylesheet_tag }}
 
-    <ul part="list">
+    {%- comment -%}
+      role="presentation" am ul: ein ul darf als direkte Kinder nur li
+      enthalten, und die beiden slot-Elemente sind keins. Lighthouse meldete
+      das am 2026-09-16 auf der Produktseite als "Lists do not contain only
+      <li> elements" (Gewicht 7, live gegengeprueft).
+
+      Die Rolle am ul wegzunehmen ist hier die ehrliche Loesung und keine
+      Umgehung: die eingeschobenen li tragen in blocks/_header-menu.liquid
+      ohnehin schon role="presentation", die Liste war also nie als Liste
+      ausgezeichnet. Ein ul mit Listenrolle ueber praesentationalen Kindern
+      war der Widerspruch. Die Navigation bleibt ueber das umgebende nav mit
+      aria-label auffindbar. Das Slotten ist unberuehrt, overflow-list.js
+      fragt weiterhin [part="list"] ab.
+    {%- endcomment -%}
+    <ul part="list" role="presentation">
       <slot></slot>
       <slot
         name="more"

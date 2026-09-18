@@ -19,9 +19,14 @@
 
 {%- liquid
   assign tp_bb_id = block.id | replace: '_', '' | downcase
-  assign tp_bb_rating = block.settings.rating | strip
-  assign tp_bb_count = block.settings.review_count | strip
-  assign tp_bb_link = block.settings.review_link
+  # Eine Quelle: steht am Block selbst nichts, gilt die Theme-Einstellung
+  # (Theme-Einstellungen > TP Google-Bewertung). Bis 2026-09-16 wurde der Wert
+  # in acht Produktvorlagen einzeln gepflegt und war auseinandergelaufen -
+  # sieben nannten 4,9, product.einfassung 4.8. Das Feld am Block bleibt als
+  # Ausnahme moeglich, der Normalfall ist leer.
+  assign tp_bb_rating = block.settings.rating | strip | default: settings.tp_google_wert
+  assign tp_bb_count = block.settings.review_count | strip | default: settings.tp_google_anzahl
+  assign tp_bb_link = block.settings.review_link | default: settings.tp_google_link
 -%}
 
 {%- if tp_bb_rating != blank or tp_bb_link != blank -%}
