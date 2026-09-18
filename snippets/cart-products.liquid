@@ -323,8 +323,9 @@
                     Berechnete Zeilen (Rollenrechner, Einfass-Konfigurator) haben
                     keine aenderbare Menge - sie ergibt sich aus den Massen in den
                     Properties. UI-Sperre: can_update_quantity deaktiviert den Waehler.
-                    Hinweis: Eine echte serverseitige Sperre gegen direkte Cart-API-Aufrufe
-                    braucht eine Shopify Cart/Checkout Validation Function.
+                    Hinweis: Ein direkter POST auf /cart/change.js umgeht diese UI-Sperre.
+                    Eine echte serverseitige Integritätskontrolle braucht eine Shopify
+                    Cart/Checkout Validation Function.
                   {%- endcomment -%}
                   {%- capture tp_gz_berechnet -%}{%- render 'tp-cart-gruppe', line_item: item, teil: 'berechnet' -%}{%- endcapture -%}
                   {%- if tp_gz_berechnet contains 'ja' -%}
