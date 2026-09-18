@@ -6,7 +6,7 @@ Startdatum: 2026-09-18 · Mac: kontakt755@teppich (main) · Phase: Leer-Session 
 
 | Datum | Mac | Klasse | Modell | Aufgabe (kurz) | Requests | Input-Tokens | Output-Tokens | Cache-Read | Cache-Write | Dauer | Nutzung Woche % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 2026-09-18 | kontakt755@teppich | Leer-Session / Startkontext | Gemini (47), GPT-5.6-sol (20), Sonnet (9), andere (1) | Phase-0-Setup | 77 | — | — | 0 | 0 | — | 0% |
+| 2026-09-18 | kontakt755@teppich | Leer-Session / Startkontext | Gemini (47), GPT-5.6-sol (20), Sonnet (9), andere (1) | Phase-0-Setup | 77 | 71.315* | — | 0 | 0 | — | 0% |
 
 ## Ledger-Quelle
 
