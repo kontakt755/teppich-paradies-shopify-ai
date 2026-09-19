@@ -131,7 +131,8 @@ MASS – NICHT ZUSCHNEIDEN"**. Die Bestellung wird nicht blockiert.
 |---|---|---|
 | Meterware / Raummaß | Breite × Länge, aufgerundet auf ganze m² bzw. 0,01 m² | `Rollenbreite` oder `Ihre Breite`, `Gewünschte Länge` |
 | Teppich nach Maß | umschließendes Rechteck in 0,01 m² | `Maße` |
-| Kettelservice | Umfang in 0,01 m (Rechteck exakt, rund über 355/113, oval nur Untergrenze) | `Maße` der **Hauptzeile** derselben `_Gruppe` |
+| Teppich Wunschmaß (Teppich-Vorlage) | **echte** Fläche in 0,01 m² – Rechteck/Quadrat exakt, rund und oval über π/4 (355/452); Formzuschlag darf die Menge erhöhen | `Breite`+`Länge`, `Durchmesser` oder `Seitenlänge`, dazu `Form` |
+| Kettelservice | Umfang in 0,01 m (Rechteck exakt, rund über 355/113, oval nach Ramanujan mit ganzzahliger Wurzel, 3 cm Spiel) | `Maße` der **Hauptzeile** derselben `_Gruppe` |
 | Fußleiste | Länge in m | `Länge` |
 | Haftunterlage, Stückware, Muster | keine Prüfung – die Menge *ist* die Bestellung | – |
 
@@ -146,8 +147,9 @@ Drei Regeln, die nicht aufgeweicht werden dürfen:
 3. **Gemeldet wird nur „zu wenig".** Eine höhere Menge ist der Mindestpreis und
    in Ordnung.
 
-Nicht lesbare Maße und ein Kettelservice ohne seinen Teppich lösen ebenfalls
-den Alarm aus – lieber einmal zu viel nachsehen.
+Nicht lesbare Maße, ein Kettelservice ohne seinen Teppich und ein Produkt mit
+`preis_pro_001_qm` **ganz ohne Maßangabe** lösen ebenfalls den Alarm aus –
+wer alle Properties entfernt, entkommt der Prüfung so nicht.
 
 **Grenzen:** Das hilft nur, solange jemand die Mail liest, bevor Ware bestellt
 oder zugeschnitten wird. Wer Menge *und* Maße zusammen fälscht, bestellt einen
@@ -155,7 +157,8 @@ kleineren Teppich zum richtigen Preis – kein Schaden. Geht die Bestellung
 irgendwann automatisch an den Lieferanten, braucht es die Validation Function.
 
 Geprüft: `qa/tests/bestellmail-masspruefung.test.mjs` rendert die Vorlage mit
-LiquidJS gegen 6 ehrliche und 9 manipulierte bzw. defekte Bestellungen.
+LiquidJS gegen 12 ehrliche und 16 manipulierte bzw. defekte Bestellungen
+(beide Rechner, alle vier Formen).
 LiquidJS ist nicht Shopifys Liquid (Beispiel: int/int rundet nur Shopify von
 selbst ab, deshalb steht überall `floor`) – nach dem Einsetzen im Admin immer
 die Testbenachrichtigung senden.

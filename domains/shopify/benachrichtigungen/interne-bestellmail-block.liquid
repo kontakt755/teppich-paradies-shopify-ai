@@ -122,6 +122,9 @@
         assign tp_mp_gruppe = ''
         assign tp_mp_leiste = ''
         assign tp_mp_zu = ''
+        assign tp_mp_form = ''
+        assign tp_mp_wm_breite = ''
+        assign tp_mp_wm_einzel = ''
         for p in line.properties
           case p.first
             when 'Maße'
@@ -140,6 +143,14 @@
               assign tp_mp_gruppe = p.last
             when 'Länge'
               assign tp_mp_leiste = p.last
+            when 'Form'
+              assign tp_mp_form = p.last
+            when 'Breite'
+              assign tp_mp_wm_breite = p.last
+            when 'Durchmesser'
+              assign tp_mp_wm_einzel = p.last
+            when 'Seitenlänge'
+              assign tp_mp_wm_einzel = p.last
             when 'Zu Teppich'
               assign tp_mp_zu = p.last
             when 'Zu Teppichboden'
@@ -194,6 +205,36 @@
               assign tp_mp_status = 'abweichung'
             endif
           endif
+        elsif tp_mp_wm_einzel != '' or tp_mp_wm_breite != ''
+          # Wunschmass-Rechner der Teppich-Vorlage (blocks/tp-teppich-wunschmass):
+          # Properties Breite+Laenge, Durchmesser oder Seitenlaenge, Menge immer
+          # in 0,01 m2. Abgerechnet wird dort die ECHTE Flaeche (Kreis, Ellipse),
+          # nicht das umschliessende Rechteck. Ein Formzuschlag kann die Menge
+          # erhoehen - geprueft wird deshalb die Untergrenze aus der Flaeche.
+          if tp_mp_wm_einzel != ''
+            assign tp_mp_w = tp_mp_wm_einzel | remove: 'cm' | remove: '.' | strip | plus: 0 | floor
+            assign tp_mp_l = tp_mp_w
+          else
+            assign tp_mp_w = tp_mp_wm_breite | remove: 'cm' | remove: '.' | strip | plus: 0 | floor
+            assign tp_mp_l = tp_mp_leiste | remove: 'cm' | remove: '.' | strip | plus: 0 | floor
+          endif
+          if tp_mp_w <= 0 or tp_mp_l <= 0
+            assign tp_mp_status = 'unlesbar'
+          else
+            assign tp_mp_cm2 = tp_mp_w | times: tp_mp_l
+            if tp_mp_form == 'Rund' or tp_mp_form == 'Oval'
+              # Pi/4 x Breite x Laenge; 355/452 = Pi/4 auf 7 Stellen. Abgerundet
+              # und 1 Einheit Spiel, weil der Rechner mit echtem Pi aufrundet.
+              assign tp_mp_soll = tp_mp_cm2 | times: 355 | divided_by: 45200 | floor | minus: 1
+            else
+              assign tp_mp_soll = tp_mp_cm2 | plus: 99 | divided_by: 100 | floor
+            endif
+            assign tp_mp_einheit = '× 0,01 m²'
+            assign tp_mp_status = 'ok'
+            if line.quantity < tp_mp_soll
+              assign tp_mp_status = 'abweichung'
+            endif
+          endif
         elsif tp_mp_kante != ''
           # Kettelservice: Kante in 0,01 m = cm. Das Mass steht an der
           # Hauptzeile derselben _Gruppe - die eigene Angabe der Service-Zeile
@@ -230,13 +271,22 @@
                   # Umfang = Pi x Durchmesser; 355/113 trifft Pi auf 7 Stellen.
                   assign tp_mp_soll = tp_mp_w | times: 355 | divided_by: 113 | floor
                 elsif tp_mp_h_form == 'Oval'
-                  # Ellipse: ohne Wurzel nicht exakt rechenbar. Untergrenze ist
-                  # Pi x kleinere Achse - wer darunter liegt, hat sicher gekuerzt.
-                  assign tp_mp_kurz = tp_mp_w
-                  if tp_mp_l < tp_mp_w
-                    assign tp_mp_kurz = tp_mp_l
-                  endif
-                  assign tp_mp_soll = tp_mp_kurz | times: 355 | divided_by: 113 | floor
+                  # Ellipse nach Ramanujan wie assets/tp-masstepich-rechnung.js:
+                  # U = Pi/2 x (3(w+l) - Wurzel((3w+l)(w+3l))), alles in cm.
+                  # Liquid kennt keine Wurzel - ganzzahlig nach Heron, Start
+                  # 2(w+l) liegt sicher darueber, 12 Schritte reichen bis 10 m.
+                  assign tp_mp_n = tp_mp_w | times: 3 | plus: tp_mp_l
+                  assign tp_mp_n2 = tp_mp_l | times: 3 | plus: tp_mp_w
+                  assign tp_mp_n = tp_mp_n | times: tp_mp_n2
+                  assign tp_mp_x = tp_mp_w | plus: tp_mp_l | times: 2
+                  for tp_mp_i in (1..12)
+                    assign tp_mp_q = tp_mp_n | divided_by: tp_mp_x | floor
+                    assign tp_mp_x = tp_mp_x | plus: tp_mp_q | divided_by: 2 | floor
+                  endfor
+                  # Die abgerundete Wurzel macht den Umfang um bis zu 2 cm zu
+                  # gross; zusammen mit der Rundung des Rechners 3 cm Spiel
+                  # (unten kommt noch 1 cm dazu). Das sind unter 0,5 %.
+                  assign tp_mp_soll = tp_mp_w | plus: tp_mp_l | times: 3 | minus: tp_mp_x | times: 355 | divided_by: 226 | floor | minus: 2
                 else
                   assign tp_mp_soll = tp_mp_w | plus: tp_mp_l | times: 2
                 endif
@@ -263,6 +313,12 @@
           endif
         endif
 
+        # Auffangregel: Ein Produkt, dessen Menge 0,01 m2 zaehlt, MUSS ein Mass
+        # tragen. Wer alle Properties entfernt, entkommt der Pruefung so nicht.
+        if tp_mp_status == '' and tp_mp_hundertstel
+          assign tp_mp_status = 'unlesbar'
+        endif
+
         if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise'
           assign tp_mp_alarm = true
         endif
@@ -284,7 +340,7 @@
           {% case tp_mp_status %}
             {% when 'ok' %}<span style="color:#1d6b35;">passt</span><br><span style="color:#6b6b6b;font-size:12px;">Soll mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
             {% when 'abweichung' %}<strong style="color:#a62020;">MENGE ZU KLEIN</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Maß gehören mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
-            {% when 'unlesbar' %}<strong style="color:#a62020;">Maß nicht lesbar</strong><br><span style="font-size:12px;">von Hand nachrechnen</span>
+            {% when 'unlesbar' %}<strong style="color:#a62020;">Maß fehlt oder nicht lesbar</strong><br><span style="font-size:12px;">von Hand nachrechnen</span>
             {% when 'waise' %}<strong style="color:#a62020;">Service ohne Teppich</strong><br><span style="font-size:12px;">zugehörige Zeile fehlt</span>
             {% else %}–
           {% endcase %}
