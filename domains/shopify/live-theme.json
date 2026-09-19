@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-18T21:35:05Z",
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-19T08:33:08Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-18T21:35:05Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-19T08:33:08Z",
     "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
@@ -199,6 +199,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-18",
       "note": "Per workflow:live abgeloest durch 204438208846 (Commit f802cb7: Mengensperre-Klassifikation zentral in tp-cart-gruppe, Zuschnitt-Sperre aus #363 zurueckgeholt, PRs #372-#375; bringt zugleich #371 live). Rollentausch am 2026-09-18 um 21:35:05Z per Admin API gegengeprueft, Warenkorb-Szenarien auf der Storefront nachgestellt. Bleibt als unveroeffentlichtes Preview-Theme bestehen."
+    },
+    {
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
+      "retiredNoticedAt": "2026-09-19",
+      "note": "Per workflow:live abgeloest durch 204436144462 (Commit 71b7f0d, PR #377: Rollenrechner-main-Seite aus Merge #371 zurueck, genau eine Kaufleiste - die des Themes, auch auf Rechner-Seiten). Rollentausch am 2026-09-19 um 08:33:08Z per Admin API gegengeprueft, Kaufweg am Handy auf der Storefront nachgestellt. Bleibt als unveroeffentlichtes Preview-Theme bestehen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
