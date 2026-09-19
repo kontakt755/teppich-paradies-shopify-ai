@@ -27,6 +27,8 @@ const mass = (q, m='200 × 300 cm', form='Rechteck', extra={}) => line('Wovena T
 const kettel = (q, g='K1') => line('Kettelservice', q, { 'Zu Teppich':'Wovena', 'Kante umlaufend':'10,00 m', _Gruppe:g });
 const leiste = q => line('Fußleiste', q, { 'Zu Teppichboden':'Piumera', 'Höhe':'6 cm', 'Länge':'19 m' });
 const haft = q => line('Haftunterlage', q, { 'Zu Teppichboden':'Piumera', 'Ausführung':'120 cm', Bahnen:'2' });
+// Zweiter Rechner (blocks/tp-teppich-wunschmass.liquid): echte Flaeche, immer 0,01 m2.
+const wm = (q, form, props) => line('Teppich Wunschmaß', q, { Form: form, 'Fläche (berechnet)': '1,00 m²', ...props }, true);
 const stueck = q => line('Sockelleiste', q, {});
 const muster = () => line('Kostenloses Muster', 1, { Produkt:'Piumera', Farbe:'Sand', _Quellprodukt:'piumera' });
 const faelle = [
@@ -43,6 +45,19 @@ const faelle = [
  ['MANIPULIERT: Kettel 1000->100', [mass(600), kettel(100)], true, {klein:1}],
  ['MANIPULIERT: Kettel-Property mitgefaelscht', [mass(600), line('Kettelservice',100,{ 'Zu Teppich':'W','Kante umlaufend':'1,00 m',_Gruppe:'K1'})], true, {klein:1}],
  ['MANIPULIERT: Fussleiste 19->2', [meter(12), leiste(2)], true, {klein:1}],
+ ['ehrlich: Wunschmass Rechteck 200x300', [wm(600,'Rechteck',{Breite:'200 cm','Länge':'300 cm'})], false, {passt:1}],
+ ['ehrlich: Wunschmass Quadrat 150 mit Formzuschlag', [wm(240,'Quadrat',{'Seitenlänge':'150 cm'})], false, {passt:1}],
+ ['ehrlich: Wunschmass Rund 200 (315 Einheiten)', [wm(315,'Rund',{Durchmesser:'200 cm'})], false, {passt:1}],
+ ['ehrlich: Wunschmass Oval 200x300 (472 Einheiten)', [wm(472,'Oval',{Breite:'200 cm','Länge':'300 cm'})], false, {passt:1}],
+ ['MANIPULIERT: Wunschmass Rechteck 600->80', [wm(80,'Rechteck',{Breite:'200 cm','Länge':'300 cm'})], true, {klein:1}],
+ ['MANIPULIERT: Wunschmass Quadrat 225->50', [wm(50,'Quadrat',{'Seitenlänge':'150 cm'})], true, {klein:1}],
+ ['MANIPULIERT: Wunschmass Rund 315->300', [wm(300,'Rund',{Durchmesser:'200 cm'})], true, {klein:1}],
+ ['MANIPULIERT: Wunschmass Oval 472->400', [wm(400,'Oval',{Breite:'200 cm','Länge':'300 cm'})], true, {klein:1}],
+ ['MANIPULIERT: Oval-Kettel 793->700 (frueher unter der Grenze durch)', [mass(600,'200 × 300 cm','Oval'), kettel(700)], true, {klein:1}],
+ ['MANIPULIERT: Oval-Kettel knapp 793->785', [mass(600,'200 × 300 cm','Oval'), kettel(785)], true, {klein:1}],
+ ['ehrlich: Oval-Kettel gestreckt 100x500 (1050)', [mass(500,'100 × 500 cm','Oval'), kettel(1050)], false, {passt:2}],
+ ['ehrlich: Oval-Kettel fast rund 300x310 (958)', [mass(930,'300 × 310 cm','Oval'), kettel(958)], false, {passt:2}],
+ ['MANIPULIERT: alle Properties entfernt bei 0,01-Produkt', [line('Teppich nach Maß',50,{},true)], true, {unlesbar:1}],
  ['Waise: Kettel ohne Teppich', [kettel(1000,'K9'), stueck(1)], true, {waise:1}],
  ['Unlesbar: Masse Muell', [mass(600,'<b>x</b>')], true, {unlesbar:1}],
 ];
@@ -57,7 +72,7 @@ for (const [name, items, alarm, erw] of faelle) {
       passt: (html.match(/>passt</g) || []).length,
       klein: (html.match(/MENGE ZU KLEIN/g) || []).length,
       waise: (html.match(/Service ohne Teppich/g) || []).length,
-      unlesbar: (html.match(/Maß nicht lesbar/g) || []).length,
+      unlesbar: (html.match(/Maß fehlt oder nicht lesbar/g) || []).length,
     };
     assert.equal(html.includes('NICHT ZUSCHNEIDEN'), alarm, 'Warnbanner');
     for (const k of Object.keys(erw)) assert.equal(ist[k], erw[k], k);
