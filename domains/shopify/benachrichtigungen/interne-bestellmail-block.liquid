@@ -170,6 +170,7 @@
         assign tp_mp_w = 0
         assign tp_mp_l = 0
         assign tp_mp_form_rund = false
+        assign tp_mp_auf = 99
 
         if tp_mp_masse != '' or tp_mp_laenge != ''
           # Hauptzeile: Flaeche aus den Massen.
@@ -184,6 +185,10 @@
               assign tp_mp_l = tp_mp_w
             endif
           else
+            # Rollenrechner im cm-genauen Modus rundet kaufmaennisch
+            # (Math.round(area * 100)), der Einfass-Konfigurator rundet auf.
+            # 365 x 302 cm = 1102 Einheiten, nicht 1103.
+            assign tp_mp_auf = 50
             assign tp_mp_w = tp_mp_breite | remove: 'cm' | strip | plus: 0 | floor
             assign tp_mp_l = tp_mp_laenge | remove: 'cm' | strip | plus: 0 | floor
           endif
@@ -192,8 +197,8 @@
           else
             assign tp_mp_cm2 = tp_mp_w | times: tp_mp_l
             if tp_mp_hundertstel
-              # Menge zaehlt 0,01 m2 = 100 cm2, aufgerundet.
-              assign tp_mp_soll = tp_mp_cm2 | plus: 99 | divided_by: 100 | floor
+              # Menge zaehlt 0,01 m2 = 100 cm2; Rundung wie der jeweilige Rechner.
+              assign tp_mp_soll = tp_mp_cm2 | plus: tp_mp_auf | divided_by: 100 | floor
               assign tp_mp_einheit = '× 0,01 m²'
             else
               # Menge zaehlt ganze m2 = 10000 cm2, aufgerundet.

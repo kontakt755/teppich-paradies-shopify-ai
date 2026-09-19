@@ -129,8 +129,8 @@ MASS – NICHT ZUSCHNEIDEN"**. Die Bestellung wird nicht blockiert.
 
 | Zeile | Soll-Menge | Quelle des Maßes |
 |---|---|---|
-| Meterware / Raummaß | Breite × Länge, aufgerundet auf ganze m² bzw. 0,01 m² | `Rollenbreite` oder `Ihre Breite`, `Gewünschte Länge` |
-| Teppich nach Maß | umschließendes Rechteck in 0,01 m² | `Maße` |
+| Meterware / Raummaß | Breite × Länge: ganze m² aufgerundet, 0,01 m² **kaufmännisch gerundet** (so rechnet der Rollenrechner: 365 × 302 cm = 1102) | `Rollenbreite` oder `Ihre Breite`, `Gewünschte Länge` |
+| Teppich nach Maß | umschließendes Rechteck in 0,01 m², **aufgerundet** (201 × 301 cm = 606) | `Maße` |
 | Teppich Wunschmaß (Teppich-Vorlage) | **echte** Fläche in 0,01 m² – Rechteck/Quadrat exakt, rund und oval über π/4 (355/452); Formzuschlag darf die Menge erhöhen | `Breite`+`Länge`, `Durchmesser` oder `Seitenlänge`, dazu `Form` |
 | Kettelservice | Umfang in 0,01 m (Rechteck exakt, rund über 355/113, oval nach Ramanujan mit ganzzahliger Wurzel, 3 cm Spiel) | `Maße` der **Hauptzeile** derselben `_Gruppe` |
 | Fußleiste | Länge in m | `Länge` |
