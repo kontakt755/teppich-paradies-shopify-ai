@@ -24,6 +24,20 @@
   Storefront-Zugriff NONE und sind dadurch ueber die Storefront-API gar nicht
   abrufbar.
 
+  MASSPRUEFUNG (#357, Inhaberentscheidung 2026-09-19):
+  Bei Zuschnittware, Teppich nach Mass und Kettelservice steckt das Mass in der
+  Menge. Die Menge laesst sich ueber /cart/change.js am Rechner vorbei
+  aendern - die Sperre im Warenkorb wirkt nur in der Oberflaeche. Diese Mail
+  rechnet deshalb je Zeile nach, welche Menge zu den MASSEN gehoert, und
+  meldet jede Bestellung, deren Menge darunter liegt, BEVOR zugeschnitten wird.
+  Gerechnet wird aus den Massangaben (Masse, Breite, Laenge) und nie aus der
+  Property "Flaeche": Zugeschnitten wird nach den Massen, und die
+  Flaechenangabe liesse sich ueber dieselbe API mitfaelschen. Ob die Menge in
+  ganzen m2 oder in 0,01 m2 zaehlt, entscheidet das Produkt-Metafeld
+  custom.preis_pro_001_qm - nicht der Property-Name. Gemeldet wird nur
+  "zu wenig bezahlt"; eine hoehere Menge (Mindestpreis) ist in Ordnung.
+  Das blockiert keine Bestellung. Es ist ein Auffangnetz vor dem Zuschnitt.
+
   Die Variante gewinnt vor dem Produkt: eine Farbe kann eine eigene
   Artikelnummer beim Grosshaendler haben. Fehlt beides, steht bewusst
   "Großhändler-ID fehlt" da - nicht ein leeres Feld, das man ueberliest.
@@ -49,6 +63,8 @@
     {% endif %}
   </p>
 
+  {%- assign tp_mp_alarm = false -%}
+  {%- capture tp_mp_tabelle -%}
   <p style="margin:0 0 4px;font-weight:bold;">Artikel mit Großhändler-ID</p>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
     <tr style="background:#f2f1ef;">
@@ -56,6 +72,7 @@
       <th align="left" style="padding:6px;border:1px solid #d8d6d2;">Artikel / Variante</th>
       <th align="left" style="padding:6px;border:1px solid #d8d6d2;">SKU</th>
       <th align="left" style="padding:6px;border:1px solid #d8d6d2;">Großhändler-ID</th>
+      <th align="left" style="padding:6px;border:1px solid #d8d6d2;">Maßprüfung</th>
     </tr>
     {% for line in line_items %}
       {%- comment -%}
@@ -90,6 +107,166 @@
       {%- if gh_id == blank -%}{%- assign gh_id = line.variant.metafields.lieferant.lieferant_b_artikelnummer -%}{%- endif -%}
       {%- if gh_id == blank -%}{%- assign gh_id = line.product.metafields.grosshandel.sku -%}{%- endif -%}
       {%- if gh_id == blank and muster_id != '' -%}{%- assign gh_id = muster_id -%}{%- endif -%}
+      {%- comment -%}
+        Masspruefung. Alles in ganzen Zahlen (cm, cm2), damit keine
+        Gleitkomma-Rundung eine Fehlmeldung erzeugt. Nach jeder Division steht
+        ausdruecklich floor: Shopify rundet int/int von selbst ab, andere
+        Liquid-Engines (LiquidJS im Test) nicht. tp_mp_status:
+        '' = keine berechnete Zeile, 'ok', 'abweichung', 'unlesbar', 'waise'.
+      {%- endcomment -%}
+      {%- liquid
+        assign tp_mp_masse = ''
+        assign tp_mp_breite = ''
+        assign tp_mp_laenge = ''
+        assign tp_mp_kante = ''
+        assign tp_mp_gruppe = ''
+        assign tp_mp_leiste = ''
+        assign tp_mp_zu = ''
+        for p in line.properties
+          case p.first
+            when 'Maße'
+              assign tp_mp_masse = p.last
+            when 'Ihre Breite'
+              assign tp_mp_breite = p.last
+            when 'Rollenbreite'
+              if tp_mp_breite == ''
+                assign tp_mp_breite = p.last
+              endif
+            when 'Gewünschte Länge'
+              assign tp_mp_laenge = p.last
+            when 'Kante umlaufend'
+              assign tp_mp_kante = p.last
+            when '_Gruppe'
+              assign tp_mp_gruppe = p.last
+            when 'Länge'
+              assign tp_mp_leiste = p.last
+            when 'Zu Teppich'
+              assign tp_mp_zu = p.last
+            when 'Zu Teppichboden'
+              assign tp_mp_zu = p.last
+          endcase
+        endfor
+
+        assign tp_mp_hundertstel = false
+        assign tp_mp_feld = line.product.metafields.custom.preis_pro_001_qm
+        if tp_mp_feld == true or tp_mp_feld == 'true' or tp_mp_feld.value == true
+          assign tp_mp_hundertstel = true
+        endif
+
+        assign tp_mp_status = ''
+        assign tp_mp_soll = 0
+        assign tp_mp_einheit = ''
+        assign tp_mp_w = 0
+        assign tp_mp_l = 0
+        assign tp_mp_form_rund = false
+
+        if tp_mp_masse != '' or tp_mp_laenge != ''
+          # Hauptzeile: Flaeche aus den Massen.
+          if tp_mp_masse != ''
+            assign tp_mp_roh = tp_mp_masse | remove: 'cm' | remove: 'Ø' | strip
+            if tp_mp_roh contains '×'
+              assign tp_mp_teile = tp_mp_roh | split: '×'
+              assign tp_mp_w = tp_mp_teile[0] | strip | plus: 0 | floor
+              assign tp_mp_l = tp_mp_teile[1] | strip | plus: 0 | floor
+            else
+              assign tp_mp_w = tp_mp_roh | plus: 0 | floor
+              assign tp_mp_l = tp_mp_w
+            endif
+          else
+            assign tp_mp_w = tp_mp_breite | remove: 'cm' | strip | plus: 0 | floor
+            assign tp_mp_l = tp_mp_laenge | remove: 'cm' | strip | plus: 0 | floor
+          endif
+          if tp_mp_w <= 0 or tp_mp_l <= 0
+            assign tp_mp_status = 'unlesbar'
+          else
+            assign tp_mp_cm2 = tp_mp_w | times: tp_mp_l
+            if tp_mp_hundertstel
+              # Menge zaehlt 0,01 m2 = 100 cm2, aufgerundet.
+              assign tp_mp_soll = tp_mp_cm2 | plus: 99 | divided_by: 100 | floor
+              assign tp_mp_einheit = '× 0,01 m²'
+            else
+              # Menge zaehlt ganze m2 = 10000 cm2, aufgerundet.
+              assign tp_mp_soll = tp_mp_cm2 | plus: 9999 | divided_by: 10000 | floor
+              assign tp_mp_einheit = 'm²'
+            endif
+            assign tp_mp_status = 'ok'
+            if line.quantity < tp_mp_soll
+              assign tp_mp_status = 'abweichung'
+            endif
+          endif
+        elsif tp_mp_kante != ''
+          # Kettelservice: Kante in 0,01 m = cm. Das Mass steht an der
+          # Hauptzeile derselben _Gruppe - die eigene Angabe der Service-Zeile
+          # waere genauso faelschbar wie ihre Menge.
+          assign tp_mp_status = 'waise'
+          for tp_mp_h in line_items
+            assign tp_mp_h_gruppe = ''
+            assign tp_mp_h_masse = ''
+            assign tp_mp_h_form = ''
+            for hp in tp_mp_h.properties
+              case hp.first
+                when '_Gruppe'
+                  assign tp_mp_h_gruppe = hp.last
+                when 'Maße'
+                  assign tp_mp_h_masse = hp.last
+                when 'Form'
+                  assign tp_mp_h_form = hp.last
+              endcase
+            endfor
+            if tp_mp_gruppe != '' and tp_mp_h_gruppe == tp_mp_gruppe and tp_mp_h_masse != ''
+              assign tp_mp_roh = tp_mp_h_masse | remove: 'cm' | remove: 'Ø' | strip
+              if tp_mp_roh contains '×'
+                assign tp_mp_teile = tp_mp_roh | split: '×'
+                assign tp_mp_w = tp_mp_teile[0] | strip | plus: 0 | floor
+                assign tp_mp_l = tp_mp_teile[1] | strip | plus: 0 | floor
+              else
+                assign tp_mp_w = tp_mp_roh | plus: 0 | floor
+                assign tp_mp_l = tp_mp_w
+              endif
+              if tp_mp_w <= 0 or tp_mp_l <= 0
+                assign tp_mp_status = 'unlesbar'
+              else
+                if tp_mp_h_form == 'Rund'
+                  # Umfang = Pi x Durchmesser; 355/113 trifft Pi auf 7 Stellen.
+                  assign tp_mp_soll = tp_mp_w | times: 355 | divided_by: 113 | floor
+                elsif tp_mp_h_form == 'Oval'
+                  # Ellipse: ohne Wurzel nicht exakt rechenbar. Untergrenze ist
+                  # Pi x kleinere Achse - wer darunter liegt, hat sicher gekuerzt.
+                  assign tp_mp_kurz = tp_mp_w
+                  if tp_mp_l < tp_mp_w
+                    assign tp_mp_kurz = tp_mp_l
+                  endif
+                  assign tp_mp_soll = tp_mp_kurz | times: 355 | divided_by: 113 | floor
+                else
+                  assign tp_mp_soll = tp_mp_w | plus: tp_mp_l | times: 2
+                endif
+                assign tp_mp_einheit = '× 0,01 m'
+                assign tp_mp_status = 'ok'
+                # 1 cm Spiel fuer die Rundung des Rechners.
+                assign tp_mp_grenze = tp_mp_soll | minus: 1
+                if line.quantity < tp_mp_grenze
+                  assign tp_mp_status = 'abweichung'
+                endif
+              endif
+            endif
+          endfor
+        elsif tp_mp_zu != '' and tp_mp_leiste != ''
+          # Fussleiste: gefertigt wird die Laenge aus der Property.
+          assign tp_mp_soll = tp_mp_leiste | remove: 'm' | strip | plus: 0 | ceil
+          assign tp_mp_einheit = 'm'
+          if tp_mp_soll <= 0
+            assign tp_mp_status = 'unlesbar'
+          elsif line.quantity < tp_mp_soll
+            assign tp_mp_status = 'abweichung'
+          else
+            assign tp_mp_status = 'ok'
+          endif
+        endif
+
+        if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise'
+          assign tp_mp_alarm = true
+        endif
+      -%}
       <tr>
         <td style="padding:6px;border:1px solid #d8d6d2;">{{ line.quantity }} ×</td>
         <td style="padding:6px;border:1px solid #d8d6d2;">
@@ -103,7 +280,24 @@
           {% elsif quelle != '' %}<strong style="color:#8a6a12;">Muster – keine eigene ID</strong><br><span style="color:#6b6b6b;font-size:12px;">ID am Quellprodukt nachsehen:</span><br>{{ quelle | escape }}
           {% else %}<strong style="color:#a62020;">Großhändler-ID fehlt</strong>{% endif %}
         </td>
+        <td style="padding:6px;border:1px solid #d8d6d2;{% if tp_mp_status == 'abweichung' or tp_mp_status == 'unlesbar' or tp_mp_status == 'waise' %}background:#fde8e8;{% endif %}">
+          {% case tp_mp_status %}
+            {% when 'ok' %}<span style="color:#1d6b35;">passt</span><br><span style="color:#6b6b6b;font-size:12px;">Soll mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'abweichung' %}<strong style="color:#a62020;">MENGE ZU KLEIN</strong><br><span style="font-size:12px;">bestellt {{ line.quantity }}, zum Maß gehören mind. {{ tp_mp_soll }} {{ tp_mp_einheit }}</span>
+            {% when 'unlesbar' %}<strong style="color:#a62020;">Maß nicht lesbar</strong><br><span style="font-size:12px;">von Hand nachrechnen</span>
+            {% when 'waise' %}<strong style="color:#a62020;">Service ohne Teppich</strong><br><span style="font-size:12px;">zugehörige Zeile fehlt</span>
+            {% else %}–
+          {% endcase %}
+        </td>
       </tr>
     {% endfor %}
   </table>
+  {%- endcapture -%}
+  {%- if tp_mp_alarm -%}
+    <div style="margin:0 0 16px;padding:12px;border:3px solid #a62020;background:#fde8e8;color:#a62020;font-size:15px;font-weight:bold;">
+      MENGE PASST NICHT ZUM MASS – NICHT ZUSCHNEIDEN.<br>
+      <span style="font-size:13px;font-weight:normal;color:#15171a;">Mindestens eine Zeile ist mit kleinerer Menge bezahlt, als ihre Maße verlangen (siehe Spalte „Maßprüfung"). Bestellung prüfen, bevor Ware bestellt oder zugeschnitten wird; im Zweifel stornieren und erstatten.</span>
+    </div>
+  {%- endif -%}
+  {{ tp_mp_tabelle }}
 </div>

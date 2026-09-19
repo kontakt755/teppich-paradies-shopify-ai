@@ -114,6 +114,56 @@ rutschte in den Muster-Zweig. Seither wird mit einem leeren String gearbeitet.
 Nicht geprüft ist der tatsächliche Versand: dafür braucht es die
 Testbenachrichtigung aus Schritt 4.
 
+## Maßprüfung: Menge gegen Maß (#357)
+
+Bei Zuschnittware, Teppich nach Maß und Kettelservice steckt das Maß **in der
+Menge** der Bestellzeile. Die Mengensperre im Warenkorb wirkt nur in der
+Oberfläche; ein direkter Aufruf von `/cart/change.js` senkt die Menge und damit
+den Preis (belegt am 2026-09-16: 724,00 € → 90,89 €). Inhaberentscheidung
+2026-09-19: keine Validation Function im Checkout, sondern diese Prüfung als
+Auffangnetz **vor dem Zuschnitt**.
+
+Die interne Mail rechnet je Zeile nach und zeigt es in der Spalte „Maßprüfung".
+Passt eine Zeile nicht, steht über der Tabelle rot **„MENGE PASST NICHT ZUM
+MASS – NICHT ZUSCHNEIDEN"**. Die Bestellung wird nicht blockiert.
+
+| Zeile | Soll-Menge | Quelle des Maßes |
+|---|---|---|
+| Meterware / Raummaß | Breite × Länge, aufgerundet auf ganze m² bzw. 0,01 m² | `Rollenbreite` oder `Ihre Breite`, `Gewünschte Länge` |
+| Teppich nach Maß | umschließendes Rechteck in 0,01 m² | `Maße` |
+| Kettelservice | Umfang in 0,01 m (Rechteck exakt, rund über 355/113, oval nur Untergrenze) | `Maße` der **Hauptzeile** derselben `_Gruppe` |
+| Fußleiste | Länge in m | `Länge` |
+| Haftunterlage, Stückware, Muster | keine Prüfung – die Menge *ist* die Bestellung | – |
+
+Drei Regeln, die nicht aufgeweicht werden dürfen:
+
+1. **Gerechnet wird aus den Maßen, nie aus der Property „Fläche".** Zugeschnitten
+   wird nach den Maßen, und die Flächenangabe ließe sich über dieselbe API
+   mitfälschen.
+2. **Ob die Menge ganze m² oder 0,01 m² zählt, entscheidet das Produkt-Metafeld
+   `custom.preis_pro_001_qm`** – nicht der Property-Name, den der Besteller
+   kontrolliert.
+3. **Gemeldet wird nur „zu wenig".** Eine höhere Menge ist der Mindestpreis und
+   in Ordnung.
+
+Nicht lesbare Maße und ein Kettelservice ohne seinen Teppich lösen ebenfalls
+den Alarm aus – lieber einmal zu viel nachsehen.
+
+**Grenzen:** Das hilft nur, solange jemand die Mail liest, bevor Ware bestellt
+oder zugeschnitten wird. Wer Menge *und* Maße zusammen fälscht, bestellt einen
+kleineren Teppich zum richtigen Preis – kein Schaden. Geht die Bestellung
+irgendwann automatisch an den Lieferanten, braucht es die Validation Function.
+
+Geprüft: `qa/tests/bestellmail-masspruefung.test.mjs` rendert die Vorlage mit
+LiquidJS gegen 6 ehrliche und 9 manipulierte bzw. defekte Bestellungen.
+LiquidJS ist nicht Shopifys Liquid (Beispiel: int/int rundet nur Shopify von
+selbst ab, deshalb steht überall `floor`) – nach dem Einsetzen im Admin immer
+die Testbenachrichtigung senden.
+
+**Beim Einsetzen:** Der Block ersetzt den bisherigen internen Block vollständig
+(von `<div style="margin-top:32px;…` bis zum zugehörigen `</div>` vor
+`</body>`). Nicht zusätzlich einfügen, sonst steht die Übersicht doppelt da.
+
 ## Der Feldname steht an drei Stellen und muss überall gleich sein
 
 Der Anzeigename der Definition heißt seit 2026-09-16 **„Großhändler-ID"**.
