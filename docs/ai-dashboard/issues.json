@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-19T11:23:30.984Z",
+  "generated_at": "2026-09-19T13:07:18.188Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 110,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-19T11:23:30.984Z",
+    "fetchedAt": "2026-09-19T13:07:18.188Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -139,20 +139,22 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/357",
       "labels": [
+        "status:in-arbeit",
         "type:technik",
         "priority:p1",
-        "area:produktseite",
-        "status:freigabe"
+        "area:produktseite"
       ],
-      "assignee": null,
-      "assignees": [],
-      "comments": 0,
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
       "nextStep": null,
       "fields": {
         "description": "Refs #188, #282 · Nachlauf zu #345\n\n## Worum es geht\n\nBei Teppich nach Maß, Kettelservice und Zuschnittware steckt das Maß **in der Menge** der Warenkorbzeile (0,01 m² bzw. 0,01 lfm). Die Menge ist im Shopify-Warenkorb grundsätzlich vom Kunden änderbar — über die Oberfläche oder direkt über `/cart/change.js`.\n\n**Reproduziert am 16.09.:** Ein fertiger Teppich für 724,00 € ließ sich per direktem Aufruf auf **90,89 €** herunterdrücken. Danach sofort geleert, kein Kauf.\n\n## Was schon getan ist\n\n#345 sperrt die Mengenfelder aller berechneten Zeilen in der Oberfläche (vorher galt das nur für Zuschnittware). Das hält Gelegenheitsklicks ab und schützt vor versehentlichem Verstellen.\n\n**Es ist aber keine Sicherheitsgrenze.** Wer die Entwicklerkonsole öffnet, kommt weiterhin durch. Clientseitig lässt sich das prinzipiell nicht schließen: Die Menge *ist* die Preisgrundlage, es gibt keinen zweiten, „echten\" Preis zum Abgleich.\n\n## Die Entscheidung\n\nDer saubere Weg ist eine **Shopify Cart/Checkout Validation Function**: Sie läuft auf Shopifys Servern, rechnet Menge gegen die Maßangaben in den Zeileneigenschaften nach und blockiert den Checkout bei Abweichung.\n\nWas das mitbringt:\n- eigene App-Ex…"
       },
       "created_at": "2026-09-16T10:37:25Z",
-      "updated_at": "2026-09-16T10:37:25Z",
+      "updated_at": "2026-09-19T13:07:04Z",
       "closed_at": null
     },
     {
