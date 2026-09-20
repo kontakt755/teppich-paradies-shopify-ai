@@ -37,7 +37,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-29 | Link "Lieber als Meterware von der Rolle" unverstaendlich -> Frage + klarer Link | P1 | erledigt, live 2026-09-20 | - | `blocks/tp-einfass-wechsel.liquid` | Fable | Scratch ok |
 | S-30 | Teppiche nach Mass: Streichpreis im ab-Preis darstellen, damit auch dort Aktionen moeglich sind | P2 | erledigt, live 2026-09-20 | S-15 | `snippets/tp-teppich-ab-preis.liquid` | Fable | - |
 | S-31 | Ahmet prueft: Merchant Center uebernimmt die Aktionspreise korrekt (Issue #415) | P2 | offen (Inhaber) | S-15 | Google Merchant Center | Ahmet | - |
-| S-32 | Konfigurator "Ihr Preis": bei aktiver Aktion den alten Preis durchgestrichen dazu zeigen (heute nur im ab-Preis) | P3 | offen | S-30 | `assets/tp-einfass-konfigurator.js` | Fable | - |
+| S-32 | Konfigurator "Ihr Preis": bei aktiver Aktion den alten Preis durchgestrichen dazu zeigen (heute nur im ab-Preis) | P3 | review | S-30 | `assets/tp-einfass-konfigurator.js` | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
