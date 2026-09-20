@@ -74,7 +74,23 @@
     2026-09-10 war es umgekehrt: "Vergleichen" war auf jeder Karte der breite
     Hauptknopf, "Muster" ein schmaler Anhang (Befund B-08).
   {%- endcomment -%}
-  <div class="tp-card-actions" {{ block.shopify_attributes }}>
+  {%- comment -%}
+    Teppiche nach Mass (Erkennung wie snippets/tp-teppich-ab-preis.liquid): der Weg
+    fuehrt ueber den Konfigurator, deshalb ist "Jetzt konfigurieren" hier die
+    Hauptaktion (Entscheidung des Inhabers 2026-09-20). Muster und Vergleich bleiben
+    als ruhige Textlinks erhalten. Alle anderen Warenarten: Muster bleibt Hauptknopf.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_ca_teppich = false
+    if tp_ca_product.metafields.custom.preis_pro_001_qm.value == true and tp_ca_product.metafields.service.einfassung.value != blank
+      assign tp_ca_teppich = true
+    endif
+  -%}
+  <div class="tp-card-actions{% if tp_ca_teppich %} tp-card-actions--teppich{% endif %}" {{ block.shopify_attributes }}>
+    {%- if tp_ca_teppich -%}
+      <p class="tp-card-actions__hinweis">Wunschmaß verfügbar</p>
+      <a class="tp-card-actions__konfig" href="{{ tp_ca_url }}">Jetzt konfigurieren</a>
+    {%- endif -%}
     {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
     {%- unless tp_ca_product.tags contains 'zubehoer' -%}
       {%- comment -%} Ziel des Muster-Links: siehe snippets/tp-musteroption {%- endcomment -%}
@@ -202,6 +218,47 @@
       font-size: 12.5px;
     }
   }
+
+  /* Teppich nach Mass: Hinweis, Hauptknopf, darunter zwei ruhige Textlinks. */
+  .tp-card-actions--teppich { flex-wrap: wrap; gap: 6px 14px; }
+  .tp-card-actions__hinweis { flex: 1 0 100%; margin: 0; font-size: 13px; line-height: 1.3; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+  .tp-card-actions__konfig {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #8c6d43;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    text-align: center;
+  }
+  .tp-card-actions__konfig:hover { background: #7a5e3a; }
+  .tp-card-actions__konfig:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
+  .tp-card-actions--teppich .tp-card-actions__sample,
+  .tp-card-actions--teppich .tp-card-actions__compare,
+  .tp-card-actions--teppich .tp-card-actions__compare:only-child {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .tp-card-actions--teppich .tp-card-actions__compare[aria-pressed='true'] { color: var(--color-foreground); font-weight: 700; background: none; }
 {% endstylesheet %}
 
 {% schema %}
