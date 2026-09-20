@@ -1,0 +1,1555 @@
+{
+  "generatedAt": "2026-09-19T23:38:08.986Z",
+  "scope": "PR-020 only; read-only local original-code execution",
+  "status": "PASS: controls and conditional defect reproduced; no fix implemented",
+  "fixture": {
+    "declaredLiveProduct": null,
+    "note": "Synthetic variant IDs and conditional cmExact data. Whole-square-metre reference rates 65.90/89 EUR reflect historical Piumera text. Exact-mode fixtures use 66/89 cents per 0.01 m²; this is not a claim that Piumera or another live roll product is configured that way.",
+    "widths": [
+      400,
+      500
+    ],
+    "maxRoomWidth": 495
+  },
+  "sourceIntegrity": [
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "currentSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "historicalLiveSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "currentSha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "historicalLiveSha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid",
+      "currentSha256": "1afb455dfc65754d779f3f124ba0129c9f94b36ac7d51b0778bab26f0e6c9153",
+      "historicalLiveSha256": null,
+      "matchesHistoricalLive": null
+    }
+  ],
+  "grid": {
+    "widthMin": 50,
+    "widthMax": 495,
+    "lengthMin": 100,
+    "lengthMax": 5000,
+    "pairs": 2185846,
+    "halfUnitBoundaries": 58359,
+    "exactMismatches": 3310,
+    "wholeMismatches": 0,
+    "maxDifferenceUnits": 1,
+    "firstExamples": [
+      {
+        "w": 50,
+        "len": 113,
+        "actual": 56,
+        "expected": 57,
+        "binaryScaledArea": 56.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 115,
+        "actual": 57,
+        "expected": 58,
+        "binaryScaledArea": 57.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 201,
+        "actual": 100,
+        "expected": 101,
+        "binaryScaledArea": 100.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 203,
+        "actual": 101,
+        "expected": 102,
+        "binaryScaledArea": 101.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 205,
+        "actual": 102,
+        "expected": 103,
+        "binaryScaledArea": 102.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 207,
+        "actual": 103,
+        "expected": 104,
+        "binaryScaledArea": 103.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 251,
+        "actual": 125,
+        "expected": 126,
+        "binaryScaledArea": 125.49999999999999
+      },
+      {
+        "w": 50,
+        "len": 253,
+        "actual": 126,
+        "expected": 127,
+        "binaryScaledArea": 126.49999999999999
+      }
+    ],
+    "meterWidthCases": 19604,
+    "meterMismatches": 0
+  },
+  "integrationCases": 35,
+  "limitations": [
+    "No current live cmExact product established; conditional code finding only.",
+    "No browser input normalization, service eligibility, variant transition, extras or layout verification.",
+    "Requests intercepted before network; line cents calculated from fixture unit price and actual payload quantity.",
+    "LiquidJS notification is local, not Shopify Liquid, and template deployment is unknown.",
+    "Independent integer oracle checks existing rounding policy, not a new business rule."
+  ],
+  "observations": [
+    {
+      "input": {
+        "width": 250,
+        "length": 201,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "534,00 €",
+        "areaFormula": "250 cm × 201 cm = 5,03 m²",
+        "priceFormula": "6,00 m² × 89,00 €/m² = 534,00 €",
+        "cta": "6 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 6,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche (aufgerundet)": "6,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 6,
+        "actualQty": 6,
+        "expectedLineCents": 53400,
+        "payloadLineCents": 53400,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 201,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "447,67 €",
+        "areaFormula": "250 cm × 201 cm = 5,03 m²",
+        "priceFormula": "5,03 m² × 89,00 €/m² = 447,67 €",
+        "cta": "5,03 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 503,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche": "5,03 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 503,
+        "actualQty": 503,
+        "expectedLineCents": 44767,
+        "payloadLineCents": 44767,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 333,
+        "length": 200,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "623,00 €",
+        "areaFormula": "333 cm × 200 cm = 6,66 m²",
+        "priceFormula": "7,00 m² × 89,00 €/m² = 623,00 €",
+        "cta": "7 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 527,20 € statt 623,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 7,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "333 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "7,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 7,
+        "actualQty": 7,
+        "expectedLineCents": 62300,
+        "payloadLineCents": 62300,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 333,
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "592,74 €",
+        "areaFormula": "333 cm × 200 cm = 6,66 m²",
+        "priceFormula": "6,66 m² × 89,00 €/m² = 592,74 €",
+        "cta": "6,66 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 528,00 € statt 592,74 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 666,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "333 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche": "6,66 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 666,
+        "actualQty": 666,
+        "expectedLineCents": 59274,
+        "payloadLineCents": 59274,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 365,
+        "length": 301,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "979,00 €",
+        "areaFormula": "365 cm × 301 cm = 10,99 m²",
+        "priceFormula": "11,00 m² × 89,00 €/m² = 979,00 €",
+        "cta": "11 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 856,70 € statt 979,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 11,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "365 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "301 cm",
+            "Fläche (aufgerundet)": "11,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 11,
+        "actualQty": 11,
+        "expectedLineCents": 97900,
+        "payloadLineCents": 97900,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 365,
+        "length": 301,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "978,11 €",
+        "areaFormula": "365 cm × 301 cm = 10,99 m²",
+        "priceFormula": "10,99 m² × 89,00 €/m² = 978,11 €",
+        "cta": "10,99 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 794,64 € statt 978,11 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 1099,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "365 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "301 cm",
+            "Fläche": "10,99 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 1099,
+        "actualQty": 1099,
+        "expectedLineCents": 97811,
+        "payloadLineCents": 97811,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 365,
+        "length": 302,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "1.068,00 €",
+        "areaFormula": "365 cm × 302 cm = 11,02 m²",
+        "priceFormula": "12,00 m² × 89,00 €/m² = 1.068,00 €",
+        "cta": "12 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 856,70 € statt 1.068,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 12,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "365 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "302 cm",
+            "Fläche (aufgerundet)": "12,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 12,
+        "actualQty": 12,
+        "expectedLineCents": 106800,
+        "payloadLineCents": 106800,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 365,
+        "length": 302,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "980,78 €",
+        "areaFormula": "365 cm × 302 cm = 11,02 m²",
+        "priceFormula": "11,02 m² × 89,00 €/m² = 980,78 €",
+        "cta": "11,02 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 797,28 € statt 980,78 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 1102,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "365 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "302 cm",
+            "Fläche": "11,02 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 1102,
+        "actualQty": 1102,
+        "expectedLineCents": 98078,
+        "payloadLineCents": 98078,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 50,
+        "length": 203,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "178,00 €",
+        "areaFormula": "50 cm × 203 cm = 1,02 m²",
+        "priceFormula": "2,00 m² × 89,00 €/m² = 178,00 €",
+        "cta": "2 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 2,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "50 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "203 cm",
+            "Fläche (aufgerundet)": "2,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 2,
+        "actualQty": 2,
+        "expectedLineCents": 17800,
+        "payloadLineCents": 17800,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 50,
+        "length": 203,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "89,89 €",
+        "areaFormula": "50 cm × 203 cm = 1,02 m²",
+        "priceFormula": "1,01 m² × 89,00 €/m² = 89,89 €",
+        "cta": "1,01 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 101,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "50 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "203 cm",
+            "Fläche": "1,01 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 102,
+        "actualQty": 101,
+        "expectedLineCents": 9078,
+        "payloadLineCents": 8989,
+        "matchesRoundingRule": false,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": true,
+        "stopCutting": true,
+        "matches": 0
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 169,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "445,00 €",
+        "areaFormula": "250 cm × 169 cm = 4,23 m²",
+        "priceFormula": "5,00 m² × 89,00 €/m² = 445,00 €",
+        "cta": "5 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 5,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "169 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 5,
+        "actualQty": 5,
+        "expectedLineCents": 44500,
+        "payloadLineCents": 44500,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 169,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "375,58 €",
+        "areaFormula": "250 cm × 169 cm = 4,23 m²",
+        "priceFormula": "4,22 m² × 89,00 €/m² = 375,58 €",
+        "cta": "4,22 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 422,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "169 cm",
+            "Fläche": "4,22 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 423,
+        "actualQty": 422,
+        "expectedLineCents": 37647,
+        "payloadLineCents": 37558,
+        "matchesRoundingRule": false,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": true,
+        "stopCutting": true,
+        "matches": 0
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 333,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "801,00 €",
+        "areaFormula": "250 cm × 333 cm = 8,33 m²",
+        "priceFormula": "9,00 m² × 89,00 €/m² = 801,00 €",
+        "cta": "9 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 9,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "333 cm",
+            "Fläche (aufgerundet)": "9,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 9,
+        "actualQty": 9,
+        "expectedLineCents": 80100,
+        "payloadLineCents": 80100,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 333,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "740,48 €",
+        "areaFormula": "250 cm × 333 cm = 8,33 m²",
+        "priceFormula": "8,32 m² × 89,00 €/m² = 740,48 €",
+        "cta": "8,32 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 832,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "333 cm",
+            "Fläche": "8,32 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 833,
+        "actualQty": 832,
+        "expectedLineCents": 74137,
+        "payloadLineCents": 74048,
+        "matchesRoundingRule": false,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": true,
+        "stopCutting": true,
+        "matches": 0
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 332,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "801,00 €",
+        "areaFormula": "250 cm × 332 cm = 8,30 m²",
+        "priceFormula": "9,00 m² × 89,00 €/m² = 801,00 €",
+        "cta": "9 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 9,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "332 cm",
+            "Fläche (aufgerundet)": "9,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 9,
+        "actualQty": 9,
+        "expectedLineCents": 80100,
+        "payloadLineCents": 80100,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 332,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "738,70 €",
+        "areaFormula": "250 cm × 332 cm = 8,30 m²",
+        "priceFormula": "8,30 m² × 89,00 €/m² = 738,70 €",
+        "cta": "8,30 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 830,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "332 cm",
+            "Fläche": "8,30 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 830,
+        "actualQty": 830,
+        "expectedLineCents": 73870,
+        "payloadLineCents": 73870,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 334,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "801,00 €",
+        "areaFormula": "250 cm × 334 cm = 8,35 m²",
+        "priceFormula": "9,00 m² × 89,00 €/m² = 801,00 €",
+        "cta": "9 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 9,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "334 cm",
+            "Fläche (aufgerundet)": "9,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 9,
+        "actualQty": 9,
+        "expectedLineCents": 80100,
+        "payloadLineCents": 80100,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 334,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "743,15 €",
+        "areaFormula": "250 cm × 334 cm = 8,35 m²",
+        "priceFormula": "8,35 m² × 89,00 €/m² = 743,15 €",
+        "cta": "8,35 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 835,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "250 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "334 cm",
+            "Fläche": "8,35 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 835,
+        "actualQty": 835,
+        "expectedLineCents": 74315,
+        "payloadLineCents": 74315,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 350,
+        "length": 129,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "445,00 €",
+        "areaFormula": "350 cm × 129 cm = 4,52 m²",
+        "priceFormula": "5,00 m² × 89,00 €/m² = 445,00 €",
+        "cta": "5 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 395,40 € statt 445,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 5,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "350 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "129 cm",
+            "Fläche (aufgerundet)": "5,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 5,
+        "actualQty": 5,
+        "expectedLineCents": 44500,
+        "payloadLineCents": 44500,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 350,
+        "length": 129,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "401,39 €",
+        "areaFormula": "350 cm × 129 cm = 4,52 m²",
+        "priceFormula": "4,51 m² × 89,00 €/m² = 401,39 €",
+        "cta": "4,51 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 340,56 € statt 401,39 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 451,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "350 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "129 cm",
+            "Fläche": "4,51 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 452,
+        "actualQty": 451,
+        "expectedLineCents": 40228,
+        "payloadLineCents": 40139,
+        "matchesRoundingRule": false,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": true,
+        "stopCutting": true,
+        "matches": 0
+      }
+    },
+    {
+      "input": {
+        "width": 395,
+        "length": 200,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "712,00 €",
+        "areaFormula": "395 cm × 200 cm = 7,90 m²",
+        "priceFormula": "8,00 m² × 89,00 €/m² = 712,00 €",
+        "cta": "8 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 527,20 € statt 712,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 8,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "395 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 8,
+        "actualQty": 8,
+        "expectedLineCents": 71200,
+        "payloadLineCents": 71200,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 395,
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "703,10 €",
+        "areaFormula": "395 cm × 200 cm = 7,90 m²",
+        "priceFormula": "7,90 m² × 89,00 €/m² = 703,10 €",
+        "cta": "7,90 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 528,00 € statt 703,10 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 790,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "395 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche": "7,90 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 790,
+        "actualQty": 790,
+        "expectedLineCents": 70310,
+        "payloadLineCents": 70310,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 396,
+        "length": 200,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "712,00 €",
+        "areaFormula": "396 cm × 200 cm = 7,92 m²",
+        "priceFormula": "8,00 m² × 89,00 €/m² = 712,00 €",
+        "cta": "8 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 527,20 € statt 712,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 8,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "396 cm",
+            "Aus Rolle": "500 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 8,
+        "actualQty": 8,
+        "expectedLineCents": 71200,
+        "payloadLineCents": 71200,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 396,
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "704,88 €",
+        "areaFormula": "396 cm × 200 cm = 7,92 m²",
+        "priceFormula": "7,92 m² × 89,00 €/m² = 704,88 €",
+        "cta": "7,92 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 400-cm-Rolle nur 528,00 € statt 704,88 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 792,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "396 cm",
+            "Aus Rolle": "500 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche": "7,92 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 792,
+        "actualQty": 792,
+        "expectedLineCents": 70488,
+        "payloadLineCents": 70488,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 495,
+        "length": 5000,
+        "cmExact": false,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "22.072,00 €",
+        "areaFormula": "495 cm × 5000 cm = 247,50 m²",
+        "priceFormula": "248,00 m² × 89,00 €/m² = 22.072,00 €",
+        "cta": "248 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 500-cm-Rolle nur 16.475,00 € statt 22.072,00 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 248,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "495 cm",
+            "Aus Rolle": "500 cm",
+            "Gewünschte Länge": "5000 cm",
+            "Fläche (aufgerundet)": "248,00 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 248,
+        "actualQty": 248,
+        "expectedLineCents": 2207200,
+        "payloadLineCents": 2207200,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 495,
+        "length": 5000,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "22.027,50 €",
+        "areaFormula": "495 cm × 5000 cm = 247,50 m²",
+        "priceFormula": "247,50 m² × 89,00 €/m² = 22.027,50 €",
+        "cta": "247,50 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": "Günstiger als Meterware? Bei dieser Breite kostet die volle 500-cm-Rolle nur 16.500,00 € statt 22.027,50 €. Zu Meterware wechseln"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 24750,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "495 cm",
+            "Aus Rolle": "500 cm",
+            "Gewünschte Länge": "5000 cm",
+            "Fläche": "247,50 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 24750,
+        "actualQty": 24750,
+        "expectedLineCents": 2202750,
+        "payloadLineCents": 2202750,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 49,
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Breite eingeben",
+        "ariaDisabled": "true",
+        "widthError": "Breite mindestens 50 cm.",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": 496,
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Breite eingeben",
+        "ariaDisabled": "true",
+        "widthError": "Breiter als 495 cm geht nicht aus einem Stück – bitte beraten lassen.",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 99,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Länge eingeben",
+        "ariaDisabled": "true",
+        "widthError": "",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": 5001,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Bitte beraten lassen",
+        "ariaDisabled": "true",
+        "widthError": "",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": "",
+        "length": 200,
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Breite eingeben",
+        "ariaDisabled": "true",
+        "widthError": "",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": 250,
+        "length": "",
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "–",
+        "areaFormula": "– cm × – cm = –",
+        "priceFormula": "–",
+        "cta": "Länge eingeben",
+        "ariaDisabled": "true",
+        "widthError": "",
+        "hint": null
+      },
+      "request": null
+    },
+    {
+      "input": {
+        "width": 400,
+        "length": 203,
+        "cmExact": true,
+        "mode": "meter"
+      },
+      "beforeSubmit": {
+        "price": "535,92 €",
+        "areaFormula": "400 cm × 203 cm = 8,12 m²",
+        "priceFormula": "8,12 m² × 66,00 €/m² = 535,92 €",
+        "cta": "8,12 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-meter-400",
+          "quantity": 812,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "203 cm",
+            "Fläche": "8,12 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 812,
+        "actualQty": 812,
+        "expectedLineCents": 53592,
+        "payloadLineCents": 53592,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": 500,
+        "length": 203,
+        "cmExact": true,
+        "mode": "meter"
+      },
+      "beforeSubmit": {
+        "price": "669,90 €",
+        "areaFormula": "500 cm × 203 cm = 10,15 m²",
+        "priceFormula": "10,15 m² × 66,00 €/m² = 669,90 €",
+        "cta": "10,15 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-meter-500",
+          "quantity": 1015,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "500 cm",
+            "Gewünschte Länge": "203 cm",
+            "Fläche": "10,15 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 1015,
+        "actualQty": 1015,
+        "expectedLineCents": 66990,
+        "payloadLineCents": 66990,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    },
+    {
+      "input": {
+        "width": "250.1",
+        "length": "200.1",
+        "cmExact": true,
+        "mode": "raum"
+      },
+      "beforeSubmit": {
+        "price": "449,45 €",
+        "areaFormula": "251 cm × 201 cm = 5,05 m²",
+        "priceFormula": "5,05 m² × 89,00 €/m² = 449,45 €",
+        "cta": "5,05 m² in den Warenkorb",
+        "ariaDisabled": "false",
+        "widthError": "",
+        "hint": null
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-raum",
+          "quantity": 505,
+          "properties": {
+            "Art": "Raummaß",
+            "Ihre Breite": "251 cm",
+            "Aus Rolle": "400 cm",
+            "Gewünschte Länge": "201 cm",
+            "Fläche": "5,05 m²"
+          }
+        }
+      },
+      "oracle": {
+        "expectedQty": 505,
+        "actualQty": 505,
+        "expectedLineCents": 44945,
+        "payloadLineCents": 44945,
+        "matchesRoundingRule": true,
+        "displayMatchesPayload": true
+      },
+      "notification": {
+        "engine": "LiquidJS; no Shopify rendering or actual email sent",
+        "warningTooSmall": false,
+        "stopCutting": false,
+        "matches": 1
+      }
+    }
+  ]
+}

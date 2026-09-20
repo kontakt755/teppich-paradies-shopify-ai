@@ -1,0 +1,63 @@
+# Audit-Testmatrix
+
+Stand: 20.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
+
+**PASS (historisch)** = gespeicherte Browser-/API-Beobachtung vom 19.09.; **PASS (lokal)** = aktuelle deterministische Prüfung. **FAIL bestätigt** = Issue beobachtet, nicht behoben. **OFFEN** = keine Aussage zur Funktion. Ein bestandener Reproduktionslauf bedeutet nicht, dass die darin nachgewiesenen Fehler behoben sind.
+
+| ID | Fall / Soll | Ebene / tatsächliches Ergebnis | Status / Evidence |
+| --- | --- | --- | --- |
+| PR-001 | Marlow, 20 m², 5 %, Paket 2,08 m², Paketpreis 10.598 Cent | 11 Pakete, 22,88 m², 116.578 Cent; historische Anzeige, Payload, Cart und lokale Ausführung stimmen überein | PASS historisch 1440/390 + lokal; runtime `package add 20` |
+| PR-002 | `1,5` und `1.5` | Lokal identisch: Bedarf 1,50, 1 Paket. Komma historisch an beiden Viewports | PASS lokal; Komma auch historisch |
+| PR-003 | Leer/0/negativ, Blur | Ein Paket bleibt kaufbar, Feld leer. Bewusster Ruhezustand | PASS historisch + lokal; keine unerwünschte Änderung vorschlagen |
+| PR-004 | `1.234,56`, `20abc` vollständig validieren | Teilzahl/Rest wird still übernommen | FAIL bestätigt TP-001, historisch beide Viewports + lokal |
+| PR-005 | Infinity / große Zahl nicht bestellbar berechnen | Infinity-Anzeige; lokal JSON-Menge null bzw. unsichere Ganzzahl; historisch Mobile-Überlauf bei großer Zahl | FAIL bestätigt TP-002; Serverantwort auf ungültige Menge OFFEN |
+| PR-006 | 20 m² ohne Reserve / exakt 20,8 m² | Ohne Reserve jeweils 10 Pakete, 20,8 mit 5 % → 11 | PASS lokal; neue Live-Prüfung OFFEN |
+| PR-007 | Start und manuell ein Paket erhöhen | Start 1 Paket, +1 → 2; Originalcode ausgeführt | PASS lokal; DOM-Adapter beweist keine echten Pointer-/Browserereignisse |
+| PR-008 | Piumera 400 × 200 cm, 65,90 €/m² | Hauptware Menge 8, 52.720 Cent; Anzeige und historische Cart-Antwort stimmen | PASS historisch 1440/390 + lokale Hauptmenge |
+| PR-009 | Ausgewählte Fußleiste, Länge löschen | HTTP 200, nur Hauptware, Fußleiste fehlt | FAIL bestätigt TP-003, historisch 1440/390 + lokal |
+| PR-010 | Fußleiste 12 m / 2,5 m / abgewählt | Lokal 12 × 1.095 = 13.140 Cent; 2,5 → 3 m; abgewählt nur Hauptware; gültige Extras mit Gruppe | PASS lokal, Service-ID im Adapter synthetisch; neue Live-Prüfung OFFEN |
+| PR-011 | Fußleiste ausgewählt, Länge 0/-1 | Ebenfalls Hauptsubmit ohne Fußleiste | FAIL TP-003 lokal; historischer Live-Nachweis beschränkt auf leer |
+| PR-020 | Raummaß-Rundung, volle m² vs. Hundertstel | Lokal abgeschlossen: 2.185.846 ganzzahlige Maße je Modus; volle m² korrekt, 3.310 exakte Halbgrenzen im cmExact-Modus um eine Einheit zu niedrig | FAIL lokal TP-004; Live-Verwendung offen H-005; `room-pricing-2026-09-20.json` |
+| PR-020a | Preisbox, Maß-/Flächen-Properties und tatsächlich erzeugter Request | 35 lokale Integrationsfälle: 29 erzeugen erwarteten einzelnen Request, 6 ungültige Grenzen/Leerwerte keinen; Gesamtpreis entspricht Payload-Cents, TP-004-Menge trotzdem falsch | PASS für Konsistenz/Grenzen; FAIL für bedingte Rundungsregel, kein realer Shopify-Request |
+| PR-020b | Regeltreue der internen Bestellmail am originalen Raummaß-Payload | Bei 250 × 333 cm / cmExact meldet LiquidJS „MENGE ZU KLEIN“ / „NICHT ZUSCHNEIDEN“; 832 statt 833 Einheiten. Gültige Nichtfehlerfälle ohne Mengenwarnung | Bestätigte lokale Folge von TP-004; Shopify-Rendering/Versand/Deployment nicht geprüft |
+| PR-020c | Volle Rollenbreiten und 5-cm-Zugabe | 19.604 Maßpaare für 200/300/400/500 cm in beiden Mengenmodi korrekt; Raummaß 395/396 cm wählt 400-/500-cm-Rolle ohne Zugabe zur berechneten Fläche | PASS lokal, keine Preis-/Metafeldänderung |
+| PR-020d | Meterware-Preisvergleich | Originaler Tipp folgt derselben Rundung; bei 350 × 129 cm nennt er 401,39 € Raummaß statt regelkonformer 402,28 € im cmExact-Fixture | Lokale Folge von TP-004; kein zusätzliches Issue |
+| PR-021 | Einfass-Konfigurator Material, Kante, Mindestpreis bis Payload | 47 lokale Fälle abgeschlossen; 29 Requests abgefangen, 13 JS-Zustände blockiert, fünf Liquid-Gates. Historische Rechteck-Preisreferenz und synthetische andere Formen/Arten klar getrennt | PASS lokal im gültigen Servicepfad; FAIL bedingt TP-005; `einfass-pricing-2026-09-20.json` |
+| PR-021a | Referenz/Mindestpreis/Aufrundung | 200 × 300 → 600 Material + 1.000 Kante = 724,00 €; 50 × 50 → 69 + 200 = 99,41 €. Mindestpreis als Zahl/Geldobjekt, knapp darüber/darunter; 201 × 301 → 606 und 365 × 302 → 1103 Materialeinheiten | PASS lokal; keine neuen realen Cart-/Preisbelege |
+| PR-021b | Formen/Rotation/Grenzen/Bandwahl | Rechteck 350 × 420 und 420 × 350 gleich; Rund/Oval nach umschließendem Rechteck; Cover mit vorbereiteter maxW=390; Band fehlt → kein Request; ungültige Maße/Variante/Anfrage blockiert | PASS lokal; SVG, echte Browserfelder/Picker und reale Formfreigaben offen |
+| PR-021c | Konfigurierter separater Kettelservice nicht verfügbar | Original-Liquid erzeugt kettel=null, JS lässt Material ohne Kettelzeile für 534,00 € mit „Gekettelt“ zu | FAIL lokal TP-005; heutiger Shopzustand offen H-006 |
+| PR-021d | Properties, Gruppe, Mail und direkter Doppelsubmit | Mengen/Flächen-/Mindestpreis-Properties passend, zwei Zeilen gleiche Gruppe; 29 lokale Mailrenderings ohne Mengenwarnung; Doppelsubmit mit zwischenzeitlicher Neuberechnung bleibt ein Request | PASS lokal; Zuschnittabgleich als erfolgreich simuliert, echter Cart/Drawer/Checkout offen |
+| PR-021e | Oval-Näherung | 200 × 300 → 793 Einheiten; synthetisch 50 × 600 → 1213 statt geometrisch 1214 durch dokumentierte Ramanujan-Näherung | H-007 fachlich offen, kein weiterer bestätigter Fehler |
+| PR-022 | Haftunterlage: Datenvertrag, Breite, Bahnen, laufende Meter, Kombination | Lokal abgeschlossen: 61 Integrationsfälle, 54 abgefangene Requests, sieben blockierte Hauptkonfigurationen; 198.468 unabhängige Auswahl-/Grenzvergleiche | PASS lokal für festgelegte Bahnenregel; Live-Produktvertrag H-008 offen; `underlay-pricing-2026-09-20.json` |
+| PR-022a | Günstigste einzelne Variante | Vierbreitenkatalog und Gegenbeispiel niedrigster Meterpreis ≠ niedrigster Gesamtpreis. 400 × 200 mit Testpreisen 80 cm/10 € und 200 cm/21 € wählt korrekt 4 m der 200er-Breite für 84 € | PASS lokal, Preise synthetisch |
+| PR-022b | Maß-/Meterränder und echte Unterlagenmenge | 447 Breiten × 148 Längen an vollen Metergrenzen × drei Kataloge; keine Mengen-/Centabweichung. 400 × 201 im Basisfixture → 5 Bahnen/15 lfm; jeder Streifen auf volle Meter | PASS lokal; keine Behauptung einer frei optimierten Verlegung |
+| PR-022c | Liquid-Verfügbarkeit, Freigabe und Titelbreite | Nicht verfügbare/0-/negativ bepreiste Varianten fallen vor JS weg; Titel ohne erkannte cm-Breite fallen im JS weg; nur exakte Hauptvariantenfreigabe „Verfügbar“ erlaubt Zubehör | PASS lokal; isolierte Zustände, keine echten Farb-/Artwechsel getestet |
+| PR-022d | Gemeinsame Preisbox/Properties/Gruppe | Hauptware 527,20 € + gültige Fußleiste 131,40 € + Unterlage 93,50 € = 752,10 € im Fixture, drei Positionen gleiche Gruppe. Eigenlänge/abgewählte Extras/hohe Mengen und Doppelsubmit geprüft | PASS lokal; Eventmenge entspricht Summe aller Payloadmengen; realer Cart bleibt offen |
+| PR-022e | Rotation und gemischte Breiten | Alternative synthetische Verlegungen rechnerisch günstiger; aktuelle Materialien/Zuschnittfreigabe nicht belegt | H-008 offen, kein zusätzliches Issue und kein Fix-Auftrag |
+| PR-023a | **NÄCHSTER SCHRITT:** separates Teppich-Wunschmaß-Template | `product.teppich.json` → `tp-teppich-wunschmass.liquid`: Produktzuordnung/Einheit, Formen, tatsächliche Fläche, Zuschläge, Grenzen und Payload prüfen | OFFEN; nicht mit Einfasspfad verwechseln |
+| PR-023b | Weitere Produktarten: Klebevinyl/Teppichfliesen/PVC/Fixpreis | Repräsentative Produkte und freigegebene Preisregeln ermitteln | OFFEN nach PR-023a |
+| CART-001 | Paket-Cartdarstellung und Checkout erreichbar | Historisch 11 Pakete/22,88 m²/1.165,78 €, Checkoutseite mit Kontaktfeld erreichbar | PASS historisch, kein Kaufabschluss, keine vollständige Checkout-QA |
+| CART-002 | Menge ändern, entfernen, erneut öffnen; gemischte/gruppierte Positionen | Noch nicht geprüft | OFFEN nach Preisbereich |
+| CALC-001 | Sämtliche Maßgrenzen, Komma/Punkt, leer, 0, negativ, Maxima | Teilprüfungen PR-008–011 sind kein vollständiger Rechnertest | OFFEN nach Warenkorb |
+| VAR-001 | Schneller Farb-/Artwechsel, Verfügbarkeit, Preis/ID, Zurück/Reload | Noch keine vollständigen Ablaufprüfungen | OFFEN |
+| RUN-001 | JavaScript-Konsole / Exceptions / Netzwerk | Historische `exceptions`-Einträge leer; keine vollständige Netzwerk-/Console-Abdeckung | TEILBELEG, übriges OFFEN |
+| MOB-001 | Mobile ca. 390 px, Menü, Galerie, Rechner, Cart | Historische Referenzseiten ohne Überlauf außer TP-002; kein umfassender Mobile-Audit | OFFEN |
+| NAV-001 | Suche/Autosuggest, Desktop-/Mobile-Menü, Links/404 | Nicht bearbeitet | OFFEN |
+| SEO-001 | Canonical/Metadaten/strukturierte Daten/Google/Merchant | Nicht bearbeitet | OFFEN |
+| PERF-001 | Ladeverhalten, JS-Dopplung, Bilder, langsame Verbindung | Nicht bearbeitet | OFFEN |
+| UX-001 | Verlegeservice, Visualisierer, Muster/Galerie, Kaufhilfen/A11y | Nicht bearbeitet | OFFEN |
+| CROSS-001 | Featurekombinationen, Reload/Zurück/Sessionzustand | Nicht bearbeitet | OFFEN |
+| REG-001 | Finaler Regressionstest inkl. aller P0/P1 und Bereiche | Erst nach restlichem Audit/Fix-/QA-Phasen | OFFEN |
+
+## Ausgeführte lokale Checks
+
+- `node audit/scripts/reproduce-pricing.mjs`: 21 Originalcode-Ausführungen, historische Kontrollbelege und zwei SHA-256-Abgleiche bestanden. Ausgabe: `evidence/pricing-reproduction-2026-09-20.json`.
+- `node --test --test-concurrency=1 qa/tests/rollware-art.test.mjs qa/tests/masstepich-rechnung.test.mjs qa/tests/bestellmail-masspruefung.test.mjs`: **55/55 PASS**, 0 fail/skip. Ausgabe: `evidence/pricing-unit-tests-2026-09-20.log`.
+- Keine neue Theme-Änderung; ein vollständiger `npm run qa`-/Theme-Check-Lauf ist für diese reine Dokumentation nicht erforderlich. Neue Browsernachweise konnten wegen Infrastruktur nicht erstellt werden.
+- S02: `node audit/scripts/reproduce-room-pricing.mjs` – 35 Originalcode-Integrationsfälle mit lokalem LiquidJS-Rendering, Ganzzahlraster und zwei historischen Hashvergleichen bestanden; TP-004 reproduziert. Ausgabe: `evidence/room-pricing-2026-09-20.json`. Die 55 S01-Tests und PR-001–011 nicht erneut ausgeführt.
+- S03: `node audit/scripts/reproduce-einfass-pricing.mjs` – 47 Fälle, Original-Liquid-Datenvertrag mit originalen Farb-/Bandsnippets, originale Auswahl-/Rechnen-/Submit-Funktionen und TPMass. Sechs historische Hashvergleiche; 29 Requests abgefangen und lokal in die Mail gegeben; TP-005 reproduziert. Ausgabe: `evidence/einfass-pricing-2026-09-20.json`. Syntax, Dokumentkonsistenz und gezielter Secret-Scan in S03-Protokollen. Kein erneuter S01-/S02-Testlauf.
+- S04: `node --check audit/scripts/reproduce-underlay-pricing.mjs` und `node audit/scripts/reproduce-underlay-pricing.mjs` bestanden. 61 Fälle mit originalem Liquid-Datenvertrag/JS inkl. Kombination, 198.468 unabhängige Grenzvergleiche, vier historische Hashvergleiche. Ausgabe: `evidence/underlay-pricing-2026-09-20.json`. Kein neuer bestätigter Fehler, kein Replay von S01–S03. S04-Dokument-/Evidence-Konsistenz und Secret-Scan separat protokolliert.
+
+## Wiederholungsregeln
+
+Abgeschlossene PR-001–011 und lokale PR-020–022 nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.
