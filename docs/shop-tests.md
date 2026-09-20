@@ -134,3 +134,7 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - 5 Defekte, alle behoben: (1) ab-Preis nahm `price_min` inkl. gesperrter/nicht freigegebener Farben -> guenstigste KAUFBARE Variante wie im Konfigurator; (2) `blocks/price.liquid` reicht auf der eigenen Produktseite die gewaehlte Variante durch; (3) fehlende Grenzen (leer/0) liessen den ab-Preis durch -> Breite aus `tp-teppich-max-breite`, beide Grenzen Pflicht; (4) "inkl. Kettelung" auch bei Cover/Band -> "inkl. Einfassung"; (5) Farbe ohne verfuegbare Rolle fiel aufs feste Feld zurueck -> jetzt Rollen dieser Farbe, auch nicht verfuegbare (bewusst KEINE harte Sperre: falsch gepflegter Bestand wuerde Verkaeufe blockieren).
 - Risiko abgesichert: Test vergleicht den Kettelservice-Handle im Snippet mit der Einstellung in `templates/product.einfassung.json`.
 - Danach Unit 29/29 in den zwei betroffenen Dateien, `npm test` gruen; Scratch: 24 Karten mit unveraenderten ab-Preisen, 0 Rueckfaelle, wovena PDP 197,80 = Konfigurator 197,80.
+
+## 2026-09-20 - Livegang PRs #408 + #409 (Commit 1930755)
+- Preview komplett PASS im ersten Lauf (Sales-Check seit S-18 stabil: 3 Laeufe in Folge gruen).
+- Live-HTML woolara: Struktur-Block und grosses Farbbild vorhanden, neuer Rollenware-Text da, alter Text weg, kein "Liquid error"; ausgeliefertes `tp-einfass-konfigurator.js` enthaelt den Knopftext mit Preis nicht mehr.
