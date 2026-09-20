@@ -18,7 +18,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | offen | S-08 | Service-Bloecke | Fable plant | - |
 | S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | blockiert: kein EK in Shopify (unitCost leer), EK-Quelle von Ahmet noetig | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | Teilergebnis (unten), Preisverteilung Rollenware nachziehen | - | Collections, Sortierung (Analyse) | Worker | - |
-| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P2 | offen | S-08 | Preis-Snippets | Fable | - |
+| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Befund unten, wartet auf Entscheidung Ahmet | S-08 | Preis-Snippets | Fable | - |
 | S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil je Bild offen -> S-14 | - | nur Daten | Worker | - |
 | S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | offen | S-13 | - | Fable plant | - |
 | S-15 | Rabattaktionen ausrollen | P2 | offen | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
@@ -53,3 +53,11 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Groesste Farbpaletten: vallora 20, kontura 19, vantana 18, torvana 18, alvento 16 (zusammen 91 Bilder).
 - Das Qualitaetsurteil des Haiku-Workers ("professionell fotografiert") ist verworfen - unbelegt und im Widerspruch zur Aussage des Inhabers. Bewertung je Bild (Materialtreue, Farbe, Struktur, Kettelung) macht S-14 mit staerkerem Modell oder Ahmet an 10 Stichproben.
 - Hebel fuer S-14: nicht 477 Bilder neu, sondern je Produkt 1 echte Kanten-Nahaufnahme + 1 Struktur-Zoom (49 x 2), Farbbilder spaeter.
+
+## S-12 Befund Streichpreise (2026-09-20)
+- 4 aktive, oeffentlich erreichbare Produkte zeigen einen Streichpreis: sylvara-655-design-klebevinyl-als-einzelplanken, ...-klickvinyl-ohne-integrierte-trittschalldammung, ...-klickvinyl-mit-integrierter-trittschalldammung (je 24,95 statt 29,95, Varianten zuletzt geaendert 2026-08-09) und ...-klebevinyl-als-einzelplanken-kopie (26,95 statt 29,95, geaendert 2026-09-09).
+- Risiko: Bei einer Preisermaessigung muss der Referenzpreis der niedrigste Preis der letzten 30 Tage sein. Drei der vier Preise stehen seit ueber 30 Tagen unveraendert - der niedrigste 30-Tage-Preis ist dann der aktuelle Preis, der Streichpreis 29,95 ist so nicht mehr belegbar. Keine Rechtsberatung; im Zweifel pruefen lassen.
+- Ein Entwurfsprodukt (aw-ganges-teppichboden) hat compareAtPrice UNTER dem Preis - wird nicht angezeigt, Datenmuell.
+- Das Handle "...-kopie" deutet auf ein Duplikat hin (eigenes Thema, nicht angefasst).
+- Optionen: (a) compareAtPrice bei den 4 Produkten entfernen, (b) als "UVP" kennzeichnen, falls 29,95 eine belegte Herstellerempfehlung ist, (c) lassen. Keine Aenderung ohne Freigabe (Preisdaten).
+- Technische Struktur fuer kuenftige Aktionen (Vorschlag, noch nicht gebaut): Aktionsstart als Metafeld, Streichpreis nur anzeigen, wenn Aktionsstart gesetzt und hoechstens 30 Tage... Details erst nach Entscheidung zu S-08.

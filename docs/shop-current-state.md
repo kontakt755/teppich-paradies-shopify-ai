@@ -25,6 +25,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06 live (PR #393). Naechste Pakete: S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
 
 ## Offene Blocker
+- S-12: 4 Sylvara-Vinylprodukte mit Streichpreis 29,95 seit ueber 30 Tagen - Entscheidung Ahmet (entfernen / UVP / lassen).
 - S-10: keine Einkaufspreise in Shopify; EK-Quelle von Ahmet noetig.
 - Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
