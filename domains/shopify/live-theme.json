@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-20T12:23:37Z",
-    "verifiedBy": "Shopify Admin API, role MAIN"
-  },
-  "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-20T12:23:37Z",
-    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
+    "verifiedAt": "2026-09-20T12:46:25Z",
+    "verifiedBy": "Shopify CLI theme list, role live; Storefront Shopify.theme.role main"
+  },
+  "preview": {
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-20T12:46:25Z",
+    "verifiedBy": "Shopify CLI theme list, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -21,10 +21,10 @@
   },
   "retired": [
     {
-      "themeId": "204436144462",
-      "name": "Kopie von preview-main-2026-09-04",
+      "themeId": "204438208846",
+      "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-20",
-      "note": "Per workflow:live abgeloest durch 204438208846 (PRs #200, #382-#386: Warenkorb-Artikelzaehlung fuer Flaechenware (#198), Paketrechner-Eingabevalidierung TP-001/002, Rollware-Fussleiste TP-003, Raummass-Rundung TP-004, Einfass-Kettelservice-Validierung TP-005, Paketflaeche-Praezision in der Cartzeile TP-008). Rollentausch am 2026-09-20 um 12:23:37Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+      "note": "Per workflow:live abgeloest durch 204436144462 (PR #388: Raumansicht abschaltbar, Rechenaufschluesselung aus der Kundenansicht entfernt). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
     },
     {
       "themeId": "201829679438",
@@ -199,12 +199,6 @@
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-16",
       "note": "Per workflow:live abgeloest durch 204438208846 (PR #353: Musterbestellung mit eigener Variante je Muster - Musterprodukt je Qualitaet, SKU M-<Quell-SKU>, Farbe damit im variant_title auf Lieferschein, Kommissionierliste und in beiden Bestellmails). Rollentausch am 2026-09-16 um 10:07:55Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
-    },
-    {
-      "themeId": "204436144462",
-      "name": "Kopie von preview-main-2026-09-04",
-      "retiredNoticedAt": "2026-09-18",
-      "note": "Per workflow:live abgeloest durch 204438208846 (Commit f802cb7: Mengensperre-Klassifikation zentral in tp-cart-gruppe, Zuschnitt-Sperre aus #363 zurueckgeholt, PRs #372-#375; bringt zugleich #371 live). Rollentausch am 2026-09-18 um 21:35:05Z per Admin API gegengeprueft, Warenkorb-Szenarien auf der Storefront nachgestellt. Bleibt als unveroeffentlichtes Preview-Theme bestehen."
     },
     {
       "themeId": "204438208846",

@@ -21,11 +21,13 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
   Live ab - Layoutfehler dort erst gegen Live gegenpruefen, bevor sie als Shop-Fehler gelten.
 
 ## Aktive Arbeit
-- S-01 + S-02: PR offen, wartet auf Merge und Deploy (Deploy nur auf Ahmets Ansage).
+- keine. Naechstes Paket: S-04 (Rechenregel Ab-Preis).
 
 ## Offene Blocker
 - keine
 
 ## Fakten
 - Karten der Teppiche zeigen heute "ab XX EUR/m2", die PDP "XX EUR/m2" - Gegenstand von S-04 bis S-07.
-- Live zeigt bis zum Deploy weiter "Im Raum" und "So rechnen wir".
+- S-01/S-02 sind seit 2026-09-20 live (PR #388). Deploy-Befehle brauchen `--p0 0 --p1 0`.
+- `qa/evidence/local-verification.json` wird von Validierungslaeufen neu geschrieben und blockiert dann `git pull --rebase`; nach einem Deploy mitcommitten.
+- Codex-Review war am 2026-09-20 am Nutzungslimit; PR #388 ging mit eigener Pruefung + vollem Preview-Gate live.
