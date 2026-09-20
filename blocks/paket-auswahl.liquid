@@ -584,10 +584,27 @@
 
     // Einzige Berechnungsquelle: gewünschte Fläche -> Verschnitt -> auf volle
     // Pakete aufrunden. Wird nie abgerundet, damit Warenkorb/Checkout nie zu
-    // wenig berechnen.
-    function computePackages() {
+    // wenig berechnen. Parametrisiert, damit dieselbe Formel auch eine
+    // Eingabe VOR der Übernahme in desiredSqm sicherheitsprüfen kann (TP-002).
+    function computePackagesFor(sqmValue) {
       if (!sqmPerPackage) return 1;
-      return Math.max(1, Math.ceil(getRequiredSqm() / sqmPerPackage - FLOAT_EPSILON));
+      const requiredSqm = Math.max(0, sqmValue) * getWasteFactor();
+      return Math.max(1, Math.ceil(requiredSqm / sqmPerPackage - FLOAT_EPSILON));
+    }
+
+    function computePackages() {
+      return computePackagesFor(desiredSqm);
+    }
+
+    // TP-002: eine rechnerisch gültige, aber nicht endliche oder unsicher
+    // große Fläche darf weder angezeigt noch in den Warenkorb übernommen
+    // werden. Prüft Zwischen- und Endergebnis auf sichere Ganzzahlen, statt
+    // eine frei erfundene maximale Quadratmeterzahl festzulegen.
+    function isSafeSqm(value) {
+      if (!Number.isFinite(value) || value <= 0) return false;
+      const packages = computePackagesFor(value);
+      if (!Number.isSafeInteger(packages)) return false;
+      return Number.isSafeInteger(packages * packagePriceCents);
     }
 
     function setMessage(text, isError) {
@@ -687,6 +704,28 @@
     }
 
     async function addToCart() {
+      // Letzte Prüfung direkt aus dem Feld, unabhängig davon, ob Blur bereits
+      // ausgelöst wurde (z.B. Eingabe -> sofortiger Klick ohne Fokuswechsel).
+      // TP-001/TP-002: eine ungültige oder unsicher große Eingabe darf nie
+      // einen Cart-Request auslösen, auch wenn die Anzeige noch den zuletzt
+      // gültigen Stand zeigt.
+      if (sqmInput) {
+        const result = evaluateSqmInput(sqmInput.value);
+        if (result.state === 'invalid') {
+          setMessage(INVALID_SQM_MESSAGE, true);
+          sqmInput.focus();
+          return;
+        }
+        if (result.state === 'unsafe') {
+          setMessage(UNSAFE_SQM_MESSAGE, true);
+          sqmInput.focus();
+          return;
+        }
+        if (result.state === 'ok') {
+          desiredSqm = result.value;
+        }
+      }
+
       const packages = renderResults();
       const actualSqm = packages * sqmPerPackage;
       setMessage('', false);
@@ -769,34 +808,91 @@
       }
     }
 
-    // Akzeptiert "1,5" und "1.5", ignoriert Leerzeichen und alles andere.
+    // Deutsches (1.234,56 / 1,5) und englisches (1.5) Zahlenformat. Ein
+    // Zeichen-Whitelist-Muster statt permissivem parseFloat: "20abc" und
+    // "Infinity" werden vollständig verworfen statt nur den Zahlenanfang zu
+    // übernehmen (TP-001), "1.234,56" wird nicht am ersten Punkt abgeschnitten.
+    const SQM_NUMBER_PATTERN = /^-?\d{1,3}(\.\d{3})+(,\d+)?$|^-?\d+([.,]\d+)?$/;
+
     function parseSqm(raw) {
-      const text = String(raw == null ? '' : raw).replace(/\s/g, '').replace(',', '.');
-      if (text === '') return null;
-      const parsed = parseFloat(text);
-      return isNaN(parsed) ? null : parsed;
+      const text = String(raw == null ? '' : raw).trim();
+      if (text === '' || !SQM_NUMBER_PATTERN.test(text)) return null;
+
+      // Stehen Punkt UND Komma zusammen in der Eingabe, ist der Punkt
+      // Tausendertrennzeichen (deutsches Format) - sonst ist das einzige
+      // vorhandene Trennzeichen (Punkt ODER Komma) das Dezimaltrennzeichen.
+      const normalized =
+        text.indexOf('.') !== -1 && text.indexOf(',') !== -1
+          ? text.replace(/\./g, '').replace(',', '.')
+          : text.replace(',', '.');
+
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : null;
     }
+
+    // Einziger Prüfpfad für Tippen, Blur UND Absenden (TP-001/TP-002 teilen
+    // sich denselben Eingabezustand). Liefert nie einen Teil-/Näherungswert -
+    // entweder eine vollständige sichere Zahl oder einen der bewussten bzw.
+    // fehlerhaften Zustände.
+    function evaluateSqmInput(raw) {
+      const text = String(raw == null ? '' : raw).trim();
+      if (text === '') return { state: 'empty' };
+
+      const parsed = parseSqm(text);
+      if (parsed === null) return { state: 'invalid' };
+      if (parsed <= 0) return { state: 'reset' };
+      if (!isSafeSqm(parsed)) return { state: 'unsafe' };
+      return { state: 'ok', value: parsed };
+    }
+
+    const INVALID_SQM_MESSAGE = 'Fläche konnte nicht gelesen werden. Bitte z. B. 12,5 eingeben.';
+    const UNSAFE_SQM_MESSAGE = 'Diese Fläche ist zu groß für eine Berechnung. Bitte einen kleineren Wert eingeben.';
 
     if (sqmInput) {
       sqmInput.addEventListener('input', function () {
-        const parsed = parseSqm(sqmInput.value);
-        desiredSqm = parsed == null || parsed <= 0 ? 0 : parsed;
+        // Fehlermeldung sofort ausblenden, sobald der Kunde weitertippt - der
+        // endgueltige Zustand wird erst bei Blur/Absenden erneut geprueft,
+        // damit nicht bei jedem Tastendruck eine Meldung aufblitzt (z.B.
+        // waehrend "12," noch unvollstaendig ist).
+        setMessage('', false);
+
+        const result = evaluateSqmInput(sqmInput.value);
+        // Unvollständige/ungültige/unsichere Zwischenzustände lassen die
+        // zuletzt gültige Anzeige unverändert stehen - nie eine stille
+        // Teilzahl übernehmen (TP-001/TP-002).
+        if (result.state === 'invalid' || result.state === 'unsafe') return;
+
+        desiredSqm = result.state === 'ok' ? result.value : 0;
         renderResults();
       });
 
       // Beim Verlassen wird die Eingabe normalisiert. Eine leere, eine 0 und
       // eine negative Eingabe fuehren zurueck in den Ruhezustand: Feld leer,
       // ein Paket kaufbar. Vorher schrieb das Feld dort "0,01" hinein - eine
-      // Zahl, die der Kunde nie eingegeben hat.
+      // Zahl, die der Kunde nie eingegeben hat. Eine unlesbare oder unsicher
+      // große Eingabe wird dagegen NICHT stillschweigend zurückgesetzt,
+      // sondern bleibt mit Fehlermeldung stehen, bis sie korrigiert ist
+      // (TP-001/TP-002).
       sqmInput.addEventListener('blur', function () {
-        const parsed = parseSqm(sqmInput.value);
-        if (parsed == null || parsed <= 0) {
+        const result = evaluateSqmInput(sqmInput.value);
+
+        if (result.state === 'invalid') {
+          setMessage(INVALID_SQM_MESSAGE, true);
+          return;
+        }
+        if (result.state === 'unsafe') {
+          setMessage(UNSAFE_SQM_MESSAGE, true);
+          return;
+        }
+
+        setMessage('', false);
+        if (result.state === 'empty' || result.state === 'reset') {
           sqmInput.value = '';
           desiredSqm = sqmForPackages(1);
           renderResults();
           return;
         }
-        setDesiredSqm(parsed);
+        setDesiredSqm(result.value);
       });
     }
 

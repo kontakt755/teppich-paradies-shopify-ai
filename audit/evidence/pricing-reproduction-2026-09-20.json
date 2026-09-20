@@ -1,0 +1,1118 @@
+{
+  "generatedAt": "2026-09-19T23:28:35.711Z",
+  "scope": "Local source execution + inherited live evidence; no new browser/API tests",
+  "reproductionStatus": "PASS: observations reproduced; defects remain unfixed",
+  "historicalAt": "2026-09-19T13:27:30.912Z",
+  "historicalBrowser": "153.0.8010.48",
+  "sourceBaseline": "66729099c4122385e19172a1f5ba14a7524c3bfb",
+  "sourceIntegrity": [
+    {
+      "file": "blocks/paket-auswahl.liquid",
+      "currentSha256": "5133e3dcfafb59a51cac2332264767fdbd6658d7c9b354e9df2225a472038521",
+      "historicalLiveSha256": "5133e3dcfafb59a51cac2332264767fdbd6658d7c9b354e9df2225a472038521",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "currentSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "historicalLiveSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "matchesHistoricalLive": true
+    }
+  ],
+  "fixtureNotes": [
+    "Package fixture from historical Marlow payload.",
+    "Roll main fixture from historical Piumera payload; optional-service id is synthetic. The 1095-cent price comes from the displayed minimum; its pairing with 5 cm is not API-verified.",
+    "DOM adapter cannot prove browser validation, layout, event ordering or server response.",
+    "Invalid package payloads are intercepted; Shopify acceptance/rejection is unknown."
+  ],
+  "evidenceAgreement": [
+    {
+      "width": 1440,
+      "normalPackagePayload": "MATCH",
+      "rollEmptyExtraOmitted": "MATCH",
+      "infinityDisplay": "MATCH"
+    },
+    {
+      "width": 390,
+      "normalPackagePayload": "MATCH",
+      "rollEmptyExtraOmitted": "MATCH",
+      "infinityDisplay": "MATCH"
+    }
+  ],
+  "observations": [
+    {
+      "kind": "package",
+      "input": "20",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "20,00",
+      "required": "21,00 m²",
+      "packages": "11",
+      "actualArea": "22,88 m²",
+      "total": "1.165,78 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 11,
+          "properties": {
+            "_bedarf_qm": "20,00",
+            "_pakete": "11",
+            "_qm_gesamt": "22,88",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "20",
+      "blur": true,
+      "waste": false,
+      "action": null,
+      "normalizedInput": "20,00",
+      "required": "20,00 m²",
+      "packages": "10",
+      "actualArea": "20,80 m²",
+      "total": "1.059,80 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 10,
+          "properties": {
+            "_bedarf_qm": "20,00",
+            "_pakete": "10",
+            "_qm_gesamt": "20,80",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "0%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "1,5",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "1,50",
+      "required": "1,58 m²",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,50",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "1.5",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "1,50",
+      "required": "1,58 m²",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,50",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": null,
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "",
+      "required": "–",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,98",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "",
+      "required": "–",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,98",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "0",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "",
+      "required": "–",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,98",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "-1",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "",
+      "required": "–",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,98",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "20.8",
+      "blur": true,
+      "waste": false,
+      "action": null,
+      "normalizedInput": "20,80",
+      "required": "20,80 m²",
+      "packages": "10",
+      "actualArea": "20,80 m²",
+      "total": "1.059,80 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 10,
+          "properties": {
+            "_bedarf_qm": "20,80",
+            "_pakete": "10",
+            "_qm_gesamt": "20,80",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "0%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "20.8",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "20,80",
+      "required": "21,84 m²",
+      "packages": "11",
+      "actualArea": "22,88 m²",
+      "total": "1.165,78 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 11,
+          "properties": {
+            "_bedarf_qm": "20,80",
+            "_pakete": "11",
+            "_qm_gesamt": "22,88",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": null,
+      "blur": true,
+      "waste": true,
+      "action": "increase-packages",
+      "normalizedInput": "3,96",
+      "required": "4,16 m²",
+      "packages": "2",
+      "actualArea": "4,16 m²",
+      "total": "211,96 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 2,
+          "properties": {
+            "_bedarf_qm": "3,96",
+            "_pakete": "2",
+            "_qm_gesamt": "4,16",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "1.234,56",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "1,23",
+      "required": "1,30 m²",
+      "packages": "1",
+      "actualArea": "2,08 m²",
+      "total": "105,98 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 1,
+          "properties": {
+            "_bedarf_qm": "1,23",
+            "_pakete": "1",
+            "_qm_gesamt": "2,08",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "20abc",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "20,00",
+      "required": "21,00 m²",
+      "packages": "11",
+      "actualArea": "22,88 m²",
+      "total": "1.165,78 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 11,
+          "properties": {
+            "_bedarf_qm": "20,00",
+            "_pakete": "11",
+            "_qm_gesamt": "22,88",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": true
+    },
+    {
+      "kind": "package",
+      "input": "Infinity",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "Infinity",
+      "required": "Infinity m²",
+      "packages": "Infinity",
+      "actualArea": "Infinity m²",
+      "total": "∞ €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": null,
+          "properties": {
+            "_bedarf_qm": "Infinity",
+            "_pakete": "Infinity",
+            "_qm_gesamt": "Infinity",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": false
+    },
+    {
+      "kind": "package",
+      "input": "999999999999999999999",
+      "blur": true,
+      "waste": true,
+      "action": null,
+      "normalizedInput": "1e+21",
+      "required": "1,05e+21 m²",
+      "packages": "504807692307692300000",
+      "actualArea": "1,0500000000000001e+21 m²",
+      "total": "53.499.519.230.769.240.000.000,00 €",
+      "errorBeforeSubmit": "",
+      "buttonDisabledBeforeSubmit": false,
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "60332523127118",
+          "quantity": 504807692307692300000,
+          "properties": {
+            "_bedarf_qm": "1e+21",
+            "_pakete": "504807692307692300000",
+            "_qm_gesamt": "1,0500000000000001e+21",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      },
+      "safeIntegerQuantity": false
+    },
+    {
+      "kind": "roll-extra",
+      "input": "12",
+      "checked": true,
+      "extraItems": [
+        {
+          "id": "audit-leiste",
+          "quantity": 12,
+          "properties": {
+            "Zu Teppichboden": "Piumera Teppichboden 400cm 500cm",
+            "Farbe wie Teppichboden": "Sand Hell – 004",
+            "Höhe": "5 cm",
+            "Länge": "12 m"
+          }
+        }
+      ],
+      "sum": 131.39999999999998,
+      "hint": "10,95 € je Meter, Farbe wie Ihr Teppichboden.",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": 60330695491918,
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "004",
+                "_Farbe intern": "Sand Hell – 004",
+                "_Gruppe": "[synthetic-group]"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Piumera Teppichboden 400cm 500cm",
+                "Farbe wie Teppichboden": "Sand Hell – 004",
+                "Höhe": "5 cm",
+                "Länge": "12 m",
+                "_Gruppe": "[synthetic-group]"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "roll-extra",
+      "input": "2,5",
+      "checked": true,
+      "extraItems": [
+        {
+          "id": "audit-leiste",
+          "quantity": 3,
+          "properties": {
+            "Zu Teppichboden": "Piumera Teppichboden 400cm 500cm",
+            "Farbe wie Teppichboden": "Sand Hell – 004",
+            "Höhe": "5 cm",
+            "Länge": "3 m"
+          }
+        }
+      ],
+      "sum": 32.849999999999994,
+      "hint": "2,50 m werden als 3 volle Meter berechnet. 10,95 € je Meter, Farbe wie Ihr Teppichboden.",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": 60330695491918,
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "004",
+                "_Farbe intern": "Sand Hell – 004",
+                "_Gruppe": "[synthetic-group]"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Piumera Teppichboden 400cm 500cm",
+                "Farbe wie Teppichboden": "Sand Hell – 004",
+                "Höhe": "5 cm",
+                "Länge": "3 m",
+                "_Gruppe": "[synthetic-group]"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "roll-extra",
+      "input": "12",
+      "checked": false,
+      "extraItems": [],
+      "sum": 0,
+      "hint": "",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": 60330695491918,
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      }
+    },
+    {
+      "kind": "roll-extra",
+      "input": "",
+      "checked": true,
+      "extraItems": [],
+      "sum": 0,
+      "hint": "Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": 60330695491918,
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      }
+    },
+    {
+      "kind": "roll-extra",
+      "input": "0",
+      "checked": true,
+      "extraItems": [],
+      "sum": 0,
+      "hint": "Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": 60330695491918,
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      }
+    },
+    {
+      "kind": "roll-extra",
+      "input": "-1",
+      "checked": true,
+      "extraItems": [],
+      "sum": 0,
+      "hint": "Bitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.",
+      "payload": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": 60330695491918,
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      }
+    }
+  ],
+  "inheritedCases": [
+    {
+      "index": 0,
+      "label": "package input \"20\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n21,00 m²\nSie bestellen\n−\n11\n+\nOriginalpakete\n\n66 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n22,88 m²\nGesamtpreis 1.165,78 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 1,
+      "label": "package input \"1,5\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,58 m²\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 2,
+      "label": "package input \"0\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 3,
+      "label": "package input \"-1\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 4,
+      "label": "package input \"\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 5,
+      "label": "package input \"20abc\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n21,00 m²\nSie bestellen\n−\n11\n+\nOriginalpakete\n\n66 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n22,88 m²\nGesamtpreis 1.165,78 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 6,
+      "label": "package input \"1.234,56\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,30 m²\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 7,
+      "label": "package input \"999999999999999999999\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,05e+21 m²\nSie bestellen\n−\n504807692307692300000\n+\nOriginalpakete\n\n3.028846153846154e+21 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n1,0500000000000001e+21 m²\nGesamtpreis 53.499.519.230.769.240.000.000,00 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 8,
+      "label": "package input \"Infinity\"",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\nInfinity m²\nSie bestellen\n−\nInfinity\n+\nOriginalpakete\n\nInfinity Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\nInfinity m²\nGesamtpreis ∞ €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 9,
+      "label": "package add 20",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "status": 200,
+      "payload": {
+        "id": "60332523127118",
+        "quantity": 11,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "11",
+          "_qm_gesamt": "22,88",
+          "_qm_pro_paket": "2,08",
+          "_verschnitt": "5%"
+        }
+      },
+      "cart": [
+        {
+          "id": 60332523127118,
+          "title": "Marlow Eiche Nordisch – Klickvinyl 7mm",
+          "quantity": 11,
+          "price": 10598,
+          "line_price": 116578,
+          "properties": {
+            "_bedarf_qm": "20,00",
+            "_pakete": "11",
+            "_qm_gesamt": "22,88",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      ],
+      "total": 116578
+    },
+    {
+      "index": 10,
+      "label": "package cart",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false
+    },
+    {
+      "index": 11,
+      "label": "checkout reachable",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "index": 12,
+      "label": "roll 400x200",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "4\nPASSENDE TEPPICH-FUSSLEISTE\nGekettelte Fußleiste aus Ihrem Teppich\nAuf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.\n10,95 € / m\n5\nHAFTUNTERLAGE FÜR TEPPICHBODEN\nDünne Antirutsch-Unterlage von der Rolle\n80 cm breit · 5 Bahnen = 10 lfm\nab 9,35 € / m\n\nWird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.\n\nGESAMTPREIS\n527,20 €\nBis zu 3 Muster kostenlos\nVersandkostenfrei in Deutschland ab 50 €\nPersönliche Fachberatung\n\nLieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an. Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.\n\nUnsicher beim Maß oder der Farbe?\n\nBeratung anrufen\nFoto per WhatsApp\n\nWir sagen Ihnen, wie viel Sie brauchen – auch ohne Bestellung.\n\n8 m² in den Warenkorb\n\nLieber als fertigen Teppich nach Maß?\n\nAls Teppich nach Maß konfigurieren\n\nAlle Preise inkl. MwSt., zzgl. Versandkosten.\n\nGut zu wissen\n\nSo bestellen Sie Rollenware\n\nGewünschte Länge in cm eingeben – der Gesamtpreis wird automatisch berechnet. Stehen mehrere Rollenbreiten zur Wahl, wählen Sie zuerst die Breite.\n\nDie Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.\n\nBitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.\n\n"
+    },
+    {
+      "index": 13,
+      "label": "leiste checked empty",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "overflow": false,
+      "excerpt": "4\nPASSENDE TEPPICH-FUSSLEISTE\nGekettelte Fußleiste aus Ihrem Teppich\nAuf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.\n10,95 € / m\nHÖHE\n5 cm\n6 cm\n7 cm\n8 cm\n9 cm\n10 cm\nBENÖTIGTE LÄNGE\nm\n\nBitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.\n\n5\nHAFTUNTERLAGE FÜR TEPPICHBODEN\nDünne Antirutsch-Unterlage von der Rolle\n80 cm breit · 5 Bahnen = 10 lfm\nab 9,35 € / m\n\nWird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.\n\nGESAMTPREIS\n527,20 €\nBis zu 3 Muster kostenlos\nVersandkostenfrei in Deutschland ab 50 €\nPersönliche Fachberatung\n\nLieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an. Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.\n\nUnsicher beim Maß oder der Farbe?\n\nBeratung anrufen\nFoto per WhatsApp\n\nWir sagen Ihnen, wie viel Sie brauchen – auch ohne Bestellung.\n\n8 m² in den Warenkorb\n\nLieber als fertigen Teppich nach Maß?\n\nAls Teppich nach Maß konfigurieren\n\nAlle Preise inkl. MwSt., zzgl. Versandkosten.\n\nGut zu wissen\n\nSo bestellen Sie Rollenware\n\nGewünschte Länge in cm eingeben – der Gesamtpreis wird automatisch berechnet. Stehen mehrere Rollenbreiten zur Wahl, wählen Sie zuerst die Breite.\n\nDie Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.\n\nBitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.\n\n"
+    },
+    {
+      "index": 14,
+      "label": "leiste checked empty submitted",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "status": 200,
+      "payload": {
+        "id": 60330695491918,
+        "quantity": 8,
+        "properties": {
+          "Art": "Meterware",
+          "Rollenbreite": "400 cm",
+          "Gewünschte Länge": "200 cm",
+          "Fläche (aufgerundet)": "8,00 m²",
+          "Farbnummer": "004",
+          "_Farbe intern": "Sand Hell – 004"
+        }
+      },
+      "cart": [
+        {
+          "id": 60330695491918,
+          "title": "Piumera Teppichboden 400cm 500cm - Sand Hell / 400cm",
+          "quantity": 8,
+          "price": 6590,
+          "line_price": 52720,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      ],
+      "total": 52720
+    },
+    {
+      "index": 15,
+      "label": "exceptions",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "diag": []
+    },
+    {
+      "index": 16,
+      "label": "package input \"20\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n21,00 m²\nSie bestellen\n−\n11\n+\nOriginalpakete\n\n66 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n22,88 m²\nGesamtpreis 1.165,78 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 17,
+      "label": "package input \"1,5\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,58 m²\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 18,
+      "label": "package input \"0\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 19,
+      "label": "package input \"-1\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 20,
+      "label": "package input \"\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n–\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 21,
+      "label": "package input \"20abc\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n21,00 m²\nSie bestellen\n−\n11\n+\nOriginalpakete\n\n66 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n22,88 m²\nGesamtpreis 1.165,78 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 22,
+      "label": "package input \"1.234,56\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,30 m²\nSie bestellen\n−\n1\n+\nOriginalpaket\n\n6 Planken à 152,4 × 22,8 cm\n\nGesamtfläche\n2,08 m²\nGesamtpreis 105,98 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 23,
+      "label": "package input \"999999999999999999999\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": true,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\n1,05e+21 m²\nSie bestellen\n−\n504807692307692300000\n+\nOriginalpakete\n\n3.028846153846154e+21 Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\n1,0500000000000001e+21 m²\nGesamtpreis 53.499.519.230.769.240.000.000,00 €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 24,
+      "label": "package input \"Infinity\"",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "IHRE BESTELLUNG\n\nBenötigte Fläche inkl. 5% Verschnitt\nInfinity m²\nSie bestellen\n−\nInfinity\n+\nOriginalpakete\n\nInfinity Planken à 152,4 × 22,8 cm (6 je Paket)\n\nGesamtfläche\nInfinity m²\nGesamtpreis ∞ €\nIn den Warenkorb\n\n"
+    },
+    {
+      "index": 25,
+      "label": "package add 20",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "status": 200,
+      "payload": {
+        "id": "60332523127118",
+        "quantity": 11,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "11",
+          "_qm_gesamt": "22,88",
+          "_qm_pro_paket": "2,08",
+          "_verschnitt": "5%"
+        }
+      },
+      "cart": [
+        {
+          "id": 60332523127118,
+          "title": "Marlow Eiche Nordisch – Klickvinyl 7mm",
+          "quantity": 11,
+          "price": 10598,
+          "line_price": 116578,
+          "properties": {
+            "_bedarf_qm": "20,00",
+            "_pakete": "11",
+            "_qm_gesamt": "22,88",
+            "_qm_pro_paket": "2,08",
+            "_verschnitt": "5%"
+          }
+        }
+      ],
+      "total": 116578
+    },
+    {
+      "index": 26,
+      "label": "package cart",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false
+    },
+    {
+      "index": 27,
+      "label": "checkout reachable",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      }
+    },
+    {
+      "index": 28,
+      "label": "roll 400x200",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "4\nPASSENDE TEPPICH-FUSSLEISTE\nGekettelte Fußleiste aus Ihrem Teppich\nAuf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.\n10,95 € / m\n5\nHAFTUNTERLAGE FÜR TEPPICHBODEN\nDünne Antirutsch-Unterlage von der Rolle\n80 cm breit · 5 Bahnen = 10 lfm\nab 9,35 € / m\n\nWird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.\n\nGESAMTPREIS\n527,20 €\nBis zu 3 Muster kostenlos\nVersandkostenfrei in Deutschland ab 50 €\nPersönliche Fachberatung\n\nLieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an. Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.\n\nUnsicher beim Maß oder der Farbe?\n\nBeratung anrufen\nFoto per WhatsApp\n\nWir sagen Ihnen, wie viel Sie brauchen – auch ohne Bestellung.\n\n8 m² in den Warenkorb\n\nLieber als fertigen Teppich nach Maß?\n\nAls Teppich nach Maß konfigurieren\n\nAlle Preise inkl. MwSt., zzgl. Versandkosten.\n\nGut zu wissen\n\nSo bestellen Sie Rollenware\n\nGewünschte Länge in cm eingeben – der Gesamtpreis wird automatisch berechnet. Stehen mehrere Rollenbreiten zur Wahl, wählen Sie zuerst die Breite.\n\nDie Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.\n\nBitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.\n\n"
+    },
+    {
+      "index": 29,
+      "label": "leiste checked empty",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "overflow": false,
+      "excerpt": "4\nPASSENDE TEPPICH-FUSSLEISTE\nGekettelte Fußleiste aus Ihrem Teppich\nAuf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.\n10,95 € / m\nHÖHE\n5 cm\n6 cm\n7 cm\n8 cm\n9 cm\n10 cm\nBENÖTIGTE LÄNGE\nm\n\nBitte Höhe und Länge angeben. Vorschlag ist der Umfang Ihres Stücks.\n\n5\nHAFTUNTERLAGE FÜR TEPPICHBODEN\nDünne Antirutsch-Unterlage von der Rolle\n80 cm breit · 5 Bahnen = 10 lfm\nab 9,35 € / m\n\nWird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.\n\nGESAMTPREIS\n527,20 €\nBis zu 3 Muster kostenlos\nVersandkostenfrei in Deutschland ab 50 €\nPersönliche Fachberatung\n\nLieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an. Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.\n\nUnsicher beim Maß oder der Farbe?\n\nBeratung anrufen\nFoto per WhatsApp\n\nWir sagen Ihnen, wie viel Sie brauchen – auch ohne Bestellung.\n\n8 m² in den Warenkorb\n\nLieber als fertigen Teppich nach Maß?\n\nAls Teppich nach Maß konfigurieren\n\nAlle Preise inkl. MwSt., zzgl. Versandkosten.\n\nGut zu wissen\n\nSo bestellen Sie Rollenware\n\nGewünschte Länge in cm eingeben – der Gesamtpreis wird automatisch berechnet. Stehen mehrere Rollenbreiten zur Wahl, wählen Sie zuerst die Breite.\n\nDie Ware wird in der gewählten Rollenbreite auf Ihre gewünschte Länge zugeschnitten.\n\nBitte prüfen Sie Ihre Maße vor Abschluss der Bestellung sorgfältig.\n\n"
+    },
+    {
+      "index": 30,
+      "label": "leiste checked empty submitted",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "status": 200,
+      "payload": {
+        "id": 60330695491918,
+        "quantity": 8,
+        "properties": {
+          "Art": "Meterware",
+          "Rollenbreite": "400 cm",
+          "Gewünschte Länge": "200 cm",
+          "Fläche (aufgerundet)": "8,00 m²",
+          "Farbnummer": "004",
+          "_Farbe intern": "Sand Hell – 004"
+        }
+      },
+      "cart": [
+        {
+          "id": 60330695491918,
+          "title": "Piumera Teppichboden 400cm 500cm - Sand Hell / 400cm",
+          "quantity": 8,
+          "price": 6590,
+          "line_price": 52720,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "004",
+            "_Farbe intern": "Sand Hell – 004"
+          }
+        }
+      ],
+      "total": 52720
+    },
+    {
+      "index": 31,
+      "label": "exceptions",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "diag": []
+    }
+  ]
+}

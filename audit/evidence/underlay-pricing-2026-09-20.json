@@ -1,0 +1,7336 @@
+{
+  "status": "PASS",
+  "session": "S04",
+  "matrix": "PR-022",
+  "generatedAt": "2026-09-20T04:34:53.338Z",
+  "sourceIntegrity": [
+    {
+      "file": "blocks/tp-rollware-rechner.liquid",
+      "currentSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "historicalLiveSha256": "c7bbab2e15d0c020e46a8f1960eb8652be0d13c3f39651d09324f58dee4e3ad5",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "assets/tp-rollware-art.js",
+      "currentSha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "historicalLiveSha256": "cbf7cdd7837db5be9ff9f1f1ec060afcce20828d34f1fd6141feb3b3e9dbe2f2",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "templates/product.rolle.json",
+      "currentSha256": "e480c7aaed078e72fa0315f334af49f0737ecc976a60eea54ae3de3fca63460e",
+      "historicalLiveSha256": "e480c7aaed078e72fa0315f334af49f0737ecc976a60eea54ae3de3fca63460e",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "snippets/tp-farbe-daten.liquid",
+      "currentSha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe",
+      "historicalLiveSha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe",
+      "matchesHistoricalLive": true
+    }
+  ],
+  "cases": 61,
+  "requests": 54,
+  "grid": {
+    "cases": 198468,
+    "widths": 447,
+    "lengths": 148,
+    "catalogs": 3,
+    "mismatches": 0,
+    "scope": "Uniform single-variant strips in fixed orientation; full-metre boundary +/-1 cm; no exhaustive browser or live-product claim"
+  },
+  "fixture": {
+    "ids": "all synthetic",
+    "currentLiveData": false,
+    "note": "Historical runtime shows 80 cm / 5 strips / 10 lfm and advertised minimum 935c per lfm at 400x200. It does not establish the exact width/price pairing or a complete live variant list. All catalogs here are explicitly synthetic.",
+    "baseCatalog": [
+      {
+        "width": 80,
+        "price": 935
+      },
+      {
+        "width": 120,
+        "price": 1400
+      },
+      {
+        "width": 180,
+        "price": 1900
+      },
+      {
+        "width": 200,
+        "price": 2400
+      }
+    ],
+    "referenceMainPrices": "Historical 6590c per m² meterware / 8900c room; cmExact fixture 66/89c is synthetic.",
+    "footstripPrice": "1095c synthetic pairing based on historical advertised minimum, not API-verified."
+  },
+  "limitations": [
+    "No browser, current MAIN verification, product data read, real cart/server response or checkout.",
+    "Local LiquidJS contract + original JS functions; not Shopify Liquid proof.",
+    "Drawing, section lifecycle, service UI, actual color/width events and meterware tip excluded; isolated main variant state supplied.",
+    "No price or SKU changed. Optional-service absence is not automatically a bug.",
+    "Fixed orientation and one chosen width match source policy; rotation/mixed-width alternatives require business/material confirmation."
+  ],
+  "alternativeLayouts": {
+    "rotation": {
+      "inputCm": [
+        400,
+        201
+      ],
+      "sameDirection": {
+        "width": 80,
+        "strips": 5,
+        "meters": 15,
+        "cents": 14025
+      },
+      "rotated": {
+        "width": 120,
+        "strips": 2,
+        "meters": 8,
+        "cents": 11200
+      },
+      "allowedInPractice": "unknown"
+    },
+    "mixedWidths": {
+      "inputCm": [
+        200,
+        300
+      ],
+      "singleVariant": {
+        "width": 120,
+        "strips": 2,
+        "meters": 6,
+        "cents": 8400
+      },
+      "hypotheticalMixedCents": 7005,
+      "strips": [
+        {
+          "width": 80,
+          "meters": 3
+        },
+        {
+          "width": 120,
+          "meters": 3
+        }
+      ],
+      "allowedInPractice": "unknown"
+    }
+  },
+  "observations": [
+    {
+      "name": "historical hint geometry, synthetic single-price fixture",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 935
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        }
+      ],
+      "before": {
+        "total": "620,70 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 62070,
+      "eventItemCount": 18
+    },
+    {
+      "name": "four-width synthetic catalog",
+      "input": {
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "620,70 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 62070,
+      "eventItemCount": 18
+    },
+    {
+      "name": "with valid footstrip suggested perimeter",
+      "input": {
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "752,10 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Fußleiste 5 cm: 12 m × 10,95 € = 131,40 €",
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+                "Höhe": "5 cm",
+                "Länge": "12 m",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 75210,
+      "eventItemCount": 30
+    },
+    {
+      "name": "with valid footstrip custom length",
+      "input": {
+        "skirt": true,
+        "skirtLength": 7,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "697,35 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Fußleiste 5 cm: 7 m × 10,95 € = 76,65 €",
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 7,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+                "Höhe": "5 cm",
+                "Länge": "7 m",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 69735,
+      "eventItemCount": 25
+    },
+    {
+      "name": "underlay off, footstrip on",
+      "input": {
+        "underlay": false,
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "658,60 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Fußleiste 5 cm: 12 m × 10,95 € = 131,40 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+                "Höhe": "5 cm",
+                "Länge": "12 m",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "payloadTotalCents": 65860,
+      "eventItemCount": 20
+    },
+    {
+      "name": "underlay off",
+      "input": {
+        "underlay": false,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "527,20 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "underlay not configured",
+      "input": {
+        "configured": false,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [],
+      "parsedUnderlay": [],
+      "before": {
+        "total": "527,20 €",
+        "hint": "",
+        "advertisedMinimum": "",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "room width 50 length 201",
+      "input": {
+        "width": 50,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "206,05 €",
+        "hint": "80 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 9,35 € = 28,05 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 2,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "50 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "2,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 1,
+            "meters": 3,
+            "cents": 2805
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 1,
+          "meters": 3,
+          "cents": 2805
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 20605,
+      "eventItemCount": 5
+    },
+    {
+      "name": "room width 79 length 201",
+      "input": {
+        "width": 79,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "206,05 €",
+        "hint": "80 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 9,35 € = 28,05 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 2,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "79 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "2,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 1,
+            "meters": 3,
+            "cents": 2805
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 1,
+          "meters": 3,
+          "cents": 2805
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 20605,
+      "eventItemCount": 5
+    },
+    {
+      "name": "room width 80 length 201",
+      "input": {
+        "width": 80,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "206,05 €",
+        "hint": "80 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 9,35 € = 28,05 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 2,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "80 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "2,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 1,
+            "meters": 3,
+            "cents": 2805
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 1,
+          "meters": 3,
+          "cents": 2805
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 20605,
+      "eventItemCount": 5
+    },
+    {
+      "name": "room width 81 length 201",
+      "input": {
+        "width": 81,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "220,00 €",
+        "hint": "120 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 14,00 € = 42,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 2,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "81 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "2,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 2,
+            "meters": 6,
+            "cents": 5610
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 1,
+          "meters": 3,
+          "cents": 4200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 22000,
+      "eventItemCount": 5
+    },
+    {
+      "name": "room width 119 length 201",
+      "input": {
+        "width": 119,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "309,00 €",
+        "hint": "120 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 14,00 € = 42,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 3,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "119 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "3,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 2,
+            "meters": 6,
+            "cents": 5610
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 1,
+          "meters": 3,
+          "cents": 4200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 30900,
+      "eventItemCount": 6
+    },
+    {
+      "name": "room width 120 length 201",
+      "input": {
+        "width": 120,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "309,00 €",
+        "hint": "120 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 14,00 € = 42,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 3,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "120 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "3,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 1,
+            "meters": 3,
+            "cents": 4200
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 2,
+            "meters": 6,
+            "cents": 5610
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 1,
+          "meters": 3,
+          "cents": 4200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 30900,
+      "eventItemCount": 6
+    },
+    {
+      "name": "room width 121 length 201",
+      "input": {
+        "width": 121,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "323,10 €",
+        "hint": "80 cm breit · 2 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 9,35 € = 56,10 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 3,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "121 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "3,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 2,
+            "meters": 6,
+            "cents": 5610
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 2,
+          "meters": 6,
+          "cents": 5610
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 32310,
+      "eventItemCount": 9
+    },
+    {
+      "name": "room width 179 length 201",
+      "input": {
+        "width": 179,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "413,00 €",
+        "hint": "180 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 19,00 € = 57,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 4,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "179 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 180,
+          "strips": 1,
+          "meters": 3,
+          "cents": 5700
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 41300,
+      "eventItemCount": 7
+    },
+    {
+      "name": "room width 180 length 201",
+      "input": {
+        "width": 180,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "413,00 €",
+        "hint": "180 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 19,00 € = 57,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 4,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "180 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 180,
+          "strips": 1,
+          "meters": 3,
+          "cents": 5700
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 41300,
+      "eventItemCount": 7
+    },
+    {
+      "name": "room width 181 length 201",
+      "input": {
+        "width": 181,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "428,00 €",
+        "hint": "200 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 24,00 € = 72,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 4,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "181 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-3",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-3",
+          "width": 200,
+          "strips": 1,
+          "meters": 3,
+          "cents": 7200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 42800,
+      "eventItemCount": 7
+    },
+    {
+      "name": "room width 199 length 201",
+      "input": {
+        "width": 199,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "428,00 €",
+        "hint": "200 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 24,00 € = 72,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 4,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "199 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-3",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-3",
+          "width": 200,
+          "strips": 1,
+          "meters": 3,
+          "cents": 7200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 42800,
+      "eventItemCount": 7
+    },
+    {
+      "name": "room width 200 length 201",
+      "input": {
+        "width": 200,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "517,00 €",
+        "hint": "200 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 24,00 € = 72,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 5,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "200 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-3",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-3",
+          "width": 200,
+          "strips": 1,
+          "meters": 3,
+          "cents": 7200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 51700,
+      "eventItemCount": 8
+    },
+    {
+      "name": "room width 201 length 201",
+      "input": {
+        "width": 201,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "529,00 €",
+        "hint": "120 cm breit · 2 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 14,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 5,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "201 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 2,
+          "meters": 6,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 52900,
+      "eventItemCount": 11
+    },
+    {
+      "name": "room width 239 length 201",
+      "input": {
+        "width": 239,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "529,00 €",
+        "hint": "120 cm breit · 2 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 14,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 5,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "239 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 2,
+          "meters": 6,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 52900,
+      "eventItemCount": 11
+    },
+    {
+      "name": "room width 240 length 201",
+      "input": {
+        "width": 240,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "529,00 €",
+        "hint": "120 cm breit · 2 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 14,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 5,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "240 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 2,
+          "meters": 6,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 52900,
+      "eventItemCount": 11
+    },
+    {
+      "name": "room width 241 length 201",
+      "input": {
+        "width": 241,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "557,20 €",
+        "hint": "80 cm breit · 4 Bahnen = 12 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 12 m × 9,35 € = 112,20 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 5,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "241 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "4",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 4,
+            "meters": 12,
+            "cents": 11220
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 6,
+            "cents": 11400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 3,
+            "meters": 9,
+            "cents": 12600
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 4,
+          "meters": 12,
+          "cents": 11220
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 55720,
+      "eventItemCount": 17
+    },
+    {
+      "name": "room width 399 length 201",
+      "input": {
+        "width": 399,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "941,25 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 9,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "399 cm",
+                "Aus Rolle": "500 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "9,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 94125,
+      "eventItemCount": 24
+    },
+    {
+      "name": "room width 400 length 201",
+      "input": {
+        "width": 400,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "941,25 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 9,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "400 cm",
+                "Aus Rolle": "500 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "9,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 94125,
+      "eventItemCount": 24
+    },
+    {
+      "name": "room width 401 length 201",
+      "input": {
+        "width": 401,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "969,00 €",
+        "hint": "120 cm breit · 4 Bahnen = 12 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 12 m × 14,00 € = 168,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 9,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "401 cm",
+                "Aus Rolle": "500 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "9,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "4",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 6,
+            "meters": 18,
+            "cents": 16830
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 3,
+            "meters": 9,
+            "cents": 21600
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 4,
+          "meters": 12,
+          "cents": 16800
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 96900,
+      "eventItemCount": 21
+    },
+    {
+      "name": "room width 495 length 201",
+      "input": {
+        "width": 495,
+        "length": 201,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "1.061,00 €",
+        "hint": "180 cm breit · 3 Bahnen = 9 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 9 m × 19,00 € = 171,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 10,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "495 cm",
+                "Aus Rolle": "500 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "10,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 9,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "3",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 7,
+            "meters": 21,
+            "cents": 19635
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 5,
+            "meters": 15,
+            "cents": 21000
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 3,
+            "meters": 9,
+            "cents": 21600
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 180,
+          "strips": 3,
+          "meters": 9,
+          "cents": 17100
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 106100,
+      "eventItemCount": 19
+    },
+    {
+      "name": "meter length 100",
+      "input": {
+        "length": 100,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "310,35 €",
+        "hint": "80 cm breit · 5 Bahnen = 5 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 5 m × 9,35 € = 46,75 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 4,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "100 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 5,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 5,
+            "cents": 4675
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 2,
+            "cents": 4800
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 4,
+            "cents": 5600
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 3,
+            "cents": 5700
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 5,
+          "cents": 4675
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 31035,
+      "eventItemCount": 9
+    },
+    {
+      "name": "meter length 101",
+      "input": {
+        "length": 101,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "423,00 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 5,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "101 cm",
+                "Fläche (aufgerundet)": "5,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 42300,
+      "eventItemCount": 15
+    },
+    {
+      "name": "meter length 199",
+      "input": {
+        "length": 199,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "620,70 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "199 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 62070,
+      "eventItemCount": 18
+    },
+    {
+      "name": "meter length 201",
+      "input": {
+        "length": 201,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "733,35 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 9,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "9,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 73335,
+      "eventItemCount": 24
+    },
+    {
+      "name": "meter length 299",
+      "input": {
+        "length": 299,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "931,05 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 12,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "299 cm",
+                "Fläche (aufgerundet)": "12,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 93105,
+      "eventItemCount": 27
+    },
+    {
+      "name": "meter length 300",
+      "input": {
+        "length": 300,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "931,05 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 12,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "300 cm",
+                "Fläche (aufgerundet)": "12,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 93105,
+      "eventItemCount": 27
+    },
+    {
+      "name": "meter length 301",
+      "input": {
+        "length": 301,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "1.043,70 €",
+        "hint": "80 cm breit · 5 Bahnen = 20 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 20 m × 9,35 € = 187,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 13,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "301 cm",
+                "Fläche (aufgerundet)": "13,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 20,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 20,
+            "cents": 18700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 8,
+            "cents": 19200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 16,
+            "cents": 22400
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 12,
+            "cents": 22800
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 20,
+          "cents": 18700
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 104370,
+      "eventItemCount": 33
+    },
+    {
+      "name": "meter length 4999",
+      "input": {
+        "length": 4999,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "15.517,50 €",
+        "hint": "80 cm breit · 5 Bahnen = 250 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 250 m × 9,35 € = 2.337,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 200,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "4999 cm",
+                "Fläche (aufgerundet)": "200,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 250,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 250,
+            "cents": 233750
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 100,
+            "cents": 240000
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 200,
+            "cents": 280000
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 150,
+            "cents": 285000
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 250,
+          "cents": 233750
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 1551750,
+      "eventItemCount": 450
+    },
+    {
+      "name": "meter length 5000",
+      "input": {
+        "length": 5000,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "15.517,50 €",
+        "hint": "80 cm breit · 5 Bahnen = 250 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 250 m × 9,35 € = 2.337,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 200,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "5000 cm",
+                "Fläche (aufgerundet)": "200,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 250,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 250,
+            "cents": 233750
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 100,
+            "cents": 240000
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 200,
+            "cents": 280000
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 150,
+            "cents": 285000
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 250,
+          "cents": 233750
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 1551750,
+      "eventItemCount": 450
+    },
+    {
+      "name": "meter 500 cm width",
+      "input": {
+        "width": 500,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "773,00 €",
+        "hint": "180 cm breit · 3 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 19,00 € = 114,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-500",
+              "quantity": 10,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "500 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "10,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "3",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 7,
+            "meters": 14,
+            "cents": 13090
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 5,
+            "meters": 10,
+            "cents": 14000
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 3,
+            "meters": 6,
+            "cents": 14400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 180,
+          "strips": 3,
+          "meters": 6,
+          "cents": 11400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 77300,
+      "eventItemCount": 16
+    },
+    {
+      "name": "rotated synthetic dimensions 201x400",
+      "input": {
+        "width": 201,
+        "length": 400,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "913,00 €",
+        "hint": "120 cm breit · 2 Bahnen = 8 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 8 m × 14,00 € = 112,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 9,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "201 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "400 cm",
+                "Fläche (aufgerundet)": "9,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 8,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 120 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 12,
+            "cents": 11220
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 2,
+            "meters": 8,
+            "cents": 15200
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 8,
+            "cents": 19200
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 120,
+          "strips": 2,
+          "meters": 8,
+          "cents": 11200
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 91300,
+      "eventItemCount": 17
+    },
+    {
+      "name": "decimal dimensions",
+      "input": {
+        "width": 179.1,
+        "length": 200.1,
+        "mode": "raum"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "413,00 €",
+        "hint": "180 cm breit · 1 Bahn = 3 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 3 m × 19,00 € = 57,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-Wunschmaß",
+              "quantity": 4,
+              "properties": {
+                "Art": "Raummaß",
+                "Ihre Breite": "180 cm",
+                "Aus Rolle": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche (aufgerundet)": "4,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 3,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "1",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 1,
+            "meters": 3,
+            "cents": 5700
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 1,
+            "meters": 3,
+            "cents": 7200
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 2,
+            "meters": 6,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 3,
+            "meters": 9,
+            "cents": 8415
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 180,
+          "strips": 1,
+          "meters": 3,
+          "cents": 5700
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 41300,
+      "eventItemCount": 7
+    },
+    {
+      "name": "cmExact material mode",
+      "input": {
+        "width": 400,
+        "length": 201,
+        "cmExact": true,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "670,89 €",
+        "hint": "80 cm breit · 5 Bahnen = 15 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 15 m × 9,35 € = 140,25 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 804,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "201 cm",
+                "Fläche": "8,04 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 15,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 15,
+            "cents": 14025
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 6,
+            "cents": 14400
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 12,
+            "cents": 16800
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 9,
+            "cents": 17100
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 15,
+          "cents": 14025
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 67089,
+      "eventItemCount": 819
+    },
+    {
+      "name": "lowest meter price is not lowest total",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 1000
+          },
+          {
+            "width": 200,
+            "price": 2100
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 1000
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 1000,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "611,20 €",
+        "hint": "200 cm breit · 2 Bahnen = 4 lfm",
+        "advertisedMinimum": "ab 10,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 4 m × 21,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 4,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 8400
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 10000
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 200,
+          "strips": 2,
+          "meters": 4,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 61120,
+      "eventItemCount": 12
+    },
+    {
+      "name": "unavailable cheapest variant excluded",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 1,
+            "available": false
+          },
+          {
+            "width": 200,
+            "price": 2100
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "611,20 €",
+        "hint": "200 cm breit · 2 Bahnen = 4 lfm",
+        "advertisedMinimum": "ab 21,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 4 m × 21,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 4,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 8400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 200,
+          "strips": 2,
+          "meters": 4,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 61120,
+      "eventItemCount": 12
+    },
+    {
+      "name": "zero and negative price excluded",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 0
+          },
+          {
+            "width": 120,
+            "price": -100
+          },
+          {
+            "width": 200,
+            "price": 2100
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2100,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "611,20 €",
+        "hint": "200 cm breit · 2 Bahnen = 4 lfm",
+        "advertisedMinimum": "ab 21,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 4 m × 21,00 € = 84,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-2",
+              "quantity": 4,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 200 cm breit (je lfm)",
+                "Bahnen": "2",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-2",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 8400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-2",
+          "width": 200,
+          "strips": 2,
+          "meters": 4,
+          "cents": 8400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 61120,
+      "eventItemCount": 12
+    },
+    {
+      "name": "title without width excluded",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 1,
+            "title": "Unbekannte Breite",
+            "unrecognized": true
+          },
+          {
+            "width": 180,
+            "price": 1900
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "Unbekannte Breite",
+          "price": 1
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        }
+      ],
+      "before": {
+        "total": "641,20 €",
+        "hint": "180 cm breit · 3 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 19,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 19,00 € = 114,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "3",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 180,
+          "strips": 3,
+          "meters": 6,
+          "cents": 11400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 64120,
+      "eventItemCount": 14
+    },
+    {
+      "name": "single compact width title",
+      "input": {
+        "catalog": [
+          {
+            "width": 180,
+            "price": 1900,
+            "title": "180cm"
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "180cm",
+          "price": 1900
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "180cm",
+          "price": 1900,
+          "breite": 180
+        }
+      ],
+      "before": {
+        "total": "641,20 €",
+        "hint": "180 cm breit · 3 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 19,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 19,00 € = 114,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "180cm",
+                "Bahnen": "3",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 180,
+          "strips": 3,
+          "meters": 6,
+          "cents": 11400
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 64120,
+      "eventItemCount": 14
+    },
+    {
+      "name": "no recognized width",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 935,
+            "title": "Unbekannte Breite",
+            "unrecognized": true
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "Unbekannte Breite",
+          "price": 935
+        }
+      ],
+      "parsedUnderlay": [],
+      "before": {
+        "total": "527,20 €",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "no available underlay variants",
+      "input": {
+        "catalog": [
+          {
+            "width": 80,
+            "price": 935,
+            "available": false
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [],
+      "parsedUnderlay": [],
+      "before": {
+        "total": "527,20 €",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "duplicate widths choose cheaper",
+      "input": {
+        "catalog": [
+          {
+            "width": 180,
+            "price": 1900
+          },
+          {
+            "width": 180,
+            "price": 1500
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1500
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1500,
+          "breite": 180
+        }
+      ],
+      "before": {
+        "total": "617,20 €",
+        "hint": "180 cm breit · 3 Bahnen = 6 lfm",
+        "advertisedMinimum": "ab 15,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 6 m × 15,00 € = 90,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-1",
+              "quantity": 6,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 180 cm breit (je lfm)",
+                "Bahnen": "3",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-1",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 9000
+          },
+          {
+            "id": "audit-haft-0",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-1",
+          "width": 180,
+          "strips": 3,
+          "meters": 6,
+          "cents": 9000
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 61720,
+      "eventItemCount": 14
+    },
+    {
+      "name": "equal total candidates",
+      "input": {
+        "catalog": [
+          {
+            "width": 100,
+            "price": 1000
+          },
+          {
+            "width": 200,
+            "price": 2000
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 100 cm breit (je lfm)",
+          "price": 1000
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2000
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 100 cm breit (je lfm)",
+          "price": 1000,
+          "breite": 100
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2000,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "607,20 €",
+        "hint": "100 cm breit · 4 Bahnen = 8 lfm",
+        "advertisedMinimum": "ab 10,00 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 8 m × 10,00 € = 80,00 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 8,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 100 cm breit (je lfm)",
+                "Bahnen": "4",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 100,
+            "strips": 4,
+            "meters": 8,
+            "cents": 8000
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 8000
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 100,
+          "strips": 4,
+          "meters": 8,
+          "cents": 8000
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 60720,
+      "eventItemCount": 16
+    },
+    {
+      "name": "cent tie candidates",
+      "input": {
+        "catalog": [
+          {
+            "width": 100,
+            "price": 123
+          },
+          {
+            "width": 200,
+            "price": 246
+          }
+        ],
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 100 cm breit (je lfm)",
+          "price": 123
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 246
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 100 cm breit (je lfm)",
+          "price": 123,
+          "breite": 100
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 246,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "537,04 €",
+        "hint": "100 cm breit · 4 Bahnen = 8 lfm",
+        "advertisedMinimum": "ab 1,23 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Haftunterlage: 8 m × 1,23 € = 9,84 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 8,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 100 cm breit (je lfm)",
+                "Bahnen": "4",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 100,
+            "strips": 4,
+            "meters": 8,
+            "cents": 984
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 984
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 100,
+          "strips": 4,
+          "meters": 8,
+          "cents": 984
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 53704,
+      "eventItemCount": 16
+    },
+    {
+      "name": "double submit with extras",
+      "input": {
+        "doubleClick": true,
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "752,10 €",
+        "hint": "80 cm breit · 5 Bahnen = 10 lfm",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [
+          "+ Fußleiste 5 cm: 12 m × 10,95 € = 131,40 €",
+          "+ Haftunterlage: 10 m × 9,35 € = 93,50 €"
+        ],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-main-400",
+              "quantity": 8,
+              "properties": {
+                "Art": "Meterware",
+                "Rollenbreite": "400 cm",
+                "Gewünschte Länge": "200 cm",
+                "Fläche (aufgerundet)": "8,00 m²",
+                "Farbnummer": "TEST",
+                "_Farbe intern": "Auditfarbe – TEST",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-leiste",
+              "quantity": 12,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Farbe wie Teppichboden": "Auditfarbe (TEST)",
+                "Höhe": "5 cm",
+                "Länge": "12 m",
+                "_Gruppe": "T-AUDIT"
+              }
+            },
+            {
+              "id": "audit-haft-0",
+              "quantity": 10,
+              "properties": {
+                "Zu Teppichboden": "Synthetic roll fixture",
+                "Ausführung": "1 mm, 80 cm breit (je lfm)",
+                "Bahnen": "5",
+                "_Gruppe": "T-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "oracle": {
+        "candidates": [
+          {
+            "id": "audit-haft-0",
+            "width": 80,
+            "strips": 5,
+            "meters": 10,
+            "cents": 9350
+          },
+          {
+            "id": "audit-haft-3",
+            "width": 200,
+            "strips": 2,
+            "meters": 4,
+            "cents": 9600
+          },
+          {
+            "id": "audit-haft-1",
+            "width": 120,
+            "strips": 4,
+            "meters": 8,
+            "cents": 11200
+          },
+          {
+            "id": "audit-haft-2",
+            "width": 180,
+            "strips": 3,
+            "meters": 6,
+            "cents": 11400
+          }
+        ],
+        "chosen": {
+          "id": "audit-haft-0",
+          "width": 80,
+          "strips": 5,
+          "meters": 10,
+          "cents": 9350
+        },
+        "priceMatchesUniformMinimum": true,
+        "coverageSufficient": true
+      },
+      "payloadTotalCents": 75210,
+      "eventItemCount": 30
+    },
+    {
+      "name": "release empty",
+      "input": {
+        "release": "",
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "527,20 €",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "release Verfuegbar",
+      "input": {
+        "release": "Verfuegbar",
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "527,20 €",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "release Nicht verfügbar",
+      "input": {
+        "release": "Nicht verfügbar",
+        "skirt": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "527,20 €",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": true,
+        "lines": [],
+        "ariaDisabled": "false"
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-main-400",
+          "quantity": 8,
+          "properties": {
+            "Art": "Meterware",
+            "Rollenbreite": "400 cm",
+            "Gewünschte Länge": "200 cm",
+            "Fläche (aufgerundet)": "8,00 m²",
+            "Farbnummer": "TEST",
+            "_Farbe intern": "Auditfarbe – TEST"
+          }
+        }
+      },
+      "payloadTotalCents": 52720,
+      "eventItemCount": 8
+    },
+    {
+      "name": "empty length",
+      "input": {
+        "length": "",
+        "blocked": true,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "zero length",
+      "input": {
+        "length": 0,
+        "blocked": true,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "negative length",
+      "input": {
+        "length": -1,
+        "blocked": true,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "short length",
+      "input": {
+        "length": 99,
+        "blocked": true,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "too long",
+      "input": {
+        "length": 5001,
+        "blocked": true,
+        "width": 400,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "room width over max",
+      "input": {
+        "width": 496,
+        "mode": "raum",
+        "blocked": true,
+        "length": 200
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    },
+    {
+      "name": "main unavailable",
+      "input": {
+        "mainAvailable": false,
+        "blocked": true,
+        "width": 400,
+        "length": 200,
+        "mode": "meter"
+      },
+      "renderedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400
+        }
+      ],
+      "parsedUnderlay": [
+        {
+          "id": "audit-haft-0",
+          "title": "1 mm, 80 cm breit (je lfm)",
+          "price": 935,
+          "breite": 80
+        },
+        {
+          "id": "audit-haft-1",
+          "title": "1 mm, 120 cm breit (je lfm)",
+          "price": 1400,
+          "breite": 120
+        },
+        {
+          "id": "audit-haft-2",
+          "title": "1 mm, 180 cm breit (je lfm)",
+          "price": 1900,
+          "breite": 180
+        },
+        {
+          "id": "audit-haft-3",
+          "title": "1 mm, 200 cm breit (je lfm)",
+          "price": 2400,
+          "breite": 200
+        }
+      ],
+      "before": {
+        "total": "–",
+        "hint": "Von der Rolle, Preis je laufendem Meter",
+        "advertisedMinimum": "ab 9,35 € / m",
+        "underlayHidden": false,
+        "lines": [],
+        "ariaDisabled": "true"
+      },
+      "request": null
+    }
+  ]
+}

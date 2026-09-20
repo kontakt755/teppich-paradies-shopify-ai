@@ -1,0 +1,1037 @@
+{
+  "date": "2026-09-20",
+  "scope": "PR-023b.1",
+  "reproductionStatus": "PASS",
+  "caseCount": 17,
+  "interceptedRequests": 14,
+  "localCartRenders": 28,
+  "sourceIntegrity": [
+    {
+      "file": "blocks/paket-auswahl.liquid",
+      "sha256": "5133e3dcfafb59a51cac2332264767fdbd6658d7c9b354e9df2225a472038521",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "snippets/tp-verkaufseinheit.liquid",
+      "sha256": "eecb9679aff191a9867957c400118c9faa460ab06cc76588717f2a5d8a9ce226",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "snippets/tp-price-per-sqm.liquid",
+      "sha256": "d060daf694032609723f2840c10a6b343931ca60cd34817b0e21b188cf9aa79d",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "snippets/tp-paketinhalt.liquid",
+      "sha256": "fd5f8a49335eb43aed4ac79c9634d86f1718ce58c438916ec8446e9a153ba68e",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "snippets/price.liquid",
+      "sha256": "d66823e67e13a9c3a9ba24df2141e1a9c8f9053dbad16388b346cc3eac515c03",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "snippets/tp-cart-paketzeile.liquid",
+      "sha256": "7e045c1e59e50ad34d6d7bbad80f28dbd422dcf27b319efc218c425718a660a3",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.planken.json",
+      "sha256": "95ec8e8a59a8fe56447f7073a7482459891af7847a320304b4ea983289f1aa26",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.fliese.json",
+      "sha256": "0c766e2e5574158818c2fd8868591676326cd0343d5bec194ca3bc504bde0fa5",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.rolle.json",
+      "sha256": "e480c7aaed078e72fa0315f334af49f0737ecc976a60eea54ae3de3fca63460e",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.fixpreis.json",
+      "sha256": "87ba9b88fbda7e8afde248837cab1ca943421ed8b153ea1d98b1d2b6e6ad95f8",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.zubehoer.json",
+      "sha256": "b9f23ba46f1ffd8d64558444c822450c07694dfb345edc948dbea903526e142d",
+      "historicalLiveMatch": true
+    }
+  ],
+  "templateMapping": [
+    {
+      "file": "product.planken.json",
+      "blocks": [
+        {
+          "type": "paket-auswahl",
+          "disabled": false
+        },
+        {
+          "type": "buy-buttons",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "file": "product.fliese.json",
+      "blocks": [
+        {
+          "type": "paket-auswahl",
+          "disabled": false
+        },
+        {
+          "type": "buy-buttons",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "file": "product.rolle.json",
+      "blocks": [
+        {
+          "type": "tp-rollware-rechner",
+          "disabled": false
+        },
+        {
+          "type": "buy-buttons",
+          "disabled": true
+        }
+      ]
+    },
+    {
+      "file": "product.fixpreis.json",
+      "blocks": [
+        {
+          "type": "tp-zubehoer-menge",
+          "disabled": false
+        },
+        {
+          "type": "buy-buttons",
+          "disabled": false
+        }
+      ]
+    },
+    {
+      "file": "product.zubehoer.json",
+      "blocks": [
+        {
+          "type": "tp-zubehoer-menge",
+          "disabled": false
+        },
+        {
+          "type": "buy-buttons",
+          "disabled": false
+        }
+      ]
+    }
+  ],
+  "unitContracts": [
+    {
+      "name": "PVC variant width",
+      "actual": "rolle"
+    },
+    {
+      "name": "fixed bar product",
+      "actual": "stueck"
+    },
+    {
+      "name": "plain item",
+      "actual": "einzel"
+    }
+  ],
+  "observations": [
+    {
+      "name": "missing package metafield",
+      "kind": "gate",
+      "art": "einzel",
+      "hasBlock": false
+    },
+    {
+      "name": "zero package metafield",
+      "kind": "gate",
+      "art": "einzel",
+      "hasBlock": false
+    },
+    {
+      "name": "negative package metafield",
+      "kind": "gate",
+      "art": "einzel",
+      "hasBlock": false
+    },
+    {
+      "name": "Quadra historical price contract no waste",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm"
+      },
+      "input": "20",
+      "waste": false,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 4,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "4",
+          "_qm_gesamt": "20,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "0%"
+        }
+      },
+      "cents": 117800,
+      "displays": {
+        "total": "1.178,00 €",
+        "area": "20,00 m²",
+        "pieces": "80 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 4,
+          "text": "4 Originalpakete80 Fliesen à 50 × 50 cmGesamtfläche: 20,00 m²",
+          "exactAreaMilli": 20000,
+          "displayedAreaMilli": 20000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Quadra 5 percent reserve",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm"
+      },
+      "input": "20",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 5,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "5",
+          "_qm_gesamt": "25,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 147250,
+      "displays": {
+        "total": "1.472,50 €",
+        "area": "25,00 m²",
+        "pieces": "100 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 6,
+          "text": "6 Originalpakete120 Fliesen à 50 × 50 cmGesamtfläche: 30,00 m²",
+          "exactAreaMilli": 30000,
+          "displayedAreaMilli": 30000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Quadra subpackage requirement",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm"
+      },
+      "input": "0,25",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 1,
+        "properties": {
+          "_bedarf_qm": "0,25",
+          "_pakete": "1",
+          "_qm_gesamt": "5,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 29450,
+      "displays": {
+        "total": "294,50 €",
+        "area": "5,00 m²",
+        "pieces": "20 Fliesen à 50 × 50 cm"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 1,
+          "text": "1 Originalpaket20 Fliesen à 50 × 50 cmGesamtfläche: 5,00 m²",
+          "exactAreaMilli": 5000,
+          "displayedAreaMilli": 5000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 2,
+          "text": "2 Originalpakete40 Fliesen à 50 × 50 cmGesamtfläche: 10,00 m²",
+          "exactAreaMilli": 10000,
+          "displayedAreaMilli": 10000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "package precedence over contradictory roll field",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm",
+        "rollWidth": 4
+      },
+      "input": "20",
+      "waste": false,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 4,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "4",
+          "_qm_gesamt": "20,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "0%"
+        }
+      },
+      "cents": 117800,
+      "displays": {
+        "total": "1.178,00 €",
+        "area": "20,00 m²",
+        "pieces": "80 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 4,
+          "text": "4 Originalpakete80 Fliesen à 50 × 50 cmGesamtfläche: 20,00 m²",
+          "exactAreaMilli": 20000,
+          "displayedAreaMilli": 20000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "package compare-at price",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm",
+        "compare": 35000
+      },
+      "input": "20",
+      "waste": false,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 4,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "4",
+          "_qm_gesamt": "20,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "0%"
+        }
+      },
+      "cents": 117800,
+      "displays": {
+        "total": "1.178,00 €",
+        "area": "20,00 m²",
+        "pieces": "80 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "70,00 €/m² 58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "content.price_regular 70,00 €/m² content.price_sale 58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 4,
+          "text": "4 Originalpakete80 Fliesen à 50 × 50 cmGesamtfläche: 20,00 m²",
+          "exactAreaMilli": 20000,
+          "displayedAreaMilli": 20000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Klebe synthetic 6 packages 20.04 sqm",
+      "kind": "package",
+      "fixture": {
+        "sqm": 3.34,
+        "price": 10337,
+        "type": "Klebevinyl"
+      },
+      "input": "19",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "3.34",
+        "packagePriceCents": "10337",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 6,
+        "properties": {
+          "_bedarf_qm": "19,00",
+          "_pakete": "6",
+          "_qm_gesamt": "20,04",
+          "_qm_pro_paket": "3,34",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 62022,
+      "displays": {
+        "total": "620,22 €",
+        "area": "20,04 m²",
+        "pieces": null
+      },
+      "pdp": "30,95 €/m² 103,37 € pro Originalpaket 1 Paket = 3,34 m²",
+      "views": {
+        "collection": "30,95 €/m² 103,37 € / Paket · 3,34 m²",
+        "product": "30,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 6,
+          "text": "6 OriginalpaketeGesamtfläche: 20,04 m²",
+          "exactAreaMilli": 20040,
+          "displayedAreaMilli": 20040,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 7,
+          "text": "7 OriginalpaketeGesamtfläche: 23,38 m²",
+          "exactAreaMilli": 23380,
+          "displayedAreaMilli": 23380,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Klebe synthetic next package",
+      "kind": "package",
+      "fixture": {
+        "sqm": 3.34,
+        "price": 10337,
+        "type": "Klebevinyl"
+      },
+      "input": "20",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "3.34",
+        "packagePriceCents": "10337",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 7,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "7",
+          "_qm_gesamt": "23,38",
+          "_qm_pro_paket": "3,34",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 72359,
+      "displays": {
+        "total": "723,59 €",
+        "area": "23,38 m²",
+        "pieces": null
+      },
+      "pdp": "30,95 €/m² 103,37 € pro Originalpaket 1 Paket = 3,34 m²",
+      "views": {
+        "collection": "30,95 €/m² 103,37 € / Paket · 3,34 m²",
+        "product": "30,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 7,
+          "text": "7 OriginalpaketeGesamtfläche: 23,38 m²",
+          "exactAreaMilli": 23380,
+          "displayedAreaMilli": 23380,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 8,
+          "text": "8 OriginalpaketeGesamtfläche: 26,72 m²",
+          "exactAreaMilli": 26720,
+          "displayedAreaMilli": 26720,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Klebe missing content fields remain absent",
+      "kind": "package",
+      "fixture": {
+        "sqm": 3.34,
+        "price": 10337,
+        "type": "Klebevinyl",
+        "pieces": 0
+      },
+      "input": "19",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "3.34",
+        "packagePriceCents": "10337",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "0",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 6,
+        "properties": {
+          "_bedarf_qm": "19,00",
+          "_pakete": "6",
+          "_qm_gesamt": "20,04",
+          "_qm_pro_paket": "3,34",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 62022,
+      "displays": {
+        "total": "620,22 €",
+        "area": "20,04 m²",
+        "pieces": null
+      },
+      "pdp": "30,95 €/m² 103,37 € pro Originalpaket 1 Paket = 3,34 m²",
+      "views": {
+        "collection": "30,95 €/m² 103,37 € / Paket · 3,34 m²",
+        "product": "30,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 6,
+          "text": "6 OriginalpaketeGesamtfläche: 20,04 m²",
+          "exactAreaMilli": 20040,
+          "displayedAreaMilli": 20040,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 7,
+          "text": "7 OriginalpaketeGesamtfläche: 23,38 m²",
+          "exactAreaMilli": 23380,
+          "displayedAreaMilli": 23380,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "Klebe synthetic pieces fixture",
+      "kind": "package",
+      "fixture": {
+        "sqm": 3.34,
+        "price": 10337,
+        "type": "Klebevinyl",
+        "pieces": 10,
+        "label": "Planken",
+        "format": "100 × 33,4 cm"
+      },
+      "input": "19",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "3.34",
+        "packagePriceCents": "10337",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "10",
+        "pieceLabel": "Planken",
+        "pieceFormat": "100 × 33,4 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 6,
+        "properties": {
+          "_bedarf_qm": "19,00",
+          "_pakete": "6",
+          "_qm_gesamt": "20,04",
+          "_qm_pro_paket": "3,34",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 62022,
+      "displays": {
+        "total": "620,22 €",
+        "area": "20,04 m²",
+        "pieces": "60 Planken à 100 × 33,4 cm (10 je Paket)"
+      },
+      "pdp": "30,95 €/m² 103,37 € pro Originalpaket 1 Paket = 3,34 m² · 10 Planken à 100 × 33,4 cm",
+      "views": {
+        "collection": "30,95 €/m² 103,37 € / Paket · 3,34 m²",
+        "product": "30,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 6,
+          "text": "6 Originalpakete60 Planken à 100 × 33,4 cmGesamtfläche: 20,04 m²",
+          "exactAreaMilli": 20040,
+          "displayedAreaMilli": 20040,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 7,
+          "text": "7 Originalpakete70 Planken à 100 × 33,4 cmGesamtfläche: 23,38 m²",
+          "exactAreaMilli": 23380,
+          "displayedAreaMilli": 23380,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "three decimals 0.794 single package",
+      "kind": "package",
+      "fixture": {
+        "sqm": 0.794,
+        "price": 4125
+      },
+      "input": "0,75",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "0.794",
+        "packagePriceCents": "4125",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 1,
+        "properties": {
+          "_bedarf_qm": "0,750",
+          "_pakete": "1",
+          "_qm_gesamt": "0,794",
+          "_qm_pro_paket": "0,794",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 4125,
+      "displays": {
+        "total": "41,25 €",
+        "area": "0,794 m²",
+        "pieces": null
+      },
+      "pdp": "51,95 €/m² 41,25 € pro Originalpaket 1 Paket = 0,794 m²",
+      "views": {
+        "collection": "51,95 €/m² 41,25 € / Paket · 0,794 m²",
+        "product": "51,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 1,
+          "text": "1 OriginalpaketGesamtfläche: 0,79 m²",
+          "exactAreaMilli": 794,
+          "displayedAreaMilli": 790,
+          "precisionLostMilli": 4
+        },
+        {
+          "quantity": 2,
+          "text": "2 OriginalpaketeGesamtfläche: 1,59 m²",
+          "exactAreaMilli": 1588,
+          "displayedAreaMilli": 1590,
+          "precisionLostMilli": -2
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "three decimals 0.794 two packages",
+      "kind": "package",
+      "fixture": {
+        "sqm": 0.794,
+        "price": 4125
+      },
+      "input": "1,5",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "0.794",
+        "packagePriceCents": "4125",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 2,
+        "properties": {
+          "_bedarf_qm": "1,500",
+          "_pakete": "2",
+          "_qm_gesamt": "1,588",
+          "_qm_pro_paket": "0,794",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 8250,
+      "displays": {
+        "total": "82,50 €",
+        "area": "1,588 m²",
+        "pieces": null
+      },
+      "pdp": "51,95 €/m² 41,25 € pro Originalpaket 1 Paket = 0,794 m²",
+      "views": {
+        "collection": "51,95 €/m² 41,25 € / Paket · 0,794 m²",
+        "product": "51,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 2,
+          "text": "2 OriginalpaketeGesamtfläche: 1,59 m²",
+          "exactAreaMilli": 1588,
+          "displayedAreaMilli": 1590,
+          "precisionLostMilli": -2
+        },
+        {
+          "quantity": 3,
+          "text": "3 OriginalpaketeGesamtfläche: 2,38 m²",
+          "exactAreaMilli": 2382,
+          "displayedAreaMilli": 2380,
+          "precisionLostMilli": 2
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "three decimals 1.892 sixteen packages",
+      "kind": "package",
+      "fixture": {
+        "sqm": 1.892,
+        "price": 9829
+      },
+      "input": "28",
+      "waste": true,
+      "renderedDataset": {
+        "sqmPerPackage": "1.892",
+        "packagePriceCents": "9829",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "",
+        "pieceLabel": "Stück",
+        "pieceFormat": ""
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 16,
+        "properties": {
+          "_bedarf_qm": "28,000",
+          "_pakete": "16",
+          "_qm_gesamt": "30,272",
+          "_qm_pro_paket": "1,892",
+          "_verschnitt": "5%"
+        }
+      },
+      "cents": 157264,
+      "displays": {
+        "total": "1.572,64 €",
+        "area": "30,272 m²",
+        "pieces": null
+      },
+      "pdp": "51,95 €/m² 98,29 € pro Originalpaket 1 Paket = 1,892 m²",
+      "views": {
+        "collection": "51,95 €/m² 98,29 € / Paket · 1,892 m²",
+        "product": "51,95 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 16,
+          "text": "16 OriginalpaketeGesamtfläche: 30,27 m²",
+          "exactAreaMilli": 30272,
+          "displayedAreaMilli": 30270,
+          "precisionLostMilli": 2
+        },
+        {
+          "quantity": 17,
+          "text": "17 OriginalpaketeGesamtfläche: 32,16 m²",
+          "exactAreaMilli": 32164,
+          "displayedAreaMilli": 32160,
+          "precisionLostMilli": 4
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "variant event changes price and ID",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm"
+      },
+      "input": "20",
+      "waste": false,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29950",
+        "variantId": "audit-package-b",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-b",
+        "quantity": 4,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "4",
+          "_qm_gesamt": "20,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "0%"
+        }
+      },
+      "cents": 119800,
+      "displays": {
+        "total": "1.198,00 €",
+        "area": "20,00 m²",
+        "pieces": "80 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 4,
+          "text": "4 Originalpakete80 Fliesen à 50 × 50 cmGesamtfläche: 20,00 m²",
+          "exactAreaMilli": 20000,
+          "displayedAreaMilli": 20000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    },
+    {
+      "name": "other product variant event ignored",
+      "kind": "package",
+      "fixture": {
+        "sqm": 5,
+        "price": 29450,
+        "type": "Teppichboden",
+        "pieces": 20,
+        "label": "Fliesen",
+        "format": "50 × 50 cm"
+      },
+      "input": "20",
+      "waste": false,
+      "renderedDataset": {
+        "sqmPerPackage": "5",
+        "packagePriceCents": "29450",
+        "variantId": "audit-package-a",
+        "initialPackages": "1",
+        "pieceCount": "20",
+        "pieceLabel": "Fliesen",
+        "pieceFormat": "50 × 50 cm"
+      },
+      "art": "paket",
+      "payload": {
+        "id": "audit-package-a",
+        "quantity": 4,
+        "properties": {
+          "_bedarf_qm": "20,00",
+          "_pakete": "4",
+          "_qm_gesamt": "20,00",
+          "_qm_pro_paket": "5,00",
+          "_verschnitt": "0%"
+        }
+      },
+      "cents": 117800,
+      "displays": {
+        "total": "1.178,00 €",
+        "area": "20,00 m²",
+        "pieces": "80 Fliesen à 50 × 50 cm (20 je Paket)"
+      },
+      "pdp": "58,90 €/m² 294,50 € pro Originalpaket 1 Paket = 5,00 m² · 20 Fliesen à 50 × 50 cm",
+      "views": {
+        "collection": "58,90 €/m² 294,50 € / Paket · 5,00 m²",
+        "product": "58,90 €/m²"
+      },
+      "cartViews": [
+        {
+          "quantity": 4,
+          "text": "4 Originalpakete80 Fliesen à 50 × 50 cmGesamtfläche: 20,00 m²",
+          "exactAreaMilli": 20000,
+          "displayedAreaMilli": 20000,
+          "precisionLostMilli": 0
+        },
+        {
+          "quantity": 5,
+          "text": "5 Originalpakete100 Fliesen à 50 × 50 cmGesamtfläche: 25,00 m²",
+          "exactAreaMilli": 25000,
+          "displayedAreaMilli": 25000,
+          "precisionLostMilli": 0
+        }
+      ],
+      "disclaimer": "Fixture data; no current Shopify product, browser or cart response verified."
+    }
+  ],
+  "limitations": [
+    "Synthetic IDs and data; Quadra reference contract is documented historically, not freshly verified.",
+    "LiquidJS plus documented Shopify-money and integer-division adapters; original source files unchanged.",
+    "Minimal DOM, full original package script; no real browser input, layout, drawer, checkout or server response.",
+    "PVC/fixed-price mapped only. Their payload integration is PR-023b.2, still open.",
+    "S01 input defects and completed price grids were not replayed. PASS is diagnosis, not fix QA."
+  ]
+}

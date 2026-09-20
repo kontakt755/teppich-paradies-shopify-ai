@@ -1,0 +1,3257 @@
+{
+  "reproductionStatus": "PASS",
+  "session": "S03",
+  "matrix": "PR-021",
+  "generatedAt": "2026-09-20T04:20:34.530Z",
+  "fixture": {
+    "currentLiveData": false,
+    "ids": "synthetic",
+    "reference": "docs/produktseiten/piumera-referenzprodukt-inhalte.md, section 9 (2026-09-14; historical text, not current Admin data)",
+    "historicRules": "Piumera rectangle only; 89c per 0.01 m² + 19c per 0.01 lfm; 99 EUR minimum, max 400x600 cm.",
+    "syntheticCapabilities": "Other shapes/arts, service failures, availability and boundary inputs explicitly constructed."
+  },
+  "sourceIntegrity": [
+    {
+      "file": "assets/tp-einfass-konfigurator.js",
+      "currentSha256": "cb052828a311f30f145b26536a0883d37ee4f6746938c1847b202f3bb0bf9f55",
+      "historicalLiveSha256": "cb052828a311f30f145b26536a0883d37ee4f6746938c1847b202f3bb0bf9f55",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "blocks/tp-einfass-konfigurator.liquid",
+      "currentSha256": "0fac94ed78ae213540718cd38b8930f16855bd74b60b9ac6184bf30a00014094",
+      "historicalLiveSha256": "0fac94ed78ae213540718cd38b8930f16855bd74b60b9ac6184bf30a00014094",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "assets/tp-masstepich-rechnung.js",
+      "currentSha256": "d79f2cc7eaace8e7a4e299b4d06cdaed36ab9da29a92d305b8bd1cec9d604492",
+      "historicalLiveSha256": "d79f2cc7eaace8e7a4e299b4d06cdaed36ab9da29a92d305b8bd1cec9d604492",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "templates/product.einfassung.json",
+      "currentSha256": "1317aa9ec349551f0e11e8b921a7f4d0b1e0f94542ac7b72a119db1c7a263d82",
+      "historicalLiveSha256": "1317aa9ec349551f0e11e8b921a7f4d0b1e0f94542ac7b72a119db1c7a263d82",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "snippets/tp-farbe-daten.liquid",
+      "currentSha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe",
+      "historicalLiveSha256": "b78343484c5c3a92dd5fb9396cb561e2db8db62a26b70a72da1622e2d1eeadbe",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "snippets/tp-bandfarben.liquid",
+      "currentSha256": "2271ee7a9257d1c2e39d059aa365e555c7be946c72bc3bb237b3fb4251e508af",
+      "historicalLiveSha256": "2271ee7a9257d1c2e39d059aa365e555c7be946c72bc3bb237b3fb4251e508af",
+      "matchesHistoricalLive": true
+    },
+    {
+      "file": "domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid",
+      "currentSha256": "1afb455dfc65754d779f3f124ba0129c9f94b36ac7d51b0778bab26f0e6c9153",
+      "historicalLiveSha256": null,
+      "matchesHistoricalLive": null
+    }
+  ],
+  "conditionalServiceFailure": {
+    "condition": "Configured separately billed service exists but selected variant available=false",
+    "referenceSumCents": 72400,
+    "unavailableServiceSumCents": 53400,
+    "missingEdgeCents": 19000,
+    "describedAsGekettelt": true,
+    "liveOccurrenceEstablished": false,
+    "scope": "Missing optional service is separately recorded, not automatically a defect in an intentionally inclusive price model."
+  },
+  "cases": 47,
+  "interceptedRequests": 29,
+  "liquidGateCases": 5,
+  "limitations": [
+    "Local LiquidJS is not Shopify Liquid; no fresh MAIN or product verification.",
+    "Original data contract and price/submit functions executed; drawing, presets, numbering, real form/band/color events and browser normalization excluded.",
+    "Cut-attribute synchronization stubbed successful; network response is synthetic. Group cart handling/checkout remain untested.",
+    "Round/oval/cover/bands are synthetic capability fixtures; historical Piumera allowed rectangle only.",
+    "Current local notification rendered; its actual deployment and full order workflow unverified.",
+    "Ellipse oracle quantifies documented Ramanujan approximation; business acceptability is not inferred from arithmetic alone."
+  ],
+  "observations": [
+    {
+      "name": "reference rectangle 200x300",
+      "fixture": {},
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 1000,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "724,00 €",
+        "material": "534,00 €",
+        "area": "6,00 m²",
+        "edge": "10,00 m × 19,00 € = 190,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 600,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "200 × 300 cm",
+                "Fläche (abgerechnet)": "6,00 m²",
+                "Kante umlaufend": "10,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1000,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "10,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 1000,
+        "actualSumCents": 72400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "minimum rectangle 50x50",
+      "fixture": {
+        "width": 50,
+        "length": 50
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 69,
+        "kante": 2,
+        "kantenEinheiten": 200,
+        "masse": "50 × 50 cm",
+        "mindest": true
+      },
+      "before": {
+        "sum": "99,41 €",
+        "material": "61,41 €",
+        "area": "0,25 m²",
+        "edge": "2,00 m × 19,00 € = 38,00 €",
+        "minimumHint": "Mindestpreis 99,00 € für kleine Teppiche.",
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 69,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 50 cm",
+                "Fläche (abgerechnet)": "0,69 m² (Mindestpreis, gewünscht 0,25 m²)",
+                "Kante umlaufend": "2,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "Mindestpreis": "angewendet",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 50 cm · Gekettelt · 0,69 m² (Mindestpreis, gewünscht 0,25 m²)"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 200,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "2,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 69,
+        "actualMaterialUnits": 69,
+        "edgeUnits": 200,
+        "actualSumCents": 9941,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 200,
+        "sourceEdgeCm": 200,
+        "roundedPreciseEdgeUnits": 200,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "minimum paid exactly",
+      "fixture": {
+        "width": 50,
+        "length": 50,
+        "minimum": 99.41
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9941,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 69,
+        "kante": 2,
+        "kantenEinheiten": 200,
+        "masse": "50 × 50 cm",
+        "mindest": true
+      },
+      "before": {
+        "sum": "99,41 €",
+        "material": "61,41 €",
+        "area": "0,25 m²",
+        "edge": "2,00 m × 19,00 € = 38,00 €",
+        "minimumHint": "Mindestpreis 99,41 € für kleine Teppiche.",
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 69,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 50 cm",
+                "Fläche (abgerechnet)": "0,69 m² (Mindestpreis, gewünscht 0,25 m²)",
+                "Kante umlaufend": "2,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "Mindestpreis": "angewendet",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 50 cm · Gekettelt · 0,69 m² (Mindestpreis, gewünscht 0,25 m²)"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 200,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "2,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 69,
+        "actualMaterialUnits": 69,
+        "edgeUnits": 200,
+        "actualSumCents": 9941,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 200,
+        "sourceEdgeCm": 200,
+        "roundedPreciseEdgeUnits": 200,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "one cent above minimum threshold",
+      "fixture": {
+        "width": 50,
+        "length": 50,
+        "minimum": 99.42
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9942,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 70,
+        "kante": 2,
+        "kantenEinheiten": 200,
+        "masse": "50 × 50 cm",
+        "mindest": true
+      },
+      "before": {
+        "sum": "100,30 €",
+        "material": "62,30 €",
+        "area": "0,25 m²",
+        "edge": "2,00 m × 19,00 € = 38,00 €",
+        "minimumHint": "Mindestpreis 99,42 € für kleine Teppiche.",
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 70,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 50 cm",
+                "Fläche (abgerechnet)": "0,70 m² (Mindestpreis, gewünscht 0,25 m²)",
+                "Kante umlaufend": "2,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "Mindestpreis": "angewendet",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 50 cm · Gekettelt · 0,70 m² (Mindestpreis, gewünscht 0,25 m²)"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 200,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "2,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 70,
+        "actualMaterialUnits": 70,
+        "edgeUnits": 200,
+        "actualSumCents": 10030,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 200,
+        "sourceEdgeCm": 200,
+        "roundedPreciseEdgeUnits": 200,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "money metafield minimum",
+      "fixture": {
+        "width": 50,
+        "length": 50,
+        "minimum": {
+          "amount": "99.00"
+        }
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 69,
+        "kante": 2,
+        "kantenEinheiten": 200,
+        "masse": "50 × 50 cm",
+        "mindest": true
+      },
+      "before": {
+        "sum": "99,41 €",
+        "material": "61,41 €",
+        "area": "0,25 m²",
+        "edge": "2,00 m × 19,00 € = 38,00 €",
+        "minimumHint": "Mindestpreis 99,00 € für kleine Teppiche.",
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 69,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 50 cm",
+                "Fläche (abgerechnet)": "0,69 m² (Mindestpreis, gewünscht 0,25 m²)",
+                "Kante umlaufend": "2,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "Mindestpreis": "angewendet",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 50 cm · Gekettelt · 0,69 m² (Mindestpreis, gewünscht 0,25 m²)"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 200,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "2,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 69,
+        "actualMaterialUnits": 69,
+        "edgeUnits": 200,
+        "actualSumCents": 9941,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 200,
+        "sourceEdgeCm": 200,
+        "roundedPreciseEdgeUnits": 200,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "minimum inactive 50x100",
+      "fixture": {
+        "width": 50,
+        "length": 100
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 100,
+        "flaeche": 0.5,
+        "menge": 50,
+        "kante": 3,
+        "kantenEinheiten": 300,
+        "masse": "50 × 100 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "101,50 €",
+        "material": "44,50 €",
+        "area": "0,50 m²",
+        "edge": "3,00 m × 19,00 € = 57,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 50,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 100 cm",
+                "Fläche (abgerechnet)": "0,50 m²",
+                "Kante umlaufend": "3,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 100 cm · Gekettelt · 0,50 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 300,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "3,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 50,
+        "expectedMaterialUnits": 50,
+        "actualMaterialUnits": 50,
+        "edgeUnits": 300,
+        "actualSumCents": 10150,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 300,
+        "sourceEdgeCm": 300,
+        "roundedPreciseEdgeUnits": 300,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "no minimum 50x50",
+      "fixture": {
+        "width": 50,
+        "length": 50,
+        "minimum": 0
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 0,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 25,
+        "kante": 2,
+        "kantenEinheiten": 200,
+        "masse": "50 × 50 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "60,25 €",
+        "material": "22,25 €",
+        "area": "0,25 m²",
+        "edge": "2,00 m × 19,00 € = 38,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 25,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "50 × 50 cm",
+                "Fläche (abgerechnet)": "0,25 m²",
+                "Kante umlaufend": "2,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 50 cm · Gekettelt · 0,25 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 200,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "2,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 25,
+        "actualMaterialUnits": 25,
+        "edgeUnits": 200,
+        "actualSumCents": 6025,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 200,
+        "sourceEdgeCm": 200,
+        "roundedPreciseEdgeUnits": 200,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 201x301",
+      "fixture": {
+        "width": 201,
+        "length": 301
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 201,
+        "l": 301,
+        "flaeche": 6.06,
+        "menge": 606,
+        "kante": 10.04,
+        "kantenEinheiten": 1004,
+        "masse": "201 × 301 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "730,10 €",
+        "material": "539,34 €",
+        "area": "6,06 m²",
+        "edge": "10,04 m × 19,00 € = 190,76 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 606,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "201 × 301 cm",
+                "Fläche (abgerechnet)": "6,06 m²",
+                "Kante umlaufend": "10,04 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 201 × 301 cm · Gekettelt · 6,06 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1004,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "10,04 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 606,
+        "expectedMaterialUnits": 606,
+        "actualMaterialUnits": 606,
+        "edgeUnits": 1004,
+        "actualSumCents": 73010,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1004,
+        "sourceEdgeCm": 1003.9999999999999,
+        "roundedPreciseEdgeUnits": 1004,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 250x333",
+      "fixture": {
+        "width": 250,
+        "length": 333
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 250,
+        "l": 333,
+        "flaeche": 8.33,
+        "menge": 833,
+        "kante": 11.66,
+        "kantenEinheiten": 1166,
+        "masse": "250 × 333 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "962,91 €",
+        "material": "741,37 €",
+        "area": "8,33 m²",
+        "edge": "11,66 m × 19,00 € = 221,54 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 833,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "250 × 333 cm",
+                "Fläche (abgerechnet)": "8,33 m²",
+                "Kante umlaufend": "11,66 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 250 × 333 cm · Gekettelt · 8,33 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1166,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "11,66 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 833,
+        "expectedMaterialUnits": 833,
+        "actualMaterialUnits": 833,
+        "edgeUnits": 1166,
+        "actualSumCents": 96291,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1166,
+        "sourceEdgeCm": 1166,
+        "roundedPreciseEdgeUnits": 1166,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 365x302",
+      "fixture": {
+        "width": 365,
+        "length": 302
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 365,
+        "l": 302,
+        "flaeche": 11.03,
+        "menge": 1103,
+        "kante": 13.34,
+        "kantenEinheiten": 1334,
+        "masse": "365 × 302 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.235,13 €",
+        "material": "981,67 €",
+        "area": "11,03 m²",
+        "edge": "13,34 m × 19,00 € = 253,46 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 1103,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "365 × 302 cm",
+                "Fläche (abgerechnet)": "11,03 m²",
+                "Kante umlaufend": "13,34 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 365 × 302 cm · Gekettelt · 11,03 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1334,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "13,34 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 1103,
+        "expectedMaterialUnits": 1103,
+        "actualMaterialUnits": 1103,
+        "edgeUnits": 1334,
+        "actualSumCents": 123513,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1334,
+        "sourceEdgeCm": 1334,
+        "roundedPreciseEdgeUnits": 1334,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 333x200",
+      "fixture": {
+        "width": 333,
+        "length": 200
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 333,
+        "l": 200,
+        "flaeche": 6.66,
+        "menge": 666,
+        "kante": 10.66,
+        "kantenEinheiten": 1066,
+        "masse": "333 × 200 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "795,28 €",
+        "material": "592,74 €",
+        "area": "6,66 m²",
+        "edge": "10,66 m × 19,00 € = 202,54 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 666,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "333 × 200 cm",
+                "Fläche (abgerechnet)": "6,66 m²",
+                "Kante umlaufend": "10,66 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 333 × 200 cm · Gekettelt · 6,66 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1066,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "10,66 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 666,
+        "expectedMaterialUnits": 666,
+        "actualMaterialUnits": 666,
+        "edgeUnits": 1066,
+        "actualSumCents": 79528,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1066,
+        "sourceEdgeCm": 1066,
+        "roundedPreciseEdgeUnits": 1066,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 237x368",
+      "fixture": {
+        "width": 237,
+        "length": 368
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 237,
+        "l": 368,
+        "flaeche": 8.73,
+        "menge": 873,
+        "kante": 12.1,
+        "kantenEinheiten": 1210,
+        "masse": "237 × 368 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.006,87 €",
+        "material": "776,97 €",
+        "area": "8,73 m²",
+        "edge": "12,10 m × 19,00 € = 229,90 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 873,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "237 × 368 cm",
+                "Fläche (abgerechnet)": "8,73 m²",
+                "Kante umlaufend": "12,10 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 237 × 368 cm · Gekettelt · 8,73 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1210,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "12,10 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 873,
+        "expectedMaterialUnits": 873,
+        "actualMaterialUnits": 873,
+        "edgeUnits": 1210,
+        "actualSumCents": 100687,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1210,
+        "sourceEdgeCm": 1210,
+        "roundedPreciseEdgeUnits": 1210,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 350x420",
+      "fixture": {
+        "width": 350,
+        "length": 420
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 350,
+        "l": 420,
+        "flaeche": 14.7,
+        "menge": 1470,
+        "kante": 15.4,
+        "kantenEinheiten": 1540,
+        "masse": "350 × 420 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.600,90 €",
+        "material": "1.308,30 €",
+        "area": "14,70 m²",
+        "edge": "15,40 m × 19,00 € = 292,60 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 1470,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "350 × 420 cm",
+                "Fläche (abgerechnet)": "14,70 m²",
+                "Kante umlaufend": "15,40 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 350 × 420 cm · Gekettelt · 14,70 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1540,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "15,40 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 1470,
+        "expectedMaterialUnits": 1470,
+        "actualMaterialUnits": 1470,
+        "edgeUnits": 1540,
+        "actualSumCents": 160090,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1540,
+        "sourceEdgeCm": 1540,
+        "roundedPreciseEdgeUnits": 1540,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 420x350",
+      "fixture": {
+        "width": 420,
+        "length": 350
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 420,
+        "l": 350,
+        "flaeche": 14.7,
+        "menge": 1470,
+        "kante": 15.4,
+        "kantenEinheiten": 1540,
+        "masse": "420 × 350 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.600,90 €",
+        "material": "1.308,30 €",
+        "area": "14,70 m²",
+        "edge": "15,40 m × 19,00 € = 292,60 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 1470,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "420 × 350 cm",
+                "Fläche (abgerechnet)": "14,70 m²",
+                "Kante umlaufend": "15,40 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 420 × 350 cm · Gekettelt · 14,70 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1540,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "15,40 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 1470,
+        "expectedMaterialUnits": 1470,
+        "actualMaterialUnits": 1470,
+        "edgeUnits": 1540,
+        "actualSumCents": 160090,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1540,
+        "sourceEdgeCm": 1540,
+        "roundedPreciseEdgeUnits": 1540,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 400x600",
+      "fixture": {
+        "width": 400,
+        "length": 600
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 400,
+        "l": 600,
+        "flaeche": 24,
+        "menge": 2400,
+        "kante": 20,
+        "kantenEinheiten": 2000,
+        "masse": "400 × 600 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "2.516,00 €",
+        "material": "2.136,00 €",
+        "area": "24,00 m²",
+        "edge": "20,00 m × 19,00 € = 380,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 2400,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "400 × 600 cm",
+                "Fläche (abgerechnet)": "24,00 m²",
+                "Kante umlaufend": "20,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 400 × 600 cm · Gekettelt · 24,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 2000,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "20,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 2400,
+        "expectedMaterialUnits": 2400,
+        "actualMaterialUnits": 2400,
+        "edgeUnits": 2000,
+        "actualSumCents": 251600,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 2000,
+        "sourceEdgeCm": 2000,
+        "roundedPreciseEdgeUnits": 2000,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "rectangle 600x400",
+      "fixture": {
+        "width": 600,
+        "length": 400
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 600,
+        "l": 400,
+        "flaeche": 24,
+        "menge": 2400,
+        "kante": 20,
+        "kantenEinheiten": 2000,
+        "masse": "600 × 400 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "2.516,00 €",
+        "material": "2.136,00 €",
+        "area": "24,00 m²",
+        "edge": "20,00 m × 19,00 € = 380,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 2400,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "600 × 400 cm",
+                "Fläche (abgerechnet)": "24,00 m²",
+                "Kante umlaufend": "20,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 600 × 400 cm · Gekettelt · 24,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 2000,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "20,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 2400,
+        "expectedMaterialUnits": 2400,
+        "actualMaterialUnits": 2400,
+        "edgeUnits": 2000,
+        "actualSumCents": 251600,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 2000,
+        "sourceEdgeCm": 2000,
+        "roundedPreciseEdgeUnits": 2000,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "decimal dot dimensions ceil to cm",
+      "fixture": {
+        "width": 200.1,
+        "length": 300.1
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 201,
+        "l": 301,
+        "flaeche": 6.06,
+        "menge": 606,
+        "kante": 10.04,
+        "kantenEinheiten": 1004,
+        "masse": "201 × 301 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "730,10 €",
+        "material": "539,34 €",
+        "area": "6,06 m²",
+        "edge": "10,04 m × 19,00 € = 190,76 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 606,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "201 × 301 cm",
+                "Fläche (abgerechnet)": "6,06 m²",
+                "Kante umlaufend": "10,04 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 201 × 301 cm · Gekettelt · 6,06 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1004,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "10,04 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 606,
+        "expectedMaterialUnits": 606,
+        "actualMaterialUnits": 606,
+        "edgeUnits": 1004,
+        "actualSumCents": 73010,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1004,
+        "sourceEdgeCm": 1003.9999999999999,
+        "roundedPreciseEdgeUnits": 1004,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "synthetic round 200",
+      "fixture": {
+        "forms": [
+          "Rund"
+        ],
+        "form": "rund",
+        "width": 200,
+        "length": ""
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rund"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rund",
+        "w": 200,
+        "l": 200,
+        "flaeche": 4,
+        "menge": 400,
+        "kante": 6.283185307179586,
+        "kantenEinheiten": 628,
+        "masse": "Ø 200 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "475,32 €",
+        "material": "356,00 €",
+        "area": "4,00 m²",
+        "edge": "6,28 m × 19,00 € = 119,32 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 400,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rund",
+                "Maße": "Ø 200 cm",
+                "Fläche (abgerechnet)": "4,00 m²",
+                "Kante umlaufend": "6,28 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · Ø 200 cm · Gekettelt · 4,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 628,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "6,28 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 400,
+        "expectedMaterialUnits": 400,
+        "actualMaterialUnits": 400,
+        "edgeUnits": 628,
+        "actualSumCents": 47532,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 628.3185307179587,
+        "sourceEdgeCm": 628.3185307179587,
+        "roundedPreciseEdgeUnits": 628,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "synthetic round minimum 50",
+      "fixture": {
+        "forms": [
+          "Rund"
+        ],
+        "form": "rund",
+        "width": 50
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rund"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rund",
+        "w": 50,
+        "l": 50,
+        "flaeche": 0.25,
+        "menge": 78,
+        "kante": 1.5707963267948966,
+        "kantenEinheiten": 157,
+        "masse": "Ø 50 cm",
+        "mindest": true
+      },
+      "before": {
+        "sum": "99,25 €",
+        "material": "69,42 €",
+        "area": "0,25 m²",
+        "edge": "1,57 m × 19,00 € = 29,83 €",
+        "minimumHint": "Mindestpreis 99,00 € für kleine Teppiche.",
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 78,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rund",
+                "Maße": "Ø 50 cm",
+                "Fläche (abgerechnet)": "0,78 m² (Mindestpreis, gewünscht 0,25 m²)",
+                "Kante umlaufend": "1,57 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "Mindestpreis": "angewendet",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · Ø 50 cm · Gekettelt · 0,78 m² (Mindestpreis, gewünscht 0,25 m²)"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 157,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "1,57 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 25,
+        "expectedMaterialUnits": 78,
+        "actualMaterialUnits": 78,
+        "edgeUnits": 157,
+        "actualSumCents": 9925,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 157.07963267948966,
+        "sourceEdgeCm": 157.07963267948966,
+        "roundedPreciseEdgeUnits": 157,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "synthetic round max 400",
+      "fixture": {
+        "forms": [
+          "Rund"
+        ],
+        "form": "rund",
+        "width": 400
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rund"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rund",
+        "w": 400,
+        "l": 400,
+        "flaeche": 16,
+        "menge": 1600,
+        "kante": 12.566370614359172,
+        "kantenEinheiten": 1257,
+        "masse": "Ø 400 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.662,83 €",
+        "material": "1.424,00 €",
+        "area": "16,00 m²",
+        "edge": "12,57 m × 19,00 € = 238,83 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 1600,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rund",
+                "Maße": "Ø 400 cm",
+                "Fläche (abgerechnet)": "16,00 m²",
+                "Kante umlaufend": "12,57 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · Ø 400 cm · Gekettelt · 16,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1257,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "12,57 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 1600,
+        "expectedMaterialUnits": 1600,
+        "actualMaterialUnits": 1600,
+        "edgeUnits": 1257,
+        "actualSumCents": 166283,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1256.6370614359173,
+        "sourceEdgeCm": 1256.6370614359173,
+        "roundedPreciseEdgeUnits": 1257,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "synthetic oval 200x300",
+      "fixture": {
+        "forms": [
+          "Oval"
+        ],
+        "form": "oval"
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "oval"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "oval",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 7.9327187877819805,
+        "kantenEinheiten": 793,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "684,67 €",
+        "material": "534,00 €",
+        "area": "6,00 m²",
+        "edge": "7,93 m × 19,00 € = 150,67 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 600,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Oval",
+                "Maße": "200 × 300 cm",
+                "Fläche (abgerechnet)": "6,00 m²",
+                "Kante umlaufend": "7,93 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 793,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "7,93 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 793,
+        "actualSumCents": 68467,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 793.271979464528,
+        "sourceEdgeCm": 793.271878778198,
+        "roundedPreciseEdgeUnits": 793,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "synthetic long oval 50x600",
+      "fixture": {
+        "forms": [
+          "Oval"
+        ],
+        "form": "oval",
+        "width": 50,
+        "length": 600
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "oval"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "oval",
+        "w": 50,
+        "l": 600,
+        "flaeche": 3,
+        "menge": 300,
+        "kante": 12.127774451454375,
+        "kantenEinheiten": 1213,
+        "masse": "50 × 600 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "497,47 €",
+        "material": "267,00 €",
+        "area": "3,00 m²",
+        "edge": "12,13 m × 19,00 € = 230,47 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 300,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Oval",
+                "Maße": "50 × 600 cm",
+                "Fläche (abgerechnet)": "3,00 m²",
+                "Kante umlaufend": "12,13 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 50 × 600 cm · Gekettelt · 3,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1213,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "12,13 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 300,
+        "expectedMaterialUnits": 300,
+        "actualMaterialUnits": 300,
+        "edgeUnits": 1213,
+        "actualSumCents": 49747,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1214.0770476075918,
+        "sourceEdgeCm": 1212.7774451454375,
+        "roundedPreciseEdgeUnits": 1214,
+        "edgeApproximationDifferenceUnits": -1
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "cover with prepared maxWidth",
+      "fixture": {
+        "art": "Cover",
+        "maxW": 390,
+        "width": 390
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "cover",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 390,
+        "l": 300,
+        "flaeche": 11.7,
+        "menge": 1170,
+        "kante": 13.8,
+        "kantenEinheiten": 0,
+        "masse": "390 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "1.041,30 €",
+        "material": "",
+        "area": "11,70 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 1170,
+          "properties": {
+            "Einfassung": "Cover",
+            "Form": "Rechteck",
+            "Maße": "390 × 300 cm",
+            "Fläche (abgerechnet)": "11,70 m²",
+            "Kante umlaufend": "13,80 m",
+            "Farbnummer": "TEST",
+            "Vlies": "inklusive",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 390 × 300 cm · Cover · 11,70 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 1170,
+        "expectedMaterialUnits": 1170,
+        "actualMaterialUnits": 1170,
+        "edgeUnits": 0,
+        "actualSumCents": 104130,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1380,
+        "sourceEdgeCm": 1380,
+        "roundedPreciseEdgeUnits": 1380,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "cover prepared maxWidth exceeded",
+      "fixture": {
+        "art": "Cover",
+        "maxW": 390,
+        "width": 391,
+        "length": 400,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "cover",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Eine Seite darf höchstens 390 cm messen.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "band selected synthetic",
+      "fixture": {
+        "art": "Einfassband",
+        "bandSelected": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "einfassband",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 600,
+          "properties": {
+            "Einfassung": "Einfassband",
+            "Form": "Rechteck",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Farbnummer": "TEST",
+            "Bandfarbe": "8489 Natur",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Einfassband · Band 8489 Natur · 6,00 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 0,
+        "actualSumCents": 53400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "band missing blocks",
+      "fixture": {
+        "art": "Einfassband",
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "einfassband",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "paspel selected synthetic",
+      "fixture": {
+        "art": "Paspelband",
+        "bandSelected": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "paspelband",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 600,
+          "properties": {
+            "Einfassung": "Paspelband",
+            "Form": "Rechteck",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Farbnummer": "TEST",
+            "Bandfarbe": "5210 Natur",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Paspelband · Band 5210 Natur · 6,00 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 0,
+        "actualSumCents": 53400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "service unavailable",
+      "fixture": {
+        "service": "unavailable"
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 600,
+          "properties": {
+            "Einfassung": "Gekettelt",
+            "Form": "Rechteck",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Farbnummer": "TEST",
+            "Garn": "Ton in Ton",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 0,
+        "actualSumCents": 53400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "service missing",
+      "fixture": {
+        "service": "missing"
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 600,
+          "properties": {
+            "Einfassung": "Gekettelt",
+            "Form": "Rechteck",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Farbnummer": "TEST",
+            "Garn": "Ton in Ton",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 0,
+        "actualSumCents": 53400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "service zero price",
+      "fixture": {
+        "edgePrice": 0
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": null
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 0,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "534,00 €",
+        "material": "",
+        "area": "6,00 m²",
+        "edge": "",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "id": "audit-einfass-material",
+          "quantity": 600,
+          "properties": {
+            "Einfassung": "Gekettelt",
+            "Form": "Rechteck",
+            "Maße": "200 × 300 cm",
+            "Fläche (abgerechnet)": "6,00 m²",
+            "Kante umlaufend": "10,00 m",
+            "Farbnummer": "TEST",
+            "Garn": "Ton in Ton",
+            "_Zuschnitt aus Rolle": "400 cm",
+            "_Gruppe": "K-AUDIT",
+            "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+          }
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 0,
+        "actualSumCents": 53400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": null
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "double submit during inFlight with recalculate",
+      "fixture": {
+        "doubleClick": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": {
+        "form": "rechteck",
+        "w": 200,
+        "l": 300,
+        "flaeche": 6,
+        "menge": 600,
+        "kante": 10,
+        "kantenEinheiten": 1000,
+        "masse": "200 × 300 cm",
+        "mindest": false
+      },
+      "before": {
+        "sum": "724,00 €",
+        "material": "534,00 €",
+        "area": "6,00 m²",
+        "edge": "10,00 m × 19,00 € = 190,00 €",
+        "minimumHint": null,
+        "error": null,
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": false
+      },
+      "request": {
+        "url": "/cart/add.js",
+        "method": "POST",
+        "body": {
+          "items": [
+            {
+              "id": "audit-einfass-material",
+              "quantity": 600,
+              "properties": {
+                "Einfassung": "Gekettelt",
+                "Form": "Rechteck",
+                "Maße": "200 × 300 cm",
+                "Fläche (abgerechnet)": "6,00 m²",
+                "Kante umlaufend": "10,00 m",
+                "Farbnummer": "TEST",
+                "Garn": "Ton in Ton",
+                "_Zuschnitt aus Rolle": "400 cm",
+                "_Gruppe": "K-AUDIT",
+                "_Zuschnitt": "Synthetic Einfass fixture · Auditfarbe · 200 × 300 cm · Gekettelt · 6,00 m²"
+              }
+            },
+            {
+              "id": "audit-einfass-edge",
+              "quantity": 1000,
+              "properties": {
+                "Zu Teppich": "Synthetic Einfass fixture",
+                "Farbe": "Auditfarbe",
+                "Kante umlaufend": "10,00 m",
+                "_Gruppe": "K-AUDIT"
+              }
+            }
+          ]
+        }
+      },
+      "syncCalls": 1,
+      "events": [
+        "cart:update"
+      ],
+      "oracle": {
+        "geometricUnits": 600,
+        "expectedMaterialUnits": 600,
+        "actualMaterialUnits": 600,
+        "edgeUnits": 1000,
+        "actualSumCents": 72400,
+        "displayMatchesPayload": true,
+        "preciseGeometricEdgeCm": 1000,
+        "sourceEdgeCm": 1000,
+        "roundedPreciseEdgeUnits": 1000,
+        "edgeApproximationDifferenceUnits": 0
+      },
+      "notification": {
+        "warningTooSmall": false,
+        "stopCutting": false
+      }
+    },
+    {
+      "name": "empty",
+      "fixture": {
+        "width": "",
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": null,
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "zero",
+      "fixture": {
+        "width": 0,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Breite mindestens 50 cm.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "negative",
+      "fixture": {
+        "width": -1,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Breite mindestens 50 cm.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "below minimum",
+      "fixture": {
+        "width": 49,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Breite mindestens 50 cm.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "above max short side",
+      "fixture": {
+        "width": 401,
+        "length": 420,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Eine Seite darf höchstens 400 cm messen.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "above max length",
+      "fixture": {
+        "width": 400,
+        "length": 601,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Die längere Seite darf höchstens 600 cm messen.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "badInput state",
+      "fixture": {
+        "width": "",
+        "badInput": true,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "variant unavailable",
+      "fixture": {
+        "available": false,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Diese Farbe ist derzeit nicht lieferbar.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "foreign query variant",
+      "fixture": {
+        "query": "?variant=audit-foreign",
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rechteck"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "",
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": true
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "round over max",
+      "fixture": {
+        "forms": [
+          "Rund"
+        ],
+        "form": "rund",
+        "width": 401,
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "rund"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "Durchmesser höchstens 400 cm.",
+        "ctaHidden": true,
+        "ctaDisabled": true,
+        "configurationHidden": false
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "inquiry sketch",
+      "fixture": {
+        "forms": [
+          "Skizze"
+        ],
+        "form": "skizze",
+        "expectBlocked": true
+      },
+      "liquidRendered": true,
+      "data": {
+        "art": "ketteln",
+        "forms": [
+          "skizze"
+        ],
+        "minimumCents": 9900,
+        "kettel": {
+          "id": "audit-einfass-edge",
+          "price": 19
+        }
+      },
+      "state": null,
+      "before": {
+        "sum": "",
+        "material": "",
+        "area": "",
+        "edge": "",
+        "minimumHint": "",
+        "error": "",
+        "ctaHidden": false,
+        "ctaDisabled": false,
+        "configurationHidden": true
+      },
+      "request": null,
+      "syncCalls": 0,
+      "events": []
+    },
+    {
+      "name": "no cmExact product flag",
+      "fixture": {
+        "cmExact": false,
+        "expectGate": true
+      },
+      "liquidRendered": false,
+      "request": null
+    },
+    {
+      "name": "no max width",
+      "fixture": {
+        "maxW": 0,
+        "expectGate": true
+      },
+      "liquidRendered": false,
+      "request": null
+    },
+    {
+      "name": "unknown art",
+      "fixture": {
+        "art": "Unknown",
+        "expectGate": true
+      },
+      "liquidRendered": false,
+      "request": null
+    },
+    {
+      "name": "no variant release",
+      "fixture": {
+        "release": "",
+        "expectGate": true
+      },
+      "liquidRendered": false,
+      "request": null
+    },
+    {
+      "name": "zero material price",
+      "fixture": {
+        "price": 0,
+        "expectGate": true
+      },
+      "liquidRendered": false,
+      "request": null
+    }
+  ]
+}

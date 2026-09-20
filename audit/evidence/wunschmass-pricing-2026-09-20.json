@@ -1,0 +1,1945 @@
+{
+  "date": "2026-09-20",
+  "scope": "PR-023a",
+  "reproductionStatus": "PASS",
+  "sourceIntegrity": [
+    {
+      "file": "blocks/tp-teppich-wunschmass.liquid",
+      "sha256": "14db1441e5e0165b3fbc24c0424d17c684025bf43a6166a5b9f01b9d19c04a60",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "templates/product.teppich.json",
+      "sha256": "e8d765f22092d95da3ede9252162d0338dcf0c65f0a2d64ceef1e28271697ac6",
+      "historicalLiveMatch": true
+    },
+    {
+      "file": "domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid",
+      "sha256": "1afb455dfc65754d779f3f124ba0129c9f94b36ac7d51b0778bab26f0e6c9153",
+      "historicalLiveMatch": null
+    },
+    {
+      "file": "domains/shopify/rechner-zuordnung.md",
+      "sha256": "c89cfee986590ce6c82f3d32328e4e27de1e7b0d696a24e84589bb39396334f8",
+      "historicalLiveMatch": null
+    },
+    {
+      "file": "domains/lieferanten/services/HANDOFF.md",
+      "sha256": "de9e660bbe1f582733e610c26740eb21b38627b9b0c718acc3d3a1da2cc6e662",
+      "historicalLiveMatch": null
+    }
+  ],
+  "caseCount": 46,
+  "requestCount": 31,
+  "historicalProductScope": "09/11 September repository reports: no active product uses product.teppich. Current scope unverified.",
+  "limitations": [
+    "All dimensions, prices, metafields and IDs are synthetic; no Shopify request, server response or real cart.",
+    "Original full Liquid block and JS IIFE, except removed doc/schema metadata; LiquidJS is not Shopify Liquid.",
+    "Minimal DOM adapter: no real number-input sanitization, layout, lifecycle or actual variant-picker events.",
+    "Decimal numeric strings are passed directly; browser acceptance/step validation requires later browser evidence.",
+    "Form IDs/unavailability/overflow are isolated conditional probes; no claim these occur on an active product.",
+    "Mail is locally rendered from captured properties, not an actual order, deployed notification or sent email.",
+    "PASS means diagnosis reproduced, not defect repaired or shop QA passed."
+  ],
+  "observations": [
+    {
+      "name": "gate missing",
+      "hidden": true
+    },
+    {
+      "name": "gate zero",
+      "hidden": true
+    },
+    {
+      "name": "gate negative",
+      "hidden": true
+    },
+    {
+      "name": "rectangle 200x300",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "square 150",
+      "fixture": {
+        "shape": "quadrat",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "150",
+        "length": "300"
+      },
+      "before": {
+        "area": "2,25 m²",
+        "price": "200,25 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 225,
+          "properties": {
+            "Form": "Quadrat",
+            "Fläche (berechnet)": "2,25 m²",
+            "Seitenlänge": "150 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 20025,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "2,25 m²",
+        "price": "200,25 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "circle 200",
+      "fixture": {
+        "shape": "rund",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "3,14 m²",
+        "price": "280,35 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 315,
+          "properties": {
+            "Form": "Rund",
+            "Fläche (berechnet)": "3,14 m²",
+            "Durchmesser": "200 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 28035,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "3,14 m²",
+        "price": "280,35 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "ellipse 200x300",
+      "fixture": {
+        "shape": "oval",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "4,71 m²",
+        "price": "420,08 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 472,
+          "properties": {
+            "Form": "Oval",
+            "Fläche (berechnet)": "4,71 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 42008,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "4,71 m²",
+        "price": "420,08 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "shape trimmed and normalized",
+      "fixture": {
+        "shape": " OVAL ",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "4,71 m²",
+        "price": "420,08 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 472,
+          "properties": {
+            "Form": "Oval",
+            "Fläche (berechnet)": "4,71 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 42008,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "4,71 m²",
+        "price": "420,08 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "unknown shape falls back to rectangle",
+      "fixture": {
+        "shape": "hexagon",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "exact hundredth rectangle",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "250",
+        "length": "332"
+      },
+      "before": {
+        "area": "8,30 m²",
+        "price": "738,70 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 830,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "8,30 m²",
+            "Breite": "250 cm",
+            "Länge": "332 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 73870,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "8,30 m²",
+        "price": "738,70 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "round up hundredth rectangle",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "201",
+        "length": "301"
+      },
+      "before": {
+        "area": "6,05 m²",
+        "price": "539,34 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 606,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,05 m²",
+            "Breite": "201 cm",
+            "Länge": "301 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53934,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,05 m²",
+        "price": "539,34 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "minimum 99 EUR",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 99,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "50",
+        "length": "50"
+      },
+      "before": {
+        "area": "0,25 m²",
+        "price": "99,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 112,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "0,25 m²",
+            "Breite": "50 cm",
+            "Länge": "50 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 9968,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "0,25 m²",
+        "price": "99,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "surcharge 10 EUR rounds to units",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 10,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "544,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 612,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 54468,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "544,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "minimum covers surcharge",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 99,
+        "surcharge": 10,
+        "price": 89,
+        "available": true,
+        "width": "50",
+        "length": "50"
+      },
+      "before": {
+        "area": "0,25 m²",
+        "price": "99,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 112,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "0,25 m²",
+            "Breite": "50 cm",
+            "Länge": "50 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 9968,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "0,25 m²",
+        "price": "99,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "area plus surcharge exceeds minimum",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 99,
+        "surcharge": 10,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "544,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 612,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 54468,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "544,68 €",
+        "note": "inkl. Fertigungszuschlag/Mindestbestellwert, falls zutreffend",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "minimum area exact",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 6,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "minimum area below",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 6.01,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "–",
+        "note": "Mindestfläche 6,01 m².",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "6,00 m²",
+        "price": "–",
+        "note": "Mindestfläche 6,01 m².",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "circle actual area minimum",
+      "fixture": {
+        "shape": "rund",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 3.5,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "3,14 m²",
+        "price": "–",
+        "note": "Mindestfläche 3,50 m².",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "3,14 m²",
+        "price": "–",
+        "note": "Mindestfläche 3,50 m².",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "width lower boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "50",
+        "length": "300"
+      },
+      "before": {
+        "area": "1,50 m²",
+        "price": "133,50 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 150,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "1,50 m²",
+            "Breite": "50 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 13350,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "1,50 m²",
+        "price": "133,50 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "width upper boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "400",
+        "length": "300"
+      },
+      "before": {
+        "area": "12,00 m²",
+        "price": "1068,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 1200,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "12,00 m²",
+            "Breite": "400 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 106800,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "12,00 m²",
+        "price": "1068,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "width below boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "49.99",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Mindestbreite 50 cm.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Mindestbreite 50 cm.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "width above boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "400.01",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximalbreite 400 cm.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximalbreite 400 cm.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "length lower boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "50"
+      },
+      "before": {
+        "area": "1,00 m²",
+        "price": "89,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 100,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "1,00 m²",
+            "Breite": "200 cm",
+            "Länge": "50 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 8900,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "1,00 m²",
+        "price": "89,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "length upper boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "600"
+      },
+      "before": {
+        "area": "12,00 m²",
+        "price": "1068,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 1200,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "12,00 m²",
+            "Breite": "200 cm",
+            "Länge": "600 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 106800,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "12,00 m²",
+        "price": "1068,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "length below boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "49.99"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Mindestlänge 50 cm.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Mindestlänge 50 cm.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "length above boundary",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "600.01"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximallänge 600 cm.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximallänge 600 cm.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "invalid width \"\"",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "invalid width \"0\"",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "0",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "invalid width \"-1\"",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "-1",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "invalid width \"NaN\"",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "NaN",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "invalid width \"1e309\"",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "1e309",
+        "length": "300"
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximalbreite 400 cm.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Maximalbreite 400 cm.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "empty length",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": ""
+      },
+      "before": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "–",
+        "price": "–",
+        "note": "Bitte Maße eingeben.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "zero price",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 0,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "–",
+        "note": "Preis kann aktuell nicht berechnet werden.",
+        "enabled": false,
+        "message": ""
+      },
+      "requests": [],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "6,00 m²",
+        "price": "–",
+        "note": "Preis kann aktuell nicht berechnet werden.",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "missing upper bounds valid finite input",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": null,
+        "minL": 50,
+        "maxL": null,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "unbounded exponent overflow",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": null,
+        "minL": 50,
+        "maxL": null,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "1e309",
+        "length": "300"
+      },
+      "before": {
+        "area": "Infinity m²",
+        "price": "Infinity €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": null,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "Infinity m²",
+            "Breite": "Infinity cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": null,
+      "mail": null,
+      "after": {
+        "area": "Infinity m²",
+        "price": "Infinity €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "decimal below half",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200.4",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,01 m²",
+        "price": "535,78 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 602,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,01 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53578,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,01 m²",
+        "price": "535,78 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "decimal half rounds property up",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200.5",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,01 m²",
+        "price": "535,78 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 602,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,01 m²",
+            "Breite": "201 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53578,
+      "mail": {
+        "tooSmall": true,
+        "stop": true
+      },
+      "after": {
+        "area": "6,01 m²",
+        "price": "535,78 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "decimal square",
+      "fixture": {
+        "shape": "quadrat",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "150.5",
+        "length": "300"
+      },
+      "before": {
+        "area": "2,27 m²",
+        "price": "202,03 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 227,
+          "properties": {
+            "Form": "Quadrat",
+            "Fläche (berechnet)": "2,27 m²",
+            "Seitenlänge": "151 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 20203,
+      "mail": {
+        "tooSmall": true,
+        "stop": true
+      },
+      "after": {
+        "area": "2,27 m²",
+        "price": "202,03 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "decimal circle",
+      "fixture": {
+        "shape": "rund",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200.5",
+        "length": "300"
+      },
+      "before": {
+        "area": "3,16 m²",
+        "price": "281,24 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 316,
+          "properties": {
+            "Form": "Rund",
+            "Fläche (berechnet)": "3,16 m²",
+            "Durchmesser": "201 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 28124,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "3,16 m²",
+        "price": "281,24 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "decimal ellipse",
+      "fixture": {
+        "shape": "oval",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200.5",
+        "length": "300"
+      },
+      "before": {
+        "area": "4,72 m²",
+        "price": "420,97 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 473,
+          "properties": {
+            "Form": "Oval",
+            "Fläche (berechnet)": "4,72 m²",
+            "Breite": "201 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 42097,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "4,72 m²",
+        "price": "420,97 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "form points to known second variant",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300",
+        "formId": "audit-wm-b"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "606,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-b",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 60600,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "606,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "no form retains initial variant",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "foreign form id retains old price",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300",
+        "formId": "audit-foreign"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-foreign",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": false,
+        "message": ""
+      }
+    },
+    {
+      "name": "unavailable initial variant",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": false,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": "Synthetic rejection"
+      }
+    },
+    {
+      "name": "server rejection restores button",
+      "fixture": {
+        "shape": "rechteck",
+        "minW": 50,
+        "maxW": 400,
+        "minL": 50,
+        "maxL": 600,
+        "minArea": 0,
+        "minimum": 0,
+        "surcharge": 0,
+        "price": 89,
+        "available": true,
+        "width": "200",
+        "length": "300"
+      },
+      "before": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": ""
+      },
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "cents": 53400,
+      "mail": {
+        "tooSmall": false,
+        "stop": false
+      },
+      "after": {
+        "area": "6,00 m²",
+        "price": "534,00 €",
+        "note": "",
+        "enabled": true,
+        "message": "Synthetic rejection"
+      }
+    },
+    {
+      "name": "input during pending request permits second submit",
+      "requests": [
+        {
+          "id": "audit-wm-a",
+          "quantity": 600,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,00 m²",
+            "Breite": "200 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        },
+        {
+          "id": "audit-wm-a",
+          "quantity": 603,
+          "properties": {
+            "Form": "Rechteck",
+            "Fläche (berechnet)": "6,03 m²",
+            "Breite": "201 cm",
+            "Länge": "300 cm",
+            "Farbe": "Auditfarbe"
+          }
+        }
+      ],
+      "immediateDoubleClickRequests": 1,
+      "afterInputRequests": 2
+    }
+  ]
+}
