@@ -26,6 +26,7 @@ const ohneDoc = (datei) => readFileSync(path.join(root, datei), 'utf8')
 const engine = new Liquid({ templates: {
   'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid'),
   'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
+  'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
 } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
@@ -179,4 +180,41 @@ test('Qualitaetszeile ohne Fasermaterial: zwei gepflegte Arten statt einer, nich
     florhohe: { value: '3,2 mm' },
   } } } };
   assert.match(await render(p), /tp-ab-preis__qualitaet">Schlinge · Wolle · 3,2 mm Flor</);
+});
+
+// S-30: Streichpreis im ab-Preis - nur bei aktiver Aktion, nach derselben Formel.
+const altCent = (html) => { const m = html.match(/data-tp-ab-alt-cent="(\d+)"/); return m ? Number(m[1]) : null; };
+const heuteIso = new Date().toISOString().slice(0, 10);
+const gesternIso = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+const mitAktion = (p, aktion) => { p.metafields.aktion = aktion; return p; };
+const rabattiert = () => produkt({ varianten: [{ price: 78, compare_at_price: 92, available: true, metafields: { service: { einfassen: { value: 'Verfügbar' } } } }] });
+
+test('Aktion aktiv: Streichpreis = ab-Preis zum alten Variantenpreis, Kettelung in beiden Summen', async () => {
+  const html = await render(mitAktion(rabattiert(), { start: { value: heuteIso } }));
+  assert.equal(abCent(html), 120 * 78 + 460 * 19);
+  assert.equal(altCent(html), 120 * 92 + 460 * 19);
+  assert.equal(altCent(html), erwartet(92, 19, 9900));
+  assert.match(html, /<s class="tp-ab-preis__alt"/);
+});
+
+test('Vergleichspreis ohne aktive Aktion: kein Streichpreis', async () => {
+  assert.equal(altCent(await render(rabattiert())), null);
+  assert.equal(altCent(await render(mitAktion(rabattiert(), { start: { value: '2026-01-01' }, ende: { value: gesternIso } }))), null);
+});
+
+test('Aktion aktiv, aber kein Vergleichspreis: kein Streichpreis', async () => {
+  assert.equal(altCent(await render(mitAktion(produkt({ einheitCent: 78 }), { start: { value: heuteIso } }))), null);
+});
+
+test('Mindestpreis frisst den Rabatt: alt und neu gleich -> kein Streichpreis', async () => {
+  const p = produkt({ mindest: 500, varianten: [{ price: 20, compare_at_price: 26, available: true, metafields: { service: { einfassen: { value: 'Verfügbar' } } } }] });
+  const html = await render(mitAktion(p, { start: { value: heuteIso } }));
+  assert.ok(abCent(html) >= 50000);
+  assert.equal(altCent(html), null, 'ein Streichpreis ohne echten Preisunterschied waere irrefuehrend');
+});
+
+test('Produktseite: Streichpreis folgt der gewaehlten Variante', async () => {
+  const html = await render(mitAktion(rabattiert(), { start: { value: heuteIso } }), kettelOk, { price: 100, compare_at_price: 117 });
+  assert.equal(abCent(html), 120 * 100 + 460 * 19);
+  assert.equal(altCent(html), 120 * 117 + 460 * 19);
 });
