@@ -97,3 +97,7 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Scratch: Klickvinyl-Kollektion (24 Karten, Preise normal, 0 Streichpreise, 0 Sale-Badges), Sylvara-PDP, Teppichboden-PDP, Warenkorb - nirgends "Liquid error".
 - Bewusst NICHT getestet: positiver Fall mit echten Shopdaten. Dafuer muesste ein Schein-Streichpreis kurz im Live-Shop stehen. Abgedeckt nur durch die Unit-Funktionsprobe.
 - Nicht getestet: Schnellbestellliste (Section ist in keinem Template eingebunden), Warenkorb mit Artikel.
+
+## 2026-09-20 - S-18 Sales-Check: Cookie-Banner
+- Zweiter Fehlschlag am selben Tag (Preview fuer S-20): "Muster mobil", wieder `#shopify-pc__banner` faengt den Klick ab. Alle Warenkorb-Ablaeufe PASS, Muster-Konfigurator war nicht geaendert - kein Befund gegen S-20.
+- Fix im Testlaeufer, nicht im Gate: CSS-Regel blendet Banner und Vorschauleiste aus (kein Zeitfenster wie beim Beobachter), Init-Skript wartet auf `documentElement`. Danach 3 von 3 gezielten Mobil-Laeufen (Muster + Paketware) PASS.

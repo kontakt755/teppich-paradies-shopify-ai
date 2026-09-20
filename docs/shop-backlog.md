@@ -23,7 +23,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | offen | S-13 | - | Fable plant | - |
 | S-15 | Rabattaktionen ausrollen | P2 | offen | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
 | S-16 | Bessere Raumvisualisierung (Ersatz fuer S-01) | P3 | zurueckgestellt (Ahmet 2026-09-20: erstmal sein lassen; #339 geschlossen) | S-14 | Einfass-Konfigurator | - | - |
-| S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | offen | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |
+| S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | erledigt 2026-09-20 (CSS-Regel statt nur Beobachter, nach dem zweiten Fehlschlag am selben Tag) | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |
 | S-19 | Seite /pages/liefer-verlegeservice um den Satz zur Aktionspreis-Regel ergaenzen (Seiteninhalt, nicht Theme) | P2 | offen | S-09 | Shopify-Seite | - | - |
 | S-20 | Sale-Badge/Streichpreis auf Karten nur zeigen, wenn `tp-aktion-aktiv` ja sagt (verhindert unbelegte Streichpreise technisch) | P2 | review | S-09 | `_product-card-gallery.liquid`, `snippets/price.liquid` | mittleres Modell | - |
 | S-21 | Teppiche: m2-Preis komplett raus (Karte + PDP) | P1 | erledigt, live 2026-09-20 | S-04 | `snippets/tp-teppich-ab-preis.liquid` | Fable | Scratch ok |

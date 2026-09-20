@@ -35,15 +35,40 @@ async function freieSicht(page) {
 // Shopify injiziert das Cookie-Banner erst nach dem Laden - ein einmaliges
 // Aufraeumen davor greift ins Leere. Der Beobachter entfernt Leiste und
 // Banner, sobald sie auftauchen, auf jeder Seite des Kontexts.
+//
+// S-18 (2026-09-20): Der Beobachter allein reichte nicht - an einem Tag fing das Banner
+// zweimal trotzdem einen Klick ab (Klickvinyl mobil, Muster mobil), jeweils ein ganzer
+// Preview-Lauf verloren. Zwischen Einfuegen und Beobachter-Callback liegt ein Fenster,
+// und Shopify fuegt das Banner nach dem Entfernen teils erneut ein. Eine CSS-Regel hat
+// dieses Fenster nicht: ein Banner, das nie dargestellt wird, faengt keinen Klick ab.
+// Das Ablehnen (datensparsam) bleibt, damit der Zustand dem eines Besuchers entspricht.
 const UEBERLAGERUNGEN_WEG = () => {
+  const stil = () => {
+    if (!document.documentElement || document.getElementById('tp-qa-ueberlagerungen')) return;
+    const css = document.createElement('style');
+    css.id = 'tp-qa-ueberlagerungen';
+    css.textContent = '#shopify-pc__banner, #PBarNextFrameWrapper, #PBarNextFrame { display: none !important; pointer-events: none !important; }';
+    document.documentElement.appendChild(css);
+  };
   const weg = () => {
+    stil();
     document.querySelector('#PBarNextFrameWrapper')?.remove();
     document.querySelector('#PBarNextFrame')?.remove();
     const decline = document.querySelector('#shopify-pc__banner__btn-decline');
     if (decline) decline.click();
     document.querySelector('#shopify-pc__banner')?.remove();
   };
-  new MutationObserver(weg).observe(document.documentElement, { childList: true, subtree: true });
+  // Ein Init-Skript kann laufen, bevor es ein documentElement gibt - dann warf observe()
+  // und das ganze Aufraeumen fiel still aus.
+  const starten = () => {
+    if (!document.documentElement) return false;
+    stil();
+    new MutationObserver(weg).observe(document.documentElement, { childList: true, subtree: true });
+    return true;
+  };
+  if (!starten()) {
+    const warten = setInterval(() => { if (starten()) clearInterval(warten); }, 10);
+  }
   document.addEventListener('DOMContentLoaded', weg);
 };
 
