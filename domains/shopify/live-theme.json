@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-19T08:33:08Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-20T12:23:37Z",
     "verifiedBy": "Shopify Admin API, role MAIN"
   },
   "preview": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-19T08:33:08Z",
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-20T12:23:37Z",
     "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
@@ -20,6 +20,12 @@
     "note": "Niemals loeschen oder ueberschreiben. Kopie des Live-Themes 204438208846 vom 2026-09-15, angelegt per themeDuplicate - enthaelt damit auch config/settings_data.json, die im Repository nicht gepflegt wird und aus git allein nicht wiederherstellbar waere."
   },
   "retired": [
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-20",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PRs #200, #382-#386: Warenkorb-Artikelzaehlung fuer Flaechenware (#198), Paketrechner-Eingabevalidierung TP-001/002, Rollware-Fussleiste TP-003, Raummass-Rundung TP-004, Einfass-Kettelservice-Validierung TP-005, Paketflaeche-Praezision in der Cartzeile TP-008). Rollentausch am 2026-09-20 um 12:23:37Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
+    },
     {
       "themeId": "201829679438",
       "name": "theme-productpage-v2-night",
