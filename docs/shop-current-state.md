@@ -26,7 +26,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
   Live ab - Layoutfehler dort erst gegen Live gegenpruefen, bevor sie als Shop-Fehler gelten.
 
 ## Aktive Arbeit
-- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06, S-21, S-23, S-24 live. Naechste Pakete: S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
+- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06, S-19, S-20, S-21 bis S-24 live. Naechste Pakete (alt, siehe Backlog): S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
 
 ## Offene Blocker
 - S-10: keine Einkaufspreise in Shopify; Ahmet reicht eine EK-Liste nach (offen, kein Termin). Nicht erneut nachfragen, nur im Statusbericht als offen fuehren.

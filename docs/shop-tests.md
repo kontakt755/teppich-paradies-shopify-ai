@@ -104,3 +104,7 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 
 ## 2026-09-20 - S-19 Verlegeservice-Seite (Scratch-Theme)
 - `/pages/liefer-verlegeservice` mobil 375: neue Zeile "Aktionspreise - Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar ..." im Angebotskasten, gleiche Groesse wie die Zusatz-Zeile (261 x 130), kein Liquid-Fehler, kein horizontales Scrollen. `npm test` gruen (inkl. Schutztests zur Kostenlos-Wortwahl).
+
+## 2026-09-20 - Livegang PRs #402 + #404 (Commit 77b2aa0)
+- Preview Lauf 1 (nur #402): SALES FAIL am Cookie-Banner -> S-18 behoben (#403). Lauf 2 mit #402 + #403 + #404: komplett PASS.
+- Live: Aktionszeile auf `/pages/liefer-verlegeservice` vorhanden; Klickvinyl-Kollektion, Teppiche, Teppichboden-PDP und Warenkorb HTTP 200 ohne "Liquid error".
