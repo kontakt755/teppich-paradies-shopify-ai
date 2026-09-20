@@ -76,10 +76,16 @@
   # und nur mit gewaehltem Service-Produkt; sonst bleibt es bei der reinen
   # Flaechenrechnung wie bei den Bandarten.
   assign tp_ek_kettel_v = nil
+  # TP-005: von "kein separater Service konfiguriert" (Inklusivpreis, legitim)
+  # unterscheiden wir jetzt ausdruecklich "Service konfiguriert, aber gerade
+  # nicht kaufbar" - Letzteres darf den Teppich nicht stillschweigend als
+  # vollstaendig gekettelt anbieten (siehe audit/ISSUES.md TP-005).
+  assign tp_ek_kettel_service_failed = false
   if tp_ek_art == 'ketteln' and block.settings.kettelservice_produkt != blank
     assign tp_ek_kettel_v = block.settings.kettelservice_produkt.selected_or_first_available_variant
     unless tp_ek_kettel_v.available and tp_ek_kettel_v.price > 0
       assign tp_ek_kettel_v = nil
+      assign tp_ek_kettel_service_failed = true
     endunless
   endif
 
@@ -280,6 +286,7 @@
         "mindestpreis_cent": {{ tp_ek_mindest_cent | json }},
         {%- comment -%} Preis je 0,01 lfm Kante, Rollenbreiten in cm {%- endcomment -%}
         "kettel": {% if tp_ek_kettel_v %}{ "id": {{ tp_ek_kettel_v.id | json }}, "price": {{ tp_ek_kettel_v.price | json }} }{% else %}null{% endif %},
+        "kettel_service_failed": {{ tp_ek_kettel_service_failed | json }},
         "rollen": {{ tp_ek_rollen_liste | json }},
         "formen": {{ tp_ek_formen | json }},
         "produkt": {{ product.title | json }},

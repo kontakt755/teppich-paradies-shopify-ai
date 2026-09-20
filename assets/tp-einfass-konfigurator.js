@@ -78,6 +78,12 @@
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
     // nicht getrennt berechnet - die Bandarten rechnen alles ueber den m2-Preis.
     var kettel = (d.kettel && d.kettel.id && parseInt(d.kettel.price, 10) > 0) ? d.kettel : null;
+    // TP-005: true nur, wenn der Merchant ein Kettelservice-Produkt
+    // konfiguriert hat, dessen Variante aber gerade nicht verfuegbar/bepreist
+    // ist - anders als "kein Service konfiguriert" (kettel bleibt dann null,
+    // legitimer Inklusivpreis). Sperrt unten den Kauf statt den Teppich
+    // stillschweigend ohne die gewaehlte Kettelung anzubieten.
+    var kettelServiceFailed = !!d.kettel_service_failed;
     // Rollenbreiten der Meterware in cm, nur fuer die interne Warenkorbzeile.
     var rollen = (d.rollen || []).map(Number).filter(function (n) { return n > 0; });
     var mitBand = !!BAND_CM[art];
@@ -578,12 +584,19 @@
         fehlerListe = M.pruefeMasse({ form: f, w: b.wert, l: l.wert, maxW: maxW, maxL: maxL });
       }
       if (!target.available) fehlerListe.push('Diese Farbe ist derzeit nicht lieferbar.');
+      // TP-005: unabhaengig von Mass-/Farbzustand sichtbar - ein ausgefallener
+      // konfigurierter Service ist kein Eingabefehler des Kunden.
+      if (kettelServiceFailed) fehlerListe.push('Die Kettelung ist aktuell nicht verfügbar. Bitte kurz bei uns melden.');
       fehler.textContent = fehlerListe.join(' ');
       // Vor der ersten Eingabe keine Meldung - ausser die Eingabe selbst ist
-      // das Problem (Komma, 0, negativ).
-      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available);
+      // das Problem (Komma, 0, negativ) oder der Kettelservice ist ausgefallen.
+      fehler.hidden = !fehlerListe.length || (!eingegeben && !eingabeFehler && !!target && target.available && !kettelServiceFailed);
 
-      var gueltig = eingegeben && !fehlerListe.length && !!target && target.available && parseInt(target.price, 10) > 0;
+      // TP-005: ein ausgefallener konfigurierter Kettelservice macht die
+      // Konfiguration ungueltig - stand bleibt null (unten), rechnung/cta
+      // bleiben verborgen, hinzufuegen() kann also nicht auslösen.
+      var gueltig = eingegeben && !fehlerListe.length && !!target && target.available &&
+        parseInt(target.price, 10) > 0 && !kettelServiceFailed;
       zeichnen(f, gueltig ? b.wert : BEISPIEL.w, gueltig ? l.wert : (rund ? BEISPIEL.w : BEISPIEL.l), !gueltig);
 
       var bandFehlt = mitBand && !band;
