@@ -626,26 +626,13 @@
       var mindest = menge > M.mengeHundertstelM2(flaeche);
       var masse = rund ? 'Ø ' + b.wert + ' cm' : b.wert + ' × ' + l.wert + ' cm';
 
-      q('[data-masse]').textContent = masse;
-      q('[data-flaeche]').textContent = fmt(abgerechnet) + ' m²';
-      q('[data-kante]').textContent = 'Kante ' + fmt(kante) + ' m';
-      q('[data-m2preis]').textContent = euro(preis * 100);
-      q('[data-rund-hinweis]').hidden = !(f === 'rund' || f === 'oval');
+      // Die Kundenansicht zeigt nur den Endpreis; die Aufschluesselung ist entfernt.
+      var rh = q('[data-rund-hinweis]');
+      if (rh) rh.hidden = !(f === 'rund' || f === 'oval');
       var mh = q('[data-mindest-hinweis]');
-      mh.hidden = !mindest;
-      if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
-      var posten = q('[data-posten]');
-      if (posten) {
-        posten.hidden = !kettel;
-        if (kettel) {
-          q('[data-material]').textContent = euro(materialCent);
-          q('[data-kettelpreis]').textContent = fmt(kante) + ' m × ' + euro(parseInt(kettel.price, 10) * 100) + ' = ' + euro(kettelCent);
-        }
-      }
-      var zeileKettel = q('[data-zeile-kettelpreis]');
-      if (zeileKettel) {
-        zeileKettel.hidden = !kettel;
-        if (kettel) q('[data-kettel-meterpreis]').textContent = euro(parseInt(kettel.price, 10) * 100);
+      if (mh) {
+        mh.hidden = !mindest;
+        if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
       }
       q('[data-summe]').textContent = euro(summe);
       rechnung.hidden = false;
