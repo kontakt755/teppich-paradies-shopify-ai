@@ -52,3 +52,8 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Vergleichen-Klick setzt `aria-pressed=true`. Konsole ohne Theme-Fehler.
 - Gegenprobe `/collections/teppichboden`: 0 Teppich-Varianten, Muster-Knopf unveraendert braun mit "Muster anfordern".
 - Nicht getestet: Desktop-Optik (nur mobil angesehen), zweispaltiges Mobilraster (Test-Theme zeigt einspaltig).
+
+## 2026-09-20 - Livegang PR #393 (Commit 1e03b55)
+- Preview komplett PASS im ersten Lauf (COMPARE, SEO, FULL QA, SALES).
+- Live (`role = main`), mobil 375, `/collections/teppiche`: 24 Karten mit Hinweis und Knopf 343 x 44 in Muster-Braun, Link auf die Produktseite, ab-Preis daneben, kein horizontales Scrollen. `/collections/teppichboden`: 0 Konfigurieren-Knoepfe.
+- Desktop nur vermessen (Knopf 389 x 44, Preiszeile einzeilig), kein brauchbarer Screenshot.
