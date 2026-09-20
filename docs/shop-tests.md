@@ -145,3 +145,10 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 
 ## 2026-09-20 - Livegang PR #411 (Commit e636d05)
 - Preview komplett PASS. Live-HTML: wovena/callista/rubira zeigen "Schlinge · Wolle · 3,2 / 3,6 / 5 mm Flor".
+
+## 2026-09-20 - S-15 Rabattaktion Welle 1 (Shopify-Preise, kein Theme)
+- Pilot fibrella (15 Varianten) selbst geschrieben und LIVE geprueft: PDP "102,90 EUR/m2" mit Streichpreis "108,90 EUR/m2", Aktionshinweis statt Kostenlos-Versprechen, Karte mit Badge "Angebot" und altem Preis, kein Liquid-Fehler.
+- 19 weitere Produkte per Sonnet-Worker aus Skript-Auftragsdateien (768 Varianten, 0 Fehler laut Worker).
+- Eigene Gegenprobe ueber das oeffentliche `products.json`: 783/783 Soll-Varianten korrekt (Preis UND Streichpreis), 1270 Varianten ausserhalb des Plans unveraendert, genau 20 Produkte mit Streichpreis.
+- Rechner: torvana 400 cm x 500 cm = 20 m2 x 45,90 = "918,00 EUR" - rechnet mit dem Aktionspreis.
+- Nicht getestet: Checkout mit Aktionspreis, Google-Merchant-Feed (uebernimmt sale_price vermutlich automatisch - pruefen), Verhalten am Enddatum.

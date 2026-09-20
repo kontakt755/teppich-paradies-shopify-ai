@@ -35,6 +35,9 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Codex: mittags am Nutzungslimit, abends Nachcheck des ganzen Tages-Diffs gelaufen (5 Defekte behoben, siehe shop-tests). `codex exec` immer mit `< /dev/null` starten, sonst haengt es im Hintergrund.
 
 ## Fakten
+- Laufende Aktion: Welle 1, 20 Teppichboeden, 2026-09-20 bis 2026-10-18. Am Ende stellen sich NUR Anzeige und Hinweis selbst zurueck, die Preise nicht -> Issue #413, Rueckstell-Datei lokal.
+- Preishistorie gibt es nirgends: der naechtliche Sync setzt `updated_at` aller Varianten taeglich neu. Momentaufnahmen liegen lokal unter `~/teppich-paradies-analyse/rabattplan/rohdaten-storefront-<datum>.json` - vor jeder Preisaktion eine neue ziehen (oeffentliches `products.json`, exakt und ohne Modell).
+- Massen-Schreibzugriffe: Variablen per Skript erzeugen, Worker nur ausfuehren lassen (selbst, seriell, ohne Unter-Agenten), danach ALLES per Skript gegen ein Soll pruefen.
 - Manuell kuratierte Kollektionen (seit 2026-09-20): `teppiche`, `teppichboden-hochflor`, `-wolle`, `-velours`, `-schlinge`, `-nadelvlies`; `teppichboden` war es schon. Regel und Baender stehen im Backlog (S-11, S-26). Nach jedem Produktimport neu anwenden - Shopify sortiert dort nichts mehr selbst ein.
 - Metaobjekte vom Typ `fasermaterial` koennen auf Entwurf stehen und sind dann im Shop unsichtbar (2026-09-20: Schurwolle, Polypropylen, Sisal aktiviert). Bei fehlendem Material zuerst den Status pruefen.
 - Screenshots im eingebauten Browser bleiben nach Scroll-Skripten oft leer - dann vermessen statt raten.
