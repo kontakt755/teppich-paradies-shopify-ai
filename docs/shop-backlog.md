@@ -17,7 +17,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | erledigt: Datenmodell `aktion.start/ende/klasse` angelegt (Definitionen in Shopify, kein Produkt befuellt) | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
 | S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | erledigt, geht mit S-21 live | S-08 | Service-Bloecke | Fable plant | - |
 | S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - wartet auf EK-Liste von Ahmet (reicht er nach, kein Termin). Bis dahin keine Margen-/Rabatttabelle, nichts raten | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
-| S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | Teilergebnis (unten), Preisverteilung Rollenware nachziehen | - | Collections, Sortierung (Analyse) | Worker | - |
+| S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | erledigt 2026-09-20: 5 Unterkollektionen manuell kuratiert (unten) | - | Collections, Sortierung (Analyse) | Worker | - |
 | S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
 | S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil je Bild offen -> S-14 | - | nur Daten | Worker | - |
 | S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | offen | S-13 | - | Fable plant | - |
@@ -31,6 +31,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-23 | Teppich-Karte aufwerten: Preis groesser, Qualitaetszeile (Material/Art/Flor aus `service.einfass_basis`), Wunschmass sichtbarer - Variante A/B/C von Ahmet waehlen lassen | P1 | erledigt, live 2026-09-20 | S-21 | `blocks/tp-card-actions.liquid`, `snippets/tp-teppich-ab-preis.liquid`, `blocks/price.liquid` | Fable | - |
 | S-24 | Groesste Teppichbreite vom Teppichboden ableiten (500er Rollen), je Farbe, Karte + Konfigurator | P1 | erledigt, live 2026-09-20 | - | `snippets/tp-teppich-max-breite.liquid`, Konfigurator | Fable | 6 Unit-Tests, Scratch ok |
 | S-25 | Datenpflege: `service.max_breite_cm` an den Teppichen ist jetzt nur noch Rueckfall; Wovena-Teppichboden hat kein Fasermaterial gepflegt | P3 | offen | - | Produktdaten | Worker | - |
+| S-26 | Kollektion `teppiche` (50 Produkte, BEST_SELLING) nach derselben Regel kuratieren - jetzt mit ab-Preisen sinnvoll | P2 | offen | S-11 | Shopify-Kollektion | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
@@ -70,3 +71,11 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Technische Struktur fuer kuenftige Aktionen ist noch nicht entworfen; sie haengt am Datenmodell aus S-08 (Aktionsstart/-ende als Metafeld, Referenzpreis = niedrigster Preis der 30 Tage vor Aktionsstart).
 
 - ERLEDIGT 2026-09-20 (Freigabe Ahmet: "das was sinnvoll ist machen"): compareAtPrice bei den 4 aktiven Sylvara-Produkten (9 Varianten) per `productVariantsBulkUpdate` auf null gesetzt, Verkaufspreise unveraendert (24,95 / 26,95). Gegenprobe per direktem Varianten-Read ok. Begruendung: 29,95 ist weder als 30-Tage-Tiefstpreis noch als UVP belegt; ohne Beleg ist kein Streichpreis die sichere Variante. Rueckweg: compareAtPrice 29.95 wieder setzen. Das Entwurfsprodukt aw-ganges-teppichboden wurde nicht angefasst.
+
+## S-11 Umsetzung (2026-09-20)
+- Messung ueber die angezeigten EUR/m2-Preise der Kollektionsseiten (das, was der Kunde sieht). `teppichboden` (113, manuell): erste 8 bei 33-73 EUR/m2, 219-EUR-Produkte erst auf Platz 17/18 -> NICHT angefasst.
+- Problem lag in den Unterkollektionen: Sortierung BEST_SELLING ist ohne Verkaeufe faktisch zufaellig. Hochflor: 219 EUR auf Platz 2 von 9. Schlinge: erst 11 Fliesen/Planken zu 65-110 EUR, alle Rollenware-Anker (19-33 EUR) auf Platz 32-42.
+- Regel (deterministisch, wiederholbar): Baender G < 40, M 40-75, O 75-150, P >= 150 EUR/m2; innerhalb aufsteigend; Reihenfolge im Wechsel M, G, M, O; Piumera (Referenzprodukt) bleibt vorn; Premium fruehestens ab Platz 9-12.
+- Umgestellt auf MANUAL + neu geordnet: hochflor (9), wolle (11), velours (25), schlinge (42), nadelvlies (6). kurzflor (1 Produkt) unveraendert.
+- Rueckweg: alte Reihenfolgen in `~/teppich-paradies-analyse/sicherungen/kollektions-reihenfolge-2026-09-20.json`; oder Sortierung im Admin wieder auf "Meistverkauft".
+- Folge von MANUAL: neue Produkte ordnet Shopify nicht mehr automatisch ein - nach einem Import die Regel neu anwenden. Sobald echte Verkaufszahlen da sind, Bestseller auf die ersten Plaetze ziehen.
