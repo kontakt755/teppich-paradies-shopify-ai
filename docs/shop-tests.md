@@ -101,3 +101,6 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 ## 2026-09-20 - S-18 Sales-Check: Cookie-Banner
 - Zweiter Fehlschlag am selben Tag (Preview fuer S-20): "Muster mobil", wieder `#shopify-pc__banner` faengt den Klick ab. Alle Warenkorb-Ablaeufe PASS, Muster-Konfigurator war nicht geaendert - kein Befund gegen S-20.
 - Fix im Testlaeufer, nicht im Gate: CSS-Regel blendet Banner und Vorschauleiste aus (kein Zeitfenster wie beim Beobachter), Init-Skript wartet auf `documentElement`. Danach 3 von 3 gezielten Mobil-Laeufen (Muster + Paketware) PASS.
+
+## 2026-09-20 - S-19 Verlegeservice-Seite (Scratch-Theme)
+- `/pages/liefer-verlegeservice` mobil 375: neue Zeile "Aktionspreise - Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar ..." im Angebotskasten, gleiche Groesse wie die Zusatz-Zeile (261 x 130), kein Liquid-Fehler, kein horizontales Scrollen. `npm test` gruen (inkl. Schutztests zur Kostenlos-Wortwahl).

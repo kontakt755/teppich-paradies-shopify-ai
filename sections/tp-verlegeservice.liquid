@@ -81,6 +81,12 @@
           <p class="tp-vs__angebot-titel">Lieferung &amp; lose Verlegung kostenlos <span>ab {{ vs_schwelle }}&nbsp;€ Warenwert im Umkreis von {{ vs_nah }}&nbsp;km</span></p>
           <p class="tp-vs__angebot-text">Beides muss zusammenkommen. Darunter oder weiter weg: faire Festpreise ab {% render 'tp-vs-preis', wert: settings.tp_vs_anfahrt_nah %} – vorab genannt.</p>
           <p class="tp-vs__angebot-zusatz"><span class="tp-vs__zusatz-marke">Zusatz</span> Verlegeband, Fixierung und vollflächige Verklebung sind nicht enthalten – die buchen Sie zu festen Aufpreisen dazu.</p>
+          {%- comment -%}
+            Aktionspreis-Regel des Inhabers (2026-09-20), gleicher Wortlaut wie im Produkthinweis
+            blocks/tp-verlegeservice-hinweis.liquid. Steht immer da, nicht nur waehrend einer Aktion:
+            die Seite erklaert die Bedingungen, und die gelten auch fuer kuenftige Aktionen.
+          {%- endcomment -%}
+          <p class="tp-vs__angebot-zusatz"><span class="tp-vs__zusatz-marke">Aktionspreise</span> Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar mit dem kostenlosen Vor-Ort-Liefer- und Verlegeservice.</p>
         </div>
       </div>
 
