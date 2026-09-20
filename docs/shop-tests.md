@@ -108,3 +108,7 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 ## 2026-09-20 - Livegang PRs #402 + #404 (Commit 77b2aa0)
 - Preview Lauf 1 (nur #402): SALES FAIL am Cookie-Banner -> S-18 behoben (#403). Lauf 2 mit #402 + #403 + #404: komplett PASS.
 - Live: Aktionszeile auf `/pages/liefer-verlegeservice` vorhanden; Klickvinyl-Kollektion, Teppiche, Teppichboden-PDP und Warenkorb HTTP 200 ohne "Liquid error".
+
+## 2026-09-20 - S-11 Kollektionen (Shopify-Daten, kein Theme)
+- Probelauf hochflor, dann 4 weitere. Gegenprobe ueber das oeffentliche `products.json` jeder Kollektion: Reihenfolge im Shop = Soll bei allen 5 (9/11/25/42/6 Produkte). Hauptkollektion `teppichboden` unveraendert (piumera, zafira, vireno, sentira ...).
+- Nicht geprueft: Optik der Kollektionsseiten, Verhalten der Sortier-Auswahl im Theme (Standard folgt der Kollektion).
