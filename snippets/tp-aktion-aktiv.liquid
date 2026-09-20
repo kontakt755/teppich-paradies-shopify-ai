@@ -1,0 +1,36 @@
+{% doc %}
+  Laeuft fuer dieses Produkt gerade eine Preisaktion? Gibt "ja" aus oder nichts.
+  Einzige Quelle dieser Frage - Bloecke fragen hier, statt selbst Daten zu lesen.
+
+  Datenmodell (Produkt-Metafelder, Namensraum "aktion"):
+    aktion.start   Datum  - erster Tag der Aktion. Ohne Start gibt es keine Aktion.
+    aktion.ende    Datum  - letzter Tag (einschliesslich). Leer = bis auf Widerruf.
+    aktion.klasse  Text   - interne Rabattklasse (preisanker, aktion, ...), hier nicht ausgewertet.
+  Der Streichpreis selbst ist das normale compare_at_price der Variante und darf nur
+  ein belegter Referenzpreis sein (docs/shop-decisions.md, 2026-09-20).
+
+  Geschaeftsregel, die daran haengt (Inhaber, 2026-09-20): Ein Aktionspreis ist nicht
+  mit dem kostenlosen Vor-Ort-Liefer- und Verlegeservice kombinierbar; die kostenlose
+  Lieferung bis Bordsteinkante bleibt. Die Regel gilt ohne Ausnahme, deshalb gibt es
+  dafuer kein eigenes Feld.
+
+  Seiten werden zwischengespeichert - "heute" kann um Stunden nachlaufen. Fuer eine
+  Tagesgrenze reicht das; Aktionen nicht auf die Minute planen.
+
+  @param {object} product - das Produkt
+{% enddoc %}
+{%- liquid
+  assign taa_start = product.metafields.aktion.start.value
+  if taa_start != blank
+    assign taa_heute = 'now' | date: '%Y%m%d' | plus: 0
+    assign taa_von = taa_start | date: '%Y%m%d' | plus: 0
+    assign taa_bis = 99991231
+    assign taa_ende = product.metafields.aktion.ende.value
+    if taa_ende != blank
+      assign taa_bis = taa_ende | date: '%Y%m%d' | plus: 0
+    endif
+    if taa_von <= taa_heute and taa_heute <= taa_bis
+      echo 'ja'
+    endif
+  endif
+-%}

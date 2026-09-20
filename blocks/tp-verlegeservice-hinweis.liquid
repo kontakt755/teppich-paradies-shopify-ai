@@ -13,6 +13,10 @@
   Schwelle in der ersten Zone), aufgeklappt beide Stufen in je einem Satz
   und der Weg zur Seite mit allen Preisen. Alle Zahlen aus den
   Theme-Einstellungen.
+
+  Laeuft fuer das Produkt eine Preisaktion (snippets/tp-aktion-aktiv), steht hier
+  statt des Kostenlos-Versprechens der Aktionshinweis: Bordsteinkante inklusive,
+  nicht kombinierbar mit dem kostenlosen Vor-Ort-Service (Inhaber, 2026-09-20).
 {% enddoc %}
 
 {%- liquid
@@ -20,6 +24,10 @@
     render 'tp-vs-berechtigt', product: product
   endcapture
   assign vsh_gilt = vsh_gilt | strip
+  capture vsh_aktion
+    render 'tp-aktion-aktiv', product: product
+  endcapture
+  assign vsh_aktion = vsh_aktion | strip
 
   assign vsh_seite = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
   assign vsh_schwelle = settings.tp_vs_schwelle
@@ -27,6 +35,17 @@
 -%}
 
 {%- if vsh_gilt == 'ja' -%}
+{%- if vsh_aktion == 'ja' -%}
+  <div class="tp-vsh tp-vsh--aktion" {{ block.shopify_attributes }}>
+    <div class="tp-vsh__kopf">
+      {%- render 'tp-vs-icon', name: 'truck' -%}
+      <span class="tp-vsh__titel">
+        Aktionspreis
+        <span class="tp-vsh__unter">Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar mit unserem kostenlosen Vor-Ort-Liefer- und Verlegeservice.</span>
+      </span>
+    </div>
+  </div>
+{%- else -%}
   <details class="tp-vsh" {{ block.shopify_attributes }}>
     <summary class="tp-vsh__kopf">
       {%- render 'tp-vs-icon', name: 'truck' -%}
@@ -50,6 +69,7 @@
       <a class="tp-vsh__link" href="{{ vsh_seite }}">Alle Preise und Informationen zum Verlegeservice</a>
     </div>
   </details>
+{%- endif -%}
 {%- endif -%}
 
 {% stylesheet %}
@@ -169,6 +189,10 @@
   .tp-vsh__link::after {
     content: '\00a0\2192';
   }
+
+  /* Aktionshinweis: fester Text, nichts zum Aufklappen - kein Zeiger, kein Pfeil. */
+  .tp-vsh--aktion .tp-vsh__kopf { cursor: default; }
+  .tp-vsh--aktion .tp-vsh__kopf::after { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .tp-vsh__kopf::after {

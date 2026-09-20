@@ -160,11 +160,29 @@ test('kostenlos steht nur zusammen mit Schwelle und erster Zone', () => {
   // Zusage an Kunden unter 649 EUR oder aus 30 km Entfernung.
   for (const teile of SERVICE_DATEIEN) {
     const code = ohneSchema(ohneKommentare(lesen(...teile)));
-    for (const zeile of code.split('\n').filter((z) => /kostenlos/.test(z) && !/tp-vs-gratis/.test(z))) {
+    // Ausnahme seit 2026-09-20: der Aktionshinweis. "Kostenlose Lieferung bis
+    // Bordsteinkante" ist eine andere Zusage als die kostenlose Verlegung und gilt
+    // ohne Zone; dieselbe Zeile schliesst den kostenlosen Vor-Ort-Service gerade aus.
+    const pruefbar = (z) => /kostenlos/i.test(z) && !/tp-vs-gratis/.test(z) && !/Bordsteinkante.*Nicht kombinierbar/.test(z);
+    for (const zeile of code.split('\n').filter(pruefbar)) {
       assert.match(zeile, /tp_vs_radius_basis|vs_nah|vss_nah|vsh_nah|kostenlose Zone/,
         `${teile.join('/')}: "kostenlos" ohne die erste Zone: ${zeile.trim()}`);
     }
   }
+});
+
+test('der Aktionshinweis steht nur innerhalb von Berechtigung UND aktiver Aktion', () => {
+  const block = lesen('blocks', 'tp-verlegeservice-hinweis.liquid');
+  assert.match(block, /render 'tp-aktion-aktiv'/, 'Die Aktion wird nicht ueber das gemeinsame Snippet gefragt.');
+  const gilt = block.search(/{%-?\s*if vsh_gilt == 'ja'\s*-?%}/);
+  const aktion = block.search(/{%-?\s*if vsh_aktion == 'ja'\s*-?%}/);
+  const hinweis = block.indexOf('Kostenlose Lieferung bis Bordsteinkante');
+  assert.equal(block.lastIndexOf('Kostenlose Lieferung bis Bordsteinkante'), hinweis, 'Der Aktionshinweis steht mehrfach im Block.');
+  const sonst = block.indexOf('{%- else -%}', aktion);
+  assert.ok(gilt > -1 && aktion > gilt, 'Die Aktionsabfrage liegt nicht innerhalb der Berechtigung.');
+  assert.ok(hinweis > aktion && hinweis < sonst, 'Der Aktionshinweis steht ausserhalb des Aktionszweigs.');
+  // Das Kostenlos-Versprechen darf im Aktionszweig nicht vorkommen.
+  assert.doesNotMatch(block.slice(aktion, sonst), /vsh_schwelle|vsh_nah/);
 });
 
 test('der Produkthinweis erscheint nur bei Rollenware der freigegebenen Typen', () => {
