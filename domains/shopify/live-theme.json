@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-20T12:46:25Z",
+    "themeId": "204438208846",
+    "name": "preview-main-2026-09-15",
+    "verifiedAt": "2026-09-20T13:11:14Z",
     "verifiedBy": "Shopify CLI theme list, role live; Storefront Shopify.theme.role main"
   },
   "preview": {
-    "themeId": "204438208846",
-    "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-20T12:46:25Z",
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-20T13:11:14Z",
     "verifiedBy": "Shopify CLI theme list, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
@@ -21,10 +21,10 @@
   },
   "retired": [
     {
-      "themeId": "204438208846",
-      "name": "preview-main-2026-09-15",
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-20",
-      "note": "Per workflow:live abgeloest durch 204436144462 (PR #388: Raumansicht abschaltbar, Rechenaufschluesselung aus der Kundenansicht entfernt). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #391: ab-Preis der Teppiche auf Karte und Produktseite, PAngV-Hinweis aus dem Produktraster geholt). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
     },
     {
       "themeId": "201829679438",
@@ -171,12 +171,6 @@
       "note": "Existiert in der Admin API nicht mehr - am 2026-09-15 von einer anderen Sitzung geloescht, zusammen mit allen uebrigen unpublished Themes. Damit war kein Preview-Theme und kein Rueckfallpunkt mehr vorhanden; workflow:preview brach mit THEME_ID_AMBIGUOUS ab. Ersetzt durch 204438208846."
     },
     {
-      "themeId": "204438208846",
-      "name": "preview-main-2026-09-15",
-      "retiredNoticedAt": "2026-09-15",
-      "note": "Existiert in der Admin API nicht mehr - am 2026-09-15 geloescht, zusammen mit allen uebrigen unpublished Themes. Damit war weder ein Preview-Theme noch ein Rueckfallpunkt vorhanden; workflow:preview brach mit THEME_ID_AMBIGUOUS ab. Ersetzt durch 204438208846."
-    },
-    {
       "themeId": "203690246478",
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-15",
@@ -189,22 +183,10 @@
       "note": "Existiert in der Admin API nicht mehr. Stand hier seit jeher mit dem Vermerk 'Niemals loeschen oder ueberschreiben' und wurde trotzdem geloescht - der Vermerk war reiner Text und hat nichts aufgehalten. Bemerkt erst am 2026-09-15 durch die neue Bestandspruefung im Deploy-Preflight. Ersetzt durch 204440699214."
     },
     {
-      "themeId": "204438208846",
-      "name": "preview-main-2026-09-15",
-      "retiredNoticedAt": "2026-09-15",
-      "note": "Per workflow:live abgeloest durch 203690246478 (Commit 98a19e7: Musterseite ohne Produkt wird zur Bestellseite statt Sackgasse (#333), Muster-Aufruf hinter die Farbauswahl statt ans Seitenende (#335), Wortlaut-Korrektur (#337)). Rollentausch am 2026-09-15 um 12:37:49Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
-    },
-    {
       "themeId": "203690246478",
       "name": "preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-16",
       "note": "Per workflow:live abgeloest durch 204438208846 (PR #353: Musterbestellung mit eigener Variante je Muster - Musterprodukt je Qualitaet, SKU M-<Quell-SKU>, Farbe damit im variant_title auf Lieferschein, Kommissionierliste und in beiden Bestellmails). Rollentausch am 2026-09-16 um 10:07:55Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten, nicht loeschen - dient als Rueckfallpunkt."
-    },
-    {
-      "themeId": "204438208846",
-      "name": "preview-main-2026-09-15",
-      "retiredNoticedAt": "2026-09-19",
-      "note": "Per workflow:live abgeloest durch 204436144462 (Commit 71b7f0d, PR #377: Rollenrechner-main-Seite aus Merge #371 zurueck, genau eine Kaufleiste - die des Themes, auch auf Rechner-Seiten). Rollentausch am 2026-09-19 um 08:33:08Z per Admin API gegengeprueft, Kaufweg am Handy auf der Storefront nachgestellt. Bleibt als unveroeffentlichtes Preview-Theme bestehen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
