@@ -69,7 +69,8 @@ test('Einstiegsmass 80 x 150: Material plus Kettelung, Mass und Grundpreis stehe
   const html = await render(produkt({ einheitCent: 92 }));
   assert.equal(abCent(html), 120 * 92 + 460 * 19);
   assert.match(html, /ab 197,80 €/);
-  assert.match(html, /80&nbsp;×&nbsp;150&nbsp;cm · 92,00 €\/m²/);
+  assert.match(html, /80&nbsp;×&nbsp;150&nbsp;cm/);
+  assert.doesNotMatch(html, /m²/, 'Bei belegtem ab-Preis steht kein m2-Preis dabei.');
 });
 
 test('Mindestpreis greift weiter, wenn das Einstiegsmass darunter liegt', async () => {
@@ -105,5 +106,5 @@ test('Rollenware mit 0,01-m2-Preis, aber ohne Einfassung: kein ab-Preis', async 
 test('Produktseite: gewaehlte Farbe bestimmt den ab-Preis, nicht die guenstigste', async () => {
   const html = await render(produkt({ einheitCent: 92 }), kettelOk, { price: 117 });
   assert.equal(abCent(html), 120 * 117 + 460 * 19);
-  assert.match(html, /117,00 €\/m²/);
+  assert.doesNotMatch(html, /m²/);
 });
