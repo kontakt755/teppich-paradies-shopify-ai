@@ -30,7 +30,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 
 ## Offene Blocker
 - S-10: keine Einkaufspreise in Shopify; Ahmet reicht eine EK-Liste nach (offen, kein Termin). Nicht erneut nachfragen, nur im Statusbericht als offen fuehren.
-- Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
+- Codex: mittags am Nutzungslimit, abends Nachcheck des ganzen Tages-Diffs gelaufen (5 Defekte behoben, siehe shop-tests). `codex exec` immer mit `< /dev/null` starten, sonst haengt es im Hintergrund.
 
 ## Fakten
 - Manuell kuratierte Kollektionen (seit 2026-09-20): `teppiche`, `teppichboden-hochflor`, `-wolle`, `-velours`, `-schlinge`, `-nadelvlies`; `teppichboden` war es schon. Regel und Baender stehen im Backlog (S-11, S-26). Nach jedem Produktimport neu anwenden - Shopify sortiert dort nichts mehr selbst ein.

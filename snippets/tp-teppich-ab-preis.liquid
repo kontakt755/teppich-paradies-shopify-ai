@@ -35,23 +35,41 @@
 {%- liquid
   assign tp_ab_breite_cm = 80
   assign tp_ab_laenge_cm = 150
-  assign tp_ab_einheit_cent = product.price_min
+  # Guenstigste KAUFBARE Farbe: verfuegbar, bepreist und fuers Einfassen freigegeben -
+  # dieselbe Auswahl wie im Konfigurator. product.price_min zaehlte auch gesperrte Farben
+  # mit und konnte einen Preis bewerben, den niemand kaufen kann (Codex-Review 2026-09-20).
+  assign tp_ab_einheit_cent = 0
+  for tp_ab_v in product.variants
+    if tp_ab_v.available and tp_ab_v.price > 0 and tp_ab_v.metafields.service.einfassen.value == 'Verfügbar'
+      if tp_ab_einheit_cent == 0 or tp_ab_v.price < tp_ab_einheit_cent
+        assign tp_ab_einheit_cent = tp_ab_v.price
+      endif
+    endif
+  endfor
+  assign tp_ab_rueckfall_cent = product.price_min
   if variant != blank and variant.price > 0
     assign tp_ab_einheit_cent = variant.price
+    assign tp_ab_rueckfall_cent = variant.price
   endif
-  assign tp_ab_m2_cent = tp_ab_einheit_cent | times: 100
+  if tp_ab_einheit_cent > 0
+    assign tp_ab_m2_cent = tp_ab_einheit_cent | times: 100
+  else
+    assign tp_ab_m2_cent = tp_ab_rueckfall_cent | times: 100
+  endif
   assign tp_ab_art = product.metafields.service.einfassung.value | strip | downcase
   assign tp_ab_cent = 0
   assign tp_ab_belegt = false
 
   if product.metafields.custom.preis_pro_001_qm.value == true and tp_ab_art != blank and tp_ab_einheit_cent > 0
     assign tp_ab_belegt = true
-    assign tp_ab_max_b = product.metafields.service.max_breite_cm.value | times: 1
+    # Ohne belegte Grenzen faellt der Konfigurator ganz aus - dann auch kein ab-Preis.
+    # Breite aus derselben Quelle wie Karte und Konfigurator.
+    capture tp_ab_max_b
+      render 'tp-teppich-max-breite', product: product
+    endcapture
+    assign tp_ab_max_b = tp_ab_max_b | strip | times: 1
     assign tp_ab_max_l = product.metafields.service.max_laenge_cm.value | times: 1
-    if tp_ab_max_b > 0 and tp_ab_max_b < tp_ab_breite_cm
-      assign tp_ab_belegt = false
-    endif
-    if tp_ab_max_l > 0 and tp_ab_max_l < tp_ab_laenge_cm
+    if tp_ab_max_b < tp_ab_breite_cm or tp_ab_max_l < tp_ab_laenge_cm
       assign tp_ab_belegt = false
     endif
     assign tp_ab_kante_einheiten = tp_ab_breite_cm | plus: tp_ab_laenge_cm | times: 2
@@ -92,7 +110,7 @@
       <span class="tp-ab-preis__qualitaet">{{ tp_ab_qualitaet | escape }}</span>
     {%- endif -%}
     <span class="tp-ab-preis__haupt"><span class="tp-ab-preis__ab">ab</span> <span class="tp-ab-preis__betrag">{{ tp_ab_cent | money_without_trailing_zeros }}</span></span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. Kettelung</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>

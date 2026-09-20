@@ -32,9 +32,14 @@ const zweiBreiten = [v('Sand', 4.0), v('Sand', 5.0), v('Creme', 4.0), v('Creme',
 test('Teppichboden in 400 und 500 cm: groesste Breite ist 500', async () => {
   assert.equal(await max(teppich({ varianten: zweiBreiten })), '500');
 });
-test('je Farbe: nicht verfuegbare 500er Rolle zaehlt nicht', async () => {
+test('je Farbe: nicht verfuegbare 500er Rolle zaehlt nicht, solange eine verfuegbare da ist', async () => {
   assert.equal(await max(teppich({ varianten: zweiBreiten }), 'Sand'), '500');
   assert.equal(await max(teppich({ varianten: zweiBreiten }), 'Creme'), '400');
+});
+
+test('Farbe ganz ohne verfuegbare Rolle: Grenze aus den Rollen DIESER Farbe, nicht aus dem festen Feld', async () => {
+  const v2 = [v('Sand', 5.0), v('Creme', 4.0, false)];
+  assert.equal(await max(teppich({ varianten: v2, fest: 500 }), 'Creme'), '400');
 });
 test('nur 400er Rollen: 400, auch wenn das feste Feld mehr sagt', async () => {
   assert.equal(await max(teppich({ varianten: [v('Sand', 4.0)], fest: 500 })), '400');

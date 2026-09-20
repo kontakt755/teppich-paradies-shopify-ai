@@ -30,6 +30,19 @@
       endif
     endfor
   endif
+  # Keine VERFUEGBARE Rolle dieser Farbe: die Rollen der Farbe zaehlen trotzdem - die Grenze
+  # darf nie ueber das hinausgehen, was es in dieser Farbe gibt. Hart sperren waere falsch:
+  # ein falsch gepflegter Bestand wuerde dann Verkaeufe blockieren (Codex-Review 2026-09-20).
+  if tmb_max == 0 and tmb_basis != blank
+    for tmb_v in tmb_basis.variants
+      if farbe == blank or tmb_v.option1 == farbe
+        assign tmb_cm = tmb_v.metafields.custom.rollenbreite.value | times: 100 | round
+        if tmb_cm > tmb_max
+          assign tmb_max = tmb_cm
+        endif
+      endif
+    endfor
+  endif
   if tmb_max > 0
     assign tmb_art = product.metafields.service.einfassung.value | strip | downcase
     if tmb_art == 'cover'
