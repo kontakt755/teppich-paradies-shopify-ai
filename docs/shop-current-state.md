@@ -26,7 +26,9 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
   Live ab - Layoutfehler dort erst gegen Live gegenpruefen, bevor sie als Shop-Fehler gelten.
 
 ## Aktive Arbeit
-- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06, S-19, S-20, S-21 bis S-24 live. Naechste Pakete (alt, siehe Backlog): S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
+- keine. Stand 2026-09-20 abends: alle umsetzbaren Pakete S-01 bis S-29 sind live oder dokumentiert abgeschlossen.
+- Wartet auf den Inhaber: S-10 (EK-Liste, #397), S-14 (10 Kantenfotos ODER Freigabe einer KI-Testreihe, `docs/shop-bildworkflow.md`), S-25 (Fasermaterial fuer wovena/callista/rubira aus belegter Quelle), S-15 (Rabattaktionen - braucht S-10), S-16 (Raumvisualisierung zurueckgestellt).
+- Das `npm run task`-Werkzeug aendert lokal `docs/ai-dashboard/issues.json` - vor einem Deploy mit `git checkout -- docs/ai-dashboard/issues.json` zuruecksetzen (erlaubte Ausnahme).
 
 ## Offene Blocker
 - S-10: keine Einkaufspreise in Shopify; Ahmet reicht eine EK-Liste nach (offen, kein Termin). Nicht erneut nachfragen, nur im Statusbericht als offen fuehren.
