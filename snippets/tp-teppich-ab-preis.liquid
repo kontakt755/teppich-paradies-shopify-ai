@@ -20,18 +20,26 @@
   gibt das Snippet nur den Preis je m2 aus - nie einen geschaetzten Wert.
   Der Preis je m2 bleibt als Grundpreis sichtbar (Ware nach Flaeche).
 
-  @param {object} product - Produkt mit custom.preis_pro_001_qm = true
+  Teppich ist nur, was custom.preis_pro_001_qm = true UND service.einfassung traegt.
+  Zentimetergenau abgerechnete Rollenware hat ebenfalls preis_pro_001_qm, aber keine
+  Einfassung - sie bekommt hier unveraendert den Preis je m2.
+
+  @param {object} product - Produkt
+  @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe
 {%- enddoc -%}
 {%- liquid
   assign tp_ab_breite_cm = 80
   assign tp_ab_laenge_cm = 150
   assign tp_ab_einheit_cent = product.price_min
+  if variant != blank and variant.price > 0
+    assign tp_ab_einheit_cent = variant.price
+  endif
   assign tp_ab_m2_cent = tp_ab_einheit_cent | times: 100
   assign tp_ab_art = product.metafields.service.einfassung.value | strip | downcase
   assign tp_ab_cent = 0
   assign tp_ab_belegt = false
 
-  if product.metafields.custom.preis_pro_001_qm.value == true and tp_ab_einheit_cent > 0
+  if product.metafields.custom.preis_pro_001_qm.value == true and tp_ab_art != blank and tp_ab_einheit_cent > 0
     assign tp_ab_belegt = true
     assign tp_ab_max_b = product.metafields.service.max_breite_cm.value | times: 1
     assign tp_ab_max_l = product.metafields.service.max_laenge_cm.value | times: 1
@@ -75,5 +83,5 @@
     <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm · {{ tp_ab_m2_cent | money }}/m²</span>
   </span>
 {%- else -%}
-  <span class="tp-preis-je-m2">ab {{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
+  <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
 {%- endif -%}

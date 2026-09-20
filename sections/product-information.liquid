@@ -16,12 +16,6 @@
     id: 'product-details',
     closest.product: closest.product
   %}
-  {%- comment -%}
-    Pflichtangabe nach PAngV direkt unter dem Kaufbereich - siehe
-    snippets/tp-preisangabe.liquid. Hier und nicht in price.liquid, damit sie
-    einmal je Produktseite steht und nicht an jeder Karte im Raster.
-  {%- endcomment -%}
-  {% render 'tp-preisangabe' %}
 {% endcapture %}
 
 {% capture additional_blocks %}

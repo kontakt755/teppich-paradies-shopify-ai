@@ -24,6 +24,13 @@
       </a>
     </div>
     {% content_for 'blocks' %}
+    {%- comment -%}
+      Pflichtangabe nach PAngV, einmal je Produktseite (snippets/tp-preisangabe.liquid).
+      Sie muss IN der Detailspalte stehen: als eigenes Kind des Produktrasters fiel sie
+      mobil in die 16 px breite Randspalte (Buchstabenspalte neben dem Titel) und am
+      Desktop in eine dritte Rasterzelle.
+    {%- endcomment -%}
+    {% render 'tp-preisangabe' %}
   {% endcapture %}
 
   {% render 'group', children: children, settings: block_settings, shopify_attributes: block.shopify_attributes %}

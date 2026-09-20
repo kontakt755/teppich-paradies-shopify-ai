@@ -40,8 +40,8 @@ function produkt({ einheitCent, mindest = 99, art = 'Ketteln', p001 = true, maxB
 }
 const kettelOk = { kettelservice: { selected_or_first_available_variant: { available: true, price: 19 } } };
 
-async function render(product, all_products = kettelOk) {
-  return engine.parseAndRender(source, { product, all_products });
+async function render(product, all_products = kettelOk, variant = null) {
+  return engine.parseAndRender(source, { product, all_products, variant });
 }
 function abCent(html) {
   const m = html.match(/data-tp-ab-cent="(\d+)"/);
@@ -94,4 +94,16 @@ test('Kettelservice nicht kaufbar: kein ab-Preis, nur Preis je m2', async () => 
   });
   assert.equal(abCent(html), null);
   assert.match(html, /ab 26,00 €<span[^>]*>\/m²/);
+});
+
+test('Rollenware mit 0,01-m2-Preis, aber ohne Einfassung: kein ab-Preis', async () => {
+  const html = await render(produkt({ einheitCent: 29, art: '' }));
+  assert.equal(abCent(html), null);
+  assert.match(html, /29,00 €/);
+});
+
+test('Produktseite: gewaehlte Farbe bestimmt den ab-Preis, nicht die guenstigste', async () => {
+  const html = await render(produkt({ einheitCent: 92 }), kettelOk, { price: 117 });
+  assert.equal(abCent(html), 120 * 117 + 460 * 19);
+  assert.match(html, /117,00 €\/m²/);
 });

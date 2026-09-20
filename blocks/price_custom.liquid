@@ -19,6 +19,12 @@
   if compare_at_price != blank and compare_at_price > current_price
     assign show_compare_price = true
   endif
+  # Teppich nach Mass: primaer "ab XX EUR" fuer die gewaehlte Farbe, Preis je m2
+  # dezent. Erkennung und Regel stehen in snippets/tp-teppich-ab-preis.liquid.
+  assign tp_pc_teppich = false
+  if product_resource.metafields.custom.preis_pro_001_qm.value == true and product_resource.metafields.service.einfassung.value != blank
+    assign tp_pc_teppich = true
+  endif
 -%}
 
 {% liquid
@@ -66,14 +72,18 @@
   {{ block.shopify_attributes }}
 >
   <div class="price-with-unit__wrapper" ref="priceContainer">
-    {% if show_compare_price %}
+    {% if tp_pc_teppich %}
+      {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
+    {% elsif show_compare_price %}
       <span class="price-with-unit__compare">
         {{ compare_at_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
       </span>
     {% endif %}
+    {% unless tp_pc_teppich %}
     <span class="price-with-unit__current">
       {{ current_price | money_without_currency }}{% if unit_label == 'm²' %}&nbsp;€/m²{% elsif unit_label != blank %} {{ block_settings.unit_separator }} {{ unit_label }}{% endif %}
     </span>
+    {% endunless %}
   </div>
 
   {% if block_settings.show_tax_info %}
@@ -114,6 +124,10 @@
     gap: 8px;
     flex-wrap: wrap;
   }
+
+  .price-with-unit .tp-ab-preis { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 .6em; }
+  .price-with-unit .tp-ab-preis__haupt { font-size: 1.18em; font-weight: 700; }
+  .price-with-unit .tp-ab-preis__grund { font-size: .8em; font-weight: 400; opacity: .75; }
 
   .price-with-unit__current {
     font-size: 1.18em;
