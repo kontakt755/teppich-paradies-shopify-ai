@@ -46,3 +46,9 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Preview Lauf 1: SALES FAIL - nur "Klickvinyl mobil", Cookie-Banner fing den Klick ab. Zwei gezielte Wiederholungen (`--package --mobile`) PASS, voller zweiter Preview-Lauf komplett PASS. Kein Gate veraendert. -> S-18.
 - Live (`Shopify.theme.role = main`), mobil 375: wovena "ab 197,80 EUR", Konfigurator 80 x 150 = 197,80 EUR; PAngV-Hinweis 343 x 18; kein "Im Raum", kein "So rechnen wir"; kein horizontales Scrollen. zafira-teppichboden: "38,90 EUR/m2", kein ab-Preis, Hinweis 343 x 18. Kollektion teppiche liefert ab-Preise im HTML.
 - Nicht getestet live: Desktop-Optik, Suche/Startseite, echter Warenkorb-Eintrag.
+
+## 2026-09-20 - S-06 Teppich-Karte (Scratch-Theme)
+- `/collections/teppiche`, mobil 375: 24 Karten mit "Wunschmass verfuegbar", Knopf "Jetzt konfigurieren" 343 x 44 (Link auf die Produktseite), Textlinks Muster 44 x 44 und Vergleichen 74 x 44, kein horizontales Scrollen. Screenshot geprueft.
+- Vergleichen-Klick setzt `aria-pressed=true`. Konsole ohne Theme-Fehler.
+- Gegenprobe `/collections/teppichboden`: 0 Teppich-Varianten, Muster-Knopf unveraendert braun mit "Muster anfordern".
+- Nicht getestet: Desktop-Optik (nur mobil angesehen), zweispaltiges Mobilraster (Test-Theme zeigt einspaltig).
