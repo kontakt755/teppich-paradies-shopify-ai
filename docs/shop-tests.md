@@ -64,3 +64,5 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Gegenprobe piumera-teppichboden (ohne Metafeld): normaler Hinweis "Ab 649 EUR Warenwert bis 15 km kostenlos", keine Aktionsbox.
 - Test-Metafeld danach geloescht, per Read bestaetigt (0 aktion-Metafelder).
 - Nicht getestet: Optik per Screenshot (Browserfenster lieferte leere Bilder), Desktop, Enddatum mit echten Daten (nur Unit).
+- Nachtrag: `npm test` schlug zuerst mit 2 Fehlern an - zwei bestehende Schutztests in `qa/tests/verlegeservice.test.mjs` (aeussere Bedingung `if vsh_gilt == 'ja'`; "kostenlos" nie ohne Zone). Block umgebaut (Aktion verzweigt INNERHALB der Berechtigung), Test um die Bordsteinkanten-Zeile gezielt erweitert und ein neuer Test sichert, dass der Aktionszweig kein Kostenlos-Versprechen enthaelt. Danach 578 + 37 gruen, static PASS. Beide Pfade erneut im Scratch geprueft; Aufklapp-Pfeil in der Aktionsbox ausgeblendet (`::after` display none bestaetigt). Test-Metafeld wieder geloescht.
+- Lehre: Tests VOR dem Commit abwarten, Befehle nicht mit `;` hinter `npm test` ketten.

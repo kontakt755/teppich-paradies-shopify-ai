@@ -34,9 +34,10 @@
   assign vsh_nah = settings.tp_vs_radius_basis
 -%}
 
-{%- if vsh_gilt == 'ja' and vsh_aktion == 'ja' -%}
+{%- if vsh_gilt == 'ja' -%}
+{%- if vsh_aktion == 'ja' -%}
   <div class="tp-vsh tp-vsh--aktion" {{ block.shopify_attributes }}>
-    <div class="tp-vsh__kopf tp-vsh__kopf--fest">
+    <div class="tp-vsh__kopf">
       {%- render 'tp-vs-icon', name: 'truck' -%}
       <span class="tp-vsh__titel">
         Aktionspreis
@@ -44,7 +45,7 @@
       </span>
     </div>
   </div>
-{%- elsif vsh_gilt == 'ja' -%}
+{%- else -%}
   <details class="tp-vsh" {{ block.shopify_attributes }}>
     <summary class="tp-vsh__kopf">
       {%- render 'tp-vs-icon', name: 'truck' -%}
@@ -69,9 +70,9 @@
     </div>
   </details>
 {%- endif -%}
+{%- endif -%}
 
 {% stylesheet %}
-  .tp-vsh--aktion .tp-vsh__kopf { cursor: default; }
   .tp-vsh {
     margin-top: 12px;
     border: 1px solid rgb(141 113 76 / 0.35);
@@ -188,6 +189,10 @@
   .tp-vsh__link::after {
     content: '\00a0\2192';
   }
+
+  /* Aktionshinweis: fester Text, nichts zum Aufklappen - kein Zeiger, kein Pfeil. */
+  .tp-vsh--aktion .tp-vsh__kopf { cursor: default; }
+  .tp-vsh--aktion .tp-vsh__kopf::after { display: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .tp-vsh__kopf::after {
