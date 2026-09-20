@@ -138,3 +138,7 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 ## 2026-09-20 - Livegang PRs #408 + #409 (Commit 1930755)
 - Preview komplett PASS im ersten Lauf (Sales-Check seit S-18 stabil: 3 Laeufe in Folge gruen).
 - Live-HTML woolara: Struktur-Block und grosses Farbbild vorhanden, neuer Rollenware-Text da, alter Text weg, kein "Liquid error"; ausgeliefertes `tp-einfass-konfigurator.js` enthaelt den Knopftext mit Preis nicht mehr.
+
+## 2026-09-20 - S-25 Qualitaetszeile ohne Fasermaterial (Scratch-Theme)
+- Nur 3 von 49 Teppichen ohne Material: wovena, callista, rubira (Teppichboden: `custom.fasermaterial` leer, `custom.arten` = Schlinge + Wolle). Genaue Faser nicht belegt -> nichts eingetragen.
+- Snippet zeigt ohne Fasermaterial zwei Arten: Scratch "Schlinge · Wolle · 3,2 / 3,6 / 5 mm Flor". Unit 23/23.
