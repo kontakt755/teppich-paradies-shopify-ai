@@ -11,16 +11,23 @@
         --badge-font-family: var(--font-{{ settings.badge_font_family }}--family); --badge-font-weight: var(--font-{{ settings.badge_font_family }}--weight); --badge-text-transform: {{ settings.badge_text_transform }};
       "
     >
-      {%- if product.available == false or product.compare_at_price > product.price -%}
+      {%- comment -%} Streichpreis/Sale nur bei aktiver Aktion (snippets/tp-aktion-aktiv) - ein stehen gebliebener compare_at_price allein zeigt nichts (S-20, 2026-09-20). {%- endcomment -%}
+      {%- capture tp_pcg_aktion -%}{% render 'tp-aktion-aktiv', product: product %}{%- endcapture -%}
+      {%- assign tp_pcg_aktion = tp_pcg_aktion | strip -%}
+      {%- assign tp_pcg_sale = false -%}
+      {%- if tp_pcg_aktion == 'ja' and product.compare_at_price > product.price -%}
+        {%- assign tp_pcg_sale = true -%}
+      {%- endif -%}
+      {%- if product.available == false or tp_pcg_sale -%}
         <div
           class="
             product-badges__badge product-badges__badge--rectangle
-            {% if product.available == false %} color-{{ settings.badge_sold_out_color_scheme }}{% elsif product.compare_at_price > product.price %} color-{{ settings.badge_sale_color_scheme }}{% endif %}
+            {% if product.available == false %} color-{{ settings.badge_sold_out_color_scheme }}{% elsif tp_pcg_sale %} color-{{ settings.badge_sale_color_scheme }}{% endif %}
           "
         >
           {%- if product.available == false -%}
             {{ 'content.product_badge_sold_out' | t }}
-          {%- elsif product.compare_at_price > product.price -%}
+          {%- elsif tp_pcg_sale -%}
             {{ 'content.product_badge_sale' | t }}
           {%- endif -%}
         </div>
