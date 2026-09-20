@@ -20,7 +20,10 @@ source = source.replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
 createRequire(import.meta.url)('../../assets/tp-masstepich-rechnung.js');
 const M = globalThis.TPMass;
 
-const engine = new Liquid();
+const ohneDoc = (datei) => readFileSync(path.join(root, datei), 'utf8')
+  .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
+// Das Snippet bindet die Qualitaetszeile ein - die Engine bekommt das echte Snippet mit.
+const engine = new Liquid({ templates: { 'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid') } });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
 engine.registerFilter('money_without_trailing_zeros', (c) =>
@@ -68,7 +71,8 @@ for (const einheitCent of [26, 27, 34, 89, 147, 296]) {
 test('Einstiegsmass 80 x 150: Material plus Kettelung, Mass und Grundpreis stehen dabei', async () => {
   const html = await render(produkt({ einheitCent: 92 }));
   assert.equal(abCent(html), 120 * 92 + 460 * 19);
-  assert.match(html, /ab 197,80 €/);
+  assert.match(html, /tp-ab-preis__betrag">197,80 €/);
+  assert.match(html, /inkl\. Kettelung/);
   assert.match(html, /80&nbsp;×&nbsp;150&nbsp;cm/);
   assert.doesNotMatch(html, /m²/, 'Bei belegtem ab-Preis steht kein m2-Preis dabei.');
 });
@@ -107,4 +111,28 @@ test('Produktseite: gewaehlte Farbe bestimmt den ab-Preis, nicht die guenstigste
   const html = await render(produkt({ einheitCent: 92 }), kettelOk, { price: 117 });
   assert.equal(abCent(html), 120 * 117 + 460 * 19);
   assert.doesNotMatch(html, /m²/);
+});
+
+test('Karte: Qualitaetszeile kommt vom Teppichboden, nichts wird ergaenzt', async () => {
+  const p = produkt({ einheitCent: 117 });
+  p.metafields.service.einfass_basis = { value: { metafields: { custom: {
+    fasermaterial: { type: 'list.metaobject_reference', value: [{ fasermaterial: { value: 'Schurwolle' } }] },
+    arten: { type: 'list.metaobject_reference', value: [{ name: { value: 'Schlinge' } }, { name: { value: 'Natur' } }] },
+    florhohe: { value: '6 mm' },
+  } } } };
+  const html = await render(p);
+  assert.match(html, /tp-ab-preis__qualitaet">Schurwolle · Schlinge · 6 mm Flor</);
+});
+
+test('Karte ohne Daten am Teppichboden: keine Qualitaetszeile, Preis bleibt', async () => {
+  const html = await render(produkt({ einheitCent: 117 }));
+  assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
+  assert.equal(abCent(html), 120 * 117 + 460 * 19);
+});
+
+test('Produktseite (mit Variante): keine Qualitaetszeile', async () => {
+  const p = produkt({ einheitCent: 117 });
+  p.metafields.service.einfass_basis = { value: { metafields: { custom: { florhohe: { value: '6 mm' } } } } };
+  const html = await render(p, kettelOk, { price: 117 });
+  assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
 });

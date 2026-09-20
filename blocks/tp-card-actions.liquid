@@ -88,7 +88,21 @@
   -%}
   <div class="tp-card-actions{% if tp_ca_teppich %} tp-card-actions--teppich{% endif %}" {{ block.shopify_attributes }}>
     {%- if tp_ca_teppich -%}
-      <p class="tp-card-actions__hinweis">Wunschmaß verfügbar</p>
+      {%- comment -%}
+        Groesste Masse: Breite vom Teppichboden (snippets/tp-teppich-max-breite), Laenge aus
+        service.max_laenge_cm. Ohne belegte Masse bleibt es bei "Wunschmass verfuegbar".
+      {%- endcomment -%}
+      {%- capture tp_ca_max_b -%}{% render 'tp-teppich-max-breite', product: tp_ca_product %}{%- endcapture -%}
+      {%- assign tp_ca_max_b = tp_ca_max_b | strip | times: 1 -%}
+      {%- assign tp_ca_max_l = tp_ca_product.metafields.service.max_laenge_cm.value | times: 1 -%}
+      <p class="tp-card-actions__hinweis">
+        <svg class="tp-card-actions__hinweis-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="8" width="19" height="8" rx="1.5"/><path d="M6.5 8v3M10 8v4M13.5 8v3M17 8v4"/></svg>
+        {%- if tp_ca_max_b > 0 and tp_ca_max_l > 0 -%}
+          Wunschmaß bis {{ tp_ca_max_b }}&nbsp;×&nbsp;{{ tp_ca_max_l }}&nbsp;cm
+        {%- else -%}
+          Wunschmaß verfügbar
+        {%- endif -%}
+      </p>
       <a class="tp-card-actions__konfig" href="{{ tp_ca_url }}">Jetzt konfigurieren</a>
     {%- endif -%}
     {%- comment -%} Zubehoer (Kleber, Profile, Reiniger ...) hat keine Muster - Link nur fuer Bodenbelaege {%- endcomment -%}
@@ -221,7 +235,8 @@
 
   /* Teppich nach Mass: Hinweis, Hauptknopf, darunter zwei ruhige Textlinks. */
   .tp-card-actions--teppich { flex-wrap: wrap; gap: 6px 14px; }
-  .tp-card-actions__hinweis { flex: 1 0 100%; margin: 0; font-size: 13px; line-height: 1.3; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+  .tp-card-actions__hinweis { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; margin: 0 auto 2px 0; padding: 5px 10px; border-radius: 6px; background: rgb(140 109 67 / 0.14); color: #5f4826; font-size: 13px; font-weight: 600; line-height: 1.3; }
+  .tp-card-actions__hinweis-icon { flex: none; }
   .tp-card-actions__konfig {
     flex: 1 0 100%;
     display: flex;

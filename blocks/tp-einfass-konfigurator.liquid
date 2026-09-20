@@ -23,7 +23,12 @@
   assign tp_ek_id = block.id | replace: '_', '' | downcase
   assign tp_ek_art = product.metafields.service.einfassung.value | strip | downcase
   assign tp_ek_arten = 'cover,ketteln,einfassband,paspelband' | split: ','
-  assign tp_ek_max_b = product.metafields.service.max_breite_cm.value | times: 1
+  # Groesste Breite kommt vom Teppichboden (snippets/tp-teppich-max-breite), hier ueber
+  # alle Farben; je Farbe steht sie unten an der Variante.
+  capture tp_ek_max_b
+    render 'tp-teppich-max-breite', product: product
+  endcapture
+  assign tp_ek_max_b = tp_ek_max_b | strip | times: 1
   assign tp_ek_max_l = product.metafields.service.max_laenge_cm.value | times: 1
 
   assign tp_ek_raum_keys = 'wohnzimmer,esszimmer,schlafzimmer,kinderzimmer,flur' | split: ','
@@ -317,10 +322,13 @@
             {%- if tp_ek_v.metafields.service.einfassen.value == 'Verfügbar' and tp_ek_v.price > 0 -%}
               {%- capture tp_ek_v_name -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'name' %}{%- endcapture -%}
               {%- capture tp_ek_v_nr -%}{% render 'tp-farbe-daten', variant: tp_ek_v, product: product, feld: 'nummer' %}{%- endcapture -%}
+              {%- capture tp_ek_v_max -%}{% render 'tp-teppich-max-breite', product: product, farbe: tp_ek_v.option1 %}{%- endcapture -%}
+              {%- assign tp_ek_v_max = tp_ek_v_max | strip | times: 1 -%}
               {
                 "id": {{ tp_ek_v.id | json }},
                 "price": {{ tp_ek_v.price | json }},
                 "available": {{ tp_ek_v.available | json }},
+                "max_breite_cm": {{ tp_ek_v_max | json }},
                 "farbe": {{ tp_ek_v_name | strip | json }},
                 "farbnummer": {{ tp_ek_v_nr | strip | json }},
                 "optionen": {{ tp_ek_v.options | json }},

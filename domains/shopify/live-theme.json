@@ -1,15 +1,15 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-20T13:21:15Z",
-    "verifiedBy": "Shopify CLI theme list, role live; Storefront Shopify.theme.role main"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-20T13:21:15Z",
+    "verifiedAt": "2026-09-20T14:33:51Z",
+    "verifiedBy": "Shopify CLI theme list, role live"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-20T14:33:51Z",
     "verifiedBy": "Shopify CLI theme list, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
@@ -21,10 +21,10 @@
   },
   "retired": [
     {
-      "themeId": "204438208846",
-      "name": "preview-main-2026-09-15",
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-20",
-      "note": "Per workflow:live abgeloest durch 204436144462 (PR #393: Teppich-Karte mit Wunschmass-Hinweis und Konfigurieren-Knopf). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
+      "note": "Per workflow:live abgeloest durch 204438208846 (PRs #398, #399: Aktionshinweis im Verlegeservice-Block, Teppiche ohne m2-Preis). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
     },
     {
       "themeId": "201829679438",
