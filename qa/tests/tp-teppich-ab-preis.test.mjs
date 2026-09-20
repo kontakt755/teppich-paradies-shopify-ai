@@ -171,3 +171,12 @@ test('Kettelservice-Handle im Snippet = Einstellung im Produkt-Template', () => 
   const handle = tpl.match(/"kettelservice_produkt":\s*"([^"]+)"/)[1];
   assert.match(source, new RegExp(`all_products\\['${handle}'\\]`), 'Anzeige und Warenkorb wuerden mit verschiedenen Kettelpreisen rechnen.');
 });
+
+test('Qualitaetszeile ohne Fasermaterial: zwei gepflegte Arten statt einer, nichts erfunden', async () => {
+  const p = produkt({ einheitCent: 92 });
+  p.metafields.service.einfass_basis = { value: { metafields: { custom: {
+    arten: { type: 'list.metaobject_reference', value: [{ name: { value: 'Schlinge' } }, { name: { value: 'Wolle' } }, { name: { value: 'Natur' } }] },
+    florhohe: { value: '3,2 mm' },
+  } } } };
+  assert.match(await render(p), /tp-ab-preis__qualitaet">Schlinge · Wolle · 3,2 mm Flor</);
+});
