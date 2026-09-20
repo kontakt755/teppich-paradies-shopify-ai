@@ -112,3 +112,6 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 ## 2026-09-20 - S-11 Kollektionen (Shopify-Daten, kein Theme)
 - Probelauf hochflor, dann 4 weitere. Gegenprobe ueber das oeffentliche `products.json` jeder Kollektion: Reihenfolge im Shop = Soll bei allen 5 (9/11/25/42/6 Produkte). Hauptkollektion `teppichboden` unveraendert (piumera, zafira, vireno, sentira ...).
 - Nicht geprueft: Optik der Kollektionsseiten, Verhalten der Sortier-Auswahl im Theme (Standard folgt der Kollektion).
+
+## 2026-09-20 - S-26 Kollektion teppiche (Shopify-Daten)
+- Gegenprobe: `products.json` = Soll (49 Produkte) UND die gerenderte Kollektionsseite zeigt die ersten 8 Karten in der neuen Reihenfolge mit ihren ab-Preisen.

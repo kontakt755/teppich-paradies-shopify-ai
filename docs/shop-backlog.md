@@ -31,7 +31,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-23 | Teppich-Karte aufwerten: Preis groesser, Qualitaetszeile (Material/Art/Flor aus `service.einfass_basis`), Wunschmass sichtbarer - Variante A/B/C von Ahmet waehlen lassen | P1 | erledigt, live 2026-09-20 | S-21 | `blocks/tp-card-actions.liquid`, `snippets/tp-teppich-ab-preis.liquid`, `blocks/price.liquid` | Fable | - |
 | S-24 | Groesste Teppichbreite vom Teppichboden ableiten (500er Rollen), je Farbe, Karte + Konfigurator | P1 | erledigt, live 2026-09-20 | - | `snippets/tp-teppich-max-breite.liquid`, Konfigurator | Fable | 6 Unit-Tests, Scratch ok |
 | S-25 | Datenpflege: `service.max_breite_cm` an den Teppichen ist jetzt nur noch Rueckfall; Wovena-Teppichboden hat kein Fasermaterial gepflegt | P3 | offen | - | Produktdaten | Worker | - |
-| S-26 | Kollektion `teppiche` (50 Produkte, BEST_SELLING) nach derselben Regel kuratieren - jetzt mit ab-Preisen sinnvoll | P2 | offen | S-11 | Shopify-Kollektion | Fable | - |
+| S-26 | Kollektion `teppiche` (50 Produkte, BEST_SELLING) nach derselben Regel kuratieren - jetzt mit ab-Preisen sinnvoll | P2 | erledigt 2026-09-20 | S-11 | Shopify-Kollektion | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
@@ -79,3 +79,9 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Umgestellt auf MANUAL + neu geordnet: hochflor (9), wolle (11), velours (25), schlinge (42), nadelvlies (6). kurzflor (1 Produkt) unveraendert.
 - Rueckweg: alte Reihenfolgen in `~/teppich-paradies-analyse/sicherungen/kollektions-reihenfolge-2026-09-20.json`; oder Sortierung im Admin wieder auf "Meistverkauft".
 - Folge von MANUAL: neue Produkte ordnet Shopify nicht mehr automatisch ein - nach einem Import die Regel neu anwenden. Sobald echte Verkaufszahlen da sind, Bestseller auf die ersten Plaetze ziehen.
+
+## S-26 Umsetzung (2026-09-20)
+- `teppiche` (49 sichtbar, 50 im Admin - eines nicht veroeffentlicht) war BEST_SELLING und faktisch rueckwaerts-alphabetisch (wovena, woolara, vivera ...).
+- Gleiche Regel wie S-11, Baender aus der Verteilung der ab-Preise (80 x 150 cm): G < 140, M 140-160, O 160-300, P >= 300 EUR. Piumera vorn.
+- Neu erste 8: piumera 194, amara 140, altessa 119, kalvea 140, vantana 168, kerova 140, solvana 120, nuvara 140. Premium (boucella, regalia je 443) auf Platz 12 und 16.
+- Rueckweg: Sicherung in `~/teppich-paradies-analyse/sicherungen/kollektions-reihenfolge-2026-09-20.json` (Schluessel `teppiche`).

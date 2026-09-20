@@ -33,6 +33,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
 ## Fakten
+- Manuell kuratierte Kollektionen (seit 2026-09-20): `teppiche`, `teppichboden-hochflor`, `-wolle`, `-velours`, `-schlinge`, `-nadelvlies`; `teppichboden` war es schon. Regel und Baender stehen im Backlog (S-11, S-26). Nach jedem Produktimport neu anwenden - Shopify sortiert dort nichts mehr selbst ein.
 - Metaobjekte vom Typ `fasermaterial` koennen auf Entwurf stehen und sind dann im Shop unsichtbar (2026-09-20: Schurwolle, Polypropylen, Sisal aktiviert). Bei fehlendem Material zuerst den Status pruefen.
 - Screenshots im eingebauten Browser bleiben nach Scroll-Skripten oft leer - dann vermessen statt raten.
 - Materialdaten der Teppiche liegen am Basis-Teppichboden: `product.metafields.service.einfass_basis.value` -> `custom.fasermaterial` (Metaobjekt-Liste), `custom.arten`, `custom.florhohe`, `custom.ruckenausstattung`. Die Teppiche selbst tragen nur `service.*`.
