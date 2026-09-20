@@ -1,0 +1,79 @@
+{%- doc -%}
+  Einstiegspreis "ab XX EUR" fuer Teppiche nach Mass - einzige Quelle der Regel.
+
+  Der Preis gilt fuer das Einstiegsmass 80 x 150 cm (Entscheidung des Inhabers
+  2026-09-20: beim technisch kleinsten Mass 50 x 50 cm greift fast ueberall der
+  Mindestpreis, alle Karten zeigten "ab 99,xx EUR"). Er ist real kaufbar und rechnet
+  wie assets/tp-masstepich-rechnung.js (mengeMitMindestpreis):
+    - Flaeche in Einheiten a 0,01 m2, aufgerundet (80 x 150 cm = 120 Einheiten)
+    - guenstigste Farbe (price_min, Preis je 0,01 m2)
+    - Pflicht-Kettelung bei service.einfassung = Ketteln: Umfang in Einheiten
+      a 0,01 lfm (4,60 m = 460) des Kettelservice-Produkts (derselbe Handle wie in
+      templates/product.einfassung.json, Einstellung kettelservice_produkt)
+    - service.mindestpreis gilt fuer den Auftrag: die Materialmenge wird in ganzen
+      Einheiten angehoben, bis Material + Kante den Mindestpreis erreichen. Deshalb
+      kann der Einstieg knapp ueber dem Mindestpreis liegen (99,10 statt 99,00 EUR).
+  Optionale Extras sind nicht enthalten.
+
+  Laesst sich der Preis nicht belegen (kein 0,01-m2-Preis, Kettelservice nicht
+  kaufbar, Einstiegsmass passt nicht in service.max_breite_cm/max_laenge_cm),
+  gibt das Snippet nur den Preis je m2 aus - nie einen geschaetzten Wert.
+  Der Preis je m2 bleibt als Grundpreis sichtbar (Ware nach Flaeche).
+
+  @param {object} product - Produkt mit custom.preis_pro_001_qm = true
+{%- enddoc -%}
+{%- liquid
+  assign tp_ab_breite_cm = 80
+  assign tp_ab_laenge_cm = 150
+  assign tp_ab_einheit_cent = product.price_min
+  assign tp_ab_m2_cent = tp_ab_einheit_cent | times: 100
+  assign tp_ab_art = product.metafields.service.einfassung.value | strip | downcase
+  assign tp_ab_cent = 0
+  assign tp_ab_belegt = false
+
+  if product.metafields.custom.preis_pro_001_qm.value == true and tp_ab_einheit_cent > 0
+    assign tp_ab_belegt = true
+    assign tp_ab_max_b = product.metafields.service.max_breite_cm.value | times: 1
+    assign tp_ab_max_l = product.metafields.service.max_laenge_cm.value | times: 1
+    if tp_ab_max_b > 0 and tp_ab_max_b < tp_ab_breite_cm
+      assign tp_ab_belegt = false
+    endif
+    if tp_ab_max_l > 0 and tp_ab_max_l < tp_ab_laenge_cm
+      assign tp_ab_belegt = false
+    endif
+    assign tp_ab_kante_einheiten = tp_ab_breite_cm | plus: tp_ab_laenge_cm | times: 2
+    assign tp_ab_kante_cent = 0
+    if tp_ab_art == 'ketteln'
+      assign tp_ab_kettel_v = all_products['kettelservice'].selected_or_first_available_variant
+      if tp_ab_kettel_v.available and tp_ab_kettel_v.price > 0
+        assign tp_ab_kante_cent = tp_ab_kettel_v.price | times: tp_ab_kante_einheiten
+      else
+        assign tp_ab_belegt = false
+      endif
+    endif
+
+    assign tp_ab_mp = product.metafields.service.mindestpreis.value
+    if tp_ab_mp.amount
+      assign tp_ab_mindest_cent = tp_ab_mp.amount | times: 100 | round
+    else
+      assign tp_ab_mindest_cent = tp_ab_mp | times: 100 | round
+    endif
+
+    assign tp_ab_menge = tp_ab_breite_cm | times: tp_ab_laenge_cm | plus: 99 | divided_by: 100
+    assign tp_ab_material_cent = tp_ab_menge | times: tp_ab_einheit_cent
+    assign tp_ab_rest_cent = tp_ab_mindest_cent | minus: tp_ab_kante_cent
+    if tp_ab_rest_cent > tp_ab_material_cent
+      assign tp_ab_menge = tp_ab_rest_cent | plus: tp_ab_einheit_cent | minus: 1 | divided_by: tp_ab_einheit_cent
+      assign tp_ab_material_cent = tp_ab_menge | times: tp_ab_einheit_cent
+    endif
+    assign tp_ab_cent = tp_ab_material_cent | plus: tp_ab_kante_cent
+  endif
+-%}
+{%- if tp_ab_belegt and tp_ab_cent > 0 -%}
+  <span class="tp-ab-preis" data-tp-ab-cent="{{ tp_ab_cent }}">
+    <span class="tp-ab-preis__haupt">ab {{ tp_ab_cent | money_without_trailing_zeros }}</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm · {{ tp_ab_m2_cent | money }}/m²</span>
+  </span>
+{%- else -%}
+  <span class="tp-preis-je-m2">ab {{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
+{%- endif -%}
