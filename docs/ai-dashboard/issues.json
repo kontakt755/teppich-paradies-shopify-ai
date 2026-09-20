@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-20T18:01:18.185Z",
+  "generated_at": "2026-09-20T18:10:54.313Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 114,
+  "count": 115,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-20T18:01:18.185Z",
+    "fetchedAt": "2026-09-20T18:10:54.313Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 415,
+      "title": "Ahmet prueft: Merchant Center uebernimmt Aktionspreise korrekt (sale_price) - 20 Teppichboeden, Aktion bis 18.10.2026",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/415",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:google"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-20T18:10:41Z",
+      "updated_at": "2026-09-20T18:10:41Z",
+      "closed_at": null
+    },
+    {
       "number": 413,
       "title": "Rabattaktion Welle 1 beenden: Preise von 20 Teppichboeden am 19.10.2026 zurueckstellen",
       "state": "open",
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-20T18:01:04Z",
-      "updated_at": "2026-09-20T18:01:05Z",
+      "updated_at": "2026-09-20T18:01:44Z",
       "closed_at": null
     },
     {
