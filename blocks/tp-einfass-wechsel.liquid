@@ -67,7 +67,14 @@
     </div>
     {%- endif -%}
     {%- if tp_ew_basis and tp_ew_basis.available -%}
-      <a class="tp-ew__basis" href="{{ tp_ew_basis.url }}" data-ew-basis>Lieber als Meterware von der Rolle</a>
+      {%- comment -%}
+        Vorher "Lieber als Meterware von der Rolle" - fuer Kunden nicht zu verstehen (Inhaber
+        2026-09-20). Jetzt erst die Frage, dann der Link mit dem, was dahinter liegt.
+      {%- endcomment -%}
+      <p class="tp-ew__basis">
+        Sie brauchen den Belag ohne gekettelte Kante?
+        <a href="{{ tp_ew_basis.url }}" data-ew-basis>Als Teppichboden von der Rolle bestellen</a>
+      </p>
     {%- endif -%}
 
     <script type="application/json" data-ew-daten>
@@ -143,7 +150,8 @@
   }
   .tp-ew__chip:hover { border-color: var(--color-foreground, #15171a); }
   .tp-ew__chip.is-aktiv { border-color: #1d6b47; background: #1d6b47; color: #fff; }
-  .tp-ew__basis { font-size: .85rem; text-decoration: underline; text-underline-offset: 3px; color: var(--color-foreground, #15171a); }
+  .tp-ew__basis { margin: 0; font-size: .85rem; line-height: 1.45; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.78); }
+  .tp-ew__basis a { color: var(--color-foreground, #15171a); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
 {% endstylesheet %}
 
 {% schema %}

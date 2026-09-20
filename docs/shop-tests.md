@@ -121,3 +121,9 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Scratch woolara: JSON gueltig (5 Farben), Farbwechsel tauscht Foto, Farbnamen und Alt-Text. velory: 12 Farben mit Foto, kein Liquid-Fehler. Teppichboden-PDP: Block nicht vorhanden.
 - Erster Wurf war 22 px breit (fehlende Breite im Flex-Container) -> behoben, mobil 343 x 139, Foto 112 x 112 geladen, kein horizontales Scrollen.
 - Nicht getestet: Screenshot (Browserfenster liefert leere Bilder), Desktop-Optik.
+
+## 2026-09-20 - S-27/S-28/S-29 Teppich-PDP (Scratch-Theme, woolara)
+- S-27: Knopftext nach Masseingabe 200 x 300 = "In den Warenkorb", Preis "892,00 EUR" nur unter "Ihr Preis".
+- S-28 mobil 375: grosses Farbbild 325 x 244 sichtbar, 181 px unter dem Beginn der Farbwahl, Lupe 96 x 96 absolut in der Ecke; Farbklick tauscht das Bild (…-132.jpg -> …-112.jpg) und den Farbnamen; kein horizontales Scrollen. Desktop 1024: grosses Bild `display: none`, Lupe wieder in der kompakten Zeile. Unit 5/5.
+- S-29: Text "Sie brauchen den Belag ohne gekettelte Kante? Als Teppichboden von der Rolle bestellen", Link behaelt `data-ew-basis` (Skript setzt die Farbe weiter).
+- Nicht getestet: Screenshot/Optik (Browserfenster liefert leere Bilder), Bildausschnitt 4:3 bei allen Produkten, Bandarten-Produkte (Knopftext "Bitte Bandfarbe waehlen" unveraendert).

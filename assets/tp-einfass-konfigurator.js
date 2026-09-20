@@ -649,7 +649,8 @@
       };
       cta.hidden = false;
       cta.disabled = inFlight || bandFehlt;
-      if (!inFlight) cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb – ' + euro(summe);
+      // Der Preis steht direkt darueber unter "Ihr Preis" - im Knopf waere er doppelt (Inhaber 2026-09-20).
+      if (!inFlight) cta.textContent = bandFehlt ? 'Bitte Bandfarbe wählen' : 'In den Warenkorb';
     }
 
     // Der Lieferschein kennt line_item.properties nicht - das Feld ist dort NIL

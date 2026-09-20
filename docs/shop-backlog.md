@@ -32,6 +32,9 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-24 | Groesste Teppichbreite vom Teppichboden ableiten (500er Rollen), je Farbe, Karte + Konfigurator | P1 | erledigt, live 2026-09-20 | - | `snippets/tp-teppich-max-breite.liquid`, Konfigurator | Fable | 6 Unit-Tests, Scratch ok |
 | S-25 | Datenpflege: `service.max_breite_cm` an den Teppichen ist jetzt nur noch Rueckfall; Wovena-Teppichboden hat kein Fasermaterial gepflegt | P3 | offen | - | Produktdaten | Worker | - |
 | S-26 | Kollektion `teppiche` (50 Produkte, BEST_SELLING) nach derselben Regel kuratieren - jetzt mit ab-Preisen sinnvoll | P2 | erledigt 2026-09-20 | S-11 | Shopify-Kollektion | Fable | - |
+| S-27 | Konfigurator: Preis stand doppelt ("Ihr Preis" + "In den Warenkorb – 724 EUR"), Gedankenstrich im Knopf | P1 | review | - | `assets/tp-einfass-konfigurator.js` | Fable | Scratch ok |
+| S-28 | Teppich-PDP mobil: Farbwahl und Galerie zu weit auseinander - grosses Farbbild direkt unter der Farbwahl, Strukturfoto als Lupe | P1 | review | S-14 | `blocks/tp-teppich-struktur.liquid` | Fable | 5 Unit-Tests, Scratch ok |
+| S-29 | Link "Lieber als Meterware von der Rolle" unverstaendlich -> Frage + klarer Link | P1 | review | - | `blocks/tp-einfass-wechsel.liquid` | Fable | Scratch ok |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |

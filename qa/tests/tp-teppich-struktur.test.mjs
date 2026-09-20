@@ -17,7 +17,7 @@ const engine = new Liquid();
 engine.registerFilter('image_url', (bild) => `https://cdn.example/${bild}`);
 
 const teppich = (basisVarianten, gewaehlt = 0) => {
-  const variants = [{ id: 11, option1: 'Sand' }, { id: 22, option1: 'Creme' }];
+  const variants = [{ id: 11, option1: 'Sand', featured_image: 'teppich-sand.jpg' }, { id: 22, option1: 'Creme', featured_image: 'teppich-creme.jpg' }];
   return {
     title: 'Woolara Teppich nach Mass',
     variants,
@@ -58,4 +58,12 @@ test('Farbe ohne Foto am Teppichboden: kein Eintrag, kein falsches Bild', async 
 test('ohne Basisprodukt oder ohne ein einziges Foto rendert der Block nichts', async () => {
   assert.equal((await render(teppich(null))).trim(), '');
   assert.equal((await render(teppich([{ option1: 'Grau', featured_image: 'grau.jpg' }]))).trim(), '');
+});
+
+test('grosses Farbbild: Variantenbild des Teppichs, passend zur gewaehlten Farbe', async () => {
+  const html = await render(teppich(basis, 1));
+  assert.match(html, /data-tp-tts-gross[\s\S]*?src="https:\/\/cdn\.example\/teppich-creme\.jpg"/);
+  const d = daten(html);
+  assert.match(d['11'].gross, /teppich-sand\.jpg/);
+  assert.match(d['22'].gross, /teppich-creme\.jpg/);
 });
