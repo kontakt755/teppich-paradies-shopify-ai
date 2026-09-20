@@ -127,3 +127,10 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - S-28 mobil 375: grosses Farbbild 325 x 244 sichtbar, 181 px unter dem Beginn der Farbwahl, Lupe 96 x 96 absolut in der Ecke; Farbklick tauscht das Bild (…-132.jpg -> …-112.jpg) und den Farbnamen; kein horizontales Scrollen. Desktop 1024: grosses Bild `display: none`, Lupe wieder in der kompakten Zeile. Unit 5/5.
 - S-29: Text "Sie brauchen den Belag ohne gekettelte Kante? Als Teppichboden von der Rolle bestellen", Link behaelt `data-ew-basis` (Skript setzt die Farbe weiter).
 - Nicht getestet: Screenshot/Optik (Browserfenster liefert leere Bilder), Bildausschnitt 4:3 bei allen Produkten, Bandarten-Produkte (Knopftext "Bitte Bandfarbe waehlen" unveraendert).
+
+## 2026-09-20 - Codex-Nachcheck des gesamten Tages-Diffs (gpt-5.6-sol, read-only)
+- Erster Anlauf hing 25 min ohne Ausgabe: `codex exec` wartet im Hintergrund auf stdin -> immer mit `< /dev/null` starten. `timeout` gibt es auf macOS nicht.
+- Bestaetigt: Integer-Rechnung ab-Preis = JS-Rechenkern, gueltiges JSON auch bei leeren/0-Breiten, Datumsvergleich, Scope/Produktuebergabe der 7 Streichpreis-Stellen.
+- 5 Defekte, alle behoben: (1) ab-Preis nahm `price_min` inkl. gesperrter/nicht freigegebener Farben -> guenstigste KAUFBARE Variante wie im Konfigurator; (2) `blocks/price.liquid` reicht auf der eigenen Produktseite die gewaehlte Variante durch; (3) fehlende Grenzen (leer/0) liessen den ab-Preis durch -> Breite aus `tp-teppich-max-breite`, beide Grenzen Pflicht; (4) "inkl. Kettelung" auch bei Cover/Band -> "inkl. Einfassung"; (5) Farbe ohne verfuegbare Rolle fiel aufs feste Feld zurueck -> jetzt Rollen dieser Farbe, auch nicht verfuegbare (bewusst KEINE harte Sperre: falsch gepflegter Bestand wuerde Verkaeufe blockieren).
+- Risiko abgesichert: Test vergleicht den Kettelservice-Handle im Snippet mit der Einstellung in `templates/product.einfassung.json`.
+- Danach Unit 29/29 in den zwei betroffenen Dateien, `npm test` gruen; Scratch: 24 Karten mit unveraenderten ab-Preisen, 0 Rueckfaelle, wovena PDP 197,80 = Konfigurator 197,80.

@@ -70,7 +70,12 @@
       Konfiguration), der Preis je m2 bleibt dezent als Grundpreis. Regel und
       Rueckfall stehen allein in snippets/tp-teppich-ab-preis.liquid.
     {%- endcomment -%}
-    {% render 'tp-teppich-ab-preis', product: product_resource %}
+    {%- comment -%} Auf der eigenen Produktseite zaehlt die gewaehlte Farbe, auf Karten die guenstigste kaufbare. {%- endcomment -%}
+    {%- if product != blank and product.handle == product_resource.handle -%}
+      {% render 'tp-teppich-ab-preis', product: product_resource, variant: selected_variant %}
+    {%- else -%}
+      {% render 'tp-teppich-ab-preis', product: product_resource %}
+    {%- endif -%}
   {% else %}
     {% render 'price',
       show_unit_price: false,

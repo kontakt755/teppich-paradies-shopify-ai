@@ -23,7 +23,10 @@ const M = globalThis.TPMass;
 const ohneDoc = (datei) => readFileSync(path.join(root, datei), 'utf8')
   .replace(/{%-?\s*doc\s*-?%}[\s\S]*?{%-?\s*enddoc\s*-?%}/g, '');
 // Das Snippet bindet die Qualitaetszeile ein - die Engine bekommt das echte Snippet mit.
-const engine = new Liquid({ templates: { 'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid') } });
+const engine = new Liquid({ templates: {
+  'tp-teppich-qualitaet': ohneDoc('snippets/tp-teppich-qualitaet.liquid'),
+  'tp-teppich-max-breite': ohneDoc('snippets/tp-teppich-max-breite.liquid'),
+} });
 engine.registerFilter('divided_by', (a, b) => Math.floor(Number(a) / Number(b)));
 engine.registerFilter('money', (c) => (Number(c) / 100).toFixed(2).replace('.', ',') + ' €');
 engine.registerFilter('money_without_trailing_zeros', (c) =>
@@ -32,9 +35,11 @@ engine.registerFilter('money_without_trailing_zeros', (c) =>
 const W = 80;
 const L = 150;
 
-function produkt({ einheitCent, mindest = 99, art = 'Ketteln', p001 = true, maxB = 400, maxL = 1000 }) {
+function produkt({ einheitCent, mindest = 99, art = 'Ketteln', p001 = true, maxB = 400, maxL = 1000, varianten = null }) {
+  const variants = varianten || [{ price: einheitCent, available: true, metafields: { service: { einfassen: { value: 'Verfügbar' } } } }];
   return {
-    price_min: einheitCent,
+    price_min: Math.min(...variants.map((v) => v.price)),
+    variants,
     metafields: {
       custom: { preis_pro_001_qm: { value: p001 } },
       service: { einfassung: { value: art }, mindestpreis: { value: mindest }, max_breite_cm: { value: maxB }, max_laenge_cm: { value: maxL } },
@@ -135,4 +140,34 @@ test('Produktseite (mit Variante): keine Qualitaetszeile', async () => {
   p.metafields.service.einfass_basis = { value: { metafields: { custom: { florhohe: { value: '6 mm' } } } } };
   const html = await render(p, kettelOk, { price: 117 });
   assert.doesNotMatch(html, /tp-ab-preis__qualitaet/);
+});
+
+const v = (price, available = true, einfassen = 'Verfügbar') => ({ price, available, metafields: { service: { einfassen: { value: einfassen } } } });
+
+test('Karte: nicht verfuegbare oder nicht freigegebene Farben zaehlen nicht fuer den ab-Preis', async () => {
+  const html = await render(produkt({ varianten: [v(20, false), v(30, true, 'Nicht verfügbar'), v(92)] }));
+  assert.equal(abCent(html), 120 * 92 + 460 * 19, 'die guenstigste KAUFBARE Farbe (92) zaehlt, nicht price_min (20)');
+});
+
+test('keine einzige kaufbare Farbe: kein ab-Preis', async () => {
+  const html = await render(produkt({ varianten: [v(20, false)] }));
+  assert.equal(abCent(html), null);
+});
+
+test('fehlende Grenzen (leer oder 0): kein ab-Preis - der Konfigurator faellt dann auch aus', async () => {
+  assert.equal(abCent(await render(produkt({ einheitCent: 92, maxL: null }))), null);
+  assert.equal(abCent(await render(produkt({ einheitCent: 92, maxB: 0 }))), null);
+});
+
+test('Text nennt Kettelung nur bei Ketteln, sonst Einfassung', async () => {
+  assert.match(await render(produkt({ einheitCent: 92 })), /inkl\. Kettelung/);
+  const band = await render(produkt({ einheitCent: 129, art: 'Einfassband', mindest: null }));
+  assert.match(band, /inkl\. Einfassung/);
+  assert.doesNotMatch(band, /Kettelung/);
+});
+
+test('Kettelservice-Handle im Snippet = Einstellung im Produkt-Template', () => {
+  const tpl = readFileSync(path.join(root, 'templates/product.einfassung.json'), 'utf8');
+  const handle = tpl.match(/"kettelservice_produkt":\s*"([^"]+)"/)[1];
+  assert.match(source, new RegExp(`all_products\\['${handle}'\\]`), 'Anzeige und Warenkorb wuerden mit verschiedenen Kettelpreisen rechnen.');
 });
