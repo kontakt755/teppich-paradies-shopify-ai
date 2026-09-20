@@ -13,6 +13,8 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Theme-IDs: nur `domains/shopify/live-theme.json`.
 
 ## Regeln
+- Aktion: `snippets/tp-aktion-aktiv.liquid` (Metafelder `aktion.start/ende`). Verlegeservice-Berechtigung: `snippets/tp-vs-berechtigt.liquid` (Template `rolle` + Produkttyp aus `tp_vs_produkttypen`). Trifft beides zu, zeigt `blocks/tp-verlegeservice-hinweis.liquid` den Aktionshinweis statt des Kostenlos-Versprechens. Der Service wird per Anfrage gebucht - es gibt keine Warenkorb-Logik, die zu sperren waere.
+- Eine Aktion starten: compare_at_price (nur belegter Referenzpreis) + `aktion.start` am Produkt setzen. Beenden: `aktion.ende` setzen und compare_at_price entfernen.
 - Ab-Preis Teppiche: einzige Quelle `snippets/tp-teppich-ab-preis.liquid` (80 x 150 cm, Kettelservice-Handle `kettelservice`, Mindestpreis `service.mindestpreis` = 99 EUR bei allen 33 Produkten). `qa/tests/tp-teppich-ab-preis.test.mjs` haelt Liquid und Rechenkern deckungsgleich. Erkennung Teppich: `custom.preis_pro_001_qm = true` UND `service.einfassung` gesetzt - zentimetergenaue Rollenware traegt `preis_pro_001_qm` ebenfalls und bleibt bei EUR/m2. Karte nimmt die guenstigste Farbe, die PDP (`blocks/price_custom.liquid`) die gewaehlte Variante.
 - Raumansicht ist ein Block-Schalter `raumansicht_aktiv` (Standard aus). Code, Foto-Settings
   und Massstab bleiben erhalten; ohne Raumliste faellt das Skript auf die Masszeichnung zurueck.

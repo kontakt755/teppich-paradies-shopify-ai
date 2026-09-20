@@ -57,3 +57,10 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Preview komplett PASS im ersten Lauf (COMPARE, SEO, FULL QA, SALES).
 - Live (`role = main`), mobil 375, `/collections/teppiche`: 24 Karten mit Hinweis und Knopf 343 x 44 in Muster-Braun, Link auf die Produktseite, ab-Preis daneben, kein horizontales Scrollen. `/collections/teppichboden`: 0 Konfigurieren-Knoepfe.
 - Desktop nur vermessen (Knopf 389 x 44, Preiszeile einzeilig), kein brauchbarer Screenshot.
+
+## 2026-09-20 - S-08/S-09 Aktionshinweis (Scratch-Theme)
+- Unit `qa/tests/tp-aktion-aktiv.test.mjs` 7/7: ohne Start keine Aktion, Start heute, Ende heute zaehlt mit, Start morgen, Ende gestern, Produkt ohne Metafelder.
+- Echte Daten: `aktion.start` = heute testweise an zafira-teppichboden gesetzt (Live-Theme kannte den Code nicht -> dort wirkungslos). Scratch mobil 375: Box "Aktionspreis / Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar ..." 343 x 112, das aufklappbare Kostenlos-Versprechen ist weg, kein horizontales Scrollen. Uebrige "kostenlos"-Texte der Seite: Muster, Aufmass - kein widerspruechliches Verlege-Versprechen.
+- Gegenprobe piumera-teppichboden (ohne Metafeld): normaler Hinweis "Ab 649 EUR Warenwert bis 15 km kostenlos", keine Aktionsbox.
+- Test-Metafeld danach geloescht, per Read bestaetigt (0 aktion-Metafelder).
+- Nicht getestet: Optik per Screenshot (Browserfenster lieferte leere Bilder), Desktop, Enddatum mit echten Daten (nur Unit).

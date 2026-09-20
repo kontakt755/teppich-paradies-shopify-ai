@@ -13,6 +13,10 @@
   Schwelle in der ersten Zone), aufgeklappt beide Stufen in je einem Satz
   und der Weg zur Seite mit allen Preisen. Alle Zahlen aus den
   Theme-Einstellungen.
+
+  Laeuft fuer das Produkt eine Preisaktion (snippets/tp-aktion-aktiv), steht hier
+  statt des Kostenlos-Versprechens der Aktionshinweis: Bordsteinkante inklusive,
+  nicht kombinierbar mit dem kostenlosen Vor-Ort-Service (Inhaber, 2026-09-20).
 {% enddoc %}
 
 {%- liquid
@@ -20,13 +24,27 @@
     render 'tp-vs-berechtigt', product: product
   endcapture
   assign vsh_gilt = vsh_gilt | strip
+  capture vsh_aktion
+    render 'tp-aktion-aktiv', product: product
+  endcapture
+  assign vsh_aktion = vsh_aktion | strip
 
   assign vsh_seite = pages['liefer-verlegeservice'].url | default: '/pages/liefer-verlegeservice'
   assign vsh_schwelle = settings.tp_vs_schwelle
   assign vsh_nah = settings.tp_vs_radius_basis
 -%}
 
-{%- if vsh_gilt == 'ja' -%}
+{%- if vsh_gilt == 'ja' and vsh_aktion == 'ja' -%}
+  <div class="tp-vsh tp-vsh--aktion" {{ block.shopify_attributes }}>
+    <div class="tp-vsh__kopf tp-vsh__kopf--fest">
+      {%- render 'tp-vs-icon', name: 'truck' -%}
+      <span class="tp-vsh__titel">
+        Aktionspreis
+        <span class="tp-vsh__unter">Kostenlose Lieferung bis Bordsteinkante inklusive. Nicht kombinierbar mit unserem kostenlosen Vor-Ort-Liefer- und Verlegeservice.</span>
+      </span>
+    </div>
+  </div>
+{%- elsif vsh_gilt == 'ja' -%}
   <details class="tp-vsh" {{ block.shopify_attributes }}>
     <summary class="tp-vsh__kopf">
       {%- render 'tp-vs-icon', name: 'truck' -%}
@@ -53,6 +71,7 @@
 {%- endif -%}
 
 {% stylesheet %}
+  .tp-vsh--aktion .tp-vsh__kopf { cursor: default; }
   .tp-vsh {
     margin-top: 12px;
     border: 1px solid rgb(141 113 76 / 0.35);
