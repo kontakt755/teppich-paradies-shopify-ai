@@ -22,10 +22,11 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
   Live ab - Layoutfehler dort erst gegen Live gegenpruefen, bevor sie als Shop-Fehler gelten.
 
 ## Aktive Arbeit
-- S-04: PR offen. Deploy erst zusammen mit S-07 (PDP), damit Karte und Produktseite denselben Preis nennen.
+- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). Naechstes Paket: S-06 (Kartenzeilen Wunschmass/CTA).
 
 ## Offene Blocker
-- keine
+- S-10: keine Einkaufspreise in Shopify; EK-Quelle von Ahmet noetig.
+- Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
 ## Fakten
 - Preise wie "0,92 EUR" im PDP-DOM sind unsichtbare Elemente, kein Kundenbefund.

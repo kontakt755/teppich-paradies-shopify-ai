@@ -41,3 +41,8 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Unit 14/14 im Ab-Preis-Test (neu: Rollenware ohne Einfassung, gewaehlte Variante).
 - Farbwechsel auf der PDP (wovena): Variante wechselt, ab-Preis bleibt stehen, kein alter m2-Preis.
 - Nicht getestet: Vinyl-/Zubehoer-PDP fuer S-17, Sticky-Leiste.
+
+## 2026-09-20 - Livegang PR #391 (Commit f108fdd)
+- Preview Lauf 1: SALES FAIL - nur "Klickvinyl mobil", Cookie-Banner fing den Klick ab. Zwei gezielte Wiederholungen (`--package --mobile`) PASS, voller zweiter Preview-Lauf komplett PASS. Kein Gate veraendert. -> S-18.
+- Live (`Shopify.theme.role = main`), mobil 375: wovena "ab 197,80 EUR", Konfigurator 80 x 150 = 197,80 EUR; PAngV-Hinweis 343 x 18; kein "Im Raum", kein "So rechnen wir"; kein horizontales Scrollen. zafira-teppichboden: "38,90 EUR/m2", kein ab-Preis, Hinweis 343 x 18. Kollektion teppiche liefert ab-Preise im HTML.
+- Nicht getestet live: Desktop-Optik, Suche/Startseite, echter Warenkorb-Eintrag.
