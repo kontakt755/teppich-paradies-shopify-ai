@@ -25,7 +25,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
   Live ab - Layoutfehler dort erst gegen Live gegenpruefen, bevor sie als Shop-Fehler gelten.
 
 ## Aktive Arbeit
-- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06 live (PR #393). Naechste Pakete: S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
+- keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06, S-21, S-23, S-24 live. Naechste Pakete: S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
 
 ## Offene Blocker
 - S-10: keine Einkaufspreise in Shopify; Ahmet reicht eine EK-Liste nach (offen, kein Termin). Nicht erneut nachfragen, nur im Statusbericht als offen fuehren.
@@ -35,7 +35,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Metaobjekte vom Typ `fasermaterial` koennen auf Entwurf stehen und sind dann im Shop unsichtbar (2026-09-20: Schurwolle, Polypropylen, Sisal aktiviert). Bei fehlendem Material zuerst den Status pruefen.
 - Screenshots im eingebauten Browser bleiben nach Scroll-Skripten oft leer - dann vermessen statt raten.
 - Materialdaten der Teppiche liegen am Basis-Teppichboden: `product.metafields.service.einfass_basis.value` -> `custom.fasermaterial` (Metaobjekt-Liste), `custom.arten`, `custom.florhohe`, `custom.ruckenausstattung`. Die Teppiche selbst tragen nur `service.*`.
-- Die Produktbeschreibungen der 49 Teppiche nennen noch Material-EUR/m2 und Kettelpreis je lfm (S-22).
+- Die 49 Teppich-Beschreibungen und ihre Meta-Descriptions nennen seit 2026-09-20 keinen m2-Preis und keinen Kettelpreis mehr (Abschnitt "So bestellen Sie"). Originale: lokal `~/teppich-paradies-analyse/sicherungen/teppich-texte-2026-09-20.json` (nicht im Repo). Die Masse im Text sind beim Schreiben vom Teppichboden abgeleitet, aber STATISCH - aendert sich eine Rollenbreite, zeigen Karte und Konfigurator sofort den neuen Wert, der Beschreibungstext nicht.
 - Im Shop gibt es seit 2026-09-20 keinen aktiven Streichpreis mehr. Neue Streichpreise nur mit belegtem Referenzpreis (S-12).
 - Preise wie "0,92 EUR" im PDP-DOM sind unsichtbare Elemente, kein Kundenbefund.
 - `snippets/tp-preisangabe.liquid` wird in `blocks/_product-details.liquid` gerendert, nie als Kind des Produktrasters.

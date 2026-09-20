@@ -82,3 +82,12 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - PDP-Preis 30 px.
 - Datenfix: 3 `fasermaterial`-Metaobjekte (Schurwolle, Polypropylen, Sisal) von Entwurf auf aktiv - danach erscheint z. B. "Schurwolle · Schlinge · 6 mm Flor".
 - Nicht getestet: Screenshot (Browserfenster lieferte leere Bilder), Desktop-Optik, Farbwechsel mit unterschiedlicher Breite je Farbe (kein Produkt mit solcher Datenlage gefunden - nur Unit), Warenkorbzeile mit 500er Rolle.
+
+## 2026-09-20 - Livegang PR #400 (Commit 9fddd3a)
+- Preview komplett PASS im ersten Lauf. Live-HTML `/collections/teppiche`: 24 Qualitaetszeilen, 23x "bis 500", 1x "bis 400", z. B. "Schurwolle · Schlinge · 6 mm Flor".
+
+## 2026-09-20 - S-22 Produkttexte (Produktdaten, kein Theme)
+- Sonnet-Worker, Sicherung vor dem Schreiben geprueft: 50 Originale, alle mit altem Rechnerblock und m2 im SEO-Text.
+- Eigene Gegenprobe ueber den oeffentlichen Shop (nicht ueber die Worker-Antwort): 49/49 Beschreibungen mit "So bestellen Sie", 0 Rueckstaende (EUR/m2, "je laufendem Meter", alter Block), Masse 44x 500 x 600 und 5x 400 x 600, kein Text widerspricht der Wunschmass-Marke seiner Karte, keine widerspruechlichen Masse innerhalb eines Textes.
+- Meta-Descriptions live: 49/49 ohne m2-Preis und ohne "ab 99", alle <= 160 Zeichen. rubira wich im Format ab (eine Farbe) und wurde von Hand nachgezogen.
+- Nicht geprueft: Darstellung der neuen Liste im Layout (reines HTML-Listenformat wie vorher), das 50. gesicherte Produkt liegt nicht in der Kollektion teppiche.
