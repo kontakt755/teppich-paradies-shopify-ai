@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-20T12:39:31.024Z",
+  "generated_at": "2026-09-20T12:53:34.234Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 111,
+  "count": 112,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-20T12:39:31.024Z",
+    "fetchedAt": "2026-09-20T12:53:34.234Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,12 +64,36 @@
   },
   "issues": [
     {
+      "number": 390,
+      "title": "Teppiche: ab-Preis (80 x 150 cm, inkl. Kettelung) statt EUR/m2 auf Karte und Produktseite",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/390",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-20T12:53:22Z",
+      "updated_at": "2026-09-20T12:53:22Z",
+      "closed_at": null
+    },
+    {
       "number": 387,
       "title": "Teppich-Konfigurator: Raumansicht abschalten, So-rechnen-wir aus Kundenansicht entfernen",
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/387",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p0",
         "area:produktseite"
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-20T12:32:53Z",
-      "updated_at": "2026-09-20T12:39:18Z",
+      "updated_at": "2026-09-20T12:39:34Z",
       "closed_at": "2026-09-20T12:39:18Z"
     },
     {
