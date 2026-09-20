@@ -160,3 +160,8 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 
 ## 2026-09-20 - Livegang PR #416 (Commit e2839f5)
 - Preview komplett PASS. Live `/collections/teppiche`: 24 ab-Preise, 0 Streichpreise (erwartet - es laeuft keine Teppich-Aktion), kein Liquid-Fehler; Teppichboden-Angebote unveraendert sichtbar.
+
+## 2026-09-20 - S-32 Konfigurator: alter Preis bei Aktion (Scratch-Theme)
+- Unlisted Testprodukt mit Vergleichspreis 1,49 + `aktion.start` an einer Variante: 200 x 300 cm -> "774,00 EUR" und durchgestrichen "894,00 EUR" (= 600 x 1,29 / 600 x 1,49). Variante ohne Vergleichspreis: kein Streichpreis. Konsole sauber. Testwerte entfernt, per Read bestaetigt.
+- Schutztest `tp-streichpreis-nur-bei-aktion` deckt den Konfigurator-Block jetzt mit ab (11/11). Liquid liefert `compare_at_price` nur bei aktiver Aktion, das Skript entscheidet nichts selbst.
+- Nicht getestet: Mindestpreis-Fall mit echten Daten (Testprodukt hat keinen Mindestpreis) - Logik identisch zum ab-Preis, dort per Unit abgedeckt.

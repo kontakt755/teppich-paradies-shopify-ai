@@ -641,6 +641,24 @@
         if (mindest) mh.textContent = 'Mindestpreis ' + euro(mindestCent) + ' für kleine Teppiche.';
       }
       q('[data-summe]').textContent = euro(summe);
+      // Aktion: derselbe Teppich zum alten Variantenpreis, dieselbe Rechnung. Liquid liefert
+      // compare_at_price nur bei aktiver Aktion. Greift beim alten Preis der Mindestpreis,
+      // gibt es keinen Streichpreis - die Rundung ergaebe sonst einen Cent-"Rabatt".
+      var summeAlt = q('[data-summe-alt]');
+      if (summeAlt) {
+        var preisAlt = parseInt(target.compare_at_price, 10);
+        var zeigen = false;
+        if (preisAlt > preis) {
+          var mengeAlt = M.mengeMitMindestpreis(flaeche, preisAlt, Math.max(0, mindestCent - kettelCent));
+          var altSumme = mengeAlt * preisAlt + kettelCent;
+          if (mengeAlt === M.mengeHundertstelM2(flaeche) && altSumme > summe) {
+            summeAlt.textContent = euro(altSumme);
+            summeAlt.setAttribute('aria-label', 'statt ' + euro(altSumme));
+            zeigen = true;
+          }
+        }
+        summeAlt.hidden = !zeigen;
+      }
       rechnung.hidden = false;
 
       stand = {
