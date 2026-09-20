@@ -1,6 +1,6 @@
 # Teppich-Paradies – Auditstatus
 
-AUDIT FORTSCHRITT: 18 %
+AUDIT FORTSCHRITT: 22 %
 
 Stand: 20.09.2026. Phase 1 – ausschließlich Analyse. Sequenziell; keine Subagenten. Keine Shopdateien oder Produktdaten geändert. Prozentwert ist eine grobe Abdeckungsschätzung, kein Anteil bestandener Tests.
 
@@ -14,27 +14,31 @@ Abgeschlossen:
 - [x] PR-021 lokal abgeschlossen: Liquid-Datenvertrag und Einfass-Originalfunktionen in 47 Fällen geprüft, 29 Requests abgefangen. Material/Kante/Mindestpreis/Properties stimmen im gültigen Referenzpfad; TP-005 als bedingter Service-Ausfallfehler, Live-Reichweite offen.
 - [x] PR-022 lokal abgeschlossen: 61 Haftunterlagen-Integrationsfälle und 198.468 Auswahl-/Rundungsvergleiche. Günstigste einzelne Variante für gleich breite Bahnen in fester Richtung, Preis/Properties/Gruppe bis Payload korrekt. Kein neuer bestätigter Fehler; Live-Produktvertrag/andere Verlegeweisen H-008 offen.
 
+- [x] PR-023a lokal abgeschlossen: 46 Fälle am vollständigen Wunschmaß-Liquid/JS, 31 abgefangene Requests. Echte Formflächen/Mindestpreis/Zuschlag korrekt; TP-006/007 bedingt lokal bestätigt. Historisch keine aktiven Produkte auf diesem Template, heute H-009 offen.
+
+- [x] PR-023b.1 lokal abgeschlossen: Klebevinyl-/Teppichfliesen-Paketvertrag über Original-Liquid, Preisansichten und JS bis Payload/Cartzeile; 17 Fälle, 14 Requests, 28 Cart-Renderings. TP-008/P3: dritte Flächennachkommastelle wird nur im Cart verkürzt.
+
 In Arbeit:
-- [~] Preisberechnung: nächster Teil ist der separate Teppich-Wunschmaßpfad (PR-023a); nur dieser Bereich wird als Nächstes bearbeitet.
+- [~] Preisberechnung: nächster Teil sind PVC- und Stück-/Fixpreis-Payloads (PR-023b.2); nur dieser Bereich wird als Nächstes bearbeitet.
 
 Noch offen:
-- [ ] Restliche Preisfälle: separater Teppich-Wunschmaßpfad und weitere Produktarten; offene Live-Reichweite/-Produktfreigaben H-005–008 klären.
+- [ ] Restliche Preisfälle: PVC-/Stück-/Fixpreisverträge (PR-023b.2); offene Live-Reichweite/-Produktfreigaben H-005–011 klären.
 - [ ] Warenkorb bearbeiten, Gruppen, Kombinationen, Checkout vertiefen.
 - [ ] Vollständige Rechner-/Grenzfall-, Varianten- und Runtime-Prüfung.
 - [ ] Mobile, Suche/Navigation, Performance, SEO, UX, Cross-Feature-Tests und finaler Regressionstest.
 - [ ] Architekturkarte vervollständigen; Phase 2 abschließen; spätere freigegebene Fixes und QA.
 - [ ] FINAL_REPORT.md und belegte Abschlussbewertungen.
 
-Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 2 · P3: 3 · P4: 0. Davon TP-004/005 ausschließlich lokal bestätigte bedingte Codefehler, Live-Betroffenheit nicht belegt.
+Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 2 · P3: 6 · P4: 0. Davon TP-004–007 ausschließlich lokal bestätigte bedingte Codefehler; TP-006/007 historisch ruhender Pfad, aktuelle Live-Betroffenheit nicht belegt. TP-008 lokal bestätigter Cart-Anzeigeverlust, keine falsche Menge/Geldabrechnung.
 
 Aktuell untersuchter Bereich: Preisberechnung, Phase 1.
-Letzte abgeschlossene Aufgabe: PR-022. 61 Fälle mit originalem Liquid-Datenvertrag und JS; 54 Requests abgefangen, sieben ungültige Hauptkonfigurationen blockiert. 198.468 unabhängige Grenzvergleiche ohne Abweichung von der implementierten Auswahlregel. Kombination Material + Fußleiste + Unterlage im Referenz-Fixture 752,10 €, drei Positionen mit gemeinsamer Gruppe. Preise/IDs der Unterlagenkataloge ausdrücklich synthetisch. Keine Reparatur.
-Nächste Aufgabe: **PR-023a** aus TEST_MATRIX.md. `templates/product.teppich.json` → `blocks/tp-teppich-wunschmass.liquid`: separaten Wunschmaß-/Formpreisweg, Flächenregel, Formzuschläge, Grenzmaße und Original-Payload prüfen. Aktive Produktzuordnung und Einheiten aus verlässlichen vorhandenen Daten belegen, ansonsten Fixtures synthetisch markieren. Nicht mit dem abgeschlossenen Einfasspfad verwechseln. Anschließend PR-023b (weitere Produktarten), danach Warenkorb. PR-001–011 und lokale PR-020–022 ohne Quellenänderung nicht wiederholen. H-005/006/008 nur bei verfügbarem Live-Zugriff ergänzen.
-Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-008. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
+Letzte abgeschlossene Aufgabe: PR-023b.1. 17 neue Paket-Datenintegrationen, 14 Requests abgefangen, 28 Cart-Renderings. Quadra-Paketvorrang, zwei-/dreistellige Paketflächen, Stückdaten, €/m² und Cent-Summen; elf Quellenhashes historisch gleich. TP-008: Rechner 30,272 m², Cart 30,27 m²; Menge und Preis korrekt. PVC/Fixpreis nur kartiert, deren Payloads noch nicht abgeschlossen. Keine produktiven Änderungen.
+Nächste Aufgabe: **PR-023b.2**: PVC Terracora Eiche Braun (`marano-eiche-braun-vinylboden-von-der-rolle`, dokumentierte 2-/4-m-Breiten) sowie Fixpreis-/Sockelleisten-/Stückreferenz. Zuerst verlässliche vorhandene Einheit-/Preisdaten lesen; fehlende aktuelle Werte synthetisch kennzeichnen. Original-Rollen-Datenvertrag und Standardformular-/Mengenhilfeübergang bis abgefangenen Payload prüfen. Einstieg: `qa/MERCHANT_READINESS_REPORT.md`, `domains/shopify/rechner-zuordnung.md`, `domains/shopify/leisten-stangenlaenge/stangenlaenge.json`, Rollenblock, `tp-zubehoer-menge` und `assets/product-form.js`. Danach CART-002. Abgeschlossene S01–S06-Paket-/Mathematiktests ohne Quellenänderung nicht wiederholen. Live-Hypothesen H-005/006/008/009/011 getrennt nachholen, wenn verfügbar.
+Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-011. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
 Fix-Packs Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0
 
-Live-Testgrenze: Browser-/DNS-Zugriff war in S01 blockiert; S02–S04 ausschließlich lokale Schritte, keine erneuten Infrastrukturversuche. Live-Theme seit dem 19.09. nicht neu verifiziert; maßgebliche Registry: `domains/shopify/live-theme.json`. Kein aktueller Live-Beleg für cmExact im Rollenrechner, einen ausgefallenen Kettelservice, aktuelle Form-/Unterlagenfreigaben oder die eingesetzte Mail-Vorlage. Lokale Reproduktion ersetzt keine neue Live-Freigabe. Details in SESSION_LOG.md und evidence/README.md.
+Live-Testgrenze: Browser-/DNS-Zugriff war in S01 blockiert; S02–S06 ausschließlich lokale Schritte, keine erneuten Infrastrukturversuche. Live-Theme seit dem 19.09. nicht neu verifiziert; maßgebliche Registry: `domains/shopify/live-theme.json`. Kein aktueller Live-Beleg für cmExact im Rollenrechner, einen ausgefallenen Kettelservice, aktuelle Form-/Unterlagenfreigaben oder die eingesetzte Mail-Vorlage. Lokale Reproduktion ersetzt keine neue Live-Freigabe. Details in SESSION_LOG.md und evidence/README.md.
 
-Historische Evidence-Basis: `66729099c4122385e19172a1f5ba14a7524c3bfb`. Aktueller übernommener Repository-HEAD: `d63acaf`. Geprüfte Rechnerquellen sind SHA-256-identisch zum historischen Live-Snapshot; S03 ergänzt sechs Hashvergleiche für Einfassung. `origin/main` zuletzt zwei reine Dashboarddaten-Commits voraus, kein Pull/Merge. Das Audit liegt tatsächlich in `audit/` im Repository; alte Verweise auf `outputs/audit/` sind überholt.
+Historische Evidence-Basis: `66729099c4122385e19172a1f5ba14a7524c3bfb`. Aktueller übernommener Repository-HEAD: `840b883` (S01–S04-Audit zwischenzeitlich gesichert). Geprüfte Rechnerquellen sind SHA-256-identisch zum historischen Live-Snapshot; S03 ergänzt sechs Hashvergleiche für Einfassung, S05 Block und Template des separaten Wunschmaßpfads. S06 ergänzt elf Paket-/Preissnippet-/Templatevergleiche. Remote nicht erneut gelesen, kein Pull/Merge; ältere Remoteangaben im Sessionlog sind historisch. Das Audit liegt tatsächlich in `audit/` im Repository; alte Verweise auf `outputs/audit/` sind überholt.
 
-Git-Sicherung: Audit-Dateien lokal gespeichert, noch **uncommitted**. `git add TASK.md CODEX_PROGRESS.md audit` scheiterte am schreibgeschützten `.git/index.lock` (Operation not permitted). Keine Berechtigungsumgehung. Bei später verfügbarem Git-Schreibzugriff den geprüften Audit-Stand zuerst sichern; `CONTINUE_PROMPT.md` unverändert lassen.
+Git-Sicherung: S01–S04 liegen im übernommenen Commit `840b883`. S05/S06 sind nur in Auditdateien/Progress gespeichert. Aktuelles Berechtigungsprofil führt `.git` wieder nur lesbar; normale S05-/S06-Stagingversuche scheiterten mit Exit 128 an `.git/index.lock` (Operation not permitted). S05/S06 lokal gespeichert, uncommitted; S06 erneut versucht, nachdem CONTINUE_PROMPT.md von außen einen behobenen Zugriff meldete, tatsächlicher Versuch weiter gesperrt; keine Umgehung/kein neuer Commit behauptet. `TASK.md` unverändert; externe Ergänzung in `CONTINUE_PROMPT.md` nicht ändern oder mit dem Audit committen.

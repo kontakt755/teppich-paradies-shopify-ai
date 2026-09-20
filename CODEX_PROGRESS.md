@@ -1,38 +1,34 @@
 # Codex Fortschritt
 
 ## Gesamtziel
-Vollständiger Shop-Audit nach TASK.md: Fehler belegen, priorisieren und mit Implementation Briefs/Fix-Packs übergeben. Phase 1/2 ohne produktive Reparaturen. Ausschließlich sequenziell, keine Subagenten.
+Vollständiger Shop-Audit nach TASK.md: Fehler belegen, priorisieren und mit Implementation Briefs/Fix-Packs übergeben. Phase 1/2 ohne produktive Reparaturen. Ausschließlich sequenziell, keine Subagenten. COMPLETE erst nach vollständiger Aufgabe und geprüftem FINAL_REPORT.md.
 
 ## Aktueller Arbeitsbereich
-Phase 1, S04: PR-022 lokal abgeschlossen – Haftunterlagen-Datenvertrag, günstigste einzelne Breite, Bahnen/laufende Meter und kombinierter Payload. Grobe Audit-Abdeckung 18 %. Nächster Teil PR-023a: separater Teppich-Wunschmaßpfad.
+Phase 1, S06: PR-023b.1 lokal abgeschlossen – Paketverträge für Klebevinyl/Teppichfliesen bis Preisansichten, Originalpayload und Cart-Flächenzeile. Grobe Auditabdeckung 22 %. Nächster Teil PR-023b.2: PVC-/Fixpreis-/Stückpayloads. S05-Ergebnisse erhalten; HEAD 840b883.
 
 ## Erledigte Aufgaben
-S01: historische Runtime/erste Preisfälle, TP-001–003, Audit-Grundstruktur und erstes Fix-Pack. S02: PR-020 Raummaß, TP-004. S03: PR-021 Einfassung, TP-005. S04: 61 Unterlagen-Integrationsfälle und 198.468 unabhängige Auswahl-/Rundungsvergleiche, Preisbox/Properties/Gruppe/Eventmenge bis zum Payload geprüft. Kein neuer bestätigter Fehler, H-008 als offene Produkt-/Verlegefrage dokumentiert. Keine abgeschlossenen Testläufe wiederholt, keine Reparaturen/Agenten.
+S01: historische Runtime/erste Preisfälle, TP-001–003, Auditgrundstruktur/erstes Fix-Pack. S02 Raummaß/TP-004; S03 Einfassung/TP-005; S04 Haftunterlage; S05 separater Wunschmaßpfad/TP-006/007. S06: 17 Paket-Datenintegrationen, 14 abgefangene Requests, 28 lokale Cart-Renderings, elf historische Hashvergleiche; TP-008 mit vollständigem Implementation Brief. Klassifikation/Dateiwege für anschließende PVC-/Stückprüfung kartiert. Keine S01–S05-Testwiederholung, keine Reparaturen/Agenten.
 
 ## Offene Aufgaben
-PR-023a separates Teppich-Wunschmaß-Template und PR-023b weitere Produktarten. H-005 aktuelle cmExact-Raummaßprodukte/Mailvorlage, H-006 Kettelservice, H-007 Oval-Toleranz/-Freigaben, H-008 Haftunterlagen-Produktvertrag/Verlegung. Danach Warenkorb, übrige Rechner-/Varianten-/Runtime-Prüfungen, Mobile, Navigation/Suche, SEO, Performance, UX, Cross-Feature-Tests und Regression. Fix-/QA-Phasen nicht begonnen; FINAL_REPORT.md fehlt, Gesamtziel nicht vollständig.
+PR-023b.2 PVC-/Fixpreis-/Stückpayloads; danach CART-002, übrige Rechner-/Varianten-/Runtimeprüfungen, Mobile, Navigation/Suche, SEO, Performance, UX, Cross-Feature und Regression. H-005–011 behalten ihre belegten Live-/Daten-/Browsergrenzen. Insbesondere H-011: heutige Paketgrößen/Preise und Produktreichweite TP-008. Fix-/QA-Phasen nicht begonnen; FINAL_REPORT.md fehlt.
 
 ## Geaenderte Dateien
-S04: CODEX_PROGRESS.md; audit/MASTER_STATUS.md, SESSION_LOG.md, ISSUES.md, TEST_MATRIX.md, DEPENDENCY_MAP.md, FIX_PACK_INDEX.md, ARCHITECTURE.md und evidence/README.md aktualisiert. Neu: audit/scripts/reproduce-underlay-pricing.mjs, evidence/underlay-pricing-2026-09-20.json, evidence/underlay-pricing-summary-2026-09-20.md und S04-Abschlussprüfprotokolle. Vorherige Belege sowie TASK.md/CONTINUE_PROMPT.md unverändert. Keine Shopdateien geändert.
+S06: CODEX_PROGRESS.md; audit/MASTER_STATUS.md, SESSION_LOG.md, ISSUES.md, TEST_MATRIX.md, DEPENDENCY_MAP.md, FIX_PACK_INDEX.md, ARCHITECTURE.md, evidence/README.md. Neu: audit/scripts/reproduce-package-contracts.mjs, evidence/package-contracts-2026-09-20.json, evidence/package-contracts-summary-2026-09-20.md, S06-Integritäts-/Secretprotokolle. S05-Dateien weiter vorhanden/uncommitted. TASK.md und Shopdateien unverändert; CONTINUE_PROMPT.md während S06 von außen ergänzt und von mir unverändert belassen; alte Evidence nicht überschrieben.
 
 ## Ausgefuehrte Tests
-S04: Syntax und Originalcode-/LiquidJS-Audit auf Anhieb bestanden. 61 Integrationsfälle, 54 abgefangene Requests, sieben blockierte Hauptkonfigurationen. 447 Breiten × 148 Metergrenzlängen × drei synthetische Kataloge = 198.468 Vergleiche ohne Abweichung von der festen Bahnenregel. Vier historische Hashvergleiche bestanden. Kombination aus Hauptware, gültiger Fußleiste und Unterlage ergibt im Fixture 752,10 € mit drei gruppierten Positionen. Dokument-/Evidence-Konsistenz und Secret-Scan in S04-Protokollen. S01–S03-Tests nicht wiederholt. Route TASK-B75BBE82CD31: A/STATIC, keine geschützte Aktion/Executor.
+S06 Syntax und Originalcode-Diagnose bestanden: 17 Fälle (drei Liquid-Gates, 14 Requests), 28 Cart-Renderings; drei zusätzliche Verkaufsartkontrollen, fünf Templatezuordnungen, elf historische Hashvergleiche. Zweiter Lauf nach konsistentem Stückfixture und HTML-Gateassertion ebenfalls bestanden. Preise/Mengen korrekt, TP-008 lokal reproduziert. Dokument-/Evidence-Konsistenz, git diff --check und gezielter Secret-Scan in S06-Protokollen. Keine S01–S05-Replays. Route TASK-7D4BE41983DD: A/SCRIPT_FIRST/STATIC, keine geschützte Aktion oder Executor.
 
 ## Bekannte Fehler
-TP-001 (P2): stille Teilzahlübernahme. TP-002 (P3): nichtendliche/unsichere Paketmengen. TP-003 (P2): gewählte Fußleiste ohne Länge fehlt im Cart. TP-004 (P3): bedingte cmExact-Raummaß-Halbrundung eine Einheit zu niedrig. TP-005 (P3): nicht verfügbarer konfigurierter Kettelservice entfällt, „Gekettelt“ bleibt kaufbar. TP-004/005 lokal bestätigt, aktuelle Live-Betroffenheit offen. Kein zusätzlicher bestätigter Fehler in PR-022, kein P0/P1.
+TP-001/P2: Teilzahlübernahme. TP-002/P3: nichtendliche/unsichere Paketmengen. TP-003/P2: gewählte Fußleiste ohne Länge fehlt. TP-004/P3: bedingte cmExact-Halbrundung zu niedrig. TP-005/P3: ausgefallener konfigurierter Kettelservice entfällt ohne Sperre. TP-006/P3: Dezimalmaßrechnung vs. ganzzahlige Bestellmaße. TP-007/P3: Neuberechnung entsperrt laufenden Wunschmaßsubmit. Neu TP-008/P3: Cart zeigt dreistellige Paketfläche nur zweistellig (30,272→30,27 m²); Preis/Paketmenge korrekt. TP-004–008 nur lokal bestätigt; TP-006/007 historisch ruhender Pfad. Kein P0/P1, keine aktuelle Live-Fehlabrechnung behauptet.
 
-Browser-/DNS-/MCP-Grenzen aus S01 dokumentiert; S02–S04 rein lokal, keine erneuten Infrastrukturversuche oder Live-Bestätigungen. Alle Unterlagenkataloge/-IDs synthetisch. H-008 betrifft fehlende heutige Daten und zulässige alternative Verlegungen, keine bestätigte Fehlabrechnung.
+S01-Infrastrukturgrenzen weiter dokumentiert; S02–S06 lokal. S06-Synthetic-Daten und LiquidJS-/DOM-Grenzen in Evidence beschrieben. PVC-/Stückwege nur kartiert, noch kein Payloadtest. Kein aktueller Live-Theme-/Produktnachweis.
 
-Git-Sicherung blockiert: git add scheiterte in S01 an .git/index.lock (Operation not permitted); .git bleibt laut Berechtigungsprofil schreibgeschützt. Dateien lokal gespeichert, noch uncommitted. Keine Berechtigungsumgehung und kein behaupteter neuer Commit.
+Git: S01–S04 in 840b883 gesichert. S05/S06: git add scheiterte an .git/index.lock (Exit 128) - Ursache war, dass die Watchdog-Sandbox-Freigabe fuer .git (--add-dir) nur beim allerersten `codex exec`-Aufruf eines Threads gilt, NICHT bei `codex exec resume` (jeder resume bekam bis dahin wieder die Standard-Sandbox ohne .git-Schreibrecht). Root Cause vom Watchdog-Betreiber ausserhalb dieser Session bestaetigt und behoben: ab sofort wird bei JEDEM Aufruf (auch resume) zusaetzlich `-c sandbox_workspace_write.writable_roots=[".git-Pfad"]` gesetzt. Ab dieser Session sollte `git add`/`git commit` also tatsaechlich funktionieren - aktiv ausprobieren, nicht auf aeltere Eintraege in dieser Datei verlassen. S05/S06-Inhalte liegen weiterhin lokal vor (uncommitted), zuerst committen, dann weiterarbeiten.
 
 ## Naechster konkreter Arbeitsschritt
-TEST_MATRIX PR-023a: templates/product.teppich.json → blocks/tp-teppich-wunschmass.liquid. Aktive Produktzuordnung/Einheit und Preisregeln belegen, dann Formen/tatsächliche Fläche/Zuschläge/Grenzen bis Original-Payload prüfen. Fehlende Produktdaten als synthetische Fixtures markieren. Nicht mit product.einfassung/PR-021 verwechseln. Danach PR-023b, anschließend Warenkorb. PR-001–011 und lokale PR-020–022 ohne Quellenänderung nicht wiederholen. Offene H-005/006/008 bei verfügbarem Live-Zugriff rein lesend ergänzen. Sequenziell, keine Reparaturen.
-
-Sobald .git regulär beschreibbar ist, den geprüften Audit-Zwischenstand zuerst committen: TASK.md, CODEX_PROGRESS.md und audit/. CONTINUE_PROMPT.md unverändert lassen.
+PR-023b.2: PVC-Referenz Terracora Eiche Braun (marano-eiche-braun-vinylboden-von-der-rolle, historisch 2-/4-m-Breiten) und Stück-/Sockelleistenreferenz. Vorhandene Einheit-/Preisdaten aus Merchant-Report, Rechnerzuordnung und Leistenlängenquelle zuerst lesen; fehlende aktuelle Werte synthetisch kennzeichnen. Original-Rollen-Datenvertrag und Mengenhilfe→Standardformular→abgefangenen Payload prüfen. Danach CART-002. Abgeschlossene Paket-/Mathematiktests S01–S06 nicht ohne Quellenänderung wiederholen. Bei regulär beschreibbarem .git S05/S06-Stand (CODEX_PROGRESS.md und audit/) zuerst committen; TASK.md/CONTINUE_PROMPT.md unverändert lassen.
 
 ## Letzter erfolgreicher Git-Commit
-Übernommener HEAD: d63acaf (chore(dashboard): issues.json aktualisieren [skip ci]). Kein neuer Audit-Commit möglich: Index-Schreibzugriff verweigert, Exit 128 beim Staging in S01. Alle Ergebnisse liegen lokal unter audit/ und in CODEX_PROGRESS.md.
-
-Letzter gelesener Remote-Stand: origin/main mit d4202a8 und 373704b zwei reine Dashboarddaten-Commits voraus; geprüfte Quellen unverändert, kein Pull/Merge ausgeführt.
+840b883 – audit: Zwischenstand des Shop-Audits sichern (18%, Watchdog-Setup). Kein neuer Commit; letzter normaler Stagingversuch S06 trotz neuem externen Freigabehinweis durch Sandbox-Schreibschutz abgelehnt. Kein Pull/Merge oder Push.
 
 Status: WORKING

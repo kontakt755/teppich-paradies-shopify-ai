@@ -1,6 +1,6 @@
 # Bestätigte Issues und offene Hypothesen
 
-Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden historisch live am 19.09. beobachtet und am identischen Repository-Code am 20.09. reproduziert. TP-004/005 sind ausschließlich lokal bestätigte bedingte Codefehler; aktuell betroffene Live-Produkte/-Zustände sind nicht nachgewiesen. Der heutige Live-Stand wurde nicht neu verifiziert. Die genauen Grenzen stehen je Issue.
+Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden historisch live am 19.09. beobachtet und am identischen Repository-Code am 20.09. reproduziert. TP-004/005 sind ausschließlich lokal bestätigte bedingte Codefehler; aktuell betroffene Live-Produkte/-Zustände sind nicht nachgewiesen. TP-006/007 sind lokal bestätigte Fehler des historisch ruhenden Wunschmaßpfads; aktive Produktzuordnung nicht belegt (H-009). TP-008 ist ein lokal bestätigter Präzisionsverlust der Cartanzeige; keine Geld-/Mengenabweichung und keine heutige Produktprüfung (H-011). Der heutige Live-Stand wurde nicht neu verifiziert. Die genauen Grenzen stehen je Issue.
 
 | ID | Priorität | Titel | Diagnose | Fix-Status |
 | --- | --- | --- | --- | --- |
@@ -9,6 +9,9 @@ Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-003 | P2 | Ausgewählte Fußleiste ohne Länge wird bei Bestellung ausgelassen | BESTÄTIGT | Offen |
 | TP-004 | P3 | Raummaß im Hundertstel-Modus rundet einzelne Halbwerte zu niedrig | BESTÄTIGT lokal; Live-Betroffenheit offen | Offen |
 | TP-005 | P3 | Nicht verfügbarer konfigurierter Kettelservice entfällt ohne Kaufsperre | BESTÄTIGT lokal; Live-Betroffenheit offen | Offen |
+| TP-006 | P3 | Wunschmaß berechnet Dezimalmaße, übermittelt gerundete Ganzzentimeter | BESTÄTIGT lokal; historisch ruhender Pfad | Offen |
+| TP-007 | P3 | Eingabe während Wunschmaß-Request ermöglicht weiteren Submit | BESTÄTIGT lokal; historisch ruhender Pfad | Offen |
+| TP-008 | P3 | Warenkorb verkürzt Paketflächen mit drei Nachkommastellen | BESTÄTIGT lokal; aktuelle Datenreichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
@@ -162,6 +165,88 @@ Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - **Regressionstests:** 200 × 300 → Material 600 × 89 + Kante 1.000 × 19 = 72.400 Cent; 50 × 50 → 69 × 89 + 200 × 19 = 9.941 Cent; korrekte Mindestpreis-Property; Rotation 350 × 420/420 × 350 unverändert. Mobile/Desktop, Gruppenentfernung und Zuschnittabgleich bei späterer Browser-QA.
 - **Rollback-Risiko / Aufwand / Reihenfolge:** S–M, begrenzter Datenvertrags-/Gate-Fix ohne Datenmigration; beide Dateien gemeinsam versionieren. Erst H-006 und verbleibende Einfass-/Cart-Schnittstellen prüfen, danach passendes kleines Übergabepaket. Keine Reparatur während Phase 1/2.
 
+## TP-006 – Wunschmaß berechnet Dezimalmaße, übermittelt aber gerundete Ganzzentimeter
+
+- **Priorität / Bereich:** P3, Maß-/Preis-/Bestellproperties; bedingter Codefehler im historisch ungenutzten Teppich-Wunschmaßpfad. Kein neuer aktiver Kaufblocker behauptet.
+- **URL / Template / Geräte / Browser:** kein betroffenes aktives Produkt nachgewiesen. `templates/product.teppich.json` → `blocks/tp-teppich-wunschmass.liquid`. Lokal Node/V8 und LiquidJS; Geräte-/Browsermatrix offen. Datierte Produktprüfungen vom 09./11.09. melden keine aktive Nutzung (H-009).
+- **Beschreibung:** Parser/Validierung akzeptieren Dezimalzentimeter. Die Fläche und Einheiten verwenden diese Maße, während die beim Submit erzeugten Properties die Maße auf ganze cm formatieren. Die ursprüngliche Eingabe geht verloren.
+- **Reproduktion:** `node audit/scripts/reproduce-wunschmass-pricing.mjs`, Fall `decimal half rounds property up`. Synthetische Mindest-/Höchstgrenzen 50–400/50–600 cm, kein Zuschlag/Mindestpreis, 89 Cent pro 0,01 m². Breite 200.5, Länge 300. Original-IIFE ausführen und Request abfangen; dessen unveränderte Properties in die lokale interne Mail rendern.
+- **Erwartet:** ein verbindliches Maß für Anzeige, Fläche, Preis, Payload und Zuschnitt. Bei nur ganzen cm Dezimalwerte klar ablehnen oder eine fachlich festgelegte, sichtbare Normalisierung vor der gesamten Rechnung durchführen. Keine stille Rundung nur der Bestelldaten.
+- **Tatsächlich:** 6,015 m² → 602 Einheiten/535,78 €, aber `Breite: 201 cm` und `Länge: 300 cm`. Mail erwartet aus diesen Maßen 603 Einheiten, meldet `MENGE ZU KLEIN` und `NICHT ZUSCHNEIDEN`. Bei 200.4 cm ebenfalls 602 Einheiten, Property dagegen 200 cm; keine Mailwarnung, aber abweichendes Bestellmaß. Quadrat 150.5 cm → 227 Einheiten, Property 151 cm, ebenfalls Warnung. Kreis/Oval verlieren Dezimalmaße auch; keine Warnung in den geprüften Beispielen.
+- **Technische Ursache / Dateien / Zeilen:** `blocks/tp-teppich-wunschmass.liquid:394`–402 liest `parseFloat`; 423–441 prüft nur Vorzeichen/Grenzen, nicht Ganzzahligkeit oder native `stepMismatch`. 405–420/444–453 berechnen mit Dezimalmaßen. `formatGermanNumber(..., 0)` bei 549–555 rundet erst die Payload-Properties. Die Eingaben haben `step=1`, werden aber über einen eigenen `type=button`/Fetchpfad ohne `checkValidity` abgesendet. Lokale Mail 214–241 rekonstruiert aus übermittelten Maßen.
+- **Risiko:** anderes Zuschnittmaß als eingegeben und bedingte interne Fehlwarnung bei regulär erzeugtem Payload. Keine aktuelle Live-Bestellung, tatsächliche Lieferung oder versendete Mail belegt. Gesamtpreis und Menge × Variantenpreis stimmen untereinander weiterhin.
+- **Empfohlene Lösung / Aufwand / Sicherheit:** gemeinsamen validierten Maßzustand einführen, bestehende ganze-cm-Oberfläche als Ausgangspunkt; fachliche Dezimalfreigabe vor abweichender Umstellung klären. S–M. **BESTÄTIGT lokal**, Live-Reichweite und native Eingabeabläufe offen.
+- **Belege:** `evidence/wunschmass-pricing-2026-09-20.json`, fünf `decimal`-Fälle; zugehöriges Script und lesbare Zusammenfassung. Alle Produktwerte synthetisch. `step=1` allein beweist keine Verhinderung im eigenen Click-Handler; ein Browserlauf bleibt erforderlich.
+
+### IMPLEMENTATION BRIEF – TP-006
+
+- **Issue-ID / Priorität:** TP-006 / P3, vor Aktivierung dieses Pfads prüfen; H-009 ergänzen.
+- **Ziel / Problem:** akzeptiertes Maß, Rechnung und Bestellung bleiben identisch; keine durch stilles Runden verursachte Zuschnittabweichung.
+- **Root Cause:** Dezimalwert bleibt in Flächenrechnung, aber wird nur bei Property-Erzeugung ganzzahlig gerundet.
+- **Betroffene Dateien / Funktionen / Codebereiche:** `blocks/tp-teppich-wunschmass.liquid`, `readDimensionsCm`, `validate`, `render`, `addToCart`, oben genannte Zeilen. Mail lediglich zur Regression lesen; ihr Warnmechanismus ist nicht der Fehler.
+- **Zu ändernde Logik:** eine Maßvalidierung für Render und Submit. Ganze-cm-Vertrag: Nachkommastellen mit Korrekturhinweis blockieren; alternativ nur nach belegter Fachregel transparent normalisieren und alle Werte neu berechnen. Dezimalunterstützung würde einen abgestimmten Zuschnitt-/Mailvertrag benötigen und darf nicht allein durch Entfernen von `toFixed(0)` eingeführt werden.
+- **Nicht verändern:** echte Kreis-/Ellipsenfläche, 0,01-m²-Einheit, Hundertstel-Aufrundung, Mindestpreis-/Zuschlagsregeln, Produktpreise/SKUs/Metafelder, separater Einfasspfad, Mailwarnungen. Kein Produkt für Tests aktivieren.
+- **Abhängigkeiten:** Produktvertrag H-009; Mail-Properties `Breite`, `Länge`, `Durchmesser`, `Seitenlänge`. TP-007 nutzt dieselbe Datei/Submitroutine.
+- **Mögliche Seiteneffekte:** unklare Kommaeingabe, Verlust eingetippter Werte, unerwartete Ablehnung ganzzahliger `200.0`, verfälschte Mindestfläche, Maße nach Variantenwechsel veraltet.
+- **Akzeptanzkriterien:** 200.5 × 300 erzeugt nie unvermittelt Properties 201 × 300 mit Menge 602. Bei Ablehnung kein Request und sichtbarer Hinweis; nach Korrektur auf 201 × 300 → 603 Einheiten. Jede akzeptierte Konfiguration ist aus ihren Bestellmaßen konsistent rekonstruierbar.
+- **Testfälle:** 200.4/200.5/200.9, 200.0, Komma/Punkt/Paste; alle vier Formen; vor/nach Blur; korrigieren; Mindest-/Höchstgrenzen, Mindestfläche/Zuschlag/Mindestpreis.
+- **Regressionstests:** 200 × 300 → 600; Quadrat 150 → 225; Kreis 200 → 315; Oval 200 × 300 → 472. 50 × 50/Mindestpreis 99 € bei 89 Cent → 112. Payload durch lokale Mail plus später echte Desktop-/Mobile-Bedienung prüfen.
+- **Rollback-Risiko / Aufwand / Reihenfolge:** S–M, begrenzter Blockfix, keine Datenmigration. Erst Nutzung/Vertrag klären; mit TP-007 koordinieren, kein separates paralleles Edit. Phase 1/2 weiterhin keine Umsetzung.
+
+## TP-007 – Eingabe während Wunschmaß-Request ermöglicht weiteren Submit
+
+- **Priorität / Bereich:** P3, bedingter Mehrfachrequest im historisch ungenutzten Wunschmaßpfad.
+- **URL / Template / Geräte / Browser:** kein aktives Produkt belegt; `product.teppich.json` / `tp-teppich-wunschmass.liquid`. Node/V8-DOM-Adapter mit kontrolliert offenem Fetch; keine aktuelle Browser-/Serverannahme.
+- **Beschreibung / Reproduktion:** Script oben, letzter Fall `input during pending request permits second submit`. 200 × 300 cm absenden, Antwort offen halten; normaler zweiter Klick bleibt gesperrt. Breite auf 201 cm ändern, `input` auslösen und erneut klicken.
+- **Erwartet:** höchstens ein laufender Hinzufügen-Request pro Komponente; Eingabeänderung hebt die laufende Transfersperre nicht auf. Nach abgelehntem Request kann erneut bestellt werden.
+- **Tatsächlich:** erster Request Menge 600; `input` ruft `render()` auf und setzt Button wieder aktiv; zweiter Request Menge 603 noch vor Auflösung des ersten. Beide gehören zu derselben synthetischen Varianten-ID, aber verschiedenen Maßen. Kein Nachweis angenommener Doppelbestellung oder tatsächlicher doppelter Zahlung.
+- **Ursache / Dateien / Zeilen:** `blocks/tp-teppich-wunschmass.liquid:504` setzt bei jeder gültigen Neuberechnung `disabled=false`. `addToCart` (529–541) hat kein laufendes Requestflag; die temporäre Buttonsperre bei 541 ist die einzige Sperre. Input-Handler 594–596 setzt sie über `render()` zurück. Erfolgsredirect 586 erfolgt erst nach Antwort.
+- **Risiko:** bei langsamer Antwort zwei Konfigurationen im Cart, obwohl Kunde vor dem Abschluss der ersten nur seine Maße korrigiert; tatsächliche Server-/Navigationsfolgen offen. Kein allgemeiner Doppelklickfehler: unmittelbarer zweiter nativer Klick bleibt gesperrt.
+- **Empfohlene Lösung / Aufwand / Sicherheit:** unabhängigen laufenden Requestzustand vor jeglichem Render/Submit prüfen, CTA-Zustand an fachliche Validität und Requeststatus koppeln. S. **BESTÄTIGT lokal**, H-009 begrenzt aktuelle Reichweite.
+- **Belege:** `evidence/wunschmass-pricing-2026-09-20.json`, letzter Fall mit beiden Payloads; keine Netzwerkverbindung.
+
+### IMPLEMENTATION BRIEF – TP-007
+
+- **Issue-ID / Priorität:** TP-007 / P3.
+- **Ziel / Problem:** eine laufende Cartmutation je Rechnerinstanz; Neuberechnung darf keinen zweiten Submit freigeben.
+- **Root Cause:** Sperre ausschließlich am DOM-Button, während `render()` sie ohne Kenntnis des Requests überschreibt.
+- **Betroffene Dateien / Funktionen / Codebereiche:** `blocks/tp-teppich-wunschmass.liquid`, `render`, `addToCart`, Input-/Change-Listener, Zeilen 504/529–607.
+- **Zu ändernde Logik:** Requestzustand zu Beginn von `addToCart` als Gate, unabhängig von `disabled`; CTA erst bei gültigen Maßen und keinem laufenden Request freigeben. Fehlerpfad räumt Zustand zuverlässig auf. Erfolgsredirect und korrekten Payload erhalten. Eingabeänderungen während des Requests dürfen weder still einen zweiten Kauf auslösen noch den bereits gesendeten Payload mutieren.
+- **Nicht verändern:** Preisformel, Varianten-/Produktdaten, Einheiten, Properties, bestehender Cart-Redirect und die anderen Rechner. Keine globale Cartarchitektur neu bauen.
+- **Abhängigkeiten:** TP-006 arbeitet an demselben Block/Submit. H-009 aktive Nutzung; später echte langsame Verbindung und Native-Events prüfen.
+- **Mögliche Seiteneffekte:** nach Fehler dauerhaft gesperrter Button; kurzzeitig erneute Kaufbarkeit vor Redirect; Werte zwischen Berechnung und Payload abweichend; konkurrierende Meldungen.
+- **Akzeptanzkriterien:** bei offenem Request Input/Variantenchange und weiterer Klick → weiterhin genau ein Request. Ablehnung → verständliche Meldung und erneuter gültiger Versuch möglich. Kein ungewolltes automatisches Wiederholen bei Netzwerkfehler.
+- **Testfälle:** direkter Doppelklick; 200→201 während offenem Request; gültig→ungültig→gültig; synthetische 422-/Netzwerkfehler; danach gültiger Retry; Erfolg/Redirect. Keine Belastung durch echte Serienbestellungen.
+- **Regressionstests:** TP-006-Preis-/Maßfälle, alle vier Formen, Serverfehlermeldung, Desktop/Mobile bei späterem Browserlauf.
+- **Rollback-Risiko / Aufwand / Reihenfolge:** S, lokaler Zustandsfix. H-009 und TP-006 zuerst koordinieren, dann gemeinsame Regression; kein Pack/keine Umsetzung ohne geklärte Nutzung im aktuellen Audit.
+
+## TP-008 – Warenkorb verkürzt Paketflächen mit drei Nachkommastellen
+
+- **Priorität / Bereich:** P3, inkonsistente Mengen-/Flächenanzeige zwischen Produktseite und Warenkorb. Kein falscher Paketpreis, keine falsche Shopify-Paketmenge.
+- **URL / Template / Geräte / Browser:** Produkte mit dreistelliger `custom.qm_pro_paket` (z. B. dokumentierte 0,794-/1,892-m²-Verträge); kein konkretes heutiges Produkt frisch bestätigt. Paketblock in `product.planken.json`/`product.fliese.json`, Cart-Snippet in `snippets/cart-products.liquid:232`. Lokal LiquidJS und Node/V8, Browser-/Geräteabdeckung offen (H-011).
+- **Beschreibung / Reproduktion:** `node audit/scripts/reproduce-package-contracts.mjs`; Fälle `three decimals 0.794 single package`, `three decimals 0.794 two packages`, `three decimals 1.892 sixteen packages`. Original-Liquid-Dataset → originale Paket-JS-IIFE → abgefangene Menge/Properties → Original-Cart-Snippet mit derselben tatsächlichen Zeilenmenge.
+- **Erwartet:** vorhandene dritte Nachkommastelle der tatsächlich bestellten Fläche bleibt auf Produktseite und im Warenkorb erhalten. Cart berechnet weiterhin aus aktueller Zeilenmenge und Produktmetafeld, auch nach Mengenänderungen.
+- **Tatsächlich:** ein Paket 0,794 m² → Rechner/Property 0,794 m², Cart 0,79 m². Zwei Pakete → 1,588 gegenüber 1,59 m². 16 × 1,892 m² → 30,272 gegenüber 30,27 m². Paketanzahl und Preis stimmen; die sichtbare Flächenzahl ändert sich durch reine Formatierung. Zusätzliche Cart-Renderings mit erhöhter Menge zeigen dieselbe Verkürzung.
+- **Technische Ursache / Dateien / Zeilen:** `snippets/tp-cart-paketzeile.liquid:28`–36 rechnet immer `Gesamtfläche × 100 | round`, danach Ganz-/Nachkommateil aus 100. Dagegen `blocks/paket-auswahl.liquid:513`–520 und `snippets/tp-paketinhalt.liquid:35`–49 erhalten die Präzision des Metafelds bis zu drei Stellen. Die Inkonsistenz ist keine Menge-/Preisformeländerung und entsteht nicht durch alte Properties.
+- **Risiko:** widersprüchliche Bestellflächen im Kaufverlauf; Verunsicherung bei knappen Bedarfen/kleinen Paketen. Abweichung bis 0,005 m² durch Darstellung, kein belegter Geldverlust oder zusätzlicher Kaufblocker. Keine aktuelle Live-Betroffenheit als Tatsache ausgegeben.
+- **Empfohlene Lösung / Aufwand / Sicherheit:** Cart-Formatpräzision passend zum Paketmetafeld ableiten und echte Zeilenmenge weiter als Quelle nutzen. S. **BESTÄTIGT lokal**; heutige Daten-/Browserreichweite H-011 offen.
+- **Belege / Grenzen:** `evidence/package-contracts-2026-09-20.json`, `cartViews` mit Soll-Milliquadratmetern und Anzeige. Cart-Ganzzahldivision explizit im separaten LiquidJS-Adapter modelliert, da dessen Standardfilter JS-Floatdivision verwendet. Der feste Hundertstelschritt ist unmittelbar Originalcode; elf Quellenhashes historisch livegleich. Alle IDs synthetisch, keine Serverantwort/neue Bestellung.
+
+### IMPLEMENTATION BRIEF – TP-008
+
+- **Issue-ID / Priorität:** TP-008 / P3.
+- **Ziel / Problem:** Paketfläche wechselt beim Übergang in den Cart nicht ohne Erklärung von drei auf zwei Nachkommastellen.
+- **Root Cause:** fest auf Hundertstel begrenzte Formatierung im Cart, während Paketblock und Inhaltssnippet die Metafeldpräzision erhalten.
+- **Betroffene Dateien / Funktionen / Codebereiche:** `snippets/tp-cart-paketzeile.liquid`, lokale Größen-/Nachkommateilformatierung 28–36. Bestehende Quellen `tp-paketinhalt`/Paketblock zur Abgleichprüfung lesen; nicht pauschal refaktorieren.
+- **Zu ändernde Logik:** mindestens zwei, bei dreistelligem Paketmetafeld drei Nachkommastellen; mit stabiler skalierter Ganzzahlarithmetik formatieren. Weiter aus `line_item.quantity × custom.qm_pro_paket` rechnen. Keinen beim Add eingefrorenen `_qm_gesamt`-Wert als Anzeigequelle übernehmen.
+- **Nicht verändern:** Varianten-/Paketpreise, Mengen/Cartmutation, 5-%-Reserve, Stückzahl/Formatmetafelder, Gruppen-/Zuschnittlogik, Packungsgröße oder Herstellerdaten. Keine globale Moneyformatierung verändern.
+- **Abhängigkeiten:** `cart-products.liquid` nutzt dieselbe Zeile in den jeweiligen Cartoberflächen. CART-002 muss Mengenänderung/erneutes Öffnen abdecken; H-011 bestätigt aktuelle dreistellige Produkte vor späterer Live-Abnahme. Paketparserfix TP-001/002 betrifft andere Dateien, gemeinsame Regressionswerte dennoch erhalten.
+- **Mögliche Seiteneffekte:** künstliche Nachkommastellen bei 5,00/3,34; Gleitkommaartefakte, Überlauf bei Mobile, falsche Anzeige nach Entfernen/Ändern einer Position; bestehende Stückangabe versehentlich doppelt.
+- **Akzeptanzkriterien:** 0,794 × 1 → 0,794; × 2 → 1,588; 1,892 × 16 → 30,272 m². 5 × 4 bleibt 20,00 und 3,34 × 6 bleibt 20,04 m². Nach tatsächlicher Mengenänderung zeigt Cart die neu berechnete Fläche; Preis/Paketzahl unverändert.
+- **Testfälle:** 0,794, 1,892, 2,20, 3,34 und 5 m² je Paket; eine/mehrere Pakete, echte geänderte Zeilenmenge bei alten Properties, fehlende Stückdaten und vorhandene Fliesen-/Plankendaten.
+- **Regressionstests:** Quadra 4 Pakete/80 Fliesen/20,00 m²/1.178,00 € im historischen Preisfixture; Klebe-Fixture 6/20,04/620,22 €. Cartseite und Drawer, Mobile390/Desktop, ohne produktive Produktdatenänderung. Lokale Diagnoseassertions vor Fix-QA auf Sollverhalten umstellen.
+- **Rollback-Risiko / Aufwand / Reihenfolge:** gering/S, eng begrenzter Anzeige-Fix. Erst verbleibende PR-023b.2- und Cart-Prüfung, dann passendes kleines Darstellungs-Paket. Phase 1/2 keine Umsetzung; kein live freigegebener Fix.
+
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 
 | ID | Untersuchung | Aktueller Beleg / Grenze | Nächster Nachweis |
@@ -174,6 +259,9 @@ Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | H-006 | Aktueller Pflichtservice-/Verfügbarkeitszustand zu TP-005 | Lokaler Ausfallpfad bestätigt, Template konfiguriert `kettelservice`, historische Piumera-Regel verlangt separate Kettelung; heutige Daten/Bestände unbekannt | Rein lesend MAIN-Template, zugeordnete Servicevariante und Kaufbarkeit/Preis-/Bestandspolicy prüfen. Absichtliche Inklusivpreise von ausgefallenen separaten Services unterscheiden; keine Bestände verändern |
 | H-007 | Toleranz der Oval-Umfangsnäherung und aktive Formfreigaben | Code nutzt ausdrücklich Ramanujan-Näherung. Synthetisch 50 × 600 cm → 1.213 Kanteinheiten; numerische geometrische Integration → 1.214. Bei 200 × 300 beide 793. Kein belegtes aktuelles ovales Piumera-Produkt | Aktive Ovalprodukte/Grenzen und akzeptierte Abrechnungstoleranz belegen. Rechendifferenz dokumentiert, aber ohne diese Fachregel keine bestätigte Fehlabrechnung und kein pauschaler Formelumbau |
 | H-008 | Haftunterlagen-Produktvertrag und zulässige Alternativverlegung | PR-022 lokal korrekt für einzelne Breite, gleich breite Bahnen in Teppichlängsrichtung und Aufrundung je Bahn. Aktuelle Varianten-/Preiszuordnung fehlt. Synthetische Dreh-/Mischlayouts können günstiger sein; Code verspricht nur günstigste Variante innerhalb seiner festen Bahnenregel | Aktuelle Variantentitel/Breiten, Preis je Einheit und Liefer-/Zuschnittregel rein lesend belegen. Vor einer Optimierung Materialrichtung, Bahnenmischung und Zusammenfassung laufender Meter fachlich prüfen; keine alternative Bestellung aus unbestätigten Annahmen erzeugen |
+| H-009 | Heutige Nutzung/Produktvertrag von product.teppich | Produktprüfungen 09./11.09. im Repository: kein aktives Produkt. Code/Template vorhanden und historisch hashgleich. Lokale Tests vollständig synthetisch | Aktive Templatezuordnung und Aktivierungsmetafeld, Preiseinheit, Formen, Maß-/Mindestpreis-/Zuschlagsregeln rein lesend prüfen. Kein Löschen/Aktivieren aufgrund älterer Notizen; TP-006/007 vor neuer Verwendung berücksichtigen |
+| H-010 | Bedingte Integrationsrisiken des ruhenden Wunschmaßpfads | Isoliert: fremde globale Formular-ID übernimmt ID ohne Preiswechsel; fehlende Maxima erlauben nichtendliche Rechnung im Adapter; Verfügbarkeit wird nicht lokal gesperrt. Kein Nachweis dieser Kombinationen in aktivem DOM/Produkt | Erst H-009, dann echte Form-/Picker-Ereignisse, native Zahlensanitierung und Verfügbarkeit prüfen. Keine neuen bestätigten Shopissues aus konstruierten Adapterzuständen; VAR-001/CALC-001 berücksichtigen |
+| H-011 | Aktuelle Produktdaten für PR-023b und TP-008 | Historische Quadra-Paketfreigabe/Referenzpreis und dreistellige Paketgrößen dokumentiert. Alvora als Paketprodukt belegt, exakte heutige Preis-/Paketdaten fehlen. PVC-/Fixpreis bisher nur kartiert | Produkt/Template/Einheit/Variantenpreis rein lesend aktuell belegen. PR-023b.2 führt unabhängige PVC-/Stück-Payloadprüfungen fort; keine aktuellen Preise aus älteren Beispielen ableiten. TP-008 später in tatsächlichem Cart/Drawer prüfen |
 
 ## Verworfen / eingegrenzt
 
@@ -185,7 +273,13 @@ Stand: 20.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - Raummaß darf kaufmännisch auf Hundertstel runden, während das Einfassprodukt Hundertstel aufrundet; README und Mail-Code belegen diese Trennung. TP-004 betrifft nur die numerisch instabile Umsetzung der ersten Regel.
 - Bei den 35 neuen lokalen Fällen war keine zusätzliche Abweichung zwischen sichtbarem Gesamtpreis und dem aus Payload-Menge × Fixturepreis folgenden Betrag nachweisbar. Das schließt die falsche Rundungsmenge aus TP-004 nicht aus.
 - PR-021: Mindestpreis 99 € darf durch ganze Shopify-Einheiten zu 99,41 € führen. Bei 50 × 50 cm ist die Erhöhung auf 69 Materialeinheiten korrekt; Warenkorb-Property nennt 0,69 m² und gewünschte 0,25 m². Kein Mindestpreisfehler.
-- Rund/oval werden in diesem Einfasspfad nach umschließendem Rechteck berechnet. Der andere Teppich-Wunschmaßpfad bleibt separat zu prüfen. Dezimalpunktmaße werden im geprüften Einfasshandler bewusst auf ganze cm aufgerundet; echte Browserbehandlung von Komma/Paste bleibt offen.
+- Rund/oval werden in diesem Einfasspfad nach umschließendem Rechteck berechnet. Der separate Teppich-Wunschmaßpfad wurde inzwischen in PR-023a geprüft und berechnet bewusst echte Formflächen. Dezimalpunktmaße werden im geprüften Einfasshandler bewusst auf ganze cm aufgerundet; echte Browserbehandlung von Komma/Paste bleibt offen.
 - PR-022: Haftunterlage wird nicht bloß nach niedrigstem Meterpreis gewählt. Originalcode minimiert Bahnen × volle Meter je Bahn × Variantenpreis; 198.468 Grenzvergleiche in drei synthetischen Katalogen ohne Abweichung. Gültige Fußleiste + Unterlage bleiben eigenständige Positionen mit gemeinsamer Gruppe. Kein zusätzlicher bestätigter Preis-/Mengenfehler in diesen Prüfungen.
 - Historischer Hinweis „80 cm breit · 5 Bahnen = 10 lfm“ und „ab 9,35 € / m“ beweist keine konkrete Varianten-/Preiszuordnung. Der PR-022-Referenzpreis 93,50 € Unterlage und 752,10 € Gesamtkombination ist deshalb ausdrücklich ein lokaler Rechenfixture, keine aktuelle Shop-Preisbestätigung.
 - Aufrundung jeder einzelnen Bahn ist die dokumentierte Codeabsicht; nur die Summe aller Teilmeter aufzurunden, Breiten zu mischen oder die Verlegerichtung zu drehen wäre eine andere Zuschnittregel. Mögliche Einsparung allein belegt ohne Produktvertrag keinen Fehler (H-008).
+
+- PR-023a: Wunschmaß rechnet echte Kreis-/Ellipsenfläche, Einfassung dagegen umschließende Fläche. Getrennte Verträge, kein Vereinheitlichungsauftrag. 46 lokale Fälle inklusive Mindestpreis/Zuschlag; deren Rundung auf ganze Preiseinheiten ist absichtlich und wird nicht als Fehler gezählt.
+- PR-023a: Älterer Reviewhinweis vom 08.09. auf nur per CSS versteckte Standard-Kaufbuttons ist für das heutige `product.teppich.json` überholt: `buy-buttons` und Appblock sind dort `disabled`. Keine erneute Issueanlage aus diesem Altbefund.
+
+- PR-023b.1: Quadra bleibt trotz Produkttyp Teppichboden ein Paketprodukt. Paketmetafeld hat Vorrang; Karte/PDP und abgefangene Paketmenge stimmen im historischen Referenzvertrag. Fehlender Rollenrechner bei dieser Fliese ist ausdrücklich fachlich bestätigt, kein neuer Bug.
+- PR-023b.1: Bei Cart-Renderings mit neuer Zeilenmenge werden Fläche und Stückzahl korrekt neu berechnet; alte private Paketproperties überschreiben die Menge nicht. TP-008 betrifft ausschließlich die Formatpräzision. Synthetische Stück-/Preiswerte sind keine neuen Produktdaten.

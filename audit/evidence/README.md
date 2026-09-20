@@ -62,3 +62,15 @@ Bei 250 × 333 cm zeigt die aktuelle Codeausführung 8,33 m² geometrische Fläc
 - Vier SHA-256-Vergleiche gegen historische Themequellen bestanden. Keine aktuelle MAIN- oder Produktdatenverifikation. Keine Quelle oder alte Evidence verändert.
 
 `status: PASS` gilt nur für diesen lokalen Prüfbereich. Keine Aussage über bereits dokumentierte offene Issues oder den Gesamtshop. Dreh-/Mischlayoutbeispiele sind H-008 mit fehlendem Produktvertrag, keine als Fehler verkleideten Optimierungsvorschläge. Lesbare Zusammenfassung: `underlay-pricing-summary-2026-09-20.md`.
+
+## S05 – PR-023a separater Wunschmaßpfad
+
+`wunschmass-pricing-2026-09-20.json` und lesbare `wunschmass-pricing-summary-2026-09-20.md`, erzeugt durch `node audit/scripts/reproduce-wunschmass-pricing.mjs`: 46 Fälle, 31 abgefangene Requests, 28 lokale Mailrenderings, zwei historische Hashvergleiche. Vollständiger ursprünglicher Liquidblock und JS-IIFE, ausschließlich `doc`/`schema` beim Lesen entfernt. Alle Daten/IDs/Preise synthetisch; minimaler DOM ohne native Eingabesanitierung, Layout und echte Variantenereignisse. Unabhängige Ganzzahl- und rationale Pi-Intervallrechnung für die Preisreferenzen.
+
+TP-006 belegt auseinanderfallende Dezimalrechnung/Ganzzentimeterproperties und zwei daraus entstehende lokale Mailwarnungen; TP-007 einen zweiten Request nach Input während ausstehender Antwort. Responses/Redirect simuliert, keine echte Shopify-Annahme oder tatsächlicher Versand. Historische Produktprüfungen vom 09./11.09. berichten keine aktive Nutzung; aktuelle Reichweite H-009 offen. Isolierte nichtendliche/Form-ID-/Verfügbarkeitsproben bleiben H-010, kein zusätzlicher bestätigter Livefehler. Quellen/alte Evidence und frühere S01–S04-Läufe unverändert. PASS ist Diagnose, keine Fixabnahme.
+
+## S06 – PR-023b.1 Paketverträge weiterer Produktarten
+
+`package-contracts-2026-09-20.json`, Script `reproduce-package-contracts.mjs`, lesbare `package-contracts-summary-2026-09-20.md`. 17 Fälle, drei Liquid-Gates, 14 abgefangene Requests, 28 Cart-Renderings; zusätzlich drei Klassifikationskontrollen/fünf Templatezuordnungen. Elf Quellhashes stimmen mit historischem Live-Snapshot überein. Vollständiger Paketblock und seine JS-IIFE, ursprüngliche Verkaufsart-/Preis-/Inhalts-/Cart-Snippets. Alle IDs synthetisch; Quadra-Referenz aus historischen Repositorybelegen, Klebe- und Präzisionspreise ausdrücklich lokale Rechenfixtures.
+
+LiquidJS-Geldfilter adaptiert, CSS/doc/schema nur beim Lesen entfernt. Separate Cart-Engine bildet ausschließlich `divided_by:100` als Ganzzahldivision ab; das verhindert einen sonst künstlichen LiquidJS-Formatfehler. TP-008 ist dagegen die echte vorangehende feste Hundertstelrundung: 30,272 → 30,27 m². Menge/Preis unverändert. Responses/Events/Redirect lokal; keine Liveannahme, echtes Layout oder Shopify-Liquid-Abnahme. PVC-/Fixpreiswege nur kartiert, PR-023b.2 weiterhin offen. S01–S05 und deren Evidence unverändert; keine alten Diagnosen erneut ausgeführt.
