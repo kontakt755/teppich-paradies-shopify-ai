@@ -30,6 +30,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 
 ## Aktive Arbeit
 - keine. Stand 2026-09-20 abends: alle umsetzbaren Pakete S-01 bis S-29 sind live oder dokumentiert abgeschlossen.
+- Offene Punkte fuer Ahmet gesammelt in `docs/shop-offene-fragen.md` (zuerst lesen).
 - Wartet auf den Inhaber: S-10 (EK-Liste, #397), S-14 (10 Kantenfotos ODER Freigabe einer KI-Testreihe, `docs/shop-bildworkflow.md`), S-25 (Fasermaterial fuer wovena/callista/rubira aus belegter Quelle), S-15 (Rabattaktionen - braucht S-10), S-16 (Raumvisualisierung zurueckgestellt).
 - Das `npm run task`-Werkzeug aendert lokal `docs/ai-dashboard/issues.json` - vor einem Deploy mit `git checkout -- docs/ai-dashboard/issues.json` zuruecksetzen (erlaubte Ausnahme).
 
