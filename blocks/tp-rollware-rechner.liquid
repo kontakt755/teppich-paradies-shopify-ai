@@ -1428,7 +1428,12 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
 
   function updateExtras(w, len, area) {
-    var res = { items: [], sum: 0, lines: [] };
+    // leisteInvalid (TP-003): Kunde hat die Fußleiste ausdrücklich angehakt,
+    // aber keine gültige Länge hinterlassen - unterscheidet sich von "gar
+    // nicht gewählt" und darf die Bestellung nicht als reinen Teppichkauf
+    // durchlassen. calculate() und der Klick-Handler sperren damit den
+    // Warenkorb-Request, statt das Zubehör kommentarlos wegzulassen.
+    var res = { items: [], sum: 0, lines: [], leisteInvalid: false };
     var allowed = extrasAllowed();
     if (leisteBox) {
       var showL = allowed && leisteVarianten.length > 0;
@@ -1454,6 +1459,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       // Aufgerundet wird sichtbar, nicht still.
       var eingabe = parseFloat(String((meterIn && meterIn.value) || '').replace(',', '.')) || 0;
       var m = eingabe > 0 ? Math.ceil(eingabe - 1e-9) : 0;
+      res.leisteInvalid = an && m <= 0;
       var lv = leisteVarianten.filter(function (v) { return sel && String(v.id) === String(sel.value); })[0];
       var lHint = leisteBox.querySelector('[data-leiste-hint]');
       var lPreisEl = leisteBox.querySelector('[data-leiste-preis]');
@@ -1651,6 +1657,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     calcBox.hidden = !hasLength;
     drawFigure.hidden = !hasLength;
 
+    var extras;
     if (valid && target && ok) {
       var area = (w * len) / 10000;
       // Im cm-genauen Modus ist target.price der Preis pro 0,01 m² in Cent,
@@ -1675,14 +1682,20 @@ function tpRwcInit{{ tp_rc_id }}() {
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
-      var extras = updateExtras(w, len, billedArea);
+      extras = updateExtras(w, len, billedArea);
       // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
       // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
       outTotal.textContent = fmt(total + extras.sum) + ' €';
-      if (!inFlight) cta.textContent = fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+      if (!inFlight) {
+        // TP-003: angehakte, aber unvollstaendige Fussleiste haelt den Kauf
+        // an - der Button darf dann nicht so aussehen, als waere alles bereit.
+        cta.textContent = extras.leisteInvalid
+          ? 'Bitte Fußleisten-Länge angeben'
+          : fmtArea(billedArea) + ' m² in den Warenkorb' + (extras.items.length ? ' (mit Zubehör)' : '');
+      }
       updateMeterTipp(raum, w, len, rate);
     } else {
-      updateExtras(w, 0, 0);
+      extras = updateExtras(w, 0, 0);
       updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
@@ -1707,7 +1720,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     // der Klasse - so bleibt er fokussierbar und sein Klick meldet, was fehlt.
     // Waehrend eines laufenden /cart/add.js setzt der Klick-Handler ein echtes
     // disabled; das darf calculate() nicht ueberschreiben.
-    var ctaReady = !!(valid && ok);
+    // TP-003: eine angehakte, aber unvollstaendige Fussleiste darf den
+    // Hauptkauf nicht kaufbereit erscheinen lassen - sonst faellt das
+    // ausdruecklich gewaehlte Zubehoer beim Absenden kommentarlos weg.
+    var ctaReady = !!(valid && ok) && !(extras && extras.leisteInvalid);
     if (!cta.disabled) {
       cta.setAttribute('aria-disabled', ctaReady ? 'false' : 'true');
       cta.classList.toggle('is-incomplete', !ctaReady);
@@ -1861,6 +1877,16 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Zusaetze gehen im selben Aufruf mit und tragen dieselbe _Gruppe wie der
     // Teppichboden. Ohne Zusaetze bleibt der Aufruf exakt wie bisher.
     var extras = updateExtras(w, len, billedArea);
+
+    // TP-003: letzte Sperre direkt vor dem Request. Eine angehakte, aber
+    // unvollstaendige Fussleiste darf nie kommentarlos entfallen - lHint
+    // traegt bereits den passenden Hinweistext aus updateExtras().
+    if (extras.leisteInvalid) {
+      var meterIn = leisteBox.querySelector('[data-leiste-meter]');
+      if (meterIn && typeof meterIn.focus === 'function') meterIn.focus({ preventScroll: false });
+      return;
+    }
+
     var payload = { id: target.id, quantity: qty, properties: properties };
     if (extras.items.length) {
       var gruppe = 'T' + Date.now().toString(36);
