@@ -1130,6 +1130,17 @@ function tpRwcInit{{ tp_rc_id }}() {
   // krumme mit zwei ("6,66 m²") - sonst stuende dort "7,00 m²".
   function fmtArea(n) { return Number.isInteger(n) ? String(n) : fmt(n); }
 
+  // TP-004: kaufmaennische Hundertstel-Rundung direkt aus den ganzzahligen
+  // cm-Massen statt ueber den Umweg (w*len/10000)*100. Dieser Umweg macht aus
+  // exakten Halbwerten (z.B. 250x333 cm -> 832,5) durch zwei verkettete
+  // Gleitkommaoperationen 832,4999999999999 und rundet dann faelschlich ab.
+  // Eine einzelne Division zweier ganzer Zahlen ist an .5-Grenzwerten exakt
+  // (dyadischer Bruch), weil IEEE754-Division auf den naechsten darstellbaren
+  // Wert rundet - ist dieser Wert exakt darstellbar, ist das Ergebnis exakt.
+  function roundedHundredthsQty(wCm, lenCm) {
+    return Math.round((wCm * lenCm) / 100);
+  }
+
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
@@ -1260,9 +1271,16 @@ function tpRwcInit{{ tp_rc_id }}() {
     if (!meterTipp) return;
     if (!raum) { meterTipp.hidden = true; return; }
     var t = baseOptions();
+    // TP-004: der Rundungs-Callback bekommt von ART.meterwareGuenstiger nur
+    // die bereits ueber cm²/10000 gebildete Flaeche, nicht die rohen
+    // cm-Masse - derselbe Gleitkomma-Umweg wie bei der Bestellmenge. Ohne
+    // Zugriff auf die Ganzzahlmasse gleicht ein winziges Epsilon vor dem
+    // Runden die dabei entstehende Unterschreitung exakter .5-Grenzwerte aus
+    // (gleiches Muster wie die uebrigen "- 1e-9"-Stellen in dieser Datei),
+    // statt ART.meterwareGuenstiger fuer diesen Preisvergleich umzubauen.
     var cmp = ART.meterwareGuenstiger(w, len, rateRaum, farbBreiten, function (rolle) {
       return rateOf(variantFor(t, byWidth(rolle)));
-    }, cmExact ? function (a) { return Math.round(a * 100) / 100; } : Math.ceil);
+    }, cmExact ? function (a) { return Math.round(a * 100 + 1e-9) / 100; } : Math.ceil);
     if (!cmp || !cmp.guenstiger) { meterTipp.hidden = true; return; }
     while (meterTipp.firstChild) meterTipp.removeChild(meterTipp.firstChild);
     meterTipp.appendChild(document.createTextNode(
@@ -1665,7 +1683,9 @@ function tpRwcInit{{ tp_rc_id }}() {
       var rate = cmExact ? parseFloat(target.price) : parseFloat(target.price) / 100;
       // Menge fuer den Warenkorb: 0,01-m²-Einheiten (exakt, da alle
       // Rollenbreiten volle Meter sind) oder volle Quadratmeter (aufgerundet).
-      var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
+      // TP-004: aus den ganzzahligen cm-Massen (roundedHundredthsQty), nicht
+      // aus der bereits gerundeten "area" - siehe Kommentar dort.
+      var qty = cmExact ? roundedHundredthsQty(w, len) : Math.ceil(area);
       var billedArea = cmExact ? qty / 100 : qty;
       var total = billedArea * rate;
 
@@ -1857,7 +1877,10 @@ function tpRwcInit{{ tp_rc_id }}() {
     clearInvalid();
 
     var area = (w * len) / 10000;
-    var qty = cmExact ? Math.round(area * 100) : Math.ceil(area);
+    // TP-004: siehe roundedHundredthsQty()-Kommentar weiter oben - derselbe
+    // Wert wie in calculate(), damit Anzeige und tatsaechlicher Request nie
+    // auseinanderlaufen.
+    var qty = cmExact ? roundedHundredthsQty(w, len) : Math.ceil(area);
     var billedArea = cmExact ? qty / 100 : qty;
 
     // Im cm-genauen Modus steht im Shopify-Admin eine ungewohnt hohe Menge
