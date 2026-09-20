@@ -35,7 +35,9 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-27 | Konfigurator: Preis stand doppelt ("Ihr Preis" + "In den Warenkorb – 724 EUR"), Gedankenstrich im Knopf | P1 | erledigt, live 2026-09-20 | - | `assets/tp-einfass-konfigurator.js` | Fable | Scratch ok |
 | S-28 | Teppich-PDP mobil: Farbwahl und Galerie zu weit auseinander - grosses Farbbild direkt unter der Farbwahl, Strukturfoto als Lupe | P1 | erledigt, live 2026-09-20 | S-14 | `blocks/tp-teppich-struktur.liquid` | Fable | 5 Unit-Tests, Scratch ok |
 | S-29 | Link "Lieber als Meterware von der Rolle" unverstaendlich -> Frage + klarer Link | P1 | erledigt, live 2026-09-20 | - | `blocks/tp-einfass-wechsel.liquid` | Fable | Scratch ok |
-| S-30 | Teppiche nach Mass: Streichpreis im ab-Preis darstellen, damit auch dort Aktionen moeglich sind | P2 | offen | S-15 | `snippets/tp-teppich-ab-preis.liquid` | Fable | - |
+| S-30 | Teppiche nach Mass: Streichpreis im ab-Preis darstellen, damit auch dort Aktionen moeglich sind | P2 | review | S-15 | `snippets/tp-teppich-ab-preis.liquid` | Fable | - |
+| S-31 | Ahmet prueft: Merchant Center uebernimmt die Aktionspreise korrekt (Issue #415) | P2 | offen (Inhaber) | S-15 | Google Merchant Center | Ahmet | - |
+| S-32 | Konfigurator "Ihr Preis": bei aktiver Aktion den alten Preis durchgestrichen dazu zeigen (heute nur im ab-Preis) | P3 | offen | S-30 | `assets/tp-einfass-konfigurator.js` | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |

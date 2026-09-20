@@ -152,3 +152,8 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Eigene Gegenprobe ueber das oeffentliche `products.json`: 783/783 Soll-Varianten korrekt (Preis UND Streichpreis), 1270 Varianten ausserhalb des Plans unveraendert, genau 20 Produkte mit Streichpreis.
 - Rechner: torvana 400 cm x 500 cm = 20 m2 x 45,90 = "918,00 EUR" - rechnet mit dem Aktionspreis.
 - Nicht getestet: Checkout mit Aktionspreis, Google-Merchant-Feed (uebernimmt sale_price vermutlich automatisch - pruefen), Verhalten am Enddatum.
+
+## 2026-09-20 - S-30 Streichpreis im ab-Preis (Scratch-Theme)
+- Unit 38/38 in den zwei Preis-Testdateien. Der Test fand einen echten Grenzfall: greift der Mindestpreis, ergab die Rundung einen "Rabatt" von 2 Cent (500,02 statt 500,00) -> kein Streichpreis, wenn beim alten Preis der Mindestpreis greift.
+- Echte Daten am unlisted Testprodukt (Vergleichspreis 1,49 + `aktion.start` an EINER Variante): Scratch-PDP "ab 154,80 EUR" = Konfigurator 154,80 EUR, durchgestrichen "178,80 EUR" = erwartet (120 x 1,49), Text "inkl. Einfassung"; andere Variante ohne Vergleichspreis: kein Streichpreis; kein Liquid-Fehler. Testwerte danach entfernt, per Read bestaetigt.
+- Nicht getestet: Karte in der Kollektion mit Streichpreis (Testprodukt liegt in keiner Kollektion - nur Unit), Optik.

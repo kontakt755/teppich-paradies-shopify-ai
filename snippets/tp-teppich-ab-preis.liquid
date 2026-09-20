@@ -39,16 +39,19 @@
   # dieselbe Auswahl wie im Konfigurator. product.price_min zaehlte auch gesperrte Farben
   # mit und konnte einen Preis bewerben, den niemand kaufen kann (Codex-Review 2026-09-20).
   assign tp_ab_einheit_cent = 0
+  assign tp_ab_alt_einheit_cent = 0
   for tp_ab_v in product.variants
     if tp_ab_v.available and tp_ab_v.price > 0 and tp_ab_v.metafields.service.einfassen.value == 'Verfügbar'
       if tp_ab_einheit_cent == 0 or tp_ab_v.price < tp_ab_einheit_cent
         assign tp_ab_einheit_cent = tp_ab_v.price
+        assign tp_ab_alt_einheit_cent = tp_ab_v.compare_at_price | default: 0
       endif
     endif
   endfor
   assign tp_ab_rueckfall_cent = product.price_min
   if variant != blank and variant.price > 0
     assign tp_ab_einheit_cent = variant.price
+    assign tp_ab_alt_einheit_cent = variant.compare_at_price | default: 0
     assign tp_ab_rueckfall_cent = variant.price
   endif
   if tp_ab_einheit_cent > 0
@@ -98,6 +101,32 @@
       assign tp_ab_material_cent = tp_ab_menge | times: tp_ab_einheit_cent
     endif
     assign tp_ab_cent = tp_ab_material_cent | plus: tp_ab_kante_cent
+
+    # Streichpreis (S-30): derselbe Teppich zum alten Variantenpreis, dieselbe Formel - die
+    # Kettelung ist nicht rabattiert und steckt in beiden Summen. Nur bei aktiver Aktion
+    # (snippets/tp-aktion-aktiv), wie ueberall im Shop.
+    assign tp_ab_alt_cent = 0
+    if tp_ab_alt_einheit_cent > tp_ab_einheit_cent
+      capture tp_ab_aktion
+        render 'tp-aktion-aktiv', product: product
+      endcapture
+      assign tp_ab_aktion = tp_ab_aktion | strip
+      if tp_ab_aktion == 'ja'
+        assign tp_ab_alt_menge = tp_ab_breite_cm | times: tp_ab_laenge_cm | plus: 99 | divided_by: 100
+        assign tp_ab_alt_material_cent = tp_ab_alt_menge | times: tp_ab_alt_einheit_cent
+        # Greift schon beim alten Preis der Mindestpreis, kostet das Einstiegsmass vorher wie
+        # nachher den Mindestpreis - die Rundung auf ganze Einheiten ergaebe einen "Rabatt"
+        # von wenigen Cent. Das waere irrefuehrend: dann kein Streichpreis.
+        if tp_ab_rest_cent > tp_ab_alt_material_cent
+          assign tp_ab_alt_cent = 0
+        else
+          assign tp_ab_alt_cent = tp_ab_alt_material_cent | plus: tp_ab_kante_cent
+          if tp_ab_alt_cent <= tp_ab_cent
+            assign tp_ab_alt_cent = 0
+          endif
+        endif
+      endif
+    endif
   endif
 -%}
 {%- if tp_ab_belegt and tp_ab_cent > 0 -%}
@@ -109,7 +138,13 @@
     {%- if tp_ab_qualitaet != blank -%}
       <span class="tp-ab-preis__qualitaet">{{ tp_ab_qualitaet | escape }}</span>
     {%- endif -%}
-    <span class="tp-ab-preis__haupt"><span class="tp-ab-preis__ab">ab</span> <span class="tp-ab-preis__betrag">{{ tp_ab_cent | money_without_trailing_zeros }}</span></span>
+    <span class="tp-ab-preis__haupt">
+      <span class="tp-ab-preis__ab">ab</span>
+      <span class="tp-ab-preis__betrag">{% if tp_ab_alt_cent > 0 %}<span class="visually-hidden">Aktionspreis </span>{% endif %}{{ tp_ab_cent | money_without_trailing_zeros }}</span>
+      {%- if tp_ab_alt_cent > 0 -%}
+        <s class="tp-ab-preis__alt" data-tp-ab-alt-cent="{{ tp_ab_alt_cent }}"><span class="visually-hidden">statt </span>{{ tp_ab_alt_cent | money_without_trailing_zeros }}</s>
+      {%- endif -%}
+    </span>
     <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. {% if tp_ab_art == 'ketteln' %}Kettelung{% else %}Einfassung{% endif %}</span>
   </span>
 {%- else -%}
