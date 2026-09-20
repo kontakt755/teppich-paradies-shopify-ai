@@ -1,0 +1,125 @@
+{% doc %}
+  "Struktur in Originalaufnahme" auf der Produktseite eines Teppichs nach Mass.
+
+  Die Teppichbilder sind Montagen (Ausschnitt des Belags mit gezeichneter Kante) und
+  zeigen die Schlinge zu gross. Der Teppichboden, aus dem zugeschnitten wird
+  (service.einfass_basis), hat je Farbe ein echtes Foto des Belags. Dieser Block zeigt
+  genau dieses Foto zur gewaehlten Farbe - materialtreu, ohne neue Bilddaten und ohne
+  KI. Zuordnung ueber den Farbnamen: option1 des Teppichbodens = option1 des Teppichs.
+
+  Ohne Basisprodukt oder ohne passendes Foto rendert der Block nichts.
+  Konzept: docs/shop-bildworkflow.md
+{% enddoc %}
+{%- liquid
+  assign tts_basis = product.metafields.service.einfass_basis.value
+  assign tts_aktuell = product.selected_or_first_available_variant
+  assign tts_start_gesetzt = false
+  assign tts_anzahl = 0
+-%}
+{%- if tts_basis != blank -%}
+  {%- capture tts_karte -%}
+    {%- for tts_v in product.variants -%}
+      {%- comment -%} Merker statt nil-Zuweisung: eindeutig in jeder Liquid-Engine. {%- endcomment -%}
+      {%- assign tts_gefunden = false -%}
+      {%- for tts_bv in tts_basis.variants -%}
+        {%- if tts_gefunden == false and tts_bv.option1 == tts_v.option1 and tts_bv.featured_image -%}
+          {%- assign tts_bild = tts_bv.featured_image -%}
+          {%- assign tts_gefunden = true -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if tts_gefunden -%}
+        {%- assign tts_anzahl = tts_anzahl | plus: 1 -%}
+        {%- if tts_v.id == tts_aktuell.id or tts_start_gesetzt == false -%}
+          {%- assign tts_start = tts_bild -%}
+          {%- assign tts_start_farbe = tts_v.option1 -%}
+          {%- assign tts_start_gesetzt = true -%}
+        {%- endif -%}
+        "{{ tts_v.id }}": { "src": {{ tts_bild | image_url: width: 900 | json }}, "farbe": {{ tts_v.option1 | json }} },
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endcapture -%}
+
+  {%- if tts_anzahl > 0 and tts_start_gesetzt -%}
+    <figure class="tp-tts" data-tp-tts {{ block.shopify_attributes }}>
+      <img
+        class="tp-tts__bild"
+        data-tp-tts-bild
+        src="{{ tts_start | image_url: width: 900 }}"
+        alt="{{ block.settings.titel | escape }}: {{ product.title | escape }}, {{ tts_start_farbe | escape }}"
+        width="900"
+        height="900"
+        loading="lazy"
+      >
+      <figcaption class="tp-tts__text">
+        <span class="tp-tts__titel">{{ block.settings.titel | escape }} · <span data-tp-tts-farbe>{{ tts_start_farbe | escape }}</span></span>
+        <span class="tp-tts__hinweis">{{ block.settings.hinweis | escape }}</span>
+      </figcaption>
+      <script type="application/json" data-tp-tts-daten>{ {{ tts_karte }} "_": null }</script>
+    </figure>
+  {%- endif -%}
+{%- endif -%}
+
+{% javascript %}
+  (function () {
+    function variante() {
+      var m = /[?&]variant=(\d+)/.exec(window.location.search);
+      return m ? m[1] : null;
+    }
+    document.querySelectorAll('[data-tp-tts]').forEach(function (root) {
+      var daten;
+      try { daten = JSON.parse(root.querySelector('[data-tp-tts-daten]').textContent); } catch (e) { return; }
+      var bild = root.querySelector('[data-tp-tts-bild]');
+      var farbe = root.querySelector('[data-tp-tts-farbe]');
+      var titel = bild.alt.split(',').slice(0, -1).join(',');
+      function zeigen(id) {
+        var d = id && daten[String(id)];
+        if (!d || bild.getAttribute('src') === d.src) return;
+        bild.src = d.src;
+        bild.alt = titel + ', ' + d.farbe;
+        if (farbe) farbe.textContent = d.farbe;
+      }
+      document.addEventListener('tp:farbe-wechsel', function (e) { zeigen(e.detail && e.detail.variantId); });
+      document.addEventListener('variant:update', function () { setTimeout(function () { zeigen(variante()); }, 80); });
+      document.addEventListener('change', function () { setTimeout(function () { zeigen(variante()); }, 150); });
+      window.addEventListener('popstate', function () { zeigen(variante()); });
+    });
+  })();
+{% endjavascript %}
+
+{% stylesheet %}
+  .tp-tts { width: 100%; box-sizing: border-box; margin: 12px 0 0; display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: center; padding: 10px; border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.14); border-radius: 8px; }
+  .tp-tts__bild { width: 112px; height: 112px; object-fit: cover; border-radius: 6px; display: block; }
+  .tp-tts__text { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.4; }
+  .tp-tts__titel { font-weight: 700; font-size: 14px; color: var(--color-foreground, #222); }
+  .tp-tts__hinweis { color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Teppich Struktur",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "Zeigt zur gewaehlten Farbe das echte Foto des Teppichbodens, aus dem der Teppich zugeschnitten wird (service.einfass_basis). Ohne passendes Foto bleibt der Block unsichtbar."
+    },
+    {
+      "type": "text",
+      "id": "titel",
+      "label": "Titel",
+      "default": "Struktur in Originalaufnahme"
+    },
+    {
+      "type": "text",
+      "id": "hinweis",
+      "label": "Hinweis",
+      "default": "Echtes Foto des Belags, aus dem Ihr Teppich zugeschnitten wird."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Teppich Struktur"
+    }
+  ]
+}
+{% endschema %}

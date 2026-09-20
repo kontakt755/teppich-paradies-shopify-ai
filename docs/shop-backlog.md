@@ -19,8 +19,8 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - wartet auf EK-Liste von Ahmet (reicht er nach, kein Termin). Bis dahin keine Margen-/Rabatttabelle, nichts raten | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | erledigt 2026-09-20: 5 Unterkollektionen manuell kuratiert (unten) | - | Collections, Sortierung (Analyse) | Worker | - |
 | S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
-| S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil je Bild offen -> S-14 | - | nur Daten | Worker | - |
-| S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | offen | S-13 | - | Fable plant | - |
+| S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil per Stichprobe in `docs/shop-bildworkflow.md` | - | nur Daten | Worker | - |
+| S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | Konzept fertig (`docs/shop-bildworkflow.md`), Typ A (Struktur-Foto) im Theme; wartet auf 10 Kantenfotos vom Inhaber ODER Freigabe der KI-Testreihe | S-13 | - | Fable plant | - |
 | S-15 | Rabattaktionen ausrollen | P2 | offen | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
 | S-16 | Bessere Raumvisualisierung (Ersatz fuer S-01) | P3 | zurueckgestellt (Ahmet 2026-09-20: erstmal sein lassen; #339 geschlossen) | S-14 | Einfass-Konfigurator | - | - |
 | S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | erledigt 2026-09-20 (CSS-Regel statt nur Beobachter, nach dem zweiten Fehlschlag am selben Tag) | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |

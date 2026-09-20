@@ -115,3 +115,9 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 
 ## 2026-09-20 - S-26 Kollektion teppiche (Shopify-Daten)
 - Gegenprobe: `products.json` = Soll (49 Produkte) UND die gerenderte Kollektionsseite zeigt die ersten 8 Karten in der neuen Reihenfolge mit ihren ab-Preisen.
+
+## 2026-09-20 - S-14 Block "Struktur in Originalaufnahme" (Scratch-Theme)
+- Unit 4/4: Foto derselben Farbe, fremde Farben tauchen nicht auf, gewaehlte Farbe bestimmt Startbild und Alt-Text, Farbe ohne Foto bekommt keinen Eintrag, ohne Basis rendert nichts. Der Test fand einen echten Schwachpunkt (Logik ueber nil-Zuweisungen) - auf Wahr/Falsch-Merker umgestellt.
+- Scratch woolara: JSON gueltig (5 Farben), Farbwechsel tauscht Foto, Farbnamen und Alt-Text. velory: 12 Farben mit Foto, kein Liquid-Fehler. Teppichboden-PDP: Block nicht vorhanden.
+- Erster Wurf war 22 px breit (fehlende Breite im Flex-Container) -> behoben, mobil 343 x 139, Foto 112 x 112 geladen, kein horizontales Scrollen.
+- Nicht getestet: Screenshot (Browserfenster liefert leere Bilder), Desktop-Optik.

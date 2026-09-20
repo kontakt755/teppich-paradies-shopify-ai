@@ -333,6 +333,13 @@
                 "label": "Kostenloses Muster anfragen",
                 "hinweis": "Bis zu 3 Farben, versandkostenfrei"
               }
+            },
+            "tp_teppich_struktur_1": {
+              "type": "tp-teppich-struktur",
+              "settings": {
+                "titel": "Struktur in Originalaufnahme",
+                "hinweis": "Echtes Foto des Belags, aus dem Ihr Teppich zugeschnitten wird."
+              }
             }
           },
           "block_order": [
@@ -342,6 +349,7 @@
             "tp_step_farbe_sales1",
             "color_swatch_picker_f7EyBF",
             "tp_farbanzeige_tp1",
+            "tp_teppich_struktur_1",
             "tp_muster_cta_1",
             "tp_einfass_konfigurator_1",
             "buy_buttons_eYQEYi",
