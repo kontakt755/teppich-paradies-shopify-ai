@@ -31,6 +31,8 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
 ## Fakten
+- Materialdaten der Teppiche liegen am Basis-Teppichboden: `product.metafields.service.einfass_basis.value` -> `custom.fasermaterial` (Metaobjekt-Liste), `custom.arten`, `custom.florhohe`, `custom.ruckenausstattung`. Die Teppiche selbst tragen nur `service.*`.
+- Die Produktbeschreibungen der 49 Teppiche nennen noch Material-EUR/m2 und Kettelpreis je lfm (S-22).
 - Im Shop gibt es seit 2026-09-20 keinen aktiven Streichpreis mehr. Neue Streichpreise nur mit belegtem Referenzpreis (S-12).
 - Preise wie "0,92 EUR" im PDP-DOM sind unsichtbare Elemente, kein Kundenbefund.
 - `snippets/tp-preisangabe.liquid` wird in `blocks/_product-details.liquid` gerendert, nie als Kind des Produktrasters.

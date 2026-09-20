@@ -18,7 +18,10 @@
   Laesst sich der Preis nicht belegen (kein 0,01-m2-Preis, Kettelservice nicht
   kaufbar, Einstiegsmass passt nicht in service.max_breite_cm/max_laenge_cm),
   gibt das Snippet nur den Preis je m2 aus - nie einen geschaetzten Wert.
-  Der Preis je m2 bleibt als Grundpreis sichtbar (Ware nach Flaeche).
+  Bei belegtem ab-Preis steht KEIN Preis je m2 dabei (Entscheidung des Inhabers
+  2026-09-20: bei Teppichen komplett raus, auch im Raster). Der m2-Preis erscheint nur
+  noch im Rueckfall, wenn sich kein ab-Preis belegen laesst - dann waere die Alternative
+  gar kein Preis.
 
   Teppich ist nur, was custom.preis_pro_001_qm = true UND service.einfassung traegt.
   Zentimetergenau abgerechnete Rollenware hat ebenfalls preis_pro_001_qm, aber keine
@@ -80,7 +83,7 @@
 {%- if tp_ab_belegt and tp_ab_cent > 0 -%}
   <span class="tp-ab-preis" data-tp-ab-cent="{{ tp_ab_cent }}">
     <span class="tp-ab-preis__haupt">ab {{ tp_ab_cent | money_without_trailing_zeros }}</span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm · {{ tp_ab_m2_cent | money }}/m²</span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>

@@ -14,8 +14,8 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-06 | Collection-Karte Teppiche: Name / ab XX EUR / Wunschmass verfuegbar / Jetzt konfigurieren | P1 | erledigt, live 2026-09-20 | S-05 | Produktkarte (gleicher Bereich wie S-05: seriell) | mittleres Modell | - |
 | S-07 | PDP-Hierarchie Teppich: ab-Preis, Grundpreis dezent, Masse, Optionen, Endpreis | P1 | erledigt, live 2026-09-20 (PR #391; Reihenfolge Masse/Optionen/Endpreis stand schon) | S-05 | `templates/product.einfassung.json`, Preisblock | mittleres Modell | - |
 | S-17 | Live-Fehler: PAngV-Hinweis "Alle Preise inkl. MwSt." mobil 16 px breit neben dem Titel, alle Produktseiten (seit 2026-09-16) | P0 | erledigt, live 2026-09-20 (PR #391) | - | `sections/product-information.liquid`, `blocks/_product-details.liquid` | Fable | Scratch Desktop+Mobil ok |
-| S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | review: Datenmodell `aktion.start/ende/klasse` angelegt (Definitionen in Shopify, kein Produkt befuellt) | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
-| S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | review | S-08 | Service-Bloecke | Fable plant | - |
+| S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | erledigt: Datenmodell `aktion.start/ende/klasse` angelegt (Definitionen in Shopify, kein Produkt befuellt) | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
+| S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | erledigt, geht mit S-21 live | S-08 | Service-Bloecke | Fable plant | - |
 | S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - wartet auf EK-Liste von Ahmet (reicht er nach, kein Termin). Bis dahin keine Margen-/Rabatttabelle, nichts raten | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | Teilergebnis (unten), Preisverteilung Rollenware nachziehen | - | Collections, Sortierung (Analyse) | Worker | - |
 | S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
@@ -26,6 +26,9 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | offen | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |
 | S-19 | Seite /pages/liefer-verlegeservice um den Satz zur Aktionspreis-Regel ergaenzen (Seiteninhalt, nicht Theme) | P2 | offen | S-09 | Shopify-Seite | - | - |
 | S-20 | Sale-Badge/Streichpreis auf Karten nur zeigen, wenn `tp-aktion-aktiv` ja sagt (verhindert unbelegte Streichpreise technisch) | P2 | offen | S-09 | `_product-card-gallery.liquid`, `snippets/price.liquid` | mittleres Modell | - |
+| S-21 | Teppiche: m2-Preis komplett raus (Karte + PDP) | P1 | review | S-04 | `snippets/tp-teppich-ab-preis.liquid` | Fable | Scratch ok |
+| S-22 | 49 Teppich-Beschreibungen: Abschnitt "So funktioniert der Rechner" nennt Material-EUR/m2 und Kettelung je lfm; ebenso die Meta-Descriptions ("117 EUR/m2 plus Kettelung"). Textvorschlag an Ahmet, dann Bulk-Update mit Sicherung der Originale | P1 | wartet auf Freigabe des Textes | S-21 | Produktdaten (descriptionHtml, global.description_tag) | guenstiger Worker nach Freigabe | - |
+| S-23 | Teppich-Karte aufwerten: Preis groesser, Qualitaetszeile (Material/Art/Flor aus `service.einfass_basis`), Wunschmass sichtbarer - Variante A/B/C von Ahmet waehlen lassen | P1 | wartet auf Auswahl | S-21 | `blocks/tp-card-actions.liquid`, `snippets/tp-teppich-ab-preis.liquid`, `blocks/price.liquid` | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
