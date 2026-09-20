@@ -60,4 +60,4 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Ein Entwurfsprodukt (aw-ganges-teppichboden) hat compareAtPrice UNTER dem Preis - wird nicht angezeigt, Datenmuell.
 - Das Handle "...-kopie" deutet auf ein Duplikat hin (eigenes Thema, nicht angefasst).
 - Optionen: (a) compareAtPrice bei den 4 Produkten entfernen, (b) als "UVP" kennzeichnen, falls 29,95 eine belegte Herstellerempfehlung ist, (c) lassen. Keine Aenderung ohne Freigabe (Preisdaten).
-- Technische Struktur fuer kuenftige Aktionen (Vorschlag, noch nicht gebaut): Aktionsstart als Metafeld, Streichpreis nur anzeigen, wenn Aktionsstart gesetzt und hoechstens 30 Tage... Details erst nach Entscheidung zu S-08.
+- Technische Struktur fuer kuenftige Aktionen ist noch nicht entworfen; sie haengt am Datenmodell aus S-08 (Aktionsstart/-ende als Metafeld, Referenzpreis = niedrigster Preis der 30 Tage vor Aktionsstart).
