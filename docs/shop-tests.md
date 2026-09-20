@@ -157,3 +157,6 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Unit 38/38 in den zwei Preis-Testdateien. Der Test fand einen echten Grenzfall: greift der Mindestpreis, ergab die Rundung einen "Rabatt" von 2 Cent (500,02 statt 500,00) -> kein Streichpreis, wenn beim alten Preis der Mindestpreis greift.
 - Echte Daten am unlisted Testprodukt (Vergleichspreis 1,49 + `aktion.start` an EINER Variante): Scratch-PDP "ab 154,80 EUR" = Konfigurator 154,80 EUR, durchgestrichen "178,80 EUR" = erwartet (120 x 1,49), Text "inkl. Einfassung"; andere Variante ohne Vergleichspreis: kein Streichpreis; kein Liquid-Fehler. Testwerte danach entfernt, per Read bestaetigt.
 - Nicht getestet: Karte in der Kollektion mit Streichpreis (Testprodukt liegt in keiner Kollektion - nur Unit), Optik.
+
+## 2026-09-20 - Livegang PR #416 (Commit e2839f5)
+- Preview komplett PASS. Live `/collections/teppiche`: 24 ab-Preise, 0 Streichpreise (erwartet - es laeuft keine Teppich-Aktion), kein Liquid-Fehler; Teppichboden-Angebote unveraendert sichtbar.
