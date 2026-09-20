@@ -165,3 +165,11 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Unlisted Testprodukt mit Vergleichspreis 1,49 + `aktion.start` an einer Variante: 200 x 300 cm -> "774,00 EUR" und durchgestrichen "894,00 EUR" (= 600 x 1,29 / 600 x 1,49). Variante ohne Vergleichspreis: kein Streichpreis. Konsole sauber. Testwerte entfernt, per Read bestaetigt.
 - Schutztest `tp-streichpreis-nur-bei-aktion` deckt den Konfigurator-Block jetzt mit ab (11/11). Liquid liefert `compare_at_price` nur bei aktiver Aktion, das Skript entscheidet nichts selbst.
 - Nicht getestet: Mindestpreis-Fall mit echten Daten (Testprodukt hat keinen Mindestpreis) - Logik identisch zum ab-Preis, dort per Unit abgedeckt.
+
+## 2026-09-20 - Mobiler Layout-Check im Live-Shop (375 px, automatischer Detektor)
+- Gesucht: gequetschter Text (Breite < 44 px, Hoehe > 90 px bei >= 18 Zeichen - das Muster des MwSt-Fehlers S-17), horizontaler Ueberlauf, "Liquid error", kaputte Bilder.
+- Geprueft: Startseite, Kollektionen teppichboden / vinylboden-klickvinyl, PDP Rollenware (torvana), Klickvinyl (lyon), Teppich nach Mass (woolara), Teppichfliese (intervana), Sockelleiste (skarven), Warenkorb (leer), Liefer-/Verlegeservice, Suche "teppich". Ergebnis: 11 von 11 ohne Befund. Die Suche zeigt 21 Teppich-ab-Preise - die zuvor ungetestete Flaeche ist damit abgedeckt.
+- Nicht geprueft: Kollektionen teppiche / teppichfliesen / bodenleisten, Klebevinyl-PDP, Kontaktseite (im zweiten Lauf nicht mehr aufgerufen), Desktop, gefuellter Warenkorb, Checkout. Iframes gehen nicht (Shopify verbietet das Einbetten) - Seiten einzeln aufrufen.
+
+## 2026-09-20 - Livegang PR #418 (Commit 804135e)
+- Preview komplett PASS. Live woolara: 200 x 300 = "892,00 EUR", alter Preis verborgen (keine Aktion), Knopf "In den Warenkorb" aktiv, Konsole sauber, `data-summe-alt` im Markup, `compare_at_price: null` im Varianten-JSON.
