@@ -137,9 +137,13 @@
   product-price [ref='priceContainer'] .price-card-per-unit {
     font-size: max(0.8125rem, 0.82em);
   }
-  .tp-ab-preis { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5em; }
-  .tp-ab-preis__haupt { font-weight: 600; }
-  .tp-ab-preis__grund { font-size: 0.8em; font-weight: 400; opacity: 0.75; }
+  /* Teppich nach Mass auf der Karte: Qualitaetszeile, grosser Preis, Beispielmass. */
+  .tp-ab-preis { display: flex; flex-direction: column; gap: 2px; }
+  .tp-ab-preis__qualitaet { font-size: 13px; line-height: 1.35; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); margin-bottom: 4px; }
+  .tp-ab-preis__haupt { display: flex; align-items: baseline; gap: 6px; line-height: 1.15; }
+  .tp-ab-preis__ab { font-size: 13px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72); }
+  .tp-ab-preis__betrag { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  .tp-ab-preis__grund { font-size: 12px; font-weight: 400; color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62); }
   .tp-preis-je-m2 { font-weight: 600; }
   .tp-preis-je-m2__einheit { font-size: 0.8em; font-weight: 400; opacity: 0.75; }
 {% endstylesheet %}

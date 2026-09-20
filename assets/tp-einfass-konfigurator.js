@@ -72,7 +72,11 @@
     if (!ART[art] || !varianten.length || !(d.max_breite_cm > 0) || !(d.max_laenge_cm > 0)) return;
 
     var uid = 'tp-ek-' + (++zaehler);
+    // Groesste Breite: je Farbe aus den Rollenbreiten des Teppichbodens (Liquid liefert
+    // sie an der Variante), sonst der Wert ueber alle Farben. Wird in rechnen() nach der
+    // Variantenwahl neu gesetzt.
     var maxW = d.max_breite_cm;
+    var groessenMaxW = null;
     var maxL = d.max_laenge_cm;
     var mindestCent = parseInt(d.mindestpreis_cent, 10) || 0;
     // Preis je 0,01 laufendem Meter Kante. Ohne Service-Produkt wird die Kante
@@ -170,8 +174,9 @@
     }
 
     function groessenAufbauen(f) {
-      if (!groessen || groessenForm === f) return;
+      if (!groessen || (groessenForm === f && groessenMaxW === maxW)) return;
       groessenForm = f;
+      groessenMaxW = maxW;
       leeren(groessen);
       var liste = f === 'rund'
         ? GROESSEN.rund.filter(function (x) { return x <= maxW; }).map(function (x) { return [x, x]; })
@@ -547,6 +552,7 @@
 
     function rechnen() {
       target = aktuelleVariante();
+      maxW = (target && Number(target.max_breite_cm) > 0) ? Number(target.max_breite_cm) : d.max_breite_cm;
       var f = form();
       // Fail closed: fremde oder nicht freigegebene Variante - weder Angebot noch Anfrage.
       if (formSchritt) formSchritt.hidden = !target || formSchrittAus;

@@ -1,0 +1,44 @@
+{% doc %}
+  Groesste bestellbare Breite (kurze Seite) eines Teppichs nach Mass in cm. Gibt die
+  Zahl aus oder nichts. Einzige Quelle - Karte und Konfigurator fragen hier.
+
+  Die Breite kommt IMMER vom Teppichboden, aus dem zugeschnitten wird (Inhaber,
+  2026-09-20): groesste custom.rollenbreite der verfuegbaren Varianten des Basisprodukts
+  (service.einfass_basis). Manche Qualitaeten gibt es nur in 400 cm, andere auch in
+  500 cm - und nicht jede Farbe in jeder Breite. Mit "farbe" zaehlen deshalb nur die
+  Rollen dieser Farbe (option1 des Teppichbodens = Farbe des Teppichs).
+  Beim Cover wird die Kante umgeschlagen: 10 cm schmaler als die Rolle, wie
+  maxBreiteCm() in assets/tp-masstepich-rechnung.js.
+
+  Rueckfall, wenn der Teppichboden keine Rollenbreiten liefert: service.max_breite_cm.
+
+  @param {object} product - der Teppich nach Mass
+  @param {string} [farbe] - Farbname der gewaehlten Variante; ohne ihn die groesste Breite ueber alle Farben
+{% enddoc %}
+{%- liquid
+  assign tmb_max = 0
+  assign tmb_basis = product.metafields.service.einfass_basis.value
+  if tmb_basis != blank
+    for tmb_v in tmb_basis.variants
+      if tmb_v.available
+        if farbe == blank or tmb_v.option1 == farbe
+          assign tmb_cm = tmb_v.metafields.custom.rollenbreite.value | times: 100 | round
+          if tmb_cm > tmb_max
+            assign tmb_max = tmb_cm
+          endif
+        endif
+      endif
+    endfor
+  endif
+  if tmb_max > 0
+    assign tmb_art = product.metafields.service.einfassung.value | strip | downcase
+    if tmb_art == 'cover'
+      assign tmb_max = tmb_max | minus: 10
+    endif
+  else
+    assign tmb_max = product.metafields.service.max_breite_cm.value | times: 1
+  endif
+  if tmb_max > 0
+    echo tmb_max
+  endif
+-%}

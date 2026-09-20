@@ -1,0 +1,70 @@
+{% doc %}
+  Qualitaetszeile eines Teppichs nach Mass fuer die Produktkarte, z. B.
+  "Schurwolle · Schlinge · 6 mm Flor". Gibt Text aus oder nichts.
+
+  Alle Angaben kommen vom Teppichboden, aus dem zugeschnitten wird
+  (service.einfass_basis): custom.fasermaterial, custom.arten (hoechstens ein Wert),
+  custom.florhohe. Nichts wird abgeleitet oder ergaenzt - fehlt ein Feld, fehlt der
+  Teil; fehlt alles, bleibt die Zeile weg.
+
+  @param {object} product - der Teppich nach Mass
+{% enddoc %}
+{%- liquid
+  assign tq_basis = product.metafields.service.einfass_basis.value
+  assign tq_text = ''
+  if tq_basis != blank
+    assign tq_faser_mf = tq_basis.metafields.custom.fasermaterial
+    assign tq_faser_val = tq_faser_mf.value
+    if tq_faser_val != blank
+      if tq_faser_mf.type contains 'list.'
+        for tq_item in tq_faser_val limit: 1
+          assign tq_fm = tq_item.fasermaterial
+          capture tq_faser
+            echo tq_fm.value | default: tq_fm | default: tq_item.name
+          endcapture
+        endfor
+      else
+        assign tq_fm = tq_faser_val.fasermaterial
+        capture tq_faser
+          echo tq_fm.value | default: tq_fm | default: tq_faser_val.name
+        endcapture
+      endif
+      assign tq_faser = tq_faser | strip
+      if tq_faser != blank
+        assign tq_text = tq_faser
+      endif
+    endif
+
+    assign tq_art_mf = tq_basis.metafields.custom.arten
+    assign tq_art_val = tq_art_mf.value
+    if tq_art_val != blank
+      if tq_art_mf.type contains 'list.'
+        for tq_item in tq_art_val limit: 1
+          capture tq_art
+            echo tq_item.name.value | default: tq_item.name
+          endcapture
+        endfor
+      else
+        capture tq_art
+          echo tq_art_val.name.value | default: tq_art_val.name
+        endcapture
+      endif
+      assign tq_art = tq_art | strip
+      if tq_art != blank
+        if tq_text != blank
+          assign tq_text = tq_text | append: ' · '
+        endif
+        assign tq_text = tq_text | append: tq_art
+      endif
+    endif
+
+    assign tq_flor = tq_basis.metafields.custom.florhohe.value | strip
+    if tq_flor != blank
+      if tq_text != blank
+        assign tq_text = tq_text | append: ' · '
+      endif
+      assign tq_text = tq_text | append: tq_flor | append: ' Flor'
+    endif
+  endif
+  echo tq_text
+-%}

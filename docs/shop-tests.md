@@ -71,3 +71,14 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Unit 14/14 (neu: bei belegtem ab-Preis kein "m2" im Markup).
 - `/collections/teppiche`: Karte "ab 197,80 EUR z. B. 80 x 150 cm", 0 sichtbare m2-Angaben im Hauptbereich.
 - PDP woolara: "ab 227,80 EUR z. B. 80 x 150 cm", Konfigurator 80 x 150 = 227,80 EUR. Einzige verbleibende m2-Angabe: Satz in der Produktbeschreibung (S-22, Produktdaten).
+
+## 2026-09-20 - Livegang PRs #398 + #399 (Commit ddc1ad4)
+- Preview komplett PASS. Live: 24 Karten mit ab-Preis, 0 m2-Angaben im ab-Preis-Markup, Beispielmass steht.
+
+## 2026-09-20 - S-23 Karte Variante A + S-24 Breite vom Teppichboden (Scratch-Theme)
+- Unit: `tp-teppich-ab-preis` 17/17 (neu: Qualitaetszeile vom Teppichboden, ohne Daten keine Zeile, PDP ohne Zeile), `tp-teppich-max-breite` 6/6 (500er Rolle, je Farbe, nicht verfuegbare Rolle, Cover -10, Rueckfall, unbekannte Farbe). `npm test` gruen, static PASS.
+- Karte mobil 375 (vermessen): Qualitaet 13 px einzeilig, Preis 24 px, Beispielmass 12 px, Marke 239 x 27, Knopf 343 x 44, Reihenfolge stimmt, kein horizontales Scrollen. 24/24 Karten mit Qualitaetszeile; Breiten "bis 500 x 600" und "bis 400 x 600" (rivena).
+- Konfigurator woolara (500): Grenze "bis 500 x 600 cm", 450 x 450 = 2.711,25 EUR kaufbar, 520 x 520 abgelehnt, 80 x 150 = 227,80 EUR = Kartenpreis. rivena (400): 450 x 450 abgelehnt mit "Eine Seite darf hoechstens 400 cm messen". Hinweis: 520 x 300 ist zulaessig, weil nur die kurze Seite in die Rolle passen muss.
+- PDP-Preis 30 px.
+- Datenfix: 3 `fasermaterial`-Metaobjekte (Schurwolle, Polypropylen, Sisal) von Entwurf auf aktiv - danach erscheint z. B. "Schurwolle · Schlinge · 6 mm Flor".
+- Nicht getestet: Screenshot (Browserfenster lieferte leere Bilder), Desktop-Optik, Farbwechsel mit unterschiedlicher Breite je Farbe (kein Produkt mit solcher Datenlage gefunden - nur Unit), Warenkorbzeile mit 500er Rolle.

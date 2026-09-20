@@ -13,6 +13,7 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Theme-IDs: nur `domains/shopify/live-theme.json`.
 
 ## Regeln
+- Teppich-Sachdaten kommen vom Teppichboden: `snippets/tp-teppich-max-breite.liquid` (groesste verfuegbare `custom.rollenbreite`, optional je Farbe ueber option1, Cover minus 10 cm, Rueckfall `service.max_breite_cm`) und `snippets/tp-teppich-qualitaet.liquid` (Fasermaterial · Art · Florhoehe). Der Konfigurator bekommt die Breite je Variante (`max_breite_cm` im Varianten-JSON) und setzt `maxW` in `rechnen()` neu. Der Rechner dreht den Teppich: nur die KURZE Seite muss in die Rolle passen.
 - Aktion: `snippets/tp-aktion-aktiv.liquid` (Metafelder `aktion.start/ende`). Verlegeservice-Berechtigung: `snippets/tp-vs-berechtigt.liquid` (Template `rolle` + Produkttyp aus `tp_vs_produkttypen`). Trifft beides zu, zeigt `blocks/tp-verlegeservice-hinweis.liquid` den Aktionshinweis statt des Kostenlos-Versprechens. Der Service wird per Anfrage gebucht - es gibt keine Warenkorb-Logik, die zu sperren waere.
 - Eine Aktion starten: compare_at_price (nur belegter Referenzpreis) + `aktion.start` am Produkt setzen. Beenden: `aktion.ende` setzen und compare_at_price entfernen.
 - Ab-Preis Teppiche: einzige Quelle `snippets/tp-teppich-ab-preis.liquid` (80 x 150 cm, Kettelservice-Handle `kettelservice`, Mindestpreis `service.mindestpreis` = 99 EUR bei allen 33 Produkten). `qa/tests/tp-teppich-ab-preis.test.mjs` haelt Liquid und Rechenkern deckungsgleich. Erkennung Teppich: `custom.preis_pro_001_qm = true` UND `service.einfassung` gesetzt - zentimetergenaue Rollenware traegt `preis_pro_001_qm` ebenfalls und bleibt bei EUR/m2. Karte nimmt die guenstigste Farbe, die PDP (`blocks/price_custom.liquid`) die gewaehlte Variante.
@@ -31,6 +32,8 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
 ## Fakten
+- Metaobjekte vom Typ `fasermaterial` koennen auf Entwurf stehen und sind dann im Shop unsichtbar (2026-09-20: Schurwolle, Polypropylen, Sisal aktiviert). Bei fehlendem Material zuerst den Status pruefen.
+- Screenshots im eingebauten Browser bleiben nach Scroll-Skripten oft leer - dann vermessen statt raten.
 - Materialdaten der Teppiche liegen am Basis-Teppichboden: `product.metafields.service.einfass_basis.value` -> `custom.fasermaterial` (Metaobjekt-Liste), `custom.arten`, `custom.florhohe`, `custom.ruckenausstattung`. Die Teppiche selbst tragen nur `service.*`.
 - Die Produktbeschreibungen der 49 Teppiche nennen noch Material-EUR/m2 und Kettelpreis je lfm (S-22).
 - Im Shop gibt es seit 2026-09-20 keinen aktiven Streichpreis mehr. Neue Streichpreise nur mit belegtem Referenzpreis (S-12).

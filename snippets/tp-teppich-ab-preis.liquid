@@ -28,7 +28,9 @@
   Einfassung - sie bekommt hier unveraendert den Preis je m2.
 
   @param {object} product - Produkt
-  @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe
+  @param {object} [variant] - gewaehlte Variante (Produktseite); ohne sie zaehlt die guenstigste Farbe.
+    Ohne Variante (= Produktkarte) steht ueber dem Preis die Qualitaetszeile aus
+    snippets/tp-teppich-qualitaet.
 {%- enddoc -%}
 {%- liquid
   assign tp_ab_breite_cm = 80
@@ -81,9 +83,16 @@
   endif
 -%}
 {%- if tp_ab_belegt and tp_ab_cent > 0 -%}
+  {%- if variant == blank -%}
+    {%- capture tp_ab_qualitaet -%}{% render 'tp-teppich-qualitaet', product: product %}{%- endcapture -%}
+    {%- assign tp_ab_qualitaet = tp_ab_qualitaet | strip -%}
+  {%- endif -%}
   <span class="tp-ab-preis" data-tp-ab-cent="{{ tp_ab_cent }}">
-    <span class="tp-ab-preis__haupt">ab {{ tp_ab_cent | money_without_trailing_zeros }}</span>
-    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm</span>
+    {%- if tp_ab_qualitaet != blank -%}
+      <span class="tp-ab-preis__qualitaet">{{ tp_ab_qualitaet | escape }}</span>
+    {%- endif -%}
+    <span class="tp-ab-preis__haupt"><span class="tp-ab-preis__ab">ab</span> <span class="tp-ab-preis__betrag">{{ tp_ab_cent | money_without_trailing_zeros }}</span></span>
+    <span class="tp-ab-preis__grund">z.&nbsp;B. {{ tp_ab_breite_cm }}&nbsp;×&nbsp;{{ tp_ab_laenge_cm }}&nbsp;cm, inkl. Kettelung</span>
   </span>
 {%- else -%}
   <span class="tp-preis-je-m2">{% if variant == blank %}ab {% endif %}{{ tp_ab_m2_cent | money }}<span class="tp-preis-je-m2__einheit">/m²</span></span>
