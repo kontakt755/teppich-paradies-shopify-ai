@@ -16,12 +16,12 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-17 | Live-Fehler: PAngV-Hinweis "Alle Preise inkl. MwSt." mobil 16 px breit neben dem Titel, alle Produktseiten (seit 2026-09-16) | P0 | erledigt, live 2026-09-20 (PR #391) | - | `sections/product-information.liquid`, `blocks/_product-details.liquid` | Fable | Scratch Desktop+Mobil ok |
 | S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | erledigt: Datenmodell `aktion.start/ende/klasse` angelegt (Definitionen in Shopify, kein Produkt befuellt) | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
 | S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | erledigt, geht mit S-21 live | S-08 | Service-Bloecke | Fable plant | - |
-| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - wartet auf EK-Liste von Ahmet (reicht er nach, kein Termin). Bis dahin keine Margen-/Rabatttabelle, nichts raten | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
+| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - EK-Liste reicht Ahmet nach (#397). Welle 1 lief auf seine Entscheidung OHNE EK; Marge bleibt unbekannt | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | erledigt 2026-09-20: 5 Unterkollektionen manuell kuratiert (unten) | - | Collections, Sortierung (Analyse) | Worker | - |
 | S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
 | S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil per Stichprobe in `docs/shop-bildworkflow.md` | - | nur Daten | Worker | - |
 | S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | Konzept fertig (`docs/shop-bildworkflow.md`), Typ A (Struktur-Foto) im Theme; wartet auf 10 Kantenfotos vom Inhaber ODER Freigabe der KI-Testreihe | S-13 | - | Fable plant | - |
-| S-15 | Rabattaktionen ausrollen | P2 | offen | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
+| S-15 | Rabattaktionen ausrollen | P2 | Welle 1 live 2026-09-20 bis 2026-10-18 (unten); Ende = Issue #413 | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
 | S-16 | Bessere Raumvisualisierung (Ersatz fuer S-01) | P3 | zurueckgestellt (Ahmet 2026-09-20: erstmal sein lassen; #339 geschlossen) | S-14 | Einfass-Konfigurator | - | - |
 | S-18 | Sales-Check mobil wackelt: Cookie-Banner faengt den Klick auf "In den Warenkorb" ab (1 von 3 Laeufen am 2026-09-20), kostet einen ganzen Preview-Lauf | P2 | erledigt 2026-09-20 (CSS-Regel statt nur Beobachter, nach dem zweiten Fehlschlag am selben Tag) | - | `qa/run-sales-readiness.mjs` | mittleres Modell | - |
 | S-19 | Seite /pages/liefer-verlegeservice um den Satz zur Aktionspreis-Regel ergaenzen (liegt doch im Theme: `sections/tp-verlegeservice.liquid`) | P2 | erledigt, live 2026-09-20 | S-09 | Shopify-Seite | - | - |
@@ -35,6 +35,7 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-27 | Konfigurator: Preis stand doppelt ("Ihr Preis" + "In den Warenkorb – 724 EUR"), Gedankenstrich im Knopf | P1 | erledigt, live 2026-09-20 | - | `assets/tp-einfass-konfigurator.js` | Fable | Scratch ok |
 | S-28 | Teppich-PDP mobil: Farbwahl und Galerie zu weit auseinander - grosses Farbbild direkt unter der Farbwahl, Strukturfoto als Lupe | P1 | erledigt, live 2026-09-20 | S-14 | `blocks/tp-teppich-struktur.liquid` | Fable | 5 Unit-Tests, Scratch ok |
 | S-29 | Link "Lieber als Meterware von der Rolle" unverstaendlich -> Frage + klarer Link | P1 | erledigt, live 2026-09-20 | - | `blocks/tp-einfass-wechsel.liquid` | Fable | Scratch ok |
+| S-30 | Teppiche nach Mass: Streichpreis im ab-Preis darstellen, damit auch dort Aktionen moeglich sind | P2 | offen | S-15 | `snippets/tp-teppich-ab-preis.liquid` | Fable | - |
 
 ## S-03 Ergebnis (2026-09-20)
 | Issue | Befund | Empfehlung |
@@ -88,3 +89,11 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Gleiche Regel wie S-11, Baender aus der Verteilung der ab-Preise (80 x 150 cm): G < 140, M 140-160, O 160-300, P >= 300 EUR. Piumera vorn.
 - Neu erste 8: piumera 194, amara 140, altessa 119, kalvea 140, vantana 168, kerova 140, solvana 120, nuvara 140. Premium (boucella, regalia je 443) auf Platz 12 und 16.
 - Rueckweg: Sicherung in `~/teppich-paradies-analyse/sicherungen/kollektions-reihenfolge-2026-09-20.json` (Schluessel `teppiche`).
+
+## S-15 Welle 1 (2026-09-20)
+- Entscheidung Ahmet: Rabatte 5-25 % unabhaengig vom EK einpflegen; Tabelle im Chat freigegeben ("Ja, genau so, 4 Wochen"), Preise laut ihm 30 Tage unveraendert -> heutiger Preis ist der Streichpreis.
+- Umfang: 20 von 113 Teppichboeden (18 %), nur Rollenware der Hauptkollektion. Knaller -25 %: torvana, vantana, sentira. Aktion -15 %: piumera, vireno, palenza, corvella, velano/velluna, kontura, reganza, callista. Normal -10 %: vallora, alvento, nuvara, tessara, novaris, fortiva. Normal -5 %: merinda, lanova, fibrella. Premium (boucella, regalia): kein Rabatt.
+- Auswahlregel: Band M (40-75 EUR/m2) mit den meisten Farben zuerst; Endungen bleiben (,90 Rollenpreis / ,00 Wunschmass-Variante); gleicher Prozentsatz fuer alle Varianten eines Produkts.
+- Technik: `compareAtPrice` = alter Preis, `aktion.start` 2026-09-20, `aktion.ende` 2026-10-18, `aktion.klasse`. Folge laut Regel: auf diesen 20 Produkten steht der Aktionshinweis statt des Kostenlos-Versprechens.
+- Nicht enthalten: Teppiche nach Mass (der ab-Preis zeigt keinen Streichpreis - braucht Theme-Arbeit, S-30), Fliesen, Vinyl.
+- Detailtabelle, Auftragsdateien, Soll-Stand und RUECKSTELLEN-Datei liegen lokal unter `~/teppich-paradies-analyse/rabattplan/` (Preisstrategie gehoert nicht ins oeffentliche Repo).
