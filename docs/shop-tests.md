@@ -91,3 +91,9 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 - Eigene Gegenprobe ueber den oeffentlichen Shop (nicht ueber die Worker-Antwort): 49/49 Beschreibungen mit "So bestellen Sie", 0 Rueckstaende (EUR/m2, "je laufendem Meter", alter Block), Masse 44x 500 x 600 und 5x 400 x 600, kein Text widerspricht der Wunschmass-Marke seiner Karte, keine widerspruechlichen Masse innerhalb eines Textes.
 - Meta-Descriptions live: 49/49 ohne m2-Preis und ohne "ab 99", alle <= 160 Zeichen. rubira wich im Format ab (eine Farbe) und wurde von Hand nachgezogen.
 - Nicht geprueft: Darstellung der neuen Liste im Layout (reines HTML-Listenformat wie vorher), das 50. gesicherte Produkt liegt nicht in der Kollektion teppiche.
+
+## 2026-09-20 - S-20 Streichpreis nur bei aktiver Aktion (Scratch-Theme)
+- Unit 9/9: struktureller Schutztest ueber alle 7 Dateien mit `compare_at_price`; Funktionsprobe am echten `tp-price-per-sqm` - Streichpreis 29,95 erscheint mit Aktion, bleibt ohne Aktion und nach abgelaufenem Ende weg. `npm test` gruen.
+- Scratch: Klickvinyl-Kollektion (24 Karten, Preise normal, 0 Streichpreise, 0 Sale-Badges), Sylvara-PDP, Teppichboden-PDP, Warenkorb - nirgends "Liquid error".
+- Bewusst NICHT getestet: positiver Fall mit echten Shopdaten. Dafuer muesste ein Schein-Streichpreis kurz im Live-Shop stehen. Abgedeckt nur durch die Unit-Funktionsprobe.
+- Nicht getestet: Schnellbestellliste (Section ist in keinem Template eingebunden), Warenkorb mit Artikel.
