@@ -142,3 +142,6 @@ Regressionen: keine gefunden. KORREKTUR: der gequetschte MwSt-Text war doch ein 
 ## 2026-09-20 - S-25 Qualitaetszeile ohne Fasermaterial (Scratch-Theme)
 - Nur 3 von 49 Teppichen ohne Material: wovena, callista, rubira (Teppichboden: `custom.fasermaterial` leer, `custom.arten` = Schlinge + Wolle). Genaue Faser nicht belegt -> nichts eingetragen.
 - Snippet zeigt ohne Fasermaterial zwei Arten: Scratch "Schlinge · Wolle · 3,2 / 3,6 / 5 mm Flor". Unit 23/23.
+
+## 2026-09-20 - Livegang PR #411 (Commit e636d05)
+- Preview komplett PASS. Live-HTML: wovena/callista/rubira zeigen "Schlinge · Wolle · 3,2 / 3,6 / 5 mm Flor".
