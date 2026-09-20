@@ -11,19 +11,47 @@
 {%- enddoc -%}
 {%- liquid
   assign tp_cz_produkt = line_item.product
-  assign tp_cz_paket = tp_cz_produkt.metafields.custom.qm_pro_paket.value | times: 1.0
+  assign tp_cz_paket_roh = tp_cz_produkt.metafields.custom.qm_pro_paket.value | append: ''
+  assign tp_cz_paket = tp_cz_paket_roh | times: 1.0
   assign tp_cz_menge = line_item.quantity | times: 1
 -%}
 {%- if tp_cz_paket > 0 and tp_cz_menge > 0 -%}
   {%- liquid
-    assign tp_cz_gesamt = tp_cz_paket | times: tp_cz_menge
+    # TP-008: Nachkommastellen aus dem Rohtext des Metafelds ableiten (wie
+    # snippets/tp-paketinhalt.liquid), statt fest auf Hundertstel zu runden.
+    # Ein dreistelliges Paketmetafeld (z.B. 0,794 m²) braucht drei Stellen -
+    # sonst verschwindet echte Praezision beim Wechsel in den Warenkorb
+    # (16 x 1,892 m² zeigte bisher 30,27 statt 30,272 m²).
+    if tp_cz_paket_roh contains '.'
+      assign tp_cz_paket_rest = tp_cz_paket_roh | split: '.' | last
+    else
+      assign tp_cz_paket_rest = ''
+    endif
+    assign tp_cz_dezimalstellen = tp_cz_paket_rest.size | at_least: 2 | at_most: 3
 
-    # Deutsches Komma mit zwei Nachkommastellen. Ueber Cent gerechnet, damit
-    # kein Gleitkomma-Rest wie 20,000000001 in der Anzeige landet.
-    assign tp_cz_hundertstel = tp_cz_gesamt | times: 100 | round
-    assign tp_cz_ganz = tp_cz_hundertstel | divided_by: 100
-    assign tp_cz_rest = tp_cz_hundertstel | modulo: 100
-    if tp_cz_rest < 10
+    # Skalierte Ganzzahlarithmetik: die Paketflaeche wird einmalig auf ihre
+    # eigene Praezision gerundet (Hundertstel oder Tausendstel) und danach nur
+    # noch mit der ganzzahligen Menge multipliziert - kein Gleitkomma-Rest wie
+    # 20,000000001 moeglich, weil die Multiplikation zweier Ganzzahlen exakt ist.
+    assign tp_cz_skala = 100
+    if tp_cz_dezimalstellen == 3
+      assign tp_cz_skala = 1000
+    endif
+    assign tp_cz_paket_skaliert = tp_cz_paket | times: tp_cz_skala | round
+    assign tp_cz_einheiten = tp_cz_paket_skaliert | times: tp_cz_menge
+
+    assign tp_cz_ganz = tp_cz_einheiten | divided_by: tp_cz_skala
+    assign tp_cz_rest_zahl = tp_cz_einheiten | modulo: tp_cz_skala
+    assign tp_cz_rest = tp_cz_rest_zahl | append: ''
+    # Fuehrende Nullen bis zur vollen Stellenzahl ("4" -> "04" bei Hundertstel,
+    # "4" -> "004" bei Tausendstel) - sonst stuende "20,4" statt "20,04" da.
+    if tp_cz_dezimalstellen == 3
+      if tp_cz_rest_zahl < 10
+        assign tp_cz_rest = tp_cz_rest | prepend: '00'
+      elsif tp_cz_rest_zahl < 100
+        assign tp_cz_rest = tp_cz_rest | prepend: '0'
+      endif
+    elsif tp_cz_rest_zahl < 10
       assign tp_cz_rest = tp_cz_rest | prepend: '0'
     endif
     assign tp_cz_flaeche = tp_cz_ganz | append: ',' | append: tp_cz_rest
