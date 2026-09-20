@@ -25,11 +25,11 @@ Nur was jetzt gilt. Historie steht in git, Entscheidungen in `shop-decisions.md`
 - keine. S-04/S-05/S-07/S-17 sind seit 2026-09-20 live (PR #391). S-06 live (PR #393). Naechste Pakete: S-09 (Aktionshinweis an Verlegeservice-Bloecke), S-12 (Herkunft der 5 Streichpreise), S-11 nachziehen, S-14.
 
 ## Offene Blocker
-- S-12: 4 Sylvara-Vinylprodukte mit Streichpreis 29,95 seit ueber 30 Tagen - Entscheidung Ahmet (entfernen / UVP / lassen).
-- S-10: keine Einkaufspreise in Shopify; EK-Quelle von Ahmet noetig.
+- S-10: keine Einkaufspreise in Shopify; Ahmet reicht eine EK-Liste nach (offen, kein Termin). Nicht erneut nachfragen, nur im Statusbericht als offen fuehren.
 - Codex-Review am 2026-09-20 am Nutzungslimit; PRs #388/#391 gingen mit eigener Pruefung und vollem Preview-Gate live.
 
 ## Fakten
+- Im Shop gibt es seit 2026-09-20 keinen aktiven Streichpreis mehr. Neue Streichpreise nur mit belegtem Referenzpreis (S-12).
 - Preise wie "0,92 EUR" im PDP-DOM sind unsichtbare Elemente, kein Kundenbefund.
 - `snippets/tp-preisangabe.liquid` wird in `blocks/_product-details.liquid` gerendert, nie als Kind des Produktrasters.
 - Browser-Pruefung: das Preview-Cookie haelt; Live nur mit `?preview_theme_id=` (leer) ansehen und `Shopify.theme.role` gegenlesen.

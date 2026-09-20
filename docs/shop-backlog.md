@@ -16,9 +16,9 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 | S-17 | Live-Fehler: PAngV-Hinweis "Alle Preise inkl. MwSt." mobil 16 px breit neben dem Titel, alle Produktseiten (seit 2026-09-16) | P0 | erledigt, live 2026-09-20 (PR #391) | - | `sections/product-information.liquid`, `blocks/_product-details.liquid` | Fable | Scratch Desktop+Mobil ok |
 | S-08 | Rabatt-Datenmodell: bestehende Metafelder inventarisieren, Vorschlag fuer Aktions-Felder | P1 | Inventar erledigt (unten), Vorschlag offen | - | Metafelder (nur Analyse) | Worker + Fable-Entscheid | - |
 | S-09 | Verlegeservice-Logik verstehen, Aktionspreis-Hinweis daran anbinden (keine zweite Logik) | P1 | offen | S-08 | Service-Bloecke | Fable plant | - |
-| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | blockiert: kein EK in Shopify (unitCost leer), EK-Quelle von Ahmet noetig | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
+| S-10 | Produkttabelle VK/EK/Marge/Rabattklasse (EK nur aus belegter Quelle, nie geraten) | P1 | offen - wartet auf EK-Liste von Ahmet (reicht er nach, kein Termin). Bis dahin keine Margen-/Rabatttabelle, nichts raten | S-08 | Daten, lokal ausserhalb des Repos | Worker | - |
 | S-11 | Collection-Sortierung/Merchandising Teppichboden analysieren (Einstieg nicht ueber 200 EUR/m2) | P1 | Teilergebnis (unten), Preisverteilung Rollenware nachziehen | - | Collections, Sortierung (Analyse) | Worker | - |
-| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Befund unten, wartet auf Entscheidung Ahmet | S-08 | Preis-Snippets | Fable | - |
+| S-12 | Streichpreis-Struktur: belegbare Referenzpreise (30-Tage-Tiefstpreis), keine Fantasiepreise | P1 | Bestand bereinigt 2026-09-20 (unten); Struktur fuer kuenftige Aktionen offen, haengt an S-08 | S-08 | Preis-Snippets | Fable | - |
 | S-13 | Kettelungsbilder inventarisieren (Produkt, Bild, Zweck, Problem, Wunsch) | P2 | Zahlen erledigt (unten); Qualitaetsurteil je Bild offen -> S-14 | - | nur Daten | Worker | - |
 | S-14 | Externer Bild-Workflow fuer Kettelbilder vorbereiten | P2 | offen | S-13 | - | Fable plant | - |
 | S-15 | Rabattaktionen ausrollen | P2 | offen | S-08 bis S-12, Freigabe Ahmet | Preise | - | - |
@@ -61,3 +61,5 @@ GitHub-Issues bleiben die Aufgabenquelle des Dashboards; hier steht die Reihenfo
 - Das Handle "...-kopie" deutet auf ein Duplikat hin (eigenes Thema, nicht angefasst).
 - Optionen: (a) compareAtPrice bei den 4 Produkten entfernen, (b) als "UVP" kennzeichnen, falls 29,95 eine belegte Herstellerempfehlung ist, (c) lassen. Keine Aenderung ohne Freigabe (Preisdaten).
 - Technische Struktur fuer kuenftige Aktionen ist noch nicht entworfen; sie haengt am Datenmodell aus S-08 (Aktionsstart/-ende als Metafeld, Referenzpreis = niedrigster Preis der 30 Tage vor Aktionsstart).
+
+- ERLEDIGT 2026-09-20 (Freigabe Ahmet: "das was sinnvoll ist machen"): compareAtPrice bei den 4 aktiven Sylvara-Produkten (9 Varianten) per `productVariantsBulkUpdate` auf null gesetzt, Verkaufspreise unveraendert (24,95 / 26,95). Gegenprobe per direktem Varianten-Read ok. Begruendung: 29,95 ist weder als 30-Tage-Tiefstpreis noch als UVP belegt; ohne Beleg ist kein Streichpreis die sichere Variante. Rueckweg: compareAtPrice 29.95 wieder setzen. Das Entwurfsprodukt aw-ganges-teppichboden wurde nicht angefasst.
