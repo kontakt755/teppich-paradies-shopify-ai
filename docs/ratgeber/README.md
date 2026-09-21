@@ -181,9 +181,12 @@ Pilotthemen (Kaufnähe × Nachfrage): Teppichboden richtig ausmessen · Rollenbr
 und Bahnen planen · Welcher Teppichboden für welchen Raum · Teppichboden verlegen:
 lose, fixiert oder verklebt · Pflege und Fleckentfernung.
 
-**Stand der Pilotwelle:** vier Entwürfe liegen unter `content/ratgeber/teppichboden/`
-(ausmessen · Rollenbreite und Bahnen · welcher Teppichboden für welchen Raum ·
-lose/fixiert/verklebt). „Pflege und Fleckentfernung" ist noch nicht geschrieben.
+**Stand der Pilotwelle:** alle fünf Entwürfe liegen unter
+`content/ratgeber/teppichboden/` (ausmessen · Rollenbreite und Bahnen · welcher
+Teppichboden für welchen Raum · lose/fixiert/verklebt · pflegen und Flecken
+entfernen). Offen sind 71 `PRUEFEN`-Fragen an das Verlegeteam, gesammelt in der
+dortigen `README.md`; `npm run ratgeber:payload` sperrt jeden Artikel, bis seine
+Fragen beantwortet sind und der Status auf `freigegeben` steht.
 
 **Nächste Welle** (aus dem Entwurf in #424 übernommen, Reihenfolge nach Nähe zur
 Fehlbestellung bzw. zum Kaufvorbehalt):
@@ -194,7 +197,6 @@ Fehlbestellung bzw. zum Kaufvorbehalt):
 | Vorbereiten | Untergrund prüfen und vorbereiten | „Muss ich am Boden vorher etwas machen?" | `verlegeservice` |
 | Abschluss & Leisten | Teppichfußleisten passend auswählen | „Welche Leiste passt farblich und technisch?" | Kollektion Bodenleisten |
 | Planen & Messen | Teppichboden richtig transportieren | „Passt die Rolle ins Treppenhaus?" | `verlegeservice` |
-| Pflege | Pflege und Fleckentfernung | „Wie bekomme ich das wieder raus?" | `zubehoer` (Reinigungsmittel) |
 
 ## 9. Livegang-Reihenfolge (noch nicht ausgeführt)
 

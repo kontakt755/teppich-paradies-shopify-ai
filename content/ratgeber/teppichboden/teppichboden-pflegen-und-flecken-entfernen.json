@@ -1,0 +1,37 @@
+{
+  "handle": "teppichboden-pflegen-und-flecken-entfernen",
+  "title": "Teppichboden pflegen und Flecken entfernen: Was wirklich hilft",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Pflege"
+  ],
+  "excerpt": "Saugen nach Raumnutzung, Sauberlaufzone, Erste Hilfe bei frischen Flecken und eine Tabelle von Kaffee bis Blut – und wann Reinigen nicht mehr weiterhilft.",
+  "seo": {
+    "title": "Teppichboden pflegen und Flecken entfernen: So geht es",
+    "description": "Teppichboden richtig saugen, Flecken abtupfen statt reiben, erst Wasser, dann getestete Reiniger: Anleitung mit Flecken-Tabelle und typischen Fehlern."
+  },
+  "metafields": {
+    "kurzantwort": "Die wichtigste Pflege ist regelmäßiges Saugen: in Laufzonen mehrmals pro Woche, in wenig genutzten Räumen einmal, mit einer Düse, die zur Machart passt. Frische Flecken nehmen Sie sofort mit einem saugfähigen weißen Tuch auf – tupfen, nie reiben, von außen nach innen – und arbeiten zuerst nur mit kaltem oder lauwarmem Wasser. Reinigungsmittel testen Sie vorher an einer verdeckten Stelle, tupfen mit klarem Wasser nach und trocknen die Stelle gründlich. Bei Wolle und bei einer Grundreinigung entscheidet die Pflegeanleitung des Herstellers; die Sprühextraktion gehört im Zweifel in die Hand eines Fachbetriebs.",
+    "art": "Pflege",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [
+      "saugfähige weiße Tücher oder Küchenpapier",
+      "Löffel oder stumpfer Messerrücken",
+      "Schüssel mit kaltem oder lauwarmem Wasser",
+      "weiche Bürste zum Aufrichten des Flors",
+      "Kühlakku oder Eiswürfel im Beutel",
+      "Staubsauger mit zur Machart passender Düse",
+      "für das Fasermaterial geeigneter Fleckentferner"
+    ],
+    "cta": [
+      "zubehoer"
+    ],
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "zubehoer-reinigungsmittel",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "status": "entwurf"
+}
