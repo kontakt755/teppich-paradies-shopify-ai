@@ -5,27 +5,23 @@
   "tags": [
     "Verlegen"
   ],
-  "excerpt": "Lose, fixiert oder verklebt: Entscheidungshilfe nach Raumgröße, Mietwohnung, Stuhlrollen und Treppe – mit Schritt-für-Schritt-Anleitung zum Fixieren.",
+  "excerpt": "Lose, fixiert oder verklebt: die Unterschiede der drei Verlegearten, die Vorbereitung des Untergrunds und der grundsätzliche Ablauf beim Fixieren.",
   "seo": {
     "title": "Teppichboden verlegen: lose, fixieren oder kleben?",
-    "description": "Welche Verlegeart passt zu Ihrem Raum? Entscheidungshilfe, Untergrundvorbereitung und Schritt-für-Schritt-Anleitung zum Fixieren mit Verlegeband."
+    "description": "Lose, fixiert oder vollflächig verklebt? Die Unterschiede der Verlegearten, die Vorbereitung des Untergrunds und der Ablauf beim Fixieren im Überblick."
   },
   "metafields": {
-    "kurzantwort": "Lose verlegen lässt sich Teppichboden nur in kleinen, wenig beanspruchten Räumen. Das Fixieren mit doppelseitigem Verlegeband oder einer Teppichfixierung passt für die meisten Wohnräume und für Mietwohnungen, weil sich der Belag später wieder aufnehmen lässt. Vollflächig verklebt wird dort, wo der Teppichboden dauerhaft stark belastet wird: unter Stuhlrollen, auf Treppen, auf großen Flächen und im Gewerbe.",
+    "kurzantwort": "Teppichboden von der Rolle wird lose verlegt, fixiert oder vollflächig verklebt. Lose kommt nur für kleine, wenig beanspruchte Räume infrage. Beim Fixieren mit doppelseitigem Verlegeband oder einer Teppichfixierung lässt sich der Belag später wieder aufnehmen, die Verklebung ist dauerhaft. Welche Produkte zu Untergrund und Teppichboden passen und wie sie verarbeitet werden, geben die jeweiligen Hersteller vor.",
     "art": "Anleitung",
-    "dauer": "etwa ein halber Tag für einen Raum bis 20 m², ohne Untergrundarbeiten",
-    "schwierigkeit": "mittel",
-    "personen": "2",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
     "material": [
       "Teppichboden mit Zugabe",
       "doppelseitiges Verlegeband oder Teppichfixierung",
-      "Teppichmesser mit Hakenklingen und Ersatzklingen",
-      "Stahllineal oder Schneidschiene",
+      "Teppichmesser mit Ersatzklingen",
       "Maßband oder Zollstock",
-      "Kantenandrücker oder stumpfer Spachtel",
-      "Andrückwalze",
       "Staubsauger",
-      "Übergangs- oder Abschlussprofil für den Türbereich",
       "Sockelleisten"
     ],
     "cta": [
@@ -37,5 +33,5 @@
     "geprueft_von": "",
     "stand": ""
   },
-  "status": "entwurf"
+  "status": "freigegeben"
 }

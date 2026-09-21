@@ -1,47 +1,53 @@
-# Teppichboden-Ratgeber – Pilotartikel (Entwürfe)
+# Teppichboden-Ratgeber – Pilotartikel
 
-**Entwurf – nicht veröffentlichen, bevor alle PRUEFEN-Marken beantwortet und entfernt sind.**
+**Veröffentlichte Fassung = konservativer Schnitt.** Auf Entscheidung des Inhabers vom
+2026-09-21 wurden alle Aussagen entfernt, die das Verlegeteam nicht bestätigt hat. Stehen
+geblieben sind nur die veröffentlichten Hausangaben des Shops (Rollenbreiten, Rechner,
+Hausbeispiele, Muster, Services), allgemein Unstrittiges und Verweise auf Produktseite,
+Herstellerangaben oder Beratung.
 
 Fünf Pilotartikel für den Blog `ratgeber-teppichboden`. Aufbau, Metafelder und
 Redaktionsregeln stehen in `docs/ratgeber/README.md`. Je Artikel gibt es zwei Dateien:
 `<handle>.html` (nur der Artikeltext, ohne H1) und `<handle>.json` (Titel, Tags, SEO,
-Metafelder, Status `entwurf`). `geprueft_von` und `stand` bleiben leer, bis der Inhaber
-sie nach der fachlichen Prüfung füllt.
+Metafelder, Status `freigegeben`). `geprueft_von` und `stand` sind leer: Eine fachliche
+Prüfung durch das Verlegeteam hat nicht stattgefunden. `dauer`, `schwierigkeit` und
+`personen` sind in allen Artikeln leer.
 
 ## Übersicht
 
 | Nr. | Titel | Handle | Art | Themengruppe | Wörter | PRUEFEN |
 |---|---|---|---|---|---|---|
-| 1 | Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe | `teppichboden-richtig-ausmessen` | Planung | Planen & Messen | 1323 | 8 |
-| 2 | Rollenbreite wählen und Bahnen planen: 400 oder 500 cm? | `rollenbreite-und-bahnen-planen` | Planung | Planen & Messen | 1236 | 11 |
-| 3 | Welcher Teppichboden passt zu welchem Raum? | `welcher-teppichboden-fuer-welchen-raum` | Kaufberatung | Auswahl & Kaufberatung | 1137 | 7 |
-| 4 | Teppichboden verlegen: lose, fixiert oder vollflächig verklebt? | `teppichboden-verlegen-lose-fixieren-oder-kleben` | Anleitung | Verlegen | 1198 | 16 |
-| 5 | Teppichboden pflegen und Flecken entfernen: Was wirklich hilft | `teppichboden-pflegen-und-flecken-entfernen` | Pflege | Pflege | 1387 | 29 |
+| 1 | Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe | `teppichboden-richtig-ausmessen` | Planung | Planen & Messen | 1053 | 0 |
+| 2 | Rollenbreite wählen und Bahnen planen: 400 oder 500 cm? | `rollenbreite-und-bahnen-planen` | Planung | Planen & Messen | 900 | 0 |
+| 3 | Welcher Teppichboden passt zu welchem Raum? | `welcher-teppichboden-fuer-welchen-raum` | Kaufberatung | Auswahl & Kaufberatung | 930 | 0 |
+| 4 | Teppichboden verlegen: lose, fixiert oder vollflächig verklebt? | `teppichboden-verlegen-lose-fixieren-oder-kleben` | Anleitung | Verlegen | 955 | 0 |
+| 5 | Teppichboden pflegen und Flecken entfernen: Was wirklich hilft | `teppichboden-pflegen-und-flecken-entfernen` | Pflege | Pflege | 668 | 0 |
 
-Wörter ohne HTML und ohne Kommentare gezählt. PRUEFEN-Marken gesamt: 71.
+Wörter ohne HTML gezählt. PRUEFEN-Marken gesamt: 0.
 
-## So funktioniert die Prüfung
+## Regel für den Ausbau
 
-- Jede Handwerksregel und jede Zahl, die das Verlegeteam bestätigen soll, trägt im HTML
-  direkt hinter dem Satz einen Kommentar `<!-- PRUEFEN: Frage -->`.
-- Antwort „stimmt“: Marke löschen. Antwort „anders“: Satz korrigieren, Marke löschen.
-  Antwort „wissen wir nicht sicher“: Satz streichen.
-- Die `kurzantwort` in der JSON-Datei wiederholt Aussagen aus dem Text. Ändert sich im
-  Text eine Regel (z. B. die Grenze für lose Verlegung), die Kurzantwort mit anpassen.
-- Artikel 4: `dauer`, `schwierigkeit`, `personen` und `material` in der JSON-Datei sind
-  vorsichtige Platzhalter und selbst Prüfpunkte (Fragen 4.1 und 4.2).
-- Artikel 5: `material` in der JSON-Datei ist ebenfalls ein Prüfpunkt (Frage 5.8). Die
-  Flecken-Tabelle nennt bewusst keine Produktnamen und keine Mischungsverhältnisse.
-- Vor dem Veröffentlichen: `grep -c "PRUEFEN" *.html` muss überall 0 ergeben.
+- **Eine Aussage kommt erst zurück in den Artikel, wenn das Verlegeteam sie bestätigt hat.**
+- Bestätigte Aussagen ohne Marke einfügen; die `kurzantwort` in der JSON-Datei mit anpassen,
+  wenn sich dadurch eine Kernaussage ändert.
+- `geprueft_von` und `stand` füllt der Inhaber erst nach einer tatsächlichen fachlichen Prüfung.
+- `grep -c "PRUEFEN" *.html` muss überall 0 ergeben; `scripts/ratgeber-payload.mjs` sperrt
+  jeden Artikel mit Marke oder ohne Status `freigegeben`.
 
-## Bewusste Abweichung
+## Was der Schnitt entfernt hat
 
-Artikel 3 enthält acht interne Links statt der sonst üblichen rund sechs: sechs
-Kollektionslinks (je Machart einer, gebündelt in der Übersichtstabelle) und zwei
-Ratgeber-Artikel. Das war so beauftragt; wenn es zu viel ist, die Kollektionslinks auf
-die vier wichtigsten Macharten kürzen.
+Entscheidungstabelle der Verlegearten, Stärken-/Schwächen-Spalten der Macharten, Regeln zur
+Nahtlage und Überlappung, Zeit-, Maß- und Mengenangaben zum Verlegen, Werkzeugdetails,
+Saugrhythmus und Düsenzuordnung, Flecken-Tabelle samt Hausmitteln, Hinweise zu Dampfreiniger,
+Druckstellen, Flusen und Neugeruch, die nachgerechneten Flächenvergleiche und die
+zusätzlichen Beispielräume. Artikel 3 hat jetzt fünf interne Links (vier Kollektionen in
+der Tabelle, ein Ratgeber-Artikel).
 
-## Alle PRUEFEN-Fragen an das Verlegeteam
+## Offene Fachfragen – für den späteren Ausbau
+
+Die 71 Fragen aus den Entwürfen. Die zugehörigen Aussagen stehen nicht mehr in den
+Artikeln; jede Antwort des Verlegeteams ist ein möglicher Ausbau. Die ursprünglichen
+Entwurfstexte mit den Marken liegen in der Git-Historie dieses Ordners.
 
 ### 1. Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe
 

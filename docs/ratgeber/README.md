@@ -200,7 +200,21 @@ Fehlbestellung bzw. zum Kaufvorbehalt):
 | Abschluss & Leisten | Teppichfußleisten passend auswählen | „Welche Leiste passt farblich und technisch?" | Kollektion Bodenleisten |
 | Planen & Messen | Teppichboden richtig transportieren | „Passt die Rolle ins Treppenhaus?" | `verlegeservice` |
 
-## 9. Livegang-Reihenfolge (noch nicht ausgeführt)
+## 9. Livegang – ausgeführt am 2026-09-21
+
+Inhaberentscheidung: **ungeprüfte Aussagen streichen, dann veröffentlichen.** Alle 71
+offenen Fachaussagen sind aus den fünf Artikeln entfernt oder in Verweise auf
+Hersteller/Beratung umgeschrieben; die Fragen bleiben als Ausbau-Liste in
+`content/ratgeber/teppichboden/README.md`. Angelegt und öffentlich: Blog
+`ratgeber-teppichboden`, Seite `/pages/ratgeber` (Suffix `ratgeber-start`), fünf
+Artikel, Menüpunkt „Ratgeber" unter „Service & Verlegung" (46 bestehende
+Menü-IDs unverändert, eine neue). Gegenprobe am Shop: alle Seiten 200, vier
+Themengruppen, `Article` + `BreadcrumbList` valide, 16 interne Links erreichbar,
+`menu:guard` 0 Fehler, Artikel in `sitemap_blogs_1.xml`.
+Offen: Kartenbild des Bereichs und Text der Firmenbox (Theme-Editor, Inhaber);
+„Über uns" aktualisieren, weil die Firmenbox dorthin verlinkt.
+
+### Reihenfolge, wie sie gefahren wurde (gilt für jeden weiteren Bereich)
 
 1. Theme mit den `ratgeber`-Templates über die normale Kette live
    (PR → `main` → Preview → Live). **Erst danach** Shopify-Objekte anlegen – eine
