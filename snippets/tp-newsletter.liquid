@@ -1,0 +1,142 @@
+{% doc %}
+  Newsletter-Anmeldung (Double-Opt-In). Wiederverwendbarer Baustein fuer
+  Footer, Ratgeber-Artikel, Musterbestellung und aehnliche Platzierungen.
+  Alle Parameter optional - ohne Parameter entsteht eine vollstaendige,
+  neutral formulierte Anmeldung.
+
+  Formmechanik uebernommen von blocks/email-signup.liquid (Shopify-Form
+  'customer', Feldname contact[email], form.posted_successfully? /
+  form.errors). Kein eigenes Styling von dort uebernommen.
+
+  @param {string} [quelle] - Platzierung, z. B. 'footer', 'ratgeber',
+    'muster'. Landet gehandleized in contact[tags] als "quelle-<wert>" und
+    unveraendert in data-tp-newsletter-quelle. Default 'website'.
+  @param {string} [ueberschrift] - Ueberschrift ueber dem Formular.
+  @param {string} [text] - kurzer Einleitungstext unter der Ueberschrift.
+  @param {string} [hinweis] - Einwilligungstext als HTML (richtext-kompatibel,
+    z. B. mit umschliessendem <p>). Erscheint klein unter dem Formular.
+  @param {string} [button] - Beschriftung des Absende-Buttons.
+  @param {boolean} [kompakt] - einzeilige, schmucklose Variante fuer den
+    Footer statt der eigenstaendigen Karte.
+  @param {string} [instanz] - eindeutiger Suffix fuer die Formular-ID, falls
+    zwei Instanzen auf derselben Seite stehen (sonst kollidieren Label- und
+    Formular-IDs). Fallback ist quelle, danach 'website'.
+{% enddoc %}
+
+{%- liquid
+  assign tp_nl_quelle = quelle | default: 'website'
+  assign tp_nl_quelle_handle = tp_nl_quelle | handleize
+  assign tp_nl_instanz = instanz | default: quelle | default: 'website'
+  assign tp_nl_instanz_handle = tp_nl_instanz | handleize | default: 'website'
+  assign tp_nl_form_id = 'TP-Newsletter-' | append: tp_nl_instanz_handle
+  assign tp_nl_ueberschrift = ueberschrift | default: 'Neuigkeiten aus dem Teppich Paradies'
+  assign tp_nl_text = text | default: 'Neue Kollektionen, Ratgeber und Aktionen – gelegentlich per E-Mail.'
+  assign tp_nl_button = button | default: 'Anmelden'
+  assign tp_nl_hinweis_default = '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Sie können sich jederzeit über den Link in jeder E-Mail abmelden. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
+  assign tp_nl_hinweis = hinweis | default: tp_nl_hinweis_default
+  assign tp_nl_tags = 'newsletter, quelle-' | append: tp_nl_quelle_handle
+  assign tp_nl_fehler_id = tp_nl_form_id | append: '-fehler'
+-%}
+
+<div class="tp-nl{% if kompakt %} tp-nl--kompakt{% endif %}">
+  {%- if tp_nl_ueberschrift != blank -%}
+    <p class="tp-nl__heading">{{ tp_nl_ueberschrift | escape }}</p>
+  {%- endif -%}
+
+  {%- if tp_nl_text != blank -%}
+    <p class="tp-nl__text">{{ tp_nl_text | escape }}</p>
+  {%- endif -%}
+
+  {%- comment -%}
+    form ist nur zwischen form/endform bekannt (form.posted_successfully? /
+    form.errors ausserhalb ist immer leer - shopify theme check meldet das
+    zurecht als UndefinedObject). Darum bleibt das form-Tag in jedem der drei
+    Zustaende (Start, Fehler, Erfolg) offen; nur der Inhalt wechselt. Die
+    id: hier landet gleichzeitig als HTML-id auf dem <form> und als form.id
+    zur Unterscheidung mehrerer Instanzen auf einer Seite. Shopify haengt
+    nach dem Redirect deren Wert als Anker an die URL - weil das <form>
+    selbst in allen drei Zustaenden bestehen bleibt (im Erfolgsfall ohne
+    Eingabefelder, nur mit der Statusmeldung), findet der Anker immer ein
+    Ziel und die Meldung ist sichtbar, auch wenn die Felder verschwunden
+    sind.
+  {%- endcomment -%}
+  {%- form 'customer',
+    id: tp_nl_form_id,
+    class: 'tp-nl__form',
+    data-tp-newsletter-form: true,
+    data-tp-newsletter-quelle: tp_nl_quelle
+  -%}
+    {%- liquid
+      comment
+        Ob Shopify form.id bei 'customer'-Formularen fuellt, ist nicht belegt.
+        Leer zaehlt deshalb als Treffer - sonst erschiene die Bestaetigung nie.
+      endcomment
+      assign tp_nl_meine_form = false
+      if form.id == blank or form.id == tp_nl_form_id
+        assign tp_nl_meine_form = true
+      endif
+    -%}
+    {%- if form.posted_successfully? and tp_nl_meine_form -%}
+      <div
+        class="tp-nl__status tp-nl__status--erfolg"
+        role="status"
+        data-tp-newsletter-erfolg
+        data-tp-newsletter-quelle="{{ tp_nl_quelle | escape }}"
+      >
+        Fast geschafft: Bitte bestätigen Sie Ihre Anmeldung über den Link in der E-Mail, die wir Ihnen gerade geschickt haben.
+      </div>
+    {%- else -%}
+      <input
+        type="hidden"
+        name="contact[tags]"
+        value="{{ tp_nl_tags }}"
+      >
+
+      {%- if form.errors and tp_nl_meine_form -%}
+        <div
+          id="{{ tp_nl_fehler_id }}"
+          class="tp-nl__status tp-nl__status--fehler"
+          role="alert"
+        >
+          {{ form.errors | default_errors }}
+        </div>
+      {%- endif -%}
+
+      <div class="tp-nl__row">
+        <label
+          class="visually-hidden"
+          for="{{ tp_nl_form_id }}-email"
+        >
+          E-Mail-Adresse
+        </label>
+        <input
+          id="{{ tp_nl_form_id }}-email"
+          class="tp-nl__input"
+          type="email"
+          name="contact[email]"
+          autocomplete="email"
+          inputmode="email"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          required
+          placeholder="name@beispiel.de"
+          {%- if form.errors and tp_nl_meine_form %}
+            aria-invalid="true"
+            aria-describedby="{{ tp_nl_fehler_id }}"
+          {%- endif %}
+        >
+        <button
+          type="submit"
+          class="tp-nl__button"
+        >
+          {{ tp_nl_button | escape }}
+        </button>
+      </div>
+
+      {%- if tp_nl_hinweis != blank -%}
+        <div class="tp-nl__hinweis">{{ tp_nl_hinweis }}</div>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endform -%}
+</div>

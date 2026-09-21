@@ -1,0 +1,41 @@
+{
+  "handle": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+  "title": "Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Verlegen"
+  ],
+  "excerpt": "Lose, fixiert oder verklebt: Entscheidungshilfe nach Raumgröße, Mietwohnung, Stuhlrollen und Treppe – mit Schritt-für-Schritt-Anleitung zum Fixieren.",
+  "seo": {
+    "title": "Teppichboden verlegen: lose, fixieren oder kleben?",
+    "description": "Welche Verlegeart passt zu Ihrem Raum? Entscheidungshilfe, Untergrundvorbereitung und Schritt-für-Schritt-Anleitung zum Fixieren mit Verlegeband."
+  },
+  "metafields": {
+    "kurzantwort": "Lose verlegen lässt sich Teppichboden nur in kleinen, wenig beanspruchten Räumen. Das Fixieren mit doppelseitigem Verlegeband oder einer Teppichfixierung passt für die meisten Wohnräume und für Mietwohnungen, weil sich der Belag später wieder aufnehmen lässt. Vollflächig verklebt wird dort, wo der Teppichboden dauerhaft stark belastet wird: unter Stuhlrollen, auf Treppen, auf großen Flächen und im Gewerbe.",
+    "art": "Anleitung",
+    "dauer": "etwa ein halber Tag für einen Raum bis 20 m², ohne Untergrundarbeiten",
+    "schwierigkeit": "mittel",
+    "personen": "2",
+    "material": [
+      "Teppichboden mit Zugabe",
+      "doppelseitiges Verlegeband oder Teppichfixierung",
+      "Teppichmesser mit Hakenklingen und Ersatzklingen",
+      "Stahllineal oder Schneidschiene",
+      "Maßband oder Zollstock",
+      "Kantenandrücker oder stumpfer Spachtel",
+      "Andrückwalze",
+      "Staubsauger",
+      "Übergangs- oder Abschlussprofil für den Türbereich",
+      "Sockelleisten"
+    ],
+    "cta": [
+      "zubehoer",
+      "verlegeservice"
+    ],
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "zubehoer-verlegeband",
+    "geprueft_von": "",
+    "stand": ""
+  },
+  "status": "entwurf"
+}
