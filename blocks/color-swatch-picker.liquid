@@ -633,11 +633,11 @@
     Ausloeser mit Farbbild und Name, dahinter Bottom Sheet bzw. Dialog. Das
     Snippet ist reine Oberflaeche und klickt nur die Radio-Felder dieses Blocks
     an - derselbe Codepfad wie ein Klick im Raster (change-Handler oben).
-    Bis 5 Farben bleibt das Raster direkt sichtbar: es ist dann eine Zeile hoch
-    und spart dem Kunden das Oeffnen. Ohne JS oder bei darstellung = "raster"
-    bleibt das Raster ebenfalls sichtbar.
+    Ab 2 Farben (Vorgabe Inhaber 2026-09-21): ueberall dieselbe Bedienung. Bei
+    nur einer Farbe gibt es nichts zu waehlen. Ohne JS oder bei
+    darstellung = "raster" bleibt das Raster sichtbar.
   {%- endcomment -%}
-  {%- if block.settings.darstellung == 'dropdown' and color_option.values.size > 5 -%}
+  {%- if block.settings.darstellung == 'dropdown' and color_option.values.size > 1 -%}
     {%- liquid
       assign tp_cs_muster_url = ''
       unless product.tags contains 'zubehoer'

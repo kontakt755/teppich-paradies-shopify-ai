@@ -84,7 +84,15 @@
     }
 
     radios() {
-      return this.host ? Array.from(this.host.querySelectorAll('input[type="radio"]')) : [];
+      // Nur Radio-Felder, deren Wert eine der Farben ist: im Horizon-Waehler
+      // stehen daneben die Felder anderer Optionen (Laenge, Breite).
+      if (!this.host) return [];
+      if (!this.werte) {
+        this.werte = Array.from(this.querySelectorAll('[data-tp-fa-option]')).map((o) => o.dataset.wert);
+      }
+      return Array.from(this.host.querySelectorAll('input[type="radio"]')).filter(
+        (r) => this.werte.indexOf(r.value) !== -1
+      );
     }
 
     aktuellerWert() {
