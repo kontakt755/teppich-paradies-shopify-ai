@@ -217,6 +217,13 @@
 
   /* hidden-Attribut-Falle: eigene Klassen mit display gewinnen sonst gegen
      das UA-hidden. Deshalb hier explizit und mit !important im Block-Scope. */
+  /* Dropdown-Modus: nur das Dropdown zeigen - Suche, Familienfilter und Zaehler
+     des Rasters weg. Greift erst, wenn das Skript das Dropdown gebaut
+     hat, damit ohne JS das Raster samt Werkzeugen benutzbar bleibt. */
+  .color-swatch-picker-{{ color_picker_id }}[data-dropdown-bereit='1'] [data-farb-werkzeuge] {
+    display: none !important;
+  }
+
   .color-swatch-picker-{{ color_picker_id }} [hidden] {
     display: none !important;
   }
@@ -1173,7 +1180,7 @@
         { "value": "raster", "label": "Raster" },
         { "value": "dropdown", "label": "Dropdown" }
       ],
-      "default": "raster"
+      "default": "dropdown"
     }
   ],
   "presets": [
