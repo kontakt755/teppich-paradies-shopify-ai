@@ -27,6 +27,6 @@ S07 verwendet synthetische Preise/IDs und modellierte PVC-Metafeldzuordnung, his
 CART-002a: assets/tp-cart-gruppen.js, snippets/tp-cart-gruppe.liquid, assets/tp-zuschnitt-abgleich.js und bestehende qa/tests/cart-gruppen.test.mjs, cart-mengensperre.test.mjs, cart-waisen.test.mjs, zuschnitt-abgleich.test.mjs lesen und sequenziell prüfen. Danach Lücken bei Änderung/Entfernen/gruppierten Positionen bis zum Originalrequest gezielt testen. Echte Drawer-/Cart-Wiederöffnung und Checkout getrennt offen halten. PR-001–023b.2 ohne Quelländerung nicht wiederholen. Keine produktiven Reparaturen, nur Auditdateien ändern und abgeschlossene Schritte tatsächlich committen.
 
 ## Letzter erfolgreicher Git-Commit
-6b92861 – audit: S06 Abschlusspruefungen und Git-Sicherung dokumentieren. Regulär per git add/commit erfolgreich. S07-Abschlusscommit folgt nach den dokumentierten Integritäts-/Secretprüfungen; tatsächlichen neuesten Commit mit git log prüfen. Kein Pull/Merge/Push.
+4b8e49d – audit: PR-023b.2 abschliessen und PVC-Breitenfehler TP-009 belegen. Am 21.09. regulär per git add/commit erfolgreich: 15 Audit-/Progressdateien, alle S07-Belege gesichert. Diese nachgetragene Commitreferenz wird separat dokumentiert; neueste Dokumentationscommits zeigt git log. Kein Pull/Merge/Push.
 
 Status: WORKING

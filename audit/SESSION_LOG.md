@@ -207,3 +207,5 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **Status:** WORKING, grob 24 % Abdeckung, Phase 1. Gesamtauftrag und FINAL_REPORT.md weiterhin offen.
 
 **S07-Abschlusskontrolle:** Erster Integritätslauf stoppte an einer währenddessen extern geänderten docs/ai-dashboard/issues.json. Direkt danach zeigte git status/git diff diese Datei wieder unverändert bei gleichem HEAD 6b92861. Datei nicht angefasst oder gestaged; kein Produkt-/Diagnosetestfehler. Abschließender Integritätslauf prüft erneut den tatsächlichen Diff; CONTINUE_PROMPT.md bleibt die bekannte externe Änderung. Secret-Scan PASS ohne Befunde.
+
+**S07 tatsächlich committed:** `4b8e49d` – audit: PR-023b.2 abschliessen und PVC-Breitenfehler TP-009 belegen. Normaler git add/commit erfolgreich, 15 Audit-/Progressdateien. Commitreferenz anschließend in Master/Progress nachgetragen; keine Produktdiagnose erneut ausgeführt. Nächster Schritt unverändert CART-002a, Status WORKING.
