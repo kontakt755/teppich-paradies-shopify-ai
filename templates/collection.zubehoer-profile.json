@@ -300,10 +300,6 @@
             "tp_card_actions": {
               "type": "tp-card-actions",
               "settings": {}
-            },
-            "tp_card_dimensions": {
-              "type": "tp-card-dimensions",
-              "settings": {}
             }
           },
           "block_order": [
@@ -312,8 +308,7 @@
             "price_EzJzMm",
             "tp_card_color_thumbs",
             "tp_card_specs",
-            "tp_card_actions",
-            "tp_card_dimensions"
+            "tp_card_actions"
           ]
         }
       },
