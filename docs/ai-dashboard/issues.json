@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T11:32:16.157Z",
+  "generated_at": "2026-09-21T11:39:23.160Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 119,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T11:32:16.157Z",
+    "fetchedAt": "2026-09-21T11:39:23.160Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,17 +66,17 @@
     {
       "number": 442,
       "title": "Altdatei tp-google-rating: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/442",
       "labels": [
-        "status:geplant",
+        "status:in-arbeit",
         "type:technik",
         "priority:p2",
         "area:technik"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Nach dem naechsten Livegang wird 204438208846 unveroeffentlicht und danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft:",
       "fields": {
         "description": "## Stand 2026-09-21 11:32Z\n`blocks/tp-google-rating.liquid` ist aus `main` entfernt (#440, #170) und aus dem unveroeffentlichten Preview-Theme 204436144462 geloescht (gezielter `--only`-Push, Gegenprobe per Admin API: nur diese Datei fehlt, `tp-bewertungsbeleg.liquid` und `price.liquid` unveraendert).\n\n**Die Datei liegt noch auf dem heutigen Live-Theme 204438208846.** Dort stoert sie nicht (rendert nichts, in keinem Template), und das Live-Theme wird nie direkt angefasst.",
@@ -97,8 +97,8 @@
         }
       },
       "created_at": "2026-09-21T11:32:01Z",
-      "updated_at": "2026-09-21T11:32:01Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T11:39:10Z",
+      "closed_at": "2026-09-21T11:39:09Z"
     },
     {
       "number": 435,
@@ -152,13 +152,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 8,
+      "comments": 9,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:33:49Z",
-      "updated_at": "2026-09-21T11:25:49Z",
+      "updated_at": "2026-09-21T11:35:17Z",
       "closed_at": null
     },
     {
