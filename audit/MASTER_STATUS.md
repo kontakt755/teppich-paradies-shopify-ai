@@ -52,3 +52,5 @@ Git-Sicherung: `.git` am 21.09. regulär beschreibbar; `git add`/`git commit` f�
 S09 nach bestandener Integritäts-/Secretprüfung tatsächlich in `53ad666` committed (14 Audit-/Progressdateien). Externe CONTINUE_PROMPT.md und Dashboardänderung weiterhin nicht Teil des Audit-Commits.
 
 S10: insgesamt zwölf bestätigte Issues, P0=0/P1=0/P2=6/P3=6/P4=0. Auditabdeckung weiterhin grob 28 %, Phase 1.
+
+S10 gesichert in `3a17b5f`: fünf Diagnosefälle, Syntax-/Integritäts-/Secretcheck PASS. Initiale Integritätsassertion erwartete versehentlich zehn statt neun vorgeschriebener Fortschrittsabschnitte; korrigiert und erfolgreich geprüft. Nächster Schritt CART-002b.2b. Externe Prompt-/Dashboardänderungen nicht committed.

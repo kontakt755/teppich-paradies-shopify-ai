@@ -44,6 +44,6 @@ CART-002b.2b: direkte Antworten in component-cart-items.js, Zeilenidentität bei
 
 ## Letzter erfolgreicher Git-Commit
 
-53ad666 – audit: CART-002b.1 pruefen und verlorene Mengenereignisse TP-011 belegen. Tatsächlich per git add/commit gesichert: 14 Audit-/Progressdateien. Diese Referenz wird separat nachgetragen; neueste Dokumentationscommits zeigt git log. Branch audit/shop-audit. Kein Pull/Merge/Push.
+3a17b5f – audit: Section-Retry-Ausfall TP-012 sequenziell belegen. 14 Audit-/Progressdateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit; kein Merge/Push.
 
 Status: WORKING
