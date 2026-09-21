@@ -16,7 +16,7 @@ blockiert den Shop. Erledigtes hier streichen, nicht loeschen.
 | 8 | Rabatthoehe je Marketingkanal, Willkommensvorteil ja/nein, Anreiz in Stufe 2 (Warenkorb, Muster) ja/nein, Newsletter-Rhythmus | Geschaeftsentscheidungen; Technik und Vorlage sind fertig | #422, `docs/kundenbindung/marketingcodes-und-aktionen.md` |
 | 9 | ~~Alter Gratisversand-Code ohne Ablauf und ohne Nutzungsgrenze, leicht zu erraten, mit allem kombinierbar: abschalten?~~ **Erledigt 2026-09-21** auf Wort des Inhabers: per `discountCodeDeactivate` abgeschaltet (Status EXPIRED, umkehrbar, nicht geloescht). Gegenprobe im echten Warenkorb: Code wird abgelehnt (`applicable: false`, Rabatt 0). | - | #422 |
 | 10 | GA4-Property anlegen und Mess-ID nennen | Ohne Ziel landen die neuen Funnel-Ereignisse nur in den Shopify-Kundenereignissen | #52, `docs/kundenbindung/funnel-events.md` |
-| 11 | Pilotartikel des Ratgebers fachlich pruefen (alle PRUEFEN-Marken beantworten), Texte fuer Firmenbox und Newsletter-Nutzen freigeben | Fachaussagen und sichtbare Versprechen erfinde ich nicht | #422, `content/ratgeber/teppichboden/README.md` |
+| 11 | ~~Pilotartikel des Ratgebers fachlich pruefen~~ **Entschieden 2026-09-21:** Ungeprueftes gestrichen, Ratgeber veroeffentlicht. Weiter offen: die 71 Fachfragen fuer den spaeteren Ausbau (Fragebogen-PDF liegt dem Inhaber vor), Kartenbild und Firmenbox-Text im Theme-Editor | Fachaussagen und sichtbare Versprechen erfinde ich nicht | #422, `content/ratgeber/teppichboden/README.md` |
 
 ## Termine
 - **2026-10-18** endet Rabattaktion Welle 1. Anzeige und Hinweis stellen sich selbst zurueck, die PREISE nicht. Geplante Aufgabe `rabattaktion-welle1-beenden` (19.10., 8:00, nur bei geoeffneter App) und Issue #413.
