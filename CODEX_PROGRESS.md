@@ -2,48 +2,38 @@
 
 ## Gesamtziel
 
-Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Briefs und Fix-Packs. Phase 1/2 ohne produktive Reparaturen. Sequenziell, keine Subagenten. COMPLETE erst nach gesamter getesteter Aufgabe und vollständigem audit/FINAL_REPORT.md.
+Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Briefs und Fix-Packs. Phase 1/2 ohne Reparaturen. Sequenziell, keine Agenten. COMPLETE erst nach gesamtem getesteten Auftrag und FINAL_REPORT.
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S10 / CART-002b.2a lokal abgeschlossen. Grobe Auditabdeckung 28 %. Nächster Teil CART-002b.2b: Antwortreihenfolge, Zeilenidentität, Section-/Drawer-Lifecycle. Keine Shopreparatur.
+Phase 1, S11 / CART-002b.2b lokal abgeschlossen; grobe Auditabdeckung 28 %. Als Nächstes CART-002b.2c Drawer/Dialog.
 
 ## Erledigte Aufgaben
 
-S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
-
-S01–S07 Preis-/Rechner-/Produktverträge mit TP-001–009; S08 Gruppen/Mengensperren/Entfernen/Zuschnittabgleich mit TP-010. S09 zwölf Original-Mengenereignis-/Debouncefälle, elf Requests abgefangen, fünf Hashvergleiche. TP-011 mit vollständigem Implementation Brief. Keine fertigen Diagnosen erneut ausgeführt.
+S01–S10 wie in SESSION_LOG dokumentiert. S11 / CART-002b.2b lokal abgeschlossen: acht Originalcode-Antwortfälle, vier historische SHA-256-Vergleiche, Syntax und Erstlauf PASS. Direkte Erfolgsantworten auf Cartseite/Drawer verwenden full/hydration korrekt; stabiler Fehlerindex setzt Eingabe zurück und zeigt Feedback. Bei zwei programmatisch gestarteten Mutationen entsperrt schon die erste Antwort; verspätete ältere Antwort kann jüngere überschreiben. Ein durch Original-DiscountEvent gestarteter Section-Request kann nach neuer direkter Cartantwort noch morphieren. Bei manuell verschobenen Refs landet Fehlerfeedback am früheren Index und damit anderer Zeile. Diese Überschneidungen sind H-013, keine zusätzlich bestätigten Shopissues: Pointer-/Debounce-Erreichbarkeit, Server-Snapshotreihenfolge, echte MutationObserver-/Morphabläufe fehlen. Keine Shopänderung, keine S01–S10-Replays.
 
 ## Offene Aufgaben
 
-CART-002b.2 Antwort-/Zeilenidentitäts-/Section-/Drawerabläufe, echte Wiederöffnung/Reload/Checkout. Danach weitere Rechner-/Varianten-/Runtime-, Mobile-, Navigation/Suche-, SEO-, Performance-, UX-, Cross-Feature- und Regressionstests. H-005–012 halten Live-/Daten-/Browsergrenzen offen. Fix-/QA-Phasen und FINAL_REPORT ausstehend.
+CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen. Danach restlicher Rechner-/Varianten-/Runtime-, Mobile-, Navigation/Suche-, SEO-, Performance-, UX- und Cross-Feature-Audit. Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-S10: Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-architektur/-index, Evidence-README, neues Section-Diagnosescript, JSON/Summary und Integritäts-/Secretprotokolle. CODEX_PROGRESS aktualisiert.
-
-S09: CODEX_PROGRESS.md; audit/MASTER_STATUS.md, SESSION_LOG.md, ISSUES.md, TEST_MATRIX.md, DEPENDENCY_MAP.md, FIX_PACK_INDEX.md, ARCHITECTURE.md, evidence/README.md. Neu: audit/scripts/reproduce-cart-events.mjs, evidence/cart-events-2026-09-21.json, cart-events-summary-2026-09-21.md und S09-Integritäts-/Secretprotokolle. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json erhalten, nicht stagen. Shopquellen/TASK.md/alte Evidence unverändert.
+S11: CODEX_PROGRESS.md, Auditstatus/-log/-issues/-matrix/-architektur/-abhängigkeiten/-index und Evidence-README; neues reproduce-cart-responses.mjs, JSON/Summary sowie Integritäts-/Secretprotokolle. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json nicht stagen. Shopquellen unverändert.
 
 ## Ausgefuehrte Tests
 
-S10 Syntax und Erstlauf: fünf Fälle PASS, zwei TP-012-Defektfälle, ein Hashvergleich. Keine älteren Replays. Route TASK-72075157B1A8 B/STATIC.
-
-S09 Syntax und erster Diagnoselauf PASS: zwölf Fälle, elf Requests, fünf TP-011-Defektfälle, fünf historische Quellhashvergleiche. Vollständige Originalklassen/Eventtypen und originale Utilityfunktionen. JSON-/Dokument-/Quellenintegrität, git diff --check und Secret-Scan in S09-Protokollen. Keine S01–S08-Replays, insbesondere 47 S08-Tests nicht erneut ausgeführt. Route TASK-401D094F14CB B/STATIC, kein Executor/geschützter Write. PASS ist erfolgreiche Diagnose, kein reparierter Fehler.
+S11 Syntaxcheck und erster Diagnoselauf PASS: acht Antwortfälle, vier historische Hashvergleiche. Keine bisherigen Tests wiederholt. Route TASK-6FFC7626F671 B/STATIC, kein Executor. Abschluss: JSON-/Dokument-/Quellintegrität, git diff --check und Secret-Scan; Protokolle in audit/evidence.
 
 ## Bekannte Fehler
 
-TP-012/P2: fehlgeschlagener Sectionrequest bleibt gespeichert und verhindert Retry derselben URL. Lokal bestätigt, Live-Reichweite offen.
-
-TP-001/P2 Teilzahlübernahme; TP-002/P3 unsichere Paketmengen; TP-003/P2 leere Fußleiste entfällt; TP-004/P3 Halbwert-Rundung; TP-005/P3 Serviceausfall ohne Sperre; TP-006/P3 Dezimalmaßproperties; TP-007/P3 Doppelsubmit; TP-008/P3 Cartflächenpräzision; TP-009/P2 PVC-Fallbackbreite; TP-010/P2 fehlende Rücknahme gescheiterter Cartlöschung; TP-011/P2 gemeinsamer Timer verwirft andere Mengenänderungen vor Request. P0=0/P1=0/P2=6/P3=6/P4=0. TP-004–011 lokal, heutige Live-Reichweite offen.
-
-S09 native Node-Events mit modellierter DOM-Abstammung/Bubbling und virtuellen Timern. Responses ausstehend; keine echte Browser-/Server-/Drawerabnahme. .git schreibbar, frühere Sperrnotizen historisch.
+Zwölf bestätigte Issues TP-001–012, P0=0/P1=0/P2=6/P3=6/P4=0; unverändert offen. H-013 beschreibt bedingte Antwort-/Identitätsrisiken, keine bestätigte Browserstörung. Keine aktuelle Live-Verifikation. Originalklassen mit kontrollierten Responses und adaptiertem DOM/Refs/Morph; reale UI-/Serverreihenfolge fehlt. .git schreibbar.
 
 ## Naechster konkreter Arbeitsschritt
 
-CART-002b.2b: direkte Antworten in component-cart-items.js, Zeilenidentität bei Fehler/Morph und Konkurrenz mit SectionRenderer prüfen. Danach cart-drawer.js/dialog.js Lifecycle. SectionRenderer b.2a abgeschlossen, ohne Quelländerung nicht erneut ausführen. Browser/Live-Abnahme H-012 offen.
+CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen.
 
 ## Letzter erfolgreicher Git-Commit
 
-3a17b5f – audit: Section-Retry-Ausfall TP-012 sequenziell belegen. 14 Audit-/Progressdateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit; kein Merge/Push.
+36d2907 – S10-Sicherung; S11 wird nach Abschlusschecks tatsächlich committed und Referenz danach nachgetragen. Branch audit/shop-audit. Kein Merge/Push.
 
 Status: WORKING

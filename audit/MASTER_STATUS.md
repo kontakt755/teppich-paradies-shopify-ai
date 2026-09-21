@@ -25,7 +25,7 @@ Abgeschlossen:
 - [x] CART-002b.1 lokal abgeschlossen: zwölf Originalereignis-/Debouncefälle, elf Requests, fünf Quellhashvergleiche. TP-011/P2: verschiedene Mengenänderungen verdrängen sich im gemeinsamen Timer.
 
 In Arbeit:
-- [~] Warenkorb: nächster Teil CART-002b.2 (Antwortreihenfolge, Zeilenidentität, Sections/Drawer). Nur dieser Bereich wird als Nächstes bearbeitet.
+- [~] Warenkorb: nächster Teil CART-002b.2c (Drawer-/Dialog-Lifecycle). Nur dieser Bereich wird als Nächstes bearbeitet.
 
 Noch offen:
 - [ ] Preisbereich lokal bis PR-023b.2 abgeschlossen; offene Live-Reichweite/-Produktfreigaben H-005–011 und echte Browserabläufe klären.
@@ -38,9 +38,9 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 6 · P3: 6 · P4: 0. Davon TP-004–007 ausschließlich lokal bestätigte bedingte Codefehler; TP-006/007 historisch ruhender Pfad, aktuelle Live-Betroffenheit nicht belegt. TP-008 lokal bestätigter Cart-Anzeigeverlust, keine falsche Menge/Geldabrechnung. TP-009 lokal bedingter Rollenbreiten-/Mengenfehler, heutige PVC-Konfiguration offen. TP-010 lokal bestätigte fehlende Wiederherstellung nach abgelehnter Cartlöschung, Browser-/Live-Reichweite H-012. TP-011 lokal verlorene Mengenereignisse, reale Browserreichweite ebenfalls H-012.
 
 Aktuell untersuchter Bereich: Warenkorb, Phase 1.
-Letzte abgeschlossene Aufgabe: CART-002b.2a. S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
-Nächste Aufgabe: **CART-002b.2b** direkte Cartantworten/Zeilenidentität, anschließend Drawer/Dialog.
-Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-012. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
+Letzte abgeschlossene Aufgabe: CART-002b.2b. S11 / CART-002b.2b lokal abgeschlossen: acht Originalcode-Antwortfälle, vier historische SHA-256-Vergleiche, Syntax und Erstlauf PASS. Direkte Erfolgsantworten auf Cartseite/Drawer verwenden full/hydration korrekt; stabiler Fehlerindex setzt Eingabe zurück und zeigt Feedback. Bei zwei programmatisch gestarteten Mutationen entsperrt schon die erste Antwort; verspätete ältere Antwort kann jüngere überschreiben. Ein durch Original-DiscountEvent gestarteter Section-Request kann nach neuer direkter Cartantwort noch morphieren. Bei manuell verschobenen Refs landet Fehlerfeedback am früheren Index und damit anderer Zeile. Diese Überschneidungen sind H-013, keine zusätzlich bestätigten Shopissues: Pointer-/Debounce-Erreichbarkeit, Server-Snapshotreihenfolge, echte MutationObserver-/Morphabläufe fehlen. Keine Shopänderung, keine S01–S10-Replays.
+Nächste Aufgabe: **CART-002b.2c**. CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen.
+Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-013. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
 Fix-Packs Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0
 
 Live-Testgrenze: Browser-/DNS-Zugriff war in S01 blockiert; S02–S09 ausschließlich lokale Schritte, keine erneuten Infrastrukturversuche. Live-Theme seit dem 19.09. nicht neu verifiziert; maßgebliche Registry: `domains/shopify/live-theme.json`. Kein aktueller Live-Beleg für cmExact im Rollenrechner, einen ausgefallenen Kettelservice, aktuelle Form-/Unterlagenfreigaben oder die eingesetzte Mail-Vorlage. Lokale Reproduktion ersetzt keine neue Live-Freigabe. Details in SESSION_LOG.md und evidence/README.md.
@@ -54,3 +54,5 @@ S09 nach bestandener Integritäts-/Secretprüfung tatsächlich in `53ad666` comm
 S10: insgesamt zwölf bestätigte Issues, P0=0/P1=0/P2=6/P3=6/P4=0. Auditabdeckung weiterhin grob 28 %, Phase 1.
 
 S10 gesichert in `3a17b5f`: fünf Diagnosefälle, Syntax-/Integritäts-/Secretcheck PASS. Initiale Integritätsassertion erwartete versehentlich zehn statt neun vorgeschriebener Fortschrittsabschnitte; korrigiert und erfolgreich geprüft. Nächster Schritt CART-002b.2b. Externe Prompt-/Dashboardänderungen nicht committed.
+
+S11: Phase 1, grobe Abdeckung 28 %, zwölf bestätigte Issues unverändert. H-013 offen, kein zusätzlicher bestätigter Fehler aus synthetischer Konkurrenz.

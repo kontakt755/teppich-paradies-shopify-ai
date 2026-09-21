@@ -99,3 +99,8 @@ Originale Liquid-Snippets/JS-Klassen und Zuschnittqueue; minimale DOM/Refs/Morph
 S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
 
 Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-section-responses.mjs`. Route TASK-72075157B1A8, B/STATIC, kein Executor gestartet. Renderer ist gemeinsamer Abhängigkeitspunkt: TP-012 separat planen, Cart-Aufruferkonflikte mit TP-010/011 beachten.
+
+
+## S11
+
+`cart-responses-2026-09-21.json` und `cart-responses-summary-2026-09-21.md`: acht Originalantwortfälle/vier Quellhashes. Script `audit/scripts/reproduce-cart-responses.mjs`. Integritäts-/Secretprotokolle mit S11-Präfix. PASS bedeutet Diagnose bestanden, keine Reparatur oder Browserabnahme.
