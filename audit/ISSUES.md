@@ -16,6 +16,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-010 | P2 | Fehlgeschlagene Cartlöschung lässt Positionen unsichtbar | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 | TP-011 | P2 | Gemeinsames Cart-Debounce verwirft andere Mengenänderungen | BESTÄTIGT lokal; Browserreichweite offen | Offen |
 
+| TP-012 | P2 | SectionRenderer behält fehlgeschlagene Requests und verhindert Retry | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
+
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
 - **Bereich:** Preis-/Mengenberechnung, Eingabevalidierung.
@@ -327,6 +329,26 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - **Testfälle:** Reihenfolge beider Zeilen drehen, Plus/Blur, ein/mehrere Carts, fremder Produktselektor, Grenzabstand 299/301 ms; anschließend Antwortreihenfolge, Error/Retry, Entfernen während Wartezeit und Disconnect. DOM-/CSS-Erreichbarkeit separat im Browser prüfen.
 - **Regressionstests:** TP-010 Fehlerwiederherstellung, ursprüngliche Gruppen-/Mengensperren, Stück-/Paketmengen, Drawer/Cartseite, langsame Verbindung und Fokus. Diagnoseassertions vor Fix-QA auf Erhalt aller gültigen Werte umstellen.
 - **Rollback-Risiko / Aufwand / Reihenfolge:** M, Shared-Cart-Zustand. Erst CART-002b.2, dann kleine geplante Reparatur mit Tests/Review; Phase 1/2 weiterhin ausschließlich Audit.
+
+## TP-012 – Fehlgeschlagener Section-Request verhindert weitere Aktualisierung derselben URL
+
+- **Bereich / Priorität:** Cart-Section-Aktualisierung, P2; BESTÄTIGT lokal. Cartseite/Drawer betroffen, sofern sie den SectionRenderer-Fallback verwenden. Heutiger Live-Stand und Geräte-/Browserreichweite nicht geprüft.
+- **Reproduktion:** `node audit/scripts/reproduce-section-responses.mjs`. Originalen renderSection('cart', {cache:false}) aufrufen, Fetch oder response.text ablehnen; dreimal dieselbe Section-URL erneut abrufen, mit cache=false/true/false.
+- **Erwartet / tatsächlich:** ein späterer Aufruf darf einen neuen Request starten. Tatsächlich bleibt es bei einem Request und derselben Ablehnung; kein Morph. Eine andere Section-URL funktioniert weiterhin. Zwei unabhängige Fehlerfälle belegen dies.
+- **Root Cause:** assets/section-renderer.js, getSectionHTML: pendingPromises wird vor dem await gesetzt und nur nach erfolgreichem await gelöscht. Der frühe Pending-Lookup liegt vor der Cacheprüfung; cache:false umgeht den Fehler nicht. Lebensdauer: dieselbe Rendererinstanz und URL, bis zum Neuladen/Instanzwechsel. Kein Nachweis eines serverseitigen Cartverlusts.
+- **Aufrufer:** assets/component-cart-items.js #handleCartUpdate nutzt renderSection mit cache:false bei DiscountUpdateEvent und fehlender Section im CartEvent. Direkte mitgelieferte Section-Morphs bleiben ein anderer Pfad; keine Behauptung, sämtliche Cartaktionen seien blockiert.
+- **Evidence:** evidence/section-responses-2026-09-21.json; fünf Fälle, davon zwei Defektfälle; Originalmodul vollständig ausgeführt, SHA-256 identisch zum historischen Snapshot. Fetch/Parser/DOM/Morph adaptiert. Keine Netzwerkanfrage, kein echter Browser, keine produktive Änderung.
+
+### IMPLEMENTATION BRIEF – TP-012
+
+- **Issue-ID / Ziel:** TP-012 / P2. Nach transientem Sectionfehler kann eine spätere Aktualisierung derselben URL neu laden.
+- **Dateien / Funktionen:** assets/section-renderer.js getSectionHTML/renderSection; Cart-Aufrufer in component-cart-items.js für Integration und Fehleranzeige prüfen.
+- **Zu ändernde Logik:** Pending-Eintrag auch bei Ablehnung zuverlässig bereinigen, etwa im finally; dabei nur den zur erledigten Anfrage gehörenden Eintrag entfernen. Erfolgreiches Caching und Deduplizierung laufender Requests erhalten. Fehler weiter korrekt an Aufrufer melden; dort Catch/Feedback und Abbruchzustand separat prüfen.
+- **Nicht verändern:** Preise, Mengen, Gruppen, Checkout-Sperren, Eventnamen, Cache-Schlüsselvertrag und Hydration-Vertrag; keine pauschalen automatischen Requestschleifen.
+- **Abhängigkeiten / FILE CONFLICT:** geteilter SectionRenderer auch außerhalb Cart; direkte Cartantworten umgehen seine Abbruchkontrolle. CART-002b.2b und H-012 vor Packfreigabe. TP-010/011 bei Cart-Aufruferänderungen koordinieren, nicht unkontrolliert zusammen reparieren.
+- **Akzeptanz:** Fetch- und Body-Ablehnung, anschließend expliziter Retry jeweils mit neuem Request und erfolgreichem Morph. Gleichzeitige identische Requests weiterhin dedupliziert; alte Antwort darf neuere Sectionanforderung nicht überschreiben. Andere URLs bleiben unabhängig.
+- **Tests / Regression:** die fünf lokalen Szenarien auf Sollverhalten umstellen; Fehler→Retry→Erfolg, erneuter Fehler, Cache an/aus, unterschiedliche URLs und beide Antwortreihenfolgen. Anschließend echte Cartseite/Drawer/Discount-Ereignisse und weitere Renderer-Aufrufer risikobasiert testen.
+- **Seiteneffekte / Rollback / Aufwand:** S–M; versehentlich gelöschte neuere Pending-Arbeit, doppelte Requests oder veraltete Morphs vermeiden. Kleine lokale Reparatur später separat rücknehmbar; keine Datenmigration. Phase 1/2 weiter ohne Reparatur.
 
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 

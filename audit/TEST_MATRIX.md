@@ -95,3 +95,10 @@ Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 ## Wiederholungsregeln
 
 Abgeschlossene PR-001–011 und lokale PR-020–023a sowie PR-023b.1/b.2 und CART-002a/b.1 nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.
+
+
+## S10 / CART-002b.2a
+
+S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
+
+Syntaxcheck und erster Diagnoselauf PASS. Fünf Fälle: Fetchfehler mit drei Retries, Bodyfehler mit drei Retries, Deduplizierung/Cache/Refresh, neue Antwort zuerst, alte Antwort zuerst. Keine vorhandene SectionRenderer-Testsuite in git ls-files gefunden. Ältere Tests nicht erneut ausgeführt.

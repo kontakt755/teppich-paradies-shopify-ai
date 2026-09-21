@@ -249,3 +249,10 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **Status:** WORKING, grob 28 %, Phase 1, FINAL_REPORT/Gesamtauftrag offen.
 
 **S09 tatsächlich committed:** `53ad666`, 14 Audit-/Progressdateien, Branch audit/shop-audit. Integrität, Secret-Scan und git diff --check bestanden. Commitreferenz anschließend nachgetragen; keine Produktdiagnose erneut ausgeführt. Externe CONTINUE_PROMPT.md/Dashboarddatei bleiben außerhalb. Status WORKING, nächster Schritt CART-002b.2.
+
+
+## S10 – Section-Antworten und Fehler-Retry
+
+S10 / CART-002b.2a lokal abgeschlossen: fünf Original-SectionRenderer-Fälle, zwei Defektfälle TP-012/P2, ein historischer Hashvergleich. Nach Fetch-/Bodyfehler starten drei Retries derselben URL keinen neuen Request. Andere Section funktioniert. Erfolgs-Deduplizierung, Cache/Forced Refresh und Schutz gegen alte Antworten bei beiden Antwortreihenfolgen bestanden. DOM/Parser/Morph adaptiert; kein Browser-/Livebeleg, keine Shopreparatur. Nächster Schritt CART-002b.2b: direkte Cartantworten, Zeilenidentität und Zusammenspiel mit SectionRenderer, danach Drawer/Dialog-Lifecycle. Keine bisherigen Diagnosen ohne Quelländerung wiederholen.
+
+Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scripts/reproduce-section-responses.mjs`. Route TASK-72075157B1A8, B/STATIC, kein Executor gestartet. Renderer ist gemeinsamer Abhängigkeitspunkt: TP-012 separat planen, Cart-Aufruferkonflikte mit TP-010/011 beachten.

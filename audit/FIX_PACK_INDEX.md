@@ -32,3 +32,6 @@ S07: TP-009/P2 mit vollständigem Implementation Brief. Bestehenden vorgemerkten
 S08: TP-010 mit vollständigem Implementation Brief. Eigenen möglichen Fehlerwiederherstellungsblock vorgemerkt, NOT READY bis CART-002b/H-012; keine Packdatei vorschnell erstellt. Kein bestehendes Pack ausgeführt, keine Freigabe/Shopreparatur. 43 lokale Cartfälle und 47 bestehende Tests als spätere gezielte Regression dokumentiert. Ready=1, Done/QA=0.
 
 S09: TP-011 mit vollständigem Implementation Brief. Mit TP-010 an derselben Cartklasse koordinieren; vorgemerkter Cartblock weiterhin NOT READY bis CART-002b.2/H-012. Zwölf Ereignisdiagnosen ergänzen die Evidence, keine Packumsetzung/Shopänderung. Ready=1, Done/QA=0.
+
+
+S10: TP-012/P2 mit vollständigem Implementation Brief. SectionRenderer-Retry als separater Kandidat NOT READY bis CART-002b.2b/H-012 und Prüfung weiterer Aufrufer. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.
