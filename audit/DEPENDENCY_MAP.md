@@ -67,3 +67,9 @@ PVC: Metafeldrollenbreite der ersten Variante → globaler fallback_width_cm →
 `_Zuschnitt` + `_Gruppe` → `tp-zuschnitt-abgleich.js` → serialisierte GET/Attribute-POST/Gegenprobe → cart:update → Liquid-Sperre neu rendern. Nur Zuschnittattribute ändern; sonstige Attribute erhalten. Zehn lokale Abläufe einschließlich Fehler/Retry/Queue bestanden. Direkte API-/Expresspfade nicht als serverseitig validiert ausgeben.
 
 **FILE CONFLICT:** TP-010 und kommende Ereignis-/Sectionfixes teilen die Cartklasse; TP-008 teilt angrenzendes Cartmarkup, nicht denselben Formatierungscode. Keine gemeinsame Großreparatur; CART-002b zuerst abschließen, kleine getrennte Schritte mit gezielter Regression. Alle Cartkern-Dateien HIGH RISK, Phase 1 nur Diagnose.
+
+## Ergänzung S09 / CART-002b.1
+
+Original-QuantitySelector → QuantitySelectorUpdateEvent (bubbling, auch Produktseite) → document-Listener jeder Cartklasse → ein gemeinsamer 300-ms-Timer → erst danach contains/Zeile prüfen → change-Request. TP-011 verliert dadurch frühere andere Zeilen oder eigene Events nach fremdem Ereignis. Utility debounce korrekt für ein Ziel; die Cart-Einbindung braucht zielbezogene Planung und frühe Filterung.
+
+**FILE CONFLICT:** TP-010/011 teilen component-cart-items.js (CORE/SHARED/HIGH RISK). Timerplanung nicht unabhängig von Antwortreihenfolge, Fehlerwiederherstellung und nach Morph veränderter Zeilenidentität fixen. CART-002b.2 zuerst. Events/Utilities/Selektor nicht pauschal global umbauen. Fünf Originalquellen hashgleich; zwölf lokale Fälle ohne Response-/Lifecycleabnahme.

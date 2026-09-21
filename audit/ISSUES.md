@@ -14,6 +14,7 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-008 | P3 | Warenkorb verkürzt Paketflächen mit drei Nachkommastellen | BESTÄTIGT lokal; aktuelle Datenreichweite offen | Offen |
 | TP-009 | P2 | Meterbreiten verwenden erste Rollenbreite statt gewählter Variante | BESTÄTIGT lokal; aktuelle PVC-Konfiguration offen | Offen |
 | TP-010 | P2 | Fehlgeschlagene Cartlöschung lässt Positionen unsichtbar | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
+| TP-011 | P2 | Gemeinsames Cart-Debounce verwirft andere Mengenänderungen | BESTÄTIGT lokal; Browserreichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
@@ -301,6 +302,32 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - **Regressionstests:** normale Stückmengenänderung mit Fehleranzeige, Gruppen und verwaiste Services, Zuschnittattribute nach erfolgreichem Entfernen, Drawer/Cartseite und Mobile/Desktop, leere Ansicht, Fokus und erneut Öffnen. Diagnoseassertions vor Fix-QA auf Wiederherstellung umstellen.
 - **Rollback-Risiko / Aufwand / Reihenfolge:** M wegen gemeinsamer Cartklasse. Erst CART-002b/H-012 ergänzen, dann kleiner abgestimmter Fix, gezielte Tests/Review. Phase 1/2 keine Umsetzung, kein Live-Publish.
 
+## TP-011 – Gemeinsames Cart-Debounce verwirft andere Mengenänderungen
+
+- **Priorität / Bereich:** P2, Warenkorb/Mengenereignisse. Gültige Mengenänderung einer anderen Zeile wird vor dem Request still verworfen. Kein aktueller Live-Bestellfehler oder allgemeiner Kaufblocker behauptet.
+- **URL / Dateien / Geräte / Browser:** `/cart` und Cart-Komponenten im Drawer. `assets/component-cart-items.js`, `assets/component-quantity-selector.js`, `assets/events.js`, `assets/utilities.js`. Lokal Node/V8 mit nativen Node Event/EventTarget und dokumentiertem DOM-/Timeradapter; Browser/Desktop/Mobile H-012 offen.
+- **Reproduktion:** `node audit/scripts/reproduce-cart-events.mjs`. Zwei editierbare Stückzeilen starten bei Menge 2. Original-Plus-Handler Zeile 1 bei t=0, Zeile 2 bei t=100 ms; virtuelle Original-Debounce-Timer bis t=400 ms ausführen. Beide Eingabefelder stehen auf 3.
+- **Erwartet:** beide verschiedenen Zeilen werden mit ihrem jeweils zuletzt eingegebenen Wert berücksichtigt. Wiederholte Änderungen derselben Zeile dürfen zu deren letztem Wert zusammengefasst werden. Fremde Mengenereignisse dürfen keine eigene gültige Änderung löschen.
+- **Tatsächlich:** nur `/cart/change.js` für Zeile 2, Menge 3. Zeile 1 fehlt vollständig im Request. Umgekehrte Reihenfolge verliert Zeile 2; Abstand 299 ms ebenfalls Verlust. Wird stattdessen ein fremder Produktselektor betätigt, entfällt der ausstehende Cart-Request ganz. Mit zwei modellierten Cart-Komponenten wird nur die zuletzt betätigte Komponente berücksichtigt. Fünf Diagnosefälle bestätigen denselben Ursachenkomplex.
+- **Root Cause / Zeilen:** `component-cart-items.js:33` hat einen Timer pro kompletter Komponente (`debounce(...,300)`), registriert am document (40). Erst der verzögert aufgerufene Handler (55–60) filtert Ziel/Zeilennummer. `utilities.js:174–189` löscht bei jedem Ereignis den vorherigen Timer und behält nur dessen letzte Argumente. Originalselektor sendet nach lokaler Feldänderung (188 ff./259 ff.) ein echtes QuantitySelectorUpdateEvent; der Eventtyp wird auch außerhalb des Carts verwendet. Die originale Debounce-Funktion erfüllt ihren Einzelzielvertrag; ihre globale Verwendung ist das Problem.
+- **Risiko / Sicherheit:** **BESTÄTIGT lokal**, relevante still verlorene Bedienaktion und vor Antwort widersprüchlicher Eingabestand. Keine Serverannahme/Neuberechnung/Preisansicht nach Antwort getestet. Der Zweizeilenfall benötigt keine zweite Cart-Komponente. Erreichbarkeit der zusätzlichen Cross-Komponenten-/PDP-Fälle im heutigen DOM offen.
+- **Empfohlene Lösung / Aufwand:** M. Eigene gültige Ereignisse vor Verzögerung filtern; geplante Mengenänderungen je stabiler Zeilenidentität erhalten und kontrolliert abarbeiten/zusammenführen. Nicht pauschal den globalen Utility-Timer verändern oder nur das Intervall verkürzen. Antwort-/Zeilenverschiebungen vorher CART-002b.2 prüfen.
+- **Evidence / Grenzen:** `evidence/cart-events-2026-09-21.json`, zwölf Fälle/elf abgefangene Requests, fünf Fehlfälle, fünf historische Quellenhashvergleiche. Vollständige Original-Selektor-/Cart-/Eventklassen und originale debounce/parseIntOrDefault/fetchConfig. Virtuelle Zeit und manuelles document-Bubbling; Responses bleiben ausstehend, keine echte Browser-/Server-/Drawerabnahme. 301-ms-Kontrolle ruft Handler trotz vorherigem offenen Request direkt auf und beweist keine Pointerbedienung durch CSS-Sperren.
+
+### IMPLEMENTATION BRIEF – TP-011
+
+- **Issue-ID / Priorität / Ziel:** TP-011 / P2. Jede gültige Änderung einer unterschiedlichen Cartzeile bleibt erhalten; nur wiederholte Änderungen derselben Position werden auf deren letzten Wert reduziert.
+- **Problem / Root Cause:** gemeinsamer Timer über mehrere Ziele, Zielvalidierung erst nach Ersetzen der vorherigen Ereignisargumente.
+- **Betroffene Dateien / Funktionen:** Cartklasse: #debouncedOnChange, connected/disconnectedCallback, #onQuantityChange und Übergang updateQuantity. Original-QuantitySelectorUpdateEvent, Selektor und Utility dienen als Schnittstellen-/Regressionsevidence.
+- **Zu ändernde Logik:** fremde/ungültige Events vor Timerplanung ausfiltern. Geplante Werte je stabiler Zeile speichern; aktuelle Identität bei Ausführung nach Entfernen/Morph sicherstellen. Keine parallelen veralteten Index-Writes einführen. Ausstehende Timer/Arbeit bei Disconnect kontrolliert behandeln. Geeignete Serialisierung/Batchstrategie nach CART-002b.2 festlegen.
+- **Nicht verändern:** Produkt-/Paketpreise, Mengeneinheiten, berechnete Mengensperren, Gruppenentfernung, _Zuschnitt, Metafelder, globale Eventnamen oder generische debounce-Semantik für andere Nutzer. Keine sofortigen Serienrequests pro Tastendruck als Ersatz.
+- **Abhängigkeiten / FILE CONFLICT:** TP-010 und TP-011 betreffen dieselbe Cartklasse. Gemeinsamer abgestimmter Arbeitsblock, separate kleine Fixschritte. CART-002b.2 Response-/Section-/Zeilenidentität zuerst; H-012 echte DOM-Ereignisse. Neue Timer nicht unabhängig vom Mutations-/Fehlerzustand planen.
+- **Mögliche Seiteneffekte:** doppelte Requests, falscher Cartindex nach Entfernen, veralteter Mengenwert nach Morph, Dauerblockade, verlorene Änderungen beim Schließen des Drawers, nach Disconnect ausgeführte Writes, Fehlerfeedback überschrieben.
+- **Akzeptanzkriterien:** zwei verschiedene Zeilen bei 0/100 ms und 0/299 ms behalten beide letzte Werte; gleiche Zeile bei 0/100/200 ms ergibt nur finalen Wert. Fremdes Ereignis bei 100 ms verändert nicht die eigene ausstehende Änderung. Zwei Komponenten verwerfen sich nicht gegenseitig. Kein veralteter Indexrequest nach Entfernung/Morph.
+- **Testfälle:** Reihenfolge beider Zeilen drehen, Plus/Blur, ein/mehrere Carts, fremder Produktselektor, Grenzabstand 299/301 ms; anschließend Antwortreihenfolge, Error/Retry, Entfernen während Wartezeit und Disconnect. DOM-/CSS-Erreichbarkeit separat im Browser prüfen.
+- **Regressionstests:** TP-010 Fehlerwiederherstellung, ursprüngliche Gruppen-/Mengensperren, Stück-/Paketmengen, Drawer/Cartseite, langsame Verbindung und Fokus. Diagnoseassertions vor Fix-QA auf Erhalt aller gültigen Werte umstellen.
+- **Rollback-Risiko / Aufwand / Reihenfolge:** M, Shared-Cart-Zustand. Erst CART-002b.2, dann kleine geplante Reparatur mit Tests/Review; Phase 1/2 weiterhin ausschließlich Audit.
+
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 
 | ID | Untersuchung | Aktueller Beleg / Grenze | Nächster Nachweis |
@@ -343,3 +370,5 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 - S08: 20 Cartzustände mit 35 Zeilenrenderings und 28 echten Liquid-Mengenklammern stimmen für die geprüften Fixtures mit den JS-Regeln überein. Normale Stück-/Paketware bleibt änderbar. Gruppen werden von Haupt- oder Servicezeile aus vollständig per Key gelöscht.
 - S08: Originaler Zuschnittabgleich setzt/entfernt nur betroffene Attribute, prüft HTTP-Ergebnis und zurückgegebenen Zustand, serialisiert Aufrufe und erholt sich nach Fehler bei explizitem Retry. Liquid bleibt bei fehlgeschlagener Speicherung gesperrt. Kein zusätzlicher bestätigter Fehler daraus; direkte API-/Express-Umgehungen sind keine getestete Shopify-Serversperre.
+
+- S09/CART-002b.1: Originaldebounce fasst mehrere Änderungen derselben Zeile korrekt zusammen und startet bei exakt 300 ms nach letzter Aktion. Ein isoliertes fremdes Ereignis wird ignoriert. TP-011 betrifft das Verlieren bereits geplanter anderer Ziele; kein allgemeiner Defekt der Utility-Debounce-Funktion.

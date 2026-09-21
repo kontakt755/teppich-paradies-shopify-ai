@@ -231,3 +231,19 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **Status:** WORKING, grob 27 %, Phase 1. Keine Reparaturen, FINAL_REPORT und Gesamtauftrag weiterhin offen.
 
 **S08 tatsächlich committed:** `67ee9bc`, 15 Audit-/Progressdateien nach bestandener Integrität, Secret-Scan und git diff --check. Commit auf `audit/shop-audit`; dieser Branch wurde außerhalb meiner Befehle bereitgestellt, Parent bleibt 0d887b5. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json weiterhin unverändert belassen. Commitreferenz in Master/Progress nachtragen und sichern; keine erneute Produktdiagnose. Status WORKING, nächster Schritt CART-002b.
+
+## 21.09.2026 – S09 / CART-002b.1
+
+**Übernahme:** TASK/Override, Auditstatus, relevante neue Issues/Matrix/Abhängigkeiten und Git gelesen; TASK/AGENTS seit letztem Abschluss unverändert. HEAD 1bf1d1a, externe CONTINUE_PROMPT.md und Dashboarddatei erhalten. Sequenziell, keine Agenten. Route TASK-401D094F14CB B/STATIC, keine geschützte Aktion/Executor.
+
+**Scope:** nächster Ereignispfad aus CART-002b, als abgeschlossener Teil b.1 abgegrenzt. Originale Selektor-/Cart-/Eventklassen plus debounce/fetchConfig/parseIntOrDefault. SectionRenderer und Drawer zusätzlich gelesen, deren Antwort-/Lifecycleprüfung b.2 bleibt offen. Keine S01–S08-Diagnose erneut ausgeführt.
+
+**Tests / Ergebnis:** Syntax und erster Lauf reproduce-cart-events.mjs PASS. Zwölf Fälle, elf abgefangene Requests, fünf historische Quellhashvergleiche. Native Node Event/EventTarget mit explizitem Bubbling-/DOM-Modell, virtuelle Timer. Gleiche Zeile mehrfach → letzter Wert korrekt; einzelne fremde Events ignoriert. Zwei verschiedene Zeilen bei 0/100 oder 0/299 ms verlieren erste Änderung; nachfolgendes fremdes Ereignis verdrängt geplanten Cartrequest vollständig. Zwei modellierte Cart-Komponenten zeigen denselben Fehler. TP-011/P2 in fünf Fällen bestätigt, vollständiger Implementation Brief.
+
+**Grenzen:** Responses bleiben ausstehend, keine Serverannahme/Morph-/Preis-/Drawerabnahme. Handler direkt aufgerufen; 301-ms-Kontrolle beweist keine Pointerbedienung durch cart-items-disabled. Reale Browser-/PDP-/Cross-Komponenten-Erreichbarkeit H-012. Kein allgemeiner Utility-Debounce-Defekt und keine neue Issue zu bloß gelesenen Response-/Drawerpfaden.
+
+**Dokumente / Sicherung:** neue Script-/JSON-/Summary-Dateien und Auditkontrollen/Progress. Integrität/Secret-Scan vor normalem Git-Commit. Externe Dateien nicht stagen. Elf bestätigte Issues: P2=5, P3=6; kein P0/P1. Cartblock TP-010/011 weiterhin NOT READY, kein Shopfix.
+
+**Nächster konkreter Schritt:** CART-002b.2 – Antwortreihenfolge/Zeilenidentität, SectionRenderer vs. direkter Morph, Drawer-Event-/Dialog-Lifecycle. Quellen component-cart-items, section-renderer, cart-drawer, events, gegebenenfalls dialog. Echte Browser-Wiederöffnung/Reload/Checkout separat, keine fertigen Preis-/Gruppen-/Debouncefälle ohne Quellenänderung wiederholen.
+
+**Status:** WORKING, grob 28 %, Phase 1, FINAL_REPORT/Gesamtauftrag offen.

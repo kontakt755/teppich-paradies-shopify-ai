@@ -56,7 +56,12 @@ Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 | CART-002a.2 | Gruppen-/Einzellöschung bis Request | Originalklasse nutzt alle Gruppenkeys für update, Einzelzeile/Änderung für change; Drawerpfad/Checkoutmarker kontrolliert | PASS lokal im Erfolgsvertrag, Morph/DOMParser modelliert |
 | CART-002a.3 | Fehler bei Entfernen | Sechs Fehlerfälle: Gruppen-/Stück-/letzte Gruppe, JSON-errors/Netzwerk, reduzierte Bewegung/Animation nach Antwort; keine Wiederherstellung, Fehler unsichtbar | FAIL lokal TP-010, Browserreichweite H-012 |
 | CART-002a.4 | Zuschnittattribute, HTTP-Fehler, Gegenprobe, Queue | Zehn Abläufe: schreiben/löschen/erhalten, fehlende Übernahme abgelehnt, Retry erholt Queue, eigene Events ohne Schleife | PASS lokal, Requests/Responses synthetisch; UI-Liquid kein Shopify-Validation-Nachweis |
-| CART-002b | **NÄCHSTER SCHRITT:** Mengenereignisse/Antwortreihenfolge/Section-/Drawerzustand | Originalereignis vom Selektor durch Debounce, schnelle Aktionen und Antworten prüfen; echte Wiederöffnung/Reload separat | OFFEN |
+| CART-002b | Mengenereignisse/Antwortreihenfolge/Section-/Drawerzustand | Ereignisse lokal b.1 abgeschlossen; Antwort-/Section-/Drawerabläufe b.2 offen | TEILWEISE |
+| CART-002b.1 | Originalselektor → Event → Debounce → Request | Zwölf Fälle/elf Requests/fünf Hashvergleiche. Gleiche Zeile korrekt zusammengefasst, verschiedene Ziele gehen verloren | Lokal abgeschlossen; `cart-events-2026-09-21.json`, TP-011 FAIL |
+| CART-002b.1a | Zwei Zeilen bei 0/100 bzw. 0/299 ms | Nur letztes Ziel im Request, beide Eingabefelder lokal geändert; Reihenfolge umgedreht gleicher Verlust | FAIL lokal TP-011 |
+| CART-002b.1b | Fremdes Ereignis während eigener Wartezeit | Vorheriger Cartrequest ganz verworfen; auch zwei modellierte Cart-Komponenten betroffen | FAIL lokal TP-011; konkrete DOM-Reichweite H-012 |
+| CART-002b.1c | Gleiche Zeile / einzelnes fremdes Ereignis / 301 ms | Letzter Wert derselben Zeile erhalten; fremdes isoliert ignoriert; Timerkontrolle über 301 ms beide Requests | PASS lokal; ausstehende Responses und direkte Methodenaufrufe sind kein Browsernachweis |
+| CART-002b.2 | **NÄCHSTER SCHRITT:** Antwortreihenfolge/Zeilenidentität/Sections/Drawer | SectionRenderer und Drawer gelesen, noch nicht ausgeführt | OFFEN |
 | CALC-001 | Sämtliche Maßgrenzen, Komma/Punkt, leer, 0, negativ, Maxima | Teilprüfungen PR-008–011 sind kein vollständiger Rechnertest | OFFEN nach Warenkorb |
 | VAR-001 | Schneller Farb-/Artwechsel, Verfügbarkeit, Preis/ID, Zurück/Reload | Noch keine vollständigen Ablaufprüfungen | OFFEN |
 | RUN-001 | JavaScript-Konsole / Exceptions / Netzwerk | Historische `exceptions`-Einträge leer; keine vollständige Netzwerk-/Console-Abdeckung | TEILBELEG, übriges OFFEN |
@@ -85,6 +90,8 @@ Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 
 - S08: vier vorhandene Cart-Suiten (cart-gruppen/cart-mengensperre/cart-waisen/zuschnitt-abgleich) **47/47 PASS**. Syntax/erster Originalcode-Diagnoselauf bestanden; nach Fehlercontainer-Hierarchie und verzögerten Animationen zweiter Lauf bestanden: 43 Fälle/34 Requests, TP-010 bestätigt. Keine S01–S07-Replays. Dokument-/Secretchecks in S08-Protokollen.
 
+- S09: `node --check audit/scripts/reproduce-cart-events.mjs` und erster Diagnoselauf PASS: zwölf Fälle, elf Requests, fünf Defektfälle TP-011 und fünf historische Hashvergleiche. Kein Replay der 47 S08-Tests oder älterer Preisdiagnosen. Integritäts-/Secretprotokolle separat.
+
 ## Wiederholungsregeln
 
-Abgeschlossene PR-001–011 und lokale PR-020–023a sowie PR-023b.1/b.2 und CART-002a nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.
+Abgeschlossene PR-001–011 und lokale PR-020–023a sowie PR-023b.1/b.2 und CART-002a/b.1 nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.

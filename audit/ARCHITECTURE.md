@@ -71,3 +71,9 @@ Originale Servermarkup-Regeln und Browsergruppenfunktionen für 20 Cartzustände
 Cartklasse entfernt Gruppen per Keys im update-Request und einzelne Zeilen per change. Darstellung wird bereits vor Antwort entfernt/leer ersetzt. Fehlerpfad stellt sie nicht wieder her (TP-010); Fehlercontainer gehört zur entfernten Zeile. Erfolgreiche Section-Morphs im Adapter nur modelliert; echte Refs-/Event-/Drawerabläufe CART-002b offen.
 
 Zuschnittasset nutzt serialisierte GET/POST/Gegenprobe, setzt nur den Attribute-Unterschied, behält sonstige Attribute und ignoriert eigene Events. Zehn lokale Abläufe einschließlich ausbleibender Übernahme und explizitem Retry bestanden. Zehn Quellhashes historisch gleich. Keine neuen Live-/Produktdaten und keine produktiven Änderungen.
+
+## Ergänzung S09 / CART-002b.1
+
+Die Menge wird im Originalselektor vor Eventversand lokal gesetzt. Das originale QuantitySelectorUpdateEvent wird am document von jeder Cartklasse empfangen. Ein Timer pro kompletter Komponente bündelt alle Ziele; die Eigentums-/Zeilenprüfung liegt erst im verzögerten Handler. TP-011: anderer Zeilenwert oder fremdes Ereignis ersetzt dadurch den noch gültigen geplanten Wert. Gleiche Zeile wird korrekt zusammengefasst.
+
+Zwölf Originalcodefälle mit nativen Node-Events, explizitem Bubbling-/DOM- und virtuellem Timeradapter. Elf Requests abgefangen, Responses bleiben ausstehend. SectionRenderer und Drawer nur gelesen: eigener SectionRenderer kann Morphs abbrechen, direkte Cartantwort nutzt einen anderen Aufrufpfad; noch kein neuer Fehler daraus abgeleitet. CART-002b.2 folgt.
