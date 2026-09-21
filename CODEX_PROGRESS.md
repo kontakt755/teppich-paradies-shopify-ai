@@ -34,6 +34,6 @@ CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Event
 
 ## Letzter erfolgreicher Git-Commit
 
-36d2907 – S10-Sicherung; S11 wird nach Abschlusschecks tatsächlich committed und Referenz danach nachgetragen. Branch audit/shop-audit. Kein Merge/Push.
+36a875e – audit: Cartantworten und bedingte Zeilenrisiken S11 pruefen. 14 Audit-/Progressdateien tatsächlich gesichert; neuester Dokumentationscommit über git log. Branch audit/shop-audit. Kein Merge/Push.
 
 Status: WORKING
