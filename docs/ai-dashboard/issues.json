@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T11:04:17.704Z",
+  "generated_at": "2026-09-21T11:09:10.384Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 117,
+  "count": 118,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T11:04:17.704Z",
+    "fetchedAt": "2026-09-21T11:09:10.384Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,43 @@
   },
   "issues": [
     {
+      "number": 435,
+      "title": "Altdateien tp-card-*: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/435",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 0,
+      "nextStep": "Nach dem **naechsten Livegang** tauschen die Rollen: 204436144462 wird unveroeffentlicht und ist danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft, die drei Dateien entfernen - sonst blockiert `PREVIEW_DIFF`:",
+      "fields": {
+        "description": "## Stand 2026-09-21\nDie drei toten Dateien `blocks/tp-card-dimensions.liquid`, `blocks/tp-card-price-sqm.liquid`, `snippets/tp-card-roll-lengths.liquid` sind aus `main` entfernt (#421, endgueltig mit #433) und aus dem unveroeffentlichten Preview-Theme 204438208846 geloescht (gezielter CLI-Push, Gegenprobe per Admin API: nur diese drei Dateien fehlen).\n\n**Sie liegen noch auf dem heutigen Live-Theme 204436144462.** Dort stoeren sie nicht (kein Template verweist darauf), und das Live-Theme wird bewusst nie direkt angefasst.",
+        "nextStep": "Nach dem **naechsten Livegang** tauschen die Rollen: 204436144462 wird unveroeffentlicht und ist danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft, die drei Dateien entfernen - sonst blockiert `PREVIEW_DIFF`:",
+        "acceptance": {
+          "total": 2,
+          "done": 0,
+          "items": [
+            {
+              "done": false,
+              "text": "Dateien auf keinem der beiden Wechsel-Themes mehr vorhanden"
+            },
+            {
+              "done": false,
+              "text": "Preview-Lauf danach ohne `PREVIEW_DIFF`"
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-21T11:08:57Z",
+      "updated_at": "2026-09-21T11:08:57Z",
+      "closed_at": null
+    },
+    {
       "number": 422,
       "title": "Kundenbindung, Marketingcodes, Tracking-Funnel und Ratgeber-Grundlage (Bestandsanalyse + Umsetzung in Phasen)",
       "state": "open",
@@ -78,13 +115,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:33:49Z",
-      "updated_at": "2026-09-21T10:44:27Z",
+      "updated_at": "2026-09-21T11:06:48Z",
       "closed_at": null
     },
     {
@@ -1645,13 +1682,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 8,
+      "comments": 9,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:36Z",
-      "updated_at": "2026-09-21T10:10:48Z",
+      "updated_at": "2026-09-21T11:05:21Z",
       "closed_at": null
     },
     {
@@ -1693,13 +1730,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:31Z",
-      "updated_at": "2026-09-21T10:55:42Z",
+      "updated_at": "2026-09-21T11:05:22Z",
       "closed_at": "2026-09-21T10:55:29Z"
     },
     {
