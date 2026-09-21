@@ -915,16 +915,30 @@
         function openPopover() {
           offen = true;
           popover.hidden = false;
+          // Hoehe an den Platz unter dem Knopf anpassen, damit die Liste im Bild bleibt
+          var platz = window.innerHeight - button.getBoundingClientRect().bottom - 16;
+          popover.style.maxHeight = Math.max(200, Math.min(platz, 420)) + 'px';
           button.setAttribute('aria-expanded', 'true');
           var aktiv =
             optionsBox.querySelector('[aria-selected="true"]') || sichtbareOptionen()[0];
-          if (aktiv) aktiv.focus();
+          if (aktiv) aktiv.focus({ preventScroll: true });
+          // Liste vollstaendig ins Bild holen, falls der Knopf weit unten steht
+          if (popover.getBoundingClientRect().bottom > window.innerHeight) {
+            popover.scrollIntoView({ block: 'nearest' });
+          }
         }
 
         function closePopover() {
           offen = false;
           popover.hidden = true;
           button.setAttribute('aria-expanded', 'false');
+          // Filter zuruecksetzen, sonst zeigt das naechste Oeffnen nur Treffer
+          if (sucheFeld && sucheFeld.value) {
+            sucheFeld.value = '';
+            optionEls.forEach(function (o) {
+              o.el.hidden = false;
+            });
+          }
         }
 
         button.addEventListener('click', function () {
@@ -976,6 +990,18 @@
               var istGewaehlt = o.el.getAttribute('aria-selected') === 'true';
               o.el.hidden = !passt && !istGewaehlt;
             });
+          });
+
+          sucheFeld.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              closePopover();
+              button.focus();
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              var erste = sichtbareOptionen()[0];
+              if (erste) erste.focus();
+            }
           });
         }
 
