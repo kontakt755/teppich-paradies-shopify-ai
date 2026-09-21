@@ -28,6 +28,7 @@
     assign tp_fw_name = tp_fw_option.name | downcase
     if tp_fw_name contains 'farbe' or tp_fw_name contains 'dekor' or tp_fw_name contains 'color'
       assign tp_fw_position = tp_fw_option.position
+      assign tp_fw_option_obj = tp_fw_option
       assign tp_fw_values = tp_fw_option.values
       assign tp_fw_label = tp_fw_option.name
       assign tp_fw_selected = tp_fw_option.selected_value
@@ -72,6 +73,33 @@
     assign tp_fw_aktueller_name = tp_fw_aktueller_name | strip | default: tp_fw_selected
   -%}
 
+  {%- if block.settings.darstellung == 'dropdown' -%}
+    {%- comment -%}
+      Kompakte Darstellung ueber die zentrale Farbauswahl (snippets/tp-farbauswahl) -
+      dieselbe Bedienung wie auf allen anderen Produktseiten. Sie klickt die
+      Radio-Felder des Horizon-Variantenwaehlers dieser Section an; Preis,
+      Galerie, Vorschau (tp-leisten-vorschau) und Warenkorb laufen wie bisher
+      ueber variant:update. Zubehoer hat keine Muster, deshalb kein Musterlink.
+    {%- endcomment -%}
+    {%- liquid
+      assign tp_fw_host = '#shopify-section-' | append: section.id | append: ' variant-picker'
+      assign tp_fw_muster_url = ''
+      unless tp_fw_product.tags contains 'zubehoer'
+        capture tp_fw_muster_url
+          render 'tp-musteroption', product: tp_fw_product
+        endcapture
+        assign tp_fw_muster_url = tp_fw_muster_url | strip
+      endunless
+    -%}
+    {%- render 'tp-farbauswahl',
+      product: tp_fw_product,
+      option: tp_fw_option_obj,
+      selected: tp_fw_selected,
+      id: tp_fw_id,
+      host: tp_fw_host,
+      muster_url: tp_fw_muster_url
+    -%}
+  {%- else -%}
   <script src="{{ 'tp-leisten-farbwahl.js' | asset_url }}" defer></script>
   <tp-leisten-farbwahl
     class="tp-lfw{% if tp_fw_aufgeklappt %} tp-lfw--auf{% endif %}{% if block.settings.darstellung == 'dropdown' %} tp-lfw--dd{% endif %}"
@@ -135,6 +163,7 @@
       </button>
     {%- endif -%}
   </tp-leisten-farbwahl>
+  {%- endif -%}
 {%- endif -%}
 
 {% stylesheet %}
@@ -292,7 +321,8 @@
   /* Sobald die Kacheln aktiv sind, den Horizon-Variantenwaehler nur visuell
      verstecken. Er bleibt im DOM und fuer Screenreader erreichbar; der
      Selektor ueberlebt das Neu-Rendern des Waehlers beim Variantenwechsel. */
-  :where(*):has(> tp-leisten-farbwahl:not([hidden])) > variant-picker {
+  :where(*):has(> tp-leisten-farbwahl:not([hidden])) > variant-picker,
+  :where(*):has(> tp-farbauswahl[data-host*='variant-picker']:not([hidden])) > variant-picker {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
