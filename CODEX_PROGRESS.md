@@ -34,6 +34,6 @@ CART-003b: lokale Rabatt-/Cart-Notiz-Verträge in assets/cart-discount.js und as
 
 ## Letzter erfolgreicher Git-Commit
 
-6726c3d – audit: Drawer- und Dialog-Lifecycle S12 lokal pruefen. 14 Audit-/Progressdateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+d9a0529 – audit: Checkoutvertraege S13 und Browserberechtigungsgrenze pruefen. 15 Dateien tatsächlich committed; neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING

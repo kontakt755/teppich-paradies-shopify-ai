@@ -64,3 +64,5 @@ S12: elf Lifecyclefälle abgeschlossen. Phase 1, Abdeckung grob 28 %, zwölf bes
 S12 tatsächlich in `6726c3d` gesichert (14 Dateien). Elf Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Externe Prompt-/Dashboardänderungen nicht committed. Nächster Schritt CART-003 Browserfähigkeit und native Cartintegration; Status WORKING.
 
 S13: 22.09.2026, Phase 1, grob 28 %, zwölf bestätigte Issues unverändert. Aktuelle Browsergrenze ist Zugriffsberechtigung (Chrome verbunden), nicht pauschal die historische DNS-/Runnergrenze. Keine Umgehung.
+
+S13 tatsächlich in `d9a0529` gesichert (15 Dateien). Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b Rabatt/Notiz, Browserberechtigung bleibt Grenze. Status WORKING.
