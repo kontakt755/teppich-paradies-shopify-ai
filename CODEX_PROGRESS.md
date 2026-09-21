@@ -34,6 +34,6 @@ CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene sta
 
 ## Letzter erfolgreicher Git-Commit
 
-93f1eef – audit: Rabattentfernung und Controllerverlust TP-014 belegen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+8636ca5 – audit: Notizvertrag S16 und bedingten Controllerfehler pruefen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING

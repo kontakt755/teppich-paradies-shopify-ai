@@ -76,3 +76,5 @@ S15 aktuell: 14 bestätigte Issues, P0=0/P1=0/P2=6/P3=8/P4=0. Phase 1, grob 28 %
 S15 in `93f1eef` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-003b.3 Cartnotiz; Status WORKING.
 
 S16 aktuell: 14 Issues unverändert (P2=6/P3=8), Phase 1, grob 28 %. Notiz lokal deaktiviert; settings_data.json nicht historisch live-hashgleich.
+
+S16 in `8636ca5` tatsächlich gesichert. Sieben Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-004 Konsolidierung; Status WORKING.
