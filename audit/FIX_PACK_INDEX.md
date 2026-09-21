@@ -5,13 +5,15 @@ Stand: 21.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vor
 | FIX_PACK | STATUS | PRIORITÄT | ISSUES | PARALLEL SAFE | ABHÄNGIGKEITEN | ZUSTÄNDIGER AGENT |
 | --- | --- | --- | --- | --- | --- | --- |
 | [FIX_PACK_02_PRICING_INPUTS](fix-packs/FIX_PACK_02_PRICING_INPUTS.md) | READY | P2/P3 | TP-001, TP-002 | NO | ein gemeinsamer Paketparser/Submit; aktuelle Live-Quelle vor Fix verifizieren | Später Claude Code, noch nicht beauftragt |
+| [FIX_PACK_03_CART_REQUEST_FEEDBACK](fix-packs/FIX_PACK_03_CART_REQUEST_FEEDBACK.md) | READY | P3 | TP-013, TP-014 | NO | gemeinsame Rabattklasse, bedingte Notizownership; aktuelle Quellen vor Fix, Browser-QA offen | Später Claude Code, nicht beauftragt |
+| SectionRenderer-Retry, Dateiname noch offen | NOT READY | P2 | TP-012 | NO | weitere Aufrufer und H-012/013 vor Freigabe | Nicht zugewiesen |
 | Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004, TP-009 | NO | PR-020/022/023b.2 lokal abgeschlossen; H-011 PVC-Breitenvertrag; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
 | Wunschmaßpaket, Dateiname noch offen | NOT READY | P3 | TP-006, TP-007 | NO | H-009 aktive Nutzung/Maßvertrag, H-010/Browserintegration; gemeinsame Blockdatei | Nicht zugewiesen |
 | Paket-Cartdarstellung, Dateiname noch offen | NOT READY | P3 | TP-008 | NO | H-011 aktuelle dreistellige Paketgrößen, CART-002 und gemeinsame Cartdatei | Nicht zugewiesen |
-| Cart-Fehlerwiederherstellung, Dateiname noch offen | NOT READY | P2 | TP-010, TP-011 | NO | CART-002b.2, H-012, gemeinsame Cartklasse/Refs/Animation | Nicht zugewiesen |
+| Cart-Fehlerwiederherstellung, Dateiname noch offen | NOT READY | P2 | TP-010, TP-011 | NO | lokale b.2-Prüfung fertig; H-012/013, Zeilenidentität/Refs/Animation offen | Nicht zugewiesen |
 | Einfass-Servicepaket, Dateiname noch offen | NOT READY | P3 | TP-005 | NO | PR-021 lokal abgeschlossen; H-006, Datenvertrag und verbleibende Cart-/Abgleichprüfung | Nicht zugewiesen |
 
-Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0.
+Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
 Das erste Paket enthält bewusst nur zwei eng zusammenhängende Issues: beide betreffen dieselben Zahlenparser-/Submit-Grenzen und sollten gemeinsam gelöst werden. Keine unabhängigen UX-/Cart-/Architekturaufgaben angehängt, um eine Mindestzahl zu erreichen. Kein P0-Blockerpaket ohne bestätigten Blocker.
 
@@ -47,3 +49,5 @@ S14: TP-013/P3 mit vollständigem Brief. Rabattfeedback-Kandidat NOT READY bis C
 S15: Rabattfeedback/-Abbruch-Kandidat umfasst TP-013/014, NOT READY bis Notizvergleich/CART-003b.3 und Konsolidierung. Beide gleiche Klasse, keine Parallelumsetzung. Ready=1, Done/QA=0; keine Reparatur.
 
 S16: Notizvergleich abgeschlossen; TP-014 betrifft bedingt auch cart-note.js (lokal deaktiviert). Vor Packzuweisung aktive Rabattklasse und ruhende Notizänderung getrennt abgrenzen; keine Notizaktivierung. CART-004 konsolidiert kleine Pakete. Ready=1, Done/QA=0.
+
+S17 maßgeblicher Stand: Ready=2, Done/QA=0. Paket 03 ist Übergabereife, keine Umsetzung. Frühere Ready=1-Sessionnotizen bleiben historisch. TP-014 umfasst im neuen Paket beide Klassen; Notizfunktion bleibt deaktiviert. Cartkern/Renderer weiterhin NOT READY, keine vorschnellen Packdateien.

@@ -1,6 +1,6 @@
 # Bestätigte Issues und offene Hypothesen
 
-Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden historisch live am 19.09. beobachtet und am identischen Repository-Code am 20.09. reproduziert. TP-004/005 sind ausschließlich lokal bestätigte bedingte Codefehler; aktuell betroffene Live-Produkte/-Zustände sind nicht nachgewiesen. TP-006/007 sind lokal bestätigte Fehler des historisch ruhenden Wunschmaßpfads; aktive Produktzuordnung nicht belegt (H-009). TP-008 ist ein lokal bestätigter Präzisionsverlust der Cartanzeige; keine Geld-/Mengenabweichung und keine heutige Produktprüfung (H-011). TP-009 ist ein lokal bestätigter Breiten-/Mengenfehler im Mehrbreiten-Fallback; heutige PVC-Konfiguration offen (H-011). Der heutige Live-Stand wurde nicht neu verifiziert. Die genauen Grenzen stehen je Issue.
+Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden historisch live am 19.09. beobachtet und am identischen Repository-Code am 20.09. reproduziert. TP-004/005 sind ausschließlich lokal bestätigte bedingte Codefehler; aktuell betroffene Live-Produkte/-Zustände sind nicht nachgewiesen. TP-006/007 sind lokal bestätigte Fehler des historisch ruhenden Wunschmaßpfads; aktive Produktzuordnung nicht belegt (H-009). TP-008 ist ein lokal bestätigter Präzisionsverlust der Cartanzeige; keine Geld-/Mengenabweichung und keine heutige Produktprüfung (H-011). TP-009 ist ein lokal bestätigter Breiten-/Mengenfehler im Mehrbreiten-Fallback; heutige PVC-Konfiguration offen (H-011). Der heutige Live-Stand wurde nicht neu verifiziert. Die genauen Grenzen stehen je Issue.
 
 | ID | Priorität | Titel | Diagnose | Fix-Status |
 | --- | --- | --- | --- | --- |
@@ -15,11 +15,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-009 | P2 | Meterbreiten verwenden erste Rollenbreite statt gewählter Variante | BESTÄTIGT lokal; aktuelle PVC-Konfiguration offen | Offen |
 | TP-010 | P2 | Fehlgeschlagene Cartlöschung lässt Positionen unsichtbar | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 | TP-011 | P2 | Gemeinsames Cart-Debounce verwirft andere Mengenänderungen | BESTÄTIGT lokal; Browserreichweite offen | Offen |
-
 | TP-012 | P2 | SectionRenderer behält fehlgeschlagene Requests und verhindert Retry | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
-
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
-
 | TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
@@ -414,11 +411,8 @@ S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrations
 | H-010 | Bedingte Integrationsrisiken des ruhenden Wunschmaßpfads | Isoliert: fremde globale Formular-ID übernimmt ID ohne Preiswechsel; fehlende Maxima erlauben nichtendliche Rechnung im Adapter; Verfügbarkeit wird nicht lokal gesperrt. Kein Nachweis dieser Kombinationen in aktivem DOM/Produkt | Erst H-009, dann echte Form-/Picker-Ereignisse, native Zahlensanitierung und Verfügbarkeit prüfen. Keine neuen bestätigten Shopissues aus konstruierten Adapterzuständen; VAR-001/CALC-001 berücksichtigen |
 | H-011 | Aktuelle Produktdaten für PR-023b, TP-008/009 | Historische Paket-/PVC-Breiten-/Leistenquellen dokumentiert; PR-023b.1/b.2 lokal abgeschlossen. TP-009 bei mehreren Meteroptionen und verschiedenem Rollenbreitenmetafeld lokal bestätigt; heutige Options-/Metafeld-/Templatekonfiguration fehlt | Produkt/Template/Einheit/Variantenpreis rein lesend aktuell belegen. PVC insbesondere tatsächliche Optionswerte, Reihenfolge, Variantenbreiten und aktiven Rechner prüfen. Keine heutigen Preise aus Fixtures ableiten. TP-008 im Cart/Drawer, TP-009 mit tatsächlicher Breitenwahl nachprüfen |
 | H-012 | Aktuelle Cart-/Browserintegration und TP-010-Reichweite | S08 lokale Liquid-/Klassifikations-/Request-/Fehlerpfade und Zuschnittqueue geprüft. DOM, MutationObserver, Morph und Responses adaptiert, keine neuen Live-Daten | CART-002b Ereignis-/Antwortreihenfolge, echte Cartseite/Drawer/erneutes Öffnen, Browserfehler/Fokus und gesperrter Checkout inklusive Express/Keyboard prüfen. UI-Liquid-Sperre nicht mit einer serverseitigen Shopify Validation Function gleichsetzen |
-
 | H-013 | Überlappende Cartantworten und verschobene Zeilenidentität | S11: zwei direkte Requests können ältere Antwort zuletzt anwenden und vorzeitig entsperren; laufender Discount-Sectionrequest kann jüngere direkte Cartantwort überschreiben. Manuell geänderte Refs zeigen Fehler an anderer Zeile. Acht kontrollierte Fälle, keine Browser-/Server-Erreichbarkeit | Browserbedienbarkeit trotz CSS-/Debouncesperre, reale Discount-/Cartüberschneidung, Snapshotreihenfolge und tatsächlichen Refwechsel prüfen. Keine zusätzliche bestätigte Issue-ID und kein pauschaler Serialisierungsfix aus synthetischem Ablauf |
-
 | H-014 | Drawer-Ereignis-/RAF-/History- und Ansagegrenzen | S12 elf lokale Fälle: allgemeines Update öffnet bei auto-open; erste Zählansage fehlt vor RAF, späterer Event wird angesagt; Close/Disconnect vor RAF storniert geplantes Öffnen nicht. Native DOM-/Fokus-/Historyabläufe nicht getestet | Browser: echte Relevanz der Zählansage neben Dialogfokus, Öffnen durch Hintergrundabgleich, schnelles Schließen/Disconnect, Escape, Zurück/Vorwärts/Reload und Animationen prüfen. Kein zusätzlicher bestätigter Fehler aus minimalem Dialogmodell |
-
 | H-015 | Tastatur-/Express-Checkout bei Cart-Sperre | S13: Original-CTA/POST-/Pflichtfeldvertrag lokal geprüft. Express-Markup nur flagabhängig, Sperr-CSS pointer-events:none/opacity:0.4. Keine native Tastatur-/Paymentprüfung oder aktuelle Expressaktivierung | Nach erlaubtem Browserzugriff aktivierte Express-Komponenten, Tab/Enter und Checkoutvalidierung prüfen; keinen Kauf abschließen. Keine bestätigte Umgehung aus CSS allein ableiten |
 
 ## Verworfen / eingegrenzt

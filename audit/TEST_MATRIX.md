@@ -1,6 +1,6 @@
 # Audit-Testmatrix
 
-Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
+Stand: 22.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 
 **PASS (historisch)** = gespeicherte Browser-/API-Beobachtung vom 19.09.; **PASS (lokal)** = aktuelle deterministische Prüfung. **FAIL bestätigt** = Issue beobachtet, nicht behoben. **OFFEN** = keine Aussage zur Funktion. Ein bestandener Reproduktionslauf bedeutet nicht, dass die darin nachgewiesenen Fehler behoben sind.
 
@@ -50,19 +50,22 @@ Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 | PR-023b.2b | cm-Optionen / Einzelbreite / ungültiger Zustand | 200/400 cm richtig; einzelner 4-m-Fallback richtig; nicht verfügbare Variante und leere Länge ohne Request | PASS lokal; kein echter Picker-/Browsernachweis |
 | PR-023b.2c | Leisten/Profile/Band/Unterlage/Gebinde bis Standardform | 20 Fälle/18 Requests; ganze Mengen, ID, unverändertes manuelles Feld ohne belegte Einheit; Button-/vorgegebener Max-Guard blockieren | PASS lokal; tatsächliche Max-Regel/Bestände, native FormData/DOM und Antwortverarbeitung nicht geprüft |
 | CART-001 | Paket-Cartdarstellung und Checkout erreichbar | Historisch 11 Pakete/22,88 m²/1.165,78 €, Checkoutseite mit Kontaktfeld erreichbar | PASS historisch, kein Kaufabschluss, keine vollständige Checkout-QA |
-| CART-002 | Menge ändern, entfernen, erneut öffnen; gemischte/gruppierte Positionen | CART-002a lokal abgeschlossen; Mengenereignisse/Antwortreihenfolge/Sectionabläufe CART-002b folgen | TEILWEISE; echte Browser-/Checkoutabnahme offen |
+| CART-002 | Menge ändern, entfernen, erneut öffnen; gemischte/gruppierte Positionen | CART-002a/b und CART-003 lokal abgeschlossen; echte Browser-/Checkoutabnahme H-012–015 bleibt offen | TEILWEISE; echte Browser-/Checkoutabnahme offen |
 | CART-002a | Gruppen, Mengensperren, Entfernen, Zuschnittabgleich | 43 Fälle, 35 Zeilenrenderings, 28 Mengenklammern, 34 Requests; zehn Quellhashvergleiche | Lokal abgeschlossen; `cart-core-2026-09-21.json`, TP-010 FAIL |
 | CART-002a.1 | Original-Liquid vs. JS, Kundeneinheit und Mengenfeld | 20 Cartzustände; 35 Zeilen und 28 berechnete Mengen via Original-Selector min=max gesperrt; Stück/Paket änderbar | PASS lokal, keine native Browser-/Serversperre |
 | CART-002a.2 | Gruppen-/Einzellöschung bis Request | Originalklasse nutzt alle Gruppenkeys für update, Einzelzeile/Änderung für change; Drawerpfad/Checkoutmarker kontrolliert | PASS lokal im Erfolgsvertrag, Morph/DOMParser modelliert |
 | CART-002a.3 | Fehler bei Entfernen | Sechs Fehlerfälle: Gruppen-/Stück-/letzte Gruppe, JSON-errors/Netzwerk, reduzierte Bewegung/Animation nach Antwort; keine Wiederherstellung, Fehler unsichtbar | FAIL lokal TP-010, Browserreichweite H-012 |
 | CART-002a.4 | Zuschnittattribute, HTTP-Fehler, Gegenprobe, Queue | Zehn Abläufe: schreiben/löschen/erhalten, fehlende Übernahme abgelehnt, Retry erholt Queue, eigene Events ohne Schleife | PASS lokal, Requests/Responses synthetisch; UI-Liquid kein Shopify-Validation-Nachweis |
-| CART-002b | Mengenereignisse/Antwortreihenfolge/Section-/Drawerzustand | Ereignisse lokal b.1 abgeschlossen; Antwort-/Section-/Drawerabläufe b.2 offen | TEILWEISE |
+| CART-002b | Mengenereignisse/Antwortreihenfolge/Section-/Drawerzustand | Ereignisse, Antworten, SectionRenderer und Drawer lokal S09–S12 abgeschlossen | TEILWEISE |
 | CART-002b.1 | Originalselektor → Event → Debounce → Request | Zwölf Fälle/elf Requests/fünf Hashvergleiche. Gleiche Zeile korrekt zusammengefasst, verschiedene Ziele gehen verloren | Lokal abgeschlossen; `cart-events-2026-09-21.json`, TP-011 FAIL |
 | CART-002b.1a | Zwei Zeilen bei 0/100 bzw. 0/299 ms | Nur letztes Ziel im Request, beide Eingabefelder lokal geändert; Reihenfolge umgedreht gleicher Verlust | FAIL lokal TP-011 |
 | CART-002b.1b | Fremdes Ereignis während eigener Wartezeit | Vorheriger Cartrequest ganz verworfen; auch zwei modellierte Cart-Komponenten betroffen | FAIL lokal TP-011; konkrete DOM-Reichweite H-012 |
 | CART-002b.1c | Gleiche Zeile / einzelnes fremdes Ereignis / 301 ms | Letzter Wert derselben Zeile erhalten; fremdes isoliert ignoriert; Timerkontrolle über 301 ms beide Requests | PASS lokal; ausstehende Responses und direkte Methodenaufrufe sind kein Browsernachweis |
-| CART-002b.2 | **NÄCHSTER SCHRITT:** Antwortreihenfolge/Zeilenidentität/Sections/Drawer | SectionRenderer und Drawer gelesen, noch nicht ausgeführt | OFFEN |
-| CALC-001 | Sämtliche Maßgrenzen, Komma/Punkt, leer, 0, negativ, Maxima | Teilprüfungen PR-008–011 sind kein vollständiger Rechnertest | OFFEN nach Warenkorb |
+| CART-002b.2 | Antworten/Zeilenidentität/Sections/Drawer | S10 fünf, S11 acht, S12 elf lokale Fälle; TP-012 sowie H-013/014 | LOKAL ABGESCHLOSSEN; Browser offen |
+| CART-003 | Checkout, Rabatt, Notiz | S13 neun, S14 sechs, S15 sechs, S16 sieben lokale Fälle; TP-013/014 | LOKAL ABGESCHLOSSEN; native Validierung/Express/Persistenz offen |
+| CART-004 | Konsolidierung/Übergabe | S17 kleines Rabattpaket erstellt, keine Implementierung | ABGESCHLOSSEN |
+| CART-LIVE | Native DOM-/History-/Fokus-/Express-/Serverprüfung | H-012–015; S13 Browserberechtigungsablehnung | BLOCKIERT, erst nach geänderter Berechtigung |
+| CALC-001 | Sämtliche Maßgrenzen, Komma/Punkt, leer, 0, negativ, Maxima | PR-020–023 und Eingabe-Mathematik lokal fertig; verbleibende Zustands-/Auswahlwechsel CALC-001a | OFFEN: CALC-001a nächster Schritt |
 | VAR-001 | Schneller Farb-/Artwechsel, Verfügbarkeit, Preis/ID, Zurück/Reload | Noch keine vollständigen Ablaufprüfungen | OFFEN |
 | RUN-001 | JavaScript-Konsole / Exceptions / Netzwerk | Historische `exceptions`-Einträge leer; keine vollständige Netzwerk-/Console-Abdeckung | TEILBELEG, übriges OFFEN |
 | MOB-001 | Mobile ca. 390 px, Menü, Galerie, Rechner, Cart | Historische Referenzseiten ohne Überlauf außer TP-002; kein umfassender Mobile-Audit | OFFEN |
@@ -156,3 +159,12 @@ S16 / CART-003b.3: sieben lokale Notizfälle PASS. Original-debounce bündelt Ei
 Evidence: `audit/evidence/cart-note-2026-09-22.json`; Script `audit/scripts/reproduce-cart-note.mjs`. Route TASK-1E9C956DD1CD B/STATIC; kein Executor. Diagnosescript zweimal korrigiert: Konfigurationshash nicht als gleich voraussetzen; Shopify-Kommentar vor JSON-Parsing entfernen. Danach Syntax/Diagnose PASS. Keine alten Diagnosen wiederholt.
 
 Nächster Schritt: CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene statt abgeschlossene Fälle reduzieren und passende kleine Cart-/Rabatt-Fix-Packs anhand vollständiger Briefs vorbereiten (weiter Phase 1/2, keine Reparaturen). Browser-/Livegrenzen H-012–015 und Konfigurationsdrift ausdrücklich offen halten. Danach nächsten ungeprüften Rechner-/Variantenvertrag aus TEST_MATRIX auswählen. Keine fertigen Diagnosen wiederholen; Browserberechtigung S13 nicht umgehen.
+
+
+## S17 – Aktuelle Fortsetzungsreihenfolge
+
+S17 / CART-004 abgeschlossen: Cart-Testmatrix S08–S16 konsolidiert, veraltete OFFEN-Einträge korrigiert, Browser-/Livegrenzen separat geführt. FIX_PACK_03_CART_REQUEST_FEEDBACK für TP-013/014 READY zur späteren lokalen Übergabe (inklusive minimaler Ownershipkorrektur der deaktivierten Notiz, keine Aktivierung). Cartkern TP-010/011 und Renderer TP-012 bleiben NOT READY wegen offener Integrations-/Aufrufergrenzen. Keine neuen Issues, Tests nicht erneut ausgeführt, keine Reparatur.
+
+CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten.
+
+Frühere Sessionabschnitte unten/oben dokumentieren historische Arbeitsstände; maßgeblich sind aktuelle Matrix und MASTER_STATUS. Abgeschlossene Evidence bleibt erhalten.

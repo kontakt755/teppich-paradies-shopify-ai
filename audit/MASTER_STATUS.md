@@ -2,79 +2,36 @@
 
 AUDIT FORTSCHRITT: 28 %
 
-Stand: 21.09.2026. Phase 1 – ausschließlich Analyse. Sequenziell; keine Subagenten. Keine Shopdateien oder Produktdaten geändert. Prozentwert ist eine grobe Abdeckungsschätzung, kein Anteil bestandener Tests.
+Stand: 22.09.2026. Phase 1, Analyse und vorbereitende Übergabepakete. Sequenziell, keine Subagenten, keine Shopänderungen. Prozentwert grobe Abdeckung, kein Testpass-Anteil.
 
 Abgeschlossen:
-- [x] Historischer Einstieg übernommen: Repository und Live-Theme am 19.09. identifiziert; Source-Manifest vorhanden. Keine erneute Vollkartierung.
-- [x] Alle 32 Einträge in der übernommenen Runtime-Evidence ausgewertet; Desktop 1440 und Mobile 390.
-- [x] Paket-Referenzpreis und Rollenware-Referenzpreis gegen historische Warenkorbantworten geprüft.
-- [x] Paket-Eingabevalidierung und leere ausgewählte Fußleiste lokal am Originalcode reproduziert; drei Issues dokumentiert.
-- [x] Audit-Grundstruktur und ein zusammenhängendes Übergabepaket erstellt.
-- [x] PR-020 lokal abgeschlossen: Raummaß-Rundung, Preisbox/Cart-Payload und interne Maßprüfung; 35 Integrationsfälle und vollständiges Ganzzahlraster. TP-004 als bedingter Codefehler, aktuelle Live-Reichweite offen.
-- [x] PR-021 lokal abgeschlossen: Liquid-Datenvertrag und Einfass-Originalfunktionen in 47 Fällen geprüft, 29 Requests abgefangen. Material/Kante/Mindestpreis/Properties stimmen im gültigen Referenzpfad; TP-005 als bedingter Service-Ausfallfehler, Live-Reichweite offen.
-- [x] PR-022 lokal abgeschlossen: 61 Haftunterlagen-Integrationsfälle und 198.468 Auswahl-/Rundungsvergleiche. Günstigste einzelne Variante für gleich breite Bahnen in fester Richtung, Preis/Properties/Gruppe bis Payload korrekt. Kein neuer bestätigter Fehler; Live-Produktvertrag/andere Verlegeweisen H-008 offen.
 
-- [x] PR-023a lokal abgeschlossen: 46 Fälle am vollständigen Wunschmaß-Liquid/JS, 31 abgefangene Requests. Echte Formflächen/Mindestpreis/Zuschlag korrekt; TP-006/007 bedingt lokal bestätigt. Historisch keine aktiven Produkte auf diesem Template, heute H-009 offen.
-
-- [x] PR-023b.1 lokal abgeschlossen: Klebevinyl-/Teppichfliesen-Paketvertrag über Original-Liquid, Preisansichten und JS bis Payload/Cartzeile; 17 Fälle, 14 Requests, 28 Cart-Renderings. TP-008/P3: dritte Flächennachkommastelle wird nur im Cart verkürzt.
-
-- [x] PR-023b.2 lokal abgeschlossen: 10 PVC- und 20 Stück-/Zubehörfälle, 26 Requests abgefangen, sieben bestehende Mengenhilfe-Tests bestanden. TP-009/P2: bei mehreren Meteroptionen bleibt die berechnete Breite auf der ersten Variante; aktuelle Produktreichweite H-011.
-
-- [x] CART-002a lokal abgeschlossen: 43 Fälle, 35 Zeilenrenderings, 28 Mengenklammern, 34 Requests; 47 bestehende Tests bestanden. TP-010/P2: fehlgeschlagene Löschung stellt optimistisch entfernte Zeilen nicht wieder her.
-
-- [x] CART-002b.1 lokal abgeschlossen: zwölf Originalereignis-/Debouncefälle, elf Requests, fünf Quellhashvergleiche. TP-011/P2: verschiedene Mengenänderungen verdrängen sich im gemeinsamen Timer.
+- [x] Historischen Einstieg/Runtime vom 19.09. übernommen; Preisreferenzen und PR-001–011 lokal geprüft.
+- [x] PR-020–023b.2: Raummaß, Einfassung, Haftunterlage, ruhender Wunschmaßpfad, Paket-/PVC-/Stückverträge lokal abgeschlossen (S02–S07).
+- [x] CART-002a/b: Gruppen/Sperren/Löschung/Abgleich, Mengenereignisse, Antworten/SectionRenderer und Drawer lokal abgeschlossen (S08–S12).
+- [x] CART-003: Checkout-Markup, Rabatt und Notiz lokal abgeschlossen (S13–S16). Keine native Checkoutabnahme.
+- [x] CART-004: Testmatrix und Übergaben konsolidiert (S17); zwei READY-Pakete, keines umgesetzt.
 
 In Arbeit:
-- [~] Warenkorb: nächster Teil CART-003 (Browser-/Checkoutintegration). Nur dieser Bereich wird als Nächstes bearbeitet.
+
+- [~] Nächster Bereich Rechnerzustandswechsel CALC-001a/H-003.
 
 Noch offen:
-- [ ] Preisbereich lokal bis PR-023b.2 abgeschlossen; offene Live-Reichweite/-Produktfreigaben H-005–011 und echte Browserabläufe klären.
-- [ ] Warenkorb bearbeiten, Gruppen, Kombinationen, Checkout vertiefen.
-- [ ] Vollständige Rechner-/Grenzfall-, Varianten- und Runtime-Prüfung.
-- [ ] Mobile, Suche/Navigation, Performance, SEO, UX, Cross-Feature-Tests und finaler Regressionstest.
-- [ ] Architekturkarte vervollständigen; Phase 2 abschließen; spätere freigegebene Fixes und QA.
-- [ ] FINAL_REPORT.md und belegte Abschlussbewertungen.
 
-Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 6 · P3: 8 · P4: 0. Davon TP-004–007 ausschließlich lokal bestätigte bedingte Codefehler; TP-006/007 historisch ruhender Pfad, aktuelle Live-Betroffenheit nicht belegt. TP-008 lokal bestätigter Cart-Anzeigeverlust, keine falsche Menge/Geldabrechnung. TP-009 lokal bedingter Rollenbreiten-/Mengenfehler, heutige PVC-Konfiguration offen. TP-010 lokal bestätigte fehlende Wiederherstellung nach abgelehnter Cartlöschung, Browser-/Live-Reichweite H-012. TP-011 lokal verlorene Mengenereignisse, reale Browserreichweite ebenfalls H-012.
+- [ ] Heutige Live-/Produktverträge H-004–011 und Browser-/Cart-/Checkoutintegration H-012–015.
+- [ ] Restliche Rechnerzustände, Varianten, Runtime, Mobile, Navigation/Suche, SEO, Performance, UX, Cross-Feature-/Finalregression.
+- [ ] Phase 2 insgesamt, freigegebene Implementierung/Fix-QA und vollständiger FINAL_REPORT.
 
-Aktuell untersuchter Bereich: Warenkorb, Phase 1.
-Letzte abgeschlossene Aufgabe: CART-003b.3. S16 / CART-003b.3: sieben lokale Notizfälle PASS. Original-debounce bündelt Eingaben nach 200 ms; leere und Unicode-Notiz korrekt im Payload. Netzwerk-/HTTP500-Antworten ohne Fehlermeldung, erneute Eingabe startet neuen Request. TP-014 um bedingten Notizpfad erweitert: alter finally löscht neuere Controllerreferenz. Pending Timer läuft nach modelliertem Disconnect weiter; echte DOM-/Serverwirkung offen. Textarea ist name=note mit form=cart-form, daher kein bewiesener Bestellnotizverlust aus Ajaxfehler allein. Lokale Einstellung show_cart_note=false. Vier Code-/Markuphashes historisch identisch; settings_data.json weicht vom historischen Livehash ab, heutige Liveeinstellung nicht verifiziert. Keine Shopänderung.
-Nächste Aufgabe: **CART-004**. CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene statt abgeschlossene Fälle reduzieren und passende kleine Cart-/Rabatt-Fix-Packs anhand vollständiger Briefs vorbereiten (weiter Phase 1/2, keine Reparaturen). Browser-/Livegrenzen H-012–015 und Konfigurationsdrift ausdrücklich offen halten. Danach nächsten ungeprüften Rechner-/Variantenvertrag aus TEST_MATRIX auswählen. Keine fertigen Diagnosen wiederholen; Browserberechtigung S13 nicht umgehen.
-Wichtige offene Hypothesen: siehe ISSUES.md H-001, H-003–H-015. H-002 (unterschiedliche Rundungsregeln) lokal geschlossen. H-007 betrifft Oval-Näherung; H-008 heutige Haftunterlagendaten und zulässige Alternativverlegung. Keine dieser offenen Fach-/Datenfragen als zusätzlicher Fehler gezählt.
-Fix-Packs Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0
+Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 6 · P3: 8 · P4: 0 (14 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
-Live-Testgrenze: Browser-/DNS-Zugriff war in S01 blockiert; S02–S09 ausschließlich lokale Schritte, keine erneuten Infrastrukturversuche. Live-Theme seit dem 19.09. nicht neu verifiziert; maßgebliche Registry: `domains/shopify/live-theme.json`. Kein aktueller Live-Beleg für cmExact im Rollenrechner, einen ausgefallenen Kettelservice, aktuelle Form-/Unterlagenfreigaben oder die eingesetzte Mail-Vorlage. Lokale Reproduktion ersetzt keine neue Live-Freigabe. Details in SESSION_LOG.md und evidence/README.md.
+Aktuell untersuchter Bereich: Rechnerzustandswechsel, Phase 1.
+Letzte abgeschlossene Aufgabe: CART-004. S17 / CART-004 abgeschlossen: Cart-Testmatrix S08–S16 konsolidiert, veraltete OFFEN-Einträge korrigiert, Browser-/Livegrenzen separat geführt. FIX_PACK_03_CART_REQUEST_FEEDBACK für TP-013/014 READY zur späteren lokalen Übergabe (inklusive minimaler Ownershipkorrektur der deaktivierten Notiz, keine Aktivierung). Cartkern TP-010/011 und Renderer TP-012 bleiben NOT READY wegen offener Integrations-/Aufrufergrenzen. Keine neuen Issues, Tests nicht erneut ausgeführt, keine Reparatur.
+Nächste Aufgabe: **CALC-001a**. CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten.
+Wichtige offene Hypothesen: H-001, H-003–H-015; H-002 lokal geschlossen. Keine Hypothese als bestätigten Fehler zählen.
+Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
-Historische Evidence-Basis: `66729099c4122385e19172a1f5ba14a7524c3bfb`. HEAD vor S09: `1bf1d1a` (S08-Fachcommit `67ee9bc`, Übergabedokumentation `1bf1d1a`). Geprüfte Rechnerquellen sind SHA-256-identisch zum historischen Live-Snapshot; S03 ergänzt sechs Hashvergleiche für Einfassung, S05 Block und Template des separaten Wunschmaßpfads. S06 ergänzt elf Paket-/Preissnippet-/Templatevergleiche; S07 neun Rollen-/Mengenhilfe-/Formularquellen; S08 zehn Cart-/Gruppen-/Selektor-/Abgleichquellen; S09 fünf Event-/Debounce-/Selektor-/Cartquellen. Remote nicht erneut gelesen, kein Pull/Merge; ältere Remoteangaben im Sessionlog sind historisch. Das Audit liegt tatsächlich in `audit/` im Repository; alte Verweise auf `outputs/audit/` sind überholt.
+Aktuelle Zugriffsgrenze: S13 Chrome verbunden, Shopnavigation wegen verweigerter Berechtigung abgelehnt. Keine alternative Browser-/HTTP-/CDP-Umgehung, kein erneuter Versuch ohne geänderte Berechtigung. Alte S01-DNS-/Runnernotizen sind historisch. MAIN seit 19.09. nicht neu verifiziert; Registry domains/shopify/live-theme.json. settings_data.json ist nicht historisch live-hashgleich; heutige Liveeinstellungen unbekannt.
 
-Git-Sicherung: `.git` am 21.09. regulär beschreibbar; `git add`/`git commit` für S06 mit `6b92861` erfolgreich. Frühere Sperrnotizen sind historische Sessioninformation. S07 nach bestandener Abschlussprüfung tatsächlich in `4b8e49d` committed (15 Audit-/Progressdateien). S08 nach bestandener Integrität/Secret-Scan tatsächlich in `67ee9bc` gesichert, aktueller Branch `audit/shop-audit`. `CONTINUE_PROMPT.md` und zeitweise `docs/ai-dashboard/issues.json` sind externe Änderungen und bleiben außerhalb des Audit-Commits. Kein Pull/Merge/Push.
+Evidence-Basis 66729099c4122385e19172a1f5ba14a7524c3bfb; einzelne Quellhashes und Grenzen je Diagnose in audit/evidence. Chronologie/Commitreferenzen S01–S16 bleiben in SESSION_LOG.md; keine alten Evidences entfernt oder erneut ausgeführt.
 
-S09 nach bestandener Integritäts-/Secretprüfung tatsächlich in `53ad666` committed (14 Audit-/Progressdateien). Externe CONTINUE_PROMPT.md und Dashboardänderung weiterhin nicht Teil des Audit-Commits.
-
-S10: insgesamt zwölf bestätigte Issues, P0=0/P1=0/P2=6/P3=6/P4=0. Auditabdeckung weiterhin grob 28 %, Phase 1.
-
-S10 gesichert in `3a17b5f`: fünf Diagnosefälle, Syntax-/Integritäts-/Secretcheck PASS. Initiale Integritätsassertion erwartete versehentlich zehn statt neun vorgeschriebener Fortschrittsabschnitte; korrigiert und erfolgreich geprüft. Nächster Schritt CART-002b.2b. Externe Prompt-/Dashboardänderungen nicht committed.
-
-S11: Phase 1, grobe Abdeckung 28 %, zwölf bestätigte Issues unverändert. H-013 offen, kein zusätzlicher bestätigter Fehler aus synthetischer Konkurrenz.
-
-S11 tatsächlich gesichert in `36a875e` (14 Dateien). Acht Diagnosefälle, Syntax, Integrität, Secret-Scan und git diff --check bestanden. Externe Prompt-/Dashboardänderungen erhalten und nicht committed. Nächster Schritt CART-002b.2c Drawer/Dialog; Status WORKING.
-
-S12: elf Lifecyclefälle abgeschlossen. Phase 1, Abdeckung grob 28 %, zwölf bestätigte Issues unverändert; H-014 offen.
-
-S12 tatsächlich in `6726c3d` gesichert (14 Dateien). Elf Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Externe Prompt-/Dashboardänderungen nicht committed. Nächster Schritt CART-003 Browserfähigkeit und native Cartintegration; Status WORKING.
-
-S13: 22.09.2026, Phase 1, grob 28 %, zwölf bestätigte Issues unverändert. Aktuelle Browsergrenze ist Zugriffsberechtigung (Chrome verbunden), nicht pauschal die historische DNS-/Runnergrenze. Keine Umgehung.
-
-S13 tatsächlich in `d9a0529` gesichert (15 Dateien). Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b Rabatt/Notiz, Browserberechtigung bleibt Grenze. Status WORKING.
-
-S14 aktuell: 13 bestätigte Issues, P0=0/P1=0/P2=6/P3=7/P4=0. Phase 1, grobe Abdeckung 28 %. TP-013 lokale Feedbacklücke.
-
-S14 in `e26c6bd` tatsächlich gesichert: sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b.2; Status WORKING.
-
-S15 aktuell: 14 bestätigte Issues, P0=0/P1=0/P2=6/P3=8/P4=0. Phase 1, grob 28 %. TP-014 lokal bestätigt, aktuelle Live-Reichweite offen.
-
-S15 in `93f1eef` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-003b.3 Cartnotiz; Status WORKING.
-
-S16 aktuell: 14 Issues unverändert (P2=6/P3=8), Phase 1, grob 28 %. Notiz lokal deaktiviert; settings_data.json nicht historisch live-hashgleich.
-
-S16 in `8636ca5` tatsächlich gesichert. Sieben Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-004 Konsolidierung; Status WORKING.
+Git: Branch audit/shop-audit, .git schreibbar. Letzter Fachcommit S16 8636ca5, Sicherungsnotiz 5875ef0. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json nicht stagen. Kein Merge/Push.

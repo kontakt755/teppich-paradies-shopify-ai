@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "all required pack sections",
+    "evidence references/local markdown links",
+    "two READY packs/14 issues",
+    "nine progress sections/WORKING",
+    "no modified existing evidence or production source",
+    "git diff --check"
+  ],
+  "productTestsRerun": false
+}
