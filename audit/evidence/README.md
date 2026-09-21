@@ -129,3 +129,8 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S16
 
 `cart-note-2026-09-22.json`: sieben Fälle, fünf Hashes davon vier historische Matches; Konfigurationsdrift ausdrücklich erfasst. Script `audit/scripts/reproduce-cart-note.mjs`. Lokaler Notizschalter false, kein heutiger Livebeleg. Integritäts-/Secretprotokolle S16.
+
+
+## S18
+
+`roll-extra-transitions-2026-09-22.json`: neun Fälle, zwei historische Hashvergleiche; Script `audit/scripts/reproduce-roll-extra-transitions.mjs`. Lokale Auswahl-/Zubehörfunktionen mit persistenten Feldern, keine vollständige Picker-/Submitintegration. Integritäts-/Secretprotokolle S18.

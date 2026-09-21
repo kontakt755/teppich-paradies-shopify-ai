@@ -6,31 +6,31 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S17 / CART-004 abgeschlossen, grob 28 %. Weiter CALC-001a.
+Phase 1, S18 / CALC-001a.1 abgeschlossen. Grob 28 %. Weiter vollständiger Breiten-/Artwechsel bis Submit.
 
 ## Erledigte Aufgaben
 
-S17 / CART-004 abgeschlossen: Cart-Testmatrix S08–S16 konsolidiert, veraltete OFFEN-Einträge korrigiert, Browser-/Livegrenzen separat geführt. FIX_PACK_03_CART_REQUEST_FEEDBACK für TP-013/014 READY zur späteren lokalen Übergabe (inklusive minimaler Ownershipkorrektur der deaktivierten Notiz, keine Aktivierung). Cartkern TP-010/011 und Renderer TP-012 bleiben NOT READY wegen offener Integrations-/Aufrufergrenzen. Keine neuen Issues, Tests nicht erneut ausgeführt, keine Reparatur.
+S01–S17 siehe SESSION_LOG. S18 / CALC-001a.1: neun neue Übergangs-/Ereignisverträge PASS, zwei historische Quellhashvergleiche. Original-baseOptions/findVariant/rateOf/updateExtras über persistenten Feldern: Rot Meter→Rot Raum→Blau ohne Zubehörfreigabe→Blau Meter→Rot zurück. ID/Preis folgt gewählter Farbe/Art, Zubehör bei fehlender Freigabe ohne Items, eigene Leistenlänge 7 bleibt erhalten und wird beim Zurückwechseln wieder verwendet. Formular-ID hat Vorrang vor URL (synthetische Kombination); Farbchange plant 120 ms, Formularchange 100 ms, fremder Change nichts. Kein neuer bestätigter Fehler; H-003 nur teilweise geklärt.
 
 ## Offene Aufgaben
 
-CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten. Gesamter restlicher Audit, Implementierung/QA und FINAL_REPORT offen.
+CALC-001a.2: syncArtUi + calculate + Submit als zusammenhängende lokale Zustandsfolge prüfen: Wechsel zu Farbe ohne gewählte Rollenbreite bzw. ohne kaufbare Wunschmaßvariante, Art-Rückschaltung und Zubehör/ID im nachfolgenden Payload. Reale Farb-Picker-/Formular-/URL-Synchronisation anschließend VAR-001; keine Browserumgehung, keine fertigen Preisraster erneut ausführen. Weitere Auditbereiche, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-S17 MASTER_STATUS, SESSION_LOG, TEST_MATRIX, ISSUES (Tabellenformat/Datum), DEPENDENCY_MAP, FIX_PACK_INDEX, neues FIX_PACK_03_CART_REQUEST_FEEDBACK, Integritäts-/Secretprotokolle und CODEX_PROGRESS. Externe Prompt-/Dashboardänderungen erhalten.
+S18 Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues Übergangsscript/JSON, Integritäts-/Secretprotokolle und CODEX_PROGRESS. Shopquellen unverändert; externe Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Dokument-/Paketstruktur, lokale Links, Issue-/Readyzahlen, Quelländerungsscope, git diff --check und Secret-Scan. Keine Produktdiagnosen wiederholt. Route TASK-516D83336635 B/STATIC.
+Syntax/Erstlauf PASS: neun neue Übergangs-/Ereignisverträge, zwei historische Quellhashvergleiche. Keine Preisraster/Replays. Route TASK-E36D4BE4A434 B/STATIC. Dokument-/JSON-/Quellenintegrität, git diff --check und Secret-Scan protokolliert.
 
 ## Bekannte Fehler
 
-14 bestätigte Issues unverändert: P0=0/P1=0/P2=6/P3=8/P4=0. Keine Reparatur, keine Liveabnahme. Browserberechtigung blockiert seit S13; Konfigurationsdrift offen. .git schreibbar.
+14 bestätigte Issues unverändert: P0=0/P1=0/P2=6/P3=8/P4=0. H-003 nur teilweise lokal geklärt; synthetische Varianten, gesteuerte Art, kein vollständiger Picker/Submit. Browserberechtigung seit S13 blockiert. .git schreibbar.
 
 ## Naechster konkreter Arbeitsschritt
 
-CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten.
+CALC-001a.2: syncArtUi + calculate + Submit als zusammenhängende lokale Zustandsfolge prüfen: Wechsel zu Farbe ohne gewählte Rollenbreite bzw. ohne kaufbare Wunschmaßvariante, Art-Rückschaltung und Zubehör/ID im nachfolgenden Payload. Reale Farb-Picker-/Formular-/URL-Synchronisation anschließend VAR-001; keine Browserumgehung, keine fertigen Preisraster erneut ausführen.
 
 ## Letzter erfolgreicher Git-Commit
 

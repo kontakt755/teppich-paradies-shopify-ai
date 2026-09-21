@@ -51,3 +51,5 @@ S15: Rabattfeedback/-Abbruch-Kandidat umfasst TP-013/014, NOT READY bis Notizver
 S16: Notizvergleich abgeschlossen; TP-014 betrifft bedingt auch cart-note.js (lokal deaktiviert). Vor Packzuweisung aktive Rabattklasse und ruhende Notizänderung getrennt abgrenzen; keine Notizaktivierung. CART-004 konsolidiert kleine Pakete. Ready=1, Done/QA=0.
 
 S17 maßgeblicher Stand: Ready=2, Done/QA=0. Paket 03 ist Übergabereife, keine Umsetzung. Frühere Ready=1-Sessionnotizen bleiben historisch. TP-014 umfasst im neuen Paket beide Klassen; Notizfunktion bleibt deaktiviert. Cartkern/Renderer weiterhin NOT READY, keine vorschnellen Packdateien.
+
+S18: kein neues bestätigtes Issue/Pack. Rollenblock weiter NOT READY; H-003 durch Auswahl-/Zubehörfunktionen teilweise belegt, vollständiger Zustands-/Submitvertrag offen. Ready=2, Done/QA=0.
