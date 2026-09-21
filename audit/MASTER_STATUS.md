@@ -72,3 +72,5 @@ S14 aktuell: 13 bestätigte Issues, P0=0/P1=0/P2=6/P3=7/P4=0. Phase 1, grobe Abd
 S14 in `e26c6bd` tatsächlich gesichert: sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b.2; Status WORKING.
 
 S15 aktuell: 14 bestätigte Issues, P0=0/P1=0/P2=6/P3=8/P4=0. Phase 1, grob 28 %. TP-014 lokal bestätigt, aktuelle Live-Reichweite offen.
+
+S15 in `93f1eef` tatsächlich gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CART-003b.3 Cartnotiz; Status WORKING.

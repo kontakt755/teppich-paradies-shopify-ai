@@ -34,6 +34,6 @@ CART-003b.3: assets/cart-note.js mit Original-debounce/fetchConfig und snippets/
 
 ## Letzter erfolgreicher Git-Commit
 
-e26c6bd – audit: Stille Rabattfehler TP-013 lokal belegen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log; Branch audit/shop-audit, kein Merge/Push.
+93f1eef – audit: Rabattentfernung und Controllerverlust TP-014 belegen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING
