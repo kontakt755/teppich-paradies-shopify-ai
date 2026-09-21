@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T11:39:23.160Z",
+  "generated_at": "2026-09-21T11:44:07.302Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 119,
+  "count": 120,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T11:39:23.160Z",
+    "fetchedAt": "2026-09-21T11:44:07.302Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,19 +64,43 @@
   },
   "issues": [
     {
+      "number": 445,
+      "title": "Universelle Farbauswahl: kompakter Ausloeser mit Bottom Sheet und Dialog",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/445",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-21T11:43:51Z",
+      "updated_at": "2026-09-21T11:43:52Z",
+      "closed_at": null
+    },
+    {
       "number": 442,
       "title": "Altdatei tp-google-rating: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/442",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Nach dem naechsten Livegang wird 204438208846 unveroeffentlicht und danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft:",
       "fields": {
         "description": "## Stand 2026-09-21 11:32Z\n`blocks/tp-google-rating.liquid` ist aus `main` entfernt (#440, #170) und aus dem unveroeffentlichten Preview-Theme 204436144462 geloescht (gezielter `--only`-Push, Gegenprobe per Admin API: nur diese Datei fehlt, `tp-bewertungsbeleg.liquid` und `price.liquid` unveraendert).\n\n**Die Datei liegt noch auf dem heutigen Live-Theme 204438208846.** Dort stoert sie nicht (rendert nichts, in keinem Template), und das Live-Theme wird nie direkt angefasst.",
@@ -97,7 +121,7 @@
         }
       },
       "created_at": "2026-09-21T11:32:01Z",
-      "updated_at": "2026-09-21T11:39:10Z",
+      "updated_at": "2026-09-21T11:39:35Z",
       "closed_at": "2026-09-21T11:39:09Z"
     },
     {
@@ -176,13 +200,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:07:10Z",
-      "updated_at": "2026-09-21T11:23:24Z",
+      "updated_at": "2026-09-21T11:40:00Z",
       "closed_at": "2026-09-21T11:04:07Z"
     },
     {
