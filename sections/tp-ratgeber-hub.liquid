@@ -1,0 +1,221 @@
+{%- comment -%}
+  TP Ratgeber Themen-Seite (Template blog.ratgeber): ein Blog = ein Bodenbereich.
+
+  Die Artikel werden ueber ihre TAGS in Themengruppen sortiert. Reihenfolge und
+  Namen der Gruppen stehen in der Einstellung "gruppen" (ein Tag je Zeile).
+  Jeder Artikel erscheint genau einmal - in der ERSTEN Gruppe, deren Tag er
+  traegt. Artikel ohne passenden Tag landen in der Schlussgruppe. Leere Gruppen
+  werden nicht ausgegeben. Der Tag-Vergleich ignoriert Gross-/Kleinschreibung.
+
+  Tag-Ansicht (/blogs/<blog>/tagged/<tag>): Shopify liefert dann nur die
+  Artikel dieses Tags; sie stehen in einem einzigen Raster.
+
+  blog.articles wird paginiert (250 je Seite) - ohne paginate endet jede
+  Schleife still nach 50 Artikeln.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign rg_h_thema = ''
+  if current_tags != blank
+    assign rg_h_thema = current_tags | first
+  endif
+  assign rg_h_zeilen = section.settings.gruppen | newline_to_br | split: '<br />'
+  assign rg_h_rest_titel = section.settings.rest_heading | default: 'Weitere Themen'
+-%}
+
+<div class="tp-rg-hub">
+  <div class="tp-s-wrap">
+    {%- render 'tp-ratgeber-breadcrumb', blog: blog, thema: rg_h_thema -%}
+
+    <header class="tp-rg-hub__kopf">
+      <h1 class="tp-rg-hub__h1">{{ blog.title | escape }}</h1>
+      {%- if rg_h_thema != blank -%}
+        <p class="tp-rg-hub__thema">
+          Thema: <strong>{{ rg_h_thema | escape }}</strong>
+          <a class="tp-s-link" href="{{ blog.url }}">Alle Themen anzeigen</a>
+        </p>
+      {%- elsif section.settings.intro != blank -%}
+        <div class="tp-rg-hub__intro">{{ section.settings.intro }}</div>
+      {%- endif -%}
+    </header>
+
+    {%- paginate blog.articles by 250 -%}
+      {%- if blog.articles.size == 0 -%}
+        <p class="tp-rg-hub__leer">{{ section.settings.leer_text | escape }}</p>
+
+      {%- elsif rg_h_thema != blank -%}
+        <ul class="tp-rg-raster">
+          {%- for rg_h_artikel in blog.articles -%}
+            {%- assign rg_h_sofort = false -%}
+            {%- if forloop.index <= 2 -%}{%- assign rg_h_sofort = true -%}{%- endif -%}
+            <li>{%- render 'tp-ratgeber-karte', artikel: rg_h_artikel, ebene: 'h2', sofort: rg_h_sofort -%}</li>
+          {%- endfor -%}
+        </ul>
+
+      {%- else -%}
+        {%- liquid
+          assign rg_h_zugeordnet = ','
+          assign rg_h_nav = ''
+          assign rg_h_gruppen_zahl = 0
+          assign rg_h_sofort_rest = 2
+        -%}
+        {%- capture rg_h_gruppen_html -%}
+          {%- for rg_h_zeile in rg_h_zeilen -%}
+            {%- liquid
+              assign rg_h_gruppe = rg_h_zeile | strip
+              if rg_h_gruppe == blank
+                continue
+              endif
+              assign rg_h_gruppe_klein = rg_h_gruppe | downcase
+              assign rg_h_zahl = 0
+            -%}
+            {%- capture rg_h_karten -%}
+              {%- for rg_h_artikel in blog.articles -%}
+                {%- liquid
+                  assign rg_h_probe = ',' | append: rg_h_artikel.id | append: ','
+                  if rg_h_zugeordnet contains rg_h_probe
+                    continue
+                  endif
+                  assign rg_h_tags_klein = rg_h_artikel.tags | join: '|||' | downcase | split: '|||'
+                  unless rg_h_tags_klein contains rg_h_gruppe_klein
+                    continue
+                  endunless
+                  assign rg_h_zugeordnet = rg_h_zugeordnet | append: rg_h_artikel.id | append: ','
+                  assign rg_h_zahl = rg_h_zahl | plus: 1
+                  assign rg_h_sofort = false
+                  if rg_h_sofort_rest > 0
+                    assign rg_h_sofort = true
+                    assign rg_h_sofort_rest = rg_h_sofort_rest | minus: 1
+                  endif
+                -%}
+                <li>{%- render 'tp-ratgeber-karte', artikel: rg_h_artikel, sofort: rg_h_sofort -%}</li>
+              {%- endfor -%}
+            {%- endcapture -%}
+            {%- if rg_h_zahl > 0 -%}
+              {%- liquid
+                assign rg_h_gruppen_zahl = rg_h_gruppen_zahl | plus: 1
+                assign rg_h_id = rg_h_gruppe | handleize | prepend: 'thema-'
+                assign rg_h_nav = rg_h_nav | append: '<li><a href="#' | append: rg_h_id | append: '">'
+                assign rg_h_gruppe_sicher = rg_h_gruppe | escape
+                assign rg_h_nav = rg_h_nav | append: rg_h_gruppe_sicher | append: '</a></li>'
+              -%}
+              <section class="tp-rg-gruppe" id="{{ rg_h_id }}" aria-labelledby="{{ rg_h_id }}-titel">
+                <h2 class="tp-rg-gruppe__titel" id="{{ rg_h_id }}-titel">{{ rg_h_gruppe | escape }}</h2>
+                <ul class="tp-rg-raster">{{ rg_h_karten }}</ul>
+              </section>
+            {%- endif -%}
+          {%- endfor -%}
+
+          {%- comment -%} Schlussgruppe: alles, was keinen der Gruppen-Tags traegt {%- endcomment -%}
+          {%- assign rg_h_zahl = 0 -%}
+          {%- capture rg_h_karten -%}
+            {%- for rg_h_artikel in blog.articles -%}
+              {%- liquid
+                assign rg_h_probe = ',' | append: rg_h_artikel.id | append: ','
+                if rg_h_zugeordnet contains rg_h_probe
+                  continue
+                endif
+                assign rg_h_zahl = rg_h_zahl | plus: 1
+                assign rg_h_sofort = false
+                if rg_h_sofort_rest > 0
+                  assign rg_h_sofort = true
+                  assign rg_h_sofort_rest = rg_h_sofort_rest | minus: 1
+                endif
+              -%}
+              <li>{%- render 'tp-ratgeber-karte', artikel: rg_h_artikel, sofort: rg_h_sofort -%}</li>
+            {%- endfor -%}
+          {%- endcapture -%}
+          {%- if rg_h_zahl > 0 -%}
+            {%- liquid
+              if rg_h_gruppen_zahl == 0
+                assign rg_h_rest_titel = 'Alle Beiträge'
+              endif
+              assign rg_h_gruppen_zahl = rg_h_gruppen_zahl | plus: 1
+              assign rg_h_rest_sicher = rg_h_rest_titel | escape
+              assign rg_h_nav = rg_h_nav | append: '<li><a href="#thema-weitere">' | append: rg_h_rest_sicher | append: '</a></li>'
+            -%}
+            <section class="tp-rg-gruppe" id="thema-weitere" aria-labelledby="thema-weitere-titel">
+              <h2 class="tp-rg-gruppe__titel" id="thema-weitere-titel">{{ rg_h_rest_titel | escape }}</h2>
+              <ul class="tp-rg-raster">{{ rg_h_karten }}</ul>
+            </section>
+          {%- endif -%}
+        {%- endcapture -%}
+
+        {%- if rg_h_gruppen_zahl > 1 -%}
+          <nav class="tp-rg-themen" aria-label="Themen in diesem Ratgeber">
+            <ul class="tp-rg-themen__liste">{{ rg_h_nav }}</ul>
+          </nav>
+        {%- endif -%}
+
+        {{ rg_h_gruppen_html }}
+      {%- endif -%}
+
+      {%- if paginate.pages > 1 -%}
+        <nav class="tp-rg-seiten" aria-label="Seiten">
+          {{ paginate | default_pagination: next: 'Weiter', previous: 'Zurück' }}
+        </nav>
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-rg-hub { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
+  .tp-rg-hub__kopf { margin: 8px 0 28px; max-width: 760px; }
+  .tp-rg-hub__h1 { margin: 0 0 12px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-rg-hub__intro { font-size: 17px; line-height: 1.65; }
+  .tp-rg-hub__intro p { margin: 0 0 10px; }
+  .tp-rg-hub__intro a { color: var(--tp-red-dark, #96262f); text-underline-offset: 3px; }
+  .tp-rg-hub__thema { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 0; font-size: 17px; }
+  .tp-rg-hub__thema strong { color: var(--tp-ink, #1d1a17); }
+  .tp-rg-hub__thema .tp-s-link { margin: 0; font-size: 15px; }
+  .tp-rg-hub__leer { margin: 0; padding: 24px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r, 10px); font-size: 17px; }
+
+  .tp-rg-themen { margin: 0 0 12px; }
+  .tp-rg-themen__liste { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-rg-themen__liste li { margin: 0; padding: 0; }
+  .tp-rg-themen__liste a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border: 1px solid var(--tp-line-2, #d5cec4); border-radius: 999px; background: #fff; color: var(--tp-ink, #1d1a17); font-size: 15px; font-weight: 600; text-decoration: none; }
+  .tp-rg-themen__liste a:hover { border-color: var(--tp-ink, #1d1a17); }
+
+  .tp-rg-gruppe { padding-top: 36px; scroll-margin-top: calc(var(--header-height, 100px) + 8px); }
+  .tp-rg-gruppe__titel { margin: 0 0 18px; font-size: clamp(22px, 2.4vw, 28px); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); }
+
+  .tp-rg-raster { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .tp-rg-raster > li { margin: 0; padding: 0; min-width: 0; }
+
+  .tp-rg-seiten { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 40px; font-size: 16px; }
+  .tp-rg-seiten a, .tp-rg-seiten .current { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 0 12px; border-radius: var(--tp-r, 10px); color: var(--tp-ink, #1d1a17); text-decoration: none; }
+  .tp-rg-seiten a { border: 1px solid var(--tp-line-2, #d5cec4); }
+  .tp-rg-seiten a:hover { border-color: var(--tp-ink, #1d1a17); }
+  .tp-rg-seiten .current { background: var(--tp-ink, #1d1a17); color: #fff; }
+
+  @media (min-width: 640px) {
+    .tp-rg-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    .tp-rg-hub { padding-top: 24px; }
+  }
+  @media (min-width: 1024px) {
+    .tp-rg-raster { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-rg-themen__liste a, .tp-rg-seiten a { transition: border-color 0.15s; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Ratgeber Themen",
+  "tag": "section",
+  "class": "tp-rg-section",
+  "enabled_on": { "templates": ["blog"] },
+  "settings": [
+    { "type": "richtext", "id": "intro", "label": "Einleitung", "default": "<p>Von der Auswahl über das Verlegen bis zur Pflege: Hier finden Sie Anleitungen und Entscheidungshilfen aus dem Fachhandel.</p>" },
+    { "type": "textarea", "id": "gruppen", "label": "Themengruppen", "info": "Ein Artikel-Tag je Zeile, in der gewuenschten Reihenfolge. Ein Artikel erscheint in der ersten Gruppe, deren Tag er traegt.", "default": "Auswahl & Kaufberatung\nPlanen & Messen\nVorbereiten\nVerlegen\nAbschluss & Leisten\nPflege\nFehler vermeiden" },
+    { "type": "text", "id": "rest_heading", "label": "Titel Schlussgruppe", "default": "Weitere Themen", "info": "Fuer Artikel ohne passenden Tag." },
+    { "type": "text", "id": "leer_text", "label": "Text ohne Artikel", "default": "Hier entstehen gerade die ersten Beiträge. Schauen Sie bald wieder vorbei." }
+  ],
+  "presets": [ { "name": "TP Ratgeber Themen" } ]
+}
+{% endschema %}

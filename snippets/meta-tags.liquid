@@ -279,6 +279,18 @@
   href="{{ canonical_url }}"
 >
 
+{%- comment -%}
+  Tag-Seiten eines Blogs (/blogs/x/tagged/y) zeigen nur einen Ausschnitt der
+  Themenseite. Sie sollen verfolgt, aber nicht indexiert werden - sonst
+  konkurrieren sie mit der Themenseite des Ratgebers.
+{%- endcomment -%}
+{%- if template.name == 'blog' and current_tags -%}
+  <meta
+    name="robots"
+    content="noindex,follow"
+  >
+{%- endif %}
+
 {% if page_description %}
   <meta
     name="description"

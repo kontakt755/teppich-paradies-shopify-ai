@@ -1,0 +1,627 @@
+{%- comment -%}
+  TP Ratgeber-Artikel (Template article.ratgeber).
+
+  Eine ruhige Lesespalte: Breadcrumb, Art-Label + H1, Kurzantwort, Fakten,
+  Bild, Inhaltsverzeichnis, Text, Video (erst nach Klick geladen), danach -
+  bewusst zurueckhaltend und nie im Einstieg - die Verkaufslinks.
+
+  Alle Metafelder (Namespace ratgeber) sind optional. Ist eines leer, entfaellt
+  der zugehoerige Baustein ersatzlos - es wird nichts erfunden.
+
+  Preise werden hier NICHT gezeigt: die Preislogik des Shops (Euro je m2,
+  Paketpreise, Sale-Regeln) lebt an der Produktkarte und wird nicht nachgebaut.
+
+  Kommentare sind bewusst nicht eingebaut - ein Ratgeber ist kein Blog mit
+  Diskussion; Fragen laufen ueber Kontakt und Beratung.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign rg_mf = article.metafields.ratgeber
+  assign rg_art = rg_mf.art.value | strip
+  assign rg_kurz = rg_mf.kurzantwort.value | strip
+  assign rg_dauer = rg_mf.dauer.value | strip
+  assign rg_schwierigkeit = rg_mf.schwierigkeit.value | strip
+  assign rg_personen = rg_mf.personen.value | strip
+  assign rg_material = rg_mf.material.value
+  assign rg_geprueft = rg_mf.geprueft_von.value | strip
+  assign rg_stand = rg_mf.stand.value
+  assign rg_produkte = rg_mf.produkte.value
+  assign rg_cta = rg_mf.cta.value
+  assign rg_kollektion = rg_mf.kollektion.value
+  assign rg_zubehoer = rg_mf.zubehoer_kollektion.value
+
+  # Aktualisiert nur zeigen, wenn es ein spaeterer TAG ist als die Veroeffentlichung
+  assign rg_tag_pub = article.published_at | date: '%Y%m%d' | plus: 0
+  assign rg_tag_upd = article.updated_at | date: '%Y%m%d' | plus: 0
+  assign rg_aktualisiert = false
+  if rg_tag_upd > rg_tag_pub
+    assign rg_aktualisiert = true
+  endif
+
+  # Video: Art der Quelle bestimmen. Vor dem Klick geht KEINE Anfrage an den Anbieter.
+  assign rg_video_url = rg_mf.video_url.value | strip
+  assign rg_video_embed = ''
+  assign rg_video_start = ''
+  assign rg_video_datei = ''
+  assign rg_video_anbieter = ''
+  if rg_video_url != blank
+    assign rg_video_pfad = rg_video_url | split: '?' | first | downcase
+    assign rg_video_endung4 = rg_video_pfad | slice: -4, 4
+    assign rg_video_endung5 = rg_video_pfad | slice: -5, 5
+    assign rg_video_id = ''
+    if rg_video_endung4 == '.mp4' or rg_video_endung5 == '.webm'
+      assign rg_video_datei = rg_video_url
+    elsif rg_video_url contains 'youtube.com/watch'
+      assign rg_video_id = rg_video_url | split: 'v=' | last | split: '&' | first | split: '#' | first
+      assign rg_video_anbieter = 'YouTube'
+    elsif rg_video_url contains 'youtu.be/'
+      assign rg_video_id = rg_video_url | split: 'youtu.be/' | last | split: '?' | first | split: '&' | first | split: '/' | first
+      assign rg_video_anbieter = 'YouTube'
+    elsif rg_video_url contains 'youtube.com/shorts/'
+      assign rg_video_id = rg_video_url | split: 'shorts/' | last | split: '?' | first | split: '/' | first
+      assign rg_video_anbieter = 'YouTube'
+    elsif rg_video_url contains '/embed/'
+      if rg_video_url contains 'youtube.com' or rg_video_url contains 'youtube-nocookie.com'
+        assign rg_video_id = rg_video_url | split: '/embed/' | last | split: '?' | first | split: '/' | first
+        assign rg_video_anbieter = 'YouTube'
+      endif
+    elsif rg_video_url contains 'vimeo.com/'
+      assign rg_video_id = rg_video_url | split: 'vimeo.com/' | last | remove_first: 'video/' | split: '?' | first | split: '/' | first
+      assign rg_video_anbieter = 'Vimeo'
+    endif
+    if rg_video_id != blank
+      if rg_video_anbieter == 'YouTube'
+        assign rg_video_embed = 'https://www.youtube-nocookie.com/embed/' | append: rg_video_id
+        assign rg_video_start = rg_video_embed | append: '?autoplay=1&rel=0'
+      else
+        assign rg_video_embed = 'https://player.vimeo.com/video/' | append: rg_video_id
+        assign rg_video_start = rg_video_embed | append: '?autoplay=1&dnt=1'
+      endif
+    endif
+  endif
+  assign rg_video_titel = rg_mf.video_titel.value | strip | default: article.title
+  assign rg_video_text = rg_mf.video_beschreibung.value | strip
+  assign rg_video_bild = rg_mf.video_vorschaubild.value
+  assign rg_transkript = rg_mf.transkript.value | strip
+-%}
+
+{%- comment -%} Inhaltsverzeichnis und Text mit Sprungankern in einem Durchlauf (siehe Snippet) {%- endcomment -%}
+{%- capture rg_roh -%}
+  {%- render 'tp-ratgeber-inhalt', inhalt: article.content, ueberschrift: section.settings.inhalt_heading -%}
+{%- endcapture -%}
+{%- liquid
+  assign rg_roh_teile = rg_roh | split: '<!--tp-rg-trenner-->'
+  assign rg_toc = rg_roh_teile | first | strip
+  assign rg_text = rg_roh_teile | last
+  if rg_roh_teile.size < 2
+    assign rg_toc = ''
+    assign rg_text = article.content
+  endif
+-%}
+
+{%- capture rg_material_html -%}
+  {%- if rg_material != blank -%}
+    <section class="tp-rg-material" aria-labelledby="tp-rg-material-titel">
+      <h2 class="tp-rg-material__titel" id="tp-rg-material-titel">Material &amp; Werkzeug</h2>
+      <ul class="tp-rg-material__liste">
+        {%- for rg_posten in rg_material -%}
+          {%- if rg_posten != blank -%}<li>{{ rg_posten | escape }}</li>{%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </section>
+  {%- endif -%}
+{%- endcapture -%}
+
+<article class="tp-rg-artikel">
+  <div class="tp-s-wrap">
+    <div class="tp-rg-spalte">
+      {%- render 'tp-ratgeber-breadcrumb', blog: blog, artikel: article, modus: 'sichtbar' -%}
+
+      <header class="tp-rg-kopf">
+        {%- if rg_art != blank -%}
+          <p class="tp-rg-kopf__art">{{ rg_art | escape }}</p>
+        {%- endif -%}
+        <h1 class="tp-rg-kopf__h1">{{ article.title | escape }}</h1>
+        <p class="tp-rg-kopf__meta">
+          <span>Veröffentlicht {{ article.published_at | time_tag: '%d.%m.%Y' }}</span>
+          {%- if rg_aktualisiert -%}
+            <span>Aktualisiert {{ article.updated_at | time_tag: '%d.%m.%Y' }}</span>
+          {%- endif -%}
+        </p>
+        {%- if rg_geprueft != blank or rg_stand != blank -%}
+          <p class="tp-rg-kopf__meta tp-rg-kopf__meta--pruefung">
+            {%- if rg_geprueft != blank -%}<span>Fachlich geprüft von {{ rg_geprueft | escape }}</span>{%- endif -%}
+            {%- if rg_stand != blank -%}<span>Stand {{ rg_stand | date: '%d.%m.%Y' }}</span>{%- endif -%}
+          </p>
+        {%- endif -%}
+      </header>
+
+      {%- if rg_kurz != blank -%}
+        <div class="tp-rg-kurz" role="note" aria-labelledby="tp-rg-kurz-label">
+          <p class="tp-rg-kurz__label" id="tp-rg-kurz-label">{{ section.settings.kurz_label | default: 'Kurz beantwortet' | escape }}</p>
+          <p class="tp-rg-kurz__text">{{ rg_kurz | escape | newline_to_br }}</p>
+        </div>
+      {%- endif -%}
+
+      {%- if rg_dauer != blank or rg_schwierigkeit != blank or rg_personen != blank -%}
+        <dl class="tp-rg-fakten">
+          {%- if rg_dauer != blank -%}
+            <div class="tp-rg-fakten__punkt"><dt>Dauer</dt><dd>{{ rg_dauer | escape }}</dd></div>
+          {%- endif -%}
+          {%- if rg_schwierigkeit != blank -%}
+            <div class="tp-rg-fakten__punkt"><dt>Schwierigkeit</dt><dd>{{ rg_schwierigkeit | escape }}</dd></div>
+          {%- endif -%}
+          {%- if rg_personen != blank -%}
+            <div class="tp-rg-fakten__punkt"><dt>Personen</dt><dd>{{ rg_personen | escape }}</dd></div>
+          {%- endif -%}
+        </dl>
+      {%- endif -%}
+
+      {%- comment -%} Material steht bei Anleitungen direkt vor dem Text, sonst gleich nach den Fakten {%- endcomment -%}
+      {%- if rg_art != 'Anleitung' -%}{{ rg_material_html }}{%- endif -%}
+
+      {%- if article.image -%}
+        {%- assign rg_bild_alt = article.image.alt | default: article.title -%}
+        <figure class="tp-rg-bild">
+          {{-
+            article.image
+            | image_url: width: 1520
+            | image_tag:
+              alt: rg_bild_alt,
+              class: 'tp-rg-bild__img',
+              loading: 'eager',
+              fetchpriority: 'high',
+              widths: '480, 760, 1080, 1520',
+              sizes: '(min-width: 808px) 760px, 100vw'
+          -}}
+        </figure>
+      {%- endif -%}
+
+      {{ rg_toc }}
+
+      {%- if rg_art == 'Anleitung' -%}{{ rg_material_html }}{%- endif -%}
+
+      <div class="tp-rg-body">
+        {{ rg_text }}
+      </div>
+
+      {%- if rg_video_datei != blank or rg_video_embed != blank -%}
+        <section class="tp-rg-video" aria-labelledby="tp-rg-video-titel">
+          <h2 class="tp-rg-video__titel" id="tp-rg-video-titel">{{ rg_video_titel | escape }}</h2>
+          {%- if rg_video_text != blank -%}
+            <p class="tp-rg-video__text">{{ rg_video_text | escape | newline_to_br }}</p>
+          {%- endif -%}
+
+          {%- if rg_video_datei != blank -%}
+            <video
+              class="tp-rg-video__player"
+              controls
+              playsinline
+              preload="none"
+              {% if rg_video_bild != blank %}poster="{{ rg_video_bild | image_url: width: 1520 }}"{% endif %}
+            >
+              <source src="{{ rg_video_datei }}">
+              <a href="{{ rg_video_datei }}">Video ansehen</a>
+            </video>
+          {%- else -%}
+            {%- comment -%}
+              Fassade: eigenes Vorschaubild + Link. Ohne JavaScript oeffnet der Link das
+              Video beim Anbieter; mit JavaScript ersetzt der Klick die Fassade durch den
+              Player. Erst dann entsteht eine Verbindung zum Anbieter.
+            {%- endcomment -%}
+            <div class="tp-rg-video__rahmen">
+              <a
+                class="tp-rg-video__start"
+                href="{{ rg_video_url }}"
+                target="_blank"
+                rel="noopener"
+                data-tp-rg-video-src="{{ rg_video_start }}"
+                data-tp-rg-video-titel="{{ rg_video_titel | escape }}"
+                aria-label="Video abspielen: {{ rg_video_titel | escape }}"
+              >
+                {%- if rg_video_bild != blank -%}
+                  {%- assign rg_video_alt = rg_video_bild.alt | default: rg_video_titel -%}
+                  {{-
+                    rg_video_bild
+                    | image_url: width: 1520
+                    | image_tag:
+                      alt: rg_video_alt,
+                      class: 'tp-rg-video__bild',
+                      loading: 'lazy',
+                      widths: '480, 760, 1080, 1520',
+                      sizes: '(min-width: 808px) 760px, 100vw'
+                  -}}
+                {%- endif -%}
+                <span class="tp-rg-video__play" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="28" height="28" focusable="false"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>
+                </span>
+              </a>
+            </div>
+            <p class="tp-rg-video__hinweis">
+              Das Video wird erst nach Ihrem Klick von {{ rg_video_anbieter }} geladen. Dabei werden Daten an {{ rg_video_anbieter }} übertragen.
+            </p>
+          {%- endif -%}
+
+          {%- if rg_transkript != blank -%}
+            <details class="tp-rg-video__transkript">
+              <summary>Transkript anzeigen</summary>
+              <div class="tp-rg-video__transkript-text">{{ rg_transkript | escape | newline_to_br }}</div>
+            </details>
+          {%- endif -%}
+        </section>
+      {%- elsif rg_video_url != blank -%}
+        {%- comment -%} Unbekannte Videoquelle: nichts einbetten, nur verlinken {%- endcomment -%}
+        <p class="tp-rg-video__text"><a href="{{ rg_video_url }}" target="_blank" rel="noopener">{{ rg_video_titel | escape }} (Video, öffnet in neuem Tab)</a></p>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%}
+      Passend dazu: je Wert in ratgeber.cta eine kompakte Karte, danach bis zu
+      vier Produkte. data-tp-rg-cta ist der Haken fuer die Klickmessung.
+    {%- endcomment -%}
+    {%- capture rg_cta_html -%}
+      {%- for rg_cta_wert in rg_cta -%}
+        {%- liquid
+          assign rg_cta_typ = rg_cta_wert | strip | downcase
+          assign rg_cta_titel = ''
+          assign rg_cta_text = ''
+          assign rg_cta_link = ''
+          case rg_cta_typ
+            when 'rechner'
+              assign rg_cta_titel = section.settings.rechner_titel
+              assign rg_cta_text = section.settings.rechner_text
+              assign rg_cta_link = rg_kollektion.url | default: section.settings.rechner_link | default: '/collections/teppichboden'
+            when 'muster'
+              assign rg_cta_titel = section.settings.muster_titel
+              assign rg_cta_text = section.settings.muster_text
+              assign rg_cta_link = section.settings.muster_link | default: '/pages/muster'
+            when 'verlegeservice'
+              assign rg_cta_titel = section.settings.verlege_titel
+              assign rg_cta_text = section.settings.verlege_text
+              assign rg_cta_link = section.settings.verlege_link | default: '/pages/liefer-verlegeservice'
+            when 'zubehoer'
+              assign rg_cta_titel = section.settings.zubehoer_titel
+              assign rg_cta_text = section.settings.zubehoer_text
+              assign rg_cta_link = rg_zubehoer.url | default: section.settings.zubehoer_link | default: '/collections/zubehoer'
+          endcase
+        -%}
+        {%- if rg_cta_titel != blank and rg_cta_link != blank -%}
+          <li class="tp-rg-cta" data-tp-rg-cta="{{ rg_cta_typ }}">
+            <a class="tp-rg-cta__link" href="{{ rg_cta_link }}">
+              <span class="tp-rg-cta__titel">{{ rg_cta_titel | escape }}</span>
+              {%- if rg_cta_text != blank -%}
+                <span class="tp-rg-cta__text">{{ rg_cta_text | escape }}</span>
+              {%- endif -%}
+            </a>
+          </li>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- capture rg_produkte_html -%}
+      {%- for rg_produkt in rg_produkte limit: 4 -%}
+        {%- if rg_produkt == blank or rg_produkt.url == blank -%}{%- continue -%}{%- endif -%}
+        <li class="tp-rg-produkt" data-tp-rg-cta="produkt">
+          <a class="tp-rg-produkt__link" href="{{ rg_produkt.url }}">
+            <span class="tp-rg-produkt__bild">
+              {%- if rg_produkt.featured_image -%}
+                {%- assign rg_produkt_alt = rg_produkt.featured_image.alt | default: rg_produkt.title -%}
+                {{-
+                  rg_produkt.featured_image
+                  | image_url: width: 600
+                  | image_tag:
+                    alt: rg_produkt_alt,
+                    class: 'tp-rg-produkt__img',
+                    loading: 'lazy',
+                    widths: '200, 300, 450, 600',
+                    sizes: '(min-width: 768px) 240px, 44vw'
+                -}}
+              {%- endif -%}
+            </span>
+            <span class="tp-rg-produkt__titel">{{ rg_produkt.title | escape }}</span>
+            <span class="tp-rg-produkt__mehr">Zum Produkt</span>
+          </a>
+        </li>
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- liquid
+      assign rg_cta_html = rg_cta_html | strip
+      assign rg_produkte_html = rg_produkte_html | strip
+    -%}
+    {%- if rg_cta_html != blank or rg_produkte_html != blank -%}
+      <section class="tp-rg-passend tp-rg-breit" aria-labelledby="tp-rg-passend-titel">
+        <h2 class="tp-rg-abschnitt__titel" id="tp-rg-passend-titel">{{ section.settings.passend_heading | default: 'Passend dazu' | escape }}</h2>
+        {%- if rg_cta_html != blank -%}
+          <ul class="tp-rg-passend__cta">{{ rg_cta_html }}</ul>
+        {%- endif -%}
+        {%- if rg_produkte_html != blank -%}
+          <ul class="tp-rg-passend__produkte">{{ rg_produkte_html }}</ul>
+        {%- endif -%}
+      </section>
+    {%- endif -%}
+
+    {%- comment -%}
+      Verwandte Beitraege: zuerst Artikel desselben Blogs mit gemeinsamem Tag,
+      dann mit den neuesten auffuellen. Betrachtet werden die 50 neuesten
+      Artikel des Blogs - das reicht fuer drei Empfehlungen.
+    {%- endcomment -%}
+    {%- if section.settings.verwandte_anzeigen -%}
+      {%- liquid
+        assign rg_v_ids = ','
+        assign rg_v_zahl = 0
+      -%}
+      {%- capture rg_v_html -%}
+        {%- for rg_kandidat in blog.articles -%}
+          {%- if rg_v_zahl >= 3 -%}{%- break -%}{%- endif -%}
+          {%- if rg_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
+          {%- assign rg_v_treffer = false -%}
+          {%- for rg_v_tag in article.tags -%}
+            {%- if rg_kandidat.tags contains rg_v_tag -%}
+              {%- assign rg_v_treffer = true -%}
+              {%- break -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if rg_v_treffer -%}
+            {%- assign rg_v_ids = rg_v_ids | append: rg_kandidat.id | append: ',' -%}
+            {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
+            <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
+          {%- endif -%}
+        {%- endfor -%}
+        {%- if rg_v_zahl < 3 -%}
+          {%- for rg_kandidat in blog.articles -%}
+            {%- if rg_v_zahl >= 3 -%}{%- break -%}{%- endif -%}
+            {%- if rg_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
+            {%- assign rg_v_probe = ',' | append: rg_kandidat.id | append: ',' -%}
+            {%- if rg_v_ids contains rg_v_probe -%}{%- continue -%}{%- endif -%}
+            {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
+            <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
+          {%- endfor -%}
+        {%- endif -%}
+      {%- endcapture -%}
+      {%- if rg_v_zahl > 0 -%}
+        <section class="tp-rg-verwandt tp-rg-breit" aria-labelledby="tp-rg-verwandt-titel">
+          <div class="tp-rg-verwandt__kopf">
+            <h2 class="tp-rg-abschnitt__titel" id="tp-rg-verwandt-titel">{{ section.settings.verwandte_heading | default: 'Weitere Beiträge' | escape }}</h2>
+            <a class="tp-s-link" href="{{ blog.url }}">Alle Beiträge: {{ blog.title | escape }}</a>
+          </div>
+          <ul class="tp-rg-verwandt__raster">{{ rg_v_html }}</ul>
+        </section>
+      {%- endif -%}
+    {%- endif -%}
+
+    {%- if section.settings.firma_anzeigen -%}
+      {%- liquid
+        assign rg_firma_link = section.settings.firma_link | default: pages['uber-uns'].url
+      -%}
+      <aside class="tp-rg-firma tp-rg-spalte" aria-labelledby="tp-rg-firma-titel">
+        {%- if section.settings.firma_bild != blank -%}
+          {%- assign rg_firma_alt = section.settings.firma_bild.alt | default: section.settings.firma_heading -%}
+          {{-
+            section.settings.firma_bild
+            | image_url: width: 320
+            | image_tag:
+              alt: rg_firma_alt,
+              class: 'tp-rg-firma__bild',
+              loading: 'lazy',
+              widths: '160, 320',
+              sizes: '96px'
+          -}}
+        {%- endif -%}
+        <div class="tp-rg-firma__text">
+          <h2 class="tp-rg-firma__titel" id="tp-rg-firma-titel">{{ section.settings.firma_heading | escape }}</h2>
+          <div class="tp-rg-firma__rte">{{ section.settings.firma_text }}</div>
+          {%- if rg_firma_link != blank and section.settings.firma_link_text != blank -%}
+            <a class="tp-s-link" href="{{ rg_firma_link }}">{{ section.settings.firma_link_text | escape }}</a>
+          {%- endif -%}
+        </div>
+      </aside>
+    {%- endif -%}
+
+    {%- if section.settings.newsletter_anzeigen -%}
+      <div class="tp-rg-newsletter tp-rg-spalte">
+        {%- render 'tp-newsletter', quelle: 'ratgeber' -%}
+      </div>
+    {%- endif -%}
+  </div>
+</article>
+
+{%- render 'tp-ratgeber-structured-data', artikel: article, blog: blog, video_embed: rg_video_embed, video_datei: rg_video_datei -%}
+
+{%- if rg_video_embed != blank -%}
+  <script>
+    (function () {
+      if (window.tpRgVideoBereit) return;
+      window.tpRgVideoBereit = true;
+      document.addEventListener('click', function (ereignis) {
+        var start = ereignis.target.closest('[data-tp-rg-video-src]');
+        if (!start) return;
+        ereignis.preventDefault();
+        var rahmen = document.createElement('iframe');
+        rahmen.src = start.getAttribute('data-tp-rg-video-src');
+        rahmen.title = start.getAttribute('data-tp-rg-video-titel') || 'Video';
+        rahmen.className = 'tp-rg-video__iframe';
+        rahmen.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
+        rahmen.setAttribute('allowfullscreen', '');
+        start.parentNode.replaceChild(rahmen, start);
+        rahmen.focus();
+      });
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-rg-artikel { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
+  .tp-rg-spalte { max-width: 760px; margin-left: auto; margin-right: auto; }
+  .tp-rg-breit { max-width: 1080px; margin-left: auto; margin-right: auto; }
+
+  .tp-rg-kopf { margin: 8px 0 24px; }
+  .tp-rg-kopf__art { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
+  .tp-rg-kopf__h1 { margin: 0 0 14px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  /* Trenner sitzt im linken Innenabstand jedes Eintrags; am Zeilenanfang ragt er aus dem Kasten und wird abgeschnitten */
+  .tp-rg-kopf__meta { margin: 0; font-size: 14px; line-height: 1.5; color: var(--tp-muted, #655e57); display: flex; flex-wrap: wrap; overflow: hidden; }
+  .tp-rg-kopf__meta span { position: relative; margin-left: -18px; margin-right: 18px; padding-left: 18px; }
+  .tp-rg-kopf__meta span::before { content: "\00B7"; position: absolute; left: 6px; top: 0; }
+  .tp-rg-kopf__meta--pruefung { margin-top: 2px; }
+
+  .tp-rg-kurz { margin: 0 0 28px; padding: 18px 20px 20px; background: var(--tp-red-soft, #fbeeef); border-left: 4px solid var(--tp-red, #b73740); border-radius: 0 var(--tp-r, 10px) var(--tp-r, 10px) 0; }
+  .tp-rg-kurz__label { margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
+  .tp-rg-kurz__text { margin: 0; font-size: 18px; line-height: 1.6; color: var(--tp-ink, #1d1a17); }
+
+  .tp-rg-fakten { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 0 0 28px; padding: 0; }
+  .tp-rg-fakten__punkt { padding: 12px 14px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r, 10px); }
+  .tp-rg-fakten__punkt dt { margin: 0 0 2px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
+  .tp-rg-fakten__punkt dd { margin: 0; font-size: 16px; font-weight: 600; color: var(--tp-ink, #1d1a17); }
+
+  .tp-rg-material { margin: 0 0 28px; padding: 18px 20px; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); }
+  .tp-rg-material__titel { margin: 0 0 10px; font-size: 19px; font-weight: 600; line-height: 1.25; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-material__liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 24px; }
+  .tp-rg-material__liste li { position: relative; margin: 0; padding: 2px 0 2px 24px; font-size: 16px; line-height: 1.5; }
+  .tp-rg-material__liste li::before { content: ""; position: absolute; left: 2px; top: 0.6em; width: 10px; height: 6px; border-left: 2px solid var(--tp-green, #2f7a4c); border-bottom: 2px solid var(--tp-green, #2f7a4c); transform: rotate(-45deg); }
+
+  .tp-rg-bild { margin: 0 0 28px; }
+  .tp-rg-bild__img { display: block; width: 100%; height: auto; border-radius: var(--tp-r-lg, 16px); }
+
+  .tp-rg-body { font-size: 17px; line-height: 1.7; color: var(--tp-ink-2, #4a443f); hyphens: auto; }
+  .tp-rg-body > :first-child { margin-top: 0; }
+  .tp-rg-body > :last-child { margin-bottom: 0; }
+  .tp-rg-body p { margin: 0 0 1.15em; }
+  .tp-rg-body h2 { margin: 2em 0 0.6em; font-size: clamp(22px, 2.6vw, 28px); font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); scroll-margin-top: calc(var(--header-height, 100px) + 16px); }
+  .tp-rg-body h3 { margin: 1.7em 0 0.5em; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); scroll-margin-top: calc(var(--header-height, 100px) + 16px); }
+  .tp-rg-body h4 { margin: 1.5em 0 0.4em; font-size: 17px; font-weight: 600; line-height: 1.35; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-body ul, .tp-rg-body ol { margin: 0 0 1.2em; padding-left: 1.5em; }
+  .tp-rg-body li { margin: 0 0 0.45em; padding-left: 0.2em; }
+  .tp-rg-body li > ul, .tp-rg-body li > ol { margin: 0.45em 0 0; }
+  .tp-rg-body ol > li::marker { font-weight: 600; color: var(--tp-red-dark, #96262f); }
+  .tp-rg-body ul > li::marker { color: var(--tp-red, #b73740); }
+  .tp-rg-body a { color: var(--tp-red-dark, #96262f); text-decoration: underline; text-underline-offset: 3px; }
+  .tp-rg-body a:hover { color: var(--tp-ink, #1d1a17); }
+  .tp-rg-body strong { color: var(--tp-ink, #1d1a17); }
+  .tp-rg-body img { display: block; max-width: 100%; height: auto; margin: 1.6em auto; border-radius: var(--tp-r, 10px); }
+  .tp-rg-body figure { margin: 1.6em 0; }
+  .tp-rg-body figcaption { margin-top: 8px; font-size: 14px; color: var(--tp-muted, #655e57); }
+  .tp-rg-body blockquote { margin: 1.6em 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--tp-sand, #e9c8a1); color: var(--tp-ink, #1d1a17); }
+  .tp-rg-body blockquote p:last-child { margin-bottom: 0; }
+  .tp-rg-body table { display: block; max-width: 100%; overflow-x: auto; margin: 1.6em 0; border-collapse: collapse; font-size: 15px; line-height: 1.45; }
+  .tp-rg-body th, .tp-rg-body td { padding: 10px 12px; border: 1px solid var(--tp-line, #e6e0d8); text-align: left; vertical-align: top; }
+  .tp-rg-body th { background: var(--tp-bg-2, #f6f2ec); font-weight: 600; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-body iframe, .tp-rg-body video { max-width: 100%; }
+  .tp-rg-body hr { margin: 2em 0; border: 0; border-top: 1px solid var(--tp-line, #e6e0d8); }
+
+  .tp-rg-video { margin: 44px 0 0; }
+  .tp-rg-video__titel { margin: 0 0 8px; font-size: clamp(20px, 2.2vw, 24px); font-weight: 700; line-height: 1.2; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-video__text { margin: 0 0 14px; font-size: 16px; line-height: 1.6; }
+  .tp-rg-video__rahmen { position: relative; aspect-ratio: 16 / 9; background: var(--tp-ink, #1d1a17); border-radius: var(--tp-r-lg, 16px); overflow: hidden; }
+  .tp-rg-video__start { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; text-decoration: none; }
+  .tp-rg-video__bild { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .tp-rg-video__play { position: relative; display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: var(--tp-red, #b73740); color: #fff; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+  .tp-rg-video__start:hover .tp-rg-video__play, .tp-rg-video__start:focus-visible .tp-rg-video__play { background: var(--tp-red-dark, #96262f); }
+  .tp-rg-video__start:focus-visible { outline: 3px solid #fff; outline-offset: -6px; }
+  .tp-rg-video__iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .tp-rg-video__player { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--tp-ink, #1d1a17); border-radius: var(--tp-r-lg, 16px); }
+  .tp-rg-video__hinweis { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: var(--tp-muted, #655e57); }
+  .tp-rg-video__transkript { margin: 14px 0 0; border-top: 1px solid var(--tp-line, #e6e0d8); border-bottom: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-rg-video__transkript summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 48px; cursor: pointer; list-style: none; font-weight: 600; font-size: 16px; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-video__transkript summary::-webkit-details-marker { display: none; }
+  .tp-rg-video__transkript summary::after { content: "+"; flex: none; width: 28px; text-align: center; font-size: 24px; font-weight: 400; color: var(--tp-red, #b73740); }
+  .tp-rg-video__transkript[open] summary::after { content: "\2013"; }
+  .tp-rg-video__transkript-text { padding: 0 0 16px; font-size: 16px; line-height: 1.65; }
+
+  .tp-rg-abschnitt__titel { margin: 0; font-size: clamp(22px, 2.4vw, 28px); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); }
+
+  .tp-rg-passend { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-rg-passend__cta { list-style: none; margin: 20px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .tp-rg-cta { margin: 0; padding: 0; }
+  .tp-rg-cta__link { position: relative; display: flex; flex-direction: column; gap: 4px; height: 100%; min-height: 64px; padding: 16px 44px 16px 18px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); color: var(--tp-ink, #1d1a17); text-decoration: none; }
+  .tp-rg-cta__link::after { content: "\2192"; position: absolute; right: 18px; top: 16px; font-size: 18px; line-height: 1.3; color: var(--tp-red-dark, #96262f); }
+  .tp-rg-cta__link:hover { border-color: var(--tp-ink, #1d1a17); }
+  .tp-rg-cta__titel { font-size: 16px; font-weight: 600; line-height: 1.3; }
+  .tp-rg-cta__text { font-size: 14.5px; line-height: 1.45; color: var(--tp-ink-2, #4a443f); }
+
+  .tp-rg-passend__produkte { list-style: none; margin: 20px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .tp-rg-produkt { margin: 0; padding: 0; min-width: 0; }
+  .tp-rg-produkt__link { display: flex; flex-direction: column; height: 100%; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); overflow: hidden; color: var(--tp-ink, #1d1a17); text-decoration: none; }
+  .tp-rg-produkt__link:hover { border-color: var(--tp-ink, #1d1a17); }
+  .tp-rg-produkt__bild { display: block; aspect-ratio: 1 / 1; background: var(--tp-bg-3, #ede7de); overflow: hidden; }
+  .tp-rg-produkt__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-rg-produkt__titel { display: block; padding: 12px 14px 4px; font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .tp-rg-produkt__mehr { display: block; margin-top: auto; padding: 0 14px 14px; font-size: 14px; color: var(--tp-red-dark, #96262f); }
+
+  .tp-rg-verwandt { margin-top: 56px; }
+  .tp-rg-verwandt__kopf { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; margin-bottom: 20px; }
+  .tp-rg-verwandt__kopf .tp-s-link { white-space: normal; margin: 0; min-height: 0; padding: 6px 0 2px; font-size: 15px; }
+  .tp-rg-verwandt__raster { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .tp-rg-verwandt__raster > li { margin: 0; padding: 0; min-width: 0; }
+
+  .tp-rg-firma { display: flex; gap: 18px; align-items: flex-start; margin-top: 56px; padding: 22px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r-lg, 16px); }
+  .tp-rg-firma__bild { flex: none; width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+  .tp-rg-firma__text { min-width: 0; }
+  .tp-rg-firma__titel { margin: 0 0 6px; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-firma__rte { font-size: 15.5px; line-height: 1.6; }
+  .tp-rg-firma__rte p { margin: 0 0 8px; }
+
+  .tp-rg-newsletter { margin-top: 40px; }
+
+  @media (min-width: 640px) {
+    .tp-rg-verwandt__raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tp-rg-firma__bild { width: 96px; height: 96px; }
+  }
+  @media (min-width: 768px) {
+    .tp-rg-artikel { padding-top: 24px; }
+    .tp-rg-body { font-size: 18px; }
+    .tp-rg-passend__produkte { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+  }
+  @media (min-width: 1024px) {
+    .tp-rg-verwandt__raster { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-rg-cta__link, .tp-rg-produkt__link, .tp-rg-video__play { transition: border-color 0.15s, background 0.15s; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Ratgeber Beitrag",
+  "tag": "section",
+  "class": "tp-rg-section",
+  "enabled_on": { "templates": ["article"] },
+  "settings": [
+    { "type": "header", "content": "Artikelkopf" },
+    { "type": "text", "id": "kurz_label", "label": "Titel Kurzantwort", "default": "Kurz beantwortet" },
+    { "type": "text", "id": "inhalt_heading", "label": "Titel Verzeichnis", "default": "Inhalt", "info": "Das Verzeichnis erscheint ab drei Zwischenueberschriften (H2)." },
+
+    { "type": "header", "content": "Passend dazu" },
+    { "type": "paragraph", "content": "Welche Karten ein Artikel zeigt, steuert sein Metafeld ratgeber.cta. Hier stehen nur Texte und Ausweichlinks." },
+    { "type": "text", "id": "passend_heading", "label": "Ueberschrift", "default": "Passend dazu" },
+    { "type": "text", "id": "rechner_titel", "label": "Rechner: Titel", "default": "Preis für Ihr Maß berechnen" },
+    { "type": "text", "id": "rechner_text", "label": "Rechner: Text", "default": "Maße eingeben und Preis berechnen – direkt am Produkt." },
+    { "type": "url", "id": "rechner_link", "label": "Rechner: Link", "info": "Nur wenn der Artikel keine Kollektion nennt. Leer = Teppichboden." },
+    { "type": "text", "id": "muster_titel", "label": "Muster: Titel", "default": "Kostenlose Muster bestellen" },
+    { "type": "text", "id": "muster_text", "label": "Muster: Text", "default": "Farbe und Material in Ruhe zu Hause ansehen, bevor Sie sich entscheiden." },
+    { "type": "url", "id": "muster_link", "label": "Muster: Link", "info": "Leer = /pages/muster" },
+    { "type": "text", "id": "verlege_titel", "label": "Verlegeservice: Titel", "default": "Verlegen lassen" },
+    { "type": "text", "id": "verlege_text", "label": "Verlegeservice: Text", "default": "Aufmaß, Lieferung und Verlegung durch unser Team – in Oranienburg, Oberhavel und im Norden Berlins." },
+    { "type": "url", "id": "verlege_link", "label": "Verlegeservice: Link", "info": "Leer = /pages/liefer-verlegeservice" },
+    { "type": "text", "id": "zubehoer_titel", "label": "Zubehoer: Titel", "default": "Passendes Zubehör" },
+    { "type": "text", "id": "zubehoer_text", "label": "Zubehoer: Text", "default": "Was Sie für die Verlegung zusätzlich brauchen." },
+    { "type": "url", "id": "zubehoer_link", "label": "Zubehoer: Link", "info": "Nur wenn der Artikel keine Zubehoer-Kollektion nennt. Leer = /collections/zubehoer" },
+
+    { "type": "header", "content": "Weitere Beitraege" },
+    { "type": "checkbox", "id": "verwandte_anzeigen", "label": "Verwandte Beitraege zeigen", "default": true },
+    { "type": "text", "id": "verwandte_heading", "label": "Ueberschrift", "default": "Weitere Beiträge" },
+
+    { "type": "header", "content": "Wer schreibt hier" },
+    { "type": "checkbox", "id": "firma_anzeigen", "label": "Firmenbox zeigen", "default": true },
+    { "type": "text", "id": "firma_heading", "label": "Ueberschrift", "default": "Teppich Paradies – Fachhandel für Bodenbeläge" },
+    { "type": "richtext", "id": "firma_text", "label": "Text", "default": "<p>Dieser Ratgeber wird vom Team von Teppich Paradies geschrieben und gepflegt. Wenn Sie eine Frage zu Ihrem Boden haben, beraten wir Sie gern persönlich.</p>" },
+    { "type": "image_picker", "id": "firma_bild", "label": "Bild" },
+    { "type": "url", "id": "firma_link", "label": "Link", "info": "Leer = Seite uber-uns, falls vorhanden." },
+    { "type": "text", "id": "firma_link_text", "label": "Linktext", "default": "Mehr über uns" },
+
+    { "type": "header", "content": "Newsletter" },
+    { "type": "checkbox", "id": "newsletter_anzeigen", "label": "Newsletter-Hinweis zeigen", "default": false, "info": "Braucht das Snippet tp-newsletter." }
+  ],
+  "presets": [ { "name": "TP Ratgeber Beitrag" } ]
+}
+{% endschema %}

@@ -1,0 +1,103 @@
+{%- doc -%}
+  Breadcrumb des Ratgeber-Bereichs: sichtbare Navigation und BreadcrumbList
+  (JSON-LD) aus EINER Stufenlogik, damit beide nie auseinanderlaufen.
+
+  Stufen: Startseite > Ratgeber (/pages/ratgeber) > Blog > Artikel.
+  Ohne blog ist die Ratgeber-Uebersicht selbst die aktuelle Seite.
+  Mit thema (Tag-Ansicht eines Blogs) wird der Blog zum Link und das Thema
+  zur aktuellen Stufe.
+
+  @param {object} [blog] - Blog-Objekt (Bereichs-Ratgeber)
+  @param {object} [artikel] - Artikel-Objekt, wenn ein Artikel angezeigt wird
+  @param {string} [thema] - aktiver Tag in der Tag-Ansicht eines Blogs
+  @param {string} [modus] - 'sichtbar' = nur Navigation, 'schema' = nur JSON-LD, leer = beides
+
+  @example
+  {% render 'tp-ratgeber-breadcrumb', blog: blog, artikel: article, modus: 'sichtbar' %}
+{%- enddoc -%}
+
+{%- liquid
+  assign rg_b_hub_url = pages['ratgeber'].url | default: '/pages/ratgeber'
+  assign rg_b_hub_titel = 'Ratgeber'
+  assign rg_b_start_url = routes.root_url
+
+  assign rg_b_zeigen = true
+  assign rg_b_schema = true
+  if modus == 'schema'
+    assign rg_b_zeigen = false
+  elsif modus == 'sichtbar'
+    assign rg_b_schema = false
+  endif
+
+  # Welche Stufe ist die aktuelle Seite?
+  assign rg_b_aktuell = 'hub'
+  if blog != blank
+    assign rg_b_aktuell = 'blog'
+    if artikel != blank
+      assign rg_b_aktuell = 'artikel'
+    elsif thema != blank
+      assign rg_b_aktuell = 'thema'
+    endif
+  endif
+-%}
+
+{%- if rg_b_zeigen -%}
+  <nav class="tp-rg-crumb" aria-label="Breadcrumb">
+    <ol class="tp-rg-crumb__liste">
+      <li><a href="{{ rg_b_start_url }}">Startseite</a></li>
+      {%- if rg_b_aktuell == 'hub' -%}
+        <li class="tp-rg-crumb__aktuell"><span aria-current="page">{{ rg_b_hub_titel }}</span></li>
+      {%- else -%}
+        <li><a href="{{ rg_b_hub_url }}">{{ rg_b_hub_titel }}</a></li>
+        {%- if rg_b_aktuell == 'blog' -%}
+          <li class="tp-rg-crumb__aktuell"><span aria-current="page">{{ blog.title | escape }}</span></li>
+        {%- else -%}
+          <li><a href="{{ blog.url }}">{{ blog.title | escape }}</a></li>
+          {%- if rg_b_aktuell == 'artikel' -%}
+            <li class="tp-rg-crumb__aktuell"><span aria-current="page">{{ artikel.title | escape }}</span></li>
+          {%- else -%}
+            <li class="tp-rg-crumb__aktuell"><span aria-current="page">{{ thema | escape }}</span></li>
+          {%- endif -%}
+        {%- endif -%}
+      {%- endif -%}
+    </ol>
+  </nav>
+{%- endif -%}
+
+{%- if rg_b_schema -%}
+  {%- comment -%} Dieselben Stufen wie oben; die letzte Stufe zeigt auf die kanonische URL der Seite {%- endcomment -%}
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Startseite","item":{{ request.origin | append: rg_b_start_url | json }}}
+      {%- if rg_b_aktuell == 'hub' -%}
+        ,{"@type":"ListItem","position":2,"name":{{ rg_b_hub_titel | json }},"item":{{ canonical_url | json }}}
+      {%- else -%}
+        ,{"@type":"ListItem","position":2,"name":{{ rg_b_hub_titel | json }},"item":{{ request.origin | append: rg_b_hub_url | json }}}
+        {%- if rg_b_aktuell == 'blog' -%}
+          ,{"@type":"ListItem","position":3,"name":{{ blog.title | json }},"item":{{ canonical_url | json }}}
+        {%- else -%}
+          ,{"@type":"ListItem","position":3,"name":{{ blog.title | json }},"item":{{ request.origin | append: blog.url | json }}}
+          {%- if rg_b_aktuell == 'artikel' -%}
+            ,{"@type":"ListItem","position":4,"name":{{ artikel.title | json }},"item":{{ canonical_url | json }}}
+          {%- else -%}
+            ,{"@type":"ListItem","position":4,"name":{{ thema | json }},"item":{{ canonical_url | json }}}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endif -%}
+    ]}
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-rg-crumb { margin: 0 0 8px; font-size: 14px; line-height: 1.3; color: var(--tp-muted, #655e57); }
+  .tp-rg-crumb__liste { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; column-gap: 2px; }
+  .tp-rg-crumb__liste li { display: inline-flex; align-items: center; margin: 0; padding: 0; min-width: 0; }
+  .tp-rg-crumb__liste li + li::before { content: "\203A"; margin: 0 8px; color: var(--tp-line-2, #d5cec4); }
+  .tp-rg-crumb__liste a { display: inline-flex; align-items: center; min-height: 44px; color: var(--tp-ink-2, #4a443f); text-decoration: none; }
+  .tp-rg-crumb__liste a:hover { color: var(--tp-red-dark, #96262f); text-decoration: underline; }
+  .tp-rg-crumb__liste span[aria-current] { display: inline-flex; align-items: center; min-height: 44px; color: var(--tp-muted, #655e57); overflow-wrap: anywhere; }
+  /* Handy: die aktuelle Seite steht direkt darunter als H1 - die Stufe spart eine ganze Zeile. Im JSON-LD bleibt sie. */
+  @media (max-width: 767px) {
+    .tp-rg-crumb__liste li.tp-rg-crumb__aktuell { display: none; }
+  }
+{% endstylesheet %}

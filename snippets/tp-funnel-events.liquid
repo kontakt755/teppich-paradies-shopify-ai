@@ -1,0 +1,193 @@
+{% doc %}
+  Funnel-Ereignisse fuer den Kundenbindungs-Trichter (Kundenbindung-Massnahme).
+
+  Beobachtet von aussen, ohne einen der Rechner/Formulare zu veraendern:
+  Farbwahl, erste gueltige Mass-Eingabe je Rechner, Muster-CTA-Klick, Muster
+  im Warenkorb, konfigurierter Warenkorb-Klick, Rabattcode-Formular,
+  Newsletter-Formular und Ratgeber-CTA-Klicks. Gleiches Muster wie
+  snippets/tp-lead-events.liquid: publish(name, payload) an
+  window.Shopify.analytics.publish UND window.dataLayer.push. Ein Custom
+  Pixel im Admin kann die Ereignisse mit analytics.subscribe abonnieren.
+
+  Ereignisse: tp_farbe_gewaehlt, tp_masse_eingegeben, tp_muster_cta_klick,
+  tp_muster_im_warenkorb, tp_in_den_warenkorb_konfiguriert,
+  tp_rabattcode_eingegeben, tp_newsletter_anmeldung_abgeschickt,
+  tp_newsletter_anmeldung_erfolg, tp_ratgeber_cta_klick.
+
+  Keine personenbezogenen Daten: keine Formularinhalte, keine E-Mail, keine
+  Freitext-Eingabewerte, kein Rabattcode-Wert. Nur Seite, Produkt-Handle,
+  Varianten-ID, Rechnername und aehnlich grobe Angaben.
+
+  Zwei Quellen werden bewusst NICHT veraendert, nur beobachtet:
+  assets/tp-sample-checkout.js navigiert nach einem erfolgreichen
+  Muster-Warenkorb-Add per window.location.href weg, ohne cart:update zu
+  feuern - siehe die Uebergabe per sessionStorage unten (Grenzen dazu in
+  docs/kundenbindung/funnel-events.md, Abschnitt Risiken).
+
+  Anleitung fuer den Pixel und die Trichter-Definition:
+  docs/kundenbindung/funnel-events.md
+{% enddoc %}
+
+<script>
+  (function () {
+    if (window.__tpFunnelEventsGeladen) return;
+    window.__tpFunnelEventsGeladen = true;
+    var page = window.location.pathname;
+    // Wie tp-lead-events.liquid: an Shopify.analytics.publish und dataLayer.
+    function copy(from, to) {
+      for (var k in from) if (Object.prototype.hasOwnProperty.call(from, k)) to[k] = from[k];
+      return to;
+    }
+    function publish(name, payload) {
+      var data = copy(payload, { page: page });
+      try {
+        if (window.Shopify && window.Shopify.analytics && typeof window.Shopify.analytics.publish === 'function') window.Shopify.analytics.publish(name, data);
+      } catch (e) {}
+      try {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(copy(data, { event: name }));
+      } catch (e) {}
+    }
+    function handle() {
+      var m = /^\/products\/([^\/?#]+)/.exec(window.location.pathname);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+    // Je Rechner: i = Eingabefeld, r = Kaufknopf-Wurzel. tp-ek vor rollware, weil beide .tp-kaufweg tragen.
+    var RECH = [
+      { n: 'einfassung', i: '[data-breite], [data-laenge]', r: '[data-tp-ek]' },
+      { n: 'rollware', i: '[data-length-input], [data-wunsch-input]', r: '.tp-kaufweg' },
+      { n: 'paket', i: '[data-sqm-input]', r: '.tp-paket-auswahl' },
+      { n: 'wunschmass', i: '[data-input="width"], [data-input="length"]', r: '[data-min-width-cm]' },
+      { n: 'zubehoer', i: '.tp-zm__input', r: '' }
+    ];
+    function vonRechner(el, feld) {
+      if (!el || typeof el.closest !== 'function') return '';
+      for (var i = 0; i < RECH.length; i++) {
+        if (RECH[i][feld] && el.closest(RECH[i][feld])) return RECH[i].n;
+      }
+      return '';
+    }
+    var letzt = { rechner: '', ts: 0 }; // letzte Rechner-Interaktion, 3s-Fenster fuer cart:update
+    var farben = Object.create(null); // gesendete Varianten-IDs, max. 1x je Seite
+    function farbe(id) {
+      var key = id ? String(id) : '';
+      if (!key || farben[key]) return;
+      farben[key] = true;
+      publish('tp_farbe_gewaehlt', { product_handle: handle(), variant_id: key });
+    }
+    var masse = Object.create(null); // gesendete Rechnernamen fuer tp_masse_eingegeben
+    var wartetFarbe = 0;
+    // tp_masse_eingegeben, plus Merkung fuer tp_farbe_gewaehlt bei Farbe/Dekor/Color im name/id/aria-label (deckt auch die Leisten-Farbwahl ab).
+    document.addEventListener('change', function (event) {
+      try {
+        var t = event.target, rechner = vonRechner(t, 'i');
+        if (rechner) {
+          letzt = { rechner: rechner, ts: Date.now() };
+          if (!masse[rechner] && Number(String(t.value).trim().replace(',', '.')) > 0) {
+            masse[rechner] = true;
+            publish('tp_masse_eingegeben', { product_handle: handle(), rechner: rechner });
+          }
+        }
+        if (t && /^(INPUT|SELECT)$/.test(t.tagName) && /farbe|dekor|color/i.test((t.getAttribute('name') || '') + (t.id || '') + (t.getAttribute('aria-label') || ''))) {
+          wartetFarbe = Date.now();
+        }
+      } catch (e) {}
+    }, { passive: true });
+    // Quelle mit direkter Varianten-ID: color-swatch-picker.liquid.
+    document.addEventListener('tp:farbe-wechsel', function (event) {
+      try { var id = event && event.detail && event.detail.variantId; if (id) farbe(id); } catch (e) {}
+    }, { passive: true });
+    // Bestaetigt einen frischen Farbfeld-Wechsel mit der neuen Varianten-ID.
+    document.addEventListener('variant:update', function (event) {
+      try {
+        if (!wartetFarbe) return;
+        var frisch = Date.now() - wartetFarbe <= 2000, res;
+        wartetFarbe = 0;
+        res = frisch && event.detail && event.detail.resource;
+        if (res && res.id) farbe(res.id);
+      } catch (e) {}
+    }, { passive: true });
+    // Klicks: tp_muster_cta_klick, tp_ratgeber_cta_klick, Merkung fuer die beiden Warenkorb-Ereignisse. Capture-Phase, siehe tp-lead-events.liquid.
+    document.addEventListener('click', function (event) {
+      try {
+        var t = event.target;
+        if (!t || typeof t.closest !== 'function') return;
+        var link = t.closest('a[href]');
+        if (link) {
+          var href = link.getAttribute('href') || '';
+          if (href.indexOf('/pages/muster') === 0 || href.indexOf('thema=muster') !== -1 || link.closest('[class*="tp-muster-cta"]')) {
+            publish('tp_muster_cta_klick', { product_handle: handle() });
+          }
+          var modul = link.closest('[data-tp-rg-cta]');
+          if (modul) publish('tp_ratgeber_cta_klick', { ziel: href.split('?')[0].split('#')[0], cta_typ: modul.getAttribute('data-tp-rg-cta') || '' });
+        }
+        var btn = t.closest('[data-add-to-cart]'), rechner = btn && vonRechner(btn, 'r');
+        if (rechner) letzt = { rechner: rechner, ts: Date.now() };
+        // tp-sample-checkout.js verlaesst die Seite ohne cart:update - Anzahl hier merken, naechste Seite liest (Risiken: docs/kundenbindung/funnel-events.md).
+        var knopf = t.closest('[data-sample-submit]');
+        if (knopf) {
+          var wurzel = knopf.closest('[data-tp-sample-checkout]') || document;
+          var anzahl = wurzel.querySelectorAll('[data-sample-color][data-selected="true"]').length;
+          window.sessionStorage.setItem('tpFunnelMusterPending', JSON.stringify({ anzahl: anzahl, ts: Date.now() }));
+        }
+      } catch (e) {}
+    }, { capture: true, passive: true });
+    // cart:update auf einer Produktseite, hoechstens 3s nach einer Rechner-Eingabe/einem Klick auf deren Kaufknopf.
+    document.addEventListener('cart:update', function () {
+      try {
+        if (!/^\/products\//.test(window.location.pathname)) return;
+        if (!letzt.rechner || Date.now() - letzt.ts > 3000) return;
+        var rechner = letzt.rechner;
+        letzt = { rechner: '', ts: 0 };
+        publish('tp_in_den_warenkorb_konfiguriert', { product_handle: handle(), rechner: rechner });
+      } catch (e) {}
+    }, { passive: true });
+    // Rabatt: nie den Code selbst uebertragen. Newsletter-Attribute aus dem Auftrag (Snippet dafuer baut eine andere Sitzung). Capture-Phase, siehe oben.
+    var wartetRabatt = false;
+    function rabatt(erfolg) {
+      if (!wartetRabatt) return;
+      wartetRabatt = false;
+      publish('tp_rabattcode_eingegeben', { erfolg: erfolg });
+    }
+    document.addEventListener('discount:update', function () {
+      try { rabatt(true); } catch (e) {}
+    }, { passive: true });
+    document.addEventListener('submit', function (event) {
+      try {
+        var form = event.target;
+        if (!form || typeof form.matches !== 'function') return;
+        if (form.matches('.cart-discount__form')) {
+          wartetRabatt = true;
+          window.setTimeout(function () {
+            try {
+              var fehler = document.querySelector('.cart-discount__error');
+              rabatt(fehler && !fehler.classList.contains('hidden') ? false : 'unknown');
+            } catch (e) {}
+          }, 1500);
+        }
+        if (form.matches('form[data-tp-newsletter-form]')) {
+          var qEl = form.hasAttribute('data-tp-newsletter-quelle') ? form : form.closest('[data-tp-newsletter-quelle]');
+          publish('tp_newsletter_anmeldung_abgeschickt', { quelle: qEl ? qEl.getAttribute('data-tp-newsletter-quelle') || '' : '' });
+        }
+      } catch (e) {}
+    }, { capture: true, passive: true });
+    // Einmalig beim Laden (Snippet nahe am Ende von layout/theme.liquid, DOM bereits geparst).
+    try {
+      var erfolgEl = document.querySelector('[data-tp-newsletter-erfolg]');
+      var params = new URLSearchParams(window.location.search);
+      if (erfolgEl || params.get('customer_posted') === 'true') publish('tp_newsletter_anmeldung_erfolg', {});
+    } catch (e) {}
+    try {
+      var roh = window.sessionStorage.getItem('tpFunnelMusterPending');
+      if (roh) {
+        window.sessionStorage.removeItem('tpFunnelMusterPending');
+        var daten = JSON.parse(roh);
+        if (daten && daten.ts && Date.now() - daten.ts <= 20000) {
+          var payload = {};
+          if (daten.anzahl > 0) payload.anzahl = daten.anzahl;
+          publish('tp_muster_im_warenkorb', payload);
+        }
+      }
+    } catch (e) {}
+  })();
+</script>

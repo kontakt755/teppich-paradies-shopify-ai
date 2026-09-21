@@ -1,0 +1,13 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-ratgeber-beitrag",
+      "settings": {
+        "newsletter_anzeigen": false
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
