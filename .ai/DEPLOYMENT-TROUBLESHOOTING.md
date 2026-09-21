@@ -46,6 +46,26 @@ CLI-Sperre gegen Pushes auf das Live-Theme hat das aufgehalten. Deshalb vor jede
 die Rollen frisch abfragen und sich nicht auf den Stand aus der eigenen Sitzung verlassen; bei
 mehreren parallelen Sitzungen wechselt das Live-Theme im Minutentakt.
 
+**Nachtrag 2026-09-21 - gezielt per CLI statt im Admin, und immer zweimal.** Der Fall trat wieder auf
+(#421 loeschte drei Kartenbloecke, der Livegang hing; #430 holte die Dateien voruebergehend nach main
+zurueck). Zwei Dinge sind seither belegt:
+
+1. Auf einem **UNPUBLISHED** Theme geht das Entfernen auch ohne Admin-Klick: aus einem Checkout, in dem
+   die Dateien fehlen, ein Push, der mit `--only` auf **genau diese Pfade** begrenzt ist:
+   `shopify theme push --store <store> --theme <id> --path . --only <pfad1> --only <pfad2>`.
+   Der Filter gilt fuer beide Seiten, entfernt wird nur, was er trifft (am Wegwerf-Theme erprobt, dann am
+   Preview-Theme; Gegenprobe ueber `theme(id).files(filenames: [...])`). Rolle **unmittelbar davor** frisch
+   pruefen, nie waehrend ein anderer Lauf ins selbe Theme schreibt, nie ohne `--only`. Auf MAIN sperrt die
+   CLI den Push - das ist gewollt und bleibt so.
+2. Die Dateien liegen auf **beiden** Wechsel-Themes. Nach dem Entfernen aus dem Preview-Theme liegen sie
+   weiter auf MAIN; beim naechsten Livegang tauschen die Rollen, und der **uebernaechste** Preview-Lauf
+   ist wieder rot. Der Handgriff gehoert deshalb zweimal in den Plan: einmal sofort, einmal nach dem
+   naechsten Rollentausch auf dem dann unveroeffentlichten Alt-Theme (Beispiel: Issue #435).
+
+Reihenfolge, wenn ein PR Theme-Dateien loescht: **vor** dem Merge ansagen; Merge und Entfernen aus dem
+Preview-Theme direkt hintereinander, ohne Preview-Lauf dazwischen - sonst entsteht die Drift in der einen
+oder der anderen Richtung.
+
 ### SEO-Fehlschlag ist oft nicht der eigene Diff
 Am 2026-09-03 blockierte der SEO-Gate einen Live-Deploy mit 16 Fehlern, die alle vorbestanden: Die Google-Rating-API lieferte 404 auf allen PDPs (Desktop + Mobile), völlig unabhängig von der Änderung. `npm run seo:check` laufen lassen, `SEO_REPORT.md` öffnen und die ERROR-Sektion gegen den eigenen Diff halten, bevor Zeit in die falsche Ursache fließt. Ein Override existiert bewusst nicht (`--force-seo-override` wurde ausprobiert, gibt es nicht) – Altfehler müssen behoben werden, und ob trotzdem deployt wird, entscheidet der Mensch, nicht der Agent.
 
