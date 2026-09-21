@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T10:10:42.739Z",
+  "generated_at": "2026-09-21T10:11:02.061Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T10:10:42.739Z",
+    "fetchedAt": "2026-09-21T10:11:02.061Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1636,7 +1636,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/164",
       "labels": [
-        "status:review",
+        "status:blockiert",
         "type:verbesserung",
         "priority:p2",
         "area:produktseite"
@@ -1645,13 +1645,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:36Z",
-      "updated_at": "2026-09-21T10:10:04Z",
+      "updated_at": "2026-09-21T10:10:48Z",
       "closed_at": null
     },
     {
@@ -3112,7 +3112,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/40",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:content",
         "priority:p2",
         "area:produktseite"
@@ -3121,7 +3121,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "ChatGPT: Bitte Produktdaten auditieren",
       "fields": {
         "goal": "Sortiment anhand strukturierter Daten klassifizieren",
@@ -3149,7 +3149,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:30Z",
-      "updated_at": "2026-09-21T10:09:56Z",
+      "updated_at": "2026-09-21T10:10:47Z",
       "closed_at": "2026-09-21T10:09:56Z"
     },
     {
