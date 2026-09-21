@@ -91,3 +91,14 @@ Evidence: `audit/evidence/cart-responses-2026-09-21.json`; Script: `audit/script
 Nächster konkreter Schritt: CART-002b.2c: assets/cart-drawer.js und assets/dialog.js mit events.js auf Eventtypen, Öffnen/Schließen, History-/Disconnect-Lifecycle prüfen. Danach H-012/H-013 im echten Browser bei verfügbarem Runner; keine abgeschlossenen lokalen Response-/Retry-/Debouncefälle ohne Quellenänderung wiederholen.
 
 CORE/SHARED/HIGH RISK: component-cart-items.updateQuantity → CartUpdateEvent → direkter morphSection; daneben DiscountUpdateEvent → SectionRenderer mit eigener Abbruchverwaltung. Ein direkter Morph invalidiert dessen laufenden Controller nicht. Fehlerzuordnung liest aktuelle Refs anhand des alten numerischen line-Werts. TP-010/011 dürfen diese Antwort-/Identitätsgrenzen nicht verschärfen; H-013 vor konkurrierenden Queue-Fixes klären.
+
+
+## S12 – Drawer-/Dialog-Lifecycle
+
+S12 / CART-002b.2c lokal abgeschlossen: elf Originalcode-Lifecyclefälle, fünf historische Quellhashvergleiche, Syntax/Erstlauf PASS. Desktop/Mobile öffnen und schließen, Scrollstil/-position, modelliertes Back ohne doppelten Rücksprung, Disconnect/Reconnect der Listener und Sticky-Schwellen funktionieren in den Fixtures. Allgemeines CartUpdateEvent öffnet ebenfalls bei auto-open; die erste Zählansage bleibt leer, weil Öffnen erst im RAF erfolgt. Close/Disconnect vor diesem RAF verhindert dessen spätere Ausführung nicht. Letztere Beobachtungen bleiben H-014: natives Dialog-/Fokus-/Attach-/Historyverhalten und reale Erreichbarkeit nicht belegt. Keine neue bestätigte Issue-ID, keine Reparatur, keine früheren Diagnosen wiederholt.
+
+Evidence: `audit/evidence/drawer-lifecycle-2026-09-21.json`; Script: `audit/scripts/reproduce-drawer-lifecycle.mjs`. Originale Klassen und Utilityfunktionen; modellierte Element-/History-/RAF-Umgebung, leere Animationsliste. Keine Native-Dialog-/Fokusabnahme. Route TASK-EECCC76EC036 B/STATIC; kein Executor.
+
+Nächster konkreter Schritt: CART-003: Browserfähigkeit einmal neu prüfen (S01-Sperre ist historisch). Verfügbaren Browser nach Skill verwenden, öffentlichen Shop ohne Kaufabschluss zunächst rein lesend auf Drawer-Öffnen/Schließen, Fokus/Escape, Mobile Back/Reload und H-014 prüfen; Live-Theme vor livebezogenen Schlussfolgerungen aktuell verifizieren. Falls Browserzugriff weiterhin blockiert, Grenze konkret dokumentieren und sequenziell lokale Checkout-/Express-/Formularverträge prüfen. Keine S08–S12-Replays ohne Quelländerung.
+
+SHARED/HIGH RISK: dialog.js wird über Cart hinaus verwendet. showDialog prüft open vor RAF; Close prüft den noch geschlossenen Zustand, Disconnect entfernt Listener, storniert aber RAF nicht. cart-drawer.js bindet CartAddEvent.eventName (=cart:update), einschließlich allgemeiner Aktualisierungen; vorhandene Paketlogik verlässt sich laut Kommentar darauf. Eventnamen nicht pauschal trennen. header-actions.liquid steuert auto-open über Einstellung. H-014 vor Fixvorschlag prüfen.

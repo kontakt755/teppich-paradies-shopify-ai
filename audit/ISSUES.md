@@ -369,6 +369,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 | H-013 | Überlappende Cartantworten und verschobene Zeilenidentität | S11: zwei direkte Requests können ältere Antwort zuletzt anwenden und vorzeitig entsperren; laufender Discount-Sectionrequest kann jüngere direkte Cartantwort überschreiben. Manuell geänderte Refs zeigen Fehler an anderer Zeile. Acht kontrollierte Fälle, keine Browser-/Server-Erreichbarkeit | Browserbedienbarkeit trotz CSS-/Debouncesperre, reale Discount-/Cartüberschneidung, Snapshotreihenfolge und tatsächlichen Refwechsel prüfen. Keine zusätzliche bestätigte Issue-ID und kein pauschaler Serialisierungsfix aus synthetischem Ablauf |
 
+| H-014 | Drawer-Ereignis-/RAF-/History- und Ansagegrenzen | S12 elf lokale Fälle: allgemeines Update öffnet bei auto-open; erste Zählansage fehlt vor RAF, späterer Event wird angesagt; Close/Disconnect vor RAF storniert geplantes Öffnen nicht. Native DOM-/Fokus-/Historyabläufe nicht getestet | Browser: echte Relevanz der Zählansage neben Dialogfokus, Öffnen durch Hintergrundabgleich, schnelles Schließen/Disconnect, Escape, Zurück/Vorwärts/Reload und Animationen prüfen. Kein zusätzlicher bestätigter Fehler aus minimalem Dialogmodell |
+
 ## Verworfen / eingegrenzt
 
 - „Leeres Paketfeld kauft ein Paket“ ist ein ausdrücklich implementierter Ruhezustand, kein bestätigter Fehler.

@@ -1,0 +1,89 @@
+{
+  "session": "S12",
+  "task": "CART-002b.2c",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/cart-drawer.js",
+      "sha256": "c6ec4200ae19ed2a0a1c1ec85ed805b2913854417e381767a8da963daead21e9"
+    },
+    {
+      "file": "assets/dialog.js",
+      "sha256": "29e81ab767bd2dfa087023be7a26e69d7ade88e62e7c089c69dfb6a3754f9526"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "assets/utilities.js",
+      "sha256": "1b0c4926e32f6df743161c714d37def14b404a5bc1b2298171f7e5411085cde6"
+    },
+    {
+      "file": "snippets/header-actions.liquid",
+      "sha256": "3f33aa06de29b0ce95c0055398ca9c8c777d6a7b77e99b39160de1775acf8c97"
+    }
+  ],
+  "cases": [
+    {
+      "name": "desktop-open-close",
+      "history": [],
+      "scrollRestored": true
+    },
+    {
+      "name": "mobile-open-close",
+      "history": [
+        "push",
+        "back"
+      ],
+      "scrollRestored": true
+    },
+    {
+      "name": "CartAddEvent",
+      "opens": true,
+      "firstAnnouncementEmpty": true,
+      "laterAnnouncement": "Artikel: 3"
+    },
+    {
+      "name": "CartUpdateEvent",
+      "opens": true,
+      "firstAnnouncementEmpty": true,
+      "laterAnnouncement": "Artikel: 3"
+    },
+    {
+      "name": "auto-open-disabled",
+      "remainsClosedOnAdd": true,
+      "announcesWhenManuallyOpen": true
+    },
+    {
+      "name": "mobile-back",
+      "closes": true,
+      "noSecondHistoryBack": true
+    },
+    {
+      "name": "disconnect-reconnect-listener",
+      "disconnectedIgnores": true,
+      "reconnectSchedulesOnce": true
+    },
+    {
+      "name": "close-before-frame",
+      "queuedOpenStillRuns": true,
+      "boundary": "Synthetic scheduling/DOM attachment; H-014, not native showModal proof."
+    },
+    {
+      "name": "disconnect-before-frame",
+      "queuedOpenStillRuns": true,
+      "boundary": "Synthetic scheduling/DOM attachment; H-014, not native showModal proof."
+    },
+    {
+      "name": "large-summary",
+      "sticky": false
+    },
+    {
+      "name": "empty-summary",
+      "sticky": false
+    }
+  ],
+  "confirmedNewIssues": 0,
+  "limits": "Original drawer/dialog/events and original utility debounce/onAnimationEnd/isMobileBreakpoint. Minimal Element and modal simulation; getAnimations returns []; controlled RAF, history state/back is a model. No focus, native cancel, real navigation, animation timing, attachment error or live theme verification. H-014 observations require browser follow-up."
+}

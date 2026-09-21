@@ -104,3 +104,8 @@ Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scr
 ## S11
 
 `cart-responses-2026-09-21.json` und `cart-responses-summary-2026-09-21.md`: acht Originalantwortfälle/vier Quellhashes. Script `audit/scripts/reproduce-cart-responses.mjs`. Integritäts-/Secretprotokolle mit S11-Präfix. PASS bedeutet Diagnose bestanden, keine Reparatur oder Browserabnahme.
+
+
+## S12
+
+`drawer-lifecycle-2026-09-21.json` und gleichnamige Summary: elf Originalcodefälle/fünf Hashvergleiche. Script `audit/scripts/reproduce-drawer-lifecycle.mjs`. Syntax und Diagnose PASS; native Dialog-/History-/Fokusprüfung offen. Integritäts-/Secretprotokolle mit S12-Kennung.
