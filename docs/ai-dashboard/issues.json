@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T08:20:57.055Z",
+  "generated_at": "2026-09-21T08:21:29.505Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 115,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T08:20:57.055Z",
+    "fetchedAt": "2026-09-21T08:21:29.505Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1540,34 +1540,10 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/166",
       "labels": [
-        "status:review",
+        "status:blockiert",
         "priority:p1",
         "area:checkout",
         "type:entscheidung"
-      ],
-      "assignee": "kontakt755",
-      "assignees": [
-        "kontakt755"
-      ],
-      "comments": 3,
-      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
-      "fields": {
-        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
-      },
-      "created_at": "2026-09-09T20:09:42Z",
-      "updated_at": "2026-09-09T20:35:11Z",
-      "closed_at": null
-    },
-    {
-      "number": 165,
-      "title": "Konkretes Lieferdatum statt Werktage-Spanne",
-      "state": "open",
-      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/165",
-      "labels": [
-        "status:review",
-        "type:ux",
-        "priority:p2",
-        "area:versand"
       ],
       "assignee": "kontakt755",
       "assignees": [
@@ -1578,8 +1554,32 @@
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
+      "created_at": "2026-09-09T20:09:42Z",
+      "updated_at": "2026-09-21T08:21:27Z",
+      "closed_at": null
+    },
+    {
+      "number": 165,
+      "title": "Konkretes Lieferdatum statt Werktage-Spanne",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/165",
+      "labels": [
+        "status:blockiert",
+        "type:ux",
+        "priority:p2",
+        "area:versand"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 5,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
       "created_at": "2026-09-09T20:09:39Z",
-      "updated_at": "2026-09-09T20:35:09Z",
+      "updated_at": "2026-09-21T08:21:17Z",
       "closed_at": null
     },
     {
