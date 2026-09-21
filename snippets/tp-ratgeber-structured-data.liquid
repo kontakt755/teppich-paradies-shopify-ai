@@ -10,10 +10,11 @@
   Feld bringt sein fuehrendes Komma selbst mit - so bleibt das JSON auch dann
   gueltig, wenn alle Metafelder leer sind.
 
-  Der Organization-Block im Header (sections/header.liquid) traegt keine @id,
-  deshalb stehen Name, URL und Logo hier noch einmal. Die @id "#organization"
-  ist vorbereitet: bekommt der Header-Block spaeter dieselbe @id, fuehren
-  Suchmaschinen beide Angaben zusammen.
+  author und publisher verweisen auf die @id "#organization" des
+  Organization-Blocks im Header (sections/header.liquid). Name, URL und Logo
+  stehen hier trotzdem noch einmal, damit der Artikel auch fuer Auswerter
+  vollstaendig ist, die Verweise nicht aufloesen. Wird die @id geaendert,
+  beide Stellen anpassen.
 
   @param {object} artikel - Artikel-Objekt
   @param {object} blog - Blog des Artikels (Bereichs-Ratgeber)

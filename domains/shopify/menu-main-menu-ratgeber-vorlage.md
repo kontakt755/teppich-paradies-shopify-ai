@@ -27,6 +27,7 @@ und ueber „Weitere Ratgeber" am Artikelende.
 4. **Artikel** aus `content/ratgeber/teppichboden/` anlegen – erst, wenn
    `grep -c PRUEFEN` je Datei 0 ergibt und der Inhaber freigegeben hat.
    `templateSuffix: "ratgeber"`, Tags und Metafelder aus der jeweiligen `.json`.
+   Die Eingaben baut `npm run ratgeber:payload` (sperrt nicht freigegebene Artikel).
 5. **Gegenprobe vor dem Menue:** Seite, Blog und einen Artikel per Puppeteer
    abrufen (nicht `curl` mit Vorschau-Cookie): H1 stimmt, im HTML steht
    `tp-rg-`, JSON-LD enthaelt `Article` und `BreadcrumbList`. `userErrors: []`

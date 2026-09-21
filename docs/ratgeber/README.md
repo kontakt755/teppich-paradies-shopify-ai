@@ -202,8 +202,13 @@ Fehlbestellung bzw. zum Kaufvorbehalt):
    (PR → `main` → Preview → Live). **Erst danach** Shopify-Objekte anlegen – eine
    Seite oder ein Blog mit fehlendem Template fällt sonst auf das Standard-Template
    zurück (bei Seiten ist das hier die B2B-Seite).
-2. Artikel-Metafelddefinitionen anlegen, Blog `ratgeber-teppichboden` und Seite
-   `ratgeber` anlegen, Pilotartikel nach Freigabe veröffentlichen.
+2. Blog `ratgeber-teppichboden` und Seite `ratgeber` anlegen (die 19
+   Metafelddefinitionen bestehen seit 2026-09-21). Artikel anlegen mit
+   `npm run ratgeber:payload -- content/ratgeber/teppichboden --blog-id <gid>
+   --kollektionen <datei>`: Das Skript baut die Eingaben für `articleCreate` und
+   **sperrt jeden Artikel**, der nicht `"status": "freigegeben"` trägt oder noch
+   eine `PRUEFEN`-Marke enthält. Angelegt wird immer unveröffentlicht; sichtbar
+   schalten ist ein eigener, freigegebener Schritt.
 3. Menü „Service & Verlegung" um „Ratgeber" ergänzen. `menuUpdate` ersetzt den
    ganzen Baum: vorher auslesen, alle Zweige mit IDs zurückschreiben, Gegenprobe
    ist die identische ID-Menge (`docs/lessons/tote-menuelinks.md`).

@@ -326,6 +326,12 @@
   {
     "@context": "http://schema.org",
     "@type": ["Organization", "HomeAndConstructionBusiness", "Store"],
+    {%- comment -%}
+      Feste Kennung des Unternehmens. snippets/tp-ratgeber-structured-data.liquid
+      verweist als author/publisher auf genau diese @id - ohne sie liefe der
+      Verweis ins Leere. Bei einer Aenderung beide Stellen anpassen.
+    {%- endcomment -%}
+    "@id": {{ request.origin | append: '/#organization' | json }},
     {%- comment -%} Marke wie in Titeln und og:site_name; die Admin-Schreibweise bleibt als alternateName auffindbar {%- endcomment -%}
     {%- assign tp_schema_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies' -%}
     "name": {{ tp_schema_marke | json }},
@@ -382,6 +388,25 @@
     "priceRange": "€€"
   }
 </script>
+{%- comment -%}
+  WebSite nur auf der Startseite: Google liest den Seitennamen ausschliesslich
+  dort. Bewusst ohne SearchAction - die Suchbox-Auszeichnung wertet Google seit
+  2024 nicht mehr aus, und ein Schema-Eintrag ohne Wirkung waere nur Ballast.
+{%- endcomment -%}
+{%- if request.page_type == 'index' -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": {{ request.origin | append: '/#website' | json }},
+      "url": {{ request.origin | json }},
+      "name": {{ tp_schema_marke | json }},
+      {% if tp_schema_marke != shop.name %}"alternateName": {{ shop.name | json }},{% endif %}
+      "inLanguage": "de-DE",
+      "publisher": { "@id": {{ request.origin | append: '/#organization' | json }} }
+    }
+  </script>
+{%- endif %}
 
 <header-component
   id="header-component"
