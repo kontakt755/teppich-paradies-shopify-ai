@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T09:34:05.174Z",
+  "generated_at": "2026-09-21T09:34:47.421Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T09:34:05.174Z",
+    "fetchedAt": "2026-09-21T09:34:47.421Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -664,10 +664,10 @@
     {
       "number": 287,
       "title": "Predictive Search: Amazon-aehnliche Schnellsuche unter der Suchleiste (PR #286)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/287",
       "labels": [
-        "status:eingang",
+        "status:fertig",
         "type:verbesserung",
         "priority:p2",
         "area:navigation"
@@ -676,14 +676,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-14T09:26:08Z",
-      "updated_at": "2026-09-14T09:26:09Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T09:34:28Z",
+      "closed_at": "2026-09-21T09:34:09Z"
     },
     {
       "number": 282,
