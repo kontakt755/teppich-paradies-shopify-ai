@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T10:55:41.164Z",
+  "generated_at": "2026-09-21T11:04:17.704Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T10:55:41.164Z",
+    "fetchedAt": "2026-09-21T11:04:17.704Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -90,10 +90,10 @@
     {
       "number": 420,
       "title": "Produktseite Rollenware kompakter: Farb-Dropdown, cm/m-Eingabe, Visualisierer-Beschriftung, Ratgeber-Template, Aktionskonzept",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/420",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:produktseite"
@@ -102,14 +102,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:07:10Z",
-      "updated_at": "2026-09-21T10:10:11Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T11:04:07Z",
+      "closed_at": "2026-09-21T11:04:07Z"
     },
     {
       "number": 415,
@@ -1684,7 +1684,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/162",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:ux",
         "priority:p1",
         "area:produktseite"
@@ -1693,13 +1693,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:31Z",
-      "updated_at": "2026-09-21T10:55:29Z",
+      "updated_at": "2026-09-21T10:55:42Z",
       "closed_at": "2026-09-21T10:55:29Z"
     },
     {
