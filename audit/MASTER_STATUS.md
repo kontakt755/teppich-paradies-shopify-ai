@@ -49,4 +49,4 @@ Historische Evidence-Basis: `66729099c4122385e19172a1f5ba14a7524c3bfb`. HEAD vor
 
 Git-Sicherung: `.git` am 21.09. regulär beschreibbar; `git add`/`git commit` für S06 mit `6b92861` erfolgreich. Frühere Sperrnotizen sind historische Sessioninformation. S07 nach bestandener Abschlussprüfung tatsächlich in `4b8e49d` committed (15 Audit-/Progressdateien). S08 nach bestandener Integrität/Secret-Scan tatsächlich in `67ee9bc` gesichert, aktueller Branch `audit/shop-audit`. `CONTINUE_PROMPT.md` und zeitweise `docs/ai-dashboard/issues.json` sind externe Änderungen und bleiben außerhalb des Audit-Commits. Kein Pull/Merge/Push.
 
-S09-Abschluss wird nach Integritäts-/Secretprüfung regulär committed. Externe CONTINUE_PROMPT.md und Dashboardänderung weiterhin nicht Teil des Audit-Commits.
+S09 nach bestandener Integritäts-/Secretprüfung tatsächlich in `53ad666` committed (14 Audit-/Progressdateien). Externe CONTINUE_PROMPT.md und Dashboardänderung weiterhin nicht Teil des Audit-Commits.

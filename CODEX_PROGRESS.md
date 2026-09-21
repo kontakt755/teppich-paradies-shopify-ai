@@ -36,6 +36,6 @@ CART-002b.2: assets/component-cart-items.js, section-renderer.js, cart-drawer.js
 
 ## Letzter erfolgreicher Git-Commit
 
-1bf1d1a – audit: S08-Commit und Fortsetzung bei CART-002b dokumentieren; S08-Fachcommit 67ee9bc. S09 nach Abschlussprüfungen regulär sichern; neuesten Commit mit git log prüfen. Branch audit/shop-audit. Kein Pull/Merge/Push.
+53ad666 – audit: CART-002b.1 pruefen und verlorene Mengenereignisse TP-011 belegen. Tatsächlich per git add/commit gesichert: 14 Audit-/Progressdateien. Diese Referenz wird separat nachgetragen; neueste Dokumentationscommits zeigt git log. Branch audit/shop-audit. Kein Pull/Merge/Push.
 
 Status: WORKING

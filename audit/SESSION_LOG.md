@@ -247,3 +247,5 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **Nächster konkreter Schritt:** CART-002b.2 – Antwortreihenfolge/Zeilenidentität, SectionRenderer vs. direkter Morph, Drawer-Event-/Dialog-Lifecycle. Quellen component-cart-items, section-renderer, cart-drawer, events, gegebenenfalls dialog. Echte Browser-Wiederöffnung/Reload/Checkout separat, keine fertigen Preis-/Gruppen-/Debouncefälle ohne Quellenänderung wiederholen.
 
 **Status:** WORKING, grob 28 %, Phase 1, FINAL_REPORT/Gesamtauftrag offen.
+
+**S09 tatsächlich committed:** `53ad666`, 14 Audit-/Progressdateien, Branch audit/shop-audit. Integrität, Secret-Scan und git diff --check bestanden. Commitreferenz anschließend nachgetragen; keine Produktdiagnose erneut ausgeführt. Externe CONTINUE_PROMPT.md/Dashboarddatei bleiben außerhalb. Status WORKING, nächster Schritt CART-002b.2.
