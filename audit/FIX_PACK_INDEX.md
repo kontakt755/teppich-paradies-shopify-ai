@@ -1,11 +1,11 @@
 # Fix-Pack-Index
 
-Stand: 20.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vorbereitet. **READY ist Übergabereife, keine Umsetzungs-, Merge- oder Live-Freigabe.** Kein Paket umgesetzt.
+Stand: 21.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vorbereitet. **READY ist Übergabereife, keine Umsetzungs-, Merge- oder Live-Freigabe.** Kein Paket umgesetzt.
 
 | FIX_PACK | STATUS | PRIORITÄT | ISSUES | PARALLEL SAFE | ABHÄNGIGKEITEN | ZUSTÄNDIGER AGENT |
 | --- | --- | --- | --- | --- | --- | --- |
 | [FIX_PACK_02_PRICING_INPUTS](fix-packs/FIX_PACK_02_PRICING_INPUTS.md) | READY | P2/P3 | TP-001, TP-002 | NO | ein gemeinsamer Paketparser/Submit; aktuelle Live-Quelle vor Fix verifizieren | Später Claude Code, noch nicht beauftragt |
-| Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004 | NO | PR-020/022 lokal abgeschlossen; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
+| Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004, TP-009 | NO | PR-020/022/023b.2 lokal abgeschlossen; H-011 PVC-Breitenvertrag; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
 | Wunschmaßpaket, Dateiname noch offen | NOT READY | P3 | TP-006, TP-007 | NO | H-009 aktive Nutzung/Maßvertrag, H-010/Browserintegration; gemeinsame Blockdatei | Nicht zugewiesen |
 | Paket-Cartdarstellung, Dateiname noch offen | NOT READY | P3 | TP-008 | NO | H-011 aktuelle dreistellige Paketgrößen, CART-002 und gemeinsame Cartdatei | Nicht zugewiesen |
 | Einfass-Servicepaket, Dateiname noch offen | NOT READY | P3 | TP-005 | NO | PR-021 lokal abgeschlossen; H-006, Datenvertrag und verbleibende Cart-/Abgleichprüfung | Nicht zugewiesen |
@@ -25,3 +25,5 @@ S04: PR-022 lokal bestanden, kein zusätzliches Issue oder Fix-Pack. 61 Integrat
 S05: TP-006/007 besitzen vollständige Implementation Briefs. Kein sofortiges Pack für den historisch ruhenden Pfad: heutige Produktnutzung und Maßvertrag H-009 zuerst belegen, dann gemeinsam planen. 46 Diagnosefälle bieten gezielte Preis-/Payloadregression; bestehende Defektassertions sind vor Fix-QA auf Sollverhalten umzustellen. Kein bestehendes Pack ausgeführt, Ready/Done/QA unverändert.
 
 S06: TP-008 mit vollständigem Brief, noch kein zusätzliches Fix-Pack. Der einzelne Präzisionsverlust gehört nach der anstehenden Cart-Prüfung in einen kleinen passenden Darstellungsblock; nicht künstlich mit Parser-/Preisreparaturen vermischen. 17 Datenintegrationen/28 Cart-Renderings ergänzen die Übergabeevidence. Keine Freigabe/Umsetzung, Ready/Done/QA unverändert.
+
+S07: TP-009/P2 mit vollständigem Implementation Brief. Bestehenden vorgemerkten Rollenblock um Breitenvertrag/Art-Asset ergänzen; weiterhin NOT READY wegen aktueller Daten-/Cart-/Variantenabhängigkeiten. Keine Packdatei angelegt oder umgesetzt. Stück-/Zubehörvertrag lokal ohne weiteren bestätigten Fehler; vorbereitete Metafelder bleiben unangetastet. Ready/Done/QA unverändert.

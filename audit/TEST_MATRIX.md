@@ -1,6 +1,6 @@
 # Audit-Testmatrix
 
-Stand: 20.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
+Stand: 21.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 
 **PASS (historisch)** = gespeicherte Browser-/API-Beobachtung vom 19.09.; **PASS (lokal)** = aktuelle deterministische Prüfung. **FAIL bestätigt** = Issue beobachtet, nicht behoben. **OFFEN** = keine Aussage zur Funktion. Ein bestandener Reproduktionslauf bedeutet nicht, dass die darin nachgewiesenen Fehler behoben sind.
 
@@ -40,14 +40,17 @@ Stand: 20.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 | PR-023a.3 | Dezimalmaße bleiben in Bestellung konsistent | 200.5×300 → 602 Einheiten, aber Properties 201×300 → Mail erwartet 603. Auch 150.5 Quadrat warnt. 200.4/Kreis/Oval verlieren ebenfalls Dezimalmaß | FAIL lokal TP-006; tatsächliche Browser-/Live-Reichweite H-009 |
 | PR-023a.4 | Submit während laufendem Request | Direkter zweiter Klick gesperrt; nach Input 200→201 Button wieder aktiv, zwei abgefangene Requests 600/603 | FAIL lokal TP-007; keine Serverannahme behauptet |
 | PR-023a.5 | Formular-/Verfügbarkeits-/Grenzdaten | Bekanntes Formularfixture aktualisiert Preis/ID; fremde ID, unverfügbare Variante und fehlende Maxima isoliert geprüft | H-010, keine neuen bestätigten Shopissues ohne Produkt-/DOM-Nachweis |
-| PR-023b | Weitere Produktarten: Klebevinyl/Teppichfliesen/PVC/Fixpreis | Paketverträge PR-023b.1 abgeschlossen; PVC-/Stückpayloads separat PR-023b.2 | TEILWEISE lokal abgeschlossen, Live-Produktdaten H-011 |
+| PR-023b | Weitere Produktarten: Klebevinyl/Teppichfliesen/PVC/Fixpreis | Paketverträge PR-023b.1 und PVC-/Stückpayloads PR-023b.2 lokal abgeschlossen | Lokale Vertragsprüfung abgeschlossen; TP-008/009, aktuelle Daten und Browserintegration H-011 |
 | PR-023b.1 | Klebe-/Teppichfliesenvertrag Liquid → JS → Payload → Preis-/Cartansichten | 17 Fälle, drei unsichtbare Gates, 14 Requests abgefangen, 28 Cart-Renderings. Quadra 4 Pakete/80 Fliesen/20,00 m²/1.178,00 €, Klebe-Fixture 6/20,04/620,22 € | PASS lokal für Geld-/Mengenvertrag; TP-008 für dreistellige Cart-Fläche; `package-contracts-2026-09-20.json` |
 | PR-023b.1a | Paketvorrang und Stückdaten | Paketmetafeld dominiert widersprüchliche Rollenbreite/Produkttyp; fehlende Stückdaten fehlen auch im HTML, kein Fallback | PASS lokal, keine Produktdatenänderung |
 | PR-023b.1b | Varianten- und Cartmengenübergang | Passendes Ereignis aktualisiert ID/Preis, fremdes ignoriert; Cart berechnet aus aktueller Zeilenmenge trotz alter Properties | PASS im Adapter/Original-Liquid; kein echter Picker-/Cart-Ajax-Nachweis |
 | PR-023b.1c | Drei Stellen in Flächenanzeige erhalten | 1×0,794 → 0,79 statt 0,794; 2×0,794 → 1,59 statt 1,588; 16×1,892 → 30,27 statt 30,272 m² | FAIL lokal TP-008, Paketanzahl/Cent-Summe korrekt; aktuelle Produktreichweite H-011 |
-| PR-023b.2 | **NÄCHSTER SCHRITT:** PVC-/Fixpreis-/Stückpayloads | Verkaufsart und Templatewege kartiert; Original-Rollen-/Mengenhilfe-/Standardform-Integration noch prüfen | OFFEN; vorhandene Quellen und Beleggrenzen in S06-Summary |
+| PR-023b.2 | PVC-/Fixpreis-/Stückpayloads | 30 lokale Integrationen, 26 Requests; Liquid → Originalrollenfunktionen bzw. Mengenhilfe → Standardform und fetchConfig | Lokal abgeschlossen; `roll-fixed-contracts-2026-09-21.json`, TP-009 FAIL |
+| PR-023b.2a | Meteroptionen mehrerer Rollenbreiten | 4,00 m × 250 cm sendet fünf statt zehn m² und Property 200 cm; richtige Varianten-ID. Umgekehrte Reihenfolge zehn statt fünf | FAIL lokal TP-009, aktuelle PVC-Daten H-011 |
+| PR-023b.2b | cm-Optionen / Einzelbreite / ungültiger Zustand | 200/400 cm richtig; einzelner 4-m-Fallback richtig; nicht verfügbare Variante und leere Länge ohne Request | PASS lokal; kein echter Picker-/Browsernachweis |
+| PR-023b.2c | Leisten/Profile/Band/Unterlage/Gebinde bis Standardform | 20 Fälle/18 Requests; ganze Mengen, ID, unverändertes manuelles Feld ohne belegte Einheit; Button-/vorgegebener Max-Guard blockieren | PASS lokal; tatsächliche Max-Regel/Bestände, native FormData/DOM und Antwortverarbeitung nicht geprüft |
 | CART-001 | Paket-Cartdarstellung und Checkout erreichbar | Historisch 11 Pakete/22,88 m²/1.165,78 €, Checkoutseite mit Kontaktfeld erreichbar | PASS historisch, kein Kaufabschluss, keine vollständige Checkout-QA |
-| CART-002 | Menge ändern, entfernen, erneut öffnen; gemischte/gruppierte Positionen | Noch nicht geprüft | OFFEN nach Preisbereich |
+| CART-002 | Menge ändern, entfernen, erneut öffnen; gemischte/gruppierte Positionen | Nächster Teil CART-002a: Originalgruppen/Mengensperren/Entfernen/Zuschnittabgleich plus vorhandene Tests | OFFEN, nächster aktiver Bereich |
 | CALC-001 | Sämtliche Maßgrenzen, Komma/Punkt, leer, 0, negativ, Maxima | Teilprüfungen PR-008–011 sind kein vollständiger Rechnertest | OFFEN nach Warenkorb |
 | VAR-001 | Schneller Farb-/Artwechsel, Verfügbarkeit, Preis/ID, Zurück/Reload | Noch keine vollständigen Ablaufprüfungen | OFFEN |
 | RUN-001 | JavaScript-Konsole / Exceptions / Netzwerk | Historische `exceptions`-Einträge leer; keine vollständige Netzwerk-/Console-Abdeckung | TEILBELEG, übriges OFFEN |
@@ -72,6 +75,8 @@ Stand: 20.09.2026. Ein Bereich gleichzeitig. Keine Produkt-/Theme-Reparatur.
 
 - S06: `node --check audit/scripts/reproduce-package-contracts.mjs` und Diagnoselauf bestanden; 17 Fälle, 14 Requests abgefangen, 28 Cart-Renderings, drei ergänzende Klassifikationen, fünf Templatezuordnungen, elf historische Hashvergleiche. Zweiter Lauf nach konsistentem Stückfixture und zusätzlicher HTML-Gateassertion ebenfalls bestanden; keine S01–S05-Replays. TP-008 reproduziert.
 
+- S07: `node --check audit/scripts/reproduce-roll-fixed-contracts.mjs` und Diagnoselauf PASS (30 Fälle/26 Requests/neun Hashvergleiche). Erneuter Lauf nach originaler syncArtUi und Propertyassertion ebenfalls PASS; TP-009 reproduziert. `node --test --test-concurrency=1 qa/tests/zubehoer-menge.test.mjs`: **7/7 PASS**. Keine S01–S06-Replays. Keine Produktänderung oder echter Request. S07-Dokument-/Secretprotokolle separat.
+
 ## Wiederholungsregeln
 
-Abgeschlossene PR-001–011 und lokale PR-020–023a sowie PR-023b.1 nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.
+Abgeschlossene PR-001–011 und lokale PR-020–023a sowie PR-023b.1/b.2 nicht erneut auditieren, solange relevante Quellen unverändert sind. H-005/006/008 sind fehlende Live-/Fachdatenprüfungen, kein Anlass, reine Mathematik erneut laufen zu lassen. Vor späterer Fix-Abnahme Live-Theme frisch identifizieren, Quellen abgleichen und betroffene Fälle dann gezielt wiederholen. Die 55 Unit-Tests belegen nur ihren Codeumfang, nicht alle Shop-Szenarien. Ungültige Mengen vor echten Requests abfangen; keinen Checkout abschließen.

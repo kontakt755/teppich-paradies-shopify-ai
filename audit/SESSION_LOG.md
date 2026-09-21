@@ -185,3 +185,25 @@ Route `TASK-B75BBE82CD31`: A / SCRIPT_FIRST / STATIC, keine geschützte Aktion, 
 ## 21.09.2026 – S06-Abschluss und Übernahme des behobenen Git-Profils
 
 Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im schreibbaren Profil. Bei Prüfung ist S05/S06 bereits durch Commit 9682ab7 gesichert; einzige externe Änderung CONTINUE_PROMPT.md bleibt erhalten. Der noch fehlende letzte S06-Konsistenz-/Secretlauf wird nachgetragen, keine Preistests erneut ausgeführt. Protokolle tragen das tatsächliche Abschlussdatum 21.09. Die frühere Aussage „Git gesperrt, S05/S06 uncommitted“ ist historisch und wird nicht als heutiger Blocker übernommen. Nächster Fachschritt bleibt PR-023b.2, Phase 1, sequenziell.
+
+## 21.09.2026 – S07 / PR-023b.2 PVC- und Stückpayloads
+
+**Übernahme:** S06-Abschluss regulär mit `git add`/`git commit` als **6b92861** gesichert, .git damit tatsächlich beschreibbar. TASK/Override, Regeln und Auditstand übernommen; keine alten Preisaufgaben neu gestartet. Externe Änderung CONTINUE_PROMPT.md erhalten und nicht gestaged. Routing TASK-677473AF97F6: B/STATIC, keine geschützte Aktion; keine Executor-/Agentenausführung.
+
+**Scope / Quellen:** ausschließlich nächster Preisvertrag PR-023b.2, sequenziell. Historischer Merchant-Report und Rollen-Ausschlussliste (Terracora 2,00/4,00 m), Rechnerzuordnung, belegte Leistenlängen; keine aktuellen Preise aus diesen Quellen ableitbar. Alle Preis-/IDfixtures synthetisch, PVC-Variantenmetafeldzuordnung modelliert. Keine Shopify-Writes/Produktänderung.
+
+**Durchgeführt / Ergebnis:** zehn PVC-Verträge durch Original-Liquid, Rolleninitialisierung, syncArtUi, Rechnen und Submit; acht Requests. Zwanzig Stück-/Zubehörfälle über vollständigen Mengenhilfeblock/JS und Standardform-Klasse mit originalem fetchConfig; 18 Requests. Richtige ganze Mengen und ID in diesen Stückfällen, fehlende/mehrdeutige Reichweite erzeugt bewusst keine Hilfe. Neun Quellhashes historisch gleich.
+
+**Neuer Befund TP-009/P2:** Meteroptionen werden nicht als Breitenoption erkannt. Globaler erster Metafeldfallback liefert auch für gewählte 4-m-Variante 200 cm; 250 cm Länge → fünf statt zehn m², Property 200 cm, bei korrekter ID. Preisbox entspricht dem falschen Payload. Umgekehrte Reihenfolge kann Übermenge erzeugen. Einzelbreitenfallback und cm-Optionen korrekt. Vollständiger Implementation Brief; H-011 aktuelle Datenreichweite offen. Bestätigte Issues jetzt neun (P2=3, P3=6), kein P0/P1. Kein Reparaturauftrag und kein neues READY-Pack.
+
+**Tests:** Syntax/erster Diagnoseversuch erfolgreich, keine fehlgeschlagene Produktroutine. Zweiter Lauf nach Aufnahme originaler syncArtUi und zusätzlicher Propertyassertion ebenfalls PASS: 30 Fälle/26 Requests. `node --test --test-concurrency=1 qa/tests/zubehoer-menge.test.mjs` **7/7 PASS**, 0 fail/skip. S01–S06-Diagnosen nicht erneut ausgeführt. Dokument-/Quellenintegrität, git diff --check und Secret-Scan in S07-Protokollen.
+
+**Grenzen:** nur lokale LiquidJS-/DOM-/FormData-Adapter; originale Formel-/Submitquellen unverändert. Echte Browserzahleneingabe, Picker/Lifecycle, Live-Theme/-Produktdaten und Serverannahme offen. Standardform-Response absichtlich ausstehend, nur erster Request erfasst; Max-Guard als Rückgabewert vorgegeben. Keine Cart-/Checkoutbedienung als bestanden behauptet. S01-Infrastrukturgrenzen nicht erneut getestet.
+
+**Sicherung:** Script, JSON, Summary, Unitlog und Auditkontrollen/Progress aktualisiert. Nur Auditdateien und CODEX_PROGRESS in den Abschlusscommit; CONTINUE_PROMPT bleibt extern. Git-Sperrnotizen S05/S06 sind historische Zustände, heute kein Hindernis.
+
+**Exakter nächster Schritt:** CART-002a – Originalgruppen/Mengensperren/Entfernen/Zuschnittabgleich und vorhandene Tests lesen, sequenziell testen, Lücken bis abgefangene Cartmutationen gezielt ergänzen. `tp-cart-gruppen.js`, `tp-cart-gruppe.liquid`, `tp-zuschnitt-abgleich.js`; Testdateien cart-gruppen/cart-mengensperre/cart-waisen/zuschnitt-abgleich. Echte Drawer-/Cart-/Checkout-Integration gesondert offen halten. Kein erneuter PR-001–023b.2-Lauf ohne Quelländerung.
+
+**Status:** WORKING, grob 24 % Abdeckung, Phase 1. Gesamtauftrag und FINAL_REPORT.md weiterhin offen.
+
+**S07-Abschlusskontrolle:** Erster Integritätslauf stoppte an einer währenddessen extern geänderten docs/ai-dashboard/issues.json. Direkt danach zeigte git status/git diff diese Datei wieder unverändert bei gleichem HEAD 6b92861. Datei nicht angefasst oder gestaged; kein Produkt-/Diagnosetestfehler. Abschließender Integritätslauf prüft erneut den tatsächlichen Diff; CONTINUE_PROMPT.md bleibt die bekannte externe Änderung. Secret-Scan PASS ohne Befunde.

@@ -1,13 +1,13 @@
 # Abhängigkeiten und Konflikte
 
-Stand: 20.09.2026. Teilkarte des derzeitigen Preisbereichs, keine abgeschlossene Gesamtarchitektur.
+Stand: 21.09.2026. Teilkarte des derzeitigen Preisbereichs, keine abgeschlossene Gesamtarchitektur.
 
 | Datei / Pfad | Einstufung | Rolle / Abhängigkeit | Änderungsrisiko |
 | --- | --- | --- | --- |
 | `blocks/paket-auswahl.liquid` | CORE FILE / SHARED FILE / HIGH RISK | Eingabe → Paketmenge → Preis → `/cart/add.js`; empfängt `variant:update` | Alle eingebundenen Paketprodukte betroffen; TP-001/002 nur gemeinsam koordinieren |
 | `templates/product.json`, `product.planken.json`, `product.fliese.json` | SHARED FILE / HIGH RISK | Binden Paketblock ein | Im Fix-Pack nicht ändern |
 | `snippets/tp-cart-paketzeile.liquid` | SHARED FILE / HIGH RISK | Fläche/Stückzahl aus echter Cartmenge; TP-008: feste Zwei-Stellen-Formatierung | Nur Darstellung, Mengenquelle erhalten; gemeinsame Cartdatei, CART-002 noch offen |
-| `blocks/tp-rollware-rechner.liquid` | CORE FILE / HIGH RISK | Rollen-/Raummaß, Validierung, Extras, Gruppen-Payload; Unterlagenvarianten kommen gefiltert aus Liquid | TP-003 und TP-004 teilen Rechnen/Submit; PR-022 Unterlagenpreis lokal korrekt, bei späteren Änderungen regressionsprüfen |
+| `blocks/tp-rollware-rechner.liquid` | CORE FILE / HIGH RISK | Rollen-/Raummaß, Validierung, Extras, Gruppen-Payload; Unterlagenvarianten kommen gefiltert aus Liquid | TP-003/004/009 teilen Rollenblock; TP-009 verbindet Breitenvertrag und gewählte Variante; PR-022 Unterlagenpreis lokal korrekt, bei späteren Änderungen regressionsprüfen |
 | `assets/tp-rollware-art.js` | SHARED FILE / HIGH RISK | Rollenbreiten, Wunschmaß-Verfügbarkeit, Zugabe, Preisvergleich | Nicht mit separater Einfass-/Formgeometrie gleichsetzen |
 | `templates/product.rolle.json` | SHARED FILE / HIGH RISK | Rollrechner mit Produkt-/Serviceblock-Einstellungen | Produktfreigaben und eingestellte Zusatzprodukte vor jeder späteren Änderung prüfen |
 | `blocks/tp-einfass-konfigurator.liquid` | CORE FILE / HIGH RISK | Produkt-/Variantengates, Formliste, Mindestpreis und Service-Verfügbarkeit → JSON | PR-021 lokal geprüft; TP-005 verliert Ausfallstatus eines konfigurierten Kettelservice |
@@ -48,4 +48,12 @@ Während dieses Watchdog-Auftrags gilt unabhängig von theoretischen Dateikonfli
 
 TP-008 lässt sich voraussichtlich auf die Flächenformatierung in `tp-cart-paketzeile` begrenzen. Diese Datei nicht gleichzeitig mit Cart-Gruppen-/Mengenarbeiten bearbeiten; erst CART-002 abgleichen. `line_item.quantity` bleibt die Mengenquelle; kein Fix über alte `_qm_gesamt`-Properties. Paketpreis-/Parserfixes liegen in einer anderen Datei, brauchen aber dieselben Paket-/Stückregressionen. Kein neues Pack ausgeführt.
 
-Kartierter offener Pfad PR-023b.2: `product.fixpreis`/`product.zubehoer` → `tp-zubehoer-menge` schreibt Standardmengenfeld → `assets/product-form.js` serialisiert Formular → Cart. `product.rolle` verwendet eigenen Rollenpayload. Quellen gelesen, konkrete PVC-/Stückpayloadprüfung steht noch aus; nicht als PASS werten.
+In S06 kartierter, inzwischen S07 lokal geprüfter Pfad PR-023b.2: `product.fixpreis`/`product.zubehoer` → `tp-zubehoer-menge` schreibt Standardmengenfeld → `assets/product-form.js` serialisiert Formular → Cart. `product.rolle` verwendet eigenen Rollenpayload. 30 Fälle/26 Requests lokal geprüft; echte DOM-/Serverintegration weiterhin offen.
+
+## Ergänzung PR-023b.2 / TP-009
+
+`tp-zubehoer-menge` (SHARED FILE / HIGH RISK) liest belegte Längen/Flächen, setzt bestehendes Mengenfeld und sendet input/change. `product-form.js` (CORE FILE / SHARED FILE / HIGH RISK) serialisiert das Feld via FormData/fetchConfig; kein separater Zubehör-Cartpreis. 20 lokale Fälle/18 Requests korrekt, aber echte Picker-/Section-Ereignisse, Selektorvalidierung und Serverantworten noch offen.
+
+PVC: Metafeldrollenbreite der ersten Variante → globaler fallback_width_cm → Art-Optionserkennung (nur cm) → wIdx=-1 → selectedWidth nimmt stets erste Breite. Variante folgt dagegen der aktuellen Auswahl; dadurch TP-009. Rollenblock und `tp-rollware-art.js` gemeinsam betrachten. `toCm` liest auch Maßeingaben, daher Einheitenänderung sorgfältig begrenzen. Mehrbreitenfallback nicht mit dem funktionierenden Einzelbreitenfallback verwechseln.
+
+**FILE CONFLICT:** TP-003/004/009 berühren denselben Rollenblock; TP-009 zusätzlich Shared-Art-Asset. Später ein abgestimmter Arbeitsblock mit sequenziellen Fixschritten und gezielter Preis-/Raummaß-/Service-Regression. Keine Änderung an Preisen/Varianten/Metafeldern als Workaround. H-011 vor Live-Abnahme klären. Aktuell weiterhin nur Audit.

@@ -55,3 +55,11 @@ Paketware wird über das positive Flächenmetafeld erkannt, vor Rollenbreite/Pro
 TP-008 entsteht erst beim Anzeigen der Gesamtfläche im Cart: `tp-cart-paketzeile` formatiert immer zwei Stellen, während Rechner und Inhaltssnippet Metafeldpräzision bis drei Stellen übernehmen. Aktuelle Zeilenmenge wird korrekt verwendet; Preis-/Mengenquelle muss nicht geändert werden.
 
 PVC und Fixpreis wurden nur kartiert: Rollenrechner eigener Request, Stück-/Zubehörmengenhilfe ausschließlich Eingabe ins Standardformular, welches `product-form.js` serialisiert. PR-023b.2 prüft diesen Übergang als Nächstes. Historische Datenberichte ersetzen weiterhin keine aktuelle Shopify-Abfrage.
+
+## Ergänzung PR-023b.2
+
+S07 schließt lokale PVC-/Stückvertragsprüfung mit 30 Fällen/26 Requests ab. TP-009 sitzt zwischen globalem Liquid-Fallback, cm-exklusiver Breitenoptionserkennung und variantenbezogener ID-Auswahl. Originale Initialisierung, syncArtUi, calculate und Submit bestätigen: richtige ID bei falscher erster Breite. Einzelbreitenfallback und cm-Optionen bestehen. Historische Meterlabels sind belegt, aktueller Produkt-/Metafeldstand bleibt H-011.
+
+Stück-/Zubehörpfad: vollständiger Mengenhilfeblock bestimmt Modus aus belegten Produktlängen, Variantenoption/Reichweite oder Titel. JS schreibt die ganze Einheitenmenge in das bestehende Standardfeld; vollständige Produktform-Klasse serialisiert ID/quantity, ohne Preis zu senden. 20 Fälle/18 Requests belegen den lokalen Übergang. Native DOM-/FormData-/Section-Lifecycles und Antwortverarbeitung sind ausdrücklich nicht mitgeprüft. Alle Preise synthetisch; kein zusätzlicher Kaufweg.
+
+Neun Rollen-/Mengenhilfe-/Formular-/Templatequellen hashgleich mit historischem Live-Snapshot. Nächster Bereich CART-002a, keine Reparatur oder erneute Preisgrundprüfung.
