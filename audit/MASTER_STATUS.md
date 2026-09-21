@@ -60,3 +60,5 @@ S11: Phase 1, grobe Abdeckung 28 %, zwölf bestätigte Issues unverändert. H-01
 S11 tatsächlich gesichert in `36a875e` (14 Dateien). Acht Diagnosefälle, Syntax, Integrität, Secret-Scan und git diff --check bestanden. Externe Prompt-/Dashboardänderungen erhalten und nicht committed. Nächster Schritt CART-002b.2c Drawer/Dialog; Status WORKING.
 
 S12: elf Lifecyclefälle abgeschlossen. Phase 1, Abdeckung grob 28 %, zwölf bestätigte Issues unverändert; H-014 offen.
+
+S12 tatsächlich in `6726c3d` gesichert (14 Dateien). Elf Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Externe Prompt-/Dashboardänderungen nicht committed. Nächster Schritt CART-003 Browserfähigkeit und native Cartintegration; Status WORKING.

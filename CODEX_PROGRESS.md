@@ -34,6 +34,6 @@ CART-003: Browserfähigkeit einmal neu prüfen (S01-Sperre ist historisch). Verf
 
 ## Letzter erfolgreicher Git-Commit
 
-36a875e – audit: Cartantworten und bedingte Zeilenrisiken S11 pruefen. 14 Audit-/Progressdateien tatsächlich gesichert; neuester Dokumentationscommit über git log. Branch audit/shop-audit. Kein Merge/Push.
+6726c3d – audit: Drawer- und Dialog-Lifecycle S12 lokal pruefen. 14 Audit-/Progressdateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING
