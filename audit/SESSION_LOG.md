@@ -344,3 +344,5 @@ S18 / CALC-001a.1: neun neue Übergangs-/Ereignisverträge PASS, zwei historisch
 Evidence: `audit/evidence/roll-extra-transitions-2026-09-22.json`; Script `audit/scripts/reproduce-roll-extra-transitions.mjs`. Originalfunktionen und document-change-Handler, synthetische Varianten/DOM, artMode gesteuert; Timerplanung erfasst, calculate nicht aus diesem Event ausgeführt. Kein vollständiger Picker-/Morph-/Submitnachweis. Syntax/Erstlauf PASS. Route TASK-E36D4BE4A434 B/STATIC; kein Executor/alte Diagnosen.
 
 Nächster Schritt: CALC-001a.2: syncArtUi + calculate + Submit als zusammenhängende lokale Zustandsfolge prüfen: Wechsel zu Farbe ohne gewählte Rollenbreite bzw. ohne kaufbare Wunschmaßvariante, Art-Rückschaltung und Zubehör/ID im nachfolgenden Payload. Reale Farb-Picker-/Formular-/URL-Synchronisation anschließend VAR-001; keine Browserumgehung, keine fertigen Preisraster erneut ausführen.
+
+S18 in `b4f010d` tatsächlich gesichert. Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CALC-001a.2; Status WORKING.

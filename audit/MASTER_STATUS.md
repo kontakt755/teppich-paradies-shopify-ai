@@ -39,3 +39,5 @@ Git: Branch audit/shop-audit, .git schreibbar. Letzter Fachcommit S16 8636ca5, S
 S17 tatsächlich in `75f66e9` gesichert. Paket-/Link-/Integritätsprüfung und Secret-Scan PASS; keine alten Produktdiagnosen wiederholt. Zwei READY-Pakete, keines umgesetzt. Weiter CALC-001a/H-003; Status WORKING.
 
 S18: 14 Issues unverändert, Phase 1, grob 28 %. H-003 lokal teilweise geklärt, keine neue Shopdiagnose/Livefreigabe.
+
+S18 in `b4f010d` tatsächlich gesichert. Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter CALC-001a.2; Status WORKING.
