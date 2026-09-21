@@ -52,6 +52,24 @@
       var m = /^\/products\/([^\/?#]+)/.exec(window.location.pathname);
       return m ? decodeURIComponent(m[1]) : '';
     }
+    // Speichern auf dem Geraet nur mit Analyse-Einwilligung. Die API ist nicht von selbst da
+    // (gemessen 2026-09-21), sie wird wie in sections/google.liquid nachgeladen. Ohne API: nein.
+    function analyseErlaubt() {
+      try {
+        var p = window.Shopify && window.Shopify.customerPrivacy;
+        return !!(p && typeof p.analyticsProcessingAllowed === 'function' && p.analyticsProcessingAllowed());
+      } catch (e) { return false; }
+    }
+    function mitEinwilligungsApi(fertig) {
+      try {
+        if (window.Shopify && window.Shopify.customerPrivacy) return fertig();
+        if (window.Shopify && typeof window.Shopify.loadFeatures === 'function') {
+          window.Shopify.loadFeatures([{ name: 'consent-tracking-api', version: '0.1' }], function (error) {
+            if (!error) fertig();
+          });
+        }
+      } catch (e) {}
+    }
     // Je Rechner: i = Eingabefeld, r = Kaufknopf-Wurzel. tp-ek vor rollware, weil beide .tp-kaufweg tragen.
     var RECH = [
       { n: 'einfassung', i: '[data-breite], [data-laenge]', r: '[data-tp-ek]' },
@@ -128,7 +146,7 @@
         if (knopf) {
           var wurzel = knopf.closest('[data-tp-sample-checkout]') || document;
           var anzahl = wurzel.querySelectorAll('[data-sample-color][data-selected="true"]').length;
-          window.sessionStorage.setItem('tpFunnelMusterPending', JSON.stringify({ anzahl: anzahl, ts: Date.now() }));
+          if (analyseErlaubt()) window.sessionStorage.setItem('tpFunnelMusterPending', JSON.stringify({ anzahl: anzahl, ts: Date.now() }));
         }
       } catch (e) {}
     }, { capture: true, passive: true });
@@ -171,23 +189,30 @@
         }
       } catch (e) {}
     }, { capture: true, passive: true });
+    // Auf der Musterseite die Einwilligungs-API vorab laden, damit sie beim Klick auf den Knopf da ist.
+    if (document.querySelector('[data-sample-submit]')) mitEinwilligungsApi(function () {});
     // Einmalig beim Laden (Snippet nahe am Ende von layout/theme.liquid, DOM bereits geparst).
     try {
       var erfolgEl = document.querySelector('[data-tp-newsletter-erfolg]');
       var params = new URLSearchParams(window.location.search);
       if (erfolgEl || params.get('customer_posted') === 'true') publish('tp_newsletter_anmeldung_erfolg', {});
     } catch (e) {}
-    try {
-      var roh = window.sessionStorage.getItem('tpFunnelMusterPending');
-      if (roh) {
+    // Muster-Merker: tp-sample-checkout.js leitet nach Erfolg auf den Warenkorb. Nur dort zaehlt er -
+    // sonst wuerde ein Neuladen nach einem Fehlschlag als Erfolg gemeldet.
+    mitEinwilligungsApi(function () {
+      try {
+        if (!analyseErlaubt()) return;
+        var roh = window.sessionStorage.getItem('tpFunnelMusterPending');
+        if (!roh) return;
         window.sessionStorage.removeItem('tpFunnelMusterPending');
+        if (!/^\/cart(\/|$)/.test(window.location.pathname)) return;
         var daten = JSON.parse(roh);
         if (daten && daten.ts && Date.now() - daten.ts <= 20000) {
           var payload = {};
           if (daten.anzahl > 0) payload.anzahl = daten.anzahl;
           publish('tp_muster_im_warenkorb', payload);
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    });
   })();
 </script>

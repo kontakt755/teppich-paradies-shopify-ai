@@ -38,7 +38,7 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 | `tp_farbe_gewaehlt` | `tp:farbe-wechsel` (color-swatch-picker.liquid), nativer Variantenwaehler bei Optionsname Farbe/Dekor/Color (deckt auch die Leisten-Farbwahl ab) | `page`, `product_handle`, `variant_id` | Farbe gewaehlt |
 | `tp_masse_eingegeben` | erste gueltige Eingabe (`change`) je Rechner und Seitenaufruf | `page`, `product_handle`, `rechner` (rollware\|paket\|wunschmass\|einfassung\|zubehoer) | Masse eingegeben |
 | `tp_muster_cta_klick` | Klick auf einen Link zu `/pages/muster` oder den Muster-Knopf (`tp-muster-cta.liquid`) | `page`, `product_handle` | Muster |
-| `tp_muster_im_warenkorb` | Klick auf den Musterkonfigurator-Absenden-Knopf, Bestaetigung ueber sessionStorage-Uebergabe (siehe Risiken) | `page`, `anzahl` (wenn bekannt) | Muster |
+| `tp_muster_im_warenkorb` | Klick auf den Musterkonfigurator-Absenden-Knopf, Bestaetigung ueber sessionStorage-Uebergabe auf `/cart`, nur mit Analyse-Einwilligung (siehe Risiken) | `page`, `anzahl` (wenn bekannt) | Muster |
 | `tp_in_den_warenkorb_konfiguriert` | `cart:update` auf einer Produktseite, hoechstens 3 s nach einer Rechner-Eingabe/einem Klick auf deren Kaufknopf | `page`, `product_handle`, `rechner` | Warenkorb (Zusatzkontext) |
 | `tp_rabattcode_eingegeben` | `submit` auf dem Rabattcode-Formular im Warenkorb | `page`, `erfolg` (true\|false\|unknown) | Warenkorb-Pflege |
 | `tp_newsletter_anmeldung_abgeschickt` | `submit` auf `form[data-tp-newsletter-form]` | `page`, `quelle` (`data-tp-newsletter-quelle`) | Newsletter |
@@ -115,9 +115,20 @@ Berichte/Zielgruppen darauf aufgebaut werden.
   bei Erfolg sofort per `window.location.href` weg, ohne `cart:update` zu
   feuern. Das Snippet merkt die Auswahl beim Klick auf den Absenden-Knopf in
   `sessionStorage` (Schluessel `tpFunnelMusterPending`, Altersgrenze 20 s) und
-  liest sie auf der naechsten Seite. Schlaegt das Hinzufuegen fehl, bleibt die
-  Seite stehen, der Marker wird nie gelesen - keine falsche Meldung. Faellt
-  aber aus, wenn der Kunde nach einem erfolgreichen Klick den Tab schliesst.
+  liest sie auf der naechsten Seite. Faellt aus, wenn der Kunde nach einem
+  erfolgreichen Klick den Tab schliesst.
+  **Zwei Sicherungen seit 2026-09-21:** (1) Der Merker wird nur mit
+  Analyse-Einwilligung geschrieben und gelesen
+  (`Shopify.customerPrivacy.analyticsProcessingAllowed()`) - Speichern auf dem
+  Geraet zu Messzwecken braucht sie. Die API ist auf den Seiten nicht von selbst
+  vorhanden (gemessen), das Snippet laedt sie wie `sections/google.liquid` ueber
+  `Shopify.loadFeatures` nach; ohne API gilt "nein". Wer nicht einwilligt,
+  erzeugt dieses eine Ereignis nicht - alle anderen Ereignisse speichern nichts
+  und sind davon unberuehrt. (2) Das Ereignis zaehlt nur auf `/cart`, wohin
+  `tp-sample-checkout.js` nach Erfolg leitet. Ein Merker, der auf einer anderen
+  Seite gefunden wird (Neuladen nach Fehlschlag), wird verworfen, ohne zu melden.
+  Beleg: Puppeteer mit injiziertem Skript, drei Faelle (ohne Einwilligung, mit
+  Einwilligung, Merker ausserhalb des Warenkorbs).
 - **`origin/feature/pdp-kompakt` (Rollenware-Neugestaltung, #420) laeuft
   parallel.** Gewaehlte Selektoren gegen diesen Branch geprueft:
   `data-length-input`, `data-wunsch-input`, `.tp-kaufweg`, `data-add-to-cart`
