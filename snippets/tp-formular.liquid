@@ -12,7 +12,7 @@
 
   Was sich ändert:
 
-  1. Der Hinweis "Mindestens 100 cm" steht dauerhaft unter dem Feld, statt
+  1. Der Hinweis "Länge von 1 m (100 cm) bis 50 m" steht dauerhaft unter dem Feld, statt
      erst als Fehler aufzutauchen, wenn man dagegenläuft. Eine Regel, die man
      vorher kennt, ist keine Fehlermeldung wert.
 
@@ -57,7 +57,12 @@
         var hinweis = document.createElement('p');
         hinweis.className = 'tp-formular-hinweis';
         hinweis.id = wurzel.id + '-hinweis';
-        hinweis.textContent = 'Mindestens 100 cm';
+        // Issue 162: auch die Obergrenze vorab nennen. Der Rechner gibt sie am
+        // Wurzelelement mit; fehlt sie, bleibt der alte Hinweis.
+        var maxCm = parseInt(wurzel.dataset.maxLaengeCm, 10);
+        hinweis.textContent = maxCm > 0
+          ? 'Länge von 1 m (100 cm) bis ' + (maxCm / 100) + ' m'
+          : 'Mindestens 100 cm';
         fehlerMin.parentNode.insertBefore(hinweis, fehlerMin);
         ids.unshift(hinweis.id);
 

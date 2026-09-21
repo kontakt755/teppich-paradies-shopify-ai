@@ -88,7 +88,8 @@
   assign tp_rc_einfass_gruppe = product.metafields.service.einfass_gruppe.value
 -%}
 
-<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" {{ block.shopify_attributes }}>
+{%- assign tp_rc_max_laenge_cm = 5000 -%}
+<div class="tp-rwc-{{ tp_rc_id }} tp-kaufweg" id="tp-rwc-{{ tp_rc_id }}" data-product-id="{{ product.id }}" data-max-laenge-cm="{{ tp_rc_max_laenge_cm }}" {{ block.shopify_attributes }}>
 
   {%- comment -%}
     Faehrt eine Farbe nur noch ueber den Zweitlieferanten, gibt es dafuer
@@ -227,6 +228,14 @@
         Messen Sie an der längsten Stelle.
         <span data-mess-raum hidden>Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
       </p>
+      {%- comment -%}
+        Issue 162: Preisbeispiel, solange noch keine Laenge eingegeben ist.
+        Das Skript fuellt es aus dem echten Preis der gewaehlten Variante -
+        ohne Skript bleibt es leer und verborgen, es steht also nie ein
+        geratener Betrag da. Die Eingabegrenzen nennt snippets/tp-formular
+        (Obergrenze aus data-max-laenge-cm am Wurzelelement).
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-note-mess" data-beispiel hidden></p>
       <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm (1,00 m)</p>
       {%- comment -%}
         Das Attribut heisst noch data-error-comma, meldet seit der
@@ -1182,8 +1191,13 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
+  var beispielNote = root.querySelector('[data-beispiel]');
   var errComma = root.querySelector('[data-error-comma]');
-  var MAX_LENGTH_CM = 5000;
+  // Wert aus Liquid (tp_rc_max_laenge_cm), damit der Hinweis in
+  // snippets/tp-formular dieselbe Zahl nennt.
+  var MAX_LENGTH_CM = {{ tp_rc_max_laenge_cm }};
+  // Issue 162: Laenge des Preisbeispiels vor der ersten Eingabe.
+  var BEISPIEL_LAENGE_CM = 500;
   var errStock = root.querySelector('[data-error-stock]');
   var piece = root.querySelector('[data-piece]');
   var tagW = root.querySelector('[data-tag-width]');
@@ -1259,6 +1273,18 @@ function tpRwcInit{{ tp_rc_id }}() {
   // Wert rundet - ist dieser Wert exakt darstellbar, ist das Ergebnis exakt.
   function roundedHundredthsQty(wCm, lenCm) {
     return Math.round((wCm * lenCm) / 100);
+  }
+
+  // Issue 162: Preisbeispiel vor der ersten Eingabe. Rechnet mit denselben
+  // Ausdruecken wie calculate() (Flaeche, Menge, abgerechnete Flaeche, Satz),
+  // aendert dort aber nichts. qa/tests/tp-rollware-preisbeispiel.test.mjs
+  // haelt beide Wege zusammen.
+  function preisBeispiel(wCm, lenCm, priceCents, exakt) {
+    var area = (wCm * lenCm) / 10000;
+    var rate = exakt ? parseFloat(priceCents) : parseFloat(priceCents) / 100;
+    var qty = exakt ? roundedHundredthsQty(wCm, lenCm) : Math.ceil(area);
+    var billedArea = exakt ? qty / 100 : qty;
+    return { area: area, billedArea: billedArea, total: billedArea * rate };
   }
 
   // Im Raummass-Modus ist die Breite die eigene Eingabe, sonst die Rolle.
@@ -1812,6 +1838,25 @@ function tpRwcInit{{ tp_rc_id }}() {
     var hasLength = len > 0 && !wErr;
     calcBox.hidden = !hasLength;
     drawFigure.hidden = !hasLength;
+
+    // Issue 162: Preisbeispiel nur, solange das Laengenfeld leer ist und
+    // Breite samt Variante feststehen.
+    if (beispielNote) {
+      var zeigeBeispiel = !lenEingegeben && !badInput && !wErr && w > 0 && ok;
+      if (zeigeBeispiel) {
+        var bsp = preisBeispiel(w, BEISPIEL_LAENGE_CM, target.price, cmExact);
+        // Wird aufgerundet, muss das dastehen - sonst geht die Gleichung
+        // fuer den Kunden nicht auf (derselbe Grund wie beim Aufrundungshinweis).
+        var gerundet = bsp.billedArea > bsp.area + 0.0001;
+        // Masse in der Einheit, die der Kunde gerade gewaehlt hat (cm oder m).
+        var bspMasse = einheitAktiv === 'm'
+          ? fmt(w / 100) + ' × ' + fmt(BEISPIEL_LAENGE_CM / 100) + ' m'
+          : w + ' × ' + BEISPIEL_LAENGE_CM + ' cm';
+        beispielNote.textContent = 'Preisbeispiel: ' + bspMasse + ' = ' + fmtArea(bsp.area) + ' m²'
+          + (gerundet ? ', berechnet ' + fmtArea(bsp.billedArea) + ' m²' : '') + ' = ' + fmt(bsp.total) + ' €';
+      }
+      beispielNote.hidden = !zeigeBeispiel;
+    }
 
     var extras;
     if (valid && target && ok) {
