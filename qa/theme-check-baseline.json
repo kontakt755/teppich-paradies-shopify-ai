@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-09-16T08:44:27.403Z",
   "errors": 0,
-  "warnings": 70,
+  "warnings": 72,
   "fingerprints": [
     "warning|ExcessiveSettingsCount|blocks/tp-kachel-raster.liquid|156:0|This schema declares 48 settings, which exceeds the maximum of 40. Consider splitting this section or block into smaller pieces, or grouping related options with a header.",
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|184:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
@@ -9,6 +9,7 @@
     "warning|HardcodedRoutes|sections/vinylboden-verlegen.liquid|205:15|Use routes object {{ routes.collections_url }} instead of hardcoding /collections",
     "warning|OrphanedSnippet|snippets/live-chat-widget.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|snippets/predictive-search-resource-carousel.liquid|0:0|This snippet is not referenced by any other files",
+    "warning|OrphanedSnippet|snippets/tp-card-roll-lengths.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|theme/snippets/product-sisal-badge.liquid|0:0|This snippet is not referenced by any other files",
     "warning|OrphanedSnippet|theme/snippets/product-sisal-care.liquid|0:0|This snippet is not referenced by any other files",
     "warning|UndefinedObject|domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid|35:64|Unknown object 'name' used.",
@@ -38,6 +39,7 @@
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|49:19|Unknown object 'predictive_search' used.",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|75:17|Unknown object 'predictive_search' used.",
     "warning|UndefinedObject|snippets/tp-suche-ergebnisse.liquid|82:17|Unknown object 'predictive_search' used.",
+    "warning|UnusedAssign|blocks/tp-card-price-sqm.liquid|61:4|The variable 'tp_cps_variant_title' is assigned but not used",
     "warning|UnusedDocParam|snippets/divider.liquid|10:2|The parameter 'settings.width_percent' is defined but not used in this file.",
     "warning|UnusedDocParam|snippets/divider.liquid|6:2|The parameter 'settings.alignment_horizontal' is defined but not used in this file.",
     "warning|UnusedDocParam|snippets/divider.liquid|8:2|The parameter 'settings.thickness' is defined but not used in this file.",
