@@ -209,9 +209,7 @@
             "tp_farb_dropdown": {
               "type": "color-swatch-picker",
               "name": "Farb-Swatches",
-              "settings": {
-                "darstellung": "dropdown"
-              },
+              "settings": {},
               "blocks": {}
             },
             "variant_picker_R3rGDr": {

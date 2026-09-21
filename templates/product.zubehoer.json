@@ -177,9 +177,7 @@
             "tp_farb_dropdown": {
               "type": "color-swatch-picker",
               "name": "Farb-Swatches",
-              "settings": {
-                "darstellung": "dropdown"
-              },
+              "settings": {},
               "blocks": {}
             },
             "variant_picker_R3rGDr": {
@@ -201,8 +199,8 @@
               "settings": {
                 "label": "Farbe",
                 "groesse": "normal",
-                "show_nummer": false,
-                "hinweis_ohne_variantenbild": true
+                "hinweis_ohne_variantenbild": true,
+                "show_nummer": false
               },
               "blocks": {}
             },

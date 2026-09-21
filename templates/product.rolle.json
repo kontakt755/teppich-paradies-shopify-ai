@@ -251,9 +251,7 @@
                 "color_swatch_picker_f7EyBF": {
                   "type": "color-swatch-picker",
                   "name": "Farb-Swatches",
-                  "settings": {
-                    "darstellung": "dropdown"
-                  },
+                  "settings": {},
                   "blocks": {}
                 }
               },
