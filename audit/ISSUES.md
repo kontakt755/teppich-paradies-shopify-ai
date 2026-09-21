@@ -394,6 +394,10 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 S15 ergänzt TP-013: removeDiscount hat denselben leeren Fehlerpfad. Ein abgefangener Netzwerkfehler zeigt keine Meldung und dispatcht/morphiert nicht. Späteres Feedback-Fix muss Apply und Remove abdecken; Akzeptanz zusätzlich Entfernen→Fehler→expliziter Retry.
 
+S16 ergänzt TP-014 um `assets/cart-note.js:17–43`: identischer bedingungsloser #activeFetch=null im finally. Original-200-ms-Debounce + abortsensitiver Fetch zeigen A→B→A-Abschluss→C, wobei B nicht abgebrochen wird. Notiz lokal deaktiviert (show_cart_note=false); vier Codehashes historisch identisch, Konfiguration jedoch abweichend. Kein heutiger Livebefund. Brief-Ergänzung: Controllerownership in CartNote separat minimal korrigieren, wenn dieser Pfad Teil des später freigegebenen Scopes ist; keine Aktivierung der Notizfunktion. Regression: 200-ms-Bündelung, leere/Unicode-Notiz, Formularzuordnung name=note/form=cart-form erhalten. Serverseitige Notizreihenfolge und echter Checkout bleiben offen.
+
+S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrationsgrenzen für H-012, keine zusätzlichen bestätigten Bestellfehler. Native Formularübermittlung kann den aktuellen Notizwert unabhängig vom Ajaxrequest übertragen; Express/Reload und Serverpersistenz nicht geprüft. Evidence `evidence/cart-note-2026-09-22.json`.
+
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 
 | ID | Untersuchung | Aktueller Beleg / Grenze | Nächster Nachweis |

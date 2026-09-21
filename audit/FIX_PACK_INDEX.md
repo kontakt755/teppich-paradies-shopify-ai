@@ -45,3 +45,5 @@ S13: keine neue bestätigte Issue-ID oder Packfreigabe. H-015 ist offener Expres
 S14: TP-013/P3 mit vollständigem Brief. Rabattfeedback-Kandidat NOT READY bis CART-003b.2; gemeinsame cart-discount.js zuerst vollständig prüfen. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.
 
 S15: Rabattfeedback/-Abbruch-Kandidat umfasst TP-013/014, NOT READY bis Notizvergleich/CART-003b.3 und Konsolidierung. Beide gleiche Klasse, keine Parallelumsetzung. Ready=1, Done/QA=0; keine Reparatur.
+
+S16: Notizvergleich abgeschlossen; TP-014 betrifft bedingt auch cart-note.js (lokal deaktiviert). Vor Packzuweisung aktive Rabattklasse und ruhende Notizänderung getrennt abgrenzen; keine Notizaktivierung. CART-004 konsolidiert kleine Pakete. Ready=1, Done/QA=0.
