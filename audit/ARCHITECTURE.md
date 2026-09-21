@@ -63,3 +63,11 @@ S07 schließt lokale PVC-/Stückvertragsprüfung mit 30 Fällen/26 Requests ab. 
 Stück-/Zubehörpfad: vollständiger Mengenhilfeblock bestimmt Modus aus belegten Produktlängen, Variantenoption/Reichweite oder Titel. JS schreibt die ganze Einheitenmenge in das bestehende Standardfeld; vollständige Produktform-Klasse serialisiert ID/quantity, ohne Preis zu senden. 20 Fälle/18 Requests belegen den lokalen Übergang. Native DOM-/FormData-/Section-Lifecycles und Antwortverarbeitung sind ausdrücklich nicht mitgeprüft. Alle Preise synthetisch; kein zusätzlicher Kaufweg.
 
 Neun Rollen-/Mengenhilfe-/Formular-/Templatequellen hashgleich mit historischem Live-Snapshot. Nächster Bereich CART-002a, keine Reparatur oder erneute Preisgrundprüfung.
+
+## Ergänzung S08 / CART-002a
+
+Originale Servermarkup-Regeln und Browsergruppenfunktionen für 20 Cartzustände/35 Zeilen abgeglichen. Berechnete Mengen bleiben als updates[] im Formular, native Selector-Grenzen min=max liefern auch nach Original-JS-Initialisierung gesperrte Buttons (28 Zeilen). Stück-/Paketware bleibt normal änderbar. Pflichtfeld und Checkoutmarker sind eine UI-Regel, keine Shopify Cart/Checkout Validation Function.
+
+Cartklasse entfernt Gruppen per Keys im update-Request und einzelne Zeilen per change. Darstellung wird bereits vor Antwort entfernt/leer ersetzt. Fehlerpfad stellt sie nicht wieder her (TP-010); Fehlercontainer gehört zur entfernten Zeile. Erfolgreiche Section-Morphs im Adapter nur modelliert; echte Refs-/Event-/Drawerabläufe CART-002b offen.
+
+Zuschnittasset nutzt serialisierte GET/POST/Gegenprobe, setzt nur den Attribute-Unterschied, behält sonstige Attribute und ignoriert eigene Events. Zehn lokale Abläufe einschließlich ausbleibender Übernahme und explizitem Retry bestanden. Zehn Quellhashes historisch gleich. Keine neuen Live-/Produktdaten und keine produktiven Änderungen.

@@ -1,6 +1,6 @@
 # Abhängigkeiten und Konflikte
 
-Stand: 21.09.2026. Teilkarte des derzeitigen Preisbereichs, keine abgeschlossene Gesamtarchitektur.
+Stand: 21.09.2026. Teilkarte des Preis- und Warenkorbbereichs, keine abgeschlossene Gesamtarchitektur.
 
 | Datei / Pfad | Einstufung | Rolle / Abhängigkeit | Änderungsrisiko |
 | --- | --- | --- | --- |
@@ -57,3 +57,13 @@ In S06 kartierter, inzwischen S07 lokal geprüfter Pfad PR-023b.2: `product.fixp
 PVC: Metafeldrollenbreite der ersten Variante → globaler fallback_width_cm → Art-Optionserkennung (nur cm) → wIdx=-1 → selectedWidth nimmt stets erste Breite. Variante folgt dagegen der aktuellen Auswahl; dadurch TP-009. Rollenblock und `tp-rollware-art.js` gemeinsam betrachten. `toCm` liest auch Maßeingaben, daher Einheitenänderung sorgfältig begrenzen. Mehrbreitenfallback nicht mit dem funktionierenden Einzelbreitenfallback verwechseln.
 
 **FILE CONFLICT:** TP-003/004/009 berühren denselben Rollenblock; TP-009 zusätzlich Shared-Art-Asset. Später ein abgestimmter Arbeitsblock mit sequenziellen Fixschritten und gezielter Preis-/Raummaß-/Service-Regression. Keine Änderung an Preisen/Varianten/Metafeldern als Workaround. H-011 vor Live-Abnahme klären. Aktuell weiterhin nur Audit.
+
+## Ergänzung S08 / CART-002a
+
+`cart-products` → `tp-cart-gruppe` rendert Klassifikation/Gruppe/Kundeneinheit/Sperrmarker; `quantity-selector` klemmt berechnete Zeilen auf min=max. Originale Selektorklassen lassen diese Buttons gesperrt. Normale Stück-/Paketware bleibt änderbar. 35 lokale Zeilenrenderings belegen diesen Vertrag im geprüften Umfang, keine Serversperre.
+
+`component-cart-items.js` (CORE FILE / SHARED FILE / HIGH RISK) → gruppierte Keys aus gerendertem data-tp-gruppe → `/cart/update.js`, einzeln `/cart/change.js` → Section-Morph/Event. TP-010: paralleler optimistischer DOM-Entfernenpfad ohne Wiederherstellung bei Requestfehler; Inlinefehler gehört zur entfernten Zeile. Component-Refs/MutationObserver und Animation sind zusätzliche Abhängigkeiten, echter Lifecycle bleibt CART-002b/H-012.
+
+`_Zuschnitt` + `_Gruppe` → `tp-zuschnitt-abgleich.js` → serialisierte GET/Attribute-POST/Gegenprobe → cart:update → Liquid-Sperre neu rendern. Nur Zuschnittattribute ändern; sonstige Attribute erhalten. Zehn lokale Abläufe einschließlich Fehler/Retry/Queue bestanden. Direkte API-/Expresspfade nicht als serverseitig validiert ausgeben.
+
+**FILE CONFLICT:** TP-010 und kommende Ereignis-/Sectionfixes teilen die Cartklasse; TP-008 teilt angrenzendes Cartmarkup, nicht denselben Formatierungscode. Keine gemeinsame Großreparatur; CART-002b zuerst abschließen, kleine getrennte Schritte mit gezielter Regression. Alle Cartkern-Dateien HIGH RISK, Phase 1 nur Diagnose.

@@ -8,6 +8,7 @@ Stand: 21.09.2026. Phase 1 läuft; nur ausreichend belegte Teilpakete werden vor
 | Rollenrechnerpaket, Dateiname noch offen | NOT READY | P2/P3 | TP-003, TP-004, TP-009 | NO | PR-020/022/023b.2 lokal abgeschlossen; H-011 PVC-Breitenvertrag; H-005/H-008, echte Cart-/Variantenabläufe und gemeinsame Kern-Datei beachten | Nicht zugewiesen |
 | Wunschmaßpaket, Dateiname noch offen | NOT READY | P3 | TP-006, TP-007 | NO | H-009 aktive Nutzung/Maßvertrag, H-010/Browserintegration; gemeinsame Blockdatei | Nicht zugewiesen |
 | Paket-Cartdarstellung, Dateiname noch offen | NOT READY | P3 | TP-008 | NO | H-011 aktuelle dreistellige Paketgrößen, CART-002 und gemeinsame Cartdatei | Nicht zugewiesen |
+| Cart-Fehlerwiederherstellung, Dateiname noch offen | NOT READY | P2 | TP-010 | NO | CART-002b, H-012, gemeinsame Cartklasse/Refs/Animation | Nicht zugewiesen |
 | Einfass-Servicepaket, Dateiname noch offen | NOT READY | P3 | TP-005 | NO | PR-021 lokal abgeschlossen; H-006, Datenvertrag und verbleibende Cart-/Abgleichprüfung | Nicht zugewiesen |
 
 Ready: 1 · Done: 0 · QA Passed: 0 · QA Failed: 0.
@@ -27,3 +28,5 @@ S05: TP-006/007 besitzen vollständige Implementation Briefs. Kein sofortiges Pa
 S06: TP-008 mit vollständigem Brief, noch kein zusätzliches Fix-Pack. Der einzelne Präzisionsverlust gehört nach der anstehenden Cart-Prüfung in einen kleinen passenden Darstellungsblock; nicht künstlich mit Parser-/Preisreparaturen vermischen. 17 Datenintegrationen/28 Cart-Renderings ergänzen die Übergabeevidence. Keine Freigabe/Umsetzung, Ready/Done/QA unverändert.
 
 S07: TP-009/P2 mit vollständigem Implementation Brief. Bestehenden vorgemerkten Rollenblock um Breitenvertrag/Art-Asset ergänzen; weiterhin NOT READY wegen aktueller Daten-/Cart-/Variantenabhängigkeiten. Keine Packdatei angelegt oder umgesetzt. Stück-/Zubehörvertrag lokal ohne weiteren bestätigten Fehler; vorbereitete Metafelder bleiben unangetastet. Ready/Done/QA unverändert.
+
+S08: TP-010 mit vollständigem Implementation Brief. Eigenen möglichen Fehlerwiederherstellungsblock vorgemerkt, NOT READY bis CART-002b/H-012; keine Packdatei vorschnell erstellt. Kein bestehendes Pack ausgeführt, keine Freigabe/Shopreparatur. 43 lokale Cartfälle und 47 bestehende Tests als spätere gezielte Regression dokumentiert. Ready=1, Done/QA=0.

@@ -209,3 +209,23 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **S07-Abschlusskontrolle:** Erster Integritätslauf stoppte an einer währenddessen extern geänderten docs/ai-dashboard/issues.json. Direkt danach zeigte git status/git diff diese Datei wieder unverändert bei gleichem HEAD 6b92861. Datei nicht angefasst oder gestaged; kein Produkt-/Diagnosetestfehler. Abschließender Integritätslauf prüft erneut den tatsächlichen Diff; CONTINUE_PROMPT.md bleibt die bekannte externe Änderung. Secret-Scan PASS ohne Befunde.
 
 **S07 tatsächlich committed:** `4b8e49d` – audit: PR-023b.2 abschliessen und PVC-Breitenfehler TP-009 belegen. Normaler git add/commit erfolgreich, 15 Audit-/Progressdateien. Commitreferenz anschließend in Master/Progress nachgetragen; keine Produktdiagnose erneut ausgeführt. Nächster Schritt unverändert CART-002a, Status WORKING.
+
+## 21.09.2026 – S08 / CART-002a
+
+**Übernahme:** TASK mit SEQUENTIAL-Override, sechs Auditsteuerdateien, AGENTS/Git gelesen. HEAD 0d887b5, S07 abgeschlossen. Nur externe CONTINUE_PROMPT.md beim Start; docs/ai-dashboard/issues.json während Arbeit zeitweise extern geändert. Beide nicht bearbeitet/gestaged. Keine Agenten/parallel bearbeiteten Auditbereiche. Route TASK-DFF6F29D83E5 B/STATIC, keine geschützte Aktion/Executor.
+
+**Untersucht:** Gruppen, Mengensperren, verwaiste Services, Gruppen-/Stücklöschung und Zuschnittabgleich. Zehn Originalquellen: Gruppenscript/-snippet, Cartklasse, Component-Basis, Zuschnittasset, Quantity-Snippet/-Basisklasse/-Cartklasse, Cartmarkup, Utilities. Alle hashgleich zur historischen Evidence. Keine neue Live-Seite geöffnet oder Shopify-Mutation.
+
+**Tests:** vier vorhandene Suiten cart-gruppen/cart-mengensperre/cart-waisen/zuschnitt-abgleich 47/47 PASS. Neues Script reproduce-cart-core.mjs: Syntax/erster Lauf PASS. Zweiter Lauf nach genauer Fehlercontainer-Zeilenhierarchie und zwei Fällen mit Animation nach Fehlerantwort ebenfalls PASS. 20 Cartzustände/35 Zeilen/28 Mengenklammern, 13 Cartaktionen, zehn Abgleichabläufe: insgesamt 43 Fälle/34 Requests. Keine S01–S07-Wiederholung. Report und Summary neu, Integritäts-/Secretchecks separat.
+
+**Befunde:** TP-010/P2 bestätigt, sechs Fälle ohne Wiederherstellung nach abgelehnter/netzwerkfehlgeschlagener Löschung. Gruppen-/Einzel-/letzte Gruppe; richtige Requestkeys, aber entfernte Zeilen/Leeransicht bleiben trotz modelliert unverändertem Servercart. Inlinefehler abgetrennt oder nur Console. Verzögerte Animation entfernt auch nach Fehlerantwort. Vollständiger Implementation Brief, NOT READY-Vormerkung, kein Fix.
+
+**Positive Kontrollen / eingegrenzt:** JS/Liquid-Klassifikation und Kundeneinheiten stimmen im geprüften Fixtureumfang; normale Stück-/Paketware bleibt editierbar. Original-Quantity min=max sperrt beide Buttons. Gruppen von beiden Seiten vollständig per Key im Request. Reguläre Mengenablehnung setzt Feld und Fehler korrekt. Zuschnittabgleich erhält andere Attribute, prüft zurückgegebenen Zustand, bleibt bei Fehler gesperrt, erholt Queue bei explizitem Retry und verhindert eigene Eventschleife. Kein zusätzliches Issue daraus.
+
+**Grenzen:** LiquidJS/DOM/Refs/Animation/Responses adaptiert, erfolgreiche Morphs und DOMParser modelliert. Echte MutationObserver-/Pointer-/Keyboard-/CSS-Timing-/Formular-/Drawerabläufe offen; keine serverseitige Shopify Validation Function nachgewiesen. Alle Produkte/Antworten synthetisch. H-012 neue Browser-/Cart-Hypothese; aktuelle Live-Betroffenheit TP-010 offen. Zehn bestätigte Issues (P2=4/P3=6), kein P0/P1 behauptet.
+
+**Fortsetzungshinweise während Arbeit:** Wiederholte Nutzerfortsetzungen übernommen, laufenden S08-Abschluss fortgesetzt statt Tests neu zu starten. .git weiterhin beschreibbar, tatsächlicher Abschlusscommit nach Checks; nur Auditdateien und CODEX_PROGRESS stagen. Externe Dateien erhalten.
+
+**Nächster konkreter Schritt:** CART-002b: Mengenereignis vom Originalselektor über Debounce; schnelle Aktionen/Antwortreihenfolge und Section-/Drawerzustand. Quellen component-quantity-selector, component-cart-quantity-selector, component-cart-items, section-renderer, cart-drawer, events. Echte Wiederöffnung/Reload/Checkout danach separat nachholen. Abgeschlossene Preis-/CART-002a-Tests nur bei betroffener Quelländerung wiederholen.
+
+**Status:** WORKING, grob 27 %, Phase 1. Keine Reparaturen, FINAL_REPORT und Gesamtauftrag weiterhin offen.
