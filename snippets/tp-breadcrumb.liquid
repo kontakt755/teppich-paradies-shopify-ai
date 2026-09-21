@@ -1,0 +1,180 @@
+{%- doc -%}
+  Brotkrumen fuer Kollektions- und Inhaltsseiten: sichtbare Navigation und
+  BreadcrumbList (JSON-LD) aus EINER Stufenliste, damit beide nie
+  auseinanderlaufen. Hierarchie kommt aus dem Hauptmenue (main-menu), nicht
+  aus Titel-Heuristik. Verglichen werden nur PFADE: Menue-URLs sind mal
+  absolut, mal relativ; Links mit Query (Filter-Links) werden ignoriert.
+  Erster Treffer in Menue-Reihenfolge gewinnt.
+
+  Ausgeschlossen: Ratgeber-Templates (eigene Brotkrumen), /collections/all
+  und Pseudo-Kollektionen. Template "bodenleisten" hat sichtbare Brotkrumen
+  im Hero und bekommt hier nur das JSON-LD.
+
+  @example
+  {% render 'tp-breadcrumb' %}
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_bc_aktiv = false
+  assign tp_bc_sichtbar = true
+  assign tp_bc_titel = ''
+  assign tp_bc_url = ''
+
+  if request.page_type == 'collection' and collection.handle != blank and collection.handle != 'all' and collection.id != blank
+    assign tp_bc_aktiv = true
+    assign tp_bc_titel = collection.title
+    assign tp_bc_url = routes.collections_url | append: '/' | append: collection.handle
+  elsif request.page_type == 'page' and page.handle != blank
+    assign tp_bc_aktiv = true
+    assign tp_bc_titel = page.title
+    assign tp_bc_url = page.url
+  endif
+
+  if template.suffix contains 'ratgeber'
+    assign tp_bc_aktiv = false
+  endif
+  if template.suffix == 'bodenleisten'
+    assign tp_bc_sichtbar = false
+  endif
+-%}
+
+{%- if tp_bc_aktiv -%}
+  {%- liquid
+    assign tp_bc_pfad = tp_bc_url | split: '?' | first | downcase
+    assign tp_bc_sep = '|~|'
+    assign tp_bc_eltern_titel = ''
+    assign tp_bc_eltern_urls = ''
+    assign tp_bc_gefunden = false
+
+    for tp_l1 in linklists['main-menu'].links
+      if tp_bc_gefunden
+        break
+      endif
+
+      # Pfad der Ebene 1 (ohne Host, ohne Schraegstrich am Ende)
+      assign tp_p1 = ''
+      unless tp_l1.url contains '?'
+        assign tp_p1 = tp_l1.url | downcase
+        if tp_p1 contains '://'
+          assign tp_rest = tp_p1 | split: '://' | last
+          assign tp_host = tp_rest | split: '/' | first
+          assign tp_p1 = tp_rest | remove_first: tp_host
+        endif
+        assign tp_letztes = tp_p1 | slice: -1
+        if tp_letztes == '/' and tp_p1.size > 1
+          assign tp_groesse = tp_p1.size | minus: 1
+          assign tp_p1 = tp_p1 | slice: 0, tp_groesse
+        endif
+      endunless
+
+      if tp_p1 == tp_bc_pfad
+        assign tp_bc_gefunden = true
+        break
+      endif
+
+      for tp_l2 in tp_l1.links
+        assign tp_p2 = ''
+        unless tp_l2.url contains '?'
+          assign tp_p2 = tp_l2.url | downcase
+          if tp_p2 contains '://'
+            assign tp_rest = tp_p2 | split: '://' | last
+            assign tp_host = tp_rest | split: '/' | first
+            assign tp_p2 = tp_rest | remove_first: tp_host
+          endif
+          assign tp_letztes = tp_p2 | slice: -1
+          if tp_letztes == '/' and tp_p2.size > 1
+            assign tp_groesse = tp_p2.size | minus: 1
+            assign tp_p2 = tp_p2 | slice: 0, tp_groesse
+          endif
+        endunless
+
+        if tp_p2 == tp_bc_pfad
+          assign tp_bc_gefunden = true
+          if tp_p1 != '' and tp_p1 != tp_bc_pfad
+            assign tp_bc_eltern_titel = tp_l1.title
+            assign tp_bc_eltern_urls = tp_p1
+          endif
+          break
+        endif
+
+        for tp_l3 in tp_l2.links
+          assign tp_p3 = ''
+          unless tp_l3.url contains '?'
+            assign tp_p3 = tp_l3.url | downcase
+            if tp_p3 contains '://'
+              assign tp_rest = tp_p3 | split: '://' | last
+              assign tp_host = tp_rest | split: '/' | first
+              assign tp_p3 = tp_rest | remove_first: tp_host
+            endif
+            assign tp_letztes = tp_p3 | slice: -1
+            if tp_letztes == '/' and tp_p3.size > 1
+              assign tp_groesse = tp_p3.size | minus: 1
+              assign tp_p3 = tp_p3 | slice: 0, tp_groesse
+            endif
+          endunless
+
+          if tp_p3 == tp_bc_pfad
+            assign tp_bc_gefunden = true
+            # volle Kette; Stufen ohne eigenen Pfad oder mit dem aktuellen Pfad entfallen
+            if tp_p1 != '' and tp_p1 != tp_bc_pfad
+              assign tp_bc_eltern_titel = tp_l1.title
+              assign tp_bc_eltern_urls = tp_p1
+            endif
+            if tp_p2 != '' and tp_p2 != tp_bc_pfad and tp_p2 != tp_p1
+              if tp_bc_eltern_urls != ''
+                assign tp_bc_eltern_titel = tp_bc_eltern_titel | append: tp_bc_sep
+                assign tp_bc_eltern_urls = tp_bc_eltern_urls | append: tp_bc_sep
+              endif
+              assign tp_bc_eltern_titel = tp_bc_eltern_titel | append: tp_l2.title
+              assign tp_bc_eltern_urls = tp_bc_eltern_urls | append: tp_p2
+            endif
+            break
+          endif
+        endfor
+
+        if tp_bc_gefunden
+          break
+        endif
+      endfor
+    endfor
+
+    assign tp_bc_titel_liste = tp_bc_eltern_titel | split: tp_bc_sep
+    assign tp_bc_url_liste = tp_bc_eltern_urls | split: tp_bc_sep
+
+    # Anzeige: "<Elterntitel> - " vorn kuerzen (wie Produkt-Brotkrumen)
+    assign tp_bc_label = tp_bc_titel
+    if tp_bc_titel_liste.size > 0
+      assign tp_bc_praefix = tp_bc_titel_liste.last | append: ' - '
+      assign tp_bc_anfang = tp_bc_titel | slice: 0, tp_bc_praefix.size
+      if tp_bc_anfang == tp_bc_praefix
+        assign tp_bc_label = tp_bc_titel | remove_first: tp_bc_praefix
+      endif
+    endif
+  -%}
+
+  {%- if tp_bc_sichtbar -%}
+    {{ 'tp-breadcrumb.css' | asset_url | stylesheet_tag }}
+    <nav class="tp-bc" aria-label="Brotkrumen">
+      <ol class="tp-bc__liste">
+        <li class="tp-bc__stufe"><a class="tp-bc__link" href="{{ routes.root_url }}">Start</a></li>
+        {%- for tp_bc_t in tp_bc_titel_liste -%}
+          <li class="tp-bc__stufe"><a class="tp-bc__link" href="{{ tp_bc_url_liste[forloop.index0] }}">{{ tp_bc_t | escape }}</a></li>
+        {%- endfor -%}
+        <li class="tp-bc__stufe tp-bc__stufe--aktuell"><span aria-current="page">{{ tp_bc_label | escape }}</span></li>
+      </ol>
+    </nav>
+  {%- endif -%}
+
+  {%- assign tp_bc_pos = 1 -%}
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Start","item":{{ request.origin | append: routes.root_url | json }}}
+      {%- for tp_bc_t in tp_bc_titel_liste -%}
+        {%- assign tp_bc_pos = tp_bc_pos | plus: 1 -%}
+        ,{"@type":"ListItem","position":{{ tp_bc_pos }},"name":{{ tp_bc_t | json }},"item":{{ request.origin | append: tp_bc_url_liste[forloop.index0] | json }}}
+      {%- endfor -%}
+      {%- assign tp_bc_pos = tp_bc_pos | plus: 1 -%}
+      ,{"@type":"ListItem","position":{{ tp_bc_pos }},"name":{{ tp_bc_label | json }},"item":{{ request.origin | append: tp_bc_pfad | json }}}
+    ]}
+  </script>
+{%- endif -%}

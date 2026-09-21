@@ -10,6 +10,7 @@
 // kollektionen.json: { "<kollektions-handle>": "gid://shopify/Collection/…" } - Referenz-
 // Metafelder brauchen die GID, und die kennt nur der Shop. Fehlt eine, bricht der Lauf ab
 // statt den Verweis still wegzulassen.
+// Die Datei gehoert NICHT in den Artikelordner: dort gilt jede .json als Artikel.
 
 import fs from 'node:fs';
 import path from 'node:path';

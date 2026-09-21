@@ -143,6 +143,8 @@
       data-product-transition="{{ settings.transition_to_main_product }}"
       data-template="{{ template }}"
     >
+      {%- comment -%} Brotkrumen + BreadcrumbList fuer Kollektions- und Inhaltsseiten; Ausschluesse im Snippet {%- endcomment -%}
+      {% if request.page_type == 'collection' or request.page_type == 'page' %}{% render 'tp-breadcrumb' %}{% endif %}
       {{ content_for_layout }}
     </main>
 

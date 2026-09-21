@@ -1,0 +1,86 @@
+/* Brotkrumen fuer Kollektions- und Inhaltsseiten (snippets/tp-breadcrumb.liquid).
+   Optik wie .tp-product-breadcrumb: 13 px, gedaempft, "/" als Trenner. */
+.tp-bc {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--tp-container, 1240px);
+  margin: 0 auto;
+  padding: 0 var(--tp-pad, 24px);
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+}
+
+.tp-bc__liste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tp-bc__stufe {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.tp-bc__stufe + .tp-bc__stufe::before {
+  content: '/';
+  margin: 0 8px;
+  opacity: 0.5;
+}
+
+.tp-bc__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tp-bc__link:hover {
+  text-decoration: underline;
+}
+
+.tp-bc__link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.tp-bc__stufe--aktuell {
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+}
+
+/* Am Handy einzeilig: ein Umbruch liess die letzte Stufe mit verwaistem Trenner in
+   eine zweite Zeile rutschen. Die Eltern-Stufen bleiben ganz, die aktuelle Seite wird
+   bei Platzmangel mit Auslassungspunkten gekuerzt (der volle Titel steht als H1 darunter). */
+@media screen and (max-width: 767px) {
+  .tp-bc {
+    padding: 0 16px;
+  }
+
+  .tp-bc__liste {
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .tp-bc__stufe {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .tp-bc__stufe--aktuell {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .tp-bc__stufe--aktuell > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
