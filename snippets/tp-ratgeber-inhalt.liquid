@@ -1,0 +1,118 @@
+{%- doc -%}
+  Inhaltsverzeichnis und Sprunganker fuer einen Ratgeber-Artikel - komplett in
+  Liquid, damit beides ohne JavaScript funktioniert.
+
+  Der Artikeltext wird an "<h2" zerlegt. Jede h2 bekommt eine id (aus dem
+  Ueberschriftentext, per handleize), eine bereits vorhandene id bleibt stehen.
+  Doppelte ids werden mit der laufenden Nummer eindeutig gemacht.
+
+  Die Ausgabe besteht aus ZWEI Teilen, getrennt durch die Marke
+  "<!--tp-rg-trenner-->": zuerst das Verzeichnis (leer, wenn es weniger
+  Ueberschriften gibt als "mindestens"), danach der Artikeltext mit ids.
+  Der Aufrufer faengt die Ausgabe mit capture und teilt sie an der Marke -
+  ein Snippet kann keine Variablen zurueckgeben.
+
+  @param {string} inhalt - Artikeltext (article.content)
+  @param {string} [ueberschrift] - Titel des Verzeichnisses, Standard "Inhalt"
+  @param {number} [mindestens] - ab wie vielen h2 das Verzeichnis erscheint, Standard 3
+
+  @example
+  {% capture rg_roh %}{% render 'tp-ratgeber-inhalt', inhalt: article.content %}{% endcapture %}
+  {% assign rg_teile = rg_roh | split: '<!--tp-rg-trenner-->' %}
+{%- enddoc -%}
+
+{%- liquid
+  assign rg_i_min = mindestens | default: 3
+  assign rg_i_titel = ueberschrift | default: 'Inhalt'
+  assign rg_i_teile = inhalt | split: '<h2'
+  assign rg_i_ids = ','
+  assign rg_i_liste = ''
+  assign rg_i_html = ''
+  assign rg_i_zahl = 0
+
+  for rg_i_teil in rg_i_teile
+    if forloop.first
+      # Alles vor der ersten h2 bleibt, wie es ist
+      assign rg_i_html = rg_i_teil
+      continue
+    endif
+
+    # Nur echte h2: nach "<h2" folgt ">" oder ein Attribut. "<h2x" ist keine.
+    assign rg_i_start = rg_i_teil | slice: 0
+    assign rg_i_echt = false
+    if rg_i_start == '>' or rg_i_start == ' '
+      if rg_i_teil contains '</h2>'
+        assign rg_i_echt = true
+      endif
+    endif
+
+    unless rg_i_echt
+      assign rg_i_html = rg_i_html | append: '<h2' | append: rg_i_teil
+      continue
+    endunless
+
+    # Kopf = ' class="x">Ueberschrift', Attribute = alles vor dem ersten ">"
+    assign rg_i_kopf = rg_i_teil | split: '</h2>' | first
+    assign rg_i_attrs = rg_i_kopf | split: '>' | first
+    assign rg_i_praefix = rg_i_attrs | append: '>'
+    assign rg_i_text = rg_i_kopf | remove_first: rg_i_praefix | strip_html | strip
+
+    if rg_i_text == blank
+      assign rg_i_html = rg_i_html | append: '<h2' | append: rg_i_teil
+      continue
+    endif
+
+    assign rg_i_setzen = true
+    if rg_i_attrs contains ' id="'
+      assign rg_i_id = rg_i_attrs | split: ' id="' | last | split: '"' | first
+      assign rg_i_setzen = false
+    else
+      assign rg_i_id = rg_i_text | replace: '&amp;', ' ' | replace: '&nbsp;', ' ' | handleize
+      if rg_i_id == blank
+        assign rg_i_id = 'abschnitt-' | append: forloop.index0
+      endif
+      assign rg_i_probe = ',' | append: rg_i_id | append: ','
+      if rg_i_ids contains rg_i_probe
+        assign rg_i_id = rg_i_id | append: '-' | append: forloop.index0
+      endif
+    endif
+    assign rg_i_ids = rg_i_ids | append: rg_i_id | append: ','
+    assign rg_i_zahl = rg_i_zahl | plus: 1
+
+    assign rg_i_liste = rg_i_liste | append: '<li><a href="#' | append: rg_i_id | append: '">' | append: rg_i_text | append: '</a></li>'
+
+    if rg_i_setzen
+      if rg_i_attrs == blank
+        assign rg_i_rest = rg_i_teil
+      else
+        assign rg_i_rest = rg_i_teil | remove_first: rg_i_attrs
+      endif
+      assign rg_i_html = rg_i_html | append: '<h2' | append: rg_i_attrs | append: ' id="' | append: rg_i_id | append: '"' | append: rg_i_rest
+    else
+      assign rg_i_html = rg_i_html | append: '<h2' | append: rg_i_teil
+    endif
+  endfor
+-%}
+
+{%- if rg_i_zahl >= rg_i_min -%}
+  <nav class="tp-rg-toc" aria-labelledby="tp-rg-toc-titel">
+    <h2 class="tp-rg-toc__titel" id="tp-rg-toc-titel">{{ rg_i_titel | escape }}</h2>
+    <ol class="tp-rg-toc__liste">
+      {{ rg_i_liste }}
+    </ol>
+  </nav>
+{%- endif -%}
+<!--tp-rg-trenner-->
+{{- rg_i_html -}}
+
+{% stylesheet %}
+  .tp-rg-toc { margin: 32px 0; padding: 20px 22px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); }
+  .tp-rg-toc__titel { margin: 0 0 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tp-muted, #655e57); line-height: 1.3; }
+  .tp-rg-toc__liste { margin: 0; padding: 0 0 0 22px; color: var(--tp-muted, #655e57); }
+  .tp-rg-toc__liste li { margin: 0; padding: 0; }
+  .tp-rg-toc__liste a { display: flex; align-items: center; min-height: 44px; padding: 4px 0; color: var(--tp-ink, #1d1a17); text-decoration: none; font-size: 16px; line-height: 1.35; }
+  .tp-rg-toc__liste a:hover { color: var(--tp-red-dark, #96262f); text-decoration: underline; }
+  @media (min-width: 768px) {
+    .tp-rg-toc__liste a { min-height: 36px; }
+  }
+{% endstylesheet %}

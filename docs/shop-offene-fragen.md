@@ -11,6 +11,12 @@ blockiert den Shop. Erledigtes hier streichen, nicht loeschen.
 | 3 | Fasermaterial fuer wovena, callista, rubira (Teppichboden, Metafeld `custom.fasermaterial`) | Gepflegt ist nur die Art "Wolle", die genaue Faser ist nicht belegt | S-25 |
 | 4 | Merchant Center: uebernimmt der Feed die Aktionspreise als Sale-Preis? (Issue #415) | Kein Zugriff auf das Merchant Center | S-31 |
 | 5 | Optik am Handy ansehen: Teppich-Karte, grosses Farbbild mit Lupe unter der Farbwahl, Aktionskarten im Teppichboden | Das Browserfenster der Sitzung lieferte durchgehend leere Screenshots - ich habe vermessen, nicht gesehen | - |
+| 6 | Datenschutzerklaerung um Newsletter (Double-Opt-in, Versanddienst, Abmeldung), Tag Manager/Google-Tag und das Bewertungs-Widget ergaenzen | Rechtstext ist Inhabersache; vorher schalte ich keine Newsletter-Anmeldung sichtbar | #422, `docs/kundenbindung/README.md` Abschnitt 4 |
+| 7 | Shopify Messaging (E-Mail) installieren: ja/nein. Ohne das gibt es weder Newsletter noch Willkommensserie noch Muster-Nachfassmail; kostenlos bis 10.000 Mails/Monat | App-Installation = Kontoaenderung mit moeglichen Folgekosten | #422, `docs/kundenbindung/automationen.md` |
+| 8 | Rabatthoehe je Marketingkanal, Willkommensvorteil ja/nein, Anreiz in Stufe 2 (Warenkorb, Muster) ja/nein, Newsletter-Rhythmus | Geschaeftsentscheidungen; Technik und Vorlage sind fertig | #422, `docs/kundenbindung/marketingcodes-und-aktionen.md` |
+| 9 | Alter Gratisversand-Code ohne Ablauf und ohne Nutzungsgrenze, leicht zu erraten, mit allem kombinierbar: abschalten? | Versand/Rabatte aendere ich nicht ohne dein Wort (Name bewusst nicht im Repo - Rabatte im Admin, aeltester aktiver Versandcode) | #422 |
+| 10 | GA4-Property anlegen und Mess-ID nennen | Ohne Ziel landen die neuen Funnel-Ereignisse nur in den Shopify-Kundenereignissen | #52, `docs/kundenbindung/funnel-events.md` |
+| 11 | Pilotartikel des Ratgebers fachlich pruefen (alle PRUEFEN-Marken beantworten), Texte fuer Firmenbox und Newsletter-Nutzen freigeben | Fachaussagen und sichtbare Versprechen erfinde ich nicht | #422, `content/ratgeber/teppichboden/README.md` |
 
 ## Termine
 - **2026-10-18** endet Rabattaktion Welle 1. Anzeige und Hinweis stellen sich selbst zurueck, die PREISE nicht. Geplante Aufgabe `rabattaktion-welle1-beenden` (19.10., 8:00, nur bei geoeffneter App) und Issue #413.

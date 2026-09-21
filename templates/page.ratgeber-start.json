@@ -1,0 +1,34 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-ratgeber-bereiche",
+      "blocks": {
+        "teppichboden": {
+          "type": "bereich",
+          "settings": {
+            "blog": "ratgeber-teppichboden",
+            "titel": "Teppichboden",
+            "text": "Auswählen, planen, verlegen und pflegen – Schritt für Schritt erklärt.",
+            "bald": false
+          }
+        },
+        "vinylboden": {
+          "type": "bereich",
+          "settings": {
+            "titel": "Vinylboden",
+            "text": "Klick-, Klebe- und Rollenvinyl: Auswahl, Untergrund und Verlegung.",
+            "bald": true
+          }
+        }
+      },
+      "block_order": [
+        "teppichboden",
+        "vinylboden"
+      ],
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

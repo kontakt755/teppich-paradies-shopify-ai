@@ -1,0 +1,116 @@
+{%- doc -%}
+  Strukturierte Daten eines Ratgeber-Artikels: Article, BreadcrumbList und -
+  nur bei vollstaendigen Videodaten - VideoObject.
+
+  Bewusst NICHT enthalten: HowTo und FAQPage (Google zeigt dafuer keine
+  Rich Results mehr) sowie der Filter structured_data auf dem Artikel - das
+  ergaebe ein zweites Article-Objekt auf derselben Seite.
+
+  Jedes Metafeld ist optional. Pflichtfelder stehen zuerst, jedes optionale
+  Feld bringt sein fuehrendes Komma selbst mit - so bleibt das JSON auch dann
+  gueltig, wenn alle Metafelder leer sind.
+
+  Der Organization-Block im Header (sections/header.liquid) traegt keine @id,
+  deshalb stehen Name, URL und Logo hier noch einmal. Die @id "#organization"
+  ist vorbereitet: bekommt der Header-Block spaeter dieselbe @id, fuehren
+  Suchmaschinen beide Angaben zusammen.
+
+  @param {object} artikel - Artikel-Objekt
+  @param {object} blog - Blog des Artikels (Bereichs-Ratgeber)
+  @param {string} [video_embed] - Embed-URL (YouTube-nocookie/Vimeo), ohne Autoplay-Parameter
+  @param {string} [video_datei] - direkte Video-Datei (.mp4/.webm)
+
+  @example
+  {% render 'tp-ratgeber-structured-data', artikel: article, blog: blog %}
+{%- enddoc -%}
+
+{%- liquid
+  assign rg_s_mf = artikel.metafields.ratgeber
+
+  # Zeilenumbrueche und Absatzenden werden zu Leerzeichen, sonst kleben Saetze aneinander
+  assign rg_s_text = rg_s_mf.kurzantwort.value | default: artikel.excerpt_or_content | replace: '</p>', '</p> ' | replace: '</h2>', '</h2> ' | newline_to_br | replace: '<br />', ' ' | strip_html | strip_newlines | strip | truncate: 300, '…'
+
+  assign rg_s_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies'
+  assign rg_s_org_id = request.origin | append: '/#organization'
+
+  assign rg_s_geaendert = artikel.updated_at | default: artikel.published_at
+
+  assign rg_s_video_titel = rg_s_mf.video_titel.value | default: artikel.title
+  assign rg_s_video_text = rg_s_mf.video_beschreibung.value | default: rg_s_text | newline_to_br | replace: '<br />', ' ' | strip_html | strip_newlines | strip
+  assign rg_s_video_bild = rg_s_mf.video_vorschaubild.value
+  assign rg_s_video_datum = rg_s_mf.video_datum.value
+  assign rg_s_video_dauer = rg_s_mf.video_dauer_iso.value | strip | upcase
+  assign rg_s_dauer_start = rg_s_video_dauer | slice: 0, 2
+  assign rg_s_transkript = rg_s_mf.transkript.value | strip_html | strip
+
+  assign rg_s_video_ok = false
+  if video_embed != blank or video_datei != blank
+    if rg_s_video_bild != blank and rg_s_video_datum != blank and rg_s_video_titel != blank and rg_s_video_text != blank
+      assign rg_s_video_ok = true
+    endif
+  endif
+-%}
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": {{ artikel.title | json }},
+    "url": {{ canonical_url | json }},
+    "mainEntityOfPage": { "@type": "WebPage", "@id": {{ canonical_url | json }} },
+    "inLanguage": "de-DE",
+    "datePublished": {{ artikel.published_at | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+    "dateModified": {{ rg_s_geaendert | date: '%Y-%m-%dT%H:%M:%S%:z' | json }}
+    {%- if blog.title != blank -%}
+      ,"articleSection": {{ blog.title | json }}
+    {%- endif -%}
+    {%- if rg_s_text != blank -%}
+      ,"description": {{ rg_s_text | json }}
+    {%- endif -%}
+    {%- if artikel.image -%}
+      ,"image": [{{ artikel.image | image_url: width: 1200 | prepend: 'https:' | json }}]
+    {%- endif -%}
+    ,"author": {
+      "@type": "Organization",
+      "@id": {{ rg_s_org_id | json }},
+      "name": {{ rg_s_marke | json }},
+      "url": {{ request.origin | json }}
+    }
+    ,"publisher": {
+      "@type": "Organization",
+      "@id": {{ rg_s_org_id | json }},
+      "name": {{ rg_s_marke | json }},
+      "url": {{ request.origin | json }}
+      {%- if settings.logo -%}
+        ,"logo": { "@type": "ImageObject", "url": {{ settings.logo | image_url: width: 500 | prepend: 'https:' | json }} }
+      {%- endif -%}
+    }
+  }
+</script>
+
+{%- render 'tp-ratgeber-breadcrumb', blog: blog, artikel: artikel, modus: 'schema' -%}
+
+{%- if rg_s_video_ok -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      "name": {{ rg_s_video_titel | json }},
+      "description": {{ rg_s_video_text | truncate: 500, '…' | json }},
+      "thumbnailUrl": [{{ rg_s_video_bild | image_url: width: 1280 | prepend: 'https:' | json }}],
+      "uploadDate": {{ rg_s_video_datum | date: '%Y-%m-%dT%H:%M:%S%:z' | json }},
+      "inLanguage": "de-DE"
+      {%- if video_datei != blank -%}
+        ,"contentUrl": {{ video_datei | json }}
+      {%- else -%}
+        ,"embedUrl": {{ video_embed | json }}
+      {%- endif -%}
+      {%- if rg_s_dauer_start == 'PT' -%}
+        ,"duration": {{ rg_s_video_dauer | json }}
+      {%- endif -%}
+      {%- if rg_s_transkript != blank -%}
+        ,"transcript": {{ rg_s_transkript | json }}
+      {%- endif -%}
+    }
+  </script>
+{%- endif -%}

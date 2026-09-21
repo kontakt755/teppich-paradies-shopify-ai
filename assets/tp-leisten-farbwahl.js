@@ -93,14 +93,53 @@
         t.setAttribute('aria-pressed', trifft ? 'true' : 'false');
         if (trifft) aktiv = t;
       });
-      var current = this.querySelector('[data-tp-farbwahl-current]');
-      if (current && aktiv) current.textContent = aktiv.getAttribute('data-tp-farbwahl-name') || wert;
+      // Zeile ueber dem Raster und Dropdown-Knopf tragen beide den Namen
+      if (aktiv) {
+        var name = aktiv.getAttribute('data-tp-farbwahl-name') || wert;
+        this.querySelectorAll('[data-tp-farbwahl-current]').forEach(function (el) { el.textContent = name; });
+      }
+      // Dropdown: Bild der aktiven Kachel in den Knopf spiegeln - dieselbe
+      // Quelle wie im Raster, damit die Bildregeln der Kachel gelten.
+      var ddBild = this.querySelector('[data-tp-farbwahl-dd-bild]');
+      if (ddBild && aktiv) {
+        var quelle = aktiv.querySelector('.tp-lfw__bild');
+        ddBild.innerHTML = '';
+        if (quelle && quelle.firstElementChild) ddBild.appendChild(quelle.firstElementChild.cloneNode(true));
+      }
+      if (this.istDropdown()) return;
       // Liegt die gewaehlte Farbe im eingeklappten Teil, aufklappen - sonst
       // steht der aktive Zustand unsichtbar hinter dem "Alle anzeigen"-Knopf.
       if (aktiv && aktiv.hidden) this.umschalten(true);
     }
 
+    istDropdown() {
+      return !!this.querySelector('[data-tp-farbwahl-dd]');
+    }
+
+    // Dropdown auf/zu. Im Dropdown sind immer alle Farben in der Liste - das
+    // Einklappen des Rasters ("Alle anzeigen") gibt es dort nicht.
+    oeffnen(auf) {
+      var knopf = this.querySelector('[data-tp-farbwahl-dd]');
+      if (!knopf) return;
+      this.classList.toggle('tp-lfw--offen', auf);
+      knopf.setAttribute('aria-expanded', auf ? 'true' : 'false');
+      if (!auf) return;
+      this.tiles().forEach(function (t) { t.hidden = false; });
+      var liste = this.querySelector('.tp-lfw__grid');
+      var platz = window.innerHeight - knopf.getBoundingClientRect().bottom - 16;
+      if (liste) liste.style.maxHeight = Math.max(200, Math.min(platz, 420)) + 'px';
+      var aktiv = this.querySelector('[data-tp-farbwahl-id][aria-pressed="true"]');
+      if (aktiv) {
+        aktiv.focus({ preventScroll: true });
+        if (liste) liste.scrollTop = Math.max(0, aktiv.offsetTop - 60);
+      }
+      if (liste && liste.getBoundingClientRect().bottom > window.innerHeight) {
+        liste.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
     klappbar() {
+      if (this.istDropdown()) return false;
       return !!this.querySelector('[data-tp-farbwahl-mehr]');
     }
 
@@ -144,11 +183,21 @@
     onClick(event) {
       var ziel = event.target instanceof Element ? event.target : null;
       if (!ziel) return;
+      var dd = ziel.closest('[data-tp-farbwahl-dd]');
+      if (dd) {
+        this.oeffnen(!this.classList.contains('tp-lfw--offen'));
+        return;
+      }
       var tile = ziel.closest('[data-tp-farbwahl-id]');
       if (tile) {
         var radio = this.radioFuer(tile);
         if (radio && !radio.checked) radio.click();
         this.sync();
+        if (this.istDropdown()) {
+          this.oeffnen(false);
+          var knopf = this.querySelector('[data-tp-farbwahl-dd]');
+          if (knopf) knopf.focus({ preventScroll: true });
+        }
         return;
       }
       var mehr = ziel.closest('[data-tp-farbwahl-mehr]');
@@ -171,6 +220,22 @@
   // Horizon feuert variant:update nach dem Morph des Waehlers; das change-
   // Event deckt den direkten Klick auf ein (sichtbares) Radio ohne JS-Kacheln ab.
   document.addEventListener('variant:update', alleSync);
+
+  // Offenes Dropdown schliessen: Klick ausserhalb oder Escape.
+  document.addEventListener('click', function (event) {
+    instanzen.forEach(function (el) {
+      if (el.classList.contains('tp-lfw--offen') && !el.contains(event.target)) el.oeffnen(false);
+    });
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    instanzen.forEach(function (el) {
+      if (!el.classList.contains('tp-lfw--offen')) return;
+      el.oeffnen(false);
+      var knopf = el.querySelector('[data-tp-farbwahl-dd]');
+      if (knopf) knopf.focus({ preventScroll: true });
+    });
+  });
   document.addEventListener('change', function (event) {
     var t = event.target;
     if (t instanceof HTMLInputElement && t.type === 'radio' && t.closest('variant-picker')) alleSync();

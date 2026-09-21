@@ -134,6 +134,13 @@
     accent-color: var(--cp-text);
   }
 
+  .carpet-package__waste-note-{{ package_selector_id }} {
+    margin: 4px 0 0 23px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--cp-muted);
+  }
+
   .carpet-package__reserve-{{ package_selector_id }} {
     margin: 8px 0 0;
     font-size: 0.85em;
@@ -383,6 +390,17 @@
       <input type="checkbox" data-waste-checkbox checked>
       <span>+ 5% Verschnitt (empfohlen)</span>
     </label>
+    {% comment %}
+      Begruendung zum Schalter (Issue 164): warum Reserve, und dass Uebriges
+      kein Verlust ist. Nur Text - der Faktor 1.05 und die Rechnung bleiben.
+      Die Staffelung nach Format (5/10/15 %) fehlt bewusst: sie aendert die
+      empfohlene Bestellmenge und ist eine Inhaberentscheidung. Die Daten
+      dafuer laegen in custom.format_cm (2026-09-21: 293 Produkte gepflegt).
+    {% endcomment %}
+    <p class="carpet-package__waste-note-{{ package_selector_id }}">
+      Beim Verlegen fällt an Wänden und Ecken Zuschnitt an. Die Reserve erspart eine Nachbestellung aus anderer
+      Charge – Übriges hilft später bei Reparaturen.
+    </p>
   </div>
 
   {% comment %}

@@ -1,0 +1,239 @@
+{% doc %}
+  Duenner Wrapper um snippets/tp-newsletter.liquid: reicht Block-Einstellungen
+  durch, traegt block.shopify_attributes fuer den Theme-Editor. Keine eigene
+  Formularlogik - die liegt vollstaendig im Snippet, damit dieselbe Anmeldung
+  auch aus Sections/Artikeln per render aufgerufen werden kann
+  (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
+
+  Das gesamte CSS steht hier im {% stylesheet %}, nicht im Snippet - Snippets
+  koennen kein eigenes stylesheet-Tag haben. Shopify buendelt Block-CSS in
+  jedem Fall ins globale Theme-CSS, unabhaengig davon, ob dieser Block gerade
+  platziert ist - deshalb wirkt die Klasse .tp-nl auch dort, wo nur das
+  Snippet gerendert wird.
+{% enddoc %}
+
+<div {{ block.shopify_attributes }}>
+  {%- render 'tp-newsletter',
+    ueberschrift: block.settings.ueberschrift,
+    text: block.settings.text,
+    hinweis: block.settings.hinweis,
+    button: block.settings.button,
+    quelle: block.settings.quelle,
+    kompakt: block.settings.kompakt,
+    instanz: block.id
+  -%}
+</div>
+
+{% stylesheet %}
+  .tp-nl {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 420px;
+    padding: 20px;
+    background: var(--tp-bg-2, #f6f2ec);
+    border: 1px solid var(--tp-line, #e6e0d8);
+    border-radius: var(--tp-r, 10px);
+    color: var(--tp-ink, #1d1a17);
+    font-family: inherit;
+  }
+
+  .tp-nl--kompakt {
+    max-width: none;
+    padding: 0;
+    background: transparent;
+    border: none;
+  }
+
+  .tp-nl__heading {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--tp-ink, #1d1a17);
+  }
+
+  .tp-nl--kompakt .tp-nl__heading {
+    font-size: 15px;
+  }
+
+  .tp-nl__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--tp-ink-2, #4a443f);
+  }
+
+  .tp-nl__form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .tp-nl__row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .tp-nl__row > * {
+    min-width: 0;
+  }
+
+  /* Mobile-first (ab 390px gestapelt); ab hier greift die einzeilige Variante. */
+  @media screen and (min-width: 480px) {
+    .tp-nl--kompakt .tp-nl__row {
+      flex-direction: row;
+    }
+  }
+
+  @media screen and (min-width: 560px) {
+    .tp-nl:not(.tp-nl--kompakt) .tp-nl__row {
+      flex-direction: row;
+    }
+  }
+
+  .tp-nl__input {
+    flex: 1;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 16px;
+    line-height: 1.2;
+    color: var(--tp-ink, #1d1a17);
+    background: #fff;
+    border: 1px solid var(--tp-line-2, #d5cec4);
+    border-radius: var(--tp-r, 10px);
+  }
+
+  .tp-nl__input::placeholder {
+    color: var(--tp-ink-2, #4a443f);
+    opacity: 0.65;
+  }
+
+  .tp-nl__input:focus-visible {
+    outline: 2px solid var(--tp-ink, #1d1a17);
+    outline-offset: 2px;
+  }
+
+  .tp-nl__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: var(--tp-r, 10px);
+    background: var(--tp-red, #b73740);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .tp-nl__button:hover {
+    background: var(--tp-red-dark, #96262f);
+  }
+
+  .tp-nl__button:focus-visible {
+    outline: 2px solid var(--tp-ink, #1d1a17);
+    outline-offset: 2px;
+  }
+
+  .tp-nl__hinweis {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--tp-ink-2, #4a443f);
+  }
+
+  .tp-nl__hinweis p {
+    margin: 0;
+  }
+
+  .tp-nl__hinweis a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  .tp-nl__hinweis a:hover {
+    color: var(--tp-red, #b73740);
+  }
+
+  .tp-nl__hinweis a:focus-visible {
+    outline: 2px solid var(--tp-ink, #1d1a17);
+    outline-offset: 2px;
+  }
+
+  .tp-nl__status {
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    border-radius: var(--tp-r, 10px);
+    background: #fff;
+  }
+
+  .tp-nl__status--erfolg {
+    border: 1px solid var(--tp-line, #e6e0d8);
+    color: var(--tp-ink, #1d1a17);
+  }
+
+  .tp-nl__status--fehler {
+    border: 1px solid var(--tp-red, #b73740);
+    color: var(--tp-red-dark, #96262f);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Newsletter",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "ueberschrift",
+      "label": "Ueberschrift",
+      "default": "Neuigkeiten aus dem Teppich Paradies"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Text",
+      "default": "Neue Kollektionen, Ratgeber und Aktionen – gelegentlich per E-Mail."
+    },
+    {
+      "type": "richtext",
+      "id": "hinweis",
+      "label": "Einwilligungshinweis",
+      "default": "<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Sie können sich jederzeit über den Link in jeder E-Mail abmelden. Näheres in unserer <a href=\"/pages/datenschutzerklarung\">Datenschutzerklärung</a>.</p>"
+    },
+    {
+      "type": "text",
+      "id": "button",
+      "label": "Button-Beschriftung",
+      "default": "Anmelden"
+    },
+    {
+      "type": "text",
+      "id": "quelle",
+      "label": "Quelle (fuer Tags und Tracking)",
+      "info": "Steuert contact[tags] (quelle-<wert>) und data-tp-newsletter-quelle. Bei mehreren Platzierungen je Ort einen eigenen Wert vergeben, z. B. footer, ratgeber, muster.",
+      "default": "footer"
+    },
+    {
+      "type": "checkbox",
+      "id": "kompakt",
+      "label": "Kompakte einzeilige Variante (fuer den Footer)",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Newsletter"
+    }
+  ]
+}
+{% endschema %}

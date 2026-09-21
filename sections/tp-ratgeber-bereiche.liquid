@@ -1,0 +1,150 @@
+{%- comment -%}
+  TP Ratgeber Bereiche (Template page.ratgeber-start, Seite /pages/ratgeber):
+  Einstieg in alle Bereichs-Ratgeber. Je Block ein Bereich = ein Blog.
+
+  Ein Bereich wird nur dann zum Link, wenn sein Blog existiert UND Artikel
+  hat. Sonst - oder mit dem Haken "bald verfuegbar" - steht eine ruhige,
+  nicht klickbare Karte. So fuehrt von hier nie ein Link auf eine leere Seite.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+<div class="tp-rg-ueber">
+  <div class="tp-s-wrap">
+    {%- render 'tp-ratgeber-breadcrumb' -%}
+
+    <header class="tp-rg-ueber__kopf">
+      <h1 class="tp-rg-ueber__h1">{{ page.title | escape }}</h1>
+      {%- if page.content != blank -%}
+        <div class="tp-rg-ueber__intro">{{ page.content }}</div>
+      {%- endif -%}
+    </header>
+
+    {%- if section.blocks.size > 0 -%}
+      <ul class="tp-rg-bereiche">
+        {%- for block in section.blocks -%}
+          {%- liquid
+            assign rg_u_blog = block.settings.blog
+            assign rg_u_titel = block.settings.titel | default: rg_u_blog.title
+            assign rg_u_zahl = rg_u_blog.articles_count | default: 0
+            assign rg_u_aktiv = false
+            if rg_u_blog != blank and rg_u_zahl > 0
+              unless block.settings.bald
+                assign rg_u_aktiv = true
+              endunless
+            endif
+          -%}
+          {%- if rg_u_titel == blank -%}{%- continue -%}{%- endif -%}
+          <li class="tp-rg-bereich{% unless rg_u_aktiv %} tp-rg-bereich--bald{% endunless %}" {{ block.shopify_attributes }}>
+            <div class="tp-rg-bereich__bild">
+              {%- if block.settings.bild != blank -%}
+                {%- assign rg_u_alt = block.settings.bild.alt | default: rg_u_titel -%}
+                {%- assign rg_u_laden = 'lazy' -%}
+                {%- if forloop.index <= 2 -%}{%- assign rg_u_laden = 'eager' -%}{%- endif -%}
+                {{-
+                  block.settings.bild
+                  | image_url: width: 960
+                  | image_tag:
+                    alt: rg_u_alt,
+                    class: 'tp-rg-bereich__img',
+                    loading: rg_u_laden,
+                    widths: '320, 480, 640, 960',
+                    sizes: '(min-width: 1024px) 380px, (min-width: 640px) 46vw, 92vw'
+                -}}
+              {%- endif -%}
+            </div>
+            <div class="tp-rg-bereich__text">
+              {%- unless rg_u_aktiv -%}
+                <span class="tp-rg-bereich__marke">In Vorbereitung</span>
+              {%- endunless -%}
+              <h2 class="tp-rg-bereich__titel">
+                {%- if rg_u_aktiv -%}
+                  <a class="tp-rg-bereich__link" href="{{ rg_u_blog.url }}">{{ rg_u_titel | escape }}</a>
+                {%- else -%}
+                  {{ rg_u_titel | escape }}
+                {%- endif -%}
+              </h2>
+              {%- if block.settings.text != blank -%}
+                <p class="tp-rg-bereich__absatz">{{ block.settings.text | escape }}</p>
+              {%- endif -%}
+              {%- if rg_u_aktiv -%}
+                <p class="tp-rg-bereich__zahl">
+                  {%- if rg_u_zahl == 1 -%}1 Beitrag{%- else -%}{{ rg_u_zahl }} Beiträge{%- endif -%}
+                </p>
+              {%- endif -%}
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-rg-ueber { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
+  .tp-rg-ueber__kopf { margin: 8px 0 28px; max-width: 760px; }
+  .tp-rg-ueber__h1 { margin: 0 0 12px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-rg-ueber__intro { font-size: 17px; line-height: 1.65; }
+  .tp-rg-ueber__intro p { margin: 0 0 10px; }
+  .tp-rg-ueber__intro a { color: var(--tp-red-dark, #96262f); text-underline-offset: 3px; }
+
+  .tp-rg-bereiche { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .tp-rg-bereich { position: relative; display: flex; flex-direction: column; margin: 0; padding: 0; min-width: 0; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); overflow: hidden; }
+  .tp-rg-bereich:hover { border-color: var(--tp-line-2, #d5cec4); box-shadow: var(--tp-shadow, 0 10px 30px rgba(29, 26, 23, 0.1)); }
+  .tp-rg-bereich:has(.tp-rg-bereich__link:focus-visible) { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-rg-bereich__bild { aspect-ratio: 3 / 2; background: var(--tp-bg-3, #ede7de); overflow: hidden; }
+  .tp-rg-bereich__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-rg-bereich__text { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 22px; }
+  .tp-rg-bereich__titel { margin: 0; font-size: 21px; font-weight: 700; line-height: 1.25; color: var(--tp-ink, #1d1a17); }
+  .tp-rg-bereich__link { color: inherit; text-decoration: none; }
+  .tp-rg-bereich__link::after { content: ""; position: absolute; inset: 0; }
+  .tp-rg-bereich__link:hover { text-decoration: underline; }
+  .tp-rg-bereich__link:focus-visible { outline: 0; }
+  .tp-rg-bereich__absatz { margin: 0; font-size: 15.5px; line-height: 1.55; }
+  .tp-rg-bereich__zahl { margin: 0; font-size: 14px; color: var(--tp-muted, #655e57); }
+  .tp-rg-bereich__marke { align-self: flex-start; padding: 3px 10px; border-radius: 999px; background: var(--tp-bg-3, #ede7de); font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
+
+  .tp-rg-bereich--bald { background: var(--tp-bg-2, #f6f2ec); }
+  .tp-rg-bereich--bald:hover { border-color: var(--tp-line, #e6e0d8); box-shadow: none; }
+  .tp-rg-bereich--bald .tp-rg-bereich__img { opacity: 0.55; filter: grayscale(1); }
+  .tp-rg-bereich--bald .tp-rg-bereich__titel { color: var(--tp-ink-2, #4a443f); }
+
+  @media (min-width: 640px) {
+    .tp-rg-bereiche { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    .tp-rg-ueber { padding-top: 24px; }
+  }
+  @media (min-width: 1024px) {
+    .tp-rg-bereiche { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-rg-bereich { transition: box-shadow 0.15s, border-color 0.15s; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Ratgeber Bereiche",
+  "tag": "section",
+  "class": "tp-rg-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "paragraph", "content": "Titel und Einleitung kommen aus der Seite selbst (Seitentitel und Seiteninhalt)." }
+  ],
+  "blocks": [
+    {
+      "type": "bereich",
+      "name": "Bereich",
+      "limit": 12,
+      "settings": [
+        { "type": "blog", "id": "blog", "label": "Blog des Bereichs" },
+        { "type": "text", "id": "titel", "label": "Titel (leer = Blogtitel)" },
+        { "type": "textarea", "id": "text", "label": "Kurztext" },
+        { "type": "image_picker", "id": "bild", "label": "Bild" },
+        { "type": "checkbox", "id": "bald", "label": "Bald verfuegbar", "default": false, "info": "Zeigt eine ruhige Karte ohne Link. Ohne Blog oder ohne Artikel geschieht das automatisch." }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Ratgeber Bereiche" } ]
+}
+{% endschema %}

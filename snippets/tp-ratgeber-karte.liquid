@@ -1,0 +1,86 @@
+{%- doc -%}
+  Artikelkarte fuer den Ratgeber (Themen-Seite eines Blogs, verwandte Beitraege).
+  Die ganze Karte ist klickbar, es gibt aber nur EINEN echten Link (im Titel);
+  die Flaeche kommt ueber ::after des Links. Bild, Art-Label und Auszug sind
+  optional - fehlt das Bild, steht eine ruhige Flaeche in gleicher Hoehe.
+
+  @param {object} artikel - Artikel-Objekt
+  @param {string} [ebene] - Ueberschriften-Ebene des Titels, 'h2' oder 'h3' (Standard 'h3')
+  @param {boolean} [sofort] - true = Bild ohne lazy-loading (erste Karten im sichtbaren Bereich)
+
+  @example
+  {% render 'tp-ratgeber-karte', artikel: article %}
+{%- enddoc -%}
+
+{%- liquid
+  assign rg_k_ebene = ebene | default: 'h3'
+  if rg_k_ebene != 'h2'
+    assign rg_k_ebene = 'h3'
+  endif
+  assign rg_k_art = artikel.metafields.ratgeber.art.value | strip
+  assign rg_k_kurz = artikel.metafields.ratgeber.kurzantwort.value
+  assign rg_k_auszug = artikel.excerpt | strip_html | strip
+  if rg_k_auszug == blank
+    assign rg_k_auszug = rg_k_kurz | default: artikel.content | replace: '</p>', '</p> ' | replace: '</h2>', '</h2> ' | newline_to_br | replace: '<br />', ' ' | strip_html | strip_newlines | strip
+  endif
+  assign rg_k_auszug = rg_k_auszug | truncate: 140, '…'
+  assign rg_k_laden = 'lazy'
+  if sofort
+    assign rg_k_laden = 'eager'
+  endif
+-%}
+
+<article class="tp-rg-karte">
+  <div class="tp-rg-karte__bild{% unless artikel.image %} tp-rg-karte__bild--leer{% endunless %}">
+    {%- if artikel.image -%}
+      {%- assign rg_k_alt = artikel.image.alt | default: artikel.title -%}
+      {{-
+        artikel.image
+        | image_url: width: 960
+        | image_tag:
+          alt: rg_k_alt,
+          class: 'tp-rg-karte__img',
+          loading: rg_k_laden,
+          widths: '320, 480, 640, 960',
+          sizes: '(min-width: 1024px) 380px, (min-width: 640px) 46vw, 92vw'
+      -}}
+    {%- endif -%}
+  </div>
+  <div class="tp-rg-karte__text">
+    {%- if rg_k_art != blank -%}
+      <span class="tp-rg-karte__art">{{ rg_k_art | escape }}</span>
+    {%- endif -%}
+    <{{ rg_k_ebene }} class="tp-rg-karte__titel"><a class="tp-rg-karte__link" href="{{ artikel.url }}">{{ artikel.title | escape }}</a></{{ rg_k_ebene }}>
+    {%- if rg_k_auszug != blank -%}
+      <p class="tp-rg-karte__auszug">{{ rg_k_auszug | escape }}</p>
+    {%- endif -%}
+  </div>
+</article>
+
+{% stylesheet %}
+  .tp-rg-karte { position: relative; display: flex; flex-direction: column; height: 100%; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); overflow: hidden; }
+  .tp-rg-karte:hover { border-color: var(--tp-line-2, #d5cec4); box-shadow: var(--tp-shadow, 0 10px 30px rgba(29, 26, 23, 0.1)); }
+  .tp-rg-karte:has(.tp-rg-karte__link:focus-visible) { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-rg-karte__bild { aspect-ratio: 3 / 2; background: var(--tp-bg-3, #ede7de); overflow: hidden; }
+  .tp-rg-karte__img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .tp-rg-karte__text { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
+  .tp-rg-karte__art { align-self: flex-start; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
+  .tp-rg-karte__titel { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-rg-karte__link { color: inherit; text-decoration: none; }
+  .tp-rg-karte__link::after { content: ""; position: absolute; inset: 0; }
+  .tp-rg-karte__link:hover { text-decoration: underline; }
+  .tp-rg-karte__link:focus-visible { outline: 0; }
+  .tp-rg-karte__auszug { margin: 0; font-size: 15px; line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
+  /* Handy: kompakte Zeile (Bild links) statt hoher Kachel - eine Themenliste bleibt so ueberschaubar */
+  @media (max-width: 639px) {
+    .tp-rg-karte { flex-direction: row; align-items: stretch; }
+    .tp-rg-karte__bild { flex: none; width: 108px; aspect-ratio: auto; min-height: 108px; }
+    .tp-rg-karte__bild--leer { display: none; }
+    .tp-rg-karte__text { flex: 1; min-width: 0; gap: 6px; padding: 12px 14px 14px; }
+    .tp-rg-karte__titel { font-size: 16.5px; }
+    .tp-rg-karte__auszug { font-size: 14.5px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-rg-karte { transition: box-shadow 0.15s, border-color 0.15s; }
+  }
+{% endstylesheet %}

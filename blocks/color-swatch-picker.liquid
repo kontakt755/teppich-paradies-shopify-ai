@@ -214,12 +214,168 @@
   .color-swatch-picker__item-{{ color_picker_id }}[hidden] {
     display: none;
   }
+
+  /* hidden-Attribut-Falle: eigene Klassen mit display gewinnen sonst gegen
+     das UA-hidden. Deshalb hier explizit und mit !important im Block-Scope. */
+  /* Dropdown-Modus: nur das Dropdown zeigen - Suche, Familienfilter und Zaehler
+     des Rasters weg. Greift erst, wenn das Skript das Dropdown gebaut
+     hat, damit ohne JS das Raster samt Werkzeugen benutzbar bleibt. */
+  .color-swatch-picker-{{ color_picker_id }}[data-dropdown-bereit='1'] [data-farb-werkzeuge] {
+    display: none !important;
+  }
+
+  .color-swatch-picker-{{ color_picker_id }} [hidden] {
+    display: none !important;
+  }
+
+  .color-swatch-picker__dropdown-{{ color_picker_id }} {
+    position: relative;
+  }
+
+  .color-swatch-picker__dropdown-button-{{ color_picker_id }} {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .color-swatch-picker__dropdown-button-{{ color_picker_id }}:focus-visible {
+    outline: 2px solid var(--color-foreground, #111);
+    outline-offset: 2px;
+  }
+
+  .color-swatch-picker__dropdown-thumb-{{ color_picker_id }} {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .color-swatch-picker__dropdown-thumb-{{ color_picker_id }} img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+  }
+
+  .color-swatch-picker__dropdown-label-{{ color_picker_id }} {
+    flex: 1 1 auto;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .color-swatch-picker__dropdown-chevron-{{ color_picker_id }} {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    margin-top: -4px;
+  }
+
+  .color-swatch-picker__popover-{{ color_picker_id }} {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--color-background, #fff);
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.18);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+    padding: 8px;
+  }
+
+  @media (max-width: 749px) {
+    .color-swatch-picker__popover-{{ color_picker_id }} {
+      max-height: 60vh;
+    }
+  }
+
+  .color-swatch-picker__dropdown-suche-{{ color_picker_id }} {
+    width: 100%;
+    min-height: 40px;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.22);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+  }
+
+  .color-swatch-picker__option-{{ color_picker_id }} {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .color-swatch-picker__option-{{ color_picker_id }}:hover,
+  .color-swatch-picker__option-{{ color_picker_id }}:focus-visible {
+    background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
+    outline: none;
+  }
+
+  .color-swatch-picker__option-{{ color_picker_id }}[aria-selected='true'] {
+    font-weight: 600;
+  }
+
+  .color-swatch-picker__option-thumb-{{ color_picker_id }} {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    min-height: 0;
+    aspect-ratio: auto;
+    border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.14);
+    border-radius: 6px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .color-swatch-picker__option-thumb-{{ color_picker_id }} img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 {% endstyle %}
 
 {% if color_option != blank %}
   <color-swatch-picker-{{ color_picker_id }}
     class="color-swatch-picker-{{ color_picker_id }}"
     data-option-name="{{ color_option.name | escape }}"
+    data-darstellung="{{ block.settings.darstellung }}"
     {{ block.shopify_attributes }}
   >
     {%- comment -%}
@@ -611,6 +767,270 @@
       syncSwatchUI({{ selected_color | json }});
     })();
   </script>
+
+  {%- comment -%}
+    Dropdown-Darstellung. Eigener Script-Block NACH der Variantenlogik: er
+    baut nur eine Bedienoberflaeche ueber dem bestehenden Raster und loest
+    Auswahl ausschliesslich ueber input.checked + change-Event auf den
+    vorhandenen Radio-Feldern aus - derselbe Codepfad wie ein Klick im Raster
+    (siehe picker.addEventListener('change', ...) oben). Ohne JS oder bei
+    darstellung = "raster" bleibt das Raster einfach sichtbar.
+  {%- endcomment -%}
+  {%- if block.settings.darstellung == 'dropdown' -%}
+    <script>
+      (function () {
+        var picker = document.querySelector('color-swatch-picker-{{ color_picker_id }}');
+        if (!picker || picker.dataset.dropdownBereit === '1') return;
+        if (picker.dataset.darstellung !== 'dropdown') return;
+        picker.dataset.dropdownBereit = '1';
+
+        var liste = picker.querySelector('[data-farb-liste]');
+        var items = Array.prototype.slice.call(picker.querySelectorAll('[data-farb-item]'));
+        if (!liste || !items.length) return;
+
+        var wrapper = document.createElement('div');
+        wrapper.className = 'color-swatch-picker__dropdown-{{ color_picker_id }}';
+        wrapper.setAttribute('data-farb-dropdown', '');
+
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'color-swatch-picker__dropdown-button-{{ color_picker_id }}';
+        button.setAttribute('aria-haspopup', 'listbox');
+        button.setAttribute('aria-expanded', 'false');
+
+        var buttonThumb = document.createElement('span');
+        buttonThumb.className = 'color-swatch-picker__dropdown-thumb-{{ color_picker_id }}';
+        var buttonLabel = document.createElement('span');
+        buttonLabel.className = 'color-swatch-picker__dropdown-label-{{ color_picker_id }}';
+        var chevron = document.createElement('span');
+        chevron.className = 'color-swatch-picker__dropdown-chevron-{{ color_picker_id }}';
+        chevron.setAttribute('aria-hidden', 'true');
+
+        button.appendChild(buttonThumb);
+        button.appendChild(buttonLabel);
+        button.appendChild(chevron);
+
+        var popover = document.createElement('div');
+        popover.className = 'color-swatch-picker__popover-{{ color_picker_id }}';
+        popover.setAttribute('role', 'listbox');
+        popover.hidden = true;
+
+        var sucheFeld = null;
+        if (items.length >= 8) {
+          sucheFeld = document.createElement('input');
+          sucheFeld.type = 'search';
+          sucheFeld.className = 'color-swatch-picker__dropdown-suche-{{ color_picker_id }}';
+          sucheFeld.placeholder = 'Farbe suchen';
+          sucheFeld.setAttribute('aria-label', 'Farbe suchen');
+          sucheFeld.setAttribute('autocomplete', 'off');
+          popover.appendChild(sucheFeld);
+        }
+
+        var optionsBox = document.createElement('div');
+        optionsBox.setAttribute('data-farb-dropdown-optionen', '');
+        popover.appendChild(optionsBox);
+
+        var optionEls = [];
+
+        items.forEach(function (item) {
+          var input = item.querySelector('input[type="radio"]');
+          if (!input) return;
+
+          var swatchInner = item.querySelector('.color-swatch-picker__button-{{ color_picker_id }}');
+          var nameEl = item.querySelector('.color-swatch-picker__name-{{ color_picker_id }}');
+          var value = input.value;
+          var name = nameEl ? nameEl.textContent : value;
+
+          var option = document.createElement('button');
+          option.type = 'button';
+          option.setAttribute('role', 'option');
+          option.className = 'color-swatch-picker__option-{{ color_picker_id }}';
+          option.dataset.value = value;
+          option.setAttribute('aria-selected', input.checked ? 'true' : 'false');
+
+          var thumbClone = swatchInner
+            ? swatchInner.cloneNode(true)
+            : document.createElement('span');
+          thumbClone.removeAttribute('title');
+          thumbClone.removeAttribute('aria-label');
+          thumbClone.className = 'color-swatch-picker__option-thumb-{{ color_picker_id }}';
+
+          var nameSpan = document.createElement('span');
+          nameSpan.textContent = name;
+
+          option.appendChild(thumbClone);
+          option.appendChild(nameSpan);
+
+          // Auswahl loest ausschliesslich den vorhandenen Handler aus - kein
+          // zweites Event-System, keine eigene Varianten-Zuordnung.
+          option.addEventListener('click', function () {
+            if (!input.checked) {
+              input.checked = true;
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            closePopover();
+            button.focus();
+          });
+
+          optionsBox.appendChild(option);
+          optionEls.push({ el: option, item: item, input: input, name: name });
+        });
+
+        if (!optionEls.length) return;
+
+        function updateButton(value) {
+          var match = optionEls.filter(function (o) {
+            return o.input.value === value;
+          })[0];
+          if (!match) return;
+
+          buttonThumb.innerHTML = '';
+          var imgQuelle = match.item.querySelector('img');
+
+          if (imgQuelle) {
+            var img = document.createElement('img');
+            img.src = imgQuelle.src;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.width = 40;
+            img.height = 40;
+            buttonThumb.appendChild(img);
+          } else {
+            var farbkreis = match.item.querySelector('.color-swatch-picker__color-{{ color_picker_id }}');
+            if (farbkreis) buttonThumb.appendChild(farbkreis.cloneNode(true));
+          }
+
+          buttonLabel.textContent = match.name;
+
+          optionEls.forEach(function (o) {
+            o.el.setAttribute('aria-selected', o.input.value === value ? 'true' : 'false');
+          });
+        }
+
+        var offen = false;
+
+        function sichtbareOptionen() {
+          return optionEls
+            .filter(function (o) {
+              return !o.el.hidden;
+            })
+            .map(function (o) {
+              return o.el;
+            });
+        }
+
+        function openPopover() {
+          offen = true;
+          popover.hidden = false;
+          // Hoehe an den Platz unter dem Knopf anpassen, damit die Liste im Bild bleibt
+          var platz = window.innerHeight - button.getBoundingClientRect().bottom - 16;
+          popover.style.maxHeight = Math.max(200, Math.min(platz, 420)) + 'px';
+          button.setAttribute('aria-expanded', 'true');
+          var aktiv =
+            optionsBox.querySelector('[aria-selected="true"]') || sichtbareOptionen()[0];
+          if (aktiv) aktiv.focus({ preventScroll: true });
+          // Liste vollstaendig ins Bild holen, falls der Knopf weit unten steht
+          if (popover.getBoundingClientRect().bottom > window.innerHeight) {
+            popover.scrollIntoView({ block: 'nearest' });
+          }
+        }
+
+        function closePopover() {
+          offen = false;
+          popover.hidden = true;
+          button.setAttribute('aria-expanded', 'false');
+          // Filter zuruecksetzen, sonst zeigt das naechste Oeffnen nur Treffer
+          if (sucheFeld && sucheFeld.value) {
+            sucheFeld.value = '';
+            optionEls.forEach(function (o) {
+              o.el.hidden = false;
+            });
+          }
+        }
+
+        button.addEventListener('click', function () {
+          if (offen) {
+            closePopover();
+          } else {
+            openPopover();
+          }
+        });
+
+        button.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openPopover();
+          }
+        });
+
+        optionsBox.addEventListener('keydown', function (e) {
+          var sichtbar = sichtbareOptionen();
+          var idx = sichtbar.indexOf(document.activeElement);
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var next = sichtbar[Math.min(idx + 1, sichtbar.length - 1)];
+            if (next) next.focus();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            var prev = sichtbar[Math.max(idx - 1, 0)];
+            if (prev) prev.focus();
+          } else if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (document.activeElement) document.activeElement.click();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closePopover();
+            button.focus();
+          }
+        });
+
+        document.addEventListener('click', function (e) {
+          if (offen && !wrapper.contains(e.target)) closePopover();
+        });
+
+        if (sucheFeld) {
+          sucheFeld.addEventListener('input', function () {
+            var q = sucheFeld.value.trim().toLowerCase();
+            optionEls.forEach(function (o) {
+              var passt = !q || o.name.toLowerCase().indexOf(q) !== -1;
+              var istGewaehlt = o.el.getAttribute('aria-selected') === 'true';
+              o.el.hidden = !passt && !istGewaehlt;
+            });
+          });
+
+          sucheFeld.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              closePopover();
+              button.focus();
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              var erste = sichtbareOptionen()[0];
+              if (erste) erste.focus();
+            }
+          });
+        }
+
+        wrapper.appendChild(button);
+        wrapper.appendChild(popover);
+        liste.insertAdjacentElement('beforebegin', wrapper);
+        var werkzeuge = picker.querySelector('[data-farb-werkzeuge]');
+        if (werkzeuge) werkzeuge.hidden = true;
+        liste.hidden = true;
+
+        updateButton({{ selected_color | json }});
+
+        // Raster-Auswahl (Tastatur/Screenreader-Fallback) und native
+        // Optionsfelder halten den Button-Text synchron.
+        picker.addEventListener('change', function (e) {
+          if (e.target && e.target.matches('input[type="radio"]')) {
+            updateButton(e.target.value);
+          }
+        });
+      })();
+    </script>
+  {%- endif -%}
 {% endif %}
 
 {%- comment -%}
@@ -751,7 +1171,18 @@
 {
   "name": "Farb-Swatches",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "select",
+      "id": "darstellung",
+      "label": "Darstellung",
+      "options": [
+        { "value": "raster", "label": "Raster" },
+        { "value": "dropdown", "label": "Dropdown" }
+      ],
+      "default": "dropdown"
+    }
+  ],
   "presets": [
     {
       "name": "Farb-Swatches"
