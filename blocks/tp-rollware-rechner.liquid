@@ -1565,6 +1565,10 @@ function tpRwcInit{{ tp_rc_id }}() {
       svgEl(svg, 'rect', { x: x0, y: y0 + ph, width: pieceW, height: rollH - ph, fill: 'url(#rwc-rest-{{ tp_rc_id }})' });
       if (rollH - ph >= 16) {
         svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph + (rollH - ph) / 2 + 4, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'middle' }, 'Rest bleibt bei uns');
+      } else {
+        // Duenner Reststreifen (z. B. 365 aus der 400-cm-Rolle): der Text passt
+        // nicht hinein, steht deshalb direkt unter der Rolle. Nur Beschriftung.
+        svgEl(svg, 'text', { x: x0, y: y0 + rollH + 15, 'font-size': 11, fill: 'currentColor', 'text-anchor': 'start' }, 'Rest bleibt bei uns');
       }
       svgEl(svg, 'line', { x1: x0 - 6, y1: y0 + ph, x2: x0 + pieceW + 6, y2: y0 + ph, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
     }
