@@ -134,6 +134,7 @@ Aufgabe:
    Stand 2024. Für Vertrauen und Autorensignal wichtig → aktualisieren, in Fußzeile
    und Ratgeber-Firmenbox verlinken.
 3. Brotkrumen fehlen auf Kollektions- und Inhaltsseiten (nur Produktseite hat sie).
+   → erledigt: `snippets/tp-breadcrumb.liquid` (sichtbar + BreadcrumbList, Hierarchie aus dem Hauptmenü).
 4. Paketprodukte (Klick-/Klebevinyl) und Leisten nutzen das Standard-Schema ohne
    €/m²; Rollenware hat `UnitPriceSpecification`. Angleichen – mit Blick auf den
    Merchant-Center-Abgleich (#415) als eigene Aufgabe.
