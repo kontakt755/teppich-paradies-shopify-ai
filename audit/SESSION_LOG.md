@@ -300,3 +300,5 @@ S14 / CART-003b.1: sechs Original-Rabattfälle, drei stille Fehlerfälle TP-013/
 Evidence: `audit/evidence/discount-errors-2026-09-22.json`; Script: `audit/scripts/reproduce-discount-errors.mjs`. Syntax/Erstlauf PASS; Route TASK-70BD752F5C44 B/STATIC, kein Executor. Kein Replay früherer Tests.
 
 Nächster Schritt: CART-003b.2: cart-discount.js Entfernen und überlappende Requests/#activeFetch prüfen; anschließend cart-note.js Debounce/Abbruch/Fehler-/Persistenzvertrag mit cart-summary.liquid. Browser H-012–015 weiterhin berechtigungsbedingt offen; keine Umgehung oder erneute Anfrage ohne geänderte Berechtigung. S01–S14 ohne Quellenänderung nicht wiederholen.
+
+S14 in `e26c6bd` tatsächlich gesichert: sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b.2; Status WORKING.

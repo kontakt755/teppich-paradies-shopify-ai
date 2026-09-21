@@ -68,3 +68,5 @@ S13: 22.09.2026, Phase 1, grob 28 %, zwölf bestätigte Issues unverändert. Akt
 S13 tatsächlich in `d9a0529` gesichert (15 Dateien). Neun Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b Rabatt/Notiz, Browserberechtigung bleibt Grenze. Status WORKING.
 
 S14 aktuell: 13 bestätigte Issues, P0=0/P1=0/P2=6/P3=7/P4=0. Phase 1, grobe Abdeckung 28 %. TP-013 lokale Feedbacklücke.
+
+S14 in `e26c6bd` tatsächlich gesichert: sechs Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen nicht committed. Weiter CART-003b.2; Status WORKING.

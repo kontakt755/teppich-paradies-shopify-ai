@@ -34,6 +34,6 @@ CART-003b.2: cart-discount.js Entfernen und überlappende Requests/#activeFetch 
 
 ## Letzter erfolgreicher Git-Commit
 
-d9a0529 – audit: Checkoutvertraege S13 und Browserberechtigungsgrenze pruefen. 15 Dateien tatsächlich committed; neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+e26c6bd – audit: Stille Rabattfehler TP-013 lokal belegen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log; Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING
