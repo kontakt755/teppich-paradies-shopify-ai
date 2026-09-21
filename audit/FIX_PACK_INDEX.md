@@ -43,3 +43,5 @@ S12: keine neuen bestätigten Issues/Packdateien. H-014 ist Browsernachweisbedar
 S13: keine neue bestätigte Issue-ID oder Packfreigabe. H-015 ist offener Express-/Keyboardnachweis; Browserberechtigung blockiert Liveabnahme. Ready=1, Done/QA=0.
 
 S14: TP-013/P3 mit vollständigem Brief. Rabattfeedback-Kandidat NOT READY bis CART-003b.2; gemeinsame cart-discount.js zuerst vollständig prüfen. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.
+
+S15: Rabattfeedback/-Abbruch-Kandidat umfasst TP-013/014, NOT READY bis Notizvergleich/CART-003b.3 und Konsolidierung. Beide gleiche Klasse, keine Parallelumsetzung. Ready=1, Done/QA=0; keine Reparatur.

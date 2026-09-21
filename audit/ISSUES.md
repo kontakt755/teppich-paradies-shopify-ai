@@ -20,6 +20,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
 
+| TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
+
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
 - **Bereich:** Preis-/Mengenberechnung, Eingabevalidierung.
@@ -370,6 +372,27 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - **Akzeptanz / Tests:** Netzwerkfehler, 500-Fehler-JSON, ungültiges JSON zeigen verständliche Meldung; eingegebener Code bleibt erhalten und Retry kann erfolgreich sein. Gültiger Code morphiert und sendet Event; ungültiger Code/Shipping-Sonderfall behalten spezifisches Feedback. Abbruch wegen neuem Request erzeugt keine falsche Meldung.
 - **Regression / Seiteneffekte:** Cartseite und Drawer, Fokus/role=alert, Entfernen, schnelle Mehrfachversuche; keine alte Fehlermeldung nach neuerem Erfolg, keine doppelten Writes. Diagnoseassertions später auf Sollverhalten umstellen.
 - **Aufwand / Reihenfolge / Rollback:** S–M; erst restliche Rabatt-Requestzustände prüfen, dann kleines separates Fixpaket planen. Änderung an Feedback/Fehlerprüfung lokal rücknehmbar, keine Datenmigration. Phase 1/2 weiterhin ohne Reparatur.
+
+## TP-014 – Alter Rabattrequest löscht aktive Abbruchreferenz
+
+- **Priorität / Bereich / Sicherheit:** P3, Rabatt-Requestverwaltung, BESTÄTIGT lokal. Cartseite/Drawer bei vorhandenem Rabattformular; heutige Aktivierung, Geräte/Browser nicht verifiziert.
+- **Datei / Ursache:** assets/cart-discount.js #createAbortController und finally in applyDiscount/removeDiscount. Jede Aktion setzt einen neuen Controller; jeder ältere finally setzt #activeFetch bedingungslos auf null, auch wenn bereits eine neue Aktion läuft.
+- **Reproduktion:** `node audit/scripts/reproduce-discount-concurrency.mjs`. A starten; B starten und A dadurch abbrechen; A-Abschluss abwarten; C starten. B.signal.aborted bleibt false. Beide Varianten A=Apply und A=Remove geprüft.
+- **Erwartet / tatsächlich:** die Referenz auf B bleibt bis zu B-Abschluss bzw. C-Abbruch erhalten. Tatsächlich kann C den laufenden B nicht mehr abbrechen. Kontrolliert später gelieferte B-Antwort morphiert nach C; dies ist ein lokaler Antwortbeleg, keine Aussage über tatsächliche Shopify-Commitreihenfolge oder falsche Abrechnung.
+- **Evidence / Risiko:** evidence/discount-concurrency-2026-09-22.json, sechs Fälle/vier historische Quellhashes, zwei Ownership-Defektfälle. Originalklassen und fetchConfig, Fetch reagiert auf echtes AbortSignal mit modellierter Ablehnung. DOM/Morph adaptiert. Risiko veralteter Rabattanzeige/ungeklärter letzter Aktion; keine Kaufblockade belegt.
+
+### IMPLEMENTATION BRIEF – TP-014
+
+- **Ziel / Root Cause:** aktive Controllerreferenz gehört ausschließlich ihrer aktuellen Aktion; ältere Abschlüsse dürfen sie nicht löschen.
+- **Dateien / Funktionen / Bereiche:** assets/cart-discount.js Controllererzeugung sowie beide finally-Blöcke; gemeinsam mit TP-013 derselben Klasse planen.
+- **Zu ändernde Logik:** Controller nur bereinigen, wenn er noch der aktiven Aktion entspricht; optional Antwortgültigkeit an aktuelle Operation binden. Abbruch eines Clientfetches nicht als Rücknahme eines bereits serverseitig ausgeführten Writes behandeln. Gewünschte Server-Serialisierung bei Bedarf separat belegen.
+- **Nicht verändern:** Shopify-Rabattregeln/-codes, Preise, Versand/Steuer, bestehende Event-/Sectionverträge, globale Fetch-Utility oder generische Eventtypen.
+- **Abhängigkeiten / FILE CONFLICT:** TP-013 und TP-014 gleiche Datei; koordinierter kleiner Rabattblock, getrennte Fixschritte. TP-012/H-013 Sectionantworten berücksichtigen. Ähnliche Notizverwaltung in CART-003b.3 prüfen, keine ungeprüfte Sammelreparatur.
+- **Akzeptanz / Tests:** A→B-Abbruch→A.finally→C bricht B in Apply- und Remove-Ausgangsfall ab; kein älterer Erfolg überschreibt aktuelle Anzeige. Sequentielle Aktionen, Entfernen des letzten Codes und echter Fehler/Retry funktionieren weiter. Erwartete Abortfehler bleiben ohne irreführende Fehlermeldung.
+- **Regression / Seiteneffekte:** doppelte Events/Morphs, dauerhafte Controllerreferenz, verlorene neue Eingabe oder ungewollte Fehlermeldung vermeiden. Echte Browserfolge und Serverresultat vor Abnahme gezielt prüfen. Diagnoseassertions später auf Sollverhalten umstellen.
+- **Aufwand / Reihenfolge / Rollback:** S–M; erst Notizvergleich und Rabattblock planen, danach kleine lokale Reparatur mit gezielten Tests. Kein Datenumbau; Rücknahme der kleinen Controlleränderung möglich. Phase 1/2 keine Reparatur.
+
+S15 ergänzt TP-013: removeDiscount hat denselben leeren Fehlerpfad. Ein abgefangener Netzwerkfehler zeigt keine Meldung und dispatcht/morphiert nicht. Späteres Feedback-Fix muss Apply und Remove abdecken; Akzeptanz zusätzlich Entfernen→Fehler→expliziter Retry.
 
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 

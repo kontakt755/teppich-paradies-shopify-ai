@@ -119,3 +119,8 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S14
 
 `discount-errors-2026-09-22.json`: sechs Fälle, drei TP-013-Defektfälle, vier Hashvergleiche. Script `audit/scripts/reproduce-discount-errors.mjs`. Lokale Diagnose, keine Browser-/Liveabnahme. Integritäts-/Secretprotokolle S14.
+
+
+## S15
+
+`discount-concurrency-2026-09-22.json`: sechs Fälle/vier Hashes, zwei TP-014-Defektfälle und TP-013-Remove-Erweiterung. Script `audit/scripts/reproduce-discount-concurrency.mjs`. Lokales Abortmodell, keine Shopify-Reihenfolgeabnahme. Integritäts-/Secretprotokolle S15.
