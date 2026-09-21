@@ -41,3 +41,5 @@ S11: H-013 konkretisiert Antwort-/Identitätsrisiken ohne neues bestätigtes Iss
 S12: keine neuen bestätigten Issues/Packdateien. H-014 ist Browsernachweisbedarf, keine Freigabe zum globalen Event-/Dialogumbau. Cartblock/Section-Retry weiterhin NOT READY; Ready=1, Done/QA=0.
 
 S13: keine neue bestätigte Issue-ID oder Packfreigabe. H-015 ist offener Express-/Keyboardnachweis; Browserberechtigung blockiert Liveabnahme. Ready=1, Done/QA=0.
+
+S14: TP-013/P3 mit vollständigem Brief. Rabattfeedback-Kandidat NOT READY bis CART-003b.2; gemeinsame cart-discount.js zuerst vollständig prüfen. Keine Packdatei/Umsetzung. Ready=1, Done/QA=0.

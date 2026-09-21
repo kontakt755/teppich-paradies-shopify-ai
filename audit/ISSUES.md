@@ -18,6 +18,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 | TP-012 | P2 | SectionRenderer behält fehlgeschlagene Requests und verhindert Retry | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 
+| TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
+
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
 - **Bereich:** Preis-/Mengenberechnung, Eingabevalidierung.
@@ -349,6 +351,25 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 - **Akzeptanz:** Fetch- und Body-Ablehnung, anschließend expliziter Retry jeweils mit neuem Request und erfolgreichem Morph. Gleichzeitige identische Requests weiterhin dedupliziert; alte Antwort darf neuere Sectionanforderung nicht überschreiben. Andere URLs bleiben unabhängig.
 - **Tests / Regression:** die fünf lokalen Szenarien auf Sollverhalten umstellen; Fehler→Retry→Erfolg, erneuter Fehler, Cache an/aus, unterschiedliche URLs und beide Antwortreihenfolgen. Anschließend echte Cartseite/Drawer/Discount-Ereignisse und weitere Renderer-Aufrufer risikobasiert testen.
 - **Seiteneffekte / Rollback / Aufwand:** S–M; versehentlich gelöschte neuere Pending-Arbeit, doppelte Requests oder veraltete Morphs vermeiden. Kleine lokale Reparatur später separat rücknehmbar; keine Datenmigration. Phase 1/2 weiter ohne Reparatur.
+
+## TP-013 – Rabattübertragungsfehler ohne Kundenfeedback
+
+- **Bereich / Priorität / Sicherheit:** Cart-Rabattformular, P3, BESTÄTIGT lokal. Cartseite und Drawer bei aktiviertem Rabattfeld; Geräte/Browser und heutige Liveaktivierung nicht verifiziert.
+- **Dateien / Ursache:** assets/cart-discount.js applyDiscount, insbesondere response.json/data.discount_codes und leerer catch (ca. Zeilen 76–115); snippets/cart-summary.liquid Formular/Fehlerrefs. Fehleranzeige wird vor Request versteckt; Netzwerk-/Parsefehler und unerwartete Antwortstruktur werden anschließend kommentarlos abgefangen. HTTP-Status wird nicht geprüft.
+- **Reproduktion:** `node audit/scripts/reproduce-discount-errors.mjs`; Code SAVE im modellierten Originalformular absenden, Fetch ablehnen bzw. 500-JSON ohne discount_codes oder 502 mit ungültigem JSON liefern.
+- **Erwartet / tatsächlich:** nachvollziehbarer Übertragungsfehler mit Möglichkeit zum Retry. Tatsächlich bleibt Fehlercontainer versteckt, keine Sectionaktualisierung/kein Update-Event; Eingabe unverändert. Expliziter erneuter Versuch gelingt. Keine belegte falsche Rabattabrechnung oder Kaufblockade.
+- **Evidence:** evidence/discount-errors-2026-09-22.json: sechs Fälle, drei Defektfälle, vier historische Hashvergleiche. Originale Discount-/Eventklassen und fetchConfig, minimaler DOM/fetch-Adapter. Aktuelle Live-Reichweite offen. Gültig/ungültig/Shipping-Kontrollen bestanden.
+
+### IMPLEMENTATION BRIEF – TP-013
+
+- **Ziel / Problem / Root Cause:** P3; transparente Fehleranzeige bei fehlgeschlagener Rabattübertragung statt leerem catch nach Verstecken der vorherigen Meldung.
+- **Betroffene Dateien / Funktionen:** cart-discount.js applyDiscount und Fehlerhandler; cart-summary.liquid Fehlertexte/Refs; locale-Ergänzung nur falls bestehender passender Text fehlt.
+- **Zu ändernde Logik:** HTTP-/Antwortstruktur prüfen, echte Netzwerk-/Server-/Parsefehler kundengerecht melden, Code für Retry erhalten. Erwartete Abbrüche durch neuere Aktion nicht als Kundenfehler anzeigen. Keine automatische Wiederholung eines Writes ohne abgeklärten Zustand.
+- **Nicht verändern:** Rabattregeln, Shopify-Preise, Versand-/Steuerkonfiguration, bestehende Code-/Shipping-Meldungen, Cart-/Section-Eventnamen und Rechner-/Gruppenlogik.
+- **Abhängigkeiten / FILE CONFLICT:** CART-003b.2 Abbruch-/Entfernungsabläufe derselben Klasse zuerst prüfen. SectionRenderer TP-012 und H-013 bei Erfolg/Reload beachten; Fehlerfeedback nicht durch veraltete Antwort überschreiben.
+- **Akzeptanz / Tests:** Netzwerkfehler, 500-Fehler-JSON, ungültiges JSON zeigen verständliche Meldung; eingegebener Code bleibt erhalten und Retry kann erfolgreich sein. Gültiger Code morphiert und sendet Event; ungültiger Code/Shipping-Sonderfall behalten spezifisches Feedback. Abbruch wegen neuem Request erzeugt keine falsche Meldung.
+- **Regression / Seiteneffekte:** Cartseite und Drawer, Fokus/role=alert, Entfernen, schnelle Mehrfachversuche; keine alte Fehlermeldung nach neuerem Erfolg, keine doppelten Writes. Diagnoseassertions später auf Sollverhalten umstellen.
+- **Aufwand / Reihenfolge / Rollback:** S–M; erst restliche Rabatt-Requestzustände prüfen, dann kleines separates Fixpaket planen. Änderung an Feedback/Fehlerprüfung lokal rücknehmbar, keine Datenmigration. Phase 1/2 weiterhin ohne Reparatur.
 
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 

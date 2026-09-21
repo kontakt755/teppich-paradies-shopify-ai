@@ -114,3 +114,8 @@ Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scr
 ## S13 (22.09.2026)
 
 Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: aktuelle Berechtigungsablehnung, kein DNSbeweis. Integritäts-/Secretprotokolle S13. Keine Liveabnahme, keine Shopänderung.
+
+
+## S14
+
+`discount-errors-2026-09-22.json`: sechs Fälle, drei TP-013-Defektfälle, vier Hashvergleiche. Script `audit/scripts/reproduce-discount-errors.mjs`. Lokale Diagnose, keine Browser-/Liveabnahme. Integritäts-/Secretprotokolle S14.
