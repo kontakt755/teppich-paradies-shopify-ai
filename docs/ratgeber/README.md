@@ -126,10 +126,9 @@ und `agents.md` stellt Shopify selbst bereit.
 Offen, nach Wirkung sortiert – **nicht Teil dieses Pakets**, jeweils eigene kleine
 Aufgabe:
 
-1. Zwei praktisch identische Seiten: `/pages/firmenkunden` und
-   `/pages/fur-geschaftskunden` (gleiche H1, beide in der Sitemap, letztere ohne
-   Meta-Description und ohne eingehenden Link) → eine behalten, die andere
-   weiterleiten.
+1. ~~Zwei praktisch identische Seiten `/pages/firmenkunden` und
+   `/pages/fur-geschaftskunden`.~~ **Erledigt 2026-09-21:** Dublette verborgen (nicht
+   gelöscht), `301` auf `/pages/firmenkunden`, aus der Sitemap verschwunden.
 2. `/pages/uber-uns` ist verwaist (kein interner Link), Description 320 Zeichen,
    Stand 2024. Für Vertrauen und Autorensignal wichtig → aktualisieren, in Fußzeile
    und Ratgeber-Firmenbox verlinken.
@@ -139,10 +138,12 @@ Aufgabe:
    €/m²; Rollenware hat `UnitPriceSpecification`. Angleichen – mit Blick auf den
    Merchant-Center-Abgleich (#415) als eigene Aufgabe.
 5. `/pages/hochflor-teppichboden` verwaist; leerer Blog „News" in der Sitemap.
-6. 58 von 110 Bildern der Startseite ohne `width`/`height` (mögliche
-   Layoutverschiebung).
-7. `WebSite`-Schema fehlt (nur Namenssignal; die Suchbox-Auszeichnung gibt es bei
-   Google nicht mehr).
+6. ~~58 von 110 Bildern der Startseite ohne `width`/`height`.~~ **Geprüft 2026-09-21,
+   kein Handlungsbedarf:** alle 58 sind Menübilder im eingeklappten Menü
+   (`tp-dn-row__img`, `mega-menu__link-image`), gemessene Layoutverschiebung der
+   Startseite mobil = 0. Den Header dafür anzufassen lohnt nicht.
+7. ~~`WebSite`-Schema fehlt.~~ **Erledigt 2026-09-21** (#439, live): `WebSite` auf der
+   Startseite, `Organization` mit fester `@id`.
 
 ## 6. Vertrauenssignale im Ratgeber
 
