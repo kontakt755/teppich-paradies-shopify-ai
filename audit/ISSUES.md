@@ -371,6 +371,8 @@ Stand: 21.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 | H-014 | Drawer-Ereignis-/RAF-/History- und Ansagegrenzen | S12 elf lokale Fälle: allgemeines Update öffnet bei auto-open; erste Zählansage fehlt vor RAF, späterer Event wird angesagt; Close/Disconnect vor RAF storniert geplantes Öffnen nicht. Native DOM-/Fokus-/Historyabläufe nicht getestet | Browser: echte Relevanz der Zählansage neben Dialogfokus, Öffnen durch Hintergrundabgleich, schnelles Schließen/Disconnect, Escape, Zurück/Vorwärts/Reload und Animationen prüfen. Kein zusätzlicher bestätigter Fehler aus minimalem Dialogmodell |
 
+| H-015 | Tastatur-/Express-Checkout bei Cart-Sperre | S13: Original-CTA/POST-/Pflichtfeldvertrag lokal geprüft. Express-Markup nur flagabhängig, Sperr-CSS pointer-events:none/opacity:0.4. Keine native Tastatur-/Paymentprüfung oder aktuelle Expressaktivierung | Nach erlaubtem Browserzugriff aktivierte Express-Komponenten, Tab/Enter und Checkoutvalidierung prüfen; keinen Kauf abschließen. Keine bestätigte Umgehung aus CSS allein ableiten |
+
 ## Verworfen / eingegrenzt
 
 - „Leeres Paketfeld kauft ein Paket“ ist ein ausdrücklich implementierter Ruhezustand, kein bestätigter Fehler.

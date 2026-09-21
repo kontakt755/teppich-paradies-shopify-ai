@@ -109,3 +109,8 @@ Evidence: `audit/evidence/section-responses-2026-09-21.json`; Script: `audit/scr
 ## S12
 
 `drawer-lifecycle-2026-09-21.json` und gleichnamige Summary: elf Originalcodefälle/fünf Hashvergleiche. Script `audit/scripts/reproduce-drawer-lifecycle.mjs`. Syntax und Diagnose PASS; native Dialog-/History-/Fokusprüfung offen. Integritäts-/Secretprotokolle mit S12-Kennung.
+
+
+## S13 (22.09.2026)
+
+Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: aktuelle Berechtigungsablehnung, kein DNSbeweis. Integritäts-/Secretprotokolle S13. Keine Liveabnahme, keine Shopänderung.

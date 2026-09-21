@@ -39,3 +39,5 @@ S10: TP-012/P2 mit vollständigem Implementation Brief. SectionRenderer-Retry al
 S11: H-013 konkretisiert Antwort-/Identitätsrisiken ohne neues bestätigtes Issue. Cartblock und Section-Retry weiterhin NOT READY; TP-010/011/012 anhand realer Ablaufgrenzen koordinieren. Ready=1, Done/QA=0. Keine Packumsetzung.
 
 S12: keine neuen bestätigten Issues/Packdateien. H-014 ist Browsernachweisbedarf, keine Freigabe zum globalen Event-/Dialogumbau. Cartblock/Section-Retry weiterhin NOT READY; Ready=1, Done/QA=0.
+
+S13: keine neue bestätigte Issue-ID oder Packfreigabe. H-015 ist offener Express-/Keyboardnachweis; Browserberechtigung blockiert Liveabnahme. Ready=1, Done/QA=0.
