@@ -34,6 +34,57 @@
     return isNaN(n) ? NaN : n;
   }
 
+  // Masseingabe des Kunden -> ganze Zentimeter. Der Kunde darf in cm oder m
+  // tippen, mit Komma oder Punkt, mit oder ohne Einheit ("350", "350 cm",
+  // "3,5", "3.50 m"). Eine Einheit im Text schlaegt den Umschalter; ohne
+  // Einheit gilt der Umschalter (Standard cm). Bewusst KEINE Heuristik
+  // "kleine Zahl = Meter" - die erzeugt Fehlbestellungen.
+  //
+  // Gerechnet wird auf den Ziffern, nicht mit Gleitkomma: Meter werden durch
+  // Verschieben des Kommas um zwei Stellen zu cm (3.55 m -> 355, nicht
+  // 354,99999). Ein Rest unter einem Zentimeter wird wie bisher aufgerundet -
+  // die fuer den Kunden sichere Richtung.
+  //
+  // Ergebnis: { cm, fehler, einheit }. fehler: '' = gueltig (cm >= 0, ganz),
+  // 'leer', 'negativ', 'zu_gross', 'ungueltig'. Bei jedem Fehler ist cm null -
+  // nie wird eine unklare Eingabe still umgedeutet.
+  var MASS = /^(\d+(?:[.,]\d+)?|[.,]\d+)\s*(cm|zentimeter|m|meter)?\.?$/i;
+  function parseMass(text, einheit) {
+    var std = einheit === 'm' ? 'm' : 'cm';
+    var t = String(text == null ? '' : text).replace(/\u00a0/g, ' ').trim();
+    if (!t) return { cm: null, fehler: 'leer', einheit: std };
+    if (/^[-\u2212\u2013]/.test(t)) return { cm: null, fehler: 'negativ', einheit: std };
+    var m = MASS.exec(t);
+    if (!m) return { cm: null, fehler: 'ungueltig', einheit: std };
+    var unit = m[2] ? (/^m/i.test(m[2]) ? 'm' : 'cm') : std;
+    var teile = m[1].replace(',', '.').split('.');
+    var ganz = (teile[0] || '0').replace(/^0+(?=\d)/, '');
+    var bruch = teile[1] || '';
+    if (unit === 'm') {
+      var b = (bruch + '00');
+      ganz = (ganz + b.slice(0, 2)).replace(/^0+(?=\d)/, '');
+      bruch = b.slice(2);
+    }
+    if (ganz.length > 7) return { cm: null, fehler: 'zu_gross', einheit: unit };
+    var cm = parseInt(ganz, 10);
+    if (/[1-9]/.test(bruch)) cm += 1;
+    return { cm: cm, fehler: '', einheit: unit };
+  }
+
+  // Gegenprobe und Feldwert: dieselben ganzen cm in beiden Einheiten.
+  function massAlsM(cm) {
+    var n = Math.round(cm);
+    var s = String(Math.abs(n));
+    while (s.length < 3) s = '0' + s;
+    return (n < 0 ? '-' : '') + s.slice(0, -2) + ',' + s.slice(-2);
+  }
+  function massWert(cm, einheit) {
+    return einheit === 'm' ? massAlsM(cm) : String(Math.round(cm));
+  }
+  function massGegenprobe(cm) {
+    return '= ' + Math.round(cm) + ' cm = ' + massAlsM(cm) + ' m';
+  }
+
   // Index der Breitenoption: alle Werte sind "NNN cm" oder "Wunschmaß",
   // und mindestens einer ist eine echte Breite. Eine Option, die nur aus
   // "Wunschmaß" besteht, ist keine Breitenoption.
@@ -136,6 +187,9 @@
     isWunsch: isWunsch,
     isBreite: isBreite,
     toCm: toCm,
+    parseMass: parseMass,
+    massWert: massWert,
+    massGegenprobe: massGegenprobe,
     findWidthOption: findWidthOption,
     numericWidths: numericWidths,
     wunschOk: wunschOk,

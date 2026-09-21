@@ -1,0 +1,102 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-ratgeber-uebersicht",
+      "settings": {
+        "eyebrow": "Ratgeber",
+        "heading": "PLATZHALTER: Ratgeber-Uebersicht",
+        "intro": "<p>PLATZHALTER: kurze Einleitung zum Ratgeberbereich.</p>",
+        "belaege": "",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "cluster_auswaehlen": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Auswaehlen",
+            "text": "<p>PLATZHALTER: welcher Belag fuer welchen Raum, Rollenbreite, Laufrichtung.</p>",
+            "menu": ""
+          }
+        },
+        "cluster_ausmessen": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Ausmessen & Bestellen",
+            "text": "<p>PLATZHALTER: richtig ausmessen, Transport.</p>",
+            "menu": ""
+          }
+        },
+        "cluster_vorbereiten": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Vorbereiten",
+            "text": "<p>PLATZHALTER: Untergrund pruefen und vorbereiten.</p>",
+            "menu": ""
+          }
+        },
+        "cluster_verlegen": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Verlegen",
+            "text": "<p>PLATZHALTER: zuschneiden, verlegen, Bahnen verbinden, fixieren oder kleben.</p>",
+            "menu": ""
+          }
+        },
+        "cluster_abschluss": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Abschluss & Zubehoer",
+            "text": "<p>PLATZHALTER: Teppichfussleisten, Unterlagen.</p>",
+            "menu": ""
+          }
+        },
+        "cluster_pflege": {
+          "type": "cluster",
+          "settings": {
+            "titel": "Pflege",
+            "text": "<p>PLATZHALTER: Reinigung, haeufige Fehler.</p>",
+            "menu": ""
+          }
+        },
+        "einstieg_muster": {
+          "type": "einstieg",
+          "settings": {
+            "titel": "Musterbestellung",
+            "text": "Boden erst anfassen, dann entscheiden.",
+            "link": "/pages/muster"
+          }
+        },
+        "einstieg_verlegeservice": {
+          "type": "einstieg",
+          "settings": {
+            "titel": "Liefer- & Verlegeservice",
+            "text": "Wir liefern und verlegen.",
+            "link": "/pages/liefer-verlegeservice"
+          }
+        },
+        "einstieg_aufmass": {
+          "type": "einstieg",
+          "settings": {
+            "titel": "Aufmass anfragen",
+            "text": "Genaue Menge statt Schaetzung.",
+            "link": "/pages/kontakt"
+          }
+        }
+      },
+      "block_order": [
+        "cluster_auswaehlen",
+        "cluster_ausmessen",
+        "cluster_vorbereiten",
+        "cluster_verlegen",
+        "cluster_abschluss",
+        "cluster_pflege",
+        "einstieg_muster",
+        "einstieg_verlegeservice",
+        "einstieg_aufmass"
+      ]
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

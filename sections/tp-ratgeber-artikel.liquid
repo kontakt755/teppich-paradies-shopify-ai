@@ -1,0 +1,679 @@
+{% doc %}
+  Wiederverwendbares Artikel-Template fuer den Ratgeber-/Wissensbereich.
+  Kopf (Eyebrow, H1, Kurzfazit), automatisches Inhaltsverzeichnis aus den H2
+  im Inhalt, Inhalt aus page.content plus optionalen Bloecken (Schritt,
+  Hinweis, haeufiger Fehler, FAQ, CTA, Produkte) und ein Fuss mit
+  "Weitere Ratgeber" ueber ein Menue-Handle. Nur echte Felder im JSON-LD,
+  nichts erfunden.
+{% enddoc %}
+
+{%- liquid
+  assign tp_ra_page = closest.page
+  assign tp_ra_faq_count = 0
+  for tp_ra_block in section.blocks
+    if tp_ra_block.type == 'faq'
+      assign tp_ra_faq_count = tp_ra_faq_count | plus: 1
+    endif
+  endfor
+-%}
+
+<div id="tp-ratgeber-artikel-{{ section.id }}" class="tp-ratgeber-artikel color-{{ section.settings.color_scheme }}" data-tp-ratgeber-artikel>
+  <div class="tp-ratgeber-artikel__rahmen page-width">
+
+    <header class="tp-ratgeber-artikel__kopf">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-ratgeber-artikel__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h1 class="tp-ratgeber-artikel__titel">{{ tp_ra_page.title }}</h1>
+      {%- if section.settings.kurzfazit != blank -%}
+        <p class="tp-ratgeber-artikel__fazit">{{ section.settings.kurzfazit }}</p>
+      {%- endif -%}
+
+      {%- if section.settings.lesezeit != blank or section.settings.schwierigkeit != blank or section.settings.werkzeug != blank -%}
+        <ul class="tp-ratgeber-artikel__meta">
+          {%- if section.settings.lesezeit != blank -%}
+            <li class="tp-ratgeber-artikel__meta-punkt">{{ section.settings.lesezeit | escape }}</li>
+          {%- endif -%}
+          {%- if section.settings.schwierigkeit != blank -%}
+            <li class="tp-ratgeber-artikel__meta-punkt">{{ section.settings.schwierigkeit | escape }}</li>
+          {%- endif -%}
+          {%- if section.settings.werkzeug != blank -%}
+            <li class="tp-ratgeber-artikel__meta-punkt">Werkzeug: {{ section.settings.werkzeug | escape }}</li>
+          {%- endif -%}
+        </ul>
+      {%- endif -%}
+    </header>
+
+    <div class="tp-ratgeber-artikel__spalten">
+      <nav class="tp-ratgeber-artikel__toc" data-tp-ratgeber-toc aria-label="Inhaltsverzeichnis" hidden>
+        <details class="tp-ratgeber-artikel__toc-details" open>
+          <summary class="tp-ratgeber-artikel__toc-titel">{{ section.settings.toc_label | default: 'Inhalt' | escape }}</summary>
+          <ol class="tp-ratgeber-artikel__toc-liste" data-tp-ratgeber-toc-liste></ol>
+        </details>
+      </nav>
+
+      <div class="tp-ratgeber-artikel__inhalt" data-tp-ratgeber-inhalt>
+        {%- if tp_ra_page.content != blank -%}
+          <div class="tp-ratgeber-artikel__text rte">{{ tp_ra_page.content }}</div>
+        {%- endif -%}
+
+        {%- for tp_ra_block in section.blocks -%}
+          {%- case tp_ra_block.type -%}
+
+            {%- when 'schritt' -%}
+              <div class="tp-ratgeber-artikel__schritt" {{ tp_ra_block.shopify_attributes }}>
+                <div class="tp-ratgeber-artikel__schritt-kopf">
+                  <span class="tp-ratgeber-artikel__schritt-nummer" aria-hidden="true">{{ forloop.index }}</span>
+                  {%- if tp_ra_block.settings.titel != blank -%}
+                    <h3 class="tp-ratgeber-artikel__schritt-titel">{{ tp_ra_block.settings.titel | escape }}</h3>
+                  {%- endif -%}
+                </div>
+                {%- if tp_ra_block.settings.text != blank -%}
+                  <div class="tp-ratgeber-artikel__schritt-text rte">{{ tp_ra_block.settings.text }}</div>
+                {%- endif -%}
+                {%- if tp_ra_block.settings.bild != blank -%}
+                  {{ tp_ra_block.settings.bild | image_url: width: 900 | image_tag: loading: 'lazy', widths: '400, 600, 900', alt: tp_ra_block.settings.bild.alt | default: tp_ra_block.settings.titel, class: 'tp-ratgeber-artikel__schritt-bild' }}
+                {%- endif -%}
+              </div>
+
+            {%- when 'hinweis' -%}
+              <div class="tp-ratgeber-artikel__box tp-ratgeber-artikel__box--hinweis-{{ tp_ra_block.settings.typ }}" {{ tp_ra_block.shopify_attributes }}>
+                {%- if tp_ra_block.settings.titel != blank -%}
+                  <p class="tp-ratgeber-artikel__box-titel">{{ tp_ra_block.settings.titel | escape }}</p>
+                {%- endif -%}
+                {%- if tp_ra_block.settings.text != blank -%}
+                  <div class="rte">{{ tp_ra_block.settings.text }}</div>
+                {%- endif -%}
+              </div>
+
+            {%- when 'fehler' -%}
+              <div class="tp-ratgeber-artikel__box tp-ratgeber-artikel__box--fehler" {{ tp_ra_block.shopify_attributes }}>
+                {%- if tp_ra_block.settings.titel != blank -%}
+                  <p class="tp-ratgeber-artikel__box-titel">Haeufiger Fehler: {{ tp_ra_block.settings.titel | escape }}</p>
+                {%- endif -%}
+                {%- if tp_ra_block.settings.text != blank -%}
+                  <div class="rte">{{ tp_ra_block.settings.text }}</div>
+                {%- endif -%}
+              </div>
+
+            {%- when 'faq' -%}
+              <details class="tp-ratgeber-artikel__faq-eintrag" {{ tp_ra_block.shopify_attributes }}>
+                <summary class="tp-ratgeber-artikel__faq-frage">{{ tp_ra_block.settings.frage | escape }}</summary>
+                <div class="tp-ratgeber-artikel__faq-antwort rte">{{ tp_ra_block.settings.antwort }}</div>
+              </details>
+
+            {%- when 'cta' -%}
+              {%- liquid
+                case tp_ra_block.settings.typ
+                  when 'muster'
+                    assign tp_ra_cta_link = tp_ra_block.settings.link | default: '/pages/muster'
+                  when 'verlegeservice'
+                    assign tp_ra_cta_link = tp_ra_block.settings.link | default: '/pages/liefer-verlegeservice'
+                  when 'aufmass'
+                    assign tp_ra_cta_link = tp_ra_block.settings.link | default: '/pages/kontakt'
+                  else
+                    assign tp_ra_cta_link = tp_ra_block.settings.link | default: '/collections/all'
+                endcase
+              -%}
+              <a class="tp-ratgeber-artikel__cta" href="{{ tp_ra_cta_link }}" {{ tp_ra_block.shopify_attributes }}>
+                {{ tp_ra_block.settings.text | escape }}
+              </a>
+
+            {%- when 'produkte' -%}
+              {%- assign tp_ra_kollektion = collections[tp_ra_block.settings.kollektion] -%}
+              {%- if tp_ra_kollektion != blank and tp_ra_kollektion.products.size > 0 -%}
+                <div {{ tp_ra_block.shopify_attributes }}>
+                  {%- if tp_ra_block.settings.titel != blank -%}
+                    <h3>{{ tp_ra_block.settings.titel | escape }}</h3>
+                  {%- endif -%}
+                  <div class="tp-ratgeber-artikel__produkte">
+                    {%- for tp_ra_produkt in tp_ra_kollektion.products limit: tp_ra_block.settings.anzahl -%}
+                      <a class="tp-ratgeber-artikel__produkt-karte" href="{{ tp_ra_produkt.url }}">
+                        {%- if tp_ra_produkt.featured_media != blank -%}
+                          {{ tp_ra_produkt.featured_media | image_url: width: 400 | image_tag: loading: 'lazy', widths: '200, 400', alt: tp_ra_produkt.title, class: 'tp-ratgeber-artikel__produkt-bild' }}
+                        {%- endif -%}
+                        <span class="tp-ratgeber-artikel__produkt-titel">{{ tp_ra_produkt.title | escape }}</span>
+                      </a>
+                    {%- endfor -%}
+                  </div>
+                </div>
+              {%- endif -%}
+
+          {%- endcase -%}
+        {%- endfor -%}
+      </div>
+    </div>
+
+    {%- if section.settings.weitere_menu != blank -%}
+      {%- assign tp_ra_weitere = linklists[section.settings.weitere_menu] -%}
+      {%- if tp_ra_weitere.links.size > 0 -%}
+        <footer class="tp-ratgeber-artikel__fuss">
+          <h2 class="tp-ratgeber-artikel__fuss-titel">{{ section.settings.weitere_titel | default: 'Weitere Ratgeber' | escape }}</h2>
+          <ul class="tp-ratgeber-artikel__fuss-liste">
+            {%- for tp_ra_link in tp_ra_weitere.links -%}
+              <li class="tp-ratgeber-artikel__fuss-punkt">
+                <a href="{{ tp_ra_link.url }}">{{ tp_ra_link.title | escape }}</a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </footer>
+      {%- endif -%}
+    {%- endif -%}
+  </div>
+</div>
+
+{%- comment -%}
+  Article-JSON-LD nur mit real vorhandenen Feldern. headline aus dem
+  Seitentitel, dateModified aus page.updated_at - kein Autor/Bild erfunden.
+{%- endcomment -%}
+{%- capture tp_ra_ld -%}
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": {{ tp_ra_page.title | json }},
+    "dateModified": {{ tp_ra_page.updated_at | date: '%Y-%m-%d' | json }},
+    "url": {{ request.origin | append: request.path | json }}
+    {%- if tp_ra_faq_count > 0 -%}
+    , "mainEntityOfPage": { "@type": "WebPage", "@id": {{ request.origin | append: request.path | json }} }
+    {%- endif -%}
+  }
+{%- endcapture -%}
+<script type="application/ld+json">{{ tp_ra_ld }}</script>
+
+{%- comment -%}
+  FAQPage-JSON-LD nur wenn tatsaechlich FAQ-Bloecke vorhanden sind - sonst
+  meldet die Search Console ein Schema ohne sichtbaren Inhalt.
+{%- endcomment -%}
+{%- if tp_ra_faq_count > 0 -%}
+  {%- capture tp_ra_faq_ld -%}
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {%- assign tp_ra_faq_first = true -%}
+        {%- for tp_ra_block in section.blocks -%}
+          {%- if tp_ra_block.type == 'faq' -%}
+            {%- unless tp_ra_faq_first -%},{%- endunless -%}
+            {%- assign tp_ra_faq_first = false -%}
+            {
+              "@type": "Question",
+              "name": {{ tp_ra_block.settings.frage | json }},
+              "acceptedAnswer": { "@type": "Answer", "text": {{ tp_ra_block.settings.antwort | strip_html | json }} }
+            }
+          {%- endif -%}
+        {%- endfor -%}
+      ]
+    }
+  {%- endcapture -%}
+  <script type="application/ld+json">{{ tp_ra_faq_ld }}</script>
+{%- endif -%}
+
+<script>
+  (function () {
+    'use strict';
+    // Fortschreitende Verbesserung: baut das Inhaltsverzeichnis aus den H2
+    // im gerenderten Inhalt. Ohne JS bleibt die Seite vollstaendig lesbar,
+    // nur ohne Sprungliste.
+    var wurzel = document.currentScript.closest('[data-tp-ratgeber-artikel]');
+    if (!wurzel) { return; }
+    var inhalt = wurzel.querySelector('[data-tp-ratgeber-inhalt]');
+    var nav = wurzel.querySelector('[data-tp-ratgeber-toc]');
+    var liste = wurzel.querySelector('[data-tp-ratgeber-toc-liste]');
+    if (!inhalt || !nav || !liste) { return; }
+
+    var ueberschriften = inhalt.querySelectorAll('h2');
+    if (!ueberschriften.length) { return; }
+
+    var praefix = wurzel.id || 'tp-ratgeber';
+    ueberschriften.forEach(function (h2, index) {
+      if (!h2.id) {
+        h2.id = praefix + '-abschnitt-' + (index + 1);
+      }
+      var eintrag = document.createElement('li');
+      eintrag.className = 'tp-ratgeber-artikel__toc-punkt';
+      var link = document.createElement('a');
+      link.href = '#' + h2.id;
+      link.textContent = h2.textContent;
+      eintrag.appendChild(link);
+      liste.appendChild(eintrag);
+    });
+
+    nav.hidden = false;
+  })();
+</script>
+
+{% stylesheet %}
+  .tp-ratgeber-artikel {
+    padding-block: 32px 56px;
+  }
+
+  .tp-ratgeber-artikel__rahmen {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .tp-ratgeber-artikel__eyebrow {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-foreground-60, currentColor);
+  }
+
+  .tp-ratgeber-artikel__titel {
+    margin: 4px 0 0;
+  }
+
+  .tp-ratgeber-artikel__fazit {
+    max-width: 70ch;
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+
+  .tp-ratgeber-artikel__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+
+  .tp-ratgeber-artikel__meta-punkt::before {
+    content: '·';
+    margin-inline-end: 8px;
+  }
+
+  .tp-ratgeber-artikel__meta-punkt:first-child::before {
+    content: '';
+    margin-inline-end: 0;
+  }
+
+  .tp-ratgeber-artikel__spalten {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .tp-ratgeber-artikel__toc {
+    order: -1;
+    border: 1px solid var(--color-border, currentColor);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .tp-ratgeber-artikel__toc-titel {
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .tp-ratgeber-artikel__toc-liste {
+    margin: 12px 0 0;
+    padding-inline-start: 20px;
+  }
+
+  .tp-ratgeber-artikel__inhalt {
+    max-width: 70ch;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    line-height: 1.65;
+  }
+
+  .tp-ratgeber-artikel__text :is(h2, h3) {
+    scroll-margin-top: 96px;
+  }
+
+  .tp-ratgeber-artikel__schritt {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tp-ratgeber-artikel__schritt-kopf {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .tp-ratgeber-artikel__schritt-nummer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--color-foreground-10, #eee);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .tp-ratgeber-artikel__schritt-bild {
+    max-width: 100%;
+    border-radius: 8px;
+  }
+
+  .tp-ratgeber-artikel__box {
+    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-border, currentColor);
+  }
+
+  .tp-ratgeber-artikel__box--hinweis-tipp {
+    border-color: var(--color-success, #3a7a3a);
+    background: color-mix(in srgb, var(--color-success, #3a7a3a) 8%, transparent);
+  }
+
+  .tp-ratgeber-artikel__box--hinweis-achtung {
+    border-color: var(--color-error, #b23a3a);
+    background: color-mix(in srgb, var(--color-error, #b23a3a) 8%, transparent);
+  }
+
+  .tp-ratgeber-artikel__box--fehler {
+    border-style: dashed;
+  }
+
+  .tp-ratgeber-artikel__box-titel {
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+
+  .tp-ratgeber-artikel__faq-eintrag {
+    border: 1px solid var(--color-border, currentColor);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+
+  .tp-ratgeber-artikel__faq-frage {
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .tp-ratgeber-artikel__cta {
+    display: inline-flex;
+    padding: 12px 20px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    background: var(--color-button-background, #1a1a1a);
+    color: var(--color-button-text, #fff);
+    width: fit-content;
+  }
+
+  .tp-ratgeber-artikel__produkte {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+  }
+
+  .tp-ratgeber-artikel__produkt-karte {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .tp-ratgeber-artikel__produkt-bild {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .tp-ratgeber-artikel__produkt-titel {
+    font-size: 0.9rem;
+  }
+
+  .tp-ratgeber-artikel__fuss {
+    border-top: 1px solid var(--color-border, currentColor);
+    padding-top: 24px;
+  }
+
+  .tp-ratgeber-artikel__fuss-liste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media screen and (min-width: 750px) {
+    .tp-ratgeber-artikel__spalten {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+
+    .tp-ratgeber-artikel__toc {
+      order: 0;
+      flex: 0 0 220px;
+      position: sticky;
+      top: 96px;
+    }
+
+    .tp-ratgeber-artikel__inhalt {
+      flex: 1 1 auto;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Ratgeber-Artikel",
+  "tag": "section",
+  "class": "shopify-section--tp-ratgeber-artikel",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow (Cluster)",
+      "info": "z. B. \"Ratgeber · Verlegen\"."
+    },
+    {
+      "type": "textarea",
+      "id": "kurzfazit",
+      "label": "Kurzfazit",
+      "info": "Ein bis zwei Saetze direkt unter der Ueberschrift."
+    },
+    {
+      "type": "text",
+      "id": "lesezeit",
+      "label": "Lesezeit",
+      "info": "z. B. \"5 Min. Lesezeit\". Leer lassen zum Ausblenden."
+    },
+    {
+      "type": "text",
+      "id": "schwierigkeit",
+      "label": "Schwierigkeit",
+      "info": "z. B. \"Einfach\". Leer lassen zum Ausblenden."
+    },
+    {
+      "type": "text",
+      "id": "werkzeug",
+      "label": "Werkzeug",
+      "info": "Kurze Liste, z. B. \"Zollstock, Cuttermesser\". Leer lassen zum Ausblenden."
+    },
+    {
+      "type": "text",
+      "id": "toc_label",
+      "label": "Beschriftung Inhaltsverzeichnis",
+      "default": "Inhalt"
+    },
+    {
+      "type": "header",
+      "content": "Weitere Ratgeber"
+    },
+    {
+      "type": "link_list",
+      "id": "weitere_menu",
+      "label": "Menue mit weiterfuehrenden Links"
+    },
+    {
+      "type": "text",
+      "id": "weitere_titel",
+      "label": "Ueberschrift",
+      "default": "Weitere Ratgeber"
+    },
+    {
+      "type": "header",
+      "content": "Darstellung"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:settings.color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "schritt",
+      "name": "Schritt",
+      "settings": [
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Titel"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        },
+        {
+          "type": "image_picker",
+          "id": "bild",
+          "label": "Bild"
+        }
+      ]
+    },
+    {
+      "type": "hinweis",
+      "name": "Hinweis (Tipp/Achtung)",
+      "settings": [
+        {
+          "type": "select",
+          "id": "typ",
+          "label": "Art",
+          "options": [
+            { "value": "tipp", "label": "Tipp" },
+            { "value": "achtung", "label": "Achtung" }
+          ],
+          "default": "tipp"
+        },
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Titel"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text"
+        }
+      ]
+    },
+    {
+      "type": "fehler",
+      "name": "Haeufiger Fehler",
+      "settings": [
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Titel des Fehlers"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Erklaerung"
+        }
+      ]
+    },
+    {
+      "type": "faq",
+      "name": "FAQ-Eintrag",
+      "settings": [
+        {
+          "type": "text",
+          "id": "frage",
+          "label": "Frage"
+        },
+        {
+          "type": "richtext",
+          "id": "antwort",
+          "label": "Antwort"
+        }
+      ]
+    },
+    {
+      "type": "cta",
+      "name": "Verknuepfung (CTA)",
+      "settings": [
+        {
+          "type": "select",
+          "id": "typ",
+          "label": "Ziel-Art",
+          "options": [
+            { "value": "muster", "label": "Musterbestellung" },
+            { "value": "rechner", "label": "Rechner/Produkt" },
+            { "value": "kollektion", "label": "Kollektion" },
+            { "value": "verlegeservice", "label": "Verlegeservice" },
+            { "value": "aufmass", "label": "Aufmass" }
+          ],
+          "default": "kollektion"
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Knopftext"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Ziel",
+          "info": "Leer lassen nutzt die Standard-Seite der gewaehlten Ziel-Art."
+        }
+      ]
+    },
+    {
+      "type": "produkte",
+      "name": "Produkte",
+      "settings": [
+        {
+          "type": "text",
+          "id": "titel",
+          "label": "Ueberschrift"
+        },
+        {
+          "type": "collection",
+          "id": "kollektion",
+          "label": "Kollektion"
+        },
+        {
+          "type": "range",
+          "id": "anzahl",
+          "label": "Anzahl Produkte",
+          "min": 2,
+          "max": 8,
+          "step": 1,
+          "default": 4
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Ratgeber-Artikel",
+      "blocks": [
+        { "type": "schritt" },
+        { "type": "hinweis" }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,52 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-ratgeber-artikel",
+      "settings": {
+        "eyebrow": "Ratgeber · Ausmessen & Bestellen",
+        "kurzfazit": "PLATZHALTER: ein bis zwei Saetze Kurzfazit fuer diesen Artikel.",
+        "lesezeit": "PLATZHALTER: z. B. \"5 Min. Lesezeit\"",
+        "schwierigkeit": "",
+        "werkzeug": "",
+        "toc_label": "Inhalt",
+        "weitere_menu": "",
+        "weitere_titel": "Weitere Ratgeber",
+        "color_scheme": "scheme-1"
+      },
+      "blocks": {
+        "schritt_1": {
+          "type": "schritt",
+          "settings": {
+            "titel": "PLATZHALTER: erster Schritt",
+            "text": "<p>PLATZHALTER: Beschreibung des ersten Schritts.</p>",
+            "bild": ""
+          }
+        },
+        "hinweis_1": {
+          "type": "hinweis",
+          "settings": {
+            "typ": "tipp",
+            "titel": "PLATZHALTER: Tipp-Titel",
+            "text": "<p>PLATZHALTER: Tipp-Text.</p>"
+          }
+        },
+        "cta_1": {
+          "type": "cta",
+          "settings": {
+            "typ": "muster",
+            "text": "PLATZHALTER: Musterbestellung starten",
+            "link": "shopify://pages/muster"
+          }
+        }
+      },
+      "block_order": [
+        "schritt_1",
+        "hinweis_1",
+        "cta_1"
+      ]
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
