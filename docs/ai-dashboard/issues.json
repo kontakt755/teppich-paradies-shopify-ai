@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T10:11:02.061Z",
+  "generated_at": "2026-09-21T10:55:41.164Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T10:11:02.061Z",
+    "fetchedAt": "2026-09-21T10:55:41.164Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -78,13 +78,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:33:49Z",
-      "updated_at": "2026-09-21T10:10:15Z",
+      "updated_at": "2026-09-21T10:44:27Z",
       "closed_at": null
     },
     {
@@ -1681,7 +1681,7 @@
     {
       "number": 162,
       "title": "Kaufbox Rollenware: Live-Gesamtpreis, Rechenbeispiel und Eingabegrenzen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/162",
       "labels": [
         "status:in-arbeit",
@@ -1699,8 +1699,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:31Z",
-      "updated_at": "2026-09-21T09:44:25Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T10:55:29Z",
+      "closed_at": "2026-09-21T10:55:29Z"
     },
     {
       "number": 161,
