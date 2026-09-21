@@ -206,6 +206,14 @@
               },
               "blocks": {}
             },
+            "tp_farb_dropdown": {
+              "type": "color-swatch-picker",
+              "name": "Farb-Swatches",
+              "settings": {
+                "darstellung": "dropdown"
+              },
+              "blocks": {}
+            },
             "variant_picker_R3rGDr": {
               "type": "variant-picker",
               "settings": {
@@ -353,6 +361,7 @@
             "tp_vorteile_night1",
             "tp_bewertungsbeleg_standard",
             "divider_VJhene",
+            "tp_farb_dropdown",
             "variant_picker_R3rGDr",
             "tp_farbanzeige_tp1",
             "tp_muster_cta_1",

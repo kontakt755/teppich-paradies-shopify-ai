@@ -142,3 +142,100 @@ test('Meterware-Vergleich ohne Grundlage liefert null', () => {
   assert.equal(A.meterwareGuenstiger(0, 550, 88.97, [400], rateMeter), null, 'ohne Breite');
   assert.equal(A.meterwareGuenstiger(250, 550, 88.97, [400], () => 0), null, 'Rolle ohne Variante');
 });
+
+// --- Masseingabe: cm und m, ohne dass der Kunde umrechnet -----------------
+
+const cm = (text, einheit) => A.parseMass(text, einheit).cm;
+const fehler = (text, einheit) => A.parseMass(text, einheit).fehler;
+
+test('parseMass: Zentimeter mit und ohne Einheit, Leerzeichen egal', () => {
+  assert.equal(cm('350'), 350);
+  assert.equal(cm('350cm'), 350);
+  assert.equal(cm('350 cm'), 350);
+  assert.equal(cm('  350 CM '), 350);
+  assert.equal(cm('350 Zentimeter'), 350);
+  assert.equal(fehler('350'), '');
+});
+
+test('parseMass: Meter mit Komma oder Punkt, exakt ohne Gleitkomma-Falle', () => {
+  assert.equal(cm('3,5 m'), 350);
+  assert.equal(cm('3.50 m'), 350);
+  assert.equal(cm('3,50m'), 350);
+  assert.equal(cm('3.55m'), 355);      // 3.55 * 100 = 354,99999999999994
+  assert.equal(cm('1,15 m'), 115);     // 1.15 * 100 = 114,99999999999999
+  assert.equal(cm('4,35 m'), 435);     // 4.35 * 100 = 434,99999999999994
+  assert.equal(cm('2 Meter'), 200);
+  // Jede Hundertstel-Meter-Angabe bis 50 m ergibt exakt ihre Zentimeter.
+  for (let i = 1; i <= 5000; i++) {
+    const text = `${Math.floor(i / 100)},${String(i % 100).padStart(2, '0')}`;
+    assert.equal(cm(text, 'm'), i, text);
+  }
+});
+
+test('parseMass: ohne Einheit gilt der Umschalter, Standard ist cm', () => {
+  assert.equal(cm('0,5', 'm'), 50);
+  assert.equal(cm('3,5', 'm'), 350);
+  assert.equal(cm('350', 'cm'), 350);
+  assert.equal(cm('350', undefined), 350);
+  assert.equal(cm('350', 'quatsch'), 350);
+  // KEINE Heuristik "kleine Zahl = Meter": 3,5 im cm-Modus sind 3,5 cm -> 4 cm.
+  assert.equal(cm('3,5', 'cm'), 4);
+  assert.equal(cm('4', 'cm'), 4);
+});
+
+test('parseMass: Einheit im Text schlaegt den Umschalter', () => {
+  assert.equal(cm('350 cm', 'm'), 350);
+  assert.equal(cm('3,5 m', 'cm'), 350);
+  assert.equal(A.parseMass('350 cm', 'm').einheit, 'cm');
+  assert.equal(A.parseMass('3,5 m', 'cm').einheit, 'm');
+});
+
+test('parseMass: Bruchteile eines Zentimeters werden aufgerundet, nie abgeschnitten', () => {
+  assert.equal(cm('150,7'), 151);
+  assert.equal(cm('150.01 cm'), 151);
+  assert.equal(cm('150,0'), 150);
+  assert.equal(cm('3,505 m'), 351);
+  assert.equal(cm('3,500 m'), 350);
+});
+
+test('parseMass: Ungueltiges liefert einen Fehlercode und nie eine Zahl', () => {
+  const faelle = {
+    '': 'leer', '   ': 'leer',
+    'abc': 'ungueltig', '3,5,5': 'ungueltig', '1e3': 'ungueltig', '3 5': 'ungueltig',
+    '350 mm': 'ungueltig', '3m50': 'ungueltig', '3,5 m cm': 'ungueltig', 'cm': 'ungueltig',
+    'Infinity': 'ungueltig', 'NaN': 'ungueltig', '1.000,5': 'ungueltig', '+350': 'ungueltig', ',': 'ungueltig',
+    '-10': 'negativ', '-3,5 m': 'negativ', '−10': 'negativ',
+    '99999999999': 'zu_gross', '999999 m': 'zu_gross', ['1'.padEnd(400, '0')]: 'zu_gross'
+  };
+  for (const [text, code] of Object.entries(faelle)) {
+    const r = A.parseMass(text, 'cm');
+    assert.equal(r.fehler, code, JSON.stringify(text));
+    assert.equal(r.cm, null, JSON.stringify(text));
+  }
+  assert.equal(fehler(null), 'leer');
+  assert.equal(fehler(undefined), 'leer');
+});
+
+test('parseMass: Ergebnis ist immer eine ganze, endliche Zahl; 0 bleibt 0', () => {
+  for (const t of ['0', '0,0', '0 m', '9999999', '99999,99 m', '000350']) {
+    const r = A.parseMass(t);
+    assert.equal(r.fehler, '', t);
+    assert.ok(Number.isInteger(r.cm) && r.cm >= 0, t);
+  }
+  assert.equal(cm('0'), 0);
+  assert.equal(cm('000350'), 350);
+  assert.equal(cm('9999999'), 9999999);
+});
+
+test('Gegenprobe und Feldwert zeigen dieselben cm in beiden Einheiten', () => {
+  assert.equal(A.massGegenprobe(350), '= 350 cm = 3,50 m');
+  assert.equal(A.massGegenprobe(55), '= 55 cm = 0,55 m');
+  assert.equal(A.massWert(350, 'cm'), '350');
+  assert.equal(A.massWert(350, 'm'), '3,50');
+  assert.equal(A.massWert(5, 'm'), '0,05');
+  // Umschalten hin und zurueck veraendert den cm-Wert nie.
+  for (let i = 1; i <= 5000; i += 7) {
+    assert.equal(cm(A.massWert(i, 'm'), 'm'), i);
+    assert.equal(cm(A.massWert(i, 'cm'), 'cm'), i);
+  }
+});

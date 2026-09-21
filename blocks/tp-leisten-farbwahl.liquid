@@ -74,7 +74,7 @@
 
   <script src="{{ 'tp-leisten-farbwahl.js' | asset_url }}" defer></script>
   <tp-leisten-farbwahl
-    class="tp-lfw{% if tp_fw_aufgeklappt %} tp-lfw--auf{% endif %}"
+    class="tp-lfw{% if tp_fw_aufgeklappt %} tp-lfw--auf{% endif %}{% if block.settings.darstellung == 'dropdown' %} tp-lfw--dd{% endif %}"
     id="tp-lfw-{{ tp_fw_id }}"
     data-tp-farbwahl
     data-tp-farbwahl-option="{{ tp_fw_label | escape }}"
@@ -88,7 +88,27 @@
       <span class="tp-lfw__count">{{ tp_fw_values.size }} zur Auswahl</span>
     </p>
 
-    <div class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} wählen">
+    {%- if block.settings.darstellung == 'dropdown' -%}
+      {%- comment -%}
+        Dropdown: der Knopf zeigt die aktive Farbe, das Raster darunter wird zur
+        aufklappbaren Liste. Die Kacheln bleiben dieselben, damit Bildregeln und
+        Klicklogik unveraendert gelten.
+      {%- endcomment -%}
+      <button
+        type="button"
+        class="tp-lfw__dd"
+        data-tp-farbwahl-dd
+        aria-expanded="false"
+        aria-controls="tp-lfw-liste-{{ tp_fw_id }}"
+        aria-label="{{ tp_fw_label | escape }} wählen"
+      >
+        <span class="tp-lfw__dd-bild" data-tp-farbwahl-dd-bild aria-hidden="true"></span>
+        <span class="tp-lfw__dd-name" data-tp-farbwahl-current>{{ tp_fw_aktueller_name | escape }}</span>
+        <span class="tp-lfw__dd-pfeil" aria-hidden="true"></span>
+      </button>
+    {%- endif -%}
+
+    <div id="tp-lfw-liste-{{ tp_fw_id }}" class="tp-lfw__grid" role="group" aria-label="{{ tp_fw_label | escape }} wählen">
       {%- for tp_fw_value in tp_fw_values -%}
         {%- render 'tp-leisten-farbkachel',
           value: tp_fw_value,
@@ -283,6 +303,122 @@
     white-space: nowrap !important;
   }
 
+  /* Dropdown-Darstellung: Knopf mit aktiver Farbe, Kacheln als Zeilenliste */
+  .tp-lfw--dd {
+    position: relative;
+    gap: 0;
+  }
+
+  .tp-lfw--dd .tp-lfw__label,
+  .tp-lfw--dd .tp-lfw__mehr {
+    display: none;
+  }
+
+  .tp-lfw__dd {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 54px;
+    margin: 0;
+    padding: 6px 14px 6px 6px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.25);
+    border-radius: 10px;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .tp-lfw__dd:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .tp-lfw__dd-bild {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 6px;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.18);
+    box-sizing: border-box;
+  }
+
+  .tp-lfw__dd-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-lfw__dd-pfeil {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    margin-inline-end: 4px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+
+  .tp-lfw__dd[aria-expanded='true'] .tp-lfw__dd-pfeil {
+    transform: translateY(2px) rotate(-135deg);
+  }
+
+  .tp-lfw--dd .tp-lfw__grid {
+    display: none;
+  }
+
+  .tp-lfw--dd.tp-lfw--offen .tp-lfw__grid {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 6px;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.2);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.14);
+  }
+
+  .tp-lfw--dd .tp-lfw__tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 4px 8px 4px 4px;
+    text-align: start;
+  }
+
+  .tp-lfw--dd .tp-lfw__tile[hidden] {
+    display: none;
+  }
+
+  .tp-lfw--dd .tp-lfw__tile[aria-pressed='true'] {
+    background: rgb(var(--color-foreground-rgb) / 0.06);
+  }
+
+  .tp-lfw--dd .tp-lfw__tile .tp-lfw__bild {
+    flex: 0 0 40px;
+    width: 40px;
+  }
+
+  .tp-lfw--dd .tp-lfw__name {
+    display: block;
+    font-size: 0.9375rem;
+    color: var(--color-foreground);
+  }
+
   @media screen and (max-width: 749px) {
     .tp-lfw__grid {
       grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
@@ -299,7 +435,18 @@
 {
   "name": "TP Leisten-Farbwahl",
   "tag": null,
-  "settings": [],
+  "settings": [
+    {
+      "type": "select",
+      "id": "darstellung",
+      "label": "Darstellung",
+      "options": [
+        { "value": "dropdown", "label": "Dropdown" },
+        { "value": "raster", "label": "Raster" }
+      ],
+      "default": "dropdown"
+    }
+  ],
   "presets": [
     {
       "name": "TP Leisten-Farbwahl"

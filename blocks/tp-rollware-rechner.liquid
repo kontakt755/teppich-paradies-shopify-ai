@@ -153,6 +153,23 @@
     Raummass-Box tritt weiterhin an die Stelle der Rollenbreite - im Raster
     faellt ein verborgenes Feld einfach weg.
   {%- endcomment -%}
+  {%- comment -%}
+    Ein Umschalter fuer beide Massfelder (Laenge und Raummass-Breite): der
+    Kunde tippt in der Einheit, in der er gemessen hat, und rechnet nie selbst
+    um. Intern bleibt alles ganzzahlige cm (ART.parseMass). Eine Einheit im
+    Text ("3,5 m") schlaegt den Umschalter. Die Gegenprobe unter jedem Feld
+    nennt den Wert immer in beiden Einheiten.
+  {%- endcomment -%}
+  <div class="tp-rwc-einheit" data-einheit data-rwc-body>
+    <span class="tp-rwc-einheit-label" id="tp-rwc-eh-{{ tp_rc_id }}">Maße eingeben in</span>
+    <div class="tp-rwc-einheit-seg" role="radiogroup" aria-labelledby="tp-rwc-eh-{{ tp_rc_id }}">
+      <input type="radio" id="tp-rwc-eh-cm-{{ tp_rc_id }}" name="tp-rwc-einheit-{{ tp_rc_id }}" value="cm" checked>
+      <label for="tp-rwc-eh-cm-{{ tp_rc_id }}">cm<span class="tp-rwc-label--vorlesen"> Zentimeter</span></label>
+      <input type="radio" id="tp-rwc-eh-m-{{ tp_rc_id }}" name="tp-rwc-einheit-{{ tp_rc_id }}" value="m">
+      <label for="tp-rwc-eh-m-{{ tp_rc_id }}">m<span class="tp-rwc-label--vorlesen"> Meter</span></label>
+    </div>
+  </div>
+
   <div class="tp-rwc-masse" data-rwc-body>
   <div class="tp-rwc-field" data-width-field>
     <span data-width-step hidden>{% render 'tp-step-heading', number: 2, label: 'Breite wählen' %}</span>
@@ -163,9 +180,10 @@
   <div class="tp-rwc-field tp-rwc-wunsch" data-wunsch-box hidden>
     <label class="tp-rwc-label" for="tp-rwc-wb-{{ tp_rc_id }}">Ihre Breite</label>
     <div class="tp-rwc-input-wrap">
-      <input type="number" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="numeric" min="50" step="1" placeholder="z. B. 250" data-wunsch-input>
-      <span class="tp-rwc-unit">cm</span>
+      <input type="text" id="tp-rwc-wb-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" autocomplete="off" placeholder="z. B. 250" aria-describedby="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-input>
+      <span class="tp-rwc-unit" data-mass-unit>cm</span>
     </div>
+    <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-wb-echo-{{ tp_rc_id }}" data-wunsch-echo hidden></p>
     <p class="tp-rwc-note" data-wunsch-hint></p>
     <p class="tp-rwc-note tp-rwc-note-error" data-wunsch-error hidden></p>
     <p class="tp-rwc-note tp-rwc-note-tipp" data-meter-tipp hidden></p>
@@ -182,17 +200,18 @@
       <label class="tp-rwc-label tp-rwc-label--vorlesen" for="tp-rwc-len-{{ tp_rc_id }}">Länge</label>
       <div class="tp-rwc-input-wrap">
         <input
-          type="number"
+          type="text"
           id="tp-rwc-len-{{ tp_rc_id }}"
           name="laenge"
           class="tp-rwc-input tp-rwc-input--length"
-          inputmode="numeric"
-          min="100"
-          step="1"
+          inputmode="decimal"
+          autocomplete="off"
           placeholder="z. B. 400"
+          aria-describedby="tp-rwc-len-echo-{{ tp_rc_id }}"
           data-length-input>
-        <span class="tp-rwc-unit">cm</span>
+        <span class="tp-rwc-unit" data-mass-unit>cm</span>
       </div>
+      <p class="tp-rwc-note tp-rwc-gegen" id="tp-rwc-len-echo-{{ tp_rc_id }}" data-length-echo hidden></p>
       {%- comment -%}
         Messhinweis. Bewusst NICHT "der Shop rechnet 5 cm Zugabe in der Breite
         ein": die Zugabe (ZUGABE_CM in tp-rollware-art.js) entscheidet nur,
@@ -208,8 +227,13 @@
         Messen Sie an der längsten Stelle.
         <span data-mess-raum hidden>Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
       </p>
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm</p>
-      <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.</p>
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-min hidden>Mindestlänge 100 cm (1,00 m)</p>
+      {%- comment -%}
+        Das Attribut heisst noch data-error-comma, meldet seit der
+        cm/m-Eingabe aber jede nicht lesbare Angabe (Buchstaben, zwei Kommas,
+        Minus) - ein Komma allein ist kein Fehler mehr.
+      {%- endcomment -%}
+      <p class="tp-rwc-note tp-rwc-note-error" data-error-comma hidden>Bitte nur eine Zahl eingeben – zum Beispiel 350 (cm) oder 3,50 m.</p>
       {%- comment -%}
         Der Bestand wird bei Rollenware nicht getrackt, Shopify nimmt also jede
         Menge an. Ohne Obergrenze landete ein Vertipper (4000 statt 400)
@@ -239,16 +263,20 @@
       {% render 'tp-step-heading', number: 4, label: 'Passende Teppich-Fußleiste' %}
       <label class="tp-rwc-karte">
         <input type="checkbox" data-leiste-an>
-        <span class="tp-rwc-karte-text"><b>Gekettelte Fußleiste aus Ihrem Teppich</b><small>Auf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.</small></span>
+        <span class="tp-rwc-karte-text"><b>Gekettelte Fußleiste aus Ihrem Teppich</b></span>
         <span class="tp-rwc-karte-preis" data-leiste-preis></span>
       </label>
+      <details class="tp-rwc-info">
+        <summary>Mehr dazu</summary>
+        <p>Auf Wunsch fertigen wir aus dem passenden Teppichmaterial eine gekettelte Fußleiste in Ihrer Höhe.</p>
+      </details>
       <div class="tp-rwc-extra-felder" data-leiste-felder hidden>
         <div>
           <label class="tp-rwc-label" for="tp-rwc-lh-{{ tp_rc_id }}">Höhe</label>
           <select id="tp-rwc-lh-{{ tp_rc_id }}" class="tp-rwc-select" data-leiste-hoehe></select>
         </div>
         <div>
-          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Benötigte Länge</label>
+          <label class="tp-rwc-label" for="tp-rwc-lm-{{ tp_rc_id }}">Länge der Fußleiste in Metern</label>
           <div class="tp-rwc-input-wrap">
             <input type="number" id="tp-rwc-lm-{{ tp_rc_id }}" class="tp-rwc-input" inputmode="decimal" min="0.5" step="0.1" placeholder="z. B. 18,5" data-leiste-meter>
             <span class="tp-rwc-unit">m</span>
@@ -266,7 +294,10 @@
         <span class="tp-rwc-karte-text"><b>Dünne Antirutsch-Unterlage von der Rolle</b><small data-haft-hint></small></span>
         <span class="tp-rwc-karte-preis" data-haft-preis></span>
       </label>
-      <p class="tp-rwc-note" data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</p>
+      <details class="tp-rwc-info">
+        <summary>Mehr dazu</summary>
+        <p data-haft-text>Wird unter dem Teppichboden ausgelegt und hält ihn auf glatten Böden an Ort und Stelle – ohne den Untergrund zu verkleben. Mit der Schere zuschneidbar.</p>
+      </details>
     </div>
   {%- endif -%}
 
@@ -282,6 +313,16 @@
       <div class="tp-rwc-calc-round" data-formula-round hidden></div>
       <div class="tp-rwc-calc-step" data-formula-price>–</div>
       <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
+    </div>
+    {%- comment -%}
+      Zusammenfassung direkt ueber dem Preis: was ist Breite, was Laenge, in
+      welcher Einheit, welche Flaeche, welcher Preis. Die Werte kommen aus
+      derselben Rechnung wie die Summe (calculate) - hier wird nichts neu
+      gerechnet.
+    {%- endcomment -%}
+    <div class="tp-rwc-stueck" data-stueck hidden>
+      <p class="tp-rwc-stueck-mass" data-stueck-mass></p>
+      <p class="tp-rwc-stueck-preis" data-stueck-preis></p>
     </div>
     <div class="tp-rwc-calc-total">
       <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
@@ -440,6 +481,7 @@
   "selected_options": {{ product.selected_or_first_available_variant.options | json }},
   "fallback_width_cm": {{ tp_rc_fallback_width_cm | json }},
   "cm_exact": {{ tp_rc_cm_exact | json }},
+  "meter_tipp": {{ block.settings.meterware_tipp_anzeigen | json }},
   "product_title": {{ product.title | json }},
   "leiste": [
     {%- if tp_rc_leiste != blank -%}
@@ -530,7 +572,12 @@
   }
   .tp-rwc-{{ tp_rc_id }} *, .tp-rwc-{{ tp_rc_id }} *::before, .tp-rwc-{{ tp_rc_id }} *::after { box-sizing: border-box; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-field { margin-bottom: 16px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-field { margin-bottom: 10px; }
+  /* Schrittzeilen als schlanke einzeilige Labels - das Snippet selbst bleibt
+     unveraendert, hier nur die Abstaende im Rechner. */
+  .tp-rwc-{{ tp_rc_id }} .tp-step-heading { margin: 0 0 6px; gap: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-step-heading__number { min-width: 20px; height: 20px; font-size: 12px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-step-heading__label { font-size: 12.5px; line-height: 1.25; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label {
     display: block;
     font-size: 12px;
@@ -538,7 +585,7 @@
     text-transform: uppercase;
     letter-spacing: .04em;
     color: var(--tp-rwc-muted);
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-seg { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -547,8 +594,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 96px;
-    padding: 12px 18px;
+    min-width: 84px;
+    padding: 9px 14px;
     border: 1px solid var(--tp-rwc-line);
     background: var(--tp-rwc-surface);
     font-size: 1rem;
@@ -573,7 +620,7 @@
      184 px, damit "Meterware" in einer Zeile bleibt (204 px fuer
      "zentimetergenau"); die Spalte gibt bei 990 px 183 px, bei 1280 px
      181 px (Seitencontainer begrenzt) und erst bei 1440 px 208 px her. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
   @media screen and (min-width: 750px) and (max-width: 1399px) {
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-art { grid-template-columns: minmax(0, 1fr); }
   }
@@ -582,31 +629,31 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 14px 34px 14px 12px;
+    gap: 10px;
+    padding: 8px 30px 8px 10px;
     border: 1px solid var(--tp-rwc-line);
     border-radius: 8px;
     background: var(--tp-rwc-surface);
     cursor: pointer;
-    min-height: 74px;
+    min-height: 56px;
     min-width: 0;
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 44px; height: 38px; flex-shrink: 0; color: var(--tp-rwc-ink); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; overflow-wrap: break-word; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 34px; height: 29px; flex-shrink: 0; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow-wrap: break-word; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: .95rem; font-weight: 700; line-height: 1.2; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; hyphens: auto; overflow-wrap: anywhere; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
     border: 2px solid var(--tp-rwc-ink);
-    padding: 13px 33px 13px 11px;
+    padding: 7px 29px 7px 9px;
     background: var(--tp-rwc-material);
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card::after {
     content: "";
     position: absolute;
-    top: 10px;
+    top: 8px;
     right: 10px;
-    width: 9px;
-    height: 15px;
+    width: 8px;
+    height: 13px;
     border-right: 3px solid var(--tp-rwc-ink);
     border-bottom: 3px solid var(--tp-rwc-ink);
     transform: rotate(45deg);
@@ -614,8 +661,8 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:focus-visible + .tp-rwc-art-card { outline: 2px solid var(--tp-rwc-ink); outline-offset: 2px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:disabled + .tp-rwc-art-card { display: none; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-tipp { padding: 10px 12px; border-radius: 6px; background: var(--tp-rwc-material); font-size: .85rem; line-height: 1.45; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { padding: 10px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-tipp { padding: 8px 10px; border-radius: 6px; background: var(--tp-rwc-material); font-size: .85rem; line-height: 1.45; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-linkbtn {
     display: inline;
     padding: 0;
@@ -634,7 +681,7 @@
   /* Masszeile: Breite und Laenge. Auf dem Handy untereinander (Vollbreite je
      Feld), ab 750 px nebeneinander. Ein verborgenes Feld nimmt keine Spalte
      ein - im Raummass ruecken damit "Ihre Breite" und "Laenge" zusammen. */
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse { display: grid; gap: 18px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse { display: grid; gap: 10px; margin-bottom: 10px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-label--vorlesen {
     position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap;
@@ -644,20 +691,20 @@
   @media screen and (min-width: 750px) {
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse {
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 18px 20px;
+      gap: 10px 16px;
       align-items: start;
     }
-    /* Ohne eigene Schrittnummer begaenne die Breite 36 px hoeher als die
-       Laenge daneben (Hoehe der Schrittzeile plus deren Abstand). Die Reserve
-       greift genau dann, wenn die Schrittzeile verborgen ist. */
+    /* Ohne eigene Schrittnummer begaenne die Breite 26 px hoeher als die
+       Laenge daneben (Hoehe der Schrittzeile 20 px plus deren Abstand 6 px).
+       Die Reserve greift genau dann, wenn die Schrittzeile verborgen ist. */
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > [data-width-field] > [data-width-step][hidden] + .tp-rwc-label,
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > .tp-rwc-wunsch { margin-top: 36px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-masse > .tp-rwc-wunsch { margin-top: 26px; }
   }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { position: relative; max-width: 220px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-input {
     width: 100%;
-    padding: 12px 42px 12px 12px;
+    padding: 10px 42px 10px 12px;
     border: 1px solid var(--tp-rwc-line);
     border-radius: 6px;
     background: var(--tp-rwc-surface);
@@ -687,7 +734,7 @@
      Chips auf, die es fuer diese Farbe gar nicht gibt. */
   .tp-rwc-{{ tp_rc_id }} [hidden] { display: none !important; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 8px 0 0; font-size: .82rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note { margin: 4px 0 0; font-size: .82rem; line-height: 1.4; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-error { color: #a62020; }
   .tp-rwc-{{ tp_rc_id }}.tp-rwc-no-service [data-rwc-body] { display: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-hint {
@@ -702,7 +749,7 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-note[hidden] { display: none; }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 18px 0; padding: 20px 14px 14px; border-top: 1px solid var(--tp-rwc-line); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-draw { margin: 10px 0; padding: 10px 8px 4px; border-top: 1px solid var(--tp-rwc-line); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-stage {
     display: flex;
     justify-content: center;
@@ -740,7 +787,7 @@
     writing-mode: vertical-rl;
   }
 
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc { margin: 20px 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc { margin: 10px 0 12px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-formula {
     display: none;
   }
@@ -757,13 +804,13 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 14px 16px;
+    padding: 10px 14px;
     background: var(--tp-rwc-material);
     border: 1px solid transparent;
     border-radius: 10px;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.75rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; font-weight: 800; color: var(--tp-rwc-ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
 
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-line { margin: 0 0 4px; font-size: 13px; font-weight: 600; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-service-details { margin: 0 0 16px; font-size: 12.5px; color: var(--tp-rwc-muted); }
@@ -911,23 +958,23 @@
     width: 100%; max-width: 280px; padding: 12px; border: 1px solid var(--tp-rwc-line); border-radius: 6px;
     background: var(--tp-rwc-surface); color: var(--tp-rwc-ink); font: inherit; font-size: .95rem;
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 16px; padding: 14px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 10px; padding: 10px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras { display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte {
-    display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center;
-    padding: 14px 16px; border: 1px solid var(--tp-rwc-line); border-radius: 8px;
+    display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 12px; min-height: 44px; border: 1px solid var(--tp-rwc-line); border-radius: 8px;
     background: var(--tp-rwc-surface); cursor: pointer; transition: border-color .15s, background-color .15s;
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:hover { border-color: var(--tp-rwc-ink); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte:has(input:checked) { border-color: #1d6b47; box-shadow: inset 0 0 0 1px #1d6b47; background: rgb(29 107 71 / 0.05); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte input { width: 20px; height: 20px; margin: 0; accent-color: #1d6b47; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text { display: grid; gap: 2px; min-width: 0; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .95rem; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text b { font-size: .9rem; line-height: 1.25; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-text small { font-size: .8rem; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { font-size: .85rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; align-items: end; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-select,
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-input-wrap { max-width: none; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra-felder .tp-rwc-note { grid-column: 1 / -1; margin: 0; }
@@ -940,15 +987,41 @@
   }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-einfass-chip:hover { border-color: #1d6b47; color: #1d6b47; }
 
+
+  /* Einheiten-Umschalter cm | m: eine schmale Zeile, zwei Radios als
+     Segmente. 44 px Trefferflaeche am Handy ueber min-height. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 8px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg { display: inline-flex; border: 1px solid var(--tp-rwc-line); border-radius: 999px; overflow: hidden; background: var(--tp-rwc-surface); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg label { display: inline-flex; align-items: center; justify-content: center; min-width: 52px; min-height: 34px; padding: 0 14px; font-size: .9rem; font-weight: 700; cursor: pointer; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg input:checked + label { background: var(--tp-rwc-ink); color: var(--tp-rwc-surface); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg input:focus-visible + label { outline: 2px solid var(--tp-rwc-ink); outline-offset: -3px; }
+
+  /* Gegenprobe unter dem Massfeld: derselbe Wert in cm und m. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-gegen { font-weight: 700; font-variant-numeric: tabular-nums; color: #1d6b47; }
+
+  /* Zusammenfassung ueber dem Preis. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck { margin: 0 0 6px; font-variant-numeric: tabular-nums; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck p { margin: 0; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-mass { font-size: .9rem; font-weight: 700; line-height: 1.35; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-stueck-preis { font-size: .8rem; line-height: 1.4; color: var(--tp-rwc-muted); }
+
+  /* Eingeklappte Erklaertexte in der Kaufstrecke. */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-info { margin: 4px 0 0; font-size: .8rem; color: var(--tp-rwc-muted); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-info summary { display: inline-block; padding: 4px 0; cursor: pointer; color: var(--tp-rwc-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-info p { margin: 2px 0 0; line-height: 1.45; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-extra { margin-bottom: 8px; }
+
   @media screen and (max-width: 749px) {
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; min-height: 52px; font-size: 1.05rem; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input { min-height: 52px; padding: 14px 46px 14px 14px; font-size: 1.05rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-opt { flex: 1; min-width: 0; min-height: 46px; font-size: 1rem; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-einheit-seg label { min-height: 44px; min-width: 60px; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-input { min-height: 46px; padding: 10px 46px 10px 12px; font-size: 1.05rem; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length { font-size: 1.05rem; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input--length::placeholder { font-size: .95rem; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-unit { font-size: .9rem; right: 14px; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-total-value { font-size: 1.6rem; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 22px 1fr; row-gap: 4px; }
-    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte-preis { grid-column: 2; }
+    .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte { grid-template-columns: 20px 1fr auto; }
     .tp-rwc-{{ tp_rc_id }} .tp-rwc-input-wrap { max-width: none; }
   }
   @media screen and (max-width: 479px) {
@@ -1039,6 +1112,9 @@ function tpRwcInit{{ tp_rc_id }}() {
   var wunschHint = root.querySelector('[data-wunsch-hint]');
   var wunschError = root.querySelector('[data-wunsch-error]');
   var meterTipp = root.querySelector('[data-meter-tipp]');
+  // Block-Einstellung meterware_tipp_anzeigen: nur ein ausdrueckliches true
+  // zeigt den Hinweis. Fehlt die Einstellung (aelteres Template), bleibt er aus.
+  var meterTippAn = data.meter_tipp === true;
   var lengthNumber = root.querySelector('[data-length-step] .tp-step-heading__number');
   var WUNSCH_MIN_CM = 50;
   // Breiten, die es fuer die gewaehlte Farbe gibt - gesetzt von syncArtUi().
@@ -1060,6 +1136,50 @@ function tpRwcInit{{ tp_rc_id }}() {
   }
 
   var lengthInput = root.querySelector('[data-length-input]');
+  var lengthEcho = root.querySelector('[data-length-echo]');
+  var wunschEcho = root.querySelector('[data-wunsch-echo]');
+  var stueckBox = root.querySelector('[data-stueck]');
+  var stueckMass = root.querySelector('[data-stueck-mass]');
+  var stueckPreis = root.querySelector('[data-stueck-preis]');
+
+  // Eingabe-Einheit der Massfelder. Gerechnet wird immer in ganzen cm - die
+  // Einheit entscheidet nur, wie ART.parseMass eine Zahl ohne Einheit liest.
+  var einheitAktiv = 'cm';
+  function setzeEinheit(neu) {
+    neu = neu === 'm' ? 'm' : 'cm';
+    if (neu === einheitAktiv) return;
+    var alt = einheitAktiv;
+    // Sichtbaren Wert umschreiben (350 <-> 3,50), der cm-Wert bleibt gleich.
+    // Eine nicht lesbare Eingabe bleibt stehen, damit der Kunde sie sieht.
+    [lengthInput, wunschInput].forEach(function (inp) {
+      if (!inp) return;
+      var p = ART.parseMass(inp.value, alt);
+      if (!p.fehler && p.cm > 0) inp.value = ART.massWert(p.cm, neu);
+    });
+    zeigeEinheit(neu);
+  }
+  function zeigeEinheit(neu) {
+    einheitAktiv = neu;
+    root.querySelectorAll('[data-mass-unit]').forEach(function (el) { el.textContent = neu; });
+    if (lengthInput) lengthInput.placeholder = neu === 'm' ? 'z. B. 4,00' : 'z. B. 400';
+    if (wunschInput) wunschInput.placeholder = neu === 'm' ? 'z. B. 2,50' : 'z. B. 250';
+  }
+  // Der Browser kann beim Zurueckblaettern Umschalter UND Feldwerte
+  // wiederherstellen. Dann gilt die wiederhergestellte Einheit, ohne die
+  // (bereits dazu passenden) Werte umzurechnen.
+  var einheitStart = root.querySelector('input[name="tp-rwc-einheit-{{ tp_rc_id }}"]:checked');
+  if (einheitStart && einheitStart.value === 'm') zeigeEinheit('m');
+  function zeigeGegenprobe(el, wort, input) {
+    if (!el) return;
+    var p = ART.parseMass(input ? input.value : '', einheitAktiv);
+    var ok = !p.fehler && p.cm > 0;
+    // Tippt der Kunde die Einheit mit ("3,99 m"), zeigt das Feld genau diese
+    // Einheit an - sonst stuende "3,99 m" neben einem "cm".
+    var unitEl = input && input.parentNode ? input.parentNode.querySelector('[data-mass-unit]') : null;
+    if (unitEl) unitEl.textContent = p.fehler ? einheitAktiv : p.einheit;
+    el.textContent = ok ? wort + ' ' + ART.massGegenprobe(p.cm) : '';
+    el.hidden = !ok;
+  }
   var errMin = root.querySelector('[data-error-min]');
   var errMax = root.querySelector('[data-error-max]');
   var errComma = root.querySelector('[data-error-comma]');
@@ -1145,8 +1265,11 @@ function tpRwcInit{{ tp_rc_id }}() {
   function selectedWidth() {
     if (wIdx === -1) return widths[0];
     if (artMode() === 'raum') {
-      var raw = ART.toCm(wunschInput && wunschInput.value);
-      return raw > 0 ? Math.ceil(raw) : 0;
+      // Ganze cm aus cm- oder m-Eingabe. Eine absurd grosse Zahl bleibt
+      // "zu breit" (pruefeBreite meldet es), statt als leer zu gelten.
+      var p = ART.parseMass(wunschInput && wunschInput.value, einheitAktiv);
+      if (p.fehler === 'zu_gross') return 9999999;
+      return p.cm > 0 ? p.cm : 0;
     }
     var c = root.querySelector('input[name="tp-rwc-width-{{ tp_rc_id }}"]:checked');
     return c ? parseFloat(c.value) : (farbBreiten[0] || widths[0]);
@@ -1269,6 +1392,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   // weniger kostet - gerechnet aus beiden Variantenpreisen, mit Wechsel-Knopf.
   function updateMeterTipp(raum, w, len, rateRaum) {
     if (!meterTipp) return;
+    if (!meterTippAn) { meterTipp.hidden = true; return; }
     if (!raum) { meterTipp.hidden = true; return; }
     var t = baseOptions();
     // TP-004: der Rundungs-Callback bekommt von ART.meterwareGuenstiger nur
@@ -1351,15 +1475,15 @@ function tpRwcInit{{ tp_rc_id }}() {
 
     var widthPx = Math.max(DRAW_MIN_PX, Math.min(stageW, Math.round(w * pxPerCm)));
     piece.style.width = widthPx + 'px';
-    tagW.textContent = 'B: ' + w + ' cm';
+    tagW.textContent = 'Breite ' + w + ' cm';
 
     if (!len) {
       piece.style.height = '120px';
-      tagL.textContent = 'L: – cm';
+      tagL.textContent = 'Länge – cm';
       return;
     }
 
-    tagL.textContent = 'L: ' + len + ' cm';
+    tagL.textContent = 'Länge ' + len + ' cm';
     var heightPx = Math.max(DRAW_MIN_PX, Math.min(maxPx, Math.round(len * pxPerCm)));
     piece.style.height = heightPx + 'px';
   }
@@ -1368,8 +1492,12 @@ function tpRwcInit{{ tp_rc_id }}() {
     // Nachkommastellen aufrunden statt abschneiden: 150.7 wurde vorher still
     // zu 150, das Stueck waere also kuerzer als gemessen geworden. Aufrunden
     // ist die fuer den Kunden sichere Richtung.
-    var raw = parseFloat(lengthInput.value) || 0;
-    return raw > 0 ? Math.ceil(raw) : 0;
+    // Seit der cm/m-Eingabe liest ART.parseMass das Feld und liefert bereits
+    // ganze, aufgerundete cm. Eine absurd grosse Zahl laeuft in die
+    // Obergrenze (Beratungshinweis) und gilt nicht als leer.
+    var p = ART.parseMass(lengthInput.value, einheitAktiv);
+    if (p.fehler === 'zu_gross') return MAX_LENGTH_CM + 1;
+    return p.cm > 0 ? p.cm : 0;
   }
 
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -1417,8 +1545,15 @@ function tpRwcInit{{ tp_rc_id }}() {
     svgEl(svg, 'rect', { x: x0, y: y0, width: pieceW, height: ph, fill: 'rgba(29,107,71,.16)', stroke: ink, 'stroke-width': 2 });
     svgEl(svg, 'line', { x1: x0 + pieceW, y1: y0 - 6, x2: x0 + pieceW, y2: y0 + rollH + 6, stroke: ink, 'stroke-width': 1.5, 'stroke-dasharray': '5 3' });
     svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 + ph / 2 + 4, 'font-size': 12, 'font-weight': 700, fill: ink, 'text-anchor': 'middle' }, 'Ihr Stück');
-    svgEl(svg, 'text', { x: x0 + pieceW / 2, y: y0 - 12, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle' }, 'Länge ' + (len > 0 ? len + ' cm' : '–'));
-    svgEl(svg, 'text', { x: x0 - 14, y: y0 + ph / 2, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle', transform: 'rotate(-90 ' + (x0 - 14) + ' ' + (y0 + ph / 2) + ')' }, w + ' cm');
+    // Nur Beschriftung: die waagerechte Kante des Stuecks ist die Laenge
+    // (pieceW = L * sx, entlang der abgerollten Bahn), die senkrechte die
+    // Breite (ph = w * sy, quer zur Rolle). Beide Kanten tragen Wort und Wert.
+    // Ist das Stueck sehr kurz gezeichnet, beginnt die Laengenangabe an der
+    // linken Kante statt mittig - sonst liefe sie in die gedrehte
+    // Breitenangabe links daneben.
+    var lenMitte = pieceW >= 90;
+    svgEl(svg, 'text', { x: lenMitte ? x0 + pieceW / 2 : x0, y: y0 - 12, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': lenMitte ? 'middle' : 'start' }, 'Länge ' + (len > 0 ? len + ' cm' : '–'));
+    svgEl(svg, 'text', { x: x0 - 14, y: y0 + ph / 2, 'font-size': 12, 'font-weight': 600, fill: ink, 'text-anchor': 'middle', transform: 'rotate(-90 ' + (x0 - 14) + ' ' + (y0 + ph / 2) + ')' }, 'Breite ' + w + ' cm');
   }
 
   var leisteBox = root.querySelector('[data-extra="leiste"]');
@@ -1621,11 +1756,12 @@ function tpRwcInit{{ tp_rc_id }}() {
     // volle Rollenbreite, ein Zugabe-Satz waere dort schlicht falsch.
     if (messRaum) messRaum.hidden = !raum;
     var wErr = raum ? ART.pruefeBreite(w, WUNSCH_MIN_CM, maxRaumBreite()) : '';
-    // "250,5" liefert in einem number-Feld einen leeren Wert (badInput) - ohne
-    // diese Pruefung bliebe die Breite still "leer", ohne Meldung. Dieselbe
-    // Meldung wie bei der Laenge.
-    var wBad = !!(raum && wunschInput && wunschInput.validity && wunschInput.validity.badInput);
-    if (wBad) wErr = errComma ? errComma.textContent : 'Bitte ganze Zentimeter ohne Komma eingeben, zum Beispiel 250.';
+    // Nicht lesbare Breite ("abc", "2,5,0", "-250"): ohne diese Pruefung
+    // bliebe sie still "leer", ohne Meldung. Dieselbe Meldung wie bei der
+    // Laenge. Ein Komma ist seit der cm/m-Eingabe kein Fehler mehr.
+    var wFehler = (raum && wunschInput) ? ART.parseMass(wunschInput.value, einheitAktiv).fehler : '';
+    var wBad = wFehler === 'ungueltig' || wFehler === 'negativ';
+    if (wBad) wErr = errComma ? errComma.textContent : 'Bitte nur eine Zahl eingeben – zum Beispiel 250 (cm) oder 2,50 m.';
     if (wunschError) {
       wunschError.textContent = (raum && wErr && wErr !== 'leer') ? wErr : '';
       wunschError.hidden = !wunschError.textContent;
@@ -1635,11 +1771,13 @@ function tpRwcInit{{ tp_rc_id }}() {
     var tooLong = len > MAX_LENGTH_CM;
     var valid = !blocked && !tooLong && len >= 100 && !wErr;
 
-    // Ein number-Feld liefert bei "150,7" einen leeren Wert - die Seite reagierte
-    // dann gar nicht, ohne zu sagen warum. Das Komma ist in Deutschland die
-    // normale Schreibweise, der Fall trifft also echte Kunden.
-    var badInput = !!(lengthInput.validity && lengthInput.validity.badInput);
+    // Nicht lesbare Laenge bekommt eine klare Meldung statt einer stillen
+    // Umdeutung. "150,7" und "3,5 m" sind gueltig (siehe ART.parseMass).
+    var lenFehler = ART.parseMass(lengthInput.value, einheitAktiv).fehler;
+    var badInput = lenFehler === 'ungueltig' || lenFehler === 'negativ';
     if (errComma) errComma.hidden = !badInput;
+    zeigeGegenprobe(lengthEcho, 'Länge', lengthInput);
+    zeigeGegenprobe(wunschEcho, 'Breite', raum ? wunschInput : null);
 
     // "0" oder "-5" sind keine leere Eingabe: dann Mindestlaenge zeigen.
     var lenEingegeben = String(lengthInput.value || '').trim() !== '';
@@ -1702,6 +1840,15 @@ function tpRwcInit{{ tp_rc_id }}() {
       }
       formulaPrice.textContent = fmt(billedArea) + ' m² × ' + fmt(rate) + ' €/m² = ' + fmt(total) + ' €';
 
+      // Zusammenfassung ueber dem Preis - dieselben Werte und derselbe
+      // Wortlaut wie die Rechenzeilen oben, nichts wird neu gerechnet.
+      if (stueckBox) {
+        var gerundet = !!(formulaRound && !formulaRound.hidden);
+        if (stueckMass) stueckMass.textContent = 'Ihr Stück: Breite ' + w + ' cm' + (raum ? '' : ' (volle Rolle)') + ' × Länge ' + len + ' cm = ' + fmt(area) + ' m²';
+        if (stueckPreis) stueckPreis.textContent = (gerundet ? formulaRound.textContent + ' ' : '') + formulaPrice.textContent;
+        stueckBox.hidden = false;
+      }
+
       extras = updateExtras(w, len, billedArea);
       // Eine Summe auf der Seite: Teppichboden plus gewaehlte Zusaetze. Die
       // Aufteilung in Zeilen sieht der Kunde im Warenkorb.
@@ -1719,6 +1866,7 @@ function tpRwcInit{{ tp_rc_id }}() {
       updateMeterTipp(false);
       formulaArea.textContent = '– cm × – cm = –';
       formulaPrice.textContent = '–';
+      if (stueckBox) stueckBox.hidden = true;
       if (formulaRound) formulaRound.hidden = true;
       outTotal.textContent = '–';
       // Die Beschriftung nennt das naechste fehlende Feld statt pauschal
@@ -1793,6 +1941,7 @@ function tpRwcInit{{ tp_rc_id }}() {
     var el = e.target;
     if (el.name === 'tp-rwc-width-{{ tp_rc_id }}') calculate();
     if (el.name === 'tp-rwc-art-{{ tp_rc_id }}') calculate();
+    if (el.name === 'tp-rwc-einheit-{{ tp_rc_id }}') { setzeEinheit(el.value); calculate(); }
     if (el.hasAttribute && (el.hasAttribute('data-leiste-an') || el.hasAttribute('data-haft-an') || el.hasAttribute('data-leiste-hoehe'))) calculate();
   });
   if (wunschInput) wunschInput.addEventListener('input', calculate);
@@ -2015,6 +2164,17 @@ else { document.addEventListener('DOMContentLoaded', tpRwcInit{{ tp_rc_id }}); }
       "id": "haftunterlage_produkt",
       "label": "Haftunterlage (Varianten = Breiten, Preis je laufendem Meter)",
       "info": "Die Breite muss im Variantentitel stehen, z. B. \"1 mm, 180 cm breit (je lfm)\"."
+    },
+    {
+      "type": "header",
+      "content": "Hinweise"
+    },
+    {
+      "type": "checkbox",
+      "id": "meterware_tipp_anzeigen",
+      "label": "Meterware-Preistipp zeigen",
+      "info": "Zeigt im Raummaß den Hinweis, wenn dasselbe Stück als Meterware günstiger ist, samt Knopf zum Wechseln.",
+      "default": false
     }
   ],
   "presets": [
