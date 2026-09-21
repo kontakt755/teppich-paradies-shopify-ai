@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T09:50:57.769Z",
+  "generated_at": "2026-09-21T10:09:53.719Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T09:50:57.769Z",
+    "fetchedAt": "2026-09-21T10:09:53.719Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1829,7 +1829,7 @@
     {
       "number": 140,
       "title": "Laengen- und Breiten-Extraktion in Produktkarten ohne match-Filter umsetzen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/140",
       "labels": [
         "status:in-arbeit",
@@ -1848,8 +1848,8 @@
         "nextStep": "Extraktion ohne match implementieren und auf einer Rollenware-Kollektion im Preview-Theme pruefen"
       },
       "created_at": "2026-09-09T11:44:45Z",
-      "updated_at": "2026-09-21T09:33:13Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T10:09:42Z",
+      "closed_at": "2026-09-21T10:09:42Z"
     },
     {
       "number": 139,
