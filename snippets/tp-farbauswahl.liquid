@@ -1,0 +1,544 @@
+{%- doc -%}
+  Zentrale Farbauswahl der Produktseite: eine kompakte Zeile
+  "[Farbbild] Farbname >" und dahinter ein Auswahlbereich - am Telefon ein
+  Bottom Sheet, am Desktop ein kompakter Dialog mit Raster. Die Liste scrollt
+  im Auswahlbereich, nicht die Produktseite.
+
+  Dieses Snippet ist NUR Oberflaeche. Es kennt keine Varianten, keine Preise,
+  keine URL. Eine Auswahl klickt das Radio-Feld mit demselben Wert im
+  Wirtselement an (assets/tp-farbauswahl.js); alles Weitere erledigt, wer
+  dieses Radio-Feld besitzt - der Horizon-Variantenwaehler oder
+  blocks/color-swatch-picker.liquid. Deshalb gibt es hier nichts, was mit
+  Preis, Galerie oder Warenkorb auseinanderlaufen koennte.
+
+  Bildregel: gezeigt wird das Bild der ersten Variante DIESER Farbe. Hat die
+  Farbe kein eigenes Bild, erscheint ein hinterlegter Swatch (Shopify-Swatch
+  oder Farbregister), sonst eine neutrale Flaeche - nie das Bild einer
+  anderen Farbe und nie eine geratene Farbe.
+
+  @param {object} product - Produkt
+  @param {object} option - Die Farboption (aus product.options_with_values)
+  @param {string} selected - aktuell gewaehlter Farbwert
+  @param {string} id - eindeutige ID (Block-ID)
+  @param {string} host - CSS-Selektor des Elements mit den Radio-Feldern
+  @param {string} [muster_url] - Ziel der Musterbestellung, leer = kein Link
+{%- enddoc -%}
+
+{%- liquid
+  assign tp_fa_index = option.position | minus: 1
+  assign tp_fa_anzahl = option.values.size
+  assign tp_fa_name_low = option.name | downcase
+  assign tp_fa_wort = 'Farbe'
+  assign tp_fa_plural = 'Farben'
+  if tp_fa_name_low contains 'dekor'
+    assign tp_fa_wort = 'Dekor'
+    assign tp_fa_plural = 'Dekore'
+  endif
+  # Suche erst, wenn die Liste laenger ist als ein Bildschirm.
+  assign tp_fa_suche = false
+  if tp_fa_anzahl >= 12
+    assign tp_fa_suche = true
+  endif
+-%}
+
+<script src="{{ 'tp-farbauswahl.js' | asset_url }}" defer></script>
+
+<tp-farbauswahl class="tp-fa" data-host="{{ host | escape }}" hidden>
+  <p class="tp-fa__titel" id="tp-fa-titel-{{ id }}">{{ tp_fa_wort }} wählen</p>
+
+  <button
+    type="button"
+    class="tp-fa__ausloeser"
+    data-tp-fa-ausloeser
+    aria-haspopup="dialog"
+    aria-describedby="tp-fa-titel-{{ id }}"
+    on:click="#tp-fa-dialog-{{ id }}/showDialog"
+  >
+    <span class="tp-fa__bild tp-fa__bild--ausloeser" data-tp-fa-aktuell-bild aria-hidden="true"></span>
+    <span class="tp-fa__ausloeser-text">
+      <span class="tp-fa__ausloeser-name" data-tp-fa-aktuell-name>{{ selected | escape }}</span>
+      <span class="tp-fa__ausloeser-anzahl">{{ tp_fa_anzahl }} {{ tp_fa_plural }} zur Auswahl</span>
+    </span>
+    <span class="tp-fa__pfeil" aria-hidden="true"></span>
+  </button>
+
+  <dialog-component id="tp-fa-dialog-{{ id }}">
+    <dialog
+      ref="dialog"
+      class="dialog-modal tp-fa__sheet"
+      scroll-lock
+      aria-labelledby="tp-fa-kopf-{{ id }}"
+    >
+      <div class="tp-fa__kopf">
+        <h2 class="tp-fa__kopf-titel" id="tp-fa-kopf-{{ id }}">{{ tp_fa_wort }} wählen</h2>
+        <button
+          type="button"
+          class="tp-fa__schliessen button-unstyled"
+          on:click="dialog-component/closeDialog"
+        >
+          Schließen
+        </button>
+      </div>
+
+      {%- if tp_fa_suche -%}
+        <div class="tp-fa__suche-wrap">
+          <input
+            type="search"
+            class="tp-fa__suche"
+            data-tp-fa-suche
+            placeholder="{{ tp_fa_wort }} suchen, z. B. Grau"
+            aria-label="{{ tp_fa_wort }} suchen"
+            autocomplete="off"
+          >
+        </div>
+      {%- endif -%}
+
+      <ul class="tp-fa__liste" data-tp-fa-liste role="listbox" aria-labelledby="tp-fa-kopf-{{ id }}">
+        {%- for tp_fa_value in option.values -%}
+          {%- liquid
+            assign tp_fa_wert = tp_fa_value | append: ''
+            assign tp_fa_bild = blank
+            assign tp_fa_variante = blank
+            for tp_fa_v in product.variants
+              if tp_fa_v.options[tp_fa_index] == tp_fa_wert
+                if tp_fa_variante == blank
+                  assign tp_fa_variante = tp_fa_v
+                endif
+                if tp_fa_v.featured_image != blank
+                  assign tp_fa_bild = tp_fa_v.featured_image
+                  assign tp_fa_variante = tp_fa_v
+                  break
+                endif
+              endif
+            endfor
+
+            assign tp_fa_swatch = ''
+            assign tp_fa_nummer = ''
+            if tp_fa_variante != blank
+              capture tp_fa_nummer
+                render 'tp-farbe-daten', variant: tp_fa_variante, product: product, feld: 'nummer'
+              endcapture
+              assign tp_fa_nummer = tp_fa_nummer | strip
+              if tp_fa_bild == blank
+                capture tp_fa_swatch
+                  render 'tp-farbe-daten', variant: tp_fa_variante, product: product, feld: 'swatch'
+                endcapture
+                assign tp_fa_swatch = tp_fa_swatch | strip
+              endif
+            endif
+            if tp_fa_bild == blank and tp_fa_value.swatch.image != blank
+              assign tp_fa_bild = tp_fa_value.swatch.image
+            endif
+            if tp_fa_bild == blank and tp_fa_swatch == '' and tp_fa_value.swatch.color != blank
+              assign tp_fa_swatch = tp_fa_value.swatch.color
+            endif
+          -%}
+          <li class="tp-fa__eintrag" role="presentation">
+            <button
+              type="button"
+              class="tp-fa__option"
+              role="option"
+              data-tp-fa-option
+              data-wert="{{ tp_fa_wert | escape }}"
+              data-suchtext="{{ tp_fa_wert | downcase | escape }} {{ tp_fa_nummer | escape }}"
+              aria-selected="{% if tp_fa_wert == selected %}true{% else %}false{% endif %}"
+            >
+              <span class="tp-fa__bild" data-tp-fa-bild aria-hidden="true">
+                {%- if tp_fa_bild != blank -%}
+                  <img
+                    src="{{ tp_fa_bild | image_url: width: 160 }}"
+                    alt=""
+                    width="64"
+                    height="64"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                {%- elsif tp_fa_swatch != '' -%}
+                  <span class="tp-fa__swatch" style="--tp-fa-swatch: {{ tp_fa_swatch | escape }};"></span>
+                {%- else -%}
+                  <span class="tp-fa__ohne-bild"></span>
+                {%- endif -%}
+              </span>
+              <span class="tp-fa__option-text">
+                <span class="tp-fa__option-name">{{ tp_fa_wert }}</span>
+                {%- if tp_fa_nummer != '' -%}
+                  <span class="tp-fa__option-nummer">Nr. {{ tp_fa_nummer | escape }}</span>
+                {%- endif -%}
+              </span>
+              <span class="tp-fa__haken" aria-hidden="true"></span>
+            </button>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      <p class="tp-fa__leer" data-tp-fa-leer hidden>Keine passende {{ tp_fa_wort }} gefunden.</p>
+
+      {%- if muster_url != blank -%}
+        <div class="tp-fa__fuss">
+          <a class="tp-fa__muster" href="{{ muster_url }}" data-tp-fa-muster>Kostenloses Muster anfragen</a>
+        </div>
+      {%- endif -%}
+    </dialog>
+  </dialog-component>
+</tp-farbauswahl>
+
+{% stylesheet %}
+  .tp-fa {
+    display: block;
+    width: 100%;
+  }
+
+  .tp-fa[hidden] {
+    display: none;
+  }
+
+  .tp-fa__titel {
+    margin: 0 0 8px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+  }
+
+  /* Steht schon eine Schritt-Ueberschrift "Farbe waehlen" davor (tp-step),
+     bleibt der eigene Titel nur Vorlesetext - sonst stuende er doppelt da. */
+  .shopify-section:has(.tp-step) .tp-fa__titel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Der Ausloeser zeigt Farbbild und Farbname bereits. Die Zeile von
+     tp-farbanzeige waere dieselbe Angabe ein zweites Mal; ihr Hinweis auf ein
+     fehlendes Foto bleibt. Die Variantenkarte im Element liest tp-farbe.js
+     unabhaengig von der Sichtbarkeit weiter. */
+  .shopify-section:has(tp-farbauswahl:not([hidden])) .tp-farbanzeige {
+    padding-block: 0;
+  }
+
+  .shopify-section:has(tp-farbauswahl:not([hidden])) .tp-farbanzeige > span {
+    display: none;
+  }
+
+  .tp-fa__ausloeser {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 8px 14px 8px 8px;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.22);
+    border-radius: 10px;
+    background: var(--color-background);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tp-fa__ausloeser:hover {
+    border-color: rgb(var(--color-foreground-rgb) / 0.5);
+  }
+
+  .tp-fa__ausloeser:focus-visible,
+  .tp-fa__option:focus-visible,
+  .tp-fa__schliessen:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .tp-fa__bild {
+    flex: 0 0 auto;
+    display: block;
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgb(var(--color-foreground-rgb) / 0.06);
+  }
+
+  .tp-fa__bild--ausloeser {
+    width: 48px;
+    height: 48px;
+  }
+
+  .tp-fa__bild img,
+  .tp-fa__swatch,
+  .tp-fa__ohne-bild {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tp-fa__swatch {
+    background: var(--tp-fa-swatch);
+  }
+
+  .tp-fa__ausloeser-text,
+  .tp-fa__option-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tp-fa__ausloeser-name,
+  .tp-fa__option-name {
+    font-weight: 600;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .tp-fa__ausloeser-anzahl,
+  .tp-fa__option-nummer {
+    font-size: 0.8125rem;
+    opacity: 0.7;
+  }
+
+  .tp-fa__pfeil {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg);
+    opacity: 0.7;
+  }
+
+  .tp-fa__sheet {
+    padding: 0;
+    color: var(--color-foreground);
+    background: var(--color-background);
+  }
+
+  .tp-fa__sheet[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tp-fa__kopf {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+  }
+
+  .tp-fa__kopf-titel {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+  }
+
+  .tp-fa__schliessen {
+    min-height: 44px;
+    padding: 0 6px;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .tp-fa__suche-wrap {
+    flex: 0 0 auto;
+    padding: 10px 16px 0;
+  }
+
+  .tp-fa__suche {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.22);
+    border-radius: 8px;
+    background: var(--color-background);
+    color: inherit;
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  .tp-fa__liste {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tp-fa__eintrag[hidden] {
+    display: none;
+  }
+
+  .tp-fa__option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 72px;
+    padding: 8px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tp-fa__option:hover {
+    background: rgb(var(--color-foreground-rgb) / 0.04);
+  }
+
+  .tp-fa__option[aria-selected='true'] {
+    border-color: var(--color-foreground);
+    background: rgb(var(--color-foreground-rgb) / 0.05);
+  }
+
+  .tp-fa__haken {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 15px;
+    margin-right: 10px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    visibility: hidden;
+  }
+
+  .tp-fa__option[aria-selected='true'] .tp-fa__haken {
+    visibility: visible;
+  }
+
+  .tp-fa__leer {
+    margin: 0;
+    padding: 16px;
+    opacity: 0.75;
+  }
+
+  .tp-fa__fuss {
+    flex: 0 0 auto;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+    text-align: center;
+  }
+
+  .tp-fa__muster {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Telefon: Bottom Sheet. Ueberschreibt die Vollbild-Vorgabe von .dialog-modal. */
+  @media screen and (max-width: 749px) {
+    .tp-fa__sheet {
+      inset: auto 0 0 0;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      max-height: 82dvh;
+      margin: 0;
+      padding: 0;
+      border-radius: 16px 16px 0 0;
+    }
+
+    dialog.tp-fa__sheet.dialog-modal[open] {
+      animation: tp-fa-hoch var(--animation-speed, 0.25s) var(--animation-easing, ease) forwards;
+    }
+
+    dialog.tp-fa__sheet.dialog-modal.dialog-closing {
+      animation: tp-fa-runter var(--animation-speed, 0.25s) var(--animation-easing, ease) forwards;
+    }
+  }
+
+  /* Desktop: kompakter Dialog, Farben im Raster statt in einer langen Spalte. */
+  @media screen and (min-width: 750px) {
+    dialog.tp-fa__sheet.dialog-modal {
+      inset: 0;
+      margin: auto;
+    }
+
+    /* Die Theme-Animation elementSlideInTop haelt margin-top per forwards auf 0
+       und klebt den Dialog damit an den oberen Rand - eigene Ein-/Ausblendung. */
+    dialog.tp-fa__sheet.dialog-modal[open] {
+      animation: tp-fa-ein var(--animation-speed, 0.25s) var(--animation-easing, ease) forwards;
+    }
+
+    dialog.tp-fa__sheet.dialog-modal.dialog-closing {
+      animation: tp-fa-aus var(--animation-speed, 0.25s) var(--animation-easing, ease) forwards;
+    }
+
+    .tp-fa__sheet {
+      width: min(760px, calc(100vw - 48px));
+      max-height: min(680px, calc(100dvh - 96px));
+    }
+
+    .tp-fa__liste {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 4px;
+      align-content: start;
+      padding: 12px;
+    }
+
+    .tp-fa__option {
+      min-height: 68px;
+    }
+  }
+
+  @keyframes tp-fa-ein {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes tp-fa-aus {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes tp-fa-hoch {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes tp-fa-runter {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(100%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    dialog.tp-fa__sheet.dialog-modal[open],
+    dialog.tp-fa__sheet.dialog-modal.dialog-closing {
+      animation-duration: 0.01s;
+    }
+  }
+{% endstylesheet %}

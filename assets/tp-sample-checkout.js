@@ -146,6 +146,22 @@
     updateCount();
   }
 
+  // Die Produktseite haengt die dort gewaehlte Farbe als ?farbe= an
+  // (assets/tp-farbauswahl.js). Vorauswahl ueber denselben Weg wie ein Tipp
+  // des Kunden, damit Limit und bereits bestellte Muster weiter gelten.
+  // Unbekannter oder fehlender Wert: nichts passiert.
+  function vorauswahl(farbe) {
+    if (!farbe) return;
+    var cards = gridEl.querySelectorAll('[data-sample-color]');
+    for (var i = 0; i < cards.length; i += 1) {
+      if (cards[i].getAttribute('data-sample-color') !== farbe) continue;
+      var checkbox = cards[i].querySelector('input[type="checkbox"]');
+      if (checkbox && !checkbox.disabled && !checkbox.checked) checkbox.click();
+      cards[i].scrollIntoView({ block: 'center' });
+      return;
+    }
+  }
+
   function submitSelection() {
     if (submitting || selected.size === 0) return;
     submitting = true;
@@ -243,6 +259,7 @@
       loadingEl.hidden = true;
       fieldsetEl.hidden = false;
       renderColors();
+      vorauswahl(getParam('farbe'));
     }).catch(function () {
       loadingEl.hidden = true;
       showError('Für dieses Produkt sind aktuell keine Muster hinterlegt.');
