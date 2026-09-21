@@ -34,6 +34,6 @@ CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Far
 
 ## Letzter erfolgreicher Git-Commit
 
-8636ca5 – audit: Notizvertrag S16 und bedingten Controllerfehler pruefen. 13 Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+75f66e9 – audit: Cartstand konsolidieren und Rabatt-Fixpaket vorbereiten. Zehn Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING

@@ -35,3 +35,5 @@ Aktuelle Zugriffsgrenze: S13 Chrome verbunden, Shopnavigation wegen verweigerter
 Evidence-Basis 66729099c4122385e19172a1f5ba14a7524c3bfb; einzelne Quellhashes und Grenzen je Diagnose in audit/evidence. Chronologie/Commitreferenzen S01–S16 bleiben in SESSION_LOG.md; keine alten Evidences entfernt oder erneut ausgeführt.
 
 Git: Branch audit/shop-audit, .git schreibbar. Letzter Fachcommit S16 8636ca5, Sicherungsnotiz 5875ef0. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json nicht stagen. Kein Merge/Push.
+
+S17 tatsächlich in `75f66e9` gesichert. Paket-/Link-/Integritätsprüfung und Secret-Scan PASS; keine alten Produktdiagnosen wiederholt. Zwei READY-Pakete, keines umgesetzt. Weiter CALC-001a/H-003; Status WORKING.

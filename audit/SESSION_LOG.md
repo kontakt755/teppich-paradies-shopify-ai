@@ -333,3 +333,5 @@ S17 / CART-004 abgeschlossen: Cart-Testmatrix S08–S16 konsolidiert, veraltete 
 Route TASK-516D83336635 B/STATIC, kein Executor. Reine Dokument-/Link-/Scope-/Secretprüfung, keine alten Produktdiagnosen wiederholt. FILE CONFLICT: Paket 03 bündelt cart-discount.js und begrenzte cart-note.js-Ownership. Keine globale Renderer-/Cartqueueänderung. Paket 02 separat, aber keine Parallelfreigabe.
 
 Nächster Schritt: CALC-001a / H-003: verbleibende Rollenrechner-Zustandswechsel lokal prüfen: Farb-/Artwechsel bei bereits gewählter Fußleiste/Haftunterlage, aktiver Varianten-ID und Preisbasis. Einstieg blocks/tp-rollware-rechner.liquid (change-Handler um 1756/1778), assets/tp-rollware-art.js und anschließender Variantenvertrag. Keine PR-020–023-Mathematik erneut ausführen; echte Picker-/Reload-/Browsernachweise getrennt offen halten.
+
+S17 tatsächlich in `75f66e9` gesichert. Paket-/Link-/Integritätsprüfung und Secret-Scan PASS; keine alten Produktdiagnosen wiederholt. Zwei READY-Pakete, keines umgesetzt. Weiter CALC-001a/H-003; Status WORKING.
