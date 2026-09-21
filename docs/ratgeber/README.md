@@ -34,30 +34,24 @@ Schritte, eine Materialliste, kontextnahe Produktverweise und ein dichtes
 einem Kaufaufruf endet. Kein ausgewerteter Fachhändler deckt Teppichboden in der
 Tiefe ab – das ist die Lücke.
 
-### Abgrenzung zum seitenbasierten Entwurf aus PR #424
+### Entschieden: Blog-Aufbau (Inhaber, 2026-09-21)
 
-Parallel ist in PR #424 (#420) ein Ratgeber auf Basis von Shopify-**Seiten**
-entstanden (`sections/tp-ratgeber-artikel.liquid`,
-`sections/tp-ratgeber-uebersicht.liquid`, `templates/page.ratgeber.json`,
-`domains/shopify/ratgeber-informationsarchitektur.md`). Damit beide PRs ohne
-Konflikt mergen, heißen die Dateien hier anders: `tp-ratgeber-beitrag`,
-`tp-ratgeber-bereiche`, `page.ratgeber-start`. Live ist keiner von beiden.
+Parallel war in PR #424 (#420) ein Ratgeber auf Basis von Shopify-**Seiten**
+entstanden. Der Inhaber hat den Blog-Aufbau gewählt; die sechs Ratgeber-Dateien
+sind aus #424 entfernt (Commit `c06f058`). Ausschlaggebend: Beim Seiten-Aufbau
+lagen Kurzfazit, Eckdaten und Schritte in Section-Einstellungen – die gelten je
+Template-Datei, jeder Artikel hätte also eine eigene Datei gebraucht. Beim Blog
+kommt alles aus Artikel-Metafeldern mit **einem** Template; Datum, Titelbild,
+Auszug, Tags, Sitemap und das Artikelobjekt bringt Shopify mit.
 
-Welcher Aufbau bleibt, entscheidet der Inhaber. Sachlicher Unterschied:
+Die Dateinamen hier (`tp-ratgeber-beitrag`, `tp-ratgeber-bereiche`,
+`page.ratgeber-start`) bleiben so – sie waren zur Entflechtung gewählt und sind
+inzwischen im Entwicklungs-Theme geprüft.
 
-| | Seiten (PR #424) | Blog (dieses Paket) |
-|---|---|---|
-| Kurzfazit, Eckdaten, Schritte | Section-Einstellungen – gelten je **Template-Datei**, also eine Datei je Artikel | Artikel-Metafelder – **ein** Template für alle Artikel |
-| Datum, Autor, Titelbild, Auszug, Tags | nicht vorhanden bzw. von Hand | nativ am Artikel |
-| Themenseite | Linklisten von Hand pflegen | füllt sich aus den Tags |
-| Sitemap / `Article`-Semantik | Seiten-Sitemap, Schema von Hand | `sitemap_blogs`, Artikelobjekt |
-| Neuer Bodenbereich | neue Linklisten, Belag-Umschalter | neuer Blog, kein neues Template |
-
-Gut am Entwurf aus #424 und hier übernehmbar: die sechs Themencluster (decken sich
-fast mit den Gruppen oben), der Gedanke „Belag ist eine zweite Achse" und die
-Menü-Vorlage. Empfehlung: Blog-Aufbau behalten, Ratgeber-Dateien aus #424 nicht
-mergen oder danach entfernen; die Artikelliste aus #424 (Bahnen verbinden,
-Untergrund, Fußleisten) als nächste Welle nach den Pilotartikeln einplanen.
+Aus dem Entwurf übernommen: der Gedanke „Belag ist eine zweite Achse" (hier: ein
+Blog je Belag statt Umschalter), die Menü-Vorlage
+(`domains/shopify/menu-main-menu-ratgeber-vorlage.md`, an den Blog angepasst) und
+die Artikelliste der nächsten Welle (Abschnitt 8).
 
 ## 2. Aufbau eines Artikels
 
@@ -186,6 +180,21 @@ vor KI-Visualisierung.
 Pilotthemen (Kaufnähe × Nachfrage): Teppichboden richtig ausmessen · Rollenbreite
 und Bahnen planen · Welcher Teppichboden für welchen Raum · Teppichboden verlegen:
 lose, fixiert oder verklebt · Pflege und Fleckentfernung.
+
+**Stand der Pilotwelle:** vier Entwürfe liegen unter `content/ratgeber/teppichboden/`
+(ausmessen · Rollenbreite und Bahnen · welcher Teppichboden für welchen Raum ·
+lose/fixiert/verklebt). „Pflege und Fleckentfernung" ist noch nicht geschrieben.
+
+**Nächste Welle** (aus dem Entwurf in #424 übernommen, Reihenfolge nach Nähe zur
+Fehlbestellung bzw. zum Kaufvorbehalt):
+
+| Themengruppe | Arbeitstitel | Frage des Kunden | Verweise |
+|---|---|---|---|
+| Verlegen | Bahnen verbinden – Nähte bei Nadelvlies und Velours | „Sieht man die Naht?" | `verlegeservice`, `zubehoer` |
+| Vorbereiten | Untergrund prüfen und vorbereiten | „Muss ich am Boden vorher etwas machen?" | `verlegeservice` |
+| Abschluss & Leisten | Teppichfußleisten passend auswählen | „Welche Leiste passt farblich und technisch?" | Kollektion Bodenleisten |
+| Planen & Messen | Teppichboden richtig transportieren | „Passt die Rolle ins Treppenhaus?" | `verlegeservice` |
+| Pflege | Pflege und Fleckentfernung | „Wie bekomme ich das wieder raus?" | `zubehoer` (Reinigungsmittel) |
 
 ## 9. Livegang-Reihenfolge (noch nicht ausgeführt)
 
