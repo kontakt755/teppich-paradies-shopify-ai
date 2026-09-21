@@ -181,9 +181,12 @@ Pilotthemen (Kaufnähe × Nachfrage): Teppichboden richtig ausmessen · Rollenbr
 und Bahnen planen · Welcher Teppichboden für welchen Raum · Teppichboden verlegen:
 lose, fixiert oder verklebt · Pflege und Fleckentfernung.
 
-**Stand der Pilotwelle:** vier Entwürfe liegen unter `content/ratgeber/teppichboden/`
-(ausmessen · Rollenbreite und Bahnen · welcher Teppichboden für welchen Raum ·
-lose/fixiert/verklebt). „Pflege und Fleckentfernung" ist noch nicht geschrieben.
+**Stand der Pilotwelle:** alle fünf Entwürfe liegen unter
+`content/ratgeber/teppichboden/` (ausmessen · Rollenbreite und Bahnen · welcher
+Teppichboden für welchen Raum · lose/fixiert/verklebt · pflegen und Flecken
+entfernen). Offen sind 71 `PRUEFEN`-Fragen an das Verlegeteam, gesammelt in der
+dortigen `README.md`; `npm run ratgeber:payload` sperrt jeden Artikel, bis seine
+Fragen beantwortet sind und der Status auf `freigegeben` steht.
 
 **Nächste Welle** (aus dem Entwurf in #424 übernommen, Reihenfolge nach Nähe zur
 Fehlbestellung bzw. zum Kaufvorbehalt):
@@ -194,7 +197,6 @@ Fehlbestellung bzw. zum Kaufvorbehalt):
 | Vorbereiten | Untergrund prüfen und vorbereiten | „Muss ich am Boden vorher etwas machen?" | `verlegeservice` |
 | Abschluss & Leisten | Teppichfußleisten passend auswählen | „Welche Leiste passt farblich und technisch?" | Kollektion Bodenleisten |
 | Planen & Messen | Teppichboden richtig transportieren | „Passt die Rolle ins Treppenhaus?" | `verlegeservice` |
-| Pflege | Pflege und Fleckentfernung | „Wie bekomme ich das wieder raus?" | `zubehoer` (Reinigungsmittel) |
 
 ## 9. Livegang-Reihenfolge (noch nicht ausgeführt)
 
@@ -202,8 +204,13 @@ Fehlbestellung bzw. zum Kaufvorbehalt):
    (PR → `main` → Preview → Live). **Erst danach** Shopify-Objekte anlegen – eine
    Seite oder ein Blog mit fehlendem Template fällt sonst auf das Standard-Template
    zurück (bei Seiten ist das hier die B2B-Seite).
-2. Artikel-Metafelddefinitionen anlegen, Blog `ratgeber-teppichboden` und Seite
-   `ratgeber` anlegen, Pilotartikel nach Freigabe veröffentlichen.
+2. Blog `ratgeber-teppichboden` und Seite `ratgeber` anlegen (die 19
+   Metafelddefinitionen bestehen seit 2026-09-21). Artikel anlegen mit
+   `npm run ratgeber:payload -- content/ratgeber/teppichboden --blog-id <gid>
+   --kollektionen <datei>`: Das Skript baut die Eingaben für `articleCreate` und
+   **sperrt jeden Artikel**, der nicht `"status": "freigegeben"` trägt oder noch
+   eine `PRUEFEN`-Marke enthält. Angelegt wird immer unveröffentlicht; sichtbar
+   schalten ist ein eigener, freigegebener Schritt.
 3. Menü „Service & Verlegung" um „Ratgeber" ergänzen. `menuUpdate` ersetzt den
    ganzen Baum: vorher auslesen, alle Zweige mit IDs zurückschreiben, Gegenprobe
    ist die identische ID-Menge (`docs/lessons/tote-menuelinks.md`).

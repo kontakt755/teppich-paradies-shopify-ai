@@ -2,7 +2,7 @@
 
 **Entwurf – nicht veröffentlichen, bevor alle PRUEFEN-Marken beantwortet und entfernt sind.**
 
-Vier Pilotartikel für den Blog `ratgeber-teppichboden`. Aufbau, Metafelder und
+Fünf Pilotartikel für den Blog `ratgeber-teppichboden`. Aufbau, Metafelder und
 Redaktionsregeln stehen in `docs/ratgeber/README.md`. Je Artikel gibt es zwei Dateien:
 `<handle>.html` (nur der Artikeltext, ohne H1) und `<handle>.json` (Titel, Tags, SEO,
 Metafelder, Status `entwurf`). `geprueft_von` und `stand` bleiben leer, bis der Inhaber
@@ -16,8 +16,9 @@ sie nach der fachlichen Prüfung füllt.
 | 2 | Rollenbreite wählen und Bahnen planen: 400 oder 500 cm? | `rollenbreite-und-bahnen-planen` | Planung | Planen & Messen | 1236 | 11 |
 | 3 | Welcher Teppichboden passt zu welchem Raum? | `welcher-teppichboden-fuer-welchen-raum` | Kaufberatung | Auswahl & Kaufberatung | 1137 | 7 |
 | 4 | Teppichboden verlegen: lose, fixiert oder vollflächig verklebt? | `teppichboden-verlegen-lose-fixieren-oder-kleben` | Anleitung | Verlegen | 1198 | 16 |
+| 5 | Teppichboden pflegen und Flecken entfernen: Was wirklich hilft | `teppichboden-pflegen-und-flecken-entfernen` | Pflege | Pflege | 1387 | 29 |
 
-Wörter ohne HTML und ohne Kommentare gezählt. PRUEFEN-Marken gesamt: 42.
+Wörter ohne HTML und ohne Kommentare gezählt. PRUEFEN-Marken gesamt: 71.
 
 ## So funktioniert die Prüfung
 
@@ -29,6 +30,8 @@ Wörter ohne HTML und ohne Kommentare gezählt. PRUEFEN-Marken gesamt: 42.
   Text eine Regel (z. B. die Grenze für lose Verlegung), die Kurzantwort mit anpassen.
 - Artikel 4: `dauer`, `schwierigkeit`, `personen` und `material` in der JSON-Datei sind
   vorsichtige Platzhalter und selbst Prüfpunkte (Fragen 4.1 und 4.2).
+- Artikel 5: `material` in der JSON-Datei ist ebenfalls ein Prüfpunkt (Frage 5.8). Die
+  Flecken-Tabelle nennt bewusst keine Produktnamen und keine Mischungsverhältnisse.
 - Vor dem Veröffentlichen: `grep -c "PRUEFEN" *.html` muss überall 0 ergeben.
 
 ## Bewusste Abweichung
@@ -93,3 +96,35 @@ die vier wichtigsten Macharten kürzen.
 - **4.14** Bestätigen Sie „Belag endet mittig unter dem geschlossenen Türblatt“?
 - **4.15** Sichern Sie bei loser Verlegung den Türbereich grundsätzlich mit Band oder Profil?
 - **4.16** Welche Angaben zu Zahnung und Einlegezeit sollen Kunden beachten – reicht der Verweis auf den Kleberhersteller?
+
+### 5. Teppichboden pflegen und Flecken entfernen: Was wirklich hilft
+
+- **5.1** Ist die Aussage „eingetretener Sand wirkt wie ein Schleifmittel und macht Laufzonen stumpf“ aus Ihrer Sicht richtig und so formulierbar?
+- **5.2** Welchen Saugrhythmus empfehlen Sie Kunden je Raumnutzung? Stimmen „mehrmals pro Woche“, „ein- bis zweimal“ und „einmal pro Woche“?
+- **5.3** Stimmt die Zuordnung Bürste / glatte Düse je Machart mit Ihrer Empfehlung überein – insbesondere „Schlinge und Hochflor nur mit glatter Düse“ und „Nadelvlies mit Bürste“?
+- **5.4** Bestätigen Sie „herausstehende Fäden und gezogene Schlingen abschneiden, nie ziehen“?
+- **5.5** Welche Mindestlänge der Sauberlaufzone empfehlen Sie im Wohnbereich (z. B. zwei bis drei Schrittlängen)?
+- **5.6** Welche Gleiter empfehlen Sie auf Teppichboden – Filzgleiter oder glatte Kunststoff- bzw. Metallgleiter?
+- **5.7** Empfehlen Sie Bodenschutzmatten auf Teppichboden, und worauf soll der Kunde bei der Matte achten?
+- **5.8** Materialliste im Metafeld (weiße Tücher, Löffel, Wasser, weiche Bürste, Kühlakku, Staubsauger, geeigneter Fleckentferner) – vollständig und so richtig benannt?
+- **5.9** Bestätigen Sie „Mittel immer auf das Tuch, nie direkt auf den Belag“ – oder gilt das bei bestimmten Fleckentfernern anders?
+- **5.10** Stimmt „Reinigerreste führen zu schnellerer Wiederanschmutzung“ nach Ihrer Erfahrung?
+- **5.11** Empfehlen Sie verdünntes Feinwaschmittel als Hausmittel, oder ausschließlich Teppich-Fleckentferner?
+- **5.12** Raten Sie bei Rotwein von Salz ab, oder empfehlen Sie es? Bitte Zeile entsprechend anpassen.
+- **5.13** Welche erste Maßnahme empfehlen Sie bei Fett – gibt es ein Hausmittel, das Sie guten Gewissens nennen?
+- **5.14** Bestätigen Sie die Kältemethode bei Kaugummi für alle Macharten?
+- **5.15** Empfehlen Sie die Bügeleisen-Methode bei Wachs – wenn ja, bei welcher Einstellung –, oder raten Sie davon ab?
+- **5.16** Bestätigen Sie „Schlamm erst trocknen lassen, dann saugen“?
+- **5.17** Gibt es bei Tinte eine erste Maßnahme, die Sie empfehlen (z. B. Alkohol auf dem Tuch), oder soll der Kunde nichts selbst versuchen?
+- **5.18** Empfehlen Sie bei Tierurin ein Hausmittel (z. B. verdünntes Essigwasser) oder einen bestimmten Reinigertyp?
+- **5.19** Stimmt „Durchnässen kann Fixierung bzw. Kleber beeinträchtigen“ für die bei Ihnen üblichen Verlegearten?
+- **5.20** Welche Haushaltsmittel sollen Kunden ausdrücklich nicht verwenden? Ist die Liste vollständig?
+- **5.21** Raten Sie von Dampfreinigern auf Teppichboden generell ab oder nur bei verklebter bzw. fixierter Ware?
+- **5.22** Welche Pflegehinweise geben Sie Kunden zu Wollteppichboden mit – stimmen „wenig Feuchtigkeit, kein heißes Wasser, keine stark alkalischen Mittel, nur wollgeeignete Reiniger“?
+- **5.23** In welchem Abstand empfehlen Sie im Wohnbereich eine Grundreinigung – oder nur nach Bedarf?
+- **5.24** Für welche Verlegearten und Rückenarten halten Sie die Sprühextraktion für geeignet, für welche nicht?
+- **5.25** Bieten Sie eine Grundreinigung selbst an oder vermitteln Sie sie? Sollen Kunden mit Pflegefragen auf die Kontaktseite verwiesen werden?
+- **5.26** Welche Methode empfehlen Sie bei Druckstellen (anfeuchten und aufbürsten, Eiswürfel, Dampf mit Abstand)? Gibt es Macharten, bei denen Druckstellen dauerhaft bleiben?
+- **5.27** Trifft „Flusen in den ersten Wochen sind normal und lassen nach“ auf die Qualitäten im Shop zu – bei welchen Macharten besonders, und welchen Zeitraum nennen Sie Kunden?
+- **5.28** Wie formulieren Sie den Hinweis zum Neugeruch gegenüber Kunden, und welchen Zeitraum nennen Sie?
+- **5.29** Setzen Sie bei kleinen Schäden Flicken aus Reststücken ein, und soll der Ratgeber dazu raten, ein Reststück aufzubewahren?
