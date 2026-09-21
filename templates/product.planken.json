@@ -182,9 +182,7 @@
             "tp_farb_dropdown": {
               "type": "color-swatch-picker",
               "name": "Farb-Swatches",
-              "settings": {
-                "darstellung": "dropdown"
-              },
+              "settings": {},
               "blocks": {}
             },
             "variant_picker_R3rGDr": {
@@ -360,7 +358,6 @@
     },
     "product_info_full_width_TP1": {
       "type": "section",
-      "name": "Produktinformationen (Full Width)",
       "blocks": {
         "tp_verkaufstext_night2": {
           "type": "tp-verkaufstext",
@@ -391,6 +388,7 @@
         "tp_verkaufstext_night2",
         "ai_gen_block_b888d9b_CJbJ8X"
       ],
+      "name": "Produktinformationen (Full Width)",
       "settings": {
         "content_direction": "column",
         "vertical_on_mobile": true,
