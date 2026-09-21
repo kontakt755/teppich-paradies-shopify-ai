@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T11:09:10.384Z",
+  "generated_at": "2026-09-21T11:23:33.539Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 118,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T11:09:10.384Z",
+    "fetchedAt": "2026-09-21T11:23:33.539Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,17 +66,17 @@
     {
       "number": 435,
       "title": "Altdateien tp-card-*: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/435",
       "labels": [
-        "status:geplant",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 0,
+      "comments": 3,
       "nextStep": "Nach dem **naechsten Livegang** tauschen die Rollen: 204436144462 wird unveroeffentlicht und ist danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft, die drei Dateien entfernen - sonst blockiert `PREVIEW_DIFF`:",
       "fields": {
         "description": "## Stand 2026-09-21\nDie drei toten Dateien `blocks/tp-card-dimensions.liquid`, `blocks/tp-card-price-sqm.liquid`, `snippets/tp-card-roll-lengths.liquid` sind aus `main` entfernt (#421, endgueltig mit #433) und aus dem unveroeffentlichten Preview-Theme 204438208846 geloescht (gezielter CLI-Push, Gegenprobe per Admin API: nur diese drei Dateien fehlen).\n\n**Sie liegen noch auf dem heutigen Live-Theme 204436144462.** Dort stoeren sie nicht (kein Template verweist darauf), und das Live-Theme wird bewusst nie direkt angefasst.",
@@ -97,8 +97,8 @@
         }
       },
       "created_at": "2026-09-21T11:08:57Z",
-      "updated_at": "2026-09-21T11:08:57Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T11:23:31Z",
+      "closed_at": "2026-09-21T11:23:16Z"
     },
     {
       "number": 422,
@@ -115,13 +115,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:33:49Z",
-      "updated_at": "2026-09-21T11:06:48Z",
+      "updated_at": "2026-09-21T11:15:46Z",
       "closed_at": null
     },
     {
@@ -139,13 +139,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:07:10Z",
-      "updated_at": "2026-09-21T11:04:07Z",
+      "updated_at": "2026-09-21T11:23:24Z",
       "closed_at": "2026-09-21T11:04:07Z"
     },
     {
