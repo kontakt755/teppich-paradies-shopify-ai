@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T09:41:59.776Z",
+  "generated_at": "2026-09-21T09:46:10.617Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 117,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T09:41:59.776Z",
+    "fetchedAt": "2026-09-21T09:46:10.617Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -1684,7 +1684,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/162",
       "labels": [
-        "status:geplant",
+        "status:in-arbeit",
         "type:ux",
         "priority:p1",
         "area:produktseite"
@@ -1693,13 +1693,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T20:09:31Z",
-      "updated_at": "2026-09-21T08:22:16Z",
+      "updated_at": "2026-09-21T09:44:25Z",
       "closed_at": null
     },
     {
@@ -3155,7 +3155,7 @@
     {
       "number": 39,
       "title": "[SHP-012] Teppichboden-Menü-Audit",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/39",
       "labels": [
         "status:geplant",
@@ -3167,7 +3167,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": "ChatGPT: Bitte Menü-Struktur auditieren",
       "fields": {
         "goal": "Live-/Admin-Struktur read-only gegen Zielnavigation prüfen",
@@ -3191,8 +3191,8 @@
         }
       },
       "created_at": "2026-09-03T09:24:29Z",
-      "updated_at": "2026-09-08T14:23:21Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T09:45:52Z",
+      "closed_at": "2026-09-21T09:45:52Z"
     },
     {
       "number": 38,
@@ -3343,10 +3343,10 @@
     {
       "number": 35,
       "title": "[SHP-001] Repository-Portabilität",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/35",
       "labels": [
-        "status:geplant",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:backend"
@@ -3355,7 +3355,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": null,
       "fields": {
         "goal": "Privates, Windows/Mac-stabiles Git-Fundament spezifizieren und lokal vorbereiten",
@@ -3382,8 +3382,8 @@
         }
       },
       "created_at": "2026-09-03T09:24:23Z",
-      "updated_at": "2026-09-08T14:23:29Z",
-      "closed_at": null
+      "updated_at": "2026-09-21T09:46:06Z",
+      "closed_at": "2026-09-21T09:45:50Z"
     },
     {
       "number": 34,
