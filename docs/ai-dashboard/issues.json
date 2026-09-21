@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T11:31:33.060Z",
+  "generated_at": "2026-09-21T11:32:16.157Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 118,
+  "count": 119,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T11:31:33.060Z",
+    "fetchedAt": "2026-09-21T11:32:16.157Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,43 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 442,
+      "title": "Altdatei tp-google-rating: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/442",
+      "labels": [
+        "status:geplant",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 0,
+      "nextStep": "Nach dem naechsten Livegang wird 204438208846 unveroeffentlicht und danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft:",
+      "fields": {
+        "description": "## Stand 2026-09-21 11:32Z\n`blocks/tp-google-rating.liquid` ist aus `main` entfernt (#440, #170) und aus dem unveroeffentlichten Preview-Theme 204436144462 geloescht (gezielter `--only`-Push, Gegenprobe per Admin API: nur diese Datei fehlt, `tp-bewertungsbeleg.liquid` und `price.liquid` unveraendert).\n\n**Die Datei liegt noch auf dem heutigen Live-Theme 204438208846.** Dort stoert sie nicht (rendert nichts, in keinem Template), und das Live-Theme wird nie direkt angefasst.",
+        "nextStep": "Nach dem naechsten Livegang wird 204438208846 unveroeffentlicht und danach wieder Preview-Ziel. **Bevor** dort die naechste Preview laeuft:",
+        "acceptance": {
+          "total": 2,
+          "done": 0,
+          "items": [
+            {
+              "done": false,
+              "text": "Datei auf keinem der beiden Wechsel-Themes mehr vorhanden"
+            },
+            {
+              "done": false,
+              "text": "Preview-Lauf danach ohne `PREVIEW_DIFF`"
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-21T11:32:01Z",
+      "updated_at": "2026-09-21T11:32:01Z",
+      "closed_at": null
+    },
     {
       "number": 435,
       "title": "Altdateien tp-card-*: nach dem naechsten Livegang aus dem dann unveroeffentlichten Alt-Theme entfernen",
@@ -1580,19 +1617,20 @@
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/170",
       "labels": [
         "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
       ],
       "assignee": null,
       "assignees": [],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-09T21:24:11Z",
-      "updated_at": "2026-09-21T11:31:28Z",
+      "updated_at": "2026-09-21T11:31:35Z",
       "closed_at": "2026-09-21T11:31:16Z"
     },
     {
