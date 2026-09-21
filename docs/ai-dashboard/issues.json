@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-21T08:23:45.443Z",
+  "generated_at": "2026-09-21T09:07:26.478Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 115,
+  "count": 116,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-21T08:23:45.443Z",
+    "fetchedAt": "2026-09-21T09:07:26.478Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 420,
+      "title": "Produktseite Rollenware kompakter: Farb-Dropdown, cm/m-Eingabe, Visualisierer-Beschriftung, Ratgeber-Template, Aktionskonzept",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/420",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:produktseite"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-21T09:07:10Z",
+      "updated_at": "2026-09-21T09:07:11Z",
+      "closed_at": null
+    },
     {
       "number": 415,
       "title": "Ahmet prueft: Merchant Center uebernimmt Aktionspreise korrekt (sale_price) - 20 Teppichboeden, Aktion bis 18.10.2026",
@@ -796,13 +820,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-13T06:42:56Z",
-      "updated_at": "2026-09-21T08:23:43Z",
+      "updated_at": "2026-09-21T08:23:44Z",
       "closed_at": "2026-09-21T08:23:30Z"
     },
     {
