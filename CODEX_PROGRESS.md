@@ -27,6 +27,6 @@ S08-Responses/DOM/Refs/Morph/Animation modelliert. Keine echte Shopify-Mutation,
 CART-002b: assets/component-quantity-selector.js, component-cart-quantity-selector.js, component-cart-items.js, section-renderer.js, cart-drawer.js und events.js lesen. Original-Mengenereignis über Debounce sowie schnelle Aktionen/Antwortreihenfolge/Sectionzustand prüfen. Echte Browser-Wiederöffnung/Reload/Checkout getrennt halten (H-012). Preisdiagnosen und CART-002a ohne Quelländerung nicht wiederholen. Nur Auditdateien ändern, getestete Schritte tatsächlich committen.
 
 ## Letzter erfolgreicher Git-Commit
-0d887b5 – audit: erfolgreichen S07-Commit und naechsten Cart-Schritt festhalten. S07-Fachcommit 4b8e49d. S08 wird nach Abschlussprüfungen regulär committed; tatsächlichen jüngsten Stand mit git log prüfen. Kein Pull/Merge/Push.
+67ee9bc – audit: CART-002a pruefen und fehlende Loeschfehler-Ruecknahme TP-010 belegen. Tatsächlich per git add/commit gesichert: 15 Audit-/Progressdateien, Branch audit/shop-audit. Diese Commitreferenz wird separat nachgetragen; neueste Dokumentationscommits zeigt git log. Kein Pull/Merge/Push.
 
 Status: WORKING

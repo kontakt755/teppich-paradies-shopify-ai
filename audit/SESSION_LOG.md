@@ -229,3 +229,5 @@ Erneute Nutzerfortsetzung während der Sicherung: .git jetzt ausdrücklich im sc
 **Nächster konkreter Schritt:** CART-002b: Mengenereignis vom Originalselektor über Debounce; schnelle Aktionen/Antwortreihenfolge und Section-/Drawerzustand. Quellen component-quantity-selector, component-cart-quantity-selector, component-cart-items, section-renderer, cart-drawer, events. Echte Wiederöffnung/Reload/Checkout danach separat nachholen. Abgeschlossene Preis-/CART-002a-Tests nur bei betroffener Quelländerung wiederholen.
 
 **Status:** WORKING, grob 27 %, Phase 1. Keine Reparaturen, FINAL_REPORT und Gesamtauftrag weiterhin offen.
+
+**S08 tatsächlich committed:** `67ee9bc`, 15 Audit-/Progressdateien nach bestandener Integrität, Secret-Scan und git diff --check. Commit auf `audit/shop-audit`; dieser Branch wurde außerhalb meiner Befehle bereitgestellt, Parent bleibt 0d887b5. Externe CONTINUE_PROMPT.md und docs/ai-dashboard/issues.json weiterhin unverändert belassen. Commitreferenz in Master/Progress nachtragen und sichern; keine erneute Produktdiagnose. Status WORKING, nächster Schritt CART-002b.
