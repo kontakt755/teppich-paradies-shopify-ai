@@ -305,6 +305,11 @@
               },
               "blocks": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_teppich": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -326,6 +331,7 @@
           "block_order": [
             "teppich_header_group",
             "tp_teppich_vorteile_main",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_teppich",
             "divider_teppich_main",
             "color_swatch_picker_teppich_main",

@@ -177,6 +177,11 @@
               "settings": {},
               "blocks": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_night1": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -344,6 +349,7 @@
           },
           "block_order": [
             "group_icgrde",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_night1",
             "divider_VJhene",
             "tp_step_farbe_sales1",

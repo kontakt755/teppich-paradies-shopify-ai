@@ -282,6 +282,11 @@
               "type": "tp-groessen-auswahl",
               "settings": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_zubehoer": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -302,6 +307,7 @@
           },
           "block_order": [
             "group_icgrde",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_zubehoer",
             "divider_VJhene",
             "tp_groessen_auswahl",

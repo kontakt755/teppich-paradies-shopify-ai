@@ -1,0 +1,66 @@
+{% doc %}
+  Aktionshinweis auf der Produktseite. Zeigt nur etwas, wenn fuer dieses Produkt
+  eine zentral gesteuerte Aktion laeuft (snippets/tp-aktion-laufend) - sonst
+  rendert der Block nichts.
+
+  Inhaberentscheidung 2026-09-22: kein durchgestrichener Vergleichspreis, sondern
+  ein Hinweis mit Prozentsatz und Enddatum. Der Rabatt wird im Warenkorb vom
+  automatischen Shopify-Rabatt abgezogen. Kein Countdown, keine Verknappung.
+{% enddoc %}
+{%- liquid
+  assign tah_produkt = closest.product | default: product
+  capture tah_raw
+    render 'tp-aktion-laufend', product: tah_produkt
+  endcapture
+  assign tah_raw = tah_raw | strip
+-%}
+{%- if tah_raw != blank -%}
+  {%- liquid
+    assign tah_teile = tah_raw | split: '|'
+    assign tah_prozent = tah_teile[0]
+    assign tah_ende = tah_teile[1] | date: '%d.%m.%Y'
+  -%}
+  <p class="tp-aktion-hinweis" data-tp-aktion="{{ tah_prozent }}" {{ block.shopify_attributes }}>
+    <span class="tp-aktion-hinweis__badge">−{{ tah_prozent }} %</span>
+    <span class="tp-aktion-hinweis__text">Aktion bis {{ tah_ende }} – wird im Warenkorb abgezogen</span>
+  </p>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-aktion-hinweis {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .tp-aktion-hinweis__badge {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #b3261e;
+    color: #fff;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tp-aktion-hinweis__text {
+    color: var(--color-foreground);
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Aktionshinweis",
+  "tag": null,
+  "settings": [],
+  "presets": [
+    {
+      "name": "TP Aktionshinweis"
+    }
+  ]
+}
+{% endschema %}
