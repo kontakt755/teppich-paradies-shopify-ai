@@ -1,6 +1,6 @@
 # Teppich-Paradies – Auditstatus
 
-AUDIT FORTSCHRITT: 28 %
+AUDIT FORTSCHRITT: 32 %
 
 Stand: 22.09.2026. Phase 1, Analyse und vorbereitende Übergabepakete. Sequenziell, keine Subagenten, keine Shopänderungen. Prozentwert grobe Abdeckung, kein Testpass-Anteil.
 
@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
-Letzte abgeschlossene Aufgabe: S31 / JS-001e: vier Lifecycle-Beobachtungen am vollständigen Original-PricePerItemComponent PASS. Nach Reconnect aktualisiert CartUpdate die Mengenstaffel nicht mehr; Basispreis bleibt sichtbar. Frische Instanz wechselt bei Menge fünf von 10 auf 8 Euro. Sechs von acht lokalen Produkt-Templates haben einen aktiven Mengenblock; Komponente rendert nur bei tatsächlichen Varianten-Staffelpreisen. TP-016 erweitert, keine neue Issue-ID; heutige Produkt-/Browserreichweite offen.
-Nächste Aufgabe: JS-001f: `assets/media-gallery.js` als nächsten sichtbaren, ungeprüften Einmal-Controller-Kandidaten vollständig lesen, Template-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige Preis-/Sticky-/Quick-add-/Variantenfälle nicht wiederholen.
+Letzte abgeschlossene Aufgabe: S32 / JS-001f: vier Lifecycle-Beobachtungen an der vollständigen Original-MediaGallery PASS. Nach Reconnect verarbeitet dieselbe Instanz weder VariantUpdate-Ersetzung noch ZoomMediaSelected; frische Instanz verarbeitet beide. Alle acht lokalen Produkttemplates enthalten eine aktive Mediengalerie. TP-016 erweitert, keine neue Issue-ID; tatsächlicher DOM-Morph-/Browser-Reconnect und Live-Reichweite offen.
+Nächste Aufgabe: JS-001g: `assets/media.js` vollständig lesen, Klassen-/Aufruferreichweite bestimmen und den noch ungeprüften Lifecycle lokal ausführen. Fertige Galerie-/Preis-/Sticky-/Quick-add-/Variantenfälle nicht wiederholen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -67,3 +67,5 @@ S29 in `0e710dd` tatsächlich gesichert. Vier QuickAddDialog-Lifecycle-Beobachtu
 S30 in `6d4ed1a` tatsächlich gesichert. Vier Sticky-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.
 
 S31 in `f9713f5` tatsächlich gesichert. Vier Stückpreis-Lifecycle-Beobachtungen, Template-Matrix sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
+
+S32: MediaGallery-Lifecycle und acht Produkttemplates lokal geprüft; TP-016 erweitert. Keine Shopänderung. Weiter JS-001g, Status WORKING.

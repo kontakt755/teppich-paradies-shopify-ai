@@ -502,3 +502,13 @@ Script `audit/scripts/reproduce-price-per-item-reconnect.mjs`; Evidence `audit/e
 Nächster Schritt: JS-001f `media-gallery.js` als sichtbaren ungeprüften Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Fälle nicht wiederholen.
 
 S31 in `f9713f5` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Template-Matrix, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
+
+## S32 – MediaGallery-Reconnect (22.09.2026)
+
+JS-001f: vier Lifecycle-Beobachtungen an der vollständigen Original-MediaGallery PASS. Initial ersetzen VariantUpdate und ZoomMediaSelected die Galerie beziehungsweise wählen Index 3. Nach Disconnect werden beide Ereignisse ignoriert. Nach Reconnect derselben Instanz bleiben beide wirkungslos; eine frische Instanz funktioniert. Ursache ist der einmal erzeugte und nach Abort wiederverwendete `#controller`.
+
+Alle acht lokalen Produkttemplates enthalten einen aktiven `_product-media-gallery`-Block. Diese statische Reichweite belegt keinen tatsächlichen Reconnect derselben DOM-Instanz. Reales Replace/Morph-Verhalten, Quick-add-Dialog, Browser und Live-Theme blieben ungeprüft. TP-016 erweitert, keine neue Issue-ID; Issuezahl 17 unverändert.
+
+Script `audit/scripts/reproduce-media-gallery-reconnect.mjs`; Evidence `audit/evidence/media-gallery-reconnect-2026-09-22.json`. Erster Lauf erreichte die Beobachtung, scheiterte aber wegen VM-fremder Objektprototypen an `deepStrictEqual`; Optionsbeobachtung auf primitiven Boolean normalisiert, danach Diagnose PASS. Route TASK-FE7225BF7A8F B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001g `assets/media.js` vollständig lesen, seine Klassen-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige S20–S32-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.

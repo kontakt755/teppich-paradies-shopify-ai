@@ -248,3 +248,7 @@ Auch die Dialogklasse in `quick-add.js` gehört zu TP-016: CartUpdate fällt nac
 ## S31 – PricePerItem-Lifecycle
 
 `price-per-item.js` hängt an QuantitySelector und CartUpdate innerhalb ProductForm. Sein einmaliger Controller verhindert Updates nach Reconnect; sechs Templates führen aktive Quantity-Blöcke, konkrete Staffelpreisdaten offen. SHARED, FILE CONFLICT mit ProductForm-/Quantity-Lifecycle und TP-016. Nächster Kandidat sequenziell: `media-gallery.js`.
+
+## S32 – MediaGallery-Lifecycle
+
+`media-gallery.js` verbindet VariantUpdate auf Section/Dialog mit Galerieersetzung sowie ZoomDialog mit Slideshow-Auswahl. Der einmalige Controller fällt nach Reconnect aus. Alle acht Produkttemplates führen den Galerieblock; Featured Product und Quick-add nutzen angrenzendes Galerie-Markup. Bestandteil von TP-016, SHARED/HIGH RISK; ein späterer Fix muss VariantPicker, Zoom, Slideshow, Section-Replacement und Quick-add regressionsprüfen. Nächster Kandidat sequenziell: `media.js`.

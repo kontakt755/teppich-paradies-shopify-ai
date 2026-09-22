@@ -283,3 +283,15 @@ Evidence: `audit/evidence/sticky-cart-reconnect-2026-09-22.json`; Script: `audit
 Vier Lifecycle-Beobachtungen PASS: initial Staffelsprung 10→8 Euro; getrennt kein Update; Reconnect derselben Instanz kein Update; frische Instanz korrekt. Sechs von acht Templates mit aktivem Mengenblock, konkrete Staffelpreisprodukte offen. TP-016 erweitert.
 
 Evidence: `audit/evidence/price-per-item-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-price-per-item-reconnect.mjs`. Syntax/Erstlauf PASS; kein Browser-/Livepfad.
+
+## S32 – MediaGallery-Lifecycle
+
+| Test | Ergebnis | Grenze |
+|---|---|---|
+| Initial Connect: VariantUpdate + ZoomMediaSelected | PASS: 1 Ersetzung, Auswahl Index 3 | DOM/Slideshow adaptiert |
+| Nach Disconnect | PASS: 0 Ersetzungen, 0 Auswahlen | native EventTarget/AbortController |
+| Reconnect derselben Instanz | TP-016 bestätigt: beide Listener bleiben aus | kein echter DOM-Morph |
+| Frische Instanz | PASS: beide Ereignisse je einmal | kein Browser/Live |
+| Produkttemplate-Reichweite | PASS: 8/8 mit aktivem Galerieblock | statische Quelle |
+
+Evidence: `audit/evidence/media-gallery-reconnect-2026-09-22.json`. Weiter JS-001g `media.js`; fertige Lifecyclefälle nicht erneut ausführen.

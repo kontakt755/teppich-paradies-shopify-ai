@@ -79,3 +79,5 @@ S29: QuickAddDialog ergänzt TP-016; `quick-add.js` lifecycleweit lokal geprüft
 S30: TP-016 umfasst zusätzlich den in allen acht lokalen Produkttemplates aktivierten Sticky-Kaufbalken. Gemeinsames Lifecyclepaket bleibt bis weiterer Runtime-Abgrenzung und Phase-2-Konsolidierung NOT READY; FILE CONFLICT zu Varianten-/Formularpfaden. Ready=2, Done/QA=0; keine Umsetzung.
 
 S31: TP-016 umfasst zusätzlich PricePerItem; sechs Templates mit aktivem Mengenblock, tatsächliche Staffelpreisprodukte offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S32: TP-016 umfasst zusätzlich MediaGallery; alle acht Produkttemplates enthalten den aktiven Block, tatsächlicher Browser-Reconnect bleibt offen. Gemeinsames Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Varianten-/Morph-/Quick-add-Pfade. Ready=2, Done/QA=0; keine Umsetzung.

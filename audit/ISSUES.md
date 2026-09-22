@@ -577,3 +577,11 @@ Vier Originalcode-Beobachtungen bestätigen den einmaligen Controller in `assets
 Sechs lokale Produkt-Templates enthalten einen aktiven Quantity-Block, aber das Element rendert nur für Varianten mit Shopify-Staffelpreisen. Aktuelle Produkt-/Live-Reichweite und realer Browser-Reconnect offen. Priorität P3 bleibt. Risiko: veralteter sichtbarer Stückpreis nach Reinsert; übermittelter Warenkorbpreis wird hier nicht verändert.
 
 Implementation-Brief-Ergänzung: Controller pro Connect erneuern, Preisstaffelliste beim Reconnect nicht unkontrolliert duplizieren und Eventscope zum richtigen Formular erhalten. Cart-/Mengenänderung muss initial/reconnectet korrekt aktualisieren, getrennt null. B2B-Staffeln, Mengenincrement, Cartmenge und ProductForm-Morph regressionsprüfen. FILE CONFLICT ProductForm/Quantity/TP-016; Aufwand S. Pack NOT READY, Phase 1/2 ohne Reparatur.
+
+### S32 – TP-016 erweitert: MediaGallery
+
+Vier Originalcode-Beobachtungen bestätigen den einmaligen Controller in `assets/media-gallery.js`. Nach Reconnect derselben Instanz verarbeitet die Galerie weder VariantUpdate mit neuer Galeriequelle noch ZoomMediaSelected; eine frische Instanz ersetzt beziehungsweise selektiert korrekt. Alle acht lokalen Produkttemplates enthalten einen aktiven Galerieblock.
+
+Priorität P3 bleibt. Statische Template-Reichweite ist belegt, ein echter Browser-Reconnect derselben Instanz sowie Live-Theme-Gleichheit sind offen. Risiko: nach DOM-Reinsert bleibt die Galerie bei Variantenwechsel veraltet und synchronisiert die Zoomauswahl nicht mehr; eine falsche Bestellung ist nicht direkt belegt.
+
+Implementation-Brief-Ergänzung: Controller pro Connect erneuern und beide Listener je Zyklus genau einmal registrieren. Akzeptanz: VariantUpdate und ZoomMediaSelected reagieren initial/reconnectet je einmal, getrennt null; Galerieersetzung, Slideshow, ZoomDialog, VariantPicker, Featured Product und Quick-add regressionsprüfen. FILE CONFLICT mit Varianten-/Morph-/Quick-add-Lifecycle; Aufwand S. Pack NOT READY, Phase 1/2 ohne Reparatur.

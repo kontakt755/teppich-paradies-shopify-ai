@@ -159,3 +159,7 @@ Der in allen acht lokalen Produkt-Templates aktive Sticky-Kaufbalken verwendet e
 ## S31 – PricePerItem
 
 PricePerItem verbindet ProductForm-Menge, Cartmenge und Shopify-Staffelpreise. Sein einmaliger Controller fällt nach Reconnect aus; sechs Templates führen aktive Mengenblöcke, das Element selbst erscheint nur bei Varianten mit Staffelpreisen. Bestandteil des gemeinsamen TP-016-Lifecyclebereichs.
+
+## S32 – MediaGallery
+
+MediaGallery verbindet section-/dialoggebundene Variantenupdates mit dem Ersetzen der Galerie und ZoomDialog-Auswahl mit der Slideshow. Der einmalige Controller fällt nach Reconnect aus. Alle acht Produkttemplates führen den Galerieblock; die Komponente gehört zum gemeinsamen TP-016-Lifecyclebereich. Tatsächliche DOM-Reconnect-Ursache und Browserreichweite bleiben offen.

@@ -195,3 +195,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S31 – PricePerItem-Reconnect
 
 `audit/scripts/reproduce-price-per-item-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen PricePerItemComponent aus und erfasst die Quantity-Block-Reichweite. `audit/evidence/price-per-item-reconnect-2026-09-22.json` belegt den ausfallenden Staffelsprung nach Reconnect. Keine aktuellen Produkt-/Browser-/Livedaten.
+
+## S32 – MediaGallery-Reconnect
+
+`audit/scripts/reproduce-media-gallery-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen MediaGallery aus und erfasst alle acht Produkttemplates. `audit/evidence/media-gallery-reconnect-2026-09-22.json` belegt ausfallende VariantUpdate-/ZoomMediaSelected-Listener nach Reconnect. DOM/Slideshow adaptiert; kein Browser-/Livepfad.
