@@ -183,3 +183,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S28 – QuickAddComponent-Reconnect
 
 `audit/scripts/reproduce-quick-add-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen QuickAddComponent aus. `audit/evidence/quick-add-reconnect-2026-09-22.json` belegt Geister-/Doppellistener für VariantSelected und ausfallenden CartUpdate nach Reconnect. Kein Modal/Morph/Browser/Livepfad.
+
+## S29 – QuickAddDialog-Reconnect
+
+`audit/scripts/reproduce-quick-add-dialog-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen Dialogklasse aus. `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json` belegt ausfallenden CartUpdate, fortbestehenden VariantUpdate und korrekt verwalteten DialogClose. Kein UI-/Browser-/Livepfad.

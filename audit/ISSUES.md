@@ -553,3 +553,11 @@ Vier lokale Originalcode-Beobachtungen bestätigen zwei Reconnect-Ausprägungen 
 Priorität P3 bleibt: lokal BESTÄTIGT, aber Quick Add ist in den lokalen Repository-Einstellungen deaktiviert und die Liveeinstellung unbekannt. Risiko bei aktiver Funktion: getrennte Karten reagieren weiter, Reconnect verdoppelt Buttonzustandsupdates und Cartupdates leeren den Inhaltscache nicht mehr. Konkrete falsche Bestellung oder sichtbarer Livefehler nicht belegt.
 
 Implementation-Brief-Ergänzung: stabile VariantSelected-Listenerreferenz verwenden und den CartUpdate-Controller pro Verbindungszyklus erneuern. Connect/Disconnect/Reconnect muss je Ereignis genau einmal/null/einmal reagieren; mehrere Zyklen ohne Geisterlistener. Produktkarten-Zuordnung, Cacheinvalidierung, VariantPicker/ProductForm, Dialog und TP-017 regressionsprüfen. FILE CONFLICT `quick-add.js` mit angrenzenden Lifecyclefixes; keine Modal-/Morph-Neufassung. Aufwand S, rücknehmbare JS-Änderung; Pack NOT READY bis Dialogklasse geprüft. Phase 1/2 ohne Reparatur.
+
+### S29 – TP-016 erweitert: QuickAddDialog
+
+Vier Originalcode-Beobachtungen bestätigen zwei weitere Lifecycle-Ausprägungen in `assets/quick-add.js` (Dialogklasse ab etwa Zeile 278). CartUpdate nutzt einen einmalig erzeugten Controller und fällt nach Reconnect aus. VariantUpdate wird ohne Signal registriert und nie entfernt, bleibt daher im getrennten Zustand aktiv; die identische private Pfeilfunktion verhindert immerhin Doppelregistrierung. DialogClose wird korrekt entfernt und wieder registriert.
+
+Priorität P3 bleibt; Quick Add lokal deaktiviert, Live-/Browserreichweite unbekannt. Risiko bei aktiver Funktion: getrennte Dialoginstanz verarbeitet Variantenupdates weiter und kann Linkzustand verändern, während ein wiederverbundener Dialog nach CartUpdate nicht mehr schließt. Kein konkreter Live-Kaufblocker belegt.
+
+Implementation-Brief-Ergänzung: Controller pro Connect erneuern und VariantUpdate in dieselbe lifecyclegebundene Verwaltung aufnehmen; DialogClose-Verhalten erhalten. Connect/Disconnect/Reconnect für Erfolg und Cartfehler, VariantLink und iOS-Close regressionsprüfen. Keine Modal-/Morph-Neufassung. FILE CONFLICT innerhalb `quick-add.js` mit S28 gemeinsam lösen; TP-016/017 angrenzend. Aufwand S, Pack weiterhin NOT READY. Phase 1/2 ohne Reparatur.

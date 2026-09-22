@@ -466,3 +466,13 @@ Script `audit/scripts/reproduce-quick-add-reconnect.mjs`; Evidence `audit/eviden
 Nächster Schritt: JS-001c QuickAddDialog derselben Datei separat auf CartUpdate/VariantUpdate/DialogClose-Reconnect prüfen. Fertigen Component-/Morphpfad nicht wiederholen.
 
 S28 in `7f3274c` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
+
+## S29 – QuickAddDialog-Reconnect (22.09.2026)
+
+JS-001c: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddDialog PASS. Initial schließen CartUpdate, VariantUpdate-Linkabgleich und DialogClose-iOS-Nachlauf jeweils einmal korrekt an. Nach Disconnect ist CartUpdate entfernt und DialogClose entfernt, VariantUpdate bleibt jedoch aktiv. Nach Reconnect bleibt CartUpdate ausgefallen, VariantUpdate läuft einmal und DialogClose wieder einmal. Frische Instanz funktioniert vollständig.
+
+Ursachen: Der einmal erzeugte `#abortController` wird beim Disconnect abgebrochen und für CartUpdate nicht erneuert. VariantUpdate wird ohne Signal registriert und nie entfernt; da die private Pfeilfunktion identisch bleibt, ignoriert EventTarget die erneute Doppelregistrierung, sodass ein Geisterlistener, aber kein Doppelaufruf entsteht. DialogClose verwendet eine stabile Referenz und wird korrekt entfernt. TP-016 erweitert, keine neue Issue-ID. Quick Add lokal deaktiviert, Livezustand unbekannt.
+
+Script `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`; Evidence `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Dialog-/DOM-/iOS-Layout adaptiert. Erster Lauf erwartete fälschlich eine Verdopplung identischer Listener; anhand des echten EventTarget-Verhaltens auf einen Aufruf korrigiert, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-DB4E130DA403 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001d `sticky-add-to-cart.js` als kaufnahen ungeprüften Runtime-Kandidaten lesen und Lifecycle ausführen. Quick-add-/Variantenfälle nicht wiederholen.

@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
-Letzte abgeschlossene Aufgabe: S28 / JS-001b: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddComponent PASS. Nach Disconnect bleibt der gebundene VariantSelected-Listener aktiv; nach Reconnect reagiert er doppelt. CartUpdate funktioniert nach Reconnect nicht mehr, weil der einmal erzeugte Controller beim Disconnect abgebrochen und nicht erneuert wird. TP-016 erweitert, keine neue Issue-ID. Quick Add lokal deaktiviert, Live-Reichweite unbekannt.
-Nächste Aufgabe: JS-001c: QuickAddDialog aus derselben Datei separat auf Connect→Disconnect→Reconnect für CartUpdate, VariantUpdate und DialogClose ausführen. QuickAddComponent und Modal-/Morphpfad nicht wiederholen.
+Letzte abgeschlossene Aufgabe: S29 / JS-001c: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddDialog PASS. CartUpdate fällt nach Reconnect wegen wiederverwendetem abgebrochenem Controller aus. VariantUpdate bleibt während Disconnect aktiv, verdoppelt sich beim Reconnect wegen identischer Listenerfunktion jedoch nicht. DialogClose wird korrekt entfernt und erneuert. TP-016 erweitert, keine neue Issue-ID; Quick Add lokal deaktiviert, Live-Reichweite unbekannt.
+Nächste Aufgabe: JS-001d: `assets/sticky-add-to-cart.js` als nächsten kaufnahen, ungeprüften Inventarkandidaten vollständig lesen und seinen Connect→Disconnect→Reconnect-Vertrag lokal ausführen. Quick-add- und Varianten-Lifecycle S21–S29 nicht wiederholen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -61,3 +61,5 @@ S26 in `98906eb` tatsächlich gesichert. Statische Morph-/Mehrproduktmatrix sowi
 S27 in `2242374` tatsächlich gesichert. 96 Dateien/37 heuristische Kandidaten; Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
 
 S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
+
+S29 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier QuickAddDialog-Lifecycle-Beobachtungen PASS; TP-016 erweitert. Weiter JS-001d, Status WORKING.

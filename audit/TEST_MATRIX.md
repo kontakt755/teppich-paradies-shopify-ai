@@ -265,3 +265,9 @@ Evidence: `audit/evidence/js-runtime-inventory-2026-09-22.json`; Script: `audit/
 Vier Lifecycle-Beobachtungen PASS: initial Variant/Cart je einmal; getrennte Instanz verarbeitet weiterhin Variant, aber nicht Cart; wiederverbundene Instanz Variant doppelt/Cart null; frische Instanz je einmal. TP-016 erweitert. Vollständige Originalklasse und Events, UI-/DOM-Abhängigkeiten adaptiert; kein Morph/Fetch/Browser.
 
 Evidence: `audit/evidence/quick-add-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-quick-add-reconnect.mjs`. Nach VM-Ereignisnamen-Korrektur Syntax/Diagnose PASS. Nächster Schritt QuickAddDialog separat.
+
+## S29 – QuickAddDialog-Reconnect
+
+Vier Lifecycle-Beobachtungen PASS: initial Cart/Variant/Close aktiv; nach Disconnect Cart/Close inaktiv, Variant als Geisterlistener aktiv; Reconnect Cart weiter inaktiv, Variant einmal, Close einmal; frische Instanz vollständig. Identische Variant-Listenerfunktion wird nicht doppelt registriert. TP-016 erweitert.
+
+Evidence: `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`. Nach korrigierter Doppelregistrierungsassertion Syntax/Diagnose PASS. Kein UI-/Browserlauf.

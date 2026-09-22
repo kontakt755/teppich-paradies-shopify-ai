@@ -73,3 +73,5 @@ S26: Morph-/Mehrprodukt-Aufrufer lokal abgegrenzt. H-016 bleibt wegen deaktivier
 S27: reines Runtime-Inventar, keine Issue-/Packänderung. Quick-add-Lifecycle ist nur Kandidat und wird vor Zuordnung ausgeführt. Ready=2, Done/QA=0; keine Umsetzung.
 
 S28: TP-016 umfasst zusätzlich QuickAddComponent. Varianten-Lifecycleblock bleibt NOT READY bis QuickAddDialog und spätere Phase-2-Konsolidierung; Quick Add lokal deaktiviert, Livezustand offen. FILE CONFLICT `quick-add.js`/TP-016/017. Ready=2, Done/QA=0; keine Umsetzung.
+
+S29: QuickAddDialog ergänzt TP-016; `quick-add.js` lifecycleweit lokal geprüft. Varianten-Lifecycleblock bleibt wegen deaktivierter lokaler Funktion, unbekannter Live-Reichweite und später Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.

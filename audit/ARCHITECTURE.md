@@ -147,3 +147,7 @@ Die statischen Flags sind Suchhilfen, keine Defekte. Lifecycle-/Listenerprobleme
 ## S28 – QuickAddComponent
 
 Der Lifecycle-Test bestätigt asymmetrisches Reconnect-Verhalten: VariantSelected-Listener bleiben bestehen und vervielfachen sich, CartUpdate-Listener werden nach dem ersten Disconnect nicht wiederhergestellt. `quick-add.js` ist damit Teil des gemeinsamen TP-016-Lifecyclebereichs. Die Dialogklasse derselben Datei bleibt separat offen; Quick Add ist lokal deaktiviert und die Live-Reichweite unbekannt.
+
+## S29 – QuickAddDialog
+
+Die Dialogklasse zeigt denselben einmaligen Controllerfehler für CartUpdate; VariantUpdate bleibt mangels Entfernung während Disconnect aktiv, wird aber nicht vervielfacht. DialogClose ist korrekt symmetrisch. `quick-add.js` ist damit vollständig als gemeinsamer TP-016-Lifecyclebereich kartiert.
