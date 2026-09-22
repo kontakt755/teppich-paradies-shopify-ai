@@ -6,34 +6,34 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S23 / VAR-001a.2b.2 lokal abgeschlossen, grob 28 %.
+Phase 1, S24 / VAR-001a.2c.1 lokal abgeschlossen, grob 28 %.
 
 ## Erledigte Aufgaben
 
-S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
+S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
 
 ## Offene Aufgaben
 
-VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues Verbraucher-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen. Externe Prompt-/Dashboardänderungen erhalten.
+Auditdokumentation, Formular-Reconnect-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck PASS.
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck vor Commit.
 
 ## Bekannte Fehler
 
-17 bestätigte Issues: P0=0/P1=0/P2=8/P3=9/P4=0. TP-017 nur lokal; Live-Reichweite offen. Browserberechtigung seit S13 blockiert.
+17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 um ProductForm erweitert, Live-Reichweite offen. Browserberechtigung S13 weiterhin blockiert.
 
 ## Naechster konkreter Arbeitsschritt
 
-VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
-b49b709 – audit: Variantenfehler-Queue als TP-017 lokal belegen. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
+6928c45 – S23-Sicherung. S24 wird nach Prüfungen committed. Kein Merge/Push.
 
 Status: WORKING

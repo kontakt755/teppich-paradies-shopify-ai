@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: Varianten-/Farbpickervertrag, Phase 1.
-Letzte abgeschlossene Aufgabe: S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
-Nächste Aufgabe: VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+Letzte abgeschlossene Aufgabe: S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
+Nächste Aufgabe: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 

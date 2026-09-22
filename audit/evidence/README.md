@@ -161,3 +161,9 @@ S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei histo
 S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
 
 Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor.
+
+## S24 – Formular-Reconnect
+
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor.
+
+Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.

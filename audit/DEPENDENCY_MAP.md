@@ -203,3 +203,16 @@ Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scrip
 CORE/SHARED FILE, HIGH RISK: variant-picker.js → events.js → product-form.js → Cart. Fehlender Abschluss und Queue-Recovery gemeinsam behandeln; kein globaler Eventumbau.
 
 Nächster Schritt: VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+
+
+## S24 – Formular-Reconnect (22.09.2026)
+
+S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
+
+Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.
+
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor.
+
+CORE/SHARED FILE, HIGH RISK: product-form.js gemeinsam mit TP-017 koordinieren; kein pauschaler Morphumbau.
+
+Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.

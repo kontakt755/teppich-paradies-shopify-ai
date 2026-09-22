@@ -19,7 +19,7 @@ Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
 | TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
 | TP-015 | P2 | Farbwahl ohne bisherige Breitenkombination lässt alte Variante aktiv | BESTÄTIGT lokal; heutige Produktreichweite offen | Offen |
-| TP-016 | P3 | Farbkomponenten verlieren nach Reconnect ihre Ereignislistener | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
+| TP-016 | P3 | Farbkomponenten und Produktformular verlieren nach Reconnect Ereignislistener | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
 | TP-017 | P2 | Variantenrequestfehler hält Kaufklicks fest und gibt sie später gesammelt frei | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
@@ -518,3 +518,14 @@ Quellspur: assets/variant-picker.js fetchUpdatedSection kehrt ohne Metadaten zur
 - **Akzeptanzkriterien / Tests:** Erfolg, fehlende Metadaten, ungültiges JSON, Netzfehler; nach Fehler zwei Kaufklicks, danach neue Variante: keine überraschende Bestellung alter Klicks. Sichtbare Fehlermeldung und bewusster Retry. Abort durch neueren Request darf dessen Sperre nicht vorzeitig lösen.
 - **Regression / Seiteneffekte:** schnelle Variantenfolge, Mehrproduktbereiche, fehlende/nicht verfügbare Variante, Mengenregeln, mehrere erlaubte Kaufklicks, Cart-Feedback und Reconnect; Fehlzuordnung oder Doppelbestellung vermeiden. Browserabnahme später zwingend.
 - **Aufwand / Reihenfolge / Rollback:** M, nach VAR-001a.2c minimalen Fix vorbereiten; Quelländerung rücknehmbar, bereits erfolgte Bestellungen nicht. Phase 1/2 ohne Reparatur, Pack weiterhin NOT READY.
+
+
+### S24 – TP-016 erweitert: ProductFormComponent
+
+S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
+
+Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.
+
+**Implementation-Brief-Ergänzung:** Priorität P3 unverändert, lokal BESTÄTIGT unter derselben Reconnect-Bedingung. Datei assets/product-form.js:193–222 (Controller/Lifecycle), #onVariantUpdate:660 ff. URL/Template, betroffene Geräte und Browser weiterhin unbestätigt. Reproduktion Connect→Update ID2→Disconnect→Connect→Update ID4 lässt Formular-ID2 bestehen; neue Instanz übernimmt ID5. Erwartet: wiederverbundene Instanz verarbeitet passende Variantenupdates wieder. Risiko: veraltete Formular-ID/fehlende Event-Synchronisierung; falsche Livebestellung nicht nachgewiesen. Root Cause: abort() beendet Listener dauerhaft, connectedCallback verwendet dasselbe Signal erneut.
+
+Empfohlene minimale Logik: Controller pro Verbindungszyklus erneuern und alte Listener sauber beenden; keine Produkt-/Preis-/Queue-Neufassung. Abhängigkeiten/FILE CONFLICT: TP-017 ebenfalls product-form.js; sequenziell zusammen planen. Akzeptanz: Erstverbindung, getrennt, wiederverbunden und frische Instanz; mehrfacher Reconnect ohne Doppelereignisse, passende/fremde Produkt-ID und Cartupdates prüfen. Regression: Variantenfehler-/Queuevertrag TP-017 sowie Mengenregeln. Aufwand S für Controllerlogik, Browser-/Morphreichweite separat; Rollback kleine Quelländerung, keine Datenmigration. Pack NOT READY bis Aufruferabgrenzung. Phase 1/2 ohne Reparatur.

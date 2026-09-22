@@ -63,3 +63,5 @@ S21: TP-016/P3 vollständiger Brief; Farbverbraucher-Lifecycle-Kandidat NOT READ
 S22: H-017 neu, kein bestätigtes Issue und kein neues Pack. Picker-/Verbraucherintegration weiterhin NOT READY; gemeinsame variant-picker.js/product-form.js-Abhängigkeit erst prüfen. Ready=2, Done/QA=0.
 
 S23: TP-017/P2 mit Implementation Brief; Variantenfehlerabschluss/Queue-Kandidat NOT READY bis Lifecycle-/Mehrproduktabgrenzung. FILE CONFLICT variant-picker.js/product-form.js. Ready=2, Done/QA=0; keine Umsetzung.
+
+S24: TP-016 umfasst zusätzlich product-form.js; FILE CONFLICT mit TP-017. Lifecyclepaket weiterhin NOT READY bis Picker-/Morphabgrenzung. Ready=2, Done/QA=0. Keine Umsetzung.
