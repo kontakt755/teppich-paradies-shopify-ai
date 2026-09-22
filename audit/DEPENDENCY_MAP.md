@@ -244,3 +244,7 @@ Auch die Dialogklasse in `quick-add.js` gehört zu TP-016: CartUpdate fällt nac
 ## S30 – Sticky-Add-to-Cart-Lifecycle
 
 `sticky-add-to-cart.js` ist SHARED/HIGH RISK und in allen acht lokalen Produkt-Templates aktiv. Sämtliche section-/document-Ereignislistener teilen einen einmaligen Controller und fallen nach Reconnect aus. Abhängigkeiten: VariantPicker, ProductForm/Rechner-Kaufwege, QuantitySelector, CartUpdate/Error und eigene Observer. TP-016 erweitert; kein paralleler Fix mit Varianten-/Produktformular-Lifecycle. Nächster Kandidat sequenziell: `price-per-item.js`.
+
+## S31 – PricePerItem-Lifecycle
+
+`price-per-item.js` hängt an QuantitySelector und CartUpdate innerhalb ProductForm. Sein einmaliger Controller verhindert Updates nach Reconnect; sechs Templates führen aktive Quantity-Blöcke, konkrete Staffelpreisdaten offen. SHARED, FILE CONFLICT mit ProductForm-/Quantity-Lifecycle und TP-016. Nächster Kandidat sequenziell: `media-gallery.js`.

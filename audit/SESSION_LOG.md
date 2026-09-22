@@ -490,3 +490,13 @@ Script `audit/scripts/reproduce-sticky-cart-reconnect.mjs`; Evidence `audit/evid
 Nächster Schritt: JS-001e `price-per-item.js` als nächsten kaufnahen Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Lifecyclefälle nicht wiederholen.
 
 S30 in `6d4ed1a` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.
+
+## S31 – PricePerItem-Reconnect (22.09.2026)
+
+JS-001e: vier Lifecycle-Beobachtungen am vollständigen Original-PricePerItemComponent PASS. Initial wechselt CartUpdate bei synthetischer Gesamtmenge fünf korrekt vom Basispreis 10,00 € auf Staffelpreis 8,00 €. Nach Disconnect bleibt Basispreis stehen. Nach Reconnect derselben Instanz bleibt CartUpdate wirkungslos; frische Instanz wechselt korrekt. Ursache ist der einmal erzeugte und nach Abort wiederverwendete `#abortController`.
+
+Sechs von acht lokalen Produkttemplates haben einen aktiven Quantity-Block. `price-per-item` rendert laut Snippet nur, wenn die konkrete Variante `quantity_price_breaks` besitzt; aktuelle Produktzuordnung und Livehash sind nicht belegt. TP-016 erweitert, keine neue Issue-ID. Der Lauf prüft CartUpdate und Preisstaffel; QuantitySelector-Zielabgrenzung teilt denselben Controller, wurde nicht separat wiederholt.
+
+Script `audit/scripts/reproduce-price-per-item-reconnect.mjs`; Evidence `audit/evidence/price-per-item-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/Form/Input adaptiert. Syntax/Erstlauf PASS. Route TASK-41E86B722185 B/STATIC, kein Executor, Browser oder Livezugriff.
+
+Nächster Schritt: JS-001f `media-gallery.js` als sichtbaren ungeprüften Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Fälle nicht wiederholen.

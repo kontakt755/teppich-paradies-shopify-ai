@@ -191,3 +191,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S30 – Sticky-Add-to-Cart-Reconnect
 
 `audit/scripts/reproduce-sticky-cart-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen StickyAddToCartComponent aus und prüft acht lokale Produkttemplates. `audit/evidence/sticky-cart-reconnect-2026-09-22.json` belegt ausfallende Varianten-/Mengenlistener nach Reconnect. Kein UI-/Browser-/Livepfad.
+
+## S31 – PricePerItem-Reconnect
+
+`audit/scripts/reproduce-price-per-item-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen PricePerItemComponent aus und erfasst die Quantity-Block-Reichweite. `audit/evidence/price-per-item-reconnect-2026-09-22.json` belegt den ausfallenden Staffelsprung nach Reconnect. Keine aktuellen Produkt-/Browser-/Livedaten.

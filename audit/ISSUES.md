@@ -569,3 +569,11 @@ Vier Originalcode-Beobachtungen bestätigen den wiederverwendeten abgebrochenen 
 Alle acht lokalen Produkt-Templates aktivieren `enable_sticky_add_to_cart`, daher ist die lokale Template-Reichweite bestätigt. Die konkrete Browserbedingung, die dieselbe Custom-Element-Instanz reconnectet, und der heutige Livehash bleiben offen. Priorität P3 bleibt. Risiko: nach Reinsert/Morph veraltete Varianten-ID/Menge, ausbleibender Puppet-Reset und nicht synchronisierter Sticky-Kaufweg; falsche Bestellung nicht direkt belegt.
 
 Implementation-Brief-Ergänzung: Controller pro Verbindungszyklus erneuern; bestehende Observer beim Disconnect sauber trennen und beim Reconnect vollständig wiederherstellen. Akzeptanz: VariantSelected/Update, Menge, Cart Erfolg/Fehler und Zielbuttonzustand reagieren initial und reconnectet je einmal, getrennt null. Intersection-/MutationObserver und Rechner-/Paket-/Standardkaufweg regressionsprüfen. FILE CONFLICT mit VariantPicker/ProductForm und Rechnerintegration; keine Kaufweg-Neufassung. Aufwand S–M, Pack NOT READY. Phase 1/2 ohne Reparatur.
+
+### S31 – TP-016 erweitert: PricePerItemComponent
+
+Vier Originalcode-Beobachtungen bestätigen den einmaligen Controller in `assets/price-per-item.js`. Nach Reconnect derselben Instanz verarbeitet CartUpdate die geänderte Menge nicht; im Fixture bleibt 10,00 € statt Staffelpreis 8,00 € sichtbar. Frische Instanz aktualisiert korrekt. QuantitySelectorUpdate nutzt dasselbe abgebrochene Signal.
+
+Sechs lokale Produkt-Templates enthalten einen aktiven Quantity-Block, aber das Element rendert nur für Varianten mit Shopify-Staffelpreisen. Aktuelle Produkt-/Live-Reichweite und realer Browser-Reconnect offen. Priorität P3 bleibt. Risiko: veralteter sichtbarer Stückpreis nach Reinsert; übermittelter Warenkorbpreis wird hier nicht verändert.
+
+Implementation-Brief-Ergänzung: Controller pro Connect erneuern, Preisstaffelliste beim Reconnect nicht unkontrolliert duplizieren und Eventscope zum richtigen Formular erhalten. Cart-/Mengenänderung muss initial/reconnectet korrekt aktualisieren, getrennt null. B2B-Staffeln, Mengenincrement, Cartmenge und ProductForm-Morph regressionsprüfen. FILE CONFLICT ProductForm/Quantity/TP-016; Aufwand S. Pack NOT READY, Phase 1/2 ohne Reparatur.

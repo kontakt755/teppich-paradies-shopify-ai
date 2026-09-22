@@ -277,3 +277,9 @@ Evidence: `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`; Script: `
 Vier Lifecycle-Beobachtungen PASS: Initial Variant/Menge aktualisiert; getrennt beide inaktiv; Reconnect derselben Instanz beide weiter inaktiv; frische Instanz aktiv. Acht Produkt-Templates aktivieren den Balken. TP-016 erweitert. Originalklasse/Events mit adaptierten DOM-/Observergrenzen; kein Klick/Cart/Morph/Browser.
 
 Evidence: `audit/evidence/sticky-cart-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-sticky-cart-reconnect.mjs`. Syntax/Erstlauf PASS.
+
+## S31 – PricePerItem-Reconnect
+
+Vier Lifecycle-Beobachtungen PASS: initial Staffelsprung 10→8 Euro; getrennt kein Update; Reconnect derselben Instanz kein Update; frische Instanz korrekt. Sechs von acht Templates mit aktivem Mengenblock, konkrete Staffelpreisprodukte offen. TP-016 erweitert.
+
+Evidence: `audit/evidence/price-per-item-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-price-per-item-reconnect.mjs`. Syntax/Erstlauf PASS; kein Browser-/Livepfad.

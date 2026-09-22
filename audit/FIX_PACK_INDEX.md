@@ -77,3 +77,5 @@ S28: TP-016 umfasst zusätzlich QuickAddComponent. Varianten-Lifecycleblock blei
 S29: QuickAddDialog ergänzt TP-016; `quick-add.js` lifecycleweit lokal geprüft. Varianten-Lifecycleblock bleibt wegen deaktivierter lokaler Funktion, unbekannter Live-Reichweite und später Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
 
 S30: TP-016 umfasst zusätzlich den in allen acht lokalen Produkttemplates aktivierten Sticky-Kaufbalken. Gemeinsames Lifecyclepaket bleibt bis weiterer Runtime-Abgrenzung und Phase-2-Konsolidierung NOT READY; FILE CONFLICT zu Varianten-/Formularpfaden. Ready=2, Done/QA=0; keine Umsetzung.
+
+S31: TP-016 umfasst zusätzlich PricePerItem; sechs Templates mit aktivem Mengenblock, tatsächliche Staffelpreisprodukte offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
