@@ -185,3 +185,19 @@ Wer den Namen erneut ändert, muss an drei Stellen denken:
    Definition wirkt dort **nicht** rückwirkend — die Spalte muss entfernt und
    neu hinzugefügt werden, sonst steht der alte Name weiter auf dem Ausdruck.
    Genau so ist es am 2026-09-16 aufgefallen.
+
+## Kundenseitige Bausteine (Shop 2.0, 2026-09-22)
+
+| Datei | Vorlage im Admin | Einsetzen |
+|---|---|---|
+| `bestellbestaetigung-block.liquid` | Kundenbenachrichtigungen → Bestellbestätigung | nach dem Header, Standard-Einleitung entfernen; Betreff siehe Kopfkommentar |
+| `versandbestaetigung-block.liquid` | Kundenbenachrichtigungen → Versandbestätigung | nach dem Header; Standard-Trackingblock darf bleiben |
+| `interne-bestellmail-block.liquid` | Mitarbeiterbenachrichtigung → Neue Bestellung | vor `</body>` (jetzt mit Bestelltyp und Beratungsblock) |
+
+Beide Kundenbausteine erkennen Muster/Ware/Mischbestellung selbst (SKU `M-…`,
+`TP-MUSTER-000`, Property `_Muster_ID`) und lesen die Warenkorb-Angaben
+(`Beratung`, `Telefon`, `Rückruf`, `Maßprüfung`, `Verlegung`) aus den
+Bestellattributen. Tests: `qa/tests/kundenmail-bloecke.test.mjs`,
+`qa/tests/bestellmail-beratung.test.mjs`. Nach dem Einsetzen im Admin die
+Testbenachrichtigung senden und eine Testbestellung (Tag `TESTBESTELLUNG`)
+mit Beratung Ja prüfen.

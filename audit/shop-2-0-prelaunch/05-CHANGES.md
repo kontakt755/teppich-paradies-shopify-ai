@@ -36,3 +36,19 @@
 - **Dateien:** `domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid`, `qa/tests/bestellmail-beratung.test.mjs`
 - **Auswirkungen:** erst nach Einsetzen der Vorlage im Admin (Mitarbeiterbenachrichtigung „Neue Bestellung").
 - **Test:** LiquidJS 4/4, bestehende Maßprüfungs-Tests weiter grün.
+
+## 2026-09-22 · E-Mail · Kundenbausteine Bestell- und Versandbestätigung (M6b)
+
+- **Problem vorher:** Nur Shopify-Standardtexte („du"-Form, kein Musterbezug, keine Bestätigung von Beratung/Maßprüfung/Verlegung, kein Speditionshinweis) (PL-015).
+- **Änderung:** Zwei Liquid-Bausteine zum Einsetzen in die Admin-Vorlagen: Bestellbestätigung mit drei Varianten (Muster: Lichthinweis, Musterliste mit Rücklink; Ware; Misch) und „So geht es weiter"-Kasten aus den Bestellattributen; Versandbestätigung mit Versanddienstleister, Trackingnummer/-button je Sendung, Speditionshinweis bei Meterware/Raummaß, ehrlicher Hinweis ohne Tracking.
+- **Dateien:** `domains/shopify/benachrichtigungen/{bestellbestaetigung-block,versandbestaetigung-block}.liquid`, `README.md`, `qa/tests/kundenmail-bloecke.test.mjs`
+- **Auswirkungen:** keine, bis im Admin eingesetzt. Follow-up-Mails nach Zustellung (§ 22) brauchen Flow oder ein E-Mail-Tool → 07-OPEN-ITEMS.
+- **Risiken:** LiquidJS ≠ Shopify-Liquid; im Admin per Testbenachrichtigung gegenprüfen.
+- **Test:** LiquidJS 5/5.
+
+## 2026-09-22 · Tracking · Pixel-Vorlage und Conversion-Aufteilung (M8)
+
+- **Problem vorher:** Custom Pixel mit Platzhalter, keine Muster/Ware-Trennung, Doppelzählungsrisiko (PL-016, PL-017, PL-025).
+- **Änderung:** `domains/marketing/tracking-pixel-vorlage.md` mit fertigem Pixel-Code (Theme-Events → GA4, `tp_bestellung_typ`, `sample_order`, kein zweites purchase), Ads-Conversion-Tabelle (Kauf primär nur mit Wert > 0), UTM-Vorlage, vierstufige Gegenprobe.
+- **Dateien:** `domains/marketing/tracking-pixel-vorlage.md`
+- **Auswirkungen:** keine, bis GA4-ID vorliegt und Pixel im Admin angelegt ist.

@@ -1,0 +1,119 @@
+{%- comment -%}
+  Kundenseitiger Einleitungsblock fuer die Bestellbestaetigung (Shop 2.0, M6).
+
+  Einsetzen: Shopify Admin -> Einstellungen -> Benachrichtigungen ->
+  Kundenbenachrichtigungen -> "Bestellbestaetigung" -> Code bearbeiten.
+  Diesen Block direkt NACH dem Shop-Logo/Header-Table und VOR dem Standardtext
+  "Vielen Dank fuer deine Bestellung" einfuegen; den Standard-Einleitungstext
+  ("Wir bereiten deine Bestellung fuer den Versand vor ...") loeschen, weil er
+  fuer Muster nicht passt. Betreff (Feld "E-Mail-Betreff"):
+    {% if order.tags contains 'TYP-MUSTER' %}Vielen Dank für Ihre Musterbestellung{% else %}Vielen Dank für Ihre Bestellung {{ name }}{% endif %}
+  (Tags setzt Shopify Flow; ohne Flow greift der Standardbetreff.)
+
+  Was der Block macht: erkennt Muster / Ware / Mischbestellung an den
+  Positionen (SKU "M-..." oder "TP-MUSTER-000" oder Property _Muster_ID),
+  spricht den Kunden mit "Sie" an, bestaetigt Beratungswunsch, Masspruefung
+  und Verlegeanfrage aus den Bestellattributen und erklaert die naechsten
+  Schritte. Keine internen Daten (keine Lieferanten, keine Grosshaendler-IDs).
+
+  Alle Kundeneingaben laufen durch escape (Properties und Attribute sind ueber
+  die Cart-API frei setzbar).
+{%- endcomment -%}
+
+{%- liquid
+  assign tp_k_muster = 0
+  assign tp_k_ware = 0
+  for line in line_items
+    assign tp_k_ist_muster = false
+    assign tp_k_kopf = line.sku | slice: 0, 2
+    if tp_k_kopf == 'M-' or line.sku == 'TP-MUSTER-000'
+      assign tp_k_ist_muster = true
+    endif
+    for p in line.properties
+      if p.first == '_Muster_ID' and p.last != blank
+        assign tp_k_ist_muster = true
+      endif
+    endfor
+    if tp_k_ist_muster
+      assign tp_k_muster = tp_k_muster | plus: 1
+    else
+      assign tp_k_ware = tp_k_ware | plus: 1
+    endif
+  endfor
+  if tp_k_muster > 0 and tp_k_ware == 0
+    assign tp_k_typ = 'muster'
+  elsif tp_k_muster == 0
+    assign tp_k_typ = 'ware'
+  else
+    assign tp_k_typ = 'misch'
+  endif
+  assign tp_k_beratung = attributes['Beratung']
+  assign tp_k_telefon = attributes['Telefon']
+  assign tp_k_zeit = attributes['Rückruf']
+  assign tp_k_mass = attributes['Maßprüfung']
+  assign tp_k_verlegung = attributes['Verlegung']
+  assign tp_k_anrede = 'Guten Tag'
+  if billing_address.first_name != blank
+    assign tp_k_anrede = 'Guten Tag ' | append: billing_address.first_name | append: ' ' | append: billing_address.last_name
+  elsif customer.first_name != blank
+    assign tp_k_anrede = 'Guten Tag ' | append: customer.first_name | append: ' ' | append: customer.last_name
+  endif
+-%}
+
+<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.55;color:#15171a;">
+  <p style="margin:0 0 12px;">{{ tp_k_anrede | strip | escape }},</p>
+
+  {%- if tp_k_typ == 'muster' -%}
+    <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Musterbestellung bei Teppich Paradies.</p>
+    <p style="margin:0 0 12px;">Ihre Muster (Bestellung {{ name | escape }}) gehen in den nächsten Werktagen kostenlos per Post an Sie raus. So holen Sie das meiste heraus:</p>
+    <ul style="margin:0 0 16px;padding-left:20px;">
+      <li>Legen Sie die Muster dort aus, wo der Boden später liegt – und schauen Sie sie bei Tageslicht und bei Kunstlicht an.</li>
+      <li>Vergleichen Sie die Muster neben Möbeln, Wand- und Türfarbe.</li>
+      <li>Fragen zu Material, Maßen oder Verlegung? Rufen Sie uns an: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr).</li>
+    </ul>
+    <p style="margin:0 0 6px;font-weight:bold;">Ihre Muster</p>
+    <ul style="margin:0 0 16px;padding-left:20px;">
+      {%- for line in line_items -%}
+        {%- assign tp_k_link = '' -%}
+        {%- assign tp_k_farbe = '' -%}
+        {%- for p in line.properties -%}
+          {%- if p.first == '_Produktlink' -%}{%- assign tp_k_link = p.last -%}{%- endif -%}
+          {%- if p.first == 'Farbe' -%}{%- assign tp_k_farbe = p.last -%}{%- endif -%}
+        {%- endfor -%}
+        {%- if tp_k_farbe == blank -%}{%- assign tp_k_farbe = line.variant_title -%}{%- endif -%}
+        <li>
+          {%- if tp_k_link != blank -%}<a href="{{ tp_k_link | escape }}" style="color:#15171a;">{{ line.title | escape }}</a>{%- else -%}{{ line.title | escape }}{%- endif -%}
+          {%- if tp_k_farbe != blank %} – {{ tp_k_farbe | escape }}{% endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+    <p style="margin:0 0 16px;">Gefällt Ihnen ein Muster? Über die Links oben kommen Sie direkt zurück zum Produkt und können Ihre Maße eingeben.</p>
+  {%- elsif tp_k_typ == 'misch' -%}
+    <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
+    <p style="margin:0 0 12px;">Ihre Bestellung {{ name | escape }} enthält Ware und kostenlose Muster. Die Muster gehen vorab per Post raus, die Ware bereiten wir für den Versand vor. Sie erhalten eine weitere E-Mail, sobald die Ware unterwegs ist.</p>
+  {%- else -%}
+    <p style="margin:0 0 12px;font-size:18px;font-weight:bold;">Vielen Dank für Ihre Bestellung bei Teppich Paradies.</p>
+    <p style="margin:0 0 12px;">Wir haben Ihre Bestellung {{ name | escape }} erhalten und bereiten sie für den Versand vor. Sie erhalten eine weitere E-Mail mit Sendungsverfolgung, sobald die Ware unterwegs ist.</p>
+  {%- endif -%}
+
+  {%- if tp_k_beratung == 'Ja' or tp_k_mass == 'Ja' or tp_k_verlegung == 'Angefragt' -%}
+    <div style="margin:0 0 16px;padding:12px 14px;background:#f2f1ef;border-radius:6px;">
+      <p style="margin:0 0 6px;font-weight:bold;">So geht es weiter</p>
+      {%- if tp_k_beratung == 'Ja' -%}
+        <p style="margin:0 0 6px;">Sie haben eine persönliche Beratung gewünscht. Wir rufen Sie {% if tp_k_zeit != blank and tp_k_zeit != 'Egal' %}{{ tp_k_zeit | downcase | escape }} {% endif %}unter {{ tp_k_telefon | escape }} an.</p>
+      {%- endif -%}
+      {%- if tp_k_mass == 'Ja' -%}
+        <p style="margin:0 0 6px;">Wir prüfen Ihre Maße gemeinsam mit Ihnen am Telefon, bevor wir zuschneiden{% if tp_k_beratung != 'Ja' %} – Rückruf unter {{ tp_k_telefon | escape }}{% endif %}. Die Lieferung verzögert sich dadurch nicht.</p>
+      {%- endif -%}
+      {%- if tp_k_verlegung == 'Angefragt' -%}
+        <p style="margin:0;">Sie interessieren sich für Aufmaß oder Verlegung. Wir besprechen beim Rückruf, was in Ihrer Region möglich ist.</p>
+      {%- endif -%}
+    </div>
+  {%- elsif tp_k_typ != 'muster' -%}
+    <p style="margin:0 0 16px;">Fragen zu Ihrer Bestellung? Rufen Sie uns an: 03301 573 37 20 (Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr) oder antworten Sie einfach auf diese E-Mail.</p>
+  {%- endif -%}
+
+  {%- if order_status_url != blank -%}
+    <p style="margin:0 0 20px;"><a href="{{ order_status_url }}" style="display:inline-block;padding:10px 18px;background:#15171a;color:#ffffff;text-decoration:none;border-radius:6px;">Bestellstatus ansehen</a></p>
+  {%- endif -%}
+</div>

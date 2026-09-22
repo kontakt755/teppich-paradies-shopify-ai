@@ -12,3 +12,4 @@
 | 2026-09-22 | Guards | liquid/schema/template/theme/essential | lokal | PASS (2 vorbestehende Template-Warnungen) |
 | 2026-09-22 | M2/M6a | `npm test` gesamte Unit-Suite nach npm ci | lokal | PASS 645/645 (+37 Dashboard) |
 | 2026-09-22 | M6a | `qa/tests/bestellmail-beratung.test.mjs` Muster/Ware/Misch, Beratung Ja/Nein, Maßprüfung, Escaping | lokal (LiquidJS) | PASS 4/4 |
+| 2026-09-22 | M6b | `qa/tests/kundenmail-bloecke.test.mjs` Muster/Ware/Misch, Bestätigungen, Escaping, Tracking, Spedition | lokal (LiquidJS) | PASS 5/5 |
