@@ -26,9 +26,9 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 ## Kommunikation
 | Prüfung | Status | Beleg |
 |---|---|---|
-| Bestellbestätigung geprüft | ⏳ | Baustein fertig + getestet (LiquidJS); Einsetzen im Admin offen |
-| Musterbestätigung geprüft | ⏳ | im selben Baustein (Muster-Zweig) |
-| Versandbestätigung geprüft | ⏳ | Baustein fertig; Einsetzen offen |
+| Bestellbestätigung geprüft | ✅ | im Admin gespeichert, Shopify-Vorschau fehlerfrei (22.09.) |
+| Musterbestätigung geprüft | ✅ (Vorlage aktiv) | Muster-Zweig im selben Baustein; echte Musterbestellung als Gegenprobe offen |
+| Versandbestätigung geprüft | ✅ | gespeichert, Vorschau mit Tracking fehlerfrei |
 | Tracking geprüft | ❓ | keine Sendung in dieser Sitzung |
 | Bestellstatus geprüft | ❓ | Horizon-Standard, nicht angepasst |
 | Interne Meldung Beratung | ⏳ | Block fertig; im Admin-Editor eingesetzt, **Speichern durch Freigabe-Filter gesperrt** (Tab offen) |
@@ -36,7 +36,7 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 ## Ads
 | Prüfung | Status | Beleg |
 |---|---|---|
-| Merchant Center sauber | ❌ | 0 approved / 225 awaiting_review (Stand 11.09.); Versandrichtlinie 404 |
+| Merchant Center sauber | ❌ | Versandrichtlinie jetzt live (200); Produktstatus nicht prüfbar (kein Zugang) |
 | Produktfeed sauber | ❌ | ohne GTIN/custom_product, 8 doppelte SKUs, 41 ohne SKU; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
 | Conversion Tracking sauber | ⏳ | Pixel-Vorlage fertig; GA4-ID fehlt |
 | Purchase nicht doppelt | ⏳ | Regel dokumentiert (eine Quelle); Admin-Prüfung offen |

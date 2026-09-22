@@ -13,3 +13,13 @@
 | 11 | Follow-up-Mails nach Zustellung (Ware: Ankunft/Verlegung/Pflege/Bewertung; Muster: „Muster angesehen?") – braucht Flow (Zeitverzögerung) oder Shopify Email; Texte können vorbereitet werden, sobald Werkzeug entschieden ist | Ahmet | Werkzeugentscheidung (docs/shop-decisions.md: Newsletter „erstmal auslassen") |
 | 12 | Cookie-Banner-Text auf Sie-Form umstellen (Admin → Einstellungen → Kundendatenschutz → Cookie-Banner → Text) | Ahmet/Kaya | Shopify-nativ, kein Theme-Code |
 | 13 | Admin-Klicks „Speichern" (Benachrichtigungsvorlagen) werden dem Agenten vom Freigabe-Filter verweigert – Vorlagen sind eingesetzt/vorbereitet, Speichern bitte selbst | Ahmet/Kaya | Sicherheitsfilter |
+
+## Stand 2026-09-22 nachmittags (nach Admin-Session)
+
+Erledigt: Flow-Workflow Beratung/Maßprüfung/Verlegung aktiv · interne Mail, Bestell- und Versandbestätigung gespeichert · Versandrichtlinie live.
+Weiter offen (nicht per Agent lösbar):
+- **Cookie-Banner-Text (du → Sie):** im Admin nicht editierbar, solange „Automatisierte Einstellungen" aktiv ist; Text kommt aus Shopifys Übersetzungen. Weg: Einstellungen → Sprachen → Deutsch → Übersetzen (Translate & Adapt, kostenlos) → Kundendatenschutz. Entscheidung Ahmet, ob die Automatik abgeschaltet werden soll.
+- **GA4-Mess-ID:** muss vom Inhaber kommen (Google-Konto); danach Pixel aus `domains/marketing/tracking-pixel-vorlage.md`.
+- **Merchant Center:** kein Zugang in dieser Umgebung (Google-Konto des Inhabers).
+- **TYP-MUSTER/-WARE/-MISCH-Workflow:** Vorlage `domains/shopify/flow/bestell-tags.md`; bis dahin zeigt die interne Mail den Typ.
+- **SKU-Bereinigung:** nur mit ausdrücklicher Freigabe.
