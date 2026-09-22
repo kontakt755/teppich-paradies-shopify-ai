@@ -22,7 +22,7 @@ S22 Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, R
 
 ## Ausgefuehrte Tests
 
-Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt. Dokument-/JSON-/Quellenintegrität und Secret-Scan PASS; git diff --check vor Commit.
+Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt. Dokument-/JSON-/Quellenintegrität und Secret-Scan PASS; git diff --check PASS.
 
 ## Bekannte Fehler
 
@@ -34,6 +34,6 @@ VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinde
 
 ## Letzter erfolgreicher Git-Commit
 
-eae2136 – S21-Sicherung; S22-Fachcommit folgt nach Prüfungen. Branch audit/shop-audit, kein Merge/Push.
+f0020fe – audit: nativen Variantenantwortvertrag und H-017 dokumentieren. Zwölf Dateien tatsächlich committed. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING
