@@ -326,7 +326,6 @@
           },
           "block_order": [
             "teppich_header_group",
-            "tp_teppich_vorteile_main",
             "tp_bewertungsbeleg_teppich",
             "divider_teppich_main",
             "color_swatch_picker_teppich_main",
@@ -336,6 +335,7 @@
             "tp_teppich_wunschmass_main",
             "options_price_calculator_teppich_main",
             "buy_buttons_teppich_main",
+            "tp_teppich_vorteile_main",
             "tp_teppich_versand_main",
             "tp_teppich_auf_einen_blick_main",
             "tp_teppich_description_style",

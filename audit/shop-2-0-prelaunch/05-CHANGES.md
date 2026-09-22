@@ -59,3 +59,19 @@
 - **Änderung (Shop-Daten, Admin-API):** `productVariantDetachMedia` (Piktogramm von Variante 0580 gelöst), `productReorderMedia` (Piktogramm ans Ende); Titelbild jetzt echtes Foto 1127408. Datei nicht gelöscht.
 - **Auswirkungen:** sofort live (Store-Daten sind theme-unabhängig). Variante 0580 hat jetzt kein Bild (ehrlich statt falsch).
 - **Test:** Gegenprobe `featuredMedia` = 73747280331086, Variante 0580 `media: []`.
+
+## 2026-09-22 · Produktseite · Reihenfolge (M3)
+
+- **Problem vorher:** Nutzen-Block, Verlegen-lassen-Box und Vergleichsschalter standen vor dem Kaufen-Button (PL-022).
+- **Änderung:** In `product.json`, `product.fliese.json`, `product.planken.json`, `product.teppich.json` per Skript `block_order` umgestellt: alles, was `tp-vorteile`/`tp-teppich-vorteile`/`tp-vertrauen`, `tp-verlegen-lassen`, `tp-compare-toggle` enthält, direkt hinter `buy-buttons`. Nur Reihenfolge, keine Inhalte.
+- **Bewusst nicht:** `product.fixpreis.json` (Leisten-Kurzinfo = „klare Produktart", bleibt oben); `rolle`, `zubehoer`, `einfassung` waren bereits konform. H1-Vereinheitlichung (`tp-product-h1` überall) offen.
+- **Test:** Arbeitstheme Piumera-PDP Desktop/Mobil, Kaufen-Button 800 px (Desktop) bzw. 863 px (375 px) von oben.
+
+## 2026-09-22 · Performance · Diagnose (M10, keine Änderung)
+
+Lighthouse 13.5 mobil simuliert, Live 22.09.: Start 65/LCP 9,0 s, PDP 64/7,9 s, Kollektion ~68/10 s. Befund:
+- Start und Kollektion: LCP-Element ist ein `<p>` (Text), TTFB 126–140 ms, **Element-Render-Delay 2,3–3,3 s** → blockiert durch `compiled_assets/styles.css` (65 KB gz, 700–1058 ms, `unused-css-rules` 59 KB) und `base.css`; Fonts ohne Befund; Main-Thread 1,8 s (Script 0,54 s, Style/Layout 0,4 s).
+- PDP: LCP = Produktbild 1196472 (fetchpriority high, nicht lazy, im HTML entdeckbar), Load-Delay 0,6 s, Render-Delay 1,8 s; Bild 832 px für 261 CSS-px (bei DPR 2,6 ≈ 686 px nötig, nächste Stufe – kein echter Fehler).
+- Bildgröße/Kompression-Warnungen (Kollektion 352 px für 184 CSS-px) rechnen ohne Gerätedichte – bei DPR ≥ 2 korrekt.
+- Größte Fremdlast: Shopify `checkout-web`/shop-js (Wallets, Login mit Shop), nicht Theme.
+Hebel mit Wirkung: Größe des globalen Section-CSS (649 KB roh über 207 Dateien; die vier größten TP-eigenen: `tp-verlegeservice` 15,8 KB, `tp-einfass-konfigurator` 11,9 KB, `tp-ratgeber-beitrag` 11,8 KB, `tp-verlegegebiet` 11,2 KB) in Section-eigene Assets verschieben. Risiko laut Erfahrung: Section-CSS wirkt global, andere Seiten könnten sich darauf verlassen → nur mit Vorher/Nachher-Screenshots aller Seitentypen. Nicht in dieser Sitzung umgesetzt (P1, PL-020 bleibt offen).
