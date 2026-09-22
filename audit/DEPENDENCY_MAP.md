@@ -222,3 +222,9 @@ Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listene
 `variant-picker.js` ist CORE/SHARED und HIGH RISK: eigener gebundener Change-Listener wird nicht entfernt; laufender Request wird beim Disconnect nicht abgebrochen. Reconnect erzeugt doppelte Pickerereignisse und Requests. FILE CONFLICT mit TP-017 (`product-form.js`/Events) und TP-016 (`tp-farbe.js`, `product-form.js`). Lifecycle-Fixes gemeinsam sequenziell planen; keinen globalen Morphumbau ableiten.
 
 Nächster Schritt: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen.
+
+## S26 – Morph-/Mehrproduktgrenze
+
+`color-swatch-picker.liquid` → dokumentweites `tp:farbe-wechsel` → `tp-farbe.js`; native `variant:update` bleibt auf Section/Dialog/Product-Card plus Produkt-ID begrenzt. `snippets/quick-add.liquid` kann `tp-farbe-properties` eines anderen Produkts in `quick-add-modal-content` einbringen; `quick-add.js` morpht diesen Container. Lokale Einstellung deaktiviert Quick Add, Livezustand unbekannt. H-016 daher bedingt.
+
+`morph.js` ist CORE/HIGH RISK und kann alte Knoten erhalten oder verschieben. Das schafft eine Lifecycle-Abhängigkeit für TP-016, ist aber kein Auftrag zum globalen Morphumbau. FILE CONFLICT bleibt: `variant-picker.js`, `product-form.js`, `tp-farbe.js`, angrenzend `quick-add.js`; sequenziell planen.

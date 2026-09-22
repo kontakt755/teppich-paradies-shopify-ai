@@ -430,3 +430,13 @@ Grenze: kein echter DOM-Morph, keine Response-Fertigstellung und keine Browser-/
 Nächster Schritt: VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. Picker-/Formular-Reconnectfälle S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
+
+## S26 – Morph-/Mehrprodukt-Reichweite (22.09.2026)
+
+S26 / VAR-001a.2c.3 lokal abgeschlossen: acht Produkt-Templates und sechs verbundene Quellen statisch geprüft. `tp:farbe-wechsel` wird dokumentweit gesendet und von beiden Farbverbrauchern dokumentweit ohne Produktprüfung verarbeitet; native `variant:update`-Events bleiben dagegen auf Section/Dialog/Product-Card und Produkt-ID begrenzt. Drei Templates (`product.einfassung`, `product.rolle`, `product.teppich`) haben aktiven Custom-Farbpicker plus Farbanzeige, aber deaktivierte normale Buy-Buttons. Alle acht Produkttemplates enthalten Empfehlungen. Das Quick-add-Snippet kann fremde Farbproperties rendern, lokale `settings_data.json` setzt `quick_add: false`.
+
+H-016 bleibt bedingt: Bei aktiviertem Quick Add oder einem weiteren gleichzeitigen Farbverbraucher kann das globale Event fremde Properties leeren, doch der aktuelle lokale Konfigurationsstand belegt diesen Kundenpfad nicht; `settings_data.json` ist außerdem nicht historisch live-hashgleich. Kein neues bestätigtes Issue. Morph kann alte Knoten erhalten/verschieben und Quick-add-Inhalt morphen; reine Quellen belegen keine konkrete Browser-Callbackfolge. TP-016 bleibt lokal bestätigt, Live-Reichweite offen.
+
+Script `audit/scripts/audit-variant-morph-reach.mjs`; Evidence `audit/evidence/variant-morph-reach-2026-09-22.json`. Erster und zweiter Versuch stoppten vor Auswertung an Shopify-Kommentarvorspannen in Template- beziehungsweise Settings-JSON; Parser jeweils ab erster JSON-Klammer korrigiert. Danach Syntax/Matrix PASS. Keine alten Lifecycle-Diagnosen, kein Browser und keine Liveanfrage. Route TASK-07C162F822FA B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001a: JavaScript-Runtime-Inventar ab aktuellem Quellstand erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.

@@ -245,3 +245,11 @@ Vier neue Lifecycle-Beobachtungen PASS: Erstverbindung und frische Instanz je ei
 Evidence: `audit/evidence/picker-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-picker-reconnect.mjs`. Syntax/Diagnose PASS nach Korrektur des neutralen Component-Adapters. Keine Browser-/Liveprüfung.
 
 Nächster Schritt: VAR-001a.2c.3 Morph-/Quick-add-Aufrufer und Mehrproduktzuordnung H-016.
+
+## S26 – Morph-/Mehrprodukt-Reichweite
+
+Statische Matrix PASS: acht Produkt-Templates, davon drei mit aktivem Custom-Farbpicker; sechs Quellverträge zu Eventscope, Quick-add-Properties und Morph geprüft. Repository-Einstellung `quick_add: false`; Livegleichheit ausdrücklich unbekannt. H-016 bleibt bedingt, kein neues Issue. Kein Lifecycle-Replay oder Browsertest.
+
+Evidence: `audit/evidence/variant-morph-reach-2026-09-22.json`; Script: `audit/scripts/audit-variant-morph-reach.mjs`. Zwei Parseranläufe stoppten vor Auswertung an Shopify-Kommentarvorspannen; korrigierter Matrixlauf PASS.
+
+Nächster Schritt: JS-001a Runtime-Inventar und Priorisierung noch ungeprüfter Fehlerpfade.

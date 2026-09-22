@@ -6,34 +6,34 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S25 / VAR-001a.2c.2 lokal abgeschlossen, grob 28 %.
+Phase 1, S26 / VAR-001a.2c.3 lokal abgeschlossen, grob 29 %. Wechsel zu JavaScript-Runtime.
 
 ## Erledigte Aufgaben
 
-S25: vier Original-VariantPicker-Lifecycle-Beobachtungen PASS. Reconnect derselben Instanz verdoppelt Change-Events/Requests; Disconnect bricht laufenden Request nicht ab. TP-016 erweitert, keine neue Issue-ID. Reale Morph-/Live-Reichweite offen.
+S26: acht Produkttemplates und sechs Morph-/Event-/Quick-add-Quellen statisch geprüft. Drei Custom-Farbpicker-Templates haben deaktivierte normale Buy-Buttons; lokales Quick Add ist aus. H-016 bleibt wegen unbekanntem Livezustand bedingt. Varianten-/Farbpickerbereich lokal abgeschlossen; keine neue Issue-ID.
 
 ## Offene Aufgaben
 
-VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+JS-001a: JavaScript-Runtime-Inventar erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-Auditdokumentation, Picker-Reconnect-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
+Auditdokumentation, Morph-Reichweiten-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Picker-Lifecycle-Syntax und Diagnose PASS nach neutraler Component-Adapterkorrektur; vier Beobachtungen. Route TASK-91B1228B1311 B/STATIC, kein Executor. JSON-/Dokumentintegrität, Secret-Scan und git diff --check PASS.
+Morph-/Template-Matrix nach zwei Kommentarvorspann-Parserkorrekturen PASS: acht Templates, sechs Quellhashes. Route TASK-07C162F822FA B/STATIC, kein Executor. JSON-/Dokumentintegrität, Secret-Scan und git diff --check PASS.
 
 ## Bekannte Fehler
 
-17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 umfasst Farbkomponenten, ProductForm und VariantPicker; Live-Reichweite offen. Browserberechtigung S13 weiterhin blockiert.
+17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 lokal bestätigt, H-016 globale Fremdzuordnung nur bedingt. Browserberechtigung S13 weiterhin blockiert.
 
 ## Naechster konkreter Arbeitsschritt
 
-VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+JS-001a: JavaScript-Runtime-Inventar erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
-b8e16c5 – audit: TP-016 um VariantPicker-Reconnect erweitern. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
+4e6dc81 – S25-Sicherung. S26-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
 
 Status: WORKING

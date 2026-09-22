@@ -171,3 +171,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S25 – VariantPicker-Reconnect
 
 `audit/scripts/reproduce-picker-reconnect.mjs` führt vier neue Lifecycle-Beobachtungen an Original-VariantPicker/-Events aus. `audit/evidence/picker-reconnect-2026-09-22.json` belegt doppelten Listener/Request nach Reconnect und den beim Disconnect nicht abgebrochenen Request. DOM/Morph adaptiert; keine Live- oder Browseraussage.
+
+## S26 – Morph-/Mehrprodukt-Reichweite
+
+`audit/scripts/audit-variant-morph-reach.mjs` erfasst acht Produkt-Templates, lokale Quick-add-Einstellung und sechs verbundene Quellhashes. `audit/evidence/variant-morph-reach-2026-09-22.json` grenzt H-016 auf eine bedingte globale Kopplung ein. Statische Quelle/Konfiguration, kein Browser oder Livebeleg.
