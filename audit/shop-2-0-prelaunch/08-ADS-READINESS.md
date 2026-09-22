@@ -36,9 +36,9 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 ## Ads
 | Prüfung | Status | Beleg |
 |---|---|---|
-| Merchant Center sauber | ❌ | Versandrichtlinie jetzt live (200); Produktstatus nicht prüfbar (kein Zugang) |
+| Merchant Center sauber | ✅ | 225/225 genehmigt, 0 Probleme (Google-&-YouTube-App, 22.09.); Versandrichtlinie live |
 | Produktfeed sauber | ❌ | ohne GTIN/custom_product; SKUs bereinigt (104, 22.09.), offen: Turku/Marlow doppelt; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
-| Conversion Tracking sauber | ⏳ | Pixel-Vorlage fertig; GA4-ID fehlt |
+| Conversion Tracking sauber | ❌ | GA4 und Google Ads in der Google-&-YouTube-App nicht verknüpft; Pixel-Vorlage fertig |
 | Purchase nicht doppelt | ⏳ | Regel dokumentiert (eine Quelle); Admin-Prüfung offen |
 | Muster getrennt | ⏳ | `sample_order` / `tp_bestellung_typ` im Pixel; nicht eingerichtet |
 | Consent geprüft | ✅ | Shopify-nativ, Consent Mode v2 (Messung 16.09.) |
