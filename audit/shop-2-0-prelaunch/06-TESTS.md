@@ -17,3 +17,6 @@
 | 2026-09-22 | M3 | PDP Arbeitstheme Desktop/Mobil: Reihenfolge, Kaufen-Button 800/863 px, 0 Theme-Konsolenfehler (3× 401 aus Shopify-Login/Wallet-Assets) | Arbeitstheme | PASS |
 | 2026-09-22 | Technik | `npm run menu:guard` 49 Menülinks | Live | PASS 0 Fehler |
 | 2026-09-22 | § 46 | Sie/Du-Konsistenz: grep über sections/blocks/snippets/templates/locales | lokal | PASS (0 kundensichtbare Du-Formen) |
+| 2026-09-22 | M10 | Visuelle Regression CSS-Auslagerung: 10 Seitentypen × 390/1366 px, Diff vorher/nachher 0–4,1 %; Rauschen zweier identischer Läufe 0–4,4 % (gleiche Größenordnung); Sichtprüfung der größten Diffs (Einfassungs-PDP, Start, Verlegeservice, Treppen): nur Scroll-Offset fixer Elemente | Arbeitstheme, Puppeteer | PASS |
+| 2026-09-22 | M10 | Asset-CSS nur dort geladen, wo die Section rendert (Verlegeservice 2 Dateien, Einfassung 1, Ratgeber 1, Leisten 0); globales styles.css 486 KB → 448 KB roh | Arbeitstheme | PASS |
+| 2026-09-22 | M3 | H1 via tp-product-h1: PDP-Screenshots Einfassung/Rolle zeigen H1 unverändert | Arbeitstheme | PASS |

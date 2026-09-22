@@ -11,7 +11,7 @@ Der Masterplan ist nicht abgeschlossen. Dieser Bericht fasst den Stand nach der 
 - M8: Custom-Pixel-Vorlage, Conversion-Aufteilung, UTM.
 - M3: Produktseiten-Reihenfolge (Nutzen, Verlegung, Vergleich unter Kaufen) in 4 Templates.
 - M9: Feedtitel-Regel und Merchant-Center-Prüfliste (Vorlage).
-- M10: Performance-Diagnose (Ursache render-blockendes Section-CSS), keine Änderung.
+- M10: Performance-Diagnose und erster Schritt: vier große Section-Stylesheets ausgelagert (globales CSS −8 %), visuell regressionsgeprüft; H1-Block in allen Produkt-Templates vereinheitlicht.
 - Shop-Daten: Rapidia-Titelbild korrigiert (Piktogramm entfernt).
 - Entscheidungen aus der Doku geholt: Radius-Text 50 km bleibt, Lieferzeit 5–7, Muster-Fallback bleibt, Feedtitel per Regel.
 Alle Theme-Änderungen liegen im Arbeitstheme 204436144462 und im PR #454; nichts ist live.
@@ -45,7 +45,7 @@ Siehe `08-ADS-READINESS.md` – **nicht READY**: Produktfeed ❌, Tracking ⏳, 
 4. Handy (oder Fenster schmal): dieselbe Prüfung im Warenkorb-Drawer.
 5. Produktseite Piumera: kein „Jetzt kaufen"-Button mehr, nur „In den Warenkorb".
 6. Seite `/pages/treppenverlegung` (Preview): Telefonnummer überall „03301 573 37 20".
-7. Admin → Benachrichtigungen → Mitarbeiterbenachrichtigungen → Neue Bestellung → Code bearbeiten: Block aus `domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid` (im offenen Browser-Tab bereits eingesetzt, nur „Speichern" fehlt) → Testbenachrichtigung senden.
+7. Admin → Benachrichtigungen → Mitarbeiterbenachrichtigungen → Neue Bestellung → Code bearbeiten: alten Block (ab `{%- comment -%} Interner Bestellblock`) durch `domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid` ersetzen → Speichern → Testbenachrichtigung senden. (Der Agent darf im Admin nicht speichern.)
 8. Admin → Kundenbenachrichtigungen → Bestellbestätigung: Baustein einsetzen (README), Vorschau prüfen.
 9. Admin → Apps → Shopify Flow installieren, Workflows aus `domains/shopify/flow/bestell-tags.md` anlegen.
 10. Google & YouTube App → Produktstatus: awaiting_review/abgelehnt prüfen; Versandrichtlinie unter Einstellungen → Richtlinien anlegen.
