@@ -154,6 +154,12 @@
   endcapture
   assign sizes = sizes | strip
 
+  # TP: Die Horizon-Standardliste springt von 352 auf 832 px. Ein 390-px-Handy
+  # (DPR 1) und Lighthouse mobil (412 px, DPR 1,75) luden deshalb 832 px fuer
+  # ein 390/412-px-Bild. Zwischenstufen schliessen die Luecke; Zoom nutzt
+  # weiter data_max_resolution (3840 px).
+  assign tp_gallery_widths = '240, 352, 480, 600, 720, 832, 1080, 1200, 1600, 1920, 2560, 3840'
+
   assign product_media_container_class = 'product-media-container'
   if block_settings.constrain_to_viewport
     assign product_media_container_class = product_media_container_class | append: ' constrain-height'
@@ -378,10 +384,10 @@
           {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
             <div
               class="product-media-constraint-wrapper">
-              {%- render 'product-media', media: media, sizes: media_sizes, loading: media_loading, is_main_product_media: forloop.first -%}
+              {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, is_main_product_media: forloop.first -%}
             </div>
           {% else %}
-            {%- render 'product-media', media: media, sizes: media_sizes, loading: media_loading, is_main_product_media: forloop.first -%}
+            {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, loading: media_loading, is_main_product_media: forloop.first -%}
           {% endif %}
         {% endcapture %}
         {% capture class %}
@@ -493,10 +499,10 @@
             -%}
             {% if block_settings.aspect_ratio != 'adapt' and block_settings.constrain_to_viewport %}
               <div class="product-media-constraint-wrapper">
-                {%- render 'product-media', media: media, sizes: media_sizes, is_main_product_media: forloop.first -%}
+                {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, is_main_product_media: forloop.first -%}
               </div>
             {% else %}
-              {%- render 'product-media', media: media, sizes: media_sizes, is_main_product_media: forloop.first -%}
+              {%- render 'product-media', media: media, sizes: media_sizes, widths: tp_gallery_widths, is_main_product_media: forloop.first -%}
             {% endif %}
           </li>
         {% endfor %}
