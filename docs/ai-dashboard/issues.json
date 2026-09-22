@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-22T10:10:13.244Z",
+  "generated_at": "2026-09-22T10:39:51.360Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 123,
+  "count": 124,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-22T10:10:13.244Z",
+    "fetchedAt": "2026-09-22T10:39:51.360Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 472,
+      "title": "Control Center: Bestandsaufnahme 2026-09-22 und Nachschaerfung",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/472",
+      "labels": [
+        "status:in-arbeit",
+        "type:verbesserung",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Aenderungen pruefen und nach main bringen",
+      "fields": {
+        "nextStep": "Aenderungen pruefen und nach main bringen"
+      },
+      "created_at": "2026-09-22T10:39:37Z",
+      "updated_at": "2026-09-22T10:39:50Z",
+      "closed_at": null
+    },
     {
       "number": 465,
       "title": "OAuth-Weg zum shpat_-Admin-Token aufgesetzt",
@@ -126,13 +150,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T08:46:24Z",
-      "updated_at": "2026-09-22T09:37:52Z",
+      "updated_at": "2026-09-22T10:33:14Z",
       "closed_at": null
     },
     {
