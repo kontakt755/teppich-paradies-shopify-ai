@@ -11,9 +11,9 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 | PL-004 | Bestellungen | Keine automatischen Order-Tags (kein Flow); TYP-MUSTER/-WARE/-MISCH, BERATUNG-*, MASS-PRUEFUNG-*, VERLEGUNG-* fehlen | Admin-API orders 2026-09-22; `domains/shopify/benachrichtigungen/README.md:60-62` | M7 | OFFEN |
 | PL-005 | Beratung | Keine Beratungs-/Telefon-/Maßprüfungs-/Verlegeanfrage im Warenkorb; Cart-Notiz abgeschaltet (`show_cart_note: false`) | `snippets/cart-summary.liquid`, Bestellungen ohne customAttributes | M5 | ERLEDIGT (Arbeitstheme, Tags offen → PL-004) |
 | PL-007 | Express-Checkout | Dynamic Checkout (Shop Pay/Apple/Google Pay) auf PDP und im Cart aktiv → jede Pflichtabfrage im Cart umgehbar | `blocks/accelerated-checkout.liquid:23`, `cart-summary.liquid:311-318` | M5 | ERLEDIGT (PDP-Buy-now aus, Cart-Express gated) |
-| PL-008 | Konsistenz | Lieferzeit „5–7 Werktage" (6 Templates + AGB) vs. „3–5 Werktage" (`product.teppich.json:266`) | s. 01-CURRENT-STATE 1.3 | M2 | OFFEN |
+| PL-008 | Konsistenz | Lieferzeit „5–7 Werktage" (6 Templates + AGB) vs. „3–5 Werktage" (`product.teppich.json:266`) | s. 01-CURRENT-STATE 1.3 | M2 | ERLEDIGT (5–7 Werktage, Inhaber informieren) |
 | PL-009 | Konsistenz | Verlegeradius: kundensichtbar überall „50 km", die 15-km-Bedingung (kostenlose Lieferung/lose Verlegung ab 649 €) steht nur in Kommentaren; ≥ 12 Kopien ohne Einstellung | `blocks/tp-verlegen-lassen.liquid:17-19`, `templates/index.json:838-841` | M2 | ENTSCHEIDUNG (Text) / OFFEN (Quelle) |
-| PL-010 | Konsistenz | Telefonnummer in vier Schreibweisen (~25 Stellen), Öffnungszeiten in vier Formaten, keine zentrale Quelle | 01-CURRENT-STATE 1.3 | M2 | OFFEN |
+| PL-010 | Konsistenz | Telefonnummer in vier Schreibweisen (~25 Stellen), Öffnungszeiten in vier Formaten, keine zentrale Quelle | 01-CURRENT-STATE 1.3 | M2 | ERLEDIGT (Telefon einheitlich außer Rechtstexte; Öffnungszeiten: Kurzform Topbar, Langform sonst) |
 | PL-011 | Konsistenz | Versandschwelle: `tp_versand_frei_ab` im Repo leer, `[versandfrei]`-Platzhalter 11×, hart „50 €" 2× – Live zeigt 50 €, Repo-Stand rendert „ab € Bestellwert" | `settings_data.json`, `header-group.json:468`, `tp-preisangabe.liquid:5` | M2 | NICHT ÄNDERN – Schema-Default 50 greift; nur die 2 harten „50 €" bleiben zu zentralisieren |
 | PL-012 | Vertrauen | Google-Bewertung: Theme-Einstellungen `tp_google_wert/anzahl` im Repo leer; Wert nur im Editor des Live-Themes → Preview/Arbeitstheme ohne Beleg | `config/settings_data.json` | M2 | NICHT ÄNDERN – Schema-Default 4,9 / über 240 greift |
 | PL-013 | Produktidentität | `variant.sku` kundensichtbar (`blocks/sku.liquid`, JSON-LD) mit Lieferanten-Artikelmuster | 01-CURRENT-STATE 1.1 | M1 | ENTSCHÄRFT – `sku`-Block in keinem Template; nur JSON-LD `sku` |
@@ -26,7 +26,7 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 | PL-020 | Performance | Mobil LCP 5,1–7,6 s, Score 52–58; Kategorie 4,7 MB/286 Requests; 832-px-Bilder mobil | `docs/analyse/qualitaet-erstbefund-2026-09-11.md` | M10 | OFFEN |
 | PL-021 | Mobile | Touch-Targets 17–24 px (20 WARN) auf Start/Vinyl/Teppichboden/Suche | `SEO_REPORT.md` 11.09. | M10 | OFFEN |
 | PL-022 | Produktseite | Reihenfolge weicht von § 9 ab; H1 uneinheitlich (`tp-product-h1` nur planken/fliese); Verlegen-lassen vor Kaufen | 01-CURRENT-STATE 1.5 | M3 | OFFEN |
-| PL-023 | Interne Texte | „Interne Farbnummer"-Tooltip im DOM (`tp-farbanzeige.liquid:76-85`); Rechenweg B×L in `tp-rollware-anzeige.liquid:36-40` kundensichtbar | – | M2 | OFFEN |
+| PL-023 | Interne Texte | „Interne Farbnummer"-Tooltip im DOM (`tp-farbanzeige.liquid:76-85`); Rechenweg B×L in `tp-rollware-anzeige.liquid:36-40` kundensichtbar | – | M2 | TEILWEISE (Tooltip erledigt; Rechenweg-Block bleibt, startet hidden) |
 | PL-024 | Datenmodell | `custom.rollenbreite` auf Produkt- und Variantenebene, gemischt gelesen (`cart-summary.liquid` vs. `price.liquid`) | – | M1 | OFFEN |
 | PL-025 | Muster/Ads | Musterbestellung endet als 0-€-`purchase` – verfälscht Ads-Optimierung | `docs/google/…:112-115` | M8 | OFFEN |
 

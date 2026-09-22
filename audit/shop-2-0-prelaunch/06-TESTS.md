@@ -10,3 +10,5 @@
 | 2026-09-22 | M5 | Cart-Drawer auf Kollektionsseite rendert Element | Arbeitstheme Desktop | PASS |
 | 2026-09-22 | M5 | Mobil 375 px: Breite 343 px, kein horizontaler Overflow, Radio-Zeilen 44 px | Arbeitstheme Mobil | PASS |
 | 2026-09-22 | Guards | liquid/schema/template/theme/essential | lokal | PASS (2 vorbestehende Template-Warnungen) |
+| 2026-09-22 | M2/M6a | `npm test` gesamte Unit-Suite nach npm ci | lokal | PASS 645/645 (+37 Dashboard) |
+| 2026-09-22 | M6a | `qa/tests/bestellmail-beratung.test.mjs` Muster/Ware/Misch, Beratung Ja/Nein, Maßprüfung, Escaping | lokal (LiquidJS) | PASS 4/4 |

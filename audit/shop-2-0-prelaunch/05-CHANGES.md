@@ -19,3 +19,20 @@
 - **Risiken:** Ein zusätzlicher Pflichtschritt vor dem Checkout (Conversion); Express-Buttons erscheinen erst nach Antwort. Telefonnummer wird als Cart-Attribut gespeichert (Datenschutz: Zweck Rückruf, Hinweis im Text). Section-Rerender morpht das Markup, Zustand kommt aus `cart.attributes` (geprüft per Reload).
 - **Test:** `node --test qa/tests/tp-cart-beratung.test.mjs` 7/7; Arbeitstheme: ohne Antwort → Fehltext, Checkout bleibt auf /cart; Ja + Telefon + Maßprüfung + Verlegung → `/cart.js` Attribute vollständig, Shop-Pay-Button sichtbar; Reload behält Werte; Drawer rendert dasselbe Element; Mobil 375 px ohne Overflow, Touch-Targets 44 px.
 - **Ergebnis:** im Arbeitstheme 204436144462; Live nach PR-Merge und Deploy-Kette.
+
+## 2026-09-22 · Konsistenz · Telefon, Öffnungszeiten, Lieferzeit, Versandschwelle, interner Tooltip (M2)
+
+- **Problem vorher:** Telefonnummer in vier Schreibweisen (PL-010), Kontaktformular ohne Samstag, Lieferzeit 3–5 vs. 5–7 Werktage (PL-008), „50 €" hart im Rollenrechner neben Theme-Einstellung (PL-011), Tooltip „Interne Farbnummer" im Kunden-DOM (PL-023).
+- **Änderung:** Alle Vorkommen `03301 / 573 37 20`, `03301 / 5733720`, `03301 5733720` → `03301 573 37 20` (inkl. Default `tp_vs_telefon`); Kontaktformular „Mo–Fr 8:30–18:00, Sa 8:30–14:30 Uhr"; `product.teppich.json` 5–7 Werktage; Rollenrechner liest `settings.tp_versand_frei_ab`; Tooltip „Farbnummer".
+- **Dateien:** `blocks/tp-farbanzeige.liquid`, `blocks/tp-rollware-rechner.liquid`, `blocks/tp-verlegen-lassen.liquid`, `config/settings_schema.json`, `sections/contact-form.liquid`, `sections/final-cta.liquid`, `sections/tp-service-einstieg.liquid`, `sections/treppenverlegun.liquid`, `sections/vinylboden-verlegen.liquid`, `templates/page.{boden-malerarbeiten,karriere,teppichboden-verlegen,treppenverlegung,vinylboden-verlegen}.json`, `templates/product.{json,planken,rolle,teppich}.json`
+- **Bewusst nicht geändert:** Impressum, Datenschutz, AGB (Rechtstexte, Sicherheitsgrenze); Radius-Text 15/50 km (Inhaberentscheidung, 07-OPEN-ITEMS #5); Wunschmaß-Grenzen in FAQ (PL-028, braucht Metafeld-Anbindung).
+- **Risiken:** gering, reine Textwerte; Lieferzeit-Änderung ist eine inhaltliche Zusage (5–7 statt 3–5) → Inhaber informieren.
+- **Test:** Guards grün, `npm test` 645/645; Arbeitstheme Sichtprüfung.
+
+## 2026-09-22 · Interne Bestellmail · Beratung/Bestelltyp (M6a)
+
+- **Problem vorher:** Rückrufwunsch, Telefon, Maßprüfung, Verlegeanfrage waren an der Bestellung nur unter „Zusätzliche Details" sichtbar; kein Bestelltyp.
+- **Änderung:** Block „Beratung und Rückruf" (orange hervorgehoben, wenn etwas zu tun ist) und Zeile „Bestelltyp: TYP-MUSTER/-WARE/-MISCHBESTELLUNG" in `interne-bestellmail-block.liquid`; alle Werte escaped.
+- **Dateien:** `domains/shopify/benachrichtigungen/interne-bestellmail-block.liquid`, `qa/tests/bestellmail-beratung.test.mjs`
+- **Auswirkungen:** erst nach Einsetzen der Vorlage im Admin (Mitarbeiterbenachrichtigung „Neue Bestellung").
+- **Test:** LiquidJS 4/4, bestehende Maßprüfungs-Tests weiter grün.

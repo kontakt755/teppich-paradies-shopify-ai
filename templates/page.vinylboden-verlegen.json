@@ -21,7 +21,7 @@
         "hero_cta": "Verlegung anfragen",
         "hero_cta_ziel": "/pages/kontakt",
         "telefon": "+4933015733720",
-        "telefon_label": "oder anrufen: 03301 5733720"
+        "telefon_label": "oder anrufen: 03301 573 37 20"
       }
     },
     "main": {
@@ -179,7 +179,7 @@
         "whatsapp_link": "https://wa.me/4917657931322",
         "phone_text": "Oder telefonisch unter",
         "phone_number": "+4933015733720",
-        "phone_display": "03301 / 573 37 20"
+        "phone_display": "03301 573 37 20"
       }
     },
     "tp_verlegegebiet": {
