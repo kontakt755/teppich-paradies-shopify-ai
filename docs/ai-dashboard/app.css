@@ -105,8 +105,8 @@ button { font: inherit; color: inherit; }
 
 /* Statusband */
 .band { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 22px; }
-.band a { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }
-.band a:hover { text-decoration: none; border-color: var(--line-strong); }
+.band a, .band > div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }
+.band a:hover, .band > div:hover { text-decoration: none; border-color: var(--line-strong); }
 .band .n { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
 .band .l { font-size: .8rem; color: var(--text-2); }
 .band .crit .n { color: var(--crit); } .band .warn .n { color: var(--warn); } .band .info .n { color: var(--info); } .band .ok .n { color: var(--ok); }
@@ -259,8 +259,8 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 /* Insights */
 .bars { display: flex; flex-direction: column; gap: 6px; }
 .bar { display: grid; grid-template-columns: 130px 1fr 36px; gap: 10px; align-items: center; font-size: .85rem; }
-.bar .track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
-.bar .fill { height: 100%; background: var(--accent); border-radius: 4px; }
+.bar .track, .track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar .fill, .fill { height: 100%; background: var(--accent); border-radius: 4px; }
 .health { display: flex; flex-direction: column; gap: 8px; }
 .health-row { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; }
 .health-row .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; background: var(--text-3); }

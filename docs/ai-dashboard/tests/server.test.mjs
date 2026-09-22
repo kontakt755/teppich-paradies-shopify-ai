@@ -28,3 +28,14 @@ test('schreibende API-Pfade verlangen POST, JSON und lokalen Origin', async () =
   assert.equal(form.status, 415);
   assert.equal((await fetch(`${base}/api/nope`)).status, 404);
 }));
+
+test('Einkauf-API ist GET-only und liefert JSON (verfuegbar:false ohne private Fixtures im Test-Repo)', async () => withServer(async base => {
+  const b = await fetch(`${base}/api/einkauf/bestellungen`);
+  assert.equal(b.status, 200);
+  const bj = await b.json();
+  assert.equal(typeof bj.verfuegbar, 'boolean');
+  const p = await fetch(`${base}/api/einkauf/produktstatus?page=1&pageSize=5`);
+  assert.equal(p.status, 200);
+  const post = await fetch(`${base}/api/einkauf/bestellungen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
+}));

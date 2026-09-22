@@ -71,7 +71,7 @@ function sameOrigin(req) {
 }
 
 export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -81,10 +81,14 @@ export async function handleApi(req, res, pathname) {
       if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
     } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     let result;
+    const url = new URL(req.url, `http://${req.headers.host || HOST}`);
     if (simple === 'capabilities') result = await api.capabilities();
     else if (simple === 'sync') result = await api.sync();
     else if (simple === 'activity') result = await api.activity();
     else if (simple === 'agent-runs') result = api.agentRuns();
+    else if (simple === 'einkauf/bestellungen') result = api.einkaufBestellungen();
+    else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '' });
+    else if (simple === 'einkauf/klaerung') result = api.einkaufKlaerung();
     else if (taskOp === 'activity') result = await api.activityForTask(number);
     else if (taskOp === 'transition') result = await api.transition(number, await readJson(req));
     else if (taskOp === 'assign') result = await api.assign(number, await readJson(req));
