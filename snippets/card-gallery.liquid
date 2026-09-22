@@ -208,7 +208,7 @@
           endif
 
           capture slideshow_children
-            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true
+            render 'product-media', media: media, sizes: sizes, widths: card_image_widths, loading: loading, fetchpriority: tp_fetchpriority, preview_image_only: true, crop_square: true
           endcapture
 
           render 'slideshow-slide', slide_id: media.id, index: forloop.index0, hidden: hidden, class: class, attributes: attributes, children: slideshow_children, media_fit: media_fit
