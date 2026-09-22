@@ -7,7 +7,7 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 
 | ID | Bereich | Befund | Beleg | Modul | Status |
 |---|---|---|---|---|---|
-| PL-001 | Produktbilder | „Rapidia Teppichfliese 50x50cm": Titelbild ist ein Piktogramm (Gebäude/Personen „33"), kein Produktfoto | `files/328377-8FXC-prod_ec9619dc…jpg` 833×390 | M2 | OFFEN |
+| PL-001 | Produktbilder | „Rapidia Teppichfliese 50x50cm": Titelbild ist ein Piktogramm (Gebäude/Personen „33"), kein Produktfoto | `files/328377-8FXC-prod_ec9619dc…jpg` 833×390 | M2 | ERLEDIGT 2026-09-22: Piktogramm von Variante 0580 gelöst und ans Ende verschoben, Titelbild jetzt 1127408 (Grau Sehr Dunkel Dunkler); Variante 0575 und 0580 ohne Bild (Datenlücke, PL-032) |
 | PL-004 | Bestellungen | Keine automatischen Order-Tags (kein Flow); TYP-MUSTER/-WARE/-MISCH, BERATUNG-*, MASS-PRUEFUNG-*, VERLEGUNG-* fehlen | Admin-API orders 2026-09-22; `domains/shopify/benachrichtigungen/README.md:60-62` | M7 | OFFEN |
 | PL-005 | Beratung | Keine Beratungs-/Telefon-/Maßprüfungs-/Verlegeanfrage im Warenkorb; Cart-Notiz abgeschaltet (`show_cart_note: false`) | `snippets/cart-summary.liquid`, Bestellungen ohne customAttributes | M5 | ERLEDIGT (Arbeitstheme, Tags offen → PL-004) |
 | PL-007 | Express-Checkout | Dynamic Checkout (Shop Pay/Apple/Google Pay) auf PDP und im Cart aktiv → jede Pflichtabfrage im Cart umgehbar | `blocks/accelerated-checkout.liquid:23`, `cart-summary.liquid:311-318` | M5 | ERLEDIGT (PDP-Buy-now aus, Cart-Express gated) |
@@ -41,6 +41,8 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 | PL-027 | Kundenkonto | Keine Anpassung Bestellstatus/Kundenkonto; nicht getestet | `HANDOFF.md:91,104` | M12 | OFFEN |
 | PL-028 | Wunschmaß | Grenzen dreifach (FAQ, Kollektionstemplate, Metafelder) | `tp-teppiche-faq.liquid:50`, `collection.teppiche.json:275` | M2 | OFFEN |
 | PL-029 | Follow-up | Keine Nachfass-Mails nach Zustellung (Ware/Muster), kein E-Mail-Tool (bewusst) | `docs/shop-decisions.md:27` | M6 | ENTSCHEIDUNG |
+
+| PL-032 | Produktbilder | Rapidia Varianten „Grau Mittel Mittel" (0575) und „Grau Mittel Heller" (0580) ohne Variantenbild | Admin-API 2026-09-22 | M2 | OFFEN (Lieferantenbild fehlt) |
 
 ## P2 – danach
 | ID | Bereich | Befund | Modul | Status |

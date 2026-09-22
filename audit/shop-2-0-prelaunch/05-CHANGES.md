@@ -52,3 +52,10 @@
 - **Änderung:** `domains/marketing/tracking-pixel-vorlage.md` mit fertigem Pixel-Code (Theme-Events → GA4, `tp_bestellung_typ`, `sample_order`, kein zweites purchase), Ads-Conversion-Tabelle (Kauf primär nur mit Wert > 0), UTM-Vorlage, vierstufige Gegenprobe.
 - **Dateien:** `domains/marketing/tracking-pixel-vorlage.md`
 - **Auswirkungen:** keine, bis GA4-ID vorliegt und Pixel im Admin angelegt ist.
+
+## 2026-09-22 · Produktdaten · Rapidia Teppichfliese Titelbild (PL-001)
+
+- **Problem vorher:** Titelbild und Variantenbild „Grau Mittel Heller" war ein Piktogramm (Gebäude/Personen „33"), kein Produktfoto – im Feed, auf Karten und im Menü-Fallback sichtbar.
+- **Änderung (Shop-Daten, Admin-API):** `productVariantDetachMedia` (Piktogramm von Variante 0580 gelöst), `productReorderMedia` (Piktogramm ans Ende); Titelbild jetzt echtes Foto 1127408. Datei nicht gelöscht.
+- **Auswirkungen:** sofort live (Store-Daten sind theme-unabhängig). Variante 0580 hat jetzt kein Bild (ehrlich statt falsch).
+- **Test:** Gegenprobe `featuredMedia` = 73747280331086, Variante 0580 `media: []`.
