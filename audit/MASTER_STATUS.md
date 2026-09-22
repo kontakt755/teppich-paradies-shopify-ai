@@ -54,4 +54,4 @@ S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integri
 
 S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
 
-S25 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier Picker-Lifecycle-Beobachtungen PASS; keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
+S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.

@@ -34,6 +34,6 @@ VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordn
 
 ## Letzter erfolgreicher Git-Commit
 
-283ac32 – S24-Sicherung. S25-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+b8e16c5 – audit: TP-016 um VariantPicker-Reconnect erweitern. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

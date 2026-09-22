@@ -428,3 +428,5 @@ Script `audit/scripts/reproduce-picker-reconnect.mjs`; Evidence `audit/evidence/
 Grenze: kein echter DOM-Morph, keine Response-Fertigstellung und keine Browser-/Liveanfrage. Die Quellarrays `#radios`/`#checkedIndices` werden beim Reconnect nicht geleert; mögliche Darstellungsfolge nicht separat behauptet. Reale Morph-/Quick-add-Reichweite bleibt offen.
 
 Nächster Schritt: VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. Picker-/Formular-Reconnectfälle S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
