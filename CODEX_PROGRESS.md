@@ -34,6 +34,6 @@ JS-001a: JavaScript-Runtime-Inventar erstellen und ungeprüfte globale Listener,
 
 ## Letzter erfolgreicher Git-Commit
 
-4e6dc81 – S25-Sicherung. S26-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+98906eb – audit: Varianten-Morph-Reichweite und H-016 abgrenzen. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

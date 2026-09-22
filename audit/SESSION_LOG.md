@@ -440,3 +440,5 @@ H-016 bleibt bedingt: Bei aktiviertem Quick Add oder einem weiteren gleichzeitig
 Script `audit/scripts/audit-variant-morph-reach.mjs`; Evidence `audit/evidence/variant-morph-reach-2026-09-22.json`. Erster und zweiter Versuch stoppten vor Auswertung an Shopify-Kommentarvorspannen in Template- beziehungsweise Settings-JSON; Parser jeweils ab erster JSON-Klammer korrigiert. Danach Syntax/Matrix PASS. Keine alten Lifecycle-Diagnosen, kein Browser und keine Liveanfrage. Route TASK-07C162F822FA B/STATIC, kein Executor.
 
 Nächster Schritt: JS-001a: JavaScript-Runtime-Inventar ab aktuellem Quellstand erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S26 in `98906eb` tatsächlich gesichert. Matrix-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001a, Status WORKING.
