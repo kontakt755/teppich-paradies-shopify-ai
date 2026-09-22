@@ -2,10 +2,10 @@
 
 | # | Punkt | Wer | Warum offen |
 |---|---|---|---|
-| 1 | Shopify Flow aktivieren (kostenlos, Shopify-nativ) für Order-Tags TYP-*/BERATUNG-*/MASS-PRUEFUNG-*/VERLEGUNG-* | Ahmet/Kaya (Admin) | App-Installation nur im Admin; Flow-Definitionen liegen nach M7 in `domains/shopify/flow/` |
+| 1 | Flow ist installiert. Entwurf „Tag orders based on consultation attribute" fertigstellen: am Wahr-Ausgang der Bedingung „Beratung = Nein" Aktion *Add order tags* → `BERATUNG-NEIN`; umbenennen in „TP Bestell-Tags Beratung Masspruefung Verlegung"; „Zum Shop hinzufügen" (aktivieren). Zweiter Workflow TYP-MUSTER/-WARE/-MISCHBESTELLUNG laut `domains/shopify/flow/bestell-tags.md` | Ahmet/Kaya (Admin, 2 Minuten) | Agent-Chrome-Sitzung abgemeldet |
 | 2 | GA4-Mess-ID und Ads-Conversion-Aktionen; Custom-Pixel-Code einsetzen | Inhaber + Admin | keine API |
 | 3 | Merchant Center: Prüfstatus, Ablehnungen, Versandrichtlinie anlegen (`/policies/shipping-policy` 404) | Admin | keine API; Vorlage `domains/shopify/versandrichtlinie-vorlage.md` |
-| 4 | Benachrichtigungsvorlagen im Admin einsetzen: `bestellbestaetigung-block.liquid`, `versandbestaetigung-block.liquid`, `interne-bestellmail-block.liquid` (Anleitung `domains/shopify/benachrichtigungen/README.md`); danach Testbenachrichtigung + Testbestellung mit Beratung Ja | Ahmet/Kaya (Admin) | kein API-Zugriff auf Vorlagen; Browser-Session nicht im Admin angemeldet |
+| 4 | Interne Mail ist gespeichert (22.09.). Noch offen: Kundenvorlagen im Admin einsetzen: `bestellbestaetigung-block.liquid`, `versandbestaetigung-block.liquid`, `interne-bestellmail-block.liquid` (Anleitung `domains/shopify/benachrichtigungen/README.md`); danach Testbenachrichtigung + Testbestellung mit Beratung Ja | Ahmet/Kaya (Admin) | kein API-Zugriff auf Vorlagen; Browser-Session nicht im Admin angemeldet |
 | 7 | Internes Lieferanten-Mapping (`lieferant.*`) für alle Produkte füllen | Datenlauf lokal (Rohdaten außerhalb Repo) | Lieferantendaten nicht im Repo |
 | 8 | Lieferzeit auf 5–7 Werktage vereinheitlicht – nur Einspruch nötig, falls Teppich nach Maß schneller geht | Ahmet | Information |
 | 9 | Google-Bewertung/Anzahl als Theme-Einstellung im Live-Theme prüfen und ins Repo (`settings_data.json`) übernehmen | Session mit Theme-Pull | Editor-Stand ≠ Repo |
