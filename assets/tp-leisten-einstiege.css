@@ -1,0 +1,262 @@
+/* Ausgelagert aus sections/tp-leisten-einstiege.liquid (Performance: nicht mehr im globalen styles.css) */
+  .tp-le__head {
+    max-width: 52rem;
+    margin-block-end: 20px;
+  }
+
+  .tp-le__heading {
+    margin: 0 0 6px;
+  }
+
+  .tp-le__intro {
+    margin: 0;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+    font-size: 1rem;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .tp-le__group + .tp-le__group {
+    margin-block-start: 20px;
+  }
+
+  .tp-le__label {
+    margin: 0 0 10px;
+    color: rgb(var(--color-foreground-rgb) / 0.62);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .tp-le__tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-le__tile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 88px;
+    height: 100%;
+    padding: 12px 14px;
+    background: var(--color-background);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.12);
+    border-radius: var(--style-border-radius-md, 8px);
+    color: var(--color-foreground);
+    text-decoration: none;
+    transition:
+      border-color var(--animation-speed, 0.2s) var(--animation-easing, ease),
+      box-shadow var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-le__tile:hover {
+    border-color: rgb(var(--color-foreground-rgb) / 0.35);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.06);
+  }
+
+  .tp-le__tile:focus-visible,
+  .tp-le__chip:focus-visible,
+  .tp-le__reset:focus-visible {
+    outline: 2px solid var(--color-foreground);
+    outline-offset: 2px;
+  }
+
+  .tp-le__tile[aria-pressed='true'] {
+    border-color: var(--color-foreground);
+    box-shadow: inset 0 0 0 1px var(--color-foreground);
+  }
+
+  .tp-le__tile-media {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.08);
+    border-radius: var(--style-border-radius-sm, 6px);
+  }
+
+  .tp-le__tile-media img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+    object-fit: contain;
+  }
+
+  .tp-le__tile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .tp-le__tile-title {
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+
+  .tp-le__tile-text {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-le__tile-count {
+    margin-block-start: 2px;
+    font-size: 0.8125rem;
+    color: rgb(var(--color-foreground-rgb) / 0.6);
+  }
+
+  .tp-le__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-le__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    background: var(--color-background);
+    border: 1px solid rgb(var(--color-foreground-rgb) / 0.2);
+    border-radius: 999px;
+    color: var(--color-foreground);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    transition: border-color var(--animation-speed, 0.2s) var(--animation-easing, ease);
+  }
+
+  .tp-le__chip:hover {
+    border-color: rgb(var(--color-foreground-rgb) / 0.5);
+  }
+
+  .tp-le__chip[aria-pressed='true'] {
+    background: var(--color-foreground);
+    border-color: var(--color-foreground);
+    color: var(--color-background);
+  }
+
+  .tp-le__chip-count {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.7;
+  }
+
+  .tp-le__status-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    margin-block-start: 16px;
+    min-height: 24px;
+  }
+
+  .tp-le__status {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: rgb(var(--color-foreground-rgb) / 0.72);
+  }
+
+  .tp-le__status:empty {
+    display: none;
+  }
+
+  .tp-le__reset {
+    min-height: 44px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 0;
+    color: var(--color-foreground);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .tp-le__anchor {
+    height: 0;
+    scroll-margin-top: 88px;
+  }
+
+  .tp-le__empty {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    background: rgb(var(--color-foreground-rgb) / 0.05);
+    border-radius: var(--style-border-radius-sm, 6px);
+    font-size: 0.9375rem;
+  }
+
+  @media screen and (max-width: 989px) {
+    .tp-le__tiles {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-le__head {
+      margin-block-end: 14px;
+    }
+
+    /* Drei Materialien nebeneinander statt untereinander (vorher 3 x 64 px
+       plus Abstaende, zusammen 238 px vor den Produkten). Bild oben, darunter
+       Name und Anzahl - die Kachel bleibt der Filterknopf. */
+    .tp-le__tiles {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tp-le__tile {
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      min-height: 0;
+      padding: 10px 6px;
+      text-align: center;
+    }
+
+    .tp-le__tile-media {
+      flex: 0 0 auto;
+      width: 48px;
+      height: 48px;
+    }
+
+    .tp-le__tile-body {
+      align-items: center;
+    }
+
+    .tp-le__tile-title {
+      font-size: 0.875rem;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+    }
+
+    .tp-le__tile-count {
+      margin-block-start: 0;
+      font-size: 0.75rem;
+    }
+
+    .tp-le__tile-text {
+      display: none;
+    }
+
+    .tp-le__chip {
+      padding: 10px 14px;
+    }
+  }

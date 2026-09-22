@@ -1,0 +1,299 @@
+/* Ausgelagert aus sections/tp-treppen-ausfuehrung.liquid (Performance: nicht mehr im globalen styles.css) */
+  .tp-treppen-ausf {
+    max-width: 1200px;
+    margin: 72px auto;
+    padding: 0 20px;
+  }
+
+  .tp-treppen-ausf__kopf {
+    max-width: 62ch;
+    margin-bottom: 32px;
+  }
+
+  .tp-treppen-ausf__titel {
+    margin: 0 0 8px;
+    font-size: clamp(22px, 2.6vw, 30px);
+    line-height: 1.2;
+  }
+
+  .tp-treppen-ausf__text {
+    margin: 0 0 14px;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .tp-treppen-ausf__legende {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .tp-treppen-ausf__legende-marke {
+    display: inline-block;
+    width: 22px;
+    height: 6px;
+    border-radius: 3px;
+    background: #2e7d32;
+    flex: 0 0 auto;
+  }
+
+  .tp-treppen-ausf__raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  /* Bild und Text gehoeren sichtbar zusammen: eine Karte mit einem Rahmen,
+     nicht ein Bild und darunter loser Text. Genau das war der Befund zur
+     alten Belagsarten-Reihe. */
+  .tp-treppen-ausf__karte {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--color-background, #fff);
+  }
+
+  .tp-treppen-ausf__bild {
+    background: #f2f4f7;
+    padding: 12px 12px 4px;
+  }
+
+  .tp-treppen-ausf__bild img {
+    display: block;
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .tp-treppen-ausf__inhalt {
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tp-treppen-ausf__karte-titel {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .tp-treppen-ausf__karte-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .tp-treppen-ausf__detail {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.75;
+  }
+
+  .tp-treppen-ausf__belaege {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tp-treppen-ausf__belaege li {
+    font-size: 13px;
+    line-height: 1;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(46, 125, 50, 0.1);
+    color: #1b5e20;
+  }
+
+  .tp-treppen-ausf__matrix-block {
+    margin-top: 40px;
+  }
+
+  .tp-treppen-ausf__matrix-titel {
+    margin: 0 0 12px;
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  /* Die Tabelle darf schmaler werden als der Text, aber nie den Seitenrahmen
+     sprengen - deshalb scrollt sie in ihrem eigenen Kasten. */
+  .tp-treppen-ausf__matrix-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tp-treppen-ausf__matrix {
+    width: 100%;
+    min-width: 440px;
+    border-collapse: collapse;
+    font-size: 15px;
+  }
+
+  .tp-treppen-ausf__matrix th,
+  .tp-treppen-ausf__matrix td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: left;
+  }
+
+  .tp-treppen-ausf__matrix thead th {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+
+  .tp-treppen-ausf__matrix tbody th {
+    font-weight: 600;
+  }
+
+  .tp-treppen-ausf__matrix td {
+    text-align: center;
+  }
+
+  .tp-treppen-ausf__ja {
+    color: #1b5e20;
+    font-weight: 600;
+  }
+
+  .tp-treppen-ausf__nein {
+    opacity: 0.45;
+  }
+
+  .tp-treppen-ausf__matrix-hinweis {
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.5;
+    opacity: 0.8;
+  }
+
+  .tp-treppen-ausf__aktion {
+    margin-top: 32px;
+  }
+
+  .tp-treppen-ausf__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background: #2e7d32;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+
+  .tp-treppen-ausf__button:hover,
+  .tp-treppen-ausf__button:focus {
+    background: #1b5e20;
+    border-color: #b4976c;
+    outline: none;
+  }
+
+  .tp-treppen-ausf__zusatz {
+    margin: 10px 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  /* Schemazeichnung */
+  .tp-treppen-schema {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 190px;
+  }
+
+  .tp-treppen-schema__koerper {
+    fill: rgba(0, 0, 0, 0.06);
+    stroke: none;
+  }
+
+  /* Bei "mit Wange" ist die Seitenflaeche der einzige Unterschied zu
+     "Tritt- und Setzstufe". Sie braucht deshalb genug Kontrast, sonst sehen
+     die beiden Zeichnungen nebeneinander gleich aus. */
+  .tp-treppen-schema__koerper.is-belegt {
+    fill: rgba(46, 125, 50, 0.3);
+    stroke: #2e7d32;
+    stroke-width: 2;
+  }
+
+  .tp-treppen-schema__kante,
+  .tp-treppen-schema__boden {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    opacity: 0.55;
+  }
+
+  .tp-treppen-schema__stufe {
+    fill: rgba(0, 0, 0, 0.05);
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.55;
+  }
+
+  .tp-treppen-schema__flaeche {
+    fill: rgba(46, 125, 50, 0.22);
+    stroke: none;
+  }
+
+  .tp-treppen-schema__belag {
+    stroke: #2e7d32;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+
+  /* Die Kettelung ist die Kante, die den Laeufer ueberhaupt erst zum Laeufer
+     macht - sie bekommt deshalb eine eigene, kraeftige Linie. */
+  .tp-treppen-schema__kettelung {
+    stroke: #1b5e20;
+    stroke-width: 3;
+    stroke-dasharray: 5 4;
+  }
+
+  /* Stange: durchgezogen und ohne Strichelung, damit sie sich von der
+     Kettelung unterscheidet - in der Seitenansicht sind beide Varianten
+     identisch, die Draufsicht traegt den ganzen Unterschied. */
+  .tp-treppen-schema__stange-stab {
+    stroke: #1b5e20;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+
+  /* Heller Ring, sonst verschwindet der Punkt im gruenen Belagsband - er sitzt
+     genau darauf. */
+  .tp-treppen-schema__stange {
+    fill: #1b5e20;
+    stroke: #f2f4f7;
+    stroke-width: 1.5;
+  }
+
+  .tp-treppen-schema__legende {
+    fill: currentColor;
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-treppen-ausf {
+      margin: 48px auto;
+      padding: 0 16px;
+    }
+
+    .tp-treppen-ausf__raster {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
