@@ -70,7 +70,12 @@
           folgenden Argumente von image_tag - class kam sonst nie am Bild an.
         {%- endcomment -%}
         {%- assign hero_alt = section.settings.bild.alt | default: section.settings.bild_caption -%}
-        {{ section.settings.bild | image_url: width: 1600 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '640, 960, 1280, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: hero_alt, class: 'tp-hero__img' }}
+        {%- comment -%}
+          sizes folgt dem Raster: mobil volle Breite minus 2x16px Rand, darueber
+          die rechte Spalte (1fr von 2.05fr abzueglich Luecke), gedeckelt durch
+          --tp-container (1240px, ab 1600px 1360px).
+        {%- endcomment -%}
+        {{ section.settings.bild | image_url: width: 1200 | image_tag: loading: 'eager', fetchpriority: 'high', widths: '400, 600, 800, 1000, 1200, 1600', sizes: '(max-width: 767px) calc(100vw - 32px), (max-width: 1239px) calc(48vw - 37px), (min-width: 1600px) 620px, 560px', alt: hero_alt, class: 'tp-hero__img' }}
       {%- else -%}
         <div class="tp-hero__platzhalter">{{ 'image' | placeholder_svg_tag }}</div>
       {%- endif -%}
