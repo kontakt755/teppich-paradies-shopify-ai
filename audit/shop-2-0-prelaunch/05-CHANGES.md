@@ -89,3 +89,17 @@ Hebel mit Wirkung: Größe des globalen Section-CSS (649 KB roh über 207 Dateie
 - **Ablauf:** Merge #454 → Preview scheiterte an FULL QA (Theme Check meldete die Benachrichtigungsvorlagen unter `domains/` als UndefinedObject, dazu eine ungenutzte Variable) → Fix #467 → Preview scheiterte am Sales-Check (Checkout ohne Beratungsantwort bewusst gesperrt) → Fix #468 (Check wählt „Nein") → Preview PASS → Live PASS.
 - **Koordination:** parallele Livegänge #455/#463 der Sitzung „Produktseiten kompakt"; Konflikte in Templates und Rollenrechner zugunsten der kompakten Kaufstrecke gelöst, H1-Block und Buy-now-Sperre neu angewendet.
 - **Test:** siehe 06-TESTS.md.
+
+## 2026-09-22 · Produktdaten · SKU-Bereinigung (Freigabe Inhaber)
+
+- **Bestand (3.335 aktive Varianten, 517 Produkte):** 63 SKUs mit angehängtem Freitext inkl. Lieferantenname (kundensichtbar im Produkt-JSON-LD), 41 Klebevinyl-Varianten ohne SKU, 8 SKUs doppelt über je zwei Produkte, 973 Konfigurator-Varianten (Wunschmaß, Teppich nach Maß) ohne SKU, 9 Varianten einer älteren Produktgruppe (Lieferant B) ohne SKU.
+- **Geändert (104 Varianten, Admin-API `productVariantsBulkUpdate`):**
+  - 63× Freitext entfernt: SKU = Artikelnummer vor „ – " (z. B. `LVTDESIGNK_5307`).
+  - 41× fehlende SKU gesetzt, abgeschrieben aus dem Produkt-Metafeld `grosshandel.sku` (Teil vor „ – "), Linien Alvora, Fenora, Kiruna, Dornova.
+  - Vorab geprüft: Format `^[A-Z0-9]+_[A-Z0-9]+$`, 104 eindeutige Werte, keine Kollision mit bestehenden SKUs.
+- **Bewusst nicht geändert:**
+  - 973 Wunschmaß-/Teppich-nach-Maß-Varianten: welche Rolle zugeschnitten wird, ergibt sich erst aus dem Maß; eine feste SKU wäre erfunden. Interne Mail nutzt dort `grosshandel.sku` des Produkts. Diese Varianten sind ohnehin aus dem Google-Feed ausgeschlossen.
+  - 8 doppelte SKUs (Linien Turku und Marlow, je 8 Dekore mit identischer Lieferanten-Artikelnummer): kein SKU-Fehler, sondern dasselbe Produkt unter zwei Namen im Shop. Umbenennen hieße eine Nummer erfinden. Entscheidung nötig: eine der beiden Linien auf Entwurf stellen oder bewusst beide behalten (07-OPEN-ITEMS).
+  - 9 Varianten (3 Sylvara-Produkte + Kopie): Metafeld enthält keine eindeutige Artikelnummer.
+- **Rückstellung:** Liste mit alten Werten nur lokal (`~/teppich-paradies-analyse/lieferantendaten/sku-bereinigung-2026-09-22-rueckstellung.json`, enthält Lieferantennamen – nicht ins Repo).
+- **Test:** unabhängiges Nachlesen aller 104 Varianten per `nodes(ids)` = Plan; Live-PDP Dornova: 0× Lieferantenname im HTML, JSON-LD `sku` = `LVTDESIGNK_5307`.

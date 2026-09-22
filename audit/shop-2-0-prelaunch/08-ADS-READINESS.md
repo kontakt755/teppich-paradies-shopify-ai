@@ -37,7 +37,7 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 | Prüfung | Status | Beleg |
 |---|---|---|
 | Merchant Center sauber | ❌ | Versandrichtlinie jetzt live (200); Produktstatus nicht prüfbar (kein Zugang) |
-| Produktfeed sauber | ❌ | ohne GTIN/custom_product, 8 doppelte SKUs, 41 ohne SKU; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
+| Produktfeed sauber | ❌ | ohne GTIN/custom_product; SKUs bereinigt (104, 22.09.), offen: Turku/Marlow doppelt; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
 | Conversion Tracking sauber | ⏳ | Pixel-Vorlage fertig; GA4-ID fehlt |
 | Purchase nicht doppelt | ⏳ | Regel dokumentiert (eine Quelle); Admin-Prüfung offen |
 | Muster getrennt | ⏳ | `sample_order` / `tp_bestellung_typ` im Pixel; nicht eingerichtet |

@@ -23,3 +23,5 @@ Weiter offen (nicht per Agent lösbar):
 - **Merchant Center:** kein Zugang in dieser Umgebung (Google-Konto des Inhabers).
 - **TYP-MUSTER/-WARE/-MISCH-Workflow:** Vorlage `domains/shopify/flow/bestell-tags.md`; bis dahin zeigt die interne Mail den Typ.
 - **SKU-Bereinigung:** nur mit ausdrücklicher Freigabe.
+- **Turku/Marlow:** dieselben 8 Klickvinyl-Artikel doppelt im Shop. Eine Linie auf Entwurf stellen (Weiterleitung der URLs einrichten) oder beide bewusst behalten. SKU-Bereinigung sonst abgeschlossen (104 Varianten, 2026-09-22).
+- **Sylvara (3 Produkte + Kopie):** Artikelnummer beim Lieferanten nachfragen oder Produkte prüfen, ob sie noch geführt werden.
