@@ -307,6 +307,11 @@
                 "telefon_label": "oder anrufen: 03301 5733720"
               }
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_planken": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -328,6 +333,7 @@
           "block_order": [
             "group_icgrde",
             "tp_vorteile_night1",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_planken",
             "divider_VJhene",
             "tp_farb_dropdown",

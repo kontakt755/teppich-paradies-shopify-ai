@@ -1,0 +1,52 @@
+{% doc %}
+  Laeuft fuer dieses Produkt gerade eine zentral gesteuerte Aktion?
+  Gibt "prozent|JJJJ-MM-TT" aus (Rabatt und letzter Tag) oder nichts.
+
+  Quelle: Metaobjekt "tp_aktion" (Shopify-Admin > Inhalt > Metaobjekte > Aktion (TP)).
+  Eine Aktion zaehlt, wenn "aktiv" an ist, heute zwischen "start" und "ende" liegt
+  (beide Tage eingeschlossen) und das Produkt in "kollektion" enthalten ist.
+  Treffen mehrere zu, gilt die mit dem hoechsten Prozentsatz - genau so rechnet
+  Shopify bei nicht kombinierbaren automatischen Rabatten.
+
+  Abgerechnet wird NICHT hier, sondern ueber einen automatischen Shopify-Rabatt mit
+  denselben Werten. Beide muessen uebereinstimmen (Checkliste in
+  domains/shopify/aktionssystem-konzept.md). Ohne Eintrag bleibt alles unsichtbar.
+
+  Seiten werden zwischengespeichert; die Tagesgrenze kann um Stunden nachlaufen.
+
+  @param {object} product - das Produkt
+{% enddoc %}
+{%- liquid
+  assign tal_heute = 'now' | date: '%Y%m%d' | plus: 0
+  assign tal_best = 0
+  assign tal_ende = ''
+  for tal_a in shop.metaobjects.tp_aktion.values
+    if tal_a.aktiv.value != true
+      continue
+    endif
+    assign tal_von = tal_a.start.value | date: '%Y%m%d' | plus: 0
+    assign tal_bis = tal_a.ende.value | date: '%Y%m%d' | plus: 0
+    if tal_von == 0 or tal_bis == 0 or tal_heute < tal_von or tal_heute > tal_bis
+      continue
+    endif
+    assign tal_k = tal_a.kollektion.value
+    if tal_k == blank
+      continue
+    endif
+    assign tal_drin = false
+    for tal_c in product.collections
+      if tal_c.id == tal_k.id
+        assign tal_drin = true
+        break
+      endif
+    endfor
+    assign tal_p = tal_a.prozent.value | plus: 0
+    if tal_drin and tal_p > tal_best
+      assign tal_best = tal_p
+      assign tal_ende = tal_a.ende.value | date: '%Y-%m-%d'
+    endif
+  endfor
+  if tal_best > 0
+    echo tal_best | append: '|' | append: tal_ende
+  endif
+-%}

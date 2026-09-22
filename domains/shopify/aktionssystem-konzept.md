@@ -198,3 +198,38 @@ kein doppelter manueller Preisschreibzugriff auf hunderte Varianten alle zwei Wo
   Mindestpreis-Logik des Einfasskonfigurators bleibt unterhalb/oberhalb der 99-EUR-
   Schwelle korrekt, Versandfrei-Schwelle wird bei rabattierter Warenkorbsumme richtig
   angezeigt.
+
+## Umgesetzt 2026-09-22 (Anzeige) und Bedienung
+
+**Entscheidungen des Inhabers (2026-09-22):** Abrechnung ueber einen automatischen
+Shopify-Rabatt; kein durchgestrichener Vergleichspreis, sondern Hinweis mit Prozent und
+Enddatum; nicht kombinierbar mit anderen Rabattcodes. Feste Ausnahmen wurden nicht
+festgelegt - eine Aktion gilt nur fuer die Kollektion, die pro Welle gewaehlt wird.
+
+**Gebaut:**
+- Metaobjekt-Definition `tp_aktion` ("Aktion (TP)"): titel, prozent (1-50), kollektion,
+  start, ende (Pflicht - keine Dauer-Sonderangebote), aktiv (Hauptschalter).
+- `snippets/tp-aktion-laufend.liquid`: einzige Quelle der Frage "laeuft fuer dieses
+  Produkt eine Aktion?"; bei Ueberschneidung gilt der hoechste Prozentsatz.
+- `blocks/tp-aktion-hinweis.liquid`: "−15 % Aktion bis TT.MM.JJJJ – wird im Warenkorb
+  abgezogen", in allen Produktvorlagen vor der Bewertungszeile; ohne laufende Aktion
+  unsichtbar.
+- Rollenrechner: Zeile "Aktion −15 %: −75,39 €" und Gesamtpreis nach Abzug; Abzug je
+  Hauptposition auf den Cent gerundet wie Shopify. Zubehoer (Fussleiste,
+  Haftunterlage) wird ohne Abzug gezeigt.
+
+**Eine Aktion starten (beide Schritte, gleiche Werte):**
+1. Shopify-Admin > Rabatte > Rabatt erstellen > "Betrag auf Produkte" > automatisch.
+   Prozentsatz, gilt fuer die gewaehlte Kollektion, Startdatum, Enddatum (Pflicht),
+   Kombination mit anderen Rabatten: alles aus.
+2. Shopify-Admin > Inhalt > Metaobjekte > Aktion (TP) > Eintrag hinzufuegen: gleicher
+   Prozentsatz, gleiche Kollektion, gleicher erster und letzter Tag, Aktiv an.
+
+**Vor dem Start pruefen:** Produktseite eines Artikels der Kollektion zeigt Hinweis und
+Rechnerabzug; ein Artikel ausserhalb zeigt nichts; Testwarenkorb zeigt denselben
+Abzug wie der Rechner. **Nach dem Ende:** beide Seiten laufen durch ihr Enddatum von
+selbst aus.
+
+**Offen:** Produktkarten in Kollektionen zeigen die Aktion noch nicht; Zubehoer in der
+Aktionskollektion wird im Rechner ohne Abzug angezeigt (im Warenkorb zieht Shopify ihn
+trotzdem ab); Google-Feed bekommt keinen sale_price (Merchant-Promotions waeren der Weg).

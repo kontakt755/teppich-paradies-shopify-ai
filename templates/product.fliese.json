@@ -296,6 +296,11 @@
               },
               "blocks": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_fliese": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -317,6 +322,7 @@
           "block_order": [
             "group_icgrde",
             "tp_vorteile_night1",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_fliese",
             "divider_VJhene",
             "tp_farb_dropdown",
