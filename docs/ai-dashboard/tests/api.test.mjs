@@ -140,3 +140,94 @@ test('buildComment traegt Marker und Actor', () => {
   assert.match(c, /@tobias/);
   assert.match(c, /tp-control-center/);
 });
+
+// ---------------------------------------------------------------------------
+// Einkauf: Bestelluebersicht und Produktdaten-Status (synthetische Fixtures,
+// keine echten Kunden-/Lieferantendaten)
+// ---------------------------------------------------------------------------
+function privatFixture(root) {
+  const dir = path.join(root, 'privat');
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  const orders = {
+    exportiertAm: '2026-09-22T10:00:00Z',
+    orders: [{
+      id: 'gid://shopify/Order/1', name: '#2001', createdAt: '2026-09-20T08:00:00Z', cancelledAt: null,
+      displayFinancialStatus: 'PAID', displayFulfillmentStatus: 'UNFULFILLED', customAttributes: [],
+      lineItems: { nodes: [{
+        id: 'gid://shopify/LineItem/1', sku: 'TEST-1', title: 'Testboden', variantTitle: 'Blau', quantity: 500,
+        currentQuantity: 500, unfulfilledQuantity: 500, customAttributes: [],
+        variant: {
+          id: 'gid://shopify/ProductVariant/1', sku: 'TEST-1', title: 'Blau',
+          metafields: { nodes: [{ namespace: 'einkauf', key: 'bestelleinheit', value: 'paket' }, { namespace: 'lieferant', key: 'a_artikelnummer', value: 'A-123' }] },
+          product: { id: 'gid://shopify/Product/1', handle: 'testboden', title: 'Testboden', metafields: { nodes: [{ namespace: 'custom', key: 'qm_pro_paket', value: '2' }] }, grosshandel: { nodes: [] } },
+        },
+      }] },
+    }],
+    quellvarianten: [],
+  };
+  fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify(orders));
+  const plan = [
+    { gid: 'gid://shopify/ProductVariant/1', product_gid: 'gid://shopify/Product/1', handle: 'testboden', product_title: 'Testboden', variant_title: 'Blau', sku: 'TEST-1', gruppe: 'Rollenware', fields: {
+      lieferant: { value: 'A', confidence: 'SICHER', source: 'lieferant.a_artikelnummer belegt' },
+      artikelnummer: { value: 'A-123', confidence: 'SICHER', source: 'lieferant.a_artikelnummer' },
+      bestelleinheit: { value: 'paket', confidence: 'SICHER', source: 'custom.qm_pro_paket' },
+    } },
+    { gid: 'gid://shopify/ProductVariant/2', product_gid: 'gid://shopify/Product/2', handle: 'offener-artikel', product_title: 'Offener Artikel', variant_title: 'Default Title', sku: null, grosshandel_sku: 'Lieferant B Muster 42', gruppe: 'Klebevinyl', fields: {
+      lieferant: { value: null, confidence: 'UNKLAR', source: 'Lieferant nicht belegt' },
+      artikelnummer: { value: null, confidence: 'UNKLAR', source: 'keine Artikelnummer' },
+      bestelleinheit: { value: null, confidence: 'UNKLAR', source: 'Bestelleinheit fehlt' },
+    } },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  return dir;
+}
+
+test('einkaufBestellungen liest orders.json und liefert das Bestelluebersicht-Modell', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufBestellungen();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.auftraege.length, 1);
+  assert.equal(r.zahlen.offeneAuftraege, 1);
+});
+
+test('einkaufBestellungen meldet fehlende Datei statt zu werfen', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.einkaufBestellungen();
+  assert.equal(r.verfuegbar, false);
+  assert.match(r.hinweis, /orders\.json/);
+});
+
+test('einkaufProduktstatus fasst je Gruppe zusammen und paginiert offene Varianten', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus({ page: 1, pageSize: 10 });
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.gesamt.anzahl, 2);
+  assert.equal(r.gesamt.vollstaendig, 1);
+  assert.equal(r.gesamt.offen, 1);
+  assert.equal(r.offen.items.length, 1);
+  assert.equal(r.offen.items[0].handle, 'offener-artikel');
+  assert.ok(r.offen.items[0].offeneFelder.some(f => f.feld === 'lieferant'));
+});
+
+test('einkaufProduktstatus filtert nach Suche und Gruppe', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal(api.einkaufProduktstatus({ q: 'offener' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({ q: 'nichts-passt' }).offen.count, 0);
+  assert.equal(api.einkaufProduktstatus({ gruppe: 'Rollenware' }).offen.count, 0);
+  assert.equal(api.einkaufProduktstatus({ gruppe: 'Klebevinyl' }).offen.count, 1);
+});
+
+test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.einkaufKlaerung();
+  assert.equal(r.verfuegbar, false);
+});

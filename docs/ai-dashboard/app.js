@@ -120,7 +120,7 @@ async function refresh({ silent = false } = {}) {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -537,6 +537,175 @@ function viewAktivitaet() {
 }
 
 // ---------------------------------------------------------------------------
+// Ansicht: Einkauf (Bestelluebersicht + Produktdaten-Status)
+// ---------------------------------------------------------------------------
+const einkauf = {
+  bestellungen: null, loadingBestellungen: false,
+  produktstatus: null, loadingProduktstatus: false, produktstatusKey: null,
+};
+
+async function fetchEinkauf(path) {
+  try {
+    const r = await fetch(path, { cache: 'no-store' });
+    if (!r.ok) return { verfuegbar: false, hinweis: `HTTP ${r.status}` };
+    return await r.json();
+  } catch (e) { return { verfuegbar: false, hinweis: e.message }; }
+}
+
+function ensureEinkaufBestellungen() {
+  if (einkauf.bestellungen || einkauf.loadingBestellungen) return;
+  einkauf.loadingBestellungen = true;
+  fetchEinkauf('/api/einkauf/bestellungen').then(d => {
+    einkauf.bestellungen = d; einkauf.loadingBestellungen = false;
+    if (state.route.view === 'einkauf') render();
+  });
+}
+
+function ensureEinkaufProduktstatus() {
+  const p = state.route.params;
+  const qs = new URLSearchParams({ page: p.get('seite') || '1', q: p.get('psq') || '', gruppe: p.get('gruppe') || '' }).toString();
+  if (einkauf.produktstatusKey === qs && (einkauf.produktstatus || einkauf.loadingProduktstatus)) return;
+  einkauf.produktstatusKey = qs;
+  einkauf.loadingProduktstatus = true;
+  fetchEinkauf(`/api/einkauf/produktstatus?${qs}`).then(d => {
+    einkauf.produktstatus = d; einkauf.loadingProduktstatus = false;
+    if (state.route.view === 'einkauf') render();
+  });
+}
+
+function kopierbutton(id, label = 'Liste kopieren') {
+  return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
+}
+
+const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen' };
+
+function einkaufGruppeKarte(g, i, praefix) {
+  const id = `ek-${praefix}-${i}`;
+  const titel = g.lieferant === 'UNGEKLAERT' ? 'Lieferant UNGEKLAERT' : `Lieferant ${esc(g.lieferant)}`;
+  const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` <span class="badge plain">${esc(g.route)}</span>` : '';
+  const zeilen = g.positionen.map(p => `<tr>
+      <td>${p.grosshaendlerId === 'UNGEKLAERT' ? `<span class="badge gap">UNGEKLAERT</span>` : `<code class="mono">${esc(p.grosshaendlerId)}</code>`}${p.idGrund ? `<div class="small muted">${esc(p.idGrund)}</div>` : ''}</td>
+      <td>${esc(p.titel)}<div class="small muted mono">${esc(p.sku)}</div></td>
+      <td>${esc(p.farbe)}</td>
+      <td>${esc(p.kundenmenge)}</td>
+      <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `<span class="badge gap">UNGEKLAERT</span>` : esc(p.bestellmenge.text)}${p.bestellmenge.grund ? `<div class="small muted">${esc(p.bestellmenge.grund)}</div>` : ''}</td>
+      <td><a href="${esc(p.adminUrl || '')}" target="_blank" rel="noopener">${esc(p.orderName)}</a></td>
+    </tr>`).join('');
+  return `<section class="card${g.lieferant === 'UNGEKLAERT' ? ' notice warn' : ''}" style="margin-bottom:12px">
+    <div class="card-head"><h2>${titel}${route} <span class="muted small">${g.positionen.length} Pos.</span></h2>${kopierbutton(id)}</div>
+    <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Großhändler-ID</th><th>Artikel</th><th>Farbe/Variante</th><th>Kunde</th><th>Bestellen</th><th>Auftrag</th></tr></thead>
+    <tbody>${zeilen}</tbody></table></div>
+    <textarea id="${id}" style="position:absolute;left:-9999px;width:1px;height:1px">${esc(g.text)}</textarea>
+  </section>`;
+}
+
+function einkaufAuftragZeile(a) {
+  const c = a.checks;
+  const chip = (label, wert, schlecht) => `<span class="badge ${schlecht ? 'p0' : 'plain'}">${esc(label)}: ${esc(wert)}</span>`;
+  return `<div class="row" style="cursor:default" tabindex="-1">
+    <div>
+      <div class="t"><span class="badge status ${a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : ''}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener">${esc(a.name)}</a> <span class="muted small">${fmtDate(a.datum)}</span></div>
+      <div class="m">${chip('Bezahlt', a.bezahlt, a.bezahlt !== 'PAID')}${chip('Versand', a.erfuellt)}${chip('Beratung', c.beratung)}${chip('Telefon', c.telefon, c.beratung === 'Ja' && c.telefon === 'fehlt')}${chip('Maßprüfung', c.masspruefung, c.masspruefung === 'Problem')}${chip('Verlegung', c.verlegung)}</div>
+      ${a.hinweise?.length ? `<div class="next" style="color:var(--crit)">${a.hinweise.map(esc).join(' · ')}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function viewEinkaufBestellungen() {
+  ensureEinkaufBestellungen();
+  const d = einkauf.bestellungen;
+  if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestelluebersicht …</div>`;
+  if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
+  const z = d.zahlen;
+  return `
+    <div class="band" style="margin:12px 0">
+      <div class="ok"><span class="n">${z.offeneAuftraege}</span><span class="l">offene Aufträge (von ${z.auftraege})</span></div>
+      <div class="info"><span class="n">${z.zuBestellen}</span><span class="l">Positionen zu bestellen</span></div>
+      <div class="info"><span class="n">${z.muster}</span><span class="l">Muster offen</span></div>
+      <div class="${z.ohneId ? 'crit' : 'ok'}"><span class="n">${z.ohneId}</span><span class="l">ohne Großhändler-ID</span></div>
+      <div class="${z.mengeUngeklaert ? 'warn' : 'ok'}"><span class="n">${z.mengeUngeklaert}</span><span class="l">Menge UNGEKLÄRT</span></div>
+    </div>
+    <h2 style="margin-top:20px">Zu bestellen je Lieferant</h2>
+    ${d.gruppen?.length ? d.gruppen.map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('') : emptyState('Nichts zu bestellen.', 'Keine offenen Warenpositionen.')}
+    <h2 style="margin-top:20px">Muster</h2>
+    ${d.musterGruppen?.length ? d.musterGruppen.map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('') : emptyState('Keine offenen Muster.', '')}
+    <h2 style="margin-top:20px">Aufträge (Ampel)</h2>
+    <div class="rows">${d.auftraege?.filter(a => a.offen).map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
+    <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
+}
+
+function viewEinkaufProduktdaten() {
+  ensureEinkaufProduktstatus();
+  const d = einkauf.produktstatus;
+  const p = state.route.params;
+  const toolbar = `<div class="toolbar" style="margin:12px 0">
+      <input type="search" placeholder="Suche nach Produkt, SKU oder Artikelnummer …" value="${esc(p.get('psq') || '')}" data-param="psq" aria-label="Produktdaten durchsuchen">
+      ${d?.gruppen?.length ? `<select data-param="gruppe" aria-label="Nach Produktgruppe filtern"><option value="">Alle Gruppen</option>${d.gruppen.map(g => `<option value="${esc(g.gruppe)}" ${p.get('gruppe') === g.gruppe ? 'selected' : ''}>${esc(g.gruppe)}</option>`).join('')}</select>` : ''}
+    </div>`;
+  if (!d && einkauf.loadingProduktstatus) return toolbar + `<div class="empty">Lade Produktdaten-Status …</div>`;
+  if (!d || !d.verfuegbar) return emptyState('Keine Produktdaten-Statusdaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
+  const g = d.gesamt;
+  const pct = n => g.anzahl ? Math.round((n / g.anzahl) * 100) : 0;
+  const gruppenzeilen = d.gruppen.map(row => `<tr>
+      <td>${esc(row.gruppe)}</td>
+      <td>${row.vollstaendig}</td>
+      <td>${row.offen}</td>
+      <td><div class="track" style="max-width:160px"><div class="fill" style="width:${row.vollstaendig + row.offen ? Math.round(row.vollstaendig / (row.vollstaendig + row.offen) * 100) : 0}%"></div></div></td>
+    </tr>`).join('');
+  const offen = d.offen;
+  const items = offen.items.map(e => `<tr>
+      <td>${esc(e.titel)}<div class="small muted mono">${esc(e.sku || e.handle)}</div></td>
+      <td>${esc(e.variante)}</td>
+      <td>${esc(e.gruppe)}</td>
+      <td>${e.offeneFelder.map(f => `<div><b>${esc(f.feld)}</b>: ${esc(f.grund)}</div>`).join('')}</td>
+      <td>${e.offeneFelder.map(f => `<div>${esc(f.naechsterSchritt)}</div>`).join('')}</td>
+    </tr>`).join('');
+  const pages = offen.pages > 1 ? `<div class="toolbar" style="margin-top:10px">
+      <button type="button" class="btn btn-sm" ${offen.page <= 1 ? 'disabled' : ''} data-param="seite" data-value="${offen.page - 1}">← Zurück</button>
+      <span class="muted small">Seite ${offen.page} von ${offen.pages} · ${offen.count} offene Varianten</span>
+      <button type="button" class="btn btn-sm" ${offen.page >= offen.pages ? 'disabled' : ''} data-param="seite" data-value="${offen.page + 1}">Weiter →</button>
+    </div>` : '';
+  return `
+    <div class="band" style="margin:12px 0">
+      <div class="ok"><span class="n">${g.vollstaendig}</span><span class="l">vollständig (${pct(g.vollstaendig)} %)</span></div>
+      <div class="${g.offen ? 'warn' : 'ok'}"><span class="n">${g.offen}</span><span class="l">offen (${pct(g.offen)} %)</span></div>
+      <div class="info"><span class="n">${g.anzahl}</span><span class="l">Varianten gesamt</span></div>
+    </div>
+    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Je Produktgruppe</h2></div>
+      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Offen</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
+    </section>
+    ${toolbar}
+    <section class="card"><div class="card-head"><h2>Offene Varianten</h2></div>
+      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Produkt</th><th>Variante</th><th>Gruppe</th><th>Grund</th><th>Nächster Schritt</th></tr></thead><tbody>${items || ''}</tbody></table></div>
+      ${!items ? emptyState('Keine Treffer.', 'Suche oder Filter anpassen.') : ''}
+      ${pages}
+    </section>
+    <p class="small muted" style="margin-top:10px">Quelle: ${esc(d.quelle)} · Kernfelder für „vollständig": Lieferant, Artikelnummer, Bestelleinheit.</p>`;
+}
+
+function viewEinkaufHilfe() {
+  return `<section class="card">
+    <h2>So arbeitest du damit</h2>
+    <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten direkt in eine Mail oder ein Bestellportal einfügen. Muster stehen in einer eigenen Liste. Der Admin-Link führt direkt zur Bestellung in Shopify.</p>
+    <p><b>Produktdaten-Status:</b> zeigt je Produktgruppe, wie viele Varianten für den Einkauf vollständig sind (Lieferant, Artikelnummer und Bestelleinheit bekannt) und wie viele noch offen sind. Darunter kannst du die offenen Varianten durchsuchen (Produktname, SKU oder Artikelnummer) und nach Gruppe filtern. Jede Zeile zeigt den Grund und einen konkreten nächsten Schritt.</p>
+    <p><b>Wichtig:</b> Beide Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
+  </section>`;
+}
+
+function viewEinkauf() {
+  if (state.capabilities.mode !== 'local') {
+    return `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Bestellübersicht und Produktdaten-Status für den Einkauf.</p></div></div>
+      ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
+  }
+  const tab = ['bestellungen', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
+  const tabs = [['bestellungen', 'Bestellübersicht'], ['produktdaten', 'Produktdaten-Status'], ['hilfe', 'So arbeitest du damit']];
+  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was für offene Kundenbestellungen bei welchem Lieferanten zu bestellen ist, und wo Produktdaten für den Einkauf noch fehlen.</p></div></div>
+    <div class="chips" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="chip" role="tab" aria-pressed="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}</button>`).join('')}</div>`;
+  const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
+  return head + body;
+}
+
+// ---------------------------------------------------------------------------
 // Aufgaben-Detail (Sheet)
 // ---------------------------------------------------------------------------
 function primaryAction(t) {
@@ -746,7 +915,7 @@ async function syncNow() {
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
-const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet };
+const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf };
 
 function render() {
   const main = $('#main');
@@ -758,7 +927,7 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität' }[state.route.view]} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf' }[state.route.view]} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
 }
@@ -777,6 +946,15 @@ function bindEvents() {
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
+    const kop = e.target.closest('[data-kopieren]');
+    if (kop) {
+      const ta = document.getElementById(kop.dataset.kopieren);
+      if (ta) {
+        const doCopy = async () => { try { await navigator.clipboard.writeText(ta.value); return true; } catch { try { ta.select(); return document.execCommand('copy'); } catch { return false; } } };
+        doCopy().then(ok => { const alt = kop.textContent; kop.textContent = ok ? 'Kopiert' : 'Kopieren fehlgeschlagen'; setTimeout(() => { kop.textContent = alt; }, 1800); });
+      }
+      return;
+    }
     const a = e.target.closest('[data-action]');
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });

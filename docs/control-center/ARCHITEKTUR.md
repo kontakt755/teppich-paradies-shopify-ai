@@ -112,3 +112,21 @@ den Workflow mit Gates). Das Control Center schreibt ausschließlich Labels, Ass
 
 Kein Shopify-/Ads-/GA4-Lesen (öffentliches Repo, erst Sichtbarkeitsentscheidung), keine KI-Automatik mit
 Schreibzugriff, keine Mehrbenutzer-Auth, kein eigener Datenspeicher.
+
+## 8. Bereich „Einkauf" (seit 2026-09-22)
+
+Eigener Tab, getrennt vom Aufgabenmodell oben, weil die Daten aus einer anderen Quelle kommen und nie
+öffentlich werden dürfen: private Dateien unter `$TP_PRIVAT_DIR` (Standard `~/teppich-paradies-analyse`),
+nie `issues.json`, nie GitHub. Drei Unteransichten in `docs/ai-dashboard/app.js` (`viewEinkauf*`):
+
+| Unteransicht | Quelle | Aufbereitung |
+|---|---|---|
+| Bestellübersicht | `bestelluebersicht/orders.json` | `operations/lib/bestelluebersicht.mjs` (`aufbereiten()`) – dieselbe Logik wie die eigenständige HTML-Ausgabe dort |
+| Produktdaten-Status | `einkauf-dryrun/plan.json` | serverseitig zusammengefasst je Produktgruppe, offene Liste paginiert (Datei kann mehrere tausend Varianten haben) |
+| Klärung | `einkauf-klaerung/klaerung.json` + `offen.json` | optional, noch nicht befüllt |
+
+Endpunkte: `/api/einkauf/bestellungen`, `/api/einkauf/produktstatus` (Query `page`, `pageSize`, `q`, `gruppe`),
+`/api/einkauf/klaerung` – alle GET-only, nur im lokalen Server (`scripts/serve-dashboard.mjs`), nicht auf
+GitHub Pages. Fehlende private Dateien liefern `{verfuegbar: false, hinweis}` statt eines Fehlers. Im
+statischen Modus (`capabilities.mode !== 'local'`) fragt das Frontend diese Endpunkte gar nicht erst ab und
+zeigt nur den Hinweis „Nur lokal im Betrieb verfügbar".

@@ -20,6 +20,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
+import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -56,7 +57,66 @@ export function buildComment({ actor, heading, lines = [], text = null }) {
   return out.join('\n');
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, now = () => new Date() } = {}) {
+/**
+ * Einkauf-Bereich: Bestelluebersicht und Produktdaten-Status.
+ *
+ * Liest ausschliesslich private Dateien ausserhalb des Repositories
+ * ($TP_PRIVAT_DIR, Standard ~/teppich-paradies-analyse). Nichts davon landet
+ * in docs/ai-dashboard/issues.json oder sonst im Repository - die Endpunkte
+ * existieren nur im lokalen Server (scripts/serve-dashboard.mjs), nicht auf
+ * GitHub Pages. Fehlende Dateien sind kein Fehler, nur ein leerer Zustand.
+ */
+export function privatDir() {
+  return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
+}
+
+function readJsonIfExists(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+/** Kernfelder, die eine Bestellung ueberhaupt erst ermoeglichen. */
+const EINKAUF_KERNFELDER = ['lieferant', 'artikelnummer', 'bestelleinheit'];
+const EINKAUF_NAECHSTER_SCHRITT = {
+  lieferant: 'Lieferant klaeren (Preisliste/Lieferantenliste abgleichen)',
+  artikelnummer: 'Lieferanten-Artikelnummer aus Preisliste/Katalog abschreiben',
+  bestelleinheit: 'Bestelleinheit festlegen (Paket/Rolle/Stueck) je Produktgruppe',
+  farbnummer: 'Farbnummer aus Lieferantenliste abschreiben, nie fortlaufend zaehlen',
+};
+
+function feldOffen(feld) {
+  return !feld || feld.confidence === 'UNKLAR';
+}
+
+function produktstatusEintrag(variante) {
+  const felder = variante.fields || {};
+  const offeneKernfelder = EINKAUF_KERNFELDER.filter(f => feldOffen(felder[f]));
+  const vollstaendig = offeneKernfelder.length === 0;
+  return {
+    gid: variante.gid,
+    handle: variante.handle,
+    titel: variante.product_title,
+    variante: variante.variant_title,
+    sku: variante.sku,
+    grosshandelSku: variante.grosshandel_sku,
+    gruppe: variante.gruppe || 'Unbekannt',
+    vollstaendig,
+    offeneFelder: offeneKernfelder.map(f => ({
+      feld: f,
+      grund: felder[f]?.source || 'kein Grund hinterlegt',
+      naechsterSchritt: EINKAUF_NAECHSTER_SCHRITT[f] || 'manuell klaeren',
+    })),
+  };
+}
+
+function produktSucheTreffer(eintrag, q) {
+  if (!q) return true;
+  const n = q.trim().toLowerCase();
+  if (!n) return true;
+  return [eintrag.titel, eintrag.sku, eintrag.grosshandelSku, eintrag.handle, eintrag.variante]
+    .some(v => String(v ?? '').toLowerCase().includes(n));
+}
+
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
 
@@ -262,6 +322,64 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
       } catch { /* kein Ledger */ }
       return { runs, source, usage, ledger: usage ? ledger : null };
+    },
+
+    /** Bestelluebersicht: offene Kundenbestellungen, gruppiert je Lieferant, plus Muster. */
+    einkaufBestellungen() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'bestelluebersicht', 'orders.json');
+      const daten = readJsonIfExists(file);
+      if (!daten) return { verfuegbar: false, quelle: file, hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
+      let modell;
+      try { modell = aufbereiten(daten, { jetzt: now() }); }
+      catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
+      return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
+    },
+
+    /**
+     * Produktdaten-Status: je Produktgruppe vollstaendig/offen aus dem
+     * Einkauf-Dry-Run (plan.json), serverseitig zusammengefasst und die
+     * offene Liste paginiert (die Datei selbst kann mehrere tausend
+     * Varianten haben).
+     */
+    einkaufProduktstatus({ page = 1, pageSize = 50, q = '', gruppe = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'einkauf-dryrun', 'plan.json');
+      const rows = readJsonIfExists(file);
+      if (!Array.isArray(rows)) return { verfuegbar: false, quelle: file, hinweis: 'plan.json fehlt - Einkauf-Dry-Run vorher lokal laufen lassen.' };
+
+      const eintraege = rows.map(produktstatusEintrag);
+      const gruppen = {};
+      for (const e of eintraege) {
+        const g = gruppen[e.gruppe] || (gruppen[e.gruppe] = { gruppe: e.gruppe, vollstaendig: 0, offen: 0 });
+        if (e.vollstaendig) g.vollstaendig += 1; else g.offen += 1;
+      }
+      const gesamt = { vollstaendig: eintraege.filter(e => e.vollstaendig).length, offen: eintraege.filter(e => !e.vollstaendig).length, anzahl: eintraege.length };
+
+      let offene = eintraege.filter(e => !e.vollstaendig);
+      if (gruppe) offene = offene.filter(e => e.gruppe === gruppe);
+      if (q) offene = offene.filter(e => produktSucheTreffer(e, q));
+
+      const size = Math.min(Math.max(Number(pageSize) || 50, 1), 200);
+      const p = Math.max(Number(page) || 1, 1);
+      const start = (p - 1) * size;
+      const seite = offene.slice(start, start + size);
+
+      return {
+        verfuegbar: true, quelle: file,
+        gesamt, gruppen: Object.values(gruppen).sort((a, b) => b.offen - a.offen),
+        offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
+      };
+    },
+
+    /** Offene Klaerungsfaelle des Einkaufs, falls das Team sie bereits exportiert hat. */
+    einkaufKlaerung() {
+      const dir = privatDirPath || privatDir();
+      const basis = path.join(dir, 'einkauf-klaerung');
+      const klaerung = readJsonIfExists(path.join(basis, 'klaerung.json'));
+      const offen = readJsonIfExists(path.join(basis, 'offen.json'));
+      if (!klaerung && !offen) return { verfuegbar: false, quelle: basis, hinweis: 'Noch keine Klaerungsdaten exportiert (klaerung.json/offen.json fehlen).' };
+      return { verfuegbar: true, quelle: basis, klaerung: klaerung || null, offen: offen || null };
     },
   };
 }
