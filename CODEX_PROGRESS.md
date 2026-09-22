@@ -34,6 +34,6 @@ JS-001e: `price-per-item.js` vollständig lesen, Reichweite bestimmen und Lifecy
 
 ## Letzter erfolgreicher Git-Commit
 
-e01de30 – S29-Sicherung. S30-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+6d4ed1a – audit: TP-016 um Sticky-Kaufbalken erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

@@ -64,4 +64,4 @@ S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobac
 
 S29 in `0e710dd` tatsächlich gesichert. Vier QuickAddDialog-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
 
-S30 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier Sticky-Lifecycle-Beobachtungen und acht Templateaktivierungen PASS; TP-016 erweitert. Weiter JS-001e, Status WORKING.
+S30 in `6d4ed1a` tatsächlich gesichert. Vier Sticky-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.

@@ -488,3 +488,5 @@ Alle acht lokalen Produkt-Templates setzen `enable_sticky_add_to_cart: true`; di
 Script `audit/scripts/reproduce-sticky-cart-reconnect.mjs`; Evidence `audit/evidence/sticky-cart-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/DOM/Observer adaptiert. Syntax/Erstlauf PASS. Route TASK-B239BED3DED7 B/STATIC, kein Executor, Browser oder Livezugriff.
 
 Nächster Schritt: JS-001e `price-per-item.js` als nächsten kaufnahen Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Lifecyclefälle nicht wiederholen.
+
+S30 in `6d4ed1a` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001e, Status WORKING.
