@@ -14,7 +14,7 @@ Abgeschlossen:
 
 In Arbeit:
 
-- [~] Nächster Bereich Rechnerzustandswechsel CALC-001a/H-003.
+- [~] Nächster Bereich Varianten-/Farbpickervertrag VAR-001a/H-003.
 
 Noch offen:
 
@@ -24,9 +24,9 @@ Noch offen:
 
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 6 · P3: 8 · P4: 0 (14 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
-Aktuell untersuchter Bereich: Rechnerzustandswechsel, Phase 1.
-Letzte abgeschlossene Aufgabe: CALC-001a.1. S18 / CALC-001a.1: neun neue Übergangs-/Ereignisverträge PASS, zwei historische Quellhashvergleiche. Original-baseOptions/findVariant/rateOf/updateExtras über persistenten Feldern: Rot Meter→Rot Raum→Blau ohne Zubehörfreigabe→Blau Meter→Rot zurück. ID/Preis folgt gewählter Farbe/Art, Zubehör bei fehlender Freigabe ohne Items, eigene Leistenlänge 7 bleibt erhalten und wird beim Zurückwechseln wieder verwendet. Formular-ID hat Vorrang vor URL (synthetische Kombination); Farbchange plant 120 ms, Formularchange 100 ms, fremder Change nichts. Kein neuer bestätigter Fehler; H-003 nur teilweise geklärt.
-Nächste Aufgabe: **CALC-001a.2**. CALC-001a.2: syncArtUi + calculate + Submit als zusammenhängende lokale Zustandsfolge prüfen: Wechsel zu Farbe ohne gewählte Rollenbreite bzw. ohne kaufbare Wunschmaßvariante, Art-Rückschaltung und Zubehör/ID im nachfolgenden Payload. Reale Farb-Picker-/Formular-/URL-Synchronisation anschließend VAR-001; keine Browserumgehung, keine fertigen Preisraster erneut ausführen.
+Aktuell untersuchter Bereich: Varianten-/Farbpickervertrag, Phase 1.
+Letzte abgeschlossene Aufgabe: CALC-001a.2. S19 / CALC-001a.2 lokal abgeschlossen: vier aufeinanderfolgende Wechsel mit vier abgefangenen Submits, zwei historische Hashvergleiche. Original-syncArtUi/calculate/Extras/Submit: initial Raummaß, Farbe ohne Wunschmaß/500er-Breite, Rückkehr und Farbe mit nicht kaufbarer Wunschmaßvariante. Rückschaltung auf Meter/400 cm korrekt, ID/Art/Gruppe/Zubehör im Payload passend; eigene Leistenlänge 7 erhalten. Angezeigte Summe entspricht jeweils Variantenpreis × Payloadmenge einschließlich Zubehör. Kein neuer bestätigter Fehler. Native Radioexklusivität modelliert, Picker/URL/Morph und Serviceanzeige nicht vollständig ausgeführt.
+Nächste Aufgabe: **VAR-001a**. VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung.
 Wichtige offene Hypothesen: H-001, H-003–H-015; H-002 lokal geschlossen. Keine Hypothese als bestätigten Fehler zählen.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 

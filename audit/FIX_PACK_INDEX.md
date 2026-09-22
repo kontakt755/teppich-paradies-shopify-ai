@@ -53,3 +53,5 @@ S16: Notizvergleich abgeschlossen; TP-014 betrifft bedingt auch cart-note.js (lo
 S17 maßgeblicher Stand: Ready=2, Done/QA=0. Paket 03 ist Übergabereife, keine Umsetzung. Frühere Ready=1-Sessionnotizen bleiben historisch. TP-014 umfasst im neuen Paket beide Klassen; Notizfunktion bleibt deaktiviert. Cartkern/Renderer weiterhin NOT READY, keine vorschnellen Packdateien.
 
 S18: kein neues bestätigtes Issue/Pack. Rollenblock weiter NOT READY; H-003 durch Auswahl-/Zubehörfunktionen teilweise belegt, vollständiger Zustands-/Submitvertrag offen. Ready=2, Done/QA=0.
+
+S19: Rollen-Zustands-/Submitvertrag lokal geprüft, kein neues Issue/Pack. Rollenblock weiterhin NOT READY wegen VAR-001a/H-003 und Live-/Datenreichweite. Ready=2, Done/QA=0.

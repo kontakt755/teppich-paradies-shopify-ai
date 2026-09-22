@@ -134,3 +134,8 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S18
 
 `roll-extra-transitions-2026-09-22.json`: neun Fälle, zwei historische Hashvergleiche; Script `audit/scripts/reproduce-roll-extra-transitions.mjs`. Lokale Auswahl-/Zubehörfunktionen mit persistenten Feldern, keine vollständige Picker-/Submitintegration. Integritäts-/Secretprotokolle S18.
+
+
+## S19
+
+`roll-state-submit-2026-09-22.json`: vier zusammenhängende Übergänge/Submits, zwei Quellhashes, ID-/Art-/Gruppe-/Zubehör-/Gesamtpreisassertions. Script `audit/scripts/reproduce-roll-state-submit.mjs`. Native Picker-/Morphprüfung offen. Integritäts-/Secretprotokolle S19.
