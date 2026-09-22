@@ -286,6 +286,11 @@
               "type": "tp-leisten-vorschau",
               "settings": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_fixpreis": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -307,6 +312,7 @@
           "block_order": [
             "group_icgrde",
             "tp_leisten_kurzinfo",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_fixpreis",
             "divider_VJhene",
             "tp_leisten_farbwahl",

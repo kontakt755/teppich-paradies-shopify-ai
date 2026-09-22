@@ -3,13 +3,13 @@
   "live": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-22T08:12:21Z",
-    "verifiedBy": "Shopify Admin API, role MAIN, nach workflow:live auf 3daad51 (PR #452 URL-Parameter beim Farbwechsel); oeffentlicher Shop Shopify.theme.id bestaetigt"
+    "verifiedAt": "2026-09-22T10:06:50Z",
+    "verifiedBy": "Shopify Admin API, role MAIN, nach workflow:live auf 3116c81"
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-22T08:12:21Z",
+    "verifiedAt": "2026-09-22T10:06:50Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED; Rollentausch per workflow:live, zuvor MAIN"
   },
   "fallback": {
@@ -18,6 +18,13 @@
     "verifiedAt": "2026-09-15T12:05:00Z",
     "verifiedBy": "Shopify Admin API, role UNPUBLISHED",
     "note": "Niemals loeschen oder ueberschreiben. Kopie des Live-Themes 204438208846 vom 2026-09-15, angelegt per themeDuplicate - enthaelt damit auch config/settings_data.json, die im Repository nicht gepflegt wird und aus git allein nicht wiederherstellbar waere."
+  },
+  "arbeit": {
+    "themeId": "204965413198",
+    "name": "Arbeitstheme - nie Preview, nie publishen",
+    "verifiedAt": "2026-09-22T09:50:01Z",
+    "verifiedBy": "Shopify Admin API, role UNPUBLISHED, angelegt per themeDuplicate des Live-Themes am 2026-09-22",
+    "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
     {

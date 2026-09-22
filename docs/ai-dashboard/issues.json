@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-22T06:01:43.245Z",
+  "generated_at": "2026-09-22T09:41:01.596Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 120,
+  "count": 122,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-22T06:01:43.245Z",
+    "fetchedAt": "2026-09-22T09:41:01.596Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,54 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 458,
+      "title": "Operations V3: Auftrags-, Einkaufs- und Logistiksystem – Phase 1 Analyse abgeschlossen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/458",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 2,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-22T09:27:21Z",
+      "updated_at": "2026-09-22T09:40:50Z",
+      "closed_at": null
+    },
+    {
+      "number": 456,
+      "title": "Shop 2.0 Pre-Launch Masterplan (Audit + Module)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/456",
+      "labels": [
+        "status:review",
+        "type:technik",
+        "priority:p0",
+        "area:shopify"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 4,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-22T08:46:24Z",
+      "updated_at": "2026-09-22T09:37:52Z",
+      "closed_at": null
+    },
     {
       "number": 445,
       "title": "Universelle Farbauswahl: kompakter Ausloeser mit Bottom Sheet und Dialog",
@@ -690,10 +738,10 @@
     {
       "number": 322,
       "title": "Alt-PRs #279/#280/#256: Konflikte geloest, drei Entscheidungen offen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/322",
       "labels": [
-        "status:blockiert",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
@@ -702,14 +750,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T10:26:52Z",
-      "updated_at": "2026-09-15T11:31:35Z",
-      "closed_at": null
+      "updated_at": "2026-09-22T09:18:30Z",
+      "closed_at": "2026-09-22T09:18:12Z"
     },
     {
       "number": 309,

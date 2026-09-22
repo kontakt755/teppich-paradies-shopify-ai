@@ -263,7 +263,7 @@
               "type": "tp-teppich-versand",
               "name": "TP Teppich Versand",
               "settings": {
-                "delivery_time": "5–7 Werktage"
+                "delivery_time": "3–5 Werktage"
               },
               "blocks": {}
             },
@@ -305,6 +305,11 @@
               },
               "blocks": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_teppich": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -325,6 +330,8 @@
           },
           "block_order": [
             "teppich_header_group",
+            "tp_teppich_vorteile_main",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_teppich",
             "divider_teppich_main",
             "color_swatch_picker_teppich_main",
@@ -334,7 +341,6 @@
             "tp_teppich_wunschmass_main",
             "options_price_calculator_teppich_main",
             "buy_buttons_teppich_main",
-            "tp_teppich_vorteile_main",
             "tp_teppich_versand_main",
             "tp_teppich_auf_einen_blick_main",
             "tp_teppich_description_style",

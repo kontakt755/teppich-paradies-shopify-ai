@@ -297,6 +297,11 @@
               },
               "blocks": {}
             },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
+            },
             "tp_bewertungsbeleg_fliese": {
               "type": "tp-bewertungsbeleg",
               "name": "TP Bewertungsbeleg",
@@ -317,6 +322,8 @@
           },
           "block_order": [
             "group_icgrde",
+            "tp_vorteile_night1",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_fliese",
             "divider_VJhene",
             "tp_farb_dropdown",
@@ -325,10 +332,9 @@
             "tp_muster_cta_1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
+            "tp_compare_toggle_night3",
             "options_price_calculator_product_calculator_z3CEfy",
             "buy_buttons_eYQEYi",
-            "tp_vorteile_night1",
-            "tp_compare_toggle_night3",
             "text_aEtTtq"
           ]
         }

@@ -47,6 +47,10 @@ sieht das nicht, `npm run liquid:guard` schon. Korrekt ist
 **4. Nie von Hand ins Preview-Theme pushen.**
 Das Live-Gate verlangt `previewDiffCount === 0`, also Preview exakt gleich
 `origin/main`. Ein Direktpush erzeugt die Drift, die `PREVIEW_DRIFT` abfangen soll.
+Zwischenstaende und Ausprobieren gehen ausschliesslich ins Arbeitstheme
+(`arbeit` in `domains/shopify/live-theme.json`, nur mit `--only`) oder in ein
+eigenes Development-Theme (`theme push --development --development-context
+<branch>`). Das Arbeitstheme ist nie Preview-Ziel und wird nie publiziert.
 
 **5. Eine Theme-ID in Prosa veraltet, ohne dass es jemand merkt.** Siehe oben.
 

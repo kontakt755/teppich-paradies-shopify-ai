@@ -333,8 +333,13 @@
                 "cta": "Verlegung anfragen",
                 "ziel": "/pages/kontakt",
                 "telefon": "+4933015733720",
-                "telefon_label": "oder anrufen: 03301 573 37 20"
+                "telefon_label": "oder anrufen: 03301 5733720"
               }
+            },
+            "tp_aktion_hinweis": {
+              "type": "tp-aktion-hinweis",
+              "settings": {},
+              "blocks": {}
             },
             "tp_bewertungsbeleg_standard": {
               "type": "tp-bewertungsbeleg",
@@ -356,6 +361,8 @@
           },
           "block_order": [
             "group_icgrde",
+            "tp_vorteile_night1",
+            "tp_aktion_hinweis",
             "tp_bewertungsbeleg_standard",
             "divider_VJhene",
             "tp_farb_dropdown",
@@ -364,11 +371,10 @@
             "tp_muster_cta_1",
             "paket_auswahl_xLTafR",
             "tp_service_links_night1",
-            "options_price_calculator_product_calculator_z3CEfy",
-            "buy_buttons_eYQEYi",
-            "tp_vorteile_night1",
             "tp_compare_toggle_night3",
+            "options_price_calculator_product_calculator_z3CEfy",
             "tp_verlegen_lassen",
+            "buy_buttons_eYQEYi",
             "ai_gen_block_72e444a_tkq6gk",
             "tp_verkaufstext_night2",
             "ai_gen_block_b888d9b_CJbJ8X",
