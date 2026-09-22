@@ -126,6 +126,38 @@
             "subtitle": "Breite und Länge frei"
           }
         },
+        "tp_kachel_fliesen": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppichfliesen",
+            "image": "shopify://shop_images/1226991-8FXC-prod_13795b10-8d11-4d70-a638-42a5a024bcae.jpg",
+            "subtitle": "Fliesen und Planken, einzeln tauschbar"
+          }
+        },
+        "tp_kachel_fliesen_alle": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Alle Teppichfliesen",
+            "image": "shopify://shop_images/1226991-8FXC-prod_13795b10-8d11-4d70-a638-42a5a024bcae.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_fliesen_50x50": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Fliesen 50 × 50 cm",
+            "image": "shopify://shop_images/1127454-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
+        "tp_kachel_fliesen_planken": {
+          "type": "_tp-menu-kachel",
+          "settings": {
+            "menu_match": "Teppichplanken",
+            "image": "shopify://shop_images/1227287-8FXC-prod.jpg",
+            "subtitle": ""
+          }
+        },
         "tp_kachel_vinyl_alle": {
           "type": "_tp-menu-kachel",
           "settings": {
@@ -389,6 +421,10 @@
         "tp_kachel_teppiche",
         "tp_kachel_teppiche_alle",
         "tp_kachel_teppiche_mass",
+        "tp_kachel_fliesen",
+        "tp_kachel_fliesen_alle",
+        "tp_kachel_fliesen_50x50",
+        "tp_kachel_fliesen_planken",
         "tp_kachel_vinyl_alle",
         "tp_kachel_vinyl_klick",
         "tp_kachel_vinyl_klebe",
