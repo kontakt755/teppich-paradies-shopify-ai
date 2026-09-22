@@ -71,3 +71,5 @@ S25: TP-016 umfasst zusätzlich variant-picker.js (doppelter Change-Listener, Re
 S26: Morph-/Mehrprodukt-Aufrufer lokal abgegrenzt. H-016 bleibt wegen deaktiviertem lokalen Quick Add und unbekanntem Livezustand bedingt. TP-015–017 könnten später einen gemeinsamen Variantenblock bilden, bleiben bis Browser-/Live-Reichweite und Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
 
 S27: reines Runtime-Inventar, keine Issue-/Packänderung. Quick-add-Lifecycle ist nur Kandidat und wird vor Zuordnung ausgeführt. Ready=2, Done/QA=0; keine Umsetzung.
+
+S28: TP-016 umfasst zusätzlich QuickAddComponent. Varianten-Lifecycleblock bleibt NOT READY bis QuickAddDialog und spätere Phase-2-Konsolidierung; Quick Add lokal deaktiviert, Livezustand offen. FILE CONFLICT `quick-add.js`/TP-016/017. Ready=2, Done/QA=0; keine Umsetzung.

@@ -179,3 +179,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S27 – JavaScript-Runtime-Inventar
 
 `audit/scripts/audit-js-runtime-inventory.mjs` inventarisiert 96 JS-Assets samt Hash, Größe, Lifecycle-/Listener-/Fetch-Metriken und markiert bereits geprüfte Kernquellen. `audit/evidence/js-runtime-inventory-2026-09-22.json` enthält 37 heuristische Prüfkandidaten. Flags sind Priorisierung, keine Fehlerbelege.
+
+## S28 – QuickAddComponent-Reconnect
+
+`audit/scripts/reproduce-quick-add-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen QuickAddComponent aus. `audit/evidence/quick-add-reconnect-2026-09-22.json` belegt Geister-/Doppellistener für VariantSelected und ausfallenden CartUpdate nach Reconnect. Kein Modal/Morph/Browser/Livepfad.

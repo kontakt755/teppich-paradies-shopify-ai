@@ -232,3 +232,7 @@ Nächster Schritt: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszu
 ## S27 – Runtime-Inventar
 
 96 JS-Assets sind mit Hash/Metriken inventarisiert. Heuristische Kandidaten dürfen erst nach Originalcode-Ausführung als Issue gelten. `quick-add.js` ist der nächste CORE/SHARED-Kandidat und verbindet Product Card, Modal, VariantPicker, ProductForm sowie globale Cart-/Variant-Events. FILE CONFLICT mit TP-016/017 möglich; Lifecycle isoliert vor jeder Paketzuweisung prüfen. Nachfolgende Kandidaten bleiben im Evidence-Report priorisierbar, werden nicht parallel untersucht.
+
+## S28 – QuickAddComponent-Lifecycle
+
+`quick-add.js` ist nun bestätigter Teil von TP-016: dokumentweiter VariantSelected-Listener bleibt nach Disconnect und vervielfacht sich; CartUpdate-Listener fällt nach Reconnect aus. CORE/SHARED, verbindet Product Card, VariantPicker, ProductForm und Cart. FILE CONFLICT mit TP-016/017 bleibt; Dialogklasse derselben Datei vor Paketkonsolidierung separat prüfen. Lokales Quick Add deaktiviert, Live-Reichweite offen.

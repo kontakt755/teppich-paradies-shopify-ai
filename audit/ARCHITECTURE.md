@@ -143,3 +143,7 @@ Nächster Schritt: CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testma
 Der aktuelle `assets/`-Stand umfasst 96 JavaScript-Dateien mit 25.206 Zeilen, 77 Custom-Element-Definitionen, 56 Dateien mit `connectedCallback`, 47 mit globalen Document-/Window-Listenern und 16 mit Fetch-Aufrufen. Vollständige Hash-/Metrikliste: `evidence/js-runtime-inventory-2026-09-22.json`.
 
 Die statischen Flags sind Suchhilfen, keine Defekte. Lifecycle-/Listenerprobleme müssen am vollständigen Originalcode reproduziert werden. Als nächster Kandidat folgt `quick-add.js`; es verbindet Product Cards, Modal, VariantPicker, ProductForm und globale Events. Bereits geprüfte Cart-/Variantenquellen sind im Inventar markiert und werden nicht erneut pauschal getestet.
+
+## S28 – QuickAddComponent
+
+Der Lifecycle-Test bestätigt asymmetrisches Reconnect-Verhalten: VariantSelected-Listener bleiben bestehen und vervielfachen sich, CartUpdate-Listener werden nach dem ersten Disconnect nicht wiederhergestellt. `quick-add.js` ist damit Teil des gemeinsamen TP-016-Lifecyclebereichs. Die Dialogklasse derselben Datei bleibt separat offen; Quick Add ist lokal deaktiviert und die Live-Reichweite unbekannt.

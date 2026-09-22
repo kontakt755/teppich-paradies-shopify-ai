@@ -6,34 +6,34 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S27 / JS-001a abgeschlossen, grob 30 %. JavaScript-Runtime.
+Phase 1, S28 / JS-001b abgeschlossen, grob 30 %. JavaScript-Runtime.
 
 ## Erledigte Aufgaben
 
-S27: 96 JavaScript-Assets mit 25.206 Zeilen und aktuellen Hashes inventarisiert. 37 heuristische Kandidaten, keine neuen Issues. Bereits geprüfte Quellen markiert; QuickAddComponent als nächster isolierter Lifecycle-Test gewählt.
+S28: vier Original-QuickAddComponent-Lifecycle-Beobachtungen PASS. VariantSelected bleibt nach Disconnect und reagiert nach Reconnect doppelt; CartUpdate fällt nach Reconnect aus. TP-016 erweitert, keine neue Issue-ID. Quick Add lokal deaktiviert, Live-Reichweite offen.
 
 ## Offene Aufgaben
 
-JS-001b: Original-QuickAddComponent Connect→Disconnect→Reconnect für CartUpdate/VariantSelected ausführen. S26-Morphprüfung nicht wiederholen; lokales Quick Add ist aus, Livezustand unbekannt. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+JS-001c: QuickAddDialog separat auf CartUpdate/VariantUpdate/DialogClose bei Reconnect prüfen. Component-/Morphpfad nicht wiederholen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-Auditdokumentation einschließlich ARCHITECTURE, Runtime-Inventar-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
+Auditdokumentation einschließlich ARCHITECTURE, Quick-add-Lifecycle-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Runtime-Inventar nach feldbezogener Controller-Erkennung PASS: 96 Dateien, 37 heuristische Kandidaten. Route TASK-6E453FC0AD72 B/STATIC, kein Executor. JSON-/Dokumentintegrität, Secret-Scan und git diff --check PASS.
+QuickAddComponent-Syntax/Diagnose nach VM-Ereignisnamen-Korrektur PASS: vier Lifecycle-Beobachtungen. Route TASK-46ED4B67391A B/STATIC, kein Executor. JSON-/Dokumentintegrität, Secret-Scan und git diff --check PASS.
 
 ## Bekannte Fehler
 
-17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. Runtime-Flags sind keine Fehler. Browserberechtigung S13 weiterhin blockiert.
+17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 um QuickAddComponent erweitert; lokale Funktion aus, Live-Reichweite offen. Browserberechtigung S13 weiterhin blockiert.
 
 ## Naechster konkreter Arbeitsschritt
 
-JS-001b: Original-QuickAddComponent Connect→Disconnect→Reconnect für CartUpdate/VariantSelected ausführen. S26-Morphprüfung nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+JS-001c: QuickAddDialog auf CartUpdate/VariantUpdate/DialogClose bei Reconnect prüfen. Fertigen Component-/Morphpfad nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
-2242374 – audit: JavaScript-Runtime inventarisieren und priorisieren. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
+ed52d6a – S27-Sicherung. S28-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
 
 Status: WORKING

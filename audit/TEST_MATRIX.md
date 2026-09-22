@@ -259,3 +259,9 @@ Nächster Schritt: JS-001a Runtime-Inventar und Priorisierung noch ungeprüfter 
 Statisches Inventar PASS: 96 Dateien/25.206 Zeilen, 77 Custom Elements, 56 Dateien mit Connect-Lifecycle, 47 mit globalen Listenern, 16 mit Fetch und 37 heuristische Kandidaten. Prüfflags sind keine Defektassertionen. Bereits auditierte Kernquellen separat markiert.
 
 Evidence: `audit/evidence/js-runtime-inventory-2026-09-22.json`; Script: `audit/scripts/audit-js-runtime-inventory.mjs`. Nach einer feldbezogenen Controller-Erkennung Syntax/Inventar PASS. Nächster ausführbarer Kandidat: QuickAddComponent-Lifecycle.
+
+## S28 – QuickAddComponent-Reconnect
+
+Vier Lifecycle-Beobachtungen PASS: initial Variant/Cart je einmal; getrennte Instanz verarbeitet weiterhin Variant, aber nicht Cart; wiederverbundene Instanz Variant doppelt/Cart null; frische Instanz je einmal. TP-016 erweitert. Vollständige Originalklasse und Events, UI-/DOM-Abhängigkeiten adaptiert; kein Morph/Fetch/Browser.
+
+Evidence: `audit/evidence/quick-add-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-quick-add-reconnect.mjs`. Nach VM-Ereignisnamen-Korrektur Syntax/Diagnose PASS. Nächster Schritt QuickAddDialog separat.

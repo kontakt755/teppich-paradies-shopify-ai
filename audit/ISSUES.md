@@ -545,3 +545,11 @@ Die globale CustomEvent-Kopplung ist im Quellvertrag real: Sender und Farbverbra
 ### S27 – Runtime-Kandidaten, keine Issues
 
 Das statische Runtime-Inventar markiert 37 Dateien heuristisch. Kein Flag wird als Fehler gezählt. Quick Add ist als nächster Lifecycle-Test ausgewählt; erst die Originalcode-Ausführung entscheidet, ob TP-016 erweitert oder eine Hypothese verworfen wird. Issuezahl bleibt 17.
+
+### S28 – TP-016 erweitert: QuickAddComponent
+
+Vier lokale Originalcode-Beobachtungen bestätigen zwei Reconnect-Ausprägungen in `assets/quick-add.js` (QuickAddComponent, Lifecycle um Zeilen 48–65). Nach Disconnect bleibt der dokumentweite VariantSelected-Listener aktiv, weil add/remove jeweils ein neues `bind(this)` erzeugen. Nach Reconnect reagieren zwei Listener. Der CartUpdate-Listener nutzt dagegen einen einmalig erzeugten Controller: Nach dessen Abort beim Disconnect wird am Reconnect kein neuer Listener registriert. Frische Instanz funktioniert je einmal.
+
+Priorität P3 bleibt: lokal BESTÄTIGT, aber Quick Add ist in den lokalen Repository-Einstellungen deaktiviert und die Liveeinstellung unbekannt. Risiko bei aktiver Funktion: getrennte Karten reagieren weiter, Reconnect verdoppelt Buttonzustandsupdates und Cartupdates leeren den Inhaltscache nicht mehr. Konkrete falsche Bestellung oder sichtbarer Livefehler nicht belegt.
+
+Implementation-Brief-Ergänzung: stabile VariantSelected-Listenerreferenz verwenden und den CartUpdate-Controller pro Verbindungszyklus erneuern. Connect/Disconnect/Reconnect muss je Ereignis genau einmal/null/einmal reagieren; mehrere Zyklen ohne Geisterlistener. Produktkarten-Zuordnung, Cacheinvalidierung, VariantPicker/ProductForm, Dialog und TP-017 regressionsprüfen. FILE CONFLICT `quick-add.js` mit angrenzenden Lifecyclefixes; keine Modal-/Morph-Neufassung. Aufwand S, rücknehmbare JS-Änderung; Pack NOT READY bis Dialogklasse geprüft. Phase 1/2 ohne Reparatur.

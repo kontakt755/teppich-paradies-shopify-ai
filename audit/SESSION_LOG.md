@@ -454,3 +454,13 @@ Script `audit/scripts/audit-js-runtime-inventory.mjs`; Evidence `audit/evidence/
 Nächster Schritt: JS-001b vollständigen Original-QuickAddComponent-Lifecycle Connect→Disconnect→Reconnect für CartUpdate/VariantSelected lokal ausführen. Modal-/Morphprüfung S26 nicht wiederholen.
 
 S27 in `2242374` tatsächlich gesichert. Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
+
+## S28 – QuickAddComponent-Reconnect (22.09.2026)
+
+JS-001b: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddComponent PASS. Initial reagieren VariantSelected und CartUpdate je einmal. Nach Disconnect reagiert der VariantSelected-Listener weiterhin, während CartUpdate korrekt nicht mehr reagiert. Nach Reconnect reagiert VariantSelected doppelt und CartUpdate gar nicht. Eine frische Instanz verarbeitet beide Ereignisse einmal.
+
+Ursachen: `this.#updateQuickAddButtonState.bind(this)` erzeugt bei add/remove verschiedene Funktionsobjekte, sodass der dokumentweite Listener nicht entfernt wird. `#cartUpdateAbortController` wird als Feld einmal erzeugt, beim Disconnect abgebrochen und beim Reconnect mit bereits abgebrochenem Signal wiederverwendet. TP-016 um QuickAddComponent erweitert, keine neue Issue-ID. Lokale Repository-Einstellung Quick Add aus; Live-/Browserreichweite unbekannt.
+
+Script `audit/scripts/reproduce-quick-add-reconnect.mjs`; Evidence `audit/evidence/quick-add-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Component, DOM, Dialog und Media adaptiert, Eventtarget wegen fehlendem Node-DOM-Bubbling per Proxy. Erster Lauf stoppte vor Beobachtung an lexikalem VM-Zugriff auf ThemeEvents; Original-Ereignisnamen verwendet, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-46ED4B67391A B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001c QuickAddDialog derselben Datei separat auf CartUpdate/VariantUpdate/DialogClose-Reconnect prüfen. Fertigen Component-/Morphpfad nicht wiederholen.
