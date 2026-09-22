@@ -22,7 +22,7 @@ Auditdokumentation, Formular-Reconnect-Script/JSON, Prüfprotokolle und CODEX_PR
 
 ## Ausgefuehrte Tests
 
-Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck vor Commit.
+Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck PASS.
 
 ## Bekannte Fehler
 
@@ -34,6 +34,6 @@ VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Re
 
 ## Letzter erfolgreicher Git-Commit
 
-6928c45 – S23-Sicherung. S24 wird nach Prüfungen committed. Kein Merge/Push.
+e381aac – audit: TP-016 um Product-Form-Reconnect erweitern. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

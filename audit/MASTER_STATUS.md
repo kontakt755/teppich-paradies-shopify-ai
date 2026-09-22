@@ -51,3 +51,5 @@ S21 in `467021f` tatsächlich gesichert. Acht Fälle, Syntax-/Integritäts-/Secr
 S22 tatsächlich in `f0020fe` gesichert. Sechs Fälle, Syntax-/Integritäts-/Secretcheck und git diff --check PASS. Keine Shopänderung. Weiter VAR-001a.2b.2 / H-017; Status WORKING.
 
 S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c, keine Shopänderung, Status WORKING.
+
+S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
