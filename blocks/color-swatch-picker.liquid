@@ -563,8 +563,13 @@
         }
       }
 
+      // Nur den variant-Parameter ersetzen, alle anderen Parameter (z. B.
+      // preview_theme_id, Kampagnen-Parameter) und den Hash behalten - sonst
+      // fiel eine Vorschau beim ersten Farbwechsel still auf das Live-Theme.
       function updateUrl(variantId) {
-        const nextUrl = productUrl + '?variant=' + variantId;
+        const url = new URL(window.location.href);
+        url.searchParams.set('variant', variantId);
+        const nextUrl = url.pathname + url.search + url.hash;
         window.history.replaceState({ path: nextUrl }, '', nextUrl);
       }
 
