@@ -34,6 +34,6 @@ VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.j
 
 ## Letzter erfolgreicher Git-Commit
 
-9324ec8 – audit: Rollen-Zustandswechsel bis Submit S19 pruefen. Zwölf Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+79d438e – audit: Farbpicker-Kombinationsfehler TP-015 belegen. Zwölf Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING
