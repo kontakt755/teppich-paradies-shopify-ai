@@ -1,0 +1,115 @@
+{
+  "session": "S33",
+  "task": "JS-001g",
+  "status": "PASS",
+  "hashes": [
+    {
+      "file": "assets/media.js",
+      "sha256": "3355a7d400b9e1ebf91a6994b8582aa082310d63051db96ca5a360d236822f31"
+    },
+    {
+      "file": "assets/events.js",
+      "sha256": "1290bc43167daaa1166e4d3acf0b423f1d30f119347d2873ebb18001c12d2056"
+    },
+    {
+      "file": "snippets/product-media.liquid",
+      "sha256": "f8f498918a9454430f9234de9992f3ba57d1db559c4cad6f967f7655c0a2d0e9"
+    },
+    {
+      "file": "snippets/video.liquid",
+      "sha256": "7a5b6a0ac24560bbc79ae11885c6aa789dc051a4b588caa5fe1c3844c8adc8ca"
+    }
+  ],
+  "deferredCases": [
+    {
+      "name": "initial-connect",
+      "pauses": 2,
+      "finalPlaying": false
+    },
+    {
+      "name": "disconnected-ignores-events",
+      "pauses": 0,
+      "finalPlaying": true
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "pauses": 0,
+      "finalPlaying": true
+    },
+    {
+      "name": "fresh-instance",
+      "pauses": 2,
+      "finalPlaying": false
+    }
+  ],
+  "modelCases": [
+    {
+      "name": "initial-connect",
+      "uiPlays": 1,
+      "uiPauses": 1,
+      "videoPauses": 1
+    },
+    {
+      "name": "disconnected-ignores-pointer",
+      "uiPlays": 1,
+      "uiPauses": 0,
+      "videoPauses": 0
+    },
+    {
+      "name": "same-instance-reconnect-stale",
+      "uiPlays": 1,
+      "uiPauses": 0,
+      "videoPauses": 0
+    },
+    {
+      "name": "fresh-instance",
+      "uiPlays": 1,
+      "uiPauses": 1,
+      "videoPauses": 1
+    }
+  ],
+  "templateSource": [
+    {
+      "template": "product.einfassung.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fixpreis.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.fliese.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.planken.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.rolle.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.teppich.json",
+      "enabledMediaGallery": true
+    },
+    {
+      "template": "product.zubehoer.json",
+      "enabledMediaGallery": true
+    }
+  ],
+  "sourceReach": {
+    "productMediaTypes": [
+      "model",
+      "video",
+      "external_video"
+    ],
+    "globalVideoSnippetEmitsDeferredMedia": true,
+    "mediaScriptLoadedGlobally": true
+  },
+  "limits": "Original complete DeferredMedia/ProductModel and original events; Component, HTMLElement/video/model-viewer, refs, DOM and Shopify ModelViewerUI adapted, native EventTarget/AbortController. Global pause listeners and model pointer listeners tested. Loading/template cloning, iframe postMessage, autoplay, browser custom-element reactions, actual product media assignments and live theme not tested. Eight gallery templates are static potential reach, not evidence that each product has video or 3D media."
+}

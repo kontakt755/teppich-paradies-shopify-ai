@@ -252,3 +252,7 @@ Auch die Dialogklasse in `quick-add.js` gehört zu TP-016: CartUpdate fällt nac
 ## S32 – MediaGallery-Lifecycle
 
 `media-gallery.js` verbindet VariantUpdate auf Section/Dialog mit Galerieersetzung sowie ZoomDialog mit Slideshow-Auswahl. Der einmalige Controller fällt nach Reconnect aus. Alle acht Produkttemplates führen den Galerieblock; Featured Product und Quick-add nutzen angrenzendes Galerie-Markup. Bestandteil von TP-016, SHARED/HIGH RISK; ein späterer Fix muss VariantPicker, Zoom, Slideshow, Section-Replacement und Quick-add regressionsprüfen. Nächster Kandidat sequenziell: `media.js`.
+
+## S33 – DeferredMedia / ProductModel
+
+`media.js` ist global und verbindet Produkt-/Contentvideos, externe Player, DialogClose, MediaStartedPlaying und ModelViewerUI. Beide Controller fallen nach Reconnect aus. Bestandteil von TP-016, SHARED/HIGH RISK; ein späterer Fix muss Video, externe Player, 3D, Galerie, Zoom/Dialog, Autoplay und gegenseitiges Pausieren regressionsprüfen. Tatsächliche Katalog-Medienreichweite offen. Nächster Kandidat sequenziell: `layered-slideshow.js`.

@@ -295,3 +295,15 @@ Evidence: `audit/evidence/price-per-item-reconnect-2026-09-22.json`; Script: `au
 | Produkttemplate-Reichweite | PASS: 8/8 mit aktivem Galerieblock | statische Quelle |
 
 Evidence: `audit/evidence/media-gallery-reconnect-2026-09-22.json`. Weiter JS-001g `media.js`; fertige Lifecyclefälle nicht erneut ausführen.
+
+## S33 – DeferredMedia / ProductModel
+
+| Test | Ergebnis | Grenze |
+|---|---|---|
+| DeferredMedia initial | PASS: Medien- und Dialogevent pausieren | Video/DOM adaptiert |
+| DeferredMedia getrennt / Reconnect / frisch | PASS: 0 / 0 / 2 Pausen | kein Browser/Live |
+| ProductModel initial | PASS: Tap pausiert UI und Video einmal | ModelViewerUI adaptiert |
+| ProductModel getrennt / Reconnect / frisch | PASS: 0 / 0 / 1 Pointerpause | Laden/Autoplay nicht geprüft |
+| Statische Reichweite | globales Script; Produktmedien + Video-Snippet; 8 Galerietemplates | reale Medienzuweisung offen |
+
+Evidence: `audit/evidence/media-runtime-reconnect-2026-09-22.json`. Weiter JS-001h `layered-slideshow.js`.

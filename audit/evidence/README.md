@@ -199,3 +199,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S32 – MediaGallery-Reconnect
 
 `audit/scripts/reproduce-media-gallery-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen MediaGallery aus und erfasst alle acht Produkttemplates. `audit/evidence/media-gallery-reconnect-2026-09-22.json` belegt ausfallende VariantUpdate-/ZoomMediaSelected-Listener nach Reconnect. DOM/Slideshow adaptiert; kein Browser-/Livepfad.
+
+## S33 – Media-Runtime-Reconnect
+
+`audit/scripts/reproduce-media-runtime-reconnect.mjs` führt je vier Lifecycle-Fälle an vollständigem DeferredMedia und ProductModel aus. `audit/evidence/media-runtime-reconnect-2026-09-22.json` belegt ausfallende globale Pause- und Model-Pointer-Listener nach Reconnect samt statischer Quellreichweite. DOM/Video/ModelViewer adaptiert; keine realen Produkt-/Browser-/Livedaten.

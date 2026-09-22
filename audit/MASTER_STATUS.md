@@ -1,6 +1,6 @@
 # Teppich-Paradies – Auditstatus
 
-AUDIT FORTSCHRITT: 32 %
+AUDIT FORTSCHRITT: 33 %
 
 Stand: 22.09.2026. Phase 1, Analyse und vorbereitende Übergabepakete. Sequenziell, keine Subagenten, keine Shopänderungen. Prozentwert grobe Abdeckung, kein Testpass-Anteil.
 
@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
-Letzte abgeschlossene Aufgabe: S32 / JS-001f: vier Lifecycle-Beobachtungen an der vollständigen Original-MediaGallery PASS. Nach Reconnect verarbeitet dieselbe Instanz weder VariantUpdate-Ersetzung noch ZoomMediaSelected; frische Instanz verarbeitet beide. Alle acht lokalen Produkttemplates enthalten eine aktive Mediengalerie. TP-016 erweitert, keine neue Issue-ID; tatsächlicher DOM-Morph-/Browser-Reconnect und Live-Reichweite offen.
-Nächste Aufgabe: JS-001g: `assets/media.js` vollständig lesen, Klassen-/Aufruferreichweite bestimmen und den noch ungeprüften Lifecycle lokal ausführen. Fertige Galerie-/Preis-/Sticky-/Quick-add-/Variantenfälle nicht wiederholen.
+Letzte abgeschlossene Aufgabe: S33 / JS-001g: je vier Lifecycle-Beobachtungen an vollständigem Original-DeferredMedia und ProductModel PASS. Nach Reconnect fehlen globale Medien-/Dialog-Pause-Listener sowie Model-Pointer-Listener; frische Instanzen funktionieren. Script global geladen, Produktmedien/Video-Snippet erzeugen die Elemente, tatsächliche Produktmedienzuweisungen offen. TP-016 erweitert, keine neue Issue-ID.
+Nächste Aufgabe: JS-001h: `assets/layered-slideshow.js` als noch ungeprüften einmaligen Controller-Kandidaten vollständig lesen, Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige S20–S33-Fälle nicht wiederholen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -69,3 +69,5 @@ S30 in `6d4ed1a` tatsächlich gesichert. Vier Sticky-Lifecycle-Beobachtungen, ac
 S31 in `f9713f5` tatsächlich gesichert. Vier Stückpreis-Lifecycle-Beobachtungen, Template-Matrix sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
 
 S32 in `55ffd1e` tatsächlich gesichert. Vier MediaGallery-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.
+
+S33: DeferredMedia-/ProductModel-Lifecycle lokal geprüft; TP-016 erweitert. Keine Shopänderung. Weiter JS-001h, Status WORKING.

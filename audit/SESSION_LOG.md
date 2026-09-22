@@ -514,3 +514,13 @@ Script `audit/scripts/reproduce-media-gallery-reconnect.mjs`; Evidence `audit/ev
 Nächster Schritt: JS-001g `assets/media.js` vollständig lesen, seine Klassen-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige S20–S32-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 S32 in `55ffd1e` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.
+
+## S33 – Media-Runtime-Reconnect (22.09.2026)
+
+JS-001g: je vier Lifecycle-Beobachtungen an vollständigem Original-DeferredMedia und ProductModel PASS. DeferredMedia pausiert initial bei `media:started-playing` und `dialog:close`; nach Disconnect erwartungsgemäß nicht, nach Reconnect derselben Instanz weiterhin nicht, frische Instanz wieder korrekt. ProductModel registriert initial Pointerdown/Click und pausiert bei einem Tap; nach Disconnect/Reconnect bleiben die Listener aus, frische Instanz funktioniert. Beide Ursachen sind einmal erzeugte und nach Abort wiederverwendete Controller.
+
+`media.js` wird global eingebunden. `product-media.liquid` erzeugt ProductModel für Modelle und DeferredMedia für Video/externe Videos; das allgemeine `video.liquid` erzeugt ebenfalls DeferredMedia. Alle acht Produkttemplates stellen die Galerie bereit, doch aktuelle Produktzuweisungen zu Video/3D und Livegleichheit sind nicht belegt. TP-016 erweitert, keine neue Issue-ID; 17 Issues unverändert.
+
+Script `audit/scripts/reproduce-media-runtime-reconnect.mjs`; Evidence `audit/evidence/media-runtime-reconnect-2026-09-22.json`. Erster Lauf stoppte vor Beobachtung an fehlendem `querySelector` im neutralen Buttonadapter; API ergänzt, danach Syntax/Diagnose PASS. Originalklassen/-events, native EventTarget/AbortController; DOM, Video, ModelViewerUI adaptiert. Route TASK-54DABA996853 B/STATIC, kein Executor.
+
+Nächster Schritt: JS-001h `assets/layered-slideshow.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.

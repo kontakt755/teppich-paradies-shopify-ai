@@ -585,3 +585,11 @@ Vier Originalcode-Beobachtungen bestätigen den einmaligen Controller in `assets
 Priorität P3 bleibt. Statische Template-Reichweite ist belegt, ein echter Browser-Reconnect derselben Instanz sowie Live-Theme-Gleichheit sind offen. Risiko: nach DOM-Reinsert bleibt die Galerie bei Variantenwechsel veraltet und synchronisiert die Zoomauswahl nicht mehr; eine falsche Bestellung ist nicht direkt belegt.
 
 Implementation-Brief-Ergänzung: Controller pro Connect erneuern und beide Listener je Zyklus genau einmal registrieren. Akzeptanz: VariantUpdate und ZoomMediaSelected reagieren initial/reconnectet je einmal, getrennt null; Galerieersetzung, Slideshow, ZoomDialog, VariantPicker, Featured Product und Quick-add regressionsprüfen. FILE CONFLICT mit Varianten-/Morph-/Quick-add-Lifecycle; Aufwand S. Pack NOT READY, Phase 1/2 ohne Reparatur.
+
+### S33 – TP-016 erweitert: DeferredMedia und ProductModel
+
+Je vier Originalcode-Beobachtungen bestätigen zwei einmalige Controller in `assets/media.js`. DeferredMedia verliert nach Reconnect die globalen Listener für MediaStartedPlaying und DialogClose. ProductModel verliert zusätzlich Pointerdown/Click am Model Viewer; frische Instanzen funktionieren jeweils. Das Script wird global geladen, und Produktmedien sowie das allgemeine Video-Snippet können die Elemente erzeugen.
+
+Priorität P3 bleibt. Aktuelle Video-/3D-Produktzuweisungen, realer Reconnect und Livegleichheit sind offen. Risiko: mehrere Medien spielen parallel oder nach Dialogschluss weiter; ein reconnectetes 3D-Modell reagiert nicht mehr mit der vorgesehenen Tap-Pause. Kaufdaten werden nicht verändert.
+
+Implementation-Brief-Ergänzung: beide Controller pro Connect erneuern, globale Pause- und Model-Pointer-Listener je Zyklus genau einmal binden. Getrennt müssen sie inaktiv sein. Video, YouTube/Vimeo, natives Autoplay, 3D-Viewer, Galerie/Zoom/Dialog und gegenseitiges Pausieren regressionsprüfen. FILE CONFLICT mit MediaGallery/Slideshow/Dialog und TP-016; Aufwand S–M. Pack NOT READY, Phase 1/2 ohne Reparatur.

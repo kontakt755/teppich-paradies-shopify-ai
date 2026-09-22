@@ -81,3 +81,5 @@ S30: TP-016 umfasst zusätzlich den in allen acht lokalen Produkttemplates aktiv
 S31: TP-016 umfasst zusätzlich PricePerItem; sechs Templates mit aktivem Mengenblock, tatsächliche Staffelpreisprodukte offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
 
 S32: TP-016 umfasst zusätzlich MediaGallery; alle acht Produkttemplates enthalten den aktiven Block, tatsächlicher Browser-Reconnect bleibt offen. Gemeinsames Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Varianten-/Morph-/Quick-add-Pfade. Ready=2, Done/QA=0; keine Umsetzung.
+
+S33: TP-016 umfasst zusätzlich DeferredMedia/ProductModel; globale Quellreichweite belegt, tatsächliche Video-/3D-Katalog- und Browserreichweite offen. Lifecyclepaket bleibt bis Runtime-Abgrenzung/Phase 2 NOT READY; FILE CONFLICT Galerie-/Slideshow-/Dialogpfade. Ready=2, Done/QA=0; keine Umsetzung.

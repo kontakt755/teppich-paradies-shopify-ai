@@ -163,3 +163,7 @@ PricePerItem verbindet ProductForm-Menge, Cartmenge und Shopify-Staffelpreise. S
 ## S32 – MediaGallery
 
 MediaGallery verbindet section-/dialoggebundene Variantenupdates mit dem Ersetzen der Galerie und ZoomDialog-Auswahl mit der Slideshow. Der einmalige Controller fällt nach Reconnect aus. Alle acht Produkttemplates führen den Galerieblock; die Komponente gehört zum gemeinsamen TP-016-Lifecyclebereich. Tatsächliche DOM-Reconnect-Ursache und Browserreichweite bleiben offen.
+
+## S33 – DeferredMedia / ProductModel
+
+Das global geladene `media.js` koordiniert Video-/3D-Wiedergabe über dokumentweite MediaStartedPlaying- und DialogClose-Ereignisse sowie ModelViewer-Pointerevents. Die einmaligen Controller beider Klassen fallen nach Reconnect aus. Bestandteil des gemeinsamen TP-016-Lifecyclebereichs; reale Katalogmedien und Browser-Reconnect bleiben offen.
