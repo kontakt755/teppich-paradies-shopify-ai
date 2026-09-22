@@ -452,3 +452,5 @@ Bereits in S08–S26 geprüfte Kernquellen sind im Report markiert, damit sie ni
 Script `audit/scripts/audit-js-runtime-inventory.mjs`; Evidence `audit/evidence/js-runtime-inventory-2026-09-22.json`. Erster Lauf stoppte an einer zu groben Controller-Gesamtzählung, die den erneuerten Fetch-Controller mit dem einmaligen Event-Controller vermischte. Feldbezogene Erkennung ergänzt; danach Syntax/Inventar PASS. Route TASK-6E453FC0AD72 B/STATIC, kein Executor, kein Browser/Netzwerk.
 
 Nächster Schritt: JS-001b vollständigen Original-QuickAddComponent-Lifecycle Connect→Disconnect→Reconnect für CartUpdate/VariantSelected lokal ausführen. Modal-/Morphprüfung S26 nicht wiederholen.
+
+S27 in `2242374` tatsächlich gesichert. Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
