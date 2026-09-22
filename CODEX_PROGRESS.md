@@ -34,6 +34,6 @@ JS-001d: `sticky-add-to-cart.js` vollständig lesen und Lifecycle ausführen. Qu
 
 ## Letzter erfolgreicher Git-Commit
 
-e901259 – S28-Sicherung. S29-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+0e710dd – audit: TP-016 um Quick-Add-Dialog erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

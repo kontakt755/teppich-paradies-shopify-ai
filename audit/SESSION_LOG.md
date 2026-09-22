@@ -476,3 +476,5 @@ Ursachen: Der einmal erzeugte `#abortController` wird beim Disconnect abgebroche
 Script `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`; Evidence `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Dialog-/DOM-/iOS-Layout adaptiert. Erster Lauf erwartete fälschlich eine Verdopplung identischer Listener; anhand des echten EventTarget-Verhaltens auf einen Aufruf korrigiert, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-DB4E130DA403 B/STATIC, kein Executor.
 
 Nächster Schritt: JS-001d `sticky-add-to-cart.js` als kaufnahen ungeprüften Runtime-Kandidaten lesen und Lifecycle ausführen. Quick-add-/Variantenfälle nicht wiederholen.
+
+S29 in `0e710dd` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.

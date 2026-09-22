@@ -62,4 +62,4 @@ S27 in `2242374` tatsächlich gesichert. 96 Dateien/37 heuristische Kandidaten; 
 
 S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
 
-S29 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier QuickAddDialog-Lifecycle-Beobachtungen PASS; TP-016 erweitert. Weiter JS-001d, Status WORKING.
+S29 in `0e710dd` tatsächlich gesichert. Vier QuickAddDialog-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
