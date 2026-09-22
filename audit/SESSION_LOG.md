@@ -355,3 +355,5 @@ S19 / CALC-001a.2 lokal abgeschlossen: vier aufeinanderfolgende Wechsel mit vier
 Evidence: `audit/evidence/roll-state-submit-2026-09-22.json`; Script `audit/scripts/reproduce-roll-state-submit.mjs`. Baseline aus Original-Liquid, synthetische Zusatzfarben; Darstellungs-/Service-/Einfasschip-Helfer adaptiert. Erster Lauf PASS, nach ergänzter Gesamtpreis-/Breitenassertion zweiter Lauf PASS. Keine alten Diagnosen ausgeführt. Route TASK-67D370DD36E8 B/STATIC; kein Executor.
 
 Nächster Schritt: VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung.
+
+S19 in `9324ec8` tatsächlich gesichert. Vier Übergänge/Submits, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a; Status WORKING.
