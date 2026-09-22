@@ -54,14 +54,11 @@
         assign tp_crop = true
       endif
     endif
-    if tp_crop
-      assign tp_media_url = media.preview_image | image_url: width: 3840, height: 3840, crop: 'center'
-    else
-      assign tp_media_url = media.preview_image | image_url: width: 3840
-    endif
   %}
+  {%- if tp_crop -%}
   {{
-    tp_media_url
+    media.preview_image
+    | image_url: width: 3840, height: 3840, crop: 'center'
     | image_tag:
       widths: widths,
       alt: media.alt,
@@ -74,6 +71,23 @@
       style: focal_point_style,
       ref: image_ref
   }}
+  {%- else -%}
+  {{
+    media.preview_image
+    | image_url: width: 3840
+    | image_tag:
+      widths: widths,
+      alt: media.alt,
+      sizes: sizes,
+      loading: loading,
+      class: 'product-media__image',
+      ref: ref_image_to_transition,
+      data_max_resolution: high_res_url,
+      fetchpriority: fetch_priority,
+      style: focal_point_style,
+      ref: image_ref
+  }}
+  {%- endif -%}
 
   {% unless preview_image_only %}
     {%- case media.media_type -%}

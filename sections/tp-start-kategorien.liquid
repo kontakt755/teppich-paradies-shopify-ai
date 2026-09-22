@@ -57,13 +57,12 @@
               die mobile Karte bei DPR 1,75 statt auf 600 zu springen.
             {%- endcomment -%}
             {%- if img.aspect_ratio < 0.8 -%}
-              {%- assign kat_url = img | image_url: width: 800, height: 1000, crop: 'center' -%}
+              {{ img | image_url: width: 800, height: 1000, crop: 'center' | image_tag: loading: 'lazy', widths: '300, 400, 500, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
             {%- elsif img.aspect_ratio > 0.87 -%}
-              {%- assign kat_url = img | image_url: width: 800, height: 920, crop: 'center' -%}
+              {{ img | image_url: width: 800, height: 920, crop: 'center' | image_tag: loading: 'lazy', widths: '300, 400, 500, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
             {%- else -%}
-              {%- assign kat_url = img | image_url: width: 800 -%}
+              {{ img | image_url: width: 800 | image_tag: loading: 'lazy', widths: '300, 400, 500, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
             {%- endif -%}
-            {{ kat_url | image_tag: loading: 'lazy', widths: '300, 400, 500, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
           {%- else -%}
             {{ 'collection-1' | placeholder_svg_tag: 'tp-kat__img' }}
           {%- endif -%}
