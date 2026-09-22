@@ -7,7 +7,7 @@ Prioritaet: P0 blockiert das Ziel · P1 muss vor Ads-Start · P2 sollte · P3 ka
 | OPS-001 | P0 | Shopify | Kein Codepfad liest Bestellungen; kein Token mit `read_orders` ausserhalb GitHub Actions; #34 wartet auf `shpat_` | `08-SHOPIFY-INTEGRATION.md` | Auftragsband unmoeglich |
 | OPS-002 | P0 | Daten | Beschaffungsdaten in drei Generationen, keine eindeutige Beschaffungs-ID; `grosshandel.sku` ist Freitext mit mehreren SKUs | live-Stichprobe 2026-09-22 | Kein automatisches Erkennen von Lieferant/Art.-Nr. |
 | OPS-003 | P1 | Daten | `lieferant.*` bei Vinyl-Rollenware leer, bei Fliesen nur eigene SKU; Rollenware-Teppich 52 Produkte gefuellt | live-Stichprobe | Ampel waere fuer > 80 % rot |
-| OPS-004 | P1 | Fulfillment | Interne Bestellmail (Grosshaendler-ID, Masspruefung) fertig, aber nicht im Admin eingesetzt | `domains/shopify/benachrichtigungen/README.md:85-96` | Sicherheitsnetz fehlt |
+| OPS-004 | P1 | Fulfillment | Interne Bestellmail im Admin ist eine **aeltere Fassung** (13.517 Zeichen) als das Repository (17.102 Zeichen, Commit 0c8faf4); Aktualisierung per Browser-Automation am 2026-09-22 vom Sicherheits-Klassifikator abgelehnt | Admin-Editor per CodeMirror-State gelesen | Masspruefung im Admin unvollstaendig; Inhaber setzt Block ein |
 | OPS-005 | P1 | Ads | 225/225 Feedprodukte `awaiting_review`, 0 GTIN, Versandrichtlinie 404, keine Conversion-Aktionen | `11-ADS-READINESS.md` | Kein Shopping/PMax moeglich |
 | OPS-006 | P1 | Beratung | Kein Beratungs-/Rueckruf-Feld im Cart/Checkout | `snippets/cart-summary.liquid:41-92` | §45 nicht erfuellbar |
 | OPS-007 | P1 | Rollen | Kein Mitarbeiter-Rechtemodell; lokaler Server ohne Login | `docs/control-center/ARCHITEKTUR.md:89-93` | Rollen-UI §9 nicht moeglich |

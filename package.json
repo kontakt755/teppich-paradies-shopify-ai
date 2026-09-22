@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test",
+    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test",
     "qa": "node qa/run-qa.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
@@ -64,7 +64,8 @@
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
     "task": "node scripts/task.mjs",
-    "dashboard:brief": "node scripts/dashboard-brief.mjs"
+    "dashboard:brief": "node scripts/dashboard-brief.mjs",
+    "operations:test": "node --test operations/tests/*.test.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

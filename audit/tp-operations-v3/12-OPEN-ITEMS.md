@@ -3,10 +3,10 @@
 ## Inhaberentscheidungen (blockieren)
 
 1. **Token #34 (D3):** `shpat_` mit Order-/Fulfillment-Scopes fuer den Betriebs-Mac. Ohne ihn kein Auftragsband.
-2. **Metafeld-Schema `einkauf.*` (D2):** Keys sind unveraenderlich – Schema aus `02-DATA-MODEL.md` §2 vor dem Anlegen bestaetigen.
+2. ~~Metafeld-Schema `einkauf.*` (D2)~~ – angelegt am 2026-09-22 unter der Freigabe „uneingeschraenkt“; Registry `domains/shopify/einkauf-metafelder.json`.
 3. **Beratungspflichtfeld im Warenkorb (D9):** sichtbare Theme-Aenderung; Text und Pflichtcharakter freigeben.
 4. **Rollen (D11):** Benutzerliste und wer welche Rolle hat.
-5. **Bestellmail im Admin einsetzen** und **Versandrichtlinie veroeffentlichen** (nur Inhaber).
+5. **Bestellmail im Admin auf Repo-Stand bringen** (Admin enthaelt aeltere Fassung; Automation vom Klassifikator abgelehnt) und **Versandrichtlinie veroeffentlichen** (nur Inhaber).
 6. **Masterprompt ab §60:** Einkaufsstatus-Werte nach TEIL, Wareneingang, Versand, Probleme, Reklamationen, Lager, Auswertungen, Einstellungen – der Prompt ist abgeschnitten. Bitte nachreichen.
 
 ## Fachliche Klaerungen (Lieferanten, nur lokal unter `~/teppich-paradies-analyse/`)

@@ -1,0 +1,50 @@
+{
+  "_comment": "Beschaffungs-Datenmodell Operations V3. Angelegt 2026-09-22 per Admin API (Shopify-MCP). Keys sind unveraenderlich. Storefront-Zugriff ueberall NONE. Lieferanten nur als Pseudonyme A-D. Quelle: audit/tp-operations-v3/02-DATA-MODEL.md",
+  "angelegtAm": "2026-09-22",
+  "metaobjekte": {
+    "tp_lieferant": {
+      "displayNameKey": "kuerzel",
+      "felder": ["kuerzel", "bestellweg(choices: mail|portal|pdf|csv|api|ungeklaert)", "bestell_mail", "portal_url(url)", "direktversand(choices: ja|nein|ungeklaert)", "neutralversand_geprueft(multi_line)", "kleinmenge_paketware", "kleinmenge_rollenware", "lfm_raster(number_decimal)", "musterversand", "hinweis(multi_line)"],
+      "eintraege": ["lieferant-a", "lieferant-b"]
+    },
+    "tp_einkauf": {
+      "displayNameKey": "einkaufs_id",
+      "felder": ["einkaufs_id", "lieferant(metaobject_reference tp_lieferant)", "lieferziel", "route", "status(choices: OFFEN|FREIGEGEBEN|BESTELLT|BESTAETIGT|TEIL_GELIEFERT|GELIEFERT|STORNIERT|PROBLEM)", "positionen(json)", "direktversand_adresse(multi_line)", "bemerkung(multi_line)", "gesendet_am(date_time)", "bestaetigt_am(date_time)", "lieferanten_auftragsnummer", "tracking"]
+    }
+  },
+  "metafelder": {
+    "PRODUCTVARIANT einkauf": {
+      "procurement_id": "single_line_text_field, uniqueValues, Format TP-<KUERZEL>-<ARTNR>-<FARBNR>-<BREITEcm>",
+      "lieferant": "metaobject_reference tp_lieferant",
+      "hersteller": "single_line_text_field",
+      "lieferant_produktname": "single_line_text_field",
+      "lieferant_kollektion": "single_line_text_field",
+      "artikelnummer": "single_line_text_field",
+      "farbname": "single_line_text_field",
+      "farbnummer": "single_line_text_field",
+      "bestelleinheit": "choices m2|lfm|stueck|paket|rolle|karton|set|paar|sondermass",
+      "umrechnung": "json",
+      "lieferant_url": "url",
+      "muster_variante": "variant_reference",
+      "quellvariante": "variant_reference",
+      "muster_quelle": "choices MUSTERLAGER|AUS_ROLLE_SCHNEIDEN|LIEFERANT|NICHT_VERFUEGBAR",
+      "route": "choices OWN_STOCK|SUPPLIER_TO_TP|SUPPLIER_DIRECT|SUPPLIER_TO_SITE|SAMPLE_STOCK|SAMPLE_SUPPLIER|SAMPLE_CUT|NO_PROCUREMENT",
+      "route_fallback": "choices OWN_STOCK|SUPPLIER_TO_TP|SUPPLIER_TO_SITE|NO_PROCUREMENT",
+      "neutralversand": "choices VERIFIED|UNKNOWN|NOT_ALLOWED",
+      "lagerplatz": "single_line_text_field",
+      "geprueft_am": "date",
+      "geprueft_von": "single_line_text_field"
+    },
+    "ORDER ops": {
+      "status": "choices NEU|PRUEFUNG|BERATUNG_OFFEN|MASS_PRUEFUNG_OFFEN|FREIGEGEBEN|EINKAUF|WARENEINGANG|VERSAND|ABGESCHLOSSEN|SPAETER|PROBLEM (adminFilterable)",
+      "freigabe_von": "single_line_text_field",
+      "freigabe_am": "date_time",
+      "beratung": "json {gewuenscht, telefon, zeitfenster, anliegen, erledigt_am, von}",
+      "gruppen": "json [{route, lieferant, einkaufs_id, positionen[]}]",
+      "problem": "json {grund, seit, von}",
+      "spaeter_bis": "date",
+      "masspruefung": "json"
+    }
+  },
+  "unveraendertBelassen": ["grosshandel.sku", "grosshandel.externe_id", "lieferant.*", "custom.*", "service.*"]
+}
