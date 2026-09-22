@@ -19,7 +19,7 @@ Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
 | TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
 | TP-015 | P2 | Farbwahl ohne bisherige Breitenkombination lässt alte Variante aktiv | BESTÄTIGT lokal; heutige Produktreichweite offen | Offen |
-| TP-016 | P3 | Farbkomponenten und Produktformular verlieren nach Reconnect Ereignislistener | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
+| TP-016 | P3 | Varianten-/Farbkomponenten behandeln Reconnect fehlerhaft | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
 | TP-017 | P2 | Variantenrequestfehler hält Kaufklicks fest und gibt sie später gesammelt frei | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
@@ -529,3 +529,11 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 **Implementation-Brief-Ergänzung:** Priorität P3 unverändert, lokal BESTÄTIGT unter derselben Reconnect-Bedingung. Datei assets/product-form.js:193–222 (Controller/Lifecycle), #onVariantUpdate:660 ff. URL/Template, betroffene Geräte und Browser weiterhin unbestätigt. Reproduktion Connect→Update ID2→Disconnect→Connect→Update ID4 lässt Formular-ID2 bestehen; neue Instanz übernimmt ID5. Erwartet: wiederverbundene Instanz verarbeitet passende Variantenupdates wieder. Risiko: veraltete Formular-ID/fehlende Event-Synchronisierung; falsche Livebestellung nicht nachgewiesen. Root Cause: abort() beendet Listener dauerhaft, connectedCallback verwendet dasselbe Signal erneut.
 
 Empfohlene minimale Logik: Controller pro Verbindungszyklus erneuern und alte Listener sauber beenden; keine Produkt-/Preis-/Queue-Neufassung. Abhängigkeiten/FILE CONFLICT: TP-017 ebenfalls product-form.js; sequenziell zusammen planen. Akzeptanz: Erstverbindung, getrennt, wiederverbunden und frische Instanz; mehrfacher Reconnect ohne Doppelereignisse, passende/fremde Produkt-ID und Cartupdates prüfen. Regression: Variantenfehler-/Queuevertrag TP-017 sowie Mengenregeln. Aufwand S für Controllerlogik, Browser-/Morphreichweite separat; Rollback kleine Quelländerung, keine Datenmigration. Pack NOT READY bis Aufruferabgrenzung. Phase 1/2 ohne Reparatur.
+
+### S25 – TP-016 erweitert: VariantPicker
+
+Vier lokale Beobachtungen am vollständigen Original-VariantPicker bestätigen eine weitere Reconnect-Ausprägung. `connectedCallback()` registriert bei jeder Verbindung `this.variantChanged.bind(this)` als neue Listenerfunktion; `disconnectedCallback()` entfernt sie nicht und bricht `#abortController` nicht ab. Nach Connect→Disconnect→Connect erzeugt ein Change zwei `variant:selected`-Events und zwei Requests; Request zwei bricht Request eins ab. Disconnect allein lässt einen laufenden Request aktiv. Eine frische Instanz verarbeitet einmal.
+
+Priorität P3 und Diagnosegrenze bleiben unverändert: lokal bestätigt, reale Morph-/Browser-/Live-Reichweite offen. Betroffene Datei `assets/variant-picker.js`, Lifecycle um Zeilen 29–52 sowie Requestcontroller. Risiko: doppelte Auswahlsignale, unnötige/abgebrochene Requests und späte Antwort einer getrennten Instanz. Ein falscher Kauf wurde daraus nicht belegt. Die beim Reconnect ebenfalls anwachsenden Radio-/Indexarrays sind nur per Quellprüfung sichtbar und nicht als eigener Laufzeitfehler bestätigt.
+
+Implementation-Brief-Ergänzung: stabile Listenerreferenz oder lifecyclegebundene Signalverwaltung verwenden; beim Disconnect ausschließlich den Request dieser Instanz abbrechen. Mehrfacher Reconnect darf genau ein Event/einen Request erzeugen, Disconnect darf keine spätere Antwort anwenden. Erfolgs-, Abort- und TP-017-Fehlerpfad regressionsprüfen. FILE CONFLICT mit `product-form.js`, `events.js` und `tp-farbe.js`; keine globale Event-/Morph-Neufassung. Aufwand S–M, Rollback als kleine JS-Änderung; Pack bis Aufruferabgrenzung NOT READY. Phase 1/2 ohne Reparatur.

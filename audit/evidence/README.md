@@ -167,3 +167,7 @@ Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scrip
 Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor.
 
 Originalevents und native EventTarget/AbortController; Component-Basisklasse/Refs adaptiert, Lifecycle manuell. Kein tatsächlicher DOM-Morph, Submit oder Browserlauf. component.js erneuert nur eigene Refs/Observer, nicht privaten Formularcontroller. morph.js:523 verschiebt passende alte Knoten mit insertBefore; konkrete betroffene Produktstruktur offen. quick-add.js:228–237 ordnet geparste Quellknoten vor dem Morph um und beweist keinen Reconnect einer bereits verbundenen Instanz.
+
+## S25 – VariantPicker-Reconnect
+
+`audit/scripts/reproduce-picker-reconnect.mjs` führt vier neue Lifecycle-Beobachtungen an Original-VariantPicker/-Events aus. `audit/evidence/picker-reconnect-2026-09-22.json` belegt doppelten Listener/Request nach Reconnect und den beim Disconnect nicht abgebrochenen Request. DOM/Morph adaptiert; keine Live- oder Browseraussage.

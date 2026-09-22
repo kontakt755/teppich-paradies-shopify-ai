@@ -216,3 +216,9 @@ Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-
 CORE/SHARED FILE, HIGH RISK: product-form.js gemeinsam mit TP-017 koordinieren; kein pauschaler Morphumbau.
 
 Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+## S25 – VariantPicker-Lifecycle
+
+`variant-picker.js` ist CORE/SHARED und HIGH RISK: eigener gebundener Change-Listener wird nicht entfernt; laufender Request wird beim Disconnect nicht abgebrochen. Reconnect erzeugt doppelte Pickerereignisse und Requests. FILE CONFLICT mit TP-017 (`product-form.js`/Events) und TP-016 (`tp-farbe.js`, `product-form.js`). Lifecycle-Fixes gemeinsam sequenziell planen; keinen globalen Morphumbau ableiten.
+
+Nächster Schritt: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen.

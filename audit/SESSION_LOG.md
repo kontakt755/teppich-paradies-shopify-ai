@@ -418,3 +418,13 @@ CORE/SHARED FILE, HIGH RISK: product-form.js gemeinsam mit TP-017 koordinieren; 
 Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
+
+## S25 – VariantPicker-Reconnect (22.09.2026)
+
+S25 / VAR-001a.2c.2: vier Lifecycle-Beobachtungen am vollständigen Original-VariantPicker PASS. Erstverbindung verarbeitet einen Change einmal. Nach Disconnect/Connect derselben Instanz bleiben zwei gebundene Change-Listener aktiv: ein Change sendet zweimal `variant:selected` und startet zwei Requests; der zweite bricht den ersten ab. Disconnect beendet einen bereits laufenden Request nicht. Eine frische Instanz verarbeitet genau einmal. TP-016 um den nativen Picker erweitert, keine neue Issue-ID.
+
+Script `audit/scripts/reproduce-picker-reconnect.mjs`; Evidence `audit/evidence/picker-reconnect-2026-09-22.json`. Originalklasse und Originalevents, native EventTarget/AbortController; DOM/Refs, Optionsupdate und Antwort-Morph adaptiert. Erster Lauf scheiterte ausschließlich an fehlenden neutralen Component-Lifecycle-Methoden im Adapter; ergänzt, danach Syntax/Diagnose PASS. Route TASK-91B1228B1311 B/STATIC, kein Executor.
+
+Grenze: kein echter DOM-Morph, keine Response-Fertigstellung und keine Browser-/Liveanfrage. Die Quellarrays `#radios`/`#checkedIndices` werden beim Reconnect nicht geleert; mögliche Darstellungsfolge nicht separat behauptet. Reale Morph-/Quick-add-Reichweite bleibt offen.
+
+Nächster Schritt: VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. Picker-/Formular-Reconnectfälle S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.

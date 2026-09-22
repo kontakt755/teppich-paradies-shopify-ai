@@ -237,3 +237,11 @@ Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-
 CORE/SHARED FILE, HIGH RISK: product-form.js gemeinsam mit TP-017 koordinieren; kein pauschaler Morphumbau.
 
 Nächster Schritt: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+## S25 – VariantPicker-Reconnect
+
+Vier neue Lifecycle-Beobachtungen PASS: Erstverbindung und frische Instanz je ein Change/ein Request; Reconnect derselben Instanz zwei Events/zwei Requests mit Abbruch des ersten; Disconnect allein bricht laufenden Request nicht ab. Original-VariantPicker und Events, Lifecycle manuell, DOM/Morph adaptiert. Kein alter Antwort-/Formulartest wiederholt.
+
+Evidence: `audit/evidence/picker-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-picker-reconnect.mjs`. Syntax/Diagnose PASS nach Korrektur des neutralen Component-Adapters. Keine Browser-/Liveprüfung.
+
+Nächster Schritt: VAR-001a.2c.3 Morph-/Quick-add-Aufrufer und Mehrproduktzuordnung H-016.

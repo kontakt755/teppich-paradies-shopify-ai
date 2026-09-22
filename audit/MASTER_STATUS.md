@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: Varianten-/Farbpickervertrag, Phase 1.
-Letzte abgeschlossene Aufgabe: S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
-Nächste Aufgabe: VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+Letzte abgeschlossene Aufgabe: S25 / VAR-001a.2c.2: vier Lifecycle-Beobachtungen am vollständigen Original-VariantPicker PASS. Nach Reconnect verarbeitet dieselbe Instanz einen Change doppelt und startet zwei Requests; der zweite bricht den ersten ab. Ein beim Disconnect laufender Request wird nicht abgebrochen. Frische Instanz verarbeitet genau einmal. TP-016 um den Picker erweitert, keine neue Issue-ID; reale Morph-/Live-Reichweite offen.
+Nächste Aufgabe: VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. Picker-/Formular-Reconnectfälle S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -53,3 +53,5 @@ S22 tatsächlich in `f0020fe` gesichert. Sechs Fälle, Syntax-/Integritäts-/Sec
 S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c, keine Shopänderung, Status WORKING.
 
 S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c.2. Keine Shopänderung, Status WORKING.
+
+S25 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier Picker-Lifecycle-Beobachtungen PASS; keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.

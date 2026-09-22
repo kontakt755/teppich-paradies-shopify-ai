@@ -6,34 +6,34 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S24 / VAR-001a.2c.1 lokal abgeschlossen, grob 28 %.
+Phase 1, S25 / VAR-001a.2c.2 lokal abgeschlossen, grob 28 %.
 
 ## Erledigte Aufgaben
 
-S24 / VAR-001a.2c.1: vier Lifecycle-Beobachtungen am vollständigen Original-ProductFormComponent PASS. Erstverbindung aktualisiert ID, Disconnect ignoriert Update wie erwartet; dieselbe Instanz bleibt nach Reconnect auf alter ID, frische Instanz verarbeitet Update korrekt. Wiederverwendeter abgebrochener Controller bestätigt dieselbe Fehlerklasse wie TP-016; dessen Scope erweitert, keine neue Issue-ID. Sechs aktuelle Quellhashes gespeichert, keine historische Livegleichheit daraus behauptet.
+S25: vier Original-VariantPicker-Lifecycle-Beobachtungen PASS. Reconnect derselben Instanz verdoppelt Change-Events/Requests; Disconnect bricht laufenden Request nicht ab. TP-016 erweitert, keine neue Issue-ID. Reale Morph-/Live-Reichweite offen.
 
 ## Offene Aufgaben
 
-VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-Auditdokumentation, Formular-Reconnect-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
+Auditdokumentation, Picker-Reconnect-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen; fremde Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Script audit/scripts/reproduce-form-reconnect.mjs; Evidence audit/evidence/form-reconnect-2026-09-22.json. Syntax und Erstlauf PASS. Route TASK-B005090B4D3F B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck PASS.
+Picker-Lifecycle-Syntax und Diagnose PASS nach neutraler Component-Adapterkorrektur; vier Beobachtungen. Route TASK-91B1228B1311 B/STATIC, kein Executor. JSON-/Dokumentintegrität, Secret-Scan und git diff --check PASS.
 
 ## Bekannte Fehler
 
-17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 um ProductForm erweitert, Live-Reichweite offen. Browserberechtigung S13 weiterhin blockiert.
+17 Issues unverändert: P0=0/P1=0/P2=8/P3=9/P4=0. TP-016 umfasst Farbkomponenten, ProductForm und VariantPicker; Live-Reichweite offen. Browserberechtigung S13 weiterhin blockiert.
 
 ## Naechster konkreter Arbeitsschritt
 
-VAR-001a.2c.2: native VariantPicker-Lifecycle (change-Listener, Radiozustand, Request nach Disconnect) isoliert prüfen; anschließend konkrete Morph-/Mehrproduktzuordnung H-016 abgrenzen. S20–S24 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+VAR-001a.2c.3: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszuordnung H-016 abgrenzen. S21–S25 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
-e381aac – audit: TP-016 um Product-Form-Reconnect erweitern. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
+283ac32 – S24-Sicherung. S25-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
 
 Status: WORKING

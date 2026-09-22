@@ -65,3 +65,5 @@ S22: H-017 neu, kein bestätigtes Issue und kein neues Pack. Picker-/Verbraucher
 S23: TP-017/P2 mit Implementation Brief; Variantenfehlerabschluss/Queue-Kandidat NOT READY bis Lifecycle-/Mehrproduktabgrenzung. FILE CONFLICT variant-picker.js/product-form.js. Ready=2, Done/QA=0; keine Umsetzung.
 
 S24: TP-016 umfasst zusätzlich product-form.js; FILE CONFLICT mit TP-017. Lifecyclepaket weiterhin NOT READY bis Picker-/Morphabgrenzung. Ready=2, Done/QA=0. Keine Umsetzung.
+
+S25: TP-016 umfasst zusätzlich variant-picker.js (doppelter Change-Listener, Request bleibt bei Disconnect aktiv). Gemeinsames Lifecyclepaket weiterhin NOT READY bis Morph-/Mehrprodukt-Aufruferabgrenzung. FILE CONFLICT mit TP-017; Ready=2, Done/QA=0. Keine Umsetzung.
