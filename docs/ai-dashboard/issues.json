@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-22T09:18:29.553Z",
+  "generated_at": "2026-09-22T09:27:40.203Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 121,
+  "count": 122,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-22T09:18:29.553Z",
+    "fetchedAt": "2026-09-22T09:27:40.203Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 458,
+      "title": "Operations V3: Auftrags-, Einkaufs- und Logistiksystem – Phase 1 Analyse abgeschlossen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/458",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-22T09:27:21Z",
+      "updated_at": "2026-09-22T09:27:33Z",
+      "closed_at": null
+    },
+    {
       "number": 456,
       "title": "Shop 2.0 Pre-Launch Masterplan (Audit + Module)",
       "state": "open",
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T08:46:24Z",
-      "updated_at": "2026-09-22T09:15:32Z",
+      "updated_at": "2026-09-22T09:25:45Z",
       "closed_at": null
     },
     {
@@ -717,7 +741,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/322",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
@@ -726,13 +750,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-15T10:26:52Z",
-      "updated_at": "2026-09-22T09:18:12Z",
+      "updated_at": "2026-09-22T09:18:30Z",
       "closed_at": "2026-09-22T09:18:12Z"
     },
     {
