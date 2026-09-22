@@ -100,11 +100,10 @@
   <p class="tp-rwc-service-hint" data-service-hint hidden></p>
 
   {%- comment -%}
-    Kurzanleitung vor dem ersten Schritt: der Konfigurator hat vier Stationen,
-    und wer nur den ersten Schritt sieht, weiss nicht, wie weit es noch geht.
-    Eine Zeile, kein Kasten - der Rechner selbst soll die Aufmerksamkeit haben.
+    Die fruehere Kurzanleitung ("Farbe waehlen -> Mass eingeben -> ...") ist
+    entfallen: die nummerierten Schritte zeigen den Weg selbst (Inhaber
+    2026-09-22, Kaufstrecke kuerzen).
   {%- endcomment -%}
-  <p class="tp-rwc-anleitung" data-rwc-body>Farbe wählen → Maß eingeben → Preis prüfen → bequem liefern lassen.</p>
 
   {%- comment -%}
     Schritt 2 ist die Art: Meterware (volle Rollenbreite) oder Raummass
@@ -207,7 +206,7 @@
           class="tp-rwc-input tp-rwc-input--length"
           inputmode="decimal"
           autocomplete="off"
-          placeholder="z. B. 400"
+          placeholder="z. B. 400 – längste Stelle"
           aria-describedby="tp-rwc-len-echo-{{ tp_rc_id }}"
           data-length-input>
         <span class="tp-rwc-unit" data-mass-unit>cm</span>
@@ -225,8 +224,7 @@
         bei Meterware bekommt der Kunde die volle Rollenbreite.
       {%- endcomment -%}
       <p class="tp-rwc-note tp-rwc-note-mess" data-mess-hint>
-        Messen Sie an der längsten Stelle.
-        <span data-mess-raum hidden>Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
+        <span data-mess-raum hidden>Längste Stelle messen. Für eine saubere Schnittkante schneiden wir 5 cm breiter zu – berechnet wird Ihr angegebenes Maß.</span>
       </p>
       {%- comment -%}
         Issue 162: Preisbeispiel, solange noch keine Laenge eingegeben ist.
@@ -257,6 +255,92 @@
 
   <p class="tp-rwc-note tp-rwc-note-error" data-error-stock hidden></p>
 
+  {%- comment -%}
+    Reihenfolge der Kaufstrecke (Inhaberauftrag 2026-09-21): nach den Massen
+    sofort Preis und Kaufknopf. Visualisierer, Zusatzoptionen, Vertrauenszeile,
+    Lieferhinweis und Beratung folgen darunter - alles bleibt erhalten, nur
+    nichts davon steht mehr zwischen Mass und Kauf. Das JS findet alle Teile
+    ueber data-Attribute, die Reihenfolge im Markup spielt fuer die Rechnung
+    keine Rolle.
+  {%- endcomment -%}
+  <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
+    <div class="tp-rwc-calc-formula">
+      <div class="tp-rwc-calc-step" data-formula-area>– cm × – cm = –</div>
+      {%- comment -%}
+        Aufrundungshinweis steht zwischen Flaeche und Preiszeile, weil genau
+        dort der Sprung passiert. Ohne ihn zeigte die Preiszeile die
+        ungerundete Flaeche mal dem Quadratmeterpreis, nannte aber die
+        gerundete Summe - die Gleichung ging fuer den Kunden nicht auf.
+      {%- endcomment -%}
+      <div class="tp-rwc-calc-round" data-formula-round hidden></div>
+      <div class="tp-rwc-calc-step" data-formula-price>–</div>
+      <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
+    </div>
+    {%- comment -%}
+      Zusammenfassung direkt ueber dem Preis: was ist Breite, was Laenge, in
+      welcher Einheit, welche Flaeche, welcher Preis. Die Werte kommen aus
+      derselben Rechnung wie die Summe (calculate) - hier wird nichts neu
+      gerechnet.
+    {%- endcomment -%}
+    <div class="tp-rwc-stueck" data-stueck hidden>
+      <p class="tp-rwc-stueck-mass" data-stueck-mass></p>
+      <p class="tp-rwc-stueck-preis" data-stueck-preis></p>
+    </div>
+    {%- comment -%}
+      Fussleiste und Haftunterlage stehen unter dem Kaufknopf. Der Verweis
+      erscheint nur, wenn der Rechner sie fuer diese Farbe anbietet
+      (updateExtras), und verschwindet, sobald eine gewaehlt ist.
+    {%- endcomment -%}
+    <a class="tp-rwc-calc-extras-link" href="#tp-rwc-extras-{{ tp_rc_id }}" data-extras-link hidden>+ Fußleiste oder Haftunterlage dazu? Weiter unten wählen</a>
+    <div class="tp-rwc-calc-total">
+      <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
+      <span class="tp-rwc-calc-total-value" data-total>–</span>
+    </div>
+  </div>
+
+  {%- comment -%}
+    Der Button bleibt bis zur ersten gueltigen Laenge komplett verborgen. Ein
+    ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
+    Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
+  {%- endcomment -%}
+  {%- comment -%}
+    Vertrauenszeile direkt am Kaufbutton - die drei Punkte, die beim Zuschnitt
+    die Kaufangst nehmen: vorher anfassen, keine Versandkosten, jemand am
+    Telefon. Die 50-Euro-Schwelle steht genauso in Topbar, Warenkorb und
+    tp-service-links; sie darf nur gemeinsam mit denen geaendert werden.
+  {%- endcomment -%}
+
+  {%- comment -%}
+    Lieferart am Kaufbutton. Rollenware geht per Spedition - das ist die Frage,
+    die sonst erst im Warenkorb auftaucht ("wie kommt eine 4 m breite Rolle zu
+    mir?"). Eine Lieferzeit in Tagen steht hier bewusst NICHT: die pflegt
+    tp-service-links als Block-Einstellung, und eine zweite, hart verdrahtete
+    Zahl im Theme waere genau die Sorte Angabe, die still veraltet.
+
+    Verlegeservice und Aufmass bleiben in der Section product_service_rolle
+    unter dem Produkt (PR #278 hat sie bewusst dorthin verlegt, um den oberen
+    Kaufbereich schlank zu halten). Hier steht nur der Verweis darauf - das
+    haelt den Kaufbereich kompakt und beantwortet die Frage trotzdem.
+  {%- endcomment -%}
+
+
+  {%- comment -%}
+    Der Button bleibt sichtbar und anklickbar, auch solange Breite oder Laenge
+    fehlen. Vorher verschwand er (cta.hidden = cta.disabled) - der Kunde sah an
+    der Stelle nichts und hatte keinen Anhaltspunkt, was noch fehlt. Ein echtes
+    disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
+    dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
+  {%- endcomment -%}
+  <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>Breite und Länge eingeben</button>
+  <p class="tp-rwc-note tp-rwc-note-error tp-rwc-cta-hint" data-cta-hint role="alert" hidden data-rwc-body></p>
+  <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
+
+  <ul class="tp-rwc-trust" data-rwc-body>
+    <li>Bis zu 3 Muster kostenlos</li>
+    <li>Versandkostenfrei in Deutschland ab 50 €</li>
+    <li>Persönliche Fachberatung</li>
+  </ul>
+
   <figure class="tp-rwc-draw" aria-hidden="true" data-draw hidden data-rwc-body>
     <svg class="tp-rwc-rolle" viewBox="0 0 340 214" data-rolle-svg hidden></svg>
     <div class="tp-rwc-stage" data-stage>
@@ -267,7 +351,10 @@
     </div>
   </figure>
 
+
+
   {%- if tp_rc_leiste != blank -%}
+    <div id="tp-rwc-extras-{{ tp_rc_id }}"></div>
     <div class="tp-rwc-field tp-rwc-extra" data-extra="leiste" hidden data-rwc-body>
       {% render 'tp-step-heading', number: 4, label: 'Passende Teppich-Fußleiste' %}
       <label class="tp-rwc-karte">
@@ -310,64 +397,7 @@
     </div>
   {%- endif -%}
 
-  <div class="tp-rwc-calc" aria-live="polite" data-calc hidden data-rwc-body>
-    <div class="tp-rwc-calc-formula">
-      <div class="tp-rwc-calc-step" data-formula-area>– cm × – cm = –</div>
-      {%- comment -%}
-        Aufrundungshinweis steht zwischen Flaeche und Preiszeile, weil genau
-        dort der Sprung passiert. Ohne ihn zeigte die Preiszeile die
-        ungerundete Flaeche mal dem Quadratmeterpreis, nannte aber die
-        gerundete Summe - die Gleichung ging fuer den Kunden nicht auf.
-      {%- endcomment -%}
-      <div class="tp-rwc-calc-round" data-formula-round hidden></div>
-      <div class="tp-rwc-calc-step" data-formula-price>–</div>
-      <div class="tp-rwc-calc-extras" data-formula-extras hidden></div>
-    </div>
-    {%- comment -%}
-      Zusammenfassung direkt ueber dem Preis: was ist Breite, was Laenge, in
-      welcher Einheit, welche Flaeche, welcher Preis. Die Werte kommen aus
-      derselben Rechnung wie die Summe (calculate) - hier wird nichts neu
-      gerechnet.
-    {%- endcomment -%}
-    <div class="tp-rwc-stueck" data-stueck hidden>
-      <p class="tp-rwc-stueck-mass" data-stueck-mass></p>
-      <p class="tp-rwc-stueck-preis" data-stueck-preis></p>
-    </div>
-    <div class="tp-rwc-calc-total">
-      <span class="tp-rwc-calc-total-label">Gesamtpreis</span>
-      <span class="tp-rwc-calc-total-value" data-total>–</span>
-    </div>
-  </div>
 
-  {%- comment -%}
-    Der Button bleibt bis zur ersten gueltigen Laenge komplett verborgen. Ein
-    ausgegrauter "Laenge eingeben"-Button wirkte vorher wie eine defekte
-    Funktion. calculate() blendet ihn ein, sobald Laenge und Variante passen.
-  {%- endcomment -%}
-  {%- comment -%}
-    Vertrauenszeile direkt am Kaufbutton - die drei Punkte, die beim Zuschnitt
-    die Kaufangst nehmen: vorher anfassen, keine Versandkosten, jemand am
-    Telefon. Die 50-Euro-Schwelle steht genauso in Topbar, Warenkorb und
-    tp-service-links; sie darf nur gemeinsam mit denen geaendert werden.
-  {%- endcomment -%}
-  <ul class="tp-rwc-trust" data-rwc-body>
-    <li>Bis zu 3 Muster kostenlos</li>
-    <li>Versandkostenfrei in Deutschland ab 50 €</li>
-    <li>Persönliche Fachberatung</li>
-  </ul>
-
-  {%- comment -%}
-    Lieferart am Kaufbutton. Rollenware geht per Spedition - das ist die Frage,
-    die sonst erst im Warenkorb auftaucht ("wie kommt eine 4 m breite Rolle zu
-    mir?"). Eine Lieferzeit in Tagen steht hier bewusst NICHT: die pflegt
-    tp-service-links als Block-Einstellung, und eine zweite, hart verdrahtete
-    Zahl im Theme waere genau die Sorte Angabe, die still veraltet.
-
-    Verlegeservice und Aufmass bleiben in der Section product_service_rolle
-    unter dem Produkt (PR #278 hat sie bewusst dorthin verlegt, um den oberen
-    Kaufbereich schlank zu halten). Hier steht nur der Verweis darauf - das
-    haelt den Kaufbereich kompakt und beantwortet die Frage trotzdem.
-  {%- endcomment -%}
   <p class="tp-rwc-liefern" data-rwc-body>
     Lieferung per Spedition frei Bordsteinkante – wir rufen vor der Lieferung an.
     Verlegeservice und Aufmaß finden Sie weiter unten auf dieser Seite.
@@ -423,17 +453,6 @@
       <p class="tp-rwc-beratung__hinweis">Wir sagen Ihnen, wie viel Sie brauchen – auch ohne Bestellung.</p>
     </div>
   {%- endif -%}
-
-  {%- comment -%}
-    Der Button bleibt sichtbar und anklickbar, auch solange Breite oder Laenge
-    fehlen. Vorher verschwand er (cta.hidden = cta.disabled) - der Kunde sah an
-    der Stelle nichts und hatte keinen Anhaltspunkt, was noch fehlt. Ein echtes
-    disabled waere genauso stumm: ein Klick darauf loest kein Event aus. Statt
-    dessen traegt er aria-disabled und meldet beim Klick, welches Feld fehlt.
-  {%- endcomment -%}
-  <button type="button" class="tp-rwc-cta is-incomplete" data-cta data-add-to-cart aria-disabled="true" data-rwc-body>Breite und Länge eingeben</button>
-  <p class="tp-rwc-note tp-rwc-note-error tp-rwc-cta-hint" data-cta-hint role="alert" hidden data-rwc-body></p>
-  <a href="{{ routes.cart_url }}" class="tp-rwc-cart-link" data-cart-link hidden>Warenkorb ansehen</a>
 
   {%- comment -%}
     Feste Kaufleiste am Telefon: Das uebernimmt die Sticky-Leiste des Themes
@@ -644,11 +663,12 @@
     border-radius: 8px;
     background: var(--tp-rwc-surface);
     cursor: pointer;
-    min-height: 56px;
+    min-height: 44px;
     min-width: 0;
   }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { width: 34px; height: 29px; flex-shrink: 0; color: var(--tp-rwc-ink); }
-  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow-wrap: break-word; }
+  /* Kompakt (2026-09-22): kein Icon, Titel und Zusatz in einer Zeile */
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-icon { display: none; }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-text { display: flex; flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 0 6px; min-width: 0; overflow-wrap: break-word; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-title { font-size: .95rem; font-weight: 700; line-height: 1.2; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art-sub { font-size: .8rem; color: var(--tp-rwc-muted); line-height: 1.35; font-variant-numeric: tabular-nums; hyphens: auto; overflow-wrap: anywhere; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-art input:checked + .tp-rwc-art-card {
@@ -813,7 +833,7 @@
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 14px;
+    padding: 8px 14px;
     background: var(--tp-rwc-material);
     border: 1px solid transparent;
     border-radius: 10px;
@@ -845,6 +865,9 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta.is-incomplete:hover { background: var(--tp-rwc-surface); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-cta-hint { margin-top: 6px; font-weight: 600; }
 
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-note-mess:has([data-mess-raum][hidden]) { display: none; }
+  /* Grenzen (1 m bis 50 m) bleiben vorlesbar, sichtbar nennen sie die Fehlertexte */
+  .tp-rwc-{{ tp_rc_id }} .tp-formular-hinweis { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-anleitung {
     margin: 0 0 14px;
     font-size: 13px;
@@ -970,6 +993,7 @@
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch { margin: 0 0 10px; padding: 10px; border: 1px solid var(--tp-rwc-line); border-radius: 8px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-wunsch-preis { margin: 10px 0 0; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-rolle { display: block; width: 100%; height: auto; max-height: 280px; color: var(--tp-rwc-ink); }
+  .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras-link { display: block; margin: 0 0 8px; font-size: .85rem; color: inherit; text-decoration: underline; text-underline-offset: 2px; }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-calc-extras { display: grid; gap: 4px; font-size: .88rem; font-variant-numeric: tabular-nums; color: var(--tp-rwc-muted); }
   .tp-rwc-{{ tp_rc_id }} .tp-rwc-karte {
     display: grid; grid-template-columns: 20px 1fr auto; gap: 10px; align-items: center;
@@ -1589,6 +1613,7 @@ function tpRwcInit{{ tp_rc_id }}() {
   var leisteBox = root.querySelector('[data-extra="leiste"]');
   var haftBox = root.querySelector('[data-extra="haft"]');
   var formulaExtras = root.querySelector('[data-formula-extras]');
+  var extrasLink = root.querySelector('[data-extras-link]');
   var leisteVarianten = (data.leiste || []).filter(function (v) { return v && parseFloat(v.price) > 0; });
   // Breite der Haftunterlage steht im Variantentitel ("1 mm, 180 cm breit
   // (je lfm)"). Ohne erkennbare Breite faellt die Variante weg - lieber keine
@@ -1718,6 +1743,10 @@ function tpRwcInit{{ tp_rc_id }}() {
         formulaExtras.appendChild(div);
       });
       formulaExtras.hidden = !res.lines.length;
+    }
+    if (typeof extrasLink !== 'undefined' && extrasLink) {
+      var angeboten = (leisteBox && !leisteBox.hidden) || (haftBox && !haftBox.hidden);
+      extrasLink.hidden = !angeboten || res.lines.length > 0;
     }
     return res;
   }

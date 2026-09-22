@@ -29,10 +29,10 @@
   <div class="tp-muster-cta-{{ tp_mc_id }}" {{ block.shopify_attributes }}>
     <a class="tp-muster-cta__link-{{ tp_mc_id }}" href="{{ tp_mc_url }}">
       {{ block.settings.label | default: 'Kostenloses Muster anfragen' | escape }}
+      {%- if block.settings.hinweis != blank -%}
+        <small class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</small>
+      {%- endif -%}
     </a>
-    {%- if block.settings.hinweis != blank -%}
-      <p class="tp-muster-cta__hinweis-{{ tp_mc_id }}">{{ block.settings.hinweis | escape }}</p>
-    {%- endif -%}
   </div>
 
   <style>
@@ -42,6 +42,7 @@
 
     .tp-muster-cta__link-{{ tp_mc_id }} {
       display: inline-flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: center;
       width: 100%;
@@ -64,10 +65,14 @@
       background: rgb(140 109 67 / 0.08);
     }
 
+    /* Hinweis im Knopf statt als eigene Zeile darunter (Kaufstrecke kuerzen) */
     .tp-muster-cta__hinweis-{{ tp_mc_id }} {
-      margin: 6px 0 0;
-      font-size: 13px;
-      line-height: 1.4;
+      display: block;
+      width: 100%;
+      margin: 2px 0 0;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.3;
       text-align: center;
       color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
     }
