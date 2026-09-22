@@ -408,7 +408,7 @@
               {%- comment -%} Perf Runde 3: Das Feld zeigt ein Querformat (4:3, mind. quadratisch) mit cover. Hohe Bilder daher quadratisch mittig vom CDN - sichtbarer Ausschnitt unveraendert, rund ein Drittel weniger Bytes. {%- endcomment -%}
               <img
                 class="color-swatch-picker__image-{{ color_picker_id }}"
-                src="{% if swatch_image.aspect_ratio < 1 %}{{ swatch_image | image_url: width: 120, height: 120, crop: 'center' }}{% else %}{{ swatch_image | image_url: width: 120 }}{% endif %}"
+                {% if swatch_image.aspect_ratio < 1 %}src="{{ swatch_image | image_url: width: 120, height: 120, crop: 'center' }}"{% else %}src="{{ swatch_image | image_url: width: 120 }}"{% endif %}
                 alt="{{ value_name | escape }}"
                 width="60"
                 height="46"
