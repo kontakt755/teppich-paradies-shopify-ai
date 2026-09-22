@@ -12,9 +12,10 @@
   Preis, Galerie oder Warenkorb auseinanderlaufen koennte.
 
   Bildregel: gezeigt wird das Bild der ersten Variante DIESER Farbe. Hat die
-  Farbe kein eigenes Bild, erscheint ein hinterlegter Swatch (Shopify-Swatch
-  oder Farbregister), sonst eine neutrale Flaeche - nie das Bild einer
-  anderen Farbe und nie eine geratene Farbe.
+  Farbe kein eigenes Bild, erscheint das Farbbild aus dem Farbregister
+  (tp_farbe.bild), dann ein hinterlegter Swatch (Shopify-Swatch oder
+  Farbregister), sonst eine neutrale Flaeche - nie das Bild einer anderen
+  Farbe und nie eine geratene Farbe.
 
   @param {object} product - Produkt
   @param {object} option - Die Farboption (aus product.options_with_values)
@@ -124,6 +125,15 @@
                   render 'tp-farbe-daten', variant: tp_fa_variante, product: product, feld: 'swatch'
                 endcapture
                 assign tp_fa_swatch = tp_fa_swatch | strip
+              endif
+            endif
+            # Ohne eigenes Variantenbild: Farbbild aus dem Farbregister (tp_farbe.bild),
+            # z. B. Eloxal-Farbmuster der Aluprofile. Es erscheint nur hier, nicht in
+            # der Produktgalerie, weil es kein Produktmedium ist.
+            if tp_fa_bild == blank and tp_fa_variante != blank
+              assign tp_fa_reg_bild = tp_fa_variante.metafields.custom.farbe.value.bild.value
+              if tp_fa_reg_bild != blank
+                assign tp_fa_bild = tp_fa_reg_bild
               endif
             endif
             if tp_fa_bild == blank and tp_fa_value.swatch.image != blank
