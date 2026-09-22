@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-22T09:41:01.596Z",
+  "generated_at": "2026-09-22T10:10:13.244Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 122,
+  "count": 123,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-22T09:41:01.596Z",
+    "fetchedAt": "2026-09-22T10:10:13.244Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 465,
+      "title": "OAuth-Weg zum shpat_-Admin-Token aufgesetzt",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/465",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:backend"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-22T10:09:50Z",
+      "updated_at": "2026-09-22T10:10:03Z",
+      "closed_at": null
+    },
+    {
       "number": 458,
       "title": "Operations V3: Auftrags-, Einkaufs- und Logistiksystem – Phase 1 Analyse abgeschlossen",
       "state": "open",
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T09:27:21Z",
-      "updated_at": "2026-09-22T09:40:50Z",
+      "updated_at": "2026-09-22T09:53:30Z",
       "closed_at": null
     },
     {
@@ -248,13 +272,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 6,
+      "comments": 7,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-21T09:07:10Z",
-      "updated_at": "2026-09-21T11:40:00Z",
+      "updated_at": "2026-09-22T09:47:11Z",
       "closed_at": "2026-09-21T11:04:07Z"
     },
     {
