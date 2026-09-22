@@ -65,7 +65,8 @@
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
     "task": "node scripts/task.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
-    "operations:test": "node --test operations/tests/*.test.mjs"
+    "operations:test": "node --test operations/tests/*.test.mjs",
+    "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",
