@@ -37,10 +37,10 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 | Prüfung | Status | Beleg |
 |---|---|---|
 | Merchant Center sauber | ✅ | 225/225 genehmigt, 0 Probleme (Google-&-YouTube-App, 22.09.); Versandrichtlinie live |
-| Produktfeed sauber | ❌ | ohne GTIN/custom_product; SKUs bereinigt (104, 22.09.), offen: Turku/Marlow doppelt; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
-| Conversion Tracking sauber | ❌ | GA4 und Google Ads in der Google-&-YouTube-App nicht verknüpft; Pixel-Vorlage fertig |
-| Purchase nicht doppelt | ⏳ | Regel dokumentiert (eine Quelle); Admin-Prüfung offen |
-| Muster getrennt | ⏳ | `sample_order` / `tp_bestellung_typ` im Pixel; nicht eingerichtet |
+| Produktfeed sauber | ✅ | 225/225 genehmigt; SKUs bereinigt, Marlow-Doppelung entfernt; Feedtitel-Regel optional (`domains/marketing/merchant-center-feedtitel.md`) |
+| Conversion Tracking sauber | ✅ | GA4 G-3KKWHJHS0D + Ads 334-557-2870 verknüpft, Kauf primär; live nach Consent gemessen (22.09.) |
+| Purchase nicht doppelt | ✅ | eine primäre Kauf-Aktion über die App; im Ads-Konto bereits vorhandene Conversion-Aktionen vor Kampagnenstart auf „sekundär" prüfen |
+| Muster getrennt | ⏳ | Muster laufen als 0-€-Kauf; Trennung per Custom Pixel (`domains/marketing/tracking-pixel-vorlage.md`, ID G-3KKWHJHS0D) noch nicht eingerichtet – für Kampagnen mit Kaufwert-Optimierung unkritisch, da 0 € keinen Wert liefert |
 | Consent geprüft | ✅ | Shopify-nativ, Consent Mode v2 (Messung 16.09.) |
 
 ## Technik
