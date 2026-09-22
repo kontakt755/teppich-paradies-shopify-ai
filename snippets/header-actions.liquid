@@ -119,6 +119,8 @@
       type="module"
       fetchpriority="low"
     ></script>
+    {% # Beratungspflicht im Drawer: auch wenn der Warenkorb erst per Morph erscheint (snippets/tp-cart-beratung.liquid) %}
+    <script src="{{ 'tp-cart-beratung.js' | asset_url }}" defer></script>
 
     {% capture empty_cart_drawer_content %}
       <div class="cart-drawer__header">

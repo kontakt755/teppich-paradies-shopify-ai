@@ -18,7 +18,12 @@
   MASS-PRUEFUNG-OFFEN, VERLEGUNG-ANGEFRAGT (domains/shopify/flow/).
 
   Vorbelegung aus cart.attributes, damit die Antwort einen Reload oder ein
-  Section-Rerender ueberlebt.
+  Section-Rerender ueberlebt. Der Sperrzustand (Klasse tp-beratung-offen,
+  required an Frage und Telefon) wird ebenfalls serverseitig gesetzt, damit
+  er auch vor dem Laden des Skripts und nach einem Morph des Drawers gilt.
+  Das Skript laedt zusaetzlich global mit dem Drawer
+  (snippets/header-actions.liquid), weil per Morph eingefuegte Script-Tags
+  nicht ausgefuehrt werden.
 {%- enddoc -%}
 
 {%- liquid
@@ -54,12 +59,28 @@
   if tpb_mass and tpb_masswahl == 'Ja'
     assign tpb_telefon_noetig = true
   endif
+
+  # Gleiche Regel wie pruefen() in assets/tp-cart-beratung.js: mindestens 6 Ziffern
+  assign tpb_ziffern = 0
+  assign tpb_zeichen = tpb_telefon | split: ''
+  for tpb_z in tpb_zeichen
+    if '0123456789' contains tpb_z
+      assign tpb_ziffern = tpb_ziffern | plus: 1
+    endif
+  endfor
+  assign tpb_offen = false
+  if tpb_beratung != 'Ja' and tpb_beratung != 'Nein'
+    assign tpb_offen = true
+  endif
+  if tpb_telefon_noetig and tpb_ziffern < 6
+    assign tpb_offen = true
+  endif
 -%}
 
 {%- if cart != empty -%}
 <script src="{{ 'tp-cart-beratung.js' | asset_url }}" defer></script>
 <tp-cart-beratung
-  class="tp-beratung"
+  class="tp-beratung{% if tpb_offen %} tp-beratung-offen{% endif %}"
   {% if tpb_mass %}data-masspruefung{% endif %}
   {% if tpb_verlegung %}data-verlegung{% endif %}
 >
@@ -68,7 +89,7 @@
     <p class="tp-beratung__hinweis">Wir rufen Sie kurz an, klären offene Fragen zu Material, Maßen oder Verlegung und bestätigen Ihnen die Bestellung.</p>
     <div class="tp-beratung__optionen">
       <label class="tp-beratung__option">
-        <input type="radio" name="attributes[Beratung]" value="Ja" data-tp-feld="beratung" form="cart-form" {% if tpb_beratung == 'Ja' %}checked{% endif %}>
+        <input type="radio" name="attributes[Beratung]" value="Ja" data-tp-feld="beratung" form="cart-form" required {% if tpb_beratung == 'Ja' %}checked{% endif %}>
         <span>Ja, bitte anrufen</span>
       </label>
       <label class="tp-beratung__option">
@@ -114,8 +135,9 @@
   <div class="tp-beratung__telefon" data-tp-telefon-box {% unless tpb_telefon_noetig %}hidden{% endunless %}>
     <label class="tp-beratung__feld" for="{{ tpb_id }}-telefon">
       <span>Telefonnummer für den Rückruf <span class="tp-beratung__pflicht" aria-hidden="true">*</span></span>
-      <input id="{{ tpb_id }}-telefon" type="tel" name="attributes[Telefon]" data-tp-feld="telefon" form="cart-form" value="{{ tpb_telefon | escape }}" autocomplete="tel" inputmode="tel" placeholder="z. B. 0176 1234567">
+      <input id="{{ tpb_id }}-telefon" type="tel" name="attributes[Telefon]" data-tp-feld="telefon" form="cart-form" value="{{ tpb_telefon | escape }}" autocomplete="tel" inputmode="tel" placeholder="z. B. 0176 1234567" aria-describedby="{{ tpb_id }}-telefon-fehler" {% if tpb_telefon_noetig %}required{% endif %}>
     </label>
+    <p id="{{ tpb_id }}-telefon-fehler" class="tp-beratung__fehler tp-beratung__fehler--feld" data-tp-telefon-fehler role="alert" hidden></p>
   </div>
 
   {%- if tpb_verlegung -%}
@@ -217,8 +239,12 @@
     color: var(--color-error, #b3261e);
     font-weight: 500;
   }
-  .additional-checkout-buttons.tp-beratung-offen {
-    display: none;
+  .additional-checkout-buttons.tp-beratung-offen,
+  tp-cart-beratung.tp-beratung-offen ~ .cart__ctas .additional-checkout-buttons {
+    display: none !important;
+  }
+  .tp-beratung__fehler--feld {
+    margin: 0;
   }
   .cart__checkout-button[data-tp-beratung-offen] {
     opacity: 0.85;
