@@ -57,3 +57,5 @@ S18: kein neues bestätigtes Issue/Pack. Rollenblock weiter NOT READY; H-003 dur
 S19: Rollen-Zustands-/Submitvertrag lokal geprüft, kein neues Issue/Pack. Rollenblock weiterhin NOT READY wegen VAR-001a/H-003 und Live-/Datenreichweite. Ready=2, Done/QA=0.
 
 S20: TP-015/P2 vollständiger Brief, Farbpicker-Kandidat NOT READY bis VAR-001a.2 und belegter Auswahlregel. Kein Pack vorschnell erstellt. READY=2, Done/QA=0. Konflikte Rollen-/Pickerintegration beachten.
+
+S21: TP-016/P3 vollständiger Brief; Farbverbraucher-Lifecycle-Kandidat NOT READY bis native Lifecycle-/Aufruferabgrenzung VAR-001a.2b. Kein Pack vorschnell erstellt. Ready=2, Done/QA=0.

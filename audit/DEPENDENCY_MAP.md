@@ -174,3 +174,12 @@ S20 / VAR-001a.1: sechs Fälle am vollständigen ersten Original-Farbpicker-IIFE
 Evidence: `audit/evidence/color-picker-2026-09-22.json`; Script `audit/scripts/reproduce-color-picker.mjs`. Erstlauf scheiterte am Zahlenwert im Formmock; natives String-Coercion-Verhalten im Adapter ergänzt, danach Syntax/Diagnose PASS. Keine Produktquelle geändert. Route TASK-A6785D897266 B/STATIC; kein Executor/alte Diagnosen.
 
 Nächster Schritt: VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.js Verbraucher prüfen: Farbänderung→native Events→Formular-/URL-/Sectionzustand, Verfügbarkeit und mehrere Produktbereiche (H-016). TP-015 nicht durch frei geratene Breitenwahl reparieren. Keine fertigen Picker-/Rechnerfälle wiederholen; Browserberechtigung seit S13 nicht umgehen.
+
+
+## S21 – Farbverbraucher und Reconnect
+
+S21 / VAR-001a.2a: acht Original-Farbverbraucherfälle PASS, vier Reconnect-Defektfälle TP-016/P3, drei historische Hashvergleiche. Native VariantUpdateEvent-Produktprüfung funktioniert, Farbnummern werden getrimmt. Globales fremdes tp:farbe-wechsel leert Properties bei fehlender ID, Anzeige behält alten Namen (H-016, reale Mehrproduktreichweite offen). Nach Disconnect/Connect derselben Instanz reagieren beide Klassen auf keinen der beiden Eventtypen; abgebrochener Controller wird wiederverwendet. Keine heutige Browser-/Morphreichweite oder Bestellfolge behauptet.
+
+Evidence: `audit/evidence/color-consumers-2026-09-22.json`; Script `audit/scripts/reproduce-color-consumers.mjs`. Syntax/Erstlauf PASS, keine alten Replays. Route TASK-02EB9023E44A B/STATIC; kein Executor. FILE CONFLICT: beide Verbraucher in tp-farbe.js, keine parallelen Fixes.
+
+Nächster Schritt: VAR-001a.2b: assets/variant-picker.js vollständig auf native Optionswahl, buildRequestUrl/fetchUpdatedSection, Abbruch/Antwortreihenfolge und VariantUpdateEvent prüfen. Anschließend product-form-/tp-farbe-Verbraucherbindung sowie H-016 Mehrproduktbereiche abgrenzen. S20/S21 nicht wiederholen; Browserberechtigung S13 nicht umgehen.

@@ -21,6 +21,8 @@ Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 
 | TP-015 | P2 | Farbwahl ohne bisherige Breitenkombination lässt alte Variante aktiv | BESTÄTIGT lokal; heutige Produktreichweite offen | Offen |
 
+| TP-016 | P3 | Farbkomponenten verlieren nach Reconnect ihre Ereignislistener | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
+
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
 - **Bereich:** Preis-/Mengenberechnung, Eingabevalidierung.
@@ -416,6 +418,24 @@ S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrations
 - **Regression / Seiteneffekte:** Verlust anderer Optionen, ungewollte Größenänderung, falsche Formular-ID, widersprüchliche Bilder/Properties, native Eventschleifen. Mehrere Formulare, schneller Wechsel, nicht kaufbare Varianten und Zurück/Reload gezielt prüfen. Historische Defektassertions für Fix-QA auf Sollverhalten umstellen.
 - **Aufwand / Reihenfolge / Rollback:** M; erst VAR-001a.2 und Auswahlregel, dann kleiner lokaler Pickerfix. Keine Datenmigration; Codeänderung rücknehmbar. Phase 1/2 keine Reparatur.
 
+## TP-016 – Farbkomponenten reagieren nach Reconnect nicht mehr
+
+- **Bereich / Priorität / Sicherheit:** Farbnummer-Properties/Farbanzeige, P3, BESTÄTIGT lokal. assets/tp-farbe.js, TpFarbeProperties und TpFarbeAnzeige. Geräte/Browser und heutige Wiederverwendung derselben DOM-Instanz nicht nachgewiesen.
+- **Root Cause / Reproduktion:** Controller wird einmal im Klassenfeld erzeugt, disconnectedCallback bricht ihn ab; connectedCallback registriert erneut mit demselben bereits abgebrochenen Signal. `node audit/scripts/reproduce-color-consumers.mjs`: Variante 1 senden, Disconnect/Connect derselben Instanz, Variante 2 senden. Beide Eventtypen in beiden Klassen geprüft.
+- **Erwartet / tatsächlich:** nach erneutem Connect werden Farbe/Properties wieder aktualisiert. Tatsächlich bleiben Nummer 111 bzw. Name Red statt 222/Blue. Native EventTarget-/AbortController-Semantik ausgeführt, Element-/Sectionabfragen adaptiert. Kein Nachweis tatsächlich falscher Bestellproperties im heutigen Live-Shop.
+- **Evidence / Risiko:** evidence/color-consumers-2026-09-22.json; acht Fälle, vier Defektfälle, drei historische Hashvergleiche. Risiko veralteter Farbanzeige/Properties nach Wiederverwendung; neue Instanzen besitzen neuen Controller und sind nicht derselbe Fehlerfall.
+
+### IMPLEMENTATION BRIEF – TP-016
+
+- **Ziel / Root Cause:** jeder neue Verbindungszyklus bekommt funktionsfähige Listener; abgebrochene Signale nicht wiederverwenden.
+- **Dateien / Funktionen:** assets/tp-farbe.js, #abort/connectedCallback/disconnectedCallback beider Klassen; snippets/tp-farbe-properties.liquid als Formularvertrag unverändert lassen.
+- **Zu ändernde Logik:** bei erneutem Connect frischen Controller sicherstellen, alte Listener vor Neuregistrierung sauber entfernen. Karte/Produktbezug weiter aus aktuellem Host lesen. Keine globalen Listener ohne Cleanup.
+- **Nicht verändern:** Farbnummer-/Interndaten, Varianten, Produkt-IDs, Preise, Mapformat, globale Eventnamen oder andere Farbregeln. H-016 fremde CustomEvents ist getrennt zu klären, nicht beiläufig umdeuten.
+- **Abhängigkeiten / FILE CONFLICT:** beide Klassen gleiche Datei, zusammen sequenziell prüfen. Native Picker/Morph-Reichweite VAR-001a.2b vor Liveabnahme; TP-015 anderer Pickerpfad, keine pauschale Gesamtneufassung.
+- **Akzeptanz / Tests:** Connect→Event1→Disconnect→Connect→Event2 aktualisiert Nummer/Name in beiden Klassen für native und CustomEvents. Während Disconnect keine Aktualisierung; mehrere Reconnects keine Mehrfachlistener. Fremde native Produkt-ID ignoriert, leere Felder korrekt deaktiviert.
+- **Regression / Seiteneffekte:** doppelte Events, Listenerleck, veraltete Karten, falsche Produktzuordnung; normale Erstanzeige, Bilderhinweise/Swatch und Formularproperties mitprüfen. Echte Reinsert-/Morphsequenz später separat abnehmen.
+- **Aufwand / Reihenfolge / Rollback:** S; erst nativen Lifecycle-Aufrufer abgrenzen, dann minimaler Controllerfix mit Tests/Review. Kleine JS-Änderung rücknehmbar, keine Migration. Phase 1/2 ohne Reparatur.
+
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 
 | ID | Untersuchung | Aktueller Beleg / Grenze | Nächster Nachweis |
@@ -467,3 +487,5 @@ S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrations
 - S09/CART-002b.1: Originaldebounce fasst mehrere Änderungen derselben Zeile korrekt zusammen und startet bei exakt 300 ms nach letzter Aktion. Ein isoliertes fremdes Ereignis wird ignoriert. TP-011 betrifft das Verlieren bereits geplanter anderer Ziele; kein allgemeiner Defekt der Utility-Debounce-Funktion.
 
 S11: stabile Erfolgs-/Fehlerantworten lokal korrekt. Reproduktionsscript `audit/scripts/reproduce-cart-responses.mjs`; Evidence `audit/evidence/cart-responses-2026-09-21.json`. Originale Cart-/Renderer-/Eventklassen und fetchConfig/debounce ausgeführt, DOM/Refs/Morph adaptiert. Bestätigte Issuezahl unverändert zwölf.
+
+S21 ergänzt H-016: globales fremdes tp:farbe-wechsel ohne passende Map-ID deaktiviert/leert Properties, während Anzeige unbekannte ID ignoriert. Native Ereignisse mit abweichender Produkt-ID bleiben unverändert. Mehrprodukt-Shopreichweite weiterhin offen; kein weiteres bestätigtes Issue.

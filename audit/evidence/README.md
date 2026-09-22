@@ -144,3 +144,8 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S20
 
 `color-picker-2026-09-22.json`: sechs Original-IIFE-Fälle, drei TP-015-Defektfälle, zwei Hashes. Script `audit/scripts/reproduce-color-picker.mjs`; synthetische DOM-/Variantenkonstellation, aktuelle Reichweite offen. Integritäts-/Secretprotokolle S20.
+
+
+## S21
+
+`color-consumers-2026-09-22.json`: acht Fälle, vier TP-016-Reconnectfälle, drei Quellhashes. Script `audit/scripts/reproduce-color-consumers.mjs`; echte Node-EventTarget/AbortController, modellierter DOM. Integritäts-/Secretprotokolle S21.
