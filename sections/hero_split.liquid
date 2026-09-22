@@ -201,7 +201,14 @@
     <div class="hero-feature-split__grid-{{ hero_id }}">
       <div class="hero-feature-split__media-{{ hero_id }}">
         <div class="hero-feature-split__image-wrap-{{ hero_id }}">
-          {% if section.settings.image != blank %}
+          {%- comment -%} Rueckfall: ohne gesetztes Bild das Kollektionsbild, sonst das erste Produktbild - nie eine leere Flaeche im Shop {%- endcomment -%}
+          {%- liquid
+            assign hero_img = section.settings.image
+            if hero_img == blank and collection
+              assign hero_img = collection.image | default: collection.featured_image
+            endif
+          -%}
+          {% if hero_img != blank %}
             {%- comment -%} Unter 450 px bekommt das Bild eine leere Quelle: kein Download fuer eine ausgeblendete Flaeche {%- endcomment -%}
             <picture>
               <source
@@ -209,7 +216,7 @@
                 srcset="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
               >
               {{
-                section.settings.image
+                hero_img
                 | image_url: width: 1800
                 | image_tag:
                   class: hero_image_class,
@@ -219,7 +226,7 @@
                   alt: section.settings.heading
               }}
             </picture>
-          {% else %}
+          {% elsif request.design_mode %}
             <div class="hero-feature-split__placeholder-{{ hero_id }}">
               Bild
             </div>
