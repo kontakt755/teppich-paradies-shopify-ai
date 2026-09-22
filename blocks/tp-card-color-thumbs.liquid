@@ -90,9 +90,13 @@
           title="{{ tp_ct_value | escape }}"
           aria-label="{{ tp_ct_value | escape }}"
         >
+          {%- if tp_ct_match.featured_media.aspect_ratio < 1 -%}
+            {%- assign tp_ct_url = tp_ct_match.featured_media | image_url: width: 80, height: 80, crop: 'center' -%}
+          {%- else -%}
+            {%- assign tp_ct_url = tp_ct_match.featured_media | image_url: width: 80 -%}
+          {%- endif -%}
           {{
-            tp_ct_match.featured_media
-            | image_url: width: 80
+            tp_ct_url
             | image_tag:
               loading: 'lazy',
               width: 40,
@@ -146,6 +150,8 @@
      Produktfotos der Leiste. Ein enger Mittenausschnitt macht aus beiden
      dieselbe ruhige Farbflaeche - bei der flachen Kachel aendert er nichts,
      beim Foto zeigt er die Sichtflaeche statt Wand und Boden. */
+  /* Das Bild kommt quadratisch mittig beschnitten vom CDN (Perf Runde 3) -
+     sichtbar ist ohnehin nur die Mitte; der Ausschnitt bleibt derselbe. */
   .tp-card-color-thumbs__image {
     width: 170%;
     height: 170%;

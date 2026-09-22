@@ -49,7 +49,21 @@
         {%- assign kat_alt = img.alt | default: '' -%}
         <a class="tp-kat__card" href="{{ ziel | default: '#' }}" {{ block.shopify_attributes }}>
           {%- if img != blank -%}
-            {{ img | image_url: width: 800 | image_tag: loading: 'lazy', widths: '400, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
+            {%- comment -%}
+              Perf Runde 3: Die Karte zeigt 4:5 (Desktop) bzw. 4:4,6 (mobil) mit
+              cover, mittig. Hohe Bilder (schmaler als 4:5) holen wir als 4:5,
+              breite (breiter als 4:4,6) als 4:4,6 - in beiden Faellen bleibt
+              der sichtbare Ausschnitt in beiden Rahmen gleich. 500 px trifft
+              die mobile Karte bei DPR 1,75 statt auf 600 zu springen.
+            {%- endcomment -%}
+            {%- if img.aspect_ratio < 0.8 -%}
+              {%- assign kat_url = img | image_url: width: 800, height: 1000, crop: 'center' -%}
+            {%- elsif img.aspect_ratio > 0.87 -%}
+              {%- assign kat_url = img | image_url: width: 800, height: 920, crop: 'center' -%}
+            {%- else -%}
+              {%- assign kat_url = img | image_url: width: 800 -%}
+            {%- endif -%}
+            {{ kat_url | image_tag: loading: 'lazy', widths: '300, 400, 500, 600, 800', sizes: '(max-width: 767px) 68vw, (max-width: 1279px) 33vw, 16vw', alt: kat_alt, class: 'tp-kat__img' }}
           {%- else -%}
             {{ 'collection-1' | placeholder_svg_tag: 'tp-kat__img' }}
           {%- endif -%}
