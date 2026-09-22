@@ -18,14 +18,14 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
   orders(first: $first, after: $after, query: $query, sortKey: UPDATED_AT) {
     pageInfo { hasNextPage endCursor }
     nodes {
-      id name createdAt updatedAt note tags
+      id name createdAt updatedAt cancelledAt note tags
       displayFinancialStatus displayFulfillmentStatus
       customAttributes { key value }
       shippingAddress { name address1 address2 zip city country countryCodeV2 phone }
       metafields(namespace: "ops", first: 20) { nodes { namespace key type value } }
       lineItems(first: 50) {
         nodes {
-          id sku title quantity
+          id sku title variantTitle quantity currentQuantity unfulfilledQuantity
           customAttributes { key value }
           variant {
             id sku title

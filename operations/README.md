@@ -51,3 +51,49 @@ node --test operations/tests/*.test.mjs
 `.env.local` des Betriebs-Rechners. Ohne Token laeuft der Proxy im Sammelmodus:
 Queries landen nur im Log, es werden keine Bestellungen geladen und nichts
 geschrieben. `atkn_`-Token werden vom Proxy abgelehnt.
+
+## Bestelluebersicht
+
+Interne Seite fuer das Team: was fuer offene Kundenbestellungen bei welchem
+Lieferanten nachzubestellen ist, plus Auftragsampel. Logik kommt ausschliesslich
+aus `lib/resolve.mjs` (Grosshaendler-ID-Kaskade), `lib/umrechnung.mjs`
+(Einkaufsmenge, sonst `UNGEKLAERT`), `lib/einkauf.mjs` (`gruppieren`),
+`lib/status.mjs` und `lib/ampel.mjs`; Aufbereitung in `lib/bestelluebersicht.mjs`.
+
+Inhalt:
+
+- **Zu bestellen je Lieferant** – offene, nicht stornierte Positionen, gruppiert
+  nach Lieferant (Pseudonym A–D aus `einkauf.lieferant`, sonst Quelle der
+  Grosshaendler-ID, sonst `lieferant.bevorzugt`, sonst `UNGEKLAERT`). Je Gruppe
+  ein Knopf „Liste kopieren“ (Klartext: ID | Artikel | Farbe | Menge | Bestellnr.).
+- **Muster** getrennt; die ID kommt aus der Quellvariante (`_Quellvariante_ID`).
+- **Auftraege** – Ampel, Beratung/Telefon/Massprüfung/Verlegung aus den
+  Cart-Attributen, Zahlung/Versand, Link in den Shopify-Admin.
+
+Aufruf, Variante 1 – Export ueber den Shopify-MCP (kein Token noetig):
+
+1. `graphql_query` mit Orders (`id name createdAt cancelledAt
+   displayFinancialStatus displayFulfillmentStatus customAttributes` und
+   `lineItems { … variant { einkauf/lieferant-Metafelder, product { custom,
+   grosshandel } } }`, Form wie `ORDERS_QUERY` in `sync/orders.mjs`).
+   Optional die Quellvarianten der Muster ueber `nodes(ids:)` als
+   `quellvarianten` dazulegen.
+2. Ablegen als `~/teppich-paradies-analyse/bestelluebersicht/orders.json`
+   (`{orders:[…], quellvarianten:[…]}` oder die rohe Antwort `{data:{orders}}`).
+3. `npm run ops:bestelluebersicht -- --input ~/teppich-paradies-analyse/bestelluebersicht/orders.json`
+
+Variante 2 – automatisch mit Token:
+
+```
+npm run ops:bestelluebersicht -- --live --tage 60
+```
+
+liest ueber `sync/orders.mjs` `fetchOrdersSince`. Zugang in `.env.local`
+(`SHOPIFY_ADMIN_TOKEN` oder `SHOPIFY_CLIENT_ID`/`SECRET`), Einrichtung siehe
+`domains/shopify/admin-token-oauth.md`; noetig ist mindestens der Scope
+`read_orders` (plus `read_products` fuer die Metafelder). Ohne Zugang bricht
+`--live` mit Hinweis ab.
+
+Ausgabe: `~/teppich-paradies-analyse/bestelluebersicht/bestelluebersicht.html`
+(`--output` aendert das). Die Seite enthaelt Bestelldaten; das Skript verweigert
+jeden Pfad innerhalb des Repositorys. Nichts wird nach Shopify geschrieben.

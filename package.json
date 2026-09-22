@@ -67,7 +67,8 @@
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
-    "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs"
+    "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
+    "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",
