@@ -24,12 +24,10 @@
 {%- liquid
   assign tpb_mass = false
   assign tpb_verlegung = false
-  assign tpb_ware = false
   for tpb_item in cart.items
     if tpb_item.properties._Muster_ID != blank
       continue
     endif
-    assign tpb_ware = true
     if tpb_item.properties._Zuschnitt != blank or tpb_item.properties['Maße'] != blank or tpb_item.properties['Gewünschte Länge'] != blank or tpb_item.properties['Art'] == 'Raummaß'
       assign tpb_mass = true
     endif
