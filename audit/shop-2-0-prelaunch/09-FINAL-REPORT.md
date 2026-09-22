@@ -9,7 +9,11 @@ Der Masterplan ist nicht abgeschlossen. Dieser Bericht fasst den Stand nach der 
 - M6: Interne Bestellmail mit Bestelltyp/Beratung; Kundenbausteine Bestell- und Versandbestätigung (Vorlagen, getestet).
 - M7: Flow-Vorlage Tags + gespeicherte Ansichten (Vorlage).
 - M8: Custom-Pixel-Vorlage, Conversion-Aufteilung, UTM.
+- M3: Produktseiten-Reihenfolge (Nutzen, Verlegung, Vergleich unter Kaufen) in 4 Templates.
+- M9: Feedtitel-Regel und Merchant-Center-Prüfliste (Vorlage).
+- M10: Performance-Diagnose (Ursache render-blockendes Section-CSS), keine Änderung.
 - Shop-Daten: Rapidia-Titelbild korrigiert (Piktogramm entfernt).
+- Entscheidungen aus der Doku geholt: Radius-Text 50 km bleibt, Lieferzeit 5–7, Muster-Fallback bleibt, Feedtitel per Regel.
 Alle Theme-Änderungen liegen im Arbeitstheme 204436144462 und im PR #454; nichts ist live.
 
 ## B. Bewusst nicht geändert

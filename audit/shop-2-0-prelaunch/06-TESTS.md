@@ -14,3 +14,6 @@
 | 2026-09-22 | M6a | `qa/tests/bestellmail-beratung.test.mjs` Muster/Ware/Misch, Beratung Ja/Nein, Maßprüfung, Escaping | lokal (LiquidJS) | PASS 4/4 |
 | 2026-09-22 | M6b | `qa/tests/kundenmail-bloecke.test.mjs` Muster/Ware/Misch, Bestätigungen, Escaping, Tracking, Spedition | lokal (LiquidJS) | PASS 5/5 |
 | 2026-09-22 | M10 | Lighthouse 13.5 `--preset=perf` mobil simuliert, Live: Start 54 (LCP 8,9 s, TBT 600 ms, 2,4 MB), Kollektion teppichboden 68 (LCP 10,1 s, 2,8 MB), PDP Piumera 64 (LCP 7,7 s, 1,8 MB); CLS 0 überall | lokal gegen Live | FAIL (Ziel LCP < 2,5 s) |
+| 2026-09-22 | M3 | PDP Arbeitstheme Desktop/Mobil: Reihenfolge, Kaufen-Button 800/863 px, 0 Theme-Konsolenfehler (3× 401 aus Shopify-Login/Wallet-Assets) | Arbeitstheme | PASS |
+| 2026-09-22 | Technik | `npm run menu:guard` 49 Menülinks | Live | PASS 0 Fehler |
+| 2026-09-22 | § 46 | Sie/Du-Konsistenz: grep über sections/blocks/snippets/templates/locales | lokal | PASS (0 kundensichtbare Du-Formen) |

@@ -37,7 +37,7 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 | Prüfung | Status | Beleg |
 |---|---|---|
 | Merchant Center sauber | ❌ | 0 approved / 225 awaiting_review (Stand 11.09.); Versandrichtlinie 404 |
-| Produktfeed sauber | ❌ | ohne GTIN/custom_product, 8 doppelte SKUs, 41 ohne SKU; Feedtitel ohne Produktart/Farbe (PL-018/019) |
+| Produktfeed sauber | ❌ | ohne GTIN/custom_product, 8 doppelte SKUs, 41 ohne SKU; Feedtitel-Regel vorbereitet (`domains/marketing/merchant-center-feedtitel.md`), nicht eingerichtet |
 | Conversion Tracking sauber | ⏳ | Pixel-Vorlage fertig; GA4-ID fehlt |
 | Purchase nicht doppelt | ⏳ | Regel dokumentiert (eine Quelle); Admin-Prüfung offen |
 | Muster getrennt | ⏳ | `sample_order` / `tp_bestellung_typ` im Pixel; nicht eingerichtet |
@@ -47,6 +47,6 @@ Bewertung je Prüfung: ✅ bestanden · ❌ nicht bestanden · ⏳ vorbereitet, 
 | Prüfung | Status | Beleg |
 |---|---|---|
 | Keine kritischen JS-Fehler | ⏳ | Cart/PDP/Kollektion im Arbeitstheme ohne Fehler bei Sichtprüfung; kein vollständiger Konsolen-Sweep |
-| Keine 404 / kaputten Links | ⏳ | `npm run menu:guard` nicht gelaufen; Versandrichtlinie 404 bekannt |
+| Keine 404 / kaputten Links | ⏳ | `menu:guard` 49/49 ok; Versandrichtlinie `/policies/shipping-policy` 404 bleibt |
 | Performance akzeptabel | ❌ | Lighthouse 13 mobil (simuliert, live, 22.09.): Start 54 / LCP 8,9 s, Kollektion 68 / LCP 10,1 s, PDP 64 / LCP 7,7 s; CLS 0 |
 | SEO nicht beschädigt | ✅ | keine URL-/Handle-Änderung in dieser Sitzung; Canonicals/Meta unverändert |
