@@ -97,14 +97,17 @@ test('I: artikelzahlUrl ersetzt section_id und verwirft den Anker', () => {
   assert.equal(url.pathname, '/en/cart');
 });
 
-test('J: Liquid zaehlt Flaechenware je Zeile als 1, alles andere nach Menge', () => {
+test('J: Liquid zaehlt Warenkorbzeilen (Positionen), nicht Mengen', () => {
   const code = ohneKommentare(lies('snippets/tp-cart-artikelzahl.liquid'));
-  assert.match(code, /for tp_az_zeile in cart\.items/);
-  assert.match(
-    code,
-    /if tp_az_zeile\.product\.metafields\.custom\.preis_pro_001_qm\.value == true\s+assign tp_az_summe = tp_az_summe \| plus: 1\s+else\s+assign tp_az_summe = tp_az_summe \| plus: tp_az_zeile\.quantity/,
-  );
-  assert.doesNotMatch(code, /item_count/);
+  assert.match(code, /cart\.items\.size/);
+  assert.doesNotMatch(code, /item_count|quantity/);
+});
+
+test('J2: Ereignis mit ganzem Warenkorb zaehlt dessen Zeilen', () => {
+  const detail = { resource: { item_count: 1205, items: [{ quantity: 1200 }, { quantity: 5 }] }, data: { itemCount: 1205 } };
+  assert.equal(az.artikelzahlAusEreignis(detail), 2);
+  // Einzelartikel aus /cart/add.js: kein items-Feld, also nachladen.
+  assert.equal(az.artikelzahlAusEreignis({ resource: { quantity: 1200 }, data: { itemCount: 1200, source: 'product-form-component' } }), null);
 });
 
 test('K: Header-Blase, Warenkorbtitel und Drawer zaehlen nicht mehr cart.item_count', () => {
