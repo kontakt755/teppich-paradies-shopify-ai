@@ -149,3 +149,9 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S21
 
 `color-consumers-2026-09-22.json`: acht Fälle, vier TP-016-Reconnectfälle, drei Quellhashes. Script `audit/scripts/reproduce-color-consumers.mjs`; echte Node-EventTarget/AbortController, modellierter DOM. Integritäts-/Secretprotokolle S21.
+
+## S22 – Variantenantworten
+
+Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt.
+
+S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.

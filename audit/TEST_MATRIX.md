@@ -204,3 +204,12 @@ S21 / VAR-001a.2a: acht Original-Farbverbraucherfälle PASS, vier Reconnect-Defe
 Evidence: `audit/evidence/color-consumers-2026-09-22.json`; Script `audit/scripts/reproduce-color-consumers.mjs`. Syntax/Erstlauf PASS, keine alten Replays. Route TASK-02EB9023E44A B/STATIC; kein Executor. FILE CONFLICT: beide Verbraucher in tp-farbe.js, keine parallelen Fixes.
 
 Nächster Schritt: VAR-001a.2b: assets/variant-picker.js vollständig auf native Optionswahl, buildRequestUrl/fetchUpdatedSection, Abbruch/Antwortreihenfolge und VariantUpdateEvent prüfen. Anschließend product-form-/tp-farbe-Verbraucherbindung sowie H-016 Mehrproduktbereiche abgrenzen. S20/S21 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+
+## S22 – Nativer Picker-Antwortvertrag
+
+S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
+
+Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt.
+
+Nächster Schritt: VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
