@@ -33,12 +33,17 @@
   endfor
 -%}
 
+{%- comment -%}
+  Mobil ist die Karte 50vw minus Seitenrand und halbem Spaltenabstand breit
+  (173 px bei 390 px). Mit "50vw" und ohne Stufe unter 300/450 lud jede Karte
+  fast das Doppelte; 240 und 360 treffen DPR 1 und 2.
+{%- endcomment -%}
 {%- if tp_cb_image != blank -%}
   <div class="tp-card-leisten-bild" {{ block.shopify_attributes }}>
     {{
       tp_cb_image
       | image_url: width: 900
-      | image_tag: loading: 'lazy', widths: '300, 450, 600, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw', alt: tp_cb_product.title
+      | image_tag: loading: 'lazy', widths: '240, 300, 360, 450, 600, 900', sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, calc(50vw - 24px)', alt: tp_cb_product.title
     }}
   </div>
 {%- endif -%}
