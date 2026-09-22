@@ -524,3 +524,5 @@ JS-001g: je vier Lifecycle-Beobachtungen an vollständigem Original-DeferredMedi
 Script `audit/scripts/reproduce-media-runtime-reconnect.mjs`; Evidence `audit/evidence/media-runtime-reconnect-2026-09-22.json`. Erster Lauf stoppte vor Beobachtung an fehlendem `querySelector` im neutralen Buttonadapter; API ergänzt, danach Syntax/Diagnose PASS. Originalklassen/-events, native EventTarget/AbortController; DOM, Video, ModelViewerUI adaptiert. Route TASK-54DABA996853 B/STATIC, kein Executor.
 
 Nächster Schritt: JS-001h `assets/layered-slideshow.js` vollständig lesen, Reichweite bestimmen und Lifecycle lokal ausführen. Fertige Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S33 in `5baed72` tatsächlich gesichert. Acht Lifecycle-Beobachtungen, statische Reichweite, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001h, Status WORKING.
