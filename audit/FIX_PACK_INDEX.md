@@ -75,3 +75,5 @@ S27: reines Runtime-Inventar, keine Issue-/Packänderung. Quick-add-Lifecycle is
 S28: TP-016 umfasst zusätzlich QuickAddComponent. Varianten-Lifecycleblock bleibt NOT READY bis QuickAddDialog und spätere Phase-2-Konsolidierung; Quick Add lokal deaktiviert, Livezustand offen. FILE CONFLICT `quick-add.js`/TP-016/017. Ready=2, Done/QA=0; keine Umsetzung.
 
 S29: QuickAddDialog ergänzt TP-016; `quick-add.js` lifecycleweit lokal geprüft. Varianten-Lifecycleblock bleibt wegen deaktivierter lokaler Funktion, unbekannter Live-Reichweite und später Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S30: TP-016 umfasst zusätzlich den in allen acht lokalen Produkttemplates aktivierten Sticky-Kaufbalken. Gemeinsames Lifecyclepaket bleibt bis weiterer Runtime-Abgrenzung und Phase-2-Konsolidierung NOT READY; FILE CONFLICT zu Varianten-/Formularpfaden. Ready=2, Done/QA=0; keine Umsetzung.

@@ -240,3 +240,7 @@ Nächster Schritt: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszu
 ## S29 – QuickAddDialog-Lifecycle
 
 Auch die Dialogklasse in `quick-add.js` gehört zu TP-016: CartUpdate fällt nach Reconnect aus, VariantUpdate bleibt während Disconnect aktiv, DialogClose ist korrekt verwaltet. Datei nun lifecycleweit geprüft; FILE CONFLICT zu VariantPicker/ProductForm/TP-017 bleibt. Quick Add lokal deaktiviert, Live-Reichweite offen. Nächster Runtime-Kandidat sequenziell: `sticky-add-to-cart.js`.
+
+## S30 – Sticky-Add-to-Cart-Lifecycle
+
+`sticky-add-to-cart.js` ist SHARED/HIGH RISK und in allen acht lokalen Produkt-Templates aktiv. Sämtliche section-/document-Ereignislistener teilen einen einmaligen Controller und fallen nach Reconnect aus. Abhängigkeiten: VariantPicker, ProductForm/Rechner-Kaufwege, QuantitySelector, CartUpdate/Error und eigene Observer. TP-016 erweitert; kein paralleler Fix mit Varianten-/Produktformular-Lifecycle. Nächster Kandidat sequenziell: `price-per-item.js`.

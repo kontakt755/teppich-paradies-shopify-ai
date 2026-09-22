@@ -478,3 +478,13 @@ Script `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`; Evidence `audit
 Nächster Schritt: JS-001d `sticky-add-to-cart.js` als kaufnahen ungeprüften Runtime-Kandidaten lesen und Lifecycle ausführen. Quick-add-/Variantenfälle nicht wiederholen.
 
 S29 in `0e710dd` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
+
+## S30 – Sticky-Add-to-Cart-Reconnect (22.09.2026)
+
+JS-001d: vier Lifecycle-Beobachtungen am vollständigen Original-StickyAddToCartComponent PASS. Initial aktualisieren VariantSelected und QuantitySelectorUpdate Varianten-ID und sichtbare Menge. Nach Disconnect werden beide ignoriert. Nach Reconnect derselben Instanz bleiben beide wirkungslos; frische Instanz verarbeitet sie korrekt. Ursache ist der einmal als Feld erzeugte `#abortController`, der beim Disconnect abgebrochen und beim Connect nicht erneuert wird.
+
+Alle acht lokalen Produkt-Templates setzen `enable_sticky_add_to_cart: true`; die lokale Quellreichweite ist damit stärker als bei Quick Add. Ein realer Browser-Reconnect derselben Instanz ist weiterhin nicht belegt. TP-016 um StickyAddToCartComponent erweitert, keine neue Issue-ID. Eventpfade CartUpdate/CartError nutzen dasselbe Signal und sind quellseitig ebenfalls betroffen; der Lauf assertiert gezielt VariantSelected und QuantitySelectorUpdate. Intersection-/MutationObserver, Klick, Cart, Morph und UI nicht ausgeführt.
+
+Script `audit/scripts/reproduce-sticky-cart-reconnect.mjs`; Evidence `audit/evidence/sticky-cart-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/DOM/Observer adaptiert. Syntax/Erstlauf PASS. Route TASK-B239BED3DED7 B/STATIC, kein Executor, Browser oder Livezugriff.
+
+Nächster Schritt: JS-001e `price-per-item.js` als nächsten kaufnahen Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Lifecyclefälle nicht wiederholen.

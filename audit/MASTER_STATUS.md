@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
-Letzte abgeschlossene Aufgabe: S29 / JS-001c: vier Lifecycle-Beobachtungen am vollständigen Original-QuickAddDialog PASS. CartUpdate fällt nach Reconnect wegen wiederverwendetem abgebrochenem Controller aus. VariantUpdate bleibt während Disconnect aktiv, verdoppelt sich beim Reconnect wegen identischer Listenerfunktion jedoch nicht. DialogClose wird korrekt entfernt und erneuert. TP-016 erweitert, keine neue Issue-ID; Quick Add lokal deaktiviert, Live-Reichweite unbekannt.
-Nächste Aufgabe: JS-001d: `assets/sticky-add-to-cart.js` als nächsten kaufnahen, ungeprüften Inventarkandidaten vollständig lesen und seinen Connect→Disconnect→Reconnect-Vertrag lokal ausführen. Quick-add- und Varianten-Lifecycle S21–S29 nicht wiederholen.
+Letzte abgeschlossene Aufgabe: S30 / JS-001d: vier Lifecycle-Beobachtungen am vollständigen Original-StickyAddToCartComponent PASS. Nach Reconnect verarbeitet dieselbe Instanz weder VariantSelected noch QuantitySelectorUpdate, weil ihr einmal erzeugter Controller beim Disconnect dauerhaft abgebrochen wird. Frische Instanz funktioniert. Alle acht lokalen Produkt-Templates aktivieren den Sticky-Kaufbalken. TP-016 erweitert, keine neue Issue-ID; konkrete Browser-Reconnect-Reichweite offen.
+Nächste Aufgabe: JS-001e: `assets/price-per-item.js` als nächsten kaufnahen, ungeprüften Einmal-Controller-Kandidaten vollständig lesen, Template-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige Sticky-/Quick-add-/Variantenfälle nicht wiederholen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -63,3 +63,5 @@ S27 in `2242374` tatsächlich gesichert. 96 Dateien/37 heuristische Kandidaten; 
 S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
 
 S29 in `0e710dd` tatsächlich gesichert. Vier QuickAddDialog-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001d, Status WORKING.
+
+S30 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier Sticky-Lifecycle-Beobachtungen und acht Templateaktivierungen PASS; TP-016 erweitert. Weiter JS-001e, Status WORKING.

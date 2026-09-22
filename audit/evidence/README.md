@@ -187,3 +187,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S29 – QuickAddDialog-Reconnect
 
 `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs` führt vier Lifecycle-Fälle an der vollständigen Dialogklasse aus. `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json` belegt ausfallenden CartUpdate, fortbestehenden VariantUpdate und korrekt verwalteten DialogClose. Kein UI-/Browser-/Livepfad.
+
+## S30 – Sticky-Add-to-Cart-Reconnect
+
+`audit/scripts/reproduce-sticky-cart-reconnect.mjs` führt vier Lifecycle-Fälle am vollständigen StickyAddToCartComponent aus und prüft acht lokale Produkttemplates. `audit/evidence/sticky-cart-reconnect-2026-09-22.json` belegt ausfallende Varianten-/Mengenlistener nach Reconnect. Kein UI-/Browser-/Livepfad.

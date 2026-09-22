@@ -271,3 +271,9 @@ Evidence: `audit/evidence/quick-add-reconnect-2026-09-22.json`; Script: `audit/s
 Vier Lifecycle-Beobachtungen PASS: initial Cart/Variant/Close aktiv; nach Disconnect Cart/Close inaktiv, Variant als Geisterlistener aktiv; Reconnect Cart weiter inaktiv, Variant einmal, Close einmal; frische Instanz vollständig. Identische Variant-Listenerfunktion wird nicht doppelt registriert. TP-016 erweitert.
 
 Evidence: `audit/evidence/quick-add-dialog-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-quick-add-dialog-reconnect.mjs`. Nach korrigierter Doppelregistrierungsassertion Syntax/Diagnose PASS. Kein UI-/Browserlauf.
+
+## S30 – Sticky-Add-to-Cart-Reconnect
+
+Vier Lifecycle-Beobachtungen PASS: Initial Variant/Menge aktualisiert; getrennt beide inaktiv; Reconnect derselben Instanz beide weiter inaktiv; frische Instanz aktiv. Acht Produkt-Templates aktivieren den Balken. TP-016 erweitert. Originalklasse/Events mit adaptierten DOM-/Observergrenzen; kein Klick/Cart/Morph/Browser.
+
+Evidence: `audit/evidence/sticky-cart-reconnect-2026-09-22.json`; Script: `audit/scripts/reproduce-sticky-cart-reconnect.mjs`. Syntax/Erstlauf PASS.

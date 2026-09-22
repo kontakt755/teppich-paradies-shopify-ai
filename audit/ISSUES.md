@@ -561,3 +561,11 @@ Vier Originalcode-Beobachtungen bestätigen zwei weitere Lifecycle-Ausprägungen
 Priorität P3 bleibt; Quick Add lokal deaktiviert, Live-/Browserreichweite unbekannt. Risiko bei aktiver Funktion: getrennte Dialoginstanz verarbeitet Variantenupdates weiter und kann Linkzustand verändern, während ein wiederverbundener Dialog nach CartUpdate nicht mehr schließt. Kein konkreter Live-Kaufblocker belegt.
 
 Implementation-Brief-Ergänzung: Controller pro Connect erneuern und VariantUpdate in dieselbe lifecyclegebundene Verwaltung aufnehmen; DialogClose-Verhalten erhalten. Connect/Disconnect/Reconnect für Erfolg und Cartfehler, VariantLink und iOS-Close regressionsprüfen. Keine Modal-/Morph-Neufassung. FILE CONFLICT innerhalb `quick-add.js` mit S28 gemeinsam lösen; TP-016/017 angrenzend. Aufwand S, Pack weiterhin NOT READY. Phase 1/2 ohne Reparatur.
+
+### S30 – TP-016 erweitert: StickyAddToCartComponent
+
+Vier Originalcode-Beobachtungen bestätigen den wiederverwendeten abgebrochenen Controller in `assets/sticky-add-to-cart.js` (Lifecycle etwa Zeilen 88–116). Nach Connect→Disconnect→Connect verarbeitet dieselbe Instanz weder VariantSelected noch QuantitySelectorUpdate; eine frische Instanz funktioniert. CartUpdate, CartError und VariantUpdate nutzen dasselbe Signal und sind quellseitig vom selben Controllerzustand abhängig.
+
+Alle acht lokalen Produkt-Templates aktivieren `enable_sticky_add_to_cart`, daher ist die lokale Template-Reichweite bestätigt. Die konkrete Browserbedingung, die dieselbe Custom-Element-Instanz reconnectet, und der heutige Livehash bleiben offen. Priorität P3 bleibt. Risiko: nach Reinsert/Morph veraltete Varianten-ID/Menge, ausbleibender Puppet-Reset und nicht synchronisierter Sticky-Kaufweg; falsche Bestellung nicht direkt belegt.
+
+Implementation-Brief-Ergänzung: Controller pro Verbindungszyklus erneuern; bestehende Observer beim Disconnect sauber trennen und beim Reconnect vollständig wiederherstellen. Akzeptanz: VariantSelected/Update, Menge, Cart Erfolg/Fehler und Zielbuttonzustand reagieren initial und reconnectet je einmal, getrennt null. Intersection-/MutationObserver und Rechner-/Paket-/Standardkaufweg regressionsprüfen. FILE CONFLICT mit VariantPicker/ProductForm und Rechnerintegration; keine Kaufweg-Neufassung. Aufwand S–M, Pack NOT READY. Phase 1/2 ohne Reparatur.

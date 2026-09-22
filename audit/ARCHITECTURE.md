@@ -151,3 +151,7 @@ Der Lifecycle-Test bestätigt asymmetrisches Reconnect-Verhalten: VariantSelecte
 ## S29 – QuickAddDialog
 
 Die Dialogklasse zeigt denselben einmaligen Controllerfehler für CartUpdate; VariantUpdate bleibt mangels Entfernung während Disconnect aktiv, wird aber nicht vervielfacht. DialogClose ist korrekt symmetrisch. `quick-add.js` ist damit vollständig als gemeinsamer TP-016-Lifecyclebereich kartiert.
+
+## S30 – Sticky-Add-to-Cart
+
+Der in allen acht lokalen Produkt-Templates aktive Sticky-Kaufbalken verwendet einen einmaligen Controller für Varianten-, Mengen- und Cart-Ereignisse. Nach Reconnect derselben Instanz werden diese Listener nicht wiederhergestellt. Die Komponente verbindet Standardformular, Paket-/Rollen-/Einfass-Kaufwege, VariantPicker, QuantitySelector und Cart; sie gehört zum gemeinsamen TP-016-Lifecyclebereich.
