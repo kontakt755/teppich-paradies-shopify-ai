@@ -541,3 +541,7 @@ Implementation-Brief-Ergänzung: stabile Listenerreferenz oder lifecyclegebunden
 ### S26 – H-016 Reichweite eingegrenzt
 
 Die globale CustomEvent-Kopplung ist im Quellvertrag real: Sender und Farbverbraucher verwenden `document`, und CustomEvents prüfen keine Produkt-ID. Die lokale Template-/Konfigurationsmatrix belegt aber keinen aktuellen fremden Kaufformularpfad: Die drei Templates mit Custom-Farbpicker haben ihre normalen Buy-Buttons deaktiviert; Quick Add ist in `config/settings_data.json` deaktiviert. Produktempfehlungen sind in allen Produkttemplates vorhanden und das Quick-add-Snippet könnte Farbproperties eines anderen Produkts rendern, falls diese Funktion aktiv ist. Da lokale Einstellungen nicht dem verifizierten Livehash entsprechen, bleibt H-016 offen und bedingt. Kein zusätzliches Issue, keine Änderung an TP-016/017-Prioritäten.
+
+### S27 – Runtime-Kandidaten, keine Issues
+
+Das statische Runtime-Inventar markiert 37 Dateien heuristisch. Kein Flag wird als Fehler gezählt. Quick Add ist als nächster Lifecycle-Test ausgewählt; erst die Originalcode-Ausführung entscheidet, ob TP-016 erweitert oder eine Hypothese verworfen wird. Issuezahl bleibt 17.

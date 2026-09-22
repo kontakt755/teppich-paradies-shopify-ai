@@ -253,3 +253,9 @@ Statische Matrix PASS: acht Produkt-Templates, davon drei mit aktivem Custom-Far
 Evidence: `audit/evidence/variant-morph-reach-2026-09-22.json`; Script: `audit/scripts/audit-variant-morph-reach.mjs`. Zwei Parseranläufe stoppten vor Auswertung an Shopify-Kommentarvorspannen; korrigierter Matrixlauf PASS.
 
 Nächster Schritt: JS-001a Runtime-Inventar und Priorisierung noch ungeprüfter Fehlerpfade.
+
+## S27 – JavaScript-Runtime-Inventar
+
+Statisches Inventar PASS: 96 Dateien/25.206 Zeilen, 77 Custom Elements, 56 Dateien mit Connect-Lifecycle, 47 mit globalen Listenern, 16 mit Fetch und 37 heuristische Kandidaten. Prüfflags sind keine Defektassertionen. Bereits auditierte Kernquellen separat markiert.
+
+Evidence: `audit/evidence/js-runtime-inventory-2026-09-22.json`; Script: `audit/scripts/audit-js-runtime-inventory.mjs`. Nach einer feldbezogenen Controller-Erkennung Syntax/Inventar PASS. Nächster ausführbarer Kandidat: QuickAddComponent-Lifecycle.

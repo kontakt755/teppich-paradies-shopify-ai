@@ -69,3 +69,5 @@ S24: TP-016 umfasst zusätzlich product-form.js; FILE CONFLICT mit TP-017. Lifec
 S25: TP-016 umfasst zusätzlich variant-picker.js (doppelter Change-Listener, Request bleibt bei Disconnect aktiv). Gemeinsames Lifecyclepaket weiterhin NOT READY bis Morph-/Mehrprodukt-Aufruferabgrenzung. FILE CONFLICT mit TP-017; Ready=2, Done/QA=0. Keine Umsetzung.
 
 S26: Morph-/Mehrprodukt-Aufrufer lokal abgegrenzt. H-016 bleibt wegen deaktiviertem lokalen Quick Add und unbekanntem Livezustand bedingt. TP-015–017 könnten später einen gemeinsamen Variantenblock bilden, bleiben bis Browser-/Live-Reichweite und Phase-2-Konsolidierung NOT READY. Ready=2, Done/QA=0; keine Umsetzung.
+
+S27: reines Runtime-Inventar, keine Issue-/Packänderung. Quick-add-Lifecycle ist nur Kandidat und wird vor Zuordnung ausgeführt. Ready=2, Done/QA=0; keine Umsetzung.

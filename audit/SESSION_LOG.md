@@ -442,3 +442,13 @@ Script `audit/scripts/audit-variant-morph-reach.mjs`; Evidence `audit/evidence/v
 Nächster Schritt: JS-001a: JavaScript-Runtime-Inventar ab aktuellem Quellstand erstellen und ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
 
 S26 in `98906eb` tatsächlich gesichert. Matrix-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001a, Status WORKING.
+
+## S27 – JavaScript-Runtime-Inventar (22.09.2026)
+
+JS-001a abgeschlossen: 96 lokale JavaScript-Assets mit zusammen 25.206 Zeilen und aktuellen SHA-256-Werten inventarisiert. Gefunden wurden 77 Custom-Element-Definitionen, 56 Dateien mit `connectedCallback`, 47 mit globalen Document-/Window-Listenern und 16 mit `fetch`. Eine konservative Regex-Heuristik markiert 37 Dateien wegen einmalig erzeugter/abgebrochener Controller, gebundener Listener, globaler Listenerhäufung oder Fetch ohne lokalen Catch. Diese Flags priorisieren nur; sie sind ausdrücklich keine bestätigten Fehler.
+
+Bereits in S08–S26 geprüfte Kernquellen sind im Report markiert, damit sie nicht blind wiederholt werden. Nächster neuer Ausführungskandidat ist `assets/quick-add.js`: `#cartUpdateAbortController` wird als Feld einmal erzeugt und bei Disconnect abgebrochen, während VariantSelected mit jeweils neuem `bind(this)` registriert/entfernt wird. S26 las bereits Modal-/Morphgrenzen, führte den Lifecycle aber nicht aus. Lokales Quick Add ist deaktiviert und Live-Reichweite unbekannt.
+
+Script `audit/scripts/audit-js-runtime-inventory.mjs`; Evidence `audit/evidence/js-runtime-inventory-2026-09-22.json`. Erster Lauf stoppte an einer zu groben Controller-Gesamtzählung, die den erneuerten Fetch-Controller mit dem einmaligen Event-Controller vermischte. Feldbezogene Erkennung ergänzt; danach Syntax/Inventar PASS. Route TASK-6E453FC0AD72 B/STATIC, kein Executor, kein Browser/Netzwerk.
+
+Nächster Schritt: JS-001b vollständigen Original-QuickAddComponent-Lifecycle Connect→Disconnect→Reconnect für CartUpdate/VariantSelected lokal ausführen. Modal-/Morphprüfung S26 nicht wiederholen.

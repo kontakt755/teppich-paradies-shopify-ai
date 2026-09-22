@@ -138,3 +138,8 @@ S16 / CART-003b.3: sieben lokale Notizfälle PASS. Original-debounce bündelt Ei
 Evidence: `audit/evidence/cart-note-2026-09-22.json`; Script `audit/scripts/reproduce-cart-note.mjs`. Route TASK-1E9C956DD1CD B/STATIC; kein Executor. Diagnosescript zweimal korrigiert: Konfigurationshash nicht als gleich voraussetzen; Shopify-Kommentar vor JSON-Parsing entfernen. Danach Syntax/Diagnose PASS. Keine alten Diagnosen wiederholt.
 
 Nächster Schritt: CART-004: bisherigen lokalen Cart-Audit konsolidieren, Testmatrix auf offene statt abgeschlossene Fälle reduzieren und passende kleine Cart-/Rabatt-Fix-Packs anhand vollständiger Briefs vorbereiten (weiter Phase 1/2, keine Reparaturen). Browser-/Livegrenzen H-012–015 und Konfigurationsdrift ausdrücklich offen halten. Danach nächsten ungeprüften Rechner-/Variantenvertrag aus TEST_MATRIX auswählen. Keine fertigen Diagnosen wiederholen; Browserberechtigung S13 nicht umgehen.
+## S27 – JavaScript-Runtime-Inventar (22.09.2026)
+
+Der aktuelle `assets/`-Stand umfasst 96 JavaScript-Dateien mit 25.206 Zeilen, 77 Custom-Element-Definitionen, 56 Dateien mit `connectedCallback`, 47 mit globalen Document-/Window-Listenern und 16 mit Fetch-Aufrufen. Vollständige Hash-/Metrikliste: `evidence/js-runtime-inventory-2026-09-22.json`.
+
+Die statischen Flags sind Suchhilfen, keine Defekte. Lifecycle-/Listenerprobleme müssen am vollständigen Originalcode reproduziert werden. Als nächster Kandidat folgt `quick-add.js`; es verbindet Product Cards, Modal, VariantPicker, ProductForm und globale Events. Bereits geprüfte Cart-/Variantenquellen sind im Inventar markiert und werden nicht erneut pauschal getestet.

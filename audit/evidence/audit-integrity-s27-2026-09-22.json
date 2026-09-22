@@ -1,0 +1,9 @@
+{
+  "session": "S27",
+  "status": "PASS",
+  "json_files_parsed": 55,
+  "javascript_files": 96,
+  "heuristic_candidates": 37,
+  "confirmed_issues": 17,
+  "progress_headings": 9
+}

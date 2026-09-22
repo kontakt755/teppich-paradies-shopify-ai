@@ -175,3 +175,7 @@ Originalevents und native EventTarget/AbortController; Component-Basisklasse/Ref
 ## S26 – Morph-/Mehrprodukt-Reichweite
 
 `audit/scripts/audit-variant-morph-reach.mjs` erfasst acht Produkt-Templates, lokale Quick-add-Einstellung und sechs verbundene Quellhashes. `audit/evidence/variant-morph-reach-2026-09-22.json` grenzt H-016 auf eine bedingte globale Kopplung ein. Statische Quelle/Konfiguration, kein Browser oder Livebeleg.
+
+## S27 – JavaScript-Runtime-Inventar
+
+`audit/scripts/audit-js-runtime-inventory.mjs` inventarisiert 96 JS-Assets samt Hash, Größe, Lifecycle-/Listener-/Fetch-Metriken und markiert bereits geprüfte Kernquellen. `audit/evidence/js-runtime-inventory-2026-09-22.json` enthält 37 heuristische Prüfkandidaten. Flags sind Priorisierung, keine Fehlerbelege.

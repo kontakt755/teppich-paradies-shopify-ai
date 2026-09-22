@@ -228,3 +228,7 @@ Nächster Schritt: konkrete Morph-/Quick-add-Aufrufer und Mehrprodukt-Ereigniszu
 `color-swatch-picker.liquid` → dokumentweites `tp:farbe-wechsel` → `tp-farbe.js`; native `variant:update` bleibt auf Section/Dialog/Product-Card plus Produkt-ID begrenzt. `snippets/quick-add.liquid` kann `tp-farbe-properties` eines anderen Produkts in `quick-add-modal-content` einbringen; `quick-add.js` morpht diesen Container. Lokale Einstellung deaktiviert Quick Add, Livezustand unbekannt. H-016 daher bedingt.
 
 `morph.js` ist CORE/HIGH RISK und kann alte Knoten erhalten oder verschieben. Das schafft eine Lifecycle-Abhängigkeit für TP-016, ist aber kein Auftrag zum globalen Morphumbau. FILE CONFLICT bleibt: `variant-picker.js`, `product-form.js`, `tp-farbe.js`, angrenzend `quick-add.js`; sequenziell planen.
+
+## S27 – Runtime-Inventar
+
+96 JS-Assets sind mit Hash/Metriken inventarisiert. Heuristische Kandidaten dürfen erst nach Originalcode-Ausführung als Issue gelten. `quick-add.js` ist der nächste CORE/SHARED-Kandidat und verbindet Product Card, Modal, VariantPicker, ProductForm sowie globale Cart-/Variant-Events. FILE CONFLICT mit TP-016/017 möglich; Lifecycle isoliert vor jeder Paketzuweisung prüfen. Nachfolgende Kandidaten bleiben im Evidence-Report priorisierbar, werden nicht parallel untersucht.

@@ -25,8 +25,8 @@ Noch offen:
 Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: JavaScript-Runtime, Phase 1; Varianten-/Farbpicker lokal abgeschlossen.
-Letzte abgeschlossene Aufgabe: S26 / VAR-001a.2c.3: acht Produkt-Templates und sechs Quellverträge statisch geprüft. Drei Templates haben aktiven Custom-Farbpicker und Farbanzeige, dort sind normale Buy-Buttons deaktiviert; alle enthalten Empfehlungen. Quick Add ist in den lokalen Repository-Einstellungen deaktiviert. Das globale CustomEvent kann bei aktivem fremdem Quick-add-Formular dessen Farbproperties verändern, doch diese heutige Reichweite ist nicht belegt. H-016 bleibt bedingt, kein neues Issue. Morph-/Quick-add-Code bildet eine mögliche Reconnect-Grenze, kein Browser-Lifecycle-Nachweis.
-Nächste Aufgabe: JS-001a: JavaScript-Runtime-Inventar ab dem aktuellen Quellstand erstellen und noch ungeprüfte globale Listener, Controller-/Reconnect- und Promise-Fehlerpfade priorisieren. Variantenfälle S20–S26 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+Letzte abgeschlossene Aufgabe: S27 / JS-001a: 96 JavaScript-Dateien mit 25.206 Zeilen, 77 Custom-Element-Definitionen, 56 Dateien mit connectedCallback, 47 mit globalen Listenern und 16 mit fetch statisch inventarisiert. 37 Dateien tragen heuristische Prüfflags; diese sind keine Fehlerbelege. Bereits auditierte Kernquellen markiert. Nächster isolierter Kandidat ist QuickAddComponent: einmalig erzeugter Event-Controller plus gebundene Listenerreferenzen; Lifecycle noch nicht ausgeführt. Keine neue Issue-ID.
+Nächste Aufgabe: JS-001b: vollständigen Original-QuickAddComponent-Lifecycle Connect→Disconnect→Reconnect für CartUpdate/VariantSelected lokal ausführen. Modal-/Morphgrenze aus S26 nicht wiederholen; lokale Einstellung Quick Add aus und Livezustand unbekannt berücksichtigen.
 Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
@@ -57,3 +57,5 @@ S24 in `e381aac` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Syntax-/I
 S25 in `b8e16c5` tatsächlich gesichert. Vier Picker-Lifecycle-Beobachtungen, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter VAR-001a.2c.3, Status WORKING.
 
 S26 in `98906eb` tatsächlich gesichert. Statische Morph-/Mehrproduktmatrix sowie Integritäts-/Secret-/Diffcheck PASS; 17 Issues unverändert. Keine Shopänderung. Weiter JS-001a, Status WORKING.
+
+S27 Inventar abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. 96 Dateien/37 heuristische Kandidaten, keine neue Issue-ID. Weiter JS-001b, Status WORKING.
