@@ -512,3 +512,5 @@ Alle acht lokalen Produkttemplates enthalten einen aktiven `_product-media-galle
 Script `audit/scripts/reproduce-media-gallery-reconnect.mjs`; Evidence `audit/evidence/media-gallery-reconnect-2026-09-22.json`. Erster Lauf erreichte die Beobachtung, scheiterte aber wegen VM-fremder Objektprototypen an `deepStrictEqual`; Optionsbeobachtung auf primitiven Boolean normalisiert, danach Diagnose PASS. Route TASK-FE7225BF7A8F B/STATIC, kein Executor.
 
 Nächster Schritt: JS-001g `assets/media.js` vollständig lesen, seine Klassen-/Aufruferreichweite bestimmen und Lifecycle lokal ausführen. Fertige S20–S32-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S32 in `55ffd1e` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, acht Templateaktivierungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.

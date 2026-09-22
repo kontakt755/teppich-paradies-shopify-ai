@@ -68,4 +68,4 @@ S30 in `6d4ed1a` tatsächlich gesichert. Vier Sticky-Lifecycle-Beobachtungen, ac
 
 S31 in `f9713f5` tatsächlich gesichert. Vier Stückpreis-Lifecycle-Beobachtungen, Template-Matrix sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.
 
-S32: MediaGallery-Lifecycle und acht Produkttemplates lokal geprüft; TP-016 erweitert. Keine Shopänderung. Weiter JS-001g, Status WORKING.
+S32 in `55ffd1e` tatsächlich gesichert. Vier MediaGallery-Lifecycle-Beobachtungen, acht Templateaktivierungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001g, Status WORKING.

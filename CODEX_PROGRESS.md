@@ -34,6 +34,6 @@ JS-001g: `media.js` vollständig lesen, Klassen-/Aufruferreichweite bestimmen un
 
 ## Letzter erfolgreicher Git-Commit
 
-f9713f5 – audit: TP-016 um Stückpreis-Reconnect erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
+55ffd1e – audit: TP-016 um Media-Gallery-Reconnect erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING
