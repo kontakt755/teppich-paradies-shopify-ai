@@ -186,3 +186,12 @@ S19 / CALC-001a.2 lokal abgeschlossen: vier aufeinanderfolgende Wechsel mit vier
 Evidence: `audit/evidence/roll-state-submit-2026-09-22.json`; Script `audit/scripts/reproduce-roll-state-submit.mjs`. Baseline aus Original-Liquid, synthetische Zusatzfarben; Darstellungs-/Service-/Einfasschip-Helfer adaptiert. Erster Lauf PASS, nach ergänzter Gesamtpreis-/Breitenassertion zweiter Lauf PASS. Keine alten Diagnosen ausgeführt. Route TASK-67D370DD36E8 B/STATIC; kein Executor.
 
 Nächster Schritt: VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung.
+
+
+## S20 – Farbpicker-Kombinationsvertrag
+
+S20 / VAR-001a.1: sechs Fälle am vollständigen ersten Original-Farbpicker-IIFE, zwei historische Hashvergleiche. Gemeinsame Breite funktioniert mit initialem Zustand und Formular. Drei fehlende Kombinationsfälle (500 cm initial/Formular, Wunschmaß aus URL) bestätigen TP-015/P2: Radio zeigt neue Farbe, Label/ID/URL bleiben alt, kein tp:farbe-wechsel. Globale Formular-ID-Schreibweise verändert auch zweites synthetisches Formular; reale Fremdformularreichweite H-016 offen. Keine Shopänderung oder Liveabnahme.
+
+Evidence: `audit/evidence/color-picker-2026-09-22.json`; Script `audit/scripts/reproduce-color-picker.mjs`. Erstlauf scheiterte am Zahlenwert im Formmock; natives String-Coercion-Verhalten im Adapter ergänzt, danach Syntax/Diagnose PASS. Keine Produktquelle geändert. Route TASK-A6785D897266 B/STATIC; kein Executor/alte Diagnosen.
+
+Nächster Schritt: VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.js Verbraucher prüfen: Farbänderung→native Events→Formular-/URL-/Sectionzustand, Verfügbarkeit und mehrere Produktbereiche (H-016). TP-015 nicht durch frei geratene Breitenwahl reparieren. Keine fertigen Picker-/Rechnerfälle wiederholen; Browserberechtigung seit S13 nicht umgehen.

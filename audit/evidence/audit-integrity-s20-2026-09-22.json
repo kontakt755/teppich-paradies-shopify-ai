@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "six cases/two unchanged source hashes",
+    "audit JSON valid",
+    "nine progress headings/WORKING",
+    "15 confirmed issues",
+    "scope restricted",
+    "git diff --check"
+  ]
+}

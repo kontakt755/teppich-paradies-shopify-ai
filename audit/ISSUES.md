@@ -19,6 +19,8 @@ Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
 | TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
 
+| TP-015 | P2 | Farbwahl ohne bisherige Breitenkombination lässt alte Variante aktiv | BESTÄTIGT lokal; heutige Produktreichweite offen | Offen |
+
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
 - **Bereich:** Preis-/Mengenberechnung, Eingabevalidierung.
@@ -395,13 +397,32 @@ S16 ergänzt TP-014 um `assets/cart-note.js:17–43`: identischer bedingungslose
 
 S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrationsgrenzen für H-012, keine zusätzlichen bestätigten Bestellfehler. Native Formularübermittlung kann den aktuellen Notizwert unabhängig vom Ajaxrequest übertragen; Express/Reload und Serverpersistenz nicht geprüft. Evidence `evidence/cart-note-2026-09-22.json`.
 
+## TP-015 – Neue Farbe ausgewählt, alte Variante bleibt bei fehlender Kombination aktiv
+
+- **Priorität / Bereich / Sicherheit:** P2, Farbpicker/Rollenrechnerintegration, BESTÄTIGT lokal. Produktseiten mit color-swatch-picker; aktuelle Produkte, Geräte/Browser nicht verifiziert.
+- **Datei / Ursache:** blocks/color-swatch-picker.liquid findMatchingVariant (ca. 493–501) verlangt gleiche Werte aller Nichtfarboptionen. Changehandler (594–608) kehrt bei fehlender Kombination sofort zurück, nachdem das Radio bereits umgeschaltet wurde. Kein Rücksetzen, Hinweis oder valider Farbzustand. Radio-Markup um 377–387 hat keine entsprechende Kombinationssperre.
+- **Reproduktion:** `node audit/scripts/reproduce-color-picker.mjs`: synthetisch Red 400/500/Wunschmaß, Blue nur 400. Start Red 500 oder Wunschmaß; Blue auswählen. Initial-/URL-/Formularpfad in drei Fällen geprüft.
+- **Erwartet / tatsächlich:** neue Farbe muss konsistent auf eine belegte kaufbare Kombination wechseln oder die Auswahl mit verständlichem Hinweis zurückweisen/sperren. Tatsächlich Radio Blue, Label Red, Variante weiterhin Red; kein tp:farbe-wechsel. Rollenrechner liest weiterhin alte ID/URL/Initialoptionen; seine korrekte Breiten-Rückschaltung aus S19 wird dadurch nicht erreicht. Kein echter falscher Kauf durchgeführt oder heutiges betroffenes Sortiment behauptet.
+- **Evidence / Risiko:** evidence/color-picker-2026-09-22.json; sechs Fälle, drei Defektfälle, zwei historische Hashes. Vollständiger erster Picker-IIFE über Liquid gerendert, Radio-/DOM-/Formularverhalten modelliert. Risiko falscher Farberwartung bei weiterhin alter Bestellvariante, nicht Preismanipulation.
+
+### IMPLEMENTATION BRIEF – TP-015
+
+- **Ziel / Root Cause:** keine auseinanderlaufende sichtbare Farbe und aktive Variante bei fehlender Nichtfarboptionskombination. Exaktsuche mit stillem frühem Return ist Ursache.
+- **Dateien / Funktionen:** color-swatch-picker.liquid findMatchingVariant/Change/UI-/Formular-/URL-Update; Rollenrechner baseOptions/syncArtUi als Integrationsvertrag, native variant-picker.js in VAR-001a.2 prüfen.
+- **Zu ändernde Logik:** fehlende Kombination ausdrücklich behandeln. Vor automatischer Breitenänderung fachliche Auswahlregel festlegen; sichere Alternative ist sichtbare Rückweisung und Wiederherstellung konsistenter Auswahl. Keinen zufälligen ersten Varianteneintrag wählen. Verfügbarkeit und andere Optionen erhalten; Formular/URL/Label/Properties/Media nur als konsistenten Zustand aktualisieren.
+- **Nicht verändern:** Produktvarianten, Preise, SKUs, Breitenfreigaben, Raummaßregeln, Zubehör-/Gruppenlogik und globale Eventnamen. Keine Freischaltung nicht kaufbarer Varianten.
+- **Abhängigkeiten / FILE CONFLICT:** gemeinsamer Farbpicker mit H-016/nativem Picker; Rollenpaket TP-009 angrenzend, keine Parallelfixes. H-003/VAR-001a.2 sowie heutige Produktreichweite vor Liveabnahme klären.
+- **Akzeptanz / Tests:** Red500→Blue400-only und RedWunschmaß→Blue400-only ergeben entweder konsistente belegte Neuauswahl oder sichtbare Rückweisung, nie Blue-Radio bei Red-ID. Initial-, URL- und Formularpfad; gemeinsame Breite bleibt korrekt. Anschließend Rechner-Submit-ID/Farbproperties prüfen.
+- **Regression / Seiteneffekte:** Verlust anderer Optionen, ungewollte Größenänderung, falsche Formular-ID, widersprüchliche Bilder/Properties, native Eventschleifen. Mehrere Formulare, schneller Wechsel, nicht kaufbare Varianten und Zurück/Reload gezielt prüfen. Historische Defektassertions für Fix-QA auf Sollverhalten umstellen.
+- **Aufwand / Reihenfolge / Rollback:** M; erst VAR-001a.2 und Auswahlregel, dann kleiner lokaler Pickerfix. Keine Datenmigration; Codeänderung rücknehmbar. Phase 1/2 keine Reparatur.
+
 ## Offene Hypothesen – nicht als zusätzliche Issues gezählt
 
 | ID | Untersuchung | Aktueller Beleg / Grenze | Nächster Nachweis |
 | --- | --- | --- | --- |
 | H-001 | Shopify-Reaktion auf `quantity:null`/extrem große Paketmenge | Nur lokal abgefangener Payload, keine historische ungültige Serverantwort | Isolierter anonymer Browser-Cart bei wieder verfügbarem Runner; keine Belastung durch große Bestellversuche nötig, ungültige Requests möglichst vor Versand abfangen |
 | H-002 | Unterschiedliche Rundungsregeln | **Lokal geschlossen:** Regeln ausdrücklich dokumentiert und Einfass-Integration geprüft. 250 × 333 → 833, 365 × 302 → 1103 im Einfasspfad, letzteres im Raummaß absichtlich 1102 | Kein zusätzliches Issue; Regeln nicht vereinheitlichen |
-| H-003 | Zubehörzustand nach Farb-/Artwechsel | S18 Auswahl/Extras; S19 Original-syncArtUi/calculate/Submit in vier Zustandsfolgen korrekt, inklusive Rückschaltung, ID/Gruppe und Preis-Payloadvergleich | Lokaler Zustandsvertrag belegt; echte Picker/Formular/URL/Morphintegration VAR-001a und Browser offen. Nicht vollständig geschlossen |
+| H-003 | Zubehörzustand nach Farb-/Artwechsel | S18 Auswahl/Extras; S19 Original-syncArtUi/calculate/Submit in vier Zustandsfolgen korrekt, inklusive Rückschaltung, ID/Gruppe und Preis-Payloadvergleich | S20 TP-015 blockiert fehlende Breitenkombination vor Rechnernachlauf; weitere native Picker/Morphintegration VAR-001a.2 offen. Nicht geschlossen |
 | H-004 | Aktueller Shop entspricht noch historischem Live-Snapshot | Bisher geprüfte Rechnerquellen hashgleich; S03 ergänzt sechs Einfassquellen, heutige Admin-/Browserverifikation fehlt | MAIN-Theme und betroffene Assets bei verfügbarer Verbindung neu prüfen; ältere Web-Crawls nicht als Nachweis verwenden |
 | H-005 | Aktive Live-Reichweite von TP-004 | Rechenfehler lokal sicher; keine aktuelle Rollenware mit `preis_pro_001_qm=true` nachgewiesen. Vorhandene Piumera-Belege zeigen volle m²; cmExact beim separaten Einfassprodukt beweist keine Nutzung im Rollenblock | Rein lesend Produkt-Template + Flag + aktive Variante/Preis und ggf. gerendertes `cm_exact` erfassen. Benachrichtigungsvorlage im Admin separat abgleichen; keine Testmail ohne Auftrag versenden |
 | H-006 | Aktueller Pflichtservice-/Verfügbarkeitszustand zu TP-005 | Lokaler Ausfallpfad bestätigt, Template konfiguriert `kettelservice`, historische Piumera-Regel verlangt separate Kettelung; heutige Daten/Bestände unbekannt | Rein lesend MAIN-Template, zugeordnete Servicevariante und Kaufbarkeit/Preis-/Bestandspolicy prüfen. Absichtliche Inklusivpreise von ausgefallenen separaten Services unterscheiden; keine Bestände verändern |
@@ -414,6 +435,8 @@ S16: stille Notizfehler und Timer nach modelliertem Disconnect sind Integrations
 | H-013 | Überlappende Cartantworten und verschobene Zeilenidentität | S11: zwei direkte Requests können ältere Antwort zuletzt anwenden und vorzeitig entsperren; laufender Discount-Sectionrequest kann jüngere direkte Cartantwort überschreiben. Manuell geänderte Refs zeigen Fehler an anderer Zeile. Acht kontrollierte Fälle, keine Browser-/Server-Erreichbarkeit | Browserbedienbarkeit trotz CSS-/Debouncesperre, reale Discount-/Cartüberschneidung, Snapshotreihenfolge und tatsächlichen Refwechsel prüfen. Keine zusätzliche bestätigte Issue-ID und kein pauschaler Serialisierungsfix aus synthetischem Ablauf |
 | H-014 | Drawer-Ereignis-/RAF-/History- und Ansagegrenzen | S12 elf lokale Fälle: allgemeines Update öffnet bei auto-open; erste Zählansage fehlt vor RAF, späterer Event wird angesagt; Close/Disconnect vor RAF storniert geplantes Öffnen nicht. Native DOM-/Fokus-/Historyabläufe nicht getestet | Browser: echte Relevanz der Zählansage neben Dialogfokus, Öffnen durch Hintergrundabgleich, schnelles Schließen/Disconnect, Escape, Zurück/Vorwärts/Reload und Animationen prüfen. Kein zusätzlicher bestätigter Fehler aus minimalem Dialogmodell |
 | H-015 | Tastatur-/Express-Checkout bei Cart-Sperre | S13: Original-CTA/POST-/Pflichtfeldvertrag lokal geprüft. Express-Markup nur flagabhängig, Sperr-CSS pointer-events:none/opacity:0.4. Keine native Tastatur-/Paymentprüfung oder aktuelle Expressaktivierung | Nach erlaubtem Browserzugriff aktivierte Express-Komponenten, Tab/Enter und Checkoutvalidierung prüfen; keinen Kauf abschließen. Keine bestätigte Umgehung aus CSS allein ableiten |
+
+| H-016 | Farbpicker beeinflusst fremde Produktformulare | S20 setzt globale setVariantIdInput-Suche beide modellierten Formulare auf dieselbe ID. Native Optionen/Media ebenfalls global gesucht; echte Mehrprodukt-DOMreichweite ungeprüft | VAR-001a.2 Produkt-/Sectionscoping und native Events prüfen; keine bestätigte produktübergreifende Bestellung aus Fixture ableiten |
 
 ## Verworfen / eingegrenzt
 

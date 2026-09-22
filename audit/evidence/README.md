@@ -139,3 +139,8 @@ Checkout-contracts JSON/Summary: neun Fälle, vier Hashes. browser-access JSON: 
 ## S19
 
 `roll-state-submit-2026-09-22.json`: vier zusammenhängende Übergänge/Submits, zwei Quellhashes, ID-/Art-/Gruppe-/Zubehör-/Gesamtpreisassertions. Script `audit/scripts/reproduce-roll-state-submit.mjs`. Native Picker-/Morphprüfung offen. Integritäts-/Secretprotokolle S19.
+
+
+## S20
+
+`color-picker-2026-09-22.json`: sechs Original-IIFE-Fälle, drei TP-015-Defektfälle, zwei Hashes. Script `audit/scripts/reproduce-color-picker.mjs`; synthetische DOM-/Variantenkonstellation, aktuelle Reichweite offen. Integritäts-/Secretprotokolle S20.

@@ -6,31 +6,31 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S19 / CALC-001a.2 abgeschlossen, grob 28 %. Weiter VAR-001a Farbpickervertrag.
+Phase 1, S20 / VAR-001a.1 abgeschlossen, grob 28 %. Weiter nativer Varianten-/Farbverbrauchervertrag.
 
 ## Erledigte Aufgaben
 
-S01–S18 siehe SESSION_LOG. S19 / CALC-001a.2 lokal abgeschlossen: vier aufeinanderfolgende Wechsel mit vier abgefangenen Submits, zwei historische Hashvergleiche. Original-syncArtUi/calculate/Extras/Submit: initial Raummaß, Farbe ohne Wunschmaß/500er-Breite, Rückkehr und Farbe mit nicht kaufbarer Wunschmaßvariante. Rückschaltung auf Meter/400 cm korrekt, ID/Art/Gruppe/Zubehör im Payload passend; eigene Leistenlänge 7 erhalten. Angezeigte Summe entspricht jeweils Variantenpreis × Payloadmenge einschließlich Zubehör. Kein neuer bestätigter Fehler. Native Radioexklusivität modelliert, Picker/URL/Morph und Serviceanzeige nicht vollständig ausgeführt.
+S01–S19 siehe SESSION_LOG. S20 / VAR-001a.1: sechs Fälle am vollständigen ersten Original-Farbpicker-IIFE, zwei historische Hashvergleiche. Gemeinsame Breite funktioniert mit initialem Zustand und Formular. Drei fehlende Kombinationsfälle (500 cm initial/Formular, Wunschmaß aus URL) bestätigen TP-015/P2: Radio zeigt neue Farbe, Label/ID/URL bleiben alt, kein tp:farbe-wechsel. Globale Formular-ID-Schreibweise verändert auch zweites synthetisches Formular; reale Fremdformularreichweite H-016 offen. Keine Shopänderung oder Liveabnahme.
 
 ## Offene Aufgaben
 
-VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.js Verbraucher prüfen: Farbänderung→native Events→Formular-/URL-/Sectionzustand, Verfügbarkeit und mehrere Produktbereiche (H-016). TP-015 nicht durch frei geratene Breitenwahl reparieren. Keine fertigen Picker-/Rechnerfälle wiederholen; Browserberechtigung seit S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-S19 Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues Zustands-/Submit-Script/JSON, Integritäts-/Secretprotokolle und CODEX_PROGRESS. Keine Shopquellenänderung. Externe Prompt-/Dashboarddateien erhalten.
+S20 Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues Picker-Diagnosescript/JSON, Integritäts-/Secretprotokolle und CODEX_PROGRESS. Shopquellen unverändert. Externe Prompt-/Dashboarddateien erhalten.
 
 ## Ausgefuehrte Tests
 
-Syntax und vier Zustands-/Submitfälle PASS; nach ergänztem Gesamtpreis-/Breitenvergleich erneut PASS. Zwei historische Hashvergleiche, keine alten Diagnosen wiederholt. Route TASK-67D370DD36E8 B/STATIC. JSON-/Dokument-/Quellenintegrität, git diff --check und Secret-Scan protokolliert.
+Sechs Fälle PASS, drei TP-015-Defektfälle, zwei historische Quellhashes. Formmock-Stringcoercion nach erstem Fehler korrigiert, Syntax/Diagnose danach PASS. Keine alten Diagnosen. Route TASK-A6785D897266 B/STATIC. Integrität, git diff --check und Secret-Scan protokolliert.
 
 ## Bekannte Fehler
 
-14 bestätigte Issues unverändert: P0=0/P1=0/P2=6/P3=8/P4=0. H-003 lokal vertieft, native Picker-/URL-/Morphintegration offen. Browserberechtigung seit S13 blockiert; keine Umgehung. .git schreibbar.
+15 bestätigte Issues TP-001–015: P0=0/P1=0/P2=7/P3=8/P4=0. TP-015 fehlende Farbkombination lokal; heutige Reichweite offen. H-016 Fremdformulare nur bedingter Befund. Browserzugriff seit S13 berechtigungsbedingt blockiert. .git schreibbar.
 
 ## Naechster konkreter Arbeitsschritt
 
-VAR-001a / H-003: blocks/color-swatch-picker.liquid, assets/variant-picker.js und relevante tp-farbe-Schnittstelle lesen; tatsächlichen Vertrag Farbchange→Formular-ID/URL→Rechnernachlauf lokal prüfen. Schnelle Auswahl/fehlende Variante/Verfügbarkeit und mehrere Formulare abgrenzen. Keine Wiederholung fertiger Preis-/Extras-/Submitfälle. Browserzugriff bleibt seit S13 berechtigungsbedingt blockiert; keine Umgehung.
+VAR-001a.2: native Optionsfelder/variant-picker.js Antwortvertrag und tp-farbe.js Verbraucher prüfen: Farbänderung→native Events→Formular-/URL-/Sectionzustand, Verfügbarkeit und mehrere Produktbereiche (H-016). TP-015 nicht durch frei geratene Breitenwahl reparieren. Keine fertigen Picker-/Rechnerfälle wiederholen; Browserberechtigung seit S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
