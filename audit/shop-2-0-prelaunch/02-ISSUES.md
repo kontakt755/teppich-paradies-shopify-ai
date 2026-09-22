@@ -44,6 +44,8 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 
 | PL-032 | Produktbilder | Rapidia Varianten „Grau Mittel Mittel" (0575) und „Grau Mittel Heller" (0580) ohne Variantenbild | Admin-API 2026-09-22 | M2 | OFFEN (Lieferantenbild fehlt) |
 
+| PL-033 | Consent/Texte | Shopify-Cookie-Banner spricht „du/dein" („dein Erlebnis", „deiner Zustimmung"), der Shop siezt | Screenshots 22.09. (Arbeitstheme, Banner ist Shopify-nativ) | M8/§46 | OFFEN (Admin → Kundendatenschutz → Banner-Text) |
+
 ## P2 – danach
 | ID | Bereich | Befund | Modul | Status |
 |---|---|---|---|---|

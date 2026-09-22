@@ -11,3 +11,5 @@
 | 9 | Google-Bewertung/Anzahl als Theme-Einstellung im Live-Theme prüfen und ins Repo (`settings_data.json`) übernehmen | Session mit Theme-Pull | Editor-Stand ≠ Repo |
 | 10 | Custom Pixel aus `domains/marketing/tracking-pixel-vorlage.md` anlegen (GA4-ID einsetzen), in Ads genau eine Purchase-Quelle | Ahmet (Admin/Ads) | keine API |
 | 11 | Follow-up-Mails nach Zustellung (Ware: Ankunft/Verlegung/Pflege/Bewertung; Muster: „Muster angesehen?") – braucht Flow (Zeitverzögerung) oder Shopify Email; Texte können vorbereitet werden, sobald Werkzeug entschieden ist | Ahmet | Werkzeugentscheidung (docs/shop-decisions.md: Newsletter „erstmal auslassen") |
+| 12 | Cookie-Banner-Text auf Sie-Form umstellen (Admin → Einstellungen → Kundendatenschutz → Cookie-Banner → Text) | Ahmet/Kaya | Shopify-nativ, kein Theme-Code |
+| 13 | Admin-Klicks „Speichern" (Benachrichtigungsvorlagen) werden dem Agenten vom Freigabe-Filter verweigert – Vorlagen sind eingesetzt/vorbereitet, Speichern bitte selbst | Ahmet/Kaya | Sicherheitsfilter |
