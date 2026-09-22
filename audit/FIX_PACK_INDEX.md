@@ -61,3 +61,5 @@ S20: TP-015/P2 vollständiger Brief, Farbpicker-Kandidat NOT READY bis VAR-001a.
 S21: TP-016/P3 vollständiger Brief; Farbverbraucher-Lifecycle-Kandidat NOT READY bis native Lifecycle-/Aufruferabgrenzung VAR-001a.2b. Kein Pack vorschnell erstellt. Ready=2, Done/QA=0.
 
 S22: H-017 neu, kein bestätigtes Issue und kein neues Pack. Picker-/Verbraucherintegration weiterhin NOT READY; gemeinsame variant-picker.js/product-form.js-Abhängigkeit erst prüfen. Ready=2, Done/QA=0.
+
+S23: TP-017/P2 mit Implementation Brief; Variantenfehlerabschluss/Queue-Kandidat NOT READY bis Lifecycle-/Mehrproduktabgrenzung. FILE CONFLICT variant-picker.js/product-form.js. Ready=2, Done/QA=0; keine Umsetzung.

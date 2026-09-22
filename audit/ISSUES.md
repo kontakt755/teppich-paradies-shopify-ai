@@ -18,10 +18,9 @@ Stand: 22.09.2026, Phase 1. Keine Reparatur ausgeführt. TP-001–003 wurden his
 | TP-012 | P2 | SectionRenderer behält fehlgeschlagene Requests und verhindert Retry | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 | TP-013 | P3 | Rabattübertragungsfehler bleiben ohne Kundenfeedback | BESTÄTIGT lokal; heutige Live-Reichweite offen | Offen |
 | TP-014 | P3 | Alter Rabattrequest löscht Abbruchreferenz des neueren Requests | BESTÄTIGT lokal; Live-Reichweite offen | Offen |
-
 | TP-015 | P2 | Farbwahl ohne bisherige Breitenkombination lässt alte Variante aktiv | BESTÄTIGT lokal; heutige Produktreichweite offen | Offen |
-
 | TP-016 | P3 | Farbkomponenten verlieren nach Reconnect ihre Ereignislistener | BESTÄTIGT lokal; heutige Lifecycle-Reichweite offen | Offen |
+| TP-017 | P2 | Variantenrequestfehler hält Kaufklicks fest und gibt sie später gesammelt frei | BESTÄTIGT lokal; Browser-/Live-Reichweite offen | Offen |
 
 ## TP-001 – Paketrechner deutet ungültige/gemischte Zahlen still um
 
@@ -491,8 +490,31 @@ S11: stabile Erfolgs-/Fehlerantworten lokal korrekt. Reproduktionsscript `audit/
 S21 ergänzt H-016: globales fremdes tp:farbe-wechsel ohne passende Map-ID deaktiviert/leert Properties, während Anzeige unbekannte ID ignoriert. Native Ereignisse mit abweichender Produkt-ID bleiben unverändert. Mehrprodukt-Shopreichweite weiterhin offen; kein weiteres bestätigtes Issue.
 
 
-## H-017 – Fehlender Abschluss nach Variantenrequestfehler
+## H-017 – Fehlender Abschluss nach Variantenrequestfehler (S23: in TP-017 überführt)
 
 S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
 
 Quellspur: assets/variant-picker.js fetchUpdatedSection kehrt ohne Metadaten zurück beziehungsweise protokolliert Fehler; assets/product-form.js setzt #variantChangeInProgress bei variant:selected und setzt erst beim passenden variant:update zurück. Submit währenddessen reiht Artikel ein. Dieser Verbraucher wurde in S22 nicht ausgeführt: Queue-/Bestellfolge und heutige Shopreichweite unbewiesen. Nächster Beleg: VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+
+## TP-017 – Variantenrequestfehler hält Kaufklicks in der Queue
+
+- **Priorität / Bereich:** P2, Produktvarianten/Kaufinteraktion. Bedingte lokale Funktionsblockade; kein nachgewiesener globaler Live-Kaufblocker.
+- **Diagnose:** BESTÄTIGT lokal. H-017 durch S23 überführt; keine aktuelle Produkt-URL oder Browserbetroffenheit nachgewiesen. Geräte/Browser: noch offen, lokaler Node-VM-Vertrag.
+- **Dateien / Bereiche:** assets/variant-picker.js, fetchUpdatedSection; assets/product-form.js, connectedCallback (209 ff.), handleSubmit (283 ff.), #processBatchAddToCart (516 ff.), #onVariantUpdate (660 ff.), #onVariantSelected (798 ff.); assets/events.js Ereignisvertrag.
+- **Reproduktion:** S22-Fehlertrace variant:selected ohne variant:update an die Originalformularinstanz geben. Zweimal handleSubmit bei URL-Variante 2. Es geht kein Cart-Request ab. Danach erfolgreiche Auswahl/Update für Variante 3: ein Batch mit zweimal ID 2, Menge 1 wird gesendet. Erfolgskontrolle mit regulärem Update gibt genau einen wartenden Klick frei.
+- **Erwartet:** Fehlgeschlagene Auswahl sichtbar behandeln; Kaufversuch eindeutig ablehnen oder kontrolliert wiederholbar machen. Keine unbemerkt aufgestauten Klicks später für eine überholte Auswahl absenden.
+- **Tatsächlich / Ursache:** variant:selected setzt #variantChangeInProgress. Nur passendes variant:update setzt es zurück. Pickerfehler liefern keinen Abschluss. handleSubmit sammelt weiter; späteres Update leert die Queue durch Batch-Submit mit gespeicherten IDs.
+- **Risiko:** Stille Kaufverzögerung, mehrfach gespeicherte Versuche und unerwartete alte Variante nach Wiederherstellung. Tatsächliche Shopifyannahme/Bestellung nicht getestet.
+- **Evidence:** audit/evidence/variant-form-queue-2026-09-22.json und S22 variant-responses-2026-09-22.json; vier Verbraucherfälle. Kein vollständiger nativer DOM-/Morphdurchlauf.
+
+### IMPLEMENTATION BRIEF TP-017
+
+- **Ziel / Problem / Root Cause:** Fehlerzustand des Variantenrequests vollständig abschließen und wartende Kaufabsichten sicher behandeln; fehlender Fehlerabschluss lässt boolesche Sperre/Queue bestehen.
+- **Betroffene Funktionen/Dateien:** oben genannte Picker-/Formularmethoden; events.js nur falls gezieltes Fehlerereignis erforderlich. CORE FILE / HIGH RISK.
+- **Zu ändernde Logik / Empfehlung:** Requestbezogenen Erfolg/Fehler sauber dem richtigen Produkt zuordnen; bei endgültigem Fehler verständliches Feedback und explizite Wiederholbarkeit. Alte Kaufklicks nicht kommentarlos später ausführen. Überholten Abort vom Fehler des aktuellen Requests unterscheiden. Konkrete minimale Lösung erst nach Lifecycle-/Mehrproduktprüfung festlegen.
+- **Nicht verändern:** Paket-/Rollenrechner, Preise/SKUs/Varianten, Checkout, erfolgreiche normale Auswahl und schnelle Kaufinteraktion nicht pauschal entfernen; keine globale Queue-/Eventneufassung.
+- **Abhängigkeiten / FILE CONFLICT:** variant-picker.js und product-form.js gemeinsam mit Lifecycle-/Mehrproduktprüfung koordinieren; TP-016 und H-016 berühren angrenzende Verbraucher. Kein paralleler Fix.
+- **Akzeptanzkriterien / Tests:** Erfolg, fehlende Metadaten, ungültiges JSON, Netzfehler; nach Fehler zwei Kaufklicks, danach neue Variante: keine überraschende Bestellung alter Klicks. Sichtbare Fehlermeldung und bewusster Retry. Abort durch neueren Request darf dessen Sperre nicht vorzeitig lösen.
+- **Regression / Seiteneffekte:** schnelle Variantenfolge, Mehrproduktbereiche, fehlende/nicht verfügbare Variante, Mengenregeln, mehrere erlaubte Kaufklicks, Cart-Feedback und Reconnect; Fehlzuordnung oder Doppelbestellung vermeiden. Browserabnahme später zwingend.
+- **Aufwand / Reihenfolge / Rollback:** M, nach VAR-001a.2c minimalen Fix vorbereiten; Quelländerung rücknehmbar, bereits erfolgte Bestellungen nicht. Phase 1/2 ohne Reparatur, Pack weiterhin NOT READY.

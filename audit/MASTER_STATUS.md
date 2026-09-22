@@ -22,12 +22,12 @@ Noch offen:
 - [ ] Restliche Rechnerzustände, Varianten, Runtime, Mobile, Navigation/Suche, SEO, Performance, UX, Cross-Feature-/Finalregression.
 - [ ] Phase 2 insgesamt, freigegebene Implementierung/Fix-QA und vollständiger FINAL_REPORT.
 
-Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 7 · P3: 9 · P4: 0 (16 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
+Anzahl bestätigter Issues: P0: 0 · P1: 0 · P2: 8 · P3: 9 · P4: 0 (17 insgesamt). Alle offen, Details/bedingte Reichweite in ISSUES.md. TP-014 Notizpfad lokal deaktiviert; kein belegter Bestellnotizverlust.
 
 Aktuell untersuchter Bereich: Varianten-/Farbpickervertrag, Phase 1.
-Letzte abgeschlossene Aufgabe: S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
-Nächste Aufgabe: VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
-Wichtige offene Hypothesen: H-001, H-003–H-017; H-002 lokal geschlossen. Keine Hypothese als bestätigten Fehler zählen.
+Letzte abgeschlossene Aufgabe: S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
+Nächste Aufgabe: VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+Wichtige offene Hypothesen: H-001, H-003–H-016; H-017 lokal in TP-017 überführt.
 Fix-Packs Ready: 2 · Done: 0 · QA Passed: 0 · QA Failed: 0.
 
 Aktuelle Zugriffsgrenze: S13 Chrome verbunden, Shopnavigation wegen verweigerter Berechtigung abgelehnt. Keine alternative Browser-/HTTP-/CDP-Umgehung, kein erneuter Versuch ohne geänderte Berechtigung. Alte S01-DNS-/Runnernotizen sind historisch. MAIN seit 19.09. nicht neu verifiziert; Registry domains/shopify/live-theme.json. settings_data.json ist nicht historisch live-hashgleich; heutige Liveeinstellungen unbekannt.

@@ -6,34 +6,34 @@ Vollständiger Shop-Audit nach TASK.md mit belegten Fehlern, Implementation Brie
 
 ## Aktueller Arbeitsbereich
 
-Phase 1, S22 / VAR-001a.2b.1 abgeschlossen, grob 28 %. Weiter Product-Form-Fehlervertrag.
+Phase 1, S23 / VAR-001a.2b.2 lokal abgeschlossen, grob 28 %.
 
 ## Erledigte Aufgaben
 
-S22 / VAR-001a.2b.1: sechs lokale Original-Picker-Requestfälle PASS, drei historische Quellhashes gleich. Erfolg sendet variant:selected und variant:update; fehlende Metadaten, ungültiges JSON und Netzwerkfehler senden nur variant:selected. Bei ungültigem JSON erfolgt der adaptierte Picker-Morph vor dem Parsefehler. Überholter Request wird abgebrochen; nächste erfolgreiche Auswahl liefert wieder variant:update. DOM-Auswahl und Morph sind adaptiert, keine Liveprüfung. Product-Form-Verbraucher nur gelesen; mögliche hängenbleibende Submit-Queue ist H-017, kein bestätigtes Issue.
+S23 / VAR-001a.2b.2: vier Original-Product-Form-Verbraucherfälle PASS, drei Quellhashes gegen S22 unverändert. S22-Ereignisspuren am Section-EventTarget wiedergegeben, keine Pickerdiagnose wiederholt. Erfolg gibt einen wartenden Kaufklick frei. Nach fehlenden Metadaten, ungültigem JSON oder Netzwerkfehler bleiben zwei Kaufklicks ohne Cart-Request in der Queue. Späteres Variantenupdate für ID 3 sendet beide gespeicherten Klicks für ID 2. H-017 damit lokal als TP-017/P2 bestätigt; echte Browser-/Shopreichweite offen.
 
 ## Offene Aufgaben
 
-VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
+VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen. Restlicher Audit, Fix-/QA-Phasen und FINAL_REPORT offen.
 
 ## Geaenderte Dateien
 
-S22 Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, Request-Script/JSON, Integritäts-/Secretprotokolle und CODEX_PROGRESS. Keine Shopquellenänderung. Externe Prompt-/Dashboarddateien erhalten.
+Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues Verbraucher-Script/JSON, Prüfprotokolle und CODEX_PROGRESS. Keine Shopquellen. Externe Prompt-/Dashboardänderungen erhalten.
 
 ## Ausgefuehrte Tests
 
-Evidence: audit/evidence/variant-responses-2026-09-22.json; Script: audit/scripts/reproduce-variant-responses.mjs. Syntax und Erstlauf PASS. Route TASK-02650F0E1B12 klassifizierte den lokalen Audit fälschlich als D/SHOPIFY_WRITE/HUMAN_GATE; keine externe Aktion, kein Executor und keine Reparatur ausgeführt. Dokument-/JSON-/Quellenintegrität und Secret-Scan PASS; git diff --check PASS.
+Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck vor Commit.
 
 ## Bekannte Fehler
 
-16 bestätigte Issues TP-001–016: P0=0/P1=0/P2=7/P3=9/P4=0. H-017 nur Hypothese. Browserberechtigung seit S13 blockiert. .git schreibbar.
+17 bestätigte Issues: P0=0/P1=0/P2=8/P3=9/P4=0. TP-017 nur lokal; Live-Reichweite offen. Browserberechtigung seit S13 blockiert.
 
 ## Naechster konkreter Arbeitsschritt
 
-VAR-001a.2b.2: Original-Product-Form-Verbraucher an Picker-Fehlervertrag anbinden und Auswahl→Submit-Queue→Recovery lokal ausführen (H-017). Danach native DOM-/Lifecycle- und Mehrproduktabgrenzung H-016 fortsetzen. Fertige S20–S22-Fälle nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
 
 ## Letzter erfolgreicher Git-Commit
 
-f0020fe – audit: nativen Variantenantwortvertrag und H-017 dokumentieren. Zwölf Dateien tatsächlich committed. Branch audit/shop-audit, kein Merge/Push.
+a83d4de – S22-Sicherung; S23 nach Prüfungen committen. Kein Merge/Push.
 
 Status: WORKING
