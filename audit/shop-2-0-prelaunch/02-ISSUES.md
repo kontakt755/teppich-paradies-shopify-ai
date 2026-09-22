@@ -31,7 +31,7 @@ Alte Audit-Befunde TP-001…TP-017 (Branch `audit/shop-audit`, Rechner/Cart-Pfad
 | PL-025 | Muster/Ads | Musterbestellung endet als 0-€-`purchase` – verfälscht Ads-Optimierung | `docs/google/…:112-115` | M8 | OFFEN |
 
 | PL-034 | Produktidentität | 63 SKUs trugen den Lieferantennamen als Freitext, kundensichtbar im Produkt-JSON-LD | Export 2026-09-22 | M1 | ERLEDIGT (SKU-Bereinigung) |
-| PL-035 | Sortiment | Linien Turku und Marlow sind dieselben 8 Artikel unter zwei Namen (doppelte SKUs, doppelte Feed-Einträge) | Export 2026-09-22 | M9 | ENTSCHEIDUNG |
+| PL-035 | Sortiment | Linien Turku und Marlow sind dieselben 8 Artikel unter zwei Namen (doppelte SKUs, doppelte Feed-Einträge) | Export 2026-09-22 | M9 | ERLEDIGT – Marlow Entwurf + 301 auf Turku |
 
 ## P1 – starker Umsatzhebel
 
