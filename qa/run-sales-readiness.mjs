@@ -188,6 +188,15 @@ async function reachCheckout(page, setPhase) {
   const cartHealth = await pageHealth(page);
   const button = page.locator('button[name="checkout"], input[name="checkout"]').first();
   if (!(await button.count())) return { reachable: false, url: sanitizeUrl(page.url()), reason: 'Checkout-Button fehlt', cartHealth };
+  // Pflichtfrage "Persoenliche Beratung gewuenscht?" (snippets/tp-cart-beratung.liquid)
+  // wie ein Kunde mit "Nein" beantworten. Ohne Antwort haelt der Warenkorb den
+  // Checkout bewusst an - das ist gewollt, kein Fehler des Kaufwegs.
+  const beratungNein = page.locator('main tp-cart-beratung input[data-tp-feld="beratung"][value="Nein"]').first();
+  if (await beratungNein.count()) {
+    await freieSicht(page);
+    await beratungNein.check({ force: true, timeout: 10_000 });
+    await page.waitForResponse(r => r.url().includes('/cart/update'), { timeout: 10_000 }).catch(() => {});
+  }
   setPhase('checkout');
   const navigation = page.waitForURL(/checkout|checkouts/i, { timeout: 15_000 }).catch(() => {});
   await freieSicht(page);
