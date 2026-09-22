@@ -103,3 +103,11 @@ Hebel mit Wirkung: Größe des globalen Section-CSS (649 KB roh über 207 Dateie
   - 9 Varianten (3 Sylvara-Produkte + Kopie): Metafeld enthält keine eindeutige Artikelnummer.
 - **Rückstellung:** Liste mit alten Werten nur lokal (`~/teppich-paradies-analyse/lieferantendaten/sku-bereinigung-2026-09-22-rueckstellung.json`, enthält Lieferantennamen – nicht ins Repo).
 - **Test:** unabhängiges Nachlesen aller 104 Varianten per `nodes(ids)` = Plan; Live-PDP Dornova: 0× Lieferantenname im HTML, JSON-LD `sku` = `LVTDESIGNK_5307`.
+
+## 2026-09-22 · Sortiment · Marlow auf Entwurf, Weiterleitung auf Turku (Freigabe Inhaber)
+
+- **Problem:** Linien Marlow und Turku waren dieselben 8 Klickvinyl-Artikel (identische SKUs `LVTDESX5_701X`…`708X`), doppelt im Shop und im Google-Feed (PL-035).
+- **Änderung:** 8 Marlow-Produkte `status: DRAFT`; 8 URL-Weiterleitungen (301) `/products/marlow-eiche-<dekor>-klickvinyl-7mm` → `/products/turku-eiche-<dekor>-klickvinyl-7mm`. Keine Musterprodukte, Menü- oder Theme-Verweise auf Marlow vorhanden (geprüft).
+- **Rückweg:** Status wieder ACTIVE, Weiterleitungen löschen.
+- **Test:** alle 8 Marlow-URLs antworten 301 auf das passende Turku-Dekor, Turku 200, Kollektion Klickvinyl ohne Marlow.
+- **Folge:** Doppelte SKUs im aktiven Sortiment: 0. Google-Feed verliert 8 Doppelungen beim nächsten Sync.
