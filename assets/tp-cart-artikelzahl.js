@@ -1,14 +1,14 @@
 /**
  * Artikelzahl des Warenkorbs nach einem cart:update.
  *
- * Flaechenware (Metafeld custom.preis_pro_001_qm) wird in 0,01-m²-Einheiten
- * verkauft - ein Teppich mit 10 m² hat die Menge 1000. Eine solche Zeile
- * zaehlt als ein Artikel, jede andere nach Menge. Die Regel steht genau
- * einmal, in snippets/tp-cart-artikelzahl.liquid.
+ * Flaechenware wird in 0,01-m²-Einheiten verkauft - ein Teppich mit 10 m²
+ * hat die Menge 1000. Kundenseitig zaehlt deshalb jede Warenkorbzeile als
+ * ein Artikel (Anzahl der Positionen). Die Regel steht in
+ * snippets/tp-cart-artikelzahl.liquid (cart.items.size).
  *
- * Das Metafeld steht nicht im Warenkorb-JSON. Die Zahl wird hier deshalb nie
- * aus Mengen addiert, sondern aus Server-HTML mit der Marke
- * data-tp-artikelzahl gelesen:
+ * Die Zahl wird nie aus Mengen addiert. Bringt das Ereignis den ganzen
+ * Warenkorb mit (resource.items), zaehlt dessen Zeilen; sonst wird sie aus
+ * Server-HTML mit der Marke data-tp-artikelzahl gelesen:
  *   1. aus den Sections, die das Ereignis mitbringt (Drawer und
  *      Warenkorbseite, snippets/cart-products.liquid),
  *   2. sonst von sections/tp-cart-artikelzahl.liquid ueber die Section
@@ -34,10 +34,14 @@ export function artikelzahlAusHtml(html) {
 /**
  * Die Zahl, die ein cart:update schon vom Server mitbringt.
  *
- * @param {{ data?: { sections?: Record<string, string>, source?: string, itemCount?: number } }} [detail]
+ * @param {{ resource?: { items?: unknown[], item_count?: number }, data?: { sections?: Record<string, string>, source?: string, itemCount?: number } }} [detail]
  * @returns {number | null} null, wenn sie nachgeladen werden muss
  */
 export function artikelzahlAusEreignis(detail) {
+  // Ganzer Warenkorb im Ereignis (z. B. /cart/change.js): Zeilen zaehlen.
+  // Ein einzelner Artikel aus /cart/add.js hat kein items-Feld.
+  const items = detail?.resource?.items;
+  if (Array.isArray(items) && Number.isInteger(detail?.resource?.item_count)) return items.length;
   const data = detail?.data;
   for (const html of Object.values(data?.sections ?? {})) {
     const zahl = artikelzahlAusHtml(html);
