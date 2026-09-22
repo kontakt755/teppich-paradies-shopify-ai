@@ -401,3 +401,5 @@ Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scrip
 CORE/SHARED FILE, HIGH RISK: variant-picker.js → events.js → product-form.js → Cart. Fehlender Abschluss und Queue-Recovery gemeinsam behandeln; kein globaler Eventumbau.
 
 Nächster Schritt: VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphgrenzen lokal abgrenzen, danach Mehrprodukt-Ereigniszuordnung H-016. S20–S23 nicht wiederholen. Browserberechtigung S13 nicht umgehen.
+
+S23 in `b49b709` tatsächlich gesichert. Vier Verbraucherfälle, Syntax-/Integritäts-/Secret-/Diffcheck PASS. Weiter VAR-001a.2c, keine Shopänderung, Status WORKING.

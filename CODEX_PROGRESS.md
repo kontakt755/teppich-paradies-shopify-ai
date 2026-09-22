@@ -22,7 +22,7 @@ Auditstatus/-log/-issues/-matrix/-abhängigkeiten/-index, Evidence-README, neues
 
 ## Ausgefuehrte Tests
 
-Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck vor Commit.
+Evidence: audit/evidence/variant-form-queue-2026-09-22.json; Script: audit/scripts/reproduce-variant-form-queue.mjs. Vollständige Original-ProductFormComponent und Originalevents, DOM/Refs adaptiert; nur abgefangene Requests, keine Browser-/Shopaktionen. Erstlauf und nach präzisierter Recovery-ID erneut Syntax/Diagnose PASS. Route TASK-CF85944395D0 B/STATIC, kein Executor. Integritäts-/Secretcheck PASS; Diffcheck PASS.
 
 ## Bekannte Fehler
 
@@ -34,6 +34,6 @@ VAR-001a.2c: native Picker-/Product-Form-Lifecycle-Aufrufer und Reconnect/Morphg
 
 ## Letzter erfolgreicher Git-Commit
 
-a83d4de – S22-Sicherung; S23 nach Prüfungen committen. Kein Merge/Push.
+b49b709 – audit: Variantenfehler-Queue als TP-017 lokal belegen. Zwölf Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING
