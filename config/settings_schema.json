@@ -2490,7 +2490,7 @@
         "id": "tp_vs_telefon",
         "label": "Telefon, wie angezeigt",
         "info": "Der Anruf-Link entsteht daraus: Leerzeichen und Striche fallen weg, die führende 0 wird zu +49.",
-        "default": "03301 5733720"
+        "default": "03301 573 37 20"
       },
       {
         "type": "text",

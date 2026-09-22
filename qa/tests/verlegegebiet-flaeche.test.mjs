@@ -19,7 +19,9 @@ const SNIPPET = path.join(WURZEL, 'snippets', 'tp-verlegegebiet-flaeche.liquid')
 const SEKTION = path.join(WURZEL, 'sections', 'tp-verlegegebiet.liquid');
 
 const snippet = readFileSync(SNIPPET, 'utf8');
-const sektion = readFileSync(SEKTION, 'utf8');
+// Das CSS der Sektion liegt seit der Auslagerung (Shop 2.0 M10) in
+// assets/tp-verlegegebiet.css; fuer die Pruefungen zaehlen Markup und CSS zusammen.
+const sektion = readFileSync(SEKTION, 'utf8') + '\n' + readFileSync(path.join(WURZEL, 'assets', 'tp-verlegegebiet.css'), 'utf8');
 
 /** Alle Stufen mit ihrem Pfad, so wie die Sektion sie rendert. */
 function pfade() {

@@ -63,6 +63,71 @@
     {% endif %}
   </p>
 
+  {%- comment -%}
+    Beratung, Masspruefung, Verlegeanfrage und Bestelltyp (Shop 2.0, M5/M7).
+    Die Antworten kommen als Cart-Attribute aus snippets/tp-cart-beratung.liquid.
+    Solange Shopify Flow keine Tags setzt, ist dieser Block die einzige Stelle,
+    an der ein Mitarbeiter den Rueckrufwunsch sofort sieht. Der Bestelltyp
+    (Muster / Ware / Mischbestellung) zaehlt Musterzeilen an SKU "M-..." bzw.
+    "TP-MUSTER-000" oder an der Property _Muster_ID.
+  {%- endcomment -%}
+  {%- liquid
+    assign tp_bt_muster = 0
+    assign tp_bt_ware = 0
+    for line in line_items
+      assign tp_bt_ist_muster = false
+      assign tp_bt_kopf = line.sku | slice: 0, 2
+      if tp_bt_kopf == 'M-' or line.sku == 'TP-MUSTER-000'
+        assign tp_bt_ist_muster = true
+      endif
+      for p in line.properties
+        if p.first == '_Muster_ID' and p.last != blank
+          assign tp_bt_ist_muster = true
+        endif
+      endfor
+      if tp_bt_ist_muster
+        assign tp_bt_muster = tp_bt_muster | plus: 1
+      else
+        assign tp_bt_ware = tp_bt_ware | plus: 1
+      endif
+    endfor
+    if tp_bt_muster > 0 and tp_bt_ware == 0
+      assign tp_bt_typ = 'TYP-MUSTER'
+    elsif tp_bt_muster == 0
+      assign tp_bt_typ = 'TYP-WARE'
+    else
+      assign tp_bt_typ = 'TYP-MISCHBESTELLUNG'
+    endif
+    assign tp_at_beratung = attributes['Beratung']
+    assign tp_at_telefon = attributes['Telefon']
+    assign tp_at_zeit = attributes['Rückruf']
+    assign tp_at_thema = attributes['Beratungsthema']
+    assign tp_at_mass = attributes['Maßprüfung']
+    assign tp_at_verlegung = attributes['Verlegung']
+    assign tp_at_offen = false
+    if tp_at_beratung == 'Ja' or tp_at_mass == 'Ja' or tp_at_verlegung == 'Angefragt'
+      assign tp_at_offen = true
+    endif
+  -%}
+  <p style="margin:0 0 4px;font-weight:bold;">Bestelltyp: {{ tp_bt_typ }}</p>
+  <div style="margin:0 0 16px;padding:10px 12px;border-radius:6px;line-height:1.5;{% if tp_at_offen %}background:#fff4e5;border:1px solid #f0b34c;{% else %}background:#f2f1ef;{% endif %}">
+    <p style="margin:0 0 4px;font-weight:bold;">Beratung und Rückruf</p>
+    {% if tp_at_beratung == 'Ja' %}
+      <p style="margin:0;"><strong>BERATUNG-JA – bitte anrufen.</strong> Telefon: {{ tp_at_telefon | default: 'fehlt' | escape }}{% if tp_at_zeit != blank %}, am besten {{ tp_at_zeit | escape }}{% endif %}</p>
+      {% if tp_at_thema != blank %}<p style="margin:4px 0 0;">Thema: {{ tp_at_thema | escape }}</p>{% endif %}
+    {% elsif tp_at_beratung == 'Nein' %}
+      <p style="margin:0;">BERATUNG-NEIN – Kunde wünscht keinen Rückruf.</p>
+    {% else %}
+      <p style="margin:0;">Keine Angabe zur Beratung (Bestellung ohne Warenkorb-Abfrage, z. B. Express oder älteres Theme).</p>
+    {% endif %}
+    {% if tp_at_mass == 'Ja' %}
+      <p style="margin:4px 0 0;"><strong>MASS-PRUEFUNG-OFFEN</strong> – Maße vor dem Zuschnitt telefonisch bestätigen{% if tp_at_beratung != 'Ja' %} (Telefon: {{ tp_at_telefon | default: 'fehlt' | escape }}){% endif %}.</p>
+    {% endif %}
+    {% if tp_at_verlegung == 'Angefragt' %}
+      <p style="margin:4px 0 0;"><strong>VERLEGUNG-ANGEFRAGT</strong> – Interesse an Aufmaß/Verlegung, bitte beim Rückruf ansprechen.</p>
+    {% endif %}
+  </div>
+
   {%- assign tp_mp_alarm = false -%}
   {%- capture tp_mp_tabelle -%}
   <p style="margin:0 0 4px;font-weight:bold;">Artikel mit Großhändler-ID</p>

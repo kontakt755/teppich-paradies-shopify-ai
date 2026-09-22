@@ -1,0 +1,497 @@
+/* Ausgelagert aus sections/tp-verlegegebiet.liquid (Shop 2.0 M10): dieses CSS lag vorher im globalen
+   Section-Bundle (compiled_assets/styles.css) und wurde auf jeder Seite geladen.
+   Jetzt laedt es nur die Seite, die die Section/den Block rendert. */
+.tp-vg {
+  --tp-vg-ton: 141 113 76;
+  --tp-vg-linie: rgb(var(--color-foreground-rgb, 34 34 34) / 0.12);
+  --tp-vg-leise: rgb(var(--color-foreground-rgb, 34 34 34) / 0.72);
+}
+
+.tp-vg__head {
+  max-width: 62ch;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.tp-vg__eyebrow {
+  margin: 0;
+  color: #8d714c;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tp-vg__heading {
+  margin: 8px 0 12px;
+}
+
+.tp-vg__intro {
+  margin: 0;
+  color: var(--tp-vg-leise);
+  line-height: 1.6;
+}
+
+/* Karte -------------------------------------------------------------- */
+
+.tp-vg__karte {
+  max-width: 1000px;
+  margin: clamp(24px, 4vw, 40px) auto 0;
+}
+
+.tp-vg__buehne {
+  position: relative;
+  aspect-ratio: 1000 / 700;
+  border: 1px solid var(--tp-vg-linie);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #faf8f5;
+}
+
+.tp-vg__bild {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Am Bildrand schneidet die Karte Ortsnamen an. Ein schmaler Verlauf in der
+   Grundfarbe der Karte laesst sie ausklingen, statt sie halb stehen zu lassen.
+   Die Farbe ist die des Kartenbildes, nicht die der Seite - deshalb steht sie
+   hier als fester Wert und nicht als Farbschema-Variable. */
+.tp-vg__buehne::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 26px),
+    linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 26px),
+    linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 22px),
+    linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 22px);
+}
+
+/* Die Flaeche liegt als Vektor ueber dem Bild: in Markenfarbe, bei jeder
+   Breite scharf und ueber den Regler austauschbar, ohne dass die Karte neu
+   gebaut werden muss. */
+.tp-vg__gebiet {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.tp-vg__gebiet--schmal {
+  display: none;
+}
+
+.tp-vg__gebiet-form {
+  fill: rgb(var(--tp-vg-ton) / 0.14);
+  stroke: rgb(var(--tp-vg-ton) / 0.85);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Der Punkt sitzt exakt auf dem Standort, das Schild darueber: neben ihm
+   liegen Hohen Neuendorf, Hennigsdorf und Bernau, oberhalb ist die Karte
+   bis Zehdenick frei. */
+.tp-vg__marker {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tp-vg__punkt {
+  display: block;
+  width: 15px;
+  height: 15px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #1c1917;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+
+.tp-vg__marker-name {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #1c1917;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tp-vg__marker-name small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+
+/* Bildunterschrift wie in einem Bericht: links, worum es geht, rechts die
+   Quelle. Keine Farbpunkte davor - die saehen wie Bedienelemente aus. */
+.tp-vg__legende {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+  margin-top: 12px;
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.58);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tp-vg__legende a {
+  color: inherit;
+  text-underline-offset: 2px;
+}
+
+/* Adresse und Pruefung ------------------------------------------------ */
+
+/* Mitwachsend statt fest dreispaltig: die Zahl der Stufen ist eine
+   Editor-Entscheidung, das Raster darf ihr nicht im Weg stehen. */
+.tp-vg__stufen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0 clamp(20px, 3vw, 40px);
+  max-width: 1000px;
+  margin: clamp(20px, 3vw, 28px) auto 0;
+  padding: clamp(18px, 2.5vw, 22px) 0 0;
+  border-top: 1px solid var(--tp-vg-linie);
+  list-style: none;
+}
+
+.tp-vg__stufe {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  line-height: 1.5;
+}
+
+.tp-vg__stufe-marke {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tp-vg__stufe-text {
+  color: var(--tp-vg-leise);
+  font-size: 14px;
+}
+
+/* Ohne min-width: 0 zwingt das Raster seine Mindestbreite (alle Spalten
+   nebeneinander) auf die Sektion - mit vier Zonen waren das 950 px, und das
+   Tablet scrollte seitlich. Die Zonen bekommen feste Spalten: 4 am Desktop,
+   2 x 2 auf dem Tablet, darunter eine (Regel im Telefon-Block). */
+.tp-vg__stufen {
+  min-width: 0;
+}
+
+.tp-vg__stufen--zonen {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media screen and (max-width: 989px) {
+  .tp-vg__stufen--zonen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px clamp(20px, 3vw, 40px);
+  }
+}
+
+.tp-vg__spalten {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1000px;
+  margin: clamp(20px, 3vw, 32px) auto 0;
+}
+
+.tp-vg__karte-adresse,
+.tp-vg__check {
+  padding: clamp(18px, 2.5vw, 24px);
+  border: 1px solid var(--tp-vg-linie);
+  border-radius: 12px;
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.02);
+}
+
+.tp-vg__sub {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tp-vg__karte-adresse address {
+  margin: 0;
+  color: var(--tp-vg-leise);
+  font-style: normal;
+  line-height: 1.6;
+}
+
+.tp-vg__route {
+  display: inline-block;
+  margin-top: 10px;
+  color: inherit;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+/* Fuer Screenreader: der Link verlaesst die Seite. Sichtbar waere der
+   Zusatz nur Text, der die ruhige Karte stoert. */
+.tp-vg__weg {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tp-vg__check[hidden] {
+  display: none;
+}
+
+.tp-vg__check-zeile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tp-vg__input {
+  flex: 1 1 10rem;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgb(var(--color-foreground-rgb, 34 34 34) / 0.28);
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  font-size: 16px; /* verhindert das Hineinzoomen von iOS beim Fokus */
+}
+
+.tp-vg__input:focus-visible,
+.tp-vg__btn:focus-visible,
+.tp-vg__route:focus-visible,
+.tp-vg__legende a:focus-visible {
+  outline: 2px solid currentcolor;
+  outline-offset: 2px;
+}
+
+.tp-vg__ergebnis {
+  margin: 12px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.tp-vg__ergebnis:empty {
+  display: none;
+}
+
+.tp-vg__ergebnis[data-status='innen'] {
+  color: #1d6b47;
+}
+
+.tp-vg__ergebnis[data-status='rand'],
+.tp-vg__ergebnis[data-status='aussen'],
+.tp-vg__ergebnis[data-status='unbekannt'] {
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.85);
+}
+
+.tp-vg__ergebnis::before {
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+/* Der Status haengt nicht allein an der Farbe, sondern traegt ein Zeichen. */
+.tp-vg__ergebnis[data-status='innen']::before {
+  content: '\2713';
+}
+
+.tp-vg__ergebnis[data-status='rand']::before,
+.tp-vg__ergebnis[data-status='aussen']::before,
+.tp-vg__ergebnis[data-status='unbekannt']::before {
+  content: '\2139';
+}
+
+/* Ausserhalb stehen zwei Wege nebeneinander: Anfrage und Shop. */
+.tp-vg__ergebnis-weg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin: 10px 0 0;
+}
+
+.tp-vg__ergebnis-weg[hidden] {
+  display: none;
+}
+
+.tp-vg__ergebnis-weg a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.tp-vg__klein {
+  margin: 10px 0 0;
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.6);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Hinweis und Aktionen ------------------------------------------------ */
+
+.tp-vg__hinweis {
+  max-width: 62ch;
+  margin: clamp(24px, 3.5vw, 36px) auto 0;
+  color: var(--tp-vg-leise);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.tp-vg__aktionen {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.tp-vg__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.tp-vg__btn--primaer {
+  background: #1c1917;
+  color: #fff;
+}
+
+.tp-vg__btn--sekundaer {
+  border-color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.35);
+  color: inherit;
+}
+
+.tp-vg__btn--check {
+  padding: 12px 20px;
+  background: #1c1917;
+  color: #fff;
+  cursor: pointer;
+}
+
+.tp-vg__btn:hover {
+  opacity: 0.88;
+}
+
+.tp-vg__btn--sekundaer:hover {
+  background: rgb(var(--color-foreground-rgb, 34 34 34) / 0.06);
+  opacity: 1;
+}
+
+.tp-vg__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.tp-vg__vertrauen {
+  margin: 16px 0 0;
+  color: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+@media screen and (max-width: 749px) {
+  .tp-vg__buehne {
+    aspect-ratio: 340 / 380;
+    border-radius: 12px;
+  }
+
+  .tp-vg__gebiet--breit {
+    display: none;
+  }
+
+  .tp-vg__gebiet--schmal {
+    display: block;
+  }
+
+  /* Auf der schmalen Karte stehen mehr Namen am Rand an; der Verlauf faellt
+     deshalb breiter aus. Ausserhalb des Kreises geht dabei nichts verloren. */
+  .tp-vg__buehne::after {
+    background:
+      linear-gradient(to right, #faf8f5, rgb(250 248 245 / 0) 42px),
+      linear-gradient(to left, #faf8f5, rgb(250 248 245 / 0) 42px),
+      linear-gradient(to bottom, #faf8f5, rgb(250 248 245 / 0) 26px),
+      linear-gradient(to top, #faf8f5, rgb(250 248 245 / 0) 26px);
+  }
+
+  .tp-vg__marker-name {
+    font-size: 12px;
+  }
+
+
+  .tp-vg__legende {
+    gap: 2px;
+    font-size: 12px;
+  }
+
+  /* Drei Spalten pressen die Saetze auf einem Telefon zu Schnueren. */
+  .tp-vg__stufen {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .tp-vg__spalten {
+    grid-template-columns: 1fr;
+  }
+
+  .tp-vg__head,
+  .tp-vg__hinweis {
+    text-align: left;
+  }
+
+  .tp-vg__aktionen {
+    flex-direction: column;
+  }
+
+  .tp-vg__btn--primaer,
+  .tp-vg__btn--sekundaer {
+    width: 100%;
+  }
+
+  .tp-vg__vertrauen {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-vg__btn {
+    transition: none;
+  }
+}

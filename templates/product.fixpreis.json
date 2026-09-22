@@ -109,10 +109,9 @@
               },
               "blocks": {
                 "text_xrnftG": {
-                  "type": "text",
+                  "type": "tp-product-h1",
                   "name": "Product title",
                   "settings": {
-                    "text": "<h1>{{ closest.product.title }}</h1>",
                     "width": "100%",
                     "max_width": "normal",
                     "alignment": "left",
@@ -227,7 +226,8 @@
                   "type": "accelerated-checkout",
                   "static": true,
                   "settings": {},
-                  "blocks": {}
+                  "blocks": {},
+                  "disabled": true
                 }
               },
               "block_order": []
