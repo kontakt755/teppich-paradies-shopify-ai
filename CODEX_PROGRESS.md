@@ -34,6 +34,6 @@ VAR-001a.2b: assets/variant-picker.js vollständig auf native Optionswahl, build
 
 ## Letzter erfolgreicher Git-Commit
 
-79d438e – audit: Farbpicker-Kombinationsfehler TP-015 belegen. Zwölf Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
+467021f – audit: Farbverbraucher-Reconnectfehler TP-016 belegen. Zwölf Dateien tatsächlich committed. Neuester Dokumentationscommit über git log. Branch audit/shop-audit, kein Merge/Push.
 
 Status: WORKING

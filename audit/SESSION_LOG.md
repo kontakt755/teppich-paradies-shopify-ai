@@ -377,3 +377,5 @@ S21 / VAR-001a.2a: acht Original-Farbverbraucherfälle PASS, vier Reconnect-Defe
 Evidence: `audit/evidence/color-consumers-2026-09-22.json`; Script `audit/scripts/reproduce-color-consumers.mjs`. Syntax/Erstlauf PASS, keine alten Replays. Route TASK-02EB9023E44A B/STATIC; kein Executor. FILE CONFLICT: beide Verbraucher in tp-farbe.js, keine parallelen Fixes.
 
 Nächster Schritt: VAR-001a.2b: assets/variant-picker.js vollständig auf native Optionswahl, buildRequestUrl/fetchUpdatedSection, Abbruch/Antwortreihenfolge und VariantUpdateEvent prüfen. Anschließend product-form-/tp-farbe-Verbraucherbindung sowie H-016 Mehrproduktbereiche abgrenzen. S20/S21 nicht wiederholen; Browserberechtigung S13 nicht umgehen.
+
+S21 in `467021f` tatsächlich gesichert. Acht Fälle, Syntax-/Integritäts-/Secretcheck PASS. Externe Prompt-/Dashboardänderungen erhalten. Weiter VAR-001a.2b; Status WORKING.
