@@ -464,3 +464,5 @@ Ursachen: `this.#updateQuickAddButtonState.bind(this)` erzeugt bei add/remove ve
 Script `audit/scripts/reproduce-quick-add-reconnect.mjs`; Evidence `audit/evidence/quick-add-reconnect-2026-09-22.json`. Vollständige Originalklasse/Events, native EventTarget/AbortController; Component, DOM, Dialog und Media adaptiert, Eventtarget wegen fehlendem Node-DOM-Bubbling per Proxy. Erster Lauf stoppte vor Beobachtung an lexikalem VM-Zugriff auf ThemeEvents; Original-Ereignisnamen verwendet, danach Syntax/Diagnose PASS. Kein Modal/Morph/Fetch/Browser/Livezugriff. Route TASK-46ED4B67391A B/STATIC, kein Executor.
 
 Nächster Schritt: JS-001c QuickAddDialog derselben Datei separat auf CartUpdate/VariantUpdate/DialogClose-Reconnect prüfen. Fertigen Component-/Morphpfad nicht wiederholen.
+
+S28 in `7f3274c` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.

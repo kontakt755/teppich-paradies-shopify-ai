@@ -34,6 +34,6 @@ JS-001c: QuickAddDialog auf CartUpdate/VariantUpdate/DialogClose bei Reconnect p
 
 ## Letzter erfolgreicher Git-Commit
 
-ed52d6a – S27-Sicherung. S28-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+7f3274c – audit: TP-016 um Quick-Add-Reconnect erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING

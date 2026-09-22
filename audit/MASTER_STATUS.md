@@ -60,4 +60,4 @@ S26 in `98906eb` tatsächlich gesichert. Statische Morph-/Mehrproduktmatrix sowi
 
 S27 in `2242374` tatsächlich gesichert. 96 Dateien/37 heuristische Kandidaten; Inventar-, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001b, Status WORKING.
 
-S28 Diagnose abgeschlossen, Fachcommit nach Integritätsprüfung ausstehend. Vier QuickAddComponent-Lifecycle-Beobachtungen PASS; TP-016 erweitert. Weiter JS-001c, Status WORKING.
+S28 in `7f3274c` tatsächlich gesichert. Vier QuickAddComponent-Lifecycle-Beobachtungen sowie Integritäts-/Secret-/Diffcheck PASS. Keine Shopänderung. Weiter JS-001c, Status WORKING.
