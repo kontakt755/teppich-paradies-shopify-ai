@@ -254,7 +254,8 @@
                   "type": "accelerated-checkout",
                   "static": true,
                   "settings": {},
-                  "blocks": {}
+                  "blocks": {},
+                  "disabled": true
                 }
               },
               "block_order": []

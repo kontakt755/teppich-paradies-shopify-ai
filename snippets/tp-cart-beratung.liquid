@@ -1,0 +1,228 @@
+{%- doc -%}
+  Beratung, Masspruefung und Verlegeanfrage im Warenkorb (Auftrag Shop 2.0,
+  Abschnitte 11-14). Wird in snippets/cart-summary.liquid vor den
+  Checkout-Buttons gerendert - Warenkorbseite und Drawer.
+
+  Pflichtentscheidung "Persoenliche Beratung gewuenscht?" Ja/Nein ohne
+  Vorauswahl. Bei Ja: Telefonnummer (Pflicht), Zeitfenster, Freitext. Die
+  Masspruefung erscheint nur, wenn eine berechnete Position (Zuschnitt,
+  Raummass, Wunschmass, Einfassung) im Warenkorb liegt; die Verlegeanfrage
+  nur bei Positionen, fuer die der Verlegeservice gilt
+  (snippets/tp-vs-berechtigt). Muster allein: nur die Beratungsfrage.
+
+  Gespeichert wird als Cart-Attribut (Beratung, Telefon, Rueckruf,
+  Beratungsthema, Masspruefung, Verlegung) - per /cart/update.js aus
+  assets/tp-cart-beratung.js und zusaetzlich ueber die Inputs im
+  Cart-Formular. Die Attribute stehen an der Bestellung unter "Zusaetzliche
+  Details"; Shopify Flow setzt daraus die Tags BERATUNG-JA/-NEIN,
+  MASS-PRUEFUNG-OFFEN, VERLEGUNG-ANGEFRAGT (domains/shopify/flow/).
+
+  Vorbelegung aus cart.attributes, damit die Antwort einen Reload oder ein
+  Section-Rerender ueberlebt.
+{%- enddoc -%}
+
+{%- liquid
+  assign tpb_mass = false
+  assign tpb_verlegung = false
+  assign tpb_ware = false
+  for tpb_item in cart.items
+    if tpb_item.properties._Muster_ID != blank
+      continue
+    endif
+    assign tpb_ware = true
+    if tpb_item.properties._Zuschnitt != blank or tpb_item.properties['Maße'] != blank or tpb_item.properties['Gewünschte Länge'] != blank or tpb_item.properties['Art'] == 'Raummaß'
+      assign tpb_mass = true
+    endif
+    if tpb_verlegung == false
+      capture tpb_vs
+        render 'tp-vs-berechtigt', product: tpb_item.product
+      endcapture
+      if tpb_vs contains 'ja'
+        assign tpb_verlegung = true
+      endif
+    endif
+  endfor
+  assign tpb_beratung = cart.attributes['Beratung'] | default: ''
+  assign tpb_telefon = cart.attributes['Telefon'] | default: ''
+  assign tpb_zeit = cart.attributes['Rückruf'] | default: ''
+  assign tpb_thema = cart.attributes['Beratungsthema'] | default: ''
+  assign tpb_masswahl = cart.attributes['Maßprüfung'] | default: ''
+  assign tpb_verlegt = cart.attributes['Verlegung'] | default: ''
+  assign tpb_id = 'tpb-' | append: section.id | downcase | replace: '_', ''
+  assign tpb_telefon_noetig = false
+  if tpb_beratung == 'Ja'
+    assign tpb_telefon_noetig = true
+  endif
+  if tpb_mass and tpb_masswahl == 'Ja'
+    assign tpb_telefon_noetig = true
+  endif
+-%}
+
+{%- if cart != empty -%}
+<script src="{{ 'tp-cart-beratung.js' | asset_url }}" defer></script>
+<tp-cart-beratung
+  class="tp-beratung"
+  {% if tpb_mass %}data-masspruefung{% endif %}
+  {% if tpb_verlegung %}data-verlegung{% endif %}
+>
+  <fieldset class="tp-beratung__gruppe">
+    <legend class="tp-beratung__frage">Persönliche Beratung gewünscht? <span class="tp-beratung__pflicht" aria-hidden="true">*</span></legend>
+    <p class="tp-beratung__hinweis">Wir rufen Sie kurz an, klären offene Fragen zu Material, Maßen oder Verlegung und bestätigen Ihnen die Bestellung.</p>
+    <div class="tp-beratung__optionen">
+      <label class="tp-beratung__option">
+        <input type="radio" name="attributes[Beratung]" value="Ja" data-tp-feld="beratung" form="cart-form" {% if tpb_beratung == 'Ja' %}checked{% endif %}>
+        <span>Ja, bitte anrufen</span>
+      </label>
+      <label class="tp-beratung__option">
+        <input type="radio" name="attributes[Beratung]" value="Nein" data-tp-feld="beratung" form="cart-form" {% if tpb_beratung == 'Nein' %}checked{% endif %}>
+        <span>Nein, Bestellung direkt ausführen</span>
+      </label>
+    </div>
+  </fieldset>
+
+  <div class="tp-beratung__details" data-tp-beratung-details {% unless tpb_beratung == 'Ja' %}hidden{% endunless %}>
+    <label class="tp-beratung__feld" for="{{ tpb_id }}-zeit">
+      <span>Wann erreichen wir Sie am besten?</span>
+      <select id="{{ tpb_id }}-zeit" name="attributes[Rückruf]" data-tp-feld="zeit" form="cart-form">
+        <option value="Egal" {% if tpb_zeit == 'Egal' or tpb_zeit == blank %}selected{% endif %}>Egal</option>
+        <option value="Vormittags" {% if tpb_zeit == 'Vormittags' %}selected{% endif %}>Vormittags</option>
+        <option value="Mittags" {% if tpb_zeit == 'Mittags' %}selected{% endif %}>Mittags</option>
+        <option value="Nachmittags" {% if tpb_zeit == 'Nachmittags' %}selected{% endif %}>Nachmittags</option>
+      </select>
+    </label>
+    <label class="tp-beratung__feld" for="{{ tpb_id }}-thema">
+      <span>Wobei dürfen wir helfen? <em>(optional)</em></span>
+      <textarea id="{{ tpb_id }}-thema" name="attributes[Beratungsthema]" data-tp-feld="thema" form="cart-form" rows="2" maxlength="500">{{ tpb_thema }}</textarea>
+    </label>
+  </div>
+
+  {%- if tpb_mass -%}
+    <fieldset class="tp-beratung__gruppe">
+      <legend class="tp-beratung__frage">Möchten Sie Ihre Maße vor dem Zuschnitt prüfen lassen?</legend>
+      <div class="tp-beratung__optionen">
+        <label class="tp-beratung__option">
+          <input type="radio" name="attributes[Maßprüfung]" value="Nein" data-tp-feld="mass" form="cart-form" {% if tpb_masswahl == 'Nein' %}checked{% endif %}>
+          <span>Nein, Bestellung direkt ausführen</span>
+        </label>
+        <label class="tp-beratung__option">
+          <input type="radio" name="attributes[Maßprüfung]" value="Ja" data-tp-feld="mass" form="cart-form" {% if tpb_masswahl == 'Ja' %}checked{% endif %}>
+          <span>Ja, bitte kurz prüfen</span>
+        </label>
+      </div>
+      <p class="tp-beratung__hinweis">Wir gleichen Ihre Maße vor dem Zuschnitt telefonisch mit Ihnen ab. Die Lieferung verzögert sich dadurch nicht.</p>
+    </fieldset>
+  {%- endif -%}
+
+  <div class="tp-beratung__telefon" data-tp-telefon-box {% unless tpb_telefon_noetig %}hidden{% endunless %}>
+    <label class="tp-beratung__feld" for="{{ tpb_id }}-telefon">
+      <span>Telefonnummer für den Rückruf <span class="tp-beratung__pflicht" aria-hidden="true">*</span></span>
+      <input id="{{ tpb_id }}-telefon" type="tel" name="attributes[Telefon]" data-tp-feld="telefon" form="cart-form" value="{{ tpb_telefon | escape }}" autocomplete="tel" inputmode="tel" placeholder="z. B. 0176 1234567">
+    </label>
+  </div>
+
+  {%- if tpb_verlegung -%}
+    <label class="tp-beratung__option tp-beratung__option--einzeln">
+      <input type="checkbox" name="attributes[Verlegung]" value="Angefragt" data-tp-feld="verlegung" form="cart-form" {% if tpb_verlegt == 'Angefragt' %}checked{% endif %}>
+      <span>Ich interessiere mich für Aufmaß oder Verlegung durch Teppich Paradies</span>
+    </label>
+  {%- endif -%}
+
+  <p class="tp-beratung__fehler" data-tp-fehler role="alert" hidden></p>
+</tp-cart-beratung>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-beratung {
+    display: block;
+    margin-block: var(--margin-sm, 1rem);
+    padding: var(--padding-sm, 0.875rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--style-border-radius-inputs, 4px);
+    font-size: var(--font-size--sm, 0.875rem);
+  }
+  .tp-beratung__gruppe {
+    margin: 0 0 var(--margin-xs, 0.5rem);
+    padding: 0;
+    border: 0;
+    min-inline-size: 0;
+  }
+  .tp-beratung__gruppe + .tp-beratung__gruppe {
+    margin-block-start: var(--margin-sm, 1rem);
+  }
+  .tp-beratung__frage {
+    font-weight: 600;
+    padding: 0;
+    margin-block-end: var(--margin-2xs, 0.25rem);
+  }
+  .tp-beratung__pflicht {
+    color: var(--color-error, #b3261e);
+  }
+  .tp-beratung__hinweis {
+    margin: 0 0 var(--margin-2xs, 0.25rem);
+    color: rgb(from var(--color-foreground) r g b / 0.75);
+  }
+  .tp-beratung__optionen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap-xs, 0.5rem) var(--gap-sm, 1rem);
+  }
+  .tp-beratung__option {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    cursor: pointer;
+    min-block-size: 44px;
+  }
+  .tp-beratung__option--einzeln {
+    margin-block-start: var(--margin-xs, 0.5rem);
+  }
+  .tp-beratung__option input {
+    inline-size: 1.15em;
+    block-size: 1.15em;
+    margin: 0;
+    accent-color: var(--color-primary);
+  }
+  .tp-beratung [hidden] {
+    display: none !important;
+  }
+  .tp-beratung__details,
+  .tp-beratung__telefon {
+    display: grid;
+    gap: var(--gap-xs, 0.5rem);
+    margin-block-start: var(--margin-xs, 0.5rem);
+  }
+  .tp-beratung__feld {
+    display: grid;
+    gap: 0.25rem;
+  }
+  .tp-beratung__feld em {
+    font-style: normal;
+    color: rgb(from var(--color-foreground) r g b / 0.6);
+  }
+  .tp-beratung__feld input,
+  .tp-beratung__feld select,
+  .tp-beratung__feld textarea {
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-input-border, var(--color-border));
+    border-radius: var(--style-border-radius-inputs, 4px);
+    background: var(--color-input-background, var(--color-background));
+    color: var(--color-input-text, var(--color-foreground));
+    font: inherit;
+  }
+  .tp-beratung__feld [aria-invalid='true'] {
+    border-color: var(--color-error, #b3261e);
+  }
+  .tp-beratung__fehler {
+    margin: var(--margin-xs, 0.5rem) 0 0;
+    color: var(--color-error, #b3261e);
+    font-weight: 500;
+  }
+  .additional-checkout-buttons.tp-beratung-offen {
+    display: none;
+  }
+  .cart__checkout-button[data-tp-beratung-offen] {
+    opacity: 0.85;
+  }
+{% endstylesheet %}

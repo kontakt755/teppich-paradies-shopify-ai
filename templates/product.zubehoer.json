@@ -238,6 +238,7 @@
                 "accelerated-checkout": {
                   "type": "accelerated-checkout",
                   "static": true,
+                  "disabled": true,
                   "settings": {},
                   "blocks": {}
                 }
