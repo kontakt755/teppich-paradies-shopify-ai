@@ -500,3 +500,5 @@ Sechs von acht lokalen Produkttemplates haben einen aktiven Quantity-Block. `pri
 Script `audit/scripts/reproduce-price-per-item-reconnect.mjs`; Evidence `audit/evidence/price-per-item-reconnect-2026-09-22.json`. Originalklasse/Events, native EventTarget/AbortController; Component/Form/Input adaptiert. Syntax/Erstlauf PASS. Route TASK-41E86B722185 B/STATIC, kein Executor, Browser oder Livezugriff.
 
 Nächster Schritt: JS-001f `media-gallery.js` als sichtbaren ungeprüften Einmal-Controller-Kandidaten lesen, Reichweite bestimmen und Lifecycle ausführen. Fertige Fälle nicht wiederholen.
+
+S31 in `f9713f5` tatsächlich gesichert. Vier Lifecycle-Beobachtungen, Template-Matrix, Integritäts-, Secret- und Diffcheck PASS. Keine Shopänderung. Weiter JS-001f, Status WORKING.

@@ -34,6 +34,6 @@ JS-001f: `media-gallery.js` vollständig lesen, Reichweite bestimmen und Lifecyc
 
 ## Letzter erfolgreicher Git-Commit
 
-2dd7f31 – S30-Sicherung. S31-Fachcommit folgt nach Prüfungen. Kein Merge/Push.
+f9713f5 – audit: TP-016 um Stückpreis-Reconnect erweitern. Dreizehn Dateien tatsächlich committed. Kein Merge/Push.
 
 Status: WORKING
