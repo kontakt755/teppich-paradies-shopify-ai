@@ -83,3 +83,9 @@ Hebel mit Wirkung: Größe des globalen Section-CSS (649 KB roh über 207 Dateie
 - **Dateien:** `sections/tp-verlegeservice.liquid`, `blocks/tp-einfass-konfigurator.liquid`, `sections/tp-ratgeber-beitrag.liquid`, `sections/tp-verlegegebiet.liquid`, 4 neue `assets/*.css`, 6 Templates.
 - **Risiken:** Section-CSS wirkte bisher global – Seiten ohne die Section könnten Regeln daraus genutzt haben. Deshalb visuelle Regression (unten). Restrisiko: Seitentypen außerhalb der 10 geprüften (z. B. B2B-Seite, Suche).
 - **Test:** Puppeteer-Fullpage-Screenshots vorher/nachher, 10 Seitentypen (Start, Kollektion, PDP Rolle, PDP Einfassung, Verlegeservice, Treppen, Ratgeber-Artikel, Muster, Warenkorb, Leisten) × 390/1366 px; Pixel-Diffs 0–4 %, alle größten Diffs per Sichtprüfung = vertikaler Scroll-Offset fixer Elemente (Cookie-Banner, Vorschauleiste), kein Layoutunterschied; Ratgeber und drei Desktop-Seiten 0 Diff. Asset-Links gemessen: Verlegeservice-Seite lädt tp-verlegeservice.css + tp-verlegegebiet.css, Einfassungs-PDP tp-einfass-konfigurator.css, Ratgeber tp-ratgeber-beitrag.css, Leisten-Kollektion keins davon.
+
+## 2026-09-22 · Deploy · Livegang Shop 2.0 Pre-Launch
+
+- **Ablauf:** Merge #454 → Preview scheiterte an FULL QA (Theme Check meldete die Benachrichtigungsvorlagen unter `domains/` als UndefinedObject, dazu eine ungenutzte Variable) → Fix #467 → Preview scheiterte am Sales-Check (Checkout ohne Beratungsantwort bewusst gesperrt) → Fix #468 (Check wählt „Nein") → Preview PASS → Live PASS.
+- **Koordination:** parallele Livegänge #455/#463 der Sitzung „Produktseiten kompakt"; Konflikte in Templates und Rollenrechner zugunsten der kompakten Kaufstrecke gelöst, H1-Block und Buy-now-Sperre neu angewendet.
+- **Test:** siehe 06-TESTS.md.

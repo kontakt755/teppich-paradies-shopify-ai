@@ -20,3 +20,5 @@
 | 2026-09-22 | M10 | Visuelle Regression CSS-Auslagerung: 10 Seitentypen × 390/1366 px, Diff vorher/nachher 0–4,1 %; Rauschen zweier identischer Läufe 0–4,4 % (gleiche Größenordnung); Sichtprüfung der größten Diffs (Einfassungs-PDP, Start, Verlegeservice, Treppen): nur Scroll-Offset fixer Elemente | Arbeitstheme, Puppeteer | PASS |
 | 2026-09-22 | M10 | Asset-CSS nur dort geladen, wo die Section rendert (Verlegeservice 2 Dateien, Einfassung 1, Ratgeber 1, Leisten 0); globales styles.css 486 KB → 448 KB roh | Arbeitstheme | PASS |
 | 2026-09-22 | M3 | H1 via tp-product-h1: PDP-Screenshots Einfassung/Rolle zeigen H1 unverändert | Arbeitstheme | PASS |
+| 2026-09-22 | Deploy | workflow:preview 204436144462 auf ae5ca33: Unit, Evidence, Secret, Liquid, Schema, Template, Compare, SEO, FULL QA, Sales (6/6) | Preview | PASS |
+| 2026-09-22 | Deploy | workflow:live → Admin API: 204436144462 = MAIN; Live-HTML t/73 mit Teppichfliesen-Kacheln; PDP ohne Buy-now; Versandrichtlinie 200 | Live | PASS |
