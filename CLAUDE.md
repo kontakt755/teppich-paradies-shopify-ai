@@ -366,12 +366,12 @@ Owner ist Ahmet = GitHub-Login `kontakt755`. `Closes #n` im PR-Text schliesst be
 ## Tests
 
 ```
-npm test                    # alle sechs Suiten, 1.247 Tests, rund 14 s
+npm test                    # alle sieben Suiten, 1.251 Tests, rund 18 s
 npm run qa                  # volle Suite inkl. visuell (nur lokal)
 ```
 
 Einzeln laufen sie weiterhin: `qa:unit:test`, `dashboard:test`, `operations:test`,
-`automation:test`, `workflow:test`, `control:center:test`. Bis 2026-09-23 startete
+`automation:test`, `workflow:test`, `control:center:test`, `hooks:test`. Bis 2026-09-23 startete
 `npm test` nur die ersten drei — neue Suiten liefen jahrelang gruen, weil sie gar
 nicht liefen. `qa/tests/npm-test-deckung.test.mjs` prueft jetzt, dass jedes
 Verzeichnis mit `*.test.mjs` in der Kette haengt; eine bewusste Ausnahme braucht

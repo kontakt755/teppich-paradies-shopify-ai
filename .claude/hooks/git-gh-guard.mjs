@@ -77,6 +77,29 @@ const AUSNAHMEN = [
   // angesehen. Ein Sweep ueber eine Liste hat das nicht - und genau der loescht
   // im Zweifel die eine Arbeit, die noch nirgends sonst liegt.
   new RegExp(`^git\\s+branch\\s+(?:-D|--delete\\s+--force|--force\\s+--delete)(?:\\s+${BRANCHNAME})+${UMLEITUNG}`),
+
+  // Loeschen eines Zweigs auf dem Remote, mit ausgeschriebenen Namen. Dieselbe
+  // Grenze wie eine Zeile darueber: wer den Namen tippt, hat hingesehen.
+  // Routine ist das ueber "gh pr merge --delete-branch" nach einem Merge.
+  //
+  // Bis 2026-09-23 gab es hier ueberhaupt keine Regel: geprueft wurde nur das
+  // Loeschen eines Tags. Damit lief auch der Sweep durch - "--delete $(git
+  // branch -r | grep ...)" loeschte fremde Zweige, ohne dass jemand einen
+  // Namen gesehen hatte. Die Regel unten sperrt jetzt den Grundfall, diese
+  // Ausnahme laesst den ausgeschriebenen wieder zu.
+  // Bewusst eng: erlaubt sind nur die zwei Schreibweisen, die git kennt, und
+  // darin ausschliesslich Namen - kein weiteres Flag. Ein angehaengtes
+  // "--force" faellt damit aus der Ausnahme und wird unten geblockt. Das ist
+  // hier keine Kosmetik: Ausnahmen kurzschliessen vor den Verboten.
+  // Der Vorspann schliesst Tags aus: "refs/tags/v1" sieht aus wie ein
+  // Zweigname und wuerde sonst durch diese Ausnahme laufen - die Ausnahme
+  // kurzschliesst vor der Tag-Regel weiter unten. Am 2026-09-23 beim
+  // unabhaengigen Gegentest aufgefallen, bevor es in main lag.
+  new RegExp(
+    `^(?!.*(?:refs\\/tags\\/|\\btag\\b))`
+    + `git\\s+push\\s+(?:${BRANCHNAME}\\s+(?:--delete|-d)|(?:--delete|-d)\\s+${BRANCHNAME})`
+    + `(?:\\s+${BRANCHNAME})+${UMLEITUNG}`
+  ),
 ];
 
 const VERBOTEN = [
@@ -98,6 +121,8 @@ const VERBOTEN = [
   // sich aus dem Commit wiederherstellen, solange die Commits woanders haengen.
   // Ein Tag dagegen ist eine Veroeffentlichung - das bleibt gesperrt.
   [/^git\s+(.*\s)?push\b.*--delete\b.*(\btag\b|refs\/tags\/)/,      'git push --delete auf ein Tag entfernt eine Veroeffentlichung'],
+  // Kurzflag mitgepruefft: "push -d" ist dasselbe wie "push --delete".
+  [/^git\s+(.*\s)?push\b.*(--delete\b|\s-[a-zA-Z]*d\b)/,               'ein Zweig auf dem Remote ist nach dem Loeschen nur noch ueber das Reflog des Servers zu holen - Namen ausschreiben statt eine Liste einsetzen'],
   [/^git\s+(.*\s)?reset\b.*(--hard\b|--merge\b|--keep\b)/,          'git reset --hard verwirft uncommittete Aenderungen'],
   [/^git\s+(.*\s)?clean\b\s+-[a-zA-Z]*[fdx]/,                       'git clean loescht nicht versionierte Dateien'],
   [/^git\s+(.*\s)?restore\b/,                                       'git restore verwirft Aenderungen im Working Tree'],
