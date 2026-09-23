@@ -48,6 +48,18 @@ test('Einkauf-API ist GET-only und liefert JSON (verfuegbar:false ohne private F
   assert.equal(post.status, 405);
 }));
 
+test('lexikon-API ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
+  const g = await fetch(`${base}/api/lexikon/liste?q=abc`);
+  assert.equal(g.status, 200);
+  const gj = await g.json();
+  assert.equal(gj.verfuegbar, false);
+  assert.equal(gj.befehl, 'npm run lexikon:export');
+  const post = await fetch(`${base}/api/lexikon/liste`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
+  const p = await fetch(`${base}/api/lexikon/produkt?handle=x`);
+  assert.equal(p.status, 200);
+}));
+
 test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/kennzahlen`);
   assert.equal(g.status, 200);

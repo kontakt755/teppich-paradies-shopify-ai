@@ -563,7 +563,64 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, zeitraeume: daten.zeitraeume, topProdukte: daten.topProdukte || [] };
     },
+
+    /**
+     * Lexikon: "Kunde nennt den Produktnamen, wir finden das Original beim
+     * Lieferanten" - Nachschlagewerk fuer den Kundenkontakt. Liest
+     * ausschliesslich die lokale Exportdatei ($TP_PRIVAT_DIR/lexikon/produkte.json,
+     * siehe domains/lexikon/ fuer das Format), nie im Repository. Suche und
+     * Paginierung laufen serverseitig, damit die potenziell grosse Datei nie
+     * komplett an den Browser geht.
+     */
+    lexikonListe({ q = '', page = 1, pageSize = 20 } = {}) {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'lexikon', 'produkte.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.produkte)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+      }
+      const suchtext = String(q || '').trim().toLowerCase();
+      const treffer = suchtext
+        ? daten.produkte.filter(p => lexikonSucheTreffer(p, suchtext))
+        : daten.produkte;
+      const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);
+      const p = Math.max(Number(page) || 1, 1);
+      const start = (p - 1) * size;
+      const seite = treffer.slice(start, start + size).map(lexikonListenEintrag);
+      return {
+        verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.produkte.length,
+        treffer: { count: treffer.length, page: p, pageSize: size, pages: Math.max(Math.ceil(treffer.length / size), 1), items: seite },
+      };
+    },
+
+    /** Ein einzelnes Lexikon-Produkt fuer die Detailansicht (per Handle). */
+    lexikonProdukt(handle) {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'lexikon', 'produkte.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.produkte)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+      }
+      const produkt = daten.produkte.find(p => p.handle === handle);
+      if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
+      return { verfuegbar: true, quelle: file, produkt };
+    },
   };
+}
+
+/** Sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion. */
+function lexikonSucheTreffer(p, suchtext) {
+  const felder = [p.titel, p.handle];
+  for (const v of p.varianten || []) {
+    felder.push(v.sku, v.farbe, v.einkauf?.artikelnummer, v.einkauf?.kollektion, v.einkauf?.produktname);
+  }
+  return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(suchtext));
+}
+
+/** Zeilenform fuer die Trefferliste: Bild, Produktname, Produktgruppe, Anzahl Farben. */
+function lexikonListenEintrag(p) {
+  const farben = new Set((p.varianten || []).map(v => v.farbe).filter(Boolean));
+  return { handle: p.handle, titel: p.titel, produktgruppe: p.produktgruppe || null, bild: p.bild || null, status: p.status || null, farbenAnzahl: farben.size };
 }
 
 export { STATUS_LABELS };
