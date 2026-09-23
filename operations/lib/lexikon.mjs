@@ -135,6 +135,18 @@ function farbeAusOptionen(selectedOptions) {
   return treffer ? text(treffer.value) : null;
 }
 
+/**
+ * Wunschmass-Variante (Zuschnitt nach Mass, z. B. Option "Breite: Wunschmaß"):
+ * hat nie eine feste SKU/Artikelnummer/Farbnummer beim Lieferanten, weil erst
+ * beim Zuschnitt entsteht, was bestellt wird - das ist keine Datenluecke.
+ * Erkennung ueber den Optionswert, nicht ueber fehlende Einkaufsdaten (CLAUDE.md
+ * "Produkteigenschaften nicht erfinden" - wir raten nicht, wir lesen die Option).
+ */
+function istWunschmass(selectedOptions) {
+  if (!Array.isArray(selectedOptions)) return false;
+  return selectedOptions.some(o => /wunschma/i.test(String(o?.value ?? '')));
+}
+
 function einkaufBlock({ einkaufMap, customMap }) {
   const out = {};
   for (const [mfKey, zielKey] of Object.entries(EINKAUF_FELDER)) {
@@ -152,10 +164,34 @@ function skuIstMuster(sku) {
   return typeof sku === 'string' && sku.startsWith('M-');
 }
 
-function musterBlock(produkt, varianten) {
-  const handleIstMuster = typeof produkt.handle === 'string' && produkt.handle.startsWith('muster-');
-  const vorhanden = handleIstMuster || varianten.some(v => skuIstMuster(v.sku));
-  return { vorhanden, handle: handleIstMuster ? produkt.handle : null };
+/**
+ * Liest den Handle des verknuepften Musterprodukts aus einer aufgeloesten
+ * `einkauf.muster_variante`-Referenz (variant_reference auf die
+ * Mustervariante; der Export loest sie zu `{id, product:{handle}}` auf,
+ * siehe lexikon-export.mjs). Unaufgeloest (rohe GID als String) liefert
+ * nichts - wir raten keinen Handle aus einer ID.
+ */
+function musterHandleAusEinkaufswert(wert) {
+  if (!wert || typeof wert !== 'object') return null;
+  return text(wert.product?.handle ?? wert.handle ?? null);
+}
+
+/**
+ * Verknuepfung Produkt <-> Muster: primaer ueber den Produkt-Handle
+ * (Konvention `muster-<handle>` fuer das ganze Produkt), sekundaer ueber die
+ * Mustervariante am Einkaufsblock der eigenen Varianten (falls die
+ * Namenskonvention nicht greift). Wenn das Produkt selbst ein Musterprodukt
+ * ist (Handle beginnt mit `muster-`), verweist es auf sich selbst (bestehendes
+ * Verhalten). `musterKandidatenAusVarianten` kommt aus dem Varianten-Mapping.
+ */
+function musterBlock(produkt, varianten, handleSet, musterKandidatenAusVarianten) {
+  const handle = text(produkt.handle);
+  const handleIstMuster = typeof handle === 'string' && handle.startsWith('muster-');
+  let musterHandle = handleIstMuster ? handle : null;
+  if (!musterHandle && handle && handleSet.has(`muster-${handle}`)) musterHandle = `muster-${handle}`;
+  if (!musterHandle && musterKandidatenAusVarianten.length) musterHandle = musterKandidatenAusVarianten[0];
+  const vorhanden = !!musterHandle || varianten.some(v => skuIstMuster(v.sku));
+  return { vorhanden, handle: musterHandle };
 }
 
 /** Produktliste aus verschiedenen Export-Huellen ziehen. */
@@ -180,6 +216,10 @@ function produktListe(exportDaten) {
 export function aufbereiten(exportDaten, opt = {}) {
   const produkte = produktListe(exportDaten);
   const jetzt = opt.jetzt ?? new Date();
+  // Fuer die Muster-Verknuepfung ueber den Produkt-Handle (muster-<handle>)
+  // muss die Menge ALLER Handles vorab feststehen - nicht nur des eigenen
+  // Produkts.
+  const handleSet = new Set(produkte.map((p) => text(p.handle)).filter(Boolean));
 
   const ergebnis = produkte.map((p) => {
     const customMap = metafeldMap(p.metafields)?.custom ?? {};
@@ -190,10 +230,13 @@ export function aufbereiten(exportDaten, opt = {}) {
       : Array.isArray(p.variants?.nodes) ? p.variants.nodes
         : [];
 
+    const musterKandidatenAusVarianten = [];
     const varianten = rohVarianten.map((v) => {
       const vMap = metafeldMap(v.metafields);
       const preisWert = v.price ?? v.priceV2?.amount ?? v.priceSet?.shopMoney?.amount;
       const waehrung = v.priceV2?.currencyCode ?? v.priceSet?.shopMoney?.currencyCode ?? (leer(preisWert) ? null : 'EUR');
+      const musterKandidat = musterHandleAusEinkaufswert(vMap.einkauf?.muster_variante);
+      if (musterKandidat) musterKandidatenAusVarianten.push(musterKandidat);
       return {
         id: text(v.id),
         titel: text(v.title),
@@ -202,6 +245,10 @@ export function aufbereiten(exportDaten, opt = {}) {
         preis: zahl(preisWert),
         waehrung: zahl(preisWert) === null ? null : waehrung,
         verfuegbar: typeof v.availableForSale === 'boolean' ? v.availableForSale : null,
+        // Wunschmass (Zuschnitt nach Mass): SKU/Artikelnummer/Farbnummer sind
+        // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
+        // Datenluecke. Front-End muss das getrennt von echten Luecken zeigen.
+        wunschmass: istWunschmass(v.selectedOptions),
         einkauf: einkaufBlock({ einkaufMap: vMap.einkauf, customMap: vMap.custom ?? customMap }),
       };
     });
@@ -215,7 +262,7 @@ export function aufbereiten(exportDaten, opt = {}) {
       produktgruppe: produktgruppe(p),
       bild: bildUrl(p),
       eigenschaften: eigenschaften(customMap),
-      muster: musterBlock(p, varianten),
+      muster: musterBlock(p, varianten, handleSet, musterKandidatenAusVarianten),
       varianten,
     };
   });

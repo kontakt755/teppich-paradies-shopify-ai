@@ -1,3 +1,4 @@
+import './_testumgebung.mjs';   // muss zuerst stehen: setzt TP_PRIVAT_DIR vor dem Laden des Servers
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -6,10 +7,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { requestHandler } from '../../../scripts/serve-dashboard.mjs';
 
-// Der Server liest den privaten Ordner aus TP_PRIVAT_DIR. Im Test zeigt er
-// auf ein leeres Verzeichnis, sonst haengt das Ergebnis davon ab, was auf dem
-// jeweiligen Rechner unter ~/teppich-paradies-analyse liegt.
-process.env.TP_PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-test-'));
 
 async function withServer(run) {
   const server = http.createServer(requestHandler);

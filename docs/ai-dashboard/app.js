@@ -1117,6 +1117,37 @@ function viewLexikonListe() {
     ${pages}`;
 }
 
+// Lesbare deutsche Bezeichnung je internem Eigenschaften-Schluessel (aus
+// operations/lib/lexikon.mjs::EIGENSCHAFTEN_FELDER). Unbekannte Schluessel
+// werden trotzdem lesbar aufbereitet, nie roh angezeigt.
+const EIGENSCHAFTEN_LABEL = {
+  rollenbreite: 'Rollenbreite',
+  qmProPaket: 'm² pro Paket',
+  florhoehe: 'Florhöhe',
+  material: 'Material',
+  ruecken: 'Rücken',
+  nutzungsklasse: 'Nutzungsklasse',
+  fussbodenheizung: 'Fußbodenheizung',
+  brandverhalten: 'Brandverhalten',
+  belagsart: 'Belagsart',
+  optik: 'Optik',
+  fasermaterial: 'Fasermaterial',
+  zimmer: 'Zimmer',
+  aufbau: 'Aufbau',
+  gesamtstaerke: 'Gesamtstärke',
+  poleneinsatzgewicht: 'Poleneinsatzgewicht',
+  komfortklasse: 'Komfortklasse',
+  trittschallverbesserung: 'Trittschallverbesserung',
+  marke: 'Marke',
+};
+function eigenschaftLabel(key) {
+  if (EIGENSCHAFTEN_LABEL[key]) return EIGENSCHAFTEN_LABEL[key];
+  const lesbar = String(key).replaceAll('_', ' ');
+  return lesbar.charAt(0).toUpperCase() + lesbar.slice(1);
+}
+
+const LEXIKON_VARIANTEN_KOPF = '<tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferanten-Artikelnummer</th><th>Farbnummer</th><th>Preis</th><th>Verfügbar</th><th>Lieferantenseite</th></tr>';
+
 function lexikonVarianteZeile(v) {
   const artikelnr = v.einkauf?.artikelnummer;
   const artikelZelle = artikelnr
@@ -1141,6 +1172,9 @@ function viewLexikonDetail(handle) {
   if (!d || !d.verfuegbar) return zurueck + emptyState('Produkt nicht gefunden.', d?.hinweis || 'Handle prüfen.');
   const p = d.produkt;
   const eigenschaften = Object.entries(p.eigenschaften || {});
+  const alleVarianten = p.varianten || [];
+  const normaleVarianten = alleVarianten.filter((v) => !v.wunschmass);
+  const wunschmassVarianten = alleVarianten.filter((v) => v.wunschmass);
   const musterHinweis = p.muster?.vorhanden
     ? `<p class="small">Es gibt ein Muster. ${p.muster.handle ? `<a href="#" data-lex-open="${esc(p.muster.handle)}">Muster im Lexikon ansehen →</a>` : ''}</p>`
     : `<p class="small muted">Kein Muster hinterlegt.</p>`;
@@ -1151,11 +1185,16 @@ function viewLexikonDetail(handle) {
       ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
     </div>
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Farben / Varianten</h2></div>
-      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferanten-Artikelnummer</th><th>Farbnummer</th><th>Preis</th><th>Verfügbar</th><th>Lieferantenseite</th></tr></thead>
-      <tbody>${(p.varianten || []).map(lexikonVarianteZeile).join('') || `<tr><td colspan="7">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
+      <div style="overflow-x:auto"><table class="tasks"><thead>${LEXIKON_VARIANTEN_KOPF}</thead>
+      <tbody>${normaleVarianten.map(lexikonVarianteZeile).join('') || `<tr><td colspan="7">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
     </section>
+    ${wunschmassVarianten.length ? `<section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Wunschmaß (wird zugeschnitten)</h2></div>
+      <p class="small muted" style="margin:0 0 10px">Zuschnitt nach Maß: SKU, Lieferanten-Artikelnummer und Farbnummer entstehen erst beim Zuschnitt – das ist keine fehlende Angabe.</p>
+      <div style="overflow-x:auto"><table class="tasks"><thead>${LEXIKON_VARIANTEN_KOPF}</thead>
+      <tbody>${wunschmassVarianten.map(lexikonVarianteZeile).join('')}</tbody></table></div>
+    </section>` : ''}
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Eigenschaften</h2></div>
-      ${eigenschaften.length ? `<ul style="margin:0;padding-left:20px;line-height:1.8">${eigenschaften.map(([k, v]) => `<li><b>${esc(k)}:</b> ${lexWert(v)}</li>`).join('')}</ul>` : `<p class="small muted">Keine Eigenschaften hinterlegt.</p>`}
+      ${eigenschaften.length ? `<ul style="margin:0;padding-left:20px;line-height:1.8">${eigenschaften.map(([k, v]) => `<li><b>${esc(eigenschaftLabel(k))}:</b> ${lexWert(v)}</li>`).join('')}</ul>` : `<p class="small muted">Keine Eigenschaften hinterlegt.</p>`}
     </section>
     <section class="card">${musterHinweis}</section>`;
 }

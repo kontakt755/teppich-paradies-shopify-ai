@@ -134,6 +134,70 @@ test('Mustererkennung: SKU beginnt mit M- oder Handle beginnt mit muster-', () =
   assert.deepEqual(mKeins.muster, { vorhanden: false, handle: null });
 });
 
+test('Mustererkennung ueber den Produkt-Handle: muster-<handle> existiert im Datensatz', () => {
+  const echtesProdukt = produkt({ handle: 'piumera-teppichboden' });
+  const musterProdukt = produkt({
+    id: 'gid://shopify/Product/9099',
+    handle: 'muster-piumera-teppichboden',
+    title: 'Muster Piumera Teppichboden',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/6099',
+      title: 'Muster',
+      sku: 'M-9099',
+      price: '4.90',
+      availableForSale: true,
+      selectedOptions: [],
+      metafields: [],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [echtesProdukt, musterProdukt] }, { jetzt: JETZT });
+  const echtes = modell.produkte.find((p) => p.handle === 'piumera-teppichboden');
+  assert.deepEqual(echtes.muster, { vorhanden: true, handle: 'muster-piumera-teppichboden' });
+});
+
+test('Mustererkennung ueber die Mustervariante (einkauf.muster_variante), wenn der Handle nicht passt', () => {
+  const echtesProdukt = produkt({
+    handle: 'anderer-name',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5001',
+      title: 'Grün / 200x300',
+      sku: 'NS-200-GR',
+      price: '129.90',
+      availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Grün' }],
+      metafields: [
+        {
+          namespace: 'einkauf',
+          key: 'muster_variante',
+          value: { id: 'gid://shopify/ProductVariant/9999', product: { handle: 'muster-irgendwas' } },
+        },
+      ],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [echtesProdukt] }, { jetzt: JETZT });
+  assert.deepEqual(modell.produkte[0].muster, { vorhanden: true, handle: 'muster-irgendwas' });
+});
+
+test('wunschmass: Option "Wunschmaß" markiert die Variante, keine Datenluecke', () => {
+  const p = produkt({
+    variants: [{
+      id: 'gid://shopify/ProductVariant/7001',
+      title: 'Sand Hell / Wunschmaß',
+      sku: null,
+      price: '75.00',
+      availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Sand Hell' }, { name: 'Breite', value: 'Wunschmaß' }],
+      metafields: [],
+    }],
+  });
+  const v = aufbereiten({ produkte: [p] }, { jetzt: JETZT }).produkte[0].varianten[0];
+  assert.equal(v.wunschmass, true);
+  assert.equal(v.sku, null, 'Wunschmass hat bewusst keine feste SKU');
+
+  const normaleVariante = aufbereiten({ produkte: [produkt()] }, { jetzt: JETZT }).produkte[0].varianten[0];
+  assert.equal(normaleVariante.wunschmass, false);
+});
+
 test('normalisieren macht Umlaute zu ae/oe/ue/ss', () => {
   assert.equal(normalisieren('Grün'), 'gruen');
   assert.equal(normalisieren('Straße'), 'strasse');
