@@ -152,7 +152,7 @@ content/probleme/<problem>.json         → Metaobjekt tp_bodenproblem
 |---|---|---|
 | `begriff` | Text | Anzeigename, z. B. „Nutzungsklasse" |
 | `kurz` | mehrzeilig | 1–3 Saetze, muss fuer sich stehen |
-| `lang` | Rich Text | optional, laengere Erklaerung auf der Lexikonseite |
+| `lang` | mehrzeiliger Text | optional, laengere Erklaerung auf der Lexikonseite |
 | `gruppe` | Text | Teppichboden · Vinyl · Untergrund · Allgemein |
 | `synonyme` | Textliste | fuer die Suche |
 | `artikel` | Text | Handle des ausfuehrlichen Artikels, falls vorhanden |

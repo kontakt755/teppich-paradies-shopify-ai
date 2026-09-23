@@ -353,7 +353,9 @@
       assign rg_naechster_artikel = blank
       if rg_naechster_handle != blank
         for rg_naechster_kandidat in blog.articles
-          if rg_naechster_kandidat.handle == rg_naechster_handle and rg_naechster_kandidat.id != article.id
+          # article.handle ist "<blog>/<artikel>" - siehe sections/tp-bodenprobleme.liquid
+          assign rg_naechster_kandidat_handle = rg_naechster_kandidat.handle | split: '/' | last
+          if rg_naechster_kandidat_handle == rg_naechster_handle and rg_naechster_kandidat.id != article.id
             assign rg_naechster_artikel = rg_naechster_kandidat
             break
           endif
@@ -396,7 +398,8 @@
           {%- if rg_v_handle == blank -%}{%- continue -%}{%- endif -%}
           {%- assign rg_v_kandidat = blank -%}
           {%- for rg_v_probe_artikel in blog.articles -%}
-            {%- if rg_v_probe_artikel.handle == rg_v_handle -%}
+            {%- assign rg_v_probe_handle = rg_v_probe_artikel.handle | split: '/' | last -%}
+            {%- if rg_v_probe_handle == rg_v_handle -%}
               {%- assign rg_v_kandidat = rg_v_probe_artikel -%}
               {%- break -%}
             {%- endif -%}

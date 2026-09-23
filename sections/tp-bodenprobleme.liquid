@@ -41,6 +41,7 @@
 
 {%- liquid
   assign bp_reihenfolge = 'Teppichboden,Teppich,Vinyl,PVC' | split: ','
+  assign bp_blog_handles = section.settings.blogs | default: 'ratgeber-teppichboden' | split: ','
   assign bp_verlege_link = section.settings.verlege_link | default: '/pages/liefer-verlegeservice'
   assign bp_gruppen_zahl = 0
   assign bp_gesamt_zahl = 0
@@ -75,9 +76,28 @@
             {%- if bp_eintrag.belag.value != bp_belag -%}{%- continue -%}{%- endif -%}
             {%- if bp_eintrag.artikel.value == blank -%}{%- continue -%}{%- endif -%}
             {%- liquid
+              # Die Ziel-Blogs stehen als Einstellung, statt ueber das globale blogs-Objekt
+              # zu laufen: Dessen Durchlauf lieferte auf der gerenderten Seite nichts, alle
+              # Karten fielen still weg. Aufgefallen ist das erst mit echten Daten im
+              # Development-Theme. Ein neuer Bereichs-Blog wird hier eingetragen.
               assign bp_ziel = blank
-              for bp_blog in blogs
-                assign bp_kandidat = bp_blog.articles | where: 'handle', bp_eintrag.artikel.value | first
+              for bp_h in bp_blog_handles
+                assign bp_handle = bp_h | strip
+                if bp_handle == blank
+                  continue
+                endif
+                # article.handle liefert in diesem Shop "<blog-handle>/<artikel-handle>", nicht
+                # nur den Artikel-Handle. Ein Vergleich mit dem blanken Handle trifft deshalb nie.
+                # Aufgefallen beim Rendern im Development-Theme - der Problem-Finder blieb leer,
+                # obwohl alle Daten stimmten. split/last funktioniert mit und ohne Praefix.
+                assign bp_kandidat = blank
+                for bp_a in blogs[bp_handle].articles
+                  assign bp_a_handle = bp_a.handle | split: '/' | last
+                  if bp_a_handle == bp_eintrag.artikel.value
+                    assign bp_kandidat = bp_a
+                    break
+                  endif
+                endfor
                 if bp_kandidat != blank
                   assign bp_ziel = bp_kandidat
                   break
@@ -230,6 +250,7 @@
   "class": "tp-bp-section",
   "enabled_on": { "templates": ["page"] },
   "settings": [
+    { "type": "text", "id": "blogs", "label": "Blogs mit den Ziel-Artikeln", "default": "ratgeber-teppichboden", "info": "Handles, mit Komma getrennt. Ein Problem erscheint nur, wenn sein Ziel-Artikel in einem dieser Blogs liegt." },
     { "type": "paragraph", "content": "Quelle ist das Metaobjekt tp_bodenproblem (Shopify-Admin > Inhalt > Metaobjekte). Titel und Einleitung kommen aus der Seite selbst (Seitentitel und Seiteninhalt)." },
     { "type": "text", "id": "ursachen_label", "label": "Ueberschrift Ursachenliste", "default": "Mögliche Ursachen" },
     { "type": "text", "id": "link_praefix", "label": "Vorspann vor dem Artikel-Link", "default": "Ratgeber:" },

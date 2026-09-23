@@ -33,10 +33,16 @@
   # ohne paginate bei 50 Eintraegen endet, was fuer das Lexikon auf absehbare
   # Zeit reicht (Stand: 16 Eintraege). Beide Wege liefern bei einem nicht
   # existierenden Handle einfach nichts, nie einen Fehler.
-  assign lx_e_eintrag = metaobjects.tp_lexikon[handle]
-  if lx_e_eintrag == blank
+  # Ohne Handle wird gar nicht gesucht: Der Rueckfall unten vergleicht sonst
+  # nil mit nil und liefert den ersten Eintrag - auf der Seite stand deshalb
+  # 16 Mal derselbe Begriff.
+  assign lx_e_eintrag = blank
+  if handle != blank
+    assign lx_e_eintrag = metaobjects.tp_lexikon[handle]
+  endif
+  if lx_e_eintrag == blank and handle != blank
     for lx_e_kandidat in shop.metaobjects.tp_lexikon.values
-      if lx_e_kandidat.handle == handle
+      if lx_e_kandidat.system.handle == handle
         assign lx_e_eintrag = lx_e_kandidat
         break
       endif
@@ -63,10 +69,10 @@
       ihn beim Aufklappen fuer das Ereignis tp_bodenwissen_lexikon. Ohne die
       Kennung wuesste die Messung nur, DASS jemand einen Begriff geoeffnet hat.
     {%- endcomment -%}
-    <p class="tp-lex-inline" data-tp-bw-lexikon="{{ lx_e_eintrag.handle }}">
+    <p class="tp-lex-inline" data-tp-bw-lexikon="{{ lx_e_eintrag.system.handle }}">
       <span class="tp-lex-inline__text">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</span>
       {%- if lx_e_verlinken -%}
-        <a class="tp-lex-inline__link" href="/pages/bodenlexikon#{{ lx_e_eintrag.handle }}">Im Bodenlexikon nachlesen</a>
+        <a class="tp-lex-inline__link" href="/pages/bodenlexikon#{{ lx_e_eintrag.system.handle }}">Im Bodenlexikon nachlesen</a>
       {%- endif -%}
     </p>
 
@@ -87,7 +93,9 @@
           assign lx_e_blog = blogs[lx_e_bereich]
           if lx_e_blog != blank
             for lx_e_kandidat_artikel in lx_e_blog.articles
-              if lx_e_kandidat_artikel.handle == lx_e_eintrag.artikel.value
+              # article.handle ist "<blog>/<artikel>" - siehe sections/tp-bodenprobleme.liquid
+              assign lx_e_kandidat_handle = lx_e_kandidat_artikel.handle | split: '/' | last
+              if lx_e_kandidat_handle == lx_e_eintrag.artikel.value
                 assign lx_e_artikel_url = lx_e_kandidat_artikel.url
                 assign lx_e_artikel_titel = lx_e_kandidat_artikel.title
                 break
@@ -100,7 +108,7 @@
         endfor
       endif
     -%}
-    <div class="tp-lex-eintrag" id="{{ lx_e_eintrag.handle }}">
+    <div class="tp-lex-eintrag" id="{{ lx_e_eintrag.system.handle }}">
       <{{ lx_e_ebene }} class="tp-lex-eintrag__titel">{{ lx_e_eintrag.begriff.value | escape }}</{{ lx_e_ebene }}>
       <p class="tp-lex-eintrag__kurz">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</p>
       {%- if lx_e_eintrag.lang.value != blank -%}
