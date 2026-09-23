@@ -69,6 +69,14 @@ export function schreibeAlle(file, positionen) {
 
 export class AuftragsstatusFehler extends Error {}
 
+/** Begrenzt Freitext (Bestellnummer, Notiz) auf eine sinnvolle Laenge - sonst kann ein
+ *  versehentlich sehr langer Text (Copy-Paste-Unfall) die gemeinsame Datei und die Anzeige
+ *  im Control Center sprengen. */
+function clip(text, max) {
+  const s = String(text ?? '').trim();
+  return s.length > max ? s.slice(0, max) : s;
+}
+
 /**
  * Setzt den Status einer Position und schreibt sofort. Gibt den neuen
  * Datensatz der Position zurueck.
@@ -103,9 +111,9 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
     [`${status}Von`]: actor,
   };
   if (status === 'bestellt') {
-    eintrag.lieferantBestellnummer = lieferantBestellnummer ? String(lieferantBestellnummer).trim() : (bisher.lieferantBestellnummer || null);
+    eintrag.lieferantBestellnummer = lieferantBestellnummer ? clip(lieferantBestellnummer, 200) : (bisher.lieferantBestellnummer || null);
   }
-  if (notiz) eintrag[`${status}Notiz`] = String(notiz).trim();
+  if (notiz) eintrag[`${status}Notiz`] = clip(notiz, 2000);
 
   alle[key] = eintrag;
   schreibeAlle(file, alle);
