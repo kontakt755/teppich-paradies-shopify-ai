@@ -993,7 +993,7 @@ function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
 }
 
-const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen' };
+const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen', test: 'Testbestellung' };
 
 /** Menschenlesbare Anzeige statt des internen Markers "UNGEKLAERT" (Grosshandel-Exportdaten). */
 function anzeigeWert(wert) { return wert === 'UNGEKLAERT' ? 'Ungeklärt' : wert; }
@@ -1062,6 +1062,44 @@ function einkaufGruppeKarte(g, i, praefix) {
 /** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
 const adminAuftragUrl = id => (einkauf.bestellungen?.auftraege || []).find(a => a.id === id)?.adminUrl || '#';
 
+function geldText(g) {
+  if (!g || g.betrag === null || g.betrag === undefined) return '–';
+  return `${g.betrag.toFixed(2)} ${esc(g.waehrung || 'EUR')}`;
+}
+
+function adresseText(a) {
+  if (!a) return '–';
+  return `${esc(a.name)}<br>${esc(a.strasse)}<br>${esc(a.plz)} ${esc(a.ort)}, ${esc(a.land)}${a.telefon && a.telefon !== '–' ? `<br>Tel: ${esc(a.telefon)}` : ''}`;
+}
+
+/** Volle Detailansicht einer Bestellung: Kunde, Adressen, Summen, Beratung, Positionen. */
+function einkaufAuftragDetails(a) {
+  const d = a.details;
+  if (!d) return '';
+  const s = d.summen || {};
+  const beratungZeilen = Object.entries(d.beratungsangaben || {}).map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v || '–')}</div>`).join('') || '<div class="muted small">Keine Beratungsangaben.</div>';
+  const posZeilen = (d.positionen || []).map(p => `<tr>
+      <td>${esc(p.titel)}<div class="small muted">${esc(p.sku || '–')}</div></td>
+      <td>${esc(p.farbe)}</td>
+      <td>${esc(p.kundenmasse)}</td>
+      <td>${geldText(p.preis)}</td>
+      <td>${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? '–' : p.lieferantenArtikelnummer)}${p.lieferantenLink && p.lieferantenLink !== 'UNGEKLAERT' ? `<div class="small"><a href="${esc(p.lieferantenLink)}" target="_blank" rel="noopener">Beim Lieferanten öffnen</a></div>` : ''}</td>
+    </tr>`).join('');
+  return `<div style="padding:10px 4px;display:grid;gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+      <div><b>Kunde</b><br>${esc(d.kunde?.name)}<br>${esc(d.kunde?.email)}<br>${esc(d.kunde?.telefon)}</div>
+      <div><b>Lieferadresse</b><br>${adresseText(d.lieferadresse)}</div>
+      <div><b>Rechnungsadresse</b><br>${adresseText(d.rechnungsadresse)}</div>
+      <div><b>Versand &amp; Zahlung</b><br>Versandart: ${esc(d.versandart)}<br>Zahlungsart: ${esc(d.zahlungsart)}</div>
+      <div><b>Summen</b><br>Zwischensumme: ${geldText(s.zwischensumme)}<br>Versand: ${geldText(s.versand)}<br>Steuer: ${geldText(s.steuer)}<br><b>Gesamt: ${geldText(s.gesamt)}</b></div>
+      <div><b>Beratung/Angaben</b>${beratungZeilen}</div>
+    </div>
+    ${d.tags?.length ? `<div><b>Tags:</b> ${d.tags.map(t => `<span class="badge plain">${esc(t)}</span>`).join(' ')}</div>` : ''}
+    ${d.notiz ? `<div><b>Notiz des Kunden:</b> ${esc(d.notiz)}</div>` : ''}
+    <table class="tasks"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table>
+  </div>`;
+}
+
 /** Kopiertext fuer Mail/Bestellportal - nur die gerade sichtbaren Artikel, ohne interne Marker. */
 function kopierTextFuer(g, positionen) {
   const kopf = `Bestellung ${g.lieferant === 'UNGEKLAERT' ? '(Lieferant nicht zugeordnet)' : `Lieferant ${g.lieferant}`}` + (g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` (${g.route})` : '');
@@ -1085,14 +1123,18 @@ function einkaufAuftragZeile(a) {
   if (a.erfuellt && a.erfuellt !== 'UNFULFILLED' && VERSAND_LABEL[a.erfuellt]) abweichungen.push(VERSAND_LABEL[a.erfuellt]);
   if (a.checks?.verlegung === 'Ja' && !a.hinweise?.some(h => /Verlegung/.test(h))) abweichungen.push('Verlegung gebucht');
   const ampelKlasse = a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : 'plain';
-  return `<div class="order-row ${esc(a.ampel)}">
+  const detail = einkaufAuftragDetails(a);
+  const kopf = `<div class="order-row ${esc(a.ampel)}">
     <div class="order-main">
-      <div class="t"><span class="badge status ${ampelKlasse}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${abweichungen.map(x => ` <span class="badge plain">${esc(x)}</span>`).join('')}</div>
+      <div class="t"><span class="badge status ${ampelKlasse}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen" onclick="event.stopPropagation()">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${abweichungen.map(x => ` <span class="badge plain">${esc(x)}</span>`).join('')}</div>
       ${artikel.length ? `<div class="small muted">${esc(artikel.slice(0, 3).join(' · '))}${artikel.length > 3 ? ` · +${artikel.length - 3}` : ''}</div>` : ''}
       ${a.hinweise?.length ? `<ul class="order-issues">${a.hinweise.map(h => `<li>${esc(hinweisText(h))}</li>`).join('')}</ul>` : ''}
     </div>
-    ${offen.length && a.ampel !== 'gruen' ? `<button type="button" class="btn btn-sm btn-ghost" data-auftrag-erledigt="${esc(a.id)}" title="Z. B. Testbestellung oder anders erledigt – setzt die Artikel im Auftragsfluss auf „Erledigt"">Ohne Einkauf abschließen…</button>` : ''}
+    ${offen.length && a.ampel !== 'gruen' ? `<button type="button" class="btn btn-sm btn-ghost" onclick="event.preventDefault()" data-auftrag-erledigt="${esc(a.id)}" title="Z. B. Testbestellung oder anders erledigt – setzt die Artikel im Auftragsfluss auf „Erledigt"">Ohne Einkauf abschließen…</button>` : ''}
   </div>`;
+  // Ohne Detaildaten bleibt es bei der Zeile; sonst klappt die volle Bestellung darunter auf.
+  if (!detail) return kopf;
+  return `<details class="order-details"><summary>${kopf}</summary>${detail}</details>`;
 }
 
 const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
@@ -1139,6 +1181,11 @@ function viewEinkaufBestellungen() {
     <details class="card section plain-details"><summary><h2>Alle offenen Aufträge</h2><span class="preview">${aktiv.length}</span></summary>
       <div class="rows" style="margin-top:10px">${aktiv.map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
     </details>
+    ${(d.testauftraege || []).length ? `<details style="margin-top:20px">
+      <summary style="cursor:pointer;font-weight:600">Testbestellungen (${d.testauftraege.length}) – zählen in keiner Kennzahl</summary>
+      <p class="small muted" style="margin:6px 0">Tag „TESTBESTELLUNG" oder Shopify-Feld test=true. Fließen nicht in Auftragsampel, Einkauf oder Shop-Zahlen ein.</p>
+      <div class="rows">${d.testauftraege.map(einkaufAuftragZeile).join('')}</div>
+    </details>` : ''}
     <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
 }
 
@@ -1273,7 +1320,7 @@ function viewEinkaufHilfe() {
     <h3 style="margin-top:20px">Die drei Unteransichten im Detail</h3>
     <p><b>Bestellungen:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster (Bestellungen von Produktmustern statt ganzer Ware) stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
     <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter über den Listen („Noch zu bestellen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus; erledigte Artikel erscheinen nur unter „Erledigt".</p>
-    <p><b>Produktdaten:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Oben steht ehrlich, wie viele von den insgesamt erfassten Produkten vollständig sind, wie viele Handarbeit brauchen und wie viele sich von selbst füllen, sobald der laufende Lieferantenabgleich weiterläuft. „Handarbeit" heißt: eine Bestellung ist blockiert, weil Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – das muss jemand von Hand in der Preisliste nachschauen. Zusatzinformation wie Kollektion oder Hersteller blockiert nichts und taucht nur als „füllt sich automatisch" auf. Filter oben: zuerst die Produkte, die Handarbeit brauchen (dieselbe Zahl wie die Kachel) – daneben „Blockiert eine Bestellung" und „Alle offenen Produkte"; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben.</p>
+    <p><b>Produktdaten:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Oben steht ehrlich, wie viele von den insgesamt erfassten Produkten vollständig sind, wie viele Handarbeit brauchen und wie viele sich von selbst füllen, sobald der laufende Lieferantenabgleich weiterläuft. „Handarbeit" heißt: eine Bestellung ist blockiert, weil Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – das muss jemand von Hand in der Preisliste nachschauen. Zusatzinformation wie Kollektion oder Hersteller blockiert nichts und taucht nur als „füllt sich automatisch" auf. Filter oben: zuerst die Produkte, die Handarbeit brauchen (dieselbe Zahl wie die Kachel) – daneben „Blockiert eine Bestellung" und „Alle offenen Produkte"; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben. Die Zahl „ohne Großhändler-ID" in der Kachel „Kundengeschäft" auf „Heute" zählt etwas anderes: offene Positionen in tatsächlichen Kundenbestellungen (Bestellübersicht), nicht Lücken im gesamten Produktkatalog – beide Zahlen dürfen auseinanderlaufen, das ist kein Widerspruch.</p>
     <p><b>Wichtig:</b> Alle drei Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Der Auftragsfluss-Status liegt in einer eigenen lokalen Datei auf deinem Mac und wird nie ins Repository übernommen. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
   </section>`;
 }

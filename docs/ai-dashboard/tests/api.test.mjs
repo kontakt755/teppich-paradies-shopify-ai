@@ -277,6 +277,64 @@ test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
   assert.equal(r.verfuegbar, false);
 });
 
+/**
+ * Fixture fuer die drei-Gruppen-Einstufung: blockierend (Lieferant/Artikelnummer
+ * fehlt bei bestellbarer Variante), nachtragen (Farbnummer, procurement_id
+ * innerhalb Rollenware) und strukturell offen - zaehlt nirgends (Wunschmaß-
+ * Variante, Umrechnung, procurement_id ausserhalb Rollenware).
+ */
+function privatFixtureGruppen(root) {
+  const dir = path.join(root, 'privat-gruppen');
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-klaerung'), { recursive: true });
+  const plan = [
+    { gid: 'gid://shopify/ProductVariant/10', product_gid: 'gid://shopify/Product/10', handle: 'nur-farbnummer-offen', product_title: 'Nur Farbnummer offen', variant_title: 'Rot', sku: 'F-1', gruppe: 'Teppiche', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/11', product_gid: 'gid://shopify/Product/11', handle: 'wunschmass-lieferant-offen', product_title: 'Wunschmaß-Teppichboden', variant_title: 'Blau / Wunschmaß', sku: null, gruppe: 'Rollenware', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/12', product_gid: 'gid://shopify/Product/12', handle: 'nur-umrechnung-offen', product_title: 'Nur Umrechnung offen', variant_title: 'Default Title', sku: 'U-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/13', product_gid: 'gid://shopify/Product/13', handle: 'einkaufs-id-ausserhalb-rollenware', product_title: 'Einkaufs-ID außerhalb Rollenware', variant_title: 'Default Title', sku: 'P-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/14', product_gid: 'gid://shopify/Product/14', handle: 'einkaufs-id-in-rollenware', product_title: 'Einkaufs-ID in Rollenware', variant_title: 'Grün', sku: 'P-2', gruppe: 'Rollenware', fields: {} },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  const offen = [
+    { gid: 'gid://shopify/ProductVariant/10', field: 'farbnummer', reason: 'Farbnummer nicht in Preisliste gefunden', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/11', field: 'lieferant', reason: 'Lieferant unklar', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/12', field: 'umrechnung', reason: 'kein JSON-Schema festgelegt', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/13', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/14', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-klaerung', 'offen.json'), JSON.stringify(offen));
+  return dir;
+}
+
+test('einkaufProduktstatus trennt blockierend / nachtragen / strukturell offen ehrlich', () => {
+  const root = tmpRoot();
+  const dir = privatFixtureGruppen(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus({ pageSize: 20 });
+  assert.equal(r.gesamt.anzahl, 5);
+  // Farbnummer allein blockiert nichts - Nachtragen, nicht Handarbeit.
+  const farbnummer = r.offen.items.find(e => e.handle === 'nur-farbnummer-offen');
+  assert.equal(farbnummer.status, 'automatisch');
+  assert.equal(farbnummer.blockiertBestellung, false);
+  assert.equal(farbnummer.offeneFelder[0].feld, 'farbnummer');
+  assert.equal(farbnummer.offeneFelder[0].blockierend, false);
+  // Wunschmaß-Variante: Lieferant fehlt zaehlt nicht - Masse/Artikelnummer entstehen erst beim Zuschnitt.
+  assert.equal(r.offen.items.some(e => e.handle === 'wunschmass-lieferant-offen'), false);
+  // Umrechnung ist nie definiert - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'nur-umrechnung-offen'), false);
+  // procurement_id ausserhalb Rollenware ist strukturell nicht vorgesehen - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'einkaufs-id-ausserhalb-rollenware'), false);
+  // procurement_id innerhalb Rollenware ist eine echte, nicht-blockierende Luecke.
+  const procRoll = r.offen.items.find(e => e.handle === 'einkaufs-id-in-rollenware');
+  assert.ok(procRoll);
+  assert.equal(procRoll.status, 'automatisch');
+  assert.equal(procRoll.offeneFelder[0].feld, 'procurement_id');
+  // Nur die zwei echten Luecken bleiben als "offen" stehen; drei sind faktisch vollstaendig.
+  assert.equal(r.gesamt.vollstaendig, 3);
+  assert.equal(r.gesamt.handarbeit, 0);
+  assert.equal(r.gesamt.automatisch, 2);
+});
+
 // ---------------------------------------------------------------------------
 // Einkauf: Shop-Kennzahlen (Startseite "Heute")
 // ---------------------------------------------------------------------------
