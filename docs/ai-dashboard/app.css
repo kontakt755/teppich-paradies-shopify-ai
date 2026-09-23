@@ -103,6 +103,39 @@ button { font: inherit; color: inherit; }
 .empty strong { color: var(--text); }
 .empty a { margin-left: 4px; }
 
+/* Aufklappbare Startseiten-Abschnitte (Heute).
+   Wichtig: das Aufklapp-Zeichen ist ein eigenes <span class="chev">, kein ::before-Pseudoelement
+   auf dem Flex-Container - als generierter Inhalt zaehlt ::before sonst als eigenes Flex-Item und
+   justify-content:space-between verteilt dann Zeichen/Titel/Vorschau zu gleichen Teilen, wodurch
+   der Titel optisch zentriert wirkt statt linksbuendig zu stehen. */
+details.card { padding: 0; }
+details.card.section { margin-top: 14px; }
+details.card > summary { padding: 16px 18px; margin-bottom: 0; cursor: pointer; list-style: none; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::marker { content: ""; }
+details.card .details-body { padding: 0 18px 16px; }
+.collapsible-head { display: flex; align-items: center; gap: 10px; }
+.collapsible-head .chev { flex: none; display: inline-block; color: var(--text-3); font-size: 1rem; transition: transform .12s ease; }
+details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
+.collapsible-head h2 { flex: 1 1 auto; text-align: left; font-size: 1rem; }
+.collapsible-head .preview { flex: none; font-size: .85rem; font-weight: 600; color: var(--text-2); }
+
+/* "Alle anzeigen" fuer laengere Listen (z.B. Wartet auf dich) ohne eigenes Merken des Zustands */
+.inline-more { margin-top: 8px; }
+.inline-more > summary { cursor: pointer; list-style: none; font-size: .85rem; color: var(--info); }
+.inline-more > summary::-webkit-details-marker { display: none; }
+
+/* Einzeiler in "Braucht jetzt Aufmerksamkeit" */
+.row.att-row { display: flex; align-items: center; gap: 10px; }
+.att-row .rank { flex: none; width: 16px; font-weight: 700; color: var(--text-3); font-size: .85rem; text-align: right; }
+.att-row .t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.att-row .t a { color: var(--text); }
+.att-row > button { flex: none; }
+@media (max-width: 760px) {
+  .att-row { flex-wrap: wrap; }
+  .att-row .t { white-space: normal; flex-basis: 100%; }
+}
+
 /* Statusband */
 .band { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 22px; }
 .band a, .band > div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }

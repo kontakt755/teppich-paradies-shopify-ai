@@ -167,6 +167,23 @@ function emptyState(title, hint, link) {
   return `<div class="empty"><strong>${esc(title)}</strong> ${esc(hint)}${link ? `<a href="${esc(link.href)}">${esc(link.text)}</a>` : ''}</div>`;
 }
 
+/**
+ * Aufklappbarer Kartenabschnitt fuer die Startseite: haelt weniger dringende
+ * Inhalte standardmaessig eingeklappt, damit "Heute" in eine Bildschirmhoehe
+ * passt. Merkt sich je Abschnitt (id), ob der/die Nutzer:in ihn geoeffnet hat.
+ * Kopfzeile ist bewusst kein Flex-Space-Between mit dem Browser-Aufklapp-
+ * Zeichen als drittem Element (das zentriert sonst den Titel) - Chevron ist
+ * ein eigenes Element links, die Vorschau-Zahl rechts via margin-left:auto.
+ */
+function collapsibleCard(id, title, preview, bodyHtml, { openByDefault = false } = {}) {
+  let open = openByDefault;
+  try { const v = localStorage.getItem(`tp-heute-${id}`); if (v !== null) open = v === '1'; } catch {}
+  return `<details class="card section" data-collapsible="${esc(id)}" ${open ? 'open' : ''}>
+    <summary class="collapsible-head"><span class="chev" aria-hidden="true">›</span><h2>${title}</h2>${preview ? `<span class="preview">${preview}</span>` : ''}</summary>
+    <div class="details-body">${bodyHtml}</div>
+  </details>`;
+}
+
 // ---------------------------------------------------------------------------
 // Sync-Chip und Systemzustand
 // ---------------------------------------------------------------------------
@@ -214,9 +231,15 @@ function renderSyncChip() {
 // ---------------------------------------------------------------------------
 function viewHeute() {
   const tasks = state.tasks; const s = summarize(tasks);
-  const att = attentionList(tasks, { limit: 5 });
-  const waiting = tasks.filter(t => t.open && (t.status === 'freigabe' || (t.status === 'review' && (!t.reviewer || t.reviewer === 'mensch')) || (t.status === 'eingang' && t.triage.length && t.ageDays <= 14))).sort((a, b) => a.priorityRank - b.priorityRank).slice(0, 6);
-  const blocked = tasks.filter(t => t.status === 'blockiert');
+  // "Braucht jetzt Aufmerksamkeit" ist die dringendste Rangliste; jede Aufgabe darf auf
+  // "Heute" nur an einer Stelle stehen, darum werden ihre Nummern aus den Listen darunter
+  // (Wartet auf dich, Blockiert) herausgefiltert statt sie zusaetzlich dort zu wiederholen.
+  const att = attentionList(tasks, { limit: 3 });
+  const attNumbers = new Set(att.map(x => x.task.number));
+  const waitingAll = tasks.filter(t => t.open && (t.status === 'freigabe' || (t.status === 'review' && (!t.reviewer || t.reviewer === 'mensch')) || (t.status === 'eingang' && t.triage.length && t.ageDays <= 14)) && !attNumbers.has(t.number)).sort((a, b) => a.priorityRank - b.priorityRank);
+  const waiting = waitingAll.slice(0, 4);
+  const waitingRest = waitingAll.slice(4);
+  const blocked = tasks.filter(t => t.status === 'blockiert' && !attNumbers.has(t.number));
   const running = tasks.filter(t => ['in-arbeit', 'korrektur'].includes(t.status));
   const week = { done: tasks.filter(t => t.closedAt && (Date.now() - new Date(t.closedAt)) < 7 * 864e5), fresh: tasks.filter(t => t.open && t.ageDays !== null && t.ageDays < 7), overdue: tasks.filter(t => t.overdue) };
   const today = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -240,53 +263,66 @@ function viewHeute() {
 
     <section class="card">
       <div class="card-head"><h2>Braucht jetzt Aufmerksamkeit</h2><a class="more" href="#/arbeit?sort=dringlichkeit">Alle nach Dringlichkeit</a></div>
-      <p class="small muted" style="margin:-4px 0 10px">Wofür: eine automatisch berechnete Rangliste der Aufgaben, die am dringendsten eine Entscheidung oder Bearbeitung brauchen.</p>
-      ${att.length ? `<div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' })}
+      ${att.length ? `<p class="small muted" style="margin:-4px 0 8px">Dringlichkeit aus Priorität, Blocker und Frist – Grund als Tooltip auf der Zeile.</p><div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' })}
     </section>
 
     <div class="grid grid-2 section">
       <section class="card">
-        <div class="card-head"><h2>Wartet auf dich</h2><span class="more muted">Freigaben, Prüfungen und neue Aufgaben, die noch bewertet werden müssen (Triage)</span></div>
-        ${waiting.length ? `<div class="rows">${waiting.map(t => taskRow(t)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}
+        <div class="card-head"><h2>Wartet auf dich</h2><span class="more muted">Freigaben &amp; Triage</span></div>
+        ${waiting.length ? `<div class="rows">${waiting.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}
+        ${waitingRest.length ? `<details class="inline-more"><summary>Alle anzeigen (+${waitingRest.length})</summary><div class="rows" style="margin-top:6px">${waitingRest.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div></details>` : ''}
       </section>
       <section class="card">
-        <div class="card-head"><h2>Blockiert</h2><a class="more" href="#/arbeit?view=blockiert">${blocked.length} gesamt</a></div>
-        <p class="small muted" style="margin:-4px 0 10px">Wofür: Aufgaben, die gerade nicht weitergehen, weil sie auf etwas oder jemanden von außen warten.</p>
-        ${blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => blockedRow(t)).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden.')}
+        <div class="card-head"><h2>Blockiert</h2><a class="more" href="#/arbeit?view=blockiert">${tasks.filter(t => t.status === 'blockiert').length} gesamt</a></div>
+        ${blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => heuteCompactRow(t, 'Eskalieren / lösen', { title: t.blocker || 'Grund fehlt – bitte im Issue nachtragen' })).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden (die dringendsten stehen ggf. oben unter „Aufmerksamkeit").')}
       </section>
-      <section class="card">
-        <div class="card-head"><h2>Läuft gerade</h2><a class="more" href="#/arbeit?status=in-arbeit">${running.length} in Arbeit</a></div>
-        ${runningBlock(running)}
-      </section>
-      <section class="card">
-        <div class="card-head"><h2>Diese Woche</h2></div>
-        <p class="small muted" style="margin:-4px 0 10px">Wofür: kurzer Rückblick auf die letzten 7 Tage – was fertig wurde, was neu dazukam, was überfällig ist.</p>
+    </div>
+
+    ${collapsibleCard('laeuft', 'Läuft gerade', running.length ? `${plural(running.length, 'in Arbeit', 'in Arbeit')}` : 'nichts', runningBlock(running), { openByDefault: running.length > 0 })}
+
+    ${collapsibleCard('woche', 'Diese Woche', `${week.done.length} erledigt`, `
         <div class="band" style="margin:0 0 10px">
           ${bandItem(week.done.length, 'erledigt', 'ok', '#/arbeit?status=fertig')}
           ${bandItem(week.fresh.length, 'neu hinzugekommen', 'info', '#/arbeit?sort=aktualisiert')}
           ${bandItem(week.overdue.length, 'überfällig', 'crit', '#/arbeit?view=heute')}
         </div>
-        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}
-      </section>
-    </div>
+        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`)}
 
-    <section class="card section">
-      <div class="card-head"><h2>Einkauf – heute zu tun</h2><span class="more muted">Wofür: was aus Kundenbestellungen jetzt beim Lieferanten zu bestellen ist, wo etwas hakt</span></div>
-      ${heuteEinkaufBlock()}
-    </section>
+    ${collapsibleCard('einkauf', 'Einkauf – heute zu tun', heuteEinkaufPreview(), heuteEinkaufBlock(), { openByDefault: localMode && heuteEinkaufHatProblem() })}
 
-    <section class="card section">
-      <div class="card-head"><h2>Shop-Zahlen</h2><span class="more muted">Wofür: Bestellungen, Umsatz und Durchschnittsbon der letzten 7 und 30 Tage</span></div>
-      ${heuteKennzahlenBlock()}
-    </section>
+    ${collapsibleCard('zahlen', 'Shop-Zahlen', heuteKennzahlenPreview(), heuteKennzahlenBlock())}
 
-    <section class="card section">
-      <div class="card-head"><h2>Systemgesundheit <span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span></h2><a class="more" href="#/insights">Details</a></div>
-      <div class="health">${health.slice(0, 4).map(healthRow).join('')}</div>
-    </section>`;
+    ${collapsibleCard('gesundheit', 'Systemgesundheit', `<span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span>`, `<div class="health">${health.slice(0, 3).map(healthRow).join('')}</div><p class="small muted" style="margin-top:8px">${health.length > 3 ? `+${health.length - 3} weitere – ` : ''}<a href="#/insights">Alle Details in Insights →</a></p>`, { openByDefault: worst !== 'ok' })}`;
 }
 
-/** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch. */
+/** true, wenn die Einkauf-Kachel etwas Kritisches zeigt (fuer Standard-Aufklappzustand). */
+function heuteEinkaufHatProblem() {
+  const b = einkauf.bestellungen;
+  if (!b || !b.verfuegbar) return false;
+  return (b.auftraege || []).some(a => a.offen && a.ampel === 'rot');
+}
+
+/** Einkauf-Auftragsfluss-Zaehler (Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt). */
+function heuteAuftragsflussZaehler(b) {
+  const allePositionen = [...(b.gruppen || []).flatMap(g => g.positionen), ...(b.musterGruppen || []).flatMap(g => g.positionen)];
+  const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
+  for (const p of allePositionen) afZaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  return afZaehler;
+}
+
+/** Kurzvorschau fuer den zugeklappten Kopf der Einkauf-Kachel: die wichtigste Zahl. */
+function heuteEinkaufPreview() {
+  if (state.capabilities.mode !== 'local') return '';
+  const b = einkauf.bestellungen;
+  if (!b || !b.verfuegbar) return '';
+  const probleme = (b.auftraege || []).filter(a => a.offen && a.ampel === 'rot').length;
+  return probleme ? `${plural(probleme, 'Problem', 'Probleme')}` : `${plural(b.zahlen.zuBestellen, 'zu bestellen', 'zu bestellen')}`;
+}
+
+/** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch.
+ * Bewusst nur zwei grosse Zahlen (zu bestellen, Probleme) plus eine schmale Auftragsfluss-Zeile -
+ * Musterbestellungen und "ohne Großhändler-ID" bleiben im Bereich Einkauf sichtbar, verdoppeln
+ * aber nicht die Zahlenflut auf der Startseite. */
 function heuteEinkaufBlock() {
   if (state.capabilities.mode !== 'local') {
     return emptyState('Nur lokal im Betrieb verfügbar.', 'Bestellübersicht und Auftragsfluss lesen private Daten, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard');
@@ -295,27 +331,26 @@ function heuteEinkaufBlock() {
   if (!b && einkauf.loadingBestellungen) return `<div class="empty">Lade Einkaufsdaten …</div>`;
   if (!b || !b.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', b?.hinweis || 'Bestellübersicht noch nicht exportiert.', { href: '#/einkauf', text: 'Bereich Einkauf öffnen' });
   const z = b.zahlen;
-  const allePositionen = [...(b.gruppen || []).flatMap(g => g.positionen), ...(b.musterGruppen || []).flatMap(g => g.positionen)];
-  const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
-  for (const p of allePositionen) afZaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  const afZaehler = heuteAuftragsflussZaehler(b);
   const probleme = (b.auftraege || []).filter(a => a.offen && a.ampel === 'rot');
   const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
   return `
     <div class="band" style="margin:0 0 10px">
-      ${bandItem(z.zuBestellen, 'Positionen zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
-      ${bandItem(z.muster, 'Musterbestellungen offen', 'info', '#/einkauf?tab=bestellungen')}
+      ${bandItem(z.zuBestellen, 'zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
       ${bandItem(probleme.length, 'Aufträge mit Problem', probleme.length ? 'crit' : 'ok', '#/einkauf?tab=bestellungen')}
-      ${bandItem(z.ohneId, 'ohne Großhändler-ID', z.ohneId ? 'warn' : 'ok', '#/einkauf?tab=bestellungen')}
     </div>
-    <div class="small muted" style="margin-bottom:6px">Positionen je Schritt des Auftragsflusses (Bestellt → Geliefert an uns → An Kunden raus → Erledigt):</div>
-    <div class="band" style="margin:0 0 10px">
-      ${bandItem(afZaehler.offen, 'offen', 'crit', '#/einkauf?tab=bestellungen&af=offen')}
-      ${bandItem(afZaehler.bestellt, 'bestellt', 'warn', '#/einkauf?tab=bestellungen&af=bestellt')}
-      ${bandItem(afZaehler.unterwegs, 'unterwegs', 'info', '#/einkauf?tab=bestellungen&af=unterwegs')}
-      ${bandItem(afZaehler.erledigt, 'erledigt', 'ok', '#/einkauf?tab=bestellungen&af=erledigt')}
-    </div>
-    ${probleme.length ? `<div class="rows">${probleme.slice(0, 5).map(einkaufAuftragZeile).join('')}</div>` : '<p class="small muted">Keine Aufträge mit Problem (Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID).</p>'}
+    <p class="small muted" style="margin:0 0 10px">Auftragsfluss: <b>${afZaehler.offen}</b> offen · <b>${afZaehler.bestellt}</b> bestellt · <b>${afZaehler.unterwegs}</b> unterwegs · <b>${afZaehler.erledigt}</b> erledigt · <a href="#/einkauf?tab=bestellungen">${plural(z.muster, 'Musterbestellung', 'Musterbestellungen')} offen, ${plural(z.ohneId, 'Position', 'Positionen')} ohne Großhändler-ID →</a></p>
+    ${probleme.length ? `<div class="rows">${probleme.slice(0, 3).map(einkaufAuftragZeile).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere Aufträge mit Problem – <a href="#/einkauf?tab=bestellungen">alle ansehen →</a></p>` : ''}` : '<p class="small muted">Keine Aufträge mit Problem (Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID).</p>'}
     <p class="small muted" style="margin-top:8px">Stand: ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`;
+}
+
+/** Kurzvorschau fuer den zugeklappten Kopf der Shop-Zahlen-Kachel. */
+function heuteKennzahlenPreview() {
+  if (state.capabilities.mode !== 'local') return '';
+  const k = einkauf.kennzahlen;
+  if (!k || !k.verfuegbar) return '';
+  const z7 = k.zeitraeume?.['7'];
+  return z7 ? `${plural(z7.bestellungen ?? 0, 'Bestellung', 'Bestellungen')} (7 Tage)` : '';
 }
 
 /** Shop-Kennzahlen-Kachel: liest kennzahlen/shop-snapshot.json, erfindet keine Zahlen ohne Export. */
@@ -347,18 +382,30 @@ function heuteKennzahlenBlock() {
     <p class="small muted" style="margin-top:8px">Stand des Exports: ${esc(fmtDateTime(k.erstellt))} · Quelle: ${esc(k.quelle)}</p>`;
 }
 
+/** Einzeiler: Titel, ein Status-Chip, Knopf rechts. Der Grund (Prioritaet/Blocker/Frist) steht
+ * als Tooltip auf der ganzen Zeile statt als eigene Zeile - bei fuenf Eintraegen wiederholte sich
+ * sonst derselbe Erklaersatz mehrfach sichtbar. */
 function attentionItem({ task: t, reasons }, i) {
   const primary = primaryAction(t);
-  return `<article class="att-item">
-    <div class="rank">${i + 1}</div>
-    <div>
-      <div class="title">${prioBadge(t)} ${taskLink(t)}</div>
-      <div class="why">${reasons.map((r, k) => k === 0 ? `<b>${esc(r)}</b>` : esc(r)).join(' · ')}</div>
-      <div class="meta"><span>${statusBadge(t)}</span><span>${t.owner ? `Owner @${esc(t.owner)}` : ownerText(t)}</span>${t.executor ? `<span>Ausführung ${execBadge(t)}</span>` : ''}<span>${t.due ? dueText(t) : `Alter ${plural(t.ageDays ?? 0, 'Tag', 'Tage')}`}</span></div>
-      ${t.nextStep ? `<div class="next">${esc(t.nextStep)}</div>` : `<div class="next" style="color:var(--warn)">Nächster Schritt fehlt – in der Aufgabe festlegen</div>`}
-    </div>
-    <div class="actions"><button class="btn btn-sm btn-primary" data-open="${t.number}" data-primary="1">${esc(primary.label)}</button></div>
-  </article>`;
+  const why = reasons.join(' · ');
+  return `<div class="row att-row" data-open="${t.number}" tabindex="0" role="button" title="${esc(why)}">
+    <span class="rank">${i + 1}</span>
+    <span class="t">${prioBadge(t)} ${taskLink(t)}</span>
+    ${statusBadge(t)}
+    <button class="btn btn-sm btn-primary" data-open="${t.number}" data-primary="1">${esc(primary.label)}</button>
+  </div>`;
+}
+
+/** Gleicher Einzeiler wie attentionItem, aber ohne Rang und mit frei waehlbarem Knopftext -
+ * fuer die Listen "Wartet auf dich", "Blockiert" und "Läuft gerade" auf der Startseite. Ersetzt
+ * dort die mehrzeilige taskRow/blockedRow-Darstellung, damit vier bis sechs Eintraege nicht
+ * gleich eine halbe Bildschirmhoehe brauchen. */
+function heuteCompactRow(t, buttonLabel, { title } = {}) {
+  return `<div class="row att-row" data-open="${t.number}" tabindex="0" role="button" title="${esc(title ?? (t.nextStep || t.blocker || ''))}">
+    <span class="t">${prioBadge(t)} ${taskLink(t)}</span>
+    ${statusBadge(t)}
+    <button class="btn btn-sm" data-open="${t.number}" data-primary="1">${esc(buttonLabel)}</button>
+  </div>`;
 }
 
 function blockedRow(t) {
@@ -375,7 +422,7 @@ function runningBlock(running) {
   const active = runs.filter(r => ['QUEUED', 'WORKING', 'REVIEWING', 'RUNNING'].includes(r.state));
   let html = '';
   if (active.length) html += `<div class="rows">${active.map(r => `<div class="row"><div><div class="t"><span class="badge ki">KI</span> ${esc(r.task)}</div><div class="m"><span>${esc(r.state)}</span>${r.progress?.phase ? `<span>${esc(r.progress.phase)}</span>` : ''}${r.issue ? `<span><a href="#" data-open="${r.issue.number}">#${r.issue.number}</a></span>` : ''}<span>${since(r.startedAt)}</span></div></div></div>`).join('')}</div>`;
-  if (running.length) html += `<div class="rows" style="margin-top:${active.length ? 8 : 0}px">${running.slice(0, 6).map(t => taskRow(t)).join('')}</div>`;
+  if (running.length) html += `<div class="rows" style="margin-top:${active.length ? 8 : 0}px">${running.slice(0, 3).map(t => heuteCompactRow(t, 'Öffnen')).join('')}</div>${running.length > 3 ? `<p class="small muted" style="margin-top:6px">+${running.length - 3} weitere – <a href="#/arbeit?status=in-arbeit">alle ansehen →</a></p>` : ''}`;
   if (!html) html = emptyState('Nichts in Arbeit.', 'Nächste Aufgabe aus „Bereit" oder „Geplant" starten.', { href: '#/arbeit?status=geplant', text: 'Geplant' });
   if (!state.capabilities.agentRuns) html += `<p class="small muted" style="margin-top:8px">KI-Läufe der Steuerzentrale sind nur im lokalen Modus sichtbar.</p>`;
   return html;
@@ -1190,6 +1237,12 @@ function render() {
 }
 
 function bindEvents() {
+  // Aufklappbare Startseiten-Abschnitte merken sich Auf/Zu je Abschnitt (nicht je Aufgabe).
+  document.addEventListener('toggle', e => {
+    const d = e.target.closest?.('details[data-collapsible]');
+    if (!d) return;
+    try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
+  }, true);
   document.addEventListener('click', e => {
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
