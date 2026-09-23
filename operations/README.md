@@ -117,3 +117,17 @@ spiegelt `sync/orders.mjs writeOrderState` dieselben Felder nach `ops.*`.
 
 Bestelldaten gehoeren nie ins Repository: Momentaufnahmen liegen unter
 `~/teppich-paradies-analyse/ops/`.
+
+## Zugang einrichten (einmalig)
+
+```
+npm run operations:einrichten
+```
+
+Setzt die Zugriffsbereiche der App "TP Operations", veroeffentlicht die Version,
+oeffnet die Installationsadresse und legt Client-ID und geheimen Schluessel in
+`.env.local` ab (chmod 600, gitignored). Danach holt es den Token und prueft die
+Verbindung. Der Schluessel wird verdeckt eingegeben und nie ausgegeben.
+
+Jeder Schritt ist wiederholbar; bricht einer ab, nennt die Meldung den Weg von
+Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
