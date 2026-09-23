@@ -291,7 +291,7 @@ function viewHeute() {
 
   return `
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)} · Kauf, Verkauf und Kundengeschäft zuerst · Datenstand ${esc(freshness(state.raw?.generated_at).text)}</p></div>
-      <div style="display:flex;gap:8px">${state.capabilities.sync ? '<button class="btn" data-action="sync">Jetzt synchronisieren</button>' : ''}<a class="btn" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
+      <div style="display:flex;gap:8px">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync">Jetzt synchronisieren</button>' : ''}<a class="btn" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
 
     ${kundenBand}
 
@@ -686,6 +686,7 @@ const einkauf = {
   auftragsstatus: null, loadingAuftragsstatus: false,
   kennzahlen: null, loadingKennzahlen: false,
   aktualisierung: null, loadingAktualisierung: false,
+  aktualisierungLaeuft: false, aktualisierungPollTimer: null,
 };
 
 // Auftragsfluss je Position: Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt.
@@ -786,8 +787,18 @@ function ensureAktualisierung() {
   einkauf.loadingAktualisierung = true;
   fetchEinkauf('/api/aktualisierung').then(d => {
     einkauf.aktualisierung = d; einkauf.loadingAktualisierung = false;
-    if (state.route.view === 'heute' || state.route.view === 'insights') render();
+    einkauf.aktualisierungLaeuft = !!d.laeuft;
+    if (['heute', 'insights', 'einkauf'].includes(state.route.view)) render();
   });
+}
+
+/** Knopf "Jetzt aktualisieren" - nur lokal, wo die privaten Datenquellen ueberhaupt existieren.
+ * Gesperrt und mit Ladehinweis waehrend ein Lauf aktiv ist (sowohl serverseitig als auch nach
+ * einem Klick auf diesem Tab); das Ergebnis je Quelle zeigt danach aktualisierungHealth(). */
+function aktualisierenButton() {
+  if (state.capabilities.mode !== 'local') return '';
+  const laeuft = einkauf.aktualisierungLaeuft;
+  return `<button class="btn" type="button" data-action="aktualisieren" ${laeuft ? 'disabled' : ''}>${laeuft ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}</button>`;
 }
 
 /** Systemgesundheit-Zeilen fuer die lokalen Datenquellen (Lexikon, Bestellübersicht, Kennzahlen). */
@@ -799,7 +810,18 @@ function aktualisierungHealth() {
   }
   return Object.entries(a.teile || {}).map(([teil, stand]) => {
     const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
-    if (!stand.erfolg) return { level: 'warn', title: `${label}: letzter Lauf fehlgeschlagen`, detail: `${stand.meldung || ''}${stand.zeitpunkt ? ` · letzter Erfolg unbekannt, Fehler ${fmtDateTime(stand.zeitpunkt)}` : ''} · Befehl: npm run daten:aktualisieren -- --nur ${teil}` };
+    if (!stand.erfolg) {
+      // Ohne Zugang (z.B. kein SHOPIFY_ADMIN_TOKEN in .env.local) laeuft der Lauf ins Leere -
+      // die vorhandene Ausgabedatei bleibt unveraendert stehen, ist also aelter als der
+      // gescheiterte Versuch. Kein "Stand: <Versuchszeitpunkt>" vortaeuschen.
+      const keinZugang = /kein zugang/i.test(stand.meldung || '');
+      const versuch = stand.zeitpunkt ? fmtDateTime(stand.zeitpunkt) : 'unbekannt';
+      return {
+        level: 'warn',
+        title: keinZugang ? `${label}: Kein Zugang hinterlegt` : `${label}: letzter Lauf fehlgeschlagen`,
+        detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · Befehl: npm run daten:aktualisieren -- --nur ${teil}`,
+      };
+    }
     if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: 'Bitte `npm run daten:aktualisieren` ausführen.' };
     return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
   });
@@ -1042,7 +1064,9 @@ function viewEinkauf() {
   }
   const tab = ['bestellungen', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
   const tabs = [['bestellungen', 'Bestellübersicht'], ['produktdaten', 'Produktdaten-Status'], ['hilfe', 'Hilfe & Anleitung']];
-  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was für offene Kundenbestellungen bei welchem Lieferanten zu bestellen ist, und wo Produktdaten für den Einkauf noch fehlen.</p></div></div>
+  ensureAktualisierung();
+  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was für offene Kundenbestellungen bei welchem Lieferanten zu bestellen ist, und wo Produktdaten für den Einkauf noch fehlen.</p></div>
+      <div style="display:flex;gap:8px;align-items:start">${aktualisierenButton()}</div></div>
     <div class="chips" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="chip" role="tab" aria-pressed="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}</button>`).join('')}</div>`;
   const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
   return head + body;
@@ -1416,6 +1440,41 @@ async function syncNow() {
   } catch (e) { toast(`Sync fehlgeschlagen: ${e.message}`, 'crit'); }
 }
 
+/**
+ * Knopf "Jetzt aktualisieren": startet operations/scripts/aktualisieren.mjs
+ * serverseitig (POST /api/aktualisierung/start) und pollt danach den
+ * Status-Endpunkt, bis der Lauf fertig ist - kein Warten im Request, die
+ * Anfrage selbst kommt sofort zurueck. Waehrend des Laufs ist der Knopf
+ * gesperrt ("Wird aktualisiert …"); danach zeigt render() ueber
+ * aktualisierungHealth()/heuteEinkaufBlock() das Ergebnis je Quelle mit
+ * Anzahl und Zeitpunkt (aus derselben aktualisierung.json).
+ */
+async function aktualisierenNow() {
+  if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
+  try {
+    const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Aktualisierung fehlgeschlagen: ${j.error || r.status}`, 'crit'); return; }
+    if (j.laeuft && !j.gestartet) { toast('Aktualisierung läuft bereits.'); }
+    else toast('Aktualisierung gestartet …');
+    einkauf.aktualisierungLaeuft = true;
+    render();
+    pollAktualisierung();
+  } catch (e) { toast(`Aktualisierung fehlgeschlagen: ${e.message}`, 'crit'); }
+}
+
+function pollAktualisierung() {
+  clearTimeout(einkauf.aktualisierungPollTimer);
+  einkauf.aktualisierungPollTimer = setTimeout(async () => {
+    const d = await fetchEinkauf('/api/aktualisierung/status');
+    einkauf.aktualisierung = d;
+    einkauf.aktualisierungLaeuft = !!d.laeuft;
+    if (einkauf.aktualisierungLaeuft) { pollAktualisierung(); return; }
+    toast('Aktualisierung abgeschlossen.');
+    if (state.route.view === 'heute' || state.route.view === 'einkauf' || state.route.view === 'insights') render();
+  }, 2000);
+}
+
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
@@ -1502,7 +1561,7 @@ function bindEvents() {
       return;
     }
     const a = e.target.closest('[data-action]');
-    if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
+    if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;

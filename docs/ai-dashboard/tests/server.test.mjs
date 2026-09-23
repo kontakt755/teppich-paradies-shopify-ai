@@ -67,6 +67,24 @@ test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Ex
   assert.equal(post.status, 405);
 }));
 
+test('aktualisierung/start und /status: Status ist GET-only, Start verlangt POST und lokalen Origin', async () => withServer(async base => {
+  // Status: reiner Lesezugriff, kein POST noetig - kein echter Lauf wird dabei gestartet.
+  const status = await fetch(`${base}/api/aktualisierung/status`);
+  assert.equal(status.status, 200);
+  const statusJson = await status.json();
+  assert.equal(typeof statusJson.laeuft, 'boolean');
+  const statusPost = await fetch(`${base}/api/aktualisierung/status`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(statusPost.status, 405);
+
+  // Start: GET nicht erlaubt, fremder Origin abgelehnt - absichtlich kein erfolgreicher
+  // gleicher-Origin-POST hier, damit der Test nicht wirklich einen Kindprozess gegen
+  // die Shopify Admin API startet.
+  const startGet = await fetch(`${base}/api/aktualisierung/start`);
+  assert.equal(startGet.status, 405);
+  const foreign = await fetch(`${base}/api/aktualisierung/start`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
+  assert.equal(foreign.status, 403);
+}));
+
 test('einkauf/auftragsstatus: GET liest lokal, POST verlangt JSON und lokalen Origin', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/auftragsstatus`);
   assert.equal(g.status, 200);
