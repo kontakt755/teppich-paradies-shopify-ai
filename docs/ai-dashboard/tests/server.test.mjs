@@ -39,3 +39,17 @@ test('Einkauf-API ist GET-only und liefert JSON (verfuegbar:false ohne private F
   const post = await fetch(`${base}/api/einkauf/bestellungen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   assert.equal(post.status, 405);
 }));
+
+test('einkauf/auftragsstatus: GET liest lokal, POST verlangt JSON und lokalen Origin', async () => withServer(async base => {
+  const g = await fetch(`${base}/api/einkauf/auftragsstatus`);
+  assert.equal(g.status, 200);
+  const gj = await g.json();
+  assert.equal(gj.verfuegbar, true);
+  assert.deepEqual(gj.positionen, {});
+
+  const foreign = await fetch(`${base}/api/einkauf/auftragsstatus`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
+  assert.equal(foreign.status, 403);
+
+  const form = await fetch(`${base}/api/einkauf/auftragsstatus`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'a=b' });
+  assert.equal(form.status, 415);
+}));

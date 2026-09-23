@@ -542,7 +542,22 @@ function viewAktivitaet() {
 const einkauf = {
   bestellungen: null, loadingBestellungen: false,
   produktstatus: null, loadingProduktstatus: false, produktstatusKey: null,
+  auftragsstatus: null, loadingAuftragsstatus: false,
 };
+
+// Auftragsfluss je Position: Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt.
+// Muss zu operations/lib/auftragsstatus.mjs passen (dort die fuehrende Quelle).
+const AF_STATUS_ORDER = ['bestellt', 'geliefert', 'raus', 'erledigt'];
+const AF_STATUS_LABEL = { bestellt: 'Bestellt', geliefert: 'Geliefert an uns', raus: 'An Kunden raus', erledigt: 'Erledigt' };
+const AF_NEXT = { offen: 'bestellt', bestellt: 'geliefert', geliefert: 'raus', raus: 'erledigt' };
+function afFilterGruppe(status) {
+  if (!status) return 'offen';
+  if (status === 'bestellt') return 'bestellt';
+  if (status === 'geliefert' || status === 'raus') return 'unterwegs';
+  if (status === 'erledigt') return 'erledigt';
+  return 'offen';
+}
+function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 
 async function fetchEinkauf(path) {
   try {
@@ -558,6 +573,49 @@ function ensureEinkaufBestellungen() {
   fetchEinkauf('/api/einkauf/bestellungen').then(d => {
     einkauf.bestellungen = d; einkauf.loadingBestellungen = false;
     if (state.route.view === 'einkauf') render();
+  });
+}
+
+function ensureEinkaufAuftragsstatus() {
+  if (einkauf.auftragsstatus || einkauf.loadingAuftragsstatus) return;
+  einkauf.loadingAuftragsstatus = true;
+  fetchEinkauf('/api/einkauf/auftragsstatus').then(d => {
+    einkauf.auftragsstatus = d; einkauf.loadingAuftragsstatus = false;
+    if (state.route.view === 'einkauf') render();
+  });
+}
+
+async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null } = {}) {
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, status, lieferantBestellnummer }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
+    if (!einkauf.auftragsstatus) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
+    toast(`Status: ${AF_STATUS_LABEL[status]}`);
+    render();
+    return true;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
+}
+
+function openAuftragsstatusDialog(pos, status) {
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="afTitle" data-dialog>
+    <h2 id="afTitle">Bestellt · ${esc(pos.orderName)}</h2>
+    <p class="small muted">${esc(pos.titel)} · ${esc(pos.farbe)}<br>Beim Lieferanten bestellt – Bestellnummer des Lieferanten notieren (optional, hilft bei Rückfragen).</p>
+    <div class="field"><label for="afNr">Lieferanten-Bestellnummer</label><input id="afNr" name="nr" placeholder="z. B. 2026-4711"></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('input')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (new FormData(form).get('nr') || '').trim() || null });
+    if (ok) $('#dialogRoot').innerHTML = '';
+    else form.querySelector('[type=submit]').disabled = false;
   });
 }
 
@@ -579,21 +637,52 @@ function kopierbutton(id, label = 'Liste kopieren') {
 
 const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen' };
 
+function afEintragFuer(p) {
+  return einkauf.auftragsstatus?.positionen?.[afKey(p.orderId, p.lineItemId)] || null;
+}
+
+/** Lieferanten-Link oder Begründung, warum keiner hinterlegt ist. */
+function lieferantLinkZelle(p) {
+  if (p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT') {
+    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`;
+  }
+  return `<span class="small muted">keine Produktseite hinterlegt (einkauf.lieferant_url fehlt)</span>`;
+}
+
+/** Status-Zelle: aktueller Stand + Buttons fuer den naechsten Schritt. */
+function afStatusZelle(p) {
+  const eintrag = afEintragFuer(p);
+  const status = eintrag?.status || null;
+  const gruppe = afFilterGruppe(status);
+  const badgeClass = gruppe === 'erledigt' ? 'fertig' : gruppe === 'unterwegs' ? 'freigabe' : gruppe === 'bestellt' ? 'plain' : 'blockiert';
+  const stand = status ? `<div class="small muted">${esc(AF_STATUS_LABEL[status])} · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>` : '';
+  const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr.: ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
+  const naechster = AF_NEXT[gruppe];
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}">${esc(AF_STATUS_LABEL[naechster])}</button>` : '';
+  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Offen')}</span>${stand}${nr}<div style="margin-top:4px">${btn}</div>`;
+}
+
 function einkaufGruppeKarte(g, i, praefix) {
   const id = `ek-${praefix}-${i}`;
   const titel = g.lieferant === 'UNGEKLAERT' ? 'Lieferant UNGEKLAERT' : `Lieferant ${esc(g.lieferant)}`;
   const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` <span class="badge plain">${esc(g.route)}</span>` : '';
-  const zeilen = g.positionen.map(p => `<tr>
+  const af = state.route.params.get('af') || '';
+  const positionen = af ? g.positionen.filter(p => afFilterGruppe(afEintragFuer(p)?.status) === af) : g.positionen;
+  if (af && !positionen.length) return '';
+  const zeilen = positionen.map(p => `<tr>
       <td>${p.grosshaendlerId === 'UNGEKLAERT' ? `<span class="badge gap">UNGEKLAERT</span>` : `<code class="mono">${esc(p.grosshaendlerId)}</code>`}${p.idGrund ? `<div class="small muted">${esc(p.idGrund)}</div>` : ''}</td>
+      <td>${esc(p.orderName)} <span class="muted small">${fmtDate(p.orderDatum)}</span></td>
       <td>${esc(p.titel)}<div class="small muted mono">${esc(p.sku)}</div></td>
       <td>${esc(p.farbe)}</td>
       <td>${esc(p.kundenmenge)}</td>
       <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `<span class="badge gap">UNGEKLAERT</span>` : esc(p.bestellmenge.text)}${p.bestellmenge.grund ? `<div class="small muted">${esc(p.bestellmenge.grund)}</div>` : ''}</td>
-      <td><a href="${esc(p.adminUrl || '')}" target="_blank" rel="noopener">${esc(p.orderName)}</a></td>
+      <td>${lieferantLinkZelle(p)}</td>
+      <td><a href="${esc(p.adminUrl || '')}" target="_blank" rel="noopener">Bestellung ↗</a></td>
+      <td>${afStatusZelle(p)}</td>
     </tr>`).join('');
   return `<section class="card${g.lieferant === 'UNGEKLAERT' ? ' notice warn' : ''}" style="margin-bottom:12px">
-    <div class="card-head"><h2>${titel}${route} <span class="muted small">${g.positionen.length} Pos.</span></h2>${kopierbutton(id)}</div>
-    <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Großhändler-ID</th><th>Artikel</th><th>Farbe/Variante</th><th>Kunde</th><th>Bestellen</th><th>Auftrag</th></tr></thead>
+    <div class="card-head"><h2>${titel}${route} <span class="muted small">${positionen.length} Pos.</span></h2>${kopierbutton(id)}</div>
+    <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Großhändler-ID</th><th>Kundenauftrag</th><th>Artikel</th><th>Farbe/Variante</th><th>Kunde bestellt</th><th>Beim Lieferanten bestellen</th><th>Lieferant</th><th>Auftrag</th><th>Status</th></tr></thead>
     <tbody>${zeilen}</tbody></table></div>
     <textarea id="${id}" style="position:absolute;left:-9999px;width:1px;height:1px">${esc(g.text)}</textarea>
   </section>`;
@@ -611,12 +700,30 @@ function einkaufAuftragZeile(a) {
   </div>`;
 }
 
+const AF_FILTER_LABEL = { offen: 'Offen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
+
+function afFortschrittBand(alleWarePositionen) {
+  const zaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
+  for (const p of alleWarePositionen) zaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  const af = state.route.params.get('af') || '';
+  const cls = { offen: 'crit', bestellt: 'warn', unterwegs: 'info', erledigt: 'ok' };
+  return `<div class="chips" role="group" aria-label="Nach Auftragsfluss-Status filtern" style="margin:12px 0">
+    ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${af === k ? '' : k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
+    ${af ? `<button type="button" class="chip" data-param="af" data-value="">Alle</button>` : ''}
+  </div>
+  <div class="band" style="margin:12px 0">
+    ${Object.keys(AF_FILTER_LABEL).map(k => `<div class="${cls[k]}"><span class="n">${zaehler[k]}</span><span class="l">${esc(AF_FILTER_LABEL[k])}</span></div>`).join('')}
+  </div>`;
+}
+
 function viewEinkaufBestellungen() {
   ensureEinkaufBestellungen();
+  ensureEinkaufAuftragsstatus();
   const d = einkauf.bestellungen;
   if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestelluebersicht …</div>`;
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
   const z = d.zahlen;
+  const allePositionen = [...(d.gruppen || []).flatMap(g => g.positionen), ...(d.musterGruppen || []).flatMap(g => g.positionen)];
   return `
     <div class="band" style="margin:12px 0">
       <div class="ok"><span class="n">${z.offeneAuftraege}</span><span class="l">offene Aufträge (von ${z.auftraege})</span></div>
@@ -625,10 +732,12 @@ function viewEinkaufBestellungen() {
       <div class="${z.ohneId ? 'crit' : 'ok'}"><span class="n">${z.ohneId}</span><span class="l">ohne Großhändler-ID</span></div>
       <div class="${z.mengeUngeklaert ? 'warn' : 'ok'}"><span class="n">${z.mengeUngeklaert}</span><span class="l">Menge UNGEKLÄRT</span></div>
     </div>
+    <h2 style="margin-top:20px">Auftragsfluss</h2>
+    ${afFortschrittBand(allePositionen)}
     <h2 style="margin-top:20px">Zu bestellen je Lieferant</h2>
-    ${d.gruppen?.length ? d.gruppen.map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('') : emptyState('Nichts zu bestellen.', 'Keine offenen Warenpositionen.')}
+    ${d.gruppen?.length ? d.gruppen.map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('') || emptyState('Nichts zu bestellen.', 'Kein Treffer für diesen Filter.') : emptyState('Nichts zu bestellen.', 'Keine offenen Warenpositionen.')}
     <h2 style="margin-top:20px">Muster</h2>
-    ${d.musterGruppen?.length ? d.musterGruppen.map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('') : emptyState('Keine offenen Muster.', '')}
+    ${d.musterGruppen?.length ? d.musterGruppen.map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('') || emptyState('Keine offenen Muster.', 'Kein Treffer für diesen Filter.') : emptyState('Keine offenen Muster.', '')}
     <h2 style="margin-top:20px">Aufträge (Ampel)</h2>
     <div class="rows">${d.auftraege?.filter(a => a.offen).map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
     <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
@@ -686,9 +795,11 @@ function viewEinkaufProduktdaten() {
 function viewEinkaufHilfe() {
   return `<section class="card">
     <h2>So arbeitest du damit</h2>
-    <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten direkt in eine Mail oder ein Bestellportal einfügen. Muster stehen in einer eigenen Liste. Der Admin-Link führt direkt zur Bestellung in Shopify.</p>
+    <p><b>Der tägliche Ablauf in einem Satz:</b> Du gehst morgens die Bestellübersicht durch, öffnest bei jeder neuen Position „Beim Lieferanten öffnen", bestellst dort wie gewohnt, trägst danach hier „Bestellt" mit der Lieferanten-Bestellnummer ein, und setzt die Position weiter auf „Geliefert an uns", sobald die Ware da ist, dann auf „An Kunden raus", sobald sie verschickt oder abgeholt wurde, und zum Schluss auf „Erledigt" – der Filter oben zeigt dir jederzeit, wie viele Positionen noch in welchem Schritt stehen.</p>
+    <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
+    <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter oben auf der Seite („Offen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus.</p>
     <p><b>Produktdaten-Status:</b> zeigt je Produktgruppe, wie viele Varianten für den Einkauf vollständig sind (Lieferant, Artikelnummer und Bestelleinheit bekannt) und wie viele noch offen sind. Darunter kannst du die offenen Varianten durchsuchen (Produktname, SKU oder Artikelnummer) und nach Gruppe filtern. Jede Zeile zeigt den Grund und einen konkreten nächsten Schritt.</p>
-    <p><b>Wichtig:</b> Beide Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
+    <p><b>Wichtig:</b> Alle drei Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Der Auftragsfluss-Status liegt in einer eigenen lokalen Datei auf deinem Mac und wird nie ins Repository übernommen. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
   </section>`;
 }
 
@@ -944,6 +1055,14 @@ function bindEvents() {
     if (act) { const t = state.tasks.find(x => x.number === Number(act.dataset.task)); if (t) openActionDialog(t, act.dataset.act); return; }
     const dec = e.target.closest('[data-decide]');
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
+    const afBtn = e.target.closest('[data-af-set]');
+    if (afBtn) {
+      const pos = { orderId: afBtn.dataset.afOrder, lineItemId: afBtn.dataset.afItem, orderName: afBtn.closest('tr')?.querySelector('td:nth-child(2)')?.textContent?.trim() || '', titel: afBtn.closest('tr')?.querySelector('td:nth-child(3)')?.textContent?.trim() || '', farbe: afBtn.closest('tr')?.querySelector('td:nth-child(4)')?.textContent?.trim() || '' };
+      const status = afBtn.dataset.afStatus;
+      if (status === 'bestellt') openAuftragsstatusDialog(pos, status);
+      else setzeAuftragsstatus(pos, status);
+      return;
+    }
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
     const kop = e.target.closest('[data-kopieren]');

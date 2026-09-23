@@ -231,3 +231,68 @@ test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
   const r = api.einkaufKlaerung();
   assert.equal(r.verfuegbar, false);
 });
+
+// ---------------------------------------------------------------------------
+// Einkauf: Auftragsfluss-Status (lokal, nie im Repository)
+// ---------------------------------------------------------------------------
+
+test('einkaufAuftragsstatus liefert leere Liste, wenn die Datei fehlt', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.einkaufAuftragsstatus();
+  assert.equal(r.verfuegbar, true);
+  assert.deepEqual(r.positionen, {});
+});
+
+test('einkaufAuftragsstatusSetzen lehnt ohne angemeldeten gh-Nutzer ab', async () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  await assert.rejects(
+    () => api.einkaufAuftragsstatusSetzen({ orderId: '1', lineItemId: '1', status: 'bestellt' }),
+    e => e instanceof ApiError && e.status === 403,
+  );
+});
+
+test('einkaufAuftragsstatusSetzen lehnt fehlende Pflichtangaben und unbekannten Status ab', async () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  const { gh } = fakeGh({});
+  const api = createApi({ gh, root, privatDirPath: dir });
+  await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ status: 'bestellt' }), e => e instanceof ApiError && e.status === 400);
+  await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ orderId: '1', lineItemId: '1', status: 'unsinn' }), e => e instanceof ApiError && e.status === 400);
+});
+
+test('einkaufBestellungen liest auch den Admin-API-Export {data:{orders:{nodes}}}', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-einkauf-'));
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
+  const order = {
+    id: 'gid://shopify/Order/1', name: '#1001', createdAt: '2026-09-01T10:00:00Z',
+    displayFinancialStatus: 'PAID', displayFulfillmentStatus: 'UNFULFILLED', customAttributes: [],
+    lineItems: { nodes: [{ id: 'gid://shopify/LineItem/1', sku: 'ART-1', title: 'Testartikel', quantity: 1, customAttributes: [], variant: null }] },
+  };
+  fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ data: { orders: { nodes: [order] } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = await api.einkaufBestellungen();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.zahlen.auftraege, 1);
+  assert.equal(r.zahlen.positionen, 1);
+});
+
+test('einkaufAuftragsstatusSetzen schreibt lokal und GET liest es danach', async () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  const { gh } = fakeGh({});
+  const now = () => new Date('2026-09-23T09:00:00Z');
+  const api = createApi({ gh, root, privatDirPath: dir, now });
+  const r = await api.einkaufAuftragsstatusSetzen({ orderId: 'gid://shopify/Order/1', lineItemId: 'gid://shopify/LineItem/1', status: 'bestellt', lieferantBestellnummer: 'LB-42' });
+  assert.equal(r.ok, true);
+  assert.equal(r.eintrag.status, 'bestellt');
+  assert.equal(r.eintrag.aktualisiertVon, 'tobias');
+
+  const liste = api.einkaufAuftragsstatus();
+  const key = 'gid://shopify/Order/1::gid://shopify/LineItem/1';
+  assert.equal(liste.positionen[key].status, 'bestellt');
+  assert.equal(liste.positionen[key].lieferantBestellnummer, 'LB-42');
+});

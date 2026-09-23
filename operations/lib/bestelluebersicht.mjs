@@ -163,7 +163,8 @@ function musterQuelle(item, quellMap) {
   const pm = metafeldMap(n.product?.metafields);
   const gh = grosshaendlerId({ variantMetafelder: vm, produktMetafelder: pm, sku: n.sku });
   const lf = lieferantFuer({ einkauf: {}, grosshaendlerIdQuelle: gh.quelle }, vm);
-  return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim() };
+  const url = vm?.einkauf?.lieferant_url;
+  return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim() };
 }
 
 /**
@@ -203,7 +204,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       const pos = {
         orderId: order.id,
         orderName: order.name,
+        orderDatum: order.createdAt,
         lineItemId: li.id ?? null,
+        lieferantUrl: istM ? (mq?.lieferantUrl ?? UNGEKLAERT) : (item.einkauf.lieferant_url ?? UNGEKLAERT),
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
         farbe,
         sku: item.sku,
