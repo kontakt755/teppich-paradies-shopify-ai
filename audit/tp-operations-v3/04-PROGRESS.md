@@ -22,4 +22,5 @@ Legende: ⬜ OFFEN · 🟡 IN ARBEIT · 🧪 TEST · 🟠 BLOCKIERT · ✅ ERLED
 | Versand | Routen, Fallback, Mischbestellung, Teilversand, Tracking-Rueckfluss | ⬜ | Fable | `operations/lib/route.mjs` | Unit | Neutralversand je Lieferant UNGEKLAERT |
 | Rollen | Login + Rollen (Leitung/Verkauf/Einkauf/Lager/Kundenservice) lokal | ⬜ | Fable | `operations/auth/` | Server-Tests | nach D11 |
 | Ads | Merchant-Center-Blocker (Versandrichtlinie, GTIN/custom_product, Conversions) | 🟠 | Ahmet + Fable | `11-ADS-READINESS.md` | Merchant-Diagnose | Inhaberhandlungen |
+| Repo | OPS-015: `npm test` deckt alle sechs Testsuiten ab, Deckungstest gegen kuenftige Luecken | ✅ | Opus 5 | `package.json`, `qa/tests/npm-test-deckung.test.mjs`, `CLAUDE.md` | `npm test` | 1.247 Tests statt 835, 14 s statt 7 s; `.claude/hooks` bleibt aussen, Begruendung im Test |
 | Repo | Sync-Bugs OPS-010/011 beheben oder Skripte stilllegen | ✅ | Opus 5 | `workflow/sync-grosshandel.mjs`, D6-Loeschungen, `.github/workflows/grosshandel-sync.yml` | `workflow:test` 89 gruen | Paginierung, tote Preissperre und irrefuehrender Erfolgsbericht behoben; zwei Auth-Pfade entfernt; Nachtlauf ausgesetzt bis #34 |
