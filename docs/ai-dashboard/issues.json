@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T12:15:26.168Z",
+  "generated_at": "2026-09-23T12:16:01.163Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 132,
+  "count": 133,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T12:15:26.168Z",
+    "fetchedAt": "2026-09-23T12:16:01.163Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 536,
+      "title": "Control Center: Design und Übersicht überarbeiten (Doppelungen, Klartext, Navigation)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/536",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung",
+      "fields": {
+        "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung"
+      },
+      "created_at": "2026-09-23T12:15:47Z",
+      "updated_at": "2026-09-23T12:15:58Z",
+      "closed_at": null
+    },
     {
       "number": 535,
       "title": "Verkaufsweg: Beratungsfrage nur bei Muster, Auffindbarkeit fuer KI-Suche, Lexikon an der Bestellung",
@@ -3631,10 +3655,10 @@
     {
       "number": 37,
       "title": "[SHP-010] Windows-SEO-Tooling angleichen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/37",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:backend"
@@ -3643,7 +3667,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": null,
       "fields": {
         "goal": "Originalen Mac-SEO-Checker belegbar wiederherstellen",
@@ -3670,16 +3694,16 @@
         }
       },
       "created_at": "2026-09-03T09:24:26Z",
-      "updated_at": "2026-09-23T12:15:02Z",
-      "closed_at": null
+      "updated_at": "2026-09-23T12:15:52Z",
+      "closed_at": "2026-09-23T12:15:36Z"
     },
     {
       "number": 36,
       "title": "[SHP-003] QA-Logfilter",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/36",
       "labels": [
-        "status:in-arbeit",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:backend"
@@ -3688,7 +3712,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": null,
       "fields": {
         "goal": "QA-Ausgaben auf erste relevante Assertion reduzieren",
@@ -3714,8 +3738,8 @@
         }
       },
       "created_at": "2026-09-03T09:24:25Z",
-      "updated_at": "2026-09-23T12:14:59Z",
-      "closed_at": null
+      "updated_at": "2026-09-23T12:15:52Z",
+      "closed_at": "2026-09-23T12:15:35Z"
     },
     {
       "number": 35,
