@@ -216,6 +216,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         lineItemId: li.id ?? null,
         lieferantUrl: istM ? (mq?.lieferantUrl ?? UNGEKLAERT) : (item.einkauf.lieferant_url ?? UNGEKLAERT),
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
+        // Schluessel fuers Produktlexikon: von der Bestellposition direkt zum
+        // Originalartikel beim Lieferanten, ohne Suche.
+        handle: li.variant?.product?.handle ?? null,
         farbe,
         sku: item.sku,
         menge,

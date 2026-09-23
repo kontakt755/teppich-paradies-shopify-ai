@@ -197,3 +197,19 @@ test('ohne jede Laengenangabe bleibt es UNGEKLAERT und nennt beide Eigenschaften
   assert.equal(r.menge, 'UNGEKLAERT');
   assert.match(r.grund, /Gewuenschte Laenge oder Maße/);
 });
+
+test('Jede Position traegt den Produkt-Handle fuers Lexikon', () => {
+  // Ohne handle bliebe im Dashboard nur die Volltextsuche - der Weg
+  // Bestellung -> Originalartikel waere wieder Handarbeit.
+  const alle = m.gruppen.flatMap(g => g.positionen);
+  assert.ok(alle.length > 0);
+  // Einzige Ausnahme: eine Position, deren Variante im Shop geloescht wurde -
+  // dort gibt es kein Produkt mehr, auf das das Lexikon zeigen koennte.
+  const ohneHandle = alle.filter(p => !p.handle);
+  assert.deepEqual(ohneHandle.map(p => p.titel), ['Alter Testartikel']);
+  assert.ok(alle.some(p => p.handle === 'testprodukt'));
+  // Muster werden getrennt gefuehrt und brauchen den Handle genauso.
+  const musterListe = m.musterGruppen.flatMap(g => g.positionen);
+  assert.ok(musterListe.length > 0);
+  assert.equal(musterListe.find(p => p.sku === 'M-TESTROLLE_1').handle, 'muster-testboden');
+});
