@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T13:23:50.225Z",
+  "generated_at": "2026-09-23T16:16:47.556Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 134,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T13:23:50.225Z",
+    "fetchedAt": "2026-09-23T16:16:47.556Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -78,13 +78,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 1,
       "nextStep": null,
       "fields": {
         "description": "Autonome Sitzung 2026-09-23. Alle offenen PRs waren CONFLICTING und damit blockiert. Konflikte aufgeloest, CI gruen, alle MERGEABLE/CLEAN.\n\nWICHTIG - Reihenfolge, die PRs ueberschneiden sich untereinander:\n\n1. #537 (Verkaufsweg) - konfliktfrei gegen main\n2. #539 (Control Center Design) - ueberschneidet sich mit #537 in docs/ai-dashboard/app.js\n3. #514 (Bodenwissen/Ratgeber) - ueberschneidet sich mit #539 in app.js und index.html\n4. #543 (Groessenhinweis Massteppich) - unabhaengig, jederzeit\n\nNach jedem Merge rechnet GitHub neu; #539 und #514 werden danach erneut\nCONFLICTING. Die fertige Aufloesung aller drei liegt als Branch\nchore/integration-537-539-514 bereit - dort sind alle Ueberschneidungen\nbereits entschieden und geprueft (95 Dashboard-Tests, 182 operations-Tests,\nliquid/schema-Guard je 0 Fehler, im Browser gegen Testdaten geprueft).\n\nZwei Wege:\na) Die drei einzeln mergen und die Wiederholkonflikte aus dem\n   Integrationsbranch uebernehmen.\nb) chore/integration-537-539-514 als einen PR mergen und #537/#539/#514\n   schliessen. Weniger Arbeit, verliert aber die getrennte Review-Historie.\n\nDen Merge selbst konnte die Sitzung nicht ausfuehren: im Auto-Modus\ngesperrt (Merge Withou…"
       },
       "created_at": "2026-09-23T13:23:34Z",
-      "updated_at": "2026-09-23T13:23:34Z",
+      "updated_at": "2026-09-23T13:33:55Z",
       "closed_at": null
     },
     {
