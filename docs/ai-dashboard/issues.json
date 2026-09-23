@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T08:24:52.081Z",
+  "generated_at": "2026-09-23T09:02:45.596Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 127,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T08:24:52.081Z",
+    "fetchedAt": "2026-09-23T09:02:45.596Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -506,7 +506,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": null,
       "fields": {
         "goal": "Den Verbrauch von Claude Code auf beiden Macs senken, ohne Regeln oder Qualitaet zu verlieren. Reihenfolge: Kontext → Messung → Pilot → gezielte Skills.\n\n## Phasen\n\n- [x] **Phase 1 — Startkontext kuerzen:** CLAUDE.md 34,2 KB → 19,9 KB, Vorfallgeschichten nach `docs/lessons/`, Hook-Ausgabe 46 → 30 Zeilen. PR #360.\n- [ ] **Phase 0 — Baseline (lokal, beide Macs):** bei 5–10 normalen Aufgaben am Ende `/cost` notieren (Klasse, Modell, Tokens, Cache-Anteil, Dauer). Einmal pro Mac: leere Session + `/cost` als reiner Startkontext-Preis — **vor dem Merge von #360**, sonst fehlt der Vorher-Wert. Einmal `npm run ai:usage` fuer den Router-/Codex-Anteil.\n- [ ] **Phase 2 — Verhaltensregeln:** ein Modell pro Session (in CLAUDE.md/AGENTS.md mit #360), eine Session pro Aufgabe, Zwischenstand als Issue-Notiz.\n- [ ] **Phase 3 — Vergleich:** 5–10 Aufgaben nach dem Merge erneut messen. Erst danach Ponytail-Pilot auf 5 Klasse-A/B-Aufgaben mit demselben Modell wie die Baseline.\n\n## Offen (Entscheidung Inhaber)\n\nCLAUDE.md liegt bei 19,9 KB statt der angepeilten 15 KB. Der Rest sind Befehle, Guard-Tabelle, Sicherheitsgrenzen und Modell-Matrix. Kandidaten fuer weitere ~2 KB: `theme:diff`-Manifest-Block und …",
@@ -534,7 +534,7 @@
         }
       },
       "created_at": "2026-09-18T17:26:32Z",
-      "updated_at": "2026-09-18T20:48:00Z",
+      "updated_at": "2026-09-23T08:51:48Z",
       "closed_at": null
     },
     {
@@ -1619,13 +1619,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 11,
+      "comments": 12,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-11T08:41:00Z",
-      "updated_at": "2026-09-16T10:37:42Z",
+      "updated_at": "2026-09-23T08:52:52Z",
       "closed_at": null
     },
     {
@@ -2396,7 +2396,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 10,
+      "comments": 11,
       "nextStep": null,
       "fields": {
         "description": "Gesamtanalyse des Shops aus Admin-API, ShopifyQL und 30 bisherigen Berichten. Bericht liegt im PR-Branch `claude/shop-analysis-router-skqvaa` unter `docs/analyse/SHOP_ANALYSE_2026-09-09.md` (plus Produkt-Audit über 434 Produkte und Theme-Code-Review).\n\n**Kernbefund:** 5.136 Sitzungen in 90 Tagen, 22 mit Warenkorb, 6 im Checkout, 0 abgeschlossen. 37 % des Traffics landet auf Verlegeservice-Seiten ohne messbares Ziel. Kein GA4/Ads/Meta-Tag im Theme, Shopify-Pixel nie per Testkauf verifiziert.\n\n**P0**\n- [ ] Customer Events prüfen, genehmigter Testkauf, Anruf-/Formular-Ziele (Ahmet)\n- [ ] Serviceseiten: Anfrage-CTA und `tel:`-Events (Agent, nach Zieldefinition)\n- [ ] Muster-CTAs auf `/pages/muster` statt Kontaktformular umstellen (Agent, 3 Dateien)\n\n**P1**\n- [ ] 152 Produkte ohne `productType` (104 Klebevinyl, 36 Teppichboden, 7 Sockelleisten) setzen\n- [ ] Mobiler Kaufpfad: 8 nicht gerenderte `tp-`-Snippets, Touch-Targets\n- [ ] Warenkorb „Geschätzter Gesamtbetrag\", Sie/Du, USP-Band, Länderwähler\n- [ ] 118 Rollenware-Produkte vom Google-Kanal ausschließen (Liste neu erzeugen, Human Gate)\n- [ ] 12 Redirect-Ziele korrigieren/anlegen (fertige Liste im Bericht, Abschnitt 7)\n- [ ] Fotos für …",
@@ -2444,7 +2444,7 @@
         }
       },
       "created_at": "2026-09-09T06:33:34Z",
-      "updated_at": "2026-09-09T09:43:15Z",
+      "updated_at": "2026-09-23T08:52:45Z",
       "closed_at": null
     },
     {
@@ -3157,10 +3157,10 @@
     {
       "number": 44,
       "title": "[Google Ads] Phase 1.2 – Google Analytics 4 Setup",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/44",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:google"
@@ -3169,7 +3169,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 1,
+      "comments": 2,
       "nextStep": "Events testen mit Tag Assistant",
       "fields": {
         "description": "Verknüpfe Google Ads mit GA4 und richte Conversion Tracking ein\n- [ ] GA4 Property erstellt\n- [ ] Verknüpfung mit Google Ads aktiv\n- [ ] Purchase Event konfiguriert\n- [ ] AddToCart Event konfiguriert\n- [ ] ViewItem Event konfiguriert",
@@ -3202,8 +3202,8 @@
         }
       },
       "created_at": "2026-09-03T09:40:23Z",
-      "updated_at": "2026-09-12T16:41:35Z",
-      "closed_at": null
+      "updated_at": "2026-09-23T09:02:32Z",
+      "closed_at": "2026-09-23T09:02:32Z"
     },
     {
       "number": 43,
