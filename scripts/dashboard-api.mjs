@@ -76,46 +76,154 @@ function readJsonIfExists(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
 }
 
-/** Kernfelder, die eine Bestellung ueberhaupt erst ermoeglichen. */
-const EINKAUF_KERNFELDER = ['lieferant', 'artikelnummer', 'bestelleinheit'];
-const EINKAUF_NAECHSTER_SCHRITT = {
-  lieferant: 'Lieferant klaeren (Preisliste/Lieferantenliste abgleichen)',
-  artikelnummer: 'Lieferanten-Artikelnummer aus Preisliste/Katalog abschreiben',
-  bestelleinheit: 'Bestelleinheit festlegen (Paket/Rolle/Stueck) je Produktgruppe',
-  farbnummer: 'Farbnummer aus Lieferantenliste abschreiben, nie fortlaufend zaehlen',
+/**
+ * Produktdaten-Status: Klartext, Blockier-Status und Naechster-Schritt-Text
+ * je Einkaufsfeld. "blockierend" heisst: ohne dieses Feld kann die Ware beim
+ * Lieferanten nicht bestellt werden. Alles andere ist Zusatzinformation
+ * (Kollektion, Hersteller, ...) - fehlt sie, blockiert das keinen Auftrag.
+ * Quelle der Feldnamen: einkauf-klaerung/offen.json (Feld `field`).
+ */
+const EINKAUF_FELD_META = {
+  lieferant: { klartext: 'Lieferant', blockierend: true },
+  artikelnummer: { klartext: 'Artikelnummer', blockierend: true },
+  farbnummer: { klartext: 'Farbnummer', blockierend: true },
+  'lieferant/artikelnummer': { klartext: 'Lieferant/Artikelnummer', blockierend: true },
+  bestelleinheit: { klartext: 'Bestellmenge unklar', blockierend: true },
+  lieferant_kollektion: { klartext: 'Kollektion', blockierend: false },
+  hersteller: { klartext: 'Hersteller', blockierend: false },
+  farbname: { klartext: 'Farbname', blockierend: false },
+  lieferant_produktname: { klartext: 'Lieferanten-Produktname', blockierend: false },
+  lieferant_url: { klartext: 'Lieferanten-Produktseite', blockierend: false },
+  procurement_id: { klartext: 'Einkaufs-ID', blockierend: false },
+  umrechnung: { klartext: 'Umrechnung', blockierend: false },
 };
 
-function feldOffen(feld) {
-  return !feld || feld.confidence === 'UNKLAR';
+function einkaufFeldKlartext(feld) {
+  return EINKAUF_FELD_META[feld]?.klartext || feld;
 }
 
-function produktstatusEintrag(variante) {
-  const felder = variante.fields || {};
-  const offeneKernfelder = EINKAUF_KERNFELDER.filter(f => feldOffen(felder[f]));
-  const vollstaendig = offeneKernfelder.length === 0;
-  return {
-    gid: variante.gid,
-    handle: variante.handle,
-    titel: variante.product_title,
-    variante: variante.variant_title,
-    sku: variante.sku,
-    grosshandelSku: variante.grosshandel_sku,
-    gruppe: variante.gruppe || 'Unbekannt',
-    vollstaendig,
-    offeneFelder: offeneKernfelder.map(f => ({
-      feld: f,
-      grund: felder[f]?.source || 'kein Grund hinterlegt',
-      naechsterSchritt: EINKAUF_NAECHSTER_SCHRITT[f] || 'manuell klaeren',
-    })),
-  };
+function einkaufFeldBlockierend(feld) {
+  return Boolean(EINKAUF_FELD_META[feld]?.blockierend);
+}
+
+/**
+ * Naechster Schritt in verstaendlichem Deutsch, je Feld und - wo noetig -
+ * je nach Grund unterschiedlich (z. B. Kaskade ueber einen offenen
+ * Lieferanten, oder das Nummernsystem-Problem aus
+ * docs/lessons/zwei-nummernsysteme-doellken.md). Faellt kein Grund-Muster,
+ * bleibt der generische Satz fuer das Feld.
+ */
+function einkaufNaechsterSchritt(feld, grund) {
+  const g = String(grund || '');
+  const lieferantUnklar = /Lieferant unklar/i.test(g);
+  switch (feld) {
+    case 'lieferant':
+    case 'lieferant/artikelnummer':
+      return 'Lieferant von Hand klaeren (Preisliste/Lieferantenliste abgleichen)';
+    case 'artikelnummer':
+      if (lieferantUnklar) return 'Kommt automatisch, sobald der Lieferant geklaert ist';
+      return 'Artikelnummer bei Lieferant nicht gefunden - von Hand in Preisliste/Katalog pruefen';
+    case 'farbnummer':
+      if (lieferantUnklar) return 'Kommt automatisch, sobald der Lieferant geklaert ist';
+      if (/zwei Nummernsysteme/i.test(g)) return 'Farbcode und Artikelnummer-Suffix weichen ab - von Hand gegen die Lieferantenliste pruefen (zwei Nummernsysteme)';
+      return 'Farbnummer von der Lieferantenliste abschreiben, nie fortlaufend zaehlen';
+    case 'bestelleinheit':
+      if (/VE oder Stueck/i.test(g)) return 'Verpackungseinheit oder Einzelstueck? Von Hand in der Preisliste pruefen';
+      if (/Massteppich/i.test(g)) return 'Bestelleinheit als Zuschnitt+Einfassung von Hand festlegen (Inhaberentscheidung noetig)';
+      return 'Bestelleinheit von Hand aus der Preisliste uebernehmen';
+    case 'lieferant_kollektion':
+      return 'Kollektion kommt automatisch, sobald die Lieferantenseite geholt ist';
+    case 'hersteller':
+      return 'Hersteller kommt automatisch, sobald Lieferant und Kollektion bekannt sind';
+    default:
+      return 'Fuellt sich automatisch aus den uebrigen Feldern, keine Aktion noetig';
+  }
+}
+
+/** Ist der Schritt fuer dieses Feld+Grund menschliche Handarbeit oder automatisch? */
+function einkaufBrauchtHandarbeit(feld, grund) {
+  if (!einkaufFeldBlockierend(feld)) return false;
+  return !/^Kommt automatisch/.test(einkaufNaechsterSchritt(feld, grund));
 }
 
 function produktSucheTreffer(eintrag, q) {
   if (!q) return true;
   const n = q.trim().toLowerCase();
   if (!n) return true;
-  return [eintrag.titel, eintrag.sku, eintrag.grosshandelSku, eintrag.handle, eintrag.variante]
-    .some(v => String(v ?? '').toLowerCase().includes(n));
+  const skus = (eintrag.varianten || []).map(v => v.sku).filter(Boolean).join(' ');
+  return [eintrag.titel, eintrag.handle, skus].some(v => String(v ?? '').toLowerCase().includes(n));
+}
+
+/**
+ * Baut je Produkt (Handle) eine Arbeitslisten-Zeile aus dem Einkauf-Dry-Run
+ * (plan.json, Dimension: Titel/Gruppe/Varianten je gid) und dem frischeren
+ * Klaerungslauf (offen.json, Feld+Grund je gid - das ist die tatsaechlich
+ * noch offene Menge, plan.json selbst ist ein aelterer Zwischenstand).
+ */
+function produktstatusAufbauen(planRows, offenRows) {
+  const dim = new Map(planRows.map(r => [r.gid, r]));
+  const produkte = new Map();
+  for (const r of planRows) {
+    if (produkte.has(r.handle)) {
+      produkte.get(r.handle).varianten.push({ gid: r.gid, sku: r.sku, variante: r.variant_title });
+      continue;
+    }
+    produkte.set(r.handle, {
+      handle: r.handle,
+      titel: r.product_title,
+      gruppe: r.gruppe || 'Unbekannt',
+      varianten: [{ gid: r.gid, sku: r.sku, variante: r.variant_title }],
+      offeneFelderRoh: new Map(), // feld -> {grund, varianten:Set}
+    });
+  }
+
+  for (const o of offenRows) {
+    const dr = dim.get(o.gid);
+    if (!dr) continue; // Variante nicht (mehr) im Dry-Run-Plan - kann verwaist sein, wird nicht erfunden
+    const p = produkte.get(dr.handle);
+    if (!p) continue;
+    const bestehend = p.offeneFelderRoh.get(o.field);
+    if (bestehend) bestehend.varianten.add(o.gid);
+    else p.offeneFelderRoh.set(o.field, { grund: o.reason, varianten: new Set([o.gid]) });
+  }
+
+  const eintraege = [];
+  for (const p of produkte.values()) {
+    let offeneFelder = [...p.offeneFelderRoh.entries()].map(([feld, info]) => ({
+      feld,
+      klartext: einkaufFeldKlartext(feld),
+      blockierend: einkaufFeldBlockierend(feld),
+      grund: info.grund || 'kein Grund hinterlegt',
+      naechsterSchritt: einkaufNaechsterSchritt(feld, info.grund),
+      handarbeit: einkaufBrauchtHandarbeit(feld, info.grund),
+      variantenBetroffen: info.varianten.size,
+    }));
+    // Kaskade: ist der Lieferant selbst offen, sind Artikel-/Farbnummer nur
+    // eine Folge davon - nicht als eigene Handlungspunkte doppeln.
+    if (offeneFelder.some(f => f.feld === 'lieferant' || f.feld === 'lieferant/artikelnummer')) {
+      offeneFelder = offeneFelder.filter(f => !/Lieferant unklar/i.test(f.grund) || f.feld === 'lieferant' || f.feld === 'lieferant/artikelnummer');
+    }
+    offeneFelder.sort((a, b) => (b.blockierend - a.blockierend) || (b.handarbeit - a.handarbeit));
+
+    const blockierendeFelder = offeneFelder.filter(f => f.blockierend);
+    const handarbeitFelder = offeneFelder.filter(f => f.handarbeit);
+    const vollstaendig = offeneFelder.length === 0;
+    const status = vollstaendig ? 'vollstaendig' : handarbeitFelder.length ? 'handarbeit' : 'automatisch';
+
+    eintraege.push({
+      handle: p.handle,
+      titel: p.titel,
+      gruppe: p.gruppe,
+      variantenAnzahl: p.varianten.length,
+      varianten: p.varianten,
+      vollstaendig,
+      status,
+      blockiertBestellung: blockierendeFelder.length > 0,
+      offeneFelder,
+      dringlichkeit: (blockierendeFelder.length * 1000) + (handarbeitFelder.length * 10) + offeneFelder.length,
+    });
+  }
+  return eintraege;
 }
 
 export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
@@ -341,28 +449,46 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
-     * Produktdaten-Status: je Produktgruppe vollstaendig/offen aus dem
-     * Einkauf-Dry-Run (plan.json), serverseitig zusammengefasst und die
-     * offene Liste paginiert (die Datei selbst kann mehrere tausend
-     * Varianten haben).
+     * Produktdaten-Status: eine Zeile je PRODUKT (nicht je Variante/Feld -
+     * das waeren bei 3.300 Varianten und ~10 Feldern mehrere zehntausend
+     * Einzelpunkte und keine brauchbare Arbeitsliste). Dimension (Titel,
+     * Gruppe, Varianten) kommt aus dem Einkauf-Dry-Run (plan.json), die
+     * tatsaechlich noch offenen Felder aus dem frischeren Klaerungslauf
+     * (einkauf-klaerung/offen.json) - plan.json selbst kann ein aelterer
+     * Zwischenstand sein. Filter: 'blockierend' (nur was eine Bestellung
+     * verhindert), 'handarbeit' (nur was eine Person klaeren muss),
+     * '' = alle offenen Produkte.
      */
-    einkaufProduktstatus({ page = 1, pageSize = 50, q = '', gruppe = '' } = {}) {
+    einkaufProduktstatus({ page = 1, pageSize = 50, q = '', gruppe = '', filter = '' } = {}) {
       const dir = privatDirPath || privatDir();
-      const file = path.join(dir, 'einkauf-dryrun', 'plan.json');
-      const rows = readJsonIfExists(file);
-      if (!Array.isArray(rows)) return { verfuegbar: false, quelle: file, hinweis: 'plan.json fehlt - Einkauf-Dry-Run vorher lokal laufen lassen.' };
+      const planFile = path.join(dir, 'einkauf-dryrun', 'plan.json');
+      const offenFile = path.join(dir, 'einkauf-klaerung', 'offen.json');
+      const planRows = readJsonIfExists(planFile);
+      if (!Array.isArray(planRows)) return { verfuegbar: false, quelle: planFile, hinweis: 'plan.json fehlt - Einkauf-Dry-Run vorher lokal laufen lassen.' };
+      const offenRows = readJsonIfExists(offenFile);
+      if (!Array.isArray(offenRows)) return { verfuegbar: false, quelle: offenFile, hinweis: 'offen.json fehlt (einkauf-klaerung) - Klaerungslauf vorher lokal ausfuehren.' };
 
-      const eintraege = rows.map(produktstatusEintrag);
+      const eintraege = produktstatusAufbauen(planRows, offenRows);
       const gruppen = {};
       for (const e of eintraege) {
-        const g = gruppen[e.gruppe] || (gruppen[e.gruppe] = { gruppe: e.gruppe, vollstaendig: 0, offen: 0 });
-        if (e.vollstaendig) g.vollstaendig += 1; else g.offen += 1;
+        const g = gruppen[e.gruppe] || (gruppen[e.gruppe] = { gruppe: e.gruppe, vollstaendig: 0, handarbeit: 0, automatisch: 0 });
+        g[e.status] += 1;
       }
-      const gesamt = { vollstaendig: eintraege.filter(e => e.vollstaendig).length, offen: eintraege.filter(e => !e.vollstaendig).length, anzahl: eintraege.length };
+      const gesamt = {
+        anzahl: eintraege.length,
+        vollstaendig: eintraege.filter(e => e.status === 'vollstaendig').length,
+        handarbeit: eintraege.filter(e => e.status === 'handarbeit').length,
+        automatisch: eintraege.filter(e => e.status === 'automatisch').length,
+        // Rueckwaertskompatibel: "offen" = nicht vollstaendig.
+        offen: eintraege.filter(e => e.status !== 'vollstaendig').length,
+      };
 
-      let offene = eintraege.filter(e => !e.vollstaendig);
+      let offene = eintraege.filter(e => e.status !== 'vollstaendig');
       if (gruppe) offene = offene.filter(e => e.gruppe === gruppe);
+      if (filter === 'blockierend') offene = offene.filter(e => e.blockiertBestellung);
+      else if (filter === 'handarbeit') offene = offene.filter(e => e.status === 'handarbeit');
       if (q) offene = offene.filter(e => produktSucheTreffer(e, q));
+      offene.sort((a, b) => b.dringlichkeit - a.dringlichkeit || a.titel.localeCompare(b.titel, 'de'));
 
       const size = Math.min(Math.max(Number(pageSize) || 50, 1), 200);
       const p = Math.max(Number(page) || 1, 1);
@@ -370,8 +496,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const seite = offene.slice(start, start + size);
 
       return {
-        verfuegbar: true, quelle: file,
-        gesamt, gruppen: Object.values(gruppen).sort((a, b) => b.offen - a.offen),
+        verfuegbar: true, quelle: `${planFile} + ${offenFile}`,
+        gesamt, gruppen: Object.values(gruppen).sort((a, b) => (b.handarbeit + b.automatisch) - (a.handarbeit + a.automatisch)),
         offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
       };
     },
