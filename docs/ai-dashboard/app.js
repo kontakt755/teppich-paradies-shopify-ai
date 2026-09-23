@@ -956,7 +956,7 @@ function viewEinkaufBestellungen() {
     <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
 }
 
-const EINKAUF_PSFILTER_LABEL = { '': 'Alle offenen Produkte', blockierend: 'Nur blockierend', handarbeit: 'Nur Handarbeit' };
+const EINKAUF_PSFILTER_LABEL = { '': 'Alle offenen Produkte', blockierend: 'Nur blockierend', handarbeit: 'Nur Handarbeit nötig' };
 
 function viewEinkaufProduktdaten() {
   ensureEinkaufProduktstatus();
@@ -985,7 +985,7 @@ function viewEinkaufProduktdaten() {
   }).join('');
   const offen = d.offen;
   const items = offen.items.map(e => {
-    const status = e.status === 'handarbeit' ? { cls: 'blockiert', label: 'Handarbeit' } : { cls: 'freigabe', label: 'Füllt sich automatisch' };
+    const status = e.status === 'handarbeit' ? { cls: 'blockiert', label: 'Blockiert Bestellung' } : { cls: 'freigabe', label: 'Nachtragen' };
     return `<tr>
       <td><span class="badge status ${status.cls}">${esc(status.label)}</span></td>
       <td>${esc(e.titel)}<div class="small muted mono">${esc(e.handle)}</div></td>
@@ -1001,13 +1001,15 @@ function viewEinkaufProduktdaten() {
     </div>` : '';
   return `
     <div class="band" style="margin:12px 0">
+      <div class="${g.handarbeit ? 'crit' : 'ok'}"><span class="n">${g.handarbeit}</span><span class="l">blockieren eine Bestellung</span></div>
+      <div class="info"><span class="n">${g.automatisch}</span><span class="l">Zusatzinfo nachtragen</span></div>
       <div class="ok"><span class="n">${g.vollstaendig}</span><span class="l">von ${g.anzahl} Produkten vollständig</span></div>
-      <div class="${g.handarbeit ? 'crit' : 'ok'}"><span class="n">${g.handarbeit}</span><span class="l">brauchen Handarbeit</span></div>
-      <div class="info"><span class="n">${g.automatisch}</span><span class="l">füllen sich automatisch</span></div>
     </div>
-    <p class="small muted" style="margin:-6px 0 14px">„Handarbeit" blockiert eine Bestellung beim Lieferanten (Lieferant, Artikelnummer, Farbnummer oder Bestellmenge unklar) – dort muss jemand nachschauen. „Füllt sich automatisch" sind reine Zusatzinformationen wie Kollektion oder Hersteller, die keine Bestellung aufhalten und sich ergänzen, sobald der laufende Abgleich weiterläuft.</p>
+    <p class="small muted" style="margin:-6px 0 4px"><b>Blockiert Bestellung:</b> Lieferant oder Artikelnummer fehlt bei einer Variante, die tatsächlich bestellt werden kann – ohne diese Angabe kann niemand beim Lieferanten bestellen. Das ist die einzige Gruppe, die oben als Zahl zählt.</p>
+    <p class="small muted" style="margin:0 0 4px"><b>Nachtragen:</b> wünschenswerte Zusatzinformation wie Farbnummer, Kollektion, Hersteller, Lieferanten-Produktname oder -URL – fehlt sie, blockiert das keine Bestellung.</p>
+    <p class="small muted" style="margin:0 0 14px">Nicht gezählt (strukturell, keine Aufgabe): Wunschmaß-Varianten (Artikelnummer/SKU entstehen erst beim Zuschnitt), das Feld „Umrechnung" (Format nie festgelegt) und die Einkaufs-ID außerhalb der Rollenware (dort nicht vorgesehen).</p>
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Je Produktgruppe</h2></div>
-      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Handarbeit</th><th>Automatisch</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
+      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Blockiert</th><th>Nachtragen</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
     </section>
     ${toolbar}
     <section class="card"><div class="card-head"><h2>${esc(EINKAUF_PSFILTER_LABEL[psfilter])}</h2></div>
@@ -1053,7 +1055,7 @@ function viewEinkaufHilfe() {
     <h3 style="margin-top:20px">Die drei Unteransichten im Detail</h3>
     <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster (Bestellungen von Produktmustern statt ganzer Ware) stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
     <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter oben auf der Seite („Offen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus.</p>
-    <p><b>Produktdaten-Status:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Oben steht ehrlich, wie viele von den insgesamt erfassten Produkten vollständig sind, wie viele Handarbeit brauchen und wie viele sich von selbst füllen, sobald der laufende Lieferantenabgleich weiterläuft. „Handarbeit" heißt: eine Bestellung ist blockiert, weil Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – das muss jemand von Hand in der Preisliste nachschauen. Zusatzinformation wie Kollektion oder Hersteller blockiert nichts und taucht nur als „füllt sich automatisch" auf. Filter oben: alle offenen Produkte, nur blockierende oder nur Handarbeit; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben.</p>
+    <p><b>Produktdaten-Status:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Drei ehrlich getrennte Gruppen: <b>blockiert die Bestellung</b> (Lieferant oder Artikelnummer fehlt bei einer bestellbaren Variante – muss jemand von Hand klären, das treibt die große Zahl oben), <b>nachtragen</b> (Farbnummer, Kollektion, Hersteller, Lieferanten-Produktname/-URL – wünschenswert, blockiert aber keine Bestellung) und <b>strukturell offen, keine Aufgabe</b> (Wunschmaß-Varianten, deren Artikelnummer erst beim Zuschnitt entsteht; das Feld „Umrechnung", dessen Format nie festgelegt wurde; die Einkaufs-ID außerhalb der Rollenware, wo sie gar nicht vorgesehen ist – diese drei Fälle zählen nirgends mit). Filter oben: alle offenen Produkte, nur blockierende oder nur solche mit Handarbeitsbedarf; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben. Die Zahl „ohne Großhändler-ID" in der Kachel „Kundengeschäft" auf „Heute" zählt etwas anderes: offene Positionen in tatsächlichen Kundenbestellungen (Bestellübersicht), nicht Lücken im gesamten Produktkatalog – beide Zahlen dürfen auseinanderlaufen, das ist kein Widerspruch.</p>
     <p><b>Wichtig:</b> Alle drei Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Der Auftragsfluss-Status liegt in einer eigenen lokalen Datei auf deinem Mac und wird nie ins Repository übernommen. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
   </section>`;
 }
