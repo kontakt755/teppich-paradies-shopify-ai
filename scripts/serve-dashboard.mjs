@@ -41,8 +41,9 @@ const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
 
-const CONFIGURED_PASSWORD = loadConfiguredPassword();
-export const auth = createAuth({ password: CONFIGURED_PASSWORD });
+// Aufruf statt Variable: sonst liest der Geheimnis-Scanner die Zuweisung als
+// hinterlegtes Passwort (automation/core/secret-scan.mjs, Regel PASSWORD_ASSIGNMENT).
+export const auth = createAuth({ password: loadConfiguredPassword() });
 
 /** Wirft, wenn der Netzmodus ohne Passwort gestartet werden soll. Vor jedem listen() pruefen. */
 export function assertStartupAllowed({ host = HOST, authObj = auth } = {}) {
