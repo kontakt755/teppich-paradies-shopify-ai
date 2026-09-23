@@ -136,3 +136,49 @@ test('writeOrderState meldet Abweichung, wenn der Wert nach dem Schreiben nicht 
   await assert.rejects(() => writeOrderState(proxy, '8', { status: 'NEU' }), /orderId ungueltig/);
   await assert.rejects(() => writeOrderState(proxy, 'gid://shopify/Order/8', {}), /nichts zu schreiben/);
 });
+
+// Die Abfrage muss alles liefern, was die Auftragskarte zeigt. Fehlt ein Feld,
+// steht in der Oberflaeche UNGEKLAERT, obwohl Shopify den Wert haette - genau
+// das war am 2026-09-23 der Fall (Kunde, Telefon, Rechnungsadresse, Betrag).
+test('Bestellabfrage enthaelt Kunde, Betrag, Rechnungsadresse, Tracking und Bilder', () => {
+  for (const feld of ['email', 'phone', 'customer {', 'displayName', 'totalPriceSet', 'billingAddress',
+    'fulfillments(', 'trackingInfo', 'image { url altText }', 'featuredMedia']) {
+    assert.ok(ORDERS_QUERY.includes(feld), `Feld fehlt in ORDERS_QUERY: ${feld}`);
+  }
+});
+
+test('normalisiereLineItem reicht Varianten- und Produktbild durch', () => {
+  const li = normalisiereLineItem({
+    id: 'li1', sku: 'X',
+    variant: {
+      id: 'v1', sku: 'X', title: '400 cm',
+      image: { url: 'https://cdn/variante.jpg' },
+      metafields: { nodes: [] },
+      product: { id: 'p1', handle: 'h', title: 'T', featuredMedia: { preview: { image: { url: 'https://cdn/produkt.jpg' } } }, metafields: { nodes: [] } },
+    },
+  });
+  assert.equal(li.variant.image.url, 'https://cdn/variante.jpg');
+  assert.equal(li.variant.product.featuredImage.url, 'https://cdn/produkt.jpg');
+});
+
+test('normalisiereLineItem bleibt fehlerfrei, wenn es kein Bild gibt', () => {
+  const li = normalisiereLineItem({ id: 'li2', variant: { id: 'v2', metafields: { nodes: [] }, product: { id: 'p2', metafields: { nodes: [] } } } });
+  assert.equal(li.variant.image, null);
+  assert.equal(li.variant.product.featuredImage, null);
+});
+
+test('Varianten-Metafelder aus custom landen in der Liste (Rollenbreite, Farbnummer)', () => {
+  assert.ok(ORDERS_QUERY.includes('custom: metafields(namespace: "custom"'), 'Varianten-custom fehlt in ORDERS_QUERY');
+  const li = normalisiereLineItem({
+    id: 'li3',
+    variant: {
+      id: 'v3', sku: 'CVX_333', title: '400 cm',
+      metafields: { nodes: [{ namespace: 'einkauf', key: 'bestelleinheit', value: 'lfm' }] },
+      lieferant: { nodes: [{ namespace: 'lieferant', key: 'bevorzugt', value: 'a' }] },
+      custom: { nodes: [{ namespace: 'custom', key: 'rollenbreite', value: '4.0' }, { namespace: 'custom', key: 'farbcode', value: '333' }] },
+      product: { id: 'p3', handle: 'h', title: 'T', metafields: { nodes: [] } },
+    },
+  });
+  const keys = li.variant.metafields.map(m => `${m.namespace}.${m.key}`);
+  assert.deepEqual(keys, ['einkauf.bestelleinheit', 'lieferant.bevorzugt', 'custom.rollenbreite', 'custom.farbcode']);
+});

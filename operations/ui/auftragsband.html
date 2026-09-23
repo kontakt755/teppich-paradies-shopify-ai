@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Auftragsband</title>
+<link rel="stylesheet" href="/ui/auftragsband.css">
+</head>
+<body>
+<header class="kopf">
+  <div class="kopfzeile">
+    <h1>Auftragsband</h1>
+    <span class="meta" id="kontext">lädt …</span>
+  </div>
+  <form class="suchform" id="suchform" role="search">
+    <input type="search" id="suchfeld" placeholder="Kunde, Telefon, E-Mail, Bestellnr., SKU, Großhändler-ID, Farbnummer, Tracking, Muster-ID" autocomplete="off">
+    <button type="submit">Suchen</button>
+  </form>
+</header>
+
+<main id="inhalt">
+  <section id="liste" class="ansicht">
+    <h2>Warteschlange</h2>
+    <ol id="warteschlange" class="warteschlange"></ol>
+  </section>
+
+  <section id="karte" class="ansicht versteckt" aria-live="polite"></section>
+
+  <section id="suchergebnis" class="ansicht versteckt">
+    <h2>Suchergebnis</h2>
+    <ol id="treffer" class="warteschlange"></ol>
+  </section>
+</main>
+
+<footer class="fuss">
+  <span>Tastatur: <b>Enter</b> freigeben · <b>S</b> später · <b>P</b> Problem · <b>←/→</b> blättern · <b>Esc</b> zur Liste</span>
+  <span id="melder" class="melder" role="status"></span>
+</footer>
+
+<dialog id="bestaetigung">
+  <form method="dialog" id="bestaetigungsform">
+    <h3 id="bestaetigungstitel">Bestätigen</h3>
+    <p id="bestaetigungstext"></p>
+    <label>Mitarbeiter<input type="text" id="von" autocomplete="off" required></label>
+    <label id="grundfeld">Grund<input type="text" id="grund" autocomplete="off"></label>
+    <menu>
+      <button value="abbruch" type="submit">Abbrechen</button>
+      <button value="ok" type="submit" id="bestaetigen" class="primaer">Bestätigen</button>
+    </menu>
+  </form>
+</dialog>
+
+<script type="module" src="/ui/auftragsband.js"></script>
+</body>
+</html>

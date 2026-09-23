@@ -97,3 +97,23 @@ liest ueber `sync/orders.mjs` `fetchOrdersSince`. Zugang in `.env.local`
 Ausgabe: `~/teppich-paradies-analyse/bestelluebersicht/bestelluebersicht.html`
 (`--output` aendert das). Die Seite enthaelt Bestelldaten; das Skript verweigert
 jeden Pfad innerhalb des Repositorys. Nichts wird nach Shopify geschrieben.
+
+## Auftragsband
+
+`npm run operations:band -- --input <bestellungen.json>` oder `-- --live` startet
+den lokalen Server auf 127.0.0.1:8123. Er zeigt EINEN Auftrag, nicht eine
+Tabelle: Kunde mit Schnellaktionen, Statusband, Positionen mit Grosshaendler-ID,
+Kunden- und Einkaufsmenge, Route, Ampel und Masspruefung, darunter FREIGEBEN,
+SPAETER, PROBLEM. Tastatur: Enter, S, P, Pfeile, Esc; die beiden folgenreichen
+Knoepfe fragen nach.
+
+Rollen ueber `OPS_ROLLE` (leitung, verkauf, einkauf, lager, kundenservice)
+blenden Bereiche aus und sperren Endpunkte serverseitig. Eine echte Anmeldung
+ist Entscheidung D11 und bewusst noch nicht gebaut.
+
+Zustaende landen bis zum Shopify-Schreibzugriff in `.router/ops-state/auftraege.jsonl`
+(gitignored, append-only, mit Zeit und Mitarbeiter). Sobald ein Token vorliegt,
+spiegelt `sync/orders.mjs writeOrderState` dieselben Felder nach `ops.*`.
+
+Bestelldaten gehoeren nie ins Repository: Momentaufnahmen liegen unter
+`~/teppich-paradies-analyse/ops/`.

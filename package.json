@@ -66,6 +66,7 @@
     "task": "node scripts/task.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
+    "operations:band": "node operations/server.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs"
