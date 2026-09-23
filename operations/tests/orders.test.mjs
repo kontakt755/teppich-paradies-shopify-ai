@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { GraphQLProxy } from '../../workflow/graphql-proxy.mjs';
-import { fetchOrdersSince, writeOrderState, normalisiereLineItem, ORDERS_QUERY } from '../sync/orders.mjs';
+import {
+  fetchOrdersSince, fetchOrdersRelevant, baueRelevantQuery, wartenBeiThrottle,
+  writeOrderState, normalisiereLineItem, ORDERS_QUERY,
+} from '../sync/orders.mjs';
 import { resolveLineItem } from '../lib/resolve.mjs';
 
 const ok = (data) => ({ ok: true, status: 200, json: async () => ({ data }), text: async () => '' });
@@ -165,6 +168,52 @@ test('normalisiereLineItem bleibt fehlerfrei, wenn es kein Bild gibt', () => {
   const li = normalisiereLineItem({ id: 'li2', variant: { id: 'v2', metafields: { nodes: [] }, product: { id: 'p2', metafields: { nodes: [] } } } });
   assert.equal(li.variant.image, null);
   assert.equal(li.variant.product.featuredImage, null);
+});
+
+test('baueRelevantQuery grenzt ueber created_at (90 Tage) ODER offene Erfuellung ab', () => {
+  const jetzt = () => new Date('2026-09-23T12:00:00Z').getTime();
+  const q = baueRelevantQuery(90, jetzt);
+  assert.equal(q, "(created_at:>='2026-06-25T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)");
+  assert.equal(baueRelevantQuery(30, jetzt), "(created_at:>='2026-08-24T12:00:00.000Z') OR (fulfillment_status:unfulfilled) OR (fulfillment_status:partial)");
+});
+
+test('fetchOrdersRelevant blaettert vollstaendig (kein festes Limit) mit der 90-Tage-ODER-offen-Query', async () => {
+  const aufrufe = [];
+  const seiten = [
+    { cursor: 'c1', nodes: [bestellung(1), bestellung(2)] },
+    { cursor: 'c2', nodes: [bestellung(3)] },
+    { cursor: 'c3', nodes: [bestellung(4)] },
+  ];
+  const proxy = new GraphQLProxy({ token: 'shpat_test', fetch: seitenFetch(seiten, aufrufe) });
+  const r = await fetchOrdersRelevant(proxy, { warten: async () => {} });
+  assert.equal(r.gesammelt, false);
+  assert.equal(r.seiten, 3);
+  assert.equal(r.orders.length, 4);
+  assert.match(r.query, /^\(created_at:>=.*OR \(fulfillment_status:unfulfilled\) OR \(fulfillment_status:partial\)$/);
+  for (const v of aufrufe) assert.equal(v.query, r.query);
+  await assert.rejects(() => fetchOrdersRelevant(proxy, { tageFenster: 0 }), /tageFenster/);
+  await assert.rejects(() => fetchOrdersRelevant(null), /proxy fehlt/);
+});
+
+test('wartenBeiThrottle wartet nur, wenn wenig Guthaben uebrig ist, sonst nicht', async () => {
+  const proxy = new GraphQLProxy({ token: 'shpat_test', fetch: async () => ({ ok: true, status: 200, json: async () => ({ data: { x: 1 }, extensions: { cost: { throttleStatus: { maximumAvailable: 1000, currentlyAvailable: 50, restoreRate: 50 } } } }) }) });
+  await proxy.execute('query { x }');
+  let gewartetMs = null;
+  const ms = await wartenBeiThrottle(proxy, { warten: async (ms2) => { gewartetMs = ms2; } });
+  // Puffer = 100 (10% von 1000); fehlend = 50; restoreRate 50/s -> 1000ms
+  assert.equal(ms, 1000);
+  assert.equal(gewartetMs, 1000);
+
+  const proxy2 = new GraphQLProxy({ token: 'shpat_test', fetch: async () => ({ ok: true, status: 200, json: async () => ({ data: { x: 1 }, extensions: { cost: { throttleStatus: { maximumAvailable: 1000, currentlyAvailable: 900, restoreRate: 50 } } } }) }) });
+  await proxy2.execute('query { x }');
+  let nichtGewartet = true;
+  const ms2 = await wartenBeiThrottle(proxy2, { warten: async () => { nichtGewartet = false; } });
+  assert.equal(ms2, 0);
+  assert.equal(nichtGewartet, true);
+
+  // Ohne throttleStatus (z. B. Sammelmodus) passiert nichts.
+  const proxy3 = new GraphQLProxy({ token: null, fetch: () => { throw new Error('nicht aufrufen'); } });
+  assert.equal(await wartenBeiThrottle(proxy3), 0);
 });
 
 test('Varianten-Metafelder aus custom landen in der Liste (Rollenbreite, Farbnummer)', () => {
