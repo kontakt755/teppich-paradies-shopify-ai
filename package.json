@@ -54,7 +54,6 @@
     "workflow:test": "node --test workflow/tests/*.test.mjs",
     "sync:grosshandel": "node workflow/sync-grosshandel.mjs",
     "sync:grosshandel:live": "SYNC_APPROVED=true node workflow/sync-grosshandel.mjs",
-    "sync:grosshandel:mcp": "node workflow/sync-orchestrator.mjs && echo '\\n🎯 MCP-Sync bereit. Ich (Claude) werde jetzt die GraphQL-Calls über Shopify MCP ausführen...'",
     "sync:categories": "node workflow/load-grosshandel-categories.mjs",
     "sync:categories:activate": "echo 'Edit data/grosshandel-categories.json und setze active: true'",
     "control:center": "node control-center/server.mjs",
