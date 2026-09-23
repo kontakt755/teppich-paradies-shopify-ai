@@ -233,6 +233,39 @@ test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Einkauf: Shop-Kennzahlen (Startseite "Heute")
+// ---------------------------------------------------------------------------
+
+test('einkaufKennzahlen meldet fehlenden Export mit Befehl statt erfundener Zahlen', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.einkaufKennzahlen();
+  assert.equal(r.verfuegbar, false);
+  assert.ok(r.befehl);
+});
+
+test('einkaufKennzahlen liest kennzahlen/shop-snapshot.json', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-kennzahlen-'));
+  fs.mkdirSync(path.join(dir, 'kennzahlen'), { recursive: true });
+  const snapshot = {
+    erstellt: '2026-09-23T06:00:00.000Z',
+    zeitraeume: {
+      7: { bestellungen: 12, umsatz: 4321.5, waehrung: 'EUR', durchschnitt: 360.13 },
+      30: { bestellungen: 48, umsatz: 15234.9, waehrung: 'EUR', durchschnitt: 317.39 },
+    },
+    topProdukte: [{ titel: 'Beispielteppich', anzahl: 5 }],
+  };
+  fs.writeFileSync(path.join(dir, 'kennzahlen', 'shop-snapshot.json'), JSON.stringify(snapshot));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufKennzahlen();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.zeitraeume['7'].bestellungen, 12);
+  assert.equal(r.zeitraeume['30'].umsatz, 15234.9);
+  assert.equal(r.topProdukte.length, 1);
+});
+
+// ---------------------------------------------------------------------------
 // Einkauf: Auftragsfluss-Status (lokal, nie im Repository)
 // ---------------------------------------------------------------------------
 

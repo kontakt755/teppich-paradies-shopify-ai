@@ -71,7 +71,7 @@ function sameOrigin(req) {
 }
 
 export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -89,6 +89,7 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'einkauf/bestellungen') result = api.einkaufBestellungen();
     else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '' });
     else if (simple === 'einkauf/klaerung') result = api.einkaufKlaerung();
+    else if (simple === 'einkauf/kennzahlen') result = api.einkaufKennzahlen();
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req));
     else if (taskOp === 'activity') result = await api.activityForTask(number);
