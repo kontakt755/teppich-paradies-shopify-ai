@@ -5,9 +5,15 @@
   Google Pay) an der Bestellung haengen - der Warenkorb-Formularpost erreicht
   diese Buttons nicht.
 
-  Pflichtentscheidung: "Beratung Ja/Nein" ohne Vorauswahl. Solange sie fehlt
-  oder bei Ja (bzw. Masspruefung Ja) keine gueltige Telefonnummer vorliegt,
-  fuehrt kein Weg aus dem Warenkorb in den Checkout:
+  Die Pflichtentscheidung "Beratung Ja/Nein" wird nur bei einer reinen
+  Musterbestellung gestellt (ctx.beratungsfrage, serverseitig aus
+  snippets/tp-muster-position.liquid). Liegt regulaere Ware im Warenkorb,
+  entfaellt sie samt Sperre - und eine frueher gegebene Antwort wird einmal
+  leergeschrieben (data-aufraeumen), damit an der Bestellung nicht "Beratung:
+  Ja" steht, ohne dass die Frage je gestellt wurde.
+
+  Solange die Frage gestellt ist und fehlt, oder bei Ja (bzw. Masspruefung Ja)
+  keine gueltige Telefonnummer vorliegt, fuehrt kein Weg in den Checkout:
   - globaler Waechter in der Capture-Phase fuer click (Checkout-Buttons,
     Links auf /checkout) und submit (Cart-Formular, auch Enter-Taste und
     requestSubmit). Er liest die aktuellen Feldwerte direkt aus dem DOM und
@@ -55,15 +61,19 @@
 
   // Antworten pruefen. ctx.masspruefung / ctx.verlegung sagen, ob die Frage
   // im Warenkorb ueberhaupt gestellt wurde (nur bei passenden Positionen).
+  // ctx.beratungsfrage === false: kein reiner Musterwarenkorb, die Frage wurde
+  // gar nicht gestellt und darf den Checkout nicht sperren. Fehlt die Angabe
+  // (aeltere Aufrufer, Tests), gilt wie bisher: Frage gestellt.
   function pruefen(attrs, ctx) {
     attrs = attrs || {};
     ctx = ctx || {};
     var fehler = [];
-    var beratung = attrs[KEYS.beratung] || '';
+    var frageGestellt = ctx.beratungsfrage !== false;
+    var beratung = frageGestellt ? attrs[KEYS.beratung] || '' : '';
     var mass = attrs[KEYS.mass] || '';
     var telefonNoetig = beratung === 'Ja' || (ctx.masspruefung && mass === 'Ja');
 
-    if (beratung !== 'Ja' && beratung !== 'Nein') fehler.push({ feld: KEYS.beratung, code: 'BERATUNG_FEHLT', text: TEXT.BERATUNG_FEHLT });
+    if (frageGestellt && beratung !== 'Ja' && beratung !== 'Nein') fehler.push({ feld: KEYS.beratung, code: 'BERATUNG_FEHLT', text: TEXT.BERATUNG_FEHLT });
     if (telefonNoetig) {
       var tel = attrs[KEYS.telefon] || '';
       if (!String(tel).trim()) fehler.push({ feld: KEYS.telefon, code: 'TELEFON_FEHLT', text: beratung === 'Ja' ? TEXT.TELEFON_FEHLT : TEXT.TELEFON_FEHLT_MASS });
@@ -78,7 +88,8 @@
   function attributeAus(werte, ctx) {
     werte = werte || {};
     ctx = ctx || {};
-    var beratung = werte.beratung === 'Ja' || werte.beratung === 'Nein' ? werte.beratung : '';
+    var frageGestellt = ctx.beratungsfrage !== false;
+    var beratung = frageGestellt && (werte.beratung === 'Ja' || werte.beratung === 'Nein') ? werte.beratung : '';
     var mass = ctx.masspruefung && (werte.mass === 'Ja' || werte.mass === 'Nein') ? werte.mass : '';
     var telefonNoetig = beratung === 'Ja' || mass === 'Ja';
     var out = {};
@@ -137,7 +148,11 @@
   }
 
   function ctxAus(el) {
-    return { masspruefung: el.hasAttribute('data-masspruefung'), verlegung: el.hasAttribute('data-verlegung') };
+    return {
+      beratungsfrage: el.hasAttribute('data-beratungsfrage'),
+      masspruefung: el.hasAttribute('data-masspruefung'),
+      verlegung: el.hasAttribute('data-verlegung')
+    };
   }
 
   root.TPCartBeratung = { KEYS: KEYS, TEXT: TEXT, pruefen: pruefen, attributeAus: attributeAus, telefonGueltig: telefonGueltig, gleich: gleich, istCheckoutWeg: istCheckoutWeg, pfad: pfad };
@@ -253,7 +268,10 @@
   Beratung.prototype.connectedCallback = function () {
     var self = this;
     this.ctx = ctxAus(this);
-    this.gespeichert = attributeAus(this.werte(), this.ctx);
+    // data-aufraeumen: am Cart haengt noch eine Antwort aus einem frueheren,
+    // reinen Musterwarenkorb. gespeichert = null erzwingt genau einen
+    // /cart/update.js, der die nicht mehr gestellten Felder leert.
+    this.gespeichert = this.hasAttribute('data-aufraeumen') ? null : attributeAus(this.werte(), this.ctx);
     this.timer = null;
     this.onChange = function (ev) { self.aendern(ev); };
     this.addEventListener('change', this.onChange);
@@ -263,7 +281,7 @@
     // Beobachtet werden Klasse und hidden im ganzen Element; waehrend
     // anzeigen() ist der Beobachter getrennt, damit keine Schleife entsteht.
     if (typeof MutationObserver !== 'undefined') {
-      var optionen = { attributes: true, subtree: true, childList: true, attributeFilter: ['class', 'hidden', 'data-masspruefung'] };
+      var optionen = { attributes: true, subtree: true, childList: true, attributeFilter: ['class', 'hidden', 'data-beratungsfrage', 'data-masspruefung'] };
       this.beobachter = new MutationObserver(function () {
         self.beobachter.disconnect();
         self.ctx = ctxAus(self);
@@ -276,6 +294,7 @@
     // Gespeicherte Angaben (Reload) sofort pruefen: Sperre sofort, der
     // Hinweis am Telefonfeld erst nach einem Checkout-Versuch.
     this.anzeigen(false);
+    if (this.gespeichert === null) this.speichern();
   };
 
   Beratung.prototype.disconnectedCallback = function () {
@@ -311,7 +330,7 @@
   Beratung.prototype.speichern = function () {
     var self = this;
     var attrs = attributeAus(this.werte(), this.ctx);
-    if (gleich(attrs, this.gespeichert)) return Promise.resolve();
+    if (this.gespeichert && gleich(attrs, this.gespeichert)) return Promise.resolve();
     this.setAttribute('data-tp-speichert', '1');
     return fetch('/cart/update.js', {
       method: 'POST',
