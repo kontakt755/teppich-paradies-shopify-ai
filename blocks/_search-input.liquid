@@ -31,9 +31,14 @@
     <span class="svg-wrapper search__icon{{ color_scheme }}">
       {{ 'icon-search.svg' | inline_asset_content }}
     </span>
+    {%- comment -%}
+      Der Suchtyp der Ergebnisseite. Ohne article faellt eine neue Eingabe hier
+      auf reine Produktsuche zurueck und die Ratgeber-Treffer verschwinden,
+      obwohl die Seite sie darstellen kann.
+    {%- endcomment -%}
     <input
       name="type"
-      value="product"
+      value="product,collection,page,article"
       type="hidden"
     >
     <input
@@ -47,7 +52,7 @@
       placeholder="{{ 'content.search_input_placeholder' | t }}"
     >
     <a
-      href="{{ routes.search_url }}?type=product&q="
+      href="{{ routes.search_url }}?type=product,collection,page,article&amp;q="
       class="search__reset-button{{ color_scheme }}"
       aria-label="{{ 'accessibility.reset_search' | t }}"
     >

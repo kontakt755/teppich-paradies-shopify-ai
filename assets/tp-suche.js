@@ -271,7 +271,9 @@ class TpSucheLeiste extends HTMLElement {
     const p = url.searchParams;
     p.set('q', begriff);
     p.set('section_id', 'predictive-search');
-    p.set('resources[type]', 'product,collection,query,page');
+    // article = Ratgeber-Beitraege. Ohne diesen Typ bleibt die Gruppe "Ratgeber"
+    // in snippets/tp-suche-ergebnisse.liquid leer, egal was das Snippet rendert.
+    p.set('resources[type]', 'product,collection,query,page,article');
     p.set('resources[limit]', '6');
     p.set('resources[limit_scope]', 'each');
     p.set('resources[options][unavailable_products]', 'last');
