@@ -30,13 +30,18 @@ Das ist die wichtigste Ratgeber-Kennzahl und sie laeuft seit dem 21.09.
 Gleiches Muster wie die bestehenden Ereignisse: `Shopify.analytics.publish` plus
 `window.dataLayer`. Keine personenbezogenen Daten, keine Formularinhalte.
 
-| Ereignis | Ausloeser | Nutzlast | Wofuer |
-|---|---|---|---|
-| `tp_bodenwissen_suche` | Absenden der Ratgeber-Suche | `begriff`, `treffer` | Was Besucher suchen |
-| `tp_bodenwissen_suche_leer` | Suche ohne Treffer | `begriff` | **Contentluecken** — die wertvollste Quelle |
-| `tp_bodenwissen_problem_gewaehlt` | Klick im Problem-Finder | `belag`, `symptom`, `ziel` | Welche Probleme Menschen haben |
-| `tp_bodenwissen_rechner` | erste gueltige Eingabe im Rechner | `rechner` | Wird das Werkzeug benutzt |
-| `tp_bodenwissen_lexikon` | Klick auf einen Lexikon-Anker | `begriff`, `von` | Welche Begriffe unklar sind |
+Umgesetzt am 2026-09-23. Drei davon liegen in `snippets/tp-funnel-events.liquid`
+— dort steht der publish-Helfer schon und das Snippet laeuft ohnehin auf jeder
+Seite; eine vierte Kopie waere Ballast. Die beiden Sucheereignisse bleiben in
+`assets/tp-bodenwissen-suche.js`, weil nur das Asset die Trefferzahl kennt.
+
+| Ereignis | Ausloeser | Nutzlast | Wo | Wofuer |
+|---|---|---|---|---|
+| `tp_bodenwissen_suche` | Absenden der Ratgeber-Suche | `begriff`, `treffer` | Asset | Was Besucher suchen |
+| `tp_bodenwissen_suche_leer` | Suche ohne Treffer | `begriff` | Asset | **Contentluecken** — die wertvollste Quelle |
+| `tp_bodenwissen_problem_gewaehlt` | Klick im Problem-Finder | `belag`, `symptom`, `ziel` | Snippet | Welche Probleme Menschen haben |
+| `tp_bodenwissen_rechner` | erster Klick auf "Bedarf berechnen", einmal je Seitenaufruf | `rechner` | Snippet | Wird das Werkzeug benutzt |
+| `tp_bodenwissen_lexikon` | Begriff aufgeklappt oder Sprung in der Lexikon-Navigation | `begriff`, `von` | Snippet | Welche Begriffe unklar sind |
 
 `tp_bodenwissen_suche_leer` ist bewusst eigenstaendig: Suchanfragen ohne
 Ergebnis sind nach Auftrag 45 eine Themenquelle, und zwar eine, die sonst

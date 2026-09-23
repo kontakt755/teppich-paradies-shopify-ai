@@ -30,6 +30,8 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 | Kauf | `checkout_completed` | Shopify Standard |
 | Newsletter (parallel, kein Kaufschritt) | `tp_newsletter_anmeldung_abgeschickt`, `tp_newsletter_anmeldung_erfolg` | dieses Snippet |
 | Ratgeber (Einstieg vor dem Produkt) | `tp_ratgeber_cta_klick` | dieses Snippet |
+| Bodenwissen (Einstieg vor dem Produkt) | `tp_bodenwissen_problem_gewaehlt`, `tp_bodenwissen_lexikon`, `tp_bodenwissen_rechner` | dieses Snippet |
+| Bodenwissen-Suche | `tp_bodenwissen_suche`, `tp_bodenwissen_suche_leer` | `assets/tp-bodenwissen-suche.js` |
 
 ## Ereignisse
 
@@ -44,6 +46,9 @@ Besuch -> Produkt angesehen -> Farbe gewaehlt -> Masse eingegeben
 | `tp_newsletter_anmeldung_abgeschickt` | `submit` auf `form[data-tp-newsletter-form]` | `page`, `quelle` (`data-tp-newsletter-quelle`) | Newsletter |
 | `tp_newsletter_anmeldung_erfolg` | Seitenaufruf mit `[data-tp-newsletter-erfolg]` oder `?customer_posted=true` | `page` | Newsletter |
 | `tp_ratgeber_cta_klick` | Klick auf einen Link innerhalb `[data-tp-rg-cta]` | `page`, `ziel` (Pfad ohne Query), `cta_typ` (Wert von `data-tp-rg-cta`) | Ratgeber |
+| `tp_bodenwissen_problem_gewaehlt` | Klick auf `.tp-bp__link` im Problem-Finder | `page`, `belag`, `symptom`, `ziel` | Ratgeber |
+| `tp_bodenwissen_lexikon` | Aufklappen eines Fachbegriffs (`summary` ueber `[data-tp-bw-lexikon]`) oder Sprung in der Lexikon-Navigation | `page`, `begriff`, `von` (`produkt`\|`ratgeber`\|`lexikon`) | Ratgeber |
+| `tp_bodenwissen_rechner` | erster Klick auf `[data-berechnen]` im Bedarfsrechner, einmal je Seitenaufruf | `page`, `rechner` | Ratgeber |
 
 ## Custom Pixel (fertig zum Einfuegen)
 

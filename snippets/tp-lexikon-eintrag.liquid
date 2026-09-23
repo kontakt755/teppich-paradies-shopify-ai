@@ -58,7 +58,12 @@
   -%}
 
   {%- if lx_e_modus == 'inline' -%}
-    <p class="tp-lex-inline">
+    {%- comment -%}
+      data-tp-bw-lexikon traegt den Handle: snippets/tp-funnel-events.liquid liest
+      ihn beim Aufklappen fuer das Ereignis tp_bodenwissen_lexikon. Ohne die
+      Kennung wuesste die Messung nur, DASS jemand einen Begriff geoeffnet hat.
+    {%- endcomment -%}
+    <p class="tp-lex-inline" data-tp-bw-lexikon="{{ lx_e_eintrag.handle }}">
       <span class="tp-lex-inline__text">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</span>
       {%- if lx_e_verlinken -%}
         <a class="tp-lex-inline__link" href="/pages/bodenlexikon#{{ lx_e_eintrag.handle }}">Im Bodenlexikon nachlesen</a>
