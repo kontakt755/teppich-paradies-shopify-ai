@@ -149,6 +149,7 @@ function privatFixture(root) {
   const dir = path.join(root, 'privat');
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
   fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-klaerung'), { recursive: true });
   const orders = {
     exportiertAm: '2026-09-22T10:00:00Z',
     orders: [{
@@ -178,8 +179,20 @@ function privatFixture(root) {
       artikelnummer: { value: null, confidence: 'UNKLAR', source: 'keine Artikelnummer' },
       bestelleinheit: { value: null, confidence: 'UNKLAR', source: 'Bestelleinheit fehlt' },
     } },
+    { gid: 'gid://shopify/ProductVariant/3', product_gid: 'gid://shopify/Product/3', handle: 'nur-kollektion-offen', product_title: 'Nur Kollektion offen', variant_title: 'Default Title', sku: 'TEST-3', gruppe: 'Rollenware', fields: {
+      lieferant: { value: 'A', confidence: 'SICHER', source: 'lieferant.a_artikelnummer belegt' },
+      artikelnummer: { value: 'A-999', confidence: 'SICHER', source: 'lieferant.a_artikelnummer' },
+      bestelleinheit: { value: 'paket', confidence: 'SICHER', source: 'custom.qm_pro_paket' },
+      lieferant_kollektion: { value: null, confidence: 'UNKLAR', source: 'keine strukturierte Quelle' },
+    } },
   ];
   fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  const offen = [
+    { gid: 'gid://shopify/ProductVariant/2', field: 'lieferant', reason: 'Lieferant nicht belegt', next_step: 'siehe Methodennotiz im Bericht' },
+    { gid: 'gid://shopify/ProductVariant/2', field: 'artikelnummer', reason: 'keine Artikelnummer (Lieferant unklar)', next_step: 'siehe Methodennotiz im Bericht' },
+    { gid: 'gid://shopify/ProductVariant/3', field: 'lieferant_kollektion', reason: 'keine strukturierte Quelle', next_step: 'siehe Methodennotiz im Bericht' },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-klaerung', 'offen.json'), JSON.stringify(offen));
   return dir;
 }
 
@@ -201,28 +214,60 @@ test('einkaufBestellungen meldet fehlende Datei statt zu werfen', () => {
   assert.match(r.hinweis, /orders\.json/);
 });
 
-test('einkaufProduktstatus fasst je Gruppe zusammen und paginiert offene Varianten', () => {
+test('einkaufProduktstatus fasst je PRODUKT zusammen (nicht je Variante/Feld) und paginiert', () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.einkaufProduktstatus({ page: 1, pageSize: 10 });
   assert.equal(r.verfuegbar, true);
-  assert.equal(r.gesamt.anzahl, 2);
-  assert.equal(r.gesamt.vollstaendig, 1);
-  assert.equal(r.gesamt.offen, 1);
-  assert.equal(r.offen.items.length, 1);
+  assert.equal(r.gesamt.anzahl, 3);
+  assert.equal(r.gesamt.vollstaendig, 1, 'Testboden hat keine offenen Felder');
+  assert.equal(r.gesamt.handarbeit, 1, 'Offener Artikel braucht einen Menschen (Lieferant)');
+  assert.equal(r.gesamt.automatisch, 1, 'Nur Kollektion offen fuellt sich automatisch, blockiert nichts');
+  assert.equal(r.offen.count, 2);
+  // Dringlichkeit: blockierendes Produkt zuerst
   assert.equal(r.offen.items[0].handle, 'offener-artikel');
-  assert.ok(r.offen.items[0].offeneFelder.some(f => f.feld === 'lieferant'));
+  assert.equal(r.offen.items[0].status, 'handarbeit');
+  assert.equal(r.offen.items[0].blockiertBestellung, true);
+  const lieferantFeld = r.offen.items[0].offeneFelder.find(f => f.feld === 'lieferant');
+  assert.ok(lieferantFeld);
+  assert.equal(lieferantFeld.klartext, 'Lieferant');
+  assert.equal(lieferantFeld.blockierend, true);
+  // Kaskade: artikelnummer-Grund nennt "Lieferant unklar" und wird nicht doppelt gelistet
+  assert.ok(!r.offen.items[0].offeneFelder.some(f => f.feld === 'artikelnummer'));
+
+  const zweitesProdukt = r.offen.items[1];
+  assert.equal(zweitesProdukt.handle, 'nur-kollektion-offen');
+  assert.equal(zweitesProdukt.status, 'automatisch');
+  assert.equal(zweitesProdukt.blockiertBestellung, false);
+  assert.equal(zweitesProdukt.offeneFelder[0].feld, 'lieferant_kollektion');
+  assert.equal(zweitesProdukt.offeneFelder[0].klartext, 'Kollektion');
+  assert.match(zweitesProdukt.offeneFelder[0].naechsterSchritt, /automatisch/);
 });
 
-test('einkaufProduktstatus filtert nach Suche und Gruppe', () => {
+test('einkaufProduktstatus filtert nach Suche, Gruppe und Dringlichkeit (blockierend/handarbeit)', () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   assert.equal(api.einkaufProduktstatus({ q: 'offener' }).offen.count, 1);
   assert.equal(api.einkaufProduktstatus({ q: 'nichts-passt' }).offen.count, 0);
-  assert.equal(api.einkaufProduktstatus({ gruppe: 'Rollenware' }).offen.count, 0);
+  assert.equal(api.einkaufProduktstatus({ gruppe: 'Rollenware' }).offen.count, 1);
   assert.equal(api.einkaufProduktstatus({ gruppe: 'Klebevinyl' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({ filter: 'blockierend' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({ filter: 'blockierend' }).offen.items[0].handle, 'offener-artikel');
+  assert.equal(api.einkaufProduktstatus({ filter: 'handarbeit' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({}).offen.count, 2, 'ohne Filter: alle offenen Produkte');
+});
+
+test('einkaufProduktstatus meldet fehlendes offen.json statt nur plan.json zu nehmen', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-nur-plan');
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify([]));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus();
+  assert.equal(r.verfuegbar, false);
+  assert.match(r.hinweis, /offen\.json/);
 });
 
 test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
