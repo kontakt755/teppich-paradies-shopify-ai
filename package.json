@@ -69,6 +69,7 @@
     "operations:test": "node --test operations/tests/*.test.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
+    "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
   },
   "devDependencies": {
