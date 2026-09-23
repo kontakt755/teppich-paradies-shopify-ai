@@ -33,6 +33,7 @@ const state = {
   scores: new Map(),
   loadError: null,
   capabilities: { mode: 'static' },
+  session: { required: false, authenticated: true },
   me: null,
   workflowRun: null,    // letzter Actions-Lauf (oeffentliche API, optional)
   agentRuns: null,      // nur lokal
@@ -68,6 +69,26 @@ async function loadCapabilities() {
     state.capabilities = await r.json();
     state.me = state.capabilities.user || null;
   } catch { state.capabilities = { mode: 'static' }; }
+}
+
+async function loadSession() {
+  try {
+    const r = await fetch('/api/session', { cache: 'no-store' });
+    state.session = r.ok ? await r.json() : { required: false, authenticated: true };
+  } catch { state.session = { required: false, authenticated: true }; }
+  renderSessionButton();
+}
+
+function renderSessionButton() {
+  const btn = $('#sessionBtn');
+  if (!btn) return;
+  const show = Boolean(state.session?.required && state.session?.authenticated);
+  btn.hidden = !show;
+}
+
+async function logout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch { /* egal, wir leiten trotzdem um */ }
+  window.location.href = '/login';
 }
 
 async function loadData() {
@@ -1445,6 +1466,7 @@ function bindEvents() {
     openActionDialog(t, 'move', { target });
   });
   $('#searchBtn').addEventListener('click', openPalette);
+  $('#sessionBtn').addEventListener('click', logout);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
   window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
@@ -1454,6 +1476,7 @@ function bindEvents() {
 async function init() {
   parseRoute();
   bindEvents();
+  await loadSession();
   await loadCapabilities();
   await loadData();
   renderSyncChip();

@@ -7,8 +7,55 @@ npm run dashboard
 ```
 
 öffnet den lokalen Server unter `http://localhost:8001`. Voraussetzung: `gh auth login` einmalig auf dem
-Mac. Das Control Center steht **bewusst nicht im Netz** – es läuft nur, solange dieser Befehl auf einem
-Mac aktiv ist, und ist an `127.0.0.1` gebunden (kein Zugriff von anderen Geräten im selben Netz).
+Mac. Standardmäßig ist der Server an `127.0.0.1` gebunden (kein Zugriff von anderen Geräten im selben
+Netz) und verlangt keine Anmeldung – das Verhalten ändert sich nicht, solange niemand bewusst den
+Netzmodus aktiviert (siehe 1c).
+
+## 1c. Netzmodus im Firmennetz (seit 2026-09-23)
+
+Das Control Center kann **auf Wunsch des Inhabers** im Firmennetz erreichbar gemacht werden, z. B. unter
+`http://192.168.2.222:8001` – nur für Inhaber, Admins und Mitarbeiter, **nie** für Kunden. Weil es
+Kundenbestellungen, Adressen und Einkaufsdaten zeigt, verlangt der Netzmodus zwingend ein Passwort.
+
+**Starten:**
+
+```
+export TP_DASHBOARD_PASSWORT="ein-langes-zufaelliges-passwort"   # oder Datei, siehe unten
+TP_DASHBOARD_HOST=0.0.0.0 npm run dashboard
+```
+
+Danach ist das Control Center unter `http://<Mac-IP-im-Netz>:8001` erreichbar (z. B.
+`http://192.168.2.222:8001`), solange der Prozess läuft. Der Server gibt beim Start deutlich aus, unter
+welcher Adresse er erreichbar ist:
+
+```
+Control Center (Netzmodus): http://0.0.0.0:8001 - erreichbar im Firmennetz.
+Zugriff nur mit Passwort. Jede Route verlangt eine Anmeldung; Sitzung 12 Stunden gültig.
+```
+
+**Passwort setzen** – zwei gleichwertige Wege, beide **außerhalb des Repositorys**:
+
+1. Umgebungsvariable `TP_DASHBOARD_PASSWORT` (z. B. in `.env.local`, nicht committen).
+2. Datei `$TP_PRIVAT_DIR/dashboard-passwort.txt` (Standard `~/teppich-paradies-analyse`, dieselbe
+   Konvention wie die übrigen privaten Dateien in Abschnitt 8) – eine Zeile, das Passwort.
+
+Env geht vor Datei. **Startet der Prozess mit `TP_DASHBOARD_HOST` ≠ `127.0.0.1` und ist kein Passwort
+gesetzt, verweigert er den Start** mit einer klaren Fehlermeldung – kein versehentlich offenes Dashboard
+im Netz.
+
+**Anmeldung:** Wer die Adresse im Browser öffnet, sieht zuerst eine deutsche Anmeldeseite (`/login`) und
+gibt das Passwort ein. Bei Erfolg setzt der Server ein zufälliges Sitzungscookie (`HttpOnly`,
+`SameSite=Strict`, 12 Stunden gültig) – danach ist das Control Center wie gewohnt nutzbar, im Kopfbereich
+erscheint ein Knopf „🔒 Angemeldet" zum Abmelden. Falsche Passwörter werden zeitkonstant geprüft
+(`crypto.timingSafeEqual` über SHA-256-Hashes, nie im Klartext verglichen) und pro IP-Adresse gebremst:
+nach mehreren Fehlversuchen kurze Sperre. Weder Passwort noch Hash werden geloggt.
+
+**Wichtig – HTTP im lokalen Netz ist unverschlüsselt.** Es gibt kein TLS-Zertifikat für die interne
+IP-Adresse. Das Dashboard-Passwort ist deshalb **ausschließlich für dieses Dashboard** zu verwenden – nie
+ein Passwort wiederverwenden, das auch woanders (E-Mail, GitHub, Shopify-Login) gilt.
+
+Ist kein Passwort gesetzt und bleibt `TP_DASHBOARD_HOST` auf `127.0.0.1` (Standard), verhält sich der
+Server exakt wie vorher: kein Login, kein Unterschied zum bisherigen lokalen Betrieb.
 
 ## 1. Leitentscheidung: Eine Wahrheit, nur noch lokaler Betrieb
 
