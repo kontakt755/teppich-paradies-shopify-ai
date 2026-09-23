@@ -56,6 +56,6 @@ Vor jedem Commit zusaetzlich die Theme-Gates aus `CLAUDE.md`.
 | Bereich Teppichboden, 5 Artikel | live seit 2026-09-21 |
 | Redaktionsmodell + Gate | steht |
 | Artikel in der Shop-Suche | umgesetzt, noch nicht live |
-| Lexikon, Problem-Finder, Rechner | Grundlage steht, Inhalte fehlen |
+| Lexikon (16 Begriffe), Problem-Finder (6 mit Ziel), Rechner | gebaut und am Shop geprueft; Metaobjekte angelegt, Seiten fehlen noch |
 | Bereiche Teppiche, Vinyl, Untergrund | geplant, Blogs noch nicht angelegt |
 | Messung | wartet auf GA4 und Search Console |

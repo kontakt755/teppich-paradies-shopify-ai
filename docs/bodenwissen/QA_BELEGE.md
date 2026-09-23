@@ -35,26 +35,51 @@ nicht.
 
 ## Gefunden und behoben
 
-**Shopify lehnte `blocks/tp-produktinfo-tabelle.liquid` ab:** „Nested doc tags
-are not allowed". `liquid:guard` und `schema:guard` waren gruen; nur das
-Push-JSON zeigte es. Ursache: In zwei Kommentaren stand die Zeichenfolge
-`{% doc %}` als Verweis („siehe {% doc %} oben") — der Parser sieht dort ein
-echtes Tag. Ohne diesen Push waere die Datei still verworfen worden und die
-technischen Daten waeren von der Produktseite verschwunden.
+Fuenf Fehler, die alle Gates gruen durchlaufen hatten. Keiner war ohne echtes
+Rendern zu sehen.
 
-`liquid:guard` prueft seither die Balance der doc-Tags (`DOC_UNBALANCED`).
-Gegenprobe: mit dem Fehlerbild meldet er die richtige Zeile, ohne es laufen alle
-411 Dateien gruen.
+**1. Shopify lehnte `blocks/tp-produktinfo-tabelle.liquid` ab:** „Nested doc tags
+are not allowed". Ursache: In zwei Kommentaren stand die Zeichenfolge `{% doc %}`
+als Verweis („siehe {% doc %} oben") — der Parser sieht dort ein echtes Tag. Ohne
+diesen Push waere die Datei still verworfen worden und die technischen Daten
+waeren von der Produktseite verschwunden. `liquid:guard` prueft seither die
+Balance der doc-Tags (`DOC_UNBALANCED`).
+
+**2. `article.handle` ist `<blog-handle>/<artikel-handle>`**, nicht der blanke
+Handle. Jeder Vergleich mit einem gespeicherten Handle traf deshalb nie.
+Betroffen an vier Stellen: der Problem-Finder blieb vollstaendig leer, obwohl
+alle Daten stimmten; der Verweis „Ausfuehrlich" im Lexikon fehlte; und beide
+kuratierten Verweise im Artikeltemplate fielen still auf die Tag-Ableitung
+zurueck. Behoben mit `split: '/' | last`.
+
+**3. Metaobjekte haben kein `.handle`, nur `.system.handle`.** Der Rueckfall im
+Lexikon-Snippet verglich dadurch nil mit nil und lieferte immer den ersten
+Eintrag — auf der Seite stand 16 Mal „Fixierung".
+
+**4. Die Sortierung im Lexikon** baute Schluessel `<Rang>||<Begriff>||<Index>` und
+holte den Eintrag ueber den Index zurueck. Der Rueckgriff griff nicht. Ersetzt
+durch zwei schlichte Schleifen.
+
+**5. `lang` war als `rich_text_field` angelegt**, das Payload-Skript liefert aber
+Fliesstext und das Snippet rendert ihn in einem Absatz. Shopify wies zwei
+Eintraege zurueck. Feldtyp auf `multi_line_text_field` korrigiert.
+
+## Zweiter Durchlauf mit echten Daten
+
+Nachdem die Metaobjekte (`tp_lexikon`, `tp_bodenproblem`) und die beiden neuen
+Artikel-Metafelder im Shop angelegt waren:
+
+| Gegenstand | Beleg |
+|---|---|
+| Bodenlexikon | 16 verschiedene Begriffe in vier Gruppen in der vorgesehenen Reihenfolge, Anker je Begriff, zwei Verweise auf ausfuehrliche Artikel. |
+| Problem-Finder | 6 Symptome, drei verschiedene Ziel-Artikel, vier Profi-Hinweise. Die 15 Eintraege ohne Ziel erscheinen nicht — die Regel greift. |
+| Kuratierte Verweise | „Als Naechstes: Rollenbreite waehlen und Bahnen planen" erscheint; der so verlinkte Artikel taucht in „Weitere Beitraege" korrekt **nicht** noch einmal auf. |
 
 ## Nicht geprueft, weil noch nicht moeglich
 
-- **Lexikon und Problem-Finder mit Inhalt.** Beide brauchen ihre Metaobjekte im
-  Shop. Geprueft ist nur, dass die Seiten ohne sie sauber leer bleiben.
-- **Lexikon auf der Produktseite.** Dasselbe: ohne `tp_lexikon` aendert sich an
-  der Tabelle nichts. Belegt ist, dass sie unveraendert rendert.
-- **Kuratierte Verweise im Artikel.** Braucht die beiden neuen Metafelder.
-- **Mobile Darstellung und Lighthouse.** Steht aus; die Sections sind mobil
-  zuerst gebaut, aber nicht auf einem Geraet gemessen.
-
-Diese vier gehoeren in den Durchlauf **nach** dem Deploy, wenn die Shopify-
-Objekte stehen. Die Reihenfolge steht in `README.md`, Abschnitt „Stand".
+- **Lexikon auf der Produktseite.** Die Zuordnung Tabellenzeile → Begriff ist
+  gebaut und die Metaobjekte stehen jetzt; gerendert wurde sie noch nicht.
+- **Mobile Darstellung und Lighthouse.** Die Sections sind mobil zuerst gebaut,
+  aber nicht auf einem Geraet gemessen.
+- **Die drei Seiten unter ihrer echten URL.** Geprueft wurde ueber `?view=` auf
+  `/pages/ratgeber`; die Seiten selbst gibt es im Shop noch nicht.
