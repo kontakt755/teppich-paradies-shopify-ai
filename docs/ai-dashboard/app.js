@@ -71,6 +71,7 @@ async function loadCapabilities() {
 }
 
 async function loadData() {
+  if (state.capabilities.mode !== 'local') { state.raw = null; state.tasks = []; state.scores = new Map(); state.loadError = null; return; }
   try {
     const r = await fetch(`${CONFIG.dataUrl}?t=${Date.now()}`, { cache: 'no-store' });
     if (!r.ok) throw new Error(`issues.json konnte nicht geladen werden (HTTP ${r.status})`);
@@ -1033,6 +1034,11 @@ function render() {
   document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
+  if (state.capabilities.mode !== 'local') {
+    main.innerHTML = `<div class="page-head"><h1>Nur lokal im Betrieb</h1></div><div class="notice">Das Control Center läuft seit 2026-09-23 nicht mehr öffentlich. Es zeigt hier keine Aufgabendaten. Auf dem Mac starten: <span class="mono">npm run dashboard</span>, dann <span class="mono">http://localhost:8001</span> öffnen.</div>`;
+    document.title = 'Nur lokal im Betrieb · Teppich Dashboard';
+    return;
+  }
   if (state.loadError && !state.raw) {
     main.innerHTML = `<div class="page-head"><h1>Daten nicht verfügbar</h1></div><div class="notice crit">${esc(state.loadError)}</div><p class="small muted" style="margin-top:10px">issues.json wird vom Workflow „dashboard-data" erzeugt. Lokal: <span class="mono">npm run dashboard</span>. <button class="btn btn-sm" data-action="refresh" style="margin-left:8px">Erneut versuchen</button></p>`;
     return;
