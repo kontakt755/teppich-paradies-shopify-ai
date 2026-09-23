@@ -63,3 +63,15 @@ test('ladeBestellungen versteht die rohe Admin-API-Antwort', () => {
   assert.equal(ladeBestellungen({ orders: [bestellung(1, 10)] }).length, 1);
   assert.throws(() => ladeBestellungen({}), /orders/);
 });
+
+test('kostenlose Musterbestellungen werden gezaehlt, damit Umsatz 0 erklaerbar ist', () => {
+  const s = schnappschuss([
+    bestellung(1, 0),
+    bestellung(2, 0),
+    bestellung(3, 120),
+    bestellung(4, 0, { status: 'PENDING' }),
+  ], { jetzt: JETZT });
+  assert.equal(s.zeitraeume['7'].bestellungen, 3);
+  assert.equal(s.zeitraeume['7'].kostenlos, 2);
+  assert.equal(s.zeitraeume['7'].umsatz, 120);
+});
