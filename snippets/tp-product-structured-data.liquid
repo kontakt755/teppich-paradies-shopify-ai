@@ -21,9 +21,12 @@
      (Zuschnittpreis, kein eigenstaendiges Angebot), opc-*-Rechnervarianten
      und Varianten ohne Preis. Bleibt kein Offer uebrig, wird nichts
      ausgegeben.
-     Google nimmt bei gleichzeitigem offers.price und priceSpecification
-     nur offers.price - deshalb steht der Preis hier NUR in der
-     priceSpecification.
+     Der m2-Preis steht in BEIDEN Feldern: offers.price traegt ihn als
+     Pflichtangabe (ohne price verwirft Google das Angebot - Merchant
+     Center meldete es als "Produkt wird nicht angezeigt"), die
+     UnitPriceSpecification sagt zusaetzlich, dass er je 1 m2 gilt.
+     Beide Werte sind identisch und gleich dem Seitenpreis, deshalb
+     entsteht kein Widerspruch, wenn Google nur offers.price liest.
 
   3. Alle anderen Produkte behalten Shopifys natives structured_data.
 
@@ -116,6 +119,7 @@
             "@type": "Offer",
             "@id": {{ tp_sd_variant_url | append: '#offer' | json }},
             "url": {{ tp_sd_variant_url | json }},
+            "price": {{ tp_sd_price }},
             "priceCurrency": {{ cart.currency.iso_code | json }},
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
