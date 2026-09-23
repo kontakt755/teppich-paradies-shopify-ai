@@ -21,6 +21,7 @@ import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
+import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 
 const execFileP = promisify(execFile);
@@ -332,7 +333,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const daten = readJsonIfExists(file);
       if (!daten) return { verfuegbar: false, quelle: file, hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
       let modell;
-      try { modell = aufbereiten(daten, { jetzt: now() }); }
+      // Der Export der Admin API liegt als {data:{orders:{nodes}}} vor;
+      // ladeExport bringt beide Formen auf {orders, quellvarianten}.
+      try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
       return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
     },

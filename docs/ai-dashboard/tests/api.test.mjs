@@ -263,6 +263,23 @@ test('einkaufAuftragsstatusSetzen lehnt fehlende Pflichtangaben und unbekannten 
   await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ orderId: '1', lineItemId: '1', status: 'unsinn' }), e => e instanceof ApiError && e.status === 400);
 });
 
+test('einkaufBestellungen liest auch den Admin-API-Export {data:{orders:{nodes}}}', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-einkauf-'));
+  fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
+  const order = {
+    id: 'gid://shopify/Order/1', name: '#1001', createdAt: '2026-09-01T10:00:00Z',
+    displayFinancialStatus: 'PAID', displayFulfillmentStatus: 'UNFULFILLED', customAttributes: [],
+    lineItems: { nodes: [{ id: 'gid://shopify/LineItem/1', sku: 'ART-1', title: 'Testartikel', quantity: 1, customAttributes: [], variant: null }] },
+  };
+  fs.writeFileSync(path.join(dir, 'bestelluebersicht', 'orders.json'), JSON.stringify({ data: { orders: { nodes: [order] } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = await api.einkaufBestellungen();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.zahlen.auftraege, 1);
+  assert.equal(r.zahlen.positionen, 1);
+});
+
 test('einkaufAuftragsstatusSetzen schreibt lokal und GET liest es danach', async () => {
   const root = tmpRoot();
   const dir = path.join(root, 'privat');
