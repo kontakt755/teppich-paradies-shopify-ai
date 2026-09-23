@@ -126,7 +126,40 @@ nie `issues.json`, nie GitHub. Drei Unteransichten in `docs/ai-dashboard/app.js`
 | Klärung | `einkauf-klaerung/klaerung.json` + `offen.json` | optional, noch nicht befüllt |
 
 Endpunkte: `/api/einkauf/bestellungen`, `/api/einkauf/produktstatus` (Query `page`, `pageSize`, `q`, `gruppe`),
-`/api/einkauf/klaerung` – alle GET-only, nur im lokalen Server (`scripts/serve-dashboard.mjs`), nicht auf
-GitHub Pages. Fehlende private Dateien liefern `{verfuegbar: false, hinweis}` statt eines Fehlers. Im
-statischen Modus (`capabilities.mode !== 'local'`) fragt das Frontend diese Endpunkte gar nicht erst ab und
-zeigt nur den Hinweis „Nur lokal im Betrieb verfügbar".
+`/api/einkauf/klaerung`, `/api/einkauf/kennzahlen` – alle GET-only, nur im lokalen Server
+(`scripts/serve-dashboard.mjs`), nicht auf GitHub Pages. Fehlende private Dateien liefern
+`{verfuegbar: false, hinweis}` statt eines Fehlers. Im statischen Modus (`capabilities.mode !== 'local'`)
+fragt das Frontend diese Endpunkte gar nicht erst ab und zeigt nur den Hinweis „Nur lokal im Betrieb
+verfügbar".
+
+## 9. Startseite „Heute" (seit 2026-09-23)
+
+`viewHeute()` in `docs/ai-dashboard/app.js` ist die Startseite und bleibt primär aufgabenbasiert
+(GitHub Issues, siehe Abschnitt 4). Ergänzend – nur im lokalen Modus, weil die Quellen privat sind –
+zeigt sie zwei weitere Kacheln, die jeweils in den Bereich „Einkauf" (Abschnitt 8) durchklicken:
+
+| Kachel | Quelle | Inhalt |
+|---|---|---|
+| „Einkauf – heute zu tun" | `einkaufBestellungen()` + `einkaufAuftragsstatus()` | Positionen zu bestellen, offene Musterbestellungen, Aufträge mit Problem (Ampel rot: Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID), Positionen je Schritt des Auftragsflusses |
+| „Shop-Zahlen" | `einkaufKennzahlen()` → `kennzahlen/shop-snapshot.json` | Bestellungen, Umsatz, Durchschnittsbon der letzten 7 und 30 Tage |
+
+Offene Inhaberentscheidungen sind bereits über die bestehende Band-Kachel „warten auf Freigabe" und den
+Abschnitt „Wartet auf dich" abgedeckt (Aufgaben mit `status:freigabe`/Review), dafür wurde nichts Neues
+gebaut.
+
+`kennzahlen/shop-snapshot.json` ist ein noch nicht existierender Export-Vertrag unter `$TP_PRIVAT_DIR`:
+
+```json
+{
+  "erstellt": "2026-09-23T06:00:00.000Z",
+  "zeitraeume": {
+    "7": { "bestellungen": 12, "umsatz": 4321.5, "waehrung": "EUR", "durchschnitt": 360.13 },
+    "30": { "bestellungen": 48, "umsatz": 15234.9, "waehrung": "EUR", "durchschnitt": 317.39 }
+  },
+  "topProdukte": [{ "titel": "Beispielteppich", "anzahl": 5 }]
+}
+```
+
+Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` statt erfundener Zahlen; die
+Kachel zeigt den Hinweis samt Befehl. Der Export selbst (z. B. aus der Shopify Admin API oder einer
+Analytics-Query) ist noch zu bauen – das ist bewusst nicht Teil dieser Änderung.

@@ -40,6 +40,16 @@ test('Einkauf-API ist GET-only und liefert JSON (verfuegbar:false ohne private F
   assert.equal(post.status, 405);
 }));
 
+test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
+  const g = await fetch(`${base}/api/einkauf/kennzahlen`);
+  assert.equal(g.status, 200);
+  const gj = await g.json();
+  assert.equal(gj.verfuegbar, false);
+  assert.ok(gj.befehl);
+  const post = await fetch(`${base}/api/einkauf/kennzahlen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
+}));
+
 test('einkauf/auftragsstatus: GET liest lokal, POST verlangt JSON und lokalen Origin', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/auftragsstatus`);
   assert.equal(g.status, 200);

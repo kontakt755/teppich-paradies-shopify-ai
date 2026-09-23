@@ -221,6 +221,8 @@ function viewHeute() {
   const today = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
+  const localMode = state.capabilities.mode === 'local';
+  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); }
 
   const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
   return `
@@ -265,9 +267,80 @@ function viewHeute() {
     </div>
 
     <section class="card section">
+      <div class="card-head"><h2>Einkauf – heute zu tun</h2><span class="more muted">Wofür: was aus Kundenbestellungen jetzt beim Lieferanten zu bestellen ist, wo etwas hakt</span></div>
+      ${heuteEinkaufBlock()}
+    </section>
+
+    <section class="card section">
+      <div class="card-head"><h2>Shop-Zahlen</h2><span class="more muted">Wofür: Bestellungen, Umsatz und Durchschnittsbon der letzten 7 und 30 Tage</span></div>
+      ${heuteKennzahlenBlock()}
+    </section>
+
+    <section class="card section">
       <div class="card-head"><h2>Systemgesundheit <span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span></h2><a class="more" href="#/insights">Details</a></div>
       <div class="health">${health.slice(0, 4).map(healthRow).join('')}</div>
     </section>`;
+}
+
+/** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch. */
+function heuteEinkaufBlock() {
+  if (state.capabilities.mode !== 'local') {
+    return emptyState('Nur lokal im Betrieb verfügbar.', 'Bestellübersicht und Auftragsfluss lesen private Daten, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard');
+  }
+  const b = einkauf.bestellungen;
+  if (!b && einkauf.loadingBestellungen) return `<div class="empty">Lade Einkaufsdaten …</div>`;
+  if (!b || !b.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', b?.hinweis || 'Bestellübersicht noch nicht exportiert.', { href: '#/einkauf', text: 'Bereich Einkauf öffnen' });
+  const z = b.zahlen;
+  const allePositionen = [...(b.gruppen || []).flatMap(g => g.positionen), ...(b.musterGruppen || []).flatMap(g => g.positionen)];
+  const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
+  for (const p of allePositionen) afZaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  const probleme = (b.auftraege || []).filter(a => a.offen && a.ampel === 'rot');
+  const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
+  return `
+    <div class="band" style="margin:0 0 10px">
+      ${bandItem(z.zuBestellen, 'Positionen zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
+      ${bandItem(z.muster, 'Musterbestellungen offen', 'info', '#/einkauf?tab=bestellungen')}
+      ${bandItem(probleme.length, 'Aufträge mit Problem', probleme.length ? 'crit' : 'ok', '#/einkauf?tab=bestellungen')}
+      ${bandItem(z.ohneId, 'ohne Großhändler-ID', z.ohneId ? 'warn' : 'ok', '#/einkauf?tab=bestellungen')}
+    </div>
+    <div class="small muted" style="margin-bottom:6px">Positionen je Schritt des Auftragsflusses (Bestellt → Geliefert an uns → An Kunden raus → Erledigt):</div>
+    <div class="band" style="margin:0 0 10px">
+      ${bandItem(afZaehler.offen, 'offen', 'crit', '#/einkauf?tab=bestellungen&af=offen')}
+      ${bandItem(afZaehler.bestellt, 'bestellt', 'warn', '#/einkauf?tab=bestellungen&af=bestellt')}
+      ${bandItem(afZaehler.unterwegs, 'unterwegs', 'info', '#/einkauf?tab=bestellungen&af=unterwegs')}
+      ${bandItem(afZaehler.erledigt, 'erledigt', 'ok', '#/einkauf?tab=bestellungen&af=erledigt')}
+    </div>
+    ${probleme.length ? `<div class="rows">${probleme.slice(0, 5).map(einkaufAuftragZeile).join('')}</div>` : '<p class="small muted">Keine Aufträge mit Problem (Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID).</p>'}
+    <p class="small muted" style="margin-top:8px">Stand: ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`;
+}
+
+/** Shop-Kennzahlen-Kachel: liest kennzahlen/shop-snapshot.json, erfindet keine Zahlen ohne Export. */
+function heuteKennzahlenBlock() {
+  if (state.capabilities.mode !== 'local') {
+    return emptyState('Nur lokal im Betrieb verfügbar.', 'Shop-Kennzahlen lesen einen lokalen Export, der nie öffentlich wird.');
+  }
+  const k = einkauf.kennzahlen;
+  if (!k && einkauf.loadingKennzahlen) return `<div class="empty">Lade Shop-Kennzahlen …</div>`;
+  if (!k || !k.verfuegbar) {
+    return emptyState('Noch kein Export der Shop-Kennzahlen.', k?.hinweis || 'Es liegt noch keine kennzahlen/shop-snapshot.json vor.') +
+      `<p class="small muted" style="margin-top:6px">Befehl zum Erzeugen: <code class="mono">${esc(k?.befehl || 'npm run kennzahlen:export')}</code></p>`;
+  }
+  const spanne = (tage) => {
+    const z = k.zeitraeume?.[String(tage)];
+    if (!z) return emptyState(`Kein Zeitraum ${tage} Tage im Export.`, '');
+    const fmt = n => typeof n === 'number' ? n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
+    return `<div class="band" style="margin:0">
+      <div class="ok"><span class="n">${z.bestellungen ?? '–'}</span><span class="l">Bestellungen</span></div>
+      <div class="ok"><span class="n">${fmt(z.umsatz)} ${esc(z.waehrung || '')}</span><span class="l">Umsatz</span></div>
+      <div class="ok"><span class="n">${fmt(z.durchschnitt)} ${esc(z.waehrung || '')}</span><span class="l">Ø Bestellwert</span></div>
+    </div>`;
+  };
+  return `
+    <div class="grid grid-2">
+      <div><h3 style="margin:0 0 6px;font-size:.85rem;color:var(--muted)">Letzte 7 Tage</h3>${spanne(7)}</div>
+      <div><h3 style="margin:0 0 6px;font-size:.85rem;color:var(--muted)">Letzte 30 Tage</h3>${spanne(30)}</div>
+    </div>
+    <p class="small muted" style="margin-top:8px">Stand des Exports: ${esc(fmtDateTime(k.erstellt))} · Quelle: ${esc(k.quelle)}</p>`;
 }
 
 function attentionItem({ task: t, reasons }, i) {
@@ -543,6 +616,7 @@ const einkauf = {
   bestellungen: null, loadingBestellungen: false,
   produktstatus: null, loadingProduktstatus: false, produktstatusKey: null,
   auftragsstatus: null, loadingAuftragsstatus: false,
+  kennzahlen: null, loadingKennzahlen: false,
 };
 
 // Auftragsfluss je Position: Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt.
@@ -616,6 +690,15 @@ function openAuftragsstatusDialog(pos, status) {
     const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (new FormData(form).get('nr') || '').trim() || null });
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
+  });
+}
+
+function ensureEinkaufKennzahlen() {
+  if (einkauf.kennzahlen || einkauf.loadingKennzahlen) return;
+  einkauf.loadingKennzahlen = true;
+  fetchEinkauf('/api/einkauf/kennzahlen').then(d => {
+    einkauf.kennzahlen = d; einkauf.loadingKennzahlen = false;
+    if (state.route.view === 'heute') render();
   });
 }
 

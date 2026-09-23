@@ -413,6 +413,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!klaerung && !offen) return { verfuegbar: false, quelle: basis, hinweis: 'Noch keine Klaerungsdaten exportiert (klaerung.json/offen.json fehlen).' };
       return { verfuegbar: true, quelle: basis, klaerung: klaerung || null, offen: offen || null };
     },
+
+    /**
+     * Shop-Kennzahlen der letzten 7/30 Tage fuer die Startseite "Heute".
+     *
+     * Erwartetes Format (noch kein Export vorhanden - siehe
+     * docs/control-center/ARCHITEKTUR.md, Abschnitt 9):
+     *   { erstellt, zeitraeume: { "7": {bestellungen, umsatz, waehrung, durchschnitt}, "30": {...} }, topProdukte: [...] }
+     * Fehlt die Datei, liefert diese Funktion nur den Hinweis samt Befehl,
+     * der den Export erzeugen wuerde - keine erfundenen Zahlen.
+     */
+    einkaufKennzahlen() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'kennzahlen', 'shop-snapshot.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !daten.zeitraeume) {
+        return {
+          verfuegbar: false,
+          quelle: file,
+          hinweis: 'Noch kein Export der Shop-Kennzahlen vorhanden.',
+          befehl: 'npm run kennzahlen:export -- --ziel ' + file,
+        };
+      }
+      return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, zeitraeume: daten.zeitraeume, topProdukte: daten.topProdukte || [] };
+    },
   };
 }
 
