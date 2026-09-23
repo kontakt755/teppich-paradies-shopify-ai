@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T09:02:45.596Z",
+  "generated_at": "2026-09-23T09:03:01.679Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 127,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T09:02:45.596Z",
+    "fetchedAt": "2026-09-23T09:03:01.679Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -204,10 +204,10 @@
     {
       "number": 456,
       "title": "Shop 2.0 Pre-Launch Masterplan (Audit + Module)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/456",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p0",
         "area:shopify"
@@ -216,14 +216,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 7,
+      "comments": 8,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-22T08:46:24Z",
-      "updated_at": "2026-09-22T11:20:40Z",
-      "closed_at": null
+      "updated_at": "2026-09-23T09:02:48Z",
+      "closed_at": "2026-09-23T09:02:48Z"
     },
     {
       "number": 445,
