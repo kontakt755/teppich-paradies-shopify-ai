@@ -569,7 +569,13 @@
       var rund = f === 'rund';
       laengeTeile.forEach(function (el) { el.hidden = rund; });
       labelBreite.textContent = rund ? 'Durchmesser' : 'Breite';
-      grenzen.textContent = rund ? 'Möglich: Ø 50 bis ' + maxW + ' cm' : 'Möglich: bis ' + maxW + ' × ' + maxL + ' cm';
+      // Geprueft wird nicht Breite gegen maxW, sondern kuerzere Seite gegen maxW
+      // und laengere gegen maxL (pruefeMasse, tp-masstepich-rechnung.js). Das
+      // alte "bis 390 × 500 cm" las sich wie eine feste Zuordnung Breite/Laenge
+      // und liess 500 × 390 unmoeglich aussehen, obwohl es zulaessig ist.
+      grenzen.textContent = rund
+        ? 'Möglich: Ø 50 bis ' + maxW + ' cm'
+        : 'Möglich: kürzere Seite bis ' + maxW + ' cm, längere bis ' + maxL + ' cm (Reihenfolge egal)';
       groessenAufbauen(rund ? 'rund' : 'eckig');
 
       var b = lesen(inBreite);
