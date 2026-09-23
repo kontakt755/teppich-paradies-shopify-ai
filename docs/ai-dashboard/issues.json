@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T12:32:16.154Z",
+  "generated_at": "2026-09-23T13:23:50.225Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 133,
+  "count": 134,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T12:32:16.154Z",
+    "fetchedAt": "2026-09-23T13:23:50.225Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -64,6 +64,30 @@
   },
   "issues": [
     {
+      "number": 544,
+      "title": "Vier offene PRs sind mergebereit - Reihenfolge beachten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/544",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p1",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {
+        "description": "Autonome Sitzung 2026-09-23. Alle offenen PRs waren CONFLICTING und damit blockiert. Konflikte aufgeloest, CI gruen, alle MERGEABLE/CLEAN.\n\nWICHTIG - Reihenfolge, die PRs ueberschneiden sich untereinander:\n\n1. #537 (Verkaufsweg) - konfliktfrei gegen main\n2. #539 (Control Center Design) - ueberschneidet sich mit #537 in docs/ai-dashboard/app.js\n3. #514 (Bodenwissen/Ratgeber) - ueberschneidet sich mit #539 in app.js und index.html\n4. #543 (Groessenhinweis Massteppich) - unabhaengig, jederzeit\n\nNach jedem Merge rechnet GitHub neu; #539 und #514 werden danach erneut\nCONFLICTING. Die fertige Aufloesung aller drei liegt als Branch\nchore/integration-537-539-514 bereit - dort sind alle Ueberschneidungen\nbereits entschieden und geprueft (95 Dashboard-Tests, 182 operations-Tests,\nliquid/schema-Guard je 0 Fehler, im Browser gegen Testdaten geprueft).\n\nZwei Wege:\na) Die drei einzeln mergen und die Wiederholkonflikte aus dem\n   Integrationsbranch uebernehmen.\nb) chore/integration-537-539-514 als einen PR mergen und #537/#539/#514\n   schliessen. Weniger Arbeit, verliert aber die getrennte Review-Historie.\n\nDen Merge selbst konnte die Sitzung nicht ausfuehren: im Auto-Modus\ngesperrt (Merge Withou…"
+      },
+      "created_at": "2026-09-23T13:23:34Z",
+      "updated_at": "2026-09-23T13:23:34Z",
+      "closed_at": null
+    },
+    {
       "number": 536,
       "title": "Control Center: Design und Übersicht überarbeiten (Doppelungen, Klartext, Navigation)",
       "state": "open",
@@ -78,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung",
       "fields": {
         "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung"
       },
       "created_at": "2026-09-23T12:15:47Z",
-      "updated_at": "2026-09-23T12:31:59Z",
+      "updated_at": "2026-09-23T13:23:03Z",
       "closed_at": null
     },
     {
@@ -102,13 +126,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-23T12:15:03Z",
-      "updated_at": "2026-09-23T12:16:38Z",
+      "updated_at": "2026-09-23T13:22:46Z",
       "closed_at": null
     },
     {
@@ -196,11 +220,11 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 4,
+      "comments": 5,
       "nextStep": null,
       "fields": {},
       "created_at": "2026-09-23T09:48:27Z",
-      "updated_at": "2026-09-23T11:57:19Z",
+      "updated_at": "2026-09-23T13:23:12Z",
       "closed_at": null
     },
     {
