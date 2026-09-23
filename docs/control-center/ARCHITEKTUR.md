@@ -255,7 +255,7 @@ nach `$TP_PRIVAT_DIR/aktualisierung.json`:
   "aktualisiertAm": "2026-09-23T06:00:12.000Z",
   "teile": {
     "lexikon": { "zeitpunkt": "2026-09-23T06:00:03.000Z", "dauerMs": 41231, "erfolg": true, "anzahl": 412, "meldung": null },
-    "bestellungen": { "zeitpunkt": "2026-09-23T06:00:07.000Z", "dauerMs": 3877, "erfolg": true, "anzahl": 50, "meldung": "48/50 Quellvarianten der Muster geladen" },
+    "bestellungen": { "zeitpunkt": "2026-09-23T06:00:07.000Z", "dauerMs": 3877, "erfolg": true, "anzahl": 118, "meldung": "3 Seite(n) · 22/24 Quellvarianten der Muster geladen" },
     "kennzahlen": { "zeitpunkt": "2026-09-23T06:00:12.000Z", "dauerMs": 2011, "erfolg": true, "anzahl": 63, "meldung": null }
   }
 }
@@ -277,3 +277,22 @@ Täglich automatisch: eine geplante Aufgabe in Claude Desktop (`~/.claude/schedu
 `.env.local` auf. War der Rechner zum geplanten Zeitpunkt aus, läuft schlicht nichts – die Alters-Anzeige im
 Dashboard macht das sichtbar (kein stiller Fehlschlag), und der nächste manuelle oder geplante Lauf holt
 den Stand nach.
+
+**Bestellungen ohne festes Limit (seit 2026-09-23):** `fetchOrdersRelevant`
+(`operations/sync/orders.mjs`) holt vollständig paginiert alle Bestellungen der
+letzten 90 Tage (`created_at`) ODER alle noch nicht vollständig erfüllten
+(`fulfillment_status:unfulfilled`/`:partial`), unabhängig vom Alter – ersetzt
+die vorherige Regel „letzte 50 Bestellungen nach `updatedAt`". Details der
+Abgrenzung und der Ratenlimit-Wartung (`wartenBeiThrottle`) stehen in
+`operations/README.md`.
+
+**Häufiger als täglich:** `operations/scripts/sync-dienst.mjs`
+(`npm run daten:sync-dienst`) führt `aktualisieren()` in einer Dauerschleife
+aus statt über eine geplante Aufgabe – Intervall `TP_SYNC_INTERVALL_MINUTEN`
+(Standard 10 Minuten), damit eine am Nachmittag eingegangene Bestellung nicht
+erst am nächsten Morgen im Control Center sichtbar wird. Läuft entweder von
+Hand in einem Terminal oder dauerhaft über die launchd-Vorlage
+`operations/launchagents/net.teppich-paradies.sync.plist.vorlage`. Ohne Zugang
+(`SHOPIFY_ADMIN_TOKEN`/Client-Credentials) startet der Dienst nicht still –
+er meldet das Fehlen und beendet sich. Details in `operations/README.md`,
+Abschnitt „Sync-Dienst".

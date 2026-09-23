@@ -8,9 +8,12 @@
  *
  * Erneuert nacheinander:
  *   1. Lexikon      - Produkte/Varianten/Metafelder (operations/lib/lexikon.mjs)
- *   2. Bestellungen - letzte 50 Bestellungen inkl. Quellvarianten der Muster
- *                     (ohne die Quellvariante verliert ein Muster seine
- *                     Artikelnummer, siehe operations/lib/bestelluebersicht.mjs)
+ *   2. Bestellungen - alle Bestellungen der letzten 90 Tage PLUS alle noch
+ *                     nicht vollstaendig erfuellten unabhaengig vom Alter,
+ *                     vollstaendig paginiert (kein festes Limit mehr), inkl.
+ *                     Quellvarianten der Muster (ohne die Quellvariante
+ *                     verliert ein Muster seine Artikelnummer, siehe
+ *                     operations/lib/bestelluebersicht.mjs)
  *   3. Kennzahlen   - letzte 35 Tage (operations/lib/kennzahlen.mjs braucht
  *                     mindestens 30 Tage Fenster fuer den 30-Tage-Zeitraum)
  *
@@ -90,7 +93,8 @@ async function teilKennzahlen(dir) {
   return { anzahl: daten.orders.length };
 }
 
-const LETZTE_BESTELLUNGEN = 50;
+/** nodes(ids:) der Admin API nimmt bis zu 250 IDs je Aufruf - bei mehr Quellvarianten wird in Gruppen geblaettert. */
+const QUELLVARIANTEN_JE_AUFRUF = 250;
 
 /** Gleiche Variantenform wie sync/orders.mjs ORDERS_QUERY, fuer die Quellvarianten der Muster. */
 const QUELLVARIANTEN_QUERY = `
@@ -123,32 +127,46 @@ function quellvarianteIdsAus(orders) {
   return [...ids];
 }
 
+/** Teilt ids in Gruppen von hoechstens `groesse`, ohne die Reihenfolge zu aendern. */
+function inGruppen(liste, groesse) {
+  const gruppen = [];
+  for (let i = 0; i < liste.length; i += groesse) gruppen.push(liste.slice(i, i + groesse));
+  return gruppen;
+}
+
 async function teilBestellungen(dir) {
   const { erzeugeProxy } = await import('../sync/zugang.mjs');
-  const { fetchOrdersSince } = await import('../sync/orders.mjs');
+  const { fetchOrdersRelevant, wartenBeiThrottle } = await import('../sync/orders.mjs');
   const { proxy, art } = await erzeugeProxy();
   if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
 
-  // Fenster gross genug, um sicher auf LETZTE_BESTELLUNGEN Bestellungen zu
-  // kommen, auch bei ruhigen Phasen; danach auf die zuletzt aktualisierten kuerzen.
-  const seit = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString();
-  const { orders: alle } = await fetchOrdersSince(proxy, seit);
-  const orders = alle
-    .slice()
-    .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
-    .slice(0, LETZTE_BESTELLUNGEN);
+  // Abgrenzung (D fuer Vollstaendigkeit): alle Bestellungen der letzten 90
+  // Tage PLUS alle noch nicht vollstaendig erfuellten, unabhaengig vom Alter -
+  // siehe baueRelevantQuery in sync/orders.mjs. Vollstaendig paginiert, kein
+  // festes Limit mehr (vorher: letzte 50 Bestellungen, seit 2026-09 zu wenig
+  // fuer den taeglichen Betrieb).
+  const { orders, seiten, gesammelt } = await fetchOrdersRelevant(proxy);
+  if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Bestellungen konnten nicht geladen werden');
 
+  // Quellvarianten der Muster ohne festes Limit: die Admin API nimmt bis zu
+  // 250 IDs je nodes()-Aufruf, bei mehr wird in Gruppen nachgeladen.
   const ids = quellvarianteIdsAus(orders);
   let quellvarianten = [];
-  if (ids.length) {
-    const antwort = await proxy.execute(QUELLVARIANTEN_QUERY, { ids });
-    quellvarianten = (antwort?.nodes ?? []).filter(Boolean);
+  for (const gruppe of inGruppen(ids, QUELLVARIANTEN_JE_AUFRUF)) {
+    // eslint-disable-next-line no-await-in-loop -- Gruppen laufen bewusst nacheinander, damit die Throttle-Wartung greifen kann.
+    const antwort = await proxy.execute(QUELLVARIANTEN_QUERY, { ids: gruppe });
+    quellvarianten.push(...(antwort?.nodes ?? []).filter(Boolean));
+    // eslint-disable-next-line no-await-in-loop
+    await wartenBeiThrottle(proxy);
   }
 
   const ziel = path.join(dir, 'bestelluebersicht', 'orders.json');
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   fs.writeFileSync(ziel, JSON.stringify({ exportiertAm: new Date().toISOString(), orders, quellvarianten }, null, 2));
-  return { anzahl: orders.length, hinweis: `${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen` };
+  return {
+    anzahl: orders.length,
+    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen`,
+  };
 }
 
 export const TEIL_FN = { lexikon: teilLexikon, bestellungen: teilBestellungen, kennzahlen: teilKennzahlen };

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Vorlage fuer einen launchd-Dienst, der operations/scripts/sync-dienst.mjs
+  dauerhaft im Hintergrund laufen laesst (Login-Session des Nutzers, nicht
+  System-weit - deshalb LaunchAgent, kein LaunchDaemon).
+
+  Platzhalter vor der Installation ersetzen:
+    __HOME__       absoluter Pfad zum Home-Verzeichnis (z. B. /Users/ahmet)
+    __REPO_PFAD__  absoluter Pfad zu diesem Repository auf diesem Mac
+                    (z. B. /Users/ahmet/teppich-paradies-shopify-ai)
+    __NODE_PFAD__  absoluter Pfad zur node-Binary (`which node`), launchd
+                    kennt PATH aus der Login-Shell nicht
+
+  Installation (siehe operations/README.md, Abschnitt "Sync-Dienst"):
+
+    mkdir -p ~/Library/LaunchAgents
+    sed -e "s#__HOME__#$HOME#g" \
+        -e "s#__REPO_PFAD__#/pfad/zu/teppich-paradies-shopify-ai#g" \
+        -e "s#__NODE_PFAD__#$(which node)#g" \
+        operations/launchagents/net.teppich-paradies.sync.plist.vorlage \
+        > ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+    launchctl load ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+
+  Neu laden nach einer Aenderung:
+
+    launchctl unload ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+    launchctl load   ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+
+  Deinstallieren:
+
+    launchctl unload ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+    rm ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+
+  Voraussetzung: SHOPIFY_ADMIN_TOKEN (oder SHOPIFY_CLIENT_ID/SECRET) in
+  __REPO_PFAD__/.env.local (siehe domains/shopify/admin-token-oauth.md). Ohne
+  Zugang beendet sich sync-dienst.mjs sofort mit einer klaren Meldung im
+  Log unten - launchd startet ihn dann laut KeepAlive erneut, mit derselben
+  Meldung, bis der Zugang eingerichtet ist (siehe ThrottleInterval).
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>net.teppich-paradies.sync</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__NODE_PFAD__</string>
+    <string>__REPO_PFAD__/operations/scripts/sync-dienst.mjs</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__REPO_PFAD__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>TP_SYNC_INTERVALL_MINUTEN</key>
+    <string>10</string>
+  </dict>
+
+  <!-- Beim Anmelden starten und bei einem Absturz neu starten - nicht bei
+       normalem Exit-Code 0, den gibt es hier ohnehin nicht (der Dienst laeuft
+       endlos, bis SIGTERM/SIGINT kommt). -->
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <!-- Mindestabstand zwischen Neustarts, falls der Dienst sofort wieder
+       beendet (z. B. fehlender Zugang) - verhindert eine Neustart-Schleife
+       im Sekundentakt. -->
+  <key>ThrottleInterval</key>
+  <integer>60</integer>
+
+  <key>StandardOutPath</key>
+  <string>__HOME__/Library/Logs/teppich-paradies-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>__HOME__/Library/Logs/teppich-paradies-sync.log</string>
+</dict>
+</plist>
