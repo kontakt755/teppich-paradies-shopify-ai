@@ -855,10 +855,17 @@ function afEintragFuer(p) {
 
 /** Lieferanten-Link oder Begründung, warum keiner hinterlegt ist. */
 function lieferantLinkZelle(p) {
+  // Zwei Wege zum Originalartikel: direkt zum Lieferanten, wenn eine
+  // Produktseite hinterlegt ist - und immer ins Lexikon, wo Originalname,
+  // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
+  // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
+  const lex = p.handle
+    ? `<div style="margin-top:4px"><a class="btn btn-sm" href="#" data-lex-open="${esc(p.handle)}">Im Lexikon ansehen</a></div>`
+    : '';
   if (p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT') {
-    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`;
+    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>${lex}`;
   }
-  return `<span class="small muted">keine Produktseite hinterlegt (einkauf.lieferant_url fehlt)</span>`;
+  return `<span class="small muted">keine Produktseite hinterlegt (einkauf.lieferant_url fehlt)</span>${lex}`;
 }
 
 /** Status-Zelle: aktueller Stand + Buttons fuer den naechsten Schritt. */

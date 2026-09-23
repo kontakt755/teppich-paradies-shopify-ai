@@ -46,7 +46,7 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
             lieferant: metafields(namespace: "lieferant", first: 10) { nodes { namespace key type value } }
             custom: metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
             product {
-              id handle title
+              id handle title productType
               featuredMedia { preview { image { url altText } } }
               metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
               grosshandel: metafields(namespace: "grosshandel", first: 5) { nodes { namespace key type value } }
