@@ -95,11 +95,15 @@ export function parseMasse(text) {
 }
 
 /**
- * Grosshaendler-ID-Kaskade wie in der Bestellmail:
+ * Grosshaendler-ID-Kaskade: einkauf.artikelnummer (Variante) ->
  * lieferant.lieferant_a_artikelnummer -> lieferant_b_artikelnummer ->
  * grosshandel.sku (Produkt) -> Muster-SKU ohne "M-" (nur ohne Bindestrich).
  */
 export function grosshaendlerId({ variantMetafelder, produktMetafelder, sku }) {
+  // Seit dem Befuellen der Einkaufsfelder (2026-09-23) steht die gepruefte
+  // Artikelnummer direkt an der Variante; sie geht den Altfeldern vor.
+  const e = variantMetafelder?.einkauf?.artikelnummer;
+  if (!leer(e)) return { id: String(e).trim(), quelle: 'einkauf.artikelnummer' };
   const a = variantMetafelder?.lieferant?.lieferant_a_artikelnummer;
   if (!leer(a)) return { id: String(a).trim(), quelle: 'lieferant.lieferant_a_artikelnummer' };
   const b = variantMetafelder?.lieferant?.lieferant_b_artikelnummer;
