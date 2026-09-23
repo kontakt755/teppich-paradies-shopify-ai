@@ -103,6 +103,15 @@ button { font: inherit; color: inherit; }
 .empty strong { color: var(--text); }
 .empty a { margin-left: 4px; }
 
+/* Aufklappbare Startseiten-Abschnitte (Heute) */
+details.card { padding: 0; }
+details.card > summary { padding: 16px 18px; margin-bottom: 0; cursor: pointer; list-style: none; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::before { content: "▸"; display: inline-block; width: 14px; color: var(--text-3); transition: transform .12s ease; }
+details.card[open] > summary::before { transform: rotate(90deg); }
+details.card > summary h2 { display: inline; }
+details.card .details-body { padding: 0 18px 16px; }
+
 /* Statusband */
 .band { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 22px; }
 .band a, .band > div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }

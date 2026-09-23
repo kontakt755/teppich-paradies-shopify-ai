@@ -167,6 +167,20 @@ function emptyState(title, hint, link) {
   return `<div class="empty"><strong>${esc(title)}</strong> ${esc(hint)}${link ? `<a href="${esc(link.href)}">${esc(link.text)}</a>` : ''}</div>`;
 }
 
+/**
+ * Aufklappbarer Kartenabschnitt fuer die Startseite: haelt weniger dringende
+ * Inhalte standardmaessig eingeklappt, damit "Heute" in eine Bildschirmhoehe
+ * passt. Merkt sich je Abschnitt (id), ob der/die Nutzer:in ihn geoeffnet hat.
+ */
+function collapsibleCard(id, title, subtitle, bodyHtml, { openByDefault = false, extraHead = '' } = {}) {
+  let open = openByDefault;
+  try { const v = localStorage.getItem(`tp-heute-${id}`); if (v !== null) open = v === '1'; } catch {}
+  return `<details class="card section" data-collapsible="${esc(id)}" ${open ? 'open' : ''}>
+    <summary class="card-head"><h2>${title}</h2><span class="more muted">${subtitle ? esc(subtitle) : ''}${extraHead}</span></summary>
+    <div class="details-body">${bodyHtml}</div>
+  </details>`;
+}
+
 // ---------------------------------------------------------------------------
 // Sync-Chip und Systemzustand
 // ---------------------------------------------------------------------------
@@ -240,50 +254,42 @@ function viewHeute() {
 
     <section class="card">
       <div class="card-head"><h2>Braucht jetzt Aufmerksamkeit</h2><a class="more" href="#/arbeit?sort=dringlichkeit">Alle nach Dringlichkeit</a></div>
-      <p class="small muted" style="margin:-4px 0 10px">Wofür: eine automatisch berechnete Rangliste der Aufgaben, die am dringendsten eine Entscheidung oder Bearbeitung brauchen.</p>
       ${att.length ? `<div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' })}
     </section>
 
     <div class="grid grid-2 section">
       <section class="card">
-        <div class="card-head"><h2>Wartet auf dich</h2><span class="more muted">Freigaben, Prüfungen und neue Aufgaben, die noch bewertet werden müssen (Triage)</span></div>
+        <div class="card-head"><h2>Wartet auf dich</h2><span class="more muted">Freigaben &amp; Triage</span></div>
         ${waiting.length ? `<div class="rows">${waiting.map(t => taskRow(t)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}
       </section>
       <section class="card">
         <div class="card-head"><h2>Blockiert</h2><a class="more" href="#/arbeit?view=blockiert">${blocked.length} gesamt</a></div>
-        <p class="small muted" style="margin:-4px 0 10px">Wofür: Aufgaben, die gerade nicht weitergehen, weil sie auf etwas oder jemanden von außen warten.</p>
         ${blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => blockedRow(t)).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden.')}
       </section>
-      <section class="card">
-        <div class="card-head"><h2>Läuft gerade</h2><a class="more" href="#/arbeit?status=in-arbeit">${running.length} in Arbeit</a></div>
-        ${runningBlock(running)}
-      </section>
-      <section class="card">
-        <div class="card-head"><h2>Diese Woche</h2></div>
-        <p class="small muted" style="margin:-4px 0 10px">Wofür: kurzer Rückblick auf die letzten 7 Tage – was fertig wurde, was neu dazukam, was überfällig ist.</p>
+    </div>
+
+    ${collapsibleCard('laeuft', 'Läuft gerade', null, runningBlock(running), { openByDefault: running.length > 0, extraHead: `<a class="more" href="#/arbeit?status=in-arbeit" style="margin-left:8px">${running.length} in Arbeit →</a>` })}
+
+    ${collapsibleCard('woche', 'Diese Woche', 'erledigt, neu, überfällig – letzte 7 Tage', `
         <div class="band" style="margin:0 0 10px">
           ${bandItem(week.done.length, 'erledigt', 'ok', '#/arbeit?status=fertig')}
           ${bandItem(week.fresh.length, 'neu hinzugekommen', 'info', '#/arbeit?sort=aktualisiert')}
           ${bandItem(week.overdue.length, 'überfällig', 'crit', '#/arbeit?view=heute')}
         </div>
-        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}
-      </section>
-    </div>
+        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`)}
 
-    <section class="card section">
-      <div class="card-head"><h2>Einkauf – heute zu tun</h2><span class="more muted">Wofür: was aus Kundenbestellungen jetzt beim Lieferanten zu bestellen ist, wo etwas hakt</span></div>
-      ${heuteEinkaufBlock()}
-    </section>
+    ${collapsibleCard('einkauf', 'Einkauf – heute zu tun', 'was beim Lieferanten zu bestellen ist, wo es hakt', heuteEinkaufBlock(), { openByDefault: localMode && heuteEinkaufHatProblem() })}
 
-    <section class="card section">
-      <div class="card-head"><h2>Shop-Zahlen</h2><span class="more muted">Wofür: Bestellungen, Umsatz und Durchschnittsbon der letzten 7 und 30 Tage</span></div>
-      ${heuteKennzahlenBlock()}
-    </section>
+    ${collapsibleCard('zahlen', 'Shop-Zahlen', 'Bestellungen, Umsatz, Ø Bestellwert', heuteKennzahlenBlock())}
 
-    <section class="card section">
-      <div class="card-head"><h2>Systemgesundheit <span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span></h2><a class="more" href="#/insights">Details</a></div>
-      <div class="health">${health.slice(0, 4).map(healthRow).join('')}</div>
-    </section>`;
+    ${collapsibleCard('gesundheit', `Systemgesundheit <span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span>`, null, `<div class="health">${health.slice(0, 4).map(healthRow).join('')}</div><p class="small muted" style="margin-top:8px"><a href="#/insights">Alle Details in Insights →</a></p>`, { openByDefault: worst !== 'ok' })}`;
+}
+
+/** true, wenn die Einkauf-Kachel etwas Kritisches zeigt (fuer Standard-Aufklappzustand). */
+function heuteEinkaufHatProblem() {
+  const b = einkauf.bestellungen;
+  if (!b || !b.verfuegbar) return false;
+  return (b.auftraege || []).some(a => a.offen && a.ampel === 'rot');
 }
 
 /** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch. */
@@ -1190,6 +1196,12 @@ function render() {
 }
 
 function bindEvents() {
+  // Aufklappbare Startseiten-Abschnitte merken sich Auf/Zu je Abschnitt (nicht je Aufgabe).
+  document.addEventListener('toggle', e => {
+    const d = e.target.closest?.('details[data-collapsible]');
+    if (!d) return;
+    try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
+  }, true);
   document.addEventListener('click', e => {
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
