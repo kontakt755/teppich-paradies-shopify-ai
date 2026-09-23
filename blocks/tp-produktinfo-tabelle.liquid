@@ -80,7 +80,7 @@
     }
   }
 
-  /* Bodenwissen: Lexikon-Erklaerung innerhalb der Wert-Zelle, siehe {% doc %} oben */
+  /* Bodenwissen: Lexikon-Erklaerung innerhalb der Wert-Zelle, siehe Dateikopf */
   .tp-pit-lexikon-{{ ai_gen_id }} {
     margin-top: 6px;
   }
@@ -184,7 +184,7 @@ Rückenausstattung::ruecken
       {% comment %}
         Nur rendern, capture statt render...as (gibt es in Liquid nicht). Bleibt
         leer, wenn kein Handle passt oder das Metaobjekt/der Eintrag fehlt - dann
-        aendert sich an der Zeile nichts (siehe {% doc %} am Dateianfang).
+        aendert sich an der Zeile nichts (siehe Dateikopf).
       {% endcomment %}
       {% assign lexikon_inline = '' %}
       {% if lexikon_handle != blank %}
