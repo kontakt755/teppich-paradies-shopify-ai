@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T06:20:00.668Z",
+  "generated_at": "2026-09-23T08:14:20.276Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 124,
+  "count": 125,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T06:20:00.668Z",
+    "fetchedAt": "2026-09-23T08:14:20.276Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,28 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 496,
+      "title": "Merchant Center: Flaechenware ohne offers.price im JSON-LD",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/496",
+      "labels": [
+        "status:eingang",
+        "type:bug",
+        "priority:p1",
+        "area:seo"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {},
+      "created_at": "2026-09-23T08:14:04Z",
+      "updated_at": "2026-09-23T08:14:04Z",
+      "closed_at": null
+    },
     {
       "number": 472,
       "title": "Control Center: Bestandsaufnahme 2026-09-22 und Nachschaerfung",
