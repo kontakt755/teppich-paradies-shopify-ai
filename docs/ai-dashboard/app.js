@@ -249,9 +249,43 @@ function viewHeute() {
   if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); }
 
   const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
+
+  // Oberstes Band zeigt das Kundengeschaeft (Kauf/Verkauf), nicht mehr die interne
+  // Aufgabenverwaltung - das ist laut Inhaber das Wichtigste auf der Startseite.
+  const bK = localMode ? einkauf.bestellungen : null;
+  const kundenVerfuegbar = !!(bK && bK.verfuegbar);
+  const kundenProbleme = kundenVerfuegbar ? (bK.auftraege || []).filter(a => a.offen && a.ampel === 'rot').length : 0;
+  const bestellungen7 = localMode ? einkauf.kennzahlen?.zeitraeume?.['7']?.bestellungen : null;
+  const kundenBand = !localMode
+    ? `<p class="small muted">Kundengeschäft nur lokal sichtbar (private Daten). Auf dem Mac starten: <code class="mono">npm run dashboard</code></p>`
+    : !kundenVerfuegbar
+      ? `<p class="small muted">${esc(bK?.hinweis || 'Bestellübersicht noch nicht exportiert.')} <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`
+      : `<div class="band">
+          ${bandItem(bK.zahlen.offeneAuftraege, `offene Kundenaufträge (von ${bK.zahlen.auftraege})`, 'info', '#/einkauf?tab=bestellungen')}
+          ${bandItem(bK.zahlen.zuBestellen, 'beim Lieferanten zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
+          ${bandItem(kundenProbleme, 'Aufträge mit Problem', kundenProbleme ? 'crit' : 'ok', '#/einkauf?tab=bestellungen')}
+          ${typeof bestellungen7 === 'number' ? bandItem(bestellungen7, 'Bestellungen (7 Tage)', 'ok', '#/einkauf?tab=bestellungen') : `<span class="zero"><span class="n">–</span><span class="l">Bestellungen (7 Tage) – kein Export</span></span>`}
+        </div>`;
+
   return `
-    <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)} · ${plural(s.open, 'offene Aufgabe', 'offene Aufgaben')} · Datenstand ${esc(freshness(state.raw?.generated_at).text)}</p></div>
+    <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)} · Kauf, Verkauf und Kundengeschäft zuerst · Datenstand ${esc(freshness(state.raw?.generated_at).text)}</p></div>
       <div style="display:flex;gap:8px">${state.capabilities.sync ? '<button class="btn" data-action="sync">Jetzt synchronisieren</button>' : ''}<a class="btn" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
+
+    ${kundenBand}
+
+    <section class="card">
+      <div class="card-head"><h2>Kundengeschäft</h2><a class="more" href="#/einkauf">Bereich Einkauf öffnen</a></div>
+      ${heuteEinkaufBlock()}
+    </section>
+
+    <section class="card section">
+      <div class="card-head"><h2>Verkauf / Zahlen</h2></div>
+      ${heuteKennzahlenBlock()}
+    </section>
+
+    <h2 class="section" style="margin:22px 0 4px;font-size:1rem;color:var(--muted)">Interne Arbeit</h2>
+    <p class="small muted" style="margin:0 0 10px">Aufgabenverwaltung – wichtig, aber nicht so dringend wie das Kundengeschäft oben.</p>
+
     <div class="band">
       ${bandItem(s.critical, 'kritisch, höchste Priorität (P0)', 'crit', '#/arbeit?prio=p0')}
       ${bandItem(s.blocked, 'blockiert', 'crit', '#/arbeit?view=blockiert')}
@@ -261,24 +295,13 @@ function viewHeute() {
       ${bandItem(s.doneThisWeek, 'diese Woche erledigt', 'ok', '#/arbeit?status=fertig')}
     </div>
 
-    <section class="card">
-      <div class="card-head"><h2>Braucht jetzt Aufmerksamkeit</h2><a class="more" href="#/arbeit?sort=dringlichkeit">Alle nach Dringlichkeit</a></div>
-      ${att.length ? `<p class="small muted" style="margin:-4px 0 8px">Dringlichkeit aus Priorität, Blocker und Frist – Grund als Tooltip auf der Zeile.</p><div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' })}
-    </section>
+    ${collapsibleCard('aufmerksamkeit', 'Braucht jetzt Aufmerksamkeit', att.length ? String(att.length) : 'nichts', att.length ? `<p class="small muted" style="margin:-4px 0 8px">Dringlichkeit aus Priorität, Blocker und Frist – Grund als Tooltip auf der Zeile.</p><div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' }), { openByDefault: att.length > 0 })}
 
-    <div class="grid grid-2 section">
-      <section class="card">
-        <div class="card-head"><h2>Wartet auf dich</h2><span class="more muted">Freigaben &amp; Triage</span></div>
-        ${waiting.length ? `<div class="rows">${waiting.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}
-        ${waitingRest.length ? `<details class="inline-more"><summary>Alle anzeigen (+${waitingRest.length})</summary><div class="rows" style="margin-top:6px">${waitingRest.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div></details>` : ''}
-      </section>
-      <section class="card">
-        <div class="card-head"><h2>Blockiert</h2><a class="more" href="#/arbeit?view=blockiert">${tasks.filter(t => t.status === 'blockiert').length} gesamt</a></div>
-        ${blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => heuteCompactRow(t, 'Eskalieren / lösen', { title: t.blocker || 'Grund fehlt – bitte im Issue nachtragen' })).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden (die dringendsten stehen ggf. oben unter „Aufmerksamkeit").')}
-      </section>
-    </div>
+    ${collapsibleCard('wartet', 'Wartet auf dich', waitingAll.length ? String(waitingAll.length) : 'nichts', `${waiting.length ? `<div class="rows">${waiting.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}${waitingRest.length ? `<details class="inline-more"><summary>Alle anzeigen (+${waitingRest.length})</summary><div class="rows" style="margin-top:6px">${waitingRest.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div></details>` : ''}`, { openByDefault: waitingAll.length > 0 })}
 
-    ${collapsibleCard('laeuft', 'Läuft gerade', running.length ? `${plural(running.length, 'in Arbeit', 'in Arbeit')}` : 'nichts', runningBlock(running), { openByDefault: running.length > 0 })}
+    ${collapsibleCard('blockiert', 'Blockiert', String(tasks.filter(t => t.status === 'blockiert').length), blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => heuteCompactRow(t, 'Eskalieren / lösen', { title: t.blocker || 'Grund fehlt – bitte im Issue nachtragen' })).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden (die dringendsten stehen ggf. oben unter „Aufmerksamkeit").'), { openByDefault: blocked.length > 0 })}
+
+    ${collapsibleCard('laeuft', 'Läuft gerade', running.length ? `${plural(running.length, 'in Arbeit', 'in Arbeit')}` : 'nichts', runningBlock(running), { openByDefault: false })}
 
     ${collapsibleCard('woche', 'Diese Woche', `${week.done.length} erledigt`, `
         <div class="band" style="margin:0 0 10px">
@@ -286,20 +309,9 @@ function viewHeute() {
           ${bandItem(week.fresh.length, 'neu hinzugekommen', 'info', '#/arbeit?sort=aktualisiert')}
           ${bandItem(week.overdue.length, 'überfällig', 'crit', '#/arbeit?view=heute')}
         </div>
-        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`)}
-
-    ${collapsibleCard('einkauf', 'Einkauf – heute zu tun', heuteEinkaufPreview(), heuteEinkaufBlock(), { openByDefault: localMode && heuteEinkaufHatProblem() })}
-
-    ${collapsibleCard('zahlen', 'Shop-Zahlen', heuteKennzahlenPreview(), heuteKennzahlenBlock())}
+        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`, { openByDefault: false })}
 
     ${collapsibleCard('gesundheit', 'Systemgesundheit', `<span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span>`, `<div class="health">${health.slice(0, 3).map(healthRow).join('')}</div><p class="small muted" style="margin-top:8px">${health.length > 3 ? `+${health.length - 3} weitere – ` : ''}<a href="#/insights">Alle Details in Insights →</a></p>`, { openByDefault: worst !== 'ok' })}`;
-}
-
-/** true, wenn die Einkauf-Kachel etwas Kritisches zeigt (fuer Standard-Aufklappzustand). */
-function heuteEinkaufHatProblem() {
-  const b = einkauf.bestellungen;
-  if (!b || !b.verfuegbar) return false;
-  return (b.auftraege || []).some(a => a.offen && a.ampel === 'rot');
 }
 
 /** Einkauf-Auftragsfluss-Zaehler (Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt). */
@@ -308,15 +320,6 @@ function heuteAuftragsflussZaehler(b) {
   const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
   for (const p of allePositionen) afZaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
   return afZaehler;
-}
-
-/** Kurzvorschau fuer den zugeklappten Kopf der Einkauf-Kachel: die wichtigste Zahl. */
-function heuteEinkaufPreview() {
-  if (state.capabilities.mode !== 'local') return '';
-  const b = einkauf.bestellungen;
-  if (!b || !b.verfuegbar) return '';
-  const probleme = (b.auftraege || []).filter(a => a.offen && a.ampel === 'rot').length;
-  return probleme ? `${plural(probleme, 'Problem', 'Probleme')}` : `${plural(b.zahlen.zuBestellen, 'zu bestellen', 'zu bestellen')}`;
 }
 
 /** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch.
@@ -342,15 +345,6 @@ function heuteEinkaufBlock() {
     <p class="small muted" style="margin:0 0 10px">Auftragsfluss: <b>${afZaehler.offen}</b> offen · <b>${afZaehler.bestellt}</b> bestellt · <b>${afZaehler.unterwegs}</b> unterwegs · <b>${afZaehler.erledigt}</b> erledigt · <a href="#/einkauf?tab=bestellungen">${plural(z.muster, 'Musterbestellung', 'Musterbestellungen')} offen, ${plural(z.ohneId, 'Position', 'Positionen')} ohne Großhändler-ID →</a></p>
     ${probleme.length ? `<div class="rows">${probleme.slice(0, 3).map(einkaufAuftragZeile).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere Aufträge mit Problem – <a href="#/einkauf?tab=bestellungen">alle ansehen →</a></p>` : ''}` : '<p class="small muted">Keine Aufträge mit Problem (Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID).</p>'}
     <p class="small muted" style="margin-top:8px">Stand: ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`;
-}
-
-/** Kurzvorschau fuer den zugeklappten Kopf der Shop-Zahlen-Kachel. */
-function heuteKennzahlenPreview() {
-  if (state.capabilities.mode !== 'local') return '';
-  const k = einkauf.kennzahlen;
-  if (!k || !k.verfuegbar) return '';
-  const z7 = k.zeitraeume?.['7'];
-  return z7 ? `${plural(z7.bestellungen ?? 0, 'Bestellung', 'Bestellungen')} (7 Tage)` : '';
 }
 
 /** Shop-Kennzahlen-Kachel: liest kennzahlen/shop-snapshot.json, erfindet keine Zahlen ohne Export. */
