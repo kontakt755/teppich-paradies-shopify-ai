@@ -65,6 +65,7 @@ function toast(text, kind = '') {
 async function loadCapabilities() {
   try {
     const r = await fetch('/api/capabilities', { cache: 'no-store' });
+    if (r.status === 401) { state.capabilities = { mode: 'ausgeloggt' }; return; }
     if (!r.ok) throw new Error();
     state.capabilities = await r.json();
     state.me = state.capabilities.user || null;
@@ -1485,6 +1486,11 @@ function render() {
   document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
+  if (state.capabilities.mode === 'ausgeloggt') {
+    main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist nicht mehr gültig (Sitzungen gelten 12 Stunden) oder das Passwort hat sich geändert. Bereits eingegebene Angaben auf dieser Seite bleiben erhalten, bis neu geladen wird. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
+    document.title = 'Sitzung abgelaufen · Teppich Dashboard';
+    return;
+  }
   if (state.capabilities.mode !== 'local') {
     main.innerHTML = `<div class="page-head"><h1>Nur lokal im Betrieb</h1></div><div class="notice">Das Control Center läuft seit 2026-09-23 nicht mehr öffentlich. Es zeigt hier keine Aufgabendaten. Auf dem Mac starten: <span class="mono">npm run dashboard</span>, dann <span class="mono">http://localhost:8001</span> öffnen.</div>`;
     document.title = 'Nur lokal im Betrieb · Teppich Dashboard';
