@@ -107,3 +107,18 @@ test('jsonlZuProdukten behaelt das Metafeld-"type" (sammleMetaobjectGids/resolve
   assert.equal(produkte[0].metafields[0].type, 'list.metaobject_reference');
   assert.deepEqual(sammleMetaobjectGids(produkte), ['gid://shopify/Metaobject/1']);
 });
+
+test('Metaobjekt-Namen werden auch beim MCP-Weg (--input) aufgeloest', async () => {
+  const { resolveMetaobjectReferenzen, standardMetaobjektDatei } = await import('../scripts/lexikon-export.mjs');
+  assert.equal(standardMetaobjektDatei('/tmp/lexikon/produkte.json'), '/tmp/lexikon/metaobjekte.json');
+  const produkte = [{
+    handle: 'muster-produkt',
+    metafields: [{ namespace: 'custom', key: 'zimmer', type: 'list.metaobject_reference', value: '["gid://shopify/Metaobject/1","gid://shopify/Metaobject/2"]' }],
+    variants: [],
+  }];
+  resolveMetaobjectReferenzen(produkte, new Map([
+    ['gid://shopify/Metaobject/1', 'Wohnzimmer'],
+    ['gid://shopify/Metaobject/2', 'Flur'],
+  ]));
+  assert.deepEqual(produkte[0].metafields[0].value, ['Wohnzimmer', 'Flur']);
+});

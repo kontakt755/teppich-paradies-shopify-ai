@@ -282,6 +282,11 @@ export async function ladeLive() {
   return roh;
 }
 
+/** Standardort der GID->Name-Zuordnung: neben der Zieldatei. */
+export function standardMetaobjektDatei(ziel) {
+  return path.join(path.dirname(ziel), 'metaobjekte.json');
+}
+
 async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
@@ -298,12 +303,17 @@ async function main() {
     // bulkOperationRunQuery, plus optional eine bereits aufgeloeste
     // GID->Anzeigename-Zuordnung fuer custom.*-Metaobjekt-Referenzen.
     daten = jsonlZuProdukten(fs.readFileSync(a.jsonl, 'utf8'));
-    if (a.metaobjekte) {
-      const gidZuName = new Map(Object.entries(JSON.parse(fs.readFileSync(a.metaobjekte, 'utf8'))));
-      resolveMetaobjectReferenzen(daten.produkte, gidZuName);
-    }
   } else {
     daten = JSON.parse(fs.readFileSync(a.input, 'utf8'));
+  }
+  // Ohne aufgeloeste Namen stehen im Lexikon rohe Metaobjekt-IDs
+  // ("gid://shopify/Metaobject/...") statt "Wohnzimmer, Schlafzimmer".
+  // Die Zuordnung gilt fuer --jsonl und --input gleichermassen; fehlt die
+  // Datei, wird neben dem Ziel nach lexikon/metaobjekte.json gesucht.
+  const zuordnung = a.metaobjekte || standardMetaobjektDatei(ziel);
+  if (!a.live && zuordnung && fs.existsSync(zuordnung)) {
+    const gidZuName = new Map(Object.entries(JSON.parse(fs.readFileSync(zuordnung, 'utf8'))));
+    resolveMetaobjectReferenzen(daten.produkte ?? daten, gidZuName);
   }
   const modell = aufbereiten(daten);
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
