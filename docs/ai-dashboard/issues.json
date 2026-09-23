@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T11:56:17.069Z",
+  "generated_at": "2026-09-23T11:57:38.692Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 130,
+  "count": 131,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T11:56:17.069Z",
+    "fetchedAt": "2026-09-23T11:57:38.692Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 529,
+      "title": "dashboard-data.yml loeste Rebase-Konflikte zur falschen Seite auf",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/529",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-23T11:57:24Z",
+      "updated_at": "2026-09-23T11:57:37Z",
+      "closed_at": null
+    },
     {
       "number": 525,
       "title": "bodenwissen.json im Dashboard-Workflow miterzeugen",
@@ -124,11 +148,11 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": null,
       "fields": {},
       "created_at": "2026-09-23T09:48:27Z",
-      "updated_at": "2026-09-23T10:38:06Z",
+      "updated_at": "2026-09-23T11:57:19Z",
       "closed_at": null
     },
     {
