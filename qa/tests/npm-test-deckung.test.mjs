@@ -36,12 +36,9 @@ function abgedeckteVerzeichnisse() {
  * Jeder Eintrag braucht einen Grund - sonst ist das hier eine Ausrede.
  */
 const BEWUSST_AUSSEN = {
-  '.claude/hooks':
-    'git-gh-guard.test.mjs erwartet BLOCK fuer "git branch -D <name>", das der Guard '
-    + 'seit 2026-09-12 auf Wunsch des Nutzers ausdruecklich erlaubt (Kommentar in '
-    + 'git-gh-guard.mjs). Der Test ist veraltet, nicht der Guard. Erst wenn geklaert '
-    + 'ist, ob auch "git push origin --delete <name>" erlaubt bleiben soll, gehoert '
-    + 'das Verzeichnis in npm test.',
+  // Leer, und das soll so bleiben. `.claude/hooks` stand hier bis 2026-09-23,
+  // solange offen war, wie der Guard mit dem Loeschen benannter Zweige umgeht.
+  // Seit das entschieden ist, laeuft es in der Kette mit.
 };
 
 function testverzeichnisse() {
@@ -74,10 +71,10 @@ test('jede Ausnahme nennt ein Verzeichnis, das es noch gibt', () => {
   }
 });
 
-test('npm test deckt die sechs bekannten Suiten ab', () => {
+test('npm test deckt die sieben bekannten Suiten ab', () => {
   const abgedeckt = abgedeckteVerzeichnisse();
   for (const dir of ['qa/tests', 'docs/ai-dashboard/tests', 'operations/tests',
-    'automation/tests', 'workflow/tests', 'control-center/tests']) {
+    'automation/tests', 'workflow/tests', 'control-center/tests', '.claude/hooks']) {
     assert.ok(abgedeckt.has(dir), `${dir} fehlt in der Kette von "npm test"`);
   }
 });

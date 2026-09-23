@@ -1,7 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 import { requestHandler } from '../../../scripts/serve-dashboard.mjs';
+
+// Die einkauf-Endpunkte lesen das private Datenverzeichnis ($TP_PRIVAT_DIR,
+// sonst ~/teppich-paradies-analyse). Ohne diese Zeile pruefen sie den echten
+// Stand des Rechners: am 2026-09-23 schlug "verfuegbar:false ohne Export"
+// fehl, weil dort tatsaechlich ein Kennzahlen-Export lag. Ein Unit-Test darf
+// nicht davon abhaengen, was jemand nebenher in sein Heimatverzeichnis legt.
+process.env.TP_PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-test-'));
 
 async function withServer(run) {
   const server = http.createServer(requestHandler);

@@ -15,13 +15,28 @@ const FAELLE = [
   // --- muss blockieren: verwirft Arbeit oder ist unumkehrbar ---
   ['BLOCK', `${FORCE} origin main`],
   ['BLOCK', 'git ' + 'push -f'],
-  ['BLOCK', 'git ' + 'push origin --delete alt'],
   ['BLOCK', `${HARD} origin/main`],
   ['BLOCK', 'git ' + 'clean -fd'],
   ['BLOCK', 'git ' + 'restore src/app.js'],
   ['BLOCK', 'git ' + 'checkout -- .'],
-  ['BLOCK', 'git ' + 'branch -D feature/alt'],
   ['BLOCK', 'git ' + 'stash clear'],
+  // Der Grundfall bleibt gesperrt, damit jede Form ohne ausgeschriebenen
+  // Namen haengen bleibt. Bis 2026-09-23 gab es fuer den Remote gar keine
+  // Regel - nur Tags waren geschuetzt, Zweige liefen samt Sweep durch.
+  ['BLOCK', 'git ' + 'push origin --delete $(git branch -r | grep alt)'],
+  ['BLOCK', 'git ' + 'push origin --delete "alt*"'],
+  ['BLOCK', 'git ' + 'push origin --delete feature/alt --force'],
+  ['BLOCK', 'echo alt | xargs git ' + 'push origin --delete'],
+  // Ein Tag sieht aus wie ein Zweigname - die Ausnahme fuer ausgeschriebene
+  // Namen darf den Tag-Schutz nicht aushebeln.
+  ['BLOCK', 'git ' + 'push origin --delete refs/tags/v1'],
+  ['BLOCK', 'git ' + 'push origin --delete tag v1.0.0'],
+  // Die Ausnahme gilt nur fuer einen nackten Aufruf. Verpackt zaehlt der
+  // ausgeschriebene Name nicht mehr als "jemand hat hingesehen".
+  ['BLOCK', 'sh -c "git ' + 'push origin --delete alt"'],
+  ['BLOCK', 'timeout 5 git ' + 'push origin --delete alt'],
+  ['BLOCK', 'eval "git ' + 'push origin --delete alt"'],
+  ['DURCH', '/usr/bin/git ' + 'push origin --delete feature/alt'],
   ['BLOCK', 'git ' + 'remote set-url origin https://anderswo'],
   ['BLOCK', 'git ' + 'reflog expire --all'],
   ['BLOCK', 'git ' + 'update-ref -d refs/heads/main'],
@@ -49,6 +64,12 @@ const FAELLE = [
   ['DURCH', 'git stash push -m wip'],
   ['DURCH', 'git stash pop'],
   ['DURCH', 'git branch -a'],
+  // Ausgeschriebener Name heisst: jemand hat den Zweig angesehen. Seit
+  // 2026-09-12 (lokal) bzw. 2026-09-23 (Remote) ausdruecklich erlaubt, weil
+  // Aufraeumen nach einem Merge sonst nicht geht.
+  ['DURCH', 'git ' + 'branch -D feature/alt'],
+  ['DURCH', 'git ' + 'push origin --delete feature/alt'],
+  ['DURCH', 'git ' + 'push --delete origin feature/alt'],
   ['DURCH', 'git checkout -b feature/neu'],
   ['DURCH', 'git remote -v'],
   ['DURCH', 'git clean --dry-run'],
