@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-23T12:16:01.163Z",
+  "generated_at": "2026-09-23T12:16:51.495Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 133,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-23T12:16:01.163Z",
+    "fetchedAt": "2026-09-23T12:16:51.495Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -93,7 +93,7 @@
       "state": "open",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/535",
       "labels": [
-        "status:eingang",
+        "status:review",
         "type:technik",
         "priority:p1",
         "area:warenkorb"
@@ -102,13 +102,13 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 0,
+      "comments": 2,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-23T12:15:03Z",
-      "updated_at": "2026-09-23T12:15:04Z",
+      "updated_at": "2026-09-23T12:16:38Z",
       "closed_at": null
     },
     {
@@ -3667,7 +3667,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": null,
       "fields": {
         "goal": "Originalen Mac-SEO-Checker belegbar wiederherstellen",
@@ -3694,7 +3694,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:26Z",
-      "updated_at": "2026-09-23T12:15:52Z",
+      "updated_at": "2026-09-23T12:16:25Z",
       "closed_at": "2026-09-23T12:15:36Z"
     },
     {
@@ -3712,7 +3712,7 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": null,
       "fields": {
         "goal": "QA-Ausgaben auf erste relevante Assertion reduzieren",
@@ -3738,7 +3738,7 @@
         }
       },
       "created_at": "2026-09-03T09:24:25Z",
-      "updated_at": "2026-09-23T12:15:52Z",
+      "updated_at": "2026-09-23T12:16:19Z",
       "closed_at": "2026-09-23T12:15:35Z"
     },
     {
