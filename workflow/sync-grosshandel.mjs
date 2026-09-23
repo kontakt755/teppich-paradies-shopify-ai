@@ -92,7 +92,15 @@ function loadCatalogData() {
 // PHASE 3: SHOPIFY GRAPHQL QUERIES (via MCP Proxy — kein Token nötig!)
 // ─────────────────────────────────────────────────────────────
 
-const graphqlProxy = new GraphQLProxy({ store: SHOPIFY_STORE, apiVersion: SHOPIFY_API_VERSION });
+let proxyInstance = null;
+
+/** Der Konstruktor wirft bei unbrauchbarem Token; deshalb erst beim Aufruf bauen. */
+export function getProxy() {
+  if (!proxyInstance) {
+    proxyInstance = new GraphQLProxy({ store: SHOPIFY_STORE, apiVersion: SHOPIFY_API_VERSION });
+  }
+  return proxyInstance;
+}
 
 /**
  * GraphQL-Aufrufe laufen über den MCP-Proxy.
@@ -102,14 +110,17 @@ const graphqlProxy = new GraphQLProxy({ store: SHOPIFY_STORE, apiVersion: SHOPIF
  * Lokal kann jeder Sync-Aufruf stattfinden, ohne einen Token zu speichern.
  */
 async function shopifyGraphQL(query, variables = {}) {
-  return graphqlProxy.execute(query, variables);
+  return getProxy().execute(query, variables);
 }
 
 // Get all Shopify products with external ID metafield
-async function getShopifyProducts() {
+export const PRODUCT_PAGE_SIZE = 250;
+export const MAX_PRODUCT_PAGES = 40; // 10.000 Produkte; darueber ist etwas anderes falsch
+
+export async function getShopifyProducts(proxy = getProxy()) {
   const query = `
-    query {
-      products(first: 250) {
+    query ProductsPage($cursor: String) {
+      products(first: ${PRODUCT_PAGE_SIZE}, after: $cursor) {
         nodes {
           id
           title
@@ -137,8 +148,25 @@ async function getShopifyProducts() {
     }
   `;
 
-  const data = await shopifyGraphQL(query);
-  return data.products.nodes;
+  // Bis 2026-09-23 wurde pageInfo abgefragt und verworfen: alles ab Produkt 251
+  // fehlte im Abgleich, ohne Fehlermeldung. Jetzt wird geblaettert.
+  const nodes = [];
+  let cursor = null;
+
+  for (let page = 0; page < MAX_PRODUCT_PAGES; page++) {
+    const data = await proxy.execute(query, { cursor });
+    // Sammel-Betriebsart (kein Token): execute liefert null, nichts zu blaettern.
+    if (!data?.products) return nodes;
+
+    nodes.push(...(data.products.nodes || []));
+    const pageInfo = data.products.pageInfo;
+    if (!pageInfo?.hasNextPage) return nodes;
+    cursor = pageInfo.endCursor;
+  }
+
+  throw new Error(
+    `Produktabfrage nach ${MAX_PRODUCT_PAGES} Seiten (${nodes.length} Produkte) nicht am Ende. Abbruch statt Endlosschleife.`
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -185,7 +213,7 @@ function findExistingMatches(catalogData, shopifyProducts) {
 // PHASE 5: SAFETY RULES
 // ─────────────────────────────────────────────────────────────
 
-function checkSafetyRules(newArticles, existingToUpdate) {
+export function checkSafetyRules(newArticles, existingToUpdate) {
   const issues = [];
 
   if (newArticles.length > 10) {
@@ -194,8 +222,11 @@ function checkSafetyRules(newArticles, existingToUpdate) {
 
   // Check for price changes below package prices
   for (const update of existingToUpdate) {
-    const oldPrice = parseFloat(update.shopify.variants[0]?.price || '0');
-    const newPrice = parseFloat(update.artikel.price || '0');
+    // Der Katalog fuehrt das Feld `preis_eur`. Bis 2026-09-23 stand hier
+    // `update.artikel.price` - undefined, damit newPrice 0 und die Sperre
+    // unten dauerhaft wirkungslos.
+    const oldPrice = parseFloat(update.shopify.variants[0]?.price ?? '0');
+    const newPrice = parseFloat(update.artikel.preis_eur ?? '0');
 
     if (newPrice > 0 && newPrice < oldPrice * 0.8) {
       issues.push(
@@ -300,21 +331,33 @@ async function createProductDraft(article) {
   return data.productCreate.product;
 }
 
+export function preisAbweichung(match) {
+  // Shopify liefert den Preis als String, der Katalog als Zahl.
+  // Ungeprueft verglichen ('12.90' !== 12.9) meldete jeder Artikel eine Aenderung.
+  const alt = parseFloat(match.shopify?.variants?.[0]?.price ?? 'NaN');
+  const neu = parseFloat(match.artikel?.preis_eur ?? 'NaN');
+  if (!Number.isFinite(alt) || !Number.isFinite(neu)) return null;
+  if (Math.abs(alt - neu) < 0.005) return null;
+  return { alt, neu };
+}
+
 async function updateProductFields(match) {
-  // Nur Felder aktualisieren, nicht blindes productSet
-  const mutations = [];
+  const abweichung = preisAbweichung(match);
 
-  if (match.artikel.preis_eur !== match.shopify.variants[0]?.price) {
-    mutations.push(`preis: ${match.artikel.preis_eur}€`);
+  if (!abweichung) {
+    console.log(`ℹ️  Keine Aenderung noetig: ${match.artikel.titel}`);
+    return { status: 'UNVERAENDERT' };
   }
 
-  if (mutations.length === 0) {
-    console.log(`ℹ️  No changes needed: ${match.artikel.titel}`);
-    return;
-  }
-
-  console.log(`🔄 Updating: ${match.artikel.titel} (${mutations.join(', ')})`);
-  // TODO: Implement variant price update via productVariantUpdate
+  // Preisschreiben ist bewusst nicht implementiert: Preise aendern steht unter
+  // den Sicherheitsgrenzen in CLAUDE.md und braucht eine ausdrueckliche Freigabe.
+  // Die richtige Mutation waere productVariantsBulkUpdate - productVariantUpdate,
+  // auf das der alte TODO zeigte, gibt es in der Admin API nicht.
+  console.log(
+    `⏭️  Uebersprungen (Preisschreiben nicht freigegeben): ${match.artikel.titel} ` +
+    `${abweichung.alt}€ → ${abweichung.neu}€`
+  );
+  return { status: 'UEBERSPRUNGEN', ...abweichung };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -340,6 +383,7 @@ async function main() {
   // Step 3: Query Shopify
   // Ohne Token (lokal, ohne MCP-Bruecke) ist kein Abgleich moeglich: die
   // Abfragen werden nur gesammelt und exportiert, der Lauf endet sauber.
+  const graphqlProxy = getProxy();
   if (!graphqlProxy.live) {
     console.log('ℹ️  Kein SHOPIFY_ADMIN_TOKEN gesetzt: Abfragen werden nur gesammelt, kein Abgleich mit Shopify.');
     console.log('   In GitHub Actions kommt der Token aus dem Repository-Secret; lokal laeuft Schreibzugriff ueber den Shopify-MCP (CLAUDE.md).');
@@ -388,18 +432,29 @@ async function main() {
       await createProductDraft(article);
     }
 
+    let uebersprungen = 0;
     for (const match of existingToUpdate) {
-      await updateProductFields(match);
+      const ergebnis = await updateProductFields(match);
+      if (ergebnis?.status === 'UEBERSPRUNGEN') uebersprungen++;
     }
 
-    console.log('\n✅ SYNC COMPLETE');
+    if (uebersprungen > 0) {
+      console.log(
+        `\n⚠️  TEILWEISE: ${newArticles.length} Entwuerfe angelegt, ` +
+        `${uebersprungen} Preisaenderung(en) NICHT geschrieben (nicht freigegeben).`
+      );
+    } else {
+      console.log('\n✅ SYNC COMPLETE');
+    }
   } else {
     console.log(`ℹ️  To apply: SYNC_APPROVED=true npm run sync:grosshandel`);
     console.log(`ℹ️  Or locally: SYNC_APPROVED=true node workflow/sync-grosshandel.mjs`);
   }
 }
 
-main().catch((err) => {
-  console.error('❌ Sync failed:', err.message);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((err) => {
+    console.error('❌ Sync failed:', err.message);
+    process.exit(1);
+  });
+}

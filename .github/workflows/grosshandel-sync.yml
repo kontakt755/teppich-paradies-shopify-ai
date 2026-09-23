@@ -1,9 +1,12 @@
-name: Grosshandel-Sync (Daily Dry-Run)
+name: Grosshandel-Sync (Dry-Run, manuell)
 
 on:
-  # Tägliche Dry-Runs um 2 Uhr morgens
-  schedule:
-    - cron: '0 2 * * *'
+  # Der Nachtlauf ist ausgesetzt: das Repository-Secret SHOPIFY_ADMIN_TOKEN ist
+  # ein atkn_-Token, die Admin GraphQL API braucht shpat_. Der Job scheiterte
+  # deshalb jede Nacht am selben Punkt (graphql-proxy.mjs) und erzeugte nur
+  # Rauschen. Zeitplan wieder einschalten, sobald #34 den shpat_-Token liefert.
+  #  schedule:
+  #    - cron: '0 2 * * *'
   # Manuell triggern
   workflow_dispatch:
     inputs:
