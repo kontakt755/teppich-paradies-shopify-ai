@@ -105,7 +105,7 @@ function sameOrigin(req) {
 }
 
 export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|aktualisierung)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -128,6 +128,7 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req));
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
+    else if (simple === 'aktualisierung') result = api.aktualisierung();
     else if (taskOp === 'activity') result = await api.activityForTask(number);
     else if (taskOp === 'transition') result = await api.transition(number, await readJson(req));
     else if (taskOp === 'assign') result = await api.assign(number, await readJson(req));

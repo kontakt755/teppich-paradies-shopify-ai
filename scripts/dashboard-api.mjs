@@ -605,6 +605,32 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
       return { verfuegbar: true, quelle: file, produkt };
     },
+
+    /**
+     * Stand je lokaler Datenquelle (Lexikon, Bestelluebersicht, Kennzahlen),
+     * geschrieben von operations/scripts/aktualisieren.mjs
+     * ($TP_PRIVAT_DIR/aktualisierung.json). Liefert rohe Zeitstempel plus
+     * eine je Teil vorgerechnete Alters-Einschaetzung - die Oberflaeche
+     * (docs/ai-dashboard/app.js, systemHealth()) zeigt daraus "Stand: …" und
+     * warnt ab 24 Stunden. Fehlt die Datei (noch nie gelaufen), ist das kein
+     * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
+     */
+    aktualisierung() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'aktualisierung.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !daten.teile) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren' };
+      }
+      const jetzt = now().getTime();
+      const SCHWELLE_MS = 24 * 60 * 60 * 1000;
+      const teile = {};
+      for (const [teil, stand] of Object.entries(daten.teile)) {
+        const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
+        teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
+      }
+      return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile };
+    },
   };
 }
 

@@ -237,5 +237,43 @@ gebaut.
 ```
 
 Fehlt die Datei, liefert der Endpunkt `{verfuegbar: false, hinweis, befehl}` statt erfundener Zahlen; die
-Kachel zeigt den Hinweis samt Befehl. Der Export selbst (z. B. aus der Shopify Admin API oder einer
-Analytics-Query) ist noch zu bauen – das ist bewusst nicht Teil dieser Änderung.
+Kachel zeigt den Hinweis samt Befehl. Der Export selbst laeuft ueber `npm run daten:aktualisieren`
+(Abschnitt 10).
+
+## 10. Datenaktualisierung (seit 2026-09-23)
+
+Lexikon, Bestellübersicht und Kennzahlen sind Momentaufnahmen unter `$TP_PRIVAT_DIR` (Abschnitt 8/9) und
+veralten, sobald sich im Shop etwas ändert. `operations/scripts/aktualisieren.mjs`
+(`npm run daten:aktualisieren`) erneuert alle drei in einem Lauf – Details, Aufruf und Zugang stehen in
+`operations/README.md`, Abschnitt „Aktualisierung (alle Datenquellen in einem Lauf)".
+
+Jeder Teil läuft unabhängig (ein Fehler in einem verhindert die anderen nicht) und schreibt sein Ergebnis
+nach `$TP_PRIVAT_DIR/aktualisierung.json`:
+
+```json
+{
+  "aktualisiertAm": "2026-09-23T06:00:12.000Z",
+  "teile": {
+    "lexikon": { "zeitpunkt": "2026-09-23T06:00:03.000Z", "dauerMs": 41231, "erfolg": true, "anzahl": 412, "meldung": null },
+    "bestellungen": { "zeitpunkt": "2026-09-23T06:00:07.000Z", "dauerMs": 3877, "erfolg": true, "anzahl": 50, "meldung": "48/50 Quellvarianten der Muster geladen" },
+    "kennzahlen": { "zeitpunkt": "2026-09-23T06:00:12.000Z", "dauerMs": 2011, "erfolg": true, "anzahl": 63, "meldung": null }
+  }
+}
+```
+
+Schlägt ein Teil fehl (kein Zugang, API-Fehler), bleibt die vorhandene Ausgabedatei dieses Teils
+unverändert stehen – lieber ein alter, erkennbar datierter Stand als gar keine Daten. `aktualisiere()`
+übernimmt beim nächsten Lauf den Stand der Teile, die diesmal nicht liefen (`--nur`), statt sie zu löschen.
+
+Der Endpunkt `/api/aktualisierung` (`scripts/dashboard-api.mjs`, Funktion `aktualisierung()`) liest diese
+Datei, rechnet je Teil das Alter aus und markiert `veraltet: true` ab 24 Stunden. Die Startseite „Heute"
+und „Insights" zeigen das in der Kachel „Systemgesundheit" (`docs/ai-dashboard/app.js`,
+`aktualisierungHealth()`): eine Zeile je Datenquelle mit „Stand: …" und, wenn veraltet oder fehlgeschlagen,
+dem Hinweis „Daten veraltet – bitte `npm run daten:aktualisieren` ausführen." Wie beim Einkauf-Bereich nur
+im lokalen Modus sichtbar (`capabilities.mode === 'local'`) – die Rohdaten bleiben privat.
+
+Täglich automatisch: eine geplante Aufgabe in Claude Desktop (`~/.claude/scheduled-tasks/`, siehe
+`operations/README.md`) ruft `npm run daten:aktualisieren` auf einem eingeschalteten Rechner mit Zugang in
+`.env.local` auf. War der Rechner zum geplanten Zeitpunkt aus, läuft schlicht nichts – die Alters-Anzeige im
+Dashboard macht das sichtbar (kein stiller Fehlschlag), und der nächste manuelle oder geplante Lauf holt
+den Stand nach.
