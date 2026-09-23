@@ -20,19 +20,28 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
     nodes {
       id name createdAt updatedAt cancelledAt note tags
       displayFinancialStatus displayFulfillmentStatus
+      email phone
+      customer { displayName email phone }
+      totalPriceSet { shopMoney { amount currencyCode } }
       customAttributes { key value }
       shippingAddress { name address1 address2 zip city country countryCodeV2 phone }
+      billingAddress { name address1 address2 zip city country countryCodeV2 phone }
+      fulfillments(first: 10) { trackingInfo { number url company } }
       metafields(namespace: "ops", first: 20) { nodes { namespace key type value } }
       lineItems(first: 50) {
         nodes {
           id sku title variantTitle quantity currentQuantity unfulfilledQuantity
           customAttributes { key value }
+          image { url altText }
           variant {
             id sku title
+            image { url altText }
             metafields(namespace: "einkauf", first: 20) { nodes { namespace key type value } }
             lieferant: metafields(namespace: "lieferant", first: 10) { nodes { namespace key type value } }
+            custom: metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
             product {
               id handle title
+              featuredMedia { preview { image { url altText } } }
               metafields(namespace: "custom", first: 20) { nodes { namespace key type value } }
               grosshandel: metafields(namespace: "grosshandel", first: 5) { nodes { namespace key type value } }
             }
@@ -74,15 +83,22 @@ mutation OpsTagsAdd($id: ID!, $tags: [String!]!) {
 export function normalisiereLineItem(li) {
   if (!li?.variant) return li;
   const v = li.variant;
-  const vNodes = [...(v.metafields?.nodes ?? []), ...(v.lieferant?.nodes ?? [])];
+  // custom liegt auf BEIDEN Ebenen: rollenbreite und preis_pro_001_qm stehen bei
+  // Flaechenware je Variante, farbcode ebenfalls. Fehlte der Namensraum hier,
+  // blieb die Einkaufsmenge UNGEKLAERT, obwohl der Wert im Shop steht.
+  const vNodes = [...(v.metafields?.nodes ?? []), ...(v.lieferant?.nodes ?? []), ...(v.custom?.nodes ?? [])];
   const p = v.product;
   const pNodes = p ? [...(p.metafields?.nodes ?? []), ...(p.grosshandel?.nodes ?? [])] : [];
+  // Produktbild: Shopify liefert es unter featuredMedia.preview.image; die
+  // Karte sucht es als featuredImage. Einmal hier umhaengen, nicht dort raten.
+  const pBild = p?.featuredMedia?.preview?.image ?? null;
   return {
     ...li,
     variant: {
       id: v.id, sku: v.sku, title: v.title,
+      image: v.image ?? null,
       metafields: vNodes,
-      product: p ? { id: p.id, handle: p.handle, title: p.title, metafields: pNodes } : null,
+      product: p ? { id: p.id, handle: p.handle, title: p.title, featuredImage: pBild, metafields: pNodes } : null,
     },
   };
 }

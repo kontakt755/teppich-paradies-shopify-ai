@@ -109,9 +109,13 @@ export function einkaufsmenge(item, menge) {
     if (e.bestelleinheit === EINHEIT.LFM || gruppe === GRUPPE.ROLLE) {
       const breiteCm = ein.rollenbreiteCm || ein.ausRolleCm || (p.rollenbreite !== UNGEKLAERT ? p.rollenbreite * 100 : null);
       if (!(breiteCm > 0)) return ungeklaert('Rollenbreite fehlt (custom.rollenbreite / Property Rollenbreite)');
-      const laengeCm = ein.gewuenschteLaengeCm;
+      // Laenge: der Rollenrechner schreibt "Gewuenschte Laenge", der Zuschnitt-
+      // und Einfasskonfigurator stattdessen "Maße" als Breite x Laenge (so
+      // erzeugt in assets/tp-einfass-konfigurator.js). Beides ist dieselbe
+      // Angabe, deshalb zaehlt sie hier gleich - geraten wird nichts.
+      const laengeCm = ein.gewuenschteLaengeCm > 0 ? ein.gewuenschteLaengeCm : (ein.masse?.laengeCm ?? null);
       const flaecheM2 = p.preis_pro_001_qm ? menge / 100 : null;
-      if (!(laengeCm > 0) && !(flaecheM2 > 0)) return ungeklaert('Laenge fehlt (Property Gewuenschte Laenge)');
+      if (!(laengeCm > 0) && !(flaecheM2 > 0)) return ungeklaert('Laenge fehlt (Property Gewuenschte Laenge oder Maße)');
       const r = rollenware({ laengeCm, flaecheM2, breiteM: breiteCm / 100 });
       const rasterHinweis = r.raster === UNGEKLAERT ? ' (Lieferantenraster UNGEKLAERT)' : '';
       return { menge: r.lfm, einheit: EINHEIT.LFM, text: r.text + rasterHinweis, grund: r.raster === UNGEKLAERT ? 'Lieferantenraster nicht belegt' : null };

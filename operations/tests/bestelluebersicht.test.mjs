@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { aufbereiten, renderHtml, kopierText, adminLink, istOffen, lieferantFuer } from '../lib/bestelluebersicht.mjs';
+import { aufbereiten, renderHtml, kopierText, adminLink, istOffen, lieferantFuer, einkaufsmenge } from '../lib/bestelluebersicht.mjs';
 import { argumente, pruefeAusgabe, ladeExport, STANDARD_AUSGABE } from '../scripts/bestelluebersicht.mjs';
 import { UNGEKLAERT } from '../lib/umrechnung.mjs';
 
@@ -175,4 +175,25 @@ test('CLI: Argumente, Ausgabe nie im Repository, Exportformate', () => {
   assert.equal(ladeExport(JSON.stringify({ data: { orders: { nodes: [{ id: 1 }] } } })).orders.length, 1);
   assert.equal(ladeExport(JSON.stringify([{ id: 1 }])).orders.length, 1);
   assert.throws(() => ladeExport('{}'), /orders/);
+});
+
+// Zuschnittbestellungen tragen die Laenge in "Maße" (Breite x Laenge), nicht in
+// "Gewuenschte Laenge". Ohne diesen Zweig blieb die Einkaufsmenge UNGEKLAERT,
+// obwohl das Mass in der Bestellung steht (belegt an Bestellung #1008).
+test('Einkaufsmenge nimmt die Laenge auch aus der Eigenschaft Maße', () => {
+  const item = {
+    einkauf: { bestelleinheit: 'lfm' },
+    produkt: { rollenbreite: 4, preis_pro_001_qm: false, qm_pro_paket: 'UNGEKLAERT' },
+    eingaben: { masse: { breiteCm: 250, laengeCm: 350 } },
+  };
+  const r = einkaufsmenge(item, 1);
+  assert.equal(r.einheit, 'lfm');
+  assert.notEqual(r.menge, 'UNGEKLAERT');
+  assert.match(r.text, /3,5/);
+});
+
+test('ohne jede Laengenangabe bleibt es UNGEKLAERT und nennt beide Eigenschaften', () => {
+  const r = einkaufsmenge({ einkauf: { bestelleinheit: 'lfm' }, produkt: { rollenbreite: 4 }, eingaben: {} }, 1);
+  assert.equal(r.menge, 'UNGEKLAERT');
+  assert.match(r.grund, /Gewuenschte Laenge oder Maße/);
 });
