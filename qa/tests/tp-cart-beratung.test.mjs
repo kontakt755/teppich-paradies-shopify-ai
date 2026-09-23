@@ -202,3 +202,20 @@ test('Zwischen Gesamtbetrag und Kaufknopf steht nur der Preishinweis', () => {
   // Der gesetzliche Preishinweis bleibt am Preis.
   assert.ok(dazwischen.includes("render 'tax-info'"));
 });
+
+test('Pflichtfrage und Masspruefung vor dem Kaufknopf, Verlegeanfrage dahinter', () => {
+  const s = lies('snippets/cart-summary.liquid');
+  const vor = s.indexOf("render 'tp-cart-beratung', stelle: 'vor_kasse'");
+  const cta = s.indexOf('<div class="cart__ctas">');
+  const nach = s.indexOf("render 'tp-cart-beratung', stelle: 'nach_kasse'");
+  assert.ok(vor > 0 && cta > vor, 'vor_kasse steht vor den Kaufknoepfen');
+  assert.ok(nach > cta, 'nach_kasse steht hinter den Kaufknoepfen');
+
+  const snippet = lies('snippets/tp-cart-beratung.liquid');
+  // Die Stelle entscheidet Liquid, nicht CSS - sonst wichen Lese- und
+  // Tastaturreihenfolge von der sichtbaren Reihenfolge ab.
+  assert.match(snippet, /assign tpb_stelle_soll = 'nach_kasse'/);
+  assert.match(snippet, /if tpb_frage or tpb_mass\s*\n\s*assign tpb_stelle_soll = 'vor_kasse'/);
+  assert.match(snippet, /if tpb_stelle != tpb_stelle_soll\s*\n\s*assign tpb_zeigen = false/);
+  assert.ok(!/(?:^|[\s;{])order:\s*\d/m.test(snippet), 'keine CSS-order-Umsortierung');
+});

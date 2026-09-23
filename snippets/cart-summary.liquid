@@ -291,8 +291,8 @@
   </div>
 </div>
 
-{% # Beratungsfrage nur bei reiner Musterbestellung; Masspruefung/Verlegeanfrage nur bei passenden Positionen. Bei normaler Ware rendert das Snippet nichts, dann folgt direkt der Kaufknopf (snippets/tp-cart-beratung.liquid) %}
-{% render 'tp-cart-beratung' %}
+{% # Vor dem Kaufknopf: was beantwortet sein muss, bevor bestellt wird - die Pflichtfrage bei reiner Musterbestellung und die Masspruefung. Bei normaler Ware rendert das Snippet hier nichts (snippets/tp-cart-beratung.liquid) %}
+{% render 'tp-cart-beratung', stelle: 'vor_kasse' %}
 
 <div class="cart__ctas">
   <button
@@ -321,6 +321,9 @@
     </div>
   {% endif %}
 </div>
+
+{% # Hinter dem Kaufknopf: die freiwillige Verlegeanfrage - sie haelt einen Kaufkunden nicht auf %}
+{% render 'tp-cart-beratung', stelle: 'nach_kasse' %}
 
 {% if settings.show_installments %}
   <div class="cart-totals__item cart-totals__installments cart-totals__installments--nach-cta">

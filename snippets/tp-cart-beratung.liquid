@@ -128,6 +128,24 @@
   if tpb_aufraeumen
     assign tpb_zeigen = true
   endif
+
+  # Vor oder hinter dem Kaufknopf? Was beantwortet werden muss, bevor bestellt
+  # wird, steht davor: die Pflichtfrage bei reiner Musterbestellung und die
+  # Masspruefung, die einen nicht ruecknehmbaren Zuschnitt betrifft. Die
+  # Verlegeanfrage ist ein freiwilliges Interesse und darf einem Kaufkunden
+  # nicht zwischen Gesamtbetrag und "Zur Kasse" stehen.
+  # Umgesetzt ueber die Aufrufstelle statt ueber CSS order, damit Lesereihenfolge
+  # und Tastaturreihenfolge zur sichtbaren Reihenfolge passen. Das Element
+  # entsteht immer nur EINMAL - zwei davon wuerden sich beim Speichern der
+  # Cart-Attribute gegenseitig ueberschreiben.
+  assign tpb_stelle_soll = 'nach_kasse'
+  if tpb_frage or tpb_mass
+    assign tpb_stelle_soll = 'vor_kasse'
+  endif
+  assign tpb_stelle = stelle | default: 'vor_kasse'
+  if tpb_stelle != tpb_stelle_soll
+    assign tpb_zeigen = false
+  endif
 -%}
 
 {%- if cart != empty and tpb_zeigen -%}
