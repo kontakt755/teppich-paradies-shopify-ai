@@ -1,5 +1,13 @@
 # Ratgeber / Bodenwissen – Architektur, Redaktion, SEO- und KI-Grundlage
 
+> **Seit 2026-09-23 (Aufgabe #505) liegt die Portal-Architektur in
+> `docs/bodenwissen/`.** Diese Datei bleibt bestehen: Sie ist das Protokoll des
+> Livegangs vom 2026-09-21 und die Quelle der Metafeld-Konvention (Abschnitt 2).
+> Wo beide Dateien etwas zur Architektur sagen, gilt `docs/bodenwissen/`.
+> Neu dort: Content-Datenmodell mit Suchintention und Kannibalisierungs-Gate
+> (`npm run bodenwissen:guard`), Lexikon, Problem-Finder, Rechner, die
+> Bodenwissen-Suche und ein Backlog mit 121 Themen.
+
 Stand 2026-09-21 · Aufgabe #422. Ziel: ein Wissensbereich unter „Service &
 Verlegung", der Menschen hilft, für Suchmaschinen und Antwortsysteme sauber lesbar
 ist und mit dem Verkauf verbunden ist, ohne zur Werbeseite zu werden.
