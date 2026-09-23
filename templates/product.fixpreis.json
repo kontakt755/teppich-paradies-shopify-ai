@@ -282,6 +282,24 @@
                 "note": "Montagehinweise finden Sie in der Beschreibung."
               }
             },
+            "ai_gen_block_b888d9b_CJbJ8X": {
+              "type": "tp-produktinfo-tabelle",
+              "settings": {
+                "desktop_width_percent": 100,
+                "key_column_width": 35,
+                "cell_padding": 16,
+                "border_radius": 8,
+                "row_border_width": 1,
+                "background_color": "#ffffff",
+                "border_color": "#e6e6e6",
+                "key_text_color": "#000000",
+                "value_text_color": "#000000",
+                "key_font_size": 14,
+                "key_font_weight": "600",
+                "value_font_size": 14
+              },
+              "blocks": {}
+            },
             "tp_leisten_vorschau": {
               "type": "tp-leisten-vorschau",
               "settings": {}
@@ -324,6 +342,7 @@
             "buy_buttons_eYQEYi",
             "tp_service_links_sales1",
             "tp_leisten_details",
+            "ai_gen_block_b888d9b_CJbJ8X",
             "text_aEtTtq"
           ]
         }

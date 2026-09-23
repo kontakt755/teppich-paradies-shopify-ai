@@ -80,18 +80,84 @@ Material::material::name|
 Fasermaterial::fasermaterial::fasermaterial|
 Zimmer::zimmer::zimmer|
 Aufbau::aufbau::name|
-Rückenausstattung::ruckenausstattung::name|
+Rücken::ruckenausstattung::name|
 Florhöhe::florhohe::name|
 Gesamtstärke::gesamtstarke::name|
 Poleneinsatzgewicht::poleneinsatzgewicht::name|
-Nutzungsklassen::nutzungsklassen::nutzungsklasse|
+Nutzungsklasse (EN ISO 10874)::nutzungsklassen::nutzungsklasse|
 Komfortklasse::komfortklasse::name|
-Fußbodenheizung::fusbodenheizung::fusbodenheizung|
+Fußbodenheizung geeignet::fusbodenheizung::fusbodenheizung|
 Trittschallverbesserung::trittschallverbesserung::name|
-Brandverhalten::brandverhalten::brandverhalten
+Brandklasse (EN 13501-1)::brandverhalten::brandverhalten
 {% endcapture %}
 
 {% assign table_rows = table_config | strip | split: '|' %}
+
+{% comment %}
+  Rollenbreite (Rollenware): echte Datenquelle sind die Varianten-Metafelder
+  custom.rollenbreite (siehe snippets/tp-card-roll-widths.liquid), Fallback
+  Produkt-Metafeld. Nur eindeutige Werte, aufsteigend nach cm sortiert.
+{% endcomment %}
+{%- liquid
+  assign tp_pit_rw_seen = '|'
+  assign tp_pit_rw_entries = ''
+  assign tp_pit_rw_count = 0
+
+  for tp_pit_rw_variant in product.variants
+    assign tp_pit_rw_metres = tp_pit_rw_variant.metafields.custom.rollenbreite.value
+    if tp_pit_rw_metres != blank
+      assign tp_pit_rw_cm = tp_pit_rw_metres | times: 100 | round
+      assign tp_pit_rw_token = '|' | append: tp_pit_rw_cm | append: '|'
+      if tp_pit_rw_cm > 0
+        unless tp_pit_rw_seen contains tp_pit_rw_token
+          assign tp_pit_rw_seen = tp_pit_rw_seen | append: tp_pit_rw_cm | append: '|'
+          assign tp_pit_rw_sort_key = tp_pit_rw_cm | prepend: '000000'
+          assign tp_pit_rw_sort_key = tp_pit_rw_sort_key | slice: -6, 6
+          if tp_pit_rw_entries != blank
+            assign tp_pit_rw_entries = tp_pit_rw_entries | append: ','
+          endif
+          assign tp_pit_rw_entries = tp_pit_rw_entries | append: tp_pit_rw_sort_key | append: ':' | append: tp_pit_rw_cm
+          assign tp_pit_rw_count = tp_pit_rw_count | plus: 1
+        endunless
+      endif
+    endif
+  endfor
+
+  if tp_pit_rw_count == 0
+    assign tp_pit_rw_product_metafield = product.metafields.custom.rollenbreite
+    assign tp_pit_rw_product_value = tp_pit_rw_product_metafield.value
+    if tp_pit_rw_product_value != blank
+      if tp_pit_rw_product_metafield.type contains 'list.'
+        for tp_pit_rw_metres in tp_pit_rw_product_value
+          assign tp_pit_rw_cm = tp_pit_rw_metres | times: 100 | round
+          assign tp_pit_rw_token = '|' | append: tp_pit_rw_cm | append: '|'
+          if tp_pit_rw_cm > 0
+          unless tp_pit_rw_seen contains tp_pit_rw_token
+            assign tp_pit_rw_seen = tp_pit_rw_seen | append: tp_pit_rw_cm | append: '|'
+            assign tp_pit_rw_sort_key = tp_pit_rw_cm | prepend: '000000'
+            assign tp_pit_rw_sort_key = tp_pit_rw_sort_key | slice: -6, 6
+            if tp_pit_rw_entries != blank
+              assign tp_pit_rw_entries = tp_pit_rw_entries | append: ','
+            endif
+            assign tp_pit_rw_entries = tp_pit_rw_entries | append: tp_pit_rw_sort_key | append: ':' | append: tp_pit_rw_cm
+            assign tp_pit_rw_count = tp_pit_rw_count | plus: 1
+          endunless
+          endif
+        endfor
+      else
+        assign tp_pit_rw_cm = tp_pit_rw_product_value | times: 100 | round
+        if tp_pit_rw_cm > 0
+          assign tp_pit_rw_entries = '000000:' | append: tp_pit_rw_cm
+          assign tp_pit_rw_count = 1
+        endif
+      endif
+    endif
+  endif
+
+  assign tp_pit_rw_sorted = tp_pit_rw_entries | split: ',' | sort
+
+  assign tp_pit_paket_qm = product.metafields.custom.qm_pro_paket.value
+-%}
 
 <product-info-table-{{ ai_gen_id }}
   class="ai-product-info-table-{{ ai_gen_id }}"
@@ -145,6 +211,25 @@ Brandverhalten::brandverhalten::brandverhalten
         </tr>
       {% endif %}
     {% endfor %}
+
+    {% if tp_pit_rw_count > 0 %}
+      <tr class="ai-product-info-table__row-{{ ai_gen_id }}">
+        <td class="ai-product-info-table__key-{{ ai_gen_id }}">Rollenbreite</td>
+        <td class="ai-product-info-table__value-{{ ai_gen_id }}">
+          {%- for tp_pit_rw_entry in tp_pit_rw_sorted -%}
+            {%- assign tp_pit_rw_value = tp_pit_rw_entry | split: ':' | last -%}
+            {{- tp_pit_rw_value -}} cm{%- unless forloop.last -%}, {% endunless -%}
+          {%- endfor -%}
+        </td>
+      </tr>
+    {% endif %}
+
+    {% if tp_pit_paket_qm != blank %}
+      <tr class="ai-product-info-table__row-{{ ai_gen_id }}">
+        <td class="ai-product-info-table__key-{{ ai_gen_id }}">m² pro Paket</td>
+        <td class="ai-product-info-table__value-{{ ai_gen_id }}">{{ tp_pit_paket_qm }} m²</td>
+      </tr>
+    {% endif %}
   </table>
 </product-info-table-{{ ai_gen_id }}>
 
