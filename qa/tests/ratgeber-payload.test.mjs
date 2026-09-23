@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { baueEingabe, ladeArtikel, ohneKommentare, pruefeFreigabe } from '../../scripts/ratgeber-payload.mjs';
+import { OFFENE_STATUS, baueEingabe, ladeArtikel, ohneKommentare, pruefeFreigabe } from '../../scripts/ratgeber-payload.mjs';
 
 const meta = (extra = {}) => ({
   handle: 'test-artikel', title: 'Testartikel', tags: ['Planen & Messen'], excerpt: 'Kurz.',
@@ -57,12 +57,19 @@ test('fehlende Kollektions-GID bricht ab statt den Verweis still wegzulassen', (
   assert.throws(() => baueEingabe(meta(), HTML, { blogId: OPT.blogId, kollektionen: {} }), /Kollektion "teppichboden".*fehlt/);
 });
 
-test('die echten Pilotartikel sind Entwuerfe und bleiben gesperrt, solange PRUEFEN-Marken offen sind', () => {
+test('die echten Pilotartikel: offener Status plus PRUEFEN-freier Text, sonst gesperrt', () => {
   const ordner = path.resolve(import.meta.dirname, '../../content/ratgeber/teppichboden');
   const artikel = ladeArtikel(ordner);
   assert.ok(artikel.length >= 4);
   for (const { meta: m, html } of artikel) {
     assert.ok(fs.existsSync(path.join(ordner, `${m.handle}.html`)), `${m.handle}: Dateiname und handle stimmen ueberein`);
-    if (html.includes('PRUEFEN') || m.status !== 'freigegeben') assert.ok(pruefeFreigabe(m, html).length > 0, `${m.handle} muesste gesperrt sein`);
+    const gesperrt = pruefeFreigabe(m, html).length > 0;
+    const darfDurch = OFFENE_STATUS.includes(m.status) && !html.includes('PRUEFEN');
+    assert.equal(gesperrt, !darfDurch, `${m.handle}: Status "${m.status}" und Sperre passen nicht zusammen`);
   }
+});
+
+test('ein Artikel im Status veroeffentlicht darf gebaut werden, ein Entwurf nicht', () => {
+  assert.deepEqual(pruefeFreigabe(meta({ status: 'veroeffentlicht' }), HTML), []);
+  assert.ok(pruefeFreigabe(meta({ status: 'fachpruefung' }), HTML).length > 0);
 });

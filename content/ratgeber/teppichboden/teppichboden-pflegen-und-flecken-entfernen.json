@@ -1,10 +1,50 @@
 {
+  "id": "RAT-TB-005",
   "handle": "teppichboden-pflegen-und-flecken-entfernen",
   "title": "Teppichboden pflegen und Flecken entfernen: Was wirklich hilft",
   "blog": "ratgeber-teppichboden",
   "tags": [
     "Pflege"
   ],
+  "cluster": "teppichboden/pflege",
+  "parent": "ratgeber-teppichboden",
+  "intent": "anleitung",
+  "frage": "Wie pflege ich Teppichboden und was hilft gegen Flecken?",
+  "begriff": "teppichboden pflegen",
+  "nebenfragen": [
+    "Wie oft saugen?",
+    "Was tun bei einem frischen Fleck?",
+    "Wann lohnt eine Grundreinigung?"
+  ],
+  "status": "veroeffentlicht",
+  "verwandte": [
+    "welcher-teppichboden-fuer-welchen-raum"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [],
+  "quellen": [
+    {
+      "art": "hersteller",
+      "titel": "Pflegehinweise des jeweiligen Herstellers",
+      "url": ""
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Sauberlaufzone am Eingang",
+      "status": "offen"
+    },
+    {
+      "zweck": "Fleck abtupfen mit weissem Tuch",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 18,
+    "naechste": "2028-03-21",
+    "grund": "Pflegeempfehlungen werden mit dem Verlegeteam nachgeschaerft"
+  },
+  "expert_input": [],
   "excerpt": "Regelmäßig saugen, Sauberlaufmatte am Eingang, Erste Hilfe bei frischen Flecken, typische Fehler – und wann Reinigen nicht mehr weiterhilft.",
   "seo": {
     "title": "Teppichboden pflegen und Flecken entfernen: So geht es",
@@ -29,6 +69,5 @@
     "zubehoer_kollektion": "zubehoer-reinigungsmittel",
     "geprueft_von": "",
     "stand": ""
-  },
-  "status": "freigegeben"
+  }
 }

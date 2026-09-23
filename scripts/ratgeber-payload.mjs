@@ -17,12 +17,16 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const FREIGABE_STATUS = 'freigegeben';
+// 'veroeffentlicht' steht fuer einen Artikel, der bereits im Shop sichtbar ist. Der
+// Quelltext bleibt trotzdem die Wahrheit, also darf er neu gebaut werden. Die vollstaendige
+// Statusliste steht in docs/bodenwissen/CONTENT_MODEL.md, Abschnitt 3.
+export const OFFENE_STATUS = [FREIGABE_STATUS, 'veroeffentlicht'];
 const ERLAUBTE_CTA = ['rechner', 'muster', 'verlegeservice', 'zubehoer'];
 const ERLAUBTE_ART = ['Kaufberatung', 'Anleitung', 'Planung', 'Pflege'];
 
 export function pruefeFreigabe(meta, html) {
   const gruende = [];
-  if (meta.status !== FREIGABE_STATUS) gruende.push(`status ist "${meta.status}", nicht "${FREIGABE_STATUS}"`);
+  if (!OFFENE_STATUS.includes(meta.status)) gruende.push(`status ist "${meta.status}", nicht ${OFFENE_STATUS.map(s => `"${s}"`).join(' oder ')}`);
   const marken = (html.match(/PRUEFEN/g) || []).length;
   if (marken > 0) gruende.push(`${marken} offene PRUEFEN-Marke(n)`);
   if (!meta.metafields?.kurzantwort?.trim()) gruende.push('kurzantwort fehlt');

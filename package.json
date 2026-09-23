@@ -70,7 +70,10 @@
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
-    "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
+    "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
+    "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
+    "lexikon:payload": "node scripts/lexikon-payload.mjs",
+    "probleme:payload": "node scripts/probleme-payload.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

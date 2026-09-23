@@ -1,10 +1,60 @@
 {
+  "id": "RAT-TB-004",
   "handle": "teppichboden-verlegen-lose-fixieren-oder-kleben",
   "title": "Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?",
   "blog": "ratgeber-teppichboden",
   "tags": [
     "Verlegen"
   ],
+  "cluster": "teppichboden/verlegen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "anleitung",
+  "frage": "Soll ich Teppichboden lose verlegen, fixieren oder verkleben?",
+  "begriff": "teppichboden verlegen",
+  "nebenfragen": [
+    "Wann reicht lose verlegen?",
+    "Was ist eine Fixierung?",
+    "Wann muss vollflaechig verklebt werden?"
+  ],
+  "status": "veroeffentlicht",
+  "verwandte": [
+    "teppichboden-richtig-ausmessen",
+    "rollenbreite-und-bahnen-planen"
+  ],
+  "naechster_schritt": "teppichboden-pflegen-und-flecken-entfernen",
+  "lexikon": [],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Zubehoer: Verlegeband, Fixierung, Kleber",
+      "url": "/collections/zubehoer"
+    },
+    {
+      "art": "hersteller",
+      "titel": "Verarbeitungshinweise des jeweiligen Klebers",
+      "url": ""
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Verlegeband im Gitter auf dem Untergrund",
+      "status": "offen"
+    },
+    {
+      "zweck": "Doppelnahtschnitt an der Bahnenkante",
+      "status": "offen"
+    },
+    {
+      "zweck": "Anschluss an die Tuerzarge",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-21",
+    "grund": "Verlegearten sind stabil; Kleberangaben stehen beim Hersteller"
+  },
+  "expert_input": [],
   "excerpt": "Lose, fixiert oder verklebt: die Unterschiede der drei Verlegearten, die Vorbereitung des Untergrunds und der grundsätzliche Ablauf beim Fixieren.",
   "seo": {
     "title": "Teppichboden verlegen: lose, fixieren oder kleben?",
@@ -32,6 +82,5 @@
     "zubehoer_kollektion": "zubehoer-verlegeband",
     "geprueft_von": "",
     "stand": ""
-  },
-  "status": "freigegeben"
+  }
 }
