@@ -705,7 +705,7 @@ function ensureEinkaufKennzahlen() {
 
 function ensureEinkaufProduktstatus() {
   const p = state.route.params;
-  const qs = new URLSearchParams({ page: p.get('seite') || '1', q: p.get('psq') || '', gruppe: p.get('gruppe') || '' }).toString();
+  const qs = new URLSearchParams({ page: p.get('seite') || '1', q: p.get('psq') || '', gruppe: p.get('gruppe') || '', filter: p.get('psfilter') || '' }).toString();
   if (einkauf.produktstatusKey === qs && (einkauf.produktstatus || einkauf.loadingProduktstatus)) return;
   einkauf.produktstatusKey = qs;
   einkauf.loadingProduktstatus = true;
@@ -827,53 +827,66 @@ function viewEinkaufBestellungen() {
     <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
 }
 
+const EINKAUF_PSFILTER_LABEL = { '': 'Alle offenen Produkte', blockierend: 'Nur blockierend', handarbeit: 'Nur Handarbeit' };
+
 function viewEinkaufProduktdaten() {
   ensureEinkaufProduktstatus();
   const d = einkauf.produktstatus;
   const p = state.route.params;
+  const psfilter = ['', 'blockierend', 'handarbeit'].includes(p.get('psfilter')) ? p.get('psfilter') : '';
   const toolbar = `<div class="toolbar" style="margin:12px 0">
-      <input type="search" placeholder="Suche nach Produkt, SKU oder Artikelnummer …" value="${esc(p.get('psq') || '')}" data-param="psq" aria-label="Produktdaten durchsuchen">
+      <input type="search" placeholder="Suche nach Produkt, Handle oder SKU …" value="${esc(p.get('psq') || '')}" data-param="psq" aria-label="Produktdaten durchsuchen">
       ${d?.gruppen?.length ? `<select data-param="gruppe" aria-label="Nach Produktgruppe filtern"><option value="">Alle Gruppen</option>${d.gruppen.map(g => `<option value="${esc(g.gruppe)}" ${p.get('gruppe') === g.gruppe ? 'selected' : ''}>${esc(g.gruppe)}</option>`).join('')}</select>` : ''}
+    </div>
+    <div class="chips" role="group" aria-label="Nach Dringlichkeit filtern" style="margin:8px 0 12px">
+      ${Object.entries(EINKAUF_PSFILTER_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="psfilter" data-value="${k}" aria-pressed="${psfilter === k}">${esc(l)}</button>`).join('')}
     </div>`;
   if (!d && einkauf.loadingProduktstatus) return toolbar + `<div class="empty">Lade Produktdaten-Status …</div>`;
   if (!d || !d.verfuegbar) return emptyState('Keine Produktdaten-Statusdaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
   const g = d.gesamt;
-  const pct = n => g.anzahl ? Math.round((n / g.anzahl) * 100) : 0;
-  const gruppenzeilen = d.gruppen.map(row => `<tr>
+  const gruppenzeilen = d.gruppen.map(row => {
+    const summe = row.vollstaendig + row.handarbeit + row.automatisch;
+    return `<tr>
       <td>${esc(row.gruppe)}</td>
       <td>${row.vollstaendig}</td>
-      <td>${row.offen}</td>
-      <td><div class="track" style="max-width:160px"><div class="fill" style="width:${row.vollstaendig + row.offen ? Math.round(row.vollstaendig / (row.vollstaendig + row.offen) * 100) : 0}%"></div></div></td>
-    </tr>`).join('');
+      <td>${row.handarbeit}</td>
+      <td>${row.automatisch}</td>
+      <td><div class="track" style="max-width:160px"><div class="fill" style="width:${summe ? Math.round(row.vollstaendig / summe * 100) : 0}%"></div></div></td>
+    </tr>`;
+  }).join('');
   const offen = d.offen;
-  const items = offen.items.map(e => `<tr>
-      <td>${esc(e.titel)}<div class="small muted mono">${esc(e.sku || e.handle)}</div></td>
-      <td>${esc(e.variante)}</td>
-      <td>${esc(e.gruppe)}</td>
-      <td>${e.offeneFelder.map(f => `<div><b>${esc(f.feld)}</b>: ${esc(f.grund)}</div>`).join('')}</td>
+  const items = offen.items.map(e => {
+    const status = e.status === 'handarbeit' ? { cls: 'blockiert', label: 'Handarbeit' } : { cls: 'freigabe', label: 'Füllt sich automatisch' };
+    return `<tr>
+      <td><span class="badge status ${status.cls}">${esc(status.label)}</span></td>
+      <td>${esc(e.titel)}<div class="small muted mono">${esc(e.handle)}</div></td>
+      <td>${esc(e.gruppe)}<div class="small muted">${e.variantenAnzahl} Variante${e.variantenAnzahl === 1 ? '' : 'n'}</div></td>
+      <td>${e.offeneFelder.map(f => `<div><b>${esc(f.klartext)}</b>${f.blockierend ? ' <span class="badge p0" style="font-size:10px">blockiert Bestellung</span>' : ''}<div class="small muted">${esc(f.grund)}${f.variantenBetroffen < e.variantenAnzahl ? ` · ${f.variantenBetroffen}/${e.variantenAnzahl} Varianten` : ''}</div></div>`).join('')}</td>
       <td>${e.offeneFelder.map(f => `<div>${esc(f.naechsterSchritt)}</div>`).join('')}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   const pages = offen.pages > 1 ? `<div class="toolbar" style="margin-top:10px">
       <button type="button" class="btn btn-sm" ${offen.page <= 1 ? 'disabled' : ''} data-param="seite" data-value="${offen.page - 1}">← Zurück</button>
-      <span class="muted small">Seite ${offen.page} von ${offen.pages} · ${offen.count} offene Varianten</span>
+      <span class="muted small">Seite ${offen.page} von ${offen.pages} · ${offen.count} Produkte</span>
       <button type="button" class="btn btn-sm" ${offen.page >= offen.pages ? 'disabled' : ''} data-param="seite" data-value="${offen.page + 1}">Weiter →</button>
     </div>` : '';
   return `
     <div class="band" style="margin:12px 0">
-      <div class="ok"><span class="n">${g.vollstaendig}</span><span class="l">vollständig (${pct(g.vollstaendig)} %)</span></div>
-      <div class="${g.offen ? 'warn' : 'ok'}"><span class="n">${g.offen}</span><span class="l">offen (${pct(g.offen)} %)</span></div>
-      <div class="info"><span class="n">${g.anzahl}</span><span class="l">Varianten gesamt</span></div>
+      <div class="ok"><span class="n">${g.vollstaendig}</span><span class="l">von ${g.anzahl} Produkten vollständig</span></div>
+      <div class="${g.handarbeit ? 'crit' : 'ok'}"><span class="n">${g.handarbeit}</span><span class="l">brauchen Handarbeit</span></div>
+      <div class="info"><span class="n">${g.automatisch}</span><span class="l">füllen sich automatisch</span></div>
     </div>
+    <p class="small muted" style="margin:-6px 0 14px">„Handarbeit" blockiert eine Bestellung beim Lieferanten (Lieferant, Artikelnummer, Farbnummer oder Bestellmenge unklar) – dort muss jemand nachschauen. „Füllt sich automatisch" sind reine Zusatzinformationen wie Kollektion oder Hersteller, die keine Bestellung aufhalten und sich ergänzen, sobald der laufende Abgleich weiterläuft.</p>
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Je Produktgruppe</h2></div>
-      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Offen</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
+      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Handarbeit</th><th>Automatisch</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
     </section>
     ${toolbar}
-    <section class="card"><div class="card-head"><h2>Offene Varianten</h2></div>
-      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Produkt</th><th>Variante</th><th>Gruppe</th><th>Grund</th><th>Nächster Schritt</th></tr></thead><tbody>${items || ''}</tbody></table></div>
+    <section class="card"><div class="card-head"><h2>${esc(EINKAUF_PSFILTER_LABEL[psfilter])}</h2></div>
+      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Status</th><th>Produkt</th><th>Gruppe</th><th>Was fehlt</th><th>Nächster Schritt</th></tr></thead><tbody>${items || ''}</tbody></table></div>
       ${!items ? emptyState('Keine Treffer.', 'Suche oder Filter anpassen.') : ''}
       ${pages}
     </section>
-    <p class="small muted" style="margin-top:10px">Quelle: ${esc(d.quelle)} · Kernfelder für „vollständig": Lieferant, Artikelnummer, Bestelleinheit.</p>`;
+    <p class="small muted" style="margin-top:10px">Quelle: ${esc(d.quelle)} · sortiert nach Dringlichkeit: was eine Bestellung blockiert steht oben.</p>`;
 }
 
 function viewEinkaufHilfe() {
@@ -882,7 +895,7 @@ function viewEinkaufHilfe() {
     <p><b>Der tägliche Ablauf in einem Satz:</b> Du gehst morgens die Bestellübersicht durch, öffnest bei jeder neuen Position „Beim Lieferanten öffnen", bestellst dort wie gewohnt, trägst danach hier „Bestellt" mit der Lieferanten-Bestellnummer ein, und setzt die Position weiter auf „Geliefert an uns", sobald die Ware da ist, dann auf „An Kunden raus", sobald sie verschickt oder abgeholt wurde, und zum Schluss auf „Erledigt" – der Filter oben zeigt dir jederzeit, wie viele Positionen noch in welchem Schritt stehen.</p>
     <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
     <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter oben auf der Seite („Offen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus.</p>
-    <p><b>Produktdaten-Status:</b> zeigt je Produktgruppe, wie viele Varianten für den Einkauf vollständig sind (Lieferant, Artikelnummer und Bestelleinheit bekannt) und wie viele noch offen sind. Darunter kannst du die offenen Varianten durchsuchen (Produktname, SKU oder Artikelnummer) und nach Gruppe filtern. Jede Zeile zeigt den Grund und einen konkreten nächsten Schritt.</p>
+    <p><b>Produktdaten-Status:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Oben steht ehrlich, wie viele von den insgesamt erfassten Produkten vollständig sind, wie viele Handarbeit brauchen und wie viele sich von selbst füllen, sobald der laufende Lieferantenabgleich weiterläuft. „Handarbeit" heißt: eine Bestellung ist blockiert, weil Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – das muss jemand von Hand in der Preisliste nachschauen. Zusatzinformation wie Kollektion oder Hersteller blockiert nichts und taucht nur als „füllt sich automatisch" auf. Filter oben: alle offenen Produkte, nur blockierende oder nur Handarbeit; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben.</p>
     <p><b>Wichtig:</b> Alle drei Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Der Auftragsfluss-Status liegt in einer eigenen lokalen Datei auf deinem Mac und wird nie ins Repository übernommen. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
   </section>`;
 }

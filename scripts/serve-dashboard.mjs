@@ -87,7 +87,7 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'activity') result = await api.activity();
     else if (simple === 'agent-runs') result = api.agentRuns();
     else if (simple === 'einkauf/bestellungen') result = api.einkaufBestellungen();
-    else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '' });
+    else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '', filter: url.searchParams.get('filter') || '' });
     else if (simple === 'einkauf/klaerung') result = api.einkaufKlaerung();
     else if (simple === 'einkauf/kennzahlen') result = api.einkaufKennzahlen();
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
