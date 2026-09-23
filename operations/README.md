@@ -118,6 +118,36 @@ spiegelt `sync/orders.mjs writeOrderState` dieselben Felder nach `ops.*`.
 Bestelldaten gehoeren nie ins Repository: Momentaufnahmen liegen unter
 `~/teppich-paradies-analyse/ops/`.
 
+## Produktlexikon
+
+Mitarbeiter-Nachschlagewerk: der Kunde nennt den Shop-Produktnamen, das
+Lexikon liefert das Original beim Lieferanten (Artikelnummer, Farbnummer,
+Kollektion, Direktlink). Logik in `lib/lexikon.mjs` (`aufbereiten`, `suche`),
+Datenformat dort dokumentiert (Kommentarkopf).
+
+Aufruf, Variante 1 - Export ueber den Shopify-MCP (kein Token noetig):
+Produkte samt Varianten und Metafeldern (`einkauf.*`, `custom.*`) als
+`{produkte:[...]}` oder `{data:{products:{nodes:[...]}}}` ablegen, dann
+
+```
+npm run lexikon:export -- --input <datei.json>
+```
+
+Variante 2 - automatisch mit Token (`SHOPIFY_ADMIN_TOKEN`, `shpat_`, siehe
+`domains/shopify/admin-token-oauth.md`):
+
+```
+npm run lexikon:export -- --live
+```
+
+laeuft ueber `bulkOperationRunQuery` (Lesevorgang, kein Schreibzugriff).
+
+Ausgabe: `~/teppich-paradies-analyse/lexikon/produkte.json` (`--ziel` aendert
+das). **Die Datei enthaelt echte Lieferantendaten** (Artikelnummern, Farb-
+nummern, Kollektionen, URLs, Preise) und bleibt lokal - das Skript verweigert
+jeden Zielpfad innerhalb des Repositorys (gleiche Pruefung wie
+`kennzahlen-export.mjs`). Nichts wird nach Shopify geschrieben.
+
 ## Zugang einrichten (einmalig)
 
 ```
