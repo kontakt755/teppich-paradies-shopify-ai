@@ -142,6 +142,45 @@ test('Netzmodus mit Passwort: geschuetzte Route ohne Sitzung 401/302, falsches P
   });
 });
 
+test('Knopf "Jetzt aktualisieren": POST ohne Sitzung 401, mit Sitzung erlaubt', async () => {
+  process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
+  process.env.TP_DASHBOARD_PASSWORT = 'sicheres-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.222';
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=aktualisieren-auth`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+
+  await withServer(mod.requestHandler, async base => {
+    // Ohne Sitzung: 401, egal ob GET (Status) oder POST (Start)
+    const statusNoSession = await fetch(`${base}/api/aktualisierung/status`);
+    assert.equal(statusNoSession.status, 401);
+    const startNoSession = await fetch(`${base}/api/aktualisierung/start`, { method: 'POST' });
+    assert.equal(startNoSession.status, 401);
+
+    // Anmelden
+    const login = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passwort: 'sicheres-testpasswort' }),
+    });
+    const cookiePair = login.headers.get('set-cookie').split(';')[0];
+
+    // Mit Sitzung: GET-Status erlaubt
+    const status = await fetch(`${base}/api/aktualisierung/status`, { headers: { cookie: cookiePair } });
+    assert.equal(status.status, 200);
+    const statusJson = await status.json();
+    assert.equal(typeof statusJson.laeuft, 'boolean');
+
+    // Mit Sitzung, aber fremder Origin: 403
+    const foreign = await fetch(`${base}/api/aktualisierung/start`, {
+      method: 'POST', headers: { cookie: cookiePair, origin: 'https://evil.example' },
+    });
+    assert.equal(foreign.status, 403);
+
+    // GET auf den Start-Endpunkt: 405 (nur POST)
+    const wrongMethod = await fetch(`${base}/api/aktualisierung/start`, { headers: { cookie: cookiePair } });
+    assert.equal(wrongMethod.status, 405);
+  });
+});
+
 test('Standardbetrieb (kein Passwort, 127.0.0.1) bleibt unveraendert: keine Anmeldung noetig', async () => {
   process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
   delete process.env.TP_DASHBOARD_PASSWORT;

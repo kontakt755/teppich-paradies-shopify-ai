@@ -511,3 +511,70 @@ test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null stat
   const r = api.aktualisierung();
   assert.equal(r.teile.lexikon.veraltet, null);
 });
+
+// ---------------------------------------------------------------------------
+// Knopf "Jetzt aktualisieren" (aktualisierungStarten/aktualisierungStatus)
+// ---------------------------------------------------------------------------
+
+/** Legt unter root/operations/scripts/aktualisieren.mjs ein Fake-Skript ab, das
+ * kurz "laeuft" (setTimeout) und dann eine eigene aktualisierung.json schreibt -
+ * ohne echten Shopify-Zugang, aber mit demselben Vertrag wie das echte Skript. */
+function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftFehler = false } = {}) {
+  const dir = path.join(root, 'operations', 'scripts');
+  fs.mkdirSync(dir, { recursive: true });
+  const datei = path.join(dir, 'aktualisieren.mjs');
+  fs.writeFileSync(datei, `
+    import fs from 'node:fs';
+    setTimeout(() => {
+      ${wirftFehler ? "throw new Error('absichtlicher Testfehler');" : `
+      fs.mkdirSync(${JSON.stringify(privatDir)}, { recursive: true });
+      fs.writeFileSync(${JSON.stringify(path.join(privatDir, 'aktualisierung.json'))}, JSON.stringify({
+        aktualisiertAm: new Date().toISOString(),
+        teile: { lexikon: { zeitpunkt: new Date().toISOString(), dauerMs: 5, erfolg: true, anzahl: 3, meldung: null } },
+      }));`}
+    }, ${verzoegerungMs});
+  `);
+  return datei;
+}
+
+test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 100 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierungStarten();
+  assert.equal(r.gestartet, true);
+  assert.equal(r.laeuft, true);
+  assert.ok(r.seit);
+});
+
+test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts neu ("laeuft bereits")', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 300 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const erster = api.aktualisierungStarten();
+  assert.equal(erster.gestartet, true);
+  const zweiter = api.aktualisierungStarten();
+  assert.equal(zweiter.gestartet, false);
+  assert.equal(zweiter.laeuft, true);
+  assert.equal(zweiter.seit, erster.seit);
+});
+
+test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem Stand', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 150 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const vorher = api.aktualisierungStatus();
+  assert.equal(vorher.laeuft, false);
+  api.aktualisierungStarten();
+  const waehrend = api.aktualisierungStatus();
+  assert.equal(waehrend.laeuft, true);
+  await new Promise(r => setTimeout(r, 500));
+  const danach = api.aktualisierungStatus();
+  assert.equal(danach.laeuft, false);
+  assert.equal(danach.verfuegbar, true);
+  assert.equal(danach.teile.lexikon.erfolg, true);
+  assert.equal(danach.teile.lexikon.anzahl, 3);
+});
