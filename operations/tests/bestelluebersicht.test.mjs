@@ -149,7 +149,65 @@ test('Kopiertext je Lieferant ist Klartext mit ID, Menge und Bestellnummer', () 
 });
 
 test('Zahlen', () => {
-  assert.deepEqual(m.zahlen, { auftraege: 3, offeneAuftraege: 2, positionen: 8, ohneId: 3, mengeUngeklaert: 3, zuBestellen: 5, muster: 2 });
+  assert.deepEqual(m.zahlen, { auftraege: 3, offeneAuftraege: 2, positionen: 8, ohneId: 3, mengeUngeklaert: 3, zuBestellen: 5, muster: 2, testbestellungen: 0 });
+});
+
+test('Testbestellungen (Tag TESTBESTELLUNG oder test=true) landen getrennt und zaehlen nirgends mit', () => {
+  const echte = bestellung(1, [paket], { customAttributes: [] });
+  const testTag = bestellung(2, [rolle], { tags: ['TESTBESTELLUNG'], customAttributes: [] });
+  const testFeld = bestellung(3, [paket], { test: true, customAttributes: [] });
+  const testKleingeschrieben = bestellung(4, [paket], { tags: ['testbestellung'], customAttributes: [] });
+  const modell = aufbereiten({ orders: [echte, testTag, testFeld, testKleingeschrieben] });
+
+  assert.equal(modell.auftraege.length, 1);
+  assert.equal(modell.auftraege[0].name, '#T1');
+  assert.equal(modell.testauftraege.length, 3);
+  assert.ok(modell.testauftraege.every(a => a.testbestellung === true));
+  assert.ok(modell.auftraege.every(a => a.testbestellung === false));
+
+  // Zahlen zaehlen nur die echte Bestellung.
+  assert.equal(modell.zahlen.auftraege, 1);
+  assert.equal(modell.zahlen.testbestellungen, 3);
+  assert.equal(modell.zahlen.zuBestellen, 1);
+
+  // Testpositionen erscheinen nicht in den Einkaufsgruppen je Lieferant.
+  const alleGruppenPositionen = modell.gruppen.flatMap(g => g.positionen);
+  assert.ok(!alleGruppenPositionen.some(p => p.orderName === '#T2'));
+
+  // HTML zeigt einen eigenen eingeklappten Bereich.
+  const html = renderHtml(modell);
+  assert.match(html, /Testbestellungen \(3\)/);
+});
+
+test('details enthaelt Kunde, Adressen, Summen, Beratung, Tags und Positionsdaten', () => {
+  const order = bestellung(5, [paket], {
+    customer: { displayName: 'Max Mustermann', email: 'max@example.test', phone: '+49 000' },
+    email: 'max@example.test', phone: '+49 000',
+    shippingAddress: { name: 'Max Mustermann', address1: 'Teststr. 1', zip: '12345', city: 'Teststadt', country: 'Deutschland', phone: '+49 000' },
+    billingAddress: { name: 'Max Mustermann', address1: 'Teststr. 1', zip: '12345', city: 'Teststadt', country: 'Deutschland', phone: '+49 000' },
+    shippingLine: { title: 'Standardversand' },
+    subtotalPriceSet: { shopMoney: { amount: '100.00', currencyCode: 'EUR' } },
+    totalShippingPriceSet: { shopMoney: { amount: '5.00', currencyCode: 'EUR' } },
+    totalTaxSet: { shopMoney: { amount: '19.00', currencyCode: 'EUR' } },
+    totalPriceSet: { shopMoney: { amount: '124.00', currencyCode: 'EUR' } },
+    paymentGatewayNames: ['Shopify Payments'],
+    note: 'Bitte vorsichtig verpacken',
+    tags: ['BERATUNG-NEIN', 'TYP-MUSTER'],
+    customAttributes: [{ key: 'Beratung', value: 'Nein' }],
+  });
+  const modell = aufbereiten({ orders: [order] });
+  const d = modell.auftraege[0].details;
+  assert.equal(d.kunde.name, 'Max Mustermann');
+  assert.equal(d.kunde.email, 'max@example.test');
+  assert.equal(d.lieferadresse.ort, 'Teststadt');
+  assert.equal(d.versandart, 'Standardversand');
+  assert.deepEqual(d.summen.gesamt, { betrag: 124, waehrung: 'EUR' });
+  assert.equal(d.zahlungsart, 'Shopify Payments');
+  assert.equal(d.notiz, 'Bitte vorsichtig verpacken');
+  assert.deepEqual(d.tags, ['BERATUNG-NEIN', 'TYP-MUSTER']);
+  assert.equal(d.beratungsangaben.Beratung, 'Nein');
+  assert.equal(d.positionen[0].titel, 'Testdiele Eiche');
+  assert.equal(d.positionen[0].lieferantenArtikelnummer, 'B-4711');
 });
 
 test('HTML: eigenstaendig, deutsch, escaped, mobil', () => {

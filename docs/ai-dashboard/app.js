@@ -844,7 +844,7 @@ function kopierbutton(id, label = 'Liste kopieren') {
   return `<button type="button" class="btn btn-sm" data-kopieren="${esc(id)}">${esc(label)}</button>`;
 }
 
-const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen' };
+const EINKAUF_AMPEL_LABEL = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen', test: 'Testbestellung' };
 
 /** Menschenlesbare Anzeige statt des internen Markers "UNGEKLAERT" (Grosshandel-Exportdaten). */
 function anzeigeWert(wert) { return wert === 'UNGEKLAERT' ? 'Ungeklärt' : wert; }
@@ -900,16 +900,57 @@ function einkaufGruppeKarte(g, i, praefix) {
   </section>`;
 }
 
+function geldText(g) {
+  if (!g || g.betrag === null || g.betrag === undefined) return '–';
+  return `${g.betrag.toFixed(2)} ${esc(g.waehrung || 'EUR')}`;
+}
+
+function adresseText(a) {
+  if (!a) return '–';
+  return `${esc(a.name)}<br>${esc(a.strasse)}<br>${esc(a.plz)} ${esc(a.ort)}, ${esc(a.land)}${a.telefon && a.telefon !== '–' ? `<br>Tel: ${esc(a.telefon)}` : ''}`;
+}
+
+/** Volle Detailansicht einer Bestellung: Kunde, Adressen, Summen, Beratung, Positionen. */
+function einkaufAuftragDetails(a) {
+  const d = a.details;
+  if (!d) return '';
+  const s = d.summen || {};
+  const beratungZeilen = Object.entries(d.beratungsangaben || {}).map(([k, v]) => `<div><b>${esc(k)}:</b> ${esc(v || '–')}</div>`).join('') || '<div class="muted small">Keine Beratungsangaben.</div>';
+  const posZeilen = (d.positionen || []).map(p => `<tr>
+      <td>${esc(p.titel)}<div class="small muted">${esc(p.sku || '–')}</div></td>
+      <td>${esc(p.farbe)}</td>
+      <td>${esc(p.kundenmasse)}</td>
+      <td>${geldText(p.preis)}</td>
+      <td>${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? '–' : p.lieferantenArtikelnummer)}${p.lieferantenLink && p.lieferantenLink !== 'UNGEKLAERT' ? `<div class="small"><a href="${esc(p.lieferantenLink)}" target="_blank" rel="noopener">Beim Lieferanten öffnen</a></div>` : ''}</td>
+    </tr>`).join('');
+  return `<div style="padding:10px 4px;display:grid;gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+      <div><b>Kunde</b><br>${esc(d.kunde?.name)}<br>${esc(d.kunde?.email)}<br>${esc(d.kunde?.telefon)}</div>
+      <div><b>Lieferadresse</b><br>${adresseText(d.lieferadresse)}</div>
+      <div><b>Rechnungsadresse</b><br>${adresseText(d.rechnungsadresse)}</div>
+      <div><b>Versand &amp; Zahlung</b><br>Versandart: ${esc(d.versandart)}<br>Zahlungsart: ${esc(d.zahlungsart)}</div>
+      <div><b>Summen</b><br>Zwischensumme: ${geldText(s.zwischensumme)}<br>Versand: ${geldText(s.versand)}<br>Steuer: ${geldText(s.steuer)}<br><b>Gesamt: ${geldText(s.gesamt)}</b></div>
+      <div><b>Beratung/Angaben</b>${beratungZeilen}</div>
+    </div>
+    ${d.tags?.length ? `<div><b>Tags:</b> ${d.tags.map(t => `<span class="badge plain">${esc(t)}</span>`).join(' ')}</div>` : ''}
+    ${d.notiz ? `<div><b>Notiz des Kunden:</b> ${esc(d.notiz)}</div>` : ''}
+    <table class="tasks"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table>
+  </div>`;
+}
+
 function einkaufAuftragZeile(a) {
   const c = a.checks;
   const chip = (label, wert, schlecht) => `<span class="badge ${schlecht ? 'p0' : 'plain'}">${esc(label)}: ${esc(wert)}</span>`;
-  return `<div class="row" style="cursor:default" tabindex="-1">
-    <div>
-      <div class="t"><span class="badge status ${a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : ''}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener">${esc(a.name)}</a> <span class="muted small">${fmtDate(a.datum)}</span></div>
-      <div class="m">${chip('Bezahlt', a.bezahlt, a.bezahlt !== 'PAID')}${chip('Versand', a.erfuellt)}${chip('Beratung', c.beratung)}${chip('Telefon', c.telefon, c.beratung === 'Ja' && c.telefon === 'fehlt')}${chip('Maßprüfung', c.masspruefung, c.masspruefung === 'Problem')}${chip('Verlegung', c.verlegung)}</div>
-      ${a.hinweise?.length ? `<div class="next" style="color:var(--crit)">${a.hinweise.map(esc).join(' · ')}</div>` : ''}
-    </div>
-  </div>`;
+  return `<details class="row-details">
+    <summary class="row" style="cursor:pointer">
+      <div>
+        <div class="t"><span class="badge status ${a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : ''}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(a.name)}</a> <span class="muted small">${fmtDate(a.datum)}</span></div>
+        <div class="m">${chip('Bezahlt', a.bezahlt, a.bezahlt !== 'PAID')}${chip('Versand', a.erfuellt)}${chip('Beratung', c.beratung)}${chip('Telefon', c.telefon, c.beratung === 'Ja' && c.telefon === 'fehlt')}${chip('Maßprüfung', c.masspruefung, c.masspruefung === 'Problem')}${chip('Verlegung', c.verlegung)}</div>
+        ${a.hinweise?.length ? `<div class="next" style="color:var(--crit)">${a.hinweise.map(esc).join(' · ')}</div>` : ''}
+      </div>
+    </summary>
+    ${einkaufAuftragDetails(a)}
+  </details>`;
 }
 
 const AF_FILTER_LABEL = { offen: 'Offen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
@@ -953,6 +994,11 @@ function viewEinkaufBestellungen() {
     <h2 style="margin-top:20px">Aufträge – Ampel-Status</h2>
     <p class="small muted" style="margin:0 0 8px">Grün = bereit zum Bestellen, Gelb = erst prüfen, Rot = blockiert (z. B. fehlende Angabe).</p>
     <div class="rows">${d.auftraege?.filter(a => a.offen).map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
+    ${(d.testauftraege || []).length ? `<details style="margin-top:20px">
+      <summary style="cursor:pointer;font-weight:600">Testbestellungen (${d.testauftraege.length}) – zählen in keiner Kennzahl</summary>
+      <p class="small muted" style="margin:6px 0">Tag „TESTBESTELLUNG" oder Shopify-Feld test=true. Fließen nicht in Auftragsampel, Einkauf oder Shop-Zahlen ein.</p>
+      <div class="rows">${d.testauftraege.map(einkaufAuftragZeile).join('')}</div>
+    </details>` : ''}
     <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
 }
 

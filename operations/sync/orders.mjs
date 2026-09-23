@@ -18,11 +18,16 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
   orders(first: $first, after: $after, query: $query, sortKey: UPDATED_AT) {
     pageInfo { hasNextPage endCursor }
     nodes {
-      id name createdAt updatedAt cancelledAt note tags
+      id name createdAt updatedAt cancelledAt note tags test
       displayFinancialStatus displayFulfillmentStatus
       email phone
       customer { displayName email phone }
       totalPriceSet { shopMoney { amount currencyCode } }
+      subtotalPriceSet { shopMoney { amount currencyCode } }
+      totalShippingPriceSet { shopMoney { amount currencyCode } }
+      totalTaxSet { shopMoney { amount currencyCode } }
+      shippingLine { title code source }
+      paymentGatewayNames
       customAttributes { key value }
       shippingAddress { name address1 address2 zip city country countryCodeV2 phone }
       billingAddress { name address1 address2 zip city country countryCodeV2 phone }
@@ -31,6 +36,7 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       lineItems(first: 50) {
         nodes {
           id sku title variantTitle quantity currentQuantity unfulfilledQuantity
+          originalUnitPriceSet { shopMoney { amount currencyCode } }
           customAttributes { key value }
           image { url altText }
           variant {
