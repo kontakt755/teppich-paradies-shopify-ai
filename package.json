@@ -71,6 +71,7 @@
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
+    "lexikon:export": "node operations/scripts/lexikon-export.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
   },
   "devDependencies": {
