@@ -22,7 +22,10 @@
     "teppichboden-verlegen-lose-fixieren-oder-kleben"
   ],
   "naechster_schritt": "rollenbreite-und-bahnen-planen",
-  "lexikon": [],
+  "lexikon": [
+    "fixierung",
+    "rollenbreite"
+  ],
   "quellen": [
     {
       "art": "hausangabe",

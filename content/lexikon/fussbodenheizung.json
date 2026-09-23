@@ -1,0 +1,13 @@
+{
+  "handle": "fussbodenheizung",
+  "begriff": "Fußbodenheizung",
+  "kurz": "Ob ein Bodenbelag über einer Fußbodenheizung verlegt werden kann, hängt von seinem Wärmeleitwiderstand ab - dieser Wert ist materialabhängig und wird nicht für jedes Produkt einzeln ausgewiesen. Im Zweifel gilt die Angabe auf der jeweiligen Produktseite oder eine Rückfrage.",
+  "lang": "",
+  "gruppe": "Untergrund",
+  "synonyme": ["Fußbodenheizungsgeeignet", "FBH-geeignet"],
+  "artikel": "",
+  "status": "freigegeben",
+  "expert_input": [
+    "Fuer welche Produktgruppen ausser Linoleum eine belastbare Aussage zur Fussbodenheizungseignung vorliegt. Fuer Linoleum ist die Einschaetzung laut domains/shopify/linoleum-rollenware-template.md bewusst als allgemeines Materialklassen-Wissen ohne eigenes Metafeld dokumentiert; fuer Teppichboden und Vinyl ist das offen."
+  ]
+}

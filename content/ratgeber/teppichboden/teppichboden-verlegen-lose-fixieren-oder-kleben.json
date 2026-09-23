@@ -22,7 +22,12 @@
     "rollenbreite-und-bahnen-planen"
   ],
   "naechster_schritt": "teppichboden-pflegen-und-flecken-entfernen",
-  "lexikon": [],
+  "lexikon": [
+    "fixierung",
+    "fussbodenheizung",
+    "rollenbreite",
+    "ruecken"
+  ],
   "quellen": [
     {
       "art": "hausangabe",

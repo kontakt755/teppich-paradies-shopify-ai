@@ -1,0 +1,14 @@
+{
+  "handle": "nutzungsklasse",
+  "begriff": "Nutzungsklasse",
+  "kurz": "Die Nutzungsklasse ordnet einen Bodenbelag danach ein, fuer welche Beanspruchung er nach europaeischer Norm geeignet ist, zum Beispiel Wohnbereich oder gewerbliche Nutzung. Welche Klasse ein konkreter Boden traegt, steht in seinen technischen Daten und unterscheidet sich von Produkt zu Produkt.",
+  "lang": "",
+  "gruppe": "Allgemein",
+  "synonyme": ["NK", "Nutzungsklassen"],
+  "artikel": "",
+  "status": "freigegeben",
+  "expert_input": [
+    "Welche Norm-Skala (z. B. EN ISO 10874) im Shop einheitlich als Referenz genannt werden soll.",
+    "Ob custom.nutzungsklassen alle im Sortiment vorkommenden Klassen abdeckt - laut domains/shopify/linoleum-rollenware-template.md deckt das Metaobjekt bislang nur Klasse 21-33 und 42 ab."
+  ]
+}

@@ -21,7 +21,9 @@
     "teppichboden-richtig-ausmessen"
   ],
   "naechster_schritt": "teppichboden-verlegen-lose-fixieren-oder-kleben",
-  "lexikon": [],
+  "lexikon": [
+    "rollenbreite"
+  ],
   "quellen": [
     {
       "art": "hausangabe",

@@ -21,7 +21,10 @@
     "welcher-teppichboden-fuer-welchen-raum"
   ],
   "naechster_schritt": "",
-  "lexikon": [],
+  "lexikon": [
+    "fixierung",
+    "ruecken"
+  ],
   "quellen": [
     {
       "art": "hersteller",

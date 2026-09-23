@@ -21,7 +21,16 @@
     "teppichboden-richtig-ausmessen"
   ],
   "naechster_schritt": "teppichboden-richtig-ausmessen",
-  "lexikon": [],
+  "lexikon": [
+    "florhoehe",
+    "fussbodenheizung",
+    "nadelvlies",
+    "nutzungsklasse",
+    "rollenbreite",
+    "ruecken",
+    "schlinge",
+    "velours"
+  ],
   "quellen": [
     {
       "art": "hausangabe",
