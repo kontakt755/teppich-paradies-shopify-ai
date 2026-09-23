@@ -22,10 +22,15 @@ tote Links, Problem-Finder-Sperre) kommt **importiert** aus
 abweichende Kopie. Wenn sich das Gate aendert, aendert sich dieser Bereich mit,
 ohne dass hier etwas angepasst werden muss.
 
-Die Datei wird nicht automatisch erzeugt. Sie muss nach relevanten
-Content-Aenderungen von Hand neu gebaut werden (oder ueber einen CI-Schritt,
-den `package.json`/`.github/workflows/` noch nicht enthalten — das faellt
-bewusst nicht in dieses Paket, siehe unten).
+Die Datei wird vom Workflow `.github/workflows/dashboard-data.yml` erzeugt und
+mitcommittet — im selben Lauf wie `issues.json`. Ausgeloest wird er von Pushes
+auf `main`, die `content/ratgeber/`, `content/lexikon/`, `content/probleme/`,
+`scripts/build-bodenwissen-data.mjs` oder `scripts/bodenwissen-guard.mjs`
+anfassen, dazu alle 30 Minuten als Sicherheitsnetz. Ein Handlauf
+(`npm run bodenwissen:daten`) ist damit nur noch fuer die lokale Ansicht
+noetig — fuer Inhalte, die noch nicht auf `main` liegen. Die Zeile am
+Seitenende („Stand: …") zeigt `erzeugtAm` aus dem Lauf, der die Datei zuletzt
+geschrieben hat.
 
 ## Was der Bereich zeigt
 
@@ -61,15 +66,6 @@ und ebenfalls getestet.
 `docs/control-center/ARCHITEKTUR.md`, Abschnitt 7 „Nicht-Ziele"). Erst danach
 ergibt eine Quick-Win-Liste (`ANALYTICS.md`, Abschnitt 7) ueberhaupt Daten.
 
-**Kein automatischer Neubau.** Dieses Paket durfte `package.json` und
-`.github/workflows/` nicht aendern (siehe Auftrag). Es gibt deshalb weder ein
-`npm run bodenwissen:dashboard`-Skript noch einen Workflow, der
-`bodenwissen.json` bei jeder Content-Aenderung frisch schreibt — anders als
-`issues.json` (`dashboard-data.yml`, stuendlich + Event-getriggert). Bis das
-nachgezogen ist, bleibt der Datenstand so aktuell wie der letzte manuelle Lauf
-von `node scripts/build-bodenwissen-data.mjs`; die Zeile am Seitenende
-(„Stand: …") zeigt `erzeugtAm` aus genau diesem Lauf.
-
 **Nur lokal sichtbar, wie der Rest des Control Centers.** Seit 2026-09-23
 laeuft das gesamte Control Center nur noch lokal (`ARCHITEKTUR.md`,
 Abschnitt 1); `render()` in `app.js` zeigt in jeder Ansicht „Nur lokal im
@@ -90,3 +86,6 @@ zweite, abweichende zu ersetzen.
   `docs/ai-dashboard/tests/bodenwissen.test.mjs` — Muster: `lib/model.mjs`
 - `docs/ai-dashboard/app.js` — `viewRatgeber()` und `ensureBodenwissen()`,
   Navigationspunkt „Ratgeber" in `index.html`, eingebunden ueber `#/ratgeber`
+- `.github/workflows/dashboard-data.yml` — baut `bodenwissen.json` und
+  `issues.json` im selben Lauf und committet nur die Datei, die sich
+  tatsaechlich geaendert hat
