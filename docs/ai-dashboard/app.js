@@ -33,6 +33,7 @@ const state = {
   scores: new Map(),
   loadError: null,
   capabilities: { mode: 'static' },
+  session: { required: false, authenticated: true },
   me: null,
   workflowRun: null,    // letzter Actions-Lauf (oeffentliche API, optional)
   agentRuns: null,      // nur lokal
@@ -68,6 +69,26 @@ async function loadCapabilities() {
     state.capabilities = await r.json();
     state.me = state.capabilities.user || null;
   } catch { state.capabilities = { mode: 'static' }; }
+}
+
+async function loadSession() {
+  try {
+    const r = await fetch('/api/session', { cache: 'no-store' });
+    state.session = r.ok ? await r.json() : { required: false, authenticated: true };
+  } catch { state.session = { required: false, authenticated: true }; }
+  renderSessionButton();
+}
+
+function renderSessionButton() {
+  const btn = $('#sessionBtn');
+  if (!btn) return;
+  const show = Boolean(state.session?.required && state.session?.authenticated);
+  btn.hidden = !show;
+}
+
+async function logout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch { /* egal, wir leiten trotzdem um */ }
+  window.location.href = '/login';
 }
 
 async function loadData() {
@@ -215,6 +236,7 @@ function systemHealth() {
     }
   } else items.push({ level: 'warn', title: 'KI-Läufe nur lokal sichtbar', detail: 'Die Steuerzentrale speichert Läufe außerhalb des Repos; statisch ist nur der Issue-Status sichtbar.' });
   items.push({ level: 'warn', title: 'Keine Kennzahlen aus Shopify, Google Ads oder GA4 verbunden', detail: 'Bewusst: das Repository ist öffentlich. Anbindung erst nach Sichtbarkeitsentscheidung (docs/control-center/BESTANDSAUFNAHME.md, Punkt 4).' });
+  if (state.capabilities.mode === 'local') items.push(...aktualisierungHealth());
   return items;
 }
 
@@ -246,7 +268,7 @@ function viewHeute() {
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
   const localMode = state.capabilities.mode === 'local';
-  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); }
+  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); }
 
   const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
 
@@ -596,6 +618,7 @@ function projectGroups() {
 // Ansicht: Insights
 // ---------------------------------------------------------------------------
 function viewInsights() {
+  if (state.capabilities.mode === 'local') ensureAktualisierung();
   const open = state.tasks.filter(t => t.open);
   const byStatus = STATUSES.filter(s => s.open).map(s => [s.label, open.filter(t => t.status === s.key).length]).filter(x => x[1]);
   const byPrio = Object.values(PRIORITIES).map(p => [p.label, open.filter(t => t.priority === p.key).length]);
@@ -662,6 +685,7 @@ const einkauf = {
   produktstatus: null, loadingProduktstatus: false, produktstatusKey: null,
   auftragsstatus: null, loadingAuftragsstatus: false,
   kennzahlen: null, loadingKennzahlen: false,
+  aktualisierung: null, loadingAktualisierung: false,
 };
 
 // Auftragsfluss je Position: Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt.
@@ -752,6 +776,32 @@ function ensureEinkaufKennzahlen() {
   fetchEinkauf('/api/einkauf/kennzahlen').then(d => {
     einkauf.kennzahlen = d; einkauf.loadingKennzahlen = false;
     if (state.route.view === 'heute') render();
+  });
+}
+
+const AKTUALISIERUNG_TEIL_LABEL = { lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen' };
+
+function ensureAktualisierung() {
+  if (einkauf.aktualisierung || einkauf.loadingAktualisierung) return;
+  einkauf.loadingAktualisierung = true;
+  fetchEinkauf('/api/aktualisierung').then(d => {
+    einkauf.aktualisierung = d; einkauf.loadingAktualisierung = false;
+    if (state.route.view === 'heute' || state.route.view === 'insights') render();
+  });
+}
+
+/** Systemgesundheit-Zeilen fuer die lokalen Datenquellen (Lexikon, Bestellübersicht, Kennzahlen). */
+function aktualisierungHealth() {
+  const a = einkauf.aktualisierung;
+  if (!a) return [];
+  if (!a.verfuegbar) {
+    return [{ level: 'warn', title: 'Lokale Datenquellen noch nie aktualisiert', detail: `${a.hinweis || ''} Befehl: ${a.befehl || 'npm run daten:aktualisieren'}` }];
+  }
+  return Object.entries(a.teile || {}).map(([teil, stand]) => {
+    const label = AKTUALISIERUNG_TEIL_LABEL[teil] || teil;
+    if (!stand.erfolg) return { level: 'warn', title: `${label}: letzter Lauf fehlgeschlagen`, detail: `${stand.meldung || ''}${stand.zeitpunkt ? ` · letzter Erfolg unbekannt, Fehler ${fmtDateTime(stand.zeitpunkt)}` : ''} · Befehl: npm run daten:aktualisieren -- --nur ${teil}` };
+    if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: 'Bitte `npm run daten:aktualisieren` ausführen.' };
+    return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
   });
 }
 
@@ -1484,6 +1534,7 @@ function bindEvents() {
     openActionDialog(t, 'move', { target });
   });
   $('#searchBtn').addEventListener('click', openPalette);
+  $('#sessionBtn').addEventListener('click', logout);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
   window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
@@ -1493,6 +1544,7 @@ function bindEvents() {
 async function init() {
   parseRoute();
   bindEvents();
+  await loadSession();
   await loadCapabilities();
   await loadData();
   renderSyncChip();

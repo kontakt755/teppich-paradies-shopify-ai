@@ -246,10 +246,10 @@ export async function loeseMetaobjekteAuf(execute, gids, { batchSize = 100 } = {
   return map;
 }
 
-async function ladeLive() {
-  const { GraphQLProxy } = await import('../../workflow/graphql-proxy.mjs');
-  const proxy = new GraphQLProxy();
-  if (!proxy.live) throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN) - --input mit MCP-Export nutzen');
+export async function ladeLive() {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
 
   const start = await proxy.execute(BULK_START, { q: BULK_QUERY });
   const fehler = start?.bulkOperationRunQuery?.userErrors ?? [];

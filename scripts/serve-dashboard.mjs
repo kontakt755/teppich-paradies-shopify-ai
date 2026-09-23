@@ -7,7 +7,15 @@
  *
  * Liefert docs/ai-dashboard statisch (noetig, weil fetch() unter file://
  * blockiert wird) und stellt unter /api die lokale Aktions-API bereit
- * (scripts/dashboard-api.mjs). Bindet ausschliesslich an 127.0.0.1.
+ * (scripts/dashboard-api.mjs).
+ *
+ * Standard: bindet ausschliesslich an 127.0.0.1, kein Verhaltenswechsel ohne
+ * Absicht. Ueber TP_DASHBOARD_HOST (z. B. 0.0.0.0) und PORT im Firmennetz
+ * erreichbar machen - dafuer MUSS ein Passwort gesetzt sein
+ * (TP_DASHBOARD_PASSWORT oder $TP_PRIVAT_DIR/dashboard-passwort.txt), sonst
+ * verweigert der Prozess den Start. Ist ein Passwort gesetzt, verlangt JEDE
+ * Route (statisch und /api/*) eine gueltige Sitzung - auch auf 127.0.0.1.
+ * Siehe scripts/dashboard-auth.mjs und docs/control-center/ARCHITEKTUR.md.
  *
  * Schreibende Requests werden nur als JSON mit passendem Host/Origin
  * akzeptiert - ein fremder Tab im Browser kann die API nicht ueber ein
@@ -21,13 +29,30 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createApi, ApiError } from './dashboard-api.mjs';
+import {
+  createAuth, loadConfiguredPassword, parseCookies, sessionCookieHeader,
+  clearedCookieHeader, renderLoginPage, sleep, SESSION_COOKIE,
+} from './dashboard-auth.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
 const ROOT = resolve(REPO_ROOT, 'docs/ai-dashboard');
 const PORT = Number(process.env.PORT || 8001);
-const HOST = '127.0.0.1';
+const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
+
+const CONFIGURED_PASSWORD = loadConfiguredPassword();
+export const auth = createAuth({ password: CONFIGURED_PASSWORD });
+
+/** Wirft, wenn der Netzmodus ohne Passwort gestartet werden soll. Vor jedem listen() pruefen. */
+export function assertStartupAllowed({ host = HOST, authObj = auth } = {}) {
+  if (host !== '127.0.0.1' && !authObj.required) {
+    throw new Error(
+      `Start verweigert: TP_DASHBOARD_HOST=${host} (Netzmodus) verlangt ein gesetztes Passwort. ` +
+      'TP_DASHBOARD_PASSWORT setzen oder $TP_PRIVAT_DIR/dashboard-passwort.txt anlegen.'
+    );
+  }
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -62,16 +87,25 @@ function readJson(req) {
   });
 }
 
+// Firmennetz: private Adressbereiche (RFC 1918) zusaetzlich zu localhost.
+// Der Host-Header kommt vom TCP-Ziel der Verbindung, ein fremder Browser-Tab
+// kann ihn per fetch()/Formular nicht faelschen - nur der Origin-Header ist
+// vom anfragenden Ursprung gesetzt und wird zusaetzlich geprueft.
+const LAN_HOST_RE = /^(127\.0\.0\.1|localhost|10(\.\d{1,3}){3}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|192\.168(\.\d{1,3}){2})(:\d+)?$/i;
+
 function sameOrigin(req) {
   const host = req.headers.host || '';
   const origin = req.headers.origin;
-  if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) return false;
-  if (origin && !/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(origin)) return false;
+  if (!LAN_HOST_RE.test(host)) return false;
+  if (origin) {
+    const m = /^https?:\/\/(.+)$/i.exec(origin);
+    if (!m || !LAN_HOST_RE.test(m[1])) return false;
+  }
   return true;
 }
 
 export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|aktualisierung)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -94,6 +128,7 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req));
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
+    else if (simple === 'aktualisierung') result = api.aktualisierung();
     else if (taskOp === 'activity') result = await api.activityForTask(number);
     else if (taskOp === 'transition') result = await api.transition(number, await readJson(req));
     else if (taskOp === 'assign') result = await api.assign(number, await readJson(req));
@@ -119,16 +154,95 @@ export async function handleStatic(req, res, pathname) {
   }
 }
 
+function clientIp(req) {
+  return req.socket?.remoteAddress || 'unbekannt';
+}
+
+function isAuthed(req) {
+  if (!auth.required) return true;
+  const cookies = parseCookies(req);
+  return auth.validSession(cookies[SESSION_COOKIE]);
+}
+
+async function handleLogin(req, res) {
+  if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
+  if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+  const ip = clientIp(req);
+  if (auth.isLocked(ip)) {
+    send(res, 429, { error: 'Zu viele Fehlversuche. Kurz warten und erneut versuchen.' });
+    return;
+  }
+  let body;
+  try { body = await readJson(req); } catch (e) {
+    if (e instanceof ApiError) { send(res, e.status, { error: e.message }); return; }
+    send(res, 400, { error: 'Ungültige Anfrage' });
+    return;
+  }
+  const ok = auth.required && auth.verifyPassword(body?.passwort);
+  await sleep(auth.failDelayMs);
+  if (!ok) {
+    auth.registerFailure(ip);
+    send(res, 401, { error: 'Falsches Passwort' });
+    return;
+  }
+  auth.registerSuccess(ip);
+  const sid = auth.createSession();
+  res.setHeader('Set-Cookie', sessionCookieHeader(sid));
+  send(res, 200, { ok: true });
+}
+
+function handleLogout(req, res) {
+  if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
+  const cookies = parseCookies(req);
+  auth.destroySession(cookies[SESSION_COOKIE]);
+  res.setHeader('Set-Cookie', clearedCookieHeader());
+  send(res, 200, { ok: true });
+}
+
+function handleSession(req, res) {
+  send(res, 200, { required: auth.required, authenticated: isAuthed(req) });
+}
+
 export function requestHandler(req, res) {
   let pathname;
   try { pathname = decodeURIComponent(new URL(req.url || '/', `http://${HOST}`).pathname); } catch { pathname = '/'; }
+
+  if (pathname === '/api/login') return handleLogin(req, res);
+  if (pathname === '/api/logout') return handleLogout(req, res);
+  if (pathname === '/api/session') return handleSession(req, res);
+
+  if (pathname === '/login') {
+    let error = null;
+    try { error = new URL(req.url, `http://${HOST}`).searchParams.get('fehler'); } catch { /* ignoriert */ }
+    send(res, 200, renderLoginPage({ error }), 'text/html; charset=utf-8');
+    return;
+  }
+
+  if (!isAuthed(req)) {
+    if (pathname.startsWith('/api/')) { send(res, 401, { error: 'Anmeldung erforderlich' }); return; }
+    res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' });
+    res.end();
+    return;
+  }
+
   if (pathname.startsWith('/api/')) return handleApi(req, res, pathname);
   return handleStatic(req, res, pathname);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    assertStartupAllowed();
+  } catch (e) {
+    console.error(`[dashboard] ${e.message}`);
+    process.exit(1);
+  }
   createServer(requestHandler).listen(PORT, HOST, () => {
-    console.log(`Control Center: http://localhost:${PORT}`);
+    if (HOST === '127.0.0.1') {
+      console.log(`Control Center: http://localhost:${PORT}`);
+    } else {
+      console.log(`Control Center (Netzmodus): http://${HOST}:${PORT} - erreichbar im Firmennetz.`);
+      console.log('Zugriff nur mit Passwort. Jede Route verlangt eine Anmeldung; Sitzung 12 Stunden gültig.');
+    }
     console.log('Lokaler Aktionsmodus: Statuswechsel und Kommentare laufen über gh (angemeldetes Konto).');
   });
 }
