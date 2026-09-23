@@ -69,7 +69,37 @@ test('die echten Pilotartikel: offener Status plus PRUEFEN-freier Text, sonst ge
   }
 });
 
+test('die Inhaltsart Problem ist erlaubt, eine erfundene nicht', () => {
+  assert.deepEqual(pruefeFreigabe(meta({ metafields: { ...meta().metafields, art: 'Problem' } }), HTML), []);
+  assert.ok(pruefeFreigabe(meta({ metafields: { ...meta().metafields, art: 'Ratgeber' } }), HTML).length > 0);
+});
+
 test('ein Artikel im Status veroeffentlicht darf gebaut werden, ein Entwurf nicht', () => {
   assert.deepEqual(pruefeFreigabe(meta({ status: 'veroeffentlicht' }), HTML), []);
   assert.ok(pruefeFreigabe(meta({ status: 'fachpruefung' }), HTML).length > 0);
+});
+
+test('verwandte und naechster_schritt wandern als Metafelder in die Eingabe', () => {
+  const m = meta({ verwandte: ['rollenbreite-und-bahnen-planen', 'teppichboden-verlegen-lose-fixieren-oder-kleben'], naechster_schritt: 'rollenbreite-und-bahnen-planen' });
+  const { article } = baueEingabe(m, HTML, OPT);
+  const feld = (ns, key) => article.metafields.find(f => f.namespace === ns && f.key === key);
+  const verwandtFeld = feld('ratgeber', 'verwandte');
+  assert.equal(verwandtFeld.type, 'list.single_line_text_field');
+  assert.deepEqual(JSON.parse(verwandtFeld.value), ['rollenbreite-und-bahnen-planen', 'teppichboden-verlegen-lose-fixieren-oder-kleben']);
+  const naechsterFeld = feld('ratgeber', 'naechster_schritt');
+  assert.equal(naechsterFeld.type, 'single_line_text_field');
+  assert.equal(naechsterFeld.value, 'rollenbreite-und-bahnen-planen');
+});
+
+test('leere Werte bei verwandte und naechster_schritt werden weggelassen, kein leeres Metafeld', () => {
+  const ohneFelder = baueEingabe(meta(), HTML, OPT).article;
+  const feld = (ns, key) => ohneFelder.metafields.find(f => f.namespace === ns && f.key === key);
+  assert.equal(feld('ratgeber', 'verwandte'), undefined);
+  assert.equal(feld('ratgeber', 'naechster_schritt'), undefined);
+
+  const mitLeerenWerten = meta({ verwandte: ['', '   ', 'echtes-handle'], naechster_schritt: '   ' });
+  const { article } = baueEingabe(mitLeerenWerten, HTML, OPT);
+  const feld2 = (ns, key) => article.metafields.find(f => f.namespace === ns && f.key === key);
+  assert.deepEqual(JSON.parse(feld2('ratgeber', 'verwandte').value), ['echtes-handle']);
+  assert.equal(feld2('ratgeber', 'naechster_schritt'), undefined);
 });

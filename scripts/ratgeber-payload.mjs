@@ -11,6 +11,24 @@
 // Metafelder brauchen die GID, und die kennt nur der Shop. Fehlt eine, bricht der Lauf ab
 // statt den Verweis still wegzulassen.
 // Die Datei gehoert NICHT in den Artikelordner: dort gilt jede .json als Artikel.
+//
+// Neu (Paket P1, Bodenwissen): die redaktionellen Felder `verwandte` (Liste von
+// Artikel-Handles) und `naechster_schritt` (ein Artikel-Handle) wandern zusaetzlich
+// in die Metafelder ratgeber.verwandte (list.single_line_text_field) und
+// ratgeber.naechster_schritt (single_line_text_field). Beide Metafeld-Definitionen
+// bestehen noch nicht im Shop und muessen vor dem ersten Einsatz dort angelegt
+// werden (siehe docs/bodenwissen/ARTIKELTEMPLATE.md).
+//
+// Warum Handles und nicht list.article_reference: Der Quelltext im Repo kennt nur
+// Handles (Dateiname im Artikelordner). Eine echte Referenz braucht die Artikel-GID,
+// und die kennt erst der Shop, nachdem der Ziel-Artikel dort angelegt wurde - bei
+// jedem neuen Artikel entstuende ein Henne-Ei-Problem plus eine zusaetzliche
+// Aufloesungsrunde (Artikel anlegen, GID einsammeln, Referenzfeld nachtragen), so
+// wie es die `kollektionen.json`-Zuordnung fuer `kollektion`/`zubehoer_kollektion`
+// bereits heute braucht. Das Artikeltemplate loest die Handles zur Laufzeit selbst
+// gegen `blog.articles` auf und ueberspringt nicht mehr vorhandene Handles still -
+// das kann eine gepflegte Referenz nicht leisten, ohne bei jeder Loeschung
+// nachgepflegt zu werden.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +40,9 @@ export const FREIGABE_STATUS = 'freigegeben';
 // Statusliste steht in docs/bodenwissen/CONTENT_MODEL.md, Abschnitt 3.
 export const OFFENE_STATUS = [FREIGABE_STATUS, 'veroeffentlicht'];
 const ERLAUBTE_CTA = ['rechner', 'muster', 'verlegeservice', 'zubehoer'];
-const ERLAUBTE_ART = ['Kaufberatung', 'Anleitung', 'Planung', 'Pflege'];
+// 'Problem' kam mit dem Problem-Finder dazu: Ein Artikel ueber ein Schadensbild ist
+// weder Anleitung noch Kaufberatung, und das Etikett auf der Karte soll das sagen.
+const ERLAUBTE_ART = ['Kaufberatung', 'Anleitung', 'Planung', 'Pflege', 'Problem'];
 
 export function pruefeFreigabe(meta, html) {
   const gruende = [];
@@ -60,6 +80,14 @@ export function baueEingabe(meta, html, { blogId, kollektionen = {} }) {
   for (const key of ['material', 'cta']) {
     if (Array.isArray(m[key]) && m[key].length) metafields.push({ namespace: 'ratgeber', key, type: 'list.single_line_text_field', value: JSON.stringify(m[key]) });
   }
+  // Kuratierte interne Verlinkung (Redaktionsfelder, nicht unter metafields): siehe
+  // Begruendung "Handles statt list.article_reference" im Dateikopf. Leere Werte
+  // (blank oder fehlend) werden weggelassen statt als leeres Metafeld angelegt.
+  if (Array.isArray(meta.verwandte)) {
+    const verwandteWerte = meta.verwandte.map(wert => (typeof wert === 'string' ? wert.trim() : '')).filter(Boolean);
+    if (verwandteWerte.length) metafields.push({ namespace: 'ratgeber', key: 'verwandte', type: 'list.single_line_text_field', value: JSON.stringify(verwandteWerte) });
+  }
+  textfeld(metafields, 'naechster_schritt', meta.naechster_schritt);
   for (const key of ['kollektion', 'zubehoer_kollektion']) {
     if (!m[key]) continue;
     const gid = kollektionen[m[key]];

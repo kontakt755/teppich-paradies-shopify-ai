@@ -1,0 +1,75 @@
+{
+  "id": "RAT-VI-001",
+  "handle": "klickvinyl-oder-klebevinyl",
+  "title": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+  "blog": "ratgeber-vinylboden",
+  "tags": [
+    "Auswahl & Kaufberatung"
+  ],
+  "cluster": "vinylboden/auswahl",
+  "parent": "ratgeber-vinylboden",
+  "intent": "kaufberatung",
+  "frage": "Soll ich Klickvinyl oder Klebevinyl nehmen?",
+  "begriff": "klickvinyl oder klebevinyl",
+  "nebenfragen": [
+    "Welches braucht weniger Aufbauhöhe?",
+    "Was lässt sich wieder entfernen?",
+    "Was verlangt der Untergrund jeweils?"
+  ],
+  "status": "fachinput_noetig",
+  "verwandte": [
+    "untergrund-pruefen-und-vorbereiten"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fussbodenheizung",
+    "klebevinyl",
+    "klickvinyl"
+  ],
+  "quellen": [],
+  "bilder": [
+    {
+      "zweck": "Klickverbindung zweier Planken im Schnitt",
+      "status": "offen"
+    },
+    {
+      "zweck": "Klebevinyl beim Einlegen in den Kleber",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 18,
+    "naechste": "2028-03-23",
+    "grund": "Vinyl-Sortiment und Herstellerangaben ändern sich häufiger"
+  },
+  "expert_input": [
+    "Stimmen alle Zeilen der Vergleichstabelle, besonders 'einzelne Planke tauschen'?",
+    "Fehlt eine Zeile, die Kunden regelmäßig fragen?",
+    "Welche Ebenheit verlangen Sie je Verlegeart?",
+    "Gibt es Untergründe, die eine der beiden Arten ausschließen?",
+    "Welche Rolle spielt die Restfeuchte bei Klebevinyl gegenüber Klickvinyl?",
+    "Wozu raten Sie in der Mietwohnung, wozu im Eigentum?",
+    "Gibt es bei Fußbodenheizung eine klare Hausempfehlung?",
+    "Was gilt in Bad und Küche – ist eine der beiden Arten im Vorteil?"
+  ],
+  "excerpt": "Beide bestehen aus demselben Material. Der Unterschied ist, wie sie liegen: Klickvinyl schwimmt, Klebevinyl wird verklebt. Fast alles Weitere folgt daraus.",
+  "seo": {
+    "title": "Klickvinyl oder Klebevinyl: der Unterschied",
+    "description": "Klickvinyl schwimmt, Klebevinyl wird verklebt. Was das für Aufbauhöhe, Untergrund, Rückbau und Reparatur bedeutet."
+  },
+  "metafields": {
+    "kurzantwort": "Klickvinyl liegt schwimmend: Die Planken verbinden sich untereinander und sind mit dem Untergrund nicht verbunden. Klebevinyl wird vollflächig mit dem Untergrund verklebt. Daraus folgt fast alles Weitere – Klebevinyl baut niedriger und folgt jeder Unebenheit, Klickvinyl lässt sich in der Regel wieder aufnehmen und braucht eine Dehnungsfuge an der Wand.",
+    "art": "Kaufberatung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "muster"
+    ],
+    "kollektion": "vinylboden",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

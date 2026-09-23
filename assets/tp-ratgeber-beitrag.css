@@ -97,6 +97,14 @@
 .tp-rg-produkt__titel { display: block; padding: 12px 14px 4px; font-size: 15px; font-weight: 600; line-height: 1.35; }
 .tp-rg-produkt__mehr { display: block; margin-top: auto; padding: 0 14px 14px; font-size: 14px; color: var(--tp-red-dark, #96262f); }
 
+.tp-rg-naechster { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--tp-line, #e6e0d8); }
+.tp-rg-naechster__karte { position: relative; display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 20px 52px 20px 22px; background: var(--tp-red-soft, #fbeeef); border: 1px solid var(--tp-red, #b73740); border-radius: var(--tp-r-lg, 16px); color: var(--tp-ink, #1d1a17); text-decoration: none; }
+.tp-rg-naechster__karte:hover { border-color: var(--tp-red-dark, #96262f); }
+.tp-rg-naechster__karte:focus-visible { outline: 3px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+.tp-rg-naechster__titel { font-size: 18px; font-weight: 700; line-height: 1.3; }
+.tp-rg-naechster__text { font-size: 14.5px; line-height: 1.5; color: var(--tp-ink-2, #4a443f); }
+.tp-rg-naechster__pfeil { position: absolute; right: 20px; top: 20px; font-size: 20px; line-height: 1; color: var(--tp-red-dark, #96262f); }
+
 .tp-rg-verwandt { margin-top: 56px; }
 .tp-rg-verwandt__kopf { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px 24px; flex-wrap: wrap; margin-bottom: 20px; }
 .tp-rg-verwandt__kopf .tp-s-link { white-space: normal; margin: 0; min-height: 0; padding: 6px 0 2px; font-size: 15px; }
@@ -111,6 +119,30 @@
 .tp-rg-firma__rte p { margin: 0 0 8px; }
 
 .tp-rg-newsletter { margin-top: 40px; }
+
+/* Praxis-Baustein: redaktionell direkt im Artikel-HTML als <aside class="tp-rg-praxis">
+   bzw. <aside class="tp-rg-warnung"> (siehe docs/bodenwissen/ARTIKELTEMPLATE.md).
+   Ruhige, abgesetzte Kaesten ohne Ausrufezeichen-Ton - Farbe traegt den Unterschied,
+   keine Icons, keine Grossschrift. */
+.tp-rg-body aside.tp-rg-praxis,
+.tp-rg-body aside.tp-rg-warnung { margin: 1.8em 0; padding: 18px 20px; border-radius: var(--tp-r, 10px); }
+.tp-rg-body aside.tp-rg-praxis > :first-child,
+.tp-rg-body aside.tp-rg-warnung > :first-child { margin-top: 0; }
+.tp-rg-body aside.tp-rg-praxis > :last-child,
+.tp-rg-body aside.tp-rg-warnung > :last-child { margin-bottom: 0; }
+.tp-rg-body aside.tp-rg-praxis h3,
+.tp-rg-body aside.tp-rg-warnung h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; line-height: 1.3; letter-spacing: 0.01em; color: var(--tp-ink, #1d1a17); }
+.tp-rg-body aside.tp-rg-praxis p,
+.tp-rg-body aside.tp-rg-warnung p { margin: 0 0 0.6em; font-size: 15.5px; line-height: 1.55; }
+.tp-rg-body aside.tp-rg-praxis p:last-child,
+.tp-rg-body aside.tp-rg-warnung p:last-child { margin-bottom: 0; }
+.tp-rg-body aside.tp-rg-praxis ul,
+.tp-rg-body aside.tp-rg-warnung ul { margin: 0 0 0.6em; padding-left: 1.3em; }
+.tp-rg-body aside.tp-rg-praxis li,
+.tp-rg-body aside.tp-rg-warnung li { margin: 0 0 0.3em; font-size: 15.5px; line-height: 1.5; }
+
+.tp-rg-body aside.tp-rg-praxis { background: var(--tp-bg-2, #f6f2ec); border-left: 4px solid var(--tp-green, #2f7a4c); }
+.tp-rg-body aside.tp-rg-warnung { background: #fdf8ef; border-left: 4px solid var(--tp-sand, #e9c8a1); }
 
 @media (min-width: 640px) {
   .tp-rg-verwandt__raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }

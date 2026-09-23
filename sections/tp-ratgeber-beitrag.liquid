@@ -30,6 +30,8 @@
   assign rg_cta = rg_mf.cta.value
   assign rg_kollektion = rg_mf.kollektion.value
   assign rg_zubehoer = rg_mf.zubehoer_kollektion.value
+  assign rg_verwandte_kuratiert = rg_mf.verwandte.value
+  assign rg_naechster_handle = rg_mf.naechster_schritt.value | strip
 
   # Aktualisiert nur zeigen, wenn es ein spaeterer TAG ist als die Veroeffentlichung
   assign rg_tag_pub = article.published_at | date: '%Y%m%d' | plus: 0
@@ -343,9 +345,44 @@
     {%- endif -%}
 
     {%- comment -%}
-      Verwandte Beitraege: zuerst Artikel desselben Blogs mit gemeinsamem Tag,
-      dann mit den neuesten auffuellen. Betrachtet werden die 50 neuesten
-      Artikel des Blogs - das reicht fuer drei Empfehlungen.
+      Naechster Schritt: kuratierter, hervorgehobener Verweis vor den verwandten
+      Beitraegen. Erscheint nur, wenn ratgeber.naechster_schritt auf einen Artikel
+      desselben Blogs aufloest - unabhaengig davon, ob die Liste darunter an ist.
+    {%- endcomment -%}
+    {%- liquid
+      assign rg_naechster_artikel = blank
+      if rg_naechster_handle != blank
+        for rg_naechster_kandidat in blog.articles
+          if rg_naechster_kandidat.handle == rg_naechster_handle and rg_naechster_kandidat.id != article.id
+            assign rg_naechster_artikel = rg_naechster_kandidat
+            break
+          endif
+        endfor
+      endif
+    -%}
+    {%- if rg_naechster_artikel != blank -%}
+      <section class="tp-rg-naechster tp-rg-breit" aria-labelledby="tp-rg-naechster-titel">
+        <h2 class="tp-rg-abschnitt__titel" id="tp-rg-naechster-titel">{{ section.settings.naechster_heading | default: 'Als Nächstes' | escape }}</h2>
+        <a class="tp-rg-naechster__karte" href="{{ rg_naechster_artikel.url }}">
+          <span class="tp-rg-naechster__titel">{{ rg_naechster_artikel.title | escape }}</span>
+          {%- assign rg_naechster_auszug = rg_naechster_artikel.excerpt | strip_html | strip -%}
+          {%- if rg_naechster_auszug != blank -%}
+            <span class="tp-rg-naechster__text">{{ rg_naechster_auszug | truncate: 140 }}</span>
+          {%- endif -%}
+          <span class="tp-rg-naechster__pfeil" aria-hidden="true">&#8594;</span>
+        </a>
+      </section>
+    {%- endif -%}
+
+    {%- comment -%}
+      Verwandte Beitraege: die kuratierte Liste (ratgeber.verwandte) hat Vorrang,
+      in genau der hinterlegten Reihenfolge, aufgeloest ueber die Artikel
+      desselben Blogs. Handles ohne Treffer werden still uebersprungen, der
+      Naechster-Schritt-Artikel taucht hier nicht noch einmal auf. Ist das
+      Metafeld leer oder ergibt es keinen Treffer, greift die bisherige
+      Tag-Ableitung: zuerst Artikel desselben Blogs mit gemeinsamem Tag, dann mit
+      den neuesten auffuellen. Betrachtet werden die 50 neuesten Artikel des
+      Blogs - das reicht fuer drei Empfehlungen.
     {%- endcomment -%}
     {%- if section.settings.verwandte_anzeigen -%}
       {%- liquid
@@ -353,33 +390,65 @@
         assign rg_v_zahl = 0
       -%}
       {%- capture rg_v_html -%}
-        {%- for rg_kandidat in blog.articles -%}
+        {%- for rg_v_handle in rg_verwandte_kuratiert -%}
           {%- if rg_v_zahl >= 3 -%}{%- break -%}{%- endif -%}
-          {%- if rg_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
-          {%- assign rg_v_treffer = false -%}
-          {%- for rg_v_tag in article.tags -%}
-            {%- if rg_kandidat.tags contains rg_v_tag -%}
-              {%- assign rg_v_treffer = true -%}
+          {%- assign rg_v_handle = rg_v_handle | strip -%}
+          {%- if rg_v_handle == blank -%}{%- continue -%}{%- endif -%}
+          {%- assign rg_v_kandidat = blank -%}
+          {%- for rg_v_probe_artikel in blog.articles -%}
+            {%- if rg_v_probe_artikel.handle == rg_v_handle -%}
+              {%- assign rg_v_kandidat = rg_v_probe_artikel -%}
               {%- break -%}
             {%- endif -%}
           {%- endfor -%}
-          {%- if rg_v_treffer -%}
-            {%- assign rg_v_ids = rg_v_ids | append: rg_kandidat.id | append: ',' -%}
-            {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
-            <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
-          {%- endif -%}
+          {%- if rg_v_kandidat == blank or rg_v_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
+          {%- if rg_naechster_artikel != blank and rg_v_kandidat.id == rg_naechster_artikel.id -%}{%- continue -%}{%- endif -%}
+          {%- assign rg_v_probe = ',' | append: rg_v_kandidat.id | append: ',' -%}
+          {%- if rg_v_ids contains rg_v_probe -%}{%- continue -%}{%- endif -%}
+          {%- assign rg_v_ids = rg_v_ids | append: rg_v_kandidat.id | append: ',' -%}
+          {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
+          <li>{%- render 'tp-ratgeber-karte', artikel: rg_v_kandidat -%}</li>
         {%- endfor -%}
-        {%- if rg_v_zahl < 3 -%}
+      {%- endcapture -%}
+
+      {%- if rg_v_zahl == 0 -%}
+        {%- comment -%} Rueckfall: bisherige Tag-Ableitung, Logik unveraendert. {%- endcomment -%}
+        {%- liquid
+          assign rg_v_ids = ','
+          assign rg_v_zahl = 0
+        -%}
+        {%- capture rg_v_html -%}
           {%- for rg_kandidat in blog.articles -%}
             {%- if rg_v_zahl >= 3 -%}{%- break -%}{%- endif -%}
             {%- if rg_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
-            {%- assign rg_v_probe = ',' | append: rg_kandidat.id | append: ',' -%}
-            {%- if rg_v_ids contains rg_v_probe -%}{%- continue -%}{%- endif -%}
-            {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
-            <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
+            {%- if rg_naechster_artikel != blank and rg_kandidat.id == rg_naechster_artikel.id -%}{%- continue -%}{%- endif -%}
+            {%- assign rg_v_treffer = false -%}
+            {%- for rg_v_tag in article.tags -%}
+              {%- if rg_kandidat.tags contains rg_v_tag -%}
+                {%- assign rg_v_treffer = true -%}
+                {%- break -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if rg_v_treffer -%}
+              {%- assign rg_v_ids = rg_v_ids | append: rg_kandidat.id | append: ',' -%}
+              {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
+              <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
+            {%- endif -%}
           {%- endfor -%}
-        {%- endif -%}
-      {%- endcapture -%}
+          {%- if rg_v_zahl < 3 -%}
+            {%- for rg_kandidat in blog.articles -%}
+              {%- if rg_v_zahl >= 3 -%}{%- break -%}{%- endif -%}
+              {%- if rg_kandidat.id == article.id -%}{%- continue -%}{%- endif -%}
+              {%- if rg_naechster_artikel != blank and rg_kandidat.id == rg_naechster_artikel.id -%}{%- continue -%}{%- endif -%}
+              {%- assign rg_v_probe = ',' | append: rg_kandidat.id | append: ',' -%}
+              {%- if rg_v_ids contains rg_v_probe -%}{%- continue -%}{%- endif -%}
+              {%- assign rg_v_zahl = rg_v_zahl | plus: 1 -%}
+              <li>{%- render 'tp-ratgeber-karte', artikel: rg_kandidat -%}</li>
+            {%- endfor -%}
+          {%- endif -%}
+        {%- endcapture -%}
+      {%- endif -%}
+
       {%- if rg_v_zahl > 0 -%}
         <section class="tp-rg-verwandt tp-rg-breit" aria-labelledby="tp-rg-verwandt-titel">
           <div class="tp-rg-verwandt__kopf">
@@ -480,6 +549,10 @@
     { "type": "text", "id": "zubehoer_titel", "label": "Zubehoer: Titel", "default": "Passendes Zubehör" },
     { "type": "text", "id": "zubehoer_text", "label": "Zubehoer: Text", "default": "Was Sie für die Verlegung zusätzlich brauchen." },
     { "type": "url", "id": "zubehoer_link", "label": "Zubehoer: Link", "info": "Nur wenn der Artikel keine Zubehoer-Kollektion nennt. Leer = /collections/zubehoer" },
+
+    { "type": "header", "content": "Naechster Schritt" },
+    { "type": "paragraph", "content": "Erscheint nur, wenn das Artikel-Metafeld ratgeber.naechster_schritt auf einen Artikel desselben Blogs zeigt." },
+    { "type": "text", "id": "naechster_heading", "label": "Ueberschrift", "default": "Als Nächstes" },
 
     { "type": "header", "content": "Weitere Beitraege" },
     { "type": "checkbox", "id": "verwandte_anzeigen", "label": "Verwandte Beitraege zeigen", "default": true },

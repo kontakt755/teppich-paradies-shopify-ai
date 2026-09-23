@@ -127,9 +127,13 @@ export function pruefe({ artikel, lexikon = [], probleme = [], heute = new Date(
       if (LEERE_ANKER.includes(norm(text))) melde(fehler, ort, `Ankertext "${text}" sagt nicht, was dahinter steckt`);
     }
 
+    // Offene PRUEFEN-Marken sind in einem Entwurf der Normalfall - sie sind ja der
+    // Grund, warum er noch Entwurf ist. Zum Fehler werden sie erst, wenn der Artikel
+    // in den Shop soll. Dieselbe Grenze zieht scripts/ratgeber-payload.mjs.
     if (html && /PRUEFEN/.test(html)) {
       const zahl = (html.match(/PRUEFEN/g) || []).length;
-      melde(fehler, ort, `${zahl} offene PRUEFEN-Marke(n) im Text`);
+      if (STATUS_OFFEN.includes(meta.status)) melde(fehler, ort, `${zahl} offene PRUEFEN-Marke(n) im Text`);
+      else melde(hinweise, ort, `${zahl} offene Fachfrage(n) im Text - wartet auf das Verlegeteam`);
     }
     if (html && /<h1[\s>]/i.test(html)) melde(fehler, ort, 'h1 im Text (die H1 ist der Artikeltitel)');
 

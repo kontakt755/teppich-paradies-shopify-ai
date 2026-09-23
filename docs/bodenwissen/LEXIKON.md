@@ -102,6 +102,59 @@ nie zu einem Fehler - trotzdem sollte die erste Sitzung mit echtem Shop-Zugriff
 das per Render-Test bestaetigen (`docs/lessons/reference_dev_theme_render_test.md`-Muster:
 `shopify theme push --development` + Puppeteer), bevor die Seite beworben wird.
 
+## Auf der Produktseite
+
+Paket P2, Aufgabe #505. Traeger ist `blocks/tp-produktinfo-tabelle.liquid` -
+die Tabelle der technischen Daten auf der Produktseite. Eine Zeile mit
+passendem Lexikonbegriff bekommt ein zugeklapptes `<details>` in der
+Wert-Zelle; aufgeklappt zeigt es die Kurzdefinition aus
+`tp-lexikon-eintrag` im `modus: inline` (Kurztext plus Link "Im
+Bodenlexikon nachlesen" auf den Anker der Lexikonseite). Die
+Bezeichnung-Zelle bleibt unveraendert, es entsteht keine neue
+Ueberschriftenebene und kein Pop-up.
+
+### Warum `<details>` statt einer dauerhaft sichtbaren Zeile
+
+Begriffe wie Nutzungsklasse oder Florhoehe stehen auf sehr vielen
+Produktseiten. Eine immer sichtbare Erklaerungszeile je Begriff wuerde die
+Tabelle genau so ueberladen, wie Abschnitt 18 des Auftrags es ausschliesst.
+`<details>`/`<summary>` ist native HTML, tastaturbedienbar (Enter/Leertaste
+auf dem fokussierten `<summary>`), zeigt einen sichtbaren Fokusrahmen und
+bleibt standardmaessig zu - wer den Begriff schon kennt, sieht nur eine
+kurze, unterstrichene Zeile mehr. `<details>` ist gueltiger Inhalt fuer
+`<td>` (Flow Content), die Tabellenstruktur bleibt damit valide; eine
+Definitionsliste war nicht noetig.
+
+### Wie die Zuordnung funktioniert
+
+Die Zeilen der Tabelle sind in `blocks/tp-produktinfo-tabelle.liquid` als
+`Bezeichnung::metafeld::anzeigefeld` in `table_config` hinterlegt. Eine
+zweite, davon unabhaengige Zuordnung `lexikon_zuordnung` (Format
+`Bezeichnung::handle`) verbindet nur die Zeilen, deren Bezeichnung
+eindeutig einem Lexikonbegriff entspricht, mit dem passenden Handle unter
+`content/lexikon/`. Die Zuordnung ist bewusst manuell und unvollstaendig -
+kein automatisches Ableiten aus dem Feldnamen, damit nichts geraten wird.
+Aktuell zugeordnet: Florhoehe, Gesamtstaerke, Poleneinsatzgewicht,
+Nutzungsklassen, Fussbodenheizung, Trittschallverbesserung und
+Rueckenausstattung (-> `ruecken`).
+
+Neue Zeile mit Lexikonbezug hinzufuegen:
+
+1. Zeile wie gewohnt in `table_config` ergaenzen.
+2. Passenden Eintrag unter `content/lexikon/<handle>.json` pruefen bzw.
+   nach obigem Ablauf ("Wie ein Eintrag entsteht") anlegen.
+3. In `lexikon_zuordnung` (`blocks/tp-produktinfo-tabelle.liquid`) die
+   Zeile `Bezeichnung::handle` ergaenzen - die Bezeichnung muss exakt der
+   `row_label`-Spalte aus `table_config` entsprechen.
+
+### Solange das Metaobjekt `tp_lexikon` fehlt
+
+`tp-lexikon-eintrag` findet dann zu jedem Handle keinen Eintrag und gibt
+nichts aus (siehe Kommentar dort). Der Block faengt das ab, bevor er das
+`<details>` ausgibt - keine leere Aufklappzeile, keine Fehlermeldung, die
+Produktseite rendert exakt wie vorher. Sobald der Eintrag existiert,
+erscheint die Erklaerung ohne weitere Theme-Aenderung.
+
 ## Was das noch nicht ist
 
 - Das Metaobjekt `tp_lexikon` existiert im Shop noch nicht - diese Sitzung

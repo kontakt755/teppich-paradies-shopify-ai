@@ -77,12 +77,23 @@ test('Tag-Ansicht eines Blogs gilt nicht als Artikel-Link', () => {
   assert.equal(pruefe({ artikel: [eintrag] }).fehler.length, 0);
 });
 
-test('offene PRUEFEN-Marke und h1 im Text sperren', () => {
-  const eintrag = artikel();
-  eintrag.html = '<h1>Titel</h1><p>PRUEFEN: stimmt das?</p>';
-  const { fehler } = pruefe({ artikel: [eintrag] });
-  assert.ok(texte(fehler).some(t => t.includes('PRUEFEN')));
-  assert.ok(texte(fehler).some(t => t.includes('h1 im Text')));
+test('offene PRUEFEN-Marke sperrt nur einen Artikel, der in den Shop soll', () => {
+  const offen = artikel({ status: 'freigegeben', metafields: { kurzantwort: 'Ja.' } });
+  offen.html = '<p>PRUEFEN: stimmt das?</p>';
+  assert.ok(texte(pruefe({ artikel: [offen] }).fehler).some(t => t.includes('PRUEFEN')));
+
+  // Ein Entwurf DARF offene Fragen haben - das ist der Grund, warum er Entwurf ist.
+  const entwurf = artikel({ status: 'fachinput_noetig' });
+  entwurf.html = '<p>PRUEFEN: stimmt das?</p>';
+  const ergebnis = pruefe({ artikel: [entwurf] });
+  assert.deepEqual(texte(ergebnis.fehler), []);
+  assert.ok(texte(ergebnis.hinweise).some(t => t.includes('offene Fachfrage')));
+});
+
+test('h1 im Text ist immer ein Fehler, auch im Entwurf', () => {
+  const eintrag = artikel({ status: 'entwurf' });
+  eintrag.html = '<h1>Titel</h1><p>Text.</p>';
+  assert.ok(texte(pruefe({ artikel: [eintrag] }).fehler).some(t => t.includes('h1 im Text')));
 });
 
 test('freigegebener Artikel ohne Kurzantwort wird gesperrt', () => {

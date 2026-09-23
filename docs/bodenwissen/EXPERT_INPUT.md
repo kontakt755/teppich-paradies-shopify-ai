@@ -47,40 +47,60 @@ ist laut Auftrag (Abschnitt 44) meist wertvoller als ein neuer Artikel.
 | 5.20 | Welche Hausmittel sollen Kunden ausdruecklich **nicht** verwenden? | Schadenvermeidung, klarer Mehrwert |
 | 5.21 | Dampfreiniger auf Teppichboden — generell abraten? | TB-R-06 |
 
-## 3. Fragen fuer die naechste Welle
+## 3. Fragen zu den fuenf Entwuerfen der naechsten Welle
 
-Zu den fuenf Themen aus `CONTENT_BACKLOG.md`, Abschnitt „Naechste Welle".
-Jeweils das, was ohne Antwort nicht geschrieben werden kann.
+Diese fuenf Artikel sind **geschrieben und liegen als Entwurf im Repository**.
+Sie sind vollstaendig aufgebaut; an jeder Stelle, die eine Auskunft aus dem Betrieb
+braucht, steht eine `PRUEFEN`-Marke mit der konkreten Frage direkt im Text.
+`npm run ratgeber:payload` sperrt jeden von ihnen, solange die Marken offen sind —
+sie koennen also nicht versehentlich veroeffentlicht werden.
 
-### TB-V-02 Teppichboden auf Fliesen
-- Wie geht Ihr Team bei ausgepraegten Fliesenfugen tatsaechlich vor — spachteln,
-  ausgleichen, oder haengt es von der Fugenbreite ab? Ab welcher Breite?
-- Wird auf Fliesen grundsaetzlich grundiert? Wenn ja, womit — oder haengt das am
-  Produkt des Herstellers?
-- Muessen lose oder hohle Fliesen vorher raus? Woran erkennt der Kunde das?
-- Bei welchen Teppichboeden (Ruecken, Machart) raten Sie auf Fliesen ab?
+**Jede beantwortete Frage macht ein Stueck Artikel veroeffentlichbar.** Die Fragen
+stehen maschinenlesbar im Feld `expert_input` der jeweiligen `.json` und wortgleich
+als Kommentar an der passenden Stelle in der `.html`.
 
-### TB-A-01 Schlinge oder Velours
-- Welche der beiden empfehlen Sie wofuer — und was ist der Grund, den Sie
-  Kunden im Laden nennen?
-- Trifft „Velours zeigt Trittspuren" und „Schlingen koennen durch Krallen
-  gezogen werden" zu, oder ist das zu pauschal?
-- Gibt es Raeume, in denen Sie von einer der beiden grundsaetzlich abraten?
+| Entwurf | Offene Fragen | Datei |
+|---|---|---|
+| Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss | 10 | `content/ratgeber/teppichboden/teppichboden-auf-fliesen.json` |
+| Teppichboden wirft Wellen: mögliche Ursachen und was hilft | 7 | `content/ratgeber/teppichboden/teppichboden-wirft-wellen.json` |
+| Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst | 3 | `content/ratgeber/teppichboden/verschnitt-bei-teppichboden.json` |
+| Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber | 9 | `content/ratgeber/untergrund/untergrund-pruefen-und-vorbereiten.json` |
+| Klickvinyl oder Klebevinyl: Was ist der Unterschied? | 8 | `content/ratgeber/vinylboden/klickvinyl-oder-klebevinyl.json` |
 
-### UG-01 Untergrund pruefen
-- Welche Punkte pruefen Sie vor jeder Verlegung, in welcher Reihenfolge?
-- Was davon kann ein Kunde selbst pruefen, was nicht?
-- Ab welcher Unebenheit muss gespachtelt werden? Wie messen Sie das?
+Zusammen **37 Fragen**. Die wichtigsten je Entwurf:
 
-### TB-X-01 Teppichboden wirft Wellen
-- Welche Ursachen sehen Sie in der Praxis am haeufigsten?
-- Was davon laesst sich nachtraeglich beheben, was nicht?
-- Ab wann ist das ein Reklamationsfall?
+### Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss
+- Welche Punkte prüft das Team am Fliesenboden, in welcher Reihenfolge?
+- Woran erkennt ein Kunde eine hohl liegende Fliese zuverlässig?
+- Ab welcher Fugenbreite oder -tiefe raten Sie zum Spachteln?
+- Welche Teppichbodenaufbauten verzeihen Fugen besser, welche schlechter?
+- … 6 weitere in `content/ratgeber/teppichboden/teppichboden-auf-fliesen.json`
 
-### VI-01 Klickvinyl oder Klebevinyl
-- Wozu raten Sie in der Mietwohnung, wozu im Eigentum?
-- Welche Untergruende schliessen eine der beiden Arten aus?
-- Bei Fussbodenheizung: gibt es eine klare Hausempfehlung?
+### Teppichboden wirft Wellen: mögliche Ursachen und was hilft
+- Welche Ursachen sehen Sie in der Praxis am häufigsten? Nach Häufigkeit ordnen.
+- Fehlt in der Liste eine Ursache?
+- Welche Fälle lassen sich nachträglich beheben, welche nicht?
+- Gehen Wellen nach dem Nachfixieren vollständig weg?
+- … 3 weitere in `content/ratgeber/teppichboden/teppichboden-wirft-wellen.json`
+
+### Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst
+- Nennen Sie Kunden eine übliche Größenordnung für Verschnitt, oder raten Sie davon ab?
+- Wie viel Überlappung je Naht muss zusätzlich eingeplant werden?
+- Können Reststücke mitgeliefert werden, oder bleiben sie beim Zuschnitt?
+
+### Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber
+- Welche Prüfungen halten Sie für einen Kunden für sinnvoll, welche führen in die Irre?
+- Ist der Folientest brauchbar, oder raten Sie davon ab?
+- Mit welchem Verfahren messen Sie Restfeuchte?
+- Auf welche Norm bzw. welches Messverfahren beziehen Sie sich bei der Ebenheit?
+- … 5 weitere in `content/ratgeber/untergrund/untergrund-pruefen-und-vorbereiten.json`
+
+### Klickvinyl oder Klebevinyl: Was ist der Unterschied?
+- Stimmen alle Zeilen der Vergleichstabelle, besonders 'einzelne Planke tauschen'?
+- Fehlt eine Zeile, die Kunden regelmäßig fragen?
+- Welche Ebenheit verlangen Sie je Verlegeart?
+- Gibt es Untergründe, die eine der beiden Arten ausschließen?
+- … 4 weitere in `content/ratgeber/vinylboden/klickvinyl-oder-klebevinyl.json`
 
 ## 4. Wie eine Antwort in den Shop kommt
 

@@ -62,7 +62,7 @@ als neuer Artikel.
 
 | ID | Thema | Primaere Frage | Intent | Prio | Braucht | CTA |
 |---|---|---|---|---|---|---|
-| TB-P-01 | Verschnitt richtig einplanen | Wie viel Verschnitt muss ich rechnen? | planung | p1 | E T | rechner |
+| TB-P-01 | Verschnitt richtig einplanen — **Entwurf**, 3 Fragen offen | Wie viel Verschnitt muss ich rechnen? | planung | p1 | E T | rechner |
 | TB-P-02 | Mehrere Raeume aus einer Rolle | Kann ich zwei Raeume aus einer Rolle schneiden? | planung | p2 | E | rechner |
 | TB-P-03 | Verwinkelte Raeume und Nischen | Wie messe ich einen Raum mit Erker? | planung | p2 | B | rechner |
 | TB-P-04 | Treppe ausmessen | Wie viel Material braucht eine Treppe? | planung | p1 | E B T | verlegeservice |
@@ -76,7 +76,7 @@ als neuer Artikel.
 | ID | Thema | Primaere Frage | Intent | Prio | Braucht | CTA |
 |---|---|---|---|---|---|---|
 | TB-V-01 | Naehte bei Schlinge und Velours | Sieht man die Naht hinterher? | anleitung | p1 | E B | verlegeservice |
-| TB-V-02 | Teppichboden auf Fliesen | Kann ich direkt auf Fliesen verlegen? | anleitung | p1 | E B | verlegeservice |
+| TB-V-02 | Teppichboden auf Fliesen — **Entwurf**, 10 Fragen offen | Kann ich direkt auf Fliesen verlegen? | anleitung | p1 | E B | verlegeservice |
 | TB-V-03 | Teppichboden auf altem Teppichboden | Muss der alte Belag raus? | anleitung | p1 | E | verlegeservice |
 | TB-V-04 | Teppichboden auf Laminat oder Parkett | Darf Teppichboden auf Holz? | anleitung | p2 | E | – |
 | TB-V-05 | Teppichboden auf der Treppe verlegen | Wie werden Stufen bezogen? | anleitung | p2 | E B | verlegeservice |
@@ -117,7 +117,7 @@ Alle Eintraege speisen zugleich den Problem-Finder (`content/probleme/`).
 
 | ID | Thema | Primaere Frage | Intent | Prio | Braucht | CTA |
 |---|---|---|---|---|---|---|
-| TB-X-01 | Teppichboden wirft Wellen | Warum wellt sich der Boden? | problem | p1 | E B | verlegeservice |
+| TB-X-01 | Teppichboden wirft Wellen — **Entwurf**, 7 Fragen offen | Warum wellt sich der Boden? | problem | p1 | E B | verlegeservice |
 | TB-X-02 | Naht wird sichtbar | Warum sehe ich die Naht? | problem | p1 | E B | verlegeservice |
 | TB-X-03 | Druckstellen von Moebeln | Gehen Druckstellen wieder raus? | problem | p1 | E | – |
 | TB-X-04 | Flor liegt unterschiedlich / Schattierung | Warum sieht der Boden fleckig aus? | problem | p1 | E B | – |
@@ -149,7 +149,7 @@ Alle Eintraege speisen zugleich den Problem-Finder (`content/probleme/`).
 
 | ID | Thema | Primaere Frage | Intent | Prio | Braucht | CTA |
 |---|---|---|---|---|---|---|
-| VI-01 | Klickvinyl oder Klebevinyl | Was ist der Unterschied? | kaufberatung | p1 | E | muster |
+| VI-01 | Klickvinyl oder Klebevinyl — **Entwurf**, 8 Fragen offen | Was ist der Unterschied? | kaufberatung | p1 | E | muster |
 | VI-02 | Vinyl oder PVC von der Rolle | Bahnenware oder Planken? | kaufberatung | p1 | E | muster |
 | VI-03 | Vinyl auf Fliesen verlegen | Geht Vinyl direkt auf Fliesen? | anleitung | p1 | E B | verlegeservice |
 | VI-04 | Vinyl auf Fussbodenheizung | Vertraegt Vinyl Fussbodenheizung? | kaufberatung | p1 | E | produkte |
@@ -175,7 +175,7 @@ Alle Eintraege speisen zugleich den Problem-Finder (`content/probleme/`).
 
 | ID | Thema | Primaere Frage | Intent | Prio | Braucht | CTA |
 |---|---|---|---|---|---|---|
-| UG-01 | Untergrund pruefen vor dem Verlegen | Muss ich am Boden vorher etwas machen? | anleitung | p1 | E B | verlegeservice |
+| UG-01 | Untergrund pruefen vor dem Verlegen — **Entwurf**, 9 Fragen offen | Muss ich am Boden vorher etwas machen? | anleitung | p1 | E B | verlegeservice |
 | UG-02 | Estrich als Untergrund | Was muss der Estrich koennen? | anleitung | p1 | E | verlegeservice |
 | UG-03 | Restfeuchte im Estrich | Ist der Boden trocken genug? | problem | p1 | E | verlegeservice |
 | UG-04 | Fliesen als Untergrund | Was ist bei Fliesen zu beachten? | anleitung | p1 | E B | verlegeservice |
@@ -249,5 +249,13 @@ dem Verlegeteam:
 5. **VI-01 Klickvinyl oder Klebevinyl** — oeffnet den Vinyl-Bereich, der als
    Karte schon „in Vorbereitung" auf `/pages/ratgeber` steht.
 
-Erst schreiben, wenn die zugehoerigen Fragen aus `EXPERT_INPUT.md` beantwortet
-sind. Ungeprueftes wird gestrichen, nicht vermutet — die Regel von 2026-09-21.
+**Stand 2026-09-23: Alle fuenf sind geschrieben und liegen als Entwurf im
+Repository** (`content/ratgeber/<bereich>/`). Sie sind vollstaendig aufgebaut;
+an jeder Stelle, die eine Auskunft aus dem Betrieb braucht, steht eine
+`PRUEFEN`-Marke mit der konkreten Frage im Text. `ratgeber:payload` sperrt sie,
+solange die Marken offen sind — versehentlich veroeffentlichen laesst sich
+keiner davon.
+
+Zusammen **37 offene Fragen**. Jede Antwort macht ein Stueck Artikel
+veroeffentlichbar. Ungeprueftes wird gestrichen, nicht vermutet — die Regel von
+2026-09-21 gilt weiter.
