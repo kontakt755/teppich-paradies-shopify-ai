@@ -75,11 +75,19 @@ Artikel-Metafelder im Shop angelegt waren:
 | Problem-Finder | 6 Symptome, drei verschiedene Ziel-Artikel, vier Profi-Hinweise. Die 15 Eintraege ohne Ziel erscheinen nicht — die Regel greift. |
 | Kuratierte Verweise | „Als Naechstes: Rollenbreite waehlen und Bahnen planen" erscheint; der so verlinkte Artikel taucht in „Weitere Beitraege" korrekt **nicht** noch einmal auf. |
 
+## Dritter Durchlauf: Produktseite und Handy
+
+| Gegenstand | Beleg |
+|---|---|
+| Lexikon auf der Produktseite | `/products/kontura-teppichboden`: Drei der fuenf Zeilen tragen einen Aufklapper mit dem richtigen Text — Rueckenausstattung, Florhoehe, Poleneinsatzgewicht. Die Zeilen ohne passenden Begriff (Fasermaterial, Zimmer) bleiben unveraendert. |
+| Kein Begriff, keine Aenderung | Auf `/products/piumera-teppich-nach-mass` (Teppich nach Mass, andere Kennwerte) erscheint kein leerer Aufklapper. |
+| Handy, Rechner (375 px) | Kein horizontaler Ueberlauf, Eingabefelder und Knopf 52–54 px hoch, Ergebnis als Karten. Rechnung 400 × 620 cm → 400er-Rolle empfohlen, 25,60 m², Verschnitt 3,2 %. |
+| Handy, Lexikon (375 px) | 16 Eintraege und 16 Sprungmarken, kein horizontaler Ueberlauf. |
+
 ## Nicht geprueft, weil noch nicht moeglich
 
-- **Lexikon auf der Produktseite.** Die Zuordnung Tabellenzeile → Begriff ist
-  gebaut und die Metaobjekte stehen jetzt; gerendert wurde sie noch nicht.
-- **Mobile Darstellung und Lighthouse.** Die Sections sind mobil zuerst gebaut,
-  aber nicht auf einem Geraet gemessen.
 - **Die drei Seiten unter ihrer echten URL.** Geprueft wurde ueber `?view=` auf
-  `/pages/ratgeber`; die Seiten selbst gibt es im Shop noch nicht.
+  `/pages/ratgeber`; die Seiten selbst gibt es im Shop erst nach dem Deploy —
+  vorher wuerden sie auf das Standard-Template fallen (Regel vom 2026-09-21).
+- **Lighthouse und Core Web Vitals.** Sinnvoll erst auf dem Preview-Theme.
+- **Die vier neuen Bereiche** (Teppiche, Vinyl, Untergrund): Blogs existieren noch nicht.
