@@ -467,3 +467,47 @@ test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
   const r = api.lexikonProdukt('gibt-es-nicht');
   assert.equal(r.verfuegbar, false);
 });
+
+// ---------------------------------------------------------------------------
+// Datenstand: aktualisierung.json (operations/scripts/aktualisieren.mjs)
+// ---------------------------------------------------------------------------
+
+test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, false);
+  assert.ok(r.befehl.includes('daten:aktualisieren'));
+});
+
+test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const jetzt = new Date('2026-09-23T12:00:00.000Z');
+  const frisch = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000).toISOString(); // vor 2h
+  const alt = new Date(jetzt.getTime() - 30 * 60 * 60 * 1000).toISOString(); // vor 30h
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({
+    aktualisiertAm: frisch,
+    teile: {
+      lexikon: { zeitpunkt: frisch, dauerMs: 1200, erfolg: true, anzahl: 50, meldung: null },
+      bestellungen: { zeitpunkt: alt, dauerMs: 900, erfolg: true, anzahl: 50, meldung: null },
+      kennzahlen: { zeitpunkt: frisch, dauerMs: 300, erfolg: false, anzahl: null, meldung: 'Kein Zugang in .env.local' },
+    },
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, now: () => jetzt });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.teile.lexikon.veraltet, false);
+  assert.equal(r.teile.bestellungen.veraltet, true);
+  assert.equal(r.teile.kennzahlen.erfolg, false);
+  assert.equal(r.teile.kennzahlen.meldung, 'Kein Zugang in .env.local');
+});
+
+test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null statt zu werfen', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ aktualisiertAm: null, teile: { lexikon: { erfolg: false, meldung: 'x' } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierung();
+  assert.equal(r.teile.lexikon.veraltet, null);
+});

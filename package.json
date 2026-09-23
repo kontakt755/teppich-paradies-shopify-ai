@@ -72,6 +72,7 @@
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
     "lexikon:export": "node operations/scripts/lexikon-export.mjs",
+    "daten:aktualisieren": "node operations/scripts/aktualisieren.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
   },
   "devDependencies": {

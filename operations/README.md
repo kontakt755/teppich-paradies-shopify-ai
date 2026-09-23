@@ -161,3 +161,62 @@ Verbindung. Der Schluessel wird verdeckt eingegeben und nie ausgegeben.
 
 Jeder Schritt ist wiederholbar; bricht einer ab, nennt die Meldung den Weg von
 Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
+
+## Aktualisierung (alle Datenquellen in einem Lauf)
+
+Lexikon, Bestellübersicht und Kennzahlen sind private Momentaufnahmen unter
+`$TP_PRIVAT_DIR` (Standard `~/teppich-paradies-analyse`) und veralten, sobald
+sich im Shop etwas ändert - neues Produkt, neue Bestellung, geänderter Preis.
+`operations/scripts/aktualisieren.mjs` erneuert alle drei nacheinander in
+einem Aufruf:
+
+```
+npm run daten:aktualisieren
+npm run daten:aktualisieren -- --nur lexikon
+npm run daten:aktualisieren -- --nur bestellungen,kennzahlen
+```
+
+Erneuert: Lexikon (Produkte/Varianten/Metafelder, wie `lexikon:export --live`),
+Bestellübersicht (letzte 50 Bestellungen **inkl. Quellvarianten der Muster** -
+ohne die Quellvariante verliert ein Muster seine Artikelnummer, siehe
+`operations/lib/bestelluebersicht.mjs`) und Kennzahlen (35-Tage-Fenster, deckt
+die 7/30-Tage-Auswertung). Jeder Teil läuft unabhängig: ein Fehler in einem
+Teil (z. B. Rate-Limit) verhindert die anderen nicht, und die vorhandene
+Ausgabedatei bleibt unverändert stehen, wenn ein Abruf scheitert - lieber alte
+Daten mit erkennbarem Datum als gar keine.
+
+Ergebnis steht in `$TP_PRIVAT_DIR/aktualisierung.json`: je Teil Zeitpunkt,
+Dauer, Anzahl Datensätze und Erfolg/Fehler samt Meldung. Das Control Center
+liest diese Datei über `/api/aktualisierung` und zeigt "Stand: …" je
+Datenquelle in der Kachel "Systemgesundheit" (Startseite "Heute" und
+"Insights"); ab 24 Stunden Alter erscheint dort der Hinweis "Daten veraltet -
+bitte `npm run daten:aktualisieren` ausführen" (siehe
+`docs/control-center/ARCHITEKTUR.md`, Abschnitt 10).
+
+**Zugang:** braucht `SHOPIFY_ADMIN_TOKEN` oder `SHOPIFY_CLIENT_ID`/`SECRET` in
+`.env.local` (`operations/sync/zugang.mjs`, Einrichtung siehe
+`domains/shopify/admin-token-oauth.md` bzw. `npm run operations:einrichten`
+oben). Fehlt der Zugang, bricht jeder Teil mit genau dieser Meldung ab - kein
+stiller Fehlschlag, keine erfundenen Zahlen. Der Shopify-MCP zählt hier nicht:
+er läuft nur innerhalb einer Claude-Sitzung, dieses Skript aber auch ohne eine
+laufende Sitzung (z. B. per geplanter Aufgabe). Für den MCP-Weg ohne Token
+bleiben die einzelnen `--input`-Varianten von `lexikon:export`,
+`kennzahlen:export` und `ops:bestelluebersicht`.
+
+**Von Hand starten:** einfach `npm run daten:aktualisieren` in einem Terminal
+mit Repository als Arbeitsverzeichnis, Token in `.env.local`.
+
+**Täglich automatisch:** über eine geplante Aufgabe in Claude Desktop
+(`~/.claude/scheduled-tasks/`) - z. B. taeglich frueh `npm run
+daten:aktualisieren` im Repository-Pfad dieses Rechners. Die Aufgabe braucht
+einen eingeschalteten Rechner mit diesem Repository und `.env.local`; sie
+läuft nicht in der Cloud. Anlegen z. B. mit der `schedule`-Fähigkeit einer
+Claude-Code-Sitzung auf diesem Mac, oder von Hand als Cron-/launchd-Job, der
+`npm run daten:aktualisieren` mit `cwd` auf dieses Repository ausführt.
+
+**War der Rechner aus:** die geplante Aufgabe läuft schlicht nicht - kein
+Fehler, keine Benachrichtigung. Sichtbar wird das ausschließlich über das
+Alter im Dashboard (Kachel "Systemgesundheit"): steht dort "Daten veraltet",
+reicht ein manueller Lauf von `npm run daten:aktualisieren`, sobald der
+Rechner wieder läuft und online ist. Es gibt keinen Nachhol-Mechanismus, der
+verpasste Läufe automatisch aufholt.
