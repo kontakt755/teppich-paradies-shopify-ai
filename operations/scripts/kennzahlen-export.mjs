@@ -46,10 +46,14 @@ export function pruefeZiel(datei, repo = REPO) {
   return abs;
 }
 
-async function ladeLive(tage) {
+export async function ladeLive(tage) {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
   const { fetchOrdersSince } = await import('../sync/orders.mjs');
-  const seit = new Date(Date.now() - tage * 24 * 60 * 60 * 1000);
-  return { orders: await fetchOrdersSince(seit) };
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET) - --input mit MCP-Export nutzen');
+  const seit = new Date(Date.now() - tage * 24 * 60 * 60 * 1000).toISOString();
+  const r = await fetchOrdersSince(proxy, seit);
+  return { orders: r.orders };
 }
 
 async function main() {

@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run control:center:test",
+    "test": "npm run qa:unit:test && npm run dashboard:test && npm run operations:test && npm run automation:test && npm run workflow:test && npm run control:center:test && npm run hooks:test",
     "qa": "node qa/run-qa.mjs",
     "qa:visual": "node qa/run-qa.mjs --visual-evidence",
     "qa:unit:test": "node --test qa/tests/*.test.mjs",
@@ -58,6 +58,7 @@
     "sync:categories:activate": "echo 'Edit data/grosshandel-categories.json und setze active: true'",
     "control:center": "node control-center/server.mjs",
     "control:center:test": "node --test control-center/tests/*.test.mjs",
+    "hooks:test": "node --test .claude/hooks/*.test.mjs",
     "dashboard:data": "node scripts/build-dashboard-data.mjs",
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
@@ -70,6 +71,10 @@
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
     "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
     "kennzahlen:export": "node operations/scripts/kennzahlen-export.mjs",
+    "lexikon:export": "node operations/scripts/lexikon-export.mjs",
+    "daten:aktualisieren": "node operations/scripts/aktualisieren.mjs",
+    "daten:sync-dienst": "node operations/scripts/sync-dienst.mjs",
+    "daten:sichern": "node operations/scripts/sicherung.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
     "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
     "lexikon:payload": "node scripts/lexikon-payload.mjs",

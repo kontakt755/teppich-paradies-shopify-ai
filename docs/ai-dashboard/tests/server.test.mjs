@@ -1,3 +1,4 @@
+import './_testumgebung.mjs';   // muss zuerst stehen: setzt TP_PRIVAT_DIR vor dem Laden des Servers
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
@@ -6,10 +7,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { requestHandler } from '../../../scripts/serve-dashboard.mjs';
 
-// Der Server liest den privaten Ordner aus TP_PRIVAT_DIR. Im Test zeigt er
-// auf ein leeres Verzeichnis, sonst haengt das Ergebnis davon ab, was auf dem
-// jeweiligen Rechner unter ~/teppich-paradies-analyse liegt.
-process.env.TP_PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-test-'));
 
 async function withServer(run) {
   const server = http.createServer(requestHandler);
@@ -48,6 +45,18 @@ test('Einkauf-API ist GET-only und liefert JSON (verfuegbar:false ohne private F
   assert.equal(post.status, 405);
 }));
 
+test('lexikon-API ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
+  const g = await fetch(`${base}/api/lexikon/liste?q=abc`);
+  assert.equal(g.status, 200);
+  const gj = await g.json();
+  assert.equal(gj.verfuegbar, false);
+  assert.equal(gj.befehl, 'npm run lexikon:export');
+  const post = await fetch(`${base}/api/lexikon/liste`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(post.status, 405);
+  const p = await fetch(`${base}/api/lexikon/produkt?handle=x`);
+  assert.equal(p.status, 200);
+}));
+
 test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Export)', async () => withServer(async base => {
   const g = await fetch(`${base}/api/einkauf/kennzahlen`);
   assert.equal(g.status, 200);
@@ -56,6 +65,24 @@ test('einkauf/kennzahlen ist GET-only und liefert JSON (verfuegbar:false ohne Ex
   assert.ok(gj.befehl);
   const post = await fetch(`${base}/api/einkauf/kennzahlen`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
   assert.equal(post.status, 405);
+}));
+
+test('aktualisierung/start und /status: Status ist GET-only, Start verlangt POST und lokalen Origin', async () => withServer(async base => {
+  // Status: reiner Lesezugriff, kein POST noetig - kein echter Lauf wird dabei gestartet.
+  const status = await fetch(`${base}/api/aktualisierung/status`);
+  assert.equal(status.status, 200);
+  const statusJson = await status.json();
+  assert.equal(typeof statusJson.laeuft, 'boolean');
+  const statusPost = await fetch(`${base}/api/aktualisierung/status`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+  assert.equal(statusPost.status, 405);
+
+  // Start: GET nicht erlaubt, fremder Origin abgelehnt - absichtlich kein erfolgreicher
+  // gleicher-Origin-POST hier, damit der Test nicht wirklich einen Kindprozess gegen
+  // die Shopify Admin API startet.
+  const startGet = await fetch(`${base}/api/aktualisierung/start`);
+  assert.equal(startGet.status, 405);
+  const foreign = await fetch(`${base}/api/aktualisierung/start`, { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.example' }, body: '{}' });
+  assert.equal(foreign.status, 403);
 }));
 
 test('einkauf/auftragsstatus: GET liest lokal, POST verlangt JSON und lokalen Origin', async () => withServer(async base => {

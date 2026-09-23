@@ -45,7 +45,7 @@ Live-Stand (per MCP 2026-09-22): 690 Produkte, **9 Bestellungen (alle Testbestel
 
 ## 5. Doppelungen (Bereinigungskandidaten, nicht Teil dieses Vorhabens)
 
-`RISK_MAP.yaml` = Kopie des YAML in `RISK_MODEL_SPEC.md`; `qa/run-sync-path-guard.mjs` vs. `run-syncpath-guard.mjs` (letzterer tot); `EXTEND_SYNC_SYSTEM.md`/`GROSSHANDEL_SYNC.md` beschreiben dasselbe; fuenf Python-Skripte fuer dieselbe `metafieldsSet`-Mutation; `automation/dashboard/` abgeloest; `.claude/worktrees/altdateien-raus/` komplette Repo-Kopie; `npm test` startet drei von sechs Suiten nicht.
+`RISK_MAP.yaml` — **2026-09-23 geprueft: keine Kopie**, der Inhalt weicht vom YAML-Block in `RISK_MODEL_SPEC.md` ab und `CLAUDE.md` nennt die Datei als Quelle; bleibt; `qa/run-sync-path-guard.mjs` vs. `run-syncpath-guard.mjs` (letzterer tot); `EXTEND_SYNC_SYSTEM.md`/`GROSSHANDEL_SYNC.md` beschreiben dasselbe; fuenf Python-Skripte fuer dieselbe `metafieldsSet`-Mutation; `automation/dashboard/` abgeloest; `.claude/worktrees/altdateien-raus/` komplette Repo-Kopie; `npm test` startet drei von sechs Suiten nicht.
 
 ## 6. Andockpunkte (sauber, ohne Umbau)
 

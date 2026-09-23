@@ -149,6 +149,7 @@ function privatFixture(root) {
   const dir = path.join(root, 'privat');
   fs.mkdirSync(path.join(dir, 'bestelluebersicht'), { recursive: true });
   fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-klaerung'), { recursive: true });
   const orders = {
     exportiertAm: '2026-09-22T10:00:00Z',
     orders: [{
@@ -178,8 +179,20 @@ function privatFixture(root) {
       artikelnummer: { value: null, confidence: 'UNKLAR', source: 'keine Artikelnummer' },
       bestelleinheit: { value: null, confidence: 'UNKLAR', source: 'Bestelleinheit fehlt' },
     } },
+    { gid: 'gid://shopify/ProductVariant/3', product_gid: 'gid://shopify/Product/3', handle: 'nur-kollektion-offen', product_title: 'Nur Kollektion offen', variant_title: 'Default Title', sku: 'TEST-3', gruppe: 'Rollenware', fields: {
+      lieferant: { value: 'A', confidence: 'SICHER', source: 'lieferant.a_artikelnummer belegt' },
+      artikelnummer: { value: 'A-999', confidence: 'SICHER', source: 'lieferant.a_artikelnummer' },
+      bestelleinheit: { value: 'paket', confidence: 'SICHER', source: 'custom.qm_pro_paket' },
+      lieferant_kollektion: { value: null, confidence: 'UNKLAR', source: 'keine strukturierte Quelle' },
+    } },
   ];
   fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  const offen = [
+    { gid: 'gid://shopify/ProductVariant/2', field: 'lieferant', reason: 'Lieferant nicht belegt', next_step: 'siehe Methodennotiz im Bericht' },
+    { gid: 'gid://shopify/ProductVariant/2', field: 'artikelnummer', reason: 'keine Artikelnummer (Lieferant unklar)', next_step: 'siehe Methodennotiz im Bericht' },
+    { gid: 'gid://shopify/ProductVariant/3', field: 'lieferant_kollektion', reason: 'keine strukturierte Quelle', next_step: 'siehe Methodennotiz im Bericht' },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-klaerung', 'offen.json'), JSON.stringify(offen));
   return dir;
 }
 
@@ -201,28 +214,60 @@ test('einkaufBestellungen meldet fehlende Datei statt zu werfen', () => {
   assert.match(r.hinweis, /orders\.json/);
 });
 
-test('einkaufProduktstatus fasst je Gruppe zusammen und paginiert offene Varianten', () => {
+test('einkaufProduktstatus fasst je PRODUKT zusammen (nicht je Variante/Feld) und paginiert', () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.einkaufProduktstatus({ page: 1, pageSize: 10 });
   assert.equal(r.verfuegbar, true);
-  assert.equal(r.gesamt.anzahl, 2);
-  assert.equal(r.gesamt.vollstaendig, 1);
-  assert.equal(r.gesamt.offen, 1);
-  assert.equal(r.offen.items.length, 1);
+  assert.equal(r.gesamt.anzahl, 3);
+  assert.equal(r.gesamt.vollstaendig, 1, 'Testboden hat keine offenen Felder');
+  assert.equal(r.gesamt.handarbeit, 1, 'Offener Artikel braucht einen Menschen (Lieferant)');
+  assert.equal(r.gesamt.automatisch, 1, 'Nur Kollektion offen fuellt sich automatisch, blockiert nichts');
+  assert.equal(r.offen.count, 2);
+  // Dringlichkeit: blockierendes Produkt zuerst
   assert.equal(r.offen.items[0].handle, 'offener-artikel');
-  assert.ok(r.offen.items[0].offeneFelder.some(f => f.feld === 'lieferant'));
+  assert.equal(r.offen.items[0].status, 'handarbeit');
+  assert.equal(r.offen.items[0].blockiertBestellung, true);
+  const lieferantFeld = r.offen.items[0].offeneFelder.find(f => f.feld === 'lieferant');
+  assert.ok(lieferantFeld);
+  assert.equal(lieferantFeld.klartext, 'Lieferant');
+  assert.equal(lieferantFeld.blockierend, true);
+  // Kaskade: artikelnummer-Grund nennt "Lieferant unklar" und wird nicht doppelt gelistet
+  assert.ok(!r.offen.items[0].offeneFelder.some(f => f.feld === 'artikelnummer'));
+
+  const zweitesProdukt = r.offen.items[1];
+  assert.equal(zweitesProdukt.handle, 'nur-kollektion-offen');
+  assert.equal(zweitesProdukt.status, 'automatisch');
+  assert.equal(zweitesProdukt.blockiertBestellung, false);
+  assert.equal(zweitesProdukt.offeneFelder[0].feld, 'lieferant_kollektion');
+  assert.equal(zweitesProdukt.offeneFelder[0].klartext, 'Kollektion');
+  assert.match(zweitesProdukt.offeneFelder[0].naechsterSchritt, /automatisch/);
 });
 
-test('einkaufProduktstatus filtert nach Suche und Gruppe', () => {
+test('einkaufProduktstatus filtert nach Suche, Gruppe und Dringlichkeit (blockierend/handarbeit)', () => {
   const root = tmpRoot();
   const dir = privatFixture(root);
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   assert.equal(api.einkaufProduktstatus({ q: 'offener' }).offen.count, 1);
   assert.equal(api.einkaufProduktstatus({ q: 'nichts-passt' }).offen.count, 0);
-  assert.equal(api.einkaufProduktstatus({ gruppe: 'Rollenware' }).offen.count, 0);
+  assert.equal(api.einkaufProduktstatus({ gruppe: 'Rollenware' }).offen.count, 1);
   assert.equal(api.einkaufProduktstatus({ gruppe: 'Klebevinyl' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({ filter: 'blockierend' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({ filter: 'blockierend' }).offen.items[0].handle, 'offener-artikel');
+  assert.equal(api.einkaufProduktstatus({ filter: 'handarbeit' }).offen.count, 1);
+  assert.equal(api.einkaufProduktstatus({}).offen.count, 2, 'ohne Filter: alle offenen Produkte');
+});
+
+test('einkaufProduktstatus meldet fehlendes offen.json statt nur plan.json zu nehmen', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-nur-plan');
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify([]));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus();
+  assert.equal(r.verfuegbar, false);
+  assert.match(r.hinweis, /offen\.json/);
 });
 
 test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
@@ -230,6 +275,64 @@ test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
   const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
   const r = api.einkaufKlaerung();
   assert.equal(r.verfuegbar, false);
+});
+
+/**
+ * Fixture fuer die drei-Gruppen-Einstufung: blockierend (Lieferant/Artikelnummer
+ * fehlt bei bestellbarer Variante), nachtragen (Farbnummer, procurement_id
+ * innerhalb Rollenware) und strukturell offen - zaehlt nirgends (Wunschmaß-
+ * Variante, Umrechnung, procurement_id ausserhalb Rollenware).
+ */
+function privatFixtureGruppen(root) {
+  const dir = path.join(root, 'privat-gruppen');
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-klaerung'), { recursive: true });
+  const plan = [
+    { gid: 'gid://shopify/ProductVariant/10', product_gid: 'gid://shopify/Product/10', handle: 'nur-farbnummer-offen', product_title: 'Nur Farbnummer offen', variant_title: 'Rot', sku: 'F-1', gruppe: 'Teppiche', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/11', product_gid: 'gid://shopify/Product/11', handle: 'wunschmass-lieferant-offen', product_title: 'Wunschmaß-Teppichboden', variant_title: 'Blau / Wunschmaß', sku: null, gruppe: 'Rollenware', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/12', product_gid: 'gid://shopify/Product/12', handle: 'nur-umrechnung-offen', product_title: 'Nur Umrechnung offen', variant_title: 'Default Title', sku: 'U-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/13', product_gid: 'gid://shopify/Product/13', handle: 'einkaufs-id-ausserhalb-rollenware', product_title: 'Einkaufs-ID außerhalb Rollenware', variant_title: 'Default Title', sku: 'P-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/14', product_gid: 'gid://shopify/Product/14', handle: 'einkaufs-id-in-rollenware', product_title: 'Einkaufs-ID in Rollenware', variant_title: 'Grün', sku: 'P-2', gruppe: 'Rollenware', fields: {} },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  const offen = [
+    { gid: 'gid://shopify/ProductVariant/10', field: 'farbnummer', reason: 'Farbnummer nicht in Preisliste gefunden', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/11', field: 'lieferant', reason: 'Lieferant unklar', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/12', field: 'umrechnung', reason: 'kein JSON-Schema festgelegt', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/13', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/14', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-klaerung', 'offen.json'), JSON.stringify(offen));
+  return dir;
+}
+
+test('einkaufProduktstatus trennt blockierend / nachtragen / strukturell offen ehrlich', () => {
+  const root = tmpRoot();
+  const dir = privatFixtureGruppen(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus({ pageSize: 20 });
+  assert.equal(r.gesamt.anzahl, 5);
+  // Farbnummer allein blockiert nichts - Nachtragen, nicht Handarbeit.
+  const farbnummer = r.offen.items.find(e => e.handle === 'nur-farbnummer-offen');
+  assert.equal(farbnummer.status, 'automatisch');
+  assert.equal(farbnummer.blockiertBestellung, false);
+  assert.equal(farbnummer.offeneFelder[0].feld, 'farbnummer');
+  assert.equal(farbnummer.offeneFelder[0].blockierend, false);
+  // Wunschmaß-Variante: Lieferant fehlt zaehlt nicht - Masse/Artikelnummer entstehen erst beim Zuschnitt.
+  assert.equal(r.offen.items.some(e => e.handle === 'wunschmass-lieferant-offen'), false);
+  // Umrechnung ist nie definiert - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'nur-umrechnung-offen'), false);
+  // procurement_id ausserhalb Rollenware ist strukturell nicht vorgesehen - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'einkaufs-id-ausserhalb-rollenware'), false);
+  // procurement_id innerhalb Rollenware ist eine echte, nicht-blockierende Luecke.
+  const procRoll = r.offen.items.find(e => e.handle === 'einkaufs-id-in-rollenware');
+  assert.ok(procRoll);
+  assert.equal(procRoll.status, 'automatisch');
+  assert.equal(procRoll.offeneFelder[0].feld, 'procurement_id');
+  // Nur die zwei echten Luecken bleiben als "offen" stehen; drei sind faktisch vollstaendig.
+  assert.equal(r.gesamt.vollstaendig, 3);
+  assert.equal(r.gesamt.handarbeit, 0);
+  assert.equal(r.gesamt.automatisch, 2);
 });
 
 // ---------------------------------------------------------------------------
@@ -328,4 +431,208 @@ test('einkaufAuftragsstatusSetzen schreibt lokal und GET liest es danach', async
   const key = 'gid://shopify/Order/1::gid://shopify/LineItem/1';
   assert.equal(liste.positionen[key].status, 'bestellt');
   assert.equal(liste.positionen[key].lieferantBestellnummer, 'LB-42');
+});
+
+function lexikonFixture(root) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-lexikon-'));
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const produkte = [
+    {
+      handle: 'traum-teppich-grau', titel: 'Traum-Teppich Grau', shopUrl: 'https://www.teppich-paradies.net/products/traum-teppich-grau',
+      adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/111', status: 'active', produktgruppe: 'Teppichboden',
+      bild: 'https://cdn.example/bild1.jpg',
+      eigenschaften: { Material: 'Wolle', Rollenbreite: '400 cm' },
+      muster: { vorhanden: true, handle: 'muster-traum-teppich-grau' },
+      varianten: [
+        { id: 'gid://shopify/ProductVariant/1', titel: 'Grau', sku: 'TT-GR-01', farbe: 'Grau', preis: '49.90', waehrung: 'EUR', verfuegbar: true,
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4711', farbnummer: '023', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4711', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p1' } },
+        { id: 'gid://shopify/ProductVariant/2', titel: 'Beige', sku: 'TT-BE-01', farbe: 'Beige', preis: '49.90', waehrung: 'EUR', verfuegbar: false,
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4712', farbnummer: '024', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4712', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p2' } },
+      ],
+    },
+    {
+      handle: 'vinyl-clic-eiche', titel: 'Vinyl Clic Eiche', shopUrl: 'https://www.teppich-paradies.net/products/vinyl-clic-eiche',
+      adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/222', status: 'active', produktgruppe: 'Vinylboden',
+      bild: null, eigenschaften: {}, muster: { vorhanden: false, handle: null },
+      varianten: [
+        { id: 'gid://shopify/ProductVariant/3', titel: 'Eiche', sku: 'VC-EI-01', farbe: 'Eiche', preis: null, waehrung: null, verfuegbar: true,
+          einkauf: { lieferant: 'Lieferant B', artikelnummer: 'B-9001', farbnummer: null, produktname: 'Clic Eiche', url: null, kollektion: 'Holzoptik', marke: null, hersteller: null, bestelleinheit: 'Paket', procurementId: 'p3' } },
+      ],
+    },
+  ];
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-09-23T08:00:00Z', anzahl: produkte.length, produkte }));
+  return dir;
+}
+
+test('lexikonListe meldet fehlende Datei mit Exportbefehl statt zu werfen', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.lexikonListe({});
+  assert.equal(r.verfuegbar, false);
+  assert.equal(r.befehl, 'npm run lexikon:export');
+});
+
+test('lexikonListe liefert Trefferliste mit Bild, Produktgruppe und Farbanzahl', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({});
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.anzahl, 2);
+  assert.equal(r.treffer.count, 2);
+  const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.equal(grau.farbenAnzahl, 2);
+  assert.equal(grau.produktgruppe, 'Teppichboden');
+});
+
+test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal(api.lexikonListe({ q: 'Traum-Teppich' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'vinyl-clic-eiche' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'TT-BE-01' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'A-4712' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'Beige' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'Holzoptik' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'nichts-passt-hier' }).treffer.count, 0);
+});
+
+test('lexikonListe paginiert serverseitig', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({ page: 1, pageSize: 1 });
+  assert.equal(r.treffer.items.length, 1);
+  assert.equal(r.treffer.pages, 2);
+});
+
+test('lexikonProdukt liefert das volle Produkt inkl. Varianten und Einkaufsdaten', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonProdukt('traum-teppich-grau');
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.produkt.varianten.length, 2);
+  assert.equal(r.produkt.varianten[0].einkauf.artikelnummer, 'A-4711');
+  assert.equal(r.produkt.muster.vorhanden, true);
+});
+
+test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonProdukt('gibt-es-nicht');
+  assert.equal(r.verfuegbar, false);
+});
+
+// ---------------------------------------------------------------------------
+// Datenstand: aktualisierung.json (operations/scripts/aktualisieren.mjs)
+// ---------------------------------------------------------------------------
+
+test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, false);
+  assert.ok(r.befehl.includes('daten:aktualisieren'));
+});
+
+test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const jetzt = new Date('2026-09-23T12:00:00.000Z');
+  const frisch = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000).toISOString(); // vor 2h
+  const alt = new Date(jetzt.getTime() - 30 * 60 * 60 * 1000).toISOString(); // vor 30h
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({
+    aktualisiertAm: frisch,
+    teile: {
+      lexikon: { zeitpunkt: frisch, dauerMs: 1200, erfolg: true, anzahl: 50, meldung: null },
+      bestellungen: { zeitpunkt: alt, dauerMs: 900, erfolg: true, anzahl: 50, meldung: null },
+      kennzahlen: { zeitpunkt: frisch, dauerMs: 300, erfolg: false, anzahl: null, meldung: 'Kein Zugang in .env.local' },
+    },
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, now: () => jetzt });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.teile.lexikon.veraltet, false);
+  assert.equal(r.teile.bestellungen.veraltet, true);
+  assert.equal(r.teile.kennzahlen.erfolg, false);
+  assert.equal(r.teile.kennzahlen.meldung, 'Kein Zugang in .env.local');
+});
+
+test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null statt zu werfen', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ aktualisiertAm: null, teile: { lexikon: { erfolg: false, meldung: 'x' } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierung();
+  assert.equal(r.teile.lexikon.veraltet, null);
+});
+
+// ---------------------------------------------------------------------------
+// Knopf "Jetzt aktualisieren" (aktualisierungStarten/aktualisierungStatus)
+// ---------------------------------------------------------------------------
+
+/** Legt unter root/operations/scripts/aktualisieren.mjs ein Fake-Skript ab, das
+ * kurz "laeuft" (setTimeout) und dann eine eigene aktualisierung.json schreibt -
+ * ohne echten Shopify-Zugang, aber mit demselben Vertrag wie das echte Skript. */
+function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftFehler = false } = {}) {
+  const dir = path.join(root, 'operations', 'scripts');
+  fs.mkdirSync(dir, { recursive: true });
+  const datei = path.join(dir, 'aktualisieren.mjs');
+  fs.writeFileSync(datei, `
+    import fs from 'node:fs';
+    setTimeout(() => {
+      ${wirftFehler ? "throw new Error('absichtlicher Testfehler');" : `
+      fs.mkdirSync(${JSON.stringify(privatDir)}, { recursive: true });
+      fs.writeFileSync(${JSON.stringify(path.join(privatDir, 'aktualisierung.json'))}, JSON.stringify({
+        aktualisiertAm: new Date().toISOString(),
+        teile: { lexikon: { zeitpunkt: new Date().toISOString(), dauerMs: 5, erfolg: true, anzahl: 3, meldung: null } },
+      }));`}
+    }, ${verzoegerungMs});
+  `);
+  return datei;
+}
+
+test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 100 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierungStarten();
+  assert.equal(r.gestartet, true);
+  assert.equal(r.laeuft, true);
+  assert.ok(r.seit);
+});
+
+test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts neu ("laeuft bereits")', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 300 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const erster = api.aktualisierungStarten();
+  assert.equal(erster.gestartet, true);
+  const zweiter = api.aktualisierungStarten();
+  assert.equal(zweiter.gestartet, false);
+  assert.equal(zweiter.laeuft, true);
+  assert.equal(zweiter.seit, erster.seit);
+});
+
+test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem Stand', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 150 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const vorher = api.aktualisierungStatus();
+  assert.equal(vorher.laeuft, false);
+  api.aktualisierungStarten();
+  const waehrend = api.aktualisierungStatus();
+  assert.equal(waehrend.laeuft, true);
+  await new Promise(r => setTimeout(r, 500));
+  const danach = api.aktualisierungStatus();
+  assert.equal(danach.laeuft, false);
+  assert.equal(danach.verfuegbar, true);
+  assert.equal(danach.teile.lexikon.erfolg, true);
+  assert.equal(danach.teile.lexikon.anzahl, 3);
 });

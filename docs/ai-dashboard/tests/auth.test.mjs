@@ -1,0 +1,205 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, SESSION_COOKIE } from '../../../scripts/dashboard-auth.mjs';
+
+// Isoliertes Privatverzeichnis, unabhaengig davon, was auf dem jeweiligen Rechner liegt.
+const TMP_PRIVAT = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-test-'));
+
+// ---------------------------------------------------------------------------
+// Reine Funktionen aus dashboard-auth.mjs
+// ---------------------------------------------------------------------------
+
+test('createAuth: ohne Passwort ist required=false, jede Sitzungspruefung negativ', () => {
+  const auth = createAuth({ password: null });
+  assert.equal(auth.required, false);
+  assert.equal(auth.verifyPassword('irgendwas'), false);
+  assert.equal(auth.validSession('nichtvorhanden'), false);
+});
+
+test('createAuth: richtiges Passwort erzeugt gueltige Sitzung, falsches nicht', () => {
+  const auth = createAuth({ password: 'test-passwort' });
+  assert.equal(auth.required, true);
+  assert.equal(auth.verifyPassword('falsch'), false);
+  assert.equal(auth.verifyPassword('test-passwort'), true);
+  const sid = auth.createSession();
+  assert.equal(auth.validSession(sid), true);
+  auth.destroySession(sid);
+  assert.equal(auth.validSession(sid), false);
+});
+
+test('createAuth: Ratenbegrenzung sperrt nach mehreren Fehlversuchen je IP', () => {
+  const auth = createAuth({ password: 'test-passwort' });
+  const ip = '192.168.2.50';
+  assert.equal(auth.isLocked(ip), false);
+  for (let i = 0; i < 5; i += 1) auth.registerFailure(ip);
+  assert.equal(auth.isLocked(ip), true);
+  // eine andere IP ist von der Sperre nicht betroffen
+  assert.equal(auth.isLocked('192.168.2.51'), false);
+});
+
+test('loadConfiguredPassword: Env geht vor Datei, beide leer -> null', () => {
+  const readFile = () => { throw new Error('keine Datei'); };
+  assert.equal(loadConfiguredPassword({ env: {}, readFile }), null);
+  assert.equal(loadConfiguredPassword({ env: { TP_DASHBOARD_PASSWORT: '  ' }, readFile }), null);
+  assert.equal(loadConfiguredPassword({ env: { TP_DASHBOARD_PASSWORT: 'ausenv' }, readFile: () => 'ausdatei' }), 'ausenv');
+  assert.equal(loadConfiguredPassword({ env: {}, readFile: () => 'ausdatei\n' }), 'ausdatei');
+});
+
+test('passwordFilePath liegt unter TP_PRIVAT_DIR, nie im Repository', () => {
+  const p = passwordFilePath();
+  assert.match(p, /dashboard-passwort\.txt$/);
+});
+
+test('parseCookies liest das Sitzungscookie aus dem Header', () => {
+  const cookies = parseCookies({ headers: { cookie: `a=b; ${SESSION_COOKIE}=test-sitzung-wert; c=d` } });
+  assert.equal(cookies[SESSION_COOKIE], 'test-sitzung-wert');
+  assert.deepEqual(parseCookies({ headers: {} }), {});
+});
+
+// ---------------------------------------------------------------------------
+// Integration: Server im Netzmodus mit Passwort (dynamischer Import pro Fall,
+// damit jedes Modul seine eigene Auth-Konfiguration aus process.env liest).
+// ---------------------------------------------------------------------------
+
+async function withServer(handler, run) {
+  const server = http.createServer(handler);
+  await new Promise(r => server.listen(0, '127.0.0.1', r));
+  try { return await run(`http://127.0.0.1:${server.address().port}`); }
+  finally { await new Promise(r => server.close(r)); }
+}
+
+test('Netzmodus mit Passwort: geschuetzte Route ohne Sitzung 401/302, falsches Passwort abgelehnt, richtiges setzt Sitzung', async () => {
+  process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
+  process.env.TP_DASHBOARD_PASSWORT = 'sicheres-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.222';
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=auth-required`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+  assert.equal(mod.auth.required, true);
+
+  await withServer(mod.requestHandler, async base => {
+    // API ohne Sitzung -> 401
+    const apiNoSession = await fetch(`${base}/api/capabilities`);
+    assert.equal(apiNoSession.status, 401);
+
+    // HTML-Route ohne Sitzung -> Redirect auf /login
+    const pageNoSession = await fetch(`${base}/`, { redirect: 'manual' });
+    assert.equal(pageNoSession.status, 302);
+    assert.match(pageNoSession.headers.get('location'), /\/login$/);
+
+    // Login-Seite selbst ist immer erreichbar
+    const loginPage = await fetch(`${base}/login`);
+    assert.equal(loginPage.status, 200);
+    assert.match(await loginPage.text(), /Anmeldung/);
+
+    // Falsches Passwort -> 401, kein Cookie
+    const wrong = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passwort: 'falsch' }),
+    });
+    assert.equal(wrong.status, 401);
+    assert.equal(wrong.headers.get('set-cookie'), null);
+
+    // Fremder Origin bleibt auch beim Login 403
+    const foreignLogin = await fetch(`${base}/api/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: JSON.stringify({ passwort: 'sicheres-testpasswort' }),
+    });
+    assert.equal(foreignLogin.status, 403);
+
+    // Richtiges Passwort -> 200 + Sitzungscookie (HttpOnly, SameSite=Strict)
+    const right = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passwort: 'sicheres-testpasswort' }),
+    });
+    assert.equal(right.status, 200);
+    const setCookie = right.headers.get('set-cookie');
+    assert.match(setCookie, new RegExp(`${SESSION_COOKIE}=`));
+    assert.match(setCookie, /HttpOnly/);
+    assert.match(setCookie, /SameSite=Strict/);
+    const cookiePair = setCookie.split(';')[0];
+
+    // Mit Cookie: geschuetzte Route liefert 200
+    const withCookie = await fetch(`${base}/api/capabilities`, { headers: { cookie: cookiePair } });
+    assert.equal(withCookie.status, 200);
+
+    // Fremder Origin bleibt bei schreibenden Endpunkten 403, auch mit gueltiger Sitzung
+    const foreignWrite = await fetch(`${base}/api/tasks/1/comment`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: cookiePair, origin: 'https://evil.example' },
+      body: '{}',
+    });
+    assert.equal(foreignWrite.status, 403);
+
+    // Abmelden loescht die Sitzung
+    const logout = await fetch(`${base}/api/logout`, { method: 'POST', headers: { cookie: cookiePair } });
+    assert.equal(logout.status, 200);
+    const afterLogout = await fetch(`${base}/api/capabilities`, { headers: { cookie: cookiePair } });
+    assert.equal(afterLogout.status, 401);
+  });
+});
+
+test('Knopf "Jetzt aktualisieren": POST ohne Sitzung 401, mit Sitzung erlaubt', async () => {
+  process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
+  process.env.TP_DASHBOARD_PASSWORT = 'sicheres-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.222';
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=aktualisieren-auth`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+
+  await withServer(mod.requestHandler, async base => {
+    // Ohne Sitzung: 401, egal ob GET (Status) oder POST (Start)
+    const statusNoSession = await fetch(`${base}/api/aktualisierung/status`);
+    assert.equal(statusNoSession.status, 401);
+    const startNoSession = await fetch(`${base}/api/aktualisierung/start`, { method: 'POST' });
+    assert.equal(startNoSession.status, 401);
+
+    // Anmelden
+    const login = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passwort: 'sicheres-testpasswort' }),
+    });
+    const cookiePair = login.headers.get('set-cookie').split(';')[0];
+
+    // Mit Sitzung: GET-Status erlaubt
+    const status = await fetch(`${base}/api/aktualisierung/status`, { headers: { cookie: cookiePair } });
+    assert.equal(status.status, 200);
+    const statusJson = await status.json();
+    assert.equal(typeof statusJson.laeuft, 'boolean');
+
+    // Mit Sitzung, aber fremder Origin: 403
+    const foreign = await fetch(`${base}/api/aktualisierung/start`, {
+      method: 'POST', headers: { cookie: cookiePair, origin: 'https://evil.example' },
+    });
+    assert.equal(foreign.status, 403);
+
+    // GET auf den Start-Endpunkt: 405 (nur POST)
+    const wrongMethod = await fetch(`${base}/api/aktualisierung/start`, { headers: { cookie: cookiePair } });
+    assert.equal(wrongMethod.status, 405);
+  });
+});
+
+test('Standardbetrieb (kein Passwort, 127.0.0.1) bleibt unveraendert: keine Anmeldung noetig', async () => {
+  process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=default`);
+  assert.equal(mod.auth.required, false);
+  await withServer(mod.requestHandler, async base => {
+    const r = await fetch(`${base}/api/capabilities`);
+    assert.equal(r.status, 200);
+    const session = await (await fetch(`${base}/api/session`)).json();
+    assert.deepEqual(session, { required: false, authenticated: true });
+  });
+});
+
+test('Netzmodus ohne Passwort: assertStartupAllowed verweigert den Start', async () => {
+  process.env.TP_PRIVAT_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-empty-'));
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=startup-guard`);
+  assert.throws(() => mod.assertStartupAllowed({ host: '0.0.0.0', authObj: mod.auth }), /Passwort/);
+  // 127.0.0.1 bleibt ohne Passwort erlaubt (Standardbetrieb)
+  assert.doesNotThrow(() => mod.assertStartupAllowed({ host: '127.0.0.1', authObj: mod.auth }));
+});

@@ -12,7 +12,7 @@ Nur öffentliche Seiten und Theme-Dateien wurden gelesen; Checkout, Bestellungen
 - Add to cart: ohne Mutation nur Code/DOM prüfbar; keine Testposition in den Warenkorb gelegt.
 - Begin checkout: ohne Checkout-Manipulation nicht vollständig verifiziert.
 - Purchase: **UNKLAR**, bis ein vollständiger genehmigter Testkauf samt GA4-/Ads-Debug-Ansicht durchgeführt wurde.
-- Theme-Dateien mit Tracking-Begriffen: keine eigenen Theme-Hits
+- Theme-Dateien mit Tracking-Begriffen: assets/tp-cart-beratung.js
 
 ## Nächster manueller Schritt
 

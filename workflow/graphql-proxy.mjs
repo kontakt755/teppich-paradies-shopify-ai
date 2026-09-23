@@ -75,6 +75,7 @@ export class GraphQLProxy {
       throw new Error(`Shopify GraphQL: ${body.errors.map(e => e.message).join('; ').slice(0, 300)}`);
     }
     request.cost = body.extensions?.cost?.actualQueryCost ?? null;
+    request.throttleStatus = body.extensions?.cost?.throttleStatus ?? null;
     return body.data ?? {};
   }
 
