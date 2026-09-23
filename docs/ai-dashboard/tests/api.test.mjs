@@ -277,6 +277,64 @@ test('einkaufKlaerung meldet fehlende Exporte statt zu werfen', () => {
   assert.equal(r.verfuegbar, false);
 });
 
+/**
+ * Fixture fuer die drei-Gruppen-Einstufung: blockierend (Lieferant/Artikelnummer
+ * fehlt bei bestellbarer Variante), nachtragen (Farbnummer, procurement_id
+ * innerhalb Rollenware) und strukturell offen - zaehlt nirgends (Wunschmaß-
+ * Variante, Umrechnung, procurement_id ausserhalb Rollenware).
+ */
+function privatFixtureGruppen(root) {
+  const dir = path.join(root, 'privat-gruppen');
+  fs.mkdirSync(path.join(dir, 'einkauf-dryrun'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'einkauf-klaerung'), { recursive: true });
+  const plan = [
+    { gid: 'gid://shopify/ProductVariant/10', product_gid: 'gid://shopify/Product/10', handle: 'nur-farbnummer-offen', product_title: 'Nur Farbnummer offen', variant_title: 'Rot', sku: 'F-1', gruppe: 'Teppiche', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/11', product_gid: 'gid://shopify/Product/11', handle: 'wunschmass-lieferant-offen', product_title: 'Wunschmaß-Teppichboden', variant_title: 'Blau / Wunschmaß', sku: null, gruppe: 'Rollenware', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/12', product_gid: 'gid://shopify/Product/12', handle: 'nur-umrechnung-offen', product_title: 'Nur Umrechnung offen', variant_title: 'Default Title', sku: 'U-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/13', product_gid: 'gid://shopify/Product/13', handle: 'einkaufs-id-ausserhalb-rollenware', product_title: 'Einkaufs-ID außerhalb Rollenware', variant_title: 'Default Title', sku: 'P-1', gruppe: 'Zubehoer', fields: {} },
+    { gid: 'gid://shopify/ProductVariant/14', product_gid: 'gid://shopify/Product/14', handle: 'einkaufs-id-in-rollenware', product_title: 'Einkaufs-ID in Rollenware', variant_title: 'Grün', sku: 'P-2', gruppe: 'Rollenware', fields: {} },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-dryrun', 'plan.json'), JSON.stringify(plan));
+  const offen = [
+    { gid: 'gid://shopify/ProductVariant/10', field: 'farbnummer', reason: 'Farbnummer nicht in Preisliste gefunden', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/11', field: 'lieferant', reason: 'Lieferant unklar', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/12', field: 'umrechnung', reason: 'kein JSON-Schema festgelegt', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/13', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+    { gid: 'gid://shopify/ProductVariant/14', field: 'procurement_id', reason: 'Format nur fuer Rollenware mit Breite definiert', next_step: '' },
+  ];
+  fs.writeFileSync(path.join(dir, 'einkauf-klaerung', 'offen.json'), JSON.stringify(offen));
+  return dir;
+}
+
+test('einkaufProduktstatus trennt blockierend / nachtragen / strukturell offen ehrlich', () => {
+  const root = tmpRoot();
+  const dir = privatFixtureGruppen(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.einkaufProduktstatus({ pageSize: 20 });
+  assert.equal(r.gesamt.anzahl, 5);
+  // Farbnummer allein blockiert nichts - Nachtragen, nicht Handarbeit.
+  const farbnummer = r.offen.items.find(e => e.handle === 'nur-farbnummer-offen');
+  assert.equal(farbnummer.status, 'automatisch');
+  assert.equal(farbnummer.blockiertBestellung, false);
+  assert.equal(farbnummer.offeneFelder[0].feld, 'farbnummer');
+  assert.equal(farbnummer.offeneFelder[0].blockierend, false);
+  // Wunschmaß-Variante: Lieferant fehlt zaehlt nicht - Masse/Artikelnummer entstehen erst beim Zuschnitt.
+  assert.equal(r.offen.items.some(e => e.handle === 'wunschmass-lieferant-offen'), false);
+  // Umrechnung ist nie definiert - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'nur-umrechnung-offen'), false);
+  // procurement_id ausserhalb Rollenware ist strukturell nicht vorgesehen - zaehlt nirgends.
+  assert.equal(r.offen.items.some(e => e.handle === 'einkaufs-id-ausserhalb-rollenware'), false);
+  // procurement_id innerhalb Rollenware ist eine echte, nicht-blockierende Luecke.
+  const procRoll = r.offen.items.find(e => e.handle === 'einkaufs-id-in-rollenware');
+  assert.ok(procRoll);
+  assert.equal(procRoll.status, 'automatisch');
+  assert.equal(procRoll.offeneFelder[0].feld, 'procurement_id');
+  // Nur die zwei echten Luecken bleiben als "offen" stehen; drei sind faktisch vollstaendig.
+  assert.equal(r.gesamt.vollstaendig, 3);
+  assert.equal(r.gesamt.handarbeit, 0);
+  assert.equal(r.gesamt.automatisch, 2);
+});
+
 // ---------------------------------------------------------------------------
 // Einkauf: Shop-Kennzahlen (Startseite "Heute")
 // ---------------------------------------------------------------------------
@@ -466,4 +524,115 @@ test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.lexikonProdukt('gibt-es-nicht');
   assert.equal(r.verfuegbar, false);
+});
+
+// ---------------------------------------------------------------------------
+// Datenstand: aktualisierung.json (operations/scripts/aktualisieren.mjs)
+// ---------------------------------------------------------------------------
+
+test('aktualisierung meldet fehlende Datei mit Befehl statt erfundenem Stand', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, false);
+  assert.ok(r.befehl.includes('daten:aktualisieren'));
+});
+
+test('aktualisierung berechnet Alter und Veraltet-Flag je Teil (Schwelle 24h)', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  const jetzt = new Date('2026-09-23T12:00:00.000Z');
+  const frisch = new Date(jetzt.getTime() - 2 * 60 * 60 * 1000).toISOString(); // vor 2h
+  const alt = new Date(jetzt.getTime() - 30 * 60 * 60 * 1000).toISOString(); // vor 30h
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({
+    aktualisiertAm: frisch,
+    teile: {
+      lexikon: { zeitpunkt: frisch, dauerMs: 1200, erfolg: true, anzahl: 50, meldung: null },
+      bestellungen: { zeitpunkt: alt, dauerMs: 900, erfolg: true, anzahl: 50, meldung: null },
+      kennzahlen: { zeitpunkt: frisch, dauerMs: 300, erfolg: false, anzahl: null, meldung: 'Kein Zugang in .env.local' },
+    },
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir, now: () => jetzt });
+  const r = api.aktualisierung();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.teile.lexikon.veraltet, false);
+  assert.equal(r.teile.bestellungen.veraltet, true);
+  assert.equal(r.teile.kennzahlen.erfolg, false);
+  assert.equal(r.teile.kennzahlen.meldung, 'Kein Zugang in .env.local');
+});
+
+test('aktualisierung: fehlender Zeitpunkt eines Teils liefert veraltet=null statt zu werfen', () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fs.writeFileSync(path.join(dir, 'aktualisierung.json'), JSON.stringify({ aktualisiertAm: null, teile: { lexikon: { erfolg: false, meldung: 'x' } } }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierung();
+  assert.equal(r.teile.lexikon.veraltet, null);
+});
+
+// ---------------------------------------------------------------------------
+// Knopf "Jetzt aktualisieren" (aktualisierungStarten/aktualisierungStatus)
+// ---------------------------------------------------------------------------
+
+/** Legt unter root/operations/scripts/aktualisieren.mjs ein Fake-Skript ab, das
+ * kurz "laeuft" (setTimeout) und dann eine eigene aktualisierung.json schreibt -
+ * ohne echten Shopify-Zugang, aber mit demselben Vertrag wie das echte Skript. */
+function fakeAktualisierenSkript(root, privatDir, { verzoegerungMs = 150, wirftFehler = false } = {}) {
+  const dir = path.join(root, 'operations', 'scripts');
+  fs.mkdirSync(dir, { recursive: true });
+  const datei = path.join(dir, 'aktualisieren.mjs');
+  fs.writeFileSync(datei, `
+    import fs from 'node:fs';
+    setTimeout(() => {
+      ${wirftFehler ? "throw new Error('absichtlicher Testfehler');" : `
+      fs.mkdirSync(${JSON.stringify(privatDir)}, { recursive: true });
+      fs.writeFileSync(${JSON.stringify(path.join(privatDir, 'aktualisierung.json'))}, JSON.stringify({
+        aktualisiertAm: new Date().toISOString(),
+        teile: { lexikon: { zeitpunkt: new Date().toISOString(), dauerMs: 5, erfolg: true, anzahl: 3, meldung: null } },
+      }));`}
+    }, ${verzoegerungMs});
+  `);
+  return datei;
+}
+
+test('aktualisierungStarten: startet den Kindprozess und meldet gestartet:true', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 100 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.aktualisierungStarten();
+  assert.equal(r.gestartet, true);
+  assert.equal(r.laeuft, true);
+  assert.ok(r.seit);
+});
+
+test('aktualisierungStarten: zweiter Aufruf waehrend eines Laufs startet nichts neu ("laeuft bereits")', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 300 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const erster = api.aktualisierungStarten();
+  assert.equal(erster.gestartet, true);
+  const zweiter = api.aktualisierungStarten();
+  assert.equal(zweiter.gestartet, false);
+  assert.equal(zweiter.laeuft, true);
+  assert.equal(zweiter.seit, erster.seit);
+});
+
+test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem Stand', async () => {
+  const root = tmpRoot();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisierung-'));
+  fakeAktualisierenSkript(root, dir, { verzoegerungMs: 150 });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const vorher = api.aktualisierungStatus();
+  assert.equal(vorher.laeuft, false);
+  api.aktualisierungStarten();
+  const waehrend = api.aktualisierungStatus();
+  assert.equal(waehrend.laeuft, true);
+  await new Promise(r => setTimeout(r, 500));
+  const danach = api.aktualisierungStatus();
+  assert.equal(danach.laeuft, false);
+  assert.equal(danach.verfuegbar, true);
+  assert.equal(danach.teile.lexikon.erfolg, true);
+  assert.equal(danach.teile.lexikon.anzahl, 3);
 });

@@ -161,3 +161,127 @@ Verbindung. Der Schluessel wird verdeckt eingegeben und nie ausgegeben.
 
 Jeder Schritt ist wiederholbar; bricht einer ab, nennt die Meldung den Weg von
 Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
+
+## Aktualisierung (alle Datenquellen in einem Lauf)
+
+Lexikon, Bestellübersicht und Kennzahlen sind private Momentaufnahmen unter
+`$TP_PRIVAT_DIR` (Standard `~/teppich-paradies-analyse`) und veralten, sobald
+sich im Shop etwas ändert - neues Produkt, neue Bestellung, geänderter Preis.
+`operations/scripts/aktualisieren.mjs` erneuert alle drei nacheinander in
+einem Aufruf:
+
+```
+npm run daten:aktualisieren
+npm run daten:aktualisieren -- --nur lexikon
+npm run daten:aktualisieren -- --nur bestellungen,kennzahlen
+```
+
+Erneuert: Lexikon (Produkte/Varianten/Metafelder, wie `lexikon:export --live`),
+Bestellübersicht und Kennzahlen (35-Tage-Fenster, deckt die 7/30-Tage-Auswertung).
+Jeder Teil läuft unabhängig: ein Fehler in einem Teil (z. B. Rate-Limit)
+verhindert die anderen nicht, und die vorhandene Ausgabedatei bleibt
+unverändert stehen, wenn ein Abruf scheitert - lieber alte Daten mit
+erkennbarem Datum als gar keine.
+
+**Bestellungen - Abgrenzung (seit 2026-09-23):** kein festes Limit mehr. Geholt
+wird, vollständig paginiert (`pageInfo.hasNextPage`/`endCursor`, `first: 50`
+je Seite), was `fetchOrdersRelevant` in `operations/sync/orders.mjs` liefert:
+**alle Bestellungen der letzten 90 Tage** (`created_at`, nicht `updated_at` -
+eine seit Wochen unveränderte, aber inhaltlich noch offene Bestellung soll
+nicht aus alleiniger Trägheit aus dem Fenster fallen) **ODER alle noch nicht
+vollständig erfüllten** (`fulfillment_status:unfulfilled` bzw. `:partial`),
+unabhängig vom Alter - eine vor Monaten aufgegebene, nie ausgelieferte
+Bestellung darf im Control Center nicht verschwinden. Das ersetzt die
+vorherige Regel "letzte 50 Bestellungen nach `updatedAt`", bei der eine um
+15 Uhr eingegangene Bestellung an einem geschäftigen Tag erst am nächsten
+Lauf sichtbar wurde. Zwischen den Seiten wird bei knappem Guthaben laut dem
+von Shopify gemeldeten `extensions.cost.throttleStatus` gewartet
+(`wartenBeiThrottle`), statt mit `THROTTLED` abzubrechen. Die Quellvarianten
+der Muster werden ebenfalls ohne festes Limit geladen: `nodes(ids:)` nimmt
+bis zu 250 IDs je Aufruf, bei mehr wird in Gruppen nachgeladen.
+
+Ergebnis steht in `$TP_PRIVAT_DIR/aktualisierung.json`: je Teil Zeitpunkt,
+Dauer, Anzahl Datensätze und Erfolg/Fehler samt Meldung. Das Control Center
+liest diese Datei über `/api/aktualisierung` und zeigt "Stand: …" je
+Datenquelle in der Kachel "Systemgesundheit" (Startseite "Heute" und
+"Insights"); ab 24 Stunden Alter erscheint dort der Hinweis "Daten veraltet -
+bitte `npm run daten:aktualisieren` ausführen" (siehe
+`docs/control-center/ARCHITEKTUR.md`, Abschnitt 10).
+
+**Zugang:** braucht `SHOPIFY_ADMIN_TOKEN` oder `SHOPIFY_CLIENT_ID`/`SECRET` in
+`.env.local` (`operations/sync/zugang.mjs`, Einrichtung siehe
+`domains/shopify/admin-token-oauth.md` bzw. `npm run operations:einrichten`
+oben). Fehlt der Zugang, bricht jeder Teil mit genau dieser Meldung ab - kein
+stiller Fehlschlag, keine erfundenen Zahlen. Der Shopify-MCP zählt hier nicht:
+er läuft nur innerhalb einer Claude-Sitzung, dieses Skript aber auch ohne eine
+laufende Sitzung (z. B. per geplanter Aufgabe). Für den MCP-Weg ohne Token
+bleiben die einzelnen `--input`-Varianten von `lexikon:export`,
+`kennzahlen:export` und `ops:bestelluebersicht`.
+
+**Von Hand starten:** einfach `npm run daten:aktualisieren` in einem Terminal
+mit Repository als Arbeitsverzeichnis, Token in `.env.local`.
+
+**Täglich automatisch:** über eine geplante Aufgabe in Claude Desktop
+(`~/.claude/scheduled-tasks/`) - z. B. taeglich frueh `npm run
+daten:aktualisieren` im Repository-Pfad dieses Rechners. Die Aufgabe braucht
+einen eingeschalteten Rechner mit diesem Repository und `.env.local`; sie
+läuft nicht in der Cloud. Anlegen z. B. mit der `schedule`-Fähigkeit einer
+Claude-Code-Sitzung auf diesem Mac, oder von Hand als Cron-/launchd-Job, der
+`npm run daten:aktualisieren` mit `cwd` auf dieses Repository ausführt.
+
+**War der Rechner aus:** die geplante Aufgabe läuft schlicht nicht - kein
+Fehler, keine Benachrichtigung. Sichtbar wird das ausschließlich über das
+Alter im Dashboard (Kachel "Systemgesundheit"): steht dort "Daten veraltet",
+reicht ein manueller Lauf von `npm run daten:aktualisieren`, sobald der
+Rechner wieder läuft und online ist. Es gibt keinen Nachhol-Mechanismus, der
+verpasste Läufe automatisch aufholt.
+
+## Sync-Dienst (häufigere Aktualisierung)
+
+`operations/scripts/sync-dienst.mjs` führt `aktualisieren()` in einer
+Dauerschleife aus, statt nur über eine geplante Aufgabe ein- bis zweimal
+täglich:
+
+```
+npm run daten:sync-dienst
+TP_SYNC_INTERVALL_MINUTEN=5 npm run daten:sync-dienst   # Standard 10
+```
+
+Ablauf: sofortiger erster Lauf, danach ein Lauf je Intervall (die Wartezeit
+beginnt erst, wenn der vorherige Lauf fertig ist - kein Überlappen). Ein
+Fehler in einem Lauf (Ratenlimit, Netzwerk, ein einzelner kaputter Teil) wird
+protokolliert; der Dienst läuft weiter und versucht es im nächsten Intervall
+erneut - dieselbe Regel wie in `aktualisieren.mjs`: alte Daten mit
+erkennbarem Datum sind besser als keine. `SIGTERM`/`SIGINT` brechen nur die
+Wartezeit ab, nie einen laufenden Aktualisierungslauf, und beenden den
+Prozess danach regulär.
+
+**Ohne Zugang** (`SHOPIFY_ADMIN_TOKEN` oder `SHOPIFY_CLIENT_ID`/`SECRET` in
+`.env.local`) startet der Dienst nicht still folgenlos: er meldet das Fehlen
+klar auf stderr und beendet sich mit Exit-Code 1.
+
+**Dauerhaft im Hintergrund (macOS, launchd):** Vorlage
+`operations/launchagents/net.teppich-paradies.sync.plist.vorlage` (Platzhalter
+`__HOME__`, `__REPO_PFAD__`, `__NODE_PFAD__` - Anleitung steht als Kommentar
+in der Datei):
+
+```
+mkdir -p ~/Library/LaunchAgents
+sed -e "s#__HOME__#$HOME#g" \
+    -e "s#__REPO_PFAD__#$(pwd)#g" \
+    -e "s#__NODE_PFAD__#$(which node)#g" \
+    operations/launchagents/net.teppich-paradies.sync.plist.vorlage \
+    > ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+launchctl load ~/Library/LaunchAgents/net.teppich-paradies.sync.plist
+```
+
+Beenden/Deinstallieren: `launchctl unload
+~/Library/LaunchAgents/net.teppich-paradies.sync.plist` (danach optional
+`rm`). Log liegt unter `~/Library/Logs/teppich-paradies-sync.log`. `launchd`
+startet den Dienst bei jedem nicht-erfolgreichen Beenden neu (`KeepAlive`,
+`ThrottleInterval` 60s) - auch ohne Zugang, dann wiederholt sich die
+Fehlermeldung im Log, bis `.env.local` eingerichtet ist.
+
+Ersetzt keine geplante Aufgabe, die den Rechner nicht ständig am Laufen hat -
+der Dienst braucht wie die geplante Aufgabe einen eingeschalteten,
+angemeldeten Mac mit diesem Repository.

@@ -78,17 +78,28 @@ function readJsonIfExists(file) {
 
 /**
  * Produktdaten-Status: Klartext, Blockier-Status und Naechster-Schritt-Text
- * je Einkaufsfeld. "blockierend" heisst: ohne dieses Feld kann die Ware beim
- * Lieferanten nicht bestellt werden. Alles andere ist Zusatzinformation
- * (Kollektion, Hersteller, ...) - fehlt sie, blockiert das keinen Auftrag.
+ * je Einkaufsfeld. Drei ehrliche Gruppen, nicht zwei:
+ *
+ * - "blockierend": ohne dieses Feld kann die Ware beim Lieferanten nicht
+ *   bestellt werden - Lieferant oder Artikelnummer fehlt. Das ist die einzige
+ *   Gruppe, die die grosse Zahl oben treibt.
+ * - "nachtragen": wuenschenswerte Zusatzinformation (Farbnummer, Kollektion,
+ *   Hersteller, Lieferanten-Produktname/-URL) - fehlt sie, blockiert das
+ *   keine Bestellung, ist aber eine echte Luecke.
+ * - strukturell offen (kein Meta-Eintrag mit blockierend/nachtragen noetig,
+ *   siehe istStrukturellOffenerFall()): umrechnung (Format nie definiert),
+ *   procurement_id ausserhalb der Rollenware (dort nie vorgesehen) und jede
+ *   Wunschmass-Variante (SKU/Artikelnummer entstehen erst beim Zuschnitt) -
+ *   zaehlt nirgends als Aufgabe.
+ *
  * Quelle der Feldnamen: einkauf-klaerung/offen.json (Feld `field`).
  */
 const EINKAUF_FELD_META = {
   lieferant: { klartext: 'Lieferant', blockierend: true },
   artikelnummer: { klartext: 'Artikelnummer', blockierend: true },
-  farbnummer: { klartext: 'Farbnummer', blockierend: true },
   'lieferant/artikelnummer': { klartext: 'Lieferant/Artikelnummer', blockierend: true },
   bestelleinheit: { klartext: 'Bestellmenge unklar', blockierend: true },
+  farbnummer: { klartext: 'Farbnummer', blockierend: false },
   lieferant_kollektion: { klartext: 'Kollektion', blockierend: false },
   hersteller: { klartext: 'Hersteller', blockierend: false },
   farbname: { klartext: 'Farbname', blockierend: false },
@@ -104,6 +115,18 @@ function einkaufFeldKlartext(feld) {
 
 function einkaufFeldBlockierend(feld) {
   return Boolean(EINKAUF_FELD_META[feld]?.blockierend);
+}
+
+/**
+ * Strukturell offene Faelle zaehlen nie als Aufgabe (weder blockierend noch
+ * nachtragen) - siehe Kommentar an EINKAUF_FELD_META. `gruppe` und
+ * `variantTitle` kommen aus dem Dry-Run-Plan (plan.json) der Variante.
+ */
+function istStrukturellOffenerFall(feld, gruppe, variantTitle) {
+  if (/wunschma/i.test(variantTitle || '')) return true;
+  if (feld === 'umrechnung') return true;
+  if (feld === 'procurement_id' && gruppe !== 'Rollenware') return true;
+  return false;
 }
 
 /**
@@ -180,6 +203,7 @@ function produktstatusAufbauen(planRows, offenRows) {
   for (const o of offenRows) {
     const dr = dim.get(o.gid);
     if (!dr) continue; // Variante nicht (mehr) im Dry-Run-Plan - kann verwaist sein, wird nicht erfunden
+    if (istStrukturellOffenerFall(o.field, dr.gruppe, dr.variant_title)) continue; // keine Aufgabe, siehe Kommentar oben
     const p = produkte.get(dr.handle);
     if (!p) continue;
     const bestehend = p.offeneFelderRoh.get(o.field);
@@ -229,6 +253,11 @@ function produktstatusAufbauen(planRows, offenRows) {
 export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
+  // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
+  // pro Serverprozess (nicht persistent; ein Neustart des Servers vergisst einen
+  // noch laufenden Kindprozess, der aber unabhaengig weiterlaeuft und sein Ergebnis
+  // ohnehin nur in aktualisierung.json schreibt).
+  let aktualisierungLauf = null; // { seit, fehler, fertig } waehrend ein Lauf aktiv ist, sonst null
 
   const auditPath = path.join(root, '.router', 'control-center-audit.jsonl');
   function audit(entry) {
@@ -605,7 +634,78 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
       return { verfuegbar: true, quelle: file, produkt };
     },
+
+    /**
+     * Stand je lokaler Datenquelle (Lexikon, Bestelluebersicht, Kennzahlen),
+     * geschrieben von operations/scripts/aktualisieren.mjs
+     * ($TP_PRIVAT_DIR/aktualisierung.json). Liefert rohe Zeitstempel plus
+     * eine je Teil vorgerechnete Alters-Einschaetzung - die Oberflaeche
+     * (docs/ai-dashboard/app.js, systemHealth()) zeigt daraus "Stand: …" und
+     * warnt ab 24 Stunden. Fehlt die Datei (noch nie gelaufen), ist das kein
+     * Fehler, nur ein leerer Zustand mit dem Befehl, der sie anlegen wuerde.
+     */
+    aktualisierung() {
+      return leseAktualisierungsstand();
+    },
+
+    /**
+     * Startet `operations/scripts/aktualisieren.mjs` (npm run daten:aktualisieren)
+     * als eigenen Kindprozess - fuer den Knopf "Jetzt aktualisieren" in Heute/
+     * Einkauf, damit ein Mitarbeiter nach einem Kundenanruf sofort den
+     * aktuellen Stand holen kann, statt auf den naechsten geplanten Lauf zu
+     * warten (siehe docs/control-center/ARCHITEKTUR.md Abschnitt 10).
+     *
+     * Feste Argumentliste (node + Skriptpfad, keine Nutzereingabe) - kein
+     * Shell-Einschleusen moeglich. Nur ein Lauf gleichzeitig: ein zweiter
+     * Aufruf waehrend eines laufenden Prozesses startet nichts neu und meldet
+     * `laeuft: true`. Schlaegt der Lauf fehl (z. B. kein Zugang), bleibt die
+     * vorhandene aktualisierung.json unveraendert stehen (aktualisieren.mjs
+     * schreibt selbst je Teil erfolg:false, kein stiller Fehlschlag).
+     */
+    aktualisierungStarten() {
+      if (aktualisierungLauf) {
+        return { gestartet: false, laeuft: true, seit: aktualisierungLauf.seit, hinweis: 'Aktualisierung läuft bereits.' };
+      }
+      const seit = now().toISOString();
+      const skript = path.join(root, 'operations', 'scripts', 'aktualisieren.mjs');
+      const lauf = { seit, fehler: null, fertig: false };
+      aktualisierungLauf = lauf;
+      audit({ action: 'aktualisierung-start' });
+      execFileP(process.execPath, [skript], { cwd: root, timeout: 10 * 60_000, maxBuffer: 8 * 1024 * 1024 })
+        .then(() => { lauf.fertig = true; })
+        .catch(err => { lauf.fertig = true; lauf.fehler = String(err?.message || err).split('\n')[0].slice(0, 500); })
+        .finally(() => { if (aktualisierungLauf === lauf) aktualisierungLauf = null; });
+      return { gestartet: true, laeuft: true, seit };
+    },
+
+    /**
+     * Status fuer den Knopf: laeuft gerade ein Prozess (seit wann), plus der
+     * zuletzt geschriebene Stand je Datenquelle (dieselbe Form wie
+     * `aktualisierung()`). Wird per Abfrage gepollt (kein Warten im Request).
+     */
+    aktualisierungStatus() {
+      const stand = leseAktualisierungsstand();
+      if (aktualisierungLauf) return { ...stand, laeuft: true, seit: aktualisierungLauf.seit };
+      return { ...stand, laeuft: false, seit: null };
+    },
   };
+
+  function leseAktualisierungsstand() {
+    const dir = privatDirPath || privatDir();
+    const file = path.join(dir, 'aktualisierung.json');
+    const daten = readJsonIfExists(file);
+    if (!daten || !daten.teile) {
+      return { verfuegbar: false, quelle: file, hinweis: 'Noch kein Lauf von daten:aktualisieren vorhanden.', befehl: 'npm run daten:aktualisieren' };
+    }
+    const jetzt = now().getTime();
+    const SCHWELLE_MS = 24 * 60 * 60 * 1000;
+    const teile = {};
+    for (const [teil, stand] of Object.entries(daten.teile)) {
+      const alterMs = stand?.zeitpunkt ? jetzt - new Date(stand.zeitpunkt).getTime() : null;
+      teile[teil] = { ...stand, alterMs, veraltet: alterMs === null ? null : alterMs > SCHWELLE_MS };
+    }
+    return { verfuegbar: true, quelle: file, aktualisiertAm: daten.aktualisiertAm || null, teile };
+  }
 }
 
 /** Sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion. */

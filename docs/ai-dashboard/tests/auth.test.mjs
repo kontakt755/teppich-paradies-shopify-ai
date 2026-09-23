@@ -21,10 +21,10 @@ test('createAuth: ohne Passwort ist required=false, jede Sitzungspruefung negati
 });
 
 test('createAuth: richtiges Passwort erzeugt gueltige Sitzung, falsches nicht', () => {
-  const auth = createAuth({ password: 'geheim123' });
+  const auth = createAuth({ password: 'test-passwort' });
   assert.equal(auth.required, true);
   assert.equal(auth.verifyPassword('falsch'), false);
-  assert.equal(auth.verifyPassword('geheim123'), true);
+  assert.equal(auth.verifyPassword('test-passwort'), true);
   const sid = auth.createSession();
   assert.equal(auth.validSession(sid), true);
   auth.destroySession(sid);
@@ -32,7 +32,7 @@ test('createAuth: richtiges Passwort erzeugt gueltige Sitzung, falsches nicht', 
 });
 
 test('createAuth: Ratenbegrenzung sperrt nach mehreren Fehlversuchen je IP', () => {
-  const auth = createAuth({ password: 'geheim123' });
+  const auth = createAuth({ password: 'test-passwort' });
   const ip = '192.168.2.50';
   assert.equal(auth.isLocked(ip), false);
   for (let i = 0; i < 5; i += 1) auth.registerFailure(ip);
@@ -55,8 +55,8 @@ test('passwordFilePath liegt unter TP_PRIVAT_DIR, nie im Repository', () => {
 });
 
 test('parseCookies liest das Sitzungscookie aus dem Header', () => {
-  const cookies = parseCookies({ headers: { cookie: `a=b; ${SESSION_COOKIE}=abc123; c=d` } });
-  assert.equal(cookies[SESSION_COOKIE], 'abc123');
+  const cookies = parseCookies({ headers: { cookie: `a=b; ${SESSION_COOKIE}=test-sitzung-wert; c=d` } });
+  assert.equal(cookies[SESSION_COOKIE], 'test-sitzung-wert');
   assert.deepEqual(parseCookies({ headers: {} }), {});
 });
 
@@ -139,6 +139,45 @@ test('Netzmodus mit Passwort: geschuetzte Route ohne Sitzung 401/302, falsches P
     assert.equal(logout.status, 200);
     const afterLogout = await fetch(`${base}/api/capabilities`, { headers: { cookie: cookiePair } });
     assert.equal(afterLogout.status, 401);
+  });
+});
+
+test('Knopf "Jetzt aktualisieren": POST ohne Sitzung 401, mit Sitzung erlaubt', async () => {
+  process.env.TP_PRIVAT_DIR = TMP_PRIVAT;
+  process.env.TP_DASHBOARD_PASSWORT = 'sicheres-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.222';
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=aktualisieren-auth`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+
+  await withServer(mod.requestHandler, async base => {
+    // Ohne Sitzung: 401, egal ob GET (Status) oder POST (Start)
+    const statusNoSession = await fetch(`${base}/api/aktualisierung/status`);
+    assert.equal(statusNoSession.status, 401);
+    const startNoSession = await fetch(`${base}/api/aktualisierung/start`, { method: 'POST' });
+    assert.equal(startNoSession.status, 401);
+
+    // Anmelden
+    const login = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ passwort: 'sicheres-testpasswort' }),
+    });
+    const cookiePair = login.headers.get('set-cookie').split(';')[0];
+
+    // Mit Sitzung: GET-Status erlaubt
+    const status = await fetch(`${base}/api/aktualisierung/status`, { headers: { cookie: cookiePair } });
+    assert.equal(status.status, 200);
+    const statusJson = await status.json();
+    assert.equal(typeof statusJson.laeuft, 'boolean');
+
+    // Mit Sitzung, aber fremder Origin: 403
+    const foreign = await fetch(`${base}/api/aktualisierung/start`, {
+      method: 'POST', headers: { cookie: cookiePair, origin: 'https://evil.example' },
+    });
+    assert.equal(foreign.status, 403);
+
+    // GET auf den Start-Endpunkt: 405 (nur POST)
+    const wrongMethod = await fetch(`${base}/api/aktualisierung/start`, { headers: { cookie: cookiePair } });
+    assert.equal(wrongMethod.status, 405);
   });
 });
 

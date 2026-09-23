@@ -17,6 +17,7 @@ import { ableiten } from './status.mjs';
 import { procurementReady, GRUPPE } from './ampel.mjs';
 import { normalisiereLineItem } from '../sync/orders.mjs';
 import { istMusterPosition as musterRegel } from './muster.mjs';
+import { istTestbestellung } from './testbestellung.mjs';
 
 export const ADMIN_ORDER_URL = 'https://admin.shopify.com/store/sjjyq1-6w/orders/';
 
@@ -161,6 +162,70 @@ function jaNein(wert) {
   return wert ? wert : '–';
 }
 
+function geld(set) {
+  const m = set?.shopMoney;
+  if (!m || m.amount === undefined || m.amount === null) return null;
+  const n = Number(m.amount);
+  return { betrag: Number.isFinite(n) ? n : null, waehrung: m.currencyCode ?? 'EUR' };
+}
+
+function adresse(a) {
+  if (!a) return null;
+  return {
+    name: a.name ?? '–',
+    strasse: [a.address1, a.address2].filter(Boolean).join(', ') || '–',
+    plz: a.zip ?? '–',
+    ort: a.city ?? '–',
+    land: a.country ?? a.countryCodeV2 ?? '–',
+    telefon: a.phone ?? '–',
+  };
+}
+
+/**
+ * Alle Infos je Bestellung fuer die Detailansicht - Kunde, Adressen,
+ * Versand, Summen, Zahlungsart, Beratungsangaben aus den Bestellattributen,
+ * Tags und Notiz. Positionen kommen separat aus `positionen` (mit Preis).
+ */
+function vollstaendigeDetails(order, positionen) {
+  const p = propertiesMap(order?.customAttributes);
+  const beratungsangaben = {};
+  for (const [k, v] of Object.entries(p)) {
+    if (/^(beratung|telefon|r(ü|ue)ckruf|beratungsthema|ma(ß|ss)pr(ü|ue)fung|verlegung)$/i.test(k)) {
+      beratungsangaben[k] = String(v ?? '').trim();
+    }
+  }
+  return {
+    kunde: {
+      name: order.customer?.displayName ?? order.shippingAddress?.name ?? '–',
+      email: order.customer?.email ?? order.email ?? '–',
+      telefon: order.customer?.phone ?? order.phone ?? '–',
+    },
+    lieferadresse: adresse(order.shippingAddress),
+    rechnungsadresse: adresse(order.billingAddress),
+    versandart: order.shippingLine?.title ?? '–',
+    summen: {
+      zwischensumme: geld(order.subtotalPriceSet),
+      versand: geld(order.totalShippingPriceSet),
+      steuer: geld(order.totalTaxSet),
+      gesamt: geld(order.totalPriceSet),
+    },
+    zahlungsart: Array.isArray(order.paymentGatewayNames) && order.paymentGatewayNames.length ? order.paymentGatewayNames.join(', ') : '–',
+    beratungsangaben,
+    tags: Array.isArray(order.tags) ? order.tags : (typeof order.tags === 'string' ? order.tags.split(',').map((t) => t.trim()).filter(Boolean) : []),
+    notiz: order.note ?? null,
+    positionen: positionen.map((pos) => ({
+      titel: pos.titel,
+      farbe: pos.farbe,
+      menge: pos.menge,
+      kundenmasse: pos.kundenmenge,
+      preis: pos.preis,
+      sku: pos.sku,
+      lieferantenArtikelnummer: pos.grosshaendlerId,
+      lieferantenLink: pos.lieferantUrl,
+    })),
+  };
+}
+
 /** Muster: Grosshaendler-ID der Quellvariante (Property _Quellvariante_ID). */
 function musterQuelle(item, quellMap) {
   const id = numerischeId(item.einkauf?.quellvariante !== UNGEKLAERT ? item.einkauf?.quellvariante : item.eingaben?.quellvarianteId);
@@ -188,10 +253,12 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
   }
 
   const auftraege = [];
+  const testauftraege = [];
   const einkaufPositionen = [];
   const muster = [];
 
   for (const order of orders) {
+    const istTest = istTestbestellung(order);
     const zeilen = knoten(order.lineItems).map(normalisiert);
     const offen = istOffen(order);
     const positionen = zeilen.map(li => {
@@ -221,6 +288,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         handle: li.variant?.product?.handle ?? null,
         farbe,
         sku: item.sku,
+        preis: geld(li.originalUnitPriceSet),
         menge,
         kundenmenge: kundenmengeText(item, menge),
         grosshaendlerId: ghId,
@@ -235,7 +303,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         bestellmenge: istM ? { menge, einheit: 'muster', text: `${menge} Muster`, grund: null } : (li.variant ? einkaufsmenge(item, menge) : { menge: UNGEKLAERT, einheit: UNGEKLAERT, text: UNGEKLAERT, grund: "Variante in Shopify geloescht - Artikel von Hand klaeren" }),
         idGrund: ghId !== UNGEKLAERT ? null : !li.variant ? "Variante geloescht" : istM ? (mq?.quellvariante ? "Quellvariante ohne ID-Metafeld" : "Muster ohne _Quellvariante_ID - Produkt/Farbe siehe Titel") : "weder lieferant.* noch grosshandel.sku gesetzt",
       };
-      if (offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
+      if (!istTest && offen && menge > 0) (istM ? muster : einkaufPositionen).push(pos);
       return pos;
     });
 
@@ -261,17 +329,18 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
     if (!['PAID', 'PARTIALLY_REFUNDED'].includes(String(order.displayFinancialStatus))) gelb(`Zahlung: ${order.displayFinancialStatus ?? '–'}`);
     if (!offen) { ampel = 'grau'; hinweise.unshift(order.cancelledAt ? 'Storniert' : 'Erledigt'); }
 
-    auftraege.push({
+    const auftrag = {
       id: order.id,
       name: order.name,
       datum: order.createdAt,
       offen,
       storniert: !!order.cancelledAt,
+      testbestellung: istTest,
       bezahlt: order.displayFinancialStatus ?? '–',
       erfuellt: order.displayFulfillmentStatus ?? '–',
       adminUrl: adminLink(order.id),
       status: statusInfo.status,
-      ampel,
+      ampel: istTest ? 'test' : ampel,
       hinweise,
       checks: {
         beratung: jaNein(beratung),
@@ -280,7 +349,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         verlegung: jaNein(verlegung),
       },
       positionen,
-    });
+      details: vollstaendigeDetails(order, positionen),
+    };
+    (istTest ? testauftraege : auftraege).push(auftrag);
   }
 
   const gruppen = gruppieren(einkaufPositionen.map(p => ({ ...p, route: p.route === UNGEKLAERT ? UNGEKLAERT : p.route })))
@@ -293,6 +364,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
   return {
     erstellt: jetzt.toISOString(),
     auftraege,
+    testauftraege,
     gruppen,
     musterGruppen,
     zahlen: {
@@ -303,6 +375,7 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
       mengeUngeklaert: alle.filter(p => !p.istMuster && p.bestellmenge.menge === UNGEKLAERT).length,
       zuBestellen: einkaufPositionen.length,
       muster: muster.length,
+      testbestellungen: testauftraege.length,
     },
   };
 }
@@ -327,7 +400,7 @@ function datumDe(iso) {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Berlin' });
 }
 
-const AMPEL_TEXT = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen' };
+const AMPEL_TEXT = { gruen: 'Bereit', gelb: 'Prüfen', rot: 'Blockiert', grau: 'Geschlossen', test: 'Testbestellung' };
 
 function idZelle(p) {
   if (p.grosshaendlerId === UNGEKLAERT) return `<span class="flag">UNGEKLAERT</span>${p.idGrund ? `<small>${esc(p.idGrund)}</small>` : ""}`;
@@ -440,6 +513,8 @@ code{font:600 .9rem ui-monospace,Menlo,monospace;word-break:break-all}
 .ampel{width:14px;height:14px;border-radius:50%;background:var(--gra);flex:none}
 .a-gruen .ampel{background:var(--gr)}.a-gelb .ampel{background:var(--ge)}.a-rot .ampel{background:var(--ro)}
 .a-rot{border-left:5px solid var(--ro)}.a-gelb{border-left:5px solid var(--ge)}.a-gruen{border-left:5px solid var(--gr)}.a-grau{opacity:.7}
+.a-test{border-left:5px solid var(--mu);opacity:.85}.a-test .ampel{background:var(--mu)}
+details.testbereich summary{font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .chip{font-size:.78rem;background:var(--bg);border-radius:6px;padding:2px 8px}
 .chip.schlecht{background:var(--ro);color:#fff}
@@ -482,6 +557,7 @@ a{color:var(--ak)}
   <h2>Aufträge</h2>
   ${offen.map(auftragHtml).join('') || '<p class="meta">Keine offenen Aufträge.</p>'}
   ${zu.length ? `<details><summary>${zu.length} geschlossene/stornierte Aufträge</summary>${zu.map(auftragHtml).join('')}</details>` : ''}
+  ${(m.testauftraege ?? []).length ? `<details class="testbereich"><summary>Testbestellungen (${m.testauftraege.length}) – zählen in keiner Kennzahl</summary>${m.testauftraege.map(auftragHtml).join('')}</details>` : ''}
 </main>
 <script>
 document.addEventListener('click', async function (e) {

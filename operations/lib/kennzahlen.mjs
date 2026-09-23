@@ -2,6 +2,8 @@
 // Durchschnittsbon je Zeitraum. Stornierte Bestellungen zaehlen nicht mit,
 // unbezahlte ebenso wenig - gezaehlt wird, was tatsaechlich Geld gebracht hat.
 
+import { istTestbestellung } from './testbestellung.mjs';
+
 export const ZEITRAEUME = [7, 30];
 
 /** Bestellungen aus dem Admin-API-Export auf eine flache Liste bringen. */
@@ -28,9 +30,10 @@ function waehrungVon(orders) {
   return 'EUR';
 }
 
-/** Zaehlt eine Bestellung fuer den Umsatz? Storniert nie, unbezahlt nie. */
+/** Zaehlt eine Bestellung fuer den Umsatz? Storniert nie, unbezahlt nie, Testbestellung nie. */
 export function zaehlt(order) {
   if (order?.cancelledAt) return false;
+  if (istTestbestellung(order)) return false;
   const status = String(order?.displayFinancialStatus ?? '').toUpperCase();
   return status === 'PAID' || status === 'PARTIALLY_REFUNDED';
 }

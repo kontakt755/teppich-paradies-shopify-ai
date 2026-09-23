@@ -22,6 +22,23 @@ test('zaehlt nur bezahlte und nicht stornierte Bestellungen', () => {
   assert.equal(zaehlt(bestellung(1, 100, { status: 'PARTIALLY_REFUNDED' })), true);
 });
 
+test('zaehlt: Testbestellungen (Tag oder test=true) nie', () => {
+  assert.equal(zaehlt({ ...bestellung(1, 100), tags: ['TESTBESTELLUNG'] }), false);
+  assert.equal(zaehlt({ ...bestellung(1, 100), tags: ['testbestellung'] }), false);
+  assert.equal(zaehlt({ ...bestellung(1, 100), tags: ['TYP-MUSTER'] }), true);
+  assert.equal(zaehlt({ ...bestellung(1, 100), test: true }), false);
+});
+
+test('schnappschuss: Testbestellungen fliessen nicht in Umsatz oder Anzahl ein', () => {
+  const s = schnappschuss([
+    bestellung(1, 100),
+    { ...bestellung(1, 5000, { name: '#T1' }), tags: ['TESTBESTELLUNG'] },
+    { ...bestellung(2, 5000, { name: '#T2' }), test: true },
+  ], { jetzt: JETZT });
+  assert.equal(s.zeitraeume['7'].bestellungen, 1);
+  assert.equal(s.zeitraeume['7'].umsatz, 100);
+});
+
 test('Zeitraeume trennen 7 und 30 Tage, Storno wird ausgewiesen', () => {
   const s = schnappschuss([
     bestellung(1, 100),

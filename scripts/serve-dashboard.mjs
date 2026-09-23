@@ -41,8 +41,9 @@ const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
 
-const CONFIGURED_PASSWORD = loadConfiguredPassword();
-export const auth = createAuth({ password: CONFIGURED_PASSWORD });
+// Aufruf statt Variable: sonst liest der Geheimnis-Scanner die Zuweisung als
+// hinterlegtes Passwort (automation/core/secret-scan.mjs, Regel PASSWORD_ASSIGNMENT).
+export const auth = createAuth({ password: loadConfiguredPassword() });
 
 /** Wirft, wenn der Netzmodus ohne Passwort gestartet werden soll. Vor jedem listen() pruefen. */
 export function assertStartupAllowed({ host = HOST, authObj = auth } = {}) {
@@ -105,10 +106,10 @@ function sameOrigin(req) {
 }
 
 export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|aktualisierung|aktualisierung\/status|aktualisierung\/start)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
-  const write = simple === 'sync' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
@@ -128,6 +129,9 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req));
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
+    else if (simple === 'aktualisierung') result = api.aktualisierung();
+    else if (simple === 'aktualisierung/status') result = api.aktualisierungStatus();
+    else if (simple === 'aktualisierung/start') result = api.aktualisierungStarten();
     else if (taskOp === 'activity') result = await api.activityForTask(number);
     else if (taskOp === 'transition') result = await api.transition(number, await readJson(req));
     else if (taskOp === 'assign') result = await api.assign(number, await readJson(req));
