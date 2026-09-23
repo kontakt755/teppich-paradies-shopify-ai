@@ -68,7 +68,8 @@
     "operations:band": "node operations/server.mjs",
     "operations:test": "node --test operations/tests/*.test.mjs",
     "operations:verbindung": "node operations/scripts/verbindung-pruefen.mjs",
-    "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs"
+    "ops:bestelluebersicht": "node operations/scripts/bestelluebersicht.mjs",
+    "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",
