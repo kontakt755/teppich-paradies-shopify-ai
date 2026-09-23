@@ -78,17 +78,28 @@ function readJsonIfExists(file) {
 
 /**
  * Produktdaten-Status: Klartext, Blockier-Status und Naechster-Schritt-Text
- * je Einkaufsfeld. "blockierend" heisst: ohne dieses Feld kann die Ware beim
- * Lieferanten nicht bestellt werden. Alles andere ist Zusatzinformation
- * (Kollektion, Hersteller, ...) - fehlt sie, blockiert das keinen Auftrag.
+ * je Einkaufsfeld. Drei ehrliche Gruppen, nicht zwei:
+ *
+ * - "blockierend": ohne dieses Feld kann die Ware beim Lieferanten nicht
+ *   bestellt werden - Lieferant oder Artikelnummer fehlt. Das ist die einzige
+ *   Gruppe, die die grosse Zahl oben treibt.
+ * - "nachtragen": wuenschenswerte Zusatzinformation (Farbnummer, Kollektion,
+ *   Hersteller, Lieferanten-Produktname/-URL) - fehlt sie, blockiert das
+ *   keine Bestellung, ist aber eine echte Luecke.
+ * - strukturell offen (kein Meta-Eintrag mit blockierend/nachtragen noetig,
+ *   siehe istStrukturellOffenerFall()): umrechnung (Format nie definiert),
+ *   procurement_id ausserhalb der Rollenware (dort nie vorgesehen) und jede
+ *   Wunschmass-Variante (SKU/Artikelnummer entstehen erst beim Zuschnitt) -
+ *   zaehlt nirgends als Aufgabe.
+ *
  * Quelle der Feldnamen: einkauf-klaerung/offen.json (Feld `field`).
  */
 const EINKAUF_FELD_META = {
   lieferant: { klartext: 'Lieferant', blockierend: true },
   artikelnummer: { klartext: 'Artikelnummer', blockierend: true },
-  farbnummer: { klartext: 'Farbnummer', blockierend: true },
   'lieferant/artikelnummer': { klartext: 'Lieferant/Artikelnummer', blockierend: true },
   bestelleinheit: { klartext: 'Bestellmenge unklar', blockierend: true },
+  farbnummer: { klartext: 'Farbnummer', blockierend: false },
   lieferant_kollektion: { klartext: 'Kollektion', blockierend: false },
   hersteller: { klartext: 'Hersteller', blockierend: false },
   farbname: { klartext: 'Farbname', blockierend: false },
@@ -104,6 +115,18 @@ function einkaufFeldKlartext(feld) {
 
 function einkaufFeldBlockierend(feld) {
   return Boolean(EINKAUF_FELD_META[feld]?.blockierend);
+}
+
+/**
+ * Strukturell offene Faelle zaehlen nie als Aufgabe (weder blockierend noch
+ * nachtragen) - siehe Kommentar an EINKAUF_FELD_META. `gruppe` und
+ * `variantTitle` kommen aus dem Dry-Run-Plan (plan.json) der Variante.
+ */
+function istStrukturellOffenerFall(feld, gruppe, variantTitle) {
+  if (/wunschma/i.test(variantTitle || '')) return true;
+  if (feld === 'umrechnung') return true;
+  if (feld === 'procurement_id' && gruppe !== 'Rollenware') return true;
+  return false;
 }
 
 /**
@@ -180,6 +203,7 @@ function produktstatusAufbauen(planRows, offenRows) {
   for (const o of offenRows) {
     const dr = dim.get(o.gid);
     if (!dr) continue; // Variante nicht (mehr) im Dry-Run-Plan - kann verwaist sein, wird nicht erfunden
+    if (istStrukturellOffenerFall(o.field, dr.gruppe, dr.variant_title)) continue; // keine Aufgabe, siehe Kommentar oben
     const p = produkte.get(dr.handle);
     if (!p) continue;
     const bestehend = p.offeneFelderRoh.get(o.field);
