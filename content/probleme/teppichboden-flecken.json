@@ -1,0 +1,13 @@
+{
+  "handle": "teppichboden-flecken",
+  "symptom": "Flecken im Teppichboden",
+  "belag": "Teppichboden",
+  "ursachen": [
+    "Ein frischer Fleck wurde nicht sofort behandelt und ist eingetrocknet.",
+    "Der Fleck wurde gerieben statt getupft und dadurch tiefer in den Flor gedrückt.",
+    "Es wurde ein Reinigungsmittel verwendet, das für das Fasermaterial nicht geeignet ist."
+  ],
+  "artikel": "teppichboden-pflegen-und-flecken-entfernen",
+  "profi_noetig": false,
+  "status": "freigegeben"
+}

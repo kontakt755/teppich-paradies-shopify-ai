@@ -1,0 +1,13 @@
+{
+  "handle": "teppichboden-sichtbare-naht",
+  "symptom": "Die Naht zwischen zwei Bahnen ist deutlich sichtbar",
+  "belag": "Teppichboden",
+  "ursachen": [
+    "Der Raum war breiter als die verfügbare Rollenbreite, eine Naht war deshalb notwendig.",
+    "Die beiden Bahnen liegen an der Naht nicht in derselben Florrichtung.",
+    "Die Bahnen stammen aus unterschiedlichen Produktionschargen mit leicht abweichendem Farbton."
+  ],
+  "artikel": "rollenbreite-und-bahnen-planen",
+  "profi_noetig": true,
+  "status": "freigegeben"
+}

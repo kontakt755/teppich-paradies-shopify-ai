@@ -57,6 +57,40 @@ const RULES = [
   },
 ];
 
+// Regeln, die die ganze Datei betrachten statt einzelner Treffer.
+const FILE_RULES = [
+  {
+    id: 'DOC_UNBALANCED',
+    // {% doc %} und {% enddoc %} muessen paarweise auftreten, und ein doc darf
+    // nicht im naechsten stehen. Sonst meldet Shopify beim Push
+    // "Nested doc tags are not allowed" bzw. einen offenen Tag und verwirft die
+    // Datei - im Shop fehlt der Block dann komplett.
+    //
+    // Die eigentliche Falle: Es genuegt, die Zeichenfolge {% doc %} in einem CSS-
+    // oder Liquid-Kommentar zu ERWAEHNEN ("siehe {% doc %} oben"). Der Parser sieht
+    // dort ein echtes Tag. Genau so ist es am 2026-09-23 in
+    // blocks/tp-produktinfo-tabelle.liquid passiert: liquid:guard und schema:guard
+    // liefen gruen, erst der Theme-Push zeigte den Fehler. In Kommentaren gehoert
+    // deshalb "Dateikopf" statt des Tags.
+    pruefe(text) {
+      const tags = [...text.matchAll(/\{%-?\s*(end)?doc\s*-?%\}/g)];
+      let tiefe = 0;
+      for (const tag of tags) {
+        if (tag[1]) {
+          tiefe -= 1;
+          if (tiefe < 0) return { index: tag.index, grund: '{% enddoc %} ohne offenes {% doc %}' };
+        } else {
+          tiefe += 1;
+          if (tiefe > 1) return { index: tag.index, grund: 'zweites {% doc %}, bevor das erste geschlossen ist' };
+        }
+      }
+      if (tiefe > 0) return { index: tags[tags.length - 1].index, grund: '{% doc %} ohne {% enddoc %}' };
+      return null;
+    },
+    message: 'doc-Tags sind nicht ausgeglichen. Shopify verwirft die Datei beim Push. Auch eine blosse Erwaehnung in einem Kommentar zaehlt als Tag - dort "Dateikopf" schreiben.',
+  },
+];
+
 function walk(dir, files = []) {
   if (!fs.existsSync(dir)) return files;
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -78,6 +112,13 @@ const warnings = [];
 for (const file of files) {
   const text = fs.readFileSync(file, 'utf8');
   const relative = path.relative(root, file);
+
+  for (const rule of FILE_RULES) {
+    const treffer = rule.pruefe(text);
+    if (treffer) {
+      errors.push({ file: relative, line: lineOf(text, treffer.index), rule: rule.id, message: `${rule.message} (${treffer.grund})` });
+    }
+  }
 
   for (const rule of RULES) {
     rule.pattern.lastIndex = 0;

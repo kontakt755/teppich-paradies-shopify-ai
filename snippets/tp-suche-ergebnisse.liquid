@@ -16,6 +16,23 @@
   ref="resultsItems[]" und die Liste die Klasse predictive-search-results__list,
   damit die Pfeiltasten des Horizon-Suchfensters (assets/predictive-search.js)
   weiter funktionieren. Das Dropdown der Suchleiste steuert die Optionen selbst.
+
+  Auffindbarkeit Ratgeber (Aufgabe #505, Luecke L1): eigene Gruppe "Ratgeber"
+  aus predictive_search.resources.articles, hoechstens 3 Treffer, mit dem
+  Etikett aus artikel.metafields.ratgeber.art.value, ohne Bild-Zwang. Die
+  vorher hier stehende Gruppe "Ratgeber & Service" zeigte Shopify-Seiten
+  (resources.pages) und heisst jetzt "Service" - "Ratgeber" bedeutet ab jetzt
+  echte Ratgeber-Artikel, zwei Gruppen mit demselben Namen fuer verschiedene
+  Objekttypen waeren verwirrend. Platzierung vor "Kategorien", damit
+  Informationssuchen (z. B. "teppichboden ausmessen") nicht hinter Treffern
+  verschwinden, die es fuer diese Begriffe oft gar nicht gibt.
+
+  Diese Gruppe fuellt sich nur, wenn die aufrufende Anfrage "article" in
+  resources[type] anfordert. Gesetzt wird das in assets/tp-suche.js (#url) fuer
+  die Schnellsuche und ueber das versteckte Feld "type" in blocks/_search-input.liquid
+  fuer die Ergebnisseite. Wird einer der beiden Werte wieder auf reine
+  Produktsuche zurueckgestellt, bleibt diese Gruppe still leer - dann dort suchen,
+  nicht hier. Siehe docs/bodenwissen/ARCHITECTURE.md, Abschnitt 4.1.
 {%- enddoc -%}
 {%- liquid
   # predictive_search.terms kommt von Shopify bereits HTML-escaped (Beleg
@@ -25,7 +42,7 @@
   assign tp_se_begriff = predictive_search.terms | strip
   assign tp_se_begriff_roh = tp_se_begriff | replace: '&quot;', '"' | replace: '&#39;', "'" | replace: '&lt;', '<' | replace: '&gt;', '>' | replace: '&amp;', '&'
   assign tp_se_q = tp_se_begriff_roh | url_encode
-  assign tp_se_alle_url = routes.search_url | append: '?q=' | append: tp_se_q | append: '&type=product,collection,page'
+  assign tp_se_alle_url = routes.search_url | append: '?q=' | append: tp_se_q | append: '&type=product,collection,page,article'
 
   # Produkte: Entwuerfe, Lieferantenentwuerfe und Serviceartikel bleiben
   # draussen, auch wenn Shopify sie liefern sollte. Zaehlung vorab, damit die
@@ -104,7 +121,14 @@
     assign tp_se_s_anzahl = 2
   endif
 
-  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl
+  # Ratgeber-Artikel: hoechstens 3, Shopify liefert hier nur veroeffentlichte
+  # Artikel, deshalb keine weitere Tag-Filterung noetig (anders als bei Produkten oben).
+  assign tp_se_a_anzahl = predictive_search.resources.articles.size
+  if tp_se_a_anzahl > 3
+    assign tp_se_a_anzahl = 3
+  endif
+
+  assign tp_se_gesamt = tp_se_p_anzahl | plus: tp_se_k_anzahl | plus: tp_se_s_anzahl | plus: tp_se_q_anzahl | plus: tp_se_a_anzahl
 -%}
 
 <div class="tp-se" role="listbox" aria-label="Suchvorschläge" data-tp-begriff="{{ tp_se_begriff_roh | escape }}" data-tp-produkte="{{ tp_se_p_anzahl }}">
@@ -178,8 +202,22 @@
       </div>
     {%- endif -%}
 
-    {%- if tp_se_k_anzahl > 0 or tp_se_s_anzahl > 0 -%}
-      <div class="tp-se__block tp-se__block--kategorien" role="group" aria-label="Passende Kategorien">
+    {%- if tp_se_a_anzahl > 0 or tp_se_k_anzahl > 0 or tp_se_s_anzahl > 0 -%}
+      <div class="tp-se__block tp-se__block--kategorien" role="group" aria-label="Weitere Treffer">
+        {%- if tp_se_a_anzahl > 0 -%}
+          <h3 class="tp-se__h">Ratgeber</h3>
+          <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
+            {%- for tp_se_a in predictive_search.resources.articles limit: 3 -%}
+              {%- assign tp_se_a_art = tp_se_a.metafields.ratgeber.art.value | strip -%}
+              <li ref="resultsItems[]" role="presentation" class="tp-se__item">
+                <a role="option" class="tp-se__link tp-se__link--artikel" data-tp-typ="artikel" href="{{ tp_se_a.url }}">
+                  <span data-tp-titel>{{ tp_se_a.title | escape }}</span>
+                  {%- if tp_se_a_art != blank %}<span class="tp-se__artikel-art">{{ tp_se_a_art | escape }}</span>{% endif -%}
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
         {%- if tp_se_k_anzahl > 0 -%}
           <h3 class="tp-se__h">Kategorien</h3>
           <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
@@ -191,7 +229,7 @@
           </ul>
         {%- endif -%}
         {%- if tp_se_s_anzahl > 0 -%}
-          <h3 class="tp-se__h">Ratgeber &amp; Service</h3>
+          <h3 class="tp-se__h">Service</h3>
           <ul class="tp-se__liste tp-se__liste--links predictive-search-results__list" role="presentation">
             {%- for tp_se_s in predictive_search.resources.pages limit: 2 -%}
               <li ref="resultsItems[]" role="presentation" class="tp-se__item"><a role="option" class="tp-se__link" data-tp-typ="seite" href="{{ tp_se_s.url }}"><span data-tp-titel>{{ tp_se_s.title | escape }}</span></a></li>
@@ -299,6 +337,23 @@
     font-size: 15px;
     font-weight: 500;
     text-decoration: none;
+  }
+
+  /* Artikel-Treffer: Titel und Art-Etikett (z. B. "Anleitung") nebeneinander,
+     am schmalen Panel untereinander - dieselbe Zeilenhoehe wie .tp-se__link. */
+  .tp-se__link--artikel {
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    padding-block: 8px;
+  }
+
+  .tp-se__artikel-art {
+    flex: none;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tp-se-red);
   }
 
   .tp-se__produkt {

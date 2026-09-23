@@ -9,6 +9,26 @@
  */
 {
   "sections": {
+    "suche": {
+      "type": "tp-bodenwissen-suche",
+      "blocks": {
+        "teppichboden": {
+          "type": "bereich",
+          "settings": {
+            "blog": "ratgeber-teppichboden"
+          }
+        }
+      },
+      "block_order": [
+        "teppichboden"
+      ],
+      "settings": {
+        "titel": "Was möchten Sie über Ihren Boden wissen?",
+        "platzhalter": "z. B. Teppichboden ausmessen",
+        "lexikon_seite": "",
+        "probleme_seite": ""
+      }
+    },
     "main": {
       "type": "tp-ratgeber-bereiche",
       "blocks": {
@@ -35,9 +55,89 @@
         "vinylboden"
       ],
       "settings": {}
+    },
+    "einstiege": {
+      "type": "tp-bodenwissen-einstiege",
+      "blocks": {
+        "lexikon": {
+          "type": "werkzeug",
+          "settings": {
+            "titel": "Bodenlexikon",
+            "text": "Nutzungsklasse, Florhöhe, Schlinge: die Angaben auf den Produktseiten, kurz erklärt.",
+            "ziel": ""
+          }
+        },
+        "probleme": {
+          "type": "werkzeug",
+          "settings": {
+            "titel": "Problem-Finder",
+            "text": "Wellen, sichtbare Naht, Druckstellen – finden Sie den passenden Ratgeber zu Ihrem Problem.",
+            "ziel": ""
+          }
+        },
+        "rechner": {
+          "type": "werkzeug",
+          "settings": {
+            "titel": "Bedarf berechnen",
+            "text": "Raummaße eingeben und sehen, welche Rollenbreite passt und wie viel Sie bestellen.",
+            "ziel": ""
+          }
+        },
+        "gesucht-ausmessen": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Teppichboden richtig ausmessen",
+            "ziel": "/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen"
+          }
+        },
+        "gesucht-rollenbreite": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Rollenbreite wählen: 400 oder 500 cm",
+            "ziel": "/blogs/ratgeber-teppichboden/rollenbreite-und-bahnen-planen"
+          }
+        },
+        "gesucht-raum": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Welcher Teppichboden für welchen Raum",
+            "ziel": "/blogs/ratgeber-teppichboden/welcher-teppichboden-fuer-welchen-raum"
+          }
+        },
+        "gesucht-verlegen": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Lose verlegen, fixieren oder kleben",
+            "ziel": "/blogs/ratgeber-teppichboden/teppichboden-verlegen-lose-fixieren-oder-kleben"
+          }
+        },
+        "gesucht-pflege": {
+          "type": "gesucht",
+          "settings": {
+            "titel": "Teppichboden pflegen und Flecken entfernen",
+            "ziel": "/blogs/ratgeber-teppichboden/teppichboden-pflegen-und-flecken-entfernen"
+          }
+        }
+      },
+      "block_order": [
+        "lexikon",
+        "probleme",
+        "rechner",
+        "gesucht-ausmessen",
+        "gesucht-rollenbreite",
+        "gesucht-raum",
+        "gesucht-verlegen",
+        "gesucht-pflege"
+      ],
+      "settings": {
+        "werkzeuge_titel": "Werkzeuge",
+        "gesucht_titel": "Häufig gesucht"
+      }
     }
   },
   "order": [
-    "main"
+    "suche",
+    "main",
+    "einstiege"
   ]
 }

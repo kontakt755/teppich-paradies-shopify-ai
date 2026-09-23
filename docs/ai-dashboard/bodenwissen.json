@@ -1,0 +1,525 @@
+{
+  "erzeugtAm": "2026-09-23T10:35:46.879Z",
+  "statusReihenfolge": [
+    "idee",
+    "recherche",
+    "fachinput_noetig",
+    "entwurf",
+    "seo_pruefung",
+    "fachpruefung",
+    "freigegeben",
+    "veroeffentlicht",
+    "ueberarbeiten",
+    "zusammenlegen",
+    "weiterleiten",
+    "archiv"
+  ],
+  "contentPipeline": {
+    "idee": 0,
+    "recherche": 0,
+    "fachinput_noetig": 5,
+    "entwurf": 0,
+    "seo_pruefung": 0,
+    "fachpruefung": 0,
+    "freigegeben": 0,
+    "veroeffentlicht": 5,
+    "ueberarbeiten": 0,
+    "zusammenlegen": 0,
+    "weiterleiten": 0,
+    "archiv": 0
+  },
+  "gesamt": {
+    "artikel": 10,
+    "lexikon": 16,
+    "probleme": 21
+  },
+  "ueberarbeitungsbedarf": [],
+  "bilder": {
+    "offen": 24,
+    "items": [
+      {
+        "handle": "rollenbreite-und-bahnen-planen",
+        "titel": "Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?",
+        "bereich": "teppichboden",
+        "zweck": "Zwei Bahnen mit Naht unter einem Moebelstueck"
+      },
+      {
+        "handle": "rollenbreite-und-bahnen-planen",
+        "titel": "Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?",
+        "bereich": "teppichboden",
+        "zweck": "Florrichtung im Streiflicht sichtbar"
+      },
+      {
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "zweck": "Alter Fliesenboden im Ausgangszustand"
+      },
+      {
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "zweck": "Fuge aus der Nähe, mit Maßstab im Bild"
+      },
+      {
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "zweck": "Gespachtelte Fläche über Fliesen"
+      },
+      {
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "zweck": "Verlegter Teppichboden, gleiche Perspektive"
+      },
+      {
+        "handle": "teppichboden-pflegen-und-flecken-entfernen",
+        "titel": "Teppichboden pflegen und Flecken entfernen: Was wirklich hilft",
+        "bereich": "teppichboden",
+        "zweck": "Sauberlaufzone am Eingang"
+      },
+      {
+        "handle": "teppichboden-pflegen-und-flecken-entfernen",
+        "titel": "Teppichboden pflegen und Flecken entfernen: Was wirklich hilft",
+        "bereich": "teppichboden",
+        "zweck": "Fleck abtupfen mit weissem Tuch"
+      },
+      {
+        "handle": "teppichboden-richtig-ausmessen",
+        "titel": "Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe",
+        "bereich": "teppichboden",
+        "zweck": "Zollstock an der breitesten Stelle des Raums"
+      },
+      {
+        "handle": "teppichboden-richtig-ausmessen",
+        "titel": "Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe",
+        "bereich": "teppichboden",
+        "zweck": "Tuernische und Erker beim Messen"
+      },
+      {
+        "handle": "teppichboden-richtig-ausmessen",
+        "titel": "Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe",
+        "bereich": "teppichboden",
+        "zweck": "Skizze L-foermiger Raum mit Bahnenaufteilung"
+      },
+      {
+        "handle": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+        "titel": "Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?",
+        "bereich": "teppichboden",
+        "zweck": "Verlegeband im Gitter auf dem Untergrund"
+      },
+      {
+        "handle": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+        "titel": "Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?",
+        "bereich": "teppichboden",
+        "zweck": "Doppelnahtschnitt an der Bahnenkante"
+      },
+      {
+        "handle": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+        "titel": "Teppichboden verlegen: lose, fixiert oder vollflächig verklebt?",
+        "bereich": "teppichboden",
+        "zweck": "Anschluss an die Tuerzarge"
+      },
+      {
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "zweck": "Teppichboden mit deutlichen Wellen in der Laufzone"
+      },
+      {
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "zweck": "Gelöste Kante an der Wand"
+      },
+      {
+        "handle": "verschnitt-bei-teppichboden",
+        "titel": "Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst",
+        "bereich": "teppichboden",
+        "zweck": "Reststück nach dem Zuschnitt neben der verlegten Bahn"
+      },
+      {
+        "handle": "welcher-teppichboden-fuer-welchen-raum",
+        "titel": "Welcher Teppichboden passt zu welchem Raum?",
+        "bereich": "teppichboden",
+        "zweck": "Schlinge und Velours nebeneinander, Nahaufnahme"
+      },
+      {
+        "handle": "welcher-teppichboden-fuer-welchen-raum",
+        "titel": "Welcher Teppichboden passt zu welchem Raum?",
+        "bereich": "teppichboden",
+        "zweck": "Teppichboden im Flur mit Sauberlaufzone"
+      },
+      {
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "zweck": "Latte auf dem Boden, Spalt gegen das Licht sichtbar"
+      },
+      {
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "zweck": "Folientest auf dem Estrich"
+      },
+      {
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "zweck": "Spachtelmasse wird aufgezogen"
+      },
+      {
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "zweck": "Klickverbindung zweier Planken im Schnitt"
+      },
+      {
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "zweck": "Klebevinyl beim Einlegen in den Kleber"
+      }
+    ]
+  },
+  "expertInput": {
+    "gesamt": 43,
+    "ratgeber": 37,
+    "lexikon": 6,
+    "items": [
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Welche Punkte prüft das Team am Fliesenboden, in welcher Reihenfolge?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Woran erkennt ein Kunde eine hohl liegende Fliese zuverlässig?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Ab welcher Fugenbreite oder -tiefe raten Sie zum Spachteln?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Welche Teppichbodenaufbauten verzeihen Fugen besser, welche schlechter?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Grundieren Sie auf Fliesen grundsätzlich?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Übliche Schichtstärke und Trocknungszeit beim Spachteln auf Fliesen?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Wann raten Sie stattdessen zum Rückbau der Fliesen?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Welche Verlegeart empfehlen Sie auf Fliesen, wovon raten Sie ab?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Hält Verlegeband auf Fliesen dauerhaft? Braucht es einen anderen Bandtyp?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-auf-fliesen",
+        "titel": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+        "bereich": "teppichboden",
+        "frage": "Lässt sich vollflächig verklebter Teppichboden wieder von Fliesen lösen?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Welche Ursachen sehen Sie in der Praxis am häufigsten? Nach Häufigkeit ordnen."
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Fehlt in der Liste eine Ursache?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Welche Fälle lassen sich nachträglich beheben, welche nicht?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Gehen Wellen nach dem Nachfixieren vollständig weg?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Bieten Sie das Nachfixieren als Leistung an?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Ab wann ist es ein Material-, ab wann ein Verlegefehler?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "teppichboden-wirft-wellen",
+        "titel": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+        "bereich": "teppichboden",
+        "frage": "Was sollte ein Kunde dokumentieren, bevor er reklamiert?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "verschnitt-bei-teppichboden",
+        "titel": "Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst",
+        "bereich": "teppichboden",
+        "frage": "Nennen Sie Kunden eine übliche Größenordnung für Verschnitt, oder raten Sie davon ab?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "verschnitt-bei-teppichboden",
+        "titel": "Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst",
+        "bereich": "teppichboden",
+        "frage": "Wie viel Überlappung je Naht muss zusätzlich eingeplant werden?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "verschnitt-bei-teppichboden",
+        "titel": "Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst",
+        "bereich": "teppichboden",
+        "frage": "Können Reststücke mitgeliefert werden, oder bleiben sie beim Zuschnitt?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Welche Prüfungen halten Sie für einen Kunden für sinnvoll, welche führen in die Irre?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Ist der Folientest brauchbar, oder raten Sie davon ab?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Mit welchem Verfahren messen Sie Restfeuchte?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Auf welche Norm bzw. welches Messverfahren beziehen Sie sich bei der Ebenheit?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Ab welcher Abweichung wird gespachtelt – gibt es eine Hausregel?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Welche Grundierungsarten unterscheiden Sie, woran machen Sie die Wahl fest?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Gibt es Untergründe, bei denen Sie grundsätzlich zurückbauen statt zu spachteln?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Wann darf ein alter Belag liegen bleiben, wann muss er raus?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "untergrund-pruefen-und-vorbereiten",
+        "titel": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+        "bereich": "untergrund",
+        "frage": "Wie gehen Sie mit Kleberresten des alten Belags um?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Stimmen alle Zeilen der Vergleichstabelle, besonders 'einzelne Planke tauschen'?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Fehlt eine Zeile, die Kunden regelmäßig fragen?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Welche Ebenheit verlangen Sie je Verlegeart?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Gibt es Untergründe, die eine der beiden Arten ausschließen?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Welche Rolle spielt die Restfeuchte bei Klebevinyl gegenüber Klickvinyl?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Wozu raten Sie in der Mietwohnung, wozu im Eigentum?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Gibt es bei Fußbodenheizung eine klare Hausempfehlung?"
+      },
+      {
+        "quelle": "ratgeber",
+        "handle": "klickvinyl-oder-klebevinyl",
+        "titel": "Klickvinyl oder Klebevinyl: Was ist der Unterschied?",
+        "bereich": "vinylboden",
+        "frage": "Was gilt in Bad und Küche – ist eine der beiden Arten im Vorteil?"
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "fussbodenheizung",
+        "titel": "Fußbodenheizung",
+        "frage": "Fuer welche Produktgruppen ausser Linoleum eine belastbare Aussage zur Fussbodenheizungseignung vorliegt. Fuer Linoleum ist die Einschaetzung laut domains/shopify/linoleum-rollenware-template.md bewusst als allgemeines Materialklassen-Wissen ohne eigenes Metafeld dokumentiert; fuer Teppichboden und Vinyl ist das offen."
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "nutzungsklasse",
+        "titel": "Nutzungsklasse",
+        "frage": "Welche Norm-Skala (z. B. EN ISO 10874) im Shop einheitlich als Referenz genannt werden soll."
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "nutzungsklasse",
+        "titel": "Nutzungsklasse",
+        "frage": "Ob custom.nutzungsklassen alle im Sortiment vorkommenden Klassen abdeckt - laut domains/shopify/linoleum-rollenware-template.md deckt das Metaobjekt bislang nur Klasse 21-33 und 42 ab."
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "polgewicht",
+        "titel": "Polgewicht",
+        "frage": "Ob und unter welchem Feldnamen das Polgewicht im Shop je Produkt gepflegt wird - bislang kein passendes Metafeld bekannt."
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "stuhlrolleneignung",
+        "titel": "Stuhlrolleneignung",
+        "frage": "Bei welchen Produkten Stuhlrolleneignung tatsächlich angegeben ist - kein Metafeld dafür bekannt, bislang nur über Beschreibungstexte erkennbar."
+      },
+      {
+        "quelle": "lexikon",
+        "handle": "trittschall",
+        "titel": "Trittschall",
+        "frage": "Ob und wo Trittschallwerte im Shop je Produkt gepflegt werden - kein passendes Metafeld gefunden."
+      }
+    ]
+  },
+  "problemFinder": {
+    "gesamt": 21,
+    "mitZiel": 6,
+    "ohneZiel": 15
+  },
+  "gate": {
+    "fehler": [],
+    "hinweise": [
+      {
+        "ort": "content/ratgeber/teppichboden/teppichboden-auf-fliesen.json",
+        "text": "10 offene Fachfrage(n) im Text - wartet auf das Verlegeteam"
+      },
+      {
+        "ort": "content/ratgeber/teppichboden/teppichboden-wirft-wellen.json",
+        "text": "7 offene Fachfrage(n) im Text - wartet auf das Verlegeteam"
+      },
+      {
+        "ort": "content/ratgeber/teppichboden/verschnitt-bei-teppichboden.json",
+        "text": "3 offene Fachfrage(n) im Text - wartet auf das Verlegeteam"
+      },
+      {
+        "ort": "content/ratgeber/untergrund/untergrund-pruefen-und-vorbereiten.json",
+        "text": "9 offene Fachfrage(n) im Text - wartet auf das Verlegeteam"
+      },
+      {
+        "ort": "content/ratgeber/vinylboden/klickvinyl-oder-klebevinyl.json",
+        "text": "8 offene Fachfrage(n) im Text - wartet auf das Verlegeteam"
+      }
+    ],
+    "zahlen": {
+      "artikel": 10,
+      "lexikon": 16,
+      "probleme": 21
+    }
+  },
+  "suchleistung": null,
+  "suchleistungHinweis": "GA4 und Search Console sind nicht angebunden. Klicks, Impressionen, CTR und Position koennen hier nicht gezeigt werden - siehe docs/bodenwissen/ANALYTICS.md, Abschnitt 6b."
+}

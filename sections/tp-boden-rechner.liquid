@@ -1,0 +1,383 @@
+{% doc %}
+  TP Boden-Rechner (Bodenwissen, docs/bodenwissen/ARCHITECTURE.md Abschnitt
+  4.4, "Rechner L5"): Teppichboden-Bedarfsrechner mit Rollenbreite. Nimmt
+  Raumbreite und Raumlaenge in cm entgegen, probiert beide Ausrichtungen
+  (Breite/Laenge getauscht) und zeigt je verfuegbarer Rollenbreite, ob der
+  Raum in eine Bahn passt, die benoetigte Rollenlaenge, die Bestellflaeche
+  und den Verschnitt.
+
+  Jede Rechenregel stammt aus genau zwei freigegebenen Artikeln - siehe
+  docs/bodenwissen/RECHNER.md fuer die Zuordnung im Einzelnen:
+  - content/ratgeber/teppichboden/teppichboden-richtig-ausmessen.html
+    (breiteste/laengste Stelle messen, 10-20 cm Zugabe auf die Laenge)
+  - content/ratgeber/teppichboden/rollenbreite-und-bahnen-planen.html
+    (Rollenbreiten vergleichen, Ausrichtung tauschen, die mit weniger
+    Verschnitt gewinnt; passt keine Ausrichtung, entsteht eine Naht)
+
+  Keine Preise. Kein Kleber-/Grundierungs-/Spachtelmengenrechner - der
+  Verbrauch haengt am Produkt des Herstellers, siehe RECHNER.md.
+
+  Die Rechenlogik liegt vollstaendig in assets/tp-boden-rechner.js (reine
+  Funktionen ohne DOM, getestet in qa/tests/boden-rechner.test.mjs). Ohne
+  JavaScript bleibt das Formular sichtbar; ein noscript-Hinweis verweist auf
+  den Ausmess-Artikel, denn ohne JS kann hier nicht gerechnet werden.
+
+  Der bestehende Produkt-Rechner (blocks/tp-rollware-rechner.liquid) bleibt
+  unangetastet - er rechnet Preise auf der Produktseite, dieser Rechner
+  plant nur Material im Ratgeber und nennt nie einen Betrag.
+{% enddoc %}
+
+{{ 'tp-boden-rechner.js' | asset_url | script_tag }}
+
+{%- liquid
+  assign tp_br_id = section.id | replace: '_', '' | downcase
+
+  assign tp_br_ueberschrift = section.settings.ueberschrift
+  assign tp_br_einleitung = section.settings.einleitung
+  assign tp_br_ziel_kollektion = section.settings.ziel_kollektion
+
+  # Rollenbreiten-Einstellung ("400, 500") zu einer sauberen Zahlenliste
+  # bereinigen - abgeschriebene Werte, keine geratenen. Ungueltige oder
+  # leere Eintraege fallen weg; bleibt gar nichts uebrig, greift die
+  # Vorgabe 400/500 aus dem Ratgeber-Artikel.
+  assign tp_br_breiten_roh = section.settings.rollenbreiten | default: '400, 500' | split: ','
+  assign tp_br_breiten_str = ''
+  for tp_br_b in tp_br_breiten_roh
+    assign tp_br_bn = tp_br_b | strip | times: 1
+    if tp_br_bn > 0
+      if tp_br_breiten_str == blank
+        assign tp_br_breiten_str = tp_br_bn
+      else
+        assign tp_br_breiten_str = tp_br_breiten_str | append: ',' | append: tp_br_bn
+      endif
+    endif
+  endfor
+  if tp_br_breiten_str == blank
+    assign tp_br_breiten_str = '400,500'
+  endif
+
+  # Artikel-URLs ueber die echten Blog-/Artikel-Objekte, nicht als fest
+  # verdrahteter Pfad - bleibt korrekt, falls sich die URL-Struktur aendert.
+  assign tp_br_artikel_ausmessen = blogs['ratgeber-teppichboden'].articles['teppichboden-richtig-ausmessen']
+  assign tp_br_artikel_bahnen = blogs['ratgeber-teppichboden'].articles['rollenbreite-und-bahnen-planen']
+  assign tp_br_url_ausmessen = tp_br_artikel_ausmessen.url | default: '/blogs/ratgeber-teppichboden/teppichboden-richtig-ausmessen'
+  assign tp_br_url_bahnen = tp_br_artikel_bahnen.url | default: '/blogs/ratgeber-teppichboden/rollenbreite-und-bahnen-planen'
+-%}
+
+<div class="tp-br" id="tp-br-{{ tp_br_id }}" data-tp-br {{ section.shopify_attributes }}>
+  <div class="tp-br__wrap">
+    <header class="tp-br__kopf">
+      {%- if tp_br_ueberschrift != blank -%}
+        <h2 class="tp-br__h2">{{ tp_br_ueberschrift | escape }}</h2>
+      {%- endif -%}
+      {%- if tp_br_einleitung != blank -%}
+        <div class="tp-br__intro">{{ tp_br_einleitung }}</div>
+      {%- endif -%}
+    </header>
+
+    <div class="tp-br__formular">
+      <div class="tp-br__feld">
+        <label class="tp-br__label" for="tp-br-breite-{{ tp_br_id }}">Raumbreite</label>
+        <p class="tp-br__hilfe">Breiteste Stelle, mit Zollstock oder Laser an mehreren Punkten gemessen.</p>
+        <div class="tp-br__input-wrap">
+          <input
+            type="text"
+            id="tp-br-breite-{{ tp_br_id }}"
+            class="tp-br__input"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="z. B. 350"
+            data-breite-input>
+          <span class="tp-br__einheit" aria-hidden="true">cm</span>
+        </div>
+      </div>
+
+      <div class="tp-br__feld">
+        <label class="tp-br__label" for="tp-br-laenge-{{ tp_br_id }}">Raumlänge</label>
+        <p class="tp-br__hilfe">Längste Stelle, bis in Türnischen hinein gemessen.</p>
+        <div class="tp-br__input-wrap">
+          <input
+            type="text"
+            id="tp-br-laenge-{{ tp_br_id }}"
+            class="tp-br__input"
+            inputmode="decimal"
+            autocomplete="off"
+            placeholder="z. B. 550"
+            data-laenge-input>
+          <span class="tp-br__einheit" aria-hidden="true">cm</span>
+        </div>
+      </div>
+
+      <fieldset class="tp-br__zugabe">
+        <legend class="tp-br__label">Zugabe für den Zuschnitt</legend>
+        <div class="tp-br__zugabe-optionen">
+          <span class="tp-br__chip">
+            <input type="radio" id="tp-br-zugabe-10-{{ tp_br_id }}" value="10" data-zugabe-radio>
+            <label for="tp-br-zugabe-10-{{ tp_br_id }}">10 cm</label>
+          </span>
+          <span class="tp-br__chip">
+            <input type="radio" id="tp-br-zugabe-20-{{ tp_br_id }}" value="20" checked data-zugabe-radio>
+            <label for="tp-br-zugabe-20-{{ tp_br_id }}">20 cm</label>
+          </span>
+        </div>
+        <p class="tp-br__hilfe">
+          Voreingestellt sind 20 cm - die sichere Seite der im Ratgeber genannten Spanne von 10 bis 20 cm
+          für den exakten Zuschnitt an der Wand, auch wenn diese nicht ganz gerade verläuft. Bei einer sehr
+          genauen Messung reichen auch 10 cm. Mehr dazu im Artikel
+          <a href="{{ tp_br_url_ausmessen }}">Teppichboden richtig ausmessen</a>.
+        </p>
+      </fieldset>
+
+      <button type="button" class="tp-br__button" data-berechnen>Bedarf berechnen</button>
+      <p class="tp-br__fehler" data-fehler role="alert" hidden></p>
+
+      <noscript>
+        <p class="tp-br__noscript">
+          Für die Berechnung wird JavaScript benötigt. Lesen Sie stattdessen im Artikel
+          <a href="{{ tp_br_url_ausmessen }}">Teppichboden richtig ausmessen</a>, wie Sie Breite, Länge und
+          Zugabe selbst ermitteln, und <a href="/pages/kontakt">kontaktieren Sie uns</a> mit Ihren Maßen -
+          wir rechnen es für Sie.
+        </p>
+      </noscript>
+    </div>
+
+    <div class="tp-br__ergebnis-region" data-ergebnis-region aria-live="polite">
+      <p class="tp-br__status" data-status hidden></p>
+      <ul class="tp-br__karten" data-ergebnisse hidden></ul>
+
+      {%- if tp_br_ziel_kollektion != blank -%}
+        <div class="tp-br__cta" data-cta-box hidden>
+          <a class="tp-br__cta-link" href="{{ tp_br_ziel_kollektion.url }}">Passende Teppichböden ansehen</a>
+        </div>
+      {%- endif -%}
+    </div>
+
+    <p class="tp-br__hinweis">
+      Dieses Ergebnis ist eine Planungshilfe. Das verbindliche Maß nimmt unser Verlegeservice vor Ort.
+    </p>
+
+    <details class="tp-br__mehr">
+      <summary>Wie rechnet dieser Rechner?</summary>
+      <p>
+        Er misst wie im Artikel <a href="{{ tp_br_url_ausmessen }}">Teppichboden richtig ausmessen</a>
+        beschrieben: die breiteste und die längste Stelle des Raums, plus Zugabe auf die Länge. Für jede
+        hinterlegte Rollenbreite prüft er beide Ausrichtungen - Breite und Länge dürfen getauscht werden -
+        und nimmt die mit weniger Verschnitt, genau wie im Artikel
+        <a href="{{ tp_br_url_bahnen }}">Rollenbreite wählen und Bahnen planen</a> erklärt. Passt keine
+        Ausrichtung in eine Bahn, nennt er die Zahl der Bahnen; wie die Naht am besten liegt, klärt eine
+        persönliche Beratung.
+      </p>
+    </details>
+  </div>
+
+  <script type="application/json" data-tp-br-config>
+    { "rollenbreiten": [{{ tp_br_breiten_str }}] }
+  </script>
+
+  <template data-karte-vorlage>
+    <li class="tp-br-karte" data-karte>
+      <div class="tp-br-karte__kopf">
+        <span class="tp-br-karte__breite" data-karte-breite></span>
+        <span class="tp-br-karte__badge" data-karte-empfehlung hidden>Empfehlung</span>
+      </div>
+      <p class="tp-br-karte__status" data-karte-status></p>
+      <dl class="tp-br-karte__werte" data-karte-werte hidden>
+        <div class="tp-br-karte__zeile">
+          <dt>Rollenlänge</dt>
+          <dd data-karte-laenge></dd>
+        </div>
+        <div class="tp-br-karte__zeile">
+          <dt>Bestellfläche</dt>
+          <dd data-karte-flaeche></dd>
+        </div>
+        <div class="tp-br-karte__zeile">
+          <dt>Verschnitt</dt>
+          <dd data-karte-verschnitt></dd>
+        </div>
+      </dl>
+      <p class="tp-br-karte__naht" data-karte-naht hidden>
+        Passt nicht in eine Bahn: Sie brauchen <strong data-naht-anzahl></strong> Bahnen, dazwischen entsteht
+        eine Naht. Mehr dazu im Artikel <a href="{{ tp_br_url_bahnen }}">Rollenbreite wählen und Bahnen
+        planen</a>.
+      </p>
+    </li>
+  </template>
+</div>
+
+{% stylesheet %}
+  .tp-br {
+    --tp-br-ink: var(--color-foreground, #15171a);
+    --tp-br-muted: rgb(var(--color-foreground-rgb, 34 34 34) / 0.62);
+    --tp-br-line: rgb(var(--color-foreground-rgb, 34 34 34) / 0.16);
+    --tp-br-surface: var(--color-background, #fcfcfb);
+    --tp-br-material: rgb(var(--color-foreground-rgb, 34 34 34) / 0.08);
+    --tp-br-accent: var(--color-primary, #c8891e);
+    padding: 24px 0 var(--tp-sec, 56px);
+    color: var(--tp-br-ink);
+  }
+  .tp-br *, .tp-br *::before, .tp-br *::after { box-sizing: border-box; }
+  .tp-br__wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+  .tp-br__kopf { margin-bottom: 20px; }
+  .tp-br__h2 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 32px); font-weight: 700; line-height: 1.2; }
+  .tp-br__intro { font-size: 16px; line-height: 1.55; color: var(--tp-br-muted); }
+  .tp-br__intro :first-child { margin-top: 0; }
+  .tp-br__intro :last-child { margin-bottom: 0; }
+
+  .tp-br__formular { display: flex; flex-direction: column; gap: 18px; }
+  .tp-br__feld { display: flex; flex-direction: column; gap: 6px; }
+  .tp-br__label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--tp-br-ink);
+  }
+  .tp-br__hilfe { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--tp-br-muted); }
+  .tp-br__hilfe a { color: inherit; text-decoration-thickness: 1px; }
+
+  /* Mobil zuerst: volle Breite, grosses Eingabefeld, 16px verhindert
+     Autozoom in iOS-Safari beim Fokus. */
+  .tp-br__input-wrap { position: relative; max-width: 100%; }
+  .tp-br__input {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 48px 12px 14px;
+    border: 1px solid var(--tp-br-line);
+    border-radius: 8px;
+    background: var(--tp-br-surface);
+    color: var(--tp-br-ink);
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tp-br__input:focus-visible { outline: 2px solid var(--tp-br-ink); outline-offset: 2px; }
+  .tp-br__einheit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--tp-br-muted);
+    pointer-events: none;
+  }
+
+  .tp-br__zugabe { border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .tp-br__zugabe-optionen { display: flex; gap: 10px; }
+  .tp-br__chip input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+  .tp-br__chip label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    min-width: 88px;
+    padding: 10px 18px;
+    border: 1px solid var(--tp-br-line);
+    border-radius: 8px;
+    background: var(--tp-br-surface);
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+  }
+  .tp-br__chip input:checked + label {
+    background: var(--tp-br-ink);
+    border-color: var(--tp-br-ink);
+    color: var(--tp-br-surface);
+  }
+  .tp-br__chip input:focus-visible + label { outline: 2px solid var(--tp-br-ink); outline-offset: 2px; }
+
+  .tp-br__button {
+    display: block;
+    width: 100%;
+    min-height: 54px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    background: var(--tp-br-ink);
+    color: var(--tp-br-surface);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .tp-br__button:hover { background: var(--tp-br-accent); }
+  .tp-br__button:focus-visible { outline: 2px solid var(--tp-br-ink); outline-offset: 3px; }
+
+  .tp-br__fehler { margin: 0; padding: 10px 14px; border-radius: 8px; background: rgb(166 32 32 / 0.08); color: #a62020; font-size: 14px; line-height: 1.45; }
+  .tp-br__noscript { margin: 0; padding: 12px 14px; border: 1px solid var(--tp-br-line); border-radius: 8px; background: var(--tp-br-material); font-size: 14px; line-height: 1.5; }
+
+  .tp-br__ergebnis-region { margin-top: 22px; }
+  .tp-br__status { margin: 0 0 14px; font-size: 14px; color: var(--tp-br-muted); }
+
+  /* Ergebnisse als Karten, nicht als Tabelle - auch auf dem Desktop bleibt
+     die Kartenform, nur die Spaltenzahl waechst. */
+  .tp-br__karten { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 640px) {
+    .tp-br__karten { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  }
+
+  .tp-br-karte {
+    padding: 16px;
+    border: 1px solid var(--tp-br-line);
+    border-radius: 12px;
+    background: var(--tp-br-surface);
+  }
+  .tp-br-karte__kopf { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .tp-br-karte__breite { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .tp-br-karte__badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--tp-br-ink);
+    color: var(--tp-br-surface);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .tp-br-karte__status { margin: 0 0 10px; font-size: 14px; line-height: 1.45; }
+  .tp-br-karte__werte { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  .tp-br-karte__zeile { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .tp-br-karte__zeile dt { font-size: 12.5px; color: var(--tp-br-muted); }
+  .tp-br-karte__zeile dd { margin: 0; font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .tp-br-karte__naht { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--tp-br-muted); }
+  .tp-br-karte__naht a { color: inherit; }
+
+  .tp-br__cta { margin-top: 18px; }
+  .tp-br__cta-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 20px;
+    border-radius: var(--style-border-radius-buttons-primary, 8px);
+    border: 1px solid var(--tp-br-ink);
+    color: var(--tp-br-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .tp-br__cta-link:hover { background: var(--tp-br-material); }
+
+  .tp-br__hinweis { margin: 18px 0 0; font-size: 13px; line-height: 1.5; color: var(--tp-br-muted); }
+  .tp-br__mehr { margin-top: 14px; font-size: 14px; }
+  .tp-br__mehr summary { cursor: pointer; font-weight: 600; color: var(--tp-br-ink); }
+  .tp-br__mehr p { margin: 8px 0 0; line-height: 1.55; color: var(--tp-br-muted); }
+  .tp-br__mehr a { color: inherit; }
+
+  .tp-br [hidden] { display: none !important; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Boden-Rechner",
+  "tag": "section",
+  "class": "tp-br-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "text", "id": "ueberschrift", "label": "Überschrift", "default": "Wie viel Teppichboden brauche ich?" },
+    { "type": "richtext", "id": "einleitung", "label": "Einleitung", "default": "<p>Raumbreite und Raumlänge eingeben - der Rechner zeigt, welche Rollenbreite passt, wie viel Sie bestellen und wie viel Verschnitt anfällt.</p>" },
+    { "type": "text", "id": "rollenbreiten", "label": "Rollenbreiten in cm", "default": "400, 500", "info": "Kommagetrennt, z. B. 400, 500. Nur Breiten angeben, die es im Shop tatsächlich gibt." },
+    { "type": "collection", "id": "ziel_kollektion", "label": "Ziel-Kollektion für den Knopf \"Passende Teppichböden ansehen\"" }
+  ],
+  "presets": [ { "name": "TP Boden-Rechner" } ]
+}
+{% endschema %}

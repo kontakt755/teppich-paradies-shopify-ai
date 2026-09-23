@@ -1,10 +1,59 @@
 {
+  "id": "RAT-TB-001",
   "handle": "welcher-teppichboden-fuer-welchen-raum",
   "title": "Welcher Teppichboden passt zu welchem Raum?",
   "blog": "ratgeber-teppichboden",
   "tags": [
     "Auswahl & Kaufberatung"
   ],
+  "cluster": "teppichboden/auswahl",
+  "parent": "ratgeber-teppichboden",
+  "intent": "kaufberatung",
+  "frage": "Welcher Teppichboden passt zu welchem Raum?",
+  "begriff": "welcher teppichboden",
+  "nebenfragen": [
+    "Schlinge oder Velours?",
+    "Welcher Teppichboden fuer Schlafzimmer, Flur, Arbeitszimmer?",
+    "Was bedeutet die Nutzungsklasse?"
+  ],
+  "status": "veroeffentlicht",
+  "verwandte": [
+    "teppichboden-richtig-ausmessen"
+  ],
+  "naechster_schritt": "teppichboden-richtig-ausmessen",
+  "lexikon": [
+    "florhoehe",
+    "fussbodenheizung",
+    "nadelvlies",
+    "nutzungsklasse",
+    "rollenbreite",
+    "ruecken",
+    "schlinge",
+    "velours"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Technische Daten der Teppichboeden im Shop",
+      "url": "/collections/teppichboden"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Schlinge und Velours nebeneinander, Nahaufnahme",
+      "status": "offen"
+    },
+    {
+      "zweck": "Teppichboden im Flur mit Sauberlaufzone",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 12,
+    "naechste": "2027-09-21",
+    "grund": "Sortiment und Macharten aendern sich mit dem Angebot"
+  },
+  "expert_input": [],
   "excerpt": "Velours, Schlinge, Hochflor, Kurzflor, Wolle oder Nadelvlies: welche Machart zu Schlafzimmer, Wohnzimmer, Kinderzimmer, Flur, Arbeitszimmer und Gewerbe passt.",
   "seo": {
     "title": "Welcher Teppichboden passt zu welchem Raum?",
@@ -25,6 +74,5 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
-  },
-  "status": "freigegeben"
+  }
 }

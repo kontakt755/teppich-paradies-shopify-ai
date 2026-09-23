@@ -1,0 +1,11 @@
+{
+  "handle": "teppich-geruch",
+  "symptom": "Der Teppich riecht unangenehm",
+  "belag": "Teppich",
+  "ursachen": [
+    "Ohne Ansehen des Teppichs lässt sich die Ursache nicht sicher bestimmen."
+  ],
+  "artikel": "",
+  "profi_noetig": true,
+  "status": "idee"
+}
