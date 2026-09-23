@@ -66,9 +66,15 @@ try {
 function buildSummary(data) {
   const { status, summary, findings } = data;
 
-  // Separate by severity
-  const errors = findings.filter(f => f.severity === 'ERROR');
-  const warnings = findings.filter(f => f.severity === 'WARNING');
+  // Die QA-Werkzeuge schreiben ERROR, WARN, PASS und FAIL - niemals WARNING.
+  // Bis 2026-09-23 stand hier 'WARNING': bei einem Lauf ohne ERROR blieb die
+  // Liste leer, der Abschnitt "First Relevant Assertion" fiel weg und uebrig
+  // blieben Zaehler. Genau das sollte der Filter verhindern (SHP-003).
+  const SCHWER = new Set(['ERROR', 'FAIL']);
+  const MITTEL = new Set(['WARN', 'WARNING']);
+
+  const errors = findings.filter(f => SCHWER.has(f.severity));
+  const warnings = findings.filter(f => MITTEL.has(f.severity));
 
   // Get first relevant finding
   const firstFinding = errors[0] || warnings[0];
