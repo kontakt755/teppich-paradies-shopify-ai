@@ -80,7 +80,7 @@ Der alte Weg (Node-Script mit Token in .env.local) funktioniert nicht:
 
 **Lösung seit 2026-09-04: Pure-Claude-Sync via MCP**
 ```bash
-npm run sync:grosshandel:mcp
+npm run sync:grosshandel
 ```
 
 Das startet einen Orchestrator, der mich (Claude) auffordert:
