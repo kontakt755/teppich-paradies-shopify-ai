@@ -24,7 +24,7 @@ const varianteVoll = {
   },
 };
 
-test('einkauf.* und custom.* werden gelesen, Grosshaendler-ID aus lieferant_a', () => {
+test('einkauf.* und custom.* werden gelesen, Grosshaendler-ID aus einkauf.artikelnummer', () => {
   const r = resolveLineItem({
     lineItem: { id: 'li1', sku: 'CVEXPGR04_333', quantity: 1102, customAttributes: [
       { key: 'Art', value: 'Raummaß' }, { key: 'Ihre Breite', value: '365 cm' }, { key: 'Aus Rolle', value: '400 cm' },
@@ -40,8 +40,9 @@ test('einkauf.* und custom.* werden gelesen, Grosshaendler-ID aus lieferant_a', 
   assert.equal(r.produkt.rollenbreite, 4);
   assert.equal(r.produkt.qm_pro_paket, UNGEKLAERT);
   assert.equal(r.produkt.preis_pro_001_qm, true);
-  assert.equal(r.grosshaendlerId, 'A-ART-333');
-  assert.equal(r.grosshaendlerIdQuelle, 'lieferant.lieferant_a_artikelnummer');
+  // Die Variante traegt beides; das gepflegte Einkaufsfeld geht vor.
+  assert.equal(r.grosshaendlerId, 'CVEXPGR04_333');
+  assert.equal(r.grosshaendlerIdQuelle, 'einkauf.artikelnummer');
   assert.equal(r.eingaben.ausRolleCm, 400);
   assert.equal(r.eingaben.gewuenschteLaengeCm, 302);
   assert.equal(r.eingaben.ihreBreiteCm, 365);
@@ -52,8 +53,9 @@ test('einkauf.* und custom.* werden gelesen, Grosshaendler-ID aus lieferant_a', 
   assert.equal(r.istMuster, false);
 });
 
-test('Grosshaendler-ID-Kaskade: A -> B -> grosshandel.sku -> Muster-SKU -> UNGEKLAERT', () => {
-  assert.equal(grosshaendlerId({ variantMetafelder: { lieferant: { lieferant_a_artikelnummer: 'A1' } } }).id, 'A1');
+test('Grosshaendler-ID-Kaskade: einkauf -> A -> B -> grosshandel.sku -> Muster-SKU -> UNGEKLAERT', () => {
+  assert.equal(grosshaendlerId({ variantMetafelder: { einkauf: { artikelnummer: 'E1' }, lieferant: { lieferant_a_artikelnummer: 'A1' } } }).id, 'E1');
+  assert.equal(grosshaendlerId({ variantMetafelder: { einkauf: { artikelnummer: '' }, lieferant: { lieferant_a_artikelnummer: 'A1' } } }).id, 'A1');
   assert.equal(grosshaendlerId({ variantMetafelder: { lieferant: { lieferant_a_artikelnummer: '', lieferant_b_artikelnummer: 'B1' } } }).id, 'B1');
   assert.equal(grosshaendlerId({ variantMetafelder: {}, produktMetafelder: { grosshandel: { sku: 'GH' } } }).id, 'GH');
   assert.equal(grosshaendlerId({ variantMetafelder: {}, produktMetafelder: {}, sku: 'M-CVEXPGR04_333' }).id, 'CVEXPGR04_333');
