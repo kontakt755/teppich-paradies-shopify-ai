@@ -1,21 +1,50 @@
 # Control Center – Zielarchitektur und Migrationsstrategie
 
-## 1. Leitentscheidung: Eine Wahrheit, zwei Betriebsarten
+## Starten (Mitarbeiter/Admins)
+
+```
+npm run dashboard
+```
+
+öffnet den lokalen Server unter `http://localhost:8001`. Voraussetzung: `gh auth login` einmalig auf dem
+Mac. Das Control Center steht **bewusst nicht im Netz** – es läuft nur, solange dieser Befehl auf einem
+Mac aktiv ist, und ist an `127.0.0.1` gebunden (kein Zugriff von anderen Geräten im selben Netz).
+
+## 1. Leitentscheidung: Eine Wahrheit, nur noch lokaler Betrieb
 
 **GitHub Issues bleiben die führende Aufgabenquelle.** Das Control Center legt kein zweites Aufgabensystem an.
 Alles, was den Zustand einer Aufgabe beschreibt (Status, Priorität, Owner, Blocker, Freigabe, Frist,
 Akzeptanzkriterien, nächster Schritt), lebt als Label, Assignee oder strukturiertes Body-Feld im Issue.
 
-Das Control Center (`docs/ai-dashboard/`) läuft in zwei Betriebsarten mit demselben Frontend:
+**Seit 2026-09-23 (Inhaberentscheidung) läuft das Control Center nur noch lokal.** Nur Inhaber, Admins
+und Mitarbeiter mit Mac-Zugang und `gh auth` sehen Aufgabendaten; keine öffentliche Auslieferung mehr.
+Der frühere „statische" Betrieb über GitHub Pages ist abgeschaltet (siehe Abschnitt 1b).
 
 | Betriebsart | Wie | Datenstand | Aktionen |
 |---|---|---|---|
-| **statisch** (GitHub Pages, PWA am Handy) | liest `issues.json` | vom Actions-Workflow erzeugt | read-only; jede Aktion verlinkt tief in GitHub |
-| **lokal** (`npm run dashboard` auf dem Mac) | Node-Server, `/api/*` | frisch aus `gh` + lokale KI-Laufdaten | validierte Statuswechsel, Kommentare, Freigaben über `gh` (Keychain-Auth) |
+| **lokal** (`npm run dashboard` auf dem Mac, `http://localhost:8001`) | Node-Server, `/api/*` | frisch aus `gh` + lokale KI-Laufdaten | validierte Statuswechsel, Kommentare, Freigaben über `gh` (Keychain-Auth) |
+| ohne lokalen Server (z. B. `index.html` direkt geöffnet oder alter Pages-Link) | `GET /api/capabilities` liefert nichts (404) | keiner | keine Daten sichtbar; Hinweis „Nur lokal im Betrieb – `npm run dashboard`" |
 
-Das Frontend erkennt die Betriebsart über `GET /api/capabilities` (404 → statisch). Aktionen werden nie
-nur ausgeblendet: der Server prüft Übergänge serverseitig (`lib/model.mjs` ist dieselbe Datei in Browser
-und Server).
+Das Frontend erkennt die Betriebsart über `GET /api/capabilities` (404 → nicht lokal). Ohne lokalen Server
+lädt `app.js` bewusst kein `issues.json` und zeigt keine Aufgabendaten, auch wenn die Datei technisch
+erreichbar wäre. Aktionen werden im lokalen Betrieb nie nur ausgeblendet: der Server prüft Übergänge
+serverseitig (`lib/model.mjs` ist dieselbe Datei in Browser und Server).
+
+## 1b. Öffentlichkeit abgeschaltet (2026-09-23)
+
+GitHub Pages für dieses Repository sollte per API deaktiviert werden (`DELETE
+/repos/kontakt755/teppich-paradies-shopify-ai/pages`); das schlägt mit dem verfügbaren
+GitHub-Token fehl (404), weil das Konto keine Admin-Rechte auf dem Repo hat
+(`permissions.admin: false`) – die Pages-API verlangt Admin-Rechte. **Das Abschalten von
+GitHub Pages selbst (Settings → Pages → Source: „None") braucht daher weiterhin ein
+Admin-Konto oder einen Admin-Token.** Bis dahin bleibt `https://kontakt755.github.io/teppich-paradies-shopify-ai/ai-dashboard/`
+technisch erreichbar; als Kompensation zeigt `app.js` dort keine Aufgabendaten mehr (siehe oben) –
+das entfernt die Sichtbarkeit, nicht die URL.
+
+`dashboard-data.yml` schreibt `issues.json` weiterhin nach `main`, weil die Datei die Datenquelle für
+den lokalen Betrieb bleibt (der lokale Server kann sie auch selbst per `npm run dashboard`/`gh` frisch
+erzeugen). Es findet dadurch **keine zusätzliche Veröffentlichung** mehr statt – das Committen war schon
+vorher notwendig und ist von der Pages-Frage unabhängig.
 
 ## 2. Statusmodell und Mapping
 
