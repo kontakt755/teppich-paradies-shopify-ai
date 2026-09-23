@@ -21,10 +21,10 @@ test('createAuth: ohne Passwort ist required=false, jede Sitzungspruefung negati
 });
 
 test('createAuth: richtiges Passwort erzeugt gueltige Sitzung, falsches nicht', () => {
-  const auth = createAuth({ password: 'geheim123' });
+  const auth = createAuth({ password: 'test-passwort' });
   assert.equal(auth.required, true);
   assert.equal(auth.verifyPassword('falsch'), false);
-  assert.equal(auth.verifyPassword('geheim123'), true);
+  assert.equal(auth.verifyPassword('test-passwort'), true);
   const sid = auth.createSession();
   assert.equal(auth.validSession(sid), true);
   auth.destroySession(sid);
@@ -32,7 +32,7 @@ test('createAuth: richtiges Passwort erzeugt gueltige Sitzung, falsches nicht', 
 });
 
 test('createAuth: Ratenbegrenzung sperrt nach mehreren Fehlversuchen je IP', () => {
-  const auth = createAuth({ password: 'geheim123' });
+  const auth = createAuth({ password: 'test-passwort' });
   const ip = '192.168.2.50';
   assert.equal(auth.isLocked(ip), false);
   for (let i = 0; i < 5; i += 1) auth.registerFailure(ip);
@@ -55,8 +55,8 @@ test('passwordFilePath liegt unter TP_PRIVAT_DIR, nie im Repository', () => {
 });
 
 test('parseCookies liest das Sitzungscookie aus dem Header', () => {
-  const cookies = parseCookies({ headers: { cookie: `a=b; ${SESSION_COOKIE}=abc123; c=d` } });
-  assert.equal(cookies[SESSION_COOKIE], 'abc123');
+  const cookies = parseCookies({ headers: { cookie: `a=b; ${SESSION_COOKIE}=test-sitzung-wert; c=d` } });
+  assert.equal(cookies[SESSION_COOKIE], 'test-sitzung-wert');
   assert.deepEqual(parseCookies({ headers: {} }), {});
 });
 
