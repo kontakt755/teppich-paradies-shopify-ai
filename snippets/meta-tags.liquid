@@ -152,7 +152,7 @@
 >
 <meta
   property="og:title"
-  content="{{ og_title | escape }}"
+  content="{{ og_title | escape_once }}"
 >
 <meta
   property="og:type"
@@ -160,7 +160,7 @@
 >
 <meta
   property="og:description"
-  content="{{ og_description | escape }}"
+  content="{{ og_description | escape_once }}"
 >
 
 {%- liquid
@@ -230,11 +230,11 @@
 >
 <meta
   name="twitter:title"
-  content="{{ og_title | escape }}"
+  content="{{ og_title | escape_once }}"
 >
 <meta
   name="twitter:description"
-  content="{{ og_description | escape }}"
+  content="{{ og_description | escape_once }}"
 >
 
 <title>
@@ -292,9 +292,15 @@
 {%- endif %}
 
 {% if page_description %}
+  {%- comment -%}
+    escape_once statt escape: ohne gepflegte SEO-Description liefert Shopify
+    den Produkttext, und der bringt schon Entities mit (&amp;). escape machte
+    daraus &amp;amp;, in der Suchvorschau als "&amp;" zu lesen - gemessen am
+    2026-09-23 an der Sylvara-655-Familie (4 Produkte ohne SEO-Description).
+  {%- endcomment -%}
   <meta
     name="description"
-    content="{{ page_description | escape }}"
+    content="{{ page_description | escape_once }}"
   >
 {%- elsif request.page_type == 'collection' and collection.handle == 'all' -%}
   {%- comment -%}
