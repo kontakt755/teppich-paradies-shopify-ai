@@ -15,7 +15,7 @@
 - Produkt: Piumera Teppichboden 400cm 500cm
 - Vendor: TeppichParadies
 - Produkttyp: Teppichboden
-- Varianten: 28; mit SKU: 28; mit GTIN/EAN: 0
+- Varianten: 42; mit SKU: 28; mit GTIN/EAN: 0
 - Hinweis: GTIN/EAN öffentlich nicht gepflegt
 - Hinweis: Rollenware: Varianten-/Rollenbreitenzuordnung im Feed manuell gegenprüfen
 
@@ -30,17 +30,6 @@
 - Hinweis: GTIN/EAN öffentlich nicht gepflegt
 - Hinweis: Rollenware: Varianten-/Rollenbreitenzuordnung im Feed manuell gegenprüfen
 
-### Klickvinyl PDP
-
-- URL: https://www.teppich-paradies.net/products/marlow-eiche-nordisch-klickvinyl-7mm
-- Typ: package
-- Produkt: Marlow Eiche Nordisch – Klickvinyl 7mm
-- Vendor: Marlow
-- Produkttyp: Klickvinyl
-- Varianten: 1; mit SKU: 1; mit GTIN/EAN: 0
-- Hinweis: GTIN/EAN öffentlich nicht gepflegt
-- Hinweis: Paketware: Feed-/Landingpage-Abgleich muss Paketpreis vs. sichtbaren €/m²-Preis berücksichtigen
-
 ### Klebevinyl PDP
 
 - URL: https://www.teppich-paradies.net/products/alvora-eiche-bernstein-klebevinyl-2-5mm
@@ -48,14 +37,21 @@
 - Produkt: Alvora Eiche Bernstein – Klebevinyl 2,5mm
 - Vendor: Alvora
 - Produkttyp: Klebevinyl
-- Varianten: 1; mit SKU: 0; mit GTIN/EAN: 0
-- Hinweis: SKU öffentlich nicht gepflegt
+- Varianten: 1; mit SKU: 1; mit GTIN/EAN: 0
 - Hinweis: GTIN/EAN öffentlich nicht gepflegt
 - Hinweis: Paketware: Feed-/Landingpage-Abgleich muss Paketpreis vs. sichtbaren €/m²-Preis berücksichtigen
 
 ## BLOCKER
 
-- Keine
+### Klickvinyl PDP
+
+- URL: https://www.teppich-paradies.net/products/marlow-eiche-nordisch-klickvinyl-7mm
+- Typ: package
+- Produkt: nicht lesbar
+- Vendor: fehlt
+- Produkttyp: fehlt
+- Varianten: —; mit SKU: —; mit GTIN/EAN: —
+- Hinweis: Produktdaten nicht öffentlich lesbar: HTTP 404
 
 ## Nächster manueller Schritt
 
