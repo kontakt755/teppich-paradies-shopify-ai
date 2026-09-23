@@ -1,0 +1,245 @@
+{%- comment -%}
+  TP Bodenprobleme (Template page.bodenwissen-probleme, Seite /pages/bodenprobleme):
+  Problem-Finder aus docs/bodenwissen/ARCHITECTURE.md, Abschnitt 4.3, und
+  CONTENT_MODEL.md, Abschnitt 6. Mehr dazu in docs/bodenwissen/PROBLEM_FINDER.md.
+
+  Quelle ist das Metaobjekt tp_bodenproblem (shop.metaobjects.tp_bodenproblem.values),
+  gepflegt im Shopify-Admin unter Inhalt > Metaobjekte. Die Quelltexte dazu
+  liegen in content/probleme/*.json; scripts/probleme-payload.mjs baut daraus
+  die metaobjectCreate-Eingaben und sperrt jeden Eintrag ohne freigegebenen
+  Status oder ohne echten Ziel-Artikel.
+
+  DIE ENTSCHEIDENDE REGEL (nicht aufweichen): Ein Problem erscheint hier nur,
+  wenn sein Feld "artikel" auf einen Handle zeigt, der sich zu einem echten,
+  veroeffentlichten Ratgeber-Artikel aufloesen laesst. Loest er sich nicht
+  auf, wird der Eintrag STILL uebersprungen - nie als Sackgasse und nie mit
+  einer erfundenen Antwort gerendert. Das ist die zweite Haelfte der Sperre;
+  die erste Haelfte steht im Payload-Skript.
+
+  Grundraster: immer als vollstaendige, nach Belag gruppierte Liste vorhanden
+  und ohne JavaScript crawlbar. Das Filtern nach Belag ist eine reine
+  JavaScript-Zugabe oben drauf - ohne JavaScript bleiben alle Gruppen
+  sichtbar, die Filterknoepfe tun dann einfach nichts.
+
+  Wie sections/tp-arbeiten-galerie.liquid und tp-vorher-nachher.liquid hebt
+  paginate die 50er-Grenze von shop.metaobjects.<typ>.values auf 250 an;
+  sort macht daraus ein echtes, indizierbares Array.
+
+  Aufloesung des Ziel-Artikels: das Feld "artikel" im Metaobjekt ist nur ein
+  Handle (Text), keine echte Artikel-Referenz - Shopify kennt keinen
+  blogunabhaengigen Verweis auf einen Artikel. Deshalb wird ueber alle Blogs
+  gesucht. blog.articles ist dabei NICHT paginiert: erst ab mehr als 50
+  Artikeln in einem einzelnen Blog wuerde ein Treffer uebersehen - bei
+  aktuell hoechstens 5 Artikeln je Bereich unkritisch. Waechst ein Bereich
+  ueber 50 Artikel, hier paginate ergaenzen.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- paginate shop.metaobjects.tp_bodenproblem.values by 250 -%}
+  {%- assign bp_alle = shop.metaobjects.tp_bodenproblem.values | sort: 'handle' -%}
+{%- endpaginate -%}
+
+{%- liquid
+  assign bp_reihenfolge = 'Teppichboden,Teppich,Vinyl,PVC' | split: ','
+  assign bp_verlege_link = section.settings.verlege_link | default: '/pages/liefer-verlegeservice'
+  assign bp_gruppen_zahl = 0
+  assign bp_gesamt_zahl = 0
+  assign bp_gruppen_marker = ','
+-%}
+
+<div class="tp-bp" id="tp-bp-{{ section.id }}">
+  <div class="tp-s-wrap">
+    {%- render 'tp-ratgeber-breadcrumb' -%}
+
+    <header class="tp-bp__kopf">
+      <h1 class="tp-bp__h1">{{ page.title | escape }}</h1>
+      {%- if page.content != blank -%}
+        <div class="tp-bp__intro">{{ page.content }}</div>
+      {%- endif -%}
+    </header>
+
+    {%- comment -%}
+      Gruppen-HTML einmal bauen und dabei zaehlen: nur Belaege mit mindestens
+      einem sichtbaren Eintrag bekommen eine Ueberschrift, ein Raster und
+      einen Filterknopf. Ein Eintrag ohne artikel-Wert oder ohne aufloesbares
+      Ziel wird hier uebersprungen, nicht nur optisch ausgeblendet.
+    {%- endcomment -%}
+    {%- capture bp_gruppen_html -%}
+      {%- for bp_belag in bp_reihenfolge -%}
+        {%- liquid
+          assign bp_slug = bp_belag | handleize
+          assign bp_zahl = 0
+        -%}
+        {%- capture bp_eintraege_html -%}
+          {%- for bp_eintrag in bp_alle -%}
+            {%- if bp_eintrag.belag.value != bp_belag -%}{%- continue -%}{%- endif -%}
+            {%- if bp_eintrag.artikel.value == blank -%}{%- continue -%}{%- endif -%}
+            {%- liquid
+              assign bp_ziel = blank
+              for bp_blog in blogs
+                assign bp_kandidat = bp_blog.articles | where: 'handle', bp_eintrag.artikel.value | first
+                if bp_kandidat != blank
+                  assign bp_ziel = bp_kandidat
+                  break
+                endif
+              endfor
+            -%}
+            {%- comment -%} Ohne aufloesbares Ziel keine Karte - die entscheidende Regel von oben. {%- endcomment -%}
+            {%- if bp_ziel == blank -%}{%- continue -%}{%- endif -%}
+            {%- assign bp_zahl = bp_zahl | plus: 1 -%}
+            <li class="tp-bp__eintrag">
+              <h3 class="tp-bp__symptom">{{ bp_eintrag.symptom.value | escape }}</h3>
+              {%- if bp_eintrag.ursachen.value.size > 0 -%}
+                <p class="tp-bp__ursachen-label">{{ section.settings.ursachen_label | default: 'Mögliche Ursachen' | escape }}</p>
+                <ul class="tp-bp__ursachen">
+                  {%- for bp_ursache in bp_eintrag.ursachen.value -%}
+                    <li>{{ bp_ursache | escape }}</li>
+                  {%- endfor -%}
+                </ul>
+              {%- endif -%}
+              <a class="tp-bp__link" href="{{ bp_ziel.url }}">{{ section.settings.link_praefix | default: 'Ratgeber:' | escape }} {{ bp_ziel.title | escape }}</a>
+              {%- if bp_eintrag.profi_noetig.value -%}
+                <p class="tp-bp__profi">
+                  <span>{{ section.settings.profi_text | default: 'Das gehört in Fachhände.' | escape }}</span>
+                  <a href="{{ bp_verlege_link }}">{{ section.settings.profi_cta | default: 'Verlegeservice anfragen' | escape }}</a>
+                </p>
+              {%- endif -%}
+            </li>
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- if bp_zahl > 0 -%}
+          {%- liquid
+            assign bp_gruppen_zahl = bp_gruppen_zahl | plus: 1
+            assign bp_gesamt_zahl = bp_gesamt_zahl | plus: bp_zahl
+            assign bp_gruppen_marker = bp_gruppen_marker | append: bp_slug | append: ','
+          -%}
+          <section class="tp-bp__gruppe" id="belag-{{ bp_slug }}" data-tp-bp-gruppe="{{ bp_slug }}" aria-labelledby="belag-{{ bp_slug }}-titel">
+            <h2 class="tp-bp__gruppe-titel" id="belag-{{ bp_slug }}-titel">{{ bp_belag | escape }}</h2>
+            <ul class="tp-bp__liste">{{ bp_eintraege_html }}</ul>
+          </section>
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+
+    {%- if bp_gesamt_zahl == 0 -%}
+      <p class="tp-bp__leer">{{ section.settings.leer_text | default: 'Hier entstehen gerade die ersten Einträge. Schauen Sie bald wieder vorbei.' | escape }}</p>
+      {%- if request.design_mode -%}
+        <p class="tp-bp__leer">
+          <b>Problem-Finder:</b> Noch kein freigegebener Eintrag mit aufloesbarem Ziel-Artikel. Shopify-Admin &rarr;
+          Inhalt &rarr; Metaobjekte &rarr; „Bodenproblem (TP)“. Quelltexte und Freigabe: content/probleme/*.json und
+          scripts/probleme-payload.mjs.
+        </p>
+      {%- endif -%}
+    {%- else -%}
+      {%- if bp_gruppen_zahl > 1 -%}
+        <div class="tp-bp__filter" role="group" aria-label="{{ section.settings.filter_label | default: 'Nach Belag filtern' | escape }}" data-tp-bp-filter>
+          <button type="button" class="tp-bp__chip is-aktiv" data-tp-bp-chip="alle" aria-pressed="true">
+            {{ section.settings.alle_label | default: 'Alle' | escape }} <span class="tp-bp__zahl">{{ bp_gesamt_zahl }}</span>
+          </button>
+          {%- for bp_belag in bp_reihenfolge -%}
+            {%- liquid
+              assign bp_slug = bp_belag | handleize
+              assign bp_probe = ',' | append: bp_slug | append: ','
+            -%}
+            {%- if bp_gruppen_marker contains bp_probe -%}
+              <button type="button" class="tp-bp__chip" data-tp-bp-chip="{{ bp_slug }}" aria-pressed="false">{{ bp_belag | escape }}</button>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      {{ bp_gruppen_html }}
+    {%- endif -%}
+  </div>
+</div>
+
+{%- if bp_gesamt_zahl > 0 and bp_gruppen_zahl > 1 -%}
+  {%- comment -%} Reine Zugabe: ohne dieses Skript bleiben Filterknoepfe wirkungslos, die volle Liste bleibt sichtbar. {%- endcomment -%}
+  <script>
+    (function () {
+      var wurzel = document.getElementById({{ 'tp-bp-' | append: section.id | json }});
+      if (!wurzel) return;
+      var filter = wurzel.querySelector('[data-tp-bp-filter]');
+      if (!filter) return;
+      var gruppen = wurzel.querySelectorAll('[data-tp-bp-gruppe]');
+      filter.addEventListener('click', function (ereignis) {
+        var knopf = ereignis.target.closest('[data-tp-bp-chip]');
+        if (!knopf) return;
+        var ziel = knopf.getAttribute('data-tp-bp-chip');
+        filter.querySelectorAll('[data-tp-bp-chip]').forEach(function (b) {
+          var aktiv = b === knopf;
+          b.classList.toggle('is-aktiv', aktiv);
+          b.setAttribute('aria-pressed', aktiv ? 'true' : 'false');
+        });
+        gruppen.forEach(function (gruppe) {
+          gruppe.hidden = ziel !== 'alle' && gruppe.getAttribute('data-tp-bp-gruppe') !== ziel;
+        });
+      });
+    })();
+  </script>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-bp { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
+  .tp-bp__kopf { margin: 8px 0 28px; max-width: 760px; }
+  .tp-bp__h1 { margin: 0 0 12px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-bp__intro { font-size: 17px; line-height: 1.65; }
+  .tp-bp__intro p { margin: 0 0 10px; }
+  .tp-bp__intro a { color: var(--tp-red-dark, #96262f); text-underline-offset: 3px; }
+  .tp-bp__leer { margin: 0 0 16px; padding: 24px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r, 10px); font-size: 17px; }
+
+  .tp-bp__filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .tp-bp__chip { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--tp-line, #e6e0d8); background: #fff; color: var(--tp-ink, #1d1a17); font: inherit; font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .tp-bp__chip:hover { border-color: var(--tp-line-2, #d5cec4); background: var(--tp-bg-2, #f6f2ec); }
+  .tp-bp__chip.is-aktiv { background: var(--tp-ink, #1d1a17); border-color: var(--tp-ink, #1d1a17); color: #fff; font-weight: 600; }
+  .tp-bp__zahl { font-size: 12.5px; opacity: 0.65; font-variant-numeric: tabular-nums; }
+  .tp-bp__chip.is-aktiv .tp-bp__zahl { opacity: 0.8; }
+
+  .tp-bp__gruppe { padding-top: 32px; scroll-margin-top: calc(var(--header-height, 100px) + 8px); }
+  .tp-bp__gruppe:first-of-type { padding-top: 0; }
+  .tp-bp__gruppe-titel { margin: 0 0 16px; font-size: clamp(22px, 2.4vw, 28px); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); }
+
+  .tp-bp__liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .tp-bp__eintrag { margin: 0; padding: 18px 20px 20px; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); }
+  .tp-bp__symptom { margin: 0 0 10px; font-size: 19px; font-weight: 700; line-height: 1.3; color: var(--tp-ink, #1d1a17); }
+  .tp-bp__ursachen-label { margin: 0 0 4px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
+  .tp-bp__ursachen { margin: 0 0 14px; padding-left: 20px; font-size: 15.5px; line-height: 1.55; }
+  .tp-bp__ursachen li { margin: 0 0 4px; }
+  .tp-bp__link { display: inline-flex; align-items: center; min-height: 44px; color: var(--tp-red-dark, #96262f); font-weight: 600; text-decoration: none; text-underline-offset: 3px; }
+  .tp-bp__link:hover { text-decoration: underline; }
+  .tp-bp__profi { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 12px 0 0; padding: 10px 14px; background: var(--tp-bg-2, #f6f2ec); border-radius: var(--tp-r, 10px); font-size: 14.5px; }
+  .tp-bp__profi a { color: var(--tp-red-dark, #96262f); font-weight: 600; text-underline-offset: 3px; }
+
+  @media (min-width: 640px) {
+    .tp-bp__liste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 768px) {
+    .tp-bp { padding-top: 24px; }
+  }
+  @media (min-width: 1024px) {
+    .tp-bp__liste { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-bp__chip { transition: background 0.15s, border-color 0.15s; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Bodenprobleme",
+  "tag": "section",
+  "class": "tp-bp-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "paragraph", "content": "Quelle ist das Metaobjekt tp_bodenproblem (Shopify-Admin > Inhalt > Metaobjekte). Titel und Einleitung kommen aus der Seite selbst (Seitentitel und Seiteninhalt)." },
+    { "type": "text", "id": "ursachen_label", "label": "Ueberschrift Ursachenliste", "default": "Mögliche Ursachen" },
+    { "type": "text", "id": "link_praefix", "label": "Vorspann vor dem Artikel-Link", "default": "Ratgeber:" },
+    { "type": "text", "id": "profi_text", "label": "Hinweistext bei profi_noetig", "default": "Das gehört in Fachhände." },
+    { "type": "text", "id": "profi_cta", "label": "Linktext zum Verlegeservice", "default": "Verlegeservice anfragen" },
+    { "type": "url", "id": "verlege_link", "label": "Verlegeservice: Link", "info": "Leer = /pages/liefer-verlegeservice" },
+    { "type": "text", "id": "filter_label", "label": "Aria-Label der Filterleiste", "default": "Nach Belag filtern" },
+    { "type": "text", "id": "alle_label", "label": "Filter: Beschriftung \"Alle\"", "default": "Alle" },
+    { "type": "text", "id": "leer_text", "label": "Text ohne Eintraege", "default": "Hier entstehen gerade die ersten Einträge. Schauen Sie bald wieder vorbei." }
+  ],
+  "presets": [ { "name": "TP Bodenprobleme" } ]
+}
+{% endschema %}
