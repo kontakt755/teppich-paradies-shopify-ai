@@ -21,6 +21,7 @@ import { promisify } from 'node:util';
 import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_LABELS } from '../docs/ai-dashboard/lib/model.mjs';
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -370,6 +371,34 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         gesamt, gruppen: Object.values(gruppen).sort((a, b) => b.offen - a.offen),
         offen: { count: offene.length, page: p, pageSize: size, pages: Math.max(Math.ceil(offene.length / size), 1), items: seite },
       };
+    },
+
+    /** Auftragsfluss-Status je Position, rein lokal (nie im Repository). */
+    einkaufAuftragsstatus() {
+      const dir = privatDirPath || privatDir();
+      const file = auftragsstatusPfad(dir);
+      const positionen = leseAuftragsstatus(file);
+      return { verfuegbar: true, quelle: file, positionen };
+    },
+
+    /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
+    async einkaufAuftragsstatusSetzen(payload = {}) {
+      const actor = await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const { orderId, lineItemId, status, lieferantBestellnummer, notiz } = payload || {};
+      if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
+      if (!STATUS_ORDER.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${STATUS_ORDER.join(', ')} sein`] });
+      const dir = privatDirPath || privatDir();
+      const file = auftragsstatusPfad(dir);
+      let eintrag;
+      try {
+        eintrag = setzeStatus(file, { orderId, lineItemId, status, actor, lieferantBestellnummer, notiz, jetzt: now() });
+      } catch (e) {
+        if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
+      return { ok: true, eintrag };
     },
 
     /** Offene Klaerungsfaelle des Einkaufs, falls das Team sie bereits exportiert hat. */
