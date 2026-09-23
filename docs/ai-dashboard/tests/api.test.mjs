@@ -374,3 +374,96 @@ test('einkaufAuftragsstatusSetzen schreibt lokal und GET liest es danach', async
   assert.equal(liste.positionen[key].status, 'bestellt');
   assert.equal(liste.positionen[key].lieferantBestellnummer, 'LB-42');
 });
+
+function lexikonFixture(root) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-lexikon-'));
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const produkte = [
+    {
+      handle: 'traum-teppich-grau', titel: 'Traum-Teppich Grau', shopUrl: 'https://www.teppich-paradies.net/products/traum-teppich-grau',
+      adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/111', status: 'active', produktgruppe: 'Teppichboden',
+      bild: 'https://cdn.example/bild1.jpg',
+      eigenschaften: { Material: 'Wolle', Rollenbreite: '400 cm' },
+      muster: { vorhanden: true, handle: 'muster-traum-teppich-grau' },
+      varianten: [
+        { id: 'gid://shopify/ProductVariant/1', titel: 'Grau', sku: 'TT-GR-01', farbe: 'Grau', preis: '49.90', waehrung: 'EUR', verfuegbar: true,
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4711', farbnummer: '023', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4711', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p1' } },
+        { id: 'gid://shopify/ProductVariant/2', titel: 'Beige', sku: 'TT-BE-01', farbe: 'Beige', preis: '49.90', waehrung: 'EUR', verfuegbar: false,
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4712', farbnummer: '024', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4712', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p2' } },
+      ],
+    },
+    {
+      handle: 'vinyl-clic-eiche', titel: 'Vinyl Clic Eiche', shopUrl: 'https://www.teppich-paradies.net/products/vinyl-clic-eiche',
+      adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/222', status: 'active', produktgruppe: 'Vinylboden',
+      bild: null, eigenschaften: {}, muster: { vorhanden: false, handle: null },
+      varianten: [
+        { id: 'gid://shopify/ProductVariant/3', titel: 'Eiche', sku: 'VC-EI-01', farbe: 'Eiche', preis: null, waehrung: null, verfuegbar: true,
+          einkauf: { lieferant: 'Lieferant B', artikelnummer: 'B-9001', farbnummer: null, produktname: 'Clic Eiche', url: null, kollektion: 'Holzoptik', marke: null, hersteller: null, bestelleinheit: 'Paket', procurementId: 'p3' } },
+      ],
+    },
+  ];
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({ erstellt: '2026-09-23T08:00:00Z', anzahl: produkte.length, produkte }));
+  return dir;
+}
+
+test('lexikonListe meldet fehlende Datei mit Exportbefehl statt zu werfen', () => {
+  const root = tmpRoot();
+  const api = createApi({ gh: async () => '', root, privatDirPath: path.join(root, 'nirgends') });
+  const r = api.lexikonListe({});
+  assert.equal(r.verfuegbar, false);
+  assert.equal(r.befehl, 'npm run lexikon:export');
+});
+
+test('lexikonListe liefert Trefferliste mit Bild, Produktgruppe und Farbanzahl', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({});
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.anzahl, 2);
+  assert.equal(r.treffer.count, 2);
+  const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.equal(grau.farbenAnzahl, 2);
+  assert.equal(grau.produktgruppe, 'Teppichboden');
+});
+
+test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal(api.lexikonListe({ q: 'Traum-Teppich' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'vinyl-clic-eiche' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'TT-BE-01' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'A-4712' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'Beige' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'Holzoptik' }).treffer.count, 1);
+  assert.equal(api.lexikonListe({ q: 'nichts-passt-hier' }).treffer.count, 0);
+});
+
+test('lexikonListe paginiert serverseitig', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({ page: 1, pageSize: 1 });
+  assert.equal(r.treffer.items.length, 1);
+  assert.equal(r.treffer.pages, 2);
+});
+
+test('lexikonProdukt liefert das volle Produkt inkl. Varianten und Einkaufsdaten', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonProdukt('traum-teppich-grau');
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.produkt.varianten.length, 2);
+  assert.equal(r.produkt.varianten[0].einkauf.artikelnummer, 'A-4711');
+  assert.equal(r.produkt.muster.vorhanden, true);
+});
+
+test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonProdukt('gibt-es-nicht');
+  assert.equal(r.verfuegbar, false);
+});

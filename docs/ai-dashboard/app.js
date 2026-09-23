@@ -121,7 +121,7 @@ async function refresh({ silent = false } = {}) {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'lexikon'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -999,6 +999,128 @@ function viewEinkauf() {
 }
 
 // ---------------------------------------------------------------------------
+// Ansicht: Lexikon (Produkt anhand des Kundenbegriffs finden, Original-Link)
+// ---------------------------------------------------------------------------
+const lexikon = {
+  liste: null, loadingListe: false, listeKey: null,
+  produkt: null, loadingProdukt: false, produktKey: null,
+};
+
+function ensureLexikonListe() {
+  const q = state.route.params.get('lq') || '';
+  const seite = state.route.params.get('lseite') || '1';
+  const key = `${q}::${seite}`;
+  if (lexikon.listeKey === key && (lexikon.liste || lexikon.loadingListe)) return;
+  lexikon.listeKey = key;
+  lexikon.loadingListe = true;
+  fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, page: seite })}`).then(d => {
+    lexikon.liste = d; lexikon.loadingListe = false;
+    if (state.route.view === 'lexikon') render();
+  });
+}
+
+function ensureLexikonProdukt(handle) {
+  if (lexikon.produktKey === handle && (lexikon.produkt || lexikon.loadingProdukt)) return;
+  lexikon.produktKey = handle;
+  lexikon.loadingProdukt = true;
+  fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`).then(d => {
+    lexikon.produkt = d; lexikon.loadingProdukt = false;
+    if (state.route.view === 'lexikon') render();
+  });
+}
+
+const NICHT_HINTERLEGT = '<span class="small muted">nicht hinterlegt</span>';
+function lexWert(w) { return (w === null || w === undefined || w === '') ? NICHT_HINTERLEGT : esc(String(w)); }
+
+function lexikonTrefferZeile(p) {
+  const bild = p.bild ? `<img src="${esc(p.bild)}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg-2,#eee)">` : `<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-2,#eee)"></div>`;
+  return `<div class="row" data-lex-open="${esc(p.handle)}" tabindex="0" role="button" style="cursor:pointer">
+    <div style="display:flex;gap:10px;align-items:center">
+      ${bild}
+      <div>
+        <div class="t">${esc(p.titel)}</div>
+        <div class="m">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · ${p.farbenAnzahl} Farbe${p.farbenAnzahl === 1 ? '' : 'n'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewLexikonListe() {
+  ensureLexikonListe();
+  const q = state.route.params.get('lq') || '';
+  const toolbar = `<div class="toolbar" style="margin:12px 0"><input type="search" placeholder="Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe oder Kollektion …" value="${esc(q)}" data-param="lq" aria-label="Lexikon durchsuchen"></div>`;
+  const d = lexikon.liste;
+  if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Lexikon …</div>`;
+  if (!d || !d.verfuegbar) {
+    const hinweis = `${d?.hinweis || 'Noch keine Daten exportiert.'}${d?.befehl ? ` Befehl: ${d.befehl}` : ''}`;
+    return toolbar + emptyState('Keine Lexikon-Daten verfügbar.', hinweis);
+  }
+  const t = d.treffer;
+  const pages = t.pages > 1 ? `<div class="toolbar" style="margin-top:10px">
+      <button type="button" class="btn btn-sm" ${t.page <= 1 ? 'disabled' : ''} data-param="lseite" data-value="${t.page - 1}">← Zurück</button>
+      <span class="muted small">Seite ${t.page} von ${t.pages} · ${t.count} Treffer</span>
+      <button type="button" class="btn btn-sm" ${t.page >= t.pages ? 'disabled' : ''} data-param="lseite" data-value="${t.page + 1}">Weiter →</button>
+    </div>` : '';
+  return `${toolbar}
+    <p class="small muted" style="margin:-4px 0 10px">${q ? `${t.count} Treffer für „${esc(q)}"` : `${d.anzahl} Produkte im Lexikon`} · Stand: ${esc(fmtDateTime(d.erstellt))}</p>
+    <div class="rows">${t.items.length ? t.items.map(lexikonTrefferZeile).join('') : emptyState(q ? 'Keine Treffer.' : 'Noch keine Produkte.', q ? 'Begriff prüfen oder anders schreiben.' : '')}</div>
+    ${pages}`;
+}
+
+function lexikonVarianteZeile(v) {
+  const artikelnr = v.einkauf?.artikelnummer;
+  const artikelZelle = artikelnr
+    ? `<code class="mono" data-kopiertext="${esc(artikelnr)}" title="Klicken zum Kopieren" style="cursor:pointer">${esc(artikelnr)}</code>`
+    : NICHT_HINTERLEGT;
+  return `<tr>
+    <td>${lexWert(v.farbe)}</td>
+    <td>${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
+    <td>${artikelZelle}</td>
+    <td>${lexWert(v.einkauf?.farbnummer)}</td>
+    <td>${(v.preis !== null && v.preis !== undefined) ? `${esc(v.preis)} ${esc(v.waehrung || '')}` : NICHT_HINTERLEGT}</td>
+    <td>${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
+    <td>${v.einkauf?.url ? `<a class="btn btn-sm" href="${esc(v.einkauf.url)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>` : NICHT_HINTERLEGT}</td>
+  </tr>`;
+}
+
+function viewLexikonDetail(handle) {
+  ensureLexikonProdukt(handle);
+  const zurueck = `<p style="margin:0 0 12px"><a href="#" data-lex-zurueck>← Zurück zur Lexikon-Suche</a></p>`;
+  const d = lexikon.produkt;
+  if (!d && lexikon.loadingProdukt) return zurueck + `<div class="empty">Lade Produkt …</div>`;
+  if (!d || !d.verfuegbar) return zurueck + emptyState('Produkt nicht gefunden.', d?.hinweis || 'Handle prüfen.');
+  const p = d.produkt;
+  const eigenschaften = Object.entries(p.eigenschaften || {});
+  const musterHinweis = p.muster?.vorhanden
+    ? `<p class="small">Es gibt ein Muster. ${p.muster.handle ? `<a href="#" data-lex-open="${esc(p.muster.handle)}">Muster im Lexikon ansehen →</a>` : ''}</p>`
+    : `<p class="small muted">Kein Muster hinterlegt.</p>`;
+  return `${zurueck}
+    <div class="page-head"><div><h1>${esc(p.titel)}</h1><p class="sub">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT} · Handle: <code class="mono">${esc(p.handle)}</code>${p.status ? ` · ${esc(p.status)}` : ''}</p></div></div>
+    <div class="toolbar" style="margin:10px 0 16px">
+      ${p.shopUrl ? `<a class="btn btn-primary" href="${esc(p.shopUrl)}" target="_blank" rel="noopener">Im Shop ansehen ↗</a>` : `<span class="btn" aria-disabled="true">Im Shop ansehen (${NICHT_HINTERLEGT})</span>`}
+      ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
+    </div>
+    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Farben / Varianten</h2></div>
+      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferanten-Artikelnummer</th><th>Farbnummer</th><th>Preis</th><th>Verfügbar</th><th>Lieferantenseite</th></tr></thead>
+      <tbody>${(p.varianten || []).map(lexikonVarianteZeile).join('') || `<tr><td colspan="7">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
+    </section>
+    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Eigenschaften</h2></div>
+      ${eigenschaften.length ? `<ul style="margin:0;padding-left:20px;line-height:1.8">${eigenschaften.map(([k, v]) => `<li><b>${esc(k)}:</b> ${lexWert(v)}</li>`).join('')}</ul>` : `<p class="small muted">Keine Eigenschaften hinterlegt.</p>`}
+    </section>
+    <section class="card">${musterHinweis}</section>`;
+}
+
+function viewLexikon() {
+  if (state.capabilities.mode !== 'local') {
+    return `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt den Produktnamen – hier findest du das Original beim Lieferanten.</p></div></div>
+      ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
+  }
+  const handle = state.route.params.get('handle');
+  const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Wofür ist das da: Ein Kunde nennt einen Produktnamen aus unserem Shop – hier findest du in Sekunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
+  return head + (handle ? viewLexikonDetail(handle) : viewLexikonListe());
+}
+
+// ---------------------------------------------------------------------------
 // Aufgaben-Detail (Sheet)
 // ---------------------------------------------------------------------------
 function primaryAction(t) {
@@ -1208,7 +1330,7 @@ async function syncNow() {
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
-const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf };
+const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, lexikon: viewLexikon };
 
 function render() {
   const main = $('#main');
@@ -1225,7 +1347,7 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf' }[state.route.view]} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', lexikon: 'Lexikon' }[state.route.view]} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
 }
@@ -1279,12 +1401,23 @@ function bindEvents() {
       }
       return;
     }
+    const lexOpen = e.target.closest('[data-lex-open]');
+    if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return; }
+    const lexZurueck = e.target.closest('[data-lex-zurueck]');
+    if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return; }
+    const kt = e.target.closest('[data-kopiertext]');
+    if (kt) {
+      const text = kt.dataset.kopiertext;
+      const doCopy = async () => { try { await navigator.clipboard.writeText(text); return true; } catch { return false; } };
+      doCopy().then(ok => { const alt = kt.textContent; kt.textContent = ok ? 'Kopiert' : 'Kopieren fehlgeschlagen'; setTimeout(() => { kt.textContent = alt; }, 1800); });
+      return;
+    }
     const a = e.target.closest('[data-action]');
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;
-  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set('q', el.value); else p.delete('q'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); const focus = el; render(); const again = document.querySelector('input[type=search][data-param]'); if (again && focus) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); } }, 220); });
+  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); const focus = el; render(); const again = document.querySelector('input[type=search][data-param]'); if (again && focus) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); } }, 220); });
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }
@@ -1314,7 +1447,7 @@ function bindEvents() {
   $('#searchBtn').addEventListener('click', openPalette);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
-  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); });
+  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
 
@@ -1326,6 +1459,7 @@ async function init() {
   renderSyncChip();
   if (state.route.view === 'aktivitaet') activityCache = await loadActivity();
   render();
+  if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadWorkflowRun().then(() => { renderSyncChip(); if (['heute', 'insights'].includes(state.route.view)) render(); });
   loadAgentRuns().then(() => { if (state.agentRuns) render(); });
   setInterval(() => refresh({ silent: true }), CONFIG.refreshMs);
