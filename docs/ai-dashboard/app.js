@@ -1219,7 +1219,19 @@ function eigenschaftLabel(key) {
   return lesbar.charAt(0).toUpperCase() + lesbar.slice(1);
 }
 
-const LEXIKON_VARIANTEN_KOPF = '<tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferanten-Artikelnummer</th><th>Farbnummer</th><th>Preis</th><th>Verfügbar</th><th>Lieferantenseite</th></tr>';
+const LEXIKON_VARIANTEN_KOPF = '<tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferanten-Artikelnummer</th><th>Farbnummer</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr>';
+
+// einkauf.route -> Klartext (domains/shopify/einkauf-metafelder.json)
+const LIEFERWEG_LABEL = {
+  OWN_STOCK: 'Eigenes Lager',
+  SUPPLIER_TO_TP: 'Lieferant → Teppich-Paradies',
+  SUPPLIER_DIRECT: 'Direktlieferung an Kunde',
+  SUPPLIER_TO_SITE: 'Lieferant → Baustelle',
+  SAMPLE_STOCK: 'Muster aus Lager',
+  SAMPLE_SUPPLIER: 'Muster vom Lieferanten',
+  SAMPLE_CUT: 'Muster (Zuschnitt)',
+  NO_PROCUREMENT: 'Kein Einkauf',
+};
 
 function lexikonVarianteZeile(v) {
   const artikelnr = v.einkauf?.artikelnummer;
@@ -1233,6 +1245,7 @@ function lexikonVarianteZeile(v) {
     <td>${lexWert(v.einkauf?.farbnummer)}</td>
     <td>${(v.preis !== null && v.preis !== undefined) ? `${esc(v.preis)} ${esc(v.waehrung || '')}` : NICHT_HINTERLEGT}</td>
     <td>${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
+    <td>${v.einkauf?.lieferweg ? esc(LIEFERWEG_LABEL[v.einkauf.lieferweg] || v.einkauf.lieferweg) : NICHT_HINTERLEGT}</td>
     <td>${v.einkauf?.url ? `<a class="btn btn-sm" href="${esc(v.einkauf.url)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>` : NICHT_HINTERLEGT}</td>
   </tr>`;
 }
@@ -1259,7 +1272,7 @@ function viewLexikonDetail(handle) {
     </div>
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Farben / Varianten</h2></div>
       <div style="overflow-x:auto"><table class="tasks"><thead>${LEXIKON_VARIANTEN_KOPF}</thead>
-      <tbody>${normaleVarianten.map(lexikonVarianteZeile).join('') || `<tr><td colspan="7">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
+      <tbody>${normaleVarianten.map(lexikonVarianteZeile).join('') || `<tr><td colspan="8">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
     </section>
     ${wunschmassVarianten.length ? `<section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Wunschmaß (wird zugeschnitten)</h2></div>
       <p class="small muted" style="margin:0 0 10px">Zuschnitt nach Maß: SKU, Lieferanten-Artikelnummer und Farbnummer entstehen erst beim Zuschnitt – das ist keine fehlende Angabe.</p>

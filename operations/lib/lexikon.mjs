@@ -43,6 +43,7 @@ export const EINKAUF_FELDER = Object.freeze({
   hersteller: 'hersteller',
   bestelleinheit: 'bestelleinheit',
   procurement_id: 'procurementId',
+  route: 'lieferweg', // OWN_STOCK|SUPPLIER_TO_TP|SUPPLIER_DIRECT|SUPPLIER_TO_SITE|SAMPLE_*|NO_PROCUREMENT
 });
 
 function leer(wert) {
