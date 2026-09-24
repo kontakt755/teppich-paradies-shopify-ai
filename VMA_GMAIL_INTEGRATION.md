@@ -79,16 +79,22 @@ Jeder Fund wird bewertet:
 ## 🤖 Automatischer monatlicher Scan (AKTIV)
 
 **Das ist der produktive Weg.** Eine Routine (Claude-Trigger, `trig_017kqinkmhhMvCs32N6G5eYs`)
-läuft automatisch **am 1. jeden Monats um 07:06 UTC** und:
+läuft automatisch **am 15. jeden Monats um 07:07 UTC** (angepasst an den bestehenden
+Ablauf: VMAs werden Mitte des laufenden Monats vorbereitet, nicht erst danach) und:
 
-1. Durchsucht Gmail (`kontakt@teppich-paradies.net`) nach Absences-Keywords im Vormonat
+1. Durchsucht Gmail (`kontakt@teppich-paradies.net`) **einmalig** nach Absences-Keywords
+   im laufenden Monat (1. bis heute) – kein tägliches Suchen
 2. Extrahiert Zeiträume aus Betreff/Text per Regex (nicht aus Fotos)
 3. Erstellt `abwesenheiten_kombiniert_<MM>_<YYYY>.csv` für automatisch erkannte Fälle
-4. Regeneriert die VMA-Dateien via `vma_batch.py`
+4. Erstellt die VMA-Dateien für alle 4 Mitarbeiter via `vma_batch.py` – als **Entwurf**,
+   NICHT committen/pushen
 5. Meldet Fälle **ohne Text-Datum explizit als "Rückfrage nötig"** (mit Link zur Mail)
    statt zu raten
+6. Schickt am Ende eine **Push-Benachrichtigung** (Handy, über die Claude-App) mit
+   Kurz-Zusammenfassung
 
-Kein manueller Aufruf nötig. Bei Rückfragen meldet sich die Session direkt.
+Kein manueller Aufruf nötig. Bei Rückfragen/Ergebnis meldet sich die Session direkt +
+Push-Notification aufs Handy.
 
 **Wichtig:** Die Python-Skripte `vma_gmail_scanner.py`, `vma_calendar_scanner.py` und
 `vma_combined_scanner.py` sind **funktional nur Platzhalter/Referenz** – ein
