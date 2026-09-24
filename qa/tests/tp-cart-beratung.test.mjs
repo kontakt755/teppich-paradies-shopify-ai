@@ -65,7 +65,7 @@ test('Snippet ist im Cart-Summary vor den Checkout-Buttons eingebunden', () => {
   assert.ok(pos > 0);
   assert.ok(pos < summary.indexOf('<div class="cart__ctas">'));
   const snippet = lies('snippets/tp-cart-beratung.liquid');
-  for (const name of ['attributes[Beratung]', 'attributes[Telefon]', 'attributes[Rückruf]', 'attributes[Beratungsthema]', 'attributes[Maßprüfung]', 'attributes[Verlegung]']) {
+  for (const name of ['attributes[Beratung]', 'attributes[Telefon]', 'attributes[Rückruf]', 'attributes[Beratungsthema]', 'attributes[Verlegung]']) {
     assert.ok(snippet.includes(name), name);
   }
   // Keine Vorauswahl: checked nur aus cart.attributes.
@@ -203,7 +203,7 @@ test('Zwischen Gesamtbetrag und Kaufknopf steht nur der Preishinweis', () => {
   assert.ok(dazwischen.includes("render 'tax-info'"));
 });
 
-test('Pflichtfrage und Masspruefung vor dem Kaufknopf, Verlegeanfrage dahinter', () => {
+test('Pflichtfrage vor dem Kaufknopf, Verlegeanfrage dahinter', () => {
   const s = lies('snippets/cart-summary.liquid');
   const vor = s.indexOf("render 'tp-cart-beratung', stelle: 'vor_kasse'");
   const cta = s.indexOf('<div class="cart__ctas">');
@@ -215,7 +215,21 @@ test('Pflichtfrage und Masspruefung vor dem Kaufknopf, Verlegeanfrage dahinter',
   // Die Stelle entscheidet Liquid, nicht CSS - sonst wichen Lese- und
   // Tastaturreihenfolge von der sichtbaren Reihenfolge ab.
   assert.match(snippet, /assign tpb_stelle_soll = 'nach_kasse'/);
-  assert.match(snippet, /if tpb_frage or tpb_mass\s*\n\s*assign tpb_stelle_soll = 'vor_kasse'/);
+  assert.match(snippet, /if tpb_frage\s*\n\s*assign tpb_stelle_soll = 'vor_kasse'/);
   assert.match(snippet, /if tpb_stelle != tpb_stelle_soll\s*\n\s*assign tpb_zeigen = false/);
   assert.ok(!/(?:^|[\s;{])order:\s*\d/m.test(snippet), 'keine CSS-order-Umsortierung');
+});
+
+test('Masspruefung vor dem Zuschnitt wird nicht mehr gefragt, alte Antwort wird geleert', () => {
+  // Inhaberentscheidung 2026-09-24: die Frage lud Kunden kurz vor der Kasse ein,
+  // die Bestellung noch einmal zu ueberdenken.
+  const snippet = lies('snippets/tp-cart-beratung.liquid');
+  assert.ok(!/<legend[^>]*>[^<]*vor dem Zuschnitt/.test(snippet), 'Frage ist raus');
+  assert.ok(!snippet.includes('name="attributes[Maßprüfung]"'), 'kein Eingabefeld mehr');
+  assert.ok(!snippet.includes('data-masspruefung'), 'Skript bekommt die Frage nicht mehr gemeldet');
+  assert.match(snippet, /if tpb_masswahl != blank\s*\n\s*assign tpb_aufraeumen = true/);
+  // Ohne data-masspruefung schreibt das Skript die Antwort leer.
+  const a = B.attributeAus({ beratung: 'Nein', mass: 'Ja', telefon: '0176 1234567' }, { beratungsfrage: false });
+  assert.equal(a['Maßprüfung'], '');
+  assert.equal(a.Telefon, '');
 });
