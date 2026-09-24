@@ -14,6 +14,7 @@ import {
   normalizeTask, attentionList, attentionScore, requirementsFor, summarize, areaHealth,
   freshness, matchesQuery, dependentsOf,
 } from './lib/model.mjs';
+import { ratgeberStatus, pipelineRows, statusLabel, suchleistungHinweis } from './lib/bodenwissen.mjs';
 
 const CONFIG = {
   owner: 'kontakt755',
@@ -40,6 +41,9 @@ const state = {
   route: { view: 'heute', params: new URLSearchParams() },
   selectedRow: -1,
   detailCache: new Map(),
+  bodenwissen: null,       // docs/ai-dashboard/bodenwissen.json, siehe ensureBodenwissen()
+  bodenwissenError: null,
+  bodenwissenLoaded: false,
 };
 
 const $ = sel => document.querySelector(sel);
@@ -85,6 +89,21 @@ function renderSessionButton() {
   if (!btn) return;
   const show = Boolean(state.session?.required && state.session?.authenticated);
   btn.hidden = !show;
+  const label = $('#sessionBtnText');
+  if (label) {
+    const b = state.session?.benutzer;
+    label.textContent = b?.name ? `${b.name} (${b.rolle})` : 'Angemeldet';
+  }
+  // Rolle "lesen" darf serverseitig nichts veraendern - hier nur die zugehoerige
+  // Bedienoberflaeche ausblenden, damit niemand versehentlich auf eine 403-Antwort
+  // trifft. Die eigentliche Durchsetzung liegt im Server (scripts/serve-dashboard.mjs).
+  const istLesend = state.session?.benutzer?.rolle === 'lesen';
+  document.body.classList.toggle('rolle-lesen', istLesend);
+}
+
+/** true, wenn die aktuelle Rolle keine Aenderungen vornehmen darf (nur Anzeige, Server prueft ohnehin serverseitig). */
+export function istNurLesend() {
+  return state.session?.benutzer?.rolle === 'lesen';
 }
 
 async function logout() {
@@ -143,7 +162,7 @@ async function refresh({ silent = false } = {}) {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'lexikon'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -180,7 +199,7 @@ function taskRow(t, { showNext = true } = {}) {
       <div class="m">${statusBadge(t)} <span>${ownerText(t)}</span> ${execBadge(t)} ${t.area ? `<span>${esc(t.area)}</span>` : ''} ${dueText(t) ? `<span>${dueText(t)}</span>` : ''} <span title="zuletzt aktualisiert">${ago(t.updatedAt)}</span></div>
     </div>
     <div class="r">${prioBadge(t)}${t.triage.length ? `<span class="badge gap" title="${esc(t.triage.join(', '))}">${plural(t.triage.length, 'Lücke', 'Lücken')}</span>` : ''}</div>
-    ${showNext && t.nextStep ? `<div class="next">${esc(t.nextStep)}</div>` : ''}
+    ${showNext && echterSchritt(t) ? `<div class="next">${esc(echterSchritt(t))}</div>` : ''}
     ${t.blocker && ['blockiert', 'freigabe'].includes(t.status) ? `<div class="next" style="color:var(--crit)">${esc(t.blocker)}</div>` : ''}
   </div>`;
 }
@@ -235,8 +254,10 @@ function systemHealth() {
       const failed = (ar.runs || []).filter(r => r.state === 'ERROR').length;
       items.push({ level: failed ? 'warn' : 'ok', title: `KI-Läufe: ${plural((ar.runs || []).length, 'Lauf', 'Läufe')} bekannt${failed ? `, ${failed} mit Fehler` : ''}`, detail: ar.usage ? `Ledger: ${ar.usage.requests} Provider-Aufrufe, ${ar.usage.costUsd.toFixed(2)} USD` : '' });
     }
-  } else items.push({ level: 'warn', title: 'KI-Läufe nur lokal sichtbar', detail: 'Die Steuerzentrale speichert Läufe außerhalb des Repos; statisch ist nur der Issue-Status sichtbar.' });
-  items.push({ level: 'warn', title: 'Keine Kennzahlen aus Shopify, Google Ads oder GA4 verbunden', detail: 'Bewusst: das Repository ist öffentlich. Anbindung erst nach Sichtbarkeitsentscheidung (docs/control-center/BESTANDSAUFNAHME.md, Punkt 4).' });
+  } else items.push({ level: 'info', title: 'KI-Läufe nur lokal sichtbar', detail: 'Die Steuerzentrale speichert Läufe außerhalb des Repos; statisch ist nur der Issue-Status sichtbar.' });
+  // Level "info" = dauerhafter, bewusster Zustand (kein Handlungsbedarf). Zaehlt nie als
+  // Warnung - sonst stuende die Systemgesundheit auf "Hinweise", obwohl alles laeuft.
+  items.push({ level: 'info', title: 'Google Ads und GA4 nicht angebunden', detail: 'Bewusst: Shop-Kennzahlen kommen aus dem lokalen Export (Startseite „Heute"); Ads und Analytics erst nach Sichtbarkeitsentscheidung (docs/control-center/BESTANDSAUFNAHME.md, Punkt 4).' });
   if (state.capabilities.mode === 'local') items.push(...aktualisierungHealth());
   return items;
 }
@@ -245,8 +266,10 @@ function renderSyncChip() {
   const chip = $('#syncChip'); const txt = $('#syncChipText');
   const fr = freshness(state.raw?.generated_at);
   chip.className = `sync-chip ${state.loadError ? 'fehler' : fr.level}`;
-  txt.textContent = state.loadError ? 'Daten fehlen' : `Stand ${fr.text}${state.capabilities.mode === 'local' ? ' · lokal' : ''}`;
-  chip.title = state.loadError ? state.loadError : `GitHub Issues · ${fmtDateTime(state.raw?.generated_at)} · ${state.raw?.count ?? 0} Aufgaben`;
+  // Kurz halten: der Chip darf in der Kopfzeile nicht umbrechen. Details stehen im Tooltip.
+  const uhrzeit = state.raw?.generated_at ? new Date(state.raw.generated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
+  txt.textContent = state.loadError ? 'Daten fehlen' : `Stand ${uhrzeit}`;
+  chip.title = state.loadError ? state.loadError : `Aufgabendaten ${fr.text} · ${fmtDateTime(state.raw?.generated_at)} · ${state.raw?.count ?? 0} Aufgaben · Klick: Systemzustand`;
 }
 
 // ---------------------------------------------------------------------------
@@ -269,86 +292,87 @@ function viewHeute() {
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
   const localMode = state.capabilities.mode === 'local';
-  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); }
+  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); ensureKundenRueckrufe(); }
 
-  const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
-
-  // Oberstes Band zeigt das Kundengeschaeft (Kauf/Verkauf), nicht mehr die interne
-  // Aufgabenverwaltung - das ist laut Inhaber das Wichtigste auf der Startseite.
-  const bK = localMode ? einkauf.bestellungen : null;
-  const kundenVerfuegbar = !!(bK && bK.verfuegbar);
-  const kundenProbleme = kundenVerfuegbar ? (bK.auftraege || []).filter(a => a.offen && a.ampel === 'rot').length : 0;
-  const bestellungen7 = localMode ? einkauf.kennzahlen?.zeitraeume?.['7']?.bestellungen : null;
-  const kundenBand = !localMode
-    ? `<p class="small muted">Kundengeschäft nur lokal sichtbar (private Daten). Auf dem Mac starten: <code class="mono">npm run dashboard</code></p>`
-    : !kundenVerfuegbar
-      ? `<p class="small muted">${esc(bK?.hinweis || 'Bestellübersicht noch nicht exportiert.')} <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`
-      : `<div class="band">
-          ${bandItem(bK.zahlen.offeneAuftraege, `offene Kundenaufträge (von ${bK.zahlen.auftraege})`, 'info', '#/einkauf?tab=bestellungen')}
-          ${bandItem(bK.zahlen.zuBestellen, 'beim Lieferanten zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
-          ${bandItem(kundenProbleme, 'Aufträge mit Problem', kundenProbleme ? 'crit' : 'ok', '#/einkauf?tab=bestellungen')}
-          ${typeof bestellungen7 === 'number' ? bandItem(bestellungen7, 'Bestellungen (7 Tage)', 'ok', '#/einkauf?tab=bestellungen') : `<span class="zero"><span class="n">–</span><span class="l">Bestellungen (7 Tage) – kein Export</span></span>`}
-        </div>`;
+  // Interne Arbeit: Kacheln mit 0 sind Rauschen und fallen weg; "erledigt" bleibt als
+  // positives Signal immer stehen.
+  const intern = [
+    [s.critical, 'kritisch (P0)', 'crit', '#/arbeit?prio=p0'],
+    [s.blocked, 'blockiert', 'crit', '#/arbeit?view=blockiert'],
+    [s.approvals, 'warten auf Freigabe', 'warn', '#/freigaben'],
+    [s.dueToday, 'heute fällig / überfällig', 'warn', '#/arbeit?view=heute'],
+    [s.triage, 'noch zu bewerten', 'plain', '#/arbeit?view=triage'],
+  ].filter(([n]) => n > 0);
 
   return `
-    <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)} · Kauf, Verkauf und Kundengeschäft zuerst · Datenstand ${esc(freshness(state.raw?.generated_at).text)}</p></div>
-      <div style="display:flex;gap:8px">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync">Jetzt synchronisieren</button>' : ''}<a class="btn" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
+    <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
+      <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" title="Aufgaben frisch von GitHub holen">Aufgaben synchronisieren</button>' : ''}<a class="btn btn-ghost" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
 
-    ${kundenBand}
+    <h2 class="section-title">Kundengeschäft</h2>
+    ${heuteEinkaufBlock()}
+    ${heuteRueckrufBlock()}
 
-    <section class="card">
-      <div class="card-head"><h2>Kundengeschäft</h2><a class="more" href="#/einkauf">Bereich Einkauf öffnen</a></div>
-      ${heuteEinkaufBlock()}
-    </section>
+    <h2 class="section-title">Shop-Zahlen</h2>
+    ${heuteKennzahlenBlock()}
 
-    <section class="card section">
-      <div class="card-head"><h2>Verkauf / Zahlen</h2></div>
-      ${heuteKennzahlenBlock()}
-    </section>
-
-    <h2 class="section" style="margin:22px 0 4px;font-size:1rem;color:var(--muted)">Interne Arbeit</h2>
-    <p class="small muted" style="margin:0 0 10px">Aufgabenverwaltung – wichtig, aber nicht so dringend wie das Kundengeschäft oben.</p>
-
+    <h2 class="section-title">Interne Arbeit <span class="section-note">Aufgaben aus GitHub – wichtig, aber nach dem Kundengeschäft</span></h2>
     <div class="band">
-      ${bandItem(s.critical, 'kritisch, höchste Priorität (P0)', 'crit', '#/arbeit?prio=p0')}
-      ${bandItem(s.blocked, 'blockiert', 'crit', '#/arbeit?view=blockiert')}
-      ${bandItem(s.approvals, 'warten auf Freigabe', 'warn', '#/freigaben')}
-      ${bandItem(s.dueToday, 'heute fällig / überfällig', 'warn', '#/arbeit?view=heute')}
-      ${bandItem(s.triage, 'noch zu bewerten (Triage)', 'info', '#/arbeit?view=triage')}
-      ${bandItem(s.doneThisWeek, 'diese Woche erledigt', 'ok', '#/arbeit?status=fertig')}
+      ${intern.map(([n, l, cls, href]) => bandItem(n, l, cls, href)).join('')}
+      ${bandItem(s.doneThisWeek, 'diese Woche erledigt', 'plain', '#/arbeit?status=fertig')}
     </div>
 
-    ${collapsibleCard('aufmerksamkeit', 'Braucht jetzt Aufmerksamkeit', att.length ? String(att.length) : 'nichts', att.length ? `<p class="small muted" style="margin:-4px 0 8px">Dringlichkeit aus Priorität, Blocker und Frist – Grund als Tooltip auf der Zeile.</p><div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' }), { openByDefault: att.length > 0 })}
+    ${collapsibleCard('aufmerksamkeit', 'Braucht jetzt Aufmerksamkeit', att.length ? String(att.length) : 'nichts', att.length ? `<div class="att">${att.map((x, i) => attentionItem(x, i)).join('')}</div>` : emptyState('Nichts drängt.', 'Keine P0, keine Blocker, keine offenen Freigaben – gute Zeit, die nächste wichtige Arbeit zu planen.', { href: '#/arbeit?status=geplant', text: 'Geplante Aufgaben ansehen' }), { openByDefault: att.length > 0 })}
 
     ${collapsibleCard('wartet', 'Wartet auf dich', waitingAll.length ? String(waitingAll.length) : 'nichts', `${waiting.length ? `<div class="rows">${waiting.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div>` : emptyState('Keine Freigaben offen.', 'Plane die nächste wichtige Arbeit.', { href: '#/arbeit?status=geplant', text: 'Geplant' })}${waitingRest.length ? `<details class="inline-more"><summary>Alle anzeigen (+${waitingRest.length})</summary><div class="rows" style="margin-top:6px">${waitingRest.map(t => heuteCompactRow(t, primaryAction(t).label)).join('')}</div></details>` : ''}`, { openByDefault: waitingAll.length > 0 })}
 
-    ${collapsibleCard('blockiert', 'Blockiert', String(tasks.filter(t => t.status === 'blockiert').length), blocked.length ? `<div class="rows">${blocked.slice(0, 5).map(t => heuteCompactRow(t, 'Eskalieren / lösen', { title: t.blocker || 'Grund fehlt – bitte im Issue nachtragen' })).join('')}</div>` : emptyState('Nichts blockiert.', 'Alle offenen Aufgaben können bearbeitet werden (die dringendsten stehen ggf. oben unter „Aufmerksamkeit").'), { openByDefault: blocked.length > 0 })}
+    ${blocked.length ? collapsibleCard('blockiert', 'Blockiert', String(blocked.length), `<div class="rows">${blocked.slice(0, 5).map(t => heuteCompactRow(t, 'Lösen', { title: t.blocker || 'Grund fehlt – bitte im Issue nachtragen' })).join('')}</div>`, { openByDefault: true }) : ''}
 
-    ${collapsibleCard('laeuft', 'Läuft gerade', running.length ? `${plural(running.length, 'in Arbeit', 'in Arbeit')}` : 'nichts', runningBlock(running), { openByDefault: false })}
+    ${collapsibleCard('laeuft', 'Läuft gerade', running.length ? `${running.length} in Arbeit` : 'nichts', runningBlock(running), { openByDefault: false })}
 
-    ${collapsibleCard('woche', 'Diese Woche', `${week.done.length} erledigt`, `
-        <div class="band" style="margin:0 0 10px">
-          ${bandItem(week.done.length, 'erledigt', 'ok', '#/arbeit?status=fertig')}
-          ${bandItem(week.fresh.length, 'neu hinzugekommen', 'info', '#/arbeit?sort=aktualisiert')}
-          ${bandItem(week.overdue.length, 'überfällig', 'crit', '#/arbeit?view=heute')}
-        </div>
-        ${week.done.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${week.done.slice(0, 5).map(t => `<li>${esc(t.id)} ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`, { openByDefault: false })}
+    ${collapsibleCard('woche', 'Diese Woche', `${week.done.length} erledigt · ${week.fresh.length} neu`, `
+        ${week.overdue.length ? `<p class="notice crit" style="margin-bottom:10px">${plural(week.overdue.length, 'Aufgabe ist', 'Aufgaben sind')} überfällig. <a href="#/arbeit?view=heute">Ansehen →</a></p>` : ''}
+        ${week.done.length ? `<ul class="plain-list">${week.done.slice(0, 8).map(t => `<li><span class="muted mono small">${esc(t.id)}</span> ${taskLink(t)}</li>`).join('')}</ul>` : '<p class="small muted">Noch nichts erledigt in den letzten 7 Tagen.</p>'}`, { openByDefault: false })}
 
-    ${collapsibleCard('gesundheit', 'Systemgesundheit', `<span class="badge level-${worst === 'crit' ? 'kritisch' : worst === 'warn' ? 'achtung' : 'ok'}">${worst === 'crit' ? 'Störung' : worst === 'warn' ? 'Hinweise' : 'in Ordnung'}</span>`, `<div class="health">${health.slice(0, 3).map(healthRow).join('')}</div><p class="small muted" style="margin-top:8px">${health.length > 3 ? `+${health.length - 3} weitere – ` : ''}<a href="#/insights">Alle Details in Insights →</a></p>`, { openByDefault: worst !== 'ok' })}`;
+    ${worst === 'ok'
+      ? `<p class="health-ok"><span class="dot" aria-hidden="true"></span>Alle Datenquellen in Ordnung · <a href="#/insights">Systemzustand ansehen</a></p>`
+      : `<section class="card section health-card ${worst}"><div class="card-head"><h2>Systemgesundheit</h2><a class="more" href="#/insights">Alle Details →</a></div><div class="health">${health.filter(h => h.level === 'warn' || h.level === 'crit').map(healthRow).join('')}</div></section>`}`;
 }
 
-/** Einkauf-Auftragsfluss-Zaehler (Bestellt -> Geliefert an uns -> An Kunden raus -> Erledigt). */
+/** Kachel im Zahlenband. 0 wird grau, damit echte Zahlen hervorstechen. */
+function bandItem(n, label, cls, href) {
+  const inner = `<span class="n">${esc(n)}</span><span class="l">${esc(label)}</span>`;
+  const klasse = n === 0 ? 'zero' : cls;
+  return href ? `<a href="${href}" class="${klasse}">${inner}</a>` : `<div class="${klasse}">${inner}</div>`;
+}
+
+/** Positionen (Ware und Muster) der Bestelluebersicht mit ihrem lokalen Auftragsfluss-Stand. */
+function einkaufPositionenMitStand(b) {
+  const ware = (b.gruppen || []).flatMap(g => g.positionen);
+  const muster = (b.musterGruppen || []).flatMap(g => g.positionen);
+  const gruppe = p => afFilterGruppe(afEintragFuer(p)?.status);
+  return { ware, muster, gruppe };
+}
+
+/** Auftragsfluss-Zaehler je Gruppe (offen/bestellt/unterwegs/erledigt) ueber Ware und Muster. */
 function heuteAuftragsflussZaehler(b) {
-  const allePositionen = [...(b.gruppen || []).flatMap(g => g.positionen), ...(b.musterGruppen || []).flatMap(g => g.positionen)];
+  const { ware, muster, gruppe } = einkaufPositionenMitStand(b);
   const afZaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
-  for (const p of allePositionen) afZaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  for (const p of [...ware, ...muster]) afZaehler[gruppe(p)] += 1;
   return afZaehler;
 }
 
-/** Einkauf-Kachel der Startseite: nur lokal verfügbar, klickt in den Bereich Einkauf durch.
- * Bewusst nur zwei grosse Zahlen (zu bestellen, Probleme) plus eine schmale Auftragsfluss-Zeile -
- * Musterbestellungen und "ohne Großhändler-ID" bleiben im Bereich Einkauf sichtbar, verdoppeln
- * aber nicht die Zahlenflut auf der Startseite. */
+/**
+ * Noch nicht abgeschlossene Positionen eines Auftrags. Ein Auftrag, dessen Positionen im
+ * Auftragsfluss alle auf "Erledigt" stehen (z. B. als Testbestellung ohne Einkauf
+ * abgeschlossen), zaehlt nicht mehr als offen oder als Problem - auch wenn Shopify ihn
+ * weiter als unerfuellt fuehrt.
+ */
+function auftragOffenePositionen(a) {
+  return (a.positionen || []).filter(p => (p.menge ?? 1) > 0 && afFilterGruppe(afEintragFuer(p)?.status) !== 'erledigt');
+}
+function aktiveAuftraege(b) { return (b.auftraege || []).filter(a => a.offen && auftragOffenePositionen(a).length); }
+
+/** Kundengeschaeft auf der Startseite: vier Zahlen, darunter nur die Auftraege mit Problem. */
 function heuteEinkaufBlock() {
   if (state.capabilities.mode !== 'local') {
     return emptyState('Nur lokal im Betrieb verfügbar.', 'Bestellübersicht und Auftragsfluss lesen private Daten, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard');
@@ -356,21 +380,27 @@ function heuteEinkaufBlock() {
   const b = einkauf.bestellungen;
   if (!b && einkauf.loadingBestellungen) return `<div class="empty">Lade Einkaufsdaten …</div>`;
   if (!b || !b.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', b?.hinweis || 'Bestellübersicht noch nicht exportiert.', { href: '#/einkauf', text: 'Bereich Einkauf öffnen' });
-  const z = b.zahlen;
-  const afZaehler = heuteAuftragsflussZaehler(b);
-  const probleme = (b.auftraege || []).filter(a => a.offen && a.ampel === 'rot');
-  const bandItem = (n, label, cls, href) => `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`;
+  const { ware, muster, gruppe } = einkaufPositionenMitStand(b);
+  const aktiv = aktiveAuftraege(b);
+  const probleme = aktiv.filter(a => a.ampel === 'rot');
+  const warePendent = ware.filter(p => gruppe(p) === 'offen').length;
+  const musterPendent = muster.filter(p => gruppe(p) === 'offen').length;
+  const af = heuteAuftragsflussZaehler(b);
+  const unterwegs = af.bestellt + af.unterwegs;
   return `
-    <div class="band" style="margin:0 0 10px">
-      ${bandItem(z.zuBestellen, 'zu bestellen', 'info', '#/einkauf?tab=bestellungen')}
-      ${bandItem(probleme.length, 'Aufträge mit Problem', probleme.length ? 'crit' : 'ok', '#/einkauf?tab=bestellungen')}
+    <div class="band">
+      ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain', '#/einkauf')}
+      ${bandItem(warePendent, 'Artikel noch zu bestellen', 'warn', '#/einkauf')}
+      ${bandItem(musterPendent, 'Muster noch zu bestellen', 'warn', '#/einkauf')}
+      ${bandItem(probleme.length, probleme.length === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit', '#/einkauf')}
     </div>
-    <p class="small muted" style="margin:0 0 10px">Auftragsfluss: <b>${afZaehler.offen}</b> offen · <b>${afZaehler.bestellt}</b> bestellt · <b>${afZaehler.unterwegs}</b> unterwegs · <b>${afZaehler.erledigt}</b> erledigt · <a href="#/einkauf?tab=bestellungen">${plural(z.muster, 'Musterbestellung', 'Musterbestellungen')} offen, ${plural(z.ohneId, 'Position', 'Positionen')} ohne Großhändler-ID →</a></p>
-    ${probleme.length ? `<div class="rows">${probleme.slice(0, 3).map(einkaufAuftragZeile).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere Aufträge mit Problem – <a href="#/einkauf?tab=bestellungen">alle ansehen →</a></p>` : ''}` : '<p class="small muted">Keine Aufträge mit Problem (Beratung ohne Telefon, Maßprüfung offen, fehlende Großhändler-ID).</p>'}
-    <p class="small muted" style="margin-top:8px">Stand: ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Bereich Einkauf öffnen →</a></p>`;
+    ${probleme.length
+      ? `<section class="card problem-card"><div class="card-head"><h3>Zuerst klären</h3><a class="more" href="#/einkauf">Alle Aufträge im Einkauf →</a></div><div class="rows">${probleme.slice(0, 3).map(a => einkaufAuftragZeile(a)).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere – <a href="#/einkauf">alle ansehen →</a></p>` : ''}</section>`
+      : `<p class="notice ok">Kein Auftrag mit Problem.</p>`}
+    <p class="small muted flow-line">${unterwegs ? `${plural(unterwegs, 'Artikel ist', 'Artikel sind')} beim Lieferanten bestellt oder unterwegs · ` : ''}Stand Bestellungen ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Einkauf öffnen →</a></p>`;
 }
 
-/** Shop-Kennzahlen-Kachel: liest kennzahlen/shop-snapshot.json, erfindet keine Zahlen ohne Export. */
+/** Shop-Kennzahlen: eine kompakte Tabelle statt sechs Kacheln. Erfindet ohne Export nichts. */
 function heuteKennzahlenBlock() {
   if (state.capabilities.mode !== 'local') {
     return emptyState('Nur lokal im Betrieb verfügbar.', 'Shop-Kennzahlen lesen einen lokalen Export, der nie öffentlich wird.');
@@ -379,24 +409,25 @@ function heuteKennzahlenBlock() {
   if (!k && einkauf.loadingKennzahlen) return `<div class="empty">Lade Shop-Kennzahlen …</div>`;
   if (!k || !k.verfuegbar) {
     return emptyState('Noch kein Export der Shop-Kennzahlen.', k?.hinweis || 'Es liegt noch keine kennzahlen/shop-snapshot.json vor.') +
-      `<p class="small muted" style="margin-top:6px">Befehl zum Erzeugen: <code class="mono">${esc(k?.befehl || 'npm run kennzahlen:export')}</code></p>`;
+      `<p class="small muted" style="margin-top:6px">Befehl zum Erzeugen: <code class="mono">${esc(k?.befehl || 'npm run daten:aktualisieren')}</code></p>`;
   }
-  const spanne = (tage) => {
-    const z = k.zeitraeume?.[String(tage)];
-    if (!z) return emptyState(`Kein Zeitraum ${tage} Tage im Export.`, '');
-    const fmt = n => typeof n === 'number' ? n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '–';
-    return `<div class="band" style="margin:0">
-      <div class="ok"><span class="n">${z.bestellungen ?? '–'}</span><span class="l">Bestellungen</span></div>
-      <div class="ok"><span class="n">${fmt(z.umsatz)} ${esc(z.waehrung || '')}</span><span class="l">Umsatz</span></div>
-      <div class="ok"><span class="n">${fmt(z.durchschnitt)} ${esc(z.waehrung || '')}</span><span class="l">Ø Bestellwert</span></div>
-    </div>`;
-  };
-  return `
-    <div class="grid grid-2">
-      <div><h3 style="margin:0 0 6px;font-size:.85rem;color:var(--muted)">Letzte 7 Tage</h3>${spanne(7)}</div>
-      <div><h3 style="margin:0 0 6px;font-size:.85rem;color:var(--muted)">Letzte 30 Tage</h3>${spanne(30)}</div>
-    </div>
-    <p class="small muted" style="margin-top:8px">Stand des Exports: ${esc(fmtDateTime(k.erstellt))} · Quelle: ${esc(k.quelle)}</p>`;
+  const geld = (n, w) => typeof n === 'number' ? n.toLocaleString('de-DE', { style: 'currency', currency: w || 'EUR' }) : '–';
+  const spalten = [['7', 'Letzte 7 Tage'], ['30', 'Letzte 30 Tage']].map(([t, l]) => ({ l, z: k.zeitraeume?.[t] })).filter(x => x.z);
+  if (!spalten.length) return emptyState('Keine Zeiträume im Export.', '');
+  // Bezahlte Bestellungen ohne Betrag sind kostenlose Musterbestellungen. Umsatz 0 ist dann
+  // richtig, soll aber nicht wie ein Datenfehler aussehen.
+  const hinweis = spalten.some(({ z }) => z.bestellungen > 0 && !z.umsatz)
+    ? `<p class="small muted" style="margin-top:8px">Umsatz 0 €: ${spalten.every(({ z }) => typeof z.kostenlos !== 'number' || z.kostenlos === z.bestellungen) ? 'die Bestellungen im Zeitraum waren kostenlose Musterbestellungen.' : 'bezahlte Bestellungen ohne Betrag (z. B. kostenlose Muster).'}</p>`
+    : '';
+  return `<section class="card kpi-card">
+      <table class="kpi"><thead><tr><th></th>${spalten.map(({ l }) => `<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>
+        <tr><th>Bestellungen</th>${spalten.map(({ z }) => `<td>${esc(z.bestellungen ?? '–')}${z.kostenlos ? ` <span class="small muted">(davon ${z.kostenlos} Muster)</span>` : ''}</td>`).join('')}</tr>
+        <tr><th>Umsatz</th>${spalten.map(({ z }) => `<td>${geld(z.umsatz, z.waehrung)}</td>`).join('')}</tr>
+        <tr><th>Ø Bestellwert</th>${spalten.map(({ z }) => `<td>${z.bestellungen ? geld(z.durchschnitt, z.waehrung) : '–'}</td>`).join('')}</tr>
+      </tbody></table>
+      ${hinweis}
+      <p class="small muted" style="margin-top:6px">Stornierte und unbezahlte Bestellungen zählen nicht · Stand ${esc(fmtDateTime(k.erstellt))}</p>
+    </section>`;
 }
 
 /** Einzeiler: Titel, ein Status-Chip, Knopf rechts. Der Grund (Prioritaet/Blocker/Frist) steht
@@ -418,7 +449,7 @@ function attentionItem({ task: t, reasons }, i) {
  * dort die mehrzeilige taskRow/blockedRow-Darstellung, damit vier bis sechs Eintraege nicht
  * gleich eine halbe Bildschirmhoehe brauchen. */
 function heuteCompactRow(t, buttonLabel, { title } = {}) {
-  return `<div class="row att-row" data-open="${t.number}" tabindex="0" role="button" title="${esc(title ?? (t.nextStep || t.blocker || ''))}">
+  return `<div class="row att-row" data-open="${t.number}" tabindex="0" role="button" title="${esc(title ?? (echterSchritt(t) || t.blocker || ''))}">
     <span class="t">${prioBadge(t)} ${taskLink(t)}</span>
     ${statusBadge(t)}
     <button class="btn btn-sm" data-open="${t.number}" data-primary="1">${esc(buttonLabel)}</button>
@@ -470,6 +501,9 @@ function filteredTasks() {
 function setParam(key, value) {
   const p = new URLSearchParams(state.route.params);
   if (value === '' || value === null) p.delete(key); else p.set(key, value);
+  // Ein neuer Filter beginnt wieder auf Seite 1 - sonst landet man auf einer leeren Seite.
+  if (['psfilter', 'gruppe', 'psq'].includes(key)) p.delete('seite');
+  if (key === 'lq') p.delete('lseite');
   if (key !== 'view' && key !== 'task' && p.get('view') && ['status'].includes(key)) p.delete('view');
   location.hash = `#/${state.route.view}?${p}`;
 }
@@ -499,21 +533,91 @@ function viewArbeit() {
     ${mode === 'kanban' ? kanban(list) : tableView(list)}`;
 }
 
+// Der Standardtext, den `npm run task -- create` ohne --next eintraegt. Er sagt nichts ueber
+// die Aufgabe und wiederholte sich in fast jeder Zeile - in Listen wird er ausgeblendet.
+const PLATZHALTER_SCHRITT = /^Triage: Priorität, Owner und Akzeptanzkriterien festlegen\.?$/i;
+const echterSchritt = t => (t.nextStep && !PLATZHALTER_SCHRITT.test(t.nextStep.trim())) ? t.nextStep : '';
+
+/** Projektpraefix aus dem Titel ("[Google Ads] Phase 5.1 …" -> "Google Ads"). */
+function projektVon(t) {
+  const m = t.title.match(/^\[([^\]]+)\]/);
+  return m ? m[1].replace(/\s+\d.*$/, '').replace(/^SHP.*$/, 'SHP (Shop-Backlog)') : null;
+}
+
+/**
+ * Projekte mit mindestens drei Aufgaben, die alle seit 14+ Tagen unveraendert sind, werden
+ * in der ungefilterten Liste zu einer aufklappbaren Zeile zusammengefasst - sonst schieben
+ * sich zehn ruhende Phasen-Aufgaben zwischen die Arbeit, die gerade laeuft.
+ */
+function ruhendeProjekte(list) {
+  const p = state.route.params;
+  if ([...p.keys()].some(k => !['mode', 'task'].includes(k))) return new Map();
+  const gruppen = new Map();
+  for (const t of list) { const k = projektVon(t); if (k) gruppen.set(k, [...(gruppen.get(k) || []), t]); }
+  const ruhend = new Map();
+  for (const [k, ts] of gruppen) if (ts.length >= 3 && ts.every(t => (t.daysSinceUpdate ?? 0) >= 14)) ruhend.set(k, ts);
+  return ruhend;
+}
+state.offeneProjekte = new Set();
+
+/** Liste in Anzeige-Eintraege: Aufgaben und (eingeklappte) Projektgruppen in Sortierreihenfolge. */
+function listeMitGruppen(list) {
+  const ruhend = ruhendeProjekte(list);
+  const gesehen = new Set(); const out = [];
+  for (const t of list) {
+    const k = projektVon(t);
+    if (k && ruhend.has(k)) {
+      if (!gesehen.has(k)) {
+        gesehen.add(k);
+        const ts = ruhend.get(k); const offen = state.offeneProjekte.has(k);
+        out.push({ gruppe: k, tasks: ts, offen, tage: Math.min(...ts.map(x => x.daysSinceUpdate ?? 0)) });
+        if (offen) out.push(...ts.map(x => ({ task: x, inGruppe: true })));
+      }
+      continue;
+    }
+    out.push({ task: t });
+  }
+  return out;
+}
+const gruppenText = e => `<b>[${esc(e.gruppe)}]</b> · ${plural(e.tasks.length, 'Aufgabe', 'Aufgaben')} · seit ${e.tage} Tagen unverändert`;
+
 function tableView(list) {
-  // Schmale Bildschirme: Karten statt Tabelle, damit nichts seitlich scrollen muss.
-  if (list.length && window.matchMedia('(max-width: 760px)').matches) return `<div class="rows">${list.map(t => taskRow(t)).join('')}</div>`;
   if (!list.length) return emptyState('Keine Aufgaben in dieser Ansicht.', 'Filter anpassen oder eine neue Aufgabe anlegen.', { href: newIssueUrl({ template: 'feature.yml' }), text: 'Neue Aufgabe ↗' });
-  return `<div class="table-wrap"><table class="tasks"><thead><tr>
-    <th>Aufgabe</th><th>Bereich</th><th>Status</th><th>Prio</th><th>Owner</th><th>Ausführung</th><th>Nächster Schritt</th><th>Fällig</th><th>Blocker / Lücken</th><th>Update</th></tr></thead>
-    <tbody>${list.map((t, i) => `<tr class="task-row ${i === state.selectedRow ? 'selected' : ''}" data-open="${t.number}" tabindex="0">
+  const eintraege = listeMitGruppen(list);
+  // Schmale Bildschirme: Karten statt Tabelle, damit nichts seitlich scrollen muss.
+  if (window.matchMedia('(max-width: 760px)').matches) {
+    return `<div class="rows">${eintraege.map(e => e.gruppe
+      ? `<button type="button" class="group-toggle" data-toggle-projekt="${esc(e.gruppe)}" aria-expanded="${e.offen}">${e.offen ? '▾' : '▸'} ${gruppenText(e)}</button>`
+      : taskRow(e.task)).join('')}</div>`;
+  }
+  // Spalten, die in dieser Ansicht bei allen Aufgaben gleich oder leer sind, tragen keine
+  // Information und fallen weg (z. B. Owner, wenn alles bei derselben Person liegt).
+  const spalten = {
+    owner: new Set(list.map(t => t.owner || '')).size > 1,
+    exec: list.some(t => t.executor),
+    next: list.some(t => echterSchritt(t)),
+    due: list.some(t => t.due),
+    hint: list.some(t => (t.blocker && ['blockiert', 'freigabe'].includes(t.status)) || t.triage.length),
+  };
+  const breite = 5 + Object.values(spalten).filter(Boolean).length;
+  let zeile = -1;
+  const rows = eintraege.map(e => {
+    if (e.gruppe) return `<tr class="group-row"><td colspan="${breite}"><button type="button" class="group-toggle" data-toggle-projekt="${esc(e.gruppe)}" aria-expanded="${e.offen}">${e.offen ? '▾' : '▸'} ${gruppenText(e)}</button></td></tr>`;
+    const t = e.task; zeile += 1;
+    return `<tr class="task-row ${zeile === state.selectedRow ? 'selected' : ''} ${e.inGruppe ? 'in-group' : ''}" data-open="${t.number}" tabindex="0">
       <td class="t"><span class="id">${esc(t.id)}</span> <a href="#" data-open="${t.number}">${esc(t.title)}</a></td>
-      <td>${esc(t.area || '–')}</td><td>${statusBadge(t)}</td><td>${prioBadge(t)}</td>
-      <td>${ownerText(t)}</td><td>${execBadge(t) || '<span class="muted">–</span>'}</td>
-      <td class="next">${esc(t.nextStep || '–')}</td>
-      <td class="nowrap ${t.overdue ? 'warnc' : ''}">${t.due ? fmtDate(t.due) : '–'}</td>
-      <td>${t.blocker && ['blockiert', 'freigabe'].includes(t.status) ? `<span class="warnc">${esc(t.blocker)}</span>` : ''}${t.triage.length ? `<div class="gapc">${esc(t.triage.join(' · '))}</div>` : ''}</td>
-      <td class="nowrap muted">${ago(t.updatedAt)}</td></tr>`).join('')}</tbody></table></div>
-    <p class="small muted" style="margin-top:8px">Tastatur: <kbd>j</kbd>/<kbd>k</kbd> bewegen, <kbd>Enter</kbd> öffnen, <kbd>Esc</kbd> schließen.</p>`;
+      <td>${statusBadge(t)}</td><td>${prioBadge(t)}</td><td class="muted">${esc(t.area || '–')}</td>
+      ${spalten.owner ? `<td>${ownerText(t)}</td>` : ''}
+      ${spalten.exec ? `<td>${execBadge(t) || '<span class="muted">–</span>'}</td>` : ''}
+      ${spalten.next ? `<td class="next">${esc(echterSchritt(t) || '')}</td>` : ''}
+      ${spalten.due ? `<td class="nowrap ${t.overdue ? 'warnc' : ''}">${t.due ? fmtDate(t.due) : ''}</td>` : ''}
+      ${spalten.hint ? `<td>${t.blocker && ['blockiert', 'freigabe'].includes(t.status) ? `<span class="warnc">${esc(t.blocker)}</span>` : ''}${t.triage.length ? `<div class="gapc">${esc(t.triage.join(' · '))}</div>` : ''}</td>` : ''}
+      <td class="nowrap muted">${ago(t.updatedAt)}</td></tr>`;
+  }).join('');
+  return `<div class="table-wrap"><table class="tasks"><thead><tr>
+    <th>Aufgabe</th><th>Status</th><th>Prio</th><th>Bereich</th>${spalten.owner ? '<th>Owner</th>' : ''}${spalten.exec ? '<th>Ausführung</th>' : ''}${spalten.next ? '<th>Nächster Schritt</th>' : ''}${spalten.due ? '<th>Fällig</th>' : ''}${spalten.hint ? '<th>Hinweis</th>' : ''}<th>Update</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <p class="small muted" style="margin-top:8px">Tastatur: <kbd>j</kbd>/<kbd>k</kbd> bewegen, <kbd>Enter</kbd> öffnen, <kbd>Esc</kbd> schließen.${!spalten.owner && list[0]?.owner ? ` · Alle Aufgaben liegen bei @${esc(list[0].owner)}.` : ''}</p>`;
 }
 
 function kanban(list) {
@@ -557,19 +661,27 @@ function viewFreigaben() {
 function decisionCard(t) {
   const d = t.decision || {};
   const decider = d.decider || t.owner || null;
+  // Ohne Optionen ist die Vorlage unvollstaendig: dann ist "Rueckfrage" der naheliegende Schritt.
+  const vollstaendig = Boolean(d.options?.length);
   return `<article class="card" style="box-shadow:none">
     <div class="card-head"><h3>${prioBadge(t)} ${taskLink(t)}</h3>${t.due ? `<span class="small ${t.overdue ? 'warnc' : 'muted'}">Frist ${fmtDate(t.due)}</span>` : ''}</div>
-    <p style="font-weight:600;margin-bottom:6px">${esc(d.question || t.blocker || t.nextStep || 'Freigabe erforderlich – Frage im Issue nachtragen')}</p>
-    ${d.options?.length ? `<ol style="margin:0 0 8px;padding-left:18px;font-size:.9rem">${d.options.map(o => `<li>${esc(o)}</li>`).join('')}</ol>` : '<p class="small muted" style="margin-bottom:6px">Keine Optionen hinterlegt – Entscheidungsvorlage unvollständig.</p>'}
+    ${(d.question || t.blocker || echterSchritt(t)) && (d.question || t.blocker || echterSchritt(t)) !== t.title ? `<p style="font-weight:600;margin-bottom:6px">${esc(d.question || t.blocker || echterSchritt(t))}</p>` : ''}
+    ${d.options?.length ? `<ol style="margin:0 0 8px;padding-left:18px;font-size:.9rem">${d.options.map(o => `<li>${esc(o)}</li>`).join('')}</ol>` : '<p class="notice warn small" style="margin-bottom:8px">Keine Optionen hinterlegt – im Issue unter „Optionen" ergänzen oder nachfragen.</p>'}
     ${d.recommendation ? `<div class="notice" style="margin-bottom:8px"><b>Empfehlung:</b> ${esc(d.recommendation)}</div>` : ''}
     ${t.risk ? `<p class="small muted">Risiko: ${esc(t.risk)}</p>` : ''}
     <div class="m small muted" style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0"><span>Entscheider:in ${decider ? `<b>${esc(decider)}</b>` : '<span class="badge gap">fehlt</span>'}</span><span>${statusBadge(t)}</span><span>wartet ${since(t.updatedAt)}</span></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <button class="btn btn-sm btn-primary" data-decide="approve" data-task="${t.number}">Freigeben</button>
+    <div class="decide-actions">
+      ${vollstaendig
+        ? `<button class="btn btn-sm btn-primary" data-decide="approve" data-task="${t.number}">Freigeben</button>
       <button class="btn btn-sm" data-decide="reject" data-task="${t.number}">Ablehnen</button>
-      <button class="btn btn-sm" data-decide="question" data-task="${t.number}">Rückfrage</button>
-      <button class="btn btn-sm" data-decide="delegate" data-task="${t.number}">Delegieren</button>
-      <button class="btn btn-sm btn-ghost" data-decide="later" data-task="${t.number}">Später</button>
+      <button class="btn btn-sm" data-decide="question" data-task="${t.number}">Rückfrage</button>`
+        : `<button class="btn btn-sm btn-primary" data-decide="question" data-task="${t.number}" title="Vorlage ohne Optionen – erst nachfragen">Rückfrage stellen</button>
+      <button class="btn btn-sm" data-decide="approve" data-task="${t.number}">Trotzdem freigeben</button>`}
+      <details class="more-actions"><summary class="btn btn-sm btn-ghost">Mehr</summary><div>
+        ${vollstaendig ? '' : `<button class="btn btn-sm" data-decide="reject" data-task="${t.number}">Ablehnen</button>`}
+        <button class="btn btn-sm" data-decide="delegate" data-task="${t.number}">Delegieren</button>
+        <button class="btn btn-sm" data-decide="later" data-task="${t.number}">Später</button>
+      </div></details>
     </div>
   </article>`;
 }
@@ -579,13 +691,15 @@ function decisionCard(t) {
 // ---------------------------------------------------------------------------
 function viewBereiche() {
   const health = areaHealth(state.tasks);
+  // Liegt alles bei derselben Person, sagt die Owner-Zeile auf jeder Karte nichts.
+  const mehrereOwner = new Set(state.tasks.filter(t => t.open).map(t => t.owner).filter(Boolean)).size > 1;
   return `
     <div class="page-head"><div><h1>Bereiche & Projekte</h1><p class="sub">Zustand je Bereich mit Begründung – abgeleitet aus den Aufgaben, keine geschätzten Kennzahlen</p></div></div>
     <div class="grid grid-3">${health.map(a => `<article class="card area-card">
       <div class="card-head"><h2>${esc(a.label)}</h2><span class="badge level-${a.level}">${a.level === 'ok' ? 'stabil' : a.level === 'achtung' ? 'Achtung' : 'kritisch'}</span></div>
       <div class="reasons">${esc(a.reasons.join(' · '))}</div>
       <div class="stats"><span><b>${a.open}</b> offen</span><span><b>${a.inProgress}</b> in Arbeit</span><span><b>${a.blocked}</b> blockiert</span><span><b>${a.approvals}</b> Freigabe</span></div>
-      <div class="small muted">Owner: ${a.owners.length ? a.owners.map(o => `@${esc(o)}`).join(', ') : '<span class="badge gap">niemand zugeordnet</span>'}</div>
+      ${mehrereOwner ? `<div class="small muted">Owner: ${a.owners.length ? a.owners.map(o => `@${esc(o)}`).join(', ') : '<span class="badge gap">niemand zugeordnet</span>'}</div>` : (!a.owners.length ? '<div><span class="badge gap">niemand zugeordnet</span></div>' : '')}
       ${a.top.length ? `<ul>${a.top.map(t => `<li>${prioBadge(t)} ${taskLink(t)}</li>`).join('')}</ul>` : ''}
       <div><a class="small" href="#/arbeit?area=${a.key}">Alle Aufgaben im Bereich →</a></div>
     </article>`).join('')}</div>
@@ -641,8 +755,8 @@ function viewInsights() {
       </section>
       <section class="card"><div class="card-head"><h2>Offene Arbeit nach Status</h2><span class="more muted">Quelle: GitHub Issues · ${fmtDateTime(state.raw?.generated_at)}</span></div>${bars(byStatus)}
         <div class="card-head" style="margin-top:16px"><h2>Nach Priorität</h2></div>${bars(byPrio)}</section>
-      <section class="card span-2"><div class="card-head"><h2>Kennzahlen aus Shop, Ads und Analytics</h2></div>
-        ${emptyState('Noch nicht verbunden – absichtlich.', 'Das Repository ist öffentlich; Umsätze, Ausgaben und Conversion-Daten dürfen nicht in docs/ landen. Sobald Sichtbarkeit und Lese-Zugänge entschieden sind, kommen die Integrationen in dieser Reihenfolge: GitHub (fertig), Shopify (read-only), Google Ads, GA4/Search Console. Bis dahin werden hier keine Demo-Zahlen gezeigt.')}
+      <section class="card span-2"><div class="card-head"><h2>Kennzahlen</h2></div>
+        <p class="small muted">Shop-Kennzahlen (Bestellungen, Umsatz) stehen auf <a href="#/heute">Heute</a> und kommen aus einem lokalen Export, der nie ins öffentliche Repository gelangt. Google Ads und GA4/Search Console sind noch nicht angebunden – erst nach der Sichtbarkeitsentscheidung. Bis dahin gibt es hier keine Demo-Zahlen.</p>
       </section>
     </div>`;
 }
@@ -656,6 +770,72 @@ async function loadActivity() {
   try { const r = await fetch('/api/activity', { cache: 'no-store' }); return r.ok ? await r.json() : { error: `HTTP ${r.status}` }; } catch (e) { return { error: e.message }; }
 }
 
+// Lokales Protokoll (wer hat was im Control Center gemacht) - nur bei Mehrbenutzerbetrieb
+// interessant, aber unschaedlich, wenn keine Anmeldung aktiv ist (dann leer).
+let protokollCache = null;
+async function loadProtokoll() {
+  try { const r = await fetch('/api/protokoll', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+// Mitarbeiterliste - nur fuer die Rolle "inhaber" sichtbar (der Server liefert sie nur dieser Rolle aus).
+let benutzerCache = null;
+async function loadBenutzer() {
+  if (state.session?.benutzer?.rolle !== 'inhaber') return null;
+  try { const r = await fetch('/api/benutzer', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+const EREIGNIS_LABEL = { labeled: 'Label', unlabeled: 'Label entfernt', assigned: 'zugewiesen', unassigned: 'Zuweisung entfernt', closed: 'geschlossen', reopened: 'wieder geöffnet', referenced: 'verknüpft', commented: 'Kommentar', renamed: 'umbenannt', angelegt: 'angelegt', geschlossen: 'geschlossen', aktualisiert: 'aktualisiert' };
+
+/** Label-Name in Klartext: status:review -> "Status Review", priority:p2 -> "Prio P2". */
+function labelKlartext(name) {
+  const [gruppe, wert = ''] = String(name).split(':');
+  if (gruppe === 'status') return `Status ${STATUS_BY_KEY[wert]?.label || wert}`;
+  if (gruppe === 'priority') return `Prio ${wert.toUpperCase()}`;
+  if (gruppe === 'area') return `Bereich ${wert}`;
+  if (gruppe === 'type') return `Typ ${wert}`;
+  if (gruppe === 'reviewer') return `Review durch ${wert}`;
+  return name;
+}
+
+/**
+ * Fasst Ereignisse derselben Person an derselben Aufgabe innerhalb von drei Minuten zu einem
+ * Eintrag zusammen. Beim Anlegen einer Aufgabe entstehen sonst acht Zeilen Label-Wechsel in
+ * derselben Minute. Bei Status-Labels zaehlt nur das zuletzt gesetzte.
+ */
+function buendeleAktivitaet(events) {
+  const out = [];
+  const FENSTER = 180_000;
+  for (const e of events) {
+    const t = new Date(e.at).getTime();
+    // Rueckwaerts suchen, solange die Buendel noch im Zeitfenster liegen - Ereignisse
+    // anderer Aufgaben duerfen dazwischen stehen (Bots arbeiten oft parallel).
+    let ziel = null;
+    for (let i = out.length - 1; i >= 0 && Math.abs(out[i].letzteZeit - t) <= FENSTER; i--) {
+      if (out[i].number === e.number && out[i].who === e.who) { ziel = out[i]; break; }
+    }
+    if (ziel) { ziel.teile.push(e); ziel.letzteZeit = t; }
+    else out.push({ at: e.at, who: e.who, number: e.number, title: e.title, teile: [e], letzteZeit: t });
+  }
+  return out.map(b => {
+    const chrono = b.teile.slice().reverse();
+    const gesetzt = []; const entfernt = []; const sonst = [];
+    for (const e of chrono) {
+      const m = /Label „([^"“”]+)["“”]( entfernt)?/.exec(e.text || '');
+      if (m) (m[2] || e.kind === 'unlabeled' ? entfernt : gesetzt).push(m[1]);
+      else { const roh = String(e.text || '').split(' · ').pop(); sonst.push(e.kind === 'commented' ? 'Kommentar' : EREIGNIS_LABEL[roh] || roh || EREIGNIS_LABEL[e.kind] || e.kind); }
+    }
+    const letzteJeGruppe = new Map();
+    for (const l of gesetzt) letzteJeGruppe.set(l.includes(':') ? l.split(':')[0] : l, l);
+    const gesetzteGruppen = new Set(letzteJeGruppe.keys());
+    const teile = [
+      ...[...letzteJeGruppe.values()].map(l => ({ text: labelKlartext(l), art: l.startsWith('status:') ? 'status' : 'label' })),
+      ...entfernt.filter(l => !gesetzteGruppen.has(l.includes(':') ? l.split(':')[0] : l)).map(l => ({ text: `${labelKlartext(l)} entfernt`, art: 'entfernt' })),
+      ...[...new Set(sonst)].map(t => ({ text: t, art: 'sonst' })),
+    ];
+    return { ...b, teile };
+  });
+}
+
 function viewAktivitaet() {
   const q = (state.route.params.get('q') || '').toLowerCase();
   const local = activityCache && !activityCache.error ? activityCache.events : null;
@@ -665,17 +845,40 @@ function viewAktivitaet() {
   } else {
     events = [];
     for (const t of state.tasks) {
-      events.push({ at: t.createdAt, who: 'GitHub', kind: 'angelegt', text: t.title, number: t.number });
-      if (t.closedAt) events.push({ at: t.closedAt, who: 'GitHub', kind: 'geschlossen', text: t.title, number: t.number });
-      else if (t.updatedAt && t.updatedAt !== t.createdAt) events.push({ at: t.updatedAt, who: 'GitHub', kind: 'aktualisiert', text: `${t.title} · ${t.statusLabel}`, number: t.number });
+      events.push({ at: t.createdAt, who: 'GitHub', kind: 'angelegt', text: 'angelegt', number: t.number, title: t.title });
+      if (t.closedAt) events.push({ at: t.closedAt, who: 'GitHub', kind: 'geschlossen', text: 'geschlossen', number: t.number, title: t.title });
+      else if (t.updatedAt && t.updatedAt !== t.createdAt) events.push({ at: t.updatedAt, who: 'GitHub', kind: 'aktualisiert', text: t.statusLabel, number: t.number, title: t.title });
     }
   }
-  events = events.filter(e => !q || `${e.who} ${e.kind} ${e.text} #${e.number}`.toLowerCase().includes(q)).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 150);
+  events = events.filter(e => !q || `${e.who} ${e.kind} ${e.text} ${e.title || ''} #${e.number}`.toLowerCase().includes(q)).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 300);
+  const buendel = buendeleAktivitaet(events).slice(0, 120);
+  const titelVon = b => b.title || state.tasks.find(t => t.number === b.number)?.title || '';
   return `
-    <div class="page-head"><div><h1>Aktivität</h1><p class="sub">${local ? 'Issue-Events und Kommentare aus GitHub (lokal abgerufen)' : 'Statischer Modus: nur Anlage-, Änderungs- und Abschlusszeitpunkte aus issues.json. Kommentare und Label-Wechsel im Detail stehen auf GitHub.'}</p></div></div>
+    <div class="page-head"><div><h1>Aktivität</h1><p class="sub">Was sich an den Aufgaben geändert hat – zusammengefasst je Person und Aufgabe</p></div></div>
     <div class="toolbar"><input type="search" placeholder="Verlauf durchsuchen …" value="${esc(state.route.params.get('q') || '')}" data-param="q" aria-label="Verlauf durchsuchen"></div>
     ${activityCache?.error ? `<div class="notice warn" style="margin-bottom:12px">Verlauf konnte nicht geladen werden: ${esc(activityCache.error)}</div>` : ''}
-    <section class="card"><ul class="activity">${events.map(e => `<li><span class="when">${fmtDateTime(e.at)}</span><div><span class="who">${esc(e.who)}</span> <span class="badge plain">${esc(e.kind)}</span> <a href="#" data-open="${e.number}">#${e.number}</a> <span class="body" style="display:inline">${esc(e.text)}</span></div></li>`).join('') || '<li class="muted">Keine Einträge.</li>'}</ul></section>`;
+    <section class="card"><ul class="activity">${buendel.map(b => `<li><span class="when">${fmtDateTime(b.at)}</span><div><div><a href="#" data-open="${b.number}"><span class="mono small muted">#${b.number}</span> ${esc(titelVon(b))}</a></div><div class="activity-meta"><span class="who">${esc(b.who)}</span>${b.teile.map(t => `<span class="badge ${t.art === 'status' ? 'status review' : 'plain'}">${esc(t.text)}</span>`).join('')}</div></div></li>`).join('') || '<li class="muted">Keine Einträge.</li>'}</ul></section>
+    ${renderProtokoll()}
+    ${renderBenutzerverwaltung()}`;
+}
+
+/** Lokales Protokoll (wer hat was gemacht) - letzte 50 Eintraege, nur lokal, nie auf GitHub. */
+function renderProtokoll() {
+  const eintraege = protokollCache?.eintraege || [];
+  if (!eintraege.length) return '';
+  return `
+    <div class="page-head" style="margin-top:24px"><div><h2>Lokales Protokoll</h2><p class="sub">Letzte 50 Aktionen im Control Center (nie im Repository, nur auf diesem Mac)</p></div></div>
+    <section class="card"><ul class="activity">${eintraege.map(e => `<li><span class="when">${fmtDateTime(e.zeitpunkt)}</span><div><div>${esc(e.aktion)}${e.objekt ? ` · ${esc(e.objekt)}` : ''}</div><div class="activity-meta"><span class="who">${esc(e.benutzer)}</span></div></div></li>`).join('')}</ul></section>`;
+}
+
+/** Benutzerverwaltung - nur fuer die Rolle "inhaber" sichtbar. Anlegen/Deaktivieren laeuft ueber
+ * das Skript (operations/scripts/benutzer.mjs), hier reicht eine Liste plus Hinweis. */
+function renderBenutzerverwaltung() {
+  if (!benutzerCache) return '';
+  const liste = benutzerCache.benutzer || [];
+  return `
+    <div class="page-head" style="margin-top:24px"><div><h2>Mitarbeiterzugänge</h2><p class="sub">${esc(benutzerCache.hinweis || '')}</p></div></div>
+    <section class="card">${liste.length ? `<table class="table"><thead><tr><th>Name</th><th>Kürzel</th><th>Rolle</th><th>Status</th></tr></thead><tbody>${liste.map(b => `<tr><td>${esc(b.name)}</td><td class="mono">${esc(b.kuerzel)}</td><td>${esc(b.rolle)}</td><td>${b.aktiv ? 'aktiv' : 'deaktiviert'}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Noch keine Mitarbeiterzugänge angelegt – Notzugang per Einzelpasswort aktiv.</p>'}</section>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -725,7 +928,7 @@ function ensureEinkaufBestellungen() {
   einkauf.loadingBestellungen = true;
   fetchEinkauf('/api/einkauf/bestellungen').then(d => {
     einkauf.bestellungen = d; einkauf.loadingBestellungen = false;
-    if (state.route.view === 'einkauf') render();
+    if (['heute', 'einkauf'].includes(state.route.view)) render();
   });
 }
 
@@ -734,22 +937,24 @@ function ensureEinkaufAuftragsstatus() {
   einkauf.loadingAuftragsstatus = true;
   fetchEinkauf('/api/einkauf/auftragsstatus').then(d => {
     einkauf.auftragsstatus = d; einkauf.loadingAuftragsstatus = false;
-    if (state.route.view === 'einkauf') render();
+    if (['heute', 'einkauf'].includes(state.route.view)) render();
   });
 }
 
-async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null } = {}) {
+/** Setzt den Auftragsfluss-Stand einer Position. `still` unterdrueckt Toast und Neuzeichnen
+ * (fuer Sammelaktionen, die am Ende selbst einmal melden und zeichnen). */
+async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, still = false } = {}) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
   try {
     const r = await fetch('/api/einkauf/auftragsstatus', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, status, lieferantBestellnummer }),
+      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, status, lieferantBestellnummer, notiz }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
-    if (!einkauf.auftragsstatus) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
     einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
-    toast(`Status: ${AF_STATUS_LABEL[status]}`);
-    render();
+    if (!still) { toast(`Status: ${AF_STATUS_LABEL[status]}`); render(); }
     return true;
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
 }
@@ -823,6 +1028,17 @@ function aktualisierungHealth() {
         detail: `${stand.meldung || ''} · Versuch ${versuch} – die vorhandenen (älteren) Daten bleiben unverändert stehen · Befehl: npm run daten:aktualisieren -- --nur ${teil}`,
       };
     }
+    if (stand.letzterFehler) {
+      // Der letzte Versuch scheiterte, die Daten des erfolgreichen Laufs davor gelten weiter:
+      // deren Stand zeigen, den Fehlschlag daneben (operations/scripts/aktualisieren.mjs, standNachLauf).
+      const f = stand.letzterFehler;
+      const keinZugang = /kein zugang/i.test(f.meldung || '');
+      return {
+        level: 'warn',
+        title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}${stand.veraltet ? ' – Daten veraltet' : ''} · ${keinZugang ? 'Aktualisieren ohne Zugang' : 'letzter Versuch fehlgeschlagen'}`,
+        detail: `${stand.anzahl ?? '?'} Datensätze · Versuch ${f.zeitpunkt ? fmtDateTime(f.zeitpunkt) : 'unbekannt'}: ${f.meldung || ''}${keinZugang ? ' · Auf diesem Rechner aktualisiert der geplante Export-Lauf die Daten.' : ''}`,
+      };
+    }
     if (stand.veraltet) return { level: 'warn', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)} – Daten veraltet`, detail: 'Bitte `npm run daten:aktualisieren` ausführen.' };
     return { level: 'ok', title: `${label}: Stand ${fmtDateTime(stand.zeitpunkt)}`, detail: stand.anzahl !== null && stand.anzahl !== undefined ? `${stand.anzahl} Datensätze${stand.meldung ? ` · ${stand.meldung}` : ''}` : (stand.meldung || '') };
   });
@@ -830,7 +1046,7 @@ function aktualisierungHealth() {
 
 function ensureEinkaufProduktstatus() {
   const p = state.route.params;
-  const qs = new URLSearchParams({ page: p.get('seite') || '1', q: p.get('psq') || '', gruppe: p.get('gruppe') || '', filter: p.get('psfilter') || '' }).toString();
+  const qs = new URLSearchParams({ page: p.get('seite') || '1', pageSize: '25', q: p.get('psq') || '', gruppe: p.get('gruppe') || '', filter: psFilterAktiv() === 'alle' ? '' : psFilterAktiv() }).toString();
   if (einkauf.produktstatusKey === qs && (einkauf.produktstatus || einkauf.loadingProduktstatus)) return;
   einkauf.produktstatusKey = qs;
   einkauf.loadingProduktstatus = true;
@@ -853,52 +1069,72 @@ function afEintragFuer(p) {
   return einkauf.auftragsstatus?.positionen?.[afKey(p.orderId, p.lineItemId)] || null;
 }
 
-/** Lieferanten-Link oder Begründung, warum keiner hinterlegt ist. */
+/** Lieferanten-Link oder kurzer Hinweis, warum keiner hinterlegt ist. */
 function lieferantLinkZelle(p) {
-  if (p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT') {
-    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`;
+  // Zwei Wege zum Originalartikel: direkt zum Lieferanten, wenn eine
+  // Produktseite hinterlegt ist - und immer ins Lexikon, wo Originalname,
+  // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
+  // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
+  const lex = p.handle
+    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Lexikon</a></div>`
+    : '';
+  if (hatLieferantLink(p)) {
+    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Öffnen ↗</a>${lex}`;
   }
-  return `<span class="small muted">keine Produktseite hinterlegt (einkauf.lieferant_url fehlt)</span>`;
+  return `<span class="small muted" title="Metafeld einkauf.lieferant_url fehlt">kein Link</span>${lex}`;
 }
+const hatLieferantLink = p => Boolean(p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT');
 
-/** Status-Zelle: aktueller Stand + Buttons fuer den naechsten Schritt. */
+/** Status-Zelle: aktueller Stand + Knopf fuer den naechsten Schritt. */
 function afStatusZelle(p) {
   const eintrag = afEintragFuer(p);
   const status = eintrag?.status || null;
   const gruppe = afFilterGruppe(status);
-  const badgeClass = gruppe === 'erledigt' ? 'fertig' : gruppe === 'unterwegs' ? 'freigabe' : gruppe === 'bestellt' ? 'plain' : 'blockiert';
-  const stand = status ? `<div class="small muted">${esc(AF_STATUS_LABEL[status])} · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>` : '';
-  const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr.: ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
+  const badgeClass = gruppe === 'erledigt' ? 'fertig' : gruppe === 'unterwegs' ? 'in-arbeit' : gruppe === 'bestellt' ? 'freigabe' : 'plain';
+  const stand = status ? `<div class="small muted">${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>` : '';
+  const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
   const naechster = afNaechsterStatus(status);
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}">${esc(AF_STATUS_LABEL[naechster])}</button>` : '';
-  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Offen')}</span>${stand}${nr}<div style="margin-top:4px">${btn}</div>`;
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">→ ${esc(AF_STATUS_LABEL[naechster])}</button>` : '';
+  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}</span>${stand}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
+}
+
+/** Fehlt einer Position etwas, das die Bestellung beim Lieferanten verhindert? */
+function positionUnvollstaendig(p) {
+  return p.grosshaendlerId === 'UNGEKLAERT' || p.bestellmenge?.menge === 'UNGEKLAERT' || !hatLieferantLink(p);
 }
 
 function einkaufGruppeKarte(g, i, praefix) {
   const id = `ek-${praefix}-${i}`;
-  const titel = g.lieferant === 'UNGEKLAERT' ? 'Lieferant ungeklärt' : `Lieferant ${esc(g.lieferant)}`;
-  const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` <span class="badge plain">${esc(g.route)}</span>` : '';
   const af = state.route.params.get('af') || '';
-  const positionen = af ? g.positionen.filter(p => afFilterGruppe(afEintragFuer(p)?.status) === af) : g.positionen;
-  if (af && !positionen.length) return '';
-  const zeilen = positionen.map(p => `<tr>
-      <td>${p.grosshaendlerId === 'UNGEKLAERT' ? `<span class="badge gap" title="Nicht in Shopify hinterlegt">Ungeklärt</span>` : `<code class="mono">${esc(p.grosshaendlerId)}</code>`}${p.idGrund ? `<div class="small muted">${esc(p.idGrund)}</div>` : ''}</td>
-      <td>${esc(p.orderName)} <span class="muted small">${fmtDate(p.orderDatum)}</span></td>
-      <td>${esc(p.titel)}<div class="small muted mono">${esc(p.sku)}</div></td>
-      <td>${esc(p.farbe)}</td>
-      <td>${esc(p.kundenmenge)}</td>
-      <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `<span class="badge gap" title="Nicht in Shopify hinterlegt">Ungeklärt</span>` : esc(p.bestellmenge.text)}${p.bestellmenge.grund ? `<div class="small muted">${esc(p.bestellmenge.grund)}</div>` : ''}</td>
+  // Ohne Filter zeigt die Liste alles, was noch Arbeit macht - "Erledigt" nur auf Wunsch.
+  const positionen = g.positionen.filter(p => { const gr = afFilterGruppe(afEintragFuer(p)?.status); return af ? gr === af : gr !== 'erledigt'; });
+  if (!positionen.length) return '';
+  const unbekannt = g.lieferant === 'UNGEKLAERT';
+  const luecken = positionen.filter(positionUnvollstaendig).length;
+  const titel = unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
+  const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` <span class="badge plain">${esc(g.route)}</span>` : '';
+  const unterzeile = luecken
+    ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
+    : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
+  const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
+  const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
+      <td><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
+      <td class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
+      <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div></td>
+      <td>${p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
       <td>${lieferantLinkZelle(p)}</td>
-      <td><a href="${esc(p.adminUrl || '')}" target="_blank" rel="noopener">Bestellung ↗</a></td>
       <td>${afStatusZelle(p)}</td>
     </tr>`).join('');
-  return `<section class="card${g.lieferant === 'UNGEKLAERT' ? ' notice warn' : ''}" style="margin-bottom:12px">
-    <div class="card-head"><h2>${titel}${route} <span class="muted small">${positionen.length} Pos.</span></h2>${kopierbutton(id)}</div>
-    <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Großhändler-ID</th><th>Kundenauftrag</th><th>Artikel</th><th>Farbe/Variante</th><th>Kunde bestellt</th><th>Beim Lieferanten bestellen</th><th>Lieferant</th><th>Auftrag</th><th>Status</th></tr></thead>
+  return `<section class="card group-card${luecken ? ' has-gap' : ''}">
+    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3>${kopierbutton(id)}</div>
+    ${unterzeile}
+    <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Menge beim Lieferanten</th><th>Großhändler-ID</th><th>Lieferant</th><th>Stand</th></tr></thead>
     <tbody>${zeilen}</tbody></table></div>
-    <textarea id="${id}" style="position:absolute;left:-9999px;width:1px;height:1px">${esc(g.text)}</textarea>
+    <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, positionen))}</textarea>
   </section>`;
 }
+/** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
+const adminAuftragUrl = id => (einkauf.bestellungen?.auftraege || []).find(a => a.id === id)?.adminUrl || '#';
 
 function geldText(g) {
   if (!g || g.betrag === null || g.betrag === undefined) return '–';
@@ -923,8 +1159,8 @@ function einkaufAuftragDetails(a) {
       <td>${geldText(p.preis)}</td>
       <td>${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? '–' : p.lieferantenArtikelnummer)}${p.lieferantenLink && p.lieferantenLink !== 'UNGEKLAERT' ? `<div class="small"><a href="${esc(p.lieferantenLink)}" target="_blank" rel="noopener">Beim Lieferanten öffnen</a></div>` : ''}</td>
     </tr>`).join('');
-  return `<div style="padding:10px 4px;display:grid;gap:10px">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+  return `<div style="padding:10px 4px;display:grid;gap:10px;overflow-wrap:anywhere">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px">
       <div><b>Kunde</b><br>${esc(d.kunde?.name)}<br>${esc(d.kunde?.email)}<br>${esc(d.kunde?.telefon)}</div>
       <div><b>Lieferadresse</b><br>${adresseText(d.lieferadresse)}</div>
       <div><b>Rechnungsadresse</b><br>${adresseText(d.rechnungsadresse)}</div>
@@ -934,38 +1170,58 @@ function einkaufAuftragDetails(a) {
     </div>
     ${d.tags?.length ? `<div><b>Tags:</b> ${d.tags.map(t => `<span class="badge plain">${esc(t)}</span>`).join(' ')}</div>` : ''}
     ${d.notiz ? `<div><b>Notiz des Kunden:</b> ${esc(d.notiz)}</div>` : ''}
-    <table class="tasks"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table>
+    <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table></div>
   </div>`;
 }
 
-function einkaufAuftragZeile(a) {
-  const c = a.checks;
-  const chip = (label, wert, schlecht) => `<span class="badge ${schlecht ? 'p0' : 'plain'}">${esc(label)}: ${esc(wert)}</span>`;
-  return `<details class="row-details">
-    <summary class="row" style="cursor:pointer">
-      <div>
-        <div class="t"><span class="badge status ${a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : ''}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(a.name)}</a> <span class="muted small">${fmtDate(a.datum)}</span></div>
-        <div class="m">${chip('Bezahlt', a.bezahlt, a.bezahlt !== 'PAID')}${chip('Versand', a.erfuellt)}${chip('Beratung', c.beratung)}${chip('Telefon', c.telefon, c.beratung === 'Ja' && c.telefon === 'fehlt')}${chip('Maßprüfung', c.masspruefung, c.masspruefung === 'Problem')}${chip('Verlegung', c.verlegung)}</div>
-        ${a.hinweise?.length ? `<div class="next" style="color:var(--crit)">${a.hinweise.map(esc).join(' · ')}</div>` : ''}
-      </div>
-    </summary>
-    ${einkaufAuftragDetails(a)}
-  </details>`;
+/** Kopiertext fuer Mail/Bestellportal - nur die gerade sichtbaren Artikel, ohne interne Marker. */
+function kopierTextFuer(g, positionen) {
+  const kopf = `Bestellung ${g.lieferant === 'UNGEKLAERT' ? '(Lieferant nicht zugeordnet)' : `Lieferant ${g.lieferant}`}` + (g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` (${g.route})` : '');
+  return [kopf, ...positionen.map((p, i) => `${i + 1}. ${anzeigeWert(p.grosshaendlerId)} | ${anzeigeWert(p.titel)} | ${p.farbe} | ${p.bestellmenge.menge === 'UNGEKLAERT' ? `ungeklärt (Kunde: ${p.kundenmenge})` : p.bestellmenge.text} | Kd.-Best. ${p.orderName}`)].join('\n');
 }
 
-const AF_FILTER_LABEL = { offen: 'Offen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
+const FINANZ_LABEL = { PAID: 'bezahlt', PENDING: 'Zahlung offen', AUTHORIZED: 'Zahlung autorisiert', PARTIALLY_PAID: 'teilweise bezahlt', REFUNDED: 'erstattet', PARTIALLY_REFUNDED: 'teilweise erstattet', VOIDED: 'Zahlung storniert', EXPIRED: 'Zahlung abgelaufen' };
+const VERSAND_LABEL = { UNFULFILLED: 'nicht versendet', FULFILLED: 'versendet', PARTIALLY_FULFILLED: 'teilweise versendet', IN_PROGRESS: 'in Bearbeitung', ON_HOLD: 'angehalten', SCHEDULED: 'geplant', RESTOCKED: 'zurückgelegt', OPEN: 'offen' };
+/** Hinweise aus der Aufbereitung in Alltagssprache (interne Marker nie roh zeigen). */
+const hinweisText = h => String(h).replace(/UNGEKLAERT/g, 'ungeklärt').replace(/Position\(en\)/g, 'Artikel').replace(/Einkaufsmenge\(n\)/g, 'Bestellmenge(n)').replace(/^Zahlung: (\w+)$/, (_, c) => FINANZ_LABEL[c] ? `Zahlung: ${FINANZ_LABEL[c]}` : `Zahlung: ${c}`);
 
-function afFortschrittBand(alleWarePositionen) {
+/**
+ * Ein Auftrag als Karte: Ampel, Nummer, Datum, was fehlt - in Klartext. Die frueheren
+ * Chips (Bezahlt: PAID, Telefon: fehlt, …) standen bei jedem Auftrag, auch wenn sie
+ * nichts bedeuteten; jetzt erscheint nur, was vom Normalfall abweicht.
+ */
+function einkaufAuftragZeile(a) {
+  const offen = auftragOffenePositionen(a);
+  const artikel = offen.map(p => anzeigeWert(p.titel)).filter(Boolean);
+  const abweichungen = [];
+  if (a.erfuellt && a.erfuellt !== 'UNFULFILLED' && VERSAND_LABEL[a.erfuellt]) abweichungen.push(VERSAND_LABEL[a.erfuellt]);
+  if (a.checks?.verlegung === 'Ja' && !a.hinweise?.some(h => /Verlegung/.test(h))) abweichungen.push('Verlegung gebucht');
+  const ampelKlasse = a.ampel === 'rot' ? 'blockiert' : a.ampel === 'gelb' ? 'freigabe' : a.ampel === 'gruen' ? 'fertig' : 'plain';
+  const detail = einkaufAuftragDetails(a);
+  const kopf = `<div class="order-row ${esc(a.ampel)}">
+    <div class="order-main">
+      <div class="t"><span class="badge status ${ampelKlasse}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen" onclick="event.stopPropagation()">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${abweichungen.map(x => ` <span class="badge plain">${esc(x)}</span>`).join('')}</div>
+      ${artikel.length ? `<div class="small muted">${esc(artikel.slice(0, 3).join(' · '))}${artikel.length > 3 ? ` · +${artikel.length - 3}` : ''}</div>` : ''}
+      ${a.hinweise?.length ? `<ul class="order-issues">${a.hinweise.map(h => `<li>${esc(hinweisText(h))}</li>`).join('')}</ul>` : ''}
+    </div>
+    ${offen.length && a.ampel !== 'gruen' ? `<button type="button" class="btn btn-sm btn-ghost" onclick="event.preventDefault()" data-auftrag-erledigt="${esc(a.id)}" title="Z. B. Testbestellung oder anders erledigt – setzt die Artikel im Auftragsfluss auf „Erledigt"">Ohne Einkauf abschließen…</button>` : ''}
+  </div>`;
+  // Ohne Detaildaten bleibt es bei der Zeile; sonst klappt die volle Bestellung darunter auf.
+  if (!detail) return kopf;
+  return `<details class="order-details"><summary>${kopf}</summary>${detail}</details>`;
+}
+
+const AF_FILTER_LABEL = { offen: 'Noch zu bestellen', bestellt: 'Bestellt', unterwegs: 'Unterwegs', erledigt: 'Erledigt' };
+
+/** Filter nach Auftragsfluss-Schritt. Ohne Auswahl: alles ausser "Erledigt". */
+function afFilterChips(allePositionen) {
   const zaehler = { offen: 0, bestellt: 0, unterwegs: 0, erledigt: 0 };
-  for (const p of alleWarePositionen) zaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
+  for (const p of allePositionen) zaehler[afFilterGruppe(afEintragFuer(p)?.status)] += 1;
   const af = state.route.params.get('af') || '';
-  const cls = { offen: 'crit', bestellt: 'warn', unterwegs: 'info', erledigt: 'ok' };
-  return `<div class="chips" role="group" aria-label="Nach Auftragsfluss-Status filtern" style="margin:12px 0">
-    ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${af === k ? '' : k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
-    ${af ? `<button type="button" class="chip" data-param="af" data-value="">Alle</button>` : ''}
-  </div>
-  <div class="band" style="margin:12px 0">
-    ${Object.keys(AF_FILTER_LABEL).map(k => `<div class="${cls[k]}"><span class="n">${zaehler[k]}</span><span class="l">${esc(AF_FILTER_LABEL[k])}</span></div>`).join('')}
+  const offenGesamt = zaehler.offen + zaehler.bestellt + zaehler.unterwegs;
+  return `<div class="chips" role="group" aria-label="Nach Auftragsfluss filtern">
+    <button type="button" class="chip" data-param="af" data-value="" aria-pressed="${!af}">Alle offenen<span class="c">${offenGesamt}</span></button>
+    ${Object.keys(AF_FILTER_LABEL).map(k => `<button type="button" class="chip" data-param="af" data-value="${k}" aria-pressed="${af === k}">${esc(AF_FILTER_LABEL[k])}<span class="c">${zaehler[k]}</span></button>`).join('')}
   </div>`;
 }
 
@@ -973,48 +1229,91 @@ function viewEinkaufBestellungen() {
   ensureEinkaufBestellungen();
   ensureEinkaufAuftragsstatus();
   const d = einkauf.bestellungen;
-  if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestelluebersicht …</div>`;
+  if (!d && einkauf.loadingBestellungen) return `<div class="empty">Lade Bestellübersicht …</div>`;
   if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
-  const z = d.zahlen;
-  const allePositionen = [...(d.gruppen || []).flatMap(g => g.positionen), ...(d.musterGruppen || []).flatMap(g => g.positionen)];
+  const { ware, muster, gruppe } = einkaufPositionenMitStand(d);
+  const aktiv = aktiveAuftraege(d);
+  const klaeren = aktiv.filter(a => a.ampel === 'rot' || a.ampel === 'gelb').sort((a, b) => (a.ampel === 'rot' ? 0 : 1) - (b.ampel === 'rot' ? 0 : 1));
+  const rot = klaeren.filter(a => a.ampel === 'rot').length;
+  const wareKarten = (d.gruppen || []).map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('');
+  const musterKarten = (d.musterGruppen || []).map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('');
+  const af = state.route.params.get('af') || '';
+  const leer = af ? 'Kein Artikel in diesem Schritt.' : 'Alles bestellt.';
   return `
-    <div class="band" style="margin:12px 0">
-      <div class="ok"><span class="n">${z.offeneAuftraege}</span><span class="l">offene Aufträge (von ${z.auftraege})</span></div>
-      <div class="info"><span class="n">${z.zuBestellen}</span><span class="l">Positionen zu bestellen</span></div>
-      <div class="info"><span class="n">${z.muster}</span><span class="l">Muster offen</span></div>
-      <div class="${z.ohneId ? 'crit' : 'ok'}"><span class="n">${z.ohneId}</span><span class="l">ohne Großhändler-ID</span></div>
-      <div class="${z.mengeUngeklaert ? 'warn' : 'ok'}"><span class="n">${z.mengeUngeklaert}</span><span class="l">Menge UNGEKLÄRT</span></div>
+    <div class="band">
+      ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain')}
+      ${bandItem(ware.filter(p => gruppe(p) === 'offen').length, 'Artikel noch zu bestellen', 'warn')}
+      ${bandItem(muster.filter(p => gruppe(p) === 'offen').length, 'Muster noch zu bestellen', 'warn')}
+      ${bandItem(rot, rot === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit')}
     </div>
-    <h2 style="margin-top:20px">Auftragsfluss</h2>
-    ${afFortschrittBand(allePositionen)}
-    <h2 style="margin-top:20px">Zu bestellen je Lieferant</h2>
-    ${d.gruppen?.length ? d.gruppen.map((g, i) => einkaufGruppeKarte(g, i, 'ware')).join('') || emptyState('Nichts zu bestellen.', 'Kein Treffer für diesen Filter.') : emptyState('Nichts zu bestellen.', 'Keine offenen Warenpositionen.')}
-    <h2 style="margin-top:20px">Muster</h2>
-    ${d.musterGruppen?.length ? d.musterGruppen.map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('') || emptyState('Keine offenen Muster.', 'Kein Treffer für diesen Filter.') : emptyState('Keine offenen Muster.', '')}
-    <h2 style="margin-top:20px">Aufträge – Ampel-Status</h2>
-    <p class="small muted" style="margin:0 0 8px">Grün = bereit zum Bestellen, Gelb = erst prüfen, Rot = blockiert (z. B. fehlende Angabe).</p>
-    <div class="rows">${d.auftraege?.filter(a => a.offen).map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
+    ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
+    <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen</h2>${afFilterChips([...ware, ...muster])}</div>
+    <h3 class="sub-title">Ware <span class="muted small">je Lieferant</span></h3>
+    ${wareKarten || emptyState(leer, af ? '' : 'Keine offenen Warenartikel.')}
+    <h3 class="sub-title">Muster</h3>
+    ${musterKarten || emptyState(af ? leer : 'Keine offenen Muster.', '')}
+    <details class="card section plain-details"><summary><h2>Alle offenen Aufträge</h2><span class="preview">${aktiv.length}</span></summary>
+      <div class="rows" style="margin-top:10px">${aktiv.map(einkaufAuftragZeile).join('') || emptyState('Keine offenen Aufträge.', '')}</div>
+    </details>
     ${(d.testauftraege || []).length ? `<details style="margin-top:20px">
       <summary style="cursor:pointer;font-weight:600">Testbestellungen (${d.testauftraege.length}) – zählen in keiner Kennzahl</summary>
       <p class="small muted" style="margin:6px 0">Tag „TESTBESTELLUNG" oder Shopify-Feld test=true. Fließen nicht in Auftragsampel, Einkauf oder Shop-Zahlen ein.</p>
       <div class="rows">${d.testauftraege.map(einkaufAuftragZeile).join('')}</div>
     </details>` : ''}
-    <p class="small muted" style="margin-top:10px">Stand: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Quelle: ${esc(d.quelle)} · wird nie automatisch versendet.</p>`;
+    <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
 }
 
-const EINKAUF_PSFILTER_LABEL = { '': 'Alle offenen Produkte', blockierend: 'Nur blockierend', handarbeit: 'Nur Handarbeit nötig' };
+/** Dialog "Ohne Einkauf abschließen": setzt alle offenen Artikel eines Auftrags auf Erledigt. */
+function openAuftragAbschliessenDialog(orderId) {
+  const a = (einkauf.bestellungen?.auftraege || []).find(x => x.id === orderId);
+  if (!a) return;
+  const offen = auftragOffenePositionen(a).filter(p => p.lineItemId);
+  if (!offen.length) { toast('Keine offenen Artikel in diesem Auftrag.'); return; }
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="abTitle" data-dialog>
+    <h2 id="abTitle">Ohne Einkauf abschließen · ${esc(a.name)}</h2>
+    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. In Shopify ändert sich nichts; der Schritt lässt sich über den Filter „Erledigt" nachvollziehen.</p>
+    <ul class="small" style="margin:0;padding-left:18px">${offen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)}</li>`).join('')}</ul>
+    <div class="field"><label for="abGrund">Grund (Pflicht)</label><textarea id="abGrund" name="grund" required maxlength="500" placeholder="z. B. Testbestellung, kein Einkauf nötig"></textarea></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abschließen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('textarea')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const grund = (new FormData(form).get('grund') || '').trim();
+    if (!grund) return;
+    form.querySelector('[type=submit]').disabled = true;
+    let ok = 0;
+    for (const p of offen) {
+      if (await setzeAuftragsstatus({ orderId: a.id, lineItemId: p.lineItemId }, 'erledigt', { notiz: grund, still: true })) ok += 1;
+    }
+    $('#dialogRoot').innerHTML = '';
+    toast(ok === offen.length ? `${a.name}: ${plural(ok, 'Artikel', 'Artikel')} abgeschlossen` : `${a.name}: nur ${ok} von ${offen.length} abgeschlossen`, ok === offen.length ? '' : 'crit');
+    render();
+  });
+}
+
+// Standard ist "Braucht Handarbeit": das ist die Arbeitsliste und dieselbe Zahl wie die
+// Kachel darueber (die Kachel stand sonst neben einer anders gezaehlten Liste).
+// "Alle offenen" (auch reine Zusatzinfos) bleibt einen Klick entfernt.
+const EINKAUF_PSFILTER_LABEL = { handarbeit: 'Braucht Handarbeit', blockierend: 'Blockiert eine Bestellung', alle: 'Alle offenen Produkte' };
+const PSFILTER_STANDARD = 'handarbeit';
+function psFilterAktiv() {
+  const f = state.route.params.get('psfilter');
+  return Object.hasOwn(EINKAUF_PSFILTER_LABEL, f || '') ? f : PSFILTER_STANDARD;
+}
 
 function viewEinkaufProduktdaten() {
   ensureEinkaufProduktstatus();
   const d = einkauf.produktstatus;
   const p = state.route.params;
-  const psfilter = ['', 'blockierend', 'handarbeit'].includes(p.get('psfilter')) ? p.get('psfilter') : '';
-  const toolbar = `<div class="toolbar" style="margin:12px 0">
-      <input type="search" placeholder="Suche nach Produkt, Handle oder SKU …" value="${esc(p.get('psq') || '')}" data-param="psq" aria-label="Produktdaten durchsuchen">
+  const psfilter = psFilterAktiv();
+  const toolbar = `<div class="toolbar">
+      <input type="search" placeholder="Produkt, Handle oder SKU suchen …" value="${esc(p.get('psq') || '')}" data-param="psq" aria-label="Produktdaten durchsuchen">
       ${d?.gruppen?.length ? `<select data-param="gruppe" aria-label="Nach Produktgruppe filtern"><option value="">Alle Gruppen</option>${d.gruppen.map(g => `<option value="${esc(g.gruppe)}" ${p.get('gruppe') === g.gruppe ? 'selected' : ''}>${esc(g.gruppe)}</option>`).join('')}</select>` : ''}
     </div>
-    <div class="chips" role="group" aria-label="Nach Dringlichkeit filtern" style="margin:8px 0 12px">
-      ${Object.entries(EINKAUF_PSFILTER_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="psfilter" data-value="${k}" aria-pressed="${psfilter === k}">${esc(l)}</button>`).join('')}
+    <div class="chips" role="group" aria-label="Welche Produkte zeigen">
+      ${Object.entries(EINKAUF_PSFILTER_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="psfilter" data-value="${k === PSFILTER_STANDARD ? '' : k}" aria-pressed="${psfilter === k}">${esc(l)}</button>`).join('')}
     </div>`;
   if (!d && einkauf.loadingProduktstatus) return toolbar + `<div class="empty">Lade Produktdaten-Status …</div>`;
   if (!d || !d.verfuegbar) return emptyState('Keine Produktdaten-Statusdaten verfügbar.', d?.hinweis || 'Quelle fehlt oder ist leer.');
@@ -1023,47 +1322,41 @@ function viewEinkaufProduktdaten() {
     const summe = row.vollstaendig + row.handarbeit + row.automatisch;
     return `<tr>
       <td>${esc(row.gruppe)}</td>
-      <td>${row.vollstaendig}</td>
-      <td>${row.handarbeit}</td>
-      <td>${row.automatisch}</td>
-      <td><div class="track" style="max-width:160px"><div class="fill" style="width:${summe ? Math.round(row.vollstaendig / summe * 100) : 0}%"></div></div></td>
+      <td class="num ${row.handarbeit ? 'warnc' : 'muted'}">${row.handarbeit}</td>
+      <td class="num muted">${row.automatisch}</td>
+      <td class="num">${row.vollstaendig}<span class="muted"> / ${summe}</span></td>
     </tr>`;
   }).join('');
   const offen = d.offen;
   const items = offen.items.map(e => {
-    const status = e.status === 'handarbeit' ? { cls: 'blockiert', label: 'Blockiert Bestellung' } : { cls: 'freigabe', label: 'Nachtragen' };
+    const blockierend = e.offeneFelder.filter(f => f.blockierend);
+    const zusatz = e.offeneFelder.filter(f => !f.blockierend);
     return `<tr>
-      <td><span class="badge status ${status.cls}">${esc(status.label)}</span></td>
-      <td>${esc(e.titel)}<div class="small muted mono">${esc(e.handle)}</div></td>
-      <td>${esc(e.gruppe)}<div class="small muted">${e.variantenAnzahl} Variante${e.variantenAnzahl === 1 ? '' : 'n'}</div></td>
-      <td>${e.offeneFelder.map(f => `<div><b>${esc(f.klartext)}</b>${f.blockierend ? ' <span class="badge p0" style="font-size:10px">blockiert Bestellung</span>' : ''}<div class="small muted">${esc(f.grund)}${f.variantenBetroffen < e.variantenAnzahl ? ` · ${f.variantenBetroffen}/${e.variantenAnzahl} Varianten` : ''}</div></div>`).join('')}</td>
-      <td>${e.offeneFelder.map(f => `<div>${esc(f.naechsterSchritt)}</div>`).join('')}</td>
+      <td><div class="cell-title">${esc(e.titel)}</div><div class="small muted">${esc(e.gruppe)} · ${plural(e.variantenAnzahl, 'Variante', 'Varianten')}</div></td>
+      <td>${blockierend.length ? blockierend.map(f => `<div class="fehlt" title="${esc(f.grund)}"><b>${esc(f.klartext)}</b>${f.variantenBetroffen < e.variantenAnzahl ? ` <span class="small muted">· ${f.variantenBetroffen}/${e.variantenAnzahl} Varianten</span>` : ''} <span class="small muted">→ ${esc(f.naechsterSchritt)}</span></div>`).join('') : '<span class="small muted">blockiert nichts</span>'}</td>
+      <td class="small muted">${zusatz.length ? esc(zusatz.map(f => f.klartext).join(', ')) : '–'}</td>
     </tr>`;
   }).join('');
-  const pages = offen.pages > 1 ? `<div class="toolbar" style="margin-top:10px">
+  const pages = offen.pages > 1 ? `<div class="pager">
       <button type="button" class="btn btn-sm" ${offen.page <= 1 ? 'disabled' : ''} data-param="seite" data-value="${offen.page - 1}">← Zurück</button>
       <span class="muted small">Seite ${offen.page} von ${offen.pages} · ${offen.count} Produkte</span>
       <button type="button" class="btn btn-sm" ${offen.page >= offen.pages ? 'disabled' : ''} data-param="seite" data-value="${offen.page + 1}">Weiter →</button>
     </div>` : '';
   return `
-    <div class="band" style="margin:12px 0">
-      <div class="${g.handarbeit ? 'crit' : 'ok'}"><span class="n">${g.handarbeit}</span><span class="l">blockieren eine Bestellung</span></div>
-      <div class="info"><span class="n">${g.automatisch}</span><span class="l">Zusatzinfo nachtragen</span></div>
-      <div class="ok"><span class="n">${g.vollstaendig}</span><span class="l">von ${g.anzahl} Produkten vollständig</span></div>
+    <div class="band">
+      ${bandItem(g.handarbeit, 'Produkte brauchen Handarbeit', 'crit')}
+      ${bandItem(g.automatisch, 'nur Zusatzinfos offen (füllt sich selbst)', 'plain')}
+      ${bandItem(g.vollstaendig, `von ${g.anzahl} vollständig`, 'plain')}
     </div>
-    <p class="small muted" style="margin:-6px 0 4px"><b>Blockiert Bestellung:</b> Lieferant oder Artikelnummer fehlt bei einer Variante, die tatsächlich bestellt werden kann – ohne diese Angabe kann niemand beim Lieferanten bestellen. Das ist die einzige Gruppe, die oben als Zahl zählt.</p>
-    <p class="small muted" style="margin:0 0 4px"><b>Nachtragen:</b> wünschenswerte Zusatzinformation wie Farbnummer, Kollektion, Hersteller, Lieferanten-Produktname oder -URL – fehlt sie, blockiert das keine Bestellung.</p>
-    <p class="small muted" style="margin:0 0 14px">Nicht gezählt (strukturell, keine Aufgabe): Wunschmaß-Varianten (Artikelnummer/SKU entstehen erst beim Zuschnitt), das Feld „Umrechnung" (Format nie festgelegt) und die Einkaufs-ID außerhalb der Rollenware (dort nicht vorgesehen).</p>
-    <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Je Produktgruppe</h2></div>
-      <table class="tasks"><thead><tr><th>Gruppe</th><th>Vollständig</th><th>Blockiert</th><th>Nachtragen</th><th>Anteil vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table>
-    </section>
+    <p class="small muted" style="margin:-4px 0 14px">„Handarbeit" heißt: Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – ohne sie kann nicht bestellt werden. Zusatzinfos wie Kollektion oder Hersteller halten keine Bestellung auf.</p>
     ${toolbar}
-    <section class="card"><div class="card-head"><h2>${esc(EINKAUF_PSFILTER_LABEL[psfilter])}</h2></div>
-      <div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Status</th><th>Produkt</th><th>Gruppe</th><th>Was fehlt</th><th>Nächster Schritt</th></tr></thead><tbody>${items || ''}</tbody></table></div>
-      ${!items ? emptyState('Keine Treffer.', 'Suche oder Filter anpassen.') : ''}
+    <section class="card"><div class="card-head"><h2>${esc(EINKAUF_PSFILTER_LABEL[psfilter])}</h2><span class="more muted">${offen.count} Produkte · dringendste zuerst</span></div>
+      ${items ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Produkt</th><th>Was fehlt für die Bestellung</th><th>Außerdem offen</th></tr></thead><tbody>${items}</tbody></table></div>` : emptyState('Keine Treffer.', psfilter !== 'alle' && !p.get('psq') ? 'Hier ist gerade nichts zu tun.' : 'Suche oder Filter anpassen.')}
       ${pages}
     </section>
-    <p class="small muted" style="margin-top:10px">Quelle: ${esc(d.quelle)} · sortiert nach Dringlichkeit: was eine Bestellung blockiert steht oben.</p>`;
+    <details class="card section plain-details"><summary><h2>Je Produktgruppe</h2><span class="preview">${d.gruppen.length} Gruppen</span></summary>
+      <div class="table-scroll" style="margin-top:10px"><table class="tasks compact"><thead><tr><th>Gruppe</th><th class="num">Handarbeit</th><th class="num">Nur Zusatzinfos</th><th class="num">Vollständig</th></tr></thead><tbody>${gruppenzeilen}</tbody></table></div>
+    </details>`;
 }
 
 function viewEinkaufHilfe() {
@@ -1071,13 +1364,13 @@ function viewEinkaufHilfe() {
     <h2>Dein Tag im Einkauf</h2>
     <p class="small muted">So gehst du die Bestellübersicht in der Praxis durch, Schritt für Schritt:</p>
     <ol style="margin:0 0 4px;padding-left:22px;line-height:1.7">
-      <li>Öffne den Tab „Bestellübersicht" und schau oben auf die Zahlen: wie viele Positionen (das ist eine einzelne Zeile/ein Artikel einer Kundenbestellung) es noch zu bestellen gibt und wie viele Aufträge ein Problem haben (rot markiert).</li>
-      <li>Kümmere dich zuerst um die Aufträge mit Problem (rote Ampel) – meist fehlt eine Angabe, die dort auch benannt wird, z. B. eine fehlende Großhändler-ID.</li>
-      <li>Gehe dann die restlichen Positionen gruppiert nach Lieferant durch. Klicke bei jeder neuen Position auf „Beim Lieferanten öffnen" – das öffnet die passende Produktseite des Lieferanten in einem neuen Tab.</li>
+      <li>Öffne den Tab „Bestellungen" und schau oben auf die Zahlen: wie viele Artikel und Muster noch zu bestellen sind und wie viele Aufträge ein Problem haben.</li>
+      <li>Kümmere dich zuerst um den Kasten „Zuerst klären" – dort steht bei jedem Auftrag in Klartext, was fehlt, z. B. eine Großhändler-ID. War es nur eine Testbestellung oder ist der Auftrag anders erledigt, schließe ihn mit „Ohne Einkauf abschließen…" und einem Grund ab.</li>
+      <li>Gehe dann die restlichen Positionen gruppiert nach Lieferant durch. Klicke bei jedem Artikel auf „Öffnen" – das öffnet die passende Produktseite des Lieferanten in einem neuen Tab. Die Großhändler-ID kopierst du mit einem Klick darauf.</li>
       <li>Bestelle dort wie gewohnt (Telefon, E-Mail, Bestellportal – je nach Lieferant).</li>
-      <li>Trage die Bestellung hier ein: Klick auf „Bestellt" und gib die Bestellnummer des Lieferanten ein (optional, hilft aber bei Rückfragen).</li>
+      <li>Trage die Bestellung hier ein: Klick auf „→ Bestellt" und gib die Bestellnummer des Lieferanten ein (optional, hilft aber bei Rückfragen).</li>
       <li>Sobald die Ware bei dir ankommt, setze die Position auf „Geliefert an uns"; sobald sie an den Kunden raus ist (verschickt oder abgeholt), auf „An Kunden raus"; zum Schluss auf „Erledigt".</li>
-      <li>Der Filter oben („Offen / Bestellt / Unterwegs / Erledigt") zeigt dir jederzeit, wie viele Positionen noch in welchem Schritt stehen – so siehst du auf einen Blick, was liegen geblieben ist.</li>
+      <li>Der Filter über den Listen („Noch zu bestellen / Bestellt / Unterwegs / Erledigt") zeigt dir jederzeit, wie viele Artikel in welchem Schritt stehen. Ohne Auswahl siehst du alles, was noch nicht erledigt ist.</li>
     </ol>
 
     <h3 style="margin-top:20px">Was tun, wenn etwas fehlt?</h3>
@@ -1099,9 +1392,9 @@ function viewEinkaufHilfe() {
     </ul>
 
     <h3 style="margin-top:20px">Die drei Unteransichten im Detail</h3>
-    <p><b>Bestellübersicht:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster (Bestellungen von Produktmustern statt ganzer Ware) stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
-    <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter oben auf der Seite („Offen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus.</p>
-    <p><b>Produktdaten-Status:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Drei ehrlich getrennte Gruppen: <b>blockiert die Bestellung</b> (Lieferant oder Artikelnummer fehlt bei einer bestellbaren Variante – muss jemand von Hand klären, das treibt die große Zahl oben), <b>nachtragen</b> (Farbnummer, Kollektion, Hersteller, Lieferanten-Produktname/-URL – wünschenswert, blockiert aber keine Bestellung) und <b>strukturell offen, keine Aufgabe</b> (Wunschmaß-Varianten, deren Artikelnummer erst beim Zuschnitt entsteht; das Feld „Umrechnung", dessen Format nie festgelegt wurde; die Einkaufs-ID außerhalb der Rollenware, wo sie gar nicht vorgesehen ist – diese drei Fälle zählen nirgends mit). Filter oben: alle offenen Produkte, nur blockierende oder nur solche mit Handarbeitsbedarf; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben. Die Zahl „ohne Großhändler-ID" in der Kachel „Kundengeschäft" auf „Heute" zählt etwas anderes: offene Positionen in tatsächlichen Kundenbestellungen (Bestellübersicht), nicht Lücken im gesamten Produktkatalog – beide Zahlen dürfen auseinanderlaufen, das ist kein Widerspruch.</p>
+    <p><b>Bestellungen:</b> zeigt jede offene Kundenbestellung mit Ampel (grün = bereit, gelb = erst prüfen, rot = blockiert, z. B. fehlende Großhändler-ID oder Maßprüfungs-Problem) und darunter die Positionen, gruppiert nach Lieferant. Jede Zeile zeigt Kundenauftrag und Datum, Artikel, Farbe/Variante, die Kundenmenge und die daraus berechnete Bestellmenge beim Lieferanten samt Einheit, die Großhändler-ID, einen Link „Beim Lieferanten öffnen" (öffnet die Lieferanten-Produktseite in einem neuen Tab) und den Status mit dem Button für den nächsten Schritt. Über „Liste kopieren" kannst du die Bestellliste eines Lieferanten weiterhin komplett in eine Mail oder ein Bestellportal einfügen. Muster (Bestellungen von Produktmustern statt ganzer Ware) stehen in einer eigenen Liste. Der Auftrags-Link führt direkt zur Bestellung in Shopify.</p>
+    <p><b>Status setzen:</b> „Bestellt" fragt nach der Bestellnummer des Lieferanten (optional, aber hilfreich bei Rückfragen) und merkt sich, wer wann bestellt hat. Die weiteren Schritte („Geliefert an uns", „An Kunden raus", „Erledigt") brauchen keine weitere Eingabe. Der Filter über den Listen („Noch zu bestellen / Bestellt / Unterwegs / Erledigt") blendet die Listen entsprechend ein oder aus; erledigte Artikel erscheinen nur unter „Erledigt".</p>
+    <p><b>Produktdaten:</b> zeigt je PRODUKT (nicht je Variante) eine Zeile: wie viele Varianten es hat, was fehlt und was der nächste Schritt ist. Oben steht ehrlich, wie viele von den insgesamt erfassten Produkten vollständig sind, wie viele Handarbeit brauchen und wie viele sich von selbst füllen, sobald der laufende Lieferantenabgleich weiterläuft. „Handarbeit" heißt: eine Bestellung ist blockiert, weil Lieferant, Artikelnummer, Farbnummer oder Bestellmenge fehlen – das muss jemand von Hand in der Preisliste nachschauen. Zusatzinformation wie Kollektion oder Hersteller blockiert nichts und taucht nur als „füllt sich automatisch" auf. Filter oben: zuerst die Produkte, die Handarbeit brauchen (dieselbe Zahl wie die Kachel) – daneben „Blockiert eine Bestellung" und „Alle offenen Produkte"; dazu Suche nach Produktname, Handle oder SKU und Filter nach Produktgruppe. Sortiert ist die Liste nach Dringlichkeit – was eine Bestellung aufhält, steht oben. Die Zahl „ohne Großhändler-ID" in der Kachel „Kundengeschäft" auf „Heute" zählt etwas anderes: offene Positionen in tatsächlichen Kundenbestellungen (Bestellübersicht), nicht Lücken im gesamten Produktkatalog – beide Zahlen dürfen auseinanderlaufen, das ist kein Widerspruch.</p>
     <p><b>Wichtig:</b> Alle drei Ansichten laufen nur lokal auf dem Mac (<span class="mono">npm run dashboard</span>), weil sie private Bestell- und Einkaufsdaten lesen. Auf der öffentlichen Seite (GitHub Pages) ist der Bereich Einkauf immer leer – das ist beabsichtigt, damit keine Kundendaten oder Lieferantennamen öffentlich werden. Der Auftragsfluss-Status liegt in einer eigenen lokalen Datei auf deinem Mac und wird nie ins Repository übernommen. Nichts hier wird automatisch verschickt oder bestellt; jede Bestellung bleibt ein bewusster, manueller Schritt.</p>
   </section>`;
 }
@@ -1112,11 +1405,11 @@ function viewEinkauf() {
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const tab = ['bestellungen', 'produktdaten', 'hilfe'].includes(state.route.params.get('tab')) ? state.route.params.get('tab') : 'bestellungen';
-  const tabs = [['bestellungen', 'Bestellübersicht'], ['produktdaten', 'Produktdaten-Status'], ['hilfe', 'Hilfe & Anleitung']];
+  const tabs = [['bestellungen', 'Bestellungen'], ['produktdaten', 'Produktdaten'], ['hilfe', 'Anleitung']];
   ensureAktualisierung();
-  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was für offene Kundenbestellungen bei welchem Lieferanten zu bestellen ist, und wo Produktdaten für den Einkauf noch fehlen.</p></div>
-      <div style="display:flex;gap:8px;align-items:start">${aktualisierenButton()}</div></div>
-    <div class="chips" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="chip" role="tab" aria-pressed="${tab === k}" data-param="tab" data-value="${k}">${esc(l)}</button>`).join('')}</div>`;
+  const head = `<div class="page-head"><div><h1>Einkauf</h1><p class="sub">Was bei welchem Lieferanten zu bestellen ist – und wo Produktdaten dafür fehlen.</p></div>
+      <div class="head-actions">${aktualisierenButton()}</div></div>
+    <div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${tab === k}" data-param="tab" data-value="${k === 'bestellungen' ? '' : k}">${esc(l)}</button>`).join('')}</div>`;
   const body = tab === 'bestellungen' ? viewEinkaufBestellungen() : tab === 'produktdaten' ? viewEinkaufProduktdaten() : viewEinkaufHilfe();
   return head + body;
 }
@@ -1171,7 +1464,7 @@ function lexikonTrefferZeile(p) {
 function viewLexikonListe() {
   ensureLexikonListe();
   const q = state.route.params.get('lq') || '';
-  const toolbar = `<div class="toolbar" style="margin:12px 0"><input type="search" placeholder="Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe oder Kollektion …" value="${esc(q)}" data-param="lq" aria-label="Lexikon durchsuchen"></div>`;
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Was hat der Kunde gesagt? Produktname, Farbe, SKU oder Artikelnummer …" value="${esc(q)}" data-param="lq" aria-label="Lexikon durchsuchen"></div>`;
   const d = lexikon.liste;
   if (!d && lexikon.loadingListe) return toolbar + `<div class="empty">Lade Lexikon …</div>`;
   if (!d || !d.verfuegbar) {
@@ -1179,6 +1472,13 @@ function viewLexikonListe() {
     return toolbar + emptyState('Keine Lexikon-Daten verfügbar.', hinweis);
   }
   const t = d.treffer;
+  // Ohne Suchbegriff zuerst die Suche anbieten statt 638 Produkte in Shop-Reihenfolge -
+  // die Liste bleibt einen Klick entfernt ("Alle durchblättern").
+  if (!q && !state.route.params.get('lalle')) {
+    return `${toolbar}
+      <div class="empty search-hint"><strong>${d.anzahl} Produkte im Lexikon.</strong> Tippe ein, was der Kunde genannt hat – das Lexikon findet das Produkt samt Lieferanten-Artikelnummer und Link. <button type="button" class="btn btn-sm" data-param="lalle" data-value="1">Alle durchblättern</button>
+      <div class="small muted" style="margin-top:6px">Stand: ${esc(fmtDateTime(d.erstellt))}</div></div>`;
+  }
   const pages = t.pages > 1 ? `<div class="toolbar" style="margin-top:10px">
       <button type="button" class="btn btn-sm" ${t.page <= 1 ? 'disabled' : ''} data-param="lseite" data-value="${t.page - 1}">← Zurück</button>
       <span class="muted small">Seite ${t.page} von ${t.pages} · ${t.count} Treffer</span>
@@ -1291,8 +1591,346 @@ function viewLexikon() {
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Einkaufsdaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const handle = state.route.params.get('handle');
-  const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Wofür ist das da: Ein Kunde nennt einen Produktnamen aus unserem Shop – hier findest du in Sekunden das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
+  const head = `<div class="page-head"><div><h1>Lexikon</h1><p class="sub">Kunde nennt einen Produktnamen – hier steht das Original beim Lieferanten samt Bestelldaten.</p></div></div>`;
   return head + (handle ? viewLexikonDetail(handle) : viewLexikonListe());
+}
+
+// ---------------------------------------------------------------------------
+// Ansicht: Kunden (Kundensuche, Rueckruf-/Beratungsliste, Druckansicht)
+//
+// Wofuer: Mitarbeiter am Telefon findet einen Kunden ueber Name, E-Mail,
+// Telefonnummer, Bestellnummer, Strasse/Ort oder PLZ und sieht sofort alle
+// Bestellungen. Der Rueckruf-Bereich listet alle Bestellungen mit
+// Beratungswunsch oder Massspruefung, aelteste zuerst, mit klickbarer
+// Telefonnummer. Alles kommt aus der bereits lokal vorliegenden
+// Bestelluebersicht - keine neue Shopify-Abfrage im Browser.
+// ---------------------------------------------------------------------------
+const RUECKRUF_STATUS_LABEL = { offen: 'Offen', angerufen: 'Angerufen', erledigt: 'Erledigt' };
+
+const kunden = {
+  suche: null, loadingSuche: false, sucheKey: null,
+  detail: null, loadingDetail: false, detailKey: null,
+  rueckrufe: null, loadingRueckrufe: false,
+};
+
+function ensureKundenSuche(q) {
+  const query = String(q || '').trim();
+  if (kunden.sucheKey === query && (kunden.suche || kunden.loadingSuche)) return;
+  kunden.sucheKey = query;
+  if (query.length < 2) { kunden.suche = { verfuegbar: true, treffer: [] }; return; }
+  kunden.loadingSuche = true;
+  fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query })}`).then(d => {
+    kunden.suche = d; kunden.loadingSuche = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
+
+function ensureKundenDetail(key) {
+  if (kunden.detailKey === key && (kunden.detail || kunden.loadingDetail)) return;
+  kunden.detailKey = key;
+  kunden.loadingDetail = true;
+  fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => {
+    kunden.detail = d; kunden.loadingDetail = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
+
+function ensureKundenRueckrufe() {
+  if (kunden.rueckrufe || kunden.loadingRueckrufe) return;
+  kunden.loadingRueckrufe = true;
+  fetchEinkauf('/api/kunden/rueckrufe').then(d => {
+    kunden.rueckrufe = d; kunden.loadingRueckrufe = false;
+    if (['heute', 'kunden'].includes(state.route.view)) render();
+  });
+}
+
+async function setzeRueckrufStatus(orderId, status, notiz) {
+  try {
+    const r = await fetch('/api/kunden/rueckrufe', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId, status, notiz: notiz ?? null }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
+    if (kunden.rueckrufe?.zeilen) {
+      const zeile = kunden.rueckrufe.zeilen.find(z => z.orderId === orderId);
+      if (zeile) Object.assign(zeile, j.eintrag);
+    }
+    toast(`Rückruf: ${RUECKRUF_STATUS_LABEL[status]}`);
+    render();
+    return true;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
+}
+
+function telLink(telefon) {
+  if (!telefon || telefon === '–') return '<span class="small muted">keine Telefonnummer</span>';
+  const zifferAllein = String(telefon).replace(/[^0-9+]/g, '');
+  return `<a class="tel-link" href="tel:${esc(zifferAllein)}">${esc(telefon)}</a>`;
+}
+
+/** Startseiten-Block "Heute": die aeltesten offenen Rueckrufe, damit niemand vergessen wird. */
+function heuteRueckrufBlock() {
+  ensureKundenRueckrufe();
+  const r = kunden.rueckrufe;
+  if (!r && kunden.loadingRueckrufe) return '';
+  if (!r || !r.verfuegbar) return '';
+  const offen = r.zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
+  if (!offen.length) return '';
+  return collapsibleCard('rueckrufe', 'Rückrufe & Beratungen', `${offen.length} offen`, `
+    <p class="small muted" style="margin:0 0 8px">Bestellungen mit Beratungswunsch oder Maßprüfung – ältester Wunsch zuerst.</p>
+    <div class="rows">${offen.slice(0, 5).map(rueckrufZeileHtml).join('')}</div>
+    ${offen.length > 5 ? `<p class="small muted" style="margin-top:6px">+${offen.length - 5} weitere – <a href="#/kunden?tab=rueckrufe">alle ansehen →</a></p>` : ''}
+  `, { openByDefault: true });
+}
+
+function rueckrufZeileHtml(z) {
+  return `<div class="row rueckruf-row">
+    <div>
+      <div class="t">${esc(z.kundenname)} <span class="muted small mono">${esc(z.orderName)}</span>${z.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
+      <div class="m">${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}</div>
+      <div class="tel-gross">${telLink(z.telefon)}</div>
+      ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
+    </div>
+    <div class="r rueckruf-actions">
+      <span class="badge ${z.status === 'erledigt' ? 'ok' : z.status === 'angerufen' ? 'plain' : 'gap'}">${esc(RUECKRUF_STATUS_LABEL[z.status])}</span>
+      <div class="btn-row">
+        ${['offen', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-rueckruf-open="${esc(z.orderId)}" data-rueckruf-status="${s}">${esc(RUECKRUF_STATUS_LABEL[s])}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function openRueckrufDialog(orderId, status) {
+  const z = kunden.rueckrufe?.zeilen?.find(x => x.orderId === orderId);
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="rrTitle" data-dialog>
+    <h2 id="rrTitle">Rückruf · ${esc(z?.orderName || '')} → ${esc(RUECKRUF_STATUS_LABEL[status])}</h2>
+    <p class="small muted">${esc(z?.kundenname || '')} · ${esc(z?.thema || '')}</p>
+    <div class="field"><label for="rrNotiz">Notiz (optional)</label><textarea id="rrNotiz" name="notiz" maxlength="2000" placeholder="z. B. Ergebnis des Anrufs">${esc(z?.notiz || '')}</textarea></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('textarea')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const ok = await setzeRueckrufStatus(orderId, status, (new FormData(form).get('notiz') || '').trim() || null);
+    if (ok) $('#dialogRoot').innerHTML = '';
+    else form.querySelector('[type=submit]').disabled = false;
+  });
+}
+
+function kundenTrefferZeile(k) {
+  return `<div class="row" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
+    <div>
+      <div class="t">${esc(k.name)}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}</div>
+      <div class="m">${esc(k.email !== '–' ? k.email : '')}${k.telefon !== '–' ? ` · ${esc(k.telefon)}` : ''}</div>
+    </div>
+    <div class="r">
+      <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
+      <div class="small muted">letzte: ${k.letzteBestellungName ? `${esc(k.letzteBestellungName)} · ` : ''}${fmtDate(k.letzteBestellung)}</div>
+    </div>
+  </div>`;
+}
+
+function viewKundenSuche() {
+  const q = state.route.params.get('kq') || '';
+  ensureKundenSuche(q);
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ …" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
+  const d = kunden.suche;
+  if (q.trim().length < 2) return toolbar + `<div class="empty search-hint"><strong>Kundensuche.</strong> Mindestens zwei Zeichen eingeben – gesucht wird über Kundenname, E-Mail, Telefonnummer, Bestellnummer, Straße/Ort und PLZ.</div>`;
+  if (!d && kunden.loadingSuche) return toolbar + `<div class="empty">Suche …</div>`;
+  if (!d || !d.verfuegbar) return toolbar + emptyState('Keine Kundendaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  return toolbar + `
+    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Treffer${d.treffer.length === 50 ? ' (mehr – Suche genauer eingrenzen)' : ''}</p>
+    <div class="rows">${d.treffer.length ? d.treffer.map(kundenTrefferZeile).join('') : emptyState('Keine Treffer.', 'Begriff prüfen oder anders schreiben.')}</div>`;
+}
+
+function kundenPositionZeile(p) {
+  return `<tr>
+    <td data-l="Artikel">${esc(p.titel)}${p.farbe ? `<br><span class="small muted">${esc(p.farbe)}</span>` : ''}</td>
+    <td data-l="Unsere SKU">${esc(p.sku || '–')}</td>
+    <td data-l="Lieferanten-Art.-Nr.">${esc(p.lieferantenArtikelnummer || '–')}</td>
+    <td data-l="Menge">${esc(p.kundenmasse || p.menge)}</td>
+    <td data-l="Preis">${p.preis?.betrag != null ? geldText(p.preis) : '–'}</td>
+  </tr>`;
+}
+
+function kundenAuftragKarte(a) {
+  const dt = a.details;
+  const beratungsZeilen = Object.entries(dt?.beratungsangaben || {}).filter(([, v]) => v);
+  return `<article class="card kunden-auftrag${a.testbestellung ? ' testbestellung' : ''}" id="druck-${esc(a.id.replace(/\W/g, ''))}">
+    <div class="card-head">
+      <h3>${esc(a.name)} <span class="small muted">${fmtDate(a.datum)}</span>${a.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</h3>
+      <span class="no-print"><a class="btn btn-sm btn-ghost" href="${esc(a.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin öffnen ↗</a> <button type="button" class="btn btn-sm" data-drucken="${esc(a.id)}">Drucken</button></span>
+    </div>
+    <div class="chips">
+      <span class="chip">Status: <b>${esc(a.status)}</b></span>
+      <span class="chip">Bezahlt: <b>${esc(a.bezahlt)}</b></span>
+      <span class="chip">Versand: <b>${esc(a.erfuellt)}</b></span>
+      <span class="chip">Beratung: <b>${esc(a.checks?.beratung || '–')}</b></span>
+      <span class="chip">Maßprüfung: <b>${esc(a.checks?.masspruefung || '–')}</b></span>
+    </div>
+    ${beratungsZeilen.length ? `<p class="small">${beratungsZeilen.map(([k, v]) => `<b>${esc(k)}:</b> ${esc(v)}`).join(' · ')}</p>` : ''}
+    <div class="table-wrap kunden-table"><table><thead><tr><th>Artikel</th><th>Unsere SKU</th><th>Lieferanten-Art.-Nr.</th><th>Menge</th><th>Preis</th></tr></thead>
+    <tbody>${(dt?.positionen || []).map(kundenPositionZeile).join('') || `<tr><td colspan="5">Keine Positionen.</td></tr>`}</tbody></table></div>
+    <p class="small muted" style="margin-top:8px">Gesamt: ${geldText(dt?.summen?.gesamt)} · Zahlungsart: ${esc(dt?.zahlungsart || '–')} · Versandart: ${esc(dt?.versandart || '–')}</p>
+  </article>`;
+}
+
+function adresseHtml(a, titel) {
+  if (!a) return '';
+  return `<div><p class="small muted" style="margin:0">${esc(titel)}</p><p style="margin:2px 0">${esc(a.name)}<br>${esc(a.strasse)}<br>${esc(a.plz)} ${esc(a.ort)}${a.land && a.land !== '–' ? `, ${esc(a.land)}` : ''}${a.telefon && a.telefon !== '–' ? `<br>${esc(a.telefon)}` : ''}</p></div>`;
+}
+
+function viewKundenDetail(key) {
+  ensureKundenDetail(key);
+  const zurueck = `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
+  const d = kunden.detail;
+  if (!d && kunden.loadingDetail) return zurueck + `<div class="empty">Lade Kunde …</div>`;
+  if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
+  const k = d.kunde;
+  return zurueck + `
+    <section class="card">
+      <div class="card-head"><h2>${esc(k.kunde.name)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
+      <p class="small">E-Mail: ${k.kunde.email !== '–' ? esc(k.kunde.email) : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
+      <div class="kunden-adressen">
+        ${adresseHtml(k.lieferadresse, 'Lieferadresse')}
+        ${adresseHtml(k.rechnungsadresse, 'Rechnungsadresse')}
+      </div>
+    </section>
+    <h2 style="margin-top:18px">Bestellungen</h2>
+    ${k.auftraege.map(kundenAuftragKarte).join('') || emptyState('Keine Bestellungen.', '')}
+  `;
+}
+
+function viewKundenRueckrufe() {
+  ensureKundenRueckrufe();
+  const r = kunden.rueckrufe;
+  if (!r && kunden.loadingRueckrufe) return `<div class="empty">Lade Rückrufliste …</div>`;
+  if (!r || !r.verfuegbar) return emptyState('Keine Daten verfügbar.', r?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  const offen = r.zeilen.filter(z => z.status !== 'erledigt');
+  const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
+  return `
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch oder Maßprüfung „Ja" – älteste zuerst. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
+    ${erledigt.length ? `<details style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
+  `;
+}
+
+function viewKunden() {
+  if (state.capabilities.mode !== 'local') {
+    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche und Rückruf-/Beratungsliste.</p></div></div>
+      ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Kundendaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
+  }
+  const key = state.route.params.get('key');
+  if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
+  const tab = state.route.params.get('tab') === 'rueckrufe' ? 'rueckrufe' : 'suche';
+  ensureKundenRueckrufe();
+  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden – und wer zurückgerufen werden möchte.</p></div></div>
+    <div class="tabs no-print" role="tablist">
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
+    </div>`;
+  return head + (tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche());
+}
+
+function r_badge() {
+  const n = (kunden.rueckrufe?.zeilen || []).filter(z => z.status !== 'erledigt').length;
+  return n ? ` <span class="badge gap">${n}</span>` : '';
+}
+
+// ---------------------------------------------------------------------------
+// Ansicht: Ratgeber (Bodenwissen-Inhalte)
+// ---------------------------------------------------------------------------
+/**
+ * Laedt docs/ai-dashboard/bodenwissen.json einmal je Sitzung. Fehlt die Datei
+ * (HTTP 404, z. B. weil sie noch nie erzeugt wurde), ist das kein Fehler -
+ * ratgeberStatus() zeigt dann den ruhigen "fehlt"-Hinweis statt eines Absturzes.
+ */
+function ensureBodenwissen() {
+  if (state.bodenwissenLoaded) return;
+  state.bodenwissenLoaded = true;
+  fetch(`./bodenwissen.json?t=${Date.now()}`, { cache: 'no-store' })
+    .then(async r => {
+      if (!r.ok) { state.bodenwissen = null; state.bodenwissenError = null; return; }
+      state.bodenwissen = await r.json();
+      state.bodenwissenError = null;
+    })
+    .catch(e => { state.bodenwissen = null; state.bodenwissenError = e.message; })
+    .finally(() => { if (state.route.view === 'ratgeber') render(); });
+}
+
+function viewRatgeber() {
+  ensureBodenwissen();
+  const head = `<div class="page-head"><div><h1>Ratgeber</h1><p class="sub">Stand der Bodenwissen-Inhalte (content/ratgeber, content/lexikon, content/probleme) · Quelle: <span class="mono">node scripts/build-bodenwissen-data.mjs</span></p></div></div>`;
+  const status = ratgeberStatus(state.bodenwissen, state.bodenwissenError);
+  if (status.state !== 'ok') {
+    return head + emptyState(status.state === 'fehler' ? 'Ratgeber-Daten konnten nicht geladen werden.' : 'Noch keine Ratgeber-Daten erzeugt.', status.hinweis);
+  }
+  const d = state.bodenwissen;
+  const bandItem = (n, label, cls, href) => href
+    ? `<a href="${href}" class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></a>`
+    : `<div class="${n === 0 ? 'zero' : cls}"><span class="n">${n}</span><span class="l">${esc(label)}</span></div>`;
+  const pipeline = pipelineRows(d);
+  const maxPipeline = Math.max(1, ...pipeline.map(r => r.anzahl));
+  const ueb = d.ueberarbeitungsbedarf || [];
+  const bilder = d.bilder || { offen: 0, items: [] };
+  const ei = d.expertInput || { gesamt: 0, ratgeber: 0, lexikon: 0, items: [] };
+  const pf = d.problemFinder || { gesamt: 0, mitZiel: 0, ohneZiel: 0 };
+  const gate = d.gate || { fehler: [], hinweise: [], zahlen: {} };
+  const kappen = (liste, n = 20) => liste.length > n ? `<p class="small muted" style="margin-top:6px">… und ${liste.length - n} weitere.</p>` : '';
+
+  return `${head}
+    <div class="band">
+      ${bandItem(d.gesamt?.artikel || 0, 'Artikel', 'info')}
+      ${bandItem(ueb.length, 'Überarbeitung fällig', ueb.length ? 'crit' : 'ok')}
+      ${bandItem(bilder.offen, 'Bildbedarfe offen', bilder.offen ? 'warn' : 'ok')}
+      ${bandItem(ei.gesamt, 'Expert Input offen', ei.gesamt ? 'warn' : 'ok')}
+      ${bandItem(gate.fehler.length, 'Gate-Fehler', gate.fehler.length ? 'crit' : 'ok')}
+      ${bandItem(gate.hinweise.length, 'Gate-Hinweise', gate.hinweise.length ? 'warn' : 'ok')}
+    </div>
+
+    <section class="card">
+      <div class="card-head"><h2>Content-Pipeline</h2><span class="more muted">${plural(d.gesamt?.artikel || 0, 'Artikel', 'Artikel')} gesamt</span></div>
+      <div class="bars">${pipeline.map(r => `<div class="bar"><span>${esc(r.label)}</span><div class="track"><div class="fill" style="width:${Math.round(r.anzahl / maxPipeline * 100)}%"></div></div><span class="mono small">${r.anzahl}</span></div>`).join('')}</div>
+    </section>
+
+    <div class="grid grid-2 section">
+      <section class="card">
+        <div class="card-head"><h2>Überarbeitung fällig</h2><span class="more muted">pruefung.naechste in der Vergangenheit</span></div>
+        ${ueb.length ? `<div class="rows">${ueb.map(a => `<div class="row" style="cursor:default" tabindex="-1"><div><div class="t">${esc(a.titel || a.handle)}</div><div class="m"><span>${esc(a.bereich)}</span><span class="badge status">${esc(a.status ? statusLabel(a.status) : 'ohne Status')}</span><span style="color:var(--crit)">fällig seit ${fmtDate(a.naechste)} (${a.tageUeberfaellig} Tage)</span></div></div></div>`).join('')}</div>` : emptyState('Keine Überarbeitung fällig.', 'Kein Artikel mit abgelaufenem Prüfdatum.')}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Offene Bildbedarfe</h2><span class="more muted">${bilder.offen} offen</span></div>
+        ${bilder.items.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${bilder.items.slice(0, 20).map(b => `<li>${esc(b.titel || b.handle)} · ${esc(b.zweck)}</li>`).join('')}</ul>${kappen(bilder.items)}` : emptyState('Keine offenen Bildbedarfe.', '')}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Offener Expert Input</h2><span class="more muted">${ei.gesamt} Fragen · ${ei.ratgeber} Ratgeber, ${ei.lexikon} Lexikon</span></div>
+        ${ei.items.length ? `<ul class="small muted" style="margin:0;padding-left:18px">${ei.items.slice(0, 20).map(f => `<li><b>${esc(f.titel || f.handle)}</b> (${esc(f.quelle)}): ${esc(f.frage)}</li>`).join('')}</ul>${kappen(ei.items)}` : emptyState('Kein offener Expert Input.', '')}
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Problem-Finder</h2><span class="more muted">content/probleme</span></div>
+        <div class="band" style="margin:0">
+          ${bandItem(pf.gesamt, 'Probleme gesamt', 'info')}
+          ${bandItem(pf.mitZiel, 'mit Ziel-Artikel', 'ok')}
+          ${bandItem(pf.ohneZiel, 'ohne Ziel-Artikel', pf.ohneZiel ? 'warn' : 'ok')}
+        </div>
+      </section>
+    </div>
+
+    <section class="card section">
+      <div class="card-head"><h2>Gate (bodenwissen-guard)</h2><span class="more muted">${plural(gate.zahlen?.artikel || 0, 'Artikel', 'Artikel')}, ${plural(gate.zahlen?.lexikon || 0, 'Lexikoneintrag', 'Lexikoneinträge')}, ${plural(gate.zahlen?.probleme || 0, 'Problem', 'Probleme')} geprüft</span></div>
+      ${gate.fehler.length ? `<div class="notice crit" style="margin-bottom:8px"><b>${plural(gate.fehler.length, 'Fehler', 'Fehler')}:</b><ul style="margin:6px 0 0;padding-left:18px">${gate.fehler.slice(0, 20).map(f => `<li>${esc(f.ort)}: ${esc(f.text)}</li>`).join('')}</ul>${kappen(gate.fehler)}</div>` : ''}
+      ${gate.hinweise.length ? `<div class="notice warn"><b>${plural(gate.hinweise.length, 'Hinweis', 'Hinweise')}:</b><ul style="margin:6px 0 0;padding-left:18px">${gate.hinweise.slice(0, 20).map(h => `<li>${esc(h.ort)}: ${esc(h.text)}</li>`).join('')}</ul>${kappen(gate.hinweise)}</div>` : ''}
+      ${!gate.fehler.length && !gate.hinweise.length ? emptyState('Gate ist sauber.', 'npm run bodenwissen:guard meldet weder Fehler noch Hinweise.') : ''}
+    </section>
+
+    <section class="card section">
+      <div class="card-head"><h2>Suchleistung</h2><span class="more muted">Klicks, Impressionen, CTR, Position</span></div>
+      ${emptyState('Daten noch nicht verfügbar.', suchleistungHinweis(d))}
+    </section>
+
+    <p class="small muted section">Stand: ${esc(fmtDateTime(d.erzeugtAm))} · erzeugt aus dem Repository, keine externen Aufrufe.</p>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1427,6 +2065,7 @@ function openActionDialog(t, act, extra = {}) {
   form.querySelector('input:not([type=hidden]), select, textarea')?.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
+    if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return; }
     const fd = new FormData(form);
     const payload = { target: fd.get('target') || null, owner: (fd.get('owner') || '').trim() || null, comment: (fd.get('text') || '').trim() || null, reason: (fd.get('text') || '').trim() || null, confirmAcceptance: fd.get('confirmAcceptance') === 'on', act };
     if (payload.target) {
@@ -1454,7 +2093,7 @@ function openActionDialog(t, act, extra = {}) {
 // ---------------------------------------------------------------------------
 function paletteItems(q) {
   const items = [];
-  const views = [['heute', 'Heute'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität']];
+  const views = [['heute', 'Heute'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber']];
   for (const [k, l] of views) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
   for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
@@ -1512,6 +2151,7 @@ async function syncNow() {
  * Anzahl und Zeitpunkt (aus derselben aktualisierung.json).
  */
 async function aktualisierenNow() {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aktualisierung anstossen.', 'crit'); return; }
   if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
   try {
     const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
@@ -1540,13 +2180,21 @@ function pollAktualisierung() {
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
-const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, lexikon: viewLexikon };
+const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 function render() {
   const main = $('#main');
   document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
+  // "Mehr" traegt die Freigaben-Zahl mit, damit sie im eingeklappten Menue nicht untergeht,
+  // und ist markiert, solange eine seiner Ansichten offen ist.
+  const more = $('#navMore');
+  if (more) {
+    const mc = $('#navMoreCount'); mc.hidden = !approvals; mc.textContent = approvals;
+    more.querySelector('summary').classList.toggle('current', ['freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'].includes(state.route.view));
+    more.open = false;
+  }
   if (state.capabilities.mode === 'ausgeloggt') {
     main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist nicht mehr gültig (Sitzungen gelten 12 Stunden) oder das Passwort hat sich geändert. Bereits eingegebene Angaben auf dieser Seite bleiben erhalten, bis neu geladen wird. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
     document.title = 'Sitzung abgelaufen · Teppich Dashboard';
@@ -1562,9 +2210,14 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', lexikon: 'Lexikon' }[state.route.view]} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber' }[state.route.view]} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
+  // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz).
+  if (state.route.view === 'kunden' && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
+    const feld = main.querySelector('input[type=search][data-param="kq"]');
+    if (feld && document.activeElement !== feld) { feld.focus(); feld.setSelectionRange(feld.value.length, feld.value.length); }
+  }
 }
 
 function bindEvents() {
@@ -1575,6 +2228,8 @@ function bindEvents() {
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
   document.addEventListener('click', e => {
+    const more = $('#navMore');
+    if (more?.open && !e.target.closest('#navMore')) more.open = false;
     const open = e.target.closest('[data-open]');
     if (open && !e.target.closest('[data-decide]')) { e.preventDefault(); openTask(Number(open.dataset.open)); if (open.dataset.primary) { setTimeout(() => $('#sheetRoot [data-act]')?.focus(), 50); } return; }
     if (e.target.closest('[data-close-sheet]')) { closeTask(); return; }
@@ -1595,16 +2250,19 @@ function bindEvents() {
     if (dec) { const t = state.tasks.find(x => x.number === Number(dec.dataset.task)); if (t) openActionDialog(t, dec.dataset.decide); return; }
     const afBtn = e.target.closest('[data-af-set]');
     if (afBtn) {
-      // Nur den direkten Zellentext lesen, nicht das verschachtelte SKU-<div> mit -
-      // sonst haengt am Titel im Dialog z.B. "UNGEKLAERT" ohne Trennzeichen an ("testUNGEKLAERT").
-      const zellenText = td => { const c = td?.cloneNode(true); c?.querySelectorAll('div').forEach(d => d.remove()); return c?.textContent?.trim() || ''; };
-      const tr = afBtn.closest('tr');
-      const pos = { orderId: afBtn.dataset.afOrder, lineItemId: afBtn.dataset.afItem, orderName: zellenText(tr?.querySelector('td:nth-child(2)')), titel: zellenText(tr?.querySelector('td:nth-child(3)')), farbe: zellenText(tr?.querySelector('td:nth-child(4)')) };
+      // Anzeige-Angaben fuer den Dialog stehen als data-Attribute am Knopf - nicht aus den
+      // Tabellenspalten lesen, deren Reihenfolge sich mit dem Layout aendert.
+      const ds = afBtn.dataset;
+      const pos = { orderId: ds.afOrder, lineItemId: ds.afItem, orderName: ds.afName || '', titel: anzeigeWert(ds.afTitel || ''), farbe: ds.afFarbe || '' };
       const status = afBtn.dataset.afStatus;
       if (status === 'bestellt') openAuftragsstatusDialog(pos, status);
       else setzeAuftragsstatus(pos, status);
       return;
     }
+    const proj = e.target.closest('[data-toggle-projekt]');
+    if (proj) { const k = proj.dataset.toggleProjekt; if (state.offeneProjekte.has(k)) state.offeneProjekte.delete(k); else state.offeneProjekte.add(k); render(); return; }
+    const abschl = e.target.closest('[data-auftrag-erledigt]');
+    if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return; }
     const p = e.target.closest('button[data-param]');
     if (p) { setParam(p.dataset.param, p.dataset.value); return; }
     const kop = e.target.closest('[data-kopieren]');
@@ -1620,6 +2278,14 @@ function bindEvents() {
     if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return; }
     const lexZurueck = e.target.closest('[data-lex-zurueck]');
     if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return; }
+    const kundenOpen = e.target.closest('[data-kunden-open]');
+    if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('key', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
+    const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
+    if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return; }
+    const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
+    if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
+    const druckBtn = e.target.closest('[data-drucken]');
+    if (druckBtn) { e.preventDefault(); window.print(); return; }
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
@@ -1632,7 +2298,7 @@ function bindEvents() {
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;
-  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); const focus = el; render(); const again = document.querySelector('input[type=search][data-param]'); if (again && focus) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); } }, 220); });
+  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); const focus = el; render(); const again = document.querySelector('input[type=search][data-param]'); if (again && focus) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); } }, 220); });
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }
@@ -1663,7 +2329,7 @@ function bindEvents() {
   $('#sessionBtn').addEventListener('click', logout);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
-  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
 
@@ -1674,7 +2340,7 @@ async function init() {
   await loadCapabilities();
   await loadData();
   renderSyncChip();
-  if (state.route.view === 'aktivitaet') activityCache = await loadActivity();
+  if (state.route.view === 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); }
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadWorkflowRun().then(() => { renderSyncChip(); if (['heute', 'insights'].includes(state.route.view)) render(); });

@@ -63,7 +63,9 @@
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
+    "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
     "task": "node scripts/task.mjs",
+    "benutzer": "node operations/scripts/benutzer.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",
@@ -76,7 +78,11 @@
     "daten:sync-dienst": "node operations/scripts/sync-dienst.mjs",
     "daten:sichern": "node operations/scripts/sicherung.mjs",
     "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
-    "rabatt:plan": "node operations/scripts/rabatt-plan.mjs"
+    "rabatt:plan": "node operations/scripts/rabatt-plan.mjs",
+    "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
+    "lexikon:payload": "node scripts/lexikon-payload.mjs",
+    "probleme:payload": "node scripts/probleme-payload.mjs",
+    "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

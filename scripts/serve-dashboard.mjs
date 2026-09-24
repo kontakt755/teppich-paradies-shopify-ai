@@ -33,6 +33,8 @@ import {
   createAuth, loadConfiguredPassword, parseCookies, sessionCookieHeader,
   clearedCookieHeader, renderLoginPage, sleep, SESSION_COOKIE,
 } from './dashboard-auth.mjs';
+import { leseBenutzer, benutzerDateiExistiert, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
+import { protokollPfad, letzteEintraege } from '../operations/lib/protokoll.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -41,9 +43,8 @@ const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
 
-// Aufruf statt Variable: sonst liest der Geheimnis-Scanner die Zuweisung als
-// hinterlegtes Passwort (automation/core/secret-scan.mjs, Regel PASSWORD_ASSIGNMENT).
-export const auth = createAuth({ password: loadConfiguredPassword() });
+const CONFIGURED_PASSWORD = loadConfiguredPassword();
+export const auth = createAuth({ password: CONFIGURED_PASSWORD });
 
 /** Wirft, wenn der Netzmodus ohne Passwort gestartet werden soll. Vor jedem listen() pruefen. */
 export function assertStartupAllowed({ host = HOST, authObj = auth } = {}) {
@@ -105,15 +106,24 @@ function sameOrigin(req) {
   return true;
 }
 
-export async function handleApi(req, res, pathname) {
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|aktualisierung|aktualisierung\/status|aktualisierung\/start)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+export async function handleApi(req, res, pathname, benutzer = null) {
+  // Pfadliste aus beiden Zweigen: Benutzer/Protokoll (Mehrbenutzerbetrieb) und
+  // Kunden/Rueckrufe (Kundenansicht) - fehlt einer, antwortet der Server 404.
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|kunden\/suche|kunden\/detail|kunden\/rueckrufe|aktualisierung|aktualisierung\/status|aktualisierung\/start)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
       if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+      // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
+      // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
+      // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
+      if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
+    } else if (simple === 'benutzer') {
+      if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
+      if (benutzer && benutzer.rolle !== 'inhaber') { send(res, 403, { error: 'Nur fuer die Rolle "inhaber" sichtbar' }); return; }
     } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
@@ -121,21 +131,27 @@ export async function handleApi(req, res, pathname) {
     else if (simple === 'sync') result = await api.sync();
     else if (simple === 'activity') result = await api.activity();
     else if (simple === 'agent-runs') result = api.agentRuns();
+    else if (simple === 'benutzer') result = benutzerListeOeffentlich();
+    else if (simple === 'protokoll') result = { eintraege: letzteEintraege(protokollPfad(), 50) };
     else if (simple === 'einkauf/bestellungen') result = api.einkaufBestellungen();
     else if (simple === 'einkauf/produktstatus') result = api.einkaufProduktstatus({ page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize'), q: url.searchParams.get('q') || '', gruppe: url.searchParams.get('gruppe') || '', filter: url.searchParams.get('filter') || '' });
     else if (simple === 'einkauf/klaerung') result = api.einkaufKlaerung();
     else if (simple === 'einkauf/kennzahlen') result = api.einkaufKennzahlen();
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'GET') result = api.einkaufAuftragsstatus();
-    else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req));
+    else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req), benutzer);
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
+    else if (simple === 'kunden/suche') result = api.kundenSuche({ q: url.searchParams.get('q') || '' });
+    else if (simple === 'kunden/detail') result = api.kundenDetail({ key: url.searchParams.get('key') || '' });
+    else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();
+    else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req));
     else if (simple === 'aktualisierung') result = api.aktualisierung();
     else if (simple === 'aktualisierung/status') result = api.aktualisierungStatus();
     else if (simple === 'aktualisierung/start') result = api.aktualisierungStarten();
     else if (taskOp === 'activity') result = await api.activityForTask(number);
-    else if (taskOp === 'transition') result = await api.transition(number, await readJson(req));
-    else if (taskOp === 'assign') result = await api.assign(number, await readJson(req));
-    else if (taskOp === 'comment') result = await api.comment(number, await readJson(req));
+    else if (taskOp === 'transition') result = await api.transition(number, await readJson(req), benutzer);
+    else if (taskOp === 'assign') result = await api.assign(number, await readJson(req), benutzer);
+    else if (taskOp === 'comment') result = await api.comment(number, await readJson(req), benutzer);
     send(res, 200, result);
   } catch (e) {
     if (e instanceof ApiError) { send(res, e.status, { error: e.message, ...e.extra }); return; }
@@ -143,6 +159,13 @@ export async function handleApi(req, res, pathname) {
     console.error(`[api] ${pathname}: ${msg}`);
     send(res, 500, { error: `Interner Fehler: ${msg}` });
   }
+}
+
+/** Benutzerverwaltung im UI: nur Liste (Anlegen/Deaktivieren laeuft ueber das Skript). Nie Hashes ausliefern. */
+function benutzerListeOeffentlich() {
+  if (!benutzerDateiExistiert()) return { benutzer: [], hinweis: 'Keine benutzer.json - Notzugang per Einzelpasswort aktiv.' };
+  const liste = leseBenutzer().map(b => ({ name: b.name, kuerzel: b.kuerzel, rolle: b.rolle, aktiv: b.aktiv !== false }));
+  return { benutzer: liste, hinweis: `Anlegen/Deaktivieren: npm run benutzer -- anlegen (Datei: ${benutzerDateiPfad()})` };
 }
 
 export async function handleStatic(req, res, pathname) {
@@ -167,31 +190,44 @@ function isAuthed(req) {
   return auth.validSession(cookies[SESSION_COOKIE]);
 }
 
+/** Angemeldeter Benutzer ({name, kuerzel, rolle}) oder null (Standardbetrieb ohne Anmeldung). */
+function sessionBenutzer(req) {
+  if (!auth.required) return null;
+  const cookies = parseCookies(req);
+  return auth.sessionBenutzer(cookies[SESSION_COOKIE]);
+}
+
 async function handleLogin(req, res) {
   if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
   if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
   const ip = clientIp(req);
-  if (auth.isLocked(ip)) {
-    send(res, 429, { error: 'Zu viele Fehlversuche. Kurz warten und erneut versuchen.' });
-    return;
-  }
   let body;
   try { body = await readJson(req); } catch (e) {
     if (e instanceof ApiError) { send(res, e.status, { error: e.message }); return; }
     send(res, 400, { error: 'Ungültige Anfrage' });
     return;
   }
-  const ok = auth.required && auth.verifyPassword(body?.passwort);
-  await sleep(auth.failDelayMs);
-  if (!ok) {
-    auth.registerFailure(ip);
-    send(res, 401, { error: 'Falsches Passwort' });
+  const name = typeof body?.name === 'string' ? body.name.trim() : '';
+  // Begrenzung je Benutzer UND je IP: ein Sperrschluessel aus beidem, damit weder ein
+  // einzelner Name noch eine einzelne IP-Adresse andere Konten mitsperrt.
+  const rateKey = `${ip}::${name.toLowerCase() || 'unbekannt'}`;
+  if (auth.isLocked(rateKey) || auth.isLocked(ip)) {
+    send(res, 429, { error: 'Zu viele Fehlversuche. Kurz warten und erneut versuchen.' });
     return;
   }
+  const benutzer = auth.required ? auth.verifyLogin({ name, passwort: body?.passwort }) : null;
+  await sleep(auth.failDelayMs);
+  if (!benutzer) {
+    auth.registerFailure(rateKey);
+    auth.registerFailure(ip);
+    send(res, 401, { error: 'Name oder Passwort falsch' });
+    return;
+  }
+  auth.registerSuccess(rateKey);
   auth.registerSuccess(ip);
-  const sid = auth.createSession();
+  const sid = auth.createSession(benutzer);
   res.setHeader('Set-Cookie', sessionCookieHeader(sid));
-  send(res, 200, { ok: true });
+  send(res, 200, { ok: true, benutzer });
 }
 
 function handleLogout(req, res) {
@@ -203,7 +239,7 @@ function handleLogout(req, res) {
 }
 
 function handleSession(req, res) {
-  send(res, 200, { required: auth.required, authenticated: isAuthed(req) });
+  send(res, 200, { required: auth.required, authenticated: isAuthed(req), benutzer: sessionBenutzer(req) });
 }
 
 export function requestHandler(req, res) {
@@ -228,7 +264,7 @@ export function requestHandler(req, res) {
     return;
   }
 
-  if (pathname.startsWith('/api/')) return handleApi(req, res, pathname);
+  if (pathname.startsWith('/api/')) return handleApi(req, res, pathname, sessionBenutzer(req));
   return handleStatic(req, res, pathname);
 }
 

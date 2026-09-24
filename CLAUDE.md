@@ -338,12 +338,24 @@ Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
 Label-Gruppen: `status:*`, `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`
 (`./setup-dashboard.sh` legt sie an). Tests: `npm run dashboard:test`.
 
+**Vor jeder Aenderung am Dashboard** den Skill `.claude/skills/control-center/SKILL.md`
+lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Browser
+mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
+Scrollen; `--offen` fuer Klicktests).
+
 `issues.json` gehoert dem Bot: **nicht mitcommitten**, Dateien gezielt mit
 `git add <datei>` stagen, nie `git add -A`. Zuruecksetzen ist fuer genau diesen
 Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
 `.claude/hooks/git-gh-guard.mjs`, der sonst jede Stelle im Befehl prueft und
 fail-closed blockiert (Fliesstext mit Git-Befehlen per Heredoc).
 → `docs/lessons/dashboard-issues-json.md`
+
+**Beim Rebase ist `--ours` der Upstream, nicht die eigene Arbeit.** Genau
+umgekehrt zum Merge. Wer den eigenen, gerade wiedergespielten Stand behalten
+will — etwa der Bot mit seinen frisch erzeugten Dateien — nimmt `--theirs`.
+`dashboard-data.yml` nahm seit dem 2026-09-03 `--ours` und verwarf damit die
+Datei, die es im selben Lauf erzeugt hatte.
+→ `docs/lessons/rebase-ours-ist-der-upstream.md`
 
 **Aufgaben pflegen sich ueber Ereignisse selbst** (`task-automation.yml`):
 neues Issue → Eingang, PR referenziert `#n` → In Arbeit, PR gemergt → Review,

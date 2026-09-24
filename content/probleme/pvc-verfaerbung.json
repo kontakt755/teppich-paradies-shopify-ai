@@ -1,0 +1,11 @@
+{
+  "handle": "pvc-verfaerbung",
+  "symptom": "Der PVC-Boden vergilbt oder verfärbt sich",
+  "belag": "PVC",
+  "ursachen": [
+    "Ohne Ansehen des Bodens lässt sich nicht sicher sagen, ob UV-Einstrahlung, ein ungeeignetes Reinigungsmittel oder eine andere Ursache dahintersteht."
+  ],
+  "artikel": "",
+  "profi_noetig": false,
+  "status": "idee"
+}

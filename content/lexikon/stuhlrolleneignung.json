@@ -1,0 +1,13 @@
+{
+  "handle": "stuhlrolleneignung",
+  "begriff": "Stuhlrolleneignung",
+  "kurz": "Stuhlrolleneignung beschreibt, ob ein Bodenbelag der dauerhaften Belastung durch die Rollen eines Bürostuhls standhält, ohne sich einzudrücken oder abzunutzen. Nicht jeder Belag ist dafür geeignet; wo es zutrifft, steht es in den Produktangaben, sonst empfiehlt sich eine Schutzmatte.",
+  "lang": "",
+  "gruppe": "Allgemein",
+  "synonyme": ["Stuhlrollen-geeignet", "Bürostuhl-Eignung"],
+  "artikel": "",
+  "status": "freigegeben",
+  "expert_input": [
+    "Bei welchen Produkten Stuhlrolleneignung tatsächlich angegeben ist - kein Metafeld dafür bekannt, bislang nur über Beschreibungstexte erkennbar."
+  ]
+}

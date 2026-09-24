@@ -93,6 +93,35 @@ den lokalen Betrieb bleibt (der lokale Server kann sie auch selbst per `npm run 
 erzeugen). Es findet dadurch **keine zusätzliche Veröffentlichung** mehr statt – das Committen war schon
 vorher notwendig und ist von der Pages-Frage unabhängig.
 
+## 1d. Mitarbeiterzugänge (seit 2026-09-24)
+
+Statt eines einzigen gemeinsamen Passworts kann das Control Center Mitarbeiterzugänge führen:
+Name/Kürzel + eigenes Passwort je Person, ausschließlich lokal unter
+`$TP_PRIVAT_DIR/benutzer.json` (nie im Repository, `chmod 600`, Passwörter als scrypt-Hash).
+
+**Pflege:**
+
+```
+npm run benutzer -- anlegen        # fragt Name, Kürzel, Rolle, Passwort (verdeckt)
+npm run benutzer -- passwort <kuerzel>
+npm run benutzer -- deaktivieren <kuerzel>
+npm run benutzer -- liste
+```
+
+Rollen: `inhaber` (alles, inkl. Benutzerliste im UI unter „Aktivität"), `mitarbeiter` (Auftragsfluss,
+Aufgabenstatus, Aktualisierung anstoßen), `lesen` (nur Ansicht – **serverseitig** durchgesetzt in
+`scripts/serve-dashboard.mjs`, nicht nur im Frontend ausgeblendet).
+
+**Notzugang:** Solange keine `benutzer.json` existiert, bleibt das bisherige Einzelpasswort
+(`TP_DASHBOARD_PASSWORT` / `dashboard-passwort.txt`) der einzige Zugang – kein Bruch im laufenden
+Betrieb. Existiert eine `benutzer.json`, bleibt das Einzelpasswort zusätzlich als Notzugang für den
+Inhaber gültig (Rolle `inhaber`), damit sich niemand aussperren kann.
+
+**Wer hat was gemacht:** `operations/lib/auftragsstatus.mjs` (`aktualisiertVon`) und die
+GitHub-Kommentare der Aufgabenaktionen tragen jetzt den angemeldeten Anzeigenamen statt des
+Mac-Kontos. Ein schlankes lokales Protokoll (`$TP_PRIVAT_DIR/protokoll.jsonl`, nie im Repository)
+zeigt die letzten 50 Aktionen unter „Aktivität" im Control Center.
+
 ## 2. Statusmodell und Mapping
 
 Ziel-Workflow: `Eingang → Triage → Geplant → Bereit → In Arbeit → Review → Erledigt`,

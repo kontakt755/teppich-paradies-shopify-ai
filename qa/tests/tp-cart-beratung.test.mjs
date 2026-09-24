@@ -122,18 +122,100 @@ test('Waechter und Serverzustand sind verdrahtet', () => {
   assert.match(lies('snippets/header-actions.liquid'), /tp-cart-beratung\.js/);
 });
 
-test('Beratungsfrage nur bei reinen Musterbestellungen (ctx.beratung)', () => {
-  // Ware im Warenkorb: Frage nicht gestellt, keine Pflicht, altes "Ja" wird geloescht
-  assert.equal(B.pruefen({}, { beratung: false }).ok, true);
-  assert.equal(B.pruefen({ Beratung: 'Ja' }, { beratung: false }).telefonNoetig, false);
-  assert.equal(B.attributeAus({ beratung: 'Ja', telefon: '0176 1234567' }, { beratung: false }).Beratung, '');
-  // Masspruefung "Ja" verlangt weiter das Telefon
-  assert.equal(B.pruefen({ 'Maßprüfung': 'Ja' }, { beratung: false, masspruefung: true }).ok, false);
-  // Nur Muster: Frage ist Pflicht, bei Ja mit Telefon
-  assert.equal(B.pruefen({}, { beratung: true }).ok, false);
-  assert.equal(B.pruefen({ Beratung: 'Ja' }, { beratung: true }).ok, false);
-  assert.equal(B.pruefen({ Beratung: 'Ja', Telefon: '0176 1234567' }, { beratung: true }).ok, true);
+// --- Beratungsfrage nur bei reiner Musterbestellung -------------------------
+
+test('Ohne Beratungsfrage sperrt nichts den Checkout', () => {
+  const r = B.pruefen({}, { beratungsfrage: false });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.fehler, []);
+});
+
+test('Ohne Beratungsfrage wird eine alte Antwort geleert', () => {
+  const a = B.attributeAus(
+    { beratung: 'Ja', telefon: '0301234567', zeit: 'Vormittags', thema: 'Farbe unklar' },
+    { beratungsfrage: false }
+  );
+  assert.equal(a.Beratung, '');
+  assert.equal(a.Telefon, '');
+  assert.equal(a['Rückruf'], '');
+  assert.equal(a.Beratungsthema, '');
+});
+
+test('Masspruefung braucht die Telefonnummer auch ohne Beratungsfrage', () => {
+  const ctx = { beratungsfrage: false, masspruefung: true };
+  const a = B.attributeAus({ beratung: 'Ja', mass: 'Ja', telefon: '03301 5733720' }, ctx);
+  assert.equal(a.Beratung, '');
+  assert.equal(a['Maßprüfung'], 'Ja');
+  assert.equal(a.Telefon, '03301 5733720');
+  assert.equal(B.pruefen(a, ctx).ok, true);
+  assert.equal(B.pruefen({ ...a, Telefon: '' }, ctx).fehler[0].code, 'TELEFON_FEHLT');
+});
+
+test('Fehlender ctx verhaelt sich wie bisher (Frage gestellt)', () => {
+  assert.equal(B.pruefen({}, {}).fehler[0].code, 'BERATUNG_FEHLT');
+  assert.equal(B.pruefen({}).fehler[0].code, 'BERATUNG_FEHLT');
+});
+
+test('Snippet stellt die Beratungsfrage nur bei reiner Musterbestellung', () => {
+  const s = lies('snippets/tp-cart-beratung.liquid');
+  // Die Frage haengt an tpb_frage ...
+  const if_frage = s.indexOf('{%- if tpb_frage -%}');
+  const frage = s.indexOf('Persönliche Beratung gewünscht?');
+  assert.ok(if_frage > 0 && frage > if_frage, 'Frage steht im tpb_frage-Zweig');
+  // ... und tpb_frage nur, wenn Muster da sind und keine regulaere Ware.
+  assert.match(s, /if tpb_muster_zeilen > 0 and tpb_ware_zeilen == 0\s*\n\s*assign tpb_frage = true/);
+  // Die Sperre gilt nur, solange die Frage gestellt ist.
+  assert.match(s, /if tpb_frage and tpb_beratung != 'Ja' and tpb_beratung != 'Nein'/);
+  // Keine eigene Muster-Regel im Snippet, nur das zentrale Snippet.
+  assert.ok(s.includes("render 'tp-muster-position', line_item: tpb_item"));
+  assert.ok(!/_Muster_ID/.test(s), 'Muster-Erkennung steht nicht mehr doppelt im Beratungs-Snippet');
+  // Aufraeumpfad ist verdrahtet.
+  assert.ok(s.includes('data-aufraeumen'));
+  assert.ok(lies('assets/tp-cart-beratung.js').includes("hasAttribute('data-aufraeumen')"));
+});
+
+test('Muster-Regel steht in Liquid und Node deckungsgleich', () => {
+  const liquid = lies('snippets/tp-muster-position.liquid');
+  const node = lies('operations/lib/muster.mjs');
+  for (const merkmal of ['_Muster_ID', 'M-', 'TP-MUSTER', 'Musterservice']) {
+    assert.ok(liquid.includes(merkmal), `Liquid kennt ${merkmal}`);
+    assert.ok(node.includes(merkmal), `Node kennt ${merkmal}`);
+  }
+  // Beide schliessen Preis und Handle ausdruecklich aus.
+  for (const text of [liquid, node]) {
+    assert.match(text, /Handle/);
+    assert.match(text, /0,00|Preis/);
+  }
+  assert.ok(liquid.includes('operations/lib/muster.mjs'));
+  assert.ok(node.includes('snippets/tp-muster-position.liquid'));
+});
+
+test('Zwischen Gesamtbetrag und Kaufknopf steht nur der Preishinweis', () => {
+  const s = lies('snippets/cart-summary.liquid');
+  const total = s.indexOf('cart-totals__total-value');
+  const cta = s.indexOf('<div class="cart__ctas">');
+  const dazwischen = s.slice(total, cta);
+  assert.ok(total > 0 && cta > total);
+  // Ratenzahlung ist unter die Kaufknoepfe gewandert.
+  assert.ok(!dazwischen.includes('| payment_terms'), 'keine Ratenzahlung vor dem Kaufknopf');
+  assert.ok(s.indexOf('| payment_terms') > cta, 'Ratenzahlung steht nach den Kaufknoepfen');
+  // Der gesetzliche Preishinweis bleibt am Preis.
+  assert.ok(dazwischen.includes("render 'tax-info'"));
+});
+
+test('Pflichtfrage und Masspruefung vor dem Kaufknopf, Verlegeanfrage dahinter', () => {
+  const s = lies('snippets/cart-summary.liquid');
+  const vor = s.indexOf("render 'tp-cart-beratung', stelle: 'vor_kasse'");
+  const cta = s.indexOf('<div class="cart__ctas">');
+  const nach = s.indexOf("render 'tp-cart-beratung', stelle: 'nach_kasse'");
+  assert.ok(vor > 0 && cta > vor, 'vor_kasse steht vor den Kaufknoepfen');
+  assert.ok(nach > cta, 'nach_kasse steht hinter den Kaufknoepfen');
+
   const snippet = lies('snippets/tp-cart-beratung.liquid');
-  assert.match(snippet, /assign tpb_nur_muster = false/);
-  assert.match(snippet, /\{%- if tpb_nur_muster -%\}\s*<fieldset/);
+  // Die Stelle entscheidet Liquid, nicht CSS - sonst wichen Lese- und
+  // Tastaturreihenfolge von der sichtbaren Reihenfolge ab.
+  assert.match(snippet, /assign tpb_stelle_soll = 'nach_kasse'/);
+  assert.match(snippet, /if tpb_frage or tpb_mass\s*\n\s*assign tpb_stelle_soll = 'vor_kasse'/);
+  assert.match(snippet, /if tpb_stelle != tpb_stelle_soll\s*\n\s*assign tpb_zeigen = false/);
+  assert.ok(!/(?:^|[\s;{])order:\s*\d/m.test(snippet), 'keine CSS-order-Umsortierung');
 });

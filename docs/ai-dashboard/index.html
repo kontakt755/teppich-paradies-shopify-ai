@@ -7,7 +7,9 @@
   <!-- Als App installierbar (Edge/Chrome, Safari "Zum Dock hinzufuegen", iOS/Android
        "Zum Home-Bildschirm"). Bewusst OHNE Service Worker: der wuerde issues.json
        cachen und veraltete Staende anzeigen. -->
-  <link rel="manifest" href="./manifest.webmanifest">
+  <!-- use-credentials: das Manifest wird sonst ohne Sitzungscookie geholt und landet im
+       Netzmodus (Passwortschutz) auf der Anmeldeseite. -->
+  <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
   <meta name="theme-color" content="#1f2937">
   <meta name="description" content="Control Center: Aufgaben, Freigaben, Blocker und naechste Schritte fuer Teppich Paradies">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
@@ -26,14 +28,22 @@
         <span class="brand-text">Teppich Paradies<small>Control Center</small></span>
       </a>
       <nav class="mainnav" id="mainnav" aria-label="Hauptnavigation">
+        <!-- Reihenfolge nach Wichtigkeit im Tagesgeschaeft; Seltenes unter "Mehr". -->
         <a href="#/heute" data-nav="heute">Heute</a>
-        <a href="#/arbeit" data-nav="arbeit">Arbeit</a>
-        <a href="#/freigaben" data-nav="freigaben">Freigaben<span class="nav-count" id="navFreigaben" hidden></span></a>
-        <a href="#/bereiche" data-nav="bereiche">Bereiche</a>
         <a href="#/einkauf" data-nav="einkauf">Einkauf</a>
+        <a href="#/kunden" data-nav="kunden">Kunden</a>
+        <a href="#/arbeit" data-nav="arbeit">Arbeit</a>
         <a href="#/lexikon" data-nav="lexikon">Lexikon</a>
-        <a href="#/insights" data-nav="insights">Insights</a>
-        <a href="#/aktivitaet" data-nav="aktivitaet">Aktivität</a>
+        <details class="nav-more" id="navMore">
+          <summary data-nav-more>Mehr<span class="nav-count" id="navMoreCount" hidden></span></summary>
+          <div class="nav-more-menu">
+            <a href="#/freigaben" data-nav="freigaben">Freigaben<span class="nav-count" id="navFreigaben" hidden></span></a>
+            <a href="#/ratgeber" data-nav="ratgeber">Ratgeber</a>
+            <a href="#/bereiche" data-nav="bereiche">Bereiche</a>
+            <a href="#/insights" data-nav="insights">Insights</a>
+            <a href="#/aktivitaet" data-nav="aktivitaet">Aktivität</a>
+          </div>
+        </details>
       </nav>
       <div class="topbar-tools">
         <button type="button" class="btn btn-ghost" id="searchBtn" title="Suche und Befehle (⌘K)">

@@ -26,9 +26,22 @@
     {% endif %}
 
     {% paginate search.results by products_per_page %}
+      {%- liquid
+        # TP Aufgabe #505 (Luecke L1): search.results mischt alle im Parameter
+        # "type" angefragten Objekttypen (siehe sections/tp-header-suche.liquid,
+        # snippets/tp-suche-ergebnisse.liquid - beide fragen jetzt auch "article"
+        # an). Produkte und Ratgeber-Artikel werden hier getrennt: sonst liefe
+        # ein Artikeltreffer durch die Produktkarten-Logik unten (kaputt, weil
+        # ein Artikel kein Produkt ist) und die Filterleiste zeigte eine
+        # Trefferzahl, die groesser ist als das Produktraster.
+        assign tp_sr_produkte = search.results | where: 'object_type', 'product'
+        assign tp_sr_artikel = search.results | where: 'object_type', 'article'
+      -%}
       {% if search.results_count > 0 %}
-        {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: search.results_count %}
-        {% assign products = search.results | where: 'object_type', 'product' %}
+        {% if tp_sr_produkte.size > 0 %}
+          {% content_for 'block', type: 'filters', id: 'filters', results: search, results_size: tp_sr_produkte.size %}
+        {% endif %}
+        {% assign products = tp_sr_produkte %}
       {% else %}
         {% comment %}
           Kein Katalog-Dump mehr: Horizon zeigte hier settings.empty_state_collection
@@ -38,6 +51,24 @@
         {% render 'tp-suche-leer' %}
         {% assign products = blank %}
         {% assign title = blank %}
+      {% endif %}
+
+      {% if tp_sr_artikel.size > 0 %}
+        {% comment %}
+          Ratgeber-Treffer: eigener Abschnitt vor dem Produktraster, mit der
+          bestehenden Artikelkarte (snippets/tp-ratgeber-karte.liquid) statt
+          einer eigenen Kartenoptik. Keine Begrenzung auf 3 wie in der
+          Schnellsuche - das hier ist bereits die vollstaendige, paginierte
+          Ergebnisseite.
+        {% endcomment %}
+        <section class="tp-sr-ratgeber" aria-labelledby="tp-sr-ratgeber-titel">
+          <h2 class="tp-sr-ratgeber__titel" id="tp-sr-ratgeber-titel">Ratgeber</h2>
+          <ul class="tp-sr-ratgeber__raster">
+            {% for tp_sr_a in tp_sr_artikel %}
+              <li>{% render 'tp-ratgeber-karte', artikel: tp_sr_a %}</li>
+            {% endfor %}
+          </ul>
+        </section>
       {% endif %}
 
       {% capture children %}
@@ -54,7 +85,7 @@
         {% endfor %}
       {% endcapture %}
 
-      {% if search.results_count > 0 %}
+      {% if products.size > 0 %}
         {% render 'product-grid',
           section: section,
           children: children,
@@ -67,6 +98,37 @@
     {% endpaginate %}
   </div>
 </results-list>
+
+{% stylesheet %}
+  /* TP Aufgabe #505: Ratgeber-Abschnitt ueber die volle Rasterbreite, wie
+     snippets/tp-suche-leer.liquid es fuer den Leerzustand schon macht - sonst
+     quetscht sich der Block in die 250-px-Filterspalte von .collection-wrapper. */
+  .tp-sr-ratgeber {
+    grid-column: 1 / -1;
+    margin: 8px 0 32px;
+  }
+
+  .tp-sr-ratgeber__titel {
+    margin: 0 0 16px;
+    font-size: clamp(20px, 2.2vw, 26px);
+  }
+
+  .tp-sr-ratgeber__raster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (max-width: 639px) {
+    .tp-sr-ratgeber__raster {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {

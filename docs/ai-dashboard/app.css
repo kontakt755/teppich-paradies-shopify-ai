@@ -65,9 +65,18 @@ button { font: inherit; color: inherit; }
 .mainnav a:hover { background: var(--surface-2); text-decoration: none; color: var(--text); }
 .mainnav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
 .nav-count { background: var(--accent); color: #fff; font-size: .7rem; border-radius: 999px; padding: 0 6px; min-width: 18px; text-align: center; }
+/* "Mehr"-Menue in der Hauptnavigation */
+.nav-more { position: relative; }
+.nav-more > summary { list-style: none; padding: 6px 12px; border-radius: 8px; color: var(--text-2); font-weight: 550; font-size: .92rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.nav-more > summary::-webkit-details-marker { display: none; }
+.nav-more > summary::after { content: "▾"; font-size: .7rem; color: var(--text-3); }
+.nav-more > summary:hover { background: var(--surface-2); color: var(--text); }
+.nav-more > summary.current { background: var(--accent-soft); color: var(--accent); }
+.nav-more-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 190px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.12); padding: 6px; display: flex; flex-direction: column; z-index: 30; }
+.nav-more-menu a { justify-content: space-between; }
 .topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .nav-toggle { display: none; }
-.sync-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: .8rem; color: var(--text-2); cursor: pointer; }
+.sync-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: .8rem; color: var(--text-2); cursor: pointer; }
 .sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
 .sync-chip.frisch .dot { background: var(--ok); }
 .sync-chip.alt .dot { background: var(--warn); }
@@ -87,6 +96,19 @@ button { font: inherit; color: inherit; }
 .btn-link:hover { text-decoration: underline; }
 
 /* Layout */
+.warnc { color: var(--crit); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.visually-hidden { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.section-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 26px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.section-title:first-of-type { margin-top: 4px; }
+.section-note { font-size: .8rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
+.sub-title { font-size: .95rem; margin: 18px 0 8px; }
+.section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 26px 0 4px; }
+.section-bar .chips { margin: 0; }
+.plain-list { margin: 0; padding-left: 18px; font-size: .9rem; display: flex; flex-direction: column; gap: 3px; }
+.flow-line { margin-top: 10px; }
+.pager { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 12px; }
 .page { max-width: 1320px; margin: 0 auto; padding: 24px 20px 80px; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
 .page-head .sub { color: var(--text-2); margin-top: 4px; }
@@ -142,8 +164,14 @@ details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
 .band a:hover, .band > div:hover { text-decoration: none; border-color: var(--line-strong); }
 .band .n { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
 .band .l { font-size: .8rem; color: var(--text-2); }
-.band .crit .n { color: var(--crit); } .band .warn .n { color: var(--warn); } .band .info .n { color: var(--info); } .band .ok .n { color: var(--ok); }
+/* Farbe traegt Bedeutung: Rot = Problem, Bernstein = zu tun, sonst neutral. Blau/Gruen fuer
+   blosse Mengen verwirrte ("ist Gruen gut?") und fallen weg. */
+.band .crit .n { color: var(--crit); } .band .warn .n { color: var(--warn); }
+.band .info .n, .band .ok .n, .band .plain .n { color: var(--text); }
+.band a.crit, .band > div.crit { border-left: 3px solid var(--crit); }
+.band a.warn, .band > div.warn { border-left: 3px solid var(--warn); }
 .band .zero .n { color: var(--text-3); }
+.band .zero .l { color: var(--text-3); }
 
 /* Badges */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: .74rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
@@ -324,7 +352,13 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
   .mainnav { display: none; position: absolute; top: 52px; left: 0; right: 0; background: var(--surface); border-bottom: 1px solid var(--line); flex-direction: column; padding: 8px; }
   .mainnav.open { display: flex; }
   #searchBtn kbd, #searchBtn span + span { display: none; }
-  .sync-chip #syncChipText { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Kopfzeile muss auf 360-390 px passen: nur Symbole, kein Fliesstext. */
+  .topbar-tools { gap: 4px; }
+  .topbar-tools .btn { padding: 6px 8px; }
+  #sessionBtnText, .brand-text small { display: none; }
+  .brand-text { font-size: .85rem; }
+  .sync-chip { padding: 5px 9px; }
+  .sync-chip #syncChipText { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .page { padding: 16px 12px 60px; }
   .sheet { width: 100%; }
   .activity li { grid-template-columns: 1fr; gap: 2px; }
@@ -332,3 +366,123 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
   .row .r { justify-content: flex-start; }
 }
 @media (prefers-reduced-motion: reduce) { .sk-line, .sk-band, .sk-card { animation: none; } }
+
+/* Reiter (Einkauf) */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; overflow-x: auto; }
+.tab { border: none; background: none; padding: 9px 14px; font-weight: 600; font-size: .92rem; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Auftraege (Heute / Einkauf) */
+.problem-card { background: var(--surface); }
+.problem-card .card-head h2, .problem-card .card-head h3 { font-size: 1rem; }
+.order-row { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; background: var(--surface); }
+.order-row.rot { border-left-color: var(--crit); }
+.order-row.gelb { border-left-color: var(--warn); }
+.order-row.gruen { border-left-color: var(--ok); }
+.order-row .t { font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.order-row .t a { color: var(--text); }
+.order-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.order-issues { margin: 2px 0 0; padding-left: 18px; font-size: .86rem; color: var(--crit); }
+.order-row.gelb .order-issues { color: var(--warn); }
+.order-row > .btn { flex: none; }
+
+/* Bestelllisten je Lieferant */
+.group-card { margin-bottom: 12px; }
+.group-card.has-gap { border-left: 3px solid var(--warn); }
+.group-card .card-head h3 { font-size: 1rem; }
+.table-scroll { overflow-x: auto; }
+table.tasks.compact { min-width: 720px; }
+table.tasks.compact td { padding: 8px 10px; }
+table.tasks .cell-title { font-weight: 600; }
+table.tasks tr.row-gap td { background: color-mix(in srgb, var(--warn-soft) 45%, transparent); }
+table.tasks code[data-kopiertext] { cursor: copy; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.fehlt { line-height: 1.4; }
+.fehlt + .fehlt { margin-top: 4px; }
+
+/* Shop-Zahlen */
+.kpi-card { padding: 12px 18px; max-width: 680px; }
+table.kpi { border-collapse: collapse; width: 100%; max-width: 560px; font-variant-numeric: tabular-nums; }
+table.kpi th, table.kpi td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); }
+table.kpi thead th { font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); font-weight: 600; }
+table.kpi tbody th { font-weight: 500; color: var(--text-2); }
+table.kpi td { font-weight: 650; font-size: 1.05rem; }
+table.kpi tr:last-child th, table.kpi tr:last-child td { border-bottom: none; }
+
+/* Systemzustand */
+.health-row.info .dot { background: var(--info); }
+.health-ok { display: flex; align-items: center; gap: 8px; margin-top: 22px; font-size: .85rem; color: var(--text-2); }
+.health-ok .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.health-card.warn { border-left: 3px solid var(--warn); }
+.health-card.crit { border-left: 3px solid var(--crit); }
+
+/* Aufklappbare Karte ohne Merken (Einkauf, Produktdaten) */
+.plain-details { padding: 0; }
+.plain-details > summary { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; list-style: none; }
+.plain-details > summary::-webkit-details-marker { display: none; }
+.plain-details > summary::before { content: "›"; color: var(--text-3); transition: transform .12s ease; }
+.plain-details[open] > summary::before { transform: rotate(90deg); }
+.plain-details > summary h2 { font-size: 1rem; flex: 1; }
+.plain-details > summary .preview { font-size: .85rem; font-weight: 600; color: var(--text-2); }
+.plain-details > :not(summary) { padding: 0 18px 16px; }
+
+/* Arbeit: ruhende Projektgruppen */
+.group-toggle { width: 100%; text-align: left; border: 1px dashed var(--line-strong); background: var(--surface-2); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: .88rem; color: var(--text-2); }
+.group-toggle:hover { color: var(--text); border-color: var(--text-3); }
+table.tasks tr.group-row td { padding: 6px 12px; background: var(--surface); }
+table.tasks tr.in-group td:first-child { padding-left: 28px; }
+
+/* Freigaben */
+.decide-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: flex-start; }
+.more-actions { position: relative; }
+.more-actions > summary { list-style: none; }
+.more-actions > summary::-webkit-details-marker { display: none; }
+.more-actions > div { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+
+/* Aktivitaet */
+.activity-meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 3px; }
+.activity-meta .who { margin-right: 4px; font-size: .82rem; }
+
+/* Lexikon */
+.search-hero input[type="search"] { font-size: 1.05rem; padding: 12px 14px; border-radius: 10px; }
+.search-hint .btn { margin-left: 6px; }
+
+@media (max-width: 760px) {
+  .nav-more { width: 100%; }
+  /* Im Handy-Menue klappt "Mehr" nach unten auf statt als schwebendes Fenster. */
+  .nav-more .nav-more-menu { position: static; border: none; box-shadow: none; padding: 0 0 0 12px; min-width: 0; }
+  .order-row { flex-direction: column; }
+  table.kpi td { font-size: .95rem; }
+  .section-bar { flex-direction: column; align-items: flex-start; }
+}
+
+/* Kunden (Kundensuche, Rueckruf-/Beratungsliste, Druckansicht) */
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.tel-link { font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+.tel-gross { margin-top: 4px; }
+.rueckruf-row { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.rueckruf-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.kunden-adressen { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px; }
+.kunden-auftrag.testbestellung { opacity: .8; border-style: dashed; }
+.kunden-table table { width: 100%; border-collapse: collapse; }
+.kunden-table th, .kunden-table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; font-size: .88rem; }
+.kunden-table th { font-size: .74rem; color: var(--text-2); font-weight: 600; border-top: 0; }
+
+@media (max-width: 720px) {
+  .rueckruf-row { flex-direction: column; }
+  .rueckruf-actions { align-items: flex-start; width: 100%; }
+  .kunden-table thead { display: none; }
+  .kunden-table table, .kunden-table tbody, .kunden-table tr, .kunden-table td { display: block; width: 100%; }
+  .kunden-table tr { border-top: 1px solid var(--line); padding: 6px 0; }
+  .kunden-table td { border: 0; padding: 2px 0; display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
+  .kunden-table td::before { content: attr(data-l); color: var(--text-2); font-size: .72rem; }
+}
+
+/* Druckansicht: nur die Bestellkarte, ohne Navigation/Buttons/Sync-Chip. */
+@media print {
+  .mainnav, .no-print, .toolbar, .page-head .head-actions, .topbar, .tabs, #syncChip, #navToggle, .kunden-auftrag .card-head span.no-print { display: none !important; }
+  body, main { background: #fff; color: #000; }
+  .card, .kunden-auftrag { box-shadow: none; border: 1px solid #999; break-inside: avoid; }
+  a[href]::after { content: none !important; }
+}

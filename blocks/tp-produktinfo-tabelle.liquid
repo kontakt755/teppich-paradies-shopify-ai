@@ -1,4 +1,21 @@
 {% doc %}
+  Bodenwissen-Integration (Paket P2, Aufgabe #505): Zeilen mit passendem
+  Lexikonbegriff bekommen ein details-Element in der Wert-Zelle, das den
+  Kurztext aus tp-lexikon-eintrag (modus inline) zeigt. details in td ist
+  gueltiges HTML (flow content) und bleibt standardmaessig zugeklappt, damit
+  die Seite nicht ueberladen wird - bewusst statt einer dauerhaft sichtbaren
+  Zeile, weil Begriffe wie Nutzungsklasse auf sehr vielen Produktseiten
+  vorkommen wuerden. Die Bezeichnung-Zelle (key) bleibt unveraendert, die
+  Erklaerung wird nur in der Wert-Zelle ergaenzt - das bestehende
+  Zeilenlayout und der Key/Value-Aufbau aendern sich nicht. Kein Pop-up,
+  keine neue Ueberschriftenebene: modus inline liefert nur einen Absatz.
+  Zuordnung Zeile -> Lexikon-Handle steht explizit in lexikon_zuordnung
+  weiter unten, nichts wird geraten oder aus dem Feldnamen abgeleitet. Fehlt
+  das Metaobjekt tp_lexikon im Shop oder der einzelne Eintrag, rendert
+  tp-lexikon-eintrag still nichts (siehe dortiger Kommentar) und die Zeile
+  bleibt exakt wie zuvor - kein leeres details-Element.
+  Siehe docs/bodenwissen/LEXIKON.md, Abschnitt "Auf der Produktseite".
+
   @prompt
     Tabellarische Anzeige von Produktinformationen. Links Key, rechts entsprechender Wert.
 {% enddoc %}
@@ -62,6 +79,35 @@
       padding-top: 0;
     }
   }
+
+  /* Bodenwissen: Lexikon-Erklaerung innerhalb der Wert-Zelle, siehe Dateikopf */
+  .tp-pit-lexikon-{{ ai_gen_id }} {
+    margin-top: 6px;
+  }
+
+  .tp-pit-lexikon-{{ ai_gen_id }} summary {
+    cursor: pointer;
+    font-size: 0.85em;
+    font-weight: 500;
+    color: {{ block.settings.key_text_color }};
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tp-pit-lexikon-{{ ai_gen_id }} summary::marker {
+    font-size: 0.9em;
+  }
+
+  .tp-pit-lexikon-{{ ai_gen_id }} summary:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
+
+  .tp-pit-lexikon__inhalt-{{ ai_gen_id }} {
+    margin-top: 4px;
+    font-size: 0.95em;
+    font-weight: 400;
+  }
 {% endstyle %}
 
 {% comment %}
@@ -94,10 +140,27 @@ Brandklasse (EN 13501-1)::brandverhalten::brandverhalten
 {% assign table_rows = table_config | strip | split: '|' %}
 
 {% comment %}
+  Zuordnung Zeilen-Bezeichnung (row_label oben) -> Handle in content/lexikon/.
+  Manuell gepflegt und bewusst nicht vollstaendig: nur Zeilen, bei denen die
+  Bezeichnung eindeutig einem Lexikonbegriff entspricht (kein Raten aus dem
+  Feldnamen). Neue Zeile mit Lexikonbezug? Hier per "Bezeichnung::handle"
+  ergaenzen - der Handle muss zu einer Datei unter content/lexikon/ passen,
+  siehe docs/bodenwissen/LEXIKON.md.
+
   Rollenbreite (Rollenware): echte Datenquelle sind die Varianten-Metafelder
   custom.rollenbreite (siehe snippets/tp-card-roll-widths.liquid), Fallback
   Produkt-Metafeld. Nur eindeutige Werte, aufsteigend nach cm sortiert.
 {% endcomment %}
+{% capture lexikon_zuordnung %}
+Florhöhe::florhoehe|
+Gesamtstärke::gesamthoehe|
+Poleneinsatzgewicht::polgewicht|
+Nutzungsklassen::nutzungsklasse|
+Fußbodenheizung::fussbodenheizung|
+Trittschallverbesserung::trittschall|
+Rückenausstattung::ruecken
+{% endcapture %}
+{% assign lexikon_zeilen = lexikon_zuordnung | strip | split: '|' %}
 {%- liquid
   assign tp_pit_rw_seen = '|'
   assign tp_pit_rw_entries = ''
@@ -172,6 +235,27 @@ Brandklasse (EN 13501-1)::brandverhalten::brandverhalten
       {% assign metafield = product.metafields.custom[metafield_key] %}
       {% assign metafield_value = metafield.value %}
 
+      {% comment %} Lexikon-Handle zur Zeile suchen, siehe lexikon_zuordnung oben {% endcomment %}
+      {% assign lexikon_handle = '' %}
+      {% for lexikon_zeile in lexikon_zeilen %}
+        {% assign lexikon_zeile_teile = lexikon_zeile | strip | split: '::' %}
+        {% if lexikon_zeile_teile[0] == row_label %}
+          {% assign lexikon_handle = lexikon_zeile_teile[1] %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
+
+      {% comment %}
+        Nur rendern, capture statt render...as (gibt es in Liquid nicht). Bleibt
+        leer, wenn kein Handle passt oder das Metaobjekt/der Eintrag fehlt - dann
+        aendert sich an der Zeile nichts (siehe Dateikopf).
+      {% endcomment %}
+      {% assign lexikon_inline = '' %}
+      {% if lexikon_handle != blank %}
+        {% capture lexikon_inline %}{% render 'tp-lexikon-eintrag', handle: lexikon_handle, modus: 'inline' %}{% endcapture %}
+        {% assign lexikon_inline = lexikon_inline | strip %}
+      {% endif %}
+
       {% if metafield_value != blank %}
         <tr class="ai-product-info-table__row-{{ ai_gen_id }}">
           <td class="ai-product-info-table__key-{{ ai_gen_id }}">{{ row_label }}</td>
@@ -206,6 +290,12 @@ Brandklasse (EN 13501-1)::brandverhalten::brandverhalten
                   }}
                 {% endif %}
               {% endif %}
+            {% endif %}
+            {% if lexikon_inline != blank %}
+              <details class="tp-pit-lexikon-{{ ai_gen_id }}">
+                <summary class="tp-pit-lexikon__titel-{{ ai_gen_id }}">{{ row_label }} erklärt</summary>
+                <div class="tp-pit-lexikon__inhalt-{{ ai_gen_id }}">{{ lexikon_inline }}</div>
+              </details>
             {% endif %}
           </td>
         </tr>

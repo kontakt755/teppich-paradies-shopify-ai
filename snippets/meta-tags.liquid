@@ -28,11 +28,19 @@
   # Schreibweise im Admin zu aendern waere die saubere Loesung (wirkt auch in
   # E-Mails und Checkout) - bis dahin gleicht das Theme sie hier an.
   assign tp_marke = shop.name | replace: 'TeppichParadies', 'Teppich Paradies'
+  # Startseitentitel an EINER Stelle. Ohne Homepage-Titel in den
+  # Onlineshop-Einstellungen liefert Shopify nur den Shopnamen; <title> hatte
+  # dafuer schon einen Fallback, og:title nicht - dort stand weiter
+  # "TeppichParadies" gegen einen ausformulierten <title> (gemessen 2026-09-23).
+  assign tp_startseite_titel = 'Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies'
   assign og_title = page_title | default: tp_marke
   assign og_url = canonical_url | default: request.origin
   assign og_type = 'website'
   assign og_description = page_description | default: shop.description | default: tp_marke
   assign optimized_page_title = page_title
+  if request.page_type == 'index' and page_title == shop.name
+    assign og_title = tp_startseite_titel
+  endif
 
   if request.page_type == 'product'
     assign og_type = 'product'
@@ -152,7 +160,7 @@
 >
 <meta
   property="og:title"
-  content="{{ og_title | escape }}"
+  content="{{ og_title | escape_once }}"
 >
 <meta
   property="og:type"
@@ -160,7 +168,7 @@
 >
 <meta
   property="og:description"
-  content="{{ og_description | escape }}"
+  content="{{ og_description | escape_once }}"
 >
 
 {%- liquid
@@ -230,11 +238,11 @@
 >
 <meta
   name="twitter:title"
-  content="{{ og_title | escape }}"
+  content="{{ og_title | escape_once }}"
 >
 <meta
   name="twitter:description"
-  content="{{ og_description | escape }}"
+  content="{{ og_description | escape_once }}"
 >
 
 <title>
@@ -246,7 +254,7 @@
       den Shopnamen (15 Zeichen). Der Fallback traegt Sortiment und Marke;
       ein im Admin gesetzter Titel gewinnt weiterhin.
     {%- endcomment -%}
-    Teppichboden, Vinyl & Verlegeservice Oranienburg | Teppich Paradies
+    {{ tp_startseite_titel }}
   {%- elsif request.page_type == 'cart' -%}
     {%- comment -%} Shopify liefert hier "Dein Warenkorb" - der Shop siezt (Audit B-17) {%- endcomment -%}
     Ihr Warenkorb &ndash; {{ tp_marke }}
@@ -292,9 +300,15 @@
 {%- endif %}
 
 {% if page_description %}
+  {%- comment -%}
+    escape_once statt escape: ohne gepflegte SEO-Description liefert Shopify
+    den Produkttext, und der bringt schon Entities mit (&amp;). escape machte
+    daraus &amp;amp;, in der Suchvorschau als "&amp;" zu lesen - gemessen am
+    2026-09-23 an der Sylvara-655-Familie (4 Produkte ohne SEO-Description).
+  {%- endcomment -%}
   <meta
     name="description"
-    content="{{ page_description | escape }}"
+    content="{{ page_description | escape_once }}"
   >
 {%- elsif request.page_type == 'collection' and collection.handle == 'all' -%}
   {%- comment -%}

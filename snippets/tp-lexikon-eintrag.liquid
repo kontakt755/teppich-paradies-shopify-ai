@@ -1,0 +1,138 @@
+{%- doc -%}
+  Ein Bodenlexikon-Begriff, einzeln verwendbar. Datenquelle ist ausschliesslich
+  das Shopify-Metaobjekt tp_lexikon - die Redaktionsdaten unter content/lexikon/
+  sind nur dessen Quelltext (siehe scripts/lexikon-payload.mjs) und werden vom
+  Theme nie direkt gerendert.
+
+  modus 'inline' (fuer Produkt- und Artikelseiten): nur die Kurzdefinition
+  plus optionaler Link auf die Ankerstelle im Bodenlexikon. Kein Pop-up.
+  modus 'voll' (Standard, auch fuer sections/tp-lexikon.liquid): der ganze
+  Eintrag mit Ueberschrift, id-Anker, Langtext, Synonymen und - falls
+  vorhanden - Link auf den ausfuehrlichen Artikel. Die Lexikonseite selbst
+  rendert jeden Eintrag ueber diesen Snippet, damit Auszeichnung und Anker
+  nur an einer Stelle im Theme stehen.
+
+  Ohne passendes Metaobjekt oder mit leerem "kurz" gibt der Snippet still
+  nichts aus - kein Fehler auf der Seite (gleiches Prinzip wie
+  blocks/tp-card-specs.liquid).
+
+  @param {string} handle - Handle des Lexikon-Metaobjekts, z. B. 'nutzungsklasse'
+  @param {string} [modus] - 'inline' oder 'voll' (Standard 'voll')
+  @param {boolean} [verlinken] - nur modus 'inline': Link auf die Lexikonseite zeigen (Standard true)
+  @param {string} [ebene] - nur modus 'voll': Ueberschriften-Ebene des Begriffs, 'h2' oder 'h3' (Standard 'h3')
+
+  @example
+  {% render 'tp-lexikon-eintrag', handle: 'nutzungsklasse', modus: 'inline' %}
+  {% render 'tp-lexikon-eintrag', handle: 'nutzungsklasse' %}
+{%- enddoc -%}
+
+{%- liquid
+  # shop.metaobjects.<typ>.<handle> waere die direkte Einzelabfrage, ist aber
+  # in diesem Theme noch nirgends erprobt. Deshalb zuerst der direkte Weg,
+  # mit Rueckfall auf eine Suche in shop.metaobjects.tp_lexikon.values - die
+  # ohne paginate bei 50 Eintraegen endet, was fuer das Lexikon auf absehbare
+  # Zeit reicht (Stand: 16 Eintraege). Beide Wege liefern bei einem nicht
+  # existierenden Handle einfach nichts, nie einen Fehler.
+  # Ohne Handle wird gar nicht gesucht: Der Rueckfall unten vergleicht sonst
+  # nil mit nil und liefert den ersten Eintrag - auf der Seite stand deshalb
+  # 16 Mal derselbe Begriff.
+  assign lx_e_eintrag = blank
+  if handle != blank
+    assign lx_e_eintrag = metaobjects.tp_lexikon[handle]
+  endif
+  if lx_e_eintrag == blank and handle != blank
+    for lx_e_kandidat in shop.metaobjects.tp_lexikon.values
+      if lx_e_kandidat.system.handle == handle
+        assign lx_e_eintrag = lx_e_kandidat
+        break
+      endif
+    endfor
+  endif
+-%}
+
+{%- if lx_e_eintrag != blank and lx_e_eintrag.kurz.value != blank -%}
+  {%- liquid
+    assign lx_e_modus = modus | default: 'voll'
+    assign lx_e_verlinken = true
+    if verlinken == false
+      assign lx_e_verlinken = false
+    endif
+    assign lx_e_ebene = ebene | default: 'h3'
+    if lx_e_ebene != 'h2'
+      assign lx_e_ebene = 'h3'
+    endif
+  -%}
+
+  {%- if lx_e_modus == 'inline' -%}
+    {%- comment -%}
+      data-tp-bw-lexikon traegt den Handle: snippets/tp-funnel-events.liquid liest
+      ihn beim Aufklappen fuer das Ereignis tp_bodenwissen_lexikon. Ohne die
+      Kennung wuesste die Messung nur, DASS jemand einen Begriff geoeffnet hat.
+    {%- endcomment -%}
+    <p class="tp-lex-inline" data-tp-bw-lexikon="{{ lx_e_eintrag.system.handle }}">
+      <span class="tp-lex-inline__text">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</span>
+      {%- if lx_e_verlinken -%}
+        <a class="tp-lex-inline__link" href="/pages/bodenlexikon#{{ lx_e_eintrag.system.handle }}">Im Bodenlexikon nachlesen</a>
+      {%- endif -%}
+    </p>
+
+  {%- else -%}
+    {%- comment -%}
+      "artikel" speichert nur den Artikel-Handle, keine Blog-Zuordnung (siehe
+      docs/bodenwissen/CONTENT_MODEL.md, Abschnitt 6). Liquid kennt keinen
+      Handle-Lookup ueber alle Blogs hinweg, deshalb wird ueber die bekannten
+      Bodenwissen-Blogs geloopt (docs/bodenwissen/ARCHITECTURE.md, Abschnitt 2).
+      Kein Treffer = kein Link, keine Fehlermeldung.
+    {%- endcomment -%}
+    {%- liquid
+      assign lx_e_artikel_url = ''
+      assign lx_e_artikel_titel = ''
+      if lx_e_eintrag.artikel.value != blank
+        assign lx_e_bereiche = 'ratgeber-teppichboden,ratgeber-teppiche,ratgeber-vinylboden,ratgeber-untergrund' | split: ','
+        for lx_e_bereich in lx_e_bereiche
+          assign lx_e_blog = blogs[lx_e_bereich]
+          if lx_e_blog != blank
+            for lx_e_kandidat_artikel in lx_e_blog.articles
+              # article.handle ist "<blog>/<artikel>" - siehe sections/tp-bodenprobleme.liquid
+              assign lx_e_kandidat_handle = lx_e_kandidat_artikel.handle | split: '/' | last
+              if lx_e_kandidat_handle == lx_e_eintrag.artikel.value
+                assign lx_e_artikel_url = lx_e_kandidat_artikel.url
+                assign lx_e_artikel_titel = lx_e_kandidat_artikel.title
+                break
+              endif
+            endfor
+          endif
+          if lx_e_artikel_url != blank
+            break
+          endif
+        endfor
+      endif
+    -%}
+    <div class="tp-lex-eintrag" id="{{ lx_e_eintrag.system.handle }}">
+      <{{ lx_e_ebene }} class="tp-lex-eintrag__titel">{{ lx_e_eintrag.begriff.value | escape }}</{{ lx_e_ebene }}>
+      <p class="tp-lex-eintrag__kurz">{{ lx_e_eintrag.kurz.value | strip_newlines | strip }}</p>
+      {%- if lx_e_eintrag.lang.value != blank -%}
+        <p class="tp-lex-eintrag__lang">{{ lx_e_eintrag.lang.value | strip_newlines | strip }}</p>
+      {%- endif -%}
+      {%- if lx_e_eintrag.synonyme.value.size > 0 -%}
+        <p class="tp-lex-eintrag__syn">Auch genannt: {{ lx_e_eintrag.synonyme.value | join: ', ' }}</p>
+      {%- endif -%}
+      {%- if lx_e_artikel_url != blank -%}
+        <a class="tp-lex-eintrag__mehr" href="{{ lx_e_artikel_url }}">Ausführlich: {{ lx_e_artikel_titel | escape }}</a>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-lex-inline { margin: 0; font-size: inherit; line-height: 1.55; }
+  .tp-lex-inline__link { margin-left: 6px; font-size: 0.9em; color: var(--tp-red-dark, #96262f); text-underline-offset: 3px; white-space: nowrap; }
+
+  .tp-lex-eintrag { scroll-margin-top: 96px; padding: 18px 0; border-top: 1px solid var(--tp-line, #e6e0d8); }
+  .tp-lex-eintrag:first-child { border-top: 0; padding-top: 0; }
+  .tp-lex-eintrag__titel { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: var(--tp-ink, #1d1a17); }
+  .tp-lex-eintrag__kurz { margin: 0 0 6px; font-size: 15.5px; line-height: 1.55; color: var(--tp-ink-2, #4a443f); }
+  .tp-lex-eintrag__lang { margin: 0 0 6px; font-size: 15px; line-height: 1.6; color: var(--tp-ink-2, #4a443f); }
+  .tp-lex-eintrag__syn { margin: 0 0 6px; font-size: 13.5px; color: var(--tp-muted, #655e57); }
+  .tp-lex-eintrag__mehr { display: inline-block; font-size: 14.5px; font-weight: 600; color: var(--tp-red-dark, #96262f); text-underline-offset: 3px; }
+{% endstylesheet %}

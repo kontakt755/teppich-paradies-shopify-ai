@@ -9,6 +9,13 @@
   damit das Sortiment ohne Oeffnen des Menues sichtbar ist. Die Leiste scrollt
   mit dem Inhalt weg, der klebende Header bleibt schlank. Das Feld oeffnet dort
   das Horizon-Suchfenster (dieselben Ergebnisse, dieselbe Optik).
+
+  Aufgabe #505 (Luecke L1): das Formular fuehrt ohne JavaScript auf die volle
+  Ergebnisseite; der Parameter "type" bestimmt dort, welche Objekttypen Shopify
+  sucht - er enthaelt jetzt auch "article", damit Ratgeber-Treffer erscheinen
+  (siehe sections/search-results.liquid). Die Schnellsuche selbst (mit
+  JavaScript, assets/tp-suche.js) fragt eigene resources[type] an - dort ist
+  "article" nicht Teil dieser Aenderung, siehe snippets/tp-suche-ergebnisse.liquid.
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 <script src="{{ 'tp-suche.js' | asset_url }}" type="module" fetchpriority="low"></script>
@@ -17,7 +24,7 @@
   <div class="tp-s-wrap">
     <tp-suche-leiste class="tp-hs__leiste">
       <form class="tp-hs__form" role="search" action="{{ routes.search_url }}" method="get">
-        <input type="hidden" name="type" value="product,collection,page">
+        <input type="hidden" name="type" value="product,collection,page,article">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="tp-hs__lupe"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
         <label class="visually-hidden" for="tp-hs-q">Produkte suchen</label>
         <input
@@ -64,7 +71,7 @@
               {%- assign tp_hs_bt = tp_hs_b | strip -%}
               {%- if tp_hs_bt == blank -%}{%- continue -%}{%- endif -%}
               {%- assign tp_hs_beliebt_anzahl = tp_hs_beliebt_anzahl | plus: 1 -%}
-              <li class="tp-se__item" role="presentation"><a role="option" class="tp-se__chip" data-tp-typ="beliebt" href="{{ routes.search_url }}?q={{ tp_hs_bt | url_encode }}&amp;type=product,collection,page">{{ tp_hs_bt | escape }}</a></li>
+              <li class="tp-se__item" role="presentation"><a role="option" class="tp-se__chip" data-tp-typ="beliebt" href="{{ routes.search_url }}?q={{ tp_hs_bt | url_encode }}&amp;type=product,collection,page,article">{{ tp_hs_bt | escape }}</a></li>
             {%- endfor -%}
           {%- endcapture -%}
           {%- if tp_hs_beliebt_anzahl > 0 -%}

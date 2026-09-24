@@ -1,0 +1,86 @@
+{
+  "id": "RAT-UG-001",
+  "handle": "untergrund-pruefen-und-vorbereiten",
+  "title": "Untergrund prüfen und vorbereiten: fest, eben, trocken, sauber",
+  "blog": "ratgeber-untergrund",
+  "tags": [
+    "Vorbereiten"
+  ],
+  "cluster": "untergrund/vorbereiten",
+  "parent": "ratgeber-untergrund",
+  "intent": "anleitung",
+  "frage": "Muss ich am Boden vor dem Verlegen etwas machen?",
+  "begriff": "untergrund vorbereiten",
+  "nebenfragen": [
+    "Wie prüfe ich, ob der Boden trocken ist?",
+    "Ab wann muss gespachtelt werden?",
+    "Muss der alte Belag raus?"
+  ],
+  "status": "fachinput_noetig",
+  "verwandte": [
+    "teppichboden-auf-fliesen",
+    "teppichboden-verlegen-lose-fixieren-oder-kleben"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fixierung"
+  ],
+  "quellen": [
+    {
+      "art": "hersteller",
+      "titel": "Technische Merkblätter der Grundierungen und Spachtelmassen",
+      "url": ""
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Latte auf dem Boden, Spalt gegen das Licht sichtbar",
+      "status": "offen"
+    },
+    {
+      "zweck": "Folientest auf dem Estrich",
+      "status": "offen"
+    },
+    {
+      "zweck": "Spachtelmasse wird aufgezogen",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-23",
+    "grund": "Grundsätze der Untergrundvorbereitung sind stabil"
+  },
+  "expert_input": [
+    "Welche Prüfungen halten Sie für einen Kunden für sinnvoll, welche führen in die Irre?",
+    "Ist der Folientest brauchbar, oder raten Sie davon ab?",
+    "Mit welchem Verfahren messen Sie Restfeuchte?",
+    "Auf welche Norm bzw. welches Messverfahren beziehen Sie sich bei der Ebenheit?",
+    "Ab welcher Abweichung wird gespachtelt – gibt es eine Hausregel?",
+    "Welche Grundierungsarten unterscheiden Sie, woran machen Sie die Wahl fest?",
+    "Gibt es Untergründe, bei denen Sie grundsätzlich zurückbauen statt zu spachteln?",
+    "Wann darf ein alter Belag liegen bleiben, wann muss er raus?",
+    "Wie gehen Sie mit Kleberresten des alten Belags um?"
+  ],
+  "excerpt": "Der Untergrund entscheidet oft mehr über die Haltbarkeit als der Belag. Vier Eigenschaften muss er mitbringen – und drei davon können Sie selbst grob prüfen.",
+  "seo": {
+    "title": "Untergrund prüfen und vorbereiten vor dem Verlegen",
+    "description": "Fest, eben, trocken, sauber: was der Untergrund können muss, was Sie selbst prüfen können und wann gespachtelt oder grundiert wird."
+  },
+  "metafields": {
+    "kurzantwort": "Der Untergrund muss fest, eben, trocken und sauber sein. Festigkeit, grobe Ebenheit und Verschmutzungen können Sie selbst prüfen. Die Restfeuchte eines Estrichs lässt sich dagegen nicht schätzen – sie wird gemessen, und dieser Punkt ist der teuerste, wenn man ihn übergeht. Ob eine Fläche gespachtelt werden muss, entscheidet sich vor Ort.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "verlegeservice",
+      "zubehoer"
+    ],
+    "kollektion": "",
+    "zubehoer_kollektion": "zubehoer",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

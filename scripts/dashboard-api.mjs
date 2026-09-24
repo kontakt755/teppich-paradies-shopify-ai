@@ -23,6 +23,10 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
+import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde } from '../operations/lib/kundensuche.mjs';
+import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -74,6 +78,15 @@ export function privatDir() {
 
 function readJsonIfExists(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+/** Laedt und bereitet orders.json auf (dieselbe Logik wie einkaufBestellungen()); null wenn nicht vorhanden/kaputt. */
+function ladeBestellModell(dir) {
+  const file = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const daten = readJsonIfExists(file);
+  if (!daten) return null;
+  try { return aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: new Date() }); }
+  catch { return null; }
 }
 
 /**
@@ -267,6 +280,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     } catch { /* Audit darf die Aktion nicht verhindern; der GitHub-Kommentar ist die fuehrende Spur. */ }
   }
 
+  /** Handelnde Person fuer Anzeige/Protokoll: der angemeldete Dashboard-Benutzer, sonst der gh-Login (Notzugang). */
+  function anzeigename(benutzer, actor) {
+    return benutzer?.name || actor || 'unbekannt';
+  }
+
+  function merke(benutzer, actor, aktion, objekt) {
+    protokolliere(protokollPfad(), { benutzer: anzeigename(benutzer, actor), aktion, objekt, jetzt: now() });
+  }
+
   async function currentUser() {
     if (userCache) return userCache;
     try { userCache = (await gh(['api', 'user', '--jq', '.login'])).trim() || null; } catch { userCache = null; }
@@ -363,7 +385,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Statuswechsel mit Pflichtangaben. payload: {target, owner, comment, reason, confirmAcceptance, decision} */
-    async transition(number, payload = {}) {
+    async transition(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const target = String(payload.target || '');
@@ -388,16 +410,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (newOwner) lines.push(`Owner: @${newOwner}`);
       if (payload.confirmAcceptance) lines.push('Akzeptanzkriterien: ausdrücklich bestätigt');
       if (change.note) lines.push(`Hinweis: ${change.note}`);
+      if (benutzer?.name) lines.push(`Mitarbeiter (Control Center): ${benutzer.name}`);
       await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines, text })]);
       if (change.close) await gh(['issue', 'close', String(n), '--repo', repo]);
       if (change.reopen) await gh(['issue', 'reopen', String(n), '--repo', repo]);
 
-      audit({ actor, action: 'transition', issue: n, from: task.status, to: target, owner: newOwner, decision: payload.decision || null, labels: change });
+      audit({ actor, benutzer: benutzer?.name || null, action: 'transition', issue: n, from: task.status, to: target, owner: newOwner, decision: payload.decision || null, labels: change });
+      merke(benutzer, actor, 'Statuswechsel', `Issue #${n}: ${task.statusLabel} → ${STATUS_BY_KEY[target].label}`);
       const warn = await afterWrite();
       return { ok: true, issue: n, from: task.status, to: target, labels: change, note: [change.note, warn].filter(Boolean).join(' · ') || null };
     },
 
-    async assign(number, payload = {}) {
+    async assign(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const owner = String(payload.owner || '').replace(/^@/, '').trim();
@@ -408,21 +432,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const a of record.assignees.filter(a => a !== owner)) args.push('--remove-assignee', a);
       await gh(args);
       const heading = payload.decision === 'delegate' ? DECISION_LABEL.delegate : 'Owner zugeordnet';
-      await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines: [`Owner: ${task.owner ? `@${task.owner} → ` : ''}@${owner}`], text: payload.comment || null })]);
-      audit({ actor, action: 'assign', issue: n, owner, decision: payload.decision || null });
+      const lines = [`Owner: ${task.owner ? `@${task.owner} → ` : ''}@${owner}`];
+      if (benutzer?.name) lines.push(`Mitarbeiter (Control Center): ${benutzer.name}`);
+      await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines, text: payload.comment || null })]);
+      audit({ actor, benutzer: benutzer?.name || null, action: 'assign', issue: n, owner, decision: payload.decision || null });
+      merke(benutzer, actor, 'Owner zugeordnet', `Issue #${n}: @${owner}`);
       const warn = await afterWrite();
       return { ok: true, issue: n, owner, note: warn };
     },
 
-    async comment(number, payload = {}) {
+    async comment(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const body = clip(payload.body, 6_000);
       if (!body) throw new ApiError(400, 'Kommentar ist leer', { missing: ['Kommentartext angeben'] });
       const { task } = await fetchIssue(number);
       const heading = payload.decision && DECISION_LABEL[payload.decision] ? DECISION_LABEL[payload.decision] : 'Kommentar';
-      await gh(['issue', 'comment', String(task.number), '--repo', repo, '--body', buildComment({ actor, heading, text: body })]);
-      audit({ actor, action: 'comment', issue: task.number, decision: payload.decision || null });
+      const lines = benutzer?.name ? [`Mitarbeiter (Control Center): ${benutzer.name}`] : [];
+      await gh(['issue', 'comment', String(task.number), '--repo', repo, '--body', buildComment({ actor, heading, lines, text: body })]);
+      audit({ actor, benutzer: benutzer?.name || null, action: 'comment', issue: task.number, decision: payload.decision || null });
+      merke(benutzer, actor, 'Kommentar', `Issue #${task.number}`);
       const warn = await afterWrite();
       return { ok: true, issue: task.number, note: warn };
     },
@@ -475,6 +504,58 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
       return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
+    },
+
+    /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
+    kundenSuche({ q = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
+      const treffer = sucheKunden(modell, q).slice(0, 50).map(kundenListenEintrag);
+      return { verfuegbar: true, treffer };
+    },
+
+    /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
+    kundenDetail({ key = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      const kunde = findeKunde(modell, key);
+      if (!kunde) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
+      return { verfuegbar: true, kunde };
+    },
+
+    /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
+    kundenRueckrufe() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      const statusAlle = leseRueckrufe(rueckrufePfad(dir));
+      const zeilen = rueckrufliste(modell).map(z => {
+        const s = statusAlle[z.orderId];
+        return { ...z, status: s?.status || 'offen', notiz: s?.notiz || null, aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null };
+      });
+      return { verfuegbar: true, zeilen };
+    },
+
+    /** Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt), rein lokal. */
+    async kundenRueckrufSetzen(payload = {}) {
+      const actor = await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const { orderId, status, notiz } = payload || {};
+      if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
+      if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
+      const dir = privatDirPath || privatDir();
+      const file = rueckrufePfad(dir);
+      let eintrag;
+      try {
+        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, jetzt: now() });
+      } catch (e) {
+        if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'rueckruf', orderId, status });
+      return { ok: true, eintrag };
     },
 
     /**
@@ -540,8 +621,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
-    async einkaufAuftragsstatusSetzen(payload = {}) {
-      const actor = await currentUser();
+    async einkaufAuftragsstatusSetzen(payload = {}, benutzer = null) {
+      // Im Mehrbenutzerbetrieb ist der angemeldete Dashboard-Benutzer die handelnde Person -
+      // gh-Anmeldung ist fuer diese rein lokale Aktion dann nicht mehr Voraussetzung. Ohne
+      // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
+      const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz } = payload || {};
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -556,6 +640,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         throw e;
       }
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
+      merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
       return { ok: true, eintrag };
     },
 
@@ -658,9 +743,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Feste Argumentliste (node + Skriptpfad, keine Nutzereingabe) - kein
      * Shell-Einschleusen moeglich. Nur ein Lauf gleichzeitig: ein zweiter
      * Aufruf waehrend eines laufenden Prozesses startet nichts neu und meldet
-     * `laeuft: true`. Schlaegt der Lauf fehl (z. B. kein Zugang), bleibt die
-     * vorhandene aktualisierung.json unveraendert stehen (aktualisieren.mjs
-     * schreibt selbst je Teil erfolg:false, kein stiller Fehlschlag).
+     * `laeuft: true`. Schlaegt ein Teil fehl (z. B. kein Zugang), bleiben seine
+     * Ausgabedatei und sein letzter erfolgreicher Stand erhalten; aktualisieren.mjs
+     * vermerkt den Fehlschlag daneben als `letzterFehler` (standNachLauf), kein
+     * stiller Fehlschlag.
      */
     aktualisierungStarten() {
       if (aktualisierungLauf) {

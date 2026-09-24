@@ -1,0 +1,11 @@
+{
+  "handle": "pvc-boden-ist-uneben",
+  "symptom": "Der PVC-Boden liegt uneben oder wellig",
+  "belag": "PVC",
+  "ursachen": [
+    "Ohne Ansehen des Bodens lässt sich nicht sicher sagen, ob der Untergrund, Feuchtigkeit oder die Verlegeart die Ursache ist."
+  ],
+  "artikel": "",
+  "profi_noetig": true,
+  "status": "idee"
+}
