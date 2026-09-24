@@ -40,6 +40,7 @@ const state = {
   agentRuns: null,      // nur lokal
   route: { view: 'heute', params: new URLSearchParams() },
   selectedRow: -1,
+  sheetOffenFuer: null,    // welche Aufgabe im Panel steht (Fokus nur beim Oeffnen setzen)
   detailCache: new Map(),
   bodenwissen: null,       // docs/ai-dashboard/bodenwissen.json, siehe ensureBodenwissen()
   bodenwissenError: null,
@@ -190,6 +191,7 @@ function openTask(number) {
   location.hash = `#/${state.route.view}?${p}`;
 }
 function closeTask() {
+  state.sheetOffenFuer = null;
   const p = new URLSearchParams(state.route.params); p.delete('task');
   const q = p.toString();
   location.hash = `#/${state.route.view}${q ? `?${q}` : ''}`;
@@ -1154,6 +1156,10 @@ async function setzeAuftragsstatusFuerBestellung(orderId, status) {
     if (gesetzt) ok += 1;
   }
   toast(`${ok}/${positionen.length} Artikel: ${AF_STATUS_LABEL[status]}`);
+  // Fortschritt und "Was fehlt" rechnet der Server aus dem Auftragsstatus -
+  // ohne Neuladen blieb die Zeile stehen und lud zum zweiten Klick ein.
+  kunden.bestellungen = null;
+  ensureKundenBestellungen();
   render();
 }
 
@@ -1231,6 +1237,7 @@ function ensureEinkaufProduktstatus() {
   einkauf.produktstatusKey = qs;
   einkauf.loadingProduktstatus = true;
   fetchEinkauf(`/api/einkauf/produktstatus?${qs}`).then(d => {
+    if (einkauf.produktstatusKey !== qs) return; // Antwort einer aelteren Eingabe
     einkauf.produktstatus = d; einkauf.loadingProduktstatus = false;
     if (state.route.view === 'einkauf') render();
   });
@@ -1415,7 +1422,7 @@ function einkaufAuftragZeile(a) {
   const detail = einkaufAuftragDetails(a);
   const kopf = `<div class="order-row ${esc(a.ampel)}">
     <div class="order-main">
-      <div class="t"><span class="badge status ${ampelKlasse}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen" onclick="event.stopPropagation()">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${abweichungen.map(x => ` <span class="badge plain">${esc(x)}</span>`).join('')}</div>
+      <div class="t"><span class="badge status ${ampelKlasse}">${esc(EINKAUF_AMPEL_LABEL[a.ampel] || a.ampel)}</span> <a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${abweichungen.map(x => ` <span class="badge plain">${esc(x)}</span>`).join('')}</div>
       ${artikel.length ? `<div class="small muted">${esc(artikel.slice(0, 3).join(' · '))}${artikel.length > 3 ? ` · +${artikel.length - 3}` : ''}</div>` : ''}
       ${a.hinweise?.length ? `<ul class="order-issues">${a.hinweise.map(h => `<li>${esc(hinweisText(h))}</li>`).join('')}</ul>` : ''}
     </div>
@@ -1671,6 +1678,7 @@ function ensureLexikonListe() {
   lexikon.listeKey = key;
   lexikon.loadingListe = true;
   fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q, page: seite })}`).then(d => {
+    if (lexikon.listeKey !== key) return; // Antwort einer aelteren Eingabe
     lexikon.liste = d; lexikon.loadingListe = false;
     if (state.route.view === 'lexikon') render();
   });
@@ -1681,6 +1689,7 @@ function ensureLexikonProdukt(handle) {
   lexikon.produktKey = handle;
   lexikon.loadingProdukt = true;
   fetchEinkauf(`/api/lexikon/produkt?${new URLSearchParams({ handle })}`).then(d => {
+    if (lexikon.produktKey !== handle) return; // inzwischen ein anderes Produkt geoeffnet
     lexikon.produkt = d; lexikon.loadingProdukt = false;
     if (state.route.view === 'lexikon') render();
   });
@@ -1931,8 +1940,8 @@ function internesDetails(p) {
 function viewLexikonDetail(handle) {
   ensureLexikonProdukt(handle);
   const zurueck = `<p style="margin:0 0 12px"><a href="#" data-lex-zurueck>← Zurück zur Lexikon-Suche</a></p>`;
-  const d = lexikon.produkt;
-  if (!d && lexikon.loadingProdukt) return zurueck + `<div class="empty">Lade Produkt …</div>`;
+  const d = lexikon.produktKey === handle ? lexikon.produkt : null;
+  if (!d) return zurueck + `<div class="empty">Lade Produkt …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Produkt nicht gefunden.', d?.hinweis || 'Handle prüfen.');
   const p = d.produkt;
   const alleVarianten = p.varianten || [];
@@ -2020,6 +2029,9 @@ function ensureKundenSuche(q, filter) {
   kunden.sucheKey = key;
   kunden.loadingSuche = true;
   fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query, filter: filter === 'alle' ? '' : filter })}`).then(d => {
+    // Eine frueher gestartete Abfrage darf ein neueres Ergebnis nicht ueberschreiben -
+    // sonst zeigt die Liste dauerhaft die Treffer zum alten Suchwort.
+    if (kunden.sucheKey !== key) return;
     kunden.suche = d; kunden.loadingSuche = false;
     if (state.route.view === 'kunden') render();
   });
@@ -2030,6 +2042,7 @@ function ensureKundenDetail(key) {
   kunden.detailKey = key;
   kunden.loadingDetail = true;
   fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => {
+    if (kunden.detailKey !== key) return; // inzwischen ein anderer Kunde geoeffnet
     kunden.detail = d; kunden.loadingDetail = false;
     if (state.route.view === 'kunden') render();
   });
@@ -2172,7 +2185,7 @@ function kundenTrefferZeile(k) {
   return `<div class="row kunden-zeile${fertig ? ' fertig' : ''}" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
     <div>
       <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${k.nurStammdaten ? ' <span class="badge plain">aus Shopify, keine Bestellung hier</span>' : kundenFortschrittBadge(k.fortschritt)}</div>
-      <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}" onclick="event.stopPropagation()">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}${k.telefonQuelle === 'lieferadresse' ? ' <span class="small muted">(aus der Lieferadresse)</span>' : ''}</div>
+      <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}${k.telefonQuelle === 'lieferadresse' ? ' <span class="small muted">(aus der Lieferadresse)</span>' : ''}</div>
     </div>
     <div class="r">
       <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
@@ -2187,8 +2200,8 @@ function viewKundenSuche() {
   const filter = Object.hasOwn(KUNDEN_FILTER_LABEL, filterRaw) ? filterRaw : KUNDEN_FILTER_STANDARD;
   ensureKundenSuche(q, filter);
   const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ … (Liste filtert waehrend des Tippens)" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
-  const chips = `<div class="btn-row" style="margin:8px 0">
-    ${Object.entries(KUNDEN_FILTER_LABEL).map(([k, l]) => `<button type="button" class="btn btn-sm${filter === k ? ' btn-primary' : ' btn-ghost'}" data-param="kf" data-value="${k === KUNDEN_FILTER_STANDARD ? '' : k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}
+  const chips = `<div class="chips" style="margin:8px 0">
+    ${Object.entries(KUNDEN_FILTER_LABEL).map(([k, l]) => `<button type="button" class="chip" data-param="kf" data-value="${k === KUNDEN_FILTER_STANDARD ? '' : k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}
   </div>`;
   const d = kunden.suche;
   if (!d && kunden.loadingSuche) return toolbar + chips + `<div class="empty">Lade Kunden …</div>`;
@@ -2208,6 +2221,15 @@ function kundenPositionZeile(p) {
   </tr>`;
 }
 
+// Auftragsstatus aus operations/lib/status.mjs - der Kunde am Telefon fragt
+// nicht nach "WARENEINGANG".
+const AUFTRAG_STATUS_TEXT = {
+  NEU: 'Neu', PRUEFUNG: 'In Prüfung', BERATUNG_OFFEN: 'Beratung offen',
+  MASS_PRUEFUNG_OFFEN: 'Maßprüfung offen', FREIGEGEBEN: 'Freigegeben',
+  EINKAUF: 'Im Einkauf', WARENEINGANG: 'Ware eingetroffen', VERSAND: 'Im Versand',
+  ABGESCHLOSSEN: 'Abgeschlossen', SPAETER: 'Später', PROBLEM: 'Problem',
+};
+
 function kundenAuftragKarte(a) {
   const dt = a.details;
   const beratungsZeilen = Object.entries(dt?.beratungsangaben || {}).filter(([, v]) => v);
@@ -2217,9 +2239,9 @@ function kundenAuftragKarte(a) {
       <span class="no-print"><a class="btn btn-sm btn-ghost" href="${esc(a.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin öffnen ↗</a> <button type="button" class="btn btn-sm" data-drucken="${esc(a.id)}">Drucken</button></span>
     </div>
     <div class="chips">
-      <span class="chip">Status: <b>${esc(a.status)}</b></span>
-      <span class="chip">Bezahlt: <b>${esc(a.bezahlt)}</b></span>
-      <span class="chip">Versand: <b>${esc(a.erfuellt)}</b></span>
+      <span class="chip">Status: <b>${esc(AUFTRAG_STATUS_TEXT[a.status] || a.status)}</b></span>
+      <span class="chip">Zahlung: <b>${statusText(a.bezahlt, ZAHLUNG_TEXT)}</b></span>
+      <span class="chip">Versand: <b>${statusText(a.erfuellt, VERSAND_TEXT)}</b></span>
       <span class="chip">Beratung: <b>${esc(a.checks?.beratung || '–')}</b></span>
       <span class="chip">Maßprüfung: <b>${esc(a.checks?.masspruefung || '–')}</b></span>
     </div>
@@ -2238,8 +2260,11 @@ function adresseHtml(a, titel) {
 function viewKundenDetail(key) {
   ensureKundenDetail(key);
   const zurueck = `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
-  const d = kunden.detail;
-  if (!d && kunden.loadingDetail) return zurueck + `<div class="empty">Lade Kunde …</div>`;
+  // Nur anzeigen, was zu DIESEM Kunden gehoert: sonst stehen waehrend des
+  // Ladens Name und Adresse des zuvor geoeffneten Kunden unter der neuen
+  // Adresse - am Telefon liest das jemand vor.
+  const d = kunden.detailKey === key ? kunden.detail : null;
+  if (!d) return zurueck + `<div class="empty">Lade Kunde …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
   const k = d.kunde;
   return zurueck + `
@@ -2373,12 +2398,12 @@ function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
-  return `<tr class="bq-row${offenKlasse}" data-bq-toggle="${esc(z.orderId)}">
-      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+  return `<tr class="bq-row${offenKlasse}" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}" aria-label="Bestellung ${esc(z.orderName)} von ${esc(z.kundenname)} auf- oder zuklappen">
+      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
-      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}" onclick="event.stopPropagation()">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
-      <td data-l="E-Mail">${z.email ? `<a href="mailto:${esc(z.email)}" onclick="event.stopPropagation()">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.email)}</td>
-      <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.telefon)}</td>
+      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
+      <td data-l="E-Mail">${z.email ? `<a href="mailto:${esc(z.email)}">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}">Kopieren</button>` : wertText(z.email)}</td>
+      <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}">Kopieren</button>` : wertText(z.telefon)}</td>
       <td data-l="Kunden-ID">${wertText(z.kundenId)}</td>
       <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
       <td data-l="Zahlung">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</td>
@@ -2395,7 +2420,7 @@ function bestellzeileHtml(z) {
 
 function bestellzeileKarte(z) {
   const pk = fortschrittKlasse(z.fortschritt?.stufe);
-  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}">
+  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}">
     <div>
       <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
       <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${wertText(z.zahlungsstatus)} · ${fmtDate(z.datum)}</div>
@@ -2417,10 +2442,12 @@ function viewKundenBestellungen() {
   const sort = params.get('bsort') || 'datum';
   const dir = params.get('bdir') || 'desc';
   const zeilen = bestellzeileGefiltert(d.zeilen, params);
-  const chips = `<div class="btn-row" style="margin:8px 0">
-    ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="btn btn-sm${filter === f ? ' btn-primary' : ' btn-ghost'}" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
+  const chips = `<div class="chips" style="margin:8px 0">
+    ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="chip" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
   </div>`;
-  const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-param="bsort" data-value="${feld}" data-bq-sort-toggle="${feld}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
+  // Kein data-param hier: der generische Handler wuerde vorher greifen und nur
+  // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
+  const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
   const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>E-Mail</th><th>Telefon</th><th>Kunden-ID</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}<th>Kanal</th><th>Zustellmethode</th>${sortHead('anzahlArtikel', 'Artikel')}<th>Tags</th>${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
   return `
     <div class="toolbar search-hero"><input type="search" placeholder="Suche über alle Spalten – Kunde, E-Mail, Telefon, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
@@ -2692,7 +2719,7 @@ function primaryAction(t) {
 async function renderSheet() {
   const root = $('#sheetRoot');
   const n = Number(state.route.params.get('task'));
-  if (!n) { root.innerHTML = ''; document.body.style.overflow = ''; return; }
+  if (!n) { root.innerHTML = ''; document.body.style.overflow = ''; state.sheetOffenFuer = null; return; }
   const t = state.tasks.find(x => x.number === n);
   if (!t) { root.innerHTML = `<div class="sheet-backdrop" data-close-sheet></div><aside class="sheet" role="dialog" aria-modal="true"><div class="sheet-head"><h2>#${n}</h2><button class="btn btn-ghost" data-close-sheet aria-label="Schließen">✕</button></div><div class="sheet-body">${emptyState('Aufgabe nicht in den Daten.', 'Sie hat vielleicht kein relevantes Label oder der Datenstand ist älter.', { href: issueUrl(n), text: 'Auf GitHub öffnen ↗' })}</div></aside>`; return; }
   const local = state.capabilities.actions === true;
@@ -2748,7 +2775,13 @@ async function renderSheet() {
     </div>
   </aside>`;
   document.body.style.overflow = 'hidden';
-  root.querySelector('[data-close-sheet].btn')?.focus();
+  // Nur beim Oeffnen fokussieren. renderSheet() laeuft auch beim Nachladen und
+  // beim stillen Datenabgleich - dabei riss der Fokus aus dem Panel zurueck
+  // aufs Kreuz, und das naechste Enter schloss es.
+  if (state.sheetOffenFuer !== n) {
+    state.sheetOffenFuer = n;
+    root.querySelector('[data-close-sheet].btn')?.focus();
+  }
   if (local && !detail) {
     try {
       const r = await fetch(`/api/tasks/${n}/activity`, { cache: 'no-store' });
@@ -3273,8 +3306,25 @@ function bindEvents() {
     if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
     const druckBtn = e.target.closest('[data-drucken]');
     if (druckBtn) { e.preventDefault(); window.print(); return; }
+    const sortKopf = e.target.closest('[data-bq-sort-toggle]');
+    if (sortKopf) {
+      // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war
+      // aufsteigend nur ueber die Adresszeile erreichbar.
+      e.preventDefault();
+      const feld = sortKopf.dataset.bqSortToggle;
+      const p = new URLSearchParams(state.route.params);
+      const warSortiert = (p.get('bsort') || 'datum') === feld;
+      const richtung = warSortiert ? ((p.get('bdir') || 'desc') === 'desc' ? 'asc' : 'desc') : 'desc';
+      p.set('bsort', feld);
+      if (richtung === 'desc') p.delete('bdir'); else p.set('bdir', richtung);
+      location.hash = `#/${state.route.view}?${p}`;
+      return;
+    }
     const bqToggle = e.target.closest('[data-bq-toggle]');
-    if (bqToggle) {
+    // Klicks auf Links, Schaltflaechen oder Kopierfelder gehoeren diesen
+    // Elementen - vorher hingen dort inline-stopPropagation-Aufrufe, die
+    // genau die Handler abgeschnitten haben, die am document warten.
+    if (bqToggle && !e.target.closest('a, button, [data-kopiertext], [data-kunden-open]')) {
       const id = bqToggle.dataset.bqToggle;
       if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
       render();
@@ -3305,8 +3355,12 @@ function bindEvents() {
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
     const rows = [...document.querySelectorAll('#main [data-open][tabindex]')];
     if (!rows.length) return;
-    if (e.key === 'j' || e.key === 'ArrowDown' && !state.route.params.get('task')) { e.preventDefault(); state.selectedRow = Math.min(rows.length - 1, Math.max(0, state.selectedRow + 1)); rows[state.selectedRow].focus(); rows.forEach((r, i) => r.classList.toggle('selected', i === state.selectedRow)); }
-    else if (e.key === 'k' || e.key === 'ArrowUp' && !state.route.params.get('task')) { e.preventDefault(); state.selectedRow = Math.max(0, state.selectedRow - 1); rows[state.selectedRow].focus(); rows.forEach((r, i) => r.classList.toggle('selected', i === state.selectedRow)); }
+    // Solange eine Aufgabe offen ist, gehoert die Tastatur dem Panel. Vorher
+    // band && staerker als ||, deshalb sprang j/k trotzdem in die Liste
+    // dahinter - und Enter oeffnete eine andere Aufgabe.
+    if (state.route.params.get('task')) return;
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); state.selectedRow = Math.min(rows.length - 1, Math.max(0, state.selectedRow + 1)); rows[state.selectedRow].focus(); rows.forEach((r, i) => r.classList.toggle('selected', i === state.selectedRow)); }
+    else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); state.selectedRow = Math.max(0, state.selectedRow - 1); rows[state.selectedRow].focus(); rows.forEach((r, i) => r.classList.toggle('selected', i === state.selectedRow)); }
     else if (e.key === 'Enter' && document.activeElement?.dataset?.open) { e.preventDefault(); openTask(Number(document.activeElement.dataset.open)); }
   });
   // Kanban Drag & Drop (nur lokal)
