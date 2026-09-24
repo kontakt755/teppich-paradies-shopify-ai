@@ -50,3 +50,28 @@ test('Kunde ohne Bestellung bleibt sichtbar (numberOfOrders 0)', () => {
   assert.equal(modell.kunden[0].anzahlBestellungen, 0);
   assert.equal(modell.kunden[0].gesamtumsatz, 0);
 });
+
+test('Telefonnummer: Kundenkonto zuerst, sonst aus der Lieferadresse', () => {
+  const ausKonto = kundenEintrag(kunde(1));
+  assert.equal(ausKonto.telefon, '+491234567');
+  assert.equal(ausKonto.telefonQuelle, 'kundenkonto');
+
+  const ohneKonto = { ...kunde(2), defaultPhoneNumber: null };
+  ohneKonto.defaultAddress = { ...ohneKonto.defaultAddress, phone: '+4917657931322' };
+  const ausAdresse = kundenEintrag(ohneKonto);
+  assert.equal(ausAdresse.telefon, '+4917657931322');
+  assert.equal(ausAdresse.telefonQuelle, 'lieferadresse');
+
+  const ohneAlles = { ...kunde(3), defaultPhoneNumber: null };
+  ohneAlles.defaultAddress = { ...ohneAlles.defaultAddress, phone: null };
+  const leer = kundenEintrag(ohneAlles);
+  assert.equal(leer.telefon, null);
+  assert.equal(leer.telefonQuelle, null);
+});
+
+test('Telefonnummer wird auch aus einer weiteren Anschrift genommen', () => {
+  const k = { ...kunde(4), defaultPhoneNumber: null };
+  k.defaultAddress = { ...k.defaultAddress, phone: null };
+  k.addressesV2 = { nodes: [{ name: 'Baustelle', address1: 'Bauweg 2', zip: '16515', city: 'Oranienburg', countryCodeV2: 'DE', phone: '+4930123456' }] };
+  assert.equal(kundenEintrag(k).telefon, '+4930123456');
+});

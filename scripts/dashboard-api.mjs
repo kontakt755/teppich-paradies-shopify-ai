@@ -277,6 +277,22 @@ function produktstatusAufbauen(planRows, offenRows) {
   return eintraege;
 }
 
+/**
+ * Kontaktdaten aus dem Shopify-Kundenstamm (kunden/kunden.json), nach E-Mail
+ * und Name gebuendelt. Bestellungen tragen nicht immer eine Telefonnummer -
+ * der Kundenstamm hat sie oft trotzdem (aus der Lieferadresse, siehe
+ * operations/lib/kunden.mjs::telefonVon). Am Telefon zaehlt genau das.
+ */
+function stammKontakte(dir) {
+  const daten = readJsonIfExists(path.join(dir, 'kunden', 'kunden.json'));
+  const index = new Map();
+  for (const k of daten?.kunden ?? []) {
+    if (k.email) index.set(`mail:${String(k.email).toLowerCase()}`, k);
+    if (k.name) index.set(`name:${String(k.name).toLowerCase()}`, k);
+  }
+  return index;
+}
+
 export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
@@ -530,9 +546,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Kundenliste (Inhabervorgabe) - gefiltert/sortiert wie alleKunden().
       // Ab zwei Zeichen bleibt es Freitextsuche, mit demselben Filter drauf.
       const q2 = String(q ?? '').trim();
-      const treffer = q2.length >= 2
+      const roh = q2.length >= 2
         ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
         : alleKunden(modell, { statusAlle, filter });
+      const stamm = stammKontakte(dir);
+      const treffer = roh.map((t) => {
+        if (t.telefon && t.telefon !== '–') return t;
+        const k = stamm.get(`mail:${String(t.email || '').toLowerCase()}`) || stamm.get(`name:${String(t.name || '').toLowerCase()}`);
+        if (!k?.telefon) return t;
+        return { ...t, telefon: k.telefon, telefonQuelle: k.telefonQuelle || 'kundenstamm' };
+      });
       return { verfuegbar: true, treffer, gesamt: treffer.length };
     },
 

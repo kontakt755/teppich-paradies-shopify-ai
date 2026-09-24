@@ -311,6 +311,7 @@ function viewHeute() {
     <h2 class="section-title">Kundengeschäft</h2>
     ${heuteEinkaufBlock()}
     ${heuteRueckrufBlock()}
+    ${localMode ? heuteNichtLiegenLassen() : ''}
 
     <h2 class="section-title">Shop-Zahlen</h2>
     ${heuteKennzahlenBlock()}
@@ -1948,7 +1949,7 @@ function ensureKundenBestellungen() {
   kunden.loadingBestellungen = true;
   fetchEinkauf('/api/kunden/bestellungen').then(d => {
     kunden.bestellungen = d; kunden.loadingBestellungen = false;
-    if (state.route.view === 'kunden') render();
+    if (['heute', 'kunden'].includes(state.route.view)) render();
   });
 }
 
@@ -2010,6 +2011,48 @@ function telLink(telefon) {
   if (!telefon || telefon === '–') return '<span class="small muted">keine Telefonnummer</span>';
   const zifferAllein = String(telefon).replace(/[^0-9+]/g, '');
   return `<a class="tel-link" href="tel:${esc(zifferAllein)}">${esc(telefon)}</a>`;
+}
+
+/**
+ * Startseiten-Block "Nicht liegen lassen": Geld, das schon im Haus war und
+ * still verfaellt - bezahlte Bestellungen ohne Versand, offene Angebote,
+ * abgebrochene Warenkoerbe. Jede Zeile erscheint nur, wenn es sie gibt; ein
+ * leerer Block waere Rauschen auf der wichtigsten Seite.
+ */
+function heuteNichtLiegenLassen() {
+  ensureKundenBestellungen();
+  ensureKundenAngebote();
+  ensureKundenWarenkoerbe();
+
+  const zeilen = [];
+  let aeltesterVersand = null;
+  const b = kunden.bestellungen;
+  if (b?.verfuegbar) {
+    const unversandt = (b.zeilen || []).filter(z => !z.testbestellung && !z.storniert
+      && z.zahlungsstatus === 'PAID'
+      && ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus));
+    if (unversandt.length) {
+      aeltesterVersand = unversandt.map(z => z.datum).filter(Boolean).sort()[0] || null;
+      zeilen.push(bandItem(unversandt.length, 'bezahlt, noch nicht versandt', 'crit', '#/kunden?tab=bestellungen&bfilter=unerfuellt'));
+    }
+  }
+  const a = kunden.angebote;
+  if (a?.verfuegbar) {
+    const offen = (a.angebote || []).filter(x => x.status === 'OPEN');
+    if (offen.length) zeilen.push(bandItem(offen.length, offen.length === 1 ? 'Angebot wartet auf Antwort' : 'Angebote warten auf Antwort', 'warn', '#/kunden?tab=angebote'));
+  }
+  const w = kunden.warenkoerbe;
+  if (w?.verfuegbar) {
+    const liste = w.warenkoerbe || [];
+    if (liste.length) {
+      const summe = liste.reduce((sum, x) => sum + (Number(x.wert) || 0), 0);
+      zeilen.push(bandItem(liste.length, `liegengebliebene Warenkörbe (${summe.toFixed(0)} €)`, 'warn', '#/kunden?tab=warenkoerbe'));
+    }
+  }
+  if (!zeilen.length) return '';
+  return `<h2 class="section-title">Nicht liegen lassen <span class="section-note">Kunden, die schon gekauft oder gefragt haben</span></h2>
+    <div class="band">${zeilen.join('')}</div>
+    ${aeltesterVersand ? `<p class="small muted" style="margin:6px 0 0">Älteste unversandte Bestellung vom ${esc(fmtDate(aeltesterVersand))}.</p>` : ''}`;
 }
 
 /** Startseiten-Block "Heute": die aeltesten offenen Rueckrufe, damit niemand vergessen wird. */
@@ -2074,7 +2117,7 @@ function kundenTrefferZeile(k) {
   return `<div class="row kunden-zeile${fertig ? ' fertig' : ''}" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
     <div>
       <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${kundenFortschrittBadge(k.fortschritt)}</div>
-      <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}" onclick="event.stopPropagation()">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}</div>
+      <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}" onclick="event.stopPropagation()">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}${k.telefonQuelle === 'lieferadresse' ? ' <span class="small muted">(aus der Lieferadresse)</span>' : ''}</div>
     </div>
     <div class="r">
       <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
@@ -2327,7 +2370,7 @@ function ensureKundenAngebote() {
   kunden.loadingAngebote = true;
   fetchEinkauf('/api/angebote/liste').then(d => {
     kunden.angebote = d; kunden.loadingAngebote = false;
-    if (state.route.view === 'kunden') render();
+    if (['heute', 'kunden'].includes(state.route.view)) render();
   });
 }
 
@@ -2336,7 +2379,7 @@ function ensureKundenWarenkoerbe() {
   kunden.loadingWarenkoerbe = true;
   fetchEinkauf('/api/warenkoerbe/liste').then(d => {
     kunden.warenkoerbe = d; kunden.loadingWarenkoerbe = false;
-    if (state.route.view === 'kunden') render();
+    if (['heute', 'kunden'].includes(state.route.view)) render();
   });
 }
 

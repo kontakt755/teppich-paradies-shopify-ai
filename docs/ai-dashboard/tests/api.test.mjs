@@ -719,3 +719,26 @@ test('aktualisierungStatus: laeuft waehrend des Laufs, danach fertig mit neuem S
   assert.equal(danach.teile.lexikon.erfolg, true);
   assert.equal(danach.teile.lexikon.anzahl, 3);
 });
+
+test('kundenSuche ergaenzt fehlende Telefonnummern aus dem Kundenstamm', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  // Die Bestellung der Fixture traegt keine Telefonnummer; der Kundenstamm schon.
+  fs.mkdirSync(path.join(dir, 'kunden'), { recursive: true });
+  const kundeName = api0KundenName(createApi({ gh: async () => '', root, privatDirPath: dir }));
+  fs.writeFileSync(path.join(dir, 'kunden', 'kunden.json'), JSON.stringify({
+    erstellt: '2026-09-24T10:00:00Z', anzahl: 1,
+    kunden: [{ name: kundeName, email: null, telefon: '+4930999888', telefonQuelle: 'lieferadresse' }],
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const treffer = api.kundenSuche({ filter: 'alle' }).treffer;
+  const mitTelefon = treffer.find(t => t.name === kundeName);
+  assert.equal(mitTelefon.telefon, '+4930999888');
+  assert.equal(mitTelefon.telefonQuelle, 'lieferadresse');
+});
+
+/** Name, unter dem die Fixture-Bestellung gefuehrt wird - der Stamm muss darauf passen. */
+function api0KundenName(api) {
+  const t = api.kundenSuche({ filter: 'alle' }).treffer;
+  return t[0]?.name;
+}
