@@ -1,4 +1,4 @@
-{% doc %}
+{% comment %}
   TP Boden-Rechner (Bodenwissen, docs/bodenwissen/ARCHITECTURE.md Abschnitt
   4.4, "Rechner L5"): Teppichboden-Bedarfsrechner mit Rollenbreite. Nimmt
   Raumbreite und Raumlaenge in cm entgegen, probiert beide Ausrichtungen
@@ -25,9 +25,9 @@
   Der bestehende Produkt-Rechner (blocks/tp-rollware-rechner.liquid) bleibt
   unangetastet - er rechnet Preise auf der Produktseite, dieser Rechner
   plant nur Material im Ratgeber und nennt nie einen Betrag.
-{% enddoc %}
+{% endcomment %}
 
-{{ 'tp-boden-rechner.js' | asset_url | script_tag }}
+<script src="{{ 'tp-boden-rechner.js' | asset_url }}" defer></script>
 
 {%- liquid
   assign tp_br_id = section.id | replace: '_', '' | downcase
