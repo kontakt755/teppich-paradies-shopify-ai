@@ -287,6 +287,22 @@ export function standardMetaobjektDatei(ziel) {
   return path.join(path.dirname(ziel), 'metaobjekte.json');
 }
 
+/**
+ * Lieferanten-Kuerzel -> Quicksearch-Basis-URL, fuer den Suchlink bei
+ * Varianten mit Artikelnummer, aber ohne hinterlegten Direktlink. Liest
+ * ausschliesslich die lokale Konfiguration - die echte Basis-URL gehoert
+ * nicht ins Repository (CLAUDE.md Punkt 8, .claude/skills/lieferant-a-recherche).
+ * Fehlt die Datei (z. B. auf einer Remote-Session), gibt es einfach keine
+ * Suchlinks - kein Fehler.
+ */
+export function ladeLieferantSuchen() {
+  const datei = path.join(os.homedir(), 'teppich-paradies-analyse', 'lieferantendaten', 'lieferant-a.env');
+  if (!fs.existsSync(datei)) return {};
+  const inhalt = fs.readFileSync(datei, 'utf8');
+  const m = inhalt.match(/^LIEFERANT_A_BASIS=(.+)$/m);
+  return m ? { A: m[1].trim() } : {};
+}
+
 async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
@@ -315,16 +331,20 @@ async function main() {
     const gidZuName = new Map(Object.entries(JSON.parse(fs.readFileSync(zuordnung, 'utf8'))));
     resolveMetaobjectReferenzen(daten.produkte ?? daten, gidZuName);
   }
-  const modell = aufbereiten(daten);
+  const modell = aufbereiten(daten, { lieferantSuchen: ladeLieferantSuchen() });
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
 
-  const varianten = modell.produkte.reduce((s, p) => s + p.varianten.length, 0);
-  const mitArtikelnummer = modell.produkte.reduce((s, p) => s + p.varianten.filter(v => v.einkauf.artikelnummer).length, 0);
-  const mitUrl = modell.produkte.reduce((s, p) => s + p.varianten.filter(v => v.einkauf.url).length, 0);
+  const alleVarianten = modell.produkte.flatMap(p => p.varianten);
+  const musterVarianten = alleVarianten.filter(v => v.original);
+  const echteVarianten = alleVarianten.filter(v => v.link);
+  const mitArtikelnummer = echteVarianten.filter(v => v.einkauf.artikelnummer).length;
+  const mitUrl = echteVarianten.filter(v => v.einkauf.url).length;
+  const musterMitOriginal = musterVarianten.filter(v => v.original.gefunden).length;
   console.log(`Lexikon: ${ziel}`);
-  console.log(`${modell.anzahl} Produkte, ${varianten} Varianten`);
-  console.log(`${mitArtikelnummer}/${varianten} Varianten mit Lieferanten-Artikelnummer, ${mitUrl}/${varianten} mit Lieferanten-URL`);
+  console.log(`${modell.anzahl} Produkte, ${alleVarianten.length} Varianten`);
+  console.log(`${mitArtikelnummer}/${echteVarianten.length} echte Varianten mit Lieferanten-Artikelnummer, ${mitUrl}/${echteVarianten.length} mit Lieferanten-URL`);
+  console.log(`${musterMitOriginal}/${musterVarianten.length} Mustervarianten mit verknuepftem Original`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

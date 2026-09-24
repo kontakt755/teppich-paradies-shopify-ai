@@ -166,6 +166,43 @@ function skuIstMuster(sku) {
 }
 
 /**
+ * Preis je Verkaufseinheit fuer das Kundengespraech - abgeleitet, nie neu
+ * erfunden: bei Paketware (qm_pro_paket bekannt) ist der Shopify-Listenpreis
+ * der interne Paketpreis (CLAUDE.md "Produktdaten"), das Kundengespraech
+ * braucht den Preis je m². Ohne qm_pro_paket bleibt der Stueckpreis stehen.
+ */
+function preisJeEinheit(preis, qmProPaketText) {
+  if (leer(preis)) return null;
+  const qm = zahl(qmProPaketText);
+  if (qm && qm > 0) return { betrag: Math.round((preis / qm) * 100) / 100, einheit: 'm2' };
+  return { betrag: preis, einheit: 'stueck' };
+}
+
+/**
+ * Ehrlicher Status fuer einen fehlenden/unvollstaendigen Lieferanten-Link bei
+ * einer echten (Nicht-Muster-)Variante. `lieferantSuchen` bildet Lieferanten-
+ * kuerzel auf eine lokale Quicksearch-Basis-URL ab (siehe
+ * operations/scripts/lexikon-export.mjs, nie im Repository hinterlegt -
+ * CLAUDE.md Punkt 8).
+ */
+function linkStatus(einkauf, lieferantSuchen) {
+  if (!leer(einkauf.url)) return { status: 'vorhanden', grund: null, suchlink: null };
+  if (!leer(einkauf.artikelnummer)) {
+    const basis = lieferantSuchen?.[einkauf.lieferant];
+    const suchlink = basis ? `${String(basis).replace(/\/$/, '')}/de-DE/quicksearch?query=${encodeURIComponent(einkauf.artikelnummer)}` : null;
+    return {
+      status: 'nur_artikelnummer',
+      grund: `Artikelnummer vorhanden, aber kein Link hinterlegt${einkauf.lieferant ? ` (Lieferant ${einkauf.lieferant})` : ''}`,
+      suchlink,
+    };
+  }
+  if (!leer(einkauf.lieferant)) {
+    return { status: 'fehlt', grund: `Artikelnummer bei Lieferant ${einkauf.lieferant} fehlt noch`, suchlink: null };
+  }
+  return { status: 'fehlt', grund: 'kein Lieferantenartikel hinterlegt - keine Einkaufsdaten', suchlink: null };
+}
+
+/**
  * Liest den Handle des verknuepften Musterprodukts aus einer aufgeloesten
  * `einkauf.muster_variante`-Referenz (variant_reference auf die
  * Mustervariante; der Export loest sie zu `{id, product:{handle}}` auf,
@@ -217,11 +254,15 @@ function produktListe(exportDaten) {
 export function aufbereiten(exportDaten, opt = {}) {
   const produkte = produktListe(exportDaten);
   const jetzt = opt.jetzt ?? new Date();
+  const lieferantSuchen = opt.lieferantSuchen ?? {};
   // Fuer die Muster-Verknuepfung ueber den Produkt-Handle (muster-<handle>)
   // muss die Menge ALLER Handles vorab feststehen - nicht nur des eigenen
   // Produkts.
   const handleSet = new Set(produkte.map((p) => text(p.handle)).filter(Boolean));
 
+  // __musterRef traegt die rohe Variantenreferenz aus einkauf.muster_variante
+  // bis zur zweiten Runde (Original-Verknuepfung) mit - kein Teil des
+  // oeffentlichen Formats, wird am Ende jeder Variante wieder entfernt.
   const ergebnis = produkte.map((p) => {
     const customMap = metafeldMap(p.metafields)?.custom ?? {};
     const handle = text(p.handle);
@@ -236,21 +277,29 @@ export function aufbereiten(exportDaten, opt = {}) {
       const vMap = metafeldMap(v.metafields);
       const preisWert = v.price ?? v.priceV2?.amount ?? v.priceSet?.shopMoney?.amount;
       const waehrung = v.priceV2?.currencyCode ?? v.priceSet?.shopMoney?.currencyCode ?? (leer(preisWert) ? null : 'EUR');
-      const musterKandidat = musterHandleAusEinkaufswert(vMap.einkauf?.muster_variante);
-      if (musterKandidat) musterKandidatenAusVarianten.push(musterKandidat);
+      const musterVarianteRoh = vMap.einkauf?.muster_variante;
+      const musterHandle = musterHandleAusEinkaufswert(musterVarianteRoh);
+      if (musterHandle) musterKandidatenAusVarianten.push(musterHandle);
+      const musterRef = (musterVarianteRoh && typeof musterVarianteRoh === 'object')
+        ? { id: text(musterVarianteRoh.id), handle: musterHandle }
+        : null;
+      const preis = zahl(preisWert);
+      const einkauf = einkaufBlock({ einkaufMap: vMap.einkauf, customMap: vMap.custom ?? customMap });
       return {
         id: text(v.id),
         titel: text(v.title),
         sku: text(v.sku),
         farbe: farbeAusOptionen(v.selectedOptions),
-        preis: zahl(preisWert),
-        waehrung: zahl(preisWert) === null ? null : waehrung,
+        preis,
+        waehrung: preis === null ? null : waehrung,
+        preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket),
         verfuegbar: typeof v.availableForSale === 'boolean' ? v.availableForSale : null,
         // Wunschmass (Zuschnitt nach Mass): SKU/Artikelnummer/Farbnummer sind
         // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
         // Datenluecke. Front-End muss das getrennt von echten Luecken zeigen.
         wunschmass: istWunschmass(v.selectedOptions),
-        einkauf: einkaufBlock({ einkaufMap: vMap.einkauf, customMap: vMap.custom ?? customMap }),
+        einkauf,
+        __musterRef: musterRef,
       };
     });
 
@@ -267,6 +316,82 @@ export function aufbereiten(exportDaten, opt = {}) {
       varianten,
     };
   });
+
+  // -- Zweite Runde: Muster <-> Original verknuepfen ------------------
+  // Index aller echten (Nicht-Muster-)Varianten quer ueber alle Produkte,
+  // gebaut aus dem bereits vollstaendigen ersten Durchlauf.
+  const produktByHandle = new Map(ergebnis.map((p) => [p.handle, p]));
+  const variantenById = new Map();
+  const variantenByArtikelnummer = new Map();
+  for (const p of ergebnis) {
+    for (const v of p.varianten) {
+      if (v.id) variantenById.set(v.id, { variante: v, produkt: p });
+      if (!skuIstMuster(v.sku) && !leer(v.einkauf?.artikelnummer)) {
+        variantenByArtikelnummer.set(v.einkauf.artikelnummer, { variante: v, produkt: p });
+      }
+    }
+  }
+
+  const bauOriginal = (variante, produkt, quelle) => ({
+    gefunden: true,
+    quelle,
+    artikelnummer: variante.einkauf?.artikelnummer ?? null,
+    farbnummer: variante.einkauf?.farbnummer ?? null,
+    lieferant: variante.einkauf?.lieferant ?? null,
+    url: variante.einkauf?.url ?? null,
+    kollektion: variante.einkauf?.kollektion ?? null,
+    hersteller: variante.einkauf?.hersteller ?? null,
+    produktTitel: produkt.titel,
+    produktHandle: produkt.handle,
+  });
+
+  const originalFuer = (musterVariante, musterProdukt) => {
+    // Tier 1: einkauf.muster_variante (Variantenreferenz) - am verlaesslichsten.
+    const ref = musterVariante.__musterRef;
+    if (ref?.id && variantenById.has(ref.id)) {
+      const { variante, produkt } = variantenById.get(ref.id);
+      return bauOriginal(variante, produkt, 'muster_variante');
+    }
+    // Tier 2: SKU ohne "M-"-Praefix gegen die Artikelnummern der echten Varianten.
+    if (skuIstMuster(musterVariante.sku)) {
+      const artikelnummer = musterVariante.sku.slice(2);
+      const treffer = variantenByArtikelnummer.get(artikelnummer);
+      if (treffer) return bauOriginal(treffer.variante, treffer.produkt, 'sku');
+    }
+    // Tier 3: Produkt-Handle ohne "muster-"-Praefix - nur eindeutig, wenn das
+    // Zielprodukt genau eine echte Variante mit Artikelnummer hat.
+    const handle = text(musterProdukt.handle);
+    if (handle && handle.startsWith('muster-')) {
+      const zielProdukt = produktByHandle.get(handle.slice('muster-'.length));
+      if (zielProdukt) {
+        const kandidaten = zielProdukt.varianten.filter((v) => !skuIstMuster(v.sku) && !leer(v.einkauf?.artikelnummer));
+        if (kandidaten.length === 1) return bauOriginal(kandidaten[0], zielProdukt, 'handle');
+        if (kandidaten.length > 1) {
+          return {
+            gefunden: false, quelle: 'handle', artikelnummer: null, farbnummer: null, lieferant: null, url: null,
+            kollektion: null, hersteller: null, produktTitel: zielProdukt.titel, produktHandle: zielProdukt.handle,
+            grund: `Original ueber den Produktnamen gefunden (${zielProdukt.titel}), aber ${kandidaten.length} Farben zur Auswahl - Artikelnummer nicht eindeutig zuordenbar`,
+          };
+        }
+      }
+    }
+    return {
+      gefunden: false, quelle: null, artikelnummer: null, farbnummer: null, lieferant: null, url: null,
+      kollektion: null, hersteller: null, produktTitel: null, produktHandle: null,
+      grund: 'kein Original beim Lieferanten hinterlegt',
+    };
+  };
+
+  for (const p of ergebnis) {
+    const produktIstMuster = typeof p.handle === 'string' && p.handle.startsWith('muster-');
+    p.varianten = p.varianten.map((v) => {
+      const { __musterRef, ...variante } = v;
+      if (produktIstMuster || skuIstMuster(v.sku)) {
+        return { ...variante, original: originalFuer(v, p) };
+      }
+      return { ...variante, link: linkStatus(variante.einkauf ?? {}, lieferantSuchen) };
+    });
+  }
 
   return { erstellt: jetzt.toISOString(), anzahl: ergebnis.length, produkte: ergebnis };
 }

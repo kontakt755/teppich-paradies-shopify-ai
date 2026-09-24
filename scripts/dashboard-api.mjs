@@ -28,6 +28,7 @@ import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
+import { rollenware, paketware, stueck as stueckware, UNGEKLAERT as MENGE_UNGEKLAERT } from '../operations/lib/umrechnung.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -766,6 +767,59 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       };
     },
 
+    /**
+     * Mengenhilfe fuer den Bestellblock: Kundenmenge -> Bestellmenge beim
+     * Lieferanten. Nutzt ausschliesslich operations/lib/umrechnung.mjs (keine
+     * neuen Rechenregeln) - laesst sich die Bestelleinheit einer Variante
+     * nicht sicher zuordnen oder fehlt eine noetige Produktangabe
+     * (Rollenbreite, m² pro Paket), kommt ein ehrlicher UNGEKLAERT-Hinweis
+     * statt einer geschaetzten Zahl.
+     */
+    lexikonMengenhilfe({ handle, variantenId, kundenmengeM2, kundenlaengeCm } = {}) {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'lexikon', 'produkte.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.produkte)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+      }
+      const produkt = daten.produkte.find(p => p.handle === handle);
+      if (!produkt) return { verfuegbar: false, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
+      const variante = (produkt.varianten || []).find(v => v.id === variantenId) || (produkt.varianten || [])[0];
+      if (!variante) return { verfuegbar: false, hinweis: 'Keine Variante gefunden.' };
+      const einheit = variante.einkauf?.bestelleinheit;
+      const flaeche = Number(String(kundenmengeM2 ?? '').replace(',', '.'));
+      const laenge = Number(String(kundenlaengeCm ?? '').replace(',', '.'));
+
+      if (einheit === 'paket' || einheit === 'm2') {
+        const qm = produkt.eigenschaften?.qmProPaket;
+        if (!qm) return { verfuegbar: true, ergebnis: null, grund: 'Bestellmenge ungeklaert - m² pro Paket ist am Produkt nicht hinterlegt' };
+        if (!(flaeche > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (m²) eingeben' };
+        try {
+          const r = paketware({ bedarfM2: flaeche, qmProPaket: qm });
+          return { verfuegbar: true, ergebnis: { text: `${r.pakete} Paket${r.pakete === 1 ? '' : 'e'} (${r.qmGesamt} m² gesamt)`, ...r } };
+        } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
+      }
+      if (einheit === 'rolle' || einheit === 'lfm') {
+        const breiteText = produkt.eigenschaften?.rollenbreite;
+        const breiteM = breiteText ? Number(String(breiteText).replace(',', '.')) / 100 : null;
+        if (!breiteM) return { verfuegbar: true, ergebnis: null, grund: 'Bestellmenge ungeklaert - Rollenbreite ist am Produkt nicht hinterlegt' };
+        if (!(flaeche > 0) && !(laenge > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (m² oder Länge in cm) eingeben' };
+        try {
+          const r = rollenware({ flaecheM2: flaeche > 0 ? flaeche : undefined, laengeCm: laenge > 0 ? laenge : undefined, breiteM });
+          const rasterHinweis = r.raster === MENGE_UNGEKLAERT ? ' (Lieferantenraster ungeklärt, auf 1 cm genau)' : '';
+          return { verfuegbar: true, ergebnis: { text: `${r.text}${rasterHinweis}`, ...r } };
+        } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
+      }
+      if (einheit === 'stueck') {
+        if (!(flaeche > 0)) return { verfuegbar: true, ergebnis: null, grund: 'Kundenmenge (Stück) eingeben' };
+        try {
+          const r = stueckware({ menge: flaeche });
+          return { verfuegbar: true, ergebnis: { text: `${r.stueck} Stück`, ...r } };
+        } catch (e) { return { verfuegbar: true, ergebnis: null, grund: String(e.message) }; }
+      }
+      return { verfuegbar: true, ergebnis: null, grund: einheit ? `Bestellmenge ungeklaert - Umrechnung fuer "${einheit}" ist noch nicht hinterlegt` : 'Bestellmenge ungeklaert - Bestelleinheit ist am Produkt nicht hinterlegt' };
+    },
+
     /** Ein einzelnes Lexikon-Produkt fuer die Detailansicht (per Handle). */
     lexikonProdukt(handle) {
       const dir = privatDirPath || privatDir();
@@ -927,10 +981,21 @@ function lexikonSucheTreffer(p, suchtext) {
   return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(suchtext));
 }
 
-/** Zeilenform fuer die Trefferliste: Bild, Produktname, Produktgruppe, Anzahl Farben. */
+/** Zeilenform fuer die Trefferliste: Bild, Produktname, Produktgruppe, Anzahl Farben, Preis ab, Link-Zeichen. */
 function lexikonListenEintrag(p) {
-  const farben = new Set((p.varianten || []).map(v => v.farbe).filter(Boolean));
-  return { handle: p.handle, titel: p.titel, produktgruppe: p.produktgruppe || null, bild: p.bild || null, status: p.status || null, farbenAnzahl: farben.size };
+  const varianten = p.varianten || [];
+  const farben = new Set(varianten.map(v => v.farbe).filter(Boolean));
+  const preise = varianten.map(v => v.preisJeEinheit?.betrag ?? v.preis).filter(v => typeof v === 'number');
+  const preisAb = preise.length ? Math.min(...preise) : null;
+  const preisEinheit = varianten.find(v => v.preisJeEinheit)?.preisJeEinheit?.einheit ?? null;
+  // Muster haben "original" statt "link"; ein Produkt gilt als verlinkt, wenn
+  // jede echte Variante einen Link hat bzw. jede Mustervariante ein Original.
+  const linkRelevant = varianten.filter(v => v.link || v.original);
+  const linkVorhanden = linkRelevant.length > 0 && linkRelevant.every(v => (v.link ? v.link.status === 'vorhanden' : v.original?.gefunden));
+  return {
+    handle: p.handle, titel: p.titel, produktgruppe: p.produktgruppe || null, bild: p.bild || null, status: p.status || null,
+    farbenAnzahl: farben.size, preisAb, preisEinheit, linkVorhanden,
+  };
 }
 
 export { STATUS_LABELS };

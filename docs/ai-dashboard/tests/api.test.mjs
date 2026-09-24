@@ -441,13 +441,17 @@ function lexikonFixture(root) {
       handle: 'traum-teppich-grau', titel: 'Traum-Teppich Grau', shopUrl: 'https://www.teppich-paradies.net/products/traum-teppich-grau',
       adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/111', status: 'active', produktgruppe: 'Teppichboden',
       bild: 'https://cdn.example/bild1.jpg',
-      eigenschaften: { Material: 'Wolle', Rollenbreite: '400 cm' },
+      eigenschaften: { material: 'Wolle', rollenbreite: '400', qmProPaket: '2.5' },
       muster: { vorhanden: true, handle: 'muster-traum-teppich-grau' },
       varianten: [
-        { id: 'gid://shopify/ProductVariant/1', titel: 'Grau', sku: 'TT-GR-01', farbe: 'Grau', preis: '49.90', waehrung: 'EUR', verfuegbar: true,
-          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4711', farbnummer: '023', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4711', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p1' } },
-        { id: 'gid://shopify/ProductVariant/2', titel: 'Beige', sku: 'TT-BE-01', farbe: 'Beige', preis: '49.90', waehrung: 'EUR', verfuegbar: false,
-          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4712', farbnummer: '024', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4712', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'Rolle', procurementId: 'p2' } },
+        { id: 'gid://shopify/ProductVariant/1', titel: 'Grau', sku: 'TT-GR-01', farbe: 'Grau', preis: 49.9, waehrung: 'EUR', verfuegbar: true,
+          preisJeEinheit: { betrag: 19.96, einheit: 'm2' },
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4711', farbnummer: '023', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4711', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'paket', procurementId: 'p1' },
+          link: { status: 'vorhanden', grund: null, suchlink: null } },
+        { id: 'gid://shopify/ProductVariant/2', titel: 'Beige', sku: 'TT-BE-01', farbe: 'Beige', preis: 39.9, waehrung: 'EUR', verfuegbar: false,
+          preisJeEinheit: { betrag: 15.96, einheit: 'm2' },
+          einkauf: { lieferant: 'Lieferant A', artikelnummer: 'A-4712', farbnummer: '024', produktname: 'Traumteppich', url: 'https://lieferant-a.example/artikel/4712', kollektion: 'Trend', marke: 'Hausmarke von A', hersteller: null, bestelleinheit: 'paket', procurementId: 'p2' },
+          link: { status: 'vorhanden', grund: null, suchlink: null } },
       ],
     },
     {
@@ -456,7 +460,18 @@ function lexikonFixture(root) {
       bild: null, eigenschaften: {}, muster: { vorhanden: false, handle: null },
       varianten: [
         { id: 'gid://shopify/ProductVariant/3', titel: 'Eiche', sku: 'VC-EI-01', farbe: 'Eiche', preis: null, waehrung: null, verfuegbar: true,
-          einkauf: { lieferant: 'Lieferant B', artikelnummer: 'B-9001', farbnummer: null, produktname: 'Clic Eiche', url: null, kollektion: 'Holzoptik', marke: null, hersteller: null, bestelleinheit: 'Paket', procurementId: 'p3' } },
+          einkauf: { lieferant: 'Lieferant B', artikelnummer: 'B-9001', farbnummer: null, produktname: 'Clic Eiche', url: null, kollektion: 'Holzoptik', marke: null, hersteller: null, bestelleinheit: 'paket', procurementId: 'p3' },
+          link: { status: 'fehlt', grund: 'Artikelnummer bei Lieferant B fehlt noch', suchlink: null } },
+      ],
+    },
+    {
+      handle: 'muster-traum-teppich-grau', titel: 'Muster Traum-Teppich Grau', shopUrl: 'https://www.teppich-paradies.net/products/muster-traum-teppich-grau',
+      adminUrl: 'https://admin.shopify.com/store/sjjyq1-6w/products/333', status: 'active', produktgruppe: 'Muster',
+      bild: null, eigenschaften: {}, muster: { vorhanden: true, handle: 'muster-traum-teppich-grau' },
+      varianten: [
+        { id: 'gid://shopify/ProductVariant/4', titel: 'Muster', sku: 'M-9099', farbe: null, preis: 4.9, waehrung: 'EUR', verfuegbar: true,
+          einkauf: { lieferant: null, artikelnummer: null, farbnummer: null, produktname: null, url: null, kollektion: null, marke: null, hersteller: null, bestelleinheit: null, procurementId: null },
+          original: { gefunden: true, quelle: 'sku', artikelnummer: 'A-4711', farbnummer: '023', lieferant: 'Lieferant A', url: 'https://lieferant-a.example/artikel/4711', kollektion: 'Trend', hersteller: null, produktTitel: 'Traum-Teppich Grau', produktHandle: 'traum-teppich-grau' } },
       ],
     },
   ];
@@ -478,18 +493,35 @@ test('lexikonListe liefert Trefferliste mit Bild, Produktgruppe und Farbanzahl',
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.lexikonListe({});
   assert.equal(r.verfuegbar, true);
-  assert.equal(r.anzahl, 2);
-  assert.equal(r.treffer.count, 2);
+  assert.equal(r.anzahl, 3);
+  assert.equal(r.treffer.count, 3);
   const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
   assert.equal(grau.farbenAnzahl, 2);
   assert.equal(grau.produktgruppe, 'Teppichboden');
+});
+
+test('lexikonListe liefert Preis ab und Link-Zeichen in der Trefferliste', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonListe({});
+  const grau = r.treffer.items.find(i => i.handle === 'traum-teppich-grau');
+  assert.equal(grau.preisAb, 15.96);
+  assert.equal(grau.preisEinheit, 'm2');
+  assert.equal(grau.linkVorhanden, true, 'beide Varianten haben einen Link');
+
+  const vinyl = r.treffer.items.find(i => i.handle === 'vinyl-clic-eiche');
+  assert.equal(vinyl.linkVorhanden, false, 'Variante ohne Artikelnummer hat keinen Link');
+
+  const muster = r.treffer.items.find(i => i.handle === 'muster-traum-teppich-grau');
+  assert.equal(muster.linkVorhanden, true, 'Mustervariante hat ein gefundenes Original');
 });
 
 test('lexikonListe sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion', () => {
   const root = tmpRoot();
   const dir = lexikonFixture(root);
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
-  assert.equal(api.lexikonListe({ q: 'Traum-Teppich' }).treffer.count, 1);
+  assert.deepEqual(api.lexikonListe({ q: 'traum-teppich-grau' }).treffer.items.map(i => i.handle).sort(), ['muster-traum-teppich-grau', 'traum-teppich-grau']);
   assert.equal(api.lexikonListe({ q: 'vinyl-clic-eiche' }).treffer.count, 1);
   assert.equal(api.lexikonListe({ q: 'TT-BE-01' }).treffer.count, 1);
   assert.equal(api.lexikonListe({ q: 'A-4712' }).treffer.count, 1);
@@ -504,7 +536,7 @@ test('lexikonListe paginiert serverseitig', () => {
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.lexikonListe({ page: 1, pageSize: 1 });
   assert.equal(r.treffer.items.length, 1);
-  assert.equal(r.treffer.pages, 2);
+  assert.equal(r.treffer.pages, 3);
 });
 
 test('lexikonProdukt liefert das volle Produkt inkl. Varianten und Einkaufsdaten', () => {
@@ -524,6 +556,26 @@ test('lexikonProdukt meldet unbekanntes Handle statt zu werfen', () => {
   const api = createApi({ gh: async () => '', root, privatDirPath: dir });
   const r = api.lexikonProdukt('gibt-es-nicht');
   assert.equal(r.verfuegbar, false);
+});
+
+test('lexikonMengenhilfe rechnet Paketware ueber operations/lib/umrechnung.mjs', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonMengenhilfe({ handle: 'traum-teppich-grau', variantenId: 'gid://shopify/ProductVariant/1', kundenmengeM2: '6' });
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.ergebnis.pakete, 3); // ceil(6/2.5)
+  assert.equal(r.ergebnis.qmGesamt, 7.5);
+});
+
+test('lexikonMengenhilfe meldet ehrlich UNGEKLAERT statt zu schaetzen, wenn eine Angabe fehlt', () => {
+  const root = tmpRoot();
+  const dir = lexikonFixture(root);
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.lexikonMengenhilfe({ handle: 'vinyl-clic-eiche', variantenId: 'gid://shopify/ProductVariant/3', kundenmengeM2: '10' });
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.ergebnis, null);
+  assert.match(r.grund, /m² pro Paket.*nicht hinterlegt/);
 });
 
 // ---------------------------------------------------------------------------
