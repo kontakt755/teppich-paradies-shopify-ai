@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-24T01:04:32.858Z",
+  "generated_at": "2026-09-24T05:56:21.933Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 134,
+  "count": 135,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-24T01:04:32.858Z",
+    "fetchedAt": "2026-09-24T05:56:21.933Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 546,
+      "title": "Geheimnis-Scanner: Bezeichner-Referenz nicht als Passwort werten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/546",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-24T05:55:31Z",
+      "updated_at": "2026-09-24T05:55:48Z",
+      "closed_at": null
+    },
     {
       "number": 544,
       "title": "Vier offene PRs sind mergebereit - Reihenfolge beachten",
