@@ -2,32 +2,65 @@
 
 ## 🎯 Übersicht
 
-Das System kann optional **automatisch im Gmail nach Krankschreibungen, Urlaub, etc. suchen**, um Abwesenheiten automatisch zu erfassen.
+Das System durchsucht **automatisch das Firmen-Gmail-Konto `kontakt@teppich-paradies.net`**
+nach Krankschreibungen, Urlaub, etc., um Abwesenheiten für die VMA-Erstellung zu erfassen.
 
-**Status:** 
-- ✅ Scanning-Logik: Implementiert
-- ✅ CSV-Export: Implementiert  
-- ⚠️  Gmail-MCP: Benötigt Setup (siehe unten)
+**Status:**
+- ✅ Gmail-Connector verbunden (`kontakt@teppich-paradies.net`, umgestellt vom privaten Konto)
+- ✅ Monatlicher automatischer Scan eingerichtet (Routine, siehe unten)
+- ✅ Prozess-Fix vereinbart (Zeitraum immer im Betreff)
+- ⚠️  Foto-Anhänge (Krankschreibungen) können vom Gmail-Connector NICHT gelesen werden
+  → siehe "Bekannte Grenze" unten
+
+---
+
+## ⚠️ WICHTIGE ERKENNTNIS (24.09.2026)
+
+Der claude.ai Gmail-Connector kann **nur Text durchsuchen** (Betreff/Body), **keine
+Anhänge herunterladen oder lesen** (z.B. Fotos von Krankschreibungen). Das ist eine
+technische Grenze des Connectors, keine Konfigurationssache.
+
+**Beispiel-Fund:** E-Mail "Rufat krank" vom 18.09.2026 an `e.carl-uezer@web.de` enthielt
+nur ein Foto (`PHOTO-2026-09-18-10-58-27.jpg`) als Anhang, kein Datum im Text →
+konnte nicht automatisch ausgewertet werden.
+
+### Beschlossene Lösung: Prozess-Fix + Rückfrage-Fallback (nicht: Bilderkennung)
+
+**1. Prozess-Fix (Mitarbeiter/Manager):**
+Der Zeitraum muss **immer im Betreff oder Text** stehen, nicht nur auf dem Foto.
+Format wie bisher schon meistens verwendet:
+```
+Rufat krank 18.-20.09.2026
+Ben krank 06.-15.07.
+Hayati Urlaub 16.5.-01.06
+```
+Foto der Krankschreibung zusätzlich anhängen ist weiterhin sinnvoll (Beleg), ersetzt aber
+nicht die Textangabe.
+
+**2. Fallback bei fehlendem Text-Datum:**
+Die monatliche Routine (siehe unten) erkennt E-Mails ohne Text-Datum und markiert sie
+explizit als "Rückfrage nötig" mit Link zur E-Mail, statt zu raten oder das Bild zu
+interpretieren.
+
+**Bewusst NICHT umgesetzt (verworfen für jetzt):** Eigener Google-Cloud-API-Zugriff
+(OAuth-Setup) zum Herunterladen und automatischen Auslesen von Foto-Anhängen. Das wäre
+technisch möglich, aber zusätzlicher Setup-Aufwand (Google Cloud Projekt, OAuth-Consent,
+lokaler Login-Flow) und bewusst getrennt vom Online-Shop-System gehalten. **Für später
+gemerkt, falls Foto-ohne-Text-Fälle häufig bleiben.**
 
 ---
 
 ## 🔍 Was wird gesucht?
 
-Das System sucht in **zwei Quellen**:
-
-### Quelle 1: E-Mails VON Mitarbeitern
 | Kategorie | Keywords | Beispiele |
 |-----------|----------|----------|
 | **Krankheit** | krank, krankmeldung, krankschein, arzt | "Bin erkältet", "Ärztliche Bescheinigung", "Arzttermin heute" |
 | **Urlaub** | urlaub, freistellung, frei | "Nehme Urlaub", "Urlaubsantrag genehmigt", "Freigegeben" |
 | **AU** | au, eAU, arbeitsunfähig | "Arbeitsunfähigkeit", "eAU vom Arzt", "Arbeitsunfähigkeitsbescheinigung" |
 
-### Quelle 2: E-Mails AN Manager (HIGH CONFIDENCE!)
-| Mitarbeiter | Manager-Email | Bedeutung |
-|---|---|---|
-| **Rufat** | `e.carl-uezer@teppich-paradies.net` | Krankschreibungen eingereicht = automatisch HIGH CONFIDENCE |
-
-**Hinweis:** E-Mails an Manager-Adressen = bewusste Abwesenheitsmeldungen → hochgewichtet!
+**Manager-Adresse zur Orientierung:** `e.carl-uezer@web.de` (nicht `.net` – Korrektur
+gegenüber früherer Annahme). E-Mails, die dorthin gehen, sind i.d.R. Krankmeldungen für
+Rufat.
 
 ---
 
@@ -43,9 +76,32 @@ Jeder Fund wird bewertet:
 
 ---
 
-## 🚀 Verwendung
+## 🤖 Automatischer monatlicher Scan (AKTIV)
 
-### Option 1: CSV-Datei manuell erstellen (EINFACH)
+**Das ist der produktive Weg.** Eine Routine (Claude-Trigger, `trig_017kqinkmhhMvCs32N6G5eYs`)
+läuft automatisch **am 1. jeden Monats um 07:06 UTC** und:
+
+1. Durchsucht Gmail (`kontakt@teppich-paradies.net`) nach Absences-Keywords im Vormonat
+2. Extrahiert Zeiträume aus Betreff/Text per Regex (nicht aus Fotos)
+3. Erstellt `abwesenheiten_kombiniert_<MM>_<YYYY>.csv` für automatisch erkannte Fälle
+4. Regeneriert die VMA-Dateien via `vma_batch.py`
+5. Meldet Fälle **ohne Text-Datum explizit als "Rückfrage nötig"** (mit Link zur Mail)
+   statt zu raten
+
+Kein manueller Aufruf nötig. Bei Rückfragen meldet sich die Session direkt.
+
+**Wichtig:** Die Python-Skripte `vma_gmail_scanner.py`, `vma_calendar_scanner.py` und
+`vma_combined_scanner.py` sind **funktional nur Platzhalter/Referenz** – ein
+eigenständiges Python-Skript hat keinen Zugriff auf den Gmail-MCP-Connector (nur eine
+laufende Claude-Session hat das). Die tatsächliche Suche läuft ausschließlich über die
+Routine oben bzw. manuell durch eine Claude-Session mit `mcp__Gmail__search_threads`.
+
+---
+
+## 🚀 Manuelle Alternative (CSV direkt pflegen)
+
+Falls zwischendurch schnell etwas eingetragen werden muss, ohne auf den nächsten
+Routine-Lauf zu warten:
 
 ```bash
 # 1. Schau manuell in Gmail nach Abwesenheits-E-Mails
@@ -53,57 +109,16 @@ Jeder Fund wird bewertet:
 # 3. Verwende es:
 
 python3 vma_batch.py 6 2026 --absences abwesenheiten.csv
-```
-
-### Option 2: Gmail automatisch scannen
-
-```bash
-# 1. Gmail-Scanner ausführen
-python3 vma_gmail_scanner.py 6 2026
-
-# 2. Prüfe die Ergebnisse in der Ausgabe
-# 3. CSV erstellen (automatisch):
-python3 vma_gmail_scanner.py 6 2026 --create-csv
 
 # 4. Datei prüfen & verwenden:
 python3 vma_batch.py 6 2026 --absences abwesenheiten_06_2026.csv
 ```
 
-### Option 3: Google Calendar automatisch scannen
+## 📅 Google Calendar
 
-```bash
-# 1. Kalender-Scanner ausführen (sucht Urlaub)
-python3 vma_calendar_scanner.py 6 2026
-
-# 2. Prüfe die Ergebnisse in der Ausgabe
-# 3. CSV erstellen (automatisch):
-python3 vma_calendar_scanner.py 6 2026 --create-csv
-
-# 4. Datei prüfen & verwenden:
-python3 vma_batch.py 6 2026 --absences abwesenheiten_kalender_06_2026.csv
-```
-
-**Hinweis:** Hayatin's Kalender-Einträge werden ignoriert (nicht zuverlässig).
-
-### Option 4: Gmail + Google Calendar kombiniert (EMPFOHLEN)
-
-```bash
-# 1. Kombinierter Scanner (Gmail + Kalender)
-python3 vma_combined_scanner.py 6 2026
-
-# 2. Datei prüfen:
-cat abwesenheiten_kombiniert_06_2026.csv
-
-# 3. Mit VMA-Batch verwenden:
-python3 vma_batch.py 6 2026 --absences abwesenheiten_kombiniert_06_2026.csv
-```
-
-Dieser Modus:
-- ✅ Scannt Gmail nach Krankheit, Urlaub, AU
-- ✅ Scannt Google Calendar nach Urlaubseinträgen
-- ✅ Merged Results (Duplikate werden erkannt)
-- ✅ Ignoriert Hayatin's Kalender-Einträge automatisch
-- ✅ Exportiert zu einheitlicher CSV
+Zurückgestellt – der Gmail-Kanal (Prozess-Fix + monatliche Routine) deckt die
+Abwesenheitserfassung ab. Google-Calendar-Abgleich ist nicht aktiv priorisiert
+(Hayatin's Kalender ist ohnehin nicht zuverlässig, siehe `VMA_CALENDAR_SCANNER_README.md`).
 
 ---
 

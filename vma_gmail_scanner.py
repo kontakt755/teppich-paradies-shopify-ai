@@ -32,9 +32,20 @@ EMPLOYEES = {
 
 # Manager-E-Mails für Krankschreibungs-Bestätigungen
 # (E-Mails an diese Adresse = Krankschreibungen wurden eingereicht)
+# Korrigiert 24.09.2026: tatsächliche Adresse ist @web.de, nicht @teppich-paradies.net
 MANAGER_EMAILS = {
-    'Rufat': 'e.carl-uezer@teppich-paradies.net',  # Empfänger von Krankschreibungen für Rufat
+    'Rufat': 'e.carl-uezer@web.de',  # Empfänger von Krankschreibungen für Rufat
 }
+
+# Firmen-Postfach, das durchsucht wird (nicht das private Konto!)
+COMPANY_INBOX = 'kontakt@teppich-paradies.net'
+
+# HINWEIS (24.09.2026): Dieses Skript ist als eigenständiges Python-Programm NICHT
+# ausführbar im Sinne von "läuft automatisch" - es hat keinen Zugriff auf den
+# Gmail-MCP-Connector, den nur eine laufende Claude-Session hat. Die produktive
+# Automatisierung läuft über eine monatliche Routine (Claude-Trigger), die
+# mcp__Gmail__search_threads direkt aufruft. Siehe VMA_GMAIL_INTEGRATION.md.
+# Dieses Skript dient nur als Referenz für Keywords/CSV-Format.
 
 SEARCH_KEYWORDS = {
     'krank': ['krank', 'krankmeldung', 'krankschein', 'arzt', 'arzttermin'],
