@@ -391,6 +391,7 @@ function heuteEinkaufBlock() {
   // Nur sichtbar, wenn es etwas zum Nachhaken gibt - eine 0 waere hier reines Rauschen.
   const langeBestellt = [...ware, ...muster].filter(p => { const e = afEintragFuer(p); return e?.status === 'bestellt' && afWartetage(e) >= AF_WARTE_WARN; }).length;
   const neu = heuteNeuSeitGestern(b);
+  const stand = bestelldatenStand(b);
   return `
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain', '#/einkauf')}
@@ -403,7 +404,21 @@ function heuteEinkaufBlock() {
       ? `<section class="card problem-card"><div class="card-head"><h3>Zuerst klären</h3><a class="more" href="#/einkauf">Alle Aufträge im Einkauf →</a></div><div class="rows">${probleme.slice(0, 3).map(a => einkaufAuftragZeile(a)).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere – <a href="#/einkauf">alle ansehen →</a></p>` : ''}</section>`
       : `<p class="notice ok">Kein Auftrag mit Problem.</p>`}
     ${neu.karte}
-    <p class="small muted flow-line">${neu.zeile}${unterwegs ? `${plural(unterwegs, 'Artikel ist', 'Artikel sind')} beim Lieferanten bestellt oder unterwegs · ` : ''}Stand Bestellungen ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Einkauf öffnen →</a></p>`;
+    <p class="small muted flow-line">${neu.zeile}${unterwegs ? `${plural(unterwegs, 'Artikel ist', 'Artikel sind')} beim Lieferanten bestellt oder unterwegs · ` : ''}${stand.alt ? `<b>${esc(stand.text)}</b>` : esc(stand.text)} · <a href="#/einkauf">Einkauf öffnen →</a></p>
+    ${stand.alt ? `<p class="notice warn" style="margin-top:6px">Die Zahlen oben können veraltet sein. „Jetzt aktualisieren" holt neue Daten – geht nur, wenn der Shopify-Zugang hinterlegt ist.</p>` : ''}`;
+}
+
+/**
+ * Wie alt sind die Bestelldaten wirklich? `erstellt` ist nur der Zeitpunkt,
+ * zu dem der Server die Datei gelesen hat - es als "Stand" anzuzeigen, sah
+ * immer taufrisch aus, egal wie alt der Shopify-Abruf war. Ohne
+ * `exportiertAm` wird das jetzt gesagt statt beschoenigt.
+ */
+function bestelldatenStand(b) {
+  if (!b?.exportiertAm) return { text: 'Stand der Bestelldaten unbekannt', alt: true };
+  const alter = Date.now() - new Date(b.exportiertAm).getTime();
+  const alt = !(alter < 24 * 60 * 60 * 1000);
+  return { text: `Stand Bestellungen ${fmtDateTime(b.exportiertAm)}${alt ? ' – älter als ein Tag' : ''}`, alt };
 }
 
 /**
