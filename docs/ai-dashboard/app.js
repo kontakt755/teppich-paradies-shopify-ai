@@ -149,11 +149,22 @@ async function loadAgentRuns() {
 }
 
 async function refresh({ silent = false } = {}) {
+  const vorher = silent ? datenKennung() : null;
   await loadData();
   await Promise.all([loadWorkflowRun(), loadAgentRuns()]);
   renderSyncChip();
-  render();
+  // Der stille 2-Minuten-Lauf zeichnet nur neu, wenn sich wirklich etwas
+  // geaendert hat. Sonst klappten aufgeklappte Listen zu, Tabellen sprangen
+  // an den Anfang und gerade Getipptes ging verloren.
+  if (!silent || vorher !== datenKennung()) render();
   if (!silent && !state.loadError) toast('Daten aktualisiert');
+}
+
+/** Kurzer Fingerabdruck der geladenen Daten - reicht, um "hat sich was geaendert?" zu beantworten. */
+function datenKennung() {
+  const t = state.tasks || [];
+  const agenten = state.agentRuns ? JSON.stringify(state.agentRuns).length : 0;
+  return `${t.length}|${state.raw?.generatedAt || state.raw?.generated_at || ''}|${t.map(x => `${x.number}:${x.status}:${x.updatedAt || ''}`).join(',')}|${agenten}|${state.loadError || ''}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -2154,7 +2165,7 @@ function viewKundenSuche() {
   if (!d && kunden.loadingSuche) return toolbar + chips + `<div class="empty">Lade Kunden …</div>`;
   if (!d || !d.verfuegbar) return toolbar + chips + emptyState('Keine Kundendaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   return toolbar + chips + `
-    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Kunde${d.treffer.length === 1 ? '' : 'n'}${d.treffer.length === 50 && q.trim().length >= 2 ? ' (mehr – Suche genauer eingrenzen)' : ''}</p>
+    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Kunde${d.treffer.length === 1 ? '' : 'n'}</p>
     <div class="rows">${d.treffer.length ? d.treffer.map(kundenTrefferZeile).join('') : emptyState('Keine Treffer.', 'Begriff oder Filter anpassen.')}</div>`;
 }
 
@@ -2426,7 +2437,7 @@ function betragText(betrag, waehrung) {
 }
 
 function angebotZeile(a) {
-  const offen = a.status === 'OPEN';
+  const offen = ANGEBOT_OFFEN.has(a.status);
   return `<div class="row">
     <div>
       <div class="t">${esc(a.nummer)} · ${esc(a.kunde || 'ohne Kundennamen')} ${liegtSeit(a.erstelltAm)}</div>
@@ -2435,19 +2446,29 @@ function angebotZeile(a) {
     </div>
     <div class="r">
       <div class="t">${betragText(a.betrag, a.waehrung)}</div>
-      <div class="m">${offen ? 'offen – Kunde wartet' : a.status === 'COMPLETED' ? 'in Bestellung umgewandelt' : esc(a.status)}</div>
+      <div class="m">${esc(ANGEBOT_STATUS_TEXT[a.status] || a.status || 'Status unbekannt')}</div>
       ${a.rechnungUrl ? `<a class="btn btn-sm" href="${esc(a.rechnungUrl)}" target="_blank" rel="noopener">Angebot öffnen ↗</a>` : ''}
     </div>
   </div>`;
 }
+
+// Offen heisst: der Kunde wartet. Ein verschicktes Angebot (INVOICE_SENT) ist
+// genauso offen wie ein angelegtes - es lag sonst im zugeklappten Block
+// "erledigte Angebote" (operations/lib/angebote.mjs zaehlt beide als offen).
+const ANGEBOT_OFFEN = new Set(['OPEN', 'INVOICE_SENT']);
+const ANGEBOT_STATUS_TEXT = {
+  OPEN: 'offen – Kunde wartet',
+  INVOICE_SENT: 'Angebot verschickt – Kunde hat noch nicht bezahlt',
+  COMPLETED: 'in Bestellung umgewandelt',
+};
 
 function viewKundenAngebote() {
   ensureKundenAngebote();
   const d = kunden.angebote;
   if (!d && kunden.loadingAngebote) return `<div class="empty">Lade Angebote …</div>`;
   if (!d || !d.verfuegbar) return emptyState('Keine Angebote exportiert.', d?.hinweis || 'Daten aktualisieren (braucht den Shopify-Zugang).');
-  const offen = (d.angebote || []).filter(a => a.status === 'OPEN');
-  const rest = (d.angebote || []).filter(a => a.status !== 'OPEN');
+  const offen = (d.angebote || []).filter(a => ANGEBOT_OFFEN.has(a.status));
+  const rest = (d.angebote || []).filter(a => !ANGEBOT_OFFEN.has(a.status));
   return `
     <p class="small muted" style="margin:0 0 10px">Angebote sind Entwurfsbestellungen aus Shopify. „Offen" heißt: verschickt oder angelegt, aber noch nicht bezahlt – dort wartet jemand auf eine Antwort.</p>
     <div class="rows">${offen.length ? offen.map(angebotZeile).join('') : emptyState('Kein offenes Angebot.', 'Nichts zu tun.')}</div>
@@ -2986,6 +3007,8 @@ function stelleEingabeWiederHer(main, merk) {
   return true;
 }
 
+let letzteAnsicht = null;
+
 function render() {
   const main = $('#main');
   const eingabe = merkeEingabe(main);
@@ -3020,8 +3043,12 @@ function render() {
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
   if (stelleEingabeWiederHer(main, eingabe)) return;
-  // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz).
-  if (state.route.view === 'kunden' && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
+  // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz)
+  // - aber nur beim Betreten. Sonst riss der stille 2-Minuten-Refresh den Fokus
+  // aus jedem anderen Bedienelement (auf dem Handy samt Tastatur).
+  const kundenAnsichtNeu = state.route.view === 'kunden' && letzteAnsicht !== 'kunden';
+  letzteAnsicht = state.route.view;
+  if (kundenAnsichtNeu && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
     const feld = main.querySelector('input[type=search][data-param="kq"]');
     if (feld && document.activeElement !== feld) { feld.focus(); feld.setSelectionRange(feld.value.length, feld.value.length); }
   }
@@ -3136,7 +3163,7 @@ function bindEvents() {
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;
-  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); const focus = el; render(); const again = document.querySelector('input[type=search][data-param]'); if (again && focus) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); } }, 220); });
+  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); render(); }, 220); });
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }

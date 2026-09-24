@@ -23,9 +23,18 @@ const NICHT_HINTERLEGT = null;
  * Stufen: 0 = noch nichts, 1..4 = STATUS_ORDER (bestellt..erledigt).
  */
 export function fortschritt(auftrag, statusAlle = {}) {
-  const positionen = (auftrag?.positionen ?? []).filter(p => p.lineItemId);
+  const alle = auftrag?.positionen ?? [];
+  const positionen = alle.filter(p => p.lineItemId);
   const gesamt = positionen.length;
-  if (!gesamt) return { stufe: 'keine', text: 'Keine Positionen', erledigt: 0, gesamt: 0, minStufe: 0 };
+  if (!gesamt) {
+    // Positionen ohne lineItemId lassen sich nicht nachverfolgen. Sie einfach
+    // als "fertig" durchzuwinken versteckte Bestellungen vor dem Filter
+    // "In Arbeit" - deshalb hier ehrlich als unklar melden.
+    if (alle.length) {
+      return { stufe: 'unklar', text: `Nicht nachverfolgbar (${alle.length} Position(en) ohne Kennung)`, erledigt: 0, gesamt: 0, minStufe: 0, unklar: true };
+    }
+    return { stufe: 'keine', text: 'Keine Positionen', erledigt: 0, gesamt: 0, minStufe: 0 };
+  }
 
   const stufen = positionen.map(p => {
     const key = positionKey(auftrag.id, p.lineItemId);
@@ -46,6 +55,7 @@ export function fortschritt(auftrag, statusAlle = {}) {
 /** "fertig" heisst: alle Positionen erledigt (oder gar keine Positionen mit Auftragsfluss). */
 export function istFertig(auftrag, statusAlle = {}) {
   const f = fortschritt(auftrag, statusAlle);
+  if (f.unklar) return false;
   return f.stufe === 'erledigt' || f.gesamt === 0;
 }
 
