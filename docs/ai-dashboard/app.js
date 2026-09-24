@@ -99,6 +99,9 @@ function renderSessionButton() {
   // trifft. Die eigentliche Durchsetzung liegt im Server (scripts/serve-dashboard.mjs).
   const istLesend = state.session?.benutzer?.rolle === 'lesen';
   document.body.classList.toggle('rolle-lesen', istLesend);
+  // Mitarbeiter sehen das Kundengeschaeft; die interne Entwicklungsarbeit
+  // (GitHub-Aufgaben, Freigaben, Auswertungen) bleibt beim Inhaber.
+  document.body.classList.toggle('rolle-mitarbeiter', state.session?.benutzer?.rolle === 'mitarbeiter');
 }
 
 /** true, wenn die aktuelle Rolle keine Aenderungen vornehmen darf (nur Anzeige, Server prueft ohnehin serverseitig). */
@@ -317,7 +320,7 @@ function viewHeute() {
 
   return `
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
-      <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" title="Aufgaben frisch von GitHub holen">Aufgaben synchronisieren</button>' : ''}<a class="btn btn-ghost" href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
+      <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Aufgaben frisch von GitHub holen">Aufgaben synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
 
     <h2 class="section-title">Kundengeschäft</h2>
     ${heuteEinkaufBlock()}
@@ -328,6 +331,7 @@ function viewHeute() {
     <h2 class="section-title">Shop-Zahlen</h2>
     ${heuteKennzahlenBlock()}
 
+    <div data-nur-inhaber>
     <h2 class="section-title">Interne Arbeit <span class="section-note">Aufgaben aus GitHub – wichtig, aber nach dem Kundengeschäft</span></h2>
     <div class="band">
       ${intern.map(([n, l, cls, href]) => bandItem(n, l, cls, href)).join('')}
@@ -348,7 +352,8 @@ function viewHeute() {
 
     ${worst === 'ok'
       ? `<p class="health-ok"><span class="dot" aria-hidden="true"></span>Alle Datenquellen in Ordnung · <a href="#/insights">Systemzustand ansehen</a></p>`
-      : `<section class="card section health-card ${worst}"><div class="card-head"><h2>Systemgesundheit</h2><a class="more" href="#/insights">Alle Details →</a></div><div class="health">${health.filter(h => h.level === 'warn' || h.level === 'crit').map(healthRow).join('')}</div></section>`}`;
+      : `<section class="card section health-card ${worst}"><div class="card-head"><h2>Systemgesundheit</h2><a class="more" href="#/insights">Alle Details →</a></div><div class="health">${health.filter(h => h.level === 'warn' || h.level === 'crit').map(healthRow).join('')}</div></section>`}
+    </div>`;
 }
 
 /** Kachel im Zahlenband. 0 wird grau, damit echte Zahlen hervorstechen. */
@@ -2276,6 +2281,27 @@ function viewKundenRueckrufe() {
 const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', fertig: 'Fertig', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
 const BQ_SORT_LABEL = { datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
 
+// Shopify liefert Zahlungs-, Versand- und Kanalwerte auf Englisch. Am
+// Ladentresen liest das niemand als Status - deshalb Klartext, mit dem
+// Rohwert als Titel fuer den Fall, dass jemand im Admin danach sucht.
+const ZAHLUNG_TEXT = {
+  PAID: 'Bezahlt', PENDING: 'Zahlung offen', AUTHORIZED: 'Autorisiert',
+  PARTIALLY_PAID: 'Teilweise bezahlt', PARTIALLY_REFUNDED: 'Teilweise erstattet',
+  REFUNDED: 'Erstattet', VOIDED: 'Storniert', EXPIRED: 'Abgelaufen',
+};
+const VERSAND_TEXT = {
+  FULFILLED: 'Versandt', UNFULFILLED: 'Noch nicht versandt',
+  PARTIALLY_FULFILLED: 'Teilweise versandt', IN_PROGRESS: 'Wird versandt',
+  SCHEDULED: 'Geplant', ON_HOLD: 'Zurueckgestellt', OPEN: 'Offen', RESTOCKED: 'Wieder eingelagert',
+};
+const KANAL_TEXT = { web: 'Onlineshop', pos: 'Ladengeschäft', shopify_draft_order: 'Angebot' };
+
+function statusText(wert, karte) {
+  if (wert === null || wert === undefined || wert === '') return NICHT_HINTERLEGT;
+  const text = karte[wert];
+  return text ? `<span title="${esc(wert)}">${esc(text)}</span>` : esc(wert);
+}
+
 function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q)); }
 
 function bestellzeileGefiltert(zeilen, params) {
@@ -2355,9 +2381,9 @@ function bestellzeileHtml(z) {
       <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.telefon)}</td>
       <td data-l="Kunden-ID">${wertText(z.kundenId)}</td>
       <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
-      <td data-l="Zahlung">${wertText(z.zahlungsstatus)}</td>
-      <td data-l="Versand">${wertText(z.fulfillmentstatus)}</td>
-      <td data-l="Kanal">${wertText(z.kanal)}</td>
+      <td data-l="Zahlung">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</td>
+      <td data-l="Versand">${statusText(z.fulfillmentstatus, VERSAND_TEXT)}</td>
+      <td data-l="Kanal">${statusText(z.kanal, KANAL_TEXT)}</td>
       <td data-l="Zustellmethode">${wertText(z.zustellmethode)}</td>
       <td data-l="Artikel">${z.anzahlArtikel}</td>
       <td data-l="Tags">${tagListe.length ? tagListe.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') : '<span class="small muted">–</span>'}</td>
