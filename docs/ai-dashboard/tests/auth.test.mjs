@@ -1,10 +1,11 @@
+import './_testumgebung.mjs'; // setzt TP_PRIVAT_DIR auf ein leeres Testverzeichnis - muss vor allem anderen laufen
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, SESSION_COOKIE } from '../../../scripts/dashboard-auth.mjs';
+import { createAuth, loadConfiguredPassword, passwordFilePath, parseCookies, renderLoginPage, sessionCookieHeader, sessionFilePath, SESSION_COOKIE, SESSION_TTL_LANG_MS } from '../../../scripts/dashboard-auth.mjs';
 
 // Isoliertes Privatverzeichnis, unabhaengig davon, was auf dem jeweiligen Rechner liegt.
 const TMP_PRIVAT = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-test-'));
@@ -277,4 +278,54 @@ test('Mehrbenutzerbetrieb: Anmeldung mit Name+Passwort, Rolle "lesen" bekommt 40
     const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieMona } })).json();
     assert.ok(protokoll.eintraege.some(e => e.benutzer === 'Mona Mitarbeiter' && e.aktion === 'Auftragsstatus'));
   });
+});
+
+
+// ---------------------------------------------------------------------------
+// "Angemeldet bleiben": der Ladenrechner soll morgens nicht neu fragen
+// ---------------------------------------------------------------------------
+
+test('lange Sitzung ueberlebt einen Dienst-Neustart, kurze bleibt im Speicher', () => {
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-auth-sitzung-'));
+  const alt = process.env.TP_PRIVAT_DIR;
+  process.env.TP_PRIVAT_DIR = privat;
+  try {
+    const auth = createAuth({ password: 'test-passwort' });
+    const sid = auth.createSession({ name: 'Inhaber', kuerzel: null, rolle: 'inhaber' }, { lang: true });
+    // Neustart des Dienstes = neues Auth-Objekt, gleiche Datei
+    const nachNeustart = createAuth({ password: 'test-passwort' });
+    assert.equal(nachNeustart.validSession(sid), true);
+    assert.equal(nachNeustart.sessionBenutzer(sid).rolle, 'inhaber');
+    nachNeustart.destroySession(sid);
+    assert.equal(createAuth({ password: 'test-passwort' }).validSession(sid), false);
+  } finally {
+    if (alt === undefined) delete process.env.TP_PRIVAT_DIR; else process.env.TP_PRIVAT_DIR = alt;
+  }
+});
+
+test('die Sitzungsdatei enthaelt nie den Cookie selbst, nur seinen Hash', () => {
+  const privat = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-auth-sitzung-hash-'));
+  const alt = process.env.TP_PRIVAT_DIR;
+  process.env.TP_PRIVAT_DIR = privat;
+  try {
+    const auth = createAuth({ password: 'test-passwort' });
+    const sid = auth.createSession({ name: 'Inhaber', kuerzel: null, rolle: 'inhaber' }, { lang: true });
+    const inhalt = fs.readFileSync(sessionFilePath(), 'utf8');
+    assert.equal(inhalt.includes(sid), false);
+  } finally {
+    if (alt === undefined) delete process.env.TP_PRIVAT_DIR; else process.env.TP_PRIVAT_DIR = alt;
+  }
+});
+
+test('sessionCookieHeader: lange Sitzung setzt 30 Tage', () => {
+  assert.match(sessionCookieHeader('abc', { lang: true }), new RegExp(`Max-Age=${Math.floor(SESSION_TTL_LANG_MS / 1000)}`));
+  assert.equal(sessionCookieHeader('abc').includes(`Max-Age=${Math.floor(SESSION_TTL_LANG_MS / 1000)}`), false);
+});
+
+test('Anmeldeseite zeigt das Namensfeld nur, wenn es Mitarbeiterzugaenge gibt', () => {
+  const ohne = renderLoginPage({ mitBenutzern: false });
+  assert.equal(ohne.includes('id="name"'), false);
+  assert.match(ohne, /angemeldet bleiben/i);
+  const mit = renderLoginPage({ mitBenutzern: true });
+  assert.match(mit, /id="name"/);
 });

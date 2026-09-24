@@ -22,7 +22,11 @@ import path from 'node:path';
 import { leseBenutzer, benutzerDateiExistiert, authentifiziere, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
 
 export const SESSION_COOKIE = 'tp_dashboard_sid';
-export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Stunden
+export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Stunden (ohne "angemeldet bleiben")
+// Mit "an diesem Geraet angemeldet bleiben": der Ladenrechner soll morgens
+// nicht nach dem Passwort fragen. Dafuer muessen Sitzungen auch einen
+// Dienst-Neustart ueberleben - sonst wirft jedes Update alle Mitarbeiter raus.
+export const SESSION_TTL_LANG_MS = 30 * 24 * 60 * 60 * 1000; // 30 Tage
 
 const MAX_FAILS = 5;
 const LOCK_WINDOW_MS = 15 * 60 * 1000; // Fehlversuche zaehlen 15 Minuten
@@ -32,6 +36,10 @@ const FAIL_DELAY_MS = 400; // bremst automatisiertes Raten je Versuch
 /** Privatverzeichnis fuer nicht-oeffentliche Dateien (Konvention des Repos). */
 export function privatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
+}
+
+export function sessionFilePath() {
+  return path.join(privatDir(), 'dashboard-sitzungen.json');
 }
 
 export function passwordFilePath() {
@@ -77,12 +85,37 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     try { return fs.existsSync(benutzerDatei); } catch { return false; }
   };
   const required = Boolean(password) || hatBenutzerdatei();
-  const sessions = new Map(); // sid -> { expiresAt, benutzer }
+  // Schluessel ist der SHA-256 des Sitzungscookies, nie der Cookie selbst -
+  // wer die Datei liest, kann sich damit nicht anmelden.
+  const sessions = new Map(); // sidHash -> { expiresAt, benutzer }
+  ladeSitzungen();
   const attempts = new Map(); // schluessel (ip::name) -> { count, firstFailAt, lockedUntil }
+
+  function sidHash(sid) { return sha256(sid).toString('hex'); }
+
+  function ladeSitzungen() {
+    try {
+      const roh = JSON.parse(fs.readFileSync(sessionFilePath(), 'utf8'));
+      const now = Date.now();
+      for (const [hash, eintrag] of Object.entries(roh?.sitzungen ?? {})) {
+        if (eintrag?.expiresAt > now) sessions.set(hash, eintrag);
+      }
+    } catch { /* keine Datei, unlesbar oder kaputt - dann eben neu anmelden */ }
+  }
+
+  function speichereSitzungen() {
+    const datei = sessionFilePath();
+    try {
+      fs.mkdirSync(path.dirname(datei), { recursive: true });
+      fs.writeFileSync(datei, JSON.stringify({ sitzungen: Object.fromEntries(sessions) }), { mode: 0o600 });
+    } catch { /* Sitzungen ueberleben dann keinen Neustart - kein Grund, die Anmeldung scheitern zu lassen */ }
+  }
 
   function purgeExpiredSessions() {
     const now = Date.now();
-    for (const [sid, s] of sessions) if (s.expiresAt <= now) sessions.delete(sid);
+    let entfernt = false;
+    for (const [sid, s] of sessions) if (s.expiresAt <= now) { sessions.delete(sid); entfernt = true; }
+    if (entfernt) speichereSitzungen();
   }
 
   /** Prueft Name+Passwort (Mehrbenutzerbetrieb) oder nur Passwort (Notzugang). Gibt Benutzerobjekt oder null zurueck. */
@@ -106,28 +139,29 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     return crypto.timingSafeEqual(candidateHash, passwordHash);
   }
 
-  function createSession(benutzer) {
+  function createSession(benutzer, { lang = false } = {}) {
     purgeExpiredSessions();
     const sid = crypto.randomBytes(32).toString('hex');
-    sessions.set(sid, { expiresAt: Date.now() + SESSION_TTL_MS, benutzer });
+    sessions.set(sidHash(sid), { expiresAt: Date.now() + (lang ? SESSION_TTL_LANG_MS : SESSION_TTL_MS), benutzer });
+    speichereSitzungen();
     return sid;
   }
 
   function validSession(sid) {
     if (!sid) return false;
     purgeExpiredSessions();
-    return sessions.has(sid);
+    return sessions.has(sidHash(sid));
   }
 
   /** Gibt den angemeldeten Benutzer ({name, kuerzel, rolle}) zurueck oder null. */
   function sessionBenutzer(sid) {
     if (!sid) return null;
     purgeExpiredSessions();
-    return sessions.get(sid)?.benutzer || null;
+    return sessions.get(sidHash(sid))?.benutzer || null;
   }
 
   function destroySession(sid) {
-    if (sid) sessions.delete(sid);
+    if (sid && sessions.delete(sidHash(sid))) speichereSitzungen();
   }
 
   function rateState(key) {
@@ -185,8 +219,8 @@ export function parseCookies(req) {
   return out;
 }
 
-export function sessionCookieHeader(sid) {
-  const maxAgeSec = Math.floor(SESSION_TTL_MS / 1000);
+export function sessionCookieHeader(sid, { lang = false } = {}) {
+  const maxAgeSec = Math.floor((lang ? SESSION_TTL_LANG_MS : SESSION_TTL_MS) / 1000);
   return `${SESSION_COOKIE}=${sid}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSec}`;
 }
 
@@ -199,7 +233,7 @@ export function sleep(ms) {
 }
 
 /** Anmeldeseite auf Deutsch, ohne externe Ressourcen (funktioniert auch ohne Sitzung). */
-export function renderLoginPage({ error = null } = {}) {
+export function renderLoginPage({ error = null, mitBenutzern = benutzerDateiExistiert() } = {}) {
   const errorHtml = error
     ? `<p class="error" role="alert">${escapeHtml(error)}</p>`
     : '';
@@ -222,6 +256,8 @@ export function renderLoginPage({ error = null } = {}) {
   button:disabled { opacity:.6; cursor:default; }
   p.error { color:#fca5a5; background:#450a0a; border-radius:8px; padding:8px 10px; font-size:.85rem; margin:0 0 16px; }
   p.note { color:#64748b; font-size:.75rem; margin-top:20px; }
+  label.bleiben { display:flex; align-items:center; gap:8px; margin:14px 0 0; font-size:.85rem; color:#cbd5e1; }
+  label.bleiben input { width:auto; margin:0; }
 </style>
 </head>
 <body>
@@ -230,13 +266,14 @@ export function renderLoginPage({ error = null } = {}) {
   <p class="hint">Nur für Inhaber, Admins und Mitarbeiter. Enthält Kundenbestellungen und Einkaufsdaten.</p>
   ${errorHtml}
   <form id="loginForm">
-    <label for="name">Name oder Kürzel</label>
-    <input type="text" id="name" name="name" autocomplete="username" autofocus required style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:1rem;margin-bottom:14px;">
+    ${mitBenutzern ? `<label for="name">Name oder Kürzel</label>
+    <input type="text" id="name" name="name" autocomplete="username" autofocus required style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:1rem;margin-bottom:14px;">` : ''}
     <label for="pw">Passwort</label>
-    <input type="password" id="pw" name="pw" autocomplete="current-password" required>
+    <input type="password" id="pw" name="pw" autocomplete="current-password"${mitBenutzern ? '' : ' autofocus'} required>
+    <label class="bleiben"><input type="checkbox" id="bleiben" checked> An diesem Gerät angemeldet bleiben</label>
     <button type="submit" id="submitBtn">Anmelden</button>
   </form>
-  <p class="note">Ohne Mitarbeiterzugänge (noch keine benutzer.json) reicht „Inhaber" als Name mit dem bisherigen Passwort. Verbindung im lokalen Netz ist unverschlüsselt (HTTP). Dieses Passwort nirgendwo sonst verwenden.</p>
+  <p class="note">${mitBenutzern ? 'Eigener Zugang je Mitarbeiter. ' : 'Ein gemeinsames Passwort. Eigene Zugänge je Mitarbeiter legt der Inhaber an. '}Angemeldet bleiben hält 30 Tage – nur auf Geräten im Laden benutzen, nicht auf fremden. Verbindung im lokalen Netz ist unverschlüsselt (HTTP), dieses Passwort nirgendwo sonst verwenden.</p>
 </main>
 <script>
   const form = document.getElementById('loginForm');
@@ -249,7 +286,11 @@ export function renderLoginPage({ error = null } = {}) {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: document.getElementById('name').value, passwort: document.getElementById('pw').value }),
+        body: JSON.stringify({
+          name: document.getElementById('name')?.value || '',
+          passwort: document.getElementById('pw').value,
+          angemeldetBleiben: document.getElementById('bleiben').checked,
+        }),
       });
       if (res.ok) { window.location.href = '/'; return; }
       const data = await res.json().catch(() => ({}));
