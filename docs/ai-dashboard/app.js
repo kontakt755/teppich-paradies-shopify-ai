@@ -2394,6 +2394,31 @@ async function kundeFertigSetzen(orderId) {
   } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); }
 }
 
+/** E-Mail und Telefon in einer Spalte - zwei eigene Spalten sprengten die Breite. */
+function kontaktZelle(z) {
+  const teile = [];
+  if (z.email) teile.push(`<a href="mailto:${esc(z.email)}">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}">Kopieren</button>`);
+  if (z.telefon) teile.push(`${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}">Kopieren</button>`);
+  return teile.length ? teile.join('<br>') : '<span class="small muted">kein Kontakt hinterlegt</span>';
+}
+
+/**
+ * Selten gebrauchte Angaben (Kunden-ID, Kanal, Zustellmethode, Artikelzahl,
+ * Tags) standen als eigene Spalten in der Tabelle - fuenfzehn Spalten, die
+ * niemand ohne Scrollen ueberblickt. Sie stehen jetzt in der aufgeklappten
+ * Zeile; die Suche findet sie weiterhin.
+ */
+function weitereAngaben(z, tagListe) {
+  const zeile = (label, wert) => `<div><span class="small muted">${esc(label)}</span><div>${wert}</div></div>`;
+  return `<div class="bq-weitere">
+    ${zeile('Kunden-ID', wertText(z.kundenId))}
+    ${zeile('Kanal', statusText(z.kanal, KANAL_TEXT))}
+    ${zeile('Zustellmethode', wertText(z.zustellmethode))}
+    ${zeile('Artikel', String(z.anzahlArtikel ?? '–'))}
+    ${zeile('Tags', tagListe.length ? tagListe.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') : '<span class="small muted">keine</span>')}
+  </div>`;
+}
+
 function bestellzeileHtml(z) {
   const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
   const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
@@ -2402,20 +2427,14 @@ function bestellzeileHtml(z) {
       <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
       <td data-l="Datum">${fmtDateTime(z.datum)}</td>
       <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
-      <td data-l="E-Mail">${z.email ? `<a href="mailto:${esc(z.email)}">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}">Kopieren</button>` : wertText(z.email)}</td>
-      <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}">Kopieren</button>` : wertText(z.telefon)}</td>
-      <td data-l="Kunden-ID">${wertText(z.kundenId)}</td>
+      <td data-l="Kontakt">${kontaktZelle(z)}</td>
       <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
       <td data-l="Zahlung">${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)}</td>
       <td data-l="Versand">${statusText(z.fulfillmentstatus, VERSAND_TEXT)}</td>
-      <td data-l="Kanal">${statusText(z.kanal, KANAL_TEXT)}</td>
-      <td data-l="Zustellmethode">${wertText(z.zustellmethode)}</td>
-      <td data-l="Artikel">${z.anzahlArtikel}</td>
-      <td data-l="Tags">${tagListe.length ? tagListe.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') : '<span class="small muted">–</span>'}</td>
       <td data-l="Fortschritt"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></td>
       <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
     </tr>
-    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="15">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
+    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="9">${weitereAngaben(z, tagListe)}${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
 }
 
 function bestellzeileKarte(z) {
@@ -2423,7 +2442,7 @@ function bestellzeileKarte(z) {
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}">
     <div>
       <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
-      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${wertText(z.zahlungsstatus)} · ${fmtDate(z.datum)}</div>
+      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
       ${z.wasFehlt?.length ? `<div class="m bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</div>` : ''}
     </div>
@@ -2448,13 +2467,13 @@ function viewKundenBestellungen() {
   // Kein data-param hier: der generische Handler wuerde vorher greifen und nur
   // die Spalte setzen - die Richtung liesse sich dann nie umschalten.
   const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-bq-sort-toggle="${feld}" aria-label="Nach ${esc(label)} sortieren${sort === feld ? (dir === 'asc' ? ', aktuell aufsteigend' : ', aktuell absteigend') : ''}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
-  const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>E-Mail</th><th>Telefon</th><th>Kunden-ID</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}<th>Kanal</th><th>Zustellmethode</th>${sortHead('anzahlArtikel', 'Artikel')}<th>Tags</th>${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
+  const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>Kontakt</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
   return `
-    <div class="toolbar search-hero"><input type="search" placeholder="Suche über alle Spalten – Kunde, E-Mail, Telefon, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    <div class="toolbar search-hero"><input type="search" placeholder="Suchen – Kunde, E-Mail, Telefon, Bestellnummer, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
     ${chips}
-    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Datum')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}</p>
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Datum')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'} · Zeile anklicken zeigt Positionen, Kanal, Tags und die Aktionen</p>
     <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
-    <tbody class="bq-tbody-desktop">${zeilen.length ? zeilen.map(bestellzeileHtml).join('') : `<tr><td colspan="15">${emptyState('Keine Treffer.', '')}</td></tr>`}</tbody>
+    <tbody class="bq-tbody-desktop">${zeilen.length ? zeilen.map(bestellzeileHtml).join('') : `<tr><td colspan="9">${emptyState('Keine Treffer.', '')}</td></tr>`}</tbody>
     </table></div>
     <div class="rows bq-karten">${zeilen.length ? zeilen.map(bestellzeileKarte).join('') : emptyState('Keine Treffer.', '')}</div>
   `;
