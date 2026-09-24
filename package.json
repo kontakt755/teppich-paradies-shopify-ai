@@ -63,6 +63,7 @@
     "dashboard": "node scripts/build-dashboard-data.mjs && node scripts/serve-dashboard.mjs",
     "dashboard:serve": "node scripts/serve-dashboard.mjs",
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
+    "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
     "task": "node scripts/task.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",

@@ -1108,8 +1108,8 @@ function einkaufAuftragDetails(a) {
       <td>${geldText(p.preis)}</td>
       <td>${esc(p.lieferantenArtikelnummer === 'UNGEKLAERT' ? '–' : p.lieferantenArtikelnummer)}${p.lieferantenLink && p.lieferantenLink !== 'UNGEKLAERT' ? `<div class="small"><a href="${esc(p.lieferantenLink)}" target="_blank" rel="noopener">Beim Lieferanten öffnen</a></div>` : ''}</td>
     </tr>`).join('');
-  return `<div style="padding:10px 4px;display:grid;gap:10px">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+  return `<div style="padding:10px 4px;display:grid;gap:10px;overflow-wrap:anywhere">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:10px">
       <div><b>Kunde</b><br>${esc(d.kunde?.name)}<br>${esc(d.kunde?.email)}<br>${esc(d.kunde?.telefon)}</div>
       <div><b>Lieferadresse</b><br>${adresseText(d.lieferadresse)}</div>
       <div><b>Rechnungsadresse</b><br>${adresseText(d.rechnungsadresse)}</div>
@@ -1119,7 +1119,7 @@ function einkaufAuftragDetails(a) {
     </div>
     ${d.tags?.length ? `<div><b>Tags:</b> ${d.tags.map(t => `<span class="badge plain">${esc(t)}</span>`).join(' ')}</div>` : ''}
     ${d.notiz ? `<div><b>Notiz des Kunden:</b> ${esc(d.notiz)}</div>` : ''}
-    <table class="tasks"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table>
+    <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Farbe/Variante</th><th>Kundenmaße</th><th>Preis</th><th>Lieferanten-Art.-Nr.</th></tr></thead><tbody>${posZeilen}</tbody></table></div>
   </div>`;
 }
 
