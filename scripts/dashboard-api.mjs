@@ -658,9 +658,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Feste Argumentliste (node + Skriptpfad, keine Nutzereingabe) - kein
      * Shell-Einschleusen moeglich. Nur ein Lauf gleichzeitig: ein zweiter
      * Aufruf waehrend eines laufenden Prozesses startet nichts neu und meldet
-     * `laeuft: true`. Schlaegt der Lauf fehl (z. B. kein Zugang), bleibt die
-     * vorhandene aktualisierung.json unveraendert stehen (aktualisieren.mjs
-     * schreibt selbst je Teil erfolg:false, kein stiller Fehlschlag).
+     * `laeuft: true`. Schlaegt ein Teil fehl (z. B. kein Zugang), bleiben seine
+     * Ausgabedatei und sein letzter erfolgreicher Stand erhalten; aktualisieren.mjs
+     * vermerkt den Fehlschlag daneben als `letzterFehler` (standNachLauf), kein
+     * stiller Fehlschlag.
      */
     aktualisierungStarten() {
       if (aktualisierungLauf) {
