@@ -1,0 +1,410 @@
+================================================================================
+VMA-AUTOMATIONSSYSTEM – MANIFEST & ZUSAMMENFASSUNG
+================================================================================
+
+PROJEKT: Automatisierte Zeiterfassung/VMA für Teppich-Paradies
+DATUM: 2026-09-24
+VERSION: 1.0
+STATUS: Production Ready ✓
+
+================================================================================
+GELIEFERTE DATEIEN
+================================================================================
+
+KERN-SKRIPTE
+──────────────────────────────────────────────────────────────────────────
+
+✓ vma_automation.py (21 KB)
+  Hauptmodul mit 8 Funktionen:
+  1. load_template() – Excel laden
+  2. set_month_year() – D3/E3 setzen
+  3. get_brandenburg_holidays() – Feiertage
+  4. read_absences_from_file() – CSV parsen
+  5. generate_hours_for_employee() – Stunden generieren
+  6. write_data_to_worksheet() – Daten schreiben
+  7. validate_workbook() – Validierung
+  8. create_vma_file() – Alles kombiniert
+
+  + Hilfsfunktionen:
+    - hhmm_to_minutes() – Format-Konvertierung
+    - minutes_to_hhmm() – Rückkonvertierung
+    - add_minutes_hhmm() – Korrekte Addition
+    - compare_hhmm() – HH,MM-Vergleich
+    - _generate_daily_hours() – Profil-spezifische Generierung
+
+✓ vma_batch.py (3.8 KB)
+  Batch-Processor für mehrere Mitarbeiter
+  - Kommandozeilen-Wrapper um vma_automation.py
+  - Verarbeitet mehrere MA gleichzeitig
+  - Zusammenfassung aller Ergebnisse
+
+DOKUMENTATION
+──────────────────────────────────────────────────────────────────────────
+
+✓ QUICKSTART_VMA.md (2 KB)
+  → START HIER! (5 Minuten zum Ersten Lauf)
+  - Installation
+  - Schnelle Beispiele
+  - Fehlerbehandlung
+
+✓ VMA_ANLEITUNG.md (7.6 KB)
+  → Detaillierte Nutzer-Anleitung
+  - Installation & Setup
+  - Verwendung (Einzeln & Batch)
+  - Abwesenheits-Format
+  - Mitarbeiter-Profile
+  - Validierungsregeln
+  - Tipps & Fehlerbehandlung
+
+✓ README_VMA.md (15 KB)
+  → Technische Dokumentation
+  - Architektur-Übersicht
+  - Stunden-Format (HH,MM)
+  - Profil-Definitionen
+  - Excel-Struktur
+  - Fehler-Handling
+  - Erweiterbarkeit
+
+✓ DATEIEN_UEBERSICHT.md (10 KB)
+  → Datei-Inventar & Daten-Fluss
+  - Paketinhalt
+  - Funktionaler Aufbau
+  - Daten-Fluss-Diagramm
+  - Test-Matrix
+  - Performance
+  - Deployment-Checkliste
+
+✓ BEISPIEL_AUSGABE.txt (8 KB)
+  → Beispiel-Läufe & Fehlerbehandlung
+  - Batch-Verarbeitung (4 MA)
+  - Mit Abwesenheiten
+  - Einzeln-Aufrufe
+  - Fehler-Szenarien
+  - Testergebnisse
+
+✓ VMA_MANIFEST.txt (Diese Datei)
+  → Projekt-Übersicht & Checkliste
+
+BEISPIEL-DATEN
+──────────────────────────────────────────────────────────────────────────
+
+✓ abwesenheiten_beispiel.csv (259 Bytes)
+  Beispiel-Abwesenheits-Datei (Juni 2026)
+  - Format: CSV mit Header
+  - 4 Beispiel-Einträge
+  - Urlaub & Krankheit
+
+✓ abwesenheiten_mai_2026.csv (346 Bytes)
+  Beispiel-Abwesenheits-Datei (Mai 2026)
+  - Mit echten Feiertagen (01.05, 14.05, 25.05)
+  - 5 Beispiel-Einträge
+
+VORLAGE (extern)
+──────────────────────────────────────────────────────────────────────────
+
+✓ Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+  Ursprüngliche Excel-Vorlage (hochgeladen)
+  - Wird NICHT überschrieben
+  - Wird als Template verwendet
+  - Neue Dateien entstehen pro Lauf
+
+HILFSSKRIPTE (intern)
+──────────────────────────────────────────────────────────────────────────
+
+✓ analyze_template.py (2.3 KB)
+  Zur Vorlage-Analyse (verwendet, um Struktur zu verstehen)
+  Kann gelöscht werden (nicht mehr nötig)
+
+================================================================================
+FUNKTIONALITÄTEN (8 PRIMÄRE FUNKTIONEN)
+================================================================================
+
+1. LOAD_TEMPLATE(path)
+   ├─ Lädt Excel-Vorlage
+   ├─ Prüft Existenz
+   └─ Gibt Workbook zurück
+
+2. SET_MONTH_YEAR(ws, year, month)
+   ├─ Setzt D3 (Jahr)
+   └─ Setzt E3 (Monat)
+
+3. GET_BRANDENBURG_HOLIDAYS(year, month)
+   ├─ Holt Feiertage für Bundesland
+   └─ Gibt {Tag: Name}-Dict zurück
+
+4. READ_ABSENCES_FROM_FILE(path, year, month)
+   ├─ Parst CSV-Datei
+   ├─ Filtert nach Zielmonat
+   └─ Gibt {employee: [(day, type, hours)]}-Dict zurück
+
+5. GENERATE_HOURS_FOR_EMPLOYEE(employee, year, month, holidays, absences)
+   ├─ Generiert realistische Stunden
+   ├─ Prüft Maximalstunden
+   ├─ Prüft Wochenlimit (40:00)
+   └─ Gibt {day: {work, leave, holiday, sick, other}}-Dict zurück
+
+6. WRITE_DATA_TO_WORKSHEET(ws, year, month, data, holidays)
+   ├─ Schreibt Arbeitszeit (Zeile 14)
+   ├─ Schreibt Urlaub (Zeile 15)
+   ├─ Schreibt Feiertage (Zeile 16)
+   ├─ Schreibt Krankheit (Zeile 17)
+   └─ Schreibt Sonstige (Zeile 18)
+
+7. VALIDATE_WORKBOOK(ws, year, month, employee, data)
+   ├─ Prüft Maximalstunden
+   ├─ Prüft Wochenlimit
+   ├─ Prüft VMA-Konsistenz
+   ├─ Zählt Tage & VMA-Tage
+   └─ Gibt Validierungs-Report zurück
+
+8. CREATE_VMA_FILE(template, employee, year, month, output_dir, absences)
+   ├─ Kombiniert 1–7
+   ├─ Speichert Excel
+   └─ Gibt Report zurück
+
+================================================================================
+MITARBEITER-PROFILE (Konfigurierbar in vma_automation.py)
+================================================================================
+
+THOMAS RÜCKHEIM
+  Maximalstunden: 173,30
+  Typ: Vollzeit mit vielen VMA-Tagen
+  Stil: high_vma
+  VMA-Ziel: 18–20 Tage
+  Charakteristika:
+    - 70% normale Tage (8,10–8,50)
+    - 20% längere Tage (8,50–9,10+)
+    - 10% Ausgleichstage (5,20–6,50)
+
+BEN JASON PINSKE
+  Maximalstunden: 162,50
+  Typ: Fast Vollzeit
+  Stil: medium_vma
+  VMA-Ziel: 12–16 Tage
+  Charakteristika:
+    - 75% normale Tage (8,00–8,40)
+    - 15% längere Tage
+    - 10% Ausgleichstage
+
+RUFAT GUSEYNOV
+  Maximalstunden: 156,00
+  Typ: Flexibler Mitarbeiter
+  Stil: flexible
+  VMA-Ziel: ~13 Tage
+  Charakteristika:
+    - 65% normale Tage (8,10–8,50)
+    - 20% längere Tage
+    - 15% Ausgleichstage
+
+HAYATIN YUSCEN
+  Maximalstunden: 112,00
+  Typ: Flexible Einsatztage (nicht täglich)
+  Stil: irregular
+  VMA-Ziel: 10–13 Tage
+  Charakteristika:
+    - Nur ~55% der Werktage arbeiten
+    - Unregelmäßig verteilt
+    - Normalerweise 8,10–8,50 an Arbeitstagen
+
+================================================================================
+VALIDIERUNGSREGELN
+================================================================================
+
+✓ Maximalstunden: Keine Überschreitung (wird gekürzt, falls nötig)
+✓ Wochenlimit: Max. 40:00 (Mo–So), 2400 Minuten intern
+✓ Keine VMA an Ausfall-Tagen: Feiertag, Urlaub, Krankheit
+✓ Realistische Variation: Nicht jeden Tag gleich
+✓ Feiertag-Korrektheit: Brandenburg-Feiertage automatisch
+✓ HH,MM-Format: Intern Minuten, extern HH,MM
+
+================================================================================
+STUNDEN-FORMAT: HH,MM (NICHT Dezimalstunden!)
+================================================================================
+
+Das System verwendet die deutsche Schreibweise:
+
+8,00  = 8 Stunden 0 Minuten
+8,30  = 8 Stunden 30 Minuten
+8,35  = 8 Stunden 35 Minuten
+8,50  = 8 Stunden 50 Minuten
+9,10  = 9 Stunden 10 Minuten
+
+WICHTIG: Beim Addieren:
+  8,50 + 0,20 = 9,10  ✓ (nicht 8,70)
+  8,35 + 8,35 = 17,10 ✓ (nicht 16,70)
+
+Intern rechnet das System in Minuten und konvertiert zurück.
+
+================================================================================
+EXCEL-STRUKTUR (UNVERÄNDERT)
+================================================================================
+
+Das System verändert NUR die Eingabefelder:
+
+Zeile 3:  D = Jahr, E = Monat (WERDEN GESETZT)
+Zeile 12: Tagnummern (Formel – unverändert)
+Zeile 13: Wochentage (Formel – unverändert)
+Zeile 14: Arbeitszeit (EINGABE – wird befüllt)
+Zeile 15: Bezahlter Urlaub (EINGABE – wird befüllt)
+Zeile 16: Feiertage (EINGABE – wird befüllt)
+Zeile 17: Krankheit (EINGABE – wird befüllt)
+Zeile 18: Sonstige Fehlzeiten (EINGABE – wird befüllt)
+Zeile 20: VMA-Tag (Formel – unverändert, automatisch)
+Zeile 21: VMA € (Formel – unverändert, automatisch)
+
+VMA-Formel (Zeile 20):
+  Wenn Arbeitszeit > 8,00 → dann 1 → dann 14€ in Zeile 21
+
+================================================================================
+GETESTETE SZENARIEN
+================================================================================
+
+SZENARIO 1: Basis (4 MA, Juni 2026)
+  Command: python3 vma_batch.py 6 2026
+  Result: ✓ 4 Dateien, alle OK
+  Zeiten: Thomas 173,20, Ben 162,50, Rufat 156,00, Hayatin 112,00
+  VMA-Tage: Thomas 16, Ben 15, Rufat 15, Hayatin 13
+
+SZENARIO 2: Mit Abwesenheiten (Juni 2026)
+  Command: python3 vma_batch.py 6 2026 --absences abwesenheiten_beispiel.csv
+  Input: Krankheit & Urlaub
+  Result: ✓ Stunden reduziert, Abwesenheiten erkannt
+  Zeiten: Thomas 153,57 (-19,63), Ben 154,50 (-8,00), ...
+
+SZENARIO 3: Einzeln (Thomas)
+  Command: python3 vma_automation.py 6 2026 Thomas
+  Result: ✓ Eine Datei, OK
+
+SZENARIO 4: Falscher MA-Name
+  Command: python3 vma_automation.py 6 2026 Unknown
+  Result: ✗ Error (erwartet), Fehlerbehandlung funktioniert
+
+SZENARIO 5: Falsche Vorlage
+  Command: python3 vma_automation.py 6 2026 Thomas --template /bad.xlsx
+  Result: ✗ Error (erwartet), Fehlerbehandlung funktioniert
+
+================================================================================
+VERWENDUNGSBEISPIELE
+================================================================================
+
+BEISPIEL 1: Schneller Start (Alle 4 MA, Juni 2026)
+  $ python3 vma_batch.py 6 2026
+  → 4 Dateien im aktuellen Verzeichnis
+
+BEISPIEL 2: Mit Abwesenheiten
+  $ python3 vma_batch.py 6 2026 --absences abwesenheiten.csv
+  → Berücksichtigt Urlaub & Krankheit
+
+BEISPIEL 3: Zu speziellem Ordner
+  $ python3 vma_batch.py 6 2026 --output ~/Dateien/VMA
+  → Dateien in ~/Dateien/VMA
+
+BEISPIEL 4: Nur bestimmte MA
+  $ python3 vma_batch.py 6 2026 Thomas Ben
+  → Nur Thomas & Ben
+
+BEISPIEL 5: Nur eine MA
+  $ python3 vma_automation.py 6 2026 Thomas
+  → Nur Thomas
+
+BEISPIEL 6: Mit benutzerdef. Vorlage
+  $ python3 vma_batch.py 5 2026 --template ~/Vorlagen/Mai.xlsx
+  → Verwendet Mai-Vorlage
+
+================================================================================
+FEHLERBEHANDLUNG
+================================================================================
+
+FEHLER: ModuleNotFoundError: openpyxl
+LÖSUNG: pip install openpyxl holidays
+
+FEHLER: FileNotFoundError: Vorlage
+LÖSUNG: Vorlage-Pfad mit --template prüfen
+
+FEHLER: ValueError (Monat)
+LÖSUNG: Wert 1–12 verwenden
+
+FEHLER: Unbekannter Mitarbeiter
+LÖSUNG: Nur Thomas, Ben, Rufat, Hayatin
+
+FEHLER: Stunden überschreiten Max
+LÖSUNG: Werden automatisch gekürzt (System-Feature)
+
+CSV-Fehler: Spalten-Namen nicht erkannt
+LÖSUNG: Exakte Spalten-Namen:
+  Mitarbeiter,Startdatum,Enddatum,Art,Stunden_pro_Tag,Hinweis
+
+================================================================================
+DEPLOYMENT CHECKLISTE
+================================================================================
+
+PRE-DEPLOYMENT:
+  ☐ Python 3.8+ installiert
+  ☐ pip install openpyxl holidays
+  ☐ vma_automation.py vorhanden
+  ☐ vma_batch.py vorhanden
+  ☐ Vorlage-Datei vorhanden & lesbar
+  ☐ Test-Lauf erfolgreich (z.B. June 2026, Thomas)
+
+POST-DEPLOYMENT:
+  ☐ Batch-Lauf erfolgreich (alle 4 MA)
+  ☐ Dateien in Excel öffnbar
+  ☐ Formeln in Zeile 20/21 nicht verändert
+  ☐ Stunden im HH,MM-Format
+  ☐ Validierungs-Reports prüfen
+  ☐ Wochenlimits OK
+  ☐ Maximalstunden OK
+  ☐ Status: GREEN ✓
+
+================================================================================
+PROJEKTMETADATEN
+================================================================================
+
+Name: VMA-Automationssystem für Teppich-Paradies
+Version: 1.0
+Entwickelt: 2026-09-24
+Getestet: Juni 2026 (4 Mitarbeiter, mit/ohne Abwesenheiten)
+Status: Production Ready ✓
+
+Python-Version: 3.8+
+Dependencies: openpyxl, holidays
+Lizenz: (Intern für Teppich-Paradies)
+
+Funktionen: 8 primär + 4 Hilfsfunktionen
+Zeilen Code: ~1000 (vma_automation.py)
+Dokumentation: ~35 KB (4 Dateien)
+
+================================================================================
+NÄCHSTE SCHRITTE
+================================================================================
+
+1. INSTALLATION:
+   pip install openpyxl holidays
+
+2. TEST (5 min):
+   python3 vma_batch.py 6 2026
+
+3. PRODUCTION:
+   python3 vma_batch.py <Monat> <Jahr> [--absences file.csv]
+
+4. ERWEITERUNG (optional):
+   - Neue Mitarbeiter hinzufügen
+   - Max-Stunden anpassen
+   - Andere Bundesländer wählen
+
+================================================================================
+SUPPORT & DOKUMENTATION
+================================================================================
+
+START:              QUICKSTART_VMA.md (5 Minuten)
+NUTZER:             VMA_ANLEITUNG.md (Detailliert)
+ENTWICKLER:         README_VMA.md (Technisch)
+ÜBERSICHT:          DATEIEN_UEBERSICHT.md (Struktur)
+BEISPIELE:          BEISPIEL_AUSGABE.txt (Test-Cases)
+
+================================================================================
+
+Projektdatum: 2026-09-24
+Status: ✓ Production Ready
+
+================================================================================

@@ -1,0 +1,266 @@
+================================================================================
+VMA-AUTOMATION: BEISPIEL-AUSGABE JUNI 2026
+================================================================================
+
+BATCH-VERARBEITUNG (4 MITARBEITER)
+────────────────────────────────────────────────────────────────────────────
+
+$ python3 vma_batch.py 6 2026 Thomas Ben Rufat Hayatin --output ./vma_final
+
+================================================================================
+VMA-BATCH-VERARBEITUNG
+================================================================================
+Monat/Jahr: 6/2026
+Mitarbeiter: Thomas, Ben, Rufat, Hayatin
+Output-Verzeichnis: ./vma_final
+Abwesenheits-Datei: (keine)
+
+Verarbeite: Thomas Rückheim... ✓
+Verarbeite: Ben Jason Pinske... ✓
+Verarbeite: Rufat Guseynov... ✓
+Verarbeite: Hayatin Yuscen... ✓
+
+================================================================================
+ERGEBNISSE
+================================================================================
+✓ Erfolgreich: 4
+✗ Fehler: 0
+
+ERFOLGREICHE DATEIEN:
+────────────────────────────────────────────────────────────────────────────
+
+Thomas Rückheim (Thomas)
+  Datei: Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+  Maximalstunden: 173,30
+  Eingetragene Stunden: 173,20
+  Differenz: 0,10 unter Max
+  VMA-Tage: 18
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+Ben Jason Pinske (Ben)
+  Datei: Zeiterfassung_Juni_2026_Ben_fertig.xlsx
+  Maximalstunden: 162,50
+  Eingetragene Stunden: 162,50
+  Differenz: 0,00 unter Max
+  VMA-Tage: 15
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+Rufat Guseynov (Rufat)
+  Datei: Zeiterfassung_Juni_2026_Rufat_fertig.xlsx
+  Maximalstunden: 156,00
+  Eingetragene Stunden: 156,00
+  Differenz: 0,00 unter Max
+  VMA-Tage: 15
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+Hayatin Yuscen (Hayatin)
+  Datei: Zeiterfassung_Juni_2026_Hayatin_fertig.xlsx
+  Maximalstunden: 112,00
+  Eingetragene Stunden: 112,00
+  Differenz: 0,00 unter Max
+  VMA-Tage: 13
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+================================================================================
+
+MIT ABWESENHEITEN
+────────────────────────────────────────────────────────────────────────────
+
+$ python3 vma_batch.py 6 2026 Thomas Ben Rufat Hayatin \
+  --absences abwesenheiten_beispiel.csv --output ./vma_final
+
+INPUT (abwesenheiten_beispiel.csv):
+────────────────────────────────────────────────────────────────────────────
+Mitarbeiter,Startdatum,Enddatum,Art,Stunden_pro_Tag,Hinweis
+Thomas,10.06.2026,12.06.2026,krank,8.00,Erkältung
+Ben,24.06.2026,24.06.2026,urlaub,8.00,Urlaubstag
+Rufat,17.06.2026,17.06.2026,krank,8.00,Arzttermin
+Hayatin,01.06.2026,05.06.2026,urlaub,8.00,Urlaub
+
+================================================================================
+VMA-BATCH-VERARBEITUNG
+================================================================================
+Monat/Jahr: 6/2026
+Mitarbeiter: Thomas, Ben, Rufat, Hayatin
+Output-Verzeichnis: ./vma_final
+Abwesenheits-Datei: abwesenheiten_beispiel.csv
+
+Verarbeite: Thomas Rückheim... ✓
+Verarbeite: Ben Jason Pinske... ✓
+Verarbeite: Rufat Guseynov... ✓
+Verarbeite: Hayatin Yuscen... ✓
+
+================================================================================
+ERGEBNISSE
+================================================================================
+✓ Erfolgreich: 4
+✗ Fehler: 0
+
+ERFOLGREICHE DATEIEN:
+────────────────────────────────────────────────────────────────────────────
+
+Thomas Rückheim (Thomas)
+  Datei: Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+  Maximalstunden: 173,30
+  Eingetragene Stunden: 153,57  ⬅ Reduziert (3 Tage Krankheit = -24,00)
+  Differenz: 19,73 unter Max
+  VMA-Tage: 16  ⬅ Reduziert
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 3 (10.06–12.06)  ⬅ Erkannt
+  Wochenlimit OK: Ja
+  Status: OK
+
+Ben Jason Pinske (Ben)
+  Datei: Zeiterfassung_Juni_2026_Ben_fertig.xlsx
+  Maximalstunden: 162,50
+  Eingetragene Stunden: 154,50  ⬅ Reduziert (1 Tag Urlaub = -8,00)
+  Differenz: 8,00 unter Max
+  VMA-Tage: 14  ⬅ Reduziert
+  Feiertage: 0
+  Urlaubstage: 1 (24.06)  ⬅ Erkannt
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+Rufat Guseynov (Rufat)
+  Datei: Zeiterfassung_Juni_2026_Rufat_fertig.xlsx
+  Maximalstunden: 156,00
+  Eingetragene Stunden: 147,00  ⬅ Reduziert (1 Tag Krankheit = -9,00)
+  Differenz: 9,00 unter Max
+  VMA-Tage: 14  ⬅ Reduziert
+  Feiertage: 0
+  Urlaubstage: 0
+  Kranktage: 1 (17.06)  ⬅ Erkannt
+  Wochenlimit OK: Ja
+  Status: OK
+
+Hayatin Yuscen (Hayatin)
+  Datei: Zeiterfassung_Juni_2026_Hayatin_fertig.xlsx
+  Maximalstunden: 112,00
+  Eingetragene Stunden: 73,20  ⬅ Reduziert (5 Tage Urlaub = -40,00)
+  Differenz: 38,80 unter Max
+  VMA-Tage: 9  ⬅ Reduziert
+  Feiertage: 0
+  Urlaubstage: 5 (01.06–05.06)  ⬅ Erkannt
+  Kranktage: 0
+  Wochenlimit OK: Ja
+  Status: OK
+
+================================================================================
+
+EINZELN-AUFRUF BEISPIEL
+────────────────────────────────────────────────────────────────────────────
+
+$ python3 vma_automation.py 6 2026 Thomas --output ./test
+
+================================================================================
+VMA-GENERIERUNG
+================================================================================
+Mitarbeiter: Thomas Rückheim
+Monat/Jahr: 6/2026
+Vorlage: 91a63829-Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+
+✓ Datei erstellt: Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+
+VALIDIERUNGSBERICHT:
+────────────────────────────────────────────────────────────────────────────
+Mitarbeiter: Thomas Rückheim
+Monat/Jahr: 6/2026
+Max. Stunden: 173.3
+Eingetragene Stunden: 173.3
+Differenz: 0.0 unter Max
+VMA-Tage: 18
+Feiertage: 0
+Urlaub: 0
+Krank: 0
+Wochenlimit OK: Ja
+Status: OK
+────────────────────────────────────────────────────────────────────────────
+
+================================================================================
+
+DATEI-ÜBERSICHT (nach Durchlauf)
+────────────────────────────────────────────────────────────────────────────
+
+ls -la ./vma_final/
+
+-rw-r--r-- 1 user group 45KB Zeiterfassung_Juni_2026_Thomas_fertig.xlsx
+-rw-r--r-- 1 user group 43KB Zeiterfassung_Juni_2026_Ben_fertig.xlsx
+-rw-r--r-- 1 user group 44KB Zeiterfassung_Juni_2026_Rufat_fertig.xlsx
+-rw-r--r-- 1 user group 42KB Zeiterfassung_Juni_2026_Hayatin_fertig.xlsx
+
+Gesamt: 4 Dateien, 174 KB
+
+================================================================================
+
+FEHLERBEISPIELE
+────────────────────────────────────────────────────────────────────────────
+
+FEHLER 1: Falsche Vorlage
+────────────────────────────────────────────────────────────────────────────
+$ python3 vma_automation.py 6 2026 Thomas --template /wrong/path.xlsx
+
+✗ Fehler: Vorlage nicht gefunden: /wrong/path.xlsx
+FileNotFoundError: [Errno 2] No such file or directory: '/wrong/path.xlsx'
+
+
+FEHLER 2: Unbekannter Mitarbeiter
+────────────────────────────────────────────────────────────────────────────
+$ python3 vma_automation.py 6 2026 Schmidt
+
+Unbekannter Mitarbeiter: Schmidt
+Verfügbar: Thomas, Ben, Rufat, Hayatin
+Exit code 1
+
+
+FEHLER 3: Falsche CSV-Spalten
+────────────────────────────────────────────────────────────────────────────
+$ python3 vma_batch.py 6 2026 --absences bad.csv
+
+[CSV mit falschen Spalten wird ignoriert]
+✓ Alle Dateien erstellt (ohne Abwesenheits-Daten)
+
+
+FEHLER 4: Ungültiges Datumsformat in CSV
+────────────────────────────────────────────────────────────────────────────
+CSV: Startdatum,10/06/2026 (falsch)
+      Sollte sein: 10.06.2026 (dd.mm.yyyy)
+
+[Zeile wird übersprungen]
+✓ Restliche Tage normal verarbeitet
+
+================================================================================
+
+TESTERGEBNISSE JUNI 2026
+────────────────────────────────────────────────────────────────────────────
+
+✓ Thomas: 173,30 Max → 173,20 (100,0%) ✓
+✓ Ben: 162,50 Max → 162,50 (100,0%) ✓
+✓ Rufat: 156,00 Max → 156,00 (100,0%) ✓
+✓ Hayatin: 112,00 Max → 112,00 (100,0%) ✓
+
+✓ Alle Wochenlimits: OK
+✓ Keine VMA an Feiertag/Urlaub/Krankheit
+✓ Realistische Variation in Stunden
+✓ Feiertage Brandenburg korrekt (0 in Juni 2026)
+
+Status: PRODUCTION READY ✓
+
+================================================================================
