@@ -84,7 +84,8 @@
     "bodenwissen:guard": "node scripts/bodenwissen-guard.mjs",
     "lexikon:payload": "node scripts/lexikon-payload.mjs",
     "probleme:payload": "node scripts/probleme-payload.mjs",
-    "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs"
+    "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs",
+    "shop:wache": "node operations/scripts/shopwache.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

@@ -964,6 +964,20 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.kunden.length, kunden };
     },
 
+    /**
+     * Ergebnis der Shop-Wache (operations/scripts/shopwache.mjs). Zeigt, ob
+     * der oeffentliche Shop laeuft - das sieht man den Admin-Daten nicht an.
+     */
+    shopwacheStatus() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'shopwache', 'status.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !daten.geprueftAm) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache' };
+      }
+      return { verfuegbar: true, quelle: file, ...daten };
+    },
+
     /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */
     angeboteListe() {
       const dir = privatDirPath || privatDir();
