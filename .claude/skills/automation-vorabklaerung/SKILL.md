@@ -113,6 +113,12 @@ blieben an Kranktagen die alten Arbeitszeiten aus dem Vormonat einfach stehen.
   wiederherstellen), nicht nur bedingt ueberschreiben. "Ich schreibe nur
   wenn ein Wert vorhanden ist" reicht nicht, wenn die Zelle vorher schon
   einen (falschen, alten) Wert enthalten kann.
+- **Zahlenformate pruefen, nicht nur Werte.** xlsx speichert Formate in
+  US-Notation: `0,00` heisst dort "Tausendertrenner", Excel zeigt 8,40 dann
+  als `008`. Richtig ist `0.00` (deutsches Excel zeigt `8,40`). Ein Zurücklesen
+  der Werte mit openpyxl zeigt den Fehler nicht, nur das `number_format`.
+- **Werte-Stil an der echten Referenzdatei ablesen** (z. B. nur 5-Minuten-
+  Schritte), nicht aus der Beschreibung ableiten.
 - Diese Klasse Bug ist besonders gefaehrlich, weil `validate_workbook()`-
   artige Pruefungen (Max-Stunden, Wochenlimit) sie **nicht** entdecken - die
   Summen koennen zufaellig plausibel bleiben, obwohl die Tage falsch liegen.
