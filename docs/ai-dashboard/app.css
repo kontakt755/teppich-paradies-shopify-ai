@@ -8,8 +8,10 @@
   --line: #e4e1da;
   --line-strong: #cfcac0;
   --text: #1f2328;
-  --text-2: #5b6069;
-  --text-3: #8a8f98;
+  /* Dunkler als frueher: die Nebentexte tragen im Alltag echte Angaben
+     (Kontakt, Datum, Grund) - sie muessen aus einem Meter Abstand lesbar sein. */
+  --text-2: #4c525b;
+  --text-3: #6f747d;
   --accent: #8a4b2f;          /* zurueckhaltendes Terrakotta der Marke */
   --accent-soft: #f4e6df;
   --ok: #1f7a4d;   --ok-soft: #e3f3ea;
@@ -25,7 +27,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #15171b; --surface: #1d2025; --surface-2: #23272d; --line: #2e333a; --line-strong: #3d434c;
-    --text: #e8e6e1; --text-2: #b1b5bd; --text-3: #7d828b;
+    --text: #e8e6e1; --text-2: #bcc0c7; --text-3: #8d929a;
     --accent: #d0906f; --accent-soft: #3a2a22;
     --ok: #5fc48a; --ok-soft: #173525; --warn: #e2b04a; --warn-soft: #3a2e12;
     --crit: #f08a83; --crit-soft: #3d1c1a; --info: #7faaf0; --info-soft: #1c2a42; --focus: #7faaf0;
@@ -34,7 +36,9 @@
 }
 
 * { box-sizing: border-box; }
-html { font-size: 15px; }
+/* 16px statt 15px: das Control Center wird im Laden auch im Stehen und am
+   Handy gelesen. Alles andere rechnet in rem und waechst mit. */
+html { font-size: 16px; }
 body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; }
 a { color: var(--info); text-decoration: none; }
 a:hover { text-decoration: underline; }
@@ -48,7 +52,7 @@ button { font: inherit; color: inherit; }
 .skip-link:focus { left: 8px; }
 [hidden] { display: none !important; }
 .muted { color: var(--text-2); }
-.small { font-size: .85rem; }
+.small { font-size: .875rem; }
 .mono { font-family: var(--mono); }
 .nowrap { white-space: nowrap; }
 
@@ -83,14 +87,14 @@ button { font: inherit; color: inherit; }
 .sync-chip.veraltet .dot, .sync-chip.fehler .dot { background: var(--crit); }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: .88rem; font-weight: 550; line-height: 1.2; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: .9rem; font-weight: 550; line-height: 1.2; }
 .btn:hover { background: var(--surface-2); }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-primary:hover { background: #75402a; }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
-.btn-sm { padding: 4px 9px; font-size: .8rem; }
+.btn-sm { min-height: 32px; padding: 5px 10px; font-size: .85rem; }
 .btn-danger { color: var(--crit); border-color: var(--crit); }
 .btn-link { background: none; border: none; padding: 0; color: var(--info); cursor: pointer; font-size: inherit; }
 .btn-link:hover { text-decoration: underline; }
@@ -103,9 +107,9 @@ button { font: inherit; color: inherit; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .visually-hidden { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.section-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin: 26px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.section-title { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); margin: 26px 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .section-title:first-of-type { margin-top: 4px; }
-.section-note { font-size: .8rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
+.section-note { font-size: .85rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text-3); }
 .sub-title { font-size: .95rem; margin: 18px 0 8px; }
 .section-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 26px 0 4px; }
 .section-bar .chips { margin: 0; }
@@ -165,8 +169,8 @@ details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
 .band { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 14px 0 22px; }
 .band a, .band > div { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); color: var(--text); box-shadow: var(--shadow); }
 .band a:hover, .band > div:hover { text-decoration: none; border-color: var(--line-strong); }
-.band .n { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
-.band .l { font-size: .8rem; color: var(--text-2); }
+.band .n { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
+.band .l { font-size: .85rem; color: var(--text-2); }
 /* Farbe traegt Bedeutung: Rot = Problem, Bernstein = zu tun, sonst neutral. Blau/Gruen fuer
    blosse Mengen verwirrte ("ist Gruen gut?") und fallen weg. */
 .band .crit .n { color: var(--crit); } .band .warn .n { color: var(--warn); }
@@ -175,6 +179,14 @@ details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
 .band a.warn, .band > div.warn { border-left: 3px solid var(--warn); }
 .band .zero .n { color: var(--text-3); }
 .band .zero .l { color: var(--text-3); }
+/* Eine 0 heisst "nichts zu tun" - solche Kacheln treten zurueck, damit die
+   Zahlen mit Handlungsbedarf sofort ins Auge fallen. */
+.band .zero { background: transparent; box-shadow: none; border-color: var(--line); }
+
+/* Rolle "mitarbeiter": die interne Entwicklungsarbeit (GitHub-Aufgaben,
+   Freigaben, Auswertungen) gehoert nicht an den Ladentresen. Der Server
+   entscheidet ueber Rechte, hier geht es nur um eine ruhige Oberflaeche. */
+body.rolle-mitarbeiter [data-nur-inhaber] { display: none !important; }
 
 /* Badges */
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: .74rem; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
@@ -222,9 +234,11 @@ details.card[open] > .collapsible-head .chev { transform: rotate(90deg); }
 
 /* Table (Arbeit / Liste) */
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-table.tasks { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 980px; }
-table.tasks th { text-align: left; font-weight: 600; color: var(--text-2); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
-table.tasks td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.tasks { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 980px; }
+table.tasks th { text-align: left; font-weight: 600; color: var(--text-2); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; padding: 11px 12px; border-bottom: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+table.tasks td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+/* Zebra: bei zehn Spalten verrutscht man sonst leicht eine Zeile. */
+table.tasks tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
 table.tasks tr:last-child td { border-bottom: none; }
 table.tasks tr.task-row { cursor: pointer; }
 table.tasks tr.task-row:hover { background: var(--surface-2); }
@@ -372,7 +386,7 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 
 /* Reiter (Einkauf) */
 .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin: 4px 0 16px; overflow-x: auto; }
-.tab { border: none; background: none; padding: 9px 14px; font-weight: 600; font-size: .92rem; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.tab { border: none; background: none; min-height: 42px; padding: 10px 16px; font-weight: 600; font-size: .95rem; color: var(--text-2); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
 .tab:hover { color: var(--text); }
 .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 
