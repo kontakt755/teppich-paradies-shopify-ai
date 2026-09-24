@@ -245,15 +245,16 @@ def generate_hours_for_employee(
 
         if work_hours > 0:
             work_minutes = hhmm_to_minutes(work_hours)
-            current_week_minutes += work_minutes
 
             # Prüfe Wochenlimit 40:00 (2400 Minuten)
-            if current_week_minutes > 2400:  # Über Limit
-                # Reduziere diesen Tag
-                overage = current_week_minutes - 2400
+            if current_week_minutes + work_minutes > 2400:  # Über Limit
+                overage = (current_week_minutes + work_minutes) - 2400
                 work_minutes = max(0, work_minutes - overage)
-                current_week_minutes = 2400
+                # Auf volle 5-Minuten-Schritte abrunden (bleibt sicher unter
+                # dem Limit; verhindert krumme Minutenwerte wie 8,13 statt 8,10)
+                work_minutes = (work_minutes // 5) * 5
 
+            current_week_minutes += work_minutes
             result[day]['work'] = minutes_to_hhmm(work_minutes)
             total_minutes += work_minutes
 
@@ -272,9 +273,13 @@ def generate_hours_for_employee(
         for day in range(num_days, 0, -1):
             if result[day]['work'] > 0:
                 day_minutes = hhmm_to_minutes(result[day]['work'])
-                reduction = min(day_minutes, overage_minutes)
-                result[day]['work'] = minutes_to_hhmm(day_minutes - reduction)
-                overage_minutes -= reduction
+                new_minutes = max(0, day_minutes - overage_minutes)
+                # Auf volle 5-Minuten-Schritte abrunden (bleibt sicher unter
+                # der Monatsgrenze; verhindert krumme Minutenwerte)
+                new_minutes = (new_minutes // 5) * 5
+                actual_reduction = day_minutes - new_minutes
+                result[day]['work'] = minutes_to_hhmm(new_minutes)
+                overage_minutes -= actual_reduction
                 if overage_minutes <= 0:
                     break
 
@@ -295,6 +300,10 @@ def _generate_daily_hours(
     # Seed für Konsistenz pro Monat/Mitarbeiter
     random.seed(hash(f"{employee_key}_{year}_{month}_{day}") % (2**32))
 
+    # Alle Werte in vollen 5-Minuten-Schritten (Vorbild: echte Referenzdatei
+    # nutzt ausschliesslich :00/:05/:10/.../:55, nie krumme Minuten wie :13).
+    # randrange(a, b+1, 5) statt randint(a, b) - a und b muessen Vielfache
+    # von 5 sein (sind sie in allen Bereichen unten bereits).
     if style == 'high_vma':  # Thomas - viele VMA-Tage
         # 70% normale Tage 8,10-8,50
         # 20% längere Tage 8,50-9,00+
@@ -302,42 +311,42 @@ def _generate_daily_hours(
         r = random.random()
         if r < 0.70:
             # 8,10 bis 8,50
-            mins = random.randint(490, 530)  # 8:10 bis 8:50
+            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
         elif r < 0.90:
             # 8,50 bis 9,10 (für VMA)
-            mins = random.randint(530, 550)
+            mins = random.randrange(530, 551, 5)
         else:
             # 5,20 bis 6,50 (Ausgleichstage)
-            mins = random.randint(320, 410)
+            mins = random.randrange(320, 411, 5)
         return minutes_to_hhmm(mins)
 
     elif style == 'medium_vma':  # Ben
         # Ähnlich wie Thomas, aber etwas niedriger
         r = random.random()
         if r < 0.75:
-            mins = random.randint(480, 520)  # 8:00 bis 8:40
+            mins = random.randrange(480, 521, 5)  # 8:00 bis 8:40
         elif r < 0.90:
-            mins = random.randint(500, 540)  # 8:20 bis 9:00
+            mins = random.randrange(500, 541, 5)  # 8:20 bis 9:00
         else:
-            mins = random.randint(300, 400)  # 5:00 bis 6:40
+            mins = random.randrange(300, 401, 5)  # 5:00 bis 6:40
         return minutes_to_hhmm(mins)
 
     elif style == 'flexible':  # Rufat
         # Flexibler Mix
         r = random.random()
         if r < 0.65:
-            mins = random.randint(490, 530)  # 8:10 bis 8:50
+            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
         elif r < 0.85:
-            mins = random.randint(510, 540)  # 8:30 bis 9:00
+            mins = random.randrange(510, 541, 5)  # 8:30 bis 9:00
         else:
-            mins = random.randint(300, 390)  # 5:00 bis 6:30
+            mins = random.randrange(300, 391, 5)  # 5:00 bis 6:30
         return minutes_to_hhmm(mins)
 
     elif style == 'irregular':  # Hayatin
         # Unregelmäßig verteilt, nicht jeden Tag
         # Nur ca. 55-60% der Werktage arbeiten
         if random.random() < 0.55:
-            mins = random.randint(490, 530)  # 8:10 bis 8:50
+            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
             return minutes_to_hhmm(mins)
         else:
             return 0.0
