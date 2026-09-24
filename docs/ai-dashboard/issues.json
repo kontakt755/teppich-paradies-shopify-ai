@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-24T05:57:02.806Z",
+  "generated_at": "2026-09-24T06:07:43.408Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 135,
+  "count": 136,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-24T05:57:02.806Z",
+    "fetchedAt": "2026-09-24T06:07:43.408Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 548,
+      "title": "Interne Beschaffungs-Metafelder aus der Storefront API nehmen",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/548",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:sicherheit"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Fuenf Definitionen im Namespace `lieferant` standen auf `access.storefront = PUBLIC_READ` und waren damit ueber die Storefront API mit jedem Token lesbar - auch dem oeffentlichen aus dem Theme-HTML. Betroffen: Produkt `hersteller`, `match_status`, `abgleich_datum`; Variante `bevorzugt`, `alternativ`.\n\nUmgestellt auf `NONE`, einzeln und je mit Ruecklesung. Gegenprobe an der echten Storefront: vorher alle fuenf lesbar, nachher alle `null`. `wunschmass` und `kettelung` bleiben `PUBLIC_READ` - die braucht der Rollenware-Rechner.\n\nDer entscheidende Punkt vorab geklaert: **`NONE` nimmt Liquid nichts weg.** Shopify-Doku ausdruecklich, und an einer Wegwerf-Vorlage im Arbeitstheme gemessen - mit drei Feldern als Kontrollgruppe, die schon vorher auf `NONE` standen und von Liquid trotzdem gelesen wurden.\n\nAusserdem: Anzeigename von `match_status` trug zwei Lieferanten-Klarnamen, jetzt `Abgleich Lieferant A/B`. Beschreibung von `bevorzugt` ebenso, jetzt pseudonymisiert.\n\nBelege und die vollstaendige Pruefliste: `docs/analyse/metafeld-zugriff-2026-09-24.md`.\n\n**Offen, braucht ein Wort vom Inhaber:**\n- `custom.test` (PUBLIC_READ, 0 Werte, Ueberbleibsel) loeschen? Kein Leck, reine Hygiene. Loesch…",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-24T06:07:25Z",
+      "updated_at": "2026-09-24T06:07:26Z",
+      "closed_at": null
+    },
     {
       "number": 546,
       "title": "Geheimnis-Scanner: Bezeichner-Referenz nicht als Passwort werten",
