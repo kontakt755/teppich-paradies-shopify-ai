@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { merkeEingabe, stelleEingabeWiederHer } from '../lib/eingabe.mjs';
+import { merkeEingabe, stelleEingabeWiederHer, darfUebernehmen } from '../lib/eingabe.mjs';
 
 /** Minimales Eingabefeld - nur das, was die Funktionen anfassen. */
 function feld({ param = 'kq', wert = '', start = null } = {}) {
@@ -65,4 +65,12 @@ test('Cursor landet am Ende, wenn keine Position gemerkt ist', () => {
   const f = feld({ wert: '' });
   stelleEingabeWiederHer(f, { param: 'kq', wert: 'abc', start: null, ende: null });
   assert.equal(f.selectionStart, 3);
+});
+
+test('ein Suchlauf schreibt nicht mehr in eine inzwischen gewechselte Ansicht', () => {
+  assert.equal(darfUebernehmen({ gemerkteAnsicht: 'kunden', aktuelleAnsicht: 'kunden', feldNochDa: true }), true);
+  // Waehrend der Entprellzeit auf "Heute" geklickt - der Suchtext gehoert nicht dorthin
+  assert.equal(darfUebernehmen({ gemerkteAnsicht: 'kunden', aktuelleAnsicht: 'heute', feldNochDa: true }), false);
+  // Feld inzwischen aus dem Dokument verschwunden
+  assert.equal(darfUebernehmen({ gemerkteAnsicht: 'kunden', aktuelleAnsicht: 'kunden', feldNochDa: false }), false);
 });
