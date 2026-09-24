@@ -325,3 +325,18 @@ Hand in einem Terminal oder dauerhaft über die launchd-Vorlage
 (`SHOPIFY_ADMIN_TOKEN`/Client-Credentials) startet der Dienst nicht still –
 er meldet das Fehlen und beendet sich. Details in `operations/README.md`,
 Abschnitt „Sync-Dienst".
+
+## 11. Anreicherung aus Lieferantenseiten (seit 2026-09-24)
+
+Nachbau von zwei zuvor nur lokal liegenden Python-Skripten als getesteter
+Teil des Repositorys: `operations/lib/lieferantenseiten.mjs` (Zuordnung
+Attributtabelle → Metafeld, Einheiten, Metaobjekt-Zuordnung nur bei exakter
+Entsprechung, „nie überschreiben"), `operations/scripts/anreicherung.mjs`
+(`npm run daten:anreichern`, Plan/Rollback/offen/Batches, standardmäßig nur
+planend – erst `--schreiben` schreibt) und
+`operations/scripts/lieferantenseiten-holen.mjs`
+(`npm run lieferantenseiten:holen`, höflicher Abruf – eine Seite je 120 s,
+fortsetzbar). Details, Ein-/Ausgabedateien und Sicherheitsregeln stehen in
+`operations/README.md`, Abschnitt „Anreicherung aus Lieferantenseiten". Kein
+neuer Dashboard-Bereich – die geplanten Werte landen wie gehabt unter
+`$TP_PRIVAT_DIR/anreicherung/`, nie im Repository.
