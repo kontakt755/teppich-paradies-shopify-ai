@@ -5,7 +5,20 @@
   auch aus Sections/Artikeln per render aufgerufen werden kann
   (z. B. {% render 'tp-newsletter', quelle: 'ratgeber' %}).
 
-  Das gesamte CSS steht hier im {% stylesheet %}, nicht im Snippet - Snippets
+  Das gesamte CSS steht hier im {% stylesheet %}
+  /* Footer auf Tablet-Breite: die drei Linkspalten bekommen eine eigene
+     Zeile, Newsletter und Zahlungsarten teilen sich die naechste. Ohne das
+     quetscht das Drittel-Raster die Linkspalten auf ~180 px. */
+  @media screen and (min-width: 750px) and (max-width: 1199px) {
+    .footer-content:has(.tp-nl) > .tp-footer-links {
+      grid-column: 1 / -1;
+    }
+
+    .footer-content:has(.tp-nl) > :has(> .tp-nl) {
+      grid-column: span 2;
+    }
+  }
+, nicht im Snippet - Snippets
   koennen kein eigenes stylesheet-Tag haben. Shopify buendelt Block-CSS in
   jedem Fall ins globale Theme-CSS, unabhaengig davon, ob dieser Block gerade
   platziert ist - deshalb wirkt die Klasse .tp-nl auch dort, wo nur das
