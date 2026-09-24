@@ -109,7 +109,7 @@ function sameOrigin(req) {
 export async function handleApi(req, res, pathname, benutzer = null) {
   // Pfadliste aus beiden Zweigen: Benutzer/Protokoll (Mehrbenutzerbetrieb) und
   // Kunden/Rueckrufe (Kundenansicht) - fehlt einer, antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|kunden\/suche|kunden\/detail|kunden\/rueckrufe|aktualisierung|aktualisierung\/status|aktualisierung\/start)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|aktualisierung|aktualisierung\/status|aktualisierung\/start)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -141,6 +141,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'einkauf/auftragsstatus' && req.method === 'POST') result = await api.einkaufAuftragsstatusSetzen(await readJson(req), benutzer);
     else if (simple === 'lexikon/liste') result = api.lexikonListe({ q: url.searchParams.get('q') || '', page: url.searchParams.get('page'), pageSize: url.searchParams.get('pageSize') });
     else if (simple === 'lexikon/produkt') result = api.lexikonProdukt(url.searchParams.get('handle') || '');
+    else if (simple === 'lexikon/mengenhilfe') result = api.lexikonMengenhilfe({ handle: url.searchParams.get('handle') || '', variantenId: url.searchParams.get('variantenId') || '', kundenmengeM2: url.searchParams.get('kundenmengeM2'), kundenlaengeCm: url.searchParams.get('kundenlaengeCm') });
     else if (simple === 'kunden/suche') result = api.kundenSuche({ q: url.searchParams.get('q') || '' });
     else if (simple === 'kunden/detail') result = api.kundenDetail({ key: url.searchParams.get('key') || '' });
     else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();

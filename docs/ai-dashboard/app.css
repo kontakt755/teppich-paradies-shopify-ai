@@ -479,6 +479,13 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   .kunden-table td::before { content: attr(data-l); color: var(--text-2); font-size: .72rem; }
 }
 
+/* Lexikon: "Fuer das Kundengespraech" - Frage/Antwort-Paare, laut vorlesbar. */
+.kg-liste { display: flex; flex-direction: column; gap: 6px; }
+.kg-zeile { display: grid; grid-template-columns: 200px 1fr; gap: 8px; font-size: .92rem; }
+.kg-frage { color: var(--text-2); }
+.kg-antwort { font-weight: 500; }
+@media (max-width: 640px) { .kg-zeile { grid-template-columns: 1fr; } .kg-frage { font-size: .74rem; } }
+
 /* Druckansicht: nur die Bestellkarte, ohne Navigation/Buttons/Sync-Chip. */
 @media print {
   .mainnav, .no-print, .toolbar, .page-head .head-actions, .topbar, .tabs, #syncChip, #navToggle, .kunden-auftrag .card-head span.no-print { display: none !important; }

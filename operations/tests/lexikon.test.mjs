@@ -241,3 +241,168 @@ test('suche akzeptiert auch das rohe Array (ohne {produkte})', () => {
   const modell = aufbereiten({ produkte: [produkt()] }, { jetzt: JETZT });
   assert.deepEqual(suche(modell.produkte, 'nordsee').map(p => p.handle), ['nordsee-teppich']);
 });
+
+// -- Muster <-> Original -----------------------------------------------
+
+test('Muster-Original ueber einkauf.muster_variante (Tier 1)', () => {
+  const echtes = produkt(); // Variante NS-200-GR mit voller einkauf-Ausstattung
+  const muster = produkt({
+    id: 'gid://shopify/Product/9101',
+    handle: 'muster-nordsee-teppich',
+    title: 'Muster Nordsee Teppich',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/6101',
+      title: 'Muster',
+      sku: 'M-9101',
+      price: '4.90',
+      availableForSale: true,
+      selectedOptions: [],
+      metafields: [
+        { namespace: 'einkauf', key: 'muster_variante', value: { id: 'gid://shopify/ProductVariant/5001', product: { handle: 'nordsee-teppich' } } },
+      ],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [echtes, muster] }, { jetzt: JETZT });
+  const musterProdukt = modell.produkte.find((p) => p.handle === 'muster-nordsee-teppich');
+  const v = musterProdukt.varianten[0];
+  assert.equal(v.original.gefunden, true);
+  assert.equal(v.original.quelle, 'muster_variante');
+  assert.equal(v.original.artikelnummer, 'ART-4711');
+  assert.equal(v.original.lieferant, 'A');
+  assert.equal(v.original.url, 'https://lieferant-a.example/produkt/ostseewelle');
+  assert.equal(v.original.kollektion, 'Meereswelten');
+  assert.equal(v.original.produktHandle, 'nordsee-teppich');
+  assert.equal(v.link, undefined, 'Mustervariante bekommt original statt link');
+});
+
+test('Muster-Original ueber die SKU ohne M-Praefix (Tier 2)', () => {
+  const echtes = produkt({
+    handle: 'suedsee-teppich',
+    id: 'gid://shopify/Product/9002',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5003',
+      title: 'Blau',
+      sku: 'ART-9999',
+      price: '99.00',
+      availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Blau' }],
+      metafields: [
+        { namespace: 'einkauf', key: 'lieferant', value: { kuerzel: 'A' } },
+        { namespace: 'einkauf', key: 'artikelnummer', value: 'ART-9999' },
+        { namespace: 'einkauf', key: 'lieferant_url', value: 'https://lieferant-a.example/produkt/suedsee' },
+      ],
+    }],
+  });
+  const muster = produkt({
+    id: 'gid://shopify/Product/9102',
+    handle: 'muster-suedsee-teppich-anderer-name',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/6102', title: 'Muster', sku: 'M-ART-9999', price: '4.90',
+      availableForSale: true, selectedOptions: [], metafields: [],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [echtes, muster] }, { jetzt: JETZT });
+  const v = modell.produkte.find((p) => p.handle === 'muster-suedsee-teppich-anderer-name').varianten[0];
+  assert.equal(v.original.gefunden, true);
+  assert.equal(v.original.quelle, 'sku');
+  assert.equal(v.original.artikelnummer, 'ART-9999');
+  assert.equal(v.original.url, 'https://lieferant-a.example/produkt/suedsee');
+});
+
+test('Muster-Original ueber den Produkt-Handle (Tier 3), eindeutig bei genau einer Farbe', () => {
+  const echtes = produkt(); // handle nordsee-teppich, eine Variante
+  const muster = produkt({ id: 'gid://shopify/Product/9103', handle: 'muster-nordsee-teppich' });
+  const modell = aufbereiten({ produkte: [echtes, muster] }, { jetzt: JETZT });
+  const v = modell.produkte.find((p) => p.handle === 'muster-nordsee-teppich').varianten[0];
+  assert.equal(v.original.gefunden, true);
+  assert.equal(v.original.quelle, 'handle');
+  assert.equal(v.original.artikelnummer, 'ART-4711');
+});
+
+test('Muster-Original: kein Treffer ergibt ehrlichen Grund statt Erfindung', () => {
+  const muster = produkt({ id: 'gid://shopify/Product/9104', handle: 'muster-unbekannt', variants: [{
+    id: 'gid://shopify/ProductVariant/6104', title: 'Muster', sku: 'M-9104', price: '4.90',
+    availableForSale: true, selectedOptions: [], metafields: [],
+  }] });
+  const modell = aufbereiten({ produkte: [muster] }, { jetzt: JETZT });
+  const v = modell.produkte[0].varianten[0];
+  assert.equal(v.original.gefunden, false);
+  assert.equal(v.original.grund, 'kein Original beim Lieferanten hinterlegt');
+});
+
+test('Muster-Original: Handle-Tier bei mehreren Farben mehrdeutig statt geraten', () => {
+  const echtesA = produkt({
+    id: 'gid://shopify/Product/9005', handle: 'zweifarbig',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5010', title: 'Rot', sku: 'ZW-ROT', price: '10', availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Rot' }],
+      metafields: [{ namespace: 'einkauf', key: 'artikelnummer', value: 'ZW-ROT-ART' }],
+    }, {
+      id: 'gid://shopify/ProductVariant/5011', title: 'Blau', sku: 'ZW-BLAU', price: '10', availableForSale: true,
+      selectedOptions: [{ name: 'Farbe', value: 'Blau' }],
+      metafields: [{ namespace: 'einkauf', key: 'artikelnummer', value: 'ZW-BLAU-ART' }],
+    }],
+  });
+  const muster = produkt({ id: 'gid://shopify/Product/9105', handle: 'muster-zweifarbig', variants: [{
+    id: 'gid://shopify/ProductVariant/6105', title: 'Muster', sku: 'M-9105', price: '4.90',
+    availableForSale: true, selectedOptions: [], metafields: [],
+  }] });
+  const modell = aufbereiten({ produkte: [echtesA, muster] }, { jetzt: JETZT });
+  const v = modell.produkte.find((p) => p.handle === 'muster-zweifarbig').varianten[0];
+  assert.equal(v.original.gefunden, false);
+  assert.match(v.original.grund, /mehrdeutig|Farben zur Auswahl/);
+});
+
+// -- Fehlende Links bei echten Varianten --------------------------------
+
+test('link: vorhanden bei URL, nur_artikelnummer mit Suchlink, fehlt ohne Einkaufsdaten', () => {
+  const mitUrl = produkt(); // NS-200-GR hat eine url
+  const nurArtikelnummer = produkt({
+    id: 'gid://shopify/Product/9200', handle: 'nur-artikelnummer', variants: [{
+      id: 'gid://shopify/ProductVariant/5200', title: 'Default', sku: 'NA-1', price: '10', availableForSale: true,
+      selectedOptions: [],
+      metafields: [
+        { namespace: 'einkauf', key: 'lieferant', value: { kuerzel: 'A' } },
+        { namespace: 'einkauf', key: 'artikelnummer', value: '123456' },
+      ],
+    }],
+  });
+  const ohneDaten = produkt({
+    id: 'gid://shopify/Product/9201', handle: 'ohne-einkauf', variants: [{
+      id: 'gid://shopify/ProductVariant/5201', title: 'Default', sku: 'OD-1', price: '10', availableForSale: true,
+      selectedOptions: [], metafields: [],
+    }],
+  });
+  const modell = aufbereiten(
+    { produkte: [mitUrl, nurArtikelnummer, ohneDaten] },
+    { jetzt: JETZT, lieferantSuchen: { A: 'https://lieferant-a.example' } },
+  );
+  const vMitUrl = modell.produkte.find((p) => p.handle === 'nordsee-teppich').varianten[0];
+  assert.equal(vMitUrl.link.status, 'vorhanden');
+  assert.equal(vMitUrl.link.suchlink, null);
+
+  const vNurArt = modell.produkte.find((p) => p.handle === 'nur-artikelnummer').varianten[0];
+  assert.equal(vNurArt.link.status, 'nur_artikelnummer');
+  assert.match(vNurArt.link.grund, /Artikelnummer vorhanden/);
+  assert.equal(vNurArt.link.suchlink, 'https://lieferant-a.example/de-DE/quicksearch?query=123456');
+
+  const vOhne = modell.produkte.find((p) => p.handle === 'ohne-einkauf').varianten[0];
+  assert.equal(vOhne.link.status, 'fehlt');
+  assert.equal(vOhne.link.suchlink, null);
+});
+
+test('preisJeEinheit: m2 bei qm_pro_paket, sonst stueck', () => {
+  const paket = produkt({
+    metafields: [{ namespace: 'custom', key: 'qm_pro_paket', value: '2.5' }],
+  });
+  const modell = aufbereiten({ produkte: [paket] }, { jetzt: JETZT });
+  const v = modell.produkte[0].varianten[0];
+  assert.equal(v.preisJeEinheit.einheit, 'm2');
+  assert.equal(v.preisJeEinheit.betrag, Math.round((129.9 / 2.5) * 100) / 100);
+
+  const ohnePaket = produkt();
+  const modell2 = aufbereiten({ produkte: [ohnePaket] }, { jetzt: JETZT });
+  const v2 = modell2.produkte[0].varianten[0];
+  assert.equal(v2.preisJeEinheit.einheit, 'stueck');
+  assert.equal(v2.preisJeEinheit.betrag, 129.9);
+});
