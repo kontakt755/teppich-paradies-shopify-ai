@@ -18,7 +18,24 @@ import { Liquid } from 'liquidjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const tpl = readFileSync(join(root, 'snippets', 'tp-product-structured-data.liquid'), 'utf8');
 
-const eng = new Liquid({ strictFilters: false, strictVariables: false });
+// Das Snippet rendert seit 2026-09-23 ein Teil-Snippet (Merkmale als
+// additionalProperty), deshalb muss LiquidJS Partials aus snippets/ finden.
+// Shopifys {% doc %} kennt es nicht - hier als Leertag angemeldet.
+const eng = new Liquid({
+  strictFilters: false,
+  strictVariables: false,
+  root: join(root, 'snippets'),
+  extname: '.liquid',
+});
+eng.registerTag('doc', {
+  parse(tagToken, remainTokens) {
+    while (remainTokens.length) {
+      const t = remainTokens.shift();
+      if (t.name === 'enddoc') return;
+    }
+  },
+  render: () => '',
+});
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
 eng.registerFilter('structured_data', () => '{"@type":"Product","name":"nativ"}');
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
