@@ -134,6 +134,22 @@ und durch Rueckabfrage gegengeprueft (Zaehlerstaende der Definitionen: 943 `bevo
 - Das Metaobject `lieferant` — lohnt erst, wenn Stammdaten (Lieferzeit, Konditionen) tatsaechlich gepflegt werden.
 - `mindestabnahme_ve` — Datenlage offen, siehe Abschnitt 7.
 
+**`access.storefront` gehoert zu jedem Feld dieses Namespace dazu (2026-09-24):** Genau **zwei** Felder
+duerfen `PUBLIC_READ` tragen — `wunschmass` und `kettelung`, weil `blocks/tp-rollware-rechner.liquid` sie je
+Variante in seinen Datenblock schreibt. **Alles andere im Namespace `lieferant` steht auf `NONE`.** Bis
+2026-09-24 standen `hersteller`, `match_status`, `abgleich_datum`, `bevorzugt` und `alternativ` auf
+`PUBLIC_READ` und waren damit ueber die Storefront API mit jedem Token lesbar, auch dem oeffentlichen aus dem
+Theme-HTML.
+
+Zwei Dinge, die man dabei wissen muss, beide belegt in `docs/analyse/metafeld-zugriff-2026-09-24.md`:
+
+- **`NONE` nimmt Liquid nichts weg.** `access.storefront` regelt allein die Storefront API; Liquid und
+  Benachrichtigungsvorlagen lesen Metafelder unabhaengig davon. Ein Feld darf also `NONE` sein, *obwohl* das
+  Theme es rendert. Neue Felder deshalb grundsaetzlich auf `NONE` anlegen.
+- **Beim Umstellen nur `storefront` senden.** `MetafieldAccessUpdateInput.admin` kennt als Eingabe nur
+  `MERCHANT_READ`/`MERCHANT_READ_WRITE`, der Ist-Wert hier ist `PUBLIC_READ_WRITE`. Wer `admin` „sicherheitshalber"
+  mitsendet, sperrt alle Apps aus und bricht Sync und `operations/*`. Weggelassene Unterfelder bleiben unveraendert.
+
 **Warum die Schluessel `lieferant_a_*` / `lieferant_b_*` heissen und nicht die Lieferantennamen tragen:** Am
 2026-09-12 waren sie zuerst mit den Klarnamen angelegt. Das verstoesst gegen Regel 8 in `CLAUDE.md` — das
 Repository ist oeffentlich, und die Theme-Logik wuerde die Schluessel in Liquid nennen, also im ausgelieferten

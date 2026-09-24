@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-23T08:24:00Z",
-    "verifiedBy": "Shopify Admin API, role MAIN nach workflow:live (JSON-LD-Preis #495)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-23T08:24:00Z",
-    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
+    "verifiedAt": "2026-09-24T00:00:00Z",
+    "verifiedBy": "Shopify Admin API, themes { role } - role MAIN. Die Datei fuehrte dieses Theme noch als preview und 204436144462 als live; der Rollentausch lag laut updatedAt beider Themes (2026-09-23T12:59:48Z) ueber einen Tag zurueck und war nicht nachgetragen. theme:guard faellt dabei gruen aus - er prueft Theme-IDs in Anweisungsdateien, nicht die Rollen."
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-24T00:00:00Z",
+    "verifiedBy": "Shopify Admin API, role UNPUBLISHED; zuvor MAIN. Naechstes Preview-Ziel."
   },
   "fallback": {
     "themeId": "204440699214",
@@ -27,6 +27,12 @@
     "note": "Einziges Ziel fuer Zwischenstaende und Ausprobieren (nur --only-Pushes). Niemals als --theme-id fuer workflow:preview/live verwenden, niemals publishen. Das Preview-Ziel ist ausschliesslich preview.themeId - wer dorthin Zwischenstaende pusht, blockiert den Livegang (PREVIEW_DRIFT/PREVIEW_DIFF, dreimal am 2026-09-21/22)."
   },
   "retired": [
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-24",
+      "note": "Rolle per Admin API gegengeprueft: nicht mehr MAIN, sondern UNPUBLISHED - abgeloest durch 204438208846. Bemerkt am 2026-09-24 bei der Metafeld-Zugriffsaufgabe, nicht durch einen Guard. Bleibt als unpublished Theme erhalten, ist das naechste Preview-Ziel, nicht loeschen."
+    },
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
