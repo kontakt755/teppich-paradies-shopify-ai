@@ -5,6 +5,7 @@
 
 import { UNGEKLAERT, EINHEIT } from './umrechnung.mjs';
 import { ROUTE } from './route.mjs';
+import { istMusterPosition as musterRegel } from './muster.mjs';
 
 export const GRUPPE = Object.freeze({
   ROLLE: 'rolle',
@@ -27,7 +28,7 @@ export function produktgruppe(ctx = {}) {
   const e = ctx.einkauf || {};
   const p = ctx.produkt || {};
   if (e.route === ROUTE.NO_PROCUREMENT) return GRUPPE.DIENSTLEISTUNG;
-  if (ctx.istMuster || gesetzt(e.muster_quelle) || (typeof ctx.sku === 'string' && ctx.sku.startsWith('M-'))) return GRUPPE.MUSTER;
+  if (ctx.istMuster || gesetzt(e.muster_quelle) || musterRegel({ sku: ctx.sku, produktTyp: ctx.produktTyp })) return GRUPPE.MUSTER;
   if (gesetzt(p.qm_pro_paket)) return GRUPPE.PAKET;
   if (gesetzt(p.rollenbreite)) return GRUPPE.ROLLE;
   if (gesetzt(p.stangenlaenge) || e.bestelleinheit === EINHEIT.STUECK) return GRUPPE.STUECK;

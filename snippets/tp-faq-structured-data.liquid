@@ -1,0 +1,63 @@
+{%- doc -%}
+  FAQPage-JSON-LD aus den Bloecken einer FAQ-Section.
+
+  Aufruf:
+    {% render 'tp-faq-structured-data',
+       bloecke: section.blocks, frage_key: 'frage', antwort_key: 'antwort' %}
+
+  Die Schluessel heissen je Section anders (tp-start-faq: frage/antwort,
+  tp-teppiche-faq: question/answer), deshalb sind sie Parameter.
+
+  Ausgegeben wird nur, was auf der Seite auch sichtbar steht - Google und die
+  KI-Suchsysteme verlangen das, und alles andere waere Structured-Data-Spam.
+  Leere Bloecke werden uebersprungen; ohne Frage-Antwort-Paar entsteht kein
+  Skript. HTML aus dem Richtext wird entfernt, damit der Antworttext auch in
+  einer reinen Textausgabe lesbar bleibt.
+
+  Nur einmal je Seite einbinden: zwei FAQPage-Knoten auf derselben URL wertet
+  Google als widerspruechlich. Heute liegt tp-start-faq auf templates/index.json
+  und tp-teppiche-faq auf templates/collection.teppiche.json - verschiedene
+  Seiten.
+{%- enddoc -%}
+
+{%- liquid
+  assign tpfaq_frage_key = frage_key | default: 'frage'
+  assign tpfaq_antwort_key = antwort_key | default: 'antwort'
+  assign tpfaq_anzahl = 0
+  for tpfaq_block in bloecke
+    assign tpfaq_f = tpfaq_block.settings[tpfaq_frage_key]
+    assign tpfaq_a = tpfaq_block.settings[tpfaq_antwort_key] | strip_html | strip
+    if tpfaq_f != blank and tpfaq_a != blank
+      assign tpfaq_anzahl = tpfaq_anzahl | plus: 1
+    endif
+  endfor
+-%}
+
+{%- if tpfaq_anzahl > 0 -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "@id": {{ canonical_url | append: '#faq' | json }},
+      "mainEntity": [
+        {%- assign tpfaq_erste = true -%}
+        {%- for tpfaq_block in bloecke -%}
+          {%- assign tpfaq_f = tpfaq_block.settings[tpfaq_frage_key] | strip_html | strip_newlines | strip -%}
+          {%- assign tpfaq_a = tpfaq_block.settings[tpfaq_antwort_key] | strip_html | strip_newlines | strip -%}
+          {%- if tpfaq_f != blank and tpfaq_a != blank -%}
+            {%- unless tpfaq_erste -%},{%- endunless -%}
+            {%- assign tpfaq_erste = false -%}
+            {
+              "@type": "Question",
+              "name": {{ tpfaq_f | json }},
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": {{ tpfaq_a | json }}
+              }
+            }
+          {%- endif -%}
+        {%- endfor -%}
+      ]
+    }
+  </script>
+{%- endif -%}

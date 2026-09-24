@@ -15,15 +15,18 @@
     {%- else -%}
       {%- comment -%}
         Fallback, solange im Theme-Editor kein eigenes Bild unter "Logo und Favicon"
-        hinterlegt ist. assets/tp-favicon.png ist ein einfaches Monogramm in den
-        Markenfarben (#b83840 Rot, weisses P), 64x64 px. Wird settings.favicon gesetzt,
+        hinterlegt ist. assets/tp-favicon.png ist seit 2026-09-24 das volle Logo
+        auf weissem Quadrat, 192x192 px (Google-Suche zeigt es neben dem Treffer;
+        vorher ein P-Monogramm). Wird settings.favicon gesetzt,
         greift automatisch wieder der Zweig oben.
       {%- endcomment -%}
       <link
         rel="icon"
         type="image/png"
+        sizes="192x192"
         href="{{ 'tp-favicon.png' | asset_url }}"
       >
+      <link rel="apple-touch-icon" href="{{ 'tp-favicon.png' | asset_url }}">
     {%- endif -%}
 
     {% # theme-check-disable RemoteAsset %}

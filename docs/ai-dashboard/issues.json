@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-24T06:28:19.894Z",
+  "generated_at": "2026-09-24T11:18:33.753Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 136,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-24T06:28:19.894Z",
+    "fetchedAt": "2026-09-24T11:18:33.753Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -66,10 +66,10 @@
     {
       "number": 548,
       "title": "Interne Beschaffungs-Metafelder aus der Storefront API nehmen",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/548",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:sicherheit"
@@ -78,23 +78,23 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "description": "Fuenf Definitionen im Namespace `lieferant` standen auf `access.storefront = PUBLIC_READ` und waren damit ueber die Storefront API mit jedem Token lesbar - auch dem oeffentlichen aus dem Theme-HTML. Betroffen: Produkt `hersteller`, `match_status`, `abgleich_datum`; Variante `bevorzugt`, `alternativ`.\n\nUmgestellt auf `NONE`, einzeln und je mit Ruecklesung. Gegenprobe an der echten Storefront: vorher alle fuenf lesbar, nachher alle `null`. `wunschmass` und `kettelung` bleiben `PUBLIC_READ` - die braucht der Rollenware-Rechner.\n\nDer entscheidende Punkt vorab geklaert: **`NONE` nimmt Liquid nichts weg.** Shopify-Doku ausdruecklich, und an einer Wegwerf-Vorlage im Arbeitstheme gemessen - mit drei Feldern als Kontrollgruppe, die schon vorher auf `NONE` standen und von Liquid trotzdem gelesen wurden.\n\nAusserdem: Anzeigename von `match_status` trug zwei Lieferanten-Klarnamen, jetzt `Abgleich Lieferant A/B`. Beschreibung von `bevorzugt` ebenso, jetzt pseudonymisiert.\n\nBelege und die vollstaendige Pruefliste: `docs/analyse/metafeld-zugriff-2026-09-24.md`.\n\n**Offen, braucht ein Wort vom Inhaber:**\n- `custom.test` (PUBLIC_READ, 0 Werte, Ueberbleibsel) loeschen? Kein Leck, reine Hygiene. Loesch…",
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-24T06:07:25Z",
-      "updated_at": "2026-09-24T06:10:56Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:13:03Z",
+      "closed_at": "2026-09-24T11:12:48Z"
     },
     {
       "number": 546,
       "title": "Geheimnis-Scanner: Bezeichner-Referenz nicht als Passwort werten",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/546",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
@@ -103,14 +103,14 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 2,
+      "comments": 3,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-24T05:55:31Z",
-      "updated_at": "2026-09-24T05:56:51Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:12:58Z",
+      "closed_at": "2026-09-24T11:12:40Z"
     },
     {
       "number": 544,
@@ -139,10 +139,10 @@
     {
       "number": 536,
       "title": "Control Center: Design und Übersicht überarbeiten (Doppelungen, Klartext, Navigation)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/536",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:technik"
@@ -151,19 +151,19 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung",
       "fields": {
         "nextStep": "Umsetzung im Branch feature/dashboard-ueberarbeitung"
       },
       "created_at": "2026-09-23T12:15:47Z",
-      "updated_at": "2026-09-23T13:23:03Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:13:41Z",
+      "closed_at": "2026-09-24T11:13:28Z"
     },
     {
       "number": 535,
       "title": "Verkaufsweg: Beratungsfrage nur bei Muster, Auffindbarkeit fuer KI-Suche, Lexikon an der Bestellung",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/535",
       "labels": [
         "status:review",
@@ -181,8 +181,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-23T12:15:03Z",
-      "updated_at": "2026-09-23T13:22:46Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:18:18Z",
+      "closed_at": "2026-09-24T11:18:18Z"
     },
     {
       "number": 529,

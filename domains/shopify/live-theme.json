@@ -30,6 +30,12 @@
     {
       "themeId": "204436144462",
       "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-24",
+      "note": "Rolle per Admin API gegengeprueft: nicht mehr MAIN, sondern UNPUBLISHED - abgeloest durch 204438208846. Bemerkt am 2026-09-24 bei der Metafeld-Zugriffsaufgabe, nicht durch einen Guard. Bleibt als unpublished Theme erhalten, ist das naechste Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-20",
       "note": "Per workflow:live abgeloest durch 204438208846 (PR #418: alter Preis im Konfigurator bei aktiver Aktion). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
     },

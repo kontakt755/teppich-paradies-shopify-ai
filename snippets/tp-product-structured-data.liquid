@@ -28,10 +28,31 @@
      Beide Werte sind identisch und gleich dem Seitenpreis, deshalb
      entsteht kein Widerspruch, wenn Google nur offers.price liest.
 
+  2b. Paketware (Teppichfliesen, Klick-/Klebevinyl, erkannt an
+     custom.qm_pro_paket > 0 ueber snippets/tp-verkaufseinheit.liquid) wird
+     genauso ausgegeben. Ihr Variantenpreis ist der PAKETPREIS, die Seite
+     fuehrt aber EUR/m2. Vorher fiel sie in Fall 3 und meldete den
+     Paketpreis (218,46) gegen einen sichtbaren Quadratmeterpreis (44,95) -
+     eine Preisabweichung, die das Merchant Center beanstandet. Jetzt wird
+     auf den Quadratmeter heruntergerechnet, mit derselben Rundung wie
+     snippets/price.liquid.
+
   3. Alle anderen Produkte behalten Shopifys natives structured_data.
 
   Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
-  Marke, SKU (nur wenn vorhanden), Farbe. Keine lieferant.*-Metafelder.
+  Marke, SKU (nur wenn vorhanden), Farbe und - im ProductGroup-Zweig - die
+  technischen Merkmale als additionalProperty aus
+  snippets/tp-produkt-merkmale-json.liquid. Das sind genau die Werte der
+  sichtbaren Merkmalstabelle (Material, Florhoehe, Nutzungsklasse,
+  Fussbodenheizung, Rollenbreite, Inhalt je Paket ...), damit eine
+  Antwortmaschine sie nicht aus dem Fliesstext raten muss.
+  Keine lieferant.*- oder einkauf.*-Metafelder.
+
+  Fall 3 (Shopifys natives structured_data) bleibt bewusst unangetastet: dort
+  haengt der Preis dran, und ein zweiter Product-Knoten mit derselben @id
+  laesst sich ohne Live-Pruefung im Rich-Results-Test nicht verantworten.
+  Diese Produkte tragen ihre Merkmale in der serverseitig gerenderten
+  Tabelle - fuer Crawler lesbar, nur eben nicht als JSON-LD.
 {% endcomment %}
 
 {%- liquid
@@ -56,6 +77,23 @@
     endunless
   endfor
 
+  # Paketware (Fliesen, Klick-/Klebevinyl): der Variantenpreis ist der
+  # PAKETPREIS, die Seite fuehrt aber EUR/m2. Ohne Umrechnung meldete das
+  # JSON-LD den Paketpreis gegen einen sichtbaren Quadratmeterpreis.
+  # Geprueft wird dasselbe Merkmal, das auch snippets/tp-verkaufseinheit.liquid
+  # als Beleg nimmt: die Paketflaeche selbst, kein abgeleitetes Merkmal.
+  # Bewusst ohne render: dieses Snippet laeuft im JSON-LD-Kopf und bleibt
+  # ohne Partial-Abhaengigkeit pruefbar (qa/tests/produkt-jsonld-paketware).
+  assign tp_sd_paket_qm = product_resource.metafields.custom.qm_pro_paket.value | times: 1.0
+  assign tp_sd_is_paket = false
+  if tp_sd_paket_qm > 0
+    assign tp_sd_is_paket = true
+    # Paketware zuerst - ein Produkt mit qm_pro_paket ist nie Rollenware,
+    # auch wenn eine Variante eine Rollenbreite traegt (gleiche Reihenfolge
+    # wie snippets/price.liquid, Befund 2026-09-10).
+    assign tp_sd_is_roll = false
+  endif
+
   assign tp_sd_is_wunschmass_legacy = false
   assign tp_sd_wm_width = product_resource.metafields.custom.wunschmass_mindestbreite_cm.value | times: 1
   if tp_sd_wm_width > 0
@@ -74,7 +112,7 @@
 
 {%- if tp_sd_skip -%}
   {%- comment -%} Service-/Hilfsprodukt: bewusst kein JSON-LD {%- endcomment -%}
-{%- elsif tp_sd_per_001 or tp_sd_is_roll -%}
+{%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
   {%- capture tp_sd_offers -%}
     {%- assign tp_sd_first = true -%}
     {%- for tp_sd_variant in product_resource.variants -%}
@@ -93,6 +131,13 @@
         assign tp_sd_cents = tp_sd_variant.price
         if tp_sd_per_001
           assign tp_sd_cents = tp_sd_cents | times: 100
+        endif
+        # Paketpreis -> Quadratmeterpreis, gerundet auf ganze Cent. Dieselbe
+        # Rechnung wie snippets/price.liquid (Zeile "divided_by:
+        # sqm_per_package | round"), damit Markup und Seitenpreis auf den
+        # Cent uebereinstimmen: 218,46 EUR / 4,86 m2 -> 44,95 EUR/m2.
+        if tp_sd_is_paket
+          assign tp_sd_cents = tp_sd_cents | times: 1.0 | divided_by: tp_sd_paket_qm | round
         endif
         assign tp_sd_price = tp_sd_cents | times: 1.0 | divided_by: 100 | round: 2
         assign tp_sd_variant_url = tp_sd_product_url | append: '?variant=' | append: tp_sd_variant.id
@@ -143,6 +188,8 @@
     {%- endfor -%}
   {%- endcapture -%}
   {%- assign tp_sd_offers = tp_sd_offers | strip -%}
+  {%- capture tp_sd_merkmale -%}{%- render 'tp-produkt-merkmale-json', produkt: product_resource -%}{%- endcapture -%}
+  {%- assign tp_sd_merkmale = tp_sd_merkmale | strip -%}
   {%- if tp_sd_offers != blank -%}
     <script type="application/ld+json">
       {
@@ -166,6 +213,9 @@
         {%- endif -%}
         {%- if tp_sd_color_index >= 0 -%}
         "variesBy": ["https://schema.org/color"],
+        {%- endif -%}
+        {%- if tp_sd_merkmale != blank -%}
+        "additionalProperty": [{{ tp_sd_merkmale }}],
         {%- endif -%}
         "hasVariant": [
           {{ tp_sd_offers }}

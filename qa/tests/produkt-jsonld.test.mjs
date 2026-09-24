@@ -17,7 +17,24 @@ import { Liquid } from 'liquidjs';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const tpl = readFileSync(join(root, 'snippets', 'tp-product-structured-data.liquid'), 'utf8');
 
-const eng = new Liquid({ strictFilters: false, strictVariables: false });
+// Das Snippet rendert seit 2026-09-23 ein Teil-Snippet (Merkmale als
+// additionalProperty), deshalb muss LiquidJS Partials aus snippets/ finden.
+// Shopifys {% doc %} kennt es nicht - hier als Leertag angemeldet.
+const eng = new Liquid({
+  strictFilters: false,
+  strictVariables: false,
+  root: join(root, 'snippets'),
+  extname: '.liquid',
+});
+eng.registerTag('doc', {
+  parse(tagToken, remainTokens) {
+    while (remainTokens.length) {
+      const t = remainTokens.shift();
+      if (t.name === 'enddoc') return;
+    }
+  },
+  render: () => '',
+});
 eng.registerFilter('image_url', v => (typeof v === 'string' ? v : '//cdn/bild.jpg'));
 eng.registerFilter('structured_data', () => '{"@type":"Product","name":"nativ"}');
 eng.registerFilter('json', v => JSON.stringify(v ?? null));
@@ -45,7 +62,13 @@ const produkt = (o = {}) => ({
   featured_image: null,
   options: o.options ?? ['Breite', 'Farbe'],
   variants: o.variants ?? [variante()],
-  metafields: { custom: { preis_pro_001_qm: { value: o.per001 ?? false }, wunschmass_mindestbreite_cm: { value: 0 } } },
+  metafields: {
+    custom: {
+      preis_pro_001_qm: { value: o.per001 ?? false },
+      wunschmass_mindestbreite_cm: { value: 0 },
+      ...(o.merkmale ?? {}),
+    },
+  },
 });
 
 const rendern = async (p) => eng.parseAndRender(tpl, {
@@ -101,4 +124,26 @@ test('Produkte ohne Flaechenpreis behalten Shopifys natives JSON-LD', async () =
   const p = produkt({ type: 'Klickvinyl', variants: [variante({ rollenbreite: 0 })] });
   const html = await rendern(p);
   assert.match(html, /"nativ"/);
+});
+
+test('Merkmale stehen als additionalProperty im ProductGroup-Knoten', async () => {
+  const d = gruppe(await rendern(produkt({
+    merkmale: {
+      material: { type: 'single_line_text_field', value: 'PVC' },
+      nutzungsklassen: { type: 'list.metaobject_reference', value: [{ nutzungsklasse: '23' }, { nutzungsklasse: '33' }] },
+      rollenbreite: { type: 'number_decimal', value: 4 },
+    },
+  })));
+  const alsMap = Object.fromEntries((d.additionalProperty ?? []).map((x) => [x.name, x.value]));
+  assert.equal(alsMap.Material, 'PVC');
+  assert.equal(alsMap.Nutzungsklassen, '23, 33');
+  assert.equal(alsMap.Rollenbreite, '4 m');
+  // Der Preis bleibt unangetastet - genau dafuer gibt es diese Datei.
+  assert.equal(d.hasVariant[0].offers.price, 23.9);
+});
+
+test('Ohne gepflegte Merkmale entsteht kein leeres additionalProperty', async () => {
+  const d = gruppe(await rendern(produkt()));
+  assert.equal('additionalProperty' in d, false);
+  assert.equal(d.hasVariant[0].offers.price, 23.9);
 });

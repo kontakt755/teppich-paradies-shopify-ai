@@ -3,12 +3,20 @@
   Abschnitte 11-14). Wird in snippets/cart-summary.liquid vor den
   Checkout-Buttons gerendert - Warenkorbseite und Drawer.
 
-  Pflichtentscheidung "Persoenliche Beratung gewuenscht?" Ja/Nein ohne
-  Vorauswahl. Bei Ja: Telefonnummer (Pflicht), Zeitfenster, Freitext. Die
-  Masspruefung erscheint nur, wenn eine berechnete Position (Zuschnitt,
-  Raummass, Wunschmass, Einfassung) im Warenkorb liegt; die Verlegeanfrage
-  nur bei Positionen, fuer die der Verlegeservice gilt
-  (snippets/tp-vs-berechtigt). Muster allein: nur die Beratungsfrage.
+  Die Pflichtfrage "Persoenliche Beratung gewuenscht?" erscheint nur bei einer
+  REINEN MUSTERBESTELLUNG: mindestens ein Muster im Warenkorb und keine
+  regulaere Ware. Wer bereits Ware kauft, hat die Kaufentscheidung getroffen
+  und wird nicht mehr aufgehalten - dann fuehrt nichts mehr zwischen
+  Gesamtbetrag und "Zur Kasse". Was ein Muster ist, entscheidet allein
+  snippets/tp-muster-position.liquid (gleiche Regel wie operations/lib/muster.mjs).
+
+  Unabhaengig davon bleiben zwei Fragen an regulaeren Positionen, weil sie
+  nicht beraten, sondern eine nicht ruecknehmbare Leistung absichern:
+  - Masspruefung, wenn eine berechnete Position (Zuschnitt, Raummass,
+    Wunschmass, Einfassung) im Warenkorb liegt - freiwillig, sperrt nichts.
+  - Verlegeanfrage bei Positionen, fuer die der Verlegeservice gilt
+    (snippets/tp-vs-berechtigt) - freiwillig.
+  Beide ueberspringen Musterzeilen.
 
   Gespeichert wird als Cart-Attribut (Beratung, Telefon, Rueckruf,
   Beratungsthema, Masspruefung, Verlegung) - per /cart/update.js aus
@@ -16,6 +24,12 @@
   Cart-Formular. Die Attribute stehen an der Bestellung unter "Zusaetzliche
   Details"; Shopify Flow setzt daraus die Tags BERATUNG-JA/-NEIN,
   MASS-PRUEFUNG-OFFEN, VERLEGUNG-ANGEFRAGT (domains/shopify/flow/).
+
+  Legt jemand nach der Antwort regulaere Ware dazu, wird aus der reinen
+  Musterbestellung eine Mischbestellung: die Frage verschwindet und die alte
+  Antwort muss weg, sonst stuende an der Bestellung "Beratung: Ja", ohne dass
+  sie je gestellt wurde. Dafuer traegt das Element dann data-aufraeumen und
+  das Skript schreibt die Attribute einmal leer.
 
   Vorbelegung aus cart.attributes, damit die Antwort einen Reload oder ein
   Section-Rerender ueberlebt. Der Sperrzustand (Klasse tp-beratung-offen,
@@ -29,10 +43,18 @@
 {%- liquid
   assign tpb_mass = false
   assign tpb_verlegung = false
+  assign tpb_muster_zeilen = 0
+  assign tpb_ware_zeilen = 0
+
   for tpb_item in cart.items
-    if tpb_item.properties._Muster_ID != blank
+    capture tpb_ist_muster
+      render 'tp-muster-position', line_item: tpb_item
+    endcapture
+    if tpb_ist_muster contains 'ja'
+      assign tpb_muster_zeilen = tpb_muster_zeilen | plus: 1
       continue
     endif
+    assign tpb_ware_zeilen = tpb_ware_zeilen | plus: 1
     if tpb_item.properties._Zuschnitt != blank or tpb_item.properties['Maße'] != blank or tpb_item.properties['Gewünschte Länge'] != blank or tpb_item.properties['Art'] == 'Raummaß'
       assign tpb_mass = true
     endif
@@ -45,6 +67,13 @@
       endif
     endif
   endfor
+
+  # Reine Musterbestellung: Muster da, regulaere Ware nicht.
+  assign tpb_frage = false
+  if tpb_muster_zeilen > 0 and tpb_ware_zeilen == 0
+    assign tpb_frage = true
+  endif
+
   assign tpb_beratung = cart.attributes['Beratung'] | default: ''
   assign tpb_telefon = cart.attributes['Telefon'] | default: ''
   assign tpb_zeit = cart.attributes['Rückruf'] | default: ''
@@ -52,8 +81,21 @@
   assign tpb_masswahl = cart.attributes['Maßprüfung'] | default: ''
   assign tpb_verlegt = cart.attributes['Verlegung'] | default: ''
   assign tpb_id = 'tpb-' | append: section.id | downcase | replace: '_', ''
+
+  # Antwort aus einem frueheren, reinen Musterwarenkorb steht noch am Cart,
+  # die Frage wird aber nicht mehr gestellt -> einmal leerschreiben lassen.
+  assign tpb_aufraeumen = false
+  if tpb_frage == false
+    if tpb_beratung != blank or tpb_zeit != blank or tpb_thema != blank
+      assign tpb_aufraeumen = true
+    endif
+    assign tpb_beratung = ''
+    assign tpb_zeit = ''
+    assign tpb_thema = ''
+  endif
+
   assign tpb_telefon_noetig = false
-  if tpb_beratung == 'Ja'
+  if tpb_frage and tpb_beratung == 'Ja'
     assign tpb_telefon_noetig = true
   endif
   if tpb_mass and tpb_masswahl == 'Ja'
@@ -69,51 +111,84 @@
     endif
   endfor
   assign tpb_offen = false
-  if tpb_beratung != 'Ja' and tpb_beratung != 'Nein'
+  if tpb_frage and tpb_beratung != 'Ja' and tpb_beratung != 'Nein'
     assign tpb_offen = true
   endif
   if tpb_telefon_noetig and tpb_ziffern < 6
     assign tpb_offen = true
   endif
+
+  # Sichtbar ist das Element nur mit echtem Inhalt; zum reinen Aufraeumen
+  # haengt es stumm im Dokument.
+  assign tpb_sichtbar = false
+  if tpb_frage or tpb_mass or tpb_verlegung
+    assign tpb_sichtbar = true
+  endif
+  assign tpb_zeigen = tpb_sichtbar
+  if tpb_aufraeumen
+    assign tpb_zeigen = true
+  endif
+
+  # Vor oder hinter dem Kaufknopf? Was beantwortet werden muss, bevor bestellt
+  # wird, steht davor: die Pflichtfrage bei reiner Musterbestellung und die
+  # Masspruefung, die einen nicht ruecknehmbaren Zuschnitt betrifft. Die
+  # Verlegeanfrage ist ein freiwilliges Interesse und darf einem Kaufkunden
+  # nicht zwischen Gesamtbetrag und "Zur Kasse" stehen.
+  # Umgesetzt ueber die Aufrufstelle statt ueber CSS order, damit Lesereihenfolge
+  # und Tastaturreihenfolge zur sichtbaren Reihenfolge passen. Das Element
+  # entsteht immer nur EINMAL - zwei davon wuerden sich beim Speichern der
+  # Cart-Attribute gegenseitig ueberschreiben.
+  assign tpb_stelle_soll = 'nach_kasse'
+  if tpb_frage or tpb_mass
+    assign tpb_stelle_soll = 'vor_kasse'
+  endif
+  assign tpb_stelle = stelle | default: 'vor_kasse'
+  if tpb_stelle != tpb_stelle_soll
+    assign tpb_zeigen = false
+  endif
 -%}
 
-{%- if cart != empty -%}
+{%- if cart != empty and tpb_zeigen -%}
 <script src="{{ 'tp-cart-beratung.js' | asset_url }}" defer></script>
 <tp-cart-beratung
-  class="tp-beratung{% if tpb_offen %} tp-beratung-offen{% endif %}"
+  class="tp-beratung{% unless tpb_sichtbar %} tp-beratung--stumm{% endunless %}{% if tpb_offen %} tp-beratung-offen{% endif %}"
+  {% if tpb_frage %}data-beratungsfrage{% endif %}
   {% if tpb_mass %}data-masspruefung{% endif %}
   {% if tpb_verlegung %}data-verlegung{% endif %}
+  {% if tpb_aufraeumen %}data-aufraeumen{% endif %}
 >
-  <fieldset class="tp-beratung__gruppe">
-    <legend class="tp-beratung__frage">Persönliche Beratung gewünscht? <span class="tp-beratung__pflicht" aria-hidden="true">*</span></legend>
-    <p class="tp-beratung__hinweis">Wir rufen Sie kurz an, klären offene Fragen zu Material, Maßen oder Verlegung und bestätigen Ihnen die Bestellung.</p>
-    <div class="tp-beratung__optionen">
-      <label class="tp-beratung__option">
-        <input type="radio" name="attributes[Beratung]" value="Ja" data-tp-feld="beratung" form="cart-form" required {% if tpb_beratung == 'Ja' %}checked{% endif %}>
-        <span>Ja, bitte anrufen</span>
+  {%- if tpb_frage -%}
+    <fieldset class="tp-beratung__gruppe">
+      <legend class="tp-beratung__frage">Persönliche Beratung gewünscht? <span class="tp-beratung__pflicht" aria-hidden="true">*</span></legend>
+      <p class="tp-beratung__hinweis">Wir rufen Sie kurz an, klären offene Fragen zu Material, Maßen oder Verlegung und bestätigen Ihnen die Bestellung.</p>
+      <div class="tp-beratung__optionen">
+        <label class="tp-beratung__option">
+          <input type="radio" name="attributes[Beratung]" value="Ja" data-tp-feld="beratung" form="cart-form" required {% if tpb_beratung == 'Ja' %}checked{% endif %}>
+          <span>Ja, bitte anrufen</span>
+        </label>
+        <label class="tp-beratung__option">
+          <input type="radio" name="attributes[Beratung]" value="Nein" data-tp-feld="beratung" form="cart-form" {% if tpb_beratung == 'Nein' %}checked{% endif %}>
+          <span>Nein, Bestellung direkt ausführen</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="tp-beratung__details" data-tp-beratung-details {% unless tpb_beratung == 'Ja' %}hidden{% endunless %}>
+      <label class="tp-beratung__feld" for="{{ tpb_id }}-zeit">
+        <span>Wann erreichen wir Sie am besten?</span>
+        <select id="{{ tpb_id }}-zeit" name="attributes[Rückruf]" data-tp-feld="zeit" form="cart-form">
+          <option value="Egal" {% if tpb_zeit == 'Egal' or tpb_zeit == blank %}selected{% endif %}>Egal</option>
+          <option value="Vormittags" {% if tpb_zeit == 'Vormittags' %}selected{% endif %}>Vormittags</option>
+          <option value="Mittags" {% if tpb_zeit == 'Mittags' %}selected{% endif %}>Mittags</option>
+          <option value="Nachmittags" {% if tpb_zeit == 'Nachmittags' %}selected{% endif %}>Nachmittags</option>
+        </select>
       </label>
-      <label class="tp-beratung__option">
-        <input type="radio" name="attributes[Beratung]" value="Nein" data-tp-feld="beratung" form="cart-form" {% if tpb_beratung == 'Nein' %}checked{% endif %}>
-        <span>Nein, Bestellung direkt ausführen</span>
+      <label class="tp-beratung__feld" for="{{ tpb_id }}-thema">
+        <span>Wobei dürfen wir helfen? <em>(optional)</em></span>
+        <textarea id="{{ tpb_id }}-thema" name="attributes[Beratungsthema]" data-tp-feld="thema" form="cart-form" rows="2" maxlength="500">{{ tpb_thema }}</textarea>
       </label>
     </div>
-  </fieldset>
-
-  <div class="tp-beratung__details" data-tp-beratung-details {% unless tpb_beratung == 'Ja' %}hidden{% endunless %}>
-    <label class="tp-beratung__feld" for="{{ tpb_id }}-zeit">
-      <span>Wann erreichen wir Sie am besten?</span>
-      <select id="{{ tpb_id }}-zeit" name="attributes[Rückruf]" data-tp-feld="zeit" form="cart-form">
-        <option value="Egal" {% if tpb_zeit == 'Egal' or tpb_zeit == blank %}selected{% endif %}>Egal</option>
-        <option value="Vormittags" {% if tpb_zeit == 'Vormittags' %}selected{% endif %}>Vormittags</option>
-        <option value="Mittags" {% if tpb_zeit == 'Mittags' %}selected{% endif %}>Mittags</option>
-        <option value="Nachmittags" {% if tpb_zeit == 'Nachmittags' %}selected{% endif %}>Nachmittags</option>
-      </select>
-    </label>
-    <label class="tp-beratung__feld" for="{{ tpb_id }}-thema">
-      <span>Wobei dürfen wir helfen? <em>(optional)</em></span>
-      <textarea id="{{ tpb_id }}-thema" name="attributes[Beratungsthema]" data-tp-feld="thema" form="cart-form" rows="2" maxlength="500">{{ tpb_thema }}</textarea>
-    </label>
-  </div>
+  {%- endif -%}
 
   {%- if tpb_mass -%}
     <fieldset class="tp-beratung__gruppe">
@@ -152,6 +227,9 @@
 {%- endif -%}
 
 {% stylesheet %}
+  .tp-beratung--stumm {
+    display: none;
+  }
   .tp-beratung {
     display: block;
     margin-block: var(--margin-sm, 1rem);

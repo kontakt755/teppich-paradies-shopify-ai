@@ -177,6 +177,22 @@ export const TEIL_FN = { lexikon: teilLexikon, bestellungen: teilBestellungen, k
  * @param {string} opt.dir  Zielverzeichnis ($TP_PRIVAT_DIR).
  * @param {object} opt.teilFn  Ueberschreibbare Teil-Implementierungen (Tests).
  */
+/**
+ * Neuer Stand eines Teils nach einem Lauf. Ein gescheiterter Lauf schreibt
+ * keine Ausgabedatei - die Daten des letzten erfolgreichen Laufs gelten also
+ * weiter. Deshalb bleibt dessen Stand (Zeitpunkt, Anzahl) erhalten und der
+ * Fehlschlag steht daneben unter `letzterFehler`; sonst zeigte das Dashboard
+ * nach einem Klick auf "Jetzt aktualisieren" ohne Zugang gueltige Daten als
+ * gescheitert an und verloere die 24-Stunden-Warnung. Nur ohne frueheren
+ * Erfolg wird der Teil selbst als gescheitert gefuehrt.
+ */
+export function standNachLauf(bisher, r) {
+  if (r.erfolg) return { zeitpunkt: r.zeitpunkt, dauerMs: r.dauerMs, erfolg: true, anzahl: r.anzahl, meldung: r.meldung };
+  const fehler = { zeitpunkt: r.zeitpunkt, meldung: r.meldung };
+  if (bisher?.erfolg) return { ...bisher, letzterFehler: fehler };
+  return { zeitpunkt: r.zeitpunkt, dauerMs: r.dauerMs, erfolg: false, anzahl: null, meldung: r.meldung };
+}
+
 export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEIL_FN } = {}) {
   const auszufuehren = nur && nur.length ? nur : TEILE;
   const ergebnisse = [];
@@ -192,7 +208,7 @@ export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEI
   try { bestehend = JSON.parse(fs.readFileSync(statusDatei, 'utf8')); } catch { /* erster Lauf oder defekt - neu anlegen */ }
   const teileStatus = { ...(bestehend.teile || {}) };
   for (const r of ergebnisse) {
-    teileStatus[r.teil] = { zeitpunkt: r.zeitpunkt, dauerMs: r.dauerMs, erfolg: r.erfolg, anzahl: r.anzahl, meldung: r.meldung };
+    teileStatus[r.teil] = standNachLauf(teileStatus[r.teil], r);
   }
   const status = { aktualisiertAm: new Date().toISOString(), teile: teileStatus };
   fs.mkdirSync(dir, { recursive: true });

@@ -13,6 +13,7 @@
  */
 
 import { UNGEKLAERT } from './umrechnung.mjs';
+import { istMusterPosition as musterRegel } from './muster.mjs';
 
 export const EINKAUF_KEYS = Object.freeze([
   'procurement_id', 'lieferant', 'hersteller', 'artikelnummer', 'farbnummer',
@@ -260,7 +261,11 @@ export function resolveLineItem({ lineItem, variant, alleZeilen = [] } = {}) {
     farbnummer: leer(props['Farbnummer']) ? null : String(props['Farbnummer']),
   };
 
-  const istMuster = (typeof sku === 'string' && sku.startsWith('M-')) || !!eingaben.musterId;
+  const istMuster = musterRegel({
+    sku,
+    musterId: eingaben.musterId,
+    produktTyp: variant?.product?.productType ?? null,
+  });
   // Musterzeile ohne Metafeld-Referenz: die Property ist die einzige Kundensicht.
   if (istMuster && einkauf.quellvariante === UNGEKLAERT && eingaben.quellvarianteId) {
     einkauf.quellvariante = eingaben.quellvarianteId;
