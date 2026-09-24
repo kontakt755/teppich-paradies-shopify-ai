@@ -19,6 +19,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { leseBenutzer, benutzerDateiExistiert, authentifiziere, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
 
 export const SESSION_COOKIE = 'tp_dashboard_sid';
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Stunden
@@ -54,32 +55,61 @@ function sha256(value) {
   return crypto.createHash('sha256').update(String(value), 'utf8').digest();
 }
 
+/** Liest die Benutzerliste frisch bei jedem Login-Versuch - `benutzer` (an-/abmelden) darf ohne Neustart wirken. */
+export function ladeBenutzerliste({ readList = leseBenutzer, exists = benutzerDateiExistiert } = {}) {
+  if (!exists()) return [];
+  return readList();
+}
+
 /**
- * Baut das Auth-Objekt. `password` = null bedeutet Standardbetrieb ohne
- * Anmeldung (auth.required === false).
+ * Baut das Auth-Objekt. `password` = null und keine benutzer.json bedeutet
+ * Standardbetrieb ohne Anmeldung (auth.required === false).
+ *
+ * Sobald `$TP_PRIVAT_DIR/benutzer.json` existiert, laeuft die Anmeldung
+ * ueber Name/Kuerzel + Passwort gegen diese Liste (Mehrbenutzerbetrieb). Das
+ * alte Einzelpasswort bleibt zusaetzlich als Notzugang fuer den Inhaber
+ * gueltig (Rolle "inhaber", Name "Inhaber"), solange keine benutzer.json
+ * existiert.
  */
-export function createAuth({ password = null } = {}) {
-  const required = Boolean(password);
-  const passwordHash = required ? sha256(password) : null;
-  const sessions = new Map(); // sid -> expiresAt (ms)
-  const attempts = new Map(); // ip -> { count, firstFailAt, lockedUntil }
+export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad() } = {}) {
+  const passwordHash = password ? sha256(password) : null;
+  const hatBenutzerdatei = () => {
+    try { return fs.existsSync(benutzerDatei); } catch { return false; }
+  };
+  const required = Boolean(password) || hatBenutzerdatei();
+  const sessions = new Map(); // sid -> { expiresAt, benutzer }
+  const attempts = new Map(); // schluessel (ip::name) -> { count, firstFailAt, lockedUntil }
 
   function purgeExpiredSessions() {
     const now = Date.now();
-    for (const [sid, exp] of sessions) if (exp <= now) sessions.delete(sid);
+    for (const [sid, s] of sessions) if (s.expiresAt <= now) sessions.delete(sid);
+  }
+
+  /** Prueft Name+Passwort (Mehrbenutzerbetrieb) oder nur Passwort (Notzugang). Gibt Benutzerobjekt oder null zurueck. */
+  function verifyLogin({ name = '', passwort = '' } = {}) {
+    if (hatBenutzerdatei()) {
+      const liste = ladeBenutzerliste({ exists: hatBenutzerdatei });
+      const treffer = authentifiziere(liste, name, passwort);
+      if (treffer) return treffer;
+      // Notzugang bleibt gueltig, auch wenn schon eine benutzer.json existiert - der Inhaber darf sich nie aussperren.
+      if (passwordHash && verifyPassword(passwort)) return { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
+      return null;
+    }
+    if (passwordHash && verifyPassword(passwort)) return { name: 'Inhaber', kuerzel: null, rolle: 'inhaber' };
+    return null;
   }
 
   function verifyPassword(candidate) {
-    if (!required) return false;
+    if (!passwordHash) return false;
     const candidateHash = sha256(typeof candidate === 'string' ? candidate : '');
     // Beide Hashes sind SHA-256 (32 Byte) -> gleiche Laenge, sicher fuer timingSafeEqual.
     return crypto.timingSafeEqual(candidateHash, passwordHash);
   }
 
-  function createSession() {
+  function createSession(benutzer) {
     purgeExpiredSessions();
     const sid = crypto.randomBytes(32).toString('hex');
-    sessions.set(sid, Date.now() + SESSION_TTL_MS);
+    sessions.set(sid, { expiresAt: Date.now() + SESSION_TTL_MS, benutzer });
     return sid;
   }
 
@@ -89,41 +119,49 @@ export function createAuth({ password = null } = {}) {
     return sessions.has(sid);
   }
 
+  /** Gibt den angemeldeten Benutzer ({name, kuerzel, rolle}) zurueck oder null. */
+  function sessionBenutzer(sid) {
+    if (!sid) return null;
+    purgeExpiredSessions();
+    return sessions.get(sid)?.benutzer || null;
+  }
+
   function destroySession(sid) {
     if (sid) sessions.delete(sid);
   }
 
-  function rateState(ip) {
-    const key = ip || 'unbekannt';
+  function rateState(key) {
     let s = attempts.get(key);
     if (!s) { s = { count: 0, firstFailAt: 0, lockedUntil: 0 }; attempts.set(key, s); }
     return s;
   }
 
-  function isLocked(ip) {
-    const s = rateState(ip);
+  function isLocked(key) {
+    const s = rateState(key);
     if (s.lockedUntil && s.lockedUntil > Date.now()) return true;
     if (s.lockedUntil && s.lockedUntil <= Date.now()) { s.count = 0; s.lockedUntil = 0; }
     return false;
   }
 
-  function registerFailure(ip) {
-    const s = rateState(ip);
+  function registerFailure(key) {
+    const s = rateState(key);
     const now = Date.now();
     if (!s.firstFailAt || now - s.firstFailAt > LOCK_WINDOW_MS) { s.firstFailAt = now; s.count = 0; }
     s.count += 1;
     if (s.count >= MAX_FAILS) s.lockedUntil = now + LOCK_DURATION_MS;
   }
 
-  function registerSuccess(ip) {
-    attempts.delete(ip || 'unbekannt');
+  function registerSuccess(key) {
+    attempts.delete(key);
   }
 
   return {
-    required,
+    get required() { return Boolean(password) || hatBenutzerdatei(); },
+    verifyLogin,
     verifyPassword,
     createSession,
     validSession,
+    sessionBenutzer,
     destroySession,
     isLocked,
     registerFailure,
@@ -192,11 +230,13 @@ export function renderLoginPage({ error = null } = {}) {
   <p class="hint">Nur für Inhaber, Admins und Mitarbeiter. Enthält Kundenbestellungen und Einkaufsdaten.</p>
   ${errorHtml}
   <form id="loginForm">
+    <label for="name">Name oder Kürzel</label>
+    <input type="text" id="name" name="name" autocomplete="username" autofocus required style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:1rem;margin-bottom:14px;">
     <label for="pw">Passwort</label>
-    <input type="password" id="pw" name="pw" autocomplete="current-password" autofocus required>
+    <input type="password" id="pw" name="pw" autocomplete="current-password" required>
     <button type="submit" id="submitBtn">Anmelden</button>
   </form>
-  <p class="note">Verbindung im lokalen Netz ist unverschlüsselt (HTTP). Dieses Passwort nirgendwo sonst verwenden.</p>
+  <p class="note">Ohne Mitarbeiterzugänge (noch keine benutzer.json) reicht „Inhaber" als Name mit dem bisherigen Passwort. Verbindung im lokalen Netz ist unverschlüsselt (HTTP). Dieses Passwort nirgendwo sonst verwenden.</p>
 </main>
 <script>
   const form = document.getElementById('loginForm');
@@ -209,7 +249,7 @@ export function renderLoginPage({ error = null } = {}) {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passwort: document.getElementById('pw').value }),
+        body: JSON.stringify({ name: document.getElementById('name').value, passwort: document.getElementById('pw').value }),
       });
       if (res.ok) { window.location.href = '/'; return; }
       const data = await res.json().catch(() => ({}));

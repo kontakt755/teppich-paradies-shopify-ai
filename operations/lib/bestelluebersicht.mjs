@@ -70,8 +70,29 @@ function offeneMenge(li) {
  * Quelle der Grosshaendler-ID (lieferant_a_/lieferant_b_), dann
  * lieferant.bevorzugt. Sonst UNGEKLAERT.
  */
+// einkauf.lieferant ist eine Metaobjekt-Referenz (tp_lieferant), im Export also
+// eine GID. Das Kuerzel steht im Metaobjekt selbst; damit die Uebersicht ohne
+// zusaetzliche Abfrage auskommt, steht die Zuordnung hier. Kommt ein Lieferant
+// dazu, gehoert seine GID in diese Liste - sonst zeigt die Uebersicht
+// UNGEKLAERT statt eines falschen Kuerzels.
+export const LIEFERANT_METAOBJEKT = Object.freeze({
+  'gid://shopify/Metaobject/1828679713102': 'A',
+  'gid://shopify/Metaobject/1828679745870': 'B',
+});
+
+/** Kuerzel aus einem Wert, der ein Kuerzel ODER eine Metaobjekt-GID sein kann. */
+export function kuerzelAus(wert) {
+  if (leer(wert) || wert === UNGEKLAERT) return null;
+  const s = String(wert).trim();
+  if (s.startsWith('gid://shopify/Metaobject/')) return LIEFERANT_METAOBJEKT[s] ?? null;
+  return /^[a-d]$/i.test(s) ? s.toUpperCase() : s.toUpperCase();
+}
+
 export function lieferantFuer(item, variantMetafelder) {
-  const e = item?.einkauf?.lieferant;
+  const ausEinkauf = kuerzelAus(item?.einkauf?.lieferant)
+    ?? kuerzelAus(variantMetafelder?.einkauf?.lieferant);
+  if (ausEinkauf) return ausEinkauf;
+  const e = null;
   if (!leer(e) && e !== UNGEKLAERT) return String(e).toUpperCase();
   const q = item?.grosshaendlerIdQuelle ?? '';
   const m = q.match(/lieferant_([a-d])_artikelnummer/);
@@ -239,7 +260,9 @@ function musterQuelle(item, quellMap) {
   const vm = metafeldMap(n.metafields);
   const pm = metafeldMap(n.product?.metafields);
   const gh = grosshaendlerId({ variantMetafelder: vm, produktMetafelder: pm, sku: n.sku });
-  const lf = lieferantFuer({ einkauf: {}, grosshaendlerIdQuelle: gh.quelle }, vm);
+  // Die Quellvariante traegt den Lieferanten selbst - ohne sie landet jedes
+  // Muster unter "Lieferant nicht zugeordnet", obwohl die Daten da sind.
+  const lf = lieferantFuer({ einkauf: { lieferant: vm?.einkauf?.lieferant }, grosshaendlerIdQuelle: gh.quelle }, vm);
   const url = vm?.einkauf?.lieferant_url;
   return { id: gh.id, quelle: gh.quelle, lieferant: lf, quellvariante: id, titel: `${n.product?.title ?? ''} – ${n.title ?? ''}`.trim(), lieferantUrl: leer(url) ? UNGEKLAERT : String(url).trim() };
 }

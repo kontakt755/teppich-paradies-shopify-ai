@@ -6,6 +6,8 @@
 |---|---|
 | `settings.json` | registriert die Hooks und die Freigaben (`permissions.allow`) |
 | `hooks/session-start.sh` | installiert Abhängigkeiten und zeigt den Projektzustand |
+| `skills/control-center/SKILL.md` | Regeln, Gestaltung, Ablauf und Fallstricke für das Control Center |
+| `agents/control-center.md` | Dashboard-Mitarbeiter (Subagent), arbeitet nach dem Skill oben |
 
 ## Berechtigungen: warum es keine `ask`-Liste gibt
 
