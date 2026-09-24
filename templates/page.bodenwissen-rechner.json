@@ -1,0 +1,15 @@
+{
+  "sections": {
+    "main": {
+      "type": "tp-boden-rechner",
+      "settings": {
+        "ueberschrift": "Wie viel Teppichboden brauche ich?",
+        "einleitung": "<p>Raumbreite und Raumlänge eingeben - der Rechner zeigt, welche Rollenbreite passt, wie viel Sie bestellen und wie viel Verschnitt anfällt. Keine Preise, nur Materialplanung.</p>",
+        "rollenbreiten": "400, 500"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

@@ -1,0 +1,143 @@
+{%- doc -%}
+  Suche des Bodenwissen-Bereichs. Zwei Wege, bewusst in dieser Reihenfolge:
+
+  1. Ohne JavaScript ist es ein gewoehnliches GET-Formular auf /search mit
+     type=product,collection,page,article. Es funktioniert immer.
+  2. Mit JavaScript kommt ein Vorschlagsfeld dazu. Die Vorschlaege stammen aus
+     einem Index, den diese Section selbst als application/json rendert -
+     Artikel der gewaehlten Blogs, Lexikonbegriffe und Problemeintraege.
+
+  Warum der Index hier entsteht und nicht in einer Datei: Eine gebaute Datei
+  veraltet in dem Moment, in dem jemand im Shopify-Admin einen Artikel anlegt.
+  Liquid liest den aktuellen Stand bei jedem Aufruf. Bei rund 50 Eintraegen
+  kostet das ein paar Kilobyte - eine Suchschnittstelle waere hier Aufwand ohne
+  Gegenwert.
+
+  Metaobjekte sind optional: fehlt tp_lexikon oder tp_bodenproblem, bleibt der
+  Index einfach kleiner. Nichts bricht.
+
+  Ereignisse: tp_bodenwissen_suche und tp_bodenwissen_suche_leer. Das zweite ist
+  die Contentluecken-Quelle - siehe docs/bodenwissen/ANALYTICS.md.
+{%- enddoc -%}
+
+{%- liquid
+  assign bw_typen = 'product,collection,page,article'
+  assign bw_titel = section.settings.titel | default: 'Was moechten Sie ueber Ihren Boden wissen?'
+-%}
+
+<div class="tp-bw-suche">
+  <div class="tp-s-wrap">
+    <form class="tp-bw-suche__form" role="search" action="{{ routes.search_url }}" method="get" data-tp-bw-form data-tp-bw-index-id="tp-bw-index-{{ section.id }}">
+      <label class="tp-bw-suche__label" for="tp-bw-suche-{{ section.id }}">{{ bw_titel | escape }}</label>
+      <input type="hidden" name="type" value="{{ bw_typen }}">
+      <div class="tp-bw-suche__feld">
+        <input
+          class="tp-bw-suche__input"
+          id="tp-bw-suche-{{ section.id }}"
+          type="search"
+          name="q"
+          autocomplete="off"
+          placeholder="{{ section.settings.platzhalter | default: 'z. B. Teppichboden ausmessen' | escape }}"
+          aria-describedby="tp-bw-suche-hinweis-{{ section.id }}"
+          data-tp-bw-input
+        >
+        <button class="tp-bw-suche__knopf" type="submit">Suchen</button>
+      </div>
+      <p class="tp-bw-suche__hinweis" id="tp-bw-suche-hinweis-{{ section.id }}">
+        Durchsucht Ratgeber, Lexikon und den ganzen Shop.
+      </p>
+      <ul class="tp-bw-suche__liste" data-tp-bw-liste hidden></ul>
+    </form>
+  </div>
+</div>
+
+{%- capture bw_index -%}
+[
+  {%- assign bw_erster = true -%}
+
+  {%- for bw_block in section.blocks -%}
+    {%- if bw_block.type != 'bereich' or bw_block.settings.blog == blank -%}{%- continue -%}{%- endif -%}
+    {%- assign bw_blog = blogs[bw_block.settings.blog] -%}
+    {%- for bw_artikel in bw_blog.articles limit: 100 -%}
+      {%- unless bw_erster %},{% endunless -%}{%- assign bw_erster = false -%}
+      {%- assign bw_art = bw_artikel.metafields.ratgeber.art.value | default: 'Ratgeber' -%}
+      {%- comment -%}
+        s ist das zusaetzliche Suchfeld. Fuer Artikel bleibt es leer: Der Blogtitel
+        ist fuer alle Artikel eines Blogs derselbe und wuerde bei der Eingabe
+        "teppichboden" den ganzen Blog als Treffer liefern. Titel und Art reichen.
+      {%- endcomment -%}
+      {"t":{{ bw_artikel.title | json }},"u":{{ bw_artikel.url | json }},"k":{{ bw_art | json }},"s":"","typ":"artikel"}
+    {%- endfor -%}
+  {%- endfor -%}
+
+  {%- if section.settings.lexikon_seite != blank -%}
+    {%- for bw_begriff in shop.metaobjects.tp_lexikon.values -%}
+      {%- if bw_begriff.begriff == blank -%}{%- continue -%}{%- endif -%}
+      {%- unless bw_erster %},{% endunless -%}{%- assign bw_erster = false -%}
+      {%- assign bw_syn = bw_begriff.synonyme.value | join: ' ' -%}
+      {"t":{{ bw_begriff.begriff | json }},"u":{{ section.settings.lexikon_seite | append: '#' | append: bw_begriff.system.handle | json }},"k":"Begriff","s":{{ bw_syn | json }},"typ":"begriff"}
+    {%- endfor -%}
+  {%- endif -%}
+
+  {%- if section.settings.probleme_seite != blank -%}
+    {%- for bw_problem in shop.metaobjects.tp_bodenproblem.values -%}
+      {%- if bw_problem.symptom == blank or bw_problem.artikel == blank -%}{%- continue -%}{%- endif -%}
+      {%- unless bw_erster %},{% endunless -%}{%- assign bw_erster = false -%}
+      {"t":{{ bw_problem.symptom | json }},"u":{{ section.settings.probleme_seite | json }},"k":"Problem","s":{{ bw_problem.belag | json }},"typ":"problem"}
+    {%- endfor -%}
+  {%- endif -%}
+]
+{%- endcapture -%}
+
+<script type="application/json" id="tp-bw-index-{{ section.id }}">{{ bw_index | strip_newlines }}</script>
+<script src="{{ 'tp-bodenwissen-suche.js' | asset_url }}" defer></script>
+
+{% stylesheet %}
+  .tp-bw-suche { padding: 28px 0 8px; }
+  .tp-bw-suche__form { position: relative; max-width: 640px; margin: 0 auto; }
+  .tp-bw-suche__label { display: block; margin-bottom: 10px; font-size: 19px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-bw-suche__feld { display: flex; gap: 8px; }
+  .tp-bw-suche__input { flex: 1; min-width: 0; padding: 13px 15px; font-size: 16px; color: var(--tp-ink, #1d1a17); background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); }
+  .tp-bw-suche__input:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 1px; }
+  .tp-bw-suche__input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+  .tp-bw-suche__knopf { flex: none; padding: 13px 20px; font-size: 16px; font-weight: 600; color: #fff; background: var(--tp-red-dark, #96262f); border: 0; border-radius: var(--tp-r, 10px); cursor: pointer; }
+  .tp-bw-suche__knopf:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-bw-suche__hinweis { margin: 8px 0 0; font-size: 14px; color: var(--tp-ink-2, #4a443f); }
+  .tp-bw-suche__liste { position: absolute; z-index: 20; inset-inline: 0; top: calc(100% - 26px); margin: 0; padding: 6px; list-style: none; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r, 10px); box-shadow: var(--tp-shadow, 0 10px 30px rgba(29, 26, 23, 0.1)); }
+  .tp-bw-suche__liste[hidden] { display: none; }
+  .tp-bw-suche__treffer { display: flex; align-items: baseline; gap: 10px; padding: 10px 12px; color: var(--tp-ink, #1d1a17); text-decoration: none; border-radius: 6px; }
+  .tp-bw-suche__treffer:hover,
+  .tp-bw-suche__treffer:focus-visible { background: var(--tp-bg-3, #ede7de); outline: 0; }
+  .tp-bw-suche__treffer[aria-selected="true"] { background: var(--tp-bg-3, #ede7de); }
+  .tp-bw-suche__art { flex: none; font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-red-dark, #96262f); }
+  @media (max-width: 639px) {
+    .tp-bw-suche__label { font-size: 17px; }
+    .tp-bw-suche__knopf { padding: 13px 14px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Bodenwissen Suche",
+  "tag": "section",
+  "class": "tp-rg-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "text", "id": "titel", "label": "Ueberschrift ueber dem Feld", "default": "Was möchten Sie über Ihren Boden wissen?" },
+    { "type": "text", "id": "platzhalter", "label": "Platzhalter im Feld", "default": "z. B. Teppichboden ausmessen" },
+    { "type": "url", "id": "lexikon_seite", "label": "Lexikonseite", "info": "Leer lassen, solange es die Seite nicht gibt - die Begriffe fehlen dann in den Vorschlaegen." },
+    { "type": "url", "id": "probleme_seite", "label": "Problem-Finder", "info": "Leer lassen, solange es die Seite nicht gibt." }
+  ],
+  "blocks": [
+    {
+      "type": "bereich",
+      "name": "Bereich (Blog)",
+      "limit": 8,
+      "settings": [
+        { "type": "blog", "id": "blog", "label": "Blog, dessen Artikel vorgeschlagen werden" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Bodenwissen Suche" } ]
+}
+{% endschema %}

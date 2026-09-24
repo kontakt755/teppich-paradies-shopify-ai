@@ -1,0 +1,72 @@
+{
+  "id": "RAT-TB-008",
+  "handle": "verschnitt-bei-teppichboden",
+  "title": "Verschnitt bei Teppichboden: warum Sie mehr bestellen als der Raum misst",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Planen & Messen"
+  ],
+  "cluster": "teppichboden/planen-messen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "planung",
+  "frage": "Wie viel Verschnitt muss ich bei Teppichboden einplanen?",
+  "begriff": "verschnitt teppichboden",
+  "nebenfragen": [
+    "Warum bezahle ich mehr Fläche als der Raum hat?",
+    "Wie halte ich den Verschnitt klein?",
+    "Was mache ich mit den Resten?"
+  ],
+  "status": "fachinput_noetig",
+  "verwandte": [
+    "teppichboden-richtig-ausmessen",
+    "rollenbreite-und-bahnen-planen"
+  ],
+  "naechster_schritt": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+  "lexikon": [
+    "rollenbreite"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Rollenbreiten und Bedarfsrechner im Shop",
+      "url": "/collections/teppichboden"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Reststück nach dem Zuschnitt neben der verlegten Bahn",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-23",
+    "grund": "Rechenweg folgt den Rollenbreiten"
+  },
+  "expert_input": [
+    "Nennen Sie Kunden eine übliche Größenordnung für Verschnitt, oder raten Sie davon ab?",
+    "Wie viel Überlappung je Naht muss zusätzlich eingeplant werden?",
+    "Können Reststücke mitgeliefert werden, oder bleiben sie beim Zuschnitt?"
+  ],
+  "excerpt": "Teppichboden kommt in Rollenbreite, nicht in Raumgröße. Was übrig bleibt, bezahlen Sie mit – mit der richtigen Ausrichtung oft nur halb so viel.",
+  "seo": {
+    "title": "Verschnitt bei Teppichboden richtig einplanen",
+    "description": "Woraus Verschnitt entsteht, ein durchgerechnetes Beispiel für 400- und 500-cm-Rollen und wie Sie ihn klein halten."
+  },
+  "metafields": {
+    "kurzantwort": "Verschnitt entsteht, weil Teppichboden in Rollenbreite geliefert wird und nicht in Raumgröße. Drei Quellen addieren sich: die Differenz zwischen Rollenbreite und Raumbreite, die Zugabe auf die Länge und Nischen oder schiefe Wände. Wie viel es wird, hängt stark davon ab, ob die Bahn längs oder quer liegt – im Beispiel unten sind es 30 % gegenüber 16 % derselben Raumfläche.",
+    "art": "Planung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "rechner",
+      "muster"
+    ],
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

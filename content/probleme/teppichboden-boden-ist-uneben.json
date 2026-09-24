@@ -1,0 +1,12 @@
+{
+  "handle": "teppichboden-boden-ist-uneben",
+  "symptom": "Unebenheiten des Untergrunds zeichnen sich durch den Teppichboden ab",
+  "belag": "Teppichboden",
+  "ursachen": [
+    "Der Untergrund wurde vor dem Verlegen nicht eben genug ausgeglichen.",
+    "Reste des alten Bodenbelags oder lose Stellen wurden vor dem Verlegen nicht entfernt."
+  ],
+  "artikel": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+  "profi_noetig": true,
+  "status": "freigegeben"
+}

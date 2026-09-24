@@ -1,15 +1,22 @@
 name: dashboard-data
 
-# Haelt docs/ai-dashboard/issues.json aktuell. Das Dashboard liest nur
-# diese Datei, damit der Browser keinen GitHub-Token braucht.
+# Haelt die beiden erzeugten Dateien des Control Centers aktuell:
+#
+#   docs/ai-dashboard/issues.json      - Aufgabenstand aus GitHub Issues
+#   docs/ai-dashboard/bodenwissen.json - Redaktionsstand aus content/
+#
+# Das Dashboard liest nur diese Dateien, damit der Browser keinen GitHub-Token
+# braucht. issues.json holt ihre Daten ueber die GitHub-API (GH_TOKEN),
+# bodenwissen.json ausschliesslich aus dem Repository selbst - kein Token,
+# kein Netz.
 #
 # Das Control Center laeuft seit 2026-09-23 nur noch lokal (Inhaberentscheidung,
 # siehe docs/control-center/ARCHITEKTUR.md Abschnitt 1b) - keine oeffentliche
-# Anzeige mehr. issues.json wird trotzdem hier erzeugt: sie ist die Datenquelle
-# fuer den lokalen Server (scripts/serve-dashboard.mjs) und wird von
-# app.js nur noch angezeigt, wenn /api/capabilities einen lokalen Server meldet.
-# Dieser Workflow veroeffentlicht damit keine Aufgabendaten oeffentlich, er
-# haelt nur die Datei auf main aktuell.
+# Anzeige mehr. Beide Dateien werden trotzdem hier erzeugt: sie sind die
+# Datenquelle fuer den lokalen Server (scripts/serve-dashboard.mjs) und werden
+# von app.js nur noch angezeigt, wenn /api/capabilities einen lokalen Server
+# meldet. Dieser Workflow veroeffentlicht damit keine Aufgabendaten oeffentlich,
+# er haelt nur die Dateien auf main aktuell.
 on:
   issues:
     types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned]
@@ -25,6 +32,16 @@ on:
     paths:
       - 'scripts/build-dashboard-data.mjs'
       - '.github/workflows/dashboard-data.yml'
+      # Quellen von bodenwissen.json. Ohne diese Pfade veraltet die Datei
+      # still, sobald jemand Inhalte aendert - die Issue-Events oben loesen
+      # bei einem reinen Content-Commit nichts aus.
+      - 'content/ratgeber/**'
+      - 'content/lexikon/**'
+      - 'content/probleme/**'
+      - 'scripts/build-bodenwissen-data.mjs'
+      # Die Redaktionslogik (STATUS, pruefe) kommt importiert aus dem Gate.
+      # Aendert sie sich, aendert sich auch der Inhalt von bodenwissen.json.
+      - 'scripts/bodenwissen-guard.mjs'
 
 concurrency:
   group: dashboard-data
@@ -50,24 +67,43 @@ jobs:
           DASHBOARD_REPO: ${{ github.repository }}
         run: node scripts/build-dashboard-data.mjs
 
+      # Bewusst ohne GH_TOKEN: die Daten kommen aus content/ im Repository.
+      - name: bodenwissen.json erzeugen
+        run: node scripts/build-bodenwissen-data.mjs
+
       - name: Committen wenn geaendert
+        env:
+          # Beide Dateien gehoeren dem Bot und werden einzeln gestagt - nie
+          # "git add -A" und nie der ganze Ordner: eine unveraenderte Datei
+          # gehoert nicht in den Commit (CLAUDE.md, Abschnitt Dashboard).
+          DATEIEN: 'docs/ai-dashboard/issues.json docs/ai-dashboard/bodenwissen.json'
         run: |
           set -euo pipefail
 
-          if git diff --quiet -- docs/ai-dashboard/issues.json; then
-            echo "Keine Aenderung an issues.json"
+          geaendert=()
+          for datei in $DATEIEN; do
+            if git diff --quiet -- "$datei"; then
+              echo "Keine Aenderung an $datei"
+            else
+              geaendert+=("$datei")
+            fi
+          done
+
+          if [ ${#geaendert[@]} -eq 0 ]; then
+            echo "Nichts zu committen"
             exit 0
           fi
 
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/ai-dashboard/issues.json
-          git commit -m "chore(dashboard): issues.json aktualisieren [skip ci]"
+          git add -- "${geaendert[@]}"
+          git commit -m "chore(dashboard): Dashboard-Daten aktualisieren [skip ci]"
 
           # Zwischen checkout und push kann ein anderer Commit auf main
           # gelandet sein (paralleler Lauf oder lokaler Push). Dann wird der
-          # Push abgelehnt - also rebasen und erneut versuchen. issues.json
-          # ist generiert, bei Konflikt gewinnt immer unsere neue Version.
+          # Push abgelehnt - also rebasen und erneut versuchen. Beide Dateien
+          # sind erzeugt: bei einem Konflikt soll die Fassung gewinnen, die
+          # dieser Lauf gerade erzeugt hat - sie ist die juengere.
           for versuch in 1 2 3 4 5; do
             if git push; then
               echo "Push erfolgreich (Versuch $versuch)"
@@ -76,8 +112,26 @@ jobs:
             echo "Push abgelehnt, rebase und neuer Versuch ($versuch/5)"
             git fetch origin main
             if ! git rebase origin/main; then
-              git checkout --ours docs/ai-dashboard/issues.json 2>/dev/null || true
-              git add docs/ai-dashboard/issues.json
+              # Nur die eigenen Bot-Dateien aufloesen. Ein Konflikt in einer
+              # anderen Datei bleibt stehen, "rebase --continue" scheitert
+              # dann und der Lauf bricht kontrolliert ab - statt fremde
+              # Aenderungen blind zu ueberschreiben.
+              #
+              # --theirs, nicht --ours: waehrend eines Rebase ist "ours" der
+              # Upstream (origin/main), auf den wiedergespielt wird, und
+              # "theirs" der eigene Commit, der gerade wiedergespielt wird.
+              # Die Benennung ist genau umgekehrt zum Merge. Mit --ours stand
+              # hier die AELTERE Fassung vom Server, die frisch erzeugte war
+              # weg (belegt mit dem Szenario aus docs/lessons/
+              # rebase-ours-ist-der-upstream.md).
+              for datei in $(git diff --name-only --diff-filter=U); do
+                case " $DATEIEN " in
+                  *" $datei "*)
+                    git checkout --theirs -- "$datei"
+                    git add -- "$datei"
+                    ;;
+                esac
+              done
               GIT_EDITOR=true git rebase --continue || git rebase --abort
             fi
             sleep $((versuch * 3))

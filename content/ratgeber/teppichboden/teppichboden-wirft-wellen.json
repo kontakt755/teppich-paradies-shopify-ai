@@ -1,0 +1,74 @@
+{
+  "id": "RAT-TB-007",
+  "handle": "teppichboden-wirft-wellen",
+  "title": "Teppichboden wirft Wellen: mögliche Ursachen und was hilft",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Fehler vermeiden"
+  ],
+  "cluster": "teppichboden/probleme",
+  "parent": "ratgeber-teppichboden",
+  "intent": "problem",
+  "frage": "Warum wirft mein Teppichboden Wellen?",
+  "begriff": "teppichboden wellen",
+  "nebenfragen": [
+    "Gehen Wellen wieder weg?",
+    "Ist das ein Reklamationsfall?",
+    "Kann ich das selbst beheben?"
+  ],
+  "status": "fachinput_noetig",
+  "verwandte": [
+    "teppichboden-verlegen-lose-fixieren-oder-kleben",
+    "untergrund-pruefen-und-vorbereiten"
+  ],
+  "naechster_schritt": "",
+  "lexikon": [
+    "fixierung",
+    "ruecken"
+  ],
+  "quellen": [],
+  "bilder": [
+    {
+      "zweck": "Teppichboden mit deutlichen Wellen in der Laufzone",
+      "status": "offen"
+    },
+    {
+      "zweck": "Gelöste Kante an der Wand",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-23",
+    "grund": "Schadensbilder ändern sich nicht"
+  },
+  "expert_input": [
+    "Welche Ursachen sehen Sie in der Praxis am häufigsten? Nach Häufigkeit ordnen.",
+    "Fehlt in der Liste eine Ursache?",
+    "Welche Fälle lassen sich nachträglich beheben, welche nicht?",
+    "Gehen Wellen nach dem Nachfixieren vollständig weg?",
+    "Bieten Sie das Nachfixieren als Leistung an?",
+    "Ab wann ist es ein Material-, ab wann ein Verlegefehler?",
+    "Was sollte ein Kunde dokumentieren, bevor er reklamiert?"
+  ],
+  "excerpt": "Wellen haben selten eine einzige Ursache. Diese Übersicht grenzt ein, woran es liegen kann – und was Sie prüfen sollten, bevor Sie jemanden rufen.",
+  "seo": {
+    "title": "Teppichboden wirft Wellen: Ursachen und was hilft",
+    "description": "Wellen im Teppichboden: mögliche Ursachen von loser Verlegung bis Restfeuchte, was Sie selbst prüfen können und wann ein Fachbetrieb ran muss."
+  },
+  "metafields": {
+    "kurzantwort": "Wellen entstehen meist aus zwei Dingen zusammen: Der Belag hat sich bewegt, und er war nicht so befestigt, dass er diese Bewegung aufnehmen konnte. Häufige Auslöser sind lose Verlegung, fehlende Akklimatisierung, eine nicht haltende Fixierung, Feuchtigkeit von unten oder ein unebener Untergrund. Welche Ursache bei Ihnen vorliegt, lässt sich ohne Blick auf den Boden nicht sicher sagen.",
+    "art": "Problem",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "verlegeservice"
+    ],
+    "kollektion": "",
+    "zubehoer_kollektion": "",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

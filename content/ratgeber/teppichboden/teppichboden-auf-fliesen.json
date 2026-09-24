@@ -1,0 +1,91 @@
+{
+  "id": "RAT-TB-006",
+  "handle": "teppichboden-auf-fliesen",
+  "title": "Teppichboden auf Fliesen verlegen: Was der Untergrund hergeben muss",
+  "blog": "ratgeber-teppichboden",
+  "tags": [
+    "Verlegen"
+  ],
+  "cluster": "teppichboden/verlegen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "anleitung",
+  "frage": "Kann ich Teppichboden direkt auf Fliesen verlegen?",
+  "begriff": "teppichboden auf fliesen",
+  "nebenfragen": [
+    "Zeichnen sich die Fliesenfugen ab?",
+    "Muss ich vor dem Verlegen spachteln?",
+    "Müssen die Fliesen raus?"
+  ],
+  "status": "fachinput_noetig",
+  "verwandte": [
+    "teppichboden-verlegen-lose-fixieren-oder-kleben",
+    "untergrund-pruefen-und-vorbereiten"
+  ],
+  "naechster_schritt": "teppichboden-richtig-ausmessen",
+  "lexikon": [
+    "fixierung"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Verlegeservice und Zubehör im Shop",
+      "url": "/collections/zubehoer"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Alter Fliesenboden im Ausgangszustand",
+      "status": "offen"
+    },
+    {
+      "zweck": "Fuge aus der Nähe, mit Maßstab im Bild",
+      "status": "offen"
+    },
+    {
+      "zweck": "Gespachtelte Fläche über Fliesen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Verlegter Teppichboden, gleiche Perspektive",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-23",
+    "grund": "Untergrundregeln sind stabil"
+  },
+  "expert_input": [
+    "Welche Punkte prüft das Team am Fliesenboden, in welcher Reihenfolge?",
+    "Woran erkennt ein Kunde eine hohl liegende Fliese zuverlässig?",
+    "Ab welcher Fugenbreite oder -tiefe raten Sie zum Spachteln?",
+    "Welche Teppichbodenaufbauten verzeihen Fugen besser, welche schlechter?",
+    "Grundieren Sie auf Fliesen grundsätzlich?",
+    "Übliche Schichtstärke und Trocknungszeit beim Spachteln auf Fliesen?",
+    "Wann raten Sie stattdessen zum Rückbau der Fliesen?",
+    "Welche Verlegeart empfehlen Sie auf Fliesen, wovon raten Sie ab?",
+    "Hält Verlegeband auf Fliesen dauerhaft? Braucht es einen anderen Bandtyp?",
+    "Lässt sich vollflächig verklebter Teppichboden wieder von Fliesen lösen?"
+  ],
+  "excerpt": "Fliesen tragen Teppichboden in der Regel gut. Über das Ergebnis entscheidet ihr Zustand – und wie stark sich die Fugen später abzeichnen.",
+  "seo": {
+    "title": "Teppichboden auf Fliesen verlegen: Untergrund prüfen",
+    "description": "Teppichboden auf Fliesen: Was Sie am Untergrund prüfen, warum sich Fugen abzeichnen können und wann gespachtelt werden muss."
+  },
+  "metafields": {
+    "kurzantwort": "Ja, Fliesen sind als Untergrund für Teppichboden in der Regel geeignet – sie sind fest und tragen gut. Entscheidend ist ihr Zustand: Alle Fliesen müssen fest sitzen, die Fläche muss trocken, sauber und ohne Absätze sein. Die wichtigste Frage sind die Fugen, denn sie können sich mit der Zeit durch den Belag abzeichnen. Ob dafür gespachtelt werden muss, entscheidet sich vor Ort.",
+    "art": "Anleitung",
+    "dauer": "",
+    "schwierigkeit": "",
+    "personen": "",
+    "material": [],
+    "cta": [
+      "verlegeservice",
+      "zubehoer"
+    ],
+    "kollektion": "teppichboden",
+    "zubehoer_kollektion": "zubehoer",
+    "geprueft_von": "",
+    "stand": ""
+  }
+}

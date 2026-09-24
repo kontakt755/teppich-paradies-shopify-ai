@@ -1,0 +1,145 @@
+{%- doc -%}
+  Zweite Reihe auf /pages/ratgeber: Werkzeuge (Lexikon, Problem-Finder, Rechner)
+  und darunter "Haeufig gesucht" - direkte Verweise auf einzelne Artikel.
+
+  Die Bereichskarten (ein Blog je Belag) stehen weiter in
+  sections/tp-ratgeber-bereiche.liquid. Diese Section ergaenzt sie, sie ersetzt
+  sie nicht.
+
+  Wie dort gilt: Ein Block ohne Ziel wird nicht ausgegeben. Von hier fuehrt kein
+  Link auf eine Seite, die es noch nicht gibt - das ist der Grund, warum es
+  keinen "bald verfuegbar"-Zustand gibt: Ein Werkzeug, das es nicht gibt, muss
+  man auch nicht ankuendigen.
+{%- enddoc -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign bw_e_werkzeuge = 0
+  assign bw_e_links = 0
+  for bw_e_block in section.blocks
+    if bw_e_block.settings.ziel == blank or bw_e_block.settings.titel == blank
+      continue
+    endif
+    if bw_e_block.type == 'werkzeug'
+      assign bw_e_werkzeuge = bw_e_werkzeuge | plus: 1
+    else
+      assign bw_e_links = bw_e_links | plus: 1
+    endif
+  endfor
+-%}
+
+{%- if bw_e_werkzeuge > 0 or bw_e_links > 0 -%}
+  <div class="tp-bw-einstiege">
+    <div class="tp-s-wrap">
+
+      {%- if bw_e_werkzeuge > 0 -%}
+        <section class="tp-bw-einstiege__block" aria-labelledby="tp-bw-werkzeuge-{{ section.id }}">
+          <h2 class="tp-bw-einstiege__h2" id="tp-bw-werkzeuge-{{ section.id }}">
+            {{ section.settings.werkzeuge_titel | default: 'Werkzeuge' | escape }}
+          </h2>
+          <ul class="tp-bw-werkzeuge">
+            {%- for bw_e_block in section.blocks -%}
+              {%- if bw_e_block.type != 'werkzeug' or bw_e_block.settings.ziel == blank or bw_e_block.settings.titel == blank -%}
+                {%- continue -%}
+              {%- endif -%}
+              <li class="tp-bw-werkzeug" {{ bw_e_block.shopify_attributes }}>
+                <h3 class="tp-bw-werkzeug__titel">
+                  <a class="tp-bw-werkzeug__link" href="{{ bw_e_block.settings.ziel }}">{{ bw_e_block.settings.titel | escape }}</a>
+                </h3>
+                {%- if bw_e_block.settings.text != blank -%}
+                  <p class="tp-bw-werkzeug__text">{{ bw_e_block.settings.text | escape }}</p>
+                {%- endif -%}
+              </li>
+            {%- endfor -%}
+          </ul>
+        </section>
+      {%- endif -%}
+
+      {%- if bw_e_links > 0 -%}
+        <section class="tp-bw-einstiege__block" aria-labelledby="tp-bw-gesucht-{{ section.id }}">
+          <h2 class="tp-bw-einstiege__h2" id="tp-bw-gesucht-{{ section.id }}">
+            {{ section.settings.gesucht_titel | default: 'Häufig gesucht' | escape }}
+          </h2>
+          <ul class="tp-bw-gesucht">
+            {%- for bw_e_block in section.blocks -%}
+              {%- if bw_e_block.type != 'gesucht' or bw_e_block.settings.ziel == blank or bw_e_block.settings.titel == blank -%}
+                {%- continue -%}
+              {%- endif -%}
+              <li {{ bw_e_block.shopify_attributes }}>
+                <a class="tp-bw-gesucht__link" href="{{ bw_e_block.settings.ziel }}">{{ bw_e_block.settings.titel | escape }}</a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </section>
+      {%- endif -%}
+
+    </div>
+  </div>
+{%- endif -%}
+
+{% stylesheet %}
+  .tp-bw-einstiege { padding: 0 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); }
+  .tp-bw-einstiege__block + .tp-bw-einstiege__block { margin-top: 36px; }
+  .tp-bw-einstiege__h2 { margin: 0 0 16px; font-size: clamp(20px, 2.4vw, 26px); font-weight: 700; line-height: 1.2; color: var(--tp-ink, #1d1a17); }
+
+  .tp-bw-werkzeuge { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .tp-bw-werkzeug { position: relative; margin: 0; padding: 18px 20px 20px; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); }
+  .tp-bw-werkzeug:hover { border-color: var(--tp-line-2, #d5cec4); box-shadow: var(--tp-shadow, 0 10px 30px rgba(29, 26, 23, 0.1)); }
+  .tp-bw-werkzeug:has(.tp-bw-werkzeug__link:focus-visible) { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+  .tp-bw-werkzeug__titel { margin: 0 0 6px; font-size: 18px; font-weight: 600; line-height: 1.3; color: var(--tp-ink, #1d1a17); }
+  .tp-bw-werkzeug__link { color: inherit; text-decoration: none; }
+  .tp-bw-werkzeug__link::after { content: ""; position: absolute; inset: 0; }
+  .tp-bw-werkzeug__link:hover { text-decoration: underline; }
+  .tp-bw-werkzeug__link:focus-visible { outline: 0; }
+  .tp-bw-werkzeug__text { margin: 0; font-size: 15px; line-height: 1.55; }
+
+  .tp-bw-gesucht { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .tp-bw-gesucht__link { display: inline-block; padding: 9px 14px; font-size: 15px; color: var(--tp-ink, #1d1a17); text-decoration: none; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); border-radius: 999px; }
+  .tp-bw-gesucht__link:hover { border-color: var(--tp-line-2, #d5cec4); text-decoration: underline; }
+  .tp-bw-gesucht__link:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+
+  @media (min-width: 640px) {
+    .tp-bw-werkzeuge { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (min-width: 1024px) {
+    .tp-bw-werkzeuge { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tp-bw-werkzeug { transition: box-shadow 0.15s, border-color 0.15s; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Bodenwissen Einstiege",
+  "tag": "section",
+  "class": "tp-rg-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "text", "id": "werkzeuge_titel", "label": "Ueberschrift Werkzeuge", "default": "Werkzeuge" },
+    { "type": "text", "id": "gesucht_titel", "label": "Ueberschrift Haeufig gesucht", "default": "Häufig gesucht" }
+  ],
+  "blocks": [
+    {
+      "type": "werkzeug",
+      "name": "Werkzeug",
+      "limit": 6,
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Titel" },
+        { "type": "textarea", "id": "text", "label": "Kurztext" },
+        { "type": "url", "id": "ziel", "label": "Ziel", "info": "Ohne Ziel erscheint die Karte nicht." }
+      ]
+    },
+    {
+      "type": "gesucht",
+      "name": "Haeufig gesucht",
+      "limit": 12,
+      "settings": [
+        { "type": "text", "id": "titel", "label": "Beschriftung", "info": "Sagt, was dahinter steckt - nicht \"mehr\" oder \"hier\"." },
+        { "type": "url", "id": "ziel", "label": "Ziel" }
+      ]
+    }
+  ],
+  "presets": [ { "name": "TP Bodenwissen Einstiege" } ]
+}
+{% endschema %}

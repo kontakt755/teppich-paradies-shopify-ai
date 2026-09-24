@@ -1,0 +1,171 @@
+{%- comment -%}
+  TP Lexikon (Template page.bodenwissen-lexikon.json, Seite /pages/bodenlexikon):
+  rendert alle Eintraege des Metaobjekt-Typs tp_lexikon, gruppiert nach
+  "gruppe" und alphabetisch nach "begriff" innerhalb der Gruppe. Gruppen-
+  Reihenfolge wie in docs/bodenwissen/CONTENT_MODEL.md, Abschnitt 6:
+  Teppichboden, Vinyl, Untergrund, Allgemein. Eine unbekannte oder leere
+  Gruppe landet am Ende.
+
+  Grenze: shop.metaobjects.<typ>.values liefert ohne paginate hoechstens 50
+  Eintraege. paginate hebt das auf 250 an - derselbe Kniff wie in
+  sections/tp-vorher-nachher.liquid und sections/tp-arbeiten-galerie.liquid
+  fuer das Metaobjekt tp_projekt.
+
+  Sortierung: ein Metaobjekt-Feld laesst sich nicht direkt mit `sort: 'begriff'`
+  alphabetisch ordnen - das Feld ist ein Objekt mit .value, kein Skalar
+  (siehe sections/tp-arbeiten-galerie.liquid, Kommentar zu `reihenfolge`).
+  Deshalb ein Sortierschluessel aus Gruppen-Rang + kleingeschriebenem Begriff
+  + Index, der anschliessend als Ganzes sortiert wird.
+
+  Gerendert wird jeder Eintrag ueber snippets/tp-lexikon-eintrag.liquid
+  (modus 'voll') - Auszeichnung und id-Anker stehen so nur an einer Stelle;
+  derselbe Snippet erklaert spaeter Begriffe inline auf Produkt- und
+  Artikelseiten (modus 'inline').
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign lx_gruppen_reihenfolge = 'Teppichboden,Vinyl,Untergrund,Allgemein' | split: ','
+-%}
+
+{%- paginate shop.metaobjects.tp_lexikon.values by 250 -%}
+  {%- comment -%}
+    sort macht aus der Sammlung ein echtes Array. Ohne das ueberlebt die Zuweisung
+    den paginate-Block nicht und lx_alle[i] liefert nichts - die Seite bleibt still
+    leer. Dasselbe Muster wie in sections/tp-arbeiten-galerie.liquid.
+  {%- endcomment -%}
+  {%- assign lx_alle = shop.metaobjects.tp_lexikon.values | sort: 'handle' -%}
+{%- endpaginate -%}
+
+<div class="tp-lex">
+  <div class="tp-s-wrap">
+    <header class="tp-lex__kopf">
+      <h1 class="tp-lex__h1">{{ page.title | escape }}</h1>
+      {%- if page.content != blank -%}
+        <div class="tp-lex__intro">{{ page.content }}</div>
+      {%- endif -%}
+    </header>
+
+    {%- if lx_alle.size == 0 -%}
+      {%- comment -%} Ohne Eintraege bleibt die Seite still - kein leeres Raster. {%- endcomment -%}
+      {%- if request.design_mode -%}
+        <p class="tp-lex__leer"><b>Bodenlexikon:</b> Noch kein Eintrag angelegt. Shopify-Admin &rarr;
+        Inhalt &rarr; Metaobjekte &rarr; „Lexikonbegriff (TP)" &rarr; Eintrag hinzufügen.</p>
+      {%- endif -%}
+    {%- else -%}
+      {%- comment -%}
+        Zwei Schleifen statt eines Sortierschluessels mit Index-Rueckgriff: aussen
+        die Gruppen in fester Reihenfolge, innen die Eintraege dieser Gruppe.
+        lx_alle ist bereits nach Handle sortiert, und der Handle ist der
+        handleisierte Begriff - innerhalb einer Gruppe steht damit alles
+        alphabetisch (Umlaute gefaltet: Florhoehe vor Frise vor Fussbodenheizung).
+
+        Der vorherige Weg baute je Eintrag einen Schluessel "<Rang>||<Begriff>||<Index>",
+        sortierte die Schluessel und holte den Eintrag ueber lx_alle[Index] zurueck.
+        Der Rueckgriff lieferte immer denselben Eintrag - auf der gerenderten Seite
+        stand 16 Mal "Fixierung". Aufgefallen ist das erst beim Rendern mit echten
+        Daten, nicht in liquid:guard.
+      {%- endcomment -%}
+      {%- liquid
+        assign lx_gruppen_alle = lx_gruppen_reihenfolge
+        assign lx_rest_titel = section.settings.rest_titel | default: 'Weitere Begriffe'
+      -%}
+
+      {%- capture lx_nav_html -%}
+        {%- for lx_gruppe_wert in lx_gruppen_alle -%}
+          {%- capture lx_nav_eintraege -%}
+            {%- for lx_eintrag in lx_alle -%}
+              {%- if lx_eintrag.gruppe.value != lx_gruppe_wert -%}{%- continue -%}{%- endif -%}
+              <li><a class="tp-lex-nav__link" href="#{{ lx_eintrag.system.handle }}">{{ lx_eintrag.begriff.value | escape }}</a></li>
+            {%- endfor -%}
+          {%- endcapture -%}
+          {%- if lx_nav_eintraege != blank -%}
+            <p class="tp-lex-nav__gruppe">{{ lx_gruppe_wert | escape }}</p>
+            <ul class="tp-lex-nav__liste">{{ lx_nav_eintraege }}</ul>
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- comment -%} Eintraege mit einer Gruppe, die nicht in der Reihenfolge steht. {%- endcomment -%}
+        {%- capture lx_nav_rest -%}
+          {%- for lx_eintrag in lx_alle -%}
+            {%- assign lx_g = lx_eintrag.gruppe.value | default: '' -%}
+            {%- if lx_gruppen_alle contains lx_g -%}{%- continue -%}{%- endif -%}
+            <li><a class="tp-lex-nav__link" href="#{{ lx_eintrag.system.handle }}">{{ lx_eintrag.begriff.value | escape }}</a></li>
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- if lx_nav_rest != blank -%}
+          <p class="tp-lex-nav__gruppe">{{ lx_rest_titel | escape }}</p>
+          <ul class="tp-lex-nav__liste">{{ lx_nav_rest }}</ul>
+        {%- endif -%}
+      {%- endcapture -%}
+
+      <nav class="tp-lex-nav" aria-label="Begriffe im Bodenlexikon">{{ lx_nav_html }}</nav>
+
+      <div class="tp-lex-inhalt">
+        {%- for lx_gruppe_wert in lx_gruppen_alle -%}
+          {%- capture lx_gruppe_html -%}
+            {%- for lx_eintrag in lx_alle -%}
+              {%- if lx_eintrag.gruppe.value != lx_gruppe_wert -%}{%- continue -%}{%- endif -%}
+              {%- render 'tp-lexikon-eintrag', handle: lx_eintrag.system.handle, modus: 'voll', ebene: 'h3' -%}
+            {%- endfor -%}
+          {%- endcapture -%}
+          {%- if lx_gruppe_html != blank -%}
+            <h2 class="tp-lex-gruppe__titel" id="gruppe-{{ lx_gruppe_wert | handleize }}">{{ lx_gruppe_wert | escape }}</h2>
+            <div class="tp-lex-gruppe__liste">{{ lx_gruppe_html }}</div>
+          {%- endif -%}
+        {%- endfor -%}
+
+        {%- capture lx_rest_html -%}
+          {%- for lx_eintrag in lx_alle -%}
+            {%- assign lx_g = lx_eintrag.gruppe.value | default: '' -%}
+            {%- if lx_gruppen_alle contains lx_g -%}{%- continue -%}{%- endif -%}
+            {%- render 'tp-lexikon-eintrag', handle: lx_eintrag.system.handle, modus: 'voll', ebene: 'h3' -%}
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- if lx_rest_html != blank -%}
+          <h2 class="tp-lex-gruppe__titel" id="gruppe-weitere">{{ lx_rest_titel | escape }}</h2>
+          <div class="tp-lex-gruppe__liste">{{ lx_rest_html }}</div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{% stylesheet %}
+  .tp-lex { padding: 16px 0 var(--tp-sec, 64px); color: var(--tp-ink-2, #4a443f); overflow-wrap: break-word; }
+  .tp-lex__kopf { margin: 8px 0 28px; max-width: 760px; }
+  .tp-lex__h1 { margin: 0 0 12px; font-size: clamp(28px, 4.2vw, 42px); font-weight: 700; line-height: 1.12; letter-spacing: -0.01em; color: var(--tp-ink, #1d1a17); text-wrap: balance; }
+  .tp-lex__intro { font-size: 17px; line-height: 1.65; }
+  .tp-lex__intro p { margin: 0 0 10px; }
+  .tp-lex__leer { color: var(--tp-muted, #655e57); padding: 24px 0; }
+
+  .tp-lex-nav { margin: 0 0 32px; padding: 16px 18px; background: var(--tp-bg-2, #f6f2ec); border: 1px solid var(--tp-line, #e6e0d8); border-radius: var(--tp-r-lg, 16px); }
+  .tp-lex-nav__gruppe { margin: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tp-muted, #655e57); }
+  .tp-lex-nav__gruppe:first-child { margin-top: 0; }
+  .tp-lex-nav__liste { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+  .tp-lex-nav__link { display: inline-flex; align-items: center; min-height: 36px; padding: 4px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--tp-line, #e6e0d8); color: var(--tp-ink, #1d1a17); font-size: 14px; text-decoration: none; }
+  .tp-lex-nav__link:hover { border-color: var(--tp-line-2, #d5cec4); background: var(--tp-bg-3, #ede7de); }
+  .tp-lex-nav__link:focus-visible { outline: 2px solid var(--tp-ink, #1d1a17); outline-offset: 2px; }
+
+  .tp-lex-gruppe__titel { margin: 40px 0 4px; font-size: 22px; font-weight: 700; color: var(--tp-ink, #1d1a17); scroll-margin-top: 96px; }
+  .tp-lex-gruppe__liste:first-of-type .tp-lex-gruppe__titel { margin-top: 0; }
+  .tp-lex-gruppe__liste { max-width: 760px; }
+
+  @media (max-width: 639px) {
+    .tp-lex-nav { padding: 14px; }
+    .tp-lex-gruppe__titel { font-size: 20px; margin-top: 32px; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Lexikon",
+  "tag": "section",
+  "class": "tp-lex-section",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "paragraph", "content": "Titel und Einleitung kommen aus der Seite selbst (Seitentitel und Seiteninhalt). Die Begriffe werden im Shopify-Admin unter Inhalt > Metaobjekte > Lexikonbegriff (TP) gepflegt; Quelltexte dafuer liegen unter content/lexikon/ im Repository." }
+  ],
+  "presets": [ { "name": "TP Lexikon" } ]
+}
+{% endschema %}

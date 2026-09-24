@@ -1,10 +1,52 @@
 {
+  "id": "RAT-TB-003",
   "handle": "rollenbreite-und-bahnen-planen",
   "title": "Rollenbreite wählen und Bahnen planen: 400 oder 500 cm?",
   "blog": "ratgeber-teppichboden",
   "tags": [
     "Planen & Messen"
   ],
+  "cluster": "teppichboden/planen-messen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "planung",
+  "frage": "Brauche ich eine 400er oder eine 500er Rolle?",
+  "begriff": "rollenbreite teppichboden",
+  "nebenfragen": [
+    "Wann entsteht eine Naht?",
+    "Wo darf die Naht liegen?",
+    "Was ist die Florrichtung?"
+  ],
+  "status": "veroeffentlicht",
+  "verwandte": [
+    "teppichboden-richtig-ausmessen"
+  ],
+  "naechster_schritt": "teppichboden-verlegen-lose-fixieren-oder-kleben",
+  "lexikon": [
+    "rollenbreite"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Verfuegbare Rollenbreiten im Shop",
+      "url": "/collections/teppichboden"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Zwei Bahnen mit Naht unter einem Moebelstueck",
+      "status": "offen"
+    },
+    {
+      "zweck": "Florrichtung im Streiflicht sichtbar",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-21",
+    "grund": "Rollenbreiten aendern sich nur mit dem Lieferprogramm"
+  },
+  "expert_input": [],
   "excerpt": "400 oder 500 cm Rollenbreite? So vergleichen Sie die Varianten, vermeiden Nähte und halten die Florrichtung über mehrere Räume einheitlich.",
   "seo": {
     "title": "Teppichboden: Rollenbreite wählen und Bahnen planen",
@@ -25,6 +67,5 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
-  },
-  "status": "freigegeben"
+  }
 }

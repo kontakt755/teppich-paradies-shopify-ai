@@ -345,6 +345,13 @@ Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
 fail-closed blockiert (Fliesstext mit Git-Befehlen per Heredoc).
 → `docs/lessons/dashboard-issues-json.md`
 
+**Beim Rebase ist `--ours` der Upstream, nicht die eigene Arbeit.** Genau
+umgekehrt zum Merge. Wer den eigenen, gerade wiedergespielten Stand behalten
+will — etwa der Bot mit seinen frisch erzeugten Dateien — nimmt `--theirs`.
+`dashboard-data.yml` nahm seit dem 2026-09-03 `--ours` und verwarf damit die
+Datei, die es im selben Lauf erzeugt hatte.
+→ `docs/lessons/rebase-ours-ist-der-upstream.md`
+
 **Aufgaben pflegen sich ueber Ereignisse selbst** (`task-automation.yml`):
 neues Issue → Eingang, PR referenziert `#n` → In Arbeit, PR gemergt → Review,
 Issue geschlossen → Erledigt. Prioritaeten und Owner nie automatisch.

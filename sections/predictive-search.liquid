@@ -6,6 +6,11 @@
   (Lupe, Telefon) und im Dropdown der grossen Suchleiste
   (sections/tp-header-suche.liquid, assets/tp-suche.js). Der Zweig fuer
   "Zuletzt angesehen" (search.performed) ist unveraendert Horizon.
+
+  Aufgabe #505 (Luecke L1): predictive_search.resources.articles zeigt
+  Ratgeber-Treffer, sobald resources[type] "article" in der Anfrage enthaelt.
+  Das setzen die Fetches in assets/tp-suche.js und assets/predictive-search.js -
+  beide ausserhalb dieser Aenderung.
 {%- endcomment -%}
 {%- if predictive_search.performed -%}
   <div
@@ -16,7 +21,9 @@
   >
     <div class="predictive-search-results__inner" data-search-results>
       {%- liquid
-        assign search_results_count = predictive_search.resources.products.size | plus: predictive_search.resources.pages.size | plus: predictive_search.resources.collections.size
+        # TP: Artikel (Ratgeber) zaehlen fuer die Screenreader-Ansage mit, sonst
+        # meldet "N Ergebnisse" weniger Treffer als tatsaechlich angezeigt werden.
+        assign search_results_count = predictive_search.resources.products.size | plus: predictive_search.resources.pages.size | plus: predictive_search.resources.collections.size | plus: predictive_search.resources.articles.size
       -%}
       <div class="visually-hidden" role="status">
         {%- if search_results_count > 0 -%}

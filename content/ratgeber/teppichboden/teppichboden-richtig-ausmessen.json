@@ -1,10 +1,58 @@
 {
+  "id": "RAT-TB-002",
   "handle": "teppichboden-richtig-ausmessen",
   "title": "Teppichboden richtig ausmessen: So ermitteln Sie Breite, Länge und Zugabe",
   "blog": "ratgeber-teppichboden",
   "tags": [
     "Planen & Messen"
   ],
+  "cluster": "teppichboden/planen-messen",
+  "parent": "ratgeber-teppichboden",
+  "intent": "planung",
+  "frage": "Wie messe ich einen Raum fuer Teppichboden aus?",
+  "begriff": "teppichboden ausmessen",
+  "nebenfragen": [
+    "Wie viel Zugabe braucht Teppichboden?",
+    "Messe ich mit oder ohne Sockelleiste?",
+    "Wie messe ich einen L-foermigen Raum?"
+  ],
+  "status": "veroeffentlicht",
+  "verwandte": [
+    "rollenbreite-und-bahnen-planen",
+    "teppichboden-verlegen-lose-fixieren-oder-kleben"
+  ],
+  "naechster_schritt": "rollenbreite-und-bahnen-planen",
+  "lexikon": [
+    "fixierung",
+    "rollenbreite"
+  ],
+  "quellen": [
+    {
+      "art": "hausangabe",
+      "titel": "Rollenbreiten und Bestellraster im Shop",
+      "url": "/collections/teppichboden"
+    }
+  ],
+  "bilder": [
+    {
+      "zweck": "Zollstock an der breitesten Stelle des Raums",
+      "status": "offen"
+    },
+    {
+      "zweck": "Tuernische und Erker beim Messen",
+      "status": "offen"
+    },
+    {
+      "zweck": "Skizze L-foermiger Raum mit Bahnenaufteilung",
+      "status": "offen"
+    }
+  ],
+  "pruefung": {
+    "zyklus_monate": 24,
+    "naechste": "2028-09-21",
+    "grund": "Messregeln und Rollenbreiten sind stabil"
+  },
+  "expert_input": [],
   "excerpt": "So messen Sie Ihren Raum für Teppichboden von der Rolle aus: breiteste und längste Stelle, passende Rollenbreite, 10 bis 20 cm Zugabe auf die Länge.",
   "seo": {
     "title": "Teppichboden richtig ausmessen: Breite, Länge, Zugabe",
@@ -25,6 +73,5 @@
     "zubehoer_kollektion": "",
     "geprueft_von": "",
     "stand": ""
-  },
-  "status": "freigegeben"
+  }
 }

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
-import { baueEingabe, ladeArtikel, ohneKommentare, pruefeFreigabe } from '../../scripts/ratgeber-payload.mjs';
+import { OFFENE_STATUS, baueEingabe, ladeArtikel, ohneKommentare, pruefeFreigabe } from '../../scripts/ratgeber-payload.mjs';
 
 const meta = (extra = {}) => ({
   handle: 'test-artikel', title: 'Testartikel', tags: ['Planen & Messen'], excerpt: 'Kurz.',
@@ -57,12 +57,49 @@ test('fehlende Kollektions-GID bricht ab statt den Verweis still wegzulassen', (
   assert.throws(() => baueEingabe(meta(), HTML, { blogId: OPT.blogId, kollektionen: {} }), /Kollektion "teppichboden".*fehlt/);
 });
 
-test('die echten Pilotartikel sind Entwuerfe und bleiben gesperrt, solange PRUEFEN-Marken offen sind', () => {
+test('die echten Pilotartikel: offener Status plus PRUEFEN-freier Text, sonst gesperrt', () => {
   const ordner = path.resolve(import.meta.dirname, '../../content/ratgeber/teppichboden');
   const artikel = ladeArtikel(ordner);
   assert.ok(artikel.length >= 4);
   for (const { meta: m, html } of artikel) {
     assert.ok(fs.existsSync(path.join(ordner, `${m.handle}.html`)), `${m.handle}: Dateiname und handle stimmen ueberein`);
-    if (html.includes('PRUEFEN') || m.status !== 'freigegeben') assert.ok(pruefeFreigabe(m, html).length > 0, `${m.handle} muesste gesperrt sein`);
+    const gesperrt = pruefeFreigabe(m, html).length > 0;
+    const darfDurch = OFFENE_STATUS.includes(m.status) && !html.includes('PRUEFEN');
+    assert.equal(gesperrt, !darfDurch, `${m.handle}: Status "${m.status}" und Sperre passen nicht zusammen`);
   }
+});
+
+test('die Inhaltsart Problem ist erlaubt, eine erfundene nicht', () => {
+  assert.deepEqual(pruefeFreigabe(meta({ metafields: { ...meta().metafields, art: 'Problem' } }), HTML), []);
+  assert.ok(pruefeFreigabe(meta({ metafields: { ...meta().metafields, art: 'Ratgeber' } }), HTML).length > 0);
+});
+
+test('ein Artikel im Status veroeffentlicht darf gebaut werden, ein Entwurf nicht', () => {
+  assert.deepEqual(pruefeFreigabe(meta({ status: 'veroeffentlicht' }), HTML), []);
+  assert.ok(pruefeFreigabe(meta({ status: 'fachpruefung' }), HTML).length > 0);
+});
+
+test('verwandte und naechster_schritt wandern als Metafelder in die Eingabe', () => {
+  const m = meta({ verwandte: ['rollenbreite-und-bahnen-planen', 'teppichboden-verlegen-lose-fixieren-oder-kleben'], naechster_schritt: 'rollenbreite-und-bahnen-planen' });
+  const { article } = baueEingabe(m, HTML, OPT);
+  const feld = (ns, key) => article.metafields.find(f => f.namespace === ns && f.key === key);
+  const verwandtFeld = feld('ratgeber', 'verwandte');
+  assert.equal(verwandtFeld.type, 'list.single_line_text_field');
+  assert.deepEqual(JSON.parse(verwandtFeld.value), ['rollenbreite-und-bahnen-planen', 'teppichboden-verlegen-lose-fixieren-oder-kleben']);
+  const naechsterFeld = feld('ratgeber', 'naechster_schritt');
+  assert.equal(naechsterFeld.type, 'single_line_text_field');
+  assert.equal(naechsterFeld.value, 'rollenbreite-und-bahnen-planen');
+});
+
+test('leere Werte bei verwandte und naechster_schritt werden weggelassen, kein leeres Metafeld', () => {
+  const ohneFelder = baueEingabe(meta(), HTML, OPT).article;
+  const feld = (ns, key) => ohneFelder.metafields.find(f => f.namespace === ns && f.key === key);
+  assert.equal(feld('ratgeber', 'verwandte'), undefined);
+  assert.equal(feld('ratgeber', 'naechster_schritt'), undefined);
+
+  const mitLeerenWerten = meta({ verwandte: ['', '   ', 'echtes-handle'], naechster_schritt: '   ' });
+  const { article } = baueEingabe(mitLeerenWerten, HTML, OPT);
+  const feld2 = (ns, key) => article.metafields.find(f => f.namespace === ns && f.key === key);
+  assert.deepEqual(JSON.parse(feld2('ratgeber', 'verwandte').value), ['echtes-handle']);
+  assert.equal(feld2('ratgeber', 'naechster_schritt'), undefined);
 });

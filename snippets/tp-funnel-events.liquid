@@ -48,6 +48,8 @@
         window.dataLayer.push(copy(data, { event: name }));
       } catch (e) {}
     }
+    // Einmal je Seitenaufruf, siehe Klick-Delegation weiter unten.
+    var bwRechnerGemeldet = false;
     function handle() {
       var m = /^\/products\/([^\/?#]+)/.exec(window.location.pathname);
       return m ? decodeURIComponent(m[1]) : '';
@@ -138,6 +140,48 @@
           }
           var modul = link.closest('[data-tp-rg-cta]');
           if (modul) publish('tp_ratgeber_cta_klick', { ziel: href.split('?')[0].split('#')[0], cta_typ: modul.getAttribute('data-tp-rg-cta') || '' });
+
+          // Bodenwissen: Problem-Finder. Welches Symptom fuehrt zu welchem Artikel -
+          // das ist die Liste, aus der die naechsten Themen kommen.
+          if (link.classList && link.classList.contains('tp-bp__link')) {
+            var eintrag = link.closest('.tp-bp__eintrag');
+            var gruppe = link.closest('[data-tp-bp-gruppe]');
+            var symptomEl = eintrag && eintrag.querySelector('.tp-bp__symptom');
+            publish('tp_bodenwissen_problem_gewaehlt', {
+              belag: gruppe ? gruppe.getAttribute('data-tp-bp-gruppe') || '' : '',
+              symptom: symptomEl ? (symptomEl.textContent || '').trim() : '',
+              ziel: href.split('?')[0].split('#')[0]
+            });
+          }
+
+          // Bodenwissen: Sprung auf einen Lexikonbegriff (Uebersichtsseite).
+          if (link.classList && link.classList.contains('tp-lex-nav__link')) {
+            publish('tp_bodenwissen_lexikon', { begriff: href.split('#')[1] || '', von: 'lexikon' });
+          }
+        }
+
+        // Bodenwissen: Fachbegriff aufgeklappt. toggle steigt nicht auf, deshalb
+        // der Klick auf summary. von = wo der Begriff steht, nicht welche Seite -
+        // "erklaert der Begriff auf der Produktseite etwas?" ist die Frage dahinter.
+        var summary = t.closest('summary');
+        if (summary) {
+          var kasten = summary.parentNode && summary.parentNode.querySelector('[data-tp-bw-lexikon]');
+          if (kasten) {
+            var offen = summary.parentNode.hasAttribute('open');
+            // Zustand VOR dem Klick: offen === true heisst, es wird gerade zugeklappt.
+            if (!offen) publish('tp_bodenwissen_lexikon', {
+              begriff: kasten.getAttribute('data-tp-bw-lexikon') || '',
+              von: window.location.pathname.indexOf('/products/') === 0 ? 'produkt' : 'ratgeber'
+            });
+          }
+        }
+
+        // Bodenwissen: Bedarfsrechner benutzt. Einmal je Seitenaufruf - es geht um
+        // "wird das Werkzeug benutzt", nicht um die Zahl der Rechendurchgaenge.
+        var berechnen = t.closest('[data-berechnen]');
+        if (berechnen && berechnen.closest('[data-tp-br]') && !bwRechnerGemeldet) {
+          bwRechnerGemeldet = true;
+          publish('tp_bodenwissen_rechner', { rechner: 'teppichbodenbedarf' });
         }
         var btn = t.closest('[data-add-to-cart]'), rechner = btn && vonRechner(btn, 'r');
         if (rechner) letzt = { rechner: rechner, ts: Date.now() };
