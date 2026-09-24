@@ -8,7 +8,9 @@
   Masspruefung erscheint nur, wenn eine berechnete Position (Zuschnitt,
   Raummass, Wunschmass, Einfassung) im Warenkorb liegt; die Verlegeanfrage
   nur bei Positionen, fuer die der Verlegeservice gilt
-  (snippets/tp-vs-berechtigt). Muster allein: nur die Beratungsfrage.
+  (snippets/tp-vs-berechtigt). Die Beratungsfrage erscheint seit 2026-09-24
+  nur bei reinen Musterbestellungen (Entscheidung Inhaber); bei Ware im
+  Warenkorb entfaellt sie samt Telefonpflicht.
 
   Gespeichert wird als Cart-Attribut (Beratung, Telefon, Rueckruf,
   Beratungsthema, Masspruefung, Verlegung) - per /cart/update.js aus
@@ -29,10 +31,12 @@
 {%- liquid
   assign tpb_mass = false
   assign tpb_verlegung = false
+  assign tpb_nur_muster = true
   for tpb_item in cart.items
     if tpb_item.properties._Muster_ID != blank
       continue
     endif
+    assign tpb_nur_muster = false
     if tpb_item.properties._Zuschnitt != blank or tpb_item.properties['Maße'] != blank or tpb_item.properties['Gewünschte Länge'] != blank or tpb_item.properties['Art'] == 'Raummaß'
       assign tpb_mass = true
     endif
@@ -45,7 +49,10 @@
       endif
     endif
   endfor
-  assign tpb_beratung = cart.attributes['Beratung'] | default: ''
+  assign tpb_beratung = ''
+  if tpb_nur_muster
+    assign tpb_beratung = cart.attributes['Beratung'] | default: ''
+  endif
   assign tpb_telefon = cart.attributes['Telefon'] | default: ''
   assign tpb_zeit = cart.attributes['Rückruf'] | default: ''
   assign tpb_thema = cart.attributes['Beratungsthema'] | default: ''
@@ -69,7 +76,7 @@
     endif
   endfor
   assign tpb_offen = false
-  if tpb_beratung != 'Ja' and tpb_beratung != 'Nein'
+  if tpb_nur_muster and tpb_beratung != 'Ja' and tpb_beratung != 'Nein'
     assign tpb_offen = true
   endif
   if tpb_telefon_noetig and tpb_ziffern < 6
@@ -77,13 +84,23 @@
   endif
 -%}
 
-{%- if cart != empty -%}
+{%- liquid
+  assign tpb_zeigen = false
+  if cart != empty
+    if tpb_nur_muster or tpb_mass or tpb_verlegung
+      assign tpb_zeigen = true
+    endif
+  endif
+-%}
+{%- if tpb_zeigen -%}
 <script src="{{ 'tp-cart-beratung.js' | asset_url }}" defer></script>
 <tp-cart-beratung
   class="tp-beratung{% if tpb_offen %} tp-beratung-offen{% endif %}"
+  {% if tpb_nur_muster %}data-beratung{% endif %}
   {% if tpb_mass %}data-masspruefung{% endif %}
   {% if tpb_verlegung %}data-verlegung{% endif %}
 >
+  {%- if tpb_nur_muster -%}
   <fieldset class="tp-beratung__gruppe">
     <legend class="tp-beratung__frage">Persönliche Beratung gewünscht? <span class="tp-beratung__pflicht" aria-hidden="true">*</span></legend>
     <p class="tp-beratung__hinweis">Wir rufen Sie kurz an, klären offene Fragen zu Material, Maßen oder Verlegung und bestätigen Ihnen die Bestellung.</p>
@@ -114,6 +131,7 @@
       <textarea id="{{ tpb_id }}-thema" name="attributes[Beratungsthema]" data-tp-feld="thema" form="cart-form" rows="2" maxlength="500">{{ tpb_thema }}</textarea>
     </label>
   </div>
+  {%- endif -%}
 
   {%- if tpb_mass -%}
     <fieldset class="tp-beratung__gruppe">

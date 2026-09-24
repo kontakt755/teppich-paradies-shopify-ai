@@ -121,3 +121,19 @@ test('Waechter und Serverzustand sind verdrahtet', () => {
   // Drawer: Skript global, weil per Morph eingefuegte Script-Tags nicht laufen.
   assert.match(lies('snippets/header-actions.liquid'), /tp-cart-beratung\.js/);
 });
+
+test('Beratungsfrage nur bei reinen Musterbestellungen (ctx.beratung)', () => {
+  // Ware im Warenkorb: Frage nicht gestellt, keine Pflicht, altes "Ja" wird geloescht
+  assert.equal(B.pruefen({}, { beratung: false }).ok, true);
+  assert.equal(B.pruefen({ Beratung: 'Ja' }, { beratung: false }).telefonNoetig, false);
+  assert.equal(B.attributeAus({ beratung: 'Ja', telefon: '0176 1234567' }, { beratung: false }).Beratung, '');
+  // Masspruefung "Ja" verlangt weiter das Telefon
+  assert.equal(B.pruefen({ 'Maßprüfung': 'Ja' }, { beratung: false, masspruefung: true }).ok, false);
+  // Nur Muster: Frage ist Pflicht, bei Ja mit Telefon
+  assert.equal(B.pruefen({}, { beratung: true }).ok, false);
+  assert.equal(B.pruefen({ Beratung: 'Ja' }, { beratung: true }).ok, false);
+  assert.equal(B.pruefen({ Beratung: 'Ja', Telefon: '0176 1234567' }, { beratung: true }).ok, true);
+  const snippet = lies('snippets/tp-cart-beratung.liquid');
+  assert.match(snippet, /assign tpb_nur_muster = false/);
+  assert.match(snippet, /\{%- if tpb_nur_muster -%\}\s*<fieldset/);
+});

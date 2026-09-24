@@ -60,10 +60,13 @@
     ctx = ctx || {};
     var fehler = [];
     var beratung = attrs[KEYS.beratung] || '';
+    // ctx.beratung === false: Frage nicht gestellt (Ware im Warenkorb, nicht nur Muster)
+    var gefragt = ctx.beratung !== false;
+    if (!gefragt) beratung = '';
     var mass = attrs[KEYS.mass] || '';
-    var telefonNoetig = beratung === 'Ja' || (ctx.masspruefung && mass === 'Ja');
+    var telefonNoetig = beratung === 'Ja' || (!!ctx.masspruefung && mass === 'Ja');
 
-    if (beratung !== 'Ja' && beratung !== 'Nein') fehler.push({ feld: KEYS.beratung, code: 'BERATUNG_FEHLT', text: TEXT.BERATUNG_FEHLT });
+    if (gefragt && beratung !== 'Ja' && beratung !== 'Nein') fehler.push({ feld: KEYS.beratung, code: 'BERATUNG_FEHLT', text: TEXT.BERATUNG_FEHLT });
     if (telefonNoetig) {
       var tel = attrs[KEYS.telefon] || '';
       if (!String(tel).trim()) fehler.push({ feld: KEYS.telefon, code: 'TELEFON_FEHLT', text: beratung === 'Ja' ? TEXT.TELEFON_FEHLT : TEXT.TELEFON_FEHLT_MASS });
@@ -78,7 +81,7 @@
   function attributeAus(werte, ctx) {
     werte = werte || {};
     ctx = ctx || {};
-    var beratung = werte.beratung === 'Ja' || werte.beratung === 'Nein' ? werte.beratung : '';
+    var beratung = ctx.beratung !== false && (werte.beratung === 'Ja' || werte.beratung === 'Nein') ? werte.beratung : '';
     var mass = ctx.masspruefung && (werte.mass === 'Ja' || werte.mass === 'Nein') ? werte.mass : '';
     var telefonNoetig = beratung === 'Ja' || mass === 'Ja';
     var out = {};
@@ -137,7 +140,7 @@
   }
 
   function ctxAus(el) {
-    return { masspruefung: el.hasAttribute('data-masspruefung'), verlegung: el.hasAttribute('data-verlegung') };
+    return { beratung: el.hasAttribute('data-beratung'), masspruefung: el.hasAttribute('data-masspruefung'), verlegung: el.hasAttribute('data-verlegung') };
   }
 
   root.TPCartBeratung = { KEYS: KEYS, TEXT: TEXT, pruefen: pruefen, attributeAus: attributeAus, telefonGueltig: telefonGueltig, gleich: gleich, istCheckoutWeg: istCheckoutWeg, pfad: pfad };
