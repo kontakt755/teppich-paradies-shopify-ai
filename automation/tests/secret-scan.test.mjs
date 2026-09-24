@@ -24,6 +24,36 @@ test('code that merely passes a value through is not a secret', () => {
   }
 });
 
+// Ohne diese Ausnahme musste `scripts/serve-dashboard.mjs` die Konstante
+// umgehen und `loadConfiguredPassword()` direkt in den Aufruf schreiben -
+// Produktionscode, der sich nach dem Scanner verbiegt. Genau so wird ein Gate
+// stumpf, weil die naechste Umgehung dann als normal gilt.
+test('an unquoted SCREAMING_SNAKE_CASE value is a constant reference, not a secret', () => {
+  for (const line of [
+    'export const auth = createAuth({ password: CONFIGURED_PASSWORD });',
+    'const auth = createAuth({ password: CONFIGURED_PASSWORD, host: HOST });',
+    'api_key: DEFAULT_API_KEY_NAME,',
+    'session_token = FALLBACK_SESSION_TOKEN',
+  ]) {
+    assert.deepEqual(rules(line), [], line);
+  }
+});
+
+// Die Gegenprobe zur Ausnahme oben: eng gefasst heisst, dass alles daneben
+// weiterhin blockt. Faellt einer dieser Faelle durch, ist das Gate stumpf.
+test('the constant-reference exception stays narrow', () => {
+  // In Anfuehrungszeichen steht immer ein Wert, nie ein Bezeichner.
+  assert.ok(rules(`password: "${['CONFIGURED', 'PASSWORD', 'VALUE'].join('_')}"`).includes('PASSWORD_ASSIGNMENT'));
+  // Ohne Unterstrich ist es kein Bezeichnermuster.
+  assert.deepEqual(rules(`password=${'Z'.repeat(12)}`), ['PASSWORD_ASSIGNMENT']);
+  // Segmente mit Ziffern sind kein Bezeichner, sondern ein Schluessel.
+  assert.ok(rules(`api_key=AKIA_${'1234567890'}ABCDEF`).includes('GENERIC_API_KEY'));
+  assert.ok(rules(`password=${['SECRET', '9f8e7d6c5b4a'].join('_')}`).includes('PASSWORD_ASSIGNMENT'));
+  // camelCase ist bewusst NICHT ausgenommen - sonst faellt jedes Geheimnis
+  // durch, das zufaellig wie ein Bezeichner aussieht.
+  assert.ok(rules(`password=my${['S3cret', 'Pass', 'Wort'].join('')}`).includes('PASSWORD_ASSIGNMENT'));
+});
+
 test('speaking placeholders in fixtures and docs are not secrets', () => {
   for (const line of [
     "const input = { sessionId: 'private-session-id', projectDir: '/project' };",
