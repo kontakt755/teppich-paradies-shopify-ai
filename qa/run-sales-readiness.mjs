@@ -307,7 +307,26 @@ async function rollFlow({ page, context, result, setPhase }) {
   await length.dispatchEvent('change');
   const addToCart = page.locator('main button[data-cta]');
   await addToCart.waitFor({ state: 'visible', timeout: 12_000 });
-  await page.waitForFunction(() => /€\s*259,00|259,00\s*€/.test(document.querySelector('main')?.innerText || ''), null, { timeout: 10_000 });
+  // Erwartung aus dem aktuellen Variantenpreis rechnen statt 259,00 € fest zu
+  // verankern: eine Preisaktion (2026-09-24: 25,90 -> 22,02 €/m²) liess den
+  // Test sonst scheitern, obwohl Rechner und Warenkorb richtig rechneten.
+  // Geprueft wird weiterhin, dass Anzeige und Warenkorb zur selben Rechnung
+  // gehoeren: 2,50 m × 4 m = 10 m² × Variantenpreis.
+  const qmPreisCent = await page.evaluate(async () => {
+    const r = await fetch(`${location.pathname.replace(/\/$/, '')}.js`, { credentials: 'same-origin' });
+    const produkt = await r.json();
+    const v = produkt.variants.find(x => /^400/.test(x.title)) || null;
+    return v ? v.price : null;
+  });
+  if (!Number.isInteger(qmPreisCent) || qmPreisCent <= 0) throw new Error('Variantenpreis 400 cm nicht lesbar');
+  const erwarteterCent = qmPreisCent * 10;
+  const alsEuro = cent => (cent / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const betragRegex = betrag => new RegExp(`€\\s*${betrag.replace('.', '\\.')}|${betrag.replace('.', '\\.')}\\s*€`);
+  await page.waitForFunction(
+    quelle => new RegExp(quelle).test(document.querySelector('main')?.innerText || ''),
+    betragRegex(alsEuro(erwarteterCent)).source,
+    { timeout: 10_000 }
+  );
   const calculatorText = (await page.locator('main').innerText()).replace(/\s+/g, ' ');
   result.health = await pageHealth(page);
   setPhase('add-to-cart');
@@ -320,9 +339,9 @@ async function rollFlow({ page, context, result, setPhase }) {
   result.calculator = {
     selectedWidthCm: await width.inputValue(),
     enteredLengthCm: await length.inputValue(),
-    expectedPriceCents: 25900,
-    formula: '2.50 m × 4 m × 25.90 €/m²',
-    plausible: /€\s*259,00|259,00\s*€/.test(calculatorText),
+    expectedPriceCents: erwarteterCent,
+    formula: `2.50 m × 4 m × ${alsEuro(qmPreisCent)} €/m²`,
+    plausible: betragRegex(alsEuro(erwarteterCent)).test(calculatorText),
   };
   // Menge ist die tatsaechliche Flaeche in m² (aufgerundet), nicht 1 - der
   // Rechner uebergibt quantity: qty an /cart/add.js, damit Shopify selbst
@@ -340,7 +359,7 @@ async function rollFlow({ page, context, result, setPhase }) {
     lengthProperty: line?.properties?.['Gewünschte Länge'],
     plausible: cart.item_count === 10
       && line?.quantity === 10
-      && cart.total_price === 25900
+      && cart.total_price === erwarteterCent
       && line?.variant_title === '400 cm'
       && line?.properties?.Rollenbreite === '400 cm'
       && line?.properties?.['Gewünschte Länge'] === '250 cm',
