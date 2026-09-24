@@ -455,3 +455,34 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   table.kpi td { font-size: .95rem; }
   .section-bar { flex-direction: column; align-items: flex-start; }
 }
+
+/* Kunden (Kundensuche, Rueckruf-/Beratungsliste, Druckansicht) */
+.badge.ok { background: var(--ok-soft); color: var(--ok); }
+.tel-link { font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+.tel-gross { margin-top: 4px; }
+.rueckruf-row { align-items: flex-start; flex-wrap: wrap; gap: 10px; }
+.rueckruf-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.kunden-adressen { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 10px; }
+.kunden-auftrag.testbestellung { opacity: .8; border-style: dashed; }
+.kunden-table table { width: 100%; border-collapse: collapse; }
+.kunden-table th, .kunden-table td { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; font-size: .88rem; }
+.kunden-table th { font-size: .74rem; color: var(--text-2); font-weight: 600; border-top: 0; }
+
+@media (max-width: 720px) {
+  .rueckruf-row { flex-direction: column; }
+  .rueckruf-actions { align-items: flex-start; width: 100%; }
+  .kunden-table thead { display: none; }
+  .kunden-table table, .kunden-table tbody, .kunden-table tr, .kunden-table td { display: block; width: 100%; }
+  .kunden-table tr { border-top: 1px solid var(--line); padding: 6px 0; }
+  .kunden-table td { border: 0; padding: 2px 0; display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
+  .kunden-table td::before { content: attr(data-l); color: var(--text-2); font-size: .72rem; }
+}
+
+/* Druckansicht: nur die Bestellkarte, ohne Navigation/Buttons/Sync-Chip. */
+@media print {
+  .mainnav, .no-print, .toolbar, .page-head .head-actions, .topbar, .tabs, #syncChip, #navToggle, .kunden-auftrag .card-head span.no-print { display: none !important; }
+  body, main { background: #fff; color: #000; }
+  .card, .kunden-auftrag { box-shadow: none; border: 1px solid #999; break-inside: avoid; }
+  a[href]::after { content: none !important; }
+}

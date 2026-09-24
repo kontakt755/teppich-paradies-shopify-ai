@@ -23,6 +23,9 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde } from '../operations/lib/kundensuche.mjs';
+import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
+import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -74,6 +77,15 @@ export function privatDir() {
 
 function readJsonIfExists(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+/** Laedt und bereitet orders.json auf (dieselbe Logik wie einkaufBestellungen()); null wenn nicht vorhanden/kaputt. */
+function ladeBestellModell(dir) {
+  const file = path.join(dir, 'bestelluebersicht', 'orders.json');
+  const daten = readJsonIfExists(file);
+  if (!daten) return null;
+  try { return aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: new Date() }); }
+  catch { return null; }
 }
 
 /**
@@ -475,6 +487,58 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try { modell = aufbereiten(ladeExport(JSON.stringify(daten)), { jetzt: now() }); }
       catch (e) { return { verfuegbar: false, quelle: file, hinweis: `orders.json konnte nicht ausgewertet werden: ${e.message}` }; }
       return { verfuegbar: true, quelle: file, exportiertAm: daten.exportiertAm || null, ...modell };
+    },
+
+    /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
+    kundenSuche({ q = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
+      const treffer = sucheKunden(modell, q).slice(0, 50).map(kundenListenEintrag);
+      return { verfuegbar: true, treffer };
+    },
+
+    /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
+    kundenDetail({ key = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      const kunde = findeKunde(modell, key);
+      if (!kunde) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
+      return { verfuegbar: true, kunde };
+    },
+
+    /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
+    kundenRueckrufe() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      const statusAlle = leseRueckrufe(rueckrufePfad(dir));
+      const zeilen = rueckrufliste(modell).map(z => {
+        const s = statusAlle[z.orderId];
+        return { ...z, status: s?.status || 'offen', notiz: s?.notiz || null, aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null };
+      });
+      return { verfuegbar: true, zeilen };
+    },
+
+    /** Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt), rein lokal. */
+    async kundenRueckrufSetzen(payload = {}) {
+      const actor = await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const { orderId, status, notiz } = payload || {};
+      if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
+      if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
+      const dir = privatDirPath || privatDir();
+      const file = rueckrufePfad(dir);
+      let eintrag;
+      try {
+        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, jetzt: now() });
+      } catch (e) {
+        if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      audit({ actor, action: 'rueckruf', orderId, status });
+      return { ok: true, eintrag };
     },
 
     /**
