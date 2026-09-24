@@ -469,3 +469,16 @@ test('Musterprodukt ohne eigenes Bild zeigt das Bild des Originals', () => {
   const allein = produkt({ id: 'gid://shopify/Product/9402', handle: 'muster-gibtsnicht', titel: 'Muster X', featuredImage: null, variants: [] });
   assert.equal(aufbereiten({ produkte: [allein] }, { jetzt: JETZT }).produkte[0].bild, null);
 });
+
+test('preisJeEinheit: Ware nach Maß rechnet von 0,01 m² auf den m2-Preis hoch', () => {
+  const nachMass = produkt({
+    id: 'gid://shopify/Product/9500', handle: 'teppich-nach-mass', productType: 'Teppich nach Maß',
+    metafields: [{ namespace: 'custom', key: 'preis_pro_001_qm', value: 'true' }],
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5500', title: 'Sand', sku: 'NM-1', price: '0.85',
+      availableForSale: true, selectedOptions: [{ name: 'Farbe', value: 'Sand' }], metafields: [],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [nachMass] }, { jetzt: JETZT });
+  assert.deepEqual(modell.produkte[0].varianten[0].preisJeEinheit, { betrag: 85, einheit: 'm2' });
+});
