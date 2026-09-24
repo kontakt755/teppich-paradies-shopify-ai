@@ -1,16 +1,16 @@
 {
   "_comment": "Einzige Quelle fuer Theme-IDs. Nirgends sonst darf eine Theme-ID als Fakt in Prosa stehen - qa/run-live-theme-guard.mjs erzwingt das. Nach jedem Theme-Wechsel hier aktualisieren, dann faellt der Guard wieder gruen aus.",
   "live": {
-    "themeId": "204436144462",
-    "name": "Kopie von preview-main-2026-09-04",
-    "verifiedAt": "2026-09-24T11:10:00Z",
-    "verifiedBy": "Shopify Admin API, role MAIN nach workflow:live (Newsletter-Anmeldung #551)"
-  },
-  "preview": {
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
-    "verifiedAt": "2026-09-24T11:10:00Z",
-    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
+    "verifiedAt": "2026-09-24T12:44:00Z",
+    "verifiedBy": "Shopify Admin API, role MAIN nach workflow:live (main c69123b3: Bodenwissen #514, Verkaufsweg #537, Rabattbadges #556 u. a.)"
+  },
+  "preview": {
+    "themeId": "204436144462",
+    "name": "Kopie von preview-main-2026-09-04",
+    "verifiedAt": "2026-09-24T12:44:00Z",
+    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN. Naechstes Preview-Ziel."
   },
   "fallback": {
     "themeId": "204440699214",
@@ -206,6 +206,12 @@
       "name": "preview-main-2026-09-15",
       "retiredNoticedAt": "2026-09-24",
       "note": "Per workflow:live abgeloest durch 204436144462 (PR #551: Newsletter-Anmeldung in der Fusszeile). Rollentausch am 2026-09-24 um 11:07:37Z per Admin API gegengeprueft. Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-24",
+      "note": "Per workflow:live abgeloest durch 204438208846 (main c69123b3). Rollentausch am 2026-09-24 um 12:43:11Z per Admin API gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
