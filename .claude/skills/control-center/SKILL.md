@@ -149,6 +149,31 @@ kann dafuer weg?
   Nach jedem Zusammenfuehren die volle Suite.
 - **`HOST` ist in zsh der Rechnername.** Eigene Umgebungsvariablen immer mit
   Praefix (`TP_DASHBOARD_HOST`).
+- **Servertests lesen sonst den echten Privatordner.** `scripts/serve-dashboard.mjs`
+  entscheidet beim Laden des Moduls, ob ein Passwort hinterlegt ist. Eine
+  Zuweisung von `TP_PRIVAT_DIR` im Testkoerper kommt zu spaet, weil ESM alle
+  Importe vorher ausfuehrt – der Test lief dann gegen
+  `~/teppich-paradies-analyse` und schlug auf jedem Rechner anders fehl. Deshalb
+  steht `import './_testumgebung.mjs';` als **erster** Import in jedem Servertest.
+- **Doppelter Funktionskopf nach dem Zusammenfuehren.** Wenn zwei Zweige
+  `handleApi` anfassen (neuer Parameter hier, neue Route dort), erzeugt
+  „beide Seiten behalten" zwei `export async function handleApi(...)` –
+  die Datei laedt dann gar nicht mehr (`SyntaxError: Unexpected token 'export'`).
+  Bei Signatur-Konflikten einen Kopf bauen und die Pfadlisten **vereinigen**;
+  danach `node --check scripts/serve-dashboard.mjs`.
+- **Neue Schreib-Endpunkte fallen sonst durch die Rollenpruefung.** Jeder
+  schreibende Pfad muss in die `write`-Liste in `serve-dashboard.mjs`, sonst
+  darf ihn auch die Rolle „lesen" ausloesen. Nach jedem neuen Endpunkt pruefen:
+  Rolle „lesen" bekommt 403, Rolle „mitarbeiter" 200.
+- **Der Geheimnis-Scanner blockiert Deploys wegen Testwerten.**
+  `validate --static` bricht ab, wenn in einer Zeile `password: "<wert>"` steht –
+  auch im Test. Sprechende Platzhalter verwenden („test-passwort"), und den
+  Konfigurationswert per Aufruf statt per Variable uebergeben
+  (`createAuth({ password: loadConfiguredPassword() })`).
+- **Einen PR nicht mergen, solange ein Agent noch auf dem Zweig arbeitet.**
+  Sonst liegt die fertige Arbeit danach ungemergt da und der naechste Merge
+  kostet eine Konfliktrunde. Vor dem Merge pruefen:
+  `git log --oneline origin/main..origin/<zweig>`.
 - **Auftragsfluss-Stand** (`auftragsstatus.json`) gibt es nur lokal; er wird
   von `npm run daten:sichern` gesichert. Aktionen, die ihn schreiben, immer
   mit Grund/Notiz und ueber den Filter „Erledigt" nachvollziehbar.
