@@ -31,6 +31,19 @@ const HEURISTIC_RULES = Object.freeze([
 // Anfuehrungszeichen steht immer ein Wert, nie Code. Sonst wuerde ein JWT oder
 // jedes punktgetrennte Token als "Code" durchgewunken.
 const CODE_VALUE = /[.()[\]{}]|\|\||&&|=>|^new\s|^await\s|^typeof\s/;
+// Ein unquotierter Bezeichner in SCREAMING_SNAKE_CASE ist eine Referenz auf eine
+// Konstante (`password: CONFIGURED_PASSWORD`), kein hinterlegtes Geheimnis. Ohne
+// diese Ausnahme muss Produktionscode um den Scanner herum geschrieben werden -
+// genau das macht ein Gate auf Dauer stumpf.
+// Bewusst eng gefasst, damit es scharf bleibt:
+//   - nur unquotiert; in Anfuehrungszeichen steht immer ein Wert (siehe CODE_VALUE),
+//   - mindestens ein Unterstrich, jedes Segment rein alphabetisch und >= 2 Zeichen.
+// Ein Wert aus zwoelf gleichen Grossbuchstaben (kein Unterstrich) und ein
+// Schluessel wie `AKIA_1234567890ABCDEF` (Segment mit Ziffern) bleiben Funde.
+// camelCase ist ABSICHTLICH nicht ausgenommen: ein Geheimnis in gemischter
+// Schreibweise waere davon nicht mehr zu unterscheiden. In .env-Dateien steht
+// ein Wert ebenfalls unquotiert - die sperrt aber schon SECRET_PATH.
+const CONSTANT_REFERENCE = /^[A-Z]{2,}(?:_[A-Z]{2,})+$/;
 // Ein interpolierter Wert (`${token}`, `{{ secret }}`, `%s`) wird erst zur
 // Laufzeit gebildet - im Repository steht dann kein Geheimnis, sondern eine
 // Vorlage. Das gilt auch in Anfuehrungszeichen und darum unabhaengig davon.
@@ -68,7 +81,7 @@ export function looksLikeSecretValue(assigned, minimumLength) {
   if (!assigned || typeof assigned.value !== 'string') return false;
   const candidate = assigned.value.trim();
   if (candidate.length < minimumLength) return false;
-  if (!assigned.quoted && CODE_VALUE.test(candidate)) return false;
+  if (!assigned.quoted && (CODE_VALUE.test(candidate) || CONSTANT_REFERENCE.test(candidate))) return false;
   if (isPlaceholderValue(candidate)) return false;
   if (INTERPOLATION_SOURCE.test(candidate)) {
     // Nicht den ganzen Wert verwerfen: bei "echtesGeheimnis${suffix}" steht der
