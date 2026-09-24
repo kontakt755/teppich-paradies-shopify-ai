@@ -428,6 +428,14 @@ def write_data_to_worksheet(
         if day_data['other'] > 0:
             ws[f'{col}{ROW_OTHER_ABSENCE}'] = day_data['other']
 
+def fix_number_formats(ws):
+    # xlsx speichert Formate in US-Notation: '0,00' heisst dort Tausendertrenner
+    # und wird als '008' angezeigt. '0.00' zeigt deutsches Excel als '8,40'.
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.number_format == '0,00':
+                cell.number_format = '0.00'
+
 def validate_workbook(
     ws,
     year: int,
@@ -566,6 +574,7 @@ def create_vma_file(
 
     # 6. Schreibe Daten
     write_data_to_worksheet(ws, year, month, data, holidays_dict)
+    fix_number_formats(ws)
 
     # 7. Validiere
     report = validate_workbook(ws, year, month, employee_key, data)
