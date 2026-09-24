@@ -2961,8 +2961,34 @@ function viewHilfe() {
 
 const VIEWS = { heute: viewHeute, hilfe: viewHilfe, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
+/**
+ * Merkt sich das gerade benutzte Eingabefeld samt Cursorposition. Jede
+ * Eingabe aendert die Adresse und zeichnet die Ansicht neu - ohne das hier
+ * war nach dem ersten Zeichen der Fokus weg und alles Weitere landete im
+ * Nichts. Betrifft jedes Feld mit data-param (Lexikon, Kundensuche,
+ * Bestellsuche, ...).
+ */
+function merkeEingabe(main) {
+  const el = document.activeElement;
+  if (!el || !main.contains(el) || !el.dataset?.param) return null;
+  return { param: el.dataset.param, start: el.selectionStart, ende: el.selectionEnd };
+}
+
+function stelleEingabeWiederHer(main, merk) {
+  if (!merk) return false;
+  const feld = main.querySelector(`input[data-param="${merk.param}"]`);
+  if (!feld) return false;
+  feld.focus();
+  try {
+    const pos = merk.start ?? feld.value.length;
+    feld.setSelectionRange(pos, merk.ende ?? pos);
+  } catch { /* Feldtypen ohne Auswahlbereich (z. B. number) */ }
+  return true;
+}
+
 function render() {
   const main = $('#main');
+  const eingabe = merkeEingabe(main);
   document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
@@ -2975,7 +3001,7 @@ function render() {
     more.open = false;
   }
   if (state.capabilities.mode === 'ausgeloggt') {
-    main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist nicht mehr gültig (Sitzungen gelten 12 Stunden) oder das Passwort hat sich geändert. Bereits eingegebene Angaben auf dieser Seite bleiben erhalten, bis neu geladen wird. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
+    main.innerHTML = `<div class="page-head"><h1>Sitzung abgelaufen</h1></div><div class="notice warn">Die Anmeldung ist abgelaufen oder das Passwort hat sich geändert. Bereits eingegebene Angaben auf dieser Seite bleiben erhalten, bis neu geladen wird. <a href="/login" class="btn btn-sm" style="margin-left:8px">Neu anmelden</a></div>`;
     document.title = 'Sitzung abgelaufen · Teppich Dashboard';
     return;
   }
@@ -2992,6 +3018,8 @@ function render() {
   document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
+  // Zuerst weitertippen lassen, wo jemand gerade tippt.
+  if (stelleEingabeWiederHer(main, eingabe)) return;
   // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz).
   if (state.route.view === 'kunden' && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
     const feld = main.querySelector('input[type=search][data-param="kq"]');
