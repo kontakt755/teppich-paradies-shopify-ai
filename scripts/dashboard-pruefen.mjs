@@ -32,8 +32,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'arbeit', 'lexikon', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'];
-const HANDY_ANSICHTEN = ['heute', 'einkauf', 'arbeit'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'arbeit', 'lexikon', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'];
+const HANDY_ANSICHTEN = ['heute', 'einkauf', 'kunden', 'arbeit'];
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.

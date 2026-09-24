@@ -21,7 +21,8 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       id name createdAt updatedAt cancelledAt note tags test
       displayFinancialStatus displayFulfillmentStatus
       email phone
-      customer { displayName email phone }
+      sourceName
+      customer { id displayName email phone numberOfOrders }
       totalPriceSet { shopMoney { amount currencyCode } }
       subtotalPriceSet { shopMoney { amount currencyCode } }
       totalShippingPriceSet { shopMoney { amount currencyCode } }

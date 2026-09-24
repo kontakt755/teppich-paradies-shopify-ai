@@ -486,3 +486,24 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   .card, .kunden-auftrag { box-shadow: none; border: 1px solid #999; break-inside: avoid; }
   a[href]::after { content: none !important; }
 }
+
+/* Bestellliste (Bereich Kunden -> Bestellungen): dichte Tabelle am Rechner, Karten mobil. */
+.bq-table { display: block; }
+.bq-karten { display: none; }
+.th-sort { background: none; border: 0; font: inherit; font-weight: 600; color: var(--text-2); cursor: pointer; padding: 0; white-space: nowrap; }
+.th-sort:hover { color: var(--text); }
+.bq-row { cursor: pointer; }
+.bq-row:hover { background: var(--surface-2); }
+.bq-detail td { padding: 12px; background: var(--surface-2); }
+.bq-karte { cursor: pointer; }
+.bq-detail-mobil { margin: -4px 0 8px; padding: 0 4px; }
+.bq-fortschritt { font-weight: 600; }
+.bq-fortschritt.offen { color: var(--crit); }
+.bq-fortschritt.unterwegs { color: var(--warn); }
+.bq-fortschritt.erledigt { color: var(--text-2); font-weight: 400; }
+.bq-fehlt { color: var(--crit); font-size: .8rem; }
+.kunden-zeile.fertig { opacity: .68; }
+@media (max-width: 900px) {
+  .bq-table { display: none; }
+  .bq-karten { display: flex; flex-direction: column; gap: 8px; }
+}
