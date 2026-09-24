@@ -65,6 +65,7 @@
     "dashboard:test": "node --test docs/ai-dashboard/tests/*.test.mjs",
     "dashboard:pruefen": "node scripts/dashboard-pruefen.mjs",
     "task": "node scripts/task.mjs",
+    "benutzer": "node operations/scripts/benutzer.mjs",
     "ratgeber:payload": "node scripts/ratgeber-payload.mjs",
     "dashboard:brief": "node scripts/dashboard-brief.mjs",
     "operations:band": "node operations/server.mjs",

@@ -191,7 +191,7 @@ test('Standardbetrieb (kein Passwort, 127.0.0.1) bleibt unveraendert: keine Anme
     const r = await fetch(`${base}/api/capabilities`);
     assert.equal(r.status, 200);
     const session = await (await fetch(`${base}/api/session`)).json();
-    assert.deepEqual(session, { required: false, authenticated: true });
+    assert.deepEqual(session, { required: false, authenticated: true, benutzer: null });
   });
 });
 
@@ -202,4 +202,79 @@ test('Netzmodus ohne Passwort: assertStartupAllowed verweigert den Start', async
   assert.throws(() => mod.assertStartupAllowed({ host: '0.0.0.0', authObj: mod.auth }), /Passwort/);
   // 127.0.0.1 bleibt ohne Passwort erlaubt (Standardbetrieb)
   assert.doesNotThrow(() => mod.assertStartupAllowed({ host: '127.0.0.1', authObj: mod.auth }));
+});
+
+// ---------------------------------------------------------------------------
+// Mehrbenutzerbetrieb: Name+Passwort gegen benutzer.json, Rolle "lesen"
+// serverseitig ohne Schreibrechte, Notzugang bleibt gueltig.
+// ---------------------------------------------------------------------------
+
+test('Mehrbenutzerbetrieb: Anmeldung mit Name+Passwort, Rolle "lesen" bekommt 403 auf Schreib-Endpunkte, Notzugang bleibt gueltig', async () => {
+  const { schreibeBenutzer, benutzerAnlegen } = await import('../../../operations/lib/benutzer.mjs');
+  const privatDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-dashboard-auth-mehrbenutzer-'));
+  process.env.TP_PRIVAT_DIR = privatDir;
+  process.env.TP_DASHBOARD_PASSWORT = 'notzugang-testpasswort';
+  process.env.TP_DASHBOARD_HOST = '192.168.2.223';
+  let liste = benutzerAnlegen([], { name: 'Lena Lesend', kuerzel: 'lena', passwort: 'platzhalter-lesen-1', rolle: 'lesen' });
+  liste = benutzerAnlegen(liste, { name: 'Mona Mitarbeiter', kuerzel: 'mona', passwort: 'platzhalter-mitarbeiter-1', rolle: 'mitarbeiter' });
+  schreibeBenutzer(liste, path.join(privatDir, 'benutzer.json'));
+
+  const mod = await import(`../../../scripts/serve-dashboard.mjs?case=mehrbenutzer`);
+  delete process.env.TP_DASHBOARD_PASSWORT;
+  delete process.env.TP_DASHBOARD_HOST;
+  assert.equal(mod.auth.required, true);
+
+  await withServer(mod.requestHandler, async base => {
+    // Falscher Name/Passwort -> 401
+    const falsch = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'lena', passwort: 'falsch' }),
+    });
+    assert.equal(falsch.status, 401);
+
+    // Rolle "lesen": Anmeldung klappt, /api/session nennt Name+Rolle
+    const loginLesen = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'lena', passwort: 'platzhalter-lesen-1' }),
+    });
+    assert.equal(loginLesen.status, 200);
+    const cookieLesen = loginLesen.headers.get('set-cookie').split(';')[0];
+    const sessionLesen = await (await fetch(`${base}/api/session`, { headers: { cookie: cookieLesen } })).json();
+    assert.deepEqual(sessionLesen.benutzer, { name: 'Lena Lesend', kuerzel: 'lena', rolle: 'lesen' });
+
+    // Rolle "lesen": Statuswechsel (Schreib-Endpunkt) wird serverseitig mit 403 abgelehnt
+    const gesperrterSchreibzugriff = await fetch(`${base}/api/einkauf/auftragsstatus`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieLesen },
+      body: JSON.stringify({ orderId: '1', lineItemId: '1', status: 'bestellt' }),
+    });
+    assert.equal(gesperrterSchreibzugriff.status, 403);
+
+    // Rolle "lesen": Benutzerverwaltung ist nicht sichtbar
+    const keineBenutzerliste = await fetch(`${base}/api/benutzer`, { headers: { cookie: cookieLesen } });
+    assert.equal(keineBenutzerliste.status, 403);
+
+    // Rolle "mitarbeiter": Statuswechsel im Einkauf geht durch, Name landet im Eintrag
+    const loginMitarbeiter = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'mona', passwort: 'platzhalter-mitarbeiter-1' }),
+    });
+    assert.equal(loginMitarbeiter.status, 200);
+    const cookieMona = loginMitarbeiter.headers.get('set-cookie').split(';')[0];
+    const erlaubterSchreibzugriff = await fetch(`${base}/api/einkauf/auftragsstatus`, {
+      method: 'POST', headers: { 'content-type': 'application/json', cookie: cookieMona },
+      body: JSON.stringify({ orderId: '1', lineItemId: '1', status: 'bestellt' }),
+    });
+    assert.equal(erlaubterSchreibzugriff.status, 200);
+    const j = await erlaubterSchreibzugriff.json();
+    assert.equal(j.eintrag.aktualisiertVon, 'Mona Mitarbeiter');
+
+    // Notzugang mit dem alten Einzelpasswort bleibt gueltig, auch wenn benutzer.json existiert
+    const notzugang = await fetch(`${base}/api/login`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'irgendwer', passwort: 'notzugang-testpasswort' }),
+    });
+    assert.equal(notzugang.status, 200);
+    const notzugangSession = await (await fetch(`${base}/api/session`, { headers: { cookie: notzugang.headers.get('set-cookie').split(';')[0] } })).json();
+    assert.equal(notzugangSession.benutzer.rolle, 'inhaber');
+
+    // Protokoll zeigt den zuletzt geschriebenen Eintrag mit Anzeigenamen
+    const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieMona } })).json();
+    assert.ok(protokoll.eintraege.some(e => e.benutzer === 'Mona Mitarbeiter' && e.aktion === 'Auftragsstatus'));
+  });
 });
