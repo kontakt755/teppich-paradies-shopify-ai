@@ -201,12 +201,19 @@
 
   # Streichpreis/Sale nur bei aktiver Aktion (snippets/tp-aktion-aktiv) - ein stehen gebliebener compare_at_price allein zeigt nichts (S-20, 2026-09-20).
   capture tp_pr_aktion
-    render 'tp-aktion-aktiv', product: product_resource
+    render 'tp-rabatt-sichtbar', product: product_resource
   endcapture
   assign tp_pr_aktion = tp_pr_aktion | strip
   assign show_compare_price = false
   if tp_pr_aktion == 'ja' and compare_at_price != blank and compare_at_price > price
     assign show_compare_price = true
+    # Rabatt in Prozent, immer aus Vergleichs- und Verkaufspreis gerechnet (nie statisch)
+    assign tp_pr_prozent = compare_at_price | minus: price | times: 100.0 | divided_by: compare_at_price | round
+  endif
+  # Prozent-Chip nur auf der Produktseite; die Karte zeigt ihn im Bild (_product-card-gallery)
+  assign tp_pr_chip = false
+  if show_compare_price and product.handle == product_resource.handle and tp_pr_prozent > 0
+    assign tp_pr_chip = true
   endif
 
   # Determine if currency code should be shown
@@ -253,6 +260,7 @@
     {% comment %} Standard pricing display {% endcomment %}
     {% if show_compare_price %}
       <div class="price__sale">
+        {%- if tp_pr_chip -%}<span class="tp-rabatt-badge">−{{ tp_pr_prozent }}&nbsp;%</span>{%- endif -%}
         {% if show_sale_price_first %}
           <span class="price-item__group">
             <span class="visually-hidden">{{ 'content.price_sale' | t }}&nbsp;</span>

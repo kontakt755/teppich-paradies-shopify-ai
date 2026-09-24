@@ -37,7 +37,7 @@
   assign tp_ek_raum_aktiv = block.settings.raumansicht_aktiv
   # Streichpreis nur bei aktiver Aktion - dieselbe Quelle wie ueberall (S-20, S-32).
   capture tp_ek_aktion
-    render 'tp-aktion-aktiv', product: product
+    render 'tp-rabatt-sichtbar', product: product
   endcapture
   assign tp_ek_aktion = tp_ek_aktion | strip
   assign tp_ek_raumbreite = block.settings.raum_breite_cm | default: 420 | times: 1
