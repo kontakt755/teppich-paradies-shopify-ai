@@ -22,7 +22,7 @@ import { normalizeTask, requirementsFor, labelChangesFor, STATUS_BY_KEY, STATUS_
 import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
-import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
+import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
@@ -687,8 +687,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
       const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
-      const { orderId, lineItemId, status, lieferantBestellnummer, notiz } = payload || {};
+      const { orderId, lineItemId, status, lieferantBestellnummer, notiz, aktion } = payload || {};
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
+      // "Wieder öffnen" macht einen Abschluss rueckgaengig (z. B. versehentlich "Ohne Einkauf
+      // abschliessen"). Eigener Weg statt eines Pseudo-Status, damit der Abschluss im Verlauf
+      // der Position erhalten bleibt statt ueberschrieben zu werden.
+      if (aktion === 'wiederOeffnen') {
+        const file = auftragsstatusPfad(privatDirPath || privatDir());
+        let eintrag;
+        try {
+          eintrag = oeffneWieder(file, { orderId, lineItemId, actor, notiz, jetzt: now() });
+        } catch (e) {
+          if (e instanceof AuftragsstatusFehler) throw new ApiError(400, e.message);
+          throw e;
+        }
+        audit({ actor, action: 'auftragsstatus-wieder-geoeffnet', orderId, lineItemId, status: eintrag.status });
+        merke(benutzer, actor, 'Auftragsstatus wieder geöffnet', `${orderId}/${lineItemId}: ${eintrag.status || 'noch nicht bestellt'}`);
+        return { ok: true, eintrag };
+      }
+      if (aktion) throw new ApiError(400, `Unbekannte Aktion „${aktion}"`);
       if (!STATUS_ORDER.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${STATUS_ORDER.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = auftragsstatusPfad(dir);

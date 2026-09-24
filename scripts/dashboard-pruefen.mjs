@@ -166,6 +166,9 @@ async function main() {
   if (/Error|Fehler/.test(log)) console.log(`\nServer-Ausgabe:\n${log.trim()}`);
   const schlecht = ergebnisse.filter(e => e.fehler.length || e.ueberstand.length).length;
   process.exitCode = schlecht ? 1 : 0;
+  // Der Server-Kindprozess haelt die Ereignisschleife offen; ohne ausdrueckliches Beenden
+  // feuert 'exit' nie und der Lauf blieb nach dem Bericht haengen (Instanz und Kopie blieben).
+  aufraeumen();
 }
 
 main().catch(e => { console.error(`dashboard:pruefen: ${e.message}`); process.exit(2); });

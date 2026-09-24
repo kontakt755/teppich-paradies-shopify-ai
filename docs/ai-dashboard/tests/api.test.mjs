@@ -1,3 +1,6 @@
+// Zuerst: $TP_PRIVAT_DIR auf einen Wegwerf-Ordner - merke() schreibt ins Protokoll dort,
+// sonst landeten Testeintraege in ~/teppich-paradies-analyse/protokoll.jsonl.
+import { PRIVAT_DIR } from './_testumgebung.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -431,6 +434,34 @@ test('einkaufAuftragsstatusSetzen schreibt lokal und GET liest es danach', async
   const key = 'gid://shopify/Order/1::gid://shopify/LineItem/1';
   assert.equal(liste.positionen[key].status, 'bestellt');
   assert.equal(liste.positionen[key].lieferantBestellnummer, 'LB-42');
+});
+
+test('einkaufAuftragsstatusSetzen: wiederOeffnen macht "Ohne Einkauf abschließen" rückgängig und protokolliert', async () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat');
+  const { gh } = fakeGh({});
+  let jetzt = new Date('2026-09-23T09:00:00Z');
+  const api = createApi({ gh, root, privatDirPath: dir, now: () => jetzt });
+  const pos = { orderId: 'gid://shopify/Order/1', lineItemId: 'gid://shopify/LineItem/1' };
+  await api.einkaufAuftragsstatusSetzen({ ...pos, status: 'erledigt', notiz: 'Testbestellung' });
+  jetzt = new Date('2026-09-24T10:00:00Z');
+  const r = await api.einkaufAuftragsstatusSetzen({ ...pos, aktion: 'wiederOeffnen', notiz: 'doch echt' });
+  assert.equal(r.ok, true);
+  assert.equal(r.eintrag.status, null, 'ohne vorherigen Schritt wieder "noch nicht bestellt"');
+  assert.equal(r.eintrag.wiederGeoeffnetVon, 'tobias');
+  assert.equal(r.eintrag.wiederGeoeffnetAm, '2026-09-24T10:00:00.000Z');
+  assert.equal(r.eintrag.verlauf.at(-1).abschlussGrund, 'Testbestellung');
+
+  const key = `${pos.orderId}::${pos.lineItemId}`;
+  assert.equal(api.einkaufAuftragsstatus().positionen[key].status, null);
+  const audit = fs.readFileSync(path.join(root, '.router', 'control-center-audit.jsonl'), 'utf8');
+  assert.match(audit, /auftragsstatus-wieder-geoeffnet/);
+  const protokoll = fs.readFileSync(path.join(PRIVAT_DIR, 'protokoll.jsonl'), 'utf8');
+  assert.match(protokoll, /Auftragsstatus wieder geöffnet/);
+
+  // Nicht erledigte Position und unbekannte Aktion werden abgelehnt.
+  await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ ...pos, aktion: 'wiederOeffnen' }), e => e instanceof ApiError && e.status === 400);
+  await assert.rejects(() => api.einkaufAuftragsstatusSetzen({ ...pos, aktion: 'loeschen' }), e => e instanceof ApiError && e.status === 400);
 });
 
 function lexikonFixture(root) {

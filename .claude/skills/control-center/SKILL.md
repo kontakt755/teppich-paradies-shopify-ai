@@ -174,6 +174,9 @@ kann dafuer weg?
   Sonst liegt die fertige Arbeit danach ungemergt da und der naechste Merge
   kostet eine Konfliktrunde. Vor dem Merge pruefen:
   `git log --oneline origin/main..origin/<zweig>`.
+- **Testbestellungen stehen nicht in `auftraege`**, sondern in
+  `testauftraege`. Aktionen, die einen Auftrag per ID suchen, `alleAuftraege()`
+  nehmen – sonst tut der Knopf bei Testbestellungen still nichts.
 - **Auftragsfluss-Stand** (`auftragsstatus.json`) gibt es nur lokal; er wird
   von `npm run daten:sichern` gesichert. Aktionen, die ihn schreiben, immer
   mit Grund/Notiz und ueber den Filter „Erledigt" nachvollziehbar.
@@ -182,13 +185,8 @@ kann dafuer weg?
 
 Vor dem Umsetzen als Aufgabe anlegen und mit dem Inhaber abstimmen:
 
-- „Ohne Einkauf abschliessen" rueckgaengig machen koennen (heute nur ueber
-  die Statusdatei).
-- Einkauf: Suche/Filter nach Auftrag oder Kunde; Sammelaktion „alle Muster
-  von Lieferant A als bestellt".
-- Heute: „Seit gestern neu" (neue Bestellungen, neue Probleme) als eigene
-  kurze Liste.
-- Lieferzeiten sichtbar machen: wie lange steht ein Artikel schon auf
-  „Bestellt"?
+- Einkauf: Suche/Filter nach Auftrag oder Kunde.
+- Heute „Seit gestern neu": Vortagesstand der Ampeln sichern, damit auch
+  aeltere Auftraege erscheinen, die erst jetzt rot geworden sind.
 - Arbeit: Owner-Filter und Spalte automatisch einblenden, sobald mehr als eine
   Person Aufgaben hat.
