@@ -23,8 +23,9 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
+import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
+import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
-import { sucheKunden, kundenListenEintrag, findeKunde } from '../operations/lib/kundensuche.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 
@@ -78,6 +79,18 @@ export function privatDir() {
 
 function readJsonIfExists(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+/** Wendet dieselben Filterchips wie alleKunden() auf Freitextsuchtreffer an (kundenListenEintrag-Form). */
+function passtZuKundenFilter(filter) {
+  return (k) => {
+    if (filter === 'in_arbeit') return !k.fortschritt.fertig;
+    if (filter === 'fertig') return k.fortschritt.fertig && k.fortschritt.gesamt > 0;
+    if (filter === 'rueckruf_offen') return k.beratungOffen;
+    if (filter === 'muster') return k.muster;
+    if (filter === 'test') return k.nurTestbestellungen;
+    return !k.nurTestbestellungen;
+  };
 }
 
 /** Laedt und bereitet orders.json auf (dieselbe Logik wie einkaufBestellungen()); null wenn nicht vorhanden/kaputt. */
@@ -507,12 +520,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Kundensuche: Name, E-Mail, Telefon, Bestellnummer, Strasse/Ort/PLZ - waehrend des Tippens. */
-    kundenSuche({ q = '' } = {}) {
+    kundenSuche({ q = '', filter = '' } = {}) {
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt - siehe operations/lib/bestelluebersicht.mjs bzw. den Export-Lauf dafuer.' };
-      const treffer = sucheKunden(modell, q).slice(0, 50).map(kundenListenEintrag);
-      return { verfuegbar: true, treffer };
+      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      // Unter zwei Zeichen ist die Suche kein Tor mehr, sondern die volle
+      // Kundenliste (Inhabervorgabe) - gefiltert/sortiert wie alleKunden().
+      // Ab zwei Zeichen bleibt es Freitextsuche, mit demselben Filter drauf.
+      const q2 = String(q ?? '').trim();
+      const treffer = q2.length >= 2
+        ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
+        : alleKunden(modell, { statusAlle, filter });
+      return { verfuegbar: true, treffer, gesamt: treffer.length };
     },
 
     /** Kunden-Detailansicht: Kontakt, Anschriften, alle Bestellungen mit Positionen. */
@@ -520,9 +540,48 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const dir = privatDirPath || privatDir();
       const modell = ladeBestellModell(dir);
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
-      const kunde = findeKunde(modell, key);
+      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const kunde = findeKunde(modell, key, { statusAlle });
       if (!kunde) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
       return { verfuegbar: true, kunde };
+    },
+
+    /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
+    kundenBestellungen() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
+      return { verfuegbar: true, zeilen: bestellliste(modell, { statusAlle, rueckrufeAlle }) };
+    },
+
+    /**
+     * "Kunde fertig": setzt ALLE offenen Positionen einer Bestellung auf
+     * Erledigt - bewusster Sammelschritt mit Rueckfrage im Browser und
+     * Protokolleintrag (wer/wann je Position ueber merke()), nie ein
+     * stiller Massenwechsel.
+     */
+    async kundenBestellungFertig(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || await currentUser();
+      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+      const { orderId, lineItemIds, notiz } = payload || {};
+      if (!orderId || !Array.isArray(lineItemIds) || !lineItemIds.length) {
+        throw new ApiError(400, 'orderId und lineItemIds sind Pflicht', { missing: ['orderId', 'lineItemIds'] });
+      }
+      const dir = privatDirPath || privatDir();
+      const file = auftragsstatusPfad(dir);
+      const eintraege = [];
+      for (const lineItemId of lineItemIds) {
+        try {
+          eintraege.push(setzeStatus(file, { orderId, lineItemId, status: 'erledigt', actor, notiz: notiz || 'Kunde fertig (Sammelschritt)', jetzt: now() }));
+        } catch (e) {
+          if (!(e instanceof AuftragsstatusFehler)) throw e;
+        }
+      }
+      audit({ actor, action: 'auftragsstatus-kunde-fertig', orderId, anzahl: eintraege.length });
+      merke(benutzer, actor, 'Kunde fertig', `${orderId}: ${eintraege.length} Artikel`);
+      return { ok: true, anzahl: eintraege.length, eintraege };
     },
 
     /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */

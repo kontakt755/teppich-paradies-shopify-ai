@@ -217,10 +217,14 @@ function vollstaendigeDetails(order, positionen) {
   }
   return {
     kunde: {
+      id: order.customer?.id ?? null,
+      kundennummer: numerischeId(order.customer?.id),
       name: order.customer?.displayName ?? order.shippingAddress?.name ?? '–',
       email: order.customer?.email ?? order.email ?? '–',
       telefon: order.customer?.phone ?? order.phone ?? '–',
     },
+    kanal: leer(order.sourceName) ? null : order.sourceName,
+    anzahlArtikel: positionen.length,
     lieferadresse: adresse(order.shippingAddress),
     rechnungsadresse: adresse(order.billingAddress),
     versandart: order.shippingLine?.title ?? '–',
