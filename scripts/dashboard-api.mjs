@@ -23,6 +23,7 @@ import { toIssueRecord } from './build-dashboard-data.mjs';
 import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
+import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 
 const execFileP = promisify(execFile);
 
@@ -267,6 +268,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     } catch { /* Audit darf die Aktion nicht verhindern; der GitHub-Kommentar ist die fuehrende Spur. */ }
   }
 
+  /** Handelnde Person fuer Anzeige/Protokoll: der angemeldete Dashboard-Benutzer, sonst der gh-Login (Notzugang). */
+  function anzeigename(benutzer, actor) {
+    return benutzer?.name || actor || 'unbekannt';
+  }
+
+  function merke(benutzer, actor, aktion, objekt) {
+    protokolliere(protokollPfad(), { benutzer: anzeigename(benutzer, actor), aktion, objekt, jetzt: now() });
+  }
+
   async function currentUser() {
     if (userCache) return userCache;
     try { userCache = (await gh(['api', 'user', '--jq', '.login'])).trim() || null; } catch { userCache = null; }
@@ -363,7 +373,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Statuswechsel mit Pflichtangaben. payload: {target, owner, comment, reason, confirmAcceptance, decision} */
-    async transition(number, payload = {}) {
+    async transition(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const target = String(payload.target || '');
@@ -388,16 +398,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (newOwner) lines.push(`Owner: @${newOwner}`);
       if (payload.confirmAcceptance) lines.push('Akzeptanzkriterien: ausdrücklich bestätigt');
       if (change.note) lines.push(`Hinweis: ${change.note}`);
+      if (benutzer?.name) lines.push(`Mitarbeiter (Control Center): ${benutzer.name}`);
       await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines, text })]);
       if (change.close) await gh(['issue', 'close', String(n), '--repo', repo]);
       if (change.reopen) await gh(['issue', 'reopen', String(n), '--repo', repo]);
 
-      audit({ actor, action: 'transition', issue: n, from: task.status, to: target, owner: newOwner, decision: payload.decision || null, labels: change });
+      audit({ actor, benutzer: benutzer?.name || null, action: 'transition', issue: n, from: task.status, to: target, owner: newOwner, decision: payload.decision || null, labels: change });
+      merke(benutzer, actor, 'Statuswechsel', `Issue #${n}: ${task.statusLabel} → ${STATUS_BY_KEY[target].label}`);
       const warn = await afterWrite();
       return { ok: true, issue: n, from: task.status, to: target, labels: change, note: [change.note, warn].filter(Boolean).join(' · ') || null };
     },
 
-    async assign(number, payload = {}) {
+    async assign(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const owner = String(payload.owner || '').replace(/^@/, '').trim();
@@ -408,21 +420,26 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       for (const a of record.assignees.filter(a => a !== owner)) args.push('--remove-assignee', a);
       await gh(args);
       const heading = payload.decision === 'delegate' ? DECISION_LABEL.delegate : 'Owner zugeordnet';
-      await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines: [`Owner: ${task.owner ? `@${task.owner} → ` : ''}@${owner}`], text: payload.comment || null })]);
-      audit({ actor, action: 'assign', issue: n, owner, decision: payload.decision || null });
+      const lines = [`Owner: ${task.owner ? `@${task.owner} → ` : ''}@${owner}`];
+      if (benutzer?.name) lines.push(`Mitarbeiter (Control Center): ${benutzer.name}`);
+      await gh(['issue', 'comment', String(n), '--repo', repo, '--body', buildComment({ actor, heading, lines, text: payload.comment || null })]);
+      audit({ actor, benutzer: benutzer?.name || null, action: 'assign', issue: n, owner, decision: payload.decision || null });
+      merke(benutzer, actor, 'Owner zugeordnet', `Issue #${n}: @${owner}`);
       const warn = await afterWrite();
       return { ok: true, issue: n, owner, note: warn };
     },
 
-    async comment(number, payload = {}) {
+    async comment(number, payload = {}, benutzer = null) {
       const actor = await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const body = clip(payload.body, 6_000);
       if (!body) throw new ApiError(400, 'Kommentar ist leer', { missing: ['Kommentartext angeben'] });
       const { task } = await fetchIssue(number);
       const heading = payload.decision && DECISION_LABEL[payload.decision] ? DECISION_LABEL[payload.decision] : 'Kommentar';
-      await gh(['issue', 'comment', String(task.number), '--repo', repo, '--body', buildComment({ actor, heading, text: body })]);
-      audit({ actor, action: 'comment', issue: task.number, decision: payload.decision || null });
+      const lines = benutzer?.name ? [`Mitarbeiter (Control Center): ${benutzer.name}`] : [];
+      await gh(['issue', 'comment', String(task.number), '--repo', repo, '--body', buildComment({ actor, heading, lines, text: body })]);
+      audit({ actor, benutzer: benutzer?.name || null, action: 'comment', issue: task.number, decision: payload.decision || null });
+      merke(benutzer, actor, 'Kommentar', `Issue #${task.number}`);
       const warn = await afterWrite();
       return { ok: true, issue: task.number, note: warn };
     },
@@ -540,8 +557,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** Setzt den Status einer Bestellposition (Bestellt/Geliefert/Raus/Erledigt). */
-    async einkaufAuftragsstatusSetzen(payload = {}) {
-      const actor = await currentUser();
+    async einkaufAuftragsstatusSetzen(payload = {}, benutzer = null) {
+      // Im Mehrbenutzerbetrieb ist der angemeldete Dashboard-Benutzer die handelnde Person -
+      // gh-Anmeldung ist fuer diese rein lokale Aktion dann nicht mehr Voraussetzung. Ohne
+      // Anmeldung (Notzugang) bleibt der bisherige gh-Login die handelnde Person.
+      const actor = benutzer?.name || await currentUser();
       if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
       const { orderId, lineItemId, status, lieferantBestellnummer, notiz } = payload || {};
       if (!orderId || !lineItemId) throw new ApiError(400, 'orderId und lineItemId sind Pflicht', { missing: ['orderId', 'lineItemId'] });
@@ -556,6 +576,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         throw e;
       }
       audit({ actor, action: 'auftragsstatus', orderId, lineItemId, status });
+      merke(benutzer, actor, 'Auftragsstatus', `${orderId}/${lineItemId}: ${status}`);
       return { ok: true, eintrag };
     },
 

@@ -89,6 +89,21 @@ function renderSessionButton() {
   if (!btn) return;
   const show = Boolean(state.session?.required && state.session?.authenticated);
   btn.hidden = !show;
+  const label = $('#sessionBtnText');
+  if (label) {
+    const b = state.session?.benutzer;
+    label.textContent = b?.name ? `${b.name} (${b.rolle})` : 'Angemeldet';
+  }
+  // Rolle "lesen" darf serverseitig nichts veraendern - hier nur die zugehoerige
+  // Bedienoberflaeche ausblenden, damit niemand versehentlich auf eine 403-Antwort
+  // trifft. Die eigentliche Durchsetzung liegt im Server (scripts/serve-dashboard.mjs).
+  const istLesend = state.session?.benutzer?.rolle === 'lesen';
+  document.body.classList.toggle('rolle-lesen', istLesend);
+}
+
+/** true, wenn die aktuelle Rolle keine Aenderungen vornehmen darf (nur Anzeige, Server prueft ohnehin serverseitig). */
+export function istNurLesend() {
+  return state.session?.benutzer?.rolle === 'lesen';
 }
 
 async function logout() {
@@ -754,6 +769,20 @@ async function loadActivity() {
   try { const r = await fetch('/api/activity', { cache: 'no-store' }); return r.ok ? await r.json() : { error: `HTTP ${r.status}` }; } catch (e) { return { error: e.message }; }
 }
 
+// Lokales Protokoll (wer hat was im Control Center gemacht) - nur bei Mehrbenutzerbetrieb
+// interessant, aber unschaedlich, wenn keine Anmeldung aktiv ist (dann leer).
+let protokollCache = null;
+async function loadProtokoll() {
+  try { const r = await fetch('/api/protokoll', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
+// Mitarbeiterliste - nur fuer die Rolle "inhaber" sichtbar (der Server liefert sie nur dieser Rolle aus).
+let benutzerCache = null;
+async function loadBenutzer() {
+  if (state.session?.benutzer?.rolle !== 'inhaber') return null;
+  try { const r = await fetch('/api/benutzer', { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; }
+}
+
 const EREIGNIS_LABEL = { labeled: 'Label', unlabeled: 'Label entfernt', assigned: 'zugewiesen', unassigned: 'Zuweisung entfernt', closed: 'geschlossen', reopened: 'wieder geöffnet', referenced: 'verknüpft', commented: 'Kommentar', renamed: 'umbenannt', angelegt: 'angelegt', geschlossen: 'geschlossen', aktualisiert: 'aktualisiert' };
 
 /** Label-Name in Klartext: status:review -> "Status Review", priority:p2 -> "Prio P2". */
@@ -827,7 +856,28 @@ function viewAktivitaet() {
     <div class="page-head"><div><h1>Aktivität</h1><p class="sub">Was sich an den Aufgaben geändert hat – zusammengefasst je Person und Aufgabe</p></div></div>
     <div class="toolbar"><input type="search" placeholder="Verlauf durchsuchen …" value="${esc(state.route.params.get('q') || '')}" data-param="q" aria-label="Verlauf durchsuchen"></div>
     ${activityCache?.error ? `<div class="notice warn" style="margin-bottom:12px">Verlauf konnte nicht geladen werden: ${esc(activityCache.error)}</div>` : ''}
-    <section class="card"><ul class="activity">${buendel.map(b => `<li><span class="when">${fmtDateTime(b.at)}</span><div><div><a href="#" data-open="${b.number}"><span class="mono small muted">#${b.number}</span> ${esc(titelVon(b))}</a></div><div class="activity-meta"><span class="who">${esc(b.who)}</span>${b.teile.map(t => `<span class="badge ${t.art === 'status' ? 'status review' : 'plain'}">${esc(t.text)}</span>`).join('')}</div></div></li>`).join('') || '<li class="muted">Keine Einträge.</li>'}</ul></section>`;
+    <section class="card"><ul class="activity">${buendel.map(b => `<li><span class="when">${fmtDateTime(b.at)}</span><div><div><a href="#" data-open="${b.number}"><span class="mono small muted">#${b.number}</span> ${esc(titelVon(b))}</a></div><div class="activity-meta"><span class="who">${esc(b.who)}</span>${b.teile.map(t => `<span class="badge ${t.art === 'status' ? 'status review' : 'plain'}">${esc(t.text)}</span>`).join('')}</div></div></li>`).join('') || '<li class="muted">Keine Einträge.</li>'}</ul></section>
+    ${renderProtokoll()}
+    ${renderBenutzerverwaltung()}`;
+}
+
+/** Lokales Protokoll (wer hat was gemacht) - letzte 50 Eintraege, nur lokal, nie auf GitHub. */
+function renderProtokoll() {
+  const eintraege = protokollCache?.eintraege || [];
+  if (!eintraege.length) return '';
+  return `
+    <div class="page-head" style="margin-top:24px"><div><h2>Lokales Protokoll</h2><p class="sub">Letzte 50 Aktionen im Control Center (nie im Repository, nur auf diesem Mac)</p></div></div>
+    <section class="card"><ul class="activity">${eintraege.map(e => `<li><span class="when">${fmtDateTime(e.zeitpunkt)}</span><div><div>${esc(e.aktion)}${e.objekt ? ` · ${esc(e.objekt)}` : ''}</div><div class="activity-meta"><span class="who">${esc(e.benutzer)}</span></div></div></li>`).join('')}</ul></section>`;
+}
+
+/** Benutzerverwaltung - nur fuer die Rolle "inhaber" sichtbar. Anlegen/Deaktivieren laeuft ueber
+ * das Skript (operations/scripts/benutzer.mjs), hier reicht eine Liste plus Hinweis. */
+function renderBenutzerverwaltung() {
+  if (!benutzerCache) return '';
+  const liste = benutzerCache.benutzer || [];
+  return `
+    <div class="page-head" style="margin-top:24px"><div><h2>Mitarbeiterzugänge</h2><p class="sub">${esc(benutzerCache.hinweis || '')}</p></div></div>
+    <section class="card">${liste.length ? `<table class="table"><thead><tr><th>Name</th><th>Kürzel</th><th>Rolle</th><th>Status</th></tr></thead><tbody>${liste.map(b => `<tr><td>${esc(b.name)}</td><td class="mono">${esc(b.kuerzel)}</td><td>${esc(b.rolle)}</td><td>${b.aktiv ? 'aktiv' : 'deaktiviert'}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Noch keine Mitarbeiterzugänge angelegt – Notzugang per Einzelpasswort aktiv.</p>'}</section>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -893,6 +943,7 @@ function ensureEinkaufAuftragsstatus() {
 /** Setzt den Auftragsfluss-Stand einer Position. `still` unterdrueckt Toast und Neuzeichnen
  * (fuer Sammelaktionen, die am Ende selbst einmal melden und zeichnen). */
 async function setzeAuftragsstatus(pos, status, { lieferantBestellnummer = null, notiz = null, still = false } = {}) {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return false; }
   try {
     const r = await fetch('/api/einkauf/auftragsstatus', {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -1756,6 +1807,7 @@ function openActionDialog(t, act, extra = {}) {
   form.querySelector('input:not([type=hidden]), select, textarea')?.focus();
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
+    if (istNurLesend()) { toast('Rolle "lesen" darf keine Aenderungen vornehmen.', 'crit'); return; }
     const fd = new FormData(form);
     const payload = { target: fd.get('target') || null, owner: (fd.get('owner') || '').trim() || null, comment: (fd.get('text') || '').trim() || null, reason: (fd.get('text') || '').trim() || null, confirmAcceptance: fd.get('confirmAcceptance') === 'on', act };
     if (payload.target) {
@@ -1841,6 +1893,7 @@ async function syncNow() {
  * Anzahl und Zeitpunkt (aus derselben aktualisierung.json).
  */
 async function aktualisierenNow() {
+  if (istNurLesend()) { toast('Rolle "lesen" darf keine Aktualisierung anstossen.', 'crit'); return; }
   if (einkauf.aktualisierungLaeuft) { toast('Aktualisierung läuft bereits.'); return; }
   try {
     const r = await fetch('/api/aktualisierung/start', { method: 'POST' });
@@ -2005,7 +2058,7 @@ function bindEvents() {
   $('#sessionBtn').addEventListener('click', logout);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
-  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') activityCache = await loadActivity(); render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
 
@@ -2016,7 +2069,7 @@ async function init() {
   await loadCapabilities();
   await loadData();
   renderSyncChip();
-  if (state.route.view === 'aktivitaet') activityCache = await loadActivity();
+  if (state.route.view === 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); }
   render();
   if (state.route.view === 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus();
   loadWorkflowRun().then(() => { renderSyncChip(); if (['heute', 'insights'].includes(state.route.view)) render(); });
