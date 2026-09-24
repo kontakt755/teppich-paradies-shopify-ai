@@ -338,6 +338,11 @@ Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
 Label-Gruppen: `status:*`, `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`
 (`./setup-dashboard.sh` legt sie an). Tests: `npm run dashboard:test`.
 
+**Vor jeder Aenderung am Dashboard** den Skill `.claude/skills/control-center/SKILL.md`
+lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Browser
+mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
+Scrollen; `--offen` fuer Klicktests).
+
 `issues.json` gehoert dem Bot: **nicht mitcommitten**, Dateien gezielt mit
 `git add <datei>` stagen, nie `git add -A`. Zuruecksetzen ist fuer genau diesen
 Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
