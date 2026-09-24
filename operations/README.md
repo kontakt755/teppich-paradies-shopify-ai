@@ -148,6 +148,50 @@ nummern, Kollektionen, URLs, Preise) und bleibt lokal - das Skript verweigert
 jeden Zielpfad innerhalb des Repositorys (gleiche Pruefung wie
 `kennzahlen-export.mjs`). Nichts wird nach Shopify geschrieben.
 
+## Anreicherung aus Lieferantenseiten
+
+Ersetzt zwei zuvor nur lokal liegende, nicht versionierte Python-Skripte
+(`~/teppich-paradies-analyse/einkauf-kollektion/plan_aus_cache.py` und
+`build_technik_plan.py`) durch einen getesteten Teil des Repositorys - gleiches
+Verhalten, jetzt mit Tests und ohne Python-Abhängigkeit. Logik in
+`lib/lieferantenseiten.mjs` (Zuordnung Attributtabelle → Metafeld, Einheiten
+`mm`/`dB` mit deutschem Komma, Metaobjekt-Zuordnung nur bei exakter
+Entsprechung, vorhandene Werte werden nie überschrieben), Tests in
+`operations/tests/lieferantenseiten*.test.mjs`.
+
+**Abruf** (`scripts/lieferantenseiten-holen.mjs`, `npm run lieferantenseiten:holen`):
+höflicher, fortsetzbarer Abruf der Lieferant-A-Produktseiten - eine Seite je
+120 s (`robots.txt`-Crawl-delay), fertige Seiten werden nie erneut geholt,
+jede Seite landet sofort im Cache. Die echte Basis-URL steht ausschließlich in
+`$TP_PRIVAT_DIR/lieferantendaten/lieferant-a.env` (`LIEFERANT_A_BASIS=...`,
+CLAUDE.md Punkt 8) - im Repository nur `lieferant-a.example`.
+`npm run lieferantenseiten:holen -- --stand` zählt nur, `--einmal` holt genau
+eine Seite (Debug). `SIGTERM`/`SIGINT` beenden sauber nach der aktuell
+laufenden Seite.
+
+**Plan** (`scripts/anreicherung.mjs`, `npm run daten:anreichern`): baut aus
+dem Seiten-Cache, dem Katalog-Abgleich (`lieferant-a-recherche`-Skill) und
+dem Lexikon (`lexikon/produkte.json`) Schreibpakete für zwei Feldgruppen:
+
+- `einkauf.lieferant_kollektion` / `einkauf.marke` (Varianten-Metafelder,
+  direkt aus der Seite)
+- technische `custom.*`-Produktfelder (Brandverhalten, Nutzungsklasse,
+  Fußbodenheizung, Stärke, Rücken, Material, Florhöhe, Trittschall,
+  Komfortklasse, Fasermaterial) - nur Felder, die im Lexikon heute leer sind
+
+Standardmäßig wird **nur geplant**. Ausgabe unter
+`$TP_PRIVAT_DIR/anreicherung/`: `plan.json`, `rollback.json`, `offen.json`
+(fehlende Seite, kein SKU-Treffer, widersprüchliche Varianten, fehlender
+Metaobjekt-Eintrag), `konflikte.json`, `neue-metaobjekte.json` (Rohwerte ohne
+Entsprechung - Inhaberentscheidung, nie automatisch angelegt) und
+`batches/x*.gql` (8 aliasierte `metafieldsSet` je Datei, höchstens 25
+Metafelder je Aufruf, Format aus `.claude/skills/shopify-massendaten/SKILL.md`).
+
+Erst `npm run daten:anreichern -- --schreiben` schreibt, über den Token aus
+`.env.local` (`operations/sync/zugang.mjs`, gleicher Zugang wie oben) und mit
+Gegenprobe je geplantem Wert danach (`write-log.json`: gleich/abweichend/
+fehlend) - `userErrors: []` beim Schreiben gilt nicht als Beleg.
+
 ## Zugang einrichten (einmalig)
 
 ```
@@ -164,20 +208,53 @@ Hand. Hintergrund zu den Token-Wegen: `domains/shopify/admin-token-oauth.md`.
 
 ## Aktualisierung (alle Datenquellen in einem Lauf)
 
-Lexikon, Bestellübersicht und Kennzahlen sind private Momentaufnahmen unter
-`$TP_PRIVAT_DIR` (Standard `~/teppich-paradies-analyse`) und veralten, sobald
-sich im Shop etwas ändert - neues Produkt, neue Bestellung, geänderter Preis.
-`operations/scripts/aktualisieren.mjs` erneuert alle drei nacheinander in
-einem Aufruf:
+Lexikon, Bestellübersicht, Kennzahlen, Kunden, Angebote, Warenkörbe und
+Bestand sind private Momentaufnahmen unter `$TP_PRIVAT_DIR` (Standard
+`~/teppich-paradies-analyse`) und veralten, sobald sich im Shop etwas ändert -
+neues Produkt, neue Bestellung, geänderter Preis. `operations/scripts/aktualisieren.mjs`
+erneuert alle Teile nacheinander in einem Aufruf:
 
 ```
 npm run daten:aktualisieren
 npm run daten:aktualisieren -- --nur lexikon
 npm run daten:aktualisieren -- --nur bestellungen,kennzahlen
+npm run daten:aktualisieren -- --nur kunden,angebote,warenkoerbe,bestand
 ```
 
 Erneuert: Lexikon (Produkte/Varianten/Metafelder, wie `lexikon:export --live`),
-Bestellübersicht und Kennzahlen (35-Tage-Fenster, deckt die 7/30-Tage-Auswertung).
+Bestellübersicht und Kennzahlen (35-Tage-Fenster, deckt die 7/30-Tage-Auswertung),
+sowie vier weitere Datenarten (Phase seit 2026-09-24):
+
+- **Kunden** (`operations/sync/customers.mjs`, `lib/kunden.mjs`) - eigene
+  Datenart, nicht nur aus Bestellungen abgeleitet: Name, E-Mail, Telefon,
+  Lebenszeit-Bestellzahl und -Umsatz (`numberOfOrders`/`amountSpent`, nicht
+  aus dem 90-Tage-Fenster gerechnet), Tags, Adressen, Notiz,
+  Marketing-Einwilligung. Zeigt auch Kunden ohne aktuelle Bestellung.
+  → `$TP_PRIVAT_DIR/kunden/kunden.json`
+- **Angebote/Entwürfe** (`sync/draftOrders.mjs`, `lib/angebote.mjs`) - Mass-
+  und Verlegeangebote (Shopify `DraftOrder`), die noch keine Bestellung sind:
+  Nummer, Kunde, Betrag, Status, Positionen.
+  → `$TP_PRIVAT_DIR/angebote/angebote.json`
+- **Abgebrochene Warenkörbe** (`sync/abandonedCheckouts.mjs`, `lib/warenkoerbe.mjs`) -
+  letzte 30 Tage, noch nicht abgeschlossen: Zeitpunkt, Kunde/E-Mail sofern
+  vorhanden, Warenkorbwert, Positionen - verlorener Umsatz, den das Dashboard
+  vorher nicht zeigte. → `$TP_PRIVAT_DIR/warenkoerbe/warenkoerbe.json`
+- **Lagerbestand** (`sync/inventory.mjs`, `lib/bestand.mjs`) - je Standort und
+  Variante (`available`/`on_hand`/`committed`/`incoming`). Führt der Shop
+  keinen Lagerbestand (keine getrackte Variante), steht das ausdrücklich als
+  `gefuehrt:false` mit Hinweis in der Datei - keine erfundenen Nullen.
+  → `$TP_PRIVAT_DIR/bestand/bestand.json`
+- **Erfüllungen/Rückerstattungen** (`lib/erfuellung.mjs`) - läuft ohne
+  eigenen Abruf mit, weil `sync/orders.mjs` (`ORDERS_QUERY`) `fulfillments`
+  (Status, Sendungsnummer, Träger) und `refunds` (Betrag, Grund) je Bestellung
+  bereits mitliefert; wird beim Teil "bestellungen" mitgeschrieben.
+  → `$TP_PRIVAT_DIR/erfuellung/erfuellung.json`
+
+Lesende API-Endpunkte fürs Dashboard: `GET /api/kunden/liste`,
+`/api/angebote/liste`, `/api/warenkoerbe/liste`, `/api/bestand/liste`,
+`/api/erfuellung/liste` (`scripts/dashboard-api.mjs`/`serve-dashboard.mjs`) -
+nur Datenschicht, die Oberfläche folgt separat.
+
 Jeder Teil läuft unabhängig: ein Fehler in einem Teil (z. B. Rate-Limit)
 verhindert die anderen nicht, und die vorhandene Ausgabedatei bleibt
 unverändert stehen, wenn ein Abruf scheitert - lieber alte Daten mit

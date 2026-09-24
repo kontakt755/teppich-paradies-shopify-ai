@@ -977,6 +977,20 @@ function openAuftragsstatusDialog(pos, status) {
   });
 }
 
+/** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
+async function setzeAuftragsstatusFuerBestellung(orderId, status) {
+  const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
+  const positionen = (zeile?.auftrag?.positionen || []).filter(p => p.lineItemId);
+  if (!positionen.length) { toast('Keine Positionen mit Auftragsfluss gefunden', 'warn'); return; }
+  let ok = 0;
+  for (const p of positionen) {
+    const gesetzt = await setzeAuftragsstatus({ orderId, lineItemId: p.lineItemId, orderName: zeile.orderName, titel: p.titel, farbe: p.farbe }, status, { still: true });
+    if (gesetzt) ok += 1;
+  }
+  toast(`${ok}/${positionen.length} Artikel: ${AF_STATUS_LABEL[status]}`);
+  render();
+}
+
 function ensureEinkaufKennzahlen() {
   if (einkauf.kennzahlen || einkauf.loadingKennzahlen) return;
   einkauf.loadingKennzahlen = true;
@@ -1076,26 +1090,30 @@ function lieferantLinkZelle(p) {
   // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
   // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
   const lex = p.handle
-    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Lexikon</a></div>`
+    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Im Lexikon ansehen</a></div>`
     : '';
   if (hatLieferantLink(p)) {
-    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Öffnen ↗</a>${lex}`;
+    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Beim Lieferanten öffnen ↗</a>${lex}`;
   }
   return `<span class="small muted" title="Metafeld einkauf.lieferant_url fehlt">kein Link</span>${lex}`;
 }
 const hatLieferantLink = p => Boolean(p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT');
 
 /** Status-Zelle: aktueller Stand + Knopf fuer den naechsten Schritt. */
+// Knopftext ist eine Handlung ("Als X markieren"), nicht eine Wiederholung des
+// danebenstehenden Standtexts - sonst lesen sich "Stand: Noch nicht bestellt"
+// und "→ Bestellt" wie zwei widersprüchliche Zustände (Inhaber-Feedback).
+const AF_AKTIONS_LABEL = { bestellt: 'Als bestellt markieren', geliefert: 'Als geliefert markieren', raus: 'Als raus zum Kunden markieren', erledigt: 'Als erledigt markieren' };
+
 function afStatusZelle(p) {
   const eintrag = afEintragFuer(p);
   const status = eintrag?.status || null;
-  const gruppe = afFilterGruppe(status);
-  const badgeClass = gruppe === 'erledigt' ? 'fertig' : gruppe === 'unterwegs' ? 'in-arbeit' : gruppe === 'bestellt' ? 'freigabe' : 'plain';
-  const stand = status ? `<div class="small muted">${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>` : '';
   const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
   const naechster = afNaechsterStatus(status);
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">→ ${esc(AF_STATUS_LABEL[naechster])}</button>` : '';
-  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}</span>${stand}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">${esc(AF_AKTIONS_LABEL[naechster])}</button>` : '';
+  // Der Stand ist ein ruhiger Text, kein zweiter Knopf - deshalb kein "badge status" mehr.
+  const stand = `<div class="small muted">Stand: ${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}${status ? ` · ${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}` : ''}</div>`;
+  return `${stand}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
 }
 
 /** Fehlt einer Position etwas, das die Bestellung beim Lieferanten verhindert? */
@@ -1117,24 +1135,44 @@ function einkaufGruppeKarte(g, i, praefix) {
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
     : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
+  // Kundenmenge nur zeigen, wenn sie vom Wortlaut der Bestellmenge abweicht -
+  // sonst stehen zwei Zeilen da, die dasselbe sagen (Inhaber-Feedback).
+  // Vergleich ueber die Zahl selbst, nicht ueber Teilstrings: "1 Stk." steckt
+  // sonst in "10 lfm" und die abweichende Kundenmenge verschwindet.
+  const zahlAus = t => { const m = String(t ?? '').match(/-?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.') : null; };
+  const kundenmengeWeicht = p => {
+    if (p.bestellmenge.menge === 'UNGEKLAERT') return true;
+    const k = zahlAus(p.kundenmenge); const b = zahlAus(p.bestellmenge.text);
+    return k === null || b === null || k !== b;
+  };
   const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
-      <td><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
-      <td class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
-      <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div></td>
+      <td><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · unsere SKU: <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
+      <td class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a>${auftragKundeHtml(p.orderId)}<div class="small muted">${fmtDate(p.orderDatum)}</div></td>
+      <td>${p.bestellmenge.menge === 'UNGEKLAERT' ? `${ungeklaert(p.bestellmenge.grund)}<div class="small muted">${esc(p.bestellmenge.grund || '')}</div>` : `<b>${esc(p.bestellmenge.text)}</b>`}${kundenmengeWeicht(p) ? `<div class="small muted">Kunde: ${esc(p.kundenmenge)}</div>` : ''}</td>
       <td>${p.grosshaendlerId === 'UNGEKLAERT' ? `${ungeklaert(p.idGrund)}<div class="small muted">${esc(p.idGrund || '')}</div>` : `<code class="mono" data-kopiertext="${esc(p.grosshaendlerId)}" title="Klicken zum Kopieren">${esc(p.grosshaendlerId)}</code>`}</td>
       <td>${lieferantLinkZelle(p)}</td>
       <td>${afStatusZelle(p)}</td>
     </tr>`).join('');
   return `<section class="card group-card${luecken ? ' has-gap' : ''}">
     <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3>${kopierbutton(id)}</div>
+    <p class="small muted" style="margin:-6px 0 10px">Diese Artikel sind beim Lieferanten zu bestellen. Nach dem Bestellen auf „Als bestellt markieren" klicken.</p>
     ${unterzeile}
-    <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Menge beim Lieferanten</th><th>Großhändler-ID</th><th>Lieferant</th><th>Stand</th></tr></thead>
+    <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Zu bestellen</th><th>Artikelnummer beim Lieferanten</th><th>Lieferant</th><th>Stand</th></tr></thead>
     <tbody>${zeilen}</tbody></table></div>
     <textarea id="${id}" class="visually-hidden" aria-hidden="true" tabindex="-1">${esc(kopierTextFuer(g, positionen))}</textarea>
   </section>`;
 }
 /** Shopify-Link eines Auftrags aus der Auftragsliste (Positionen tragen ihn nicht selbst). */
 const adminAuftragUrl = id => (einkauf.bestellungen?.auftraege || []).find(a => a.id === id)?.adminUrl || '#';
+
+/** Kunde (und Ort) unter der Auftragsnummer - bei Mustern und Bestellungen sieht man sofort, fuer wen. */
+function auftragKundeHtml(orderId) {
+  const a = (einkauf.bestellungen?.auftraege || []).find(x => x.id === orderId);
+  const kunde = a?.details?.kunde?.name;
+  const ort = a?.details?.lieferadresse?.ort;
+  if (!kunde || kunde === '–') return '';
+  return `<div class="small muted">${esc(kunde)}${ort && ort !== '–' ? ` · ${esc(ort)}` : ''}</div>`;
+}
 
 function geldText(g) {
   if (!g || g.betrag === null || g.betrag === undefined) return '–';
@@ -1544,6 +1582,18 @@ function nutzungsklasseText(roh) {
 }
 function leerWert(w) { return w === null || w === undefined || w === ''; }
 
+// einkauf.route -> Klartext (domains/shopify/einkauf-metafelder.json)
+const LIEFERWEG_LABEL = {
+  OWN_STOCK: 'Eigenes Lager',
+  SUPPLIER_TO_TP: 'Lieferant → Teppich-Paradies',
+  SUPPLIER_DIRECT: 'Direktlieferung an Kunde',
+  SUPPLIER_TO_SITE: 'Lieferant → Baustelle',
+  SAMPLE_STOCK: 'Muster aus Lager',
+  SAMPLE_SUPPLIER: 'Muster vom Lieferanten',
+  SAMPLE_CUT: 'Muster (Zuschnitt)',
+  NO_PROCUREMENT: 'Kein Einkauf',
+};
+
 /** Kundengespraechs-Kachel: Frage -> Antwort, nur was hinterlegt ist. */
 function kgZeile(frage, antwort) {
   if (leerWert(antwort)) return '';
@@ -1594,7 +1644,11 @@ function bestellZeile(v) {
     <td>${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
     <td>${lexWert(e.lieferant)}</td>
     <td>${artikelZelle}</td>
+    <td>${lexWert(e.farbnummer)}</td>
     <td>${lexWert(e.bestelleinheit)}</td>
+    <td>${(v.preis !== null && v.preis !== undefined) ? `${esc(v.preis)} ${esc(v.waehrung || '')}` : NICHT_HINTERLEGT}</td>
+    <td>${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
+    <td>${e.lieferweg ? esc(LIEFERWEG_LABEL[e.lieferweg] || e.lieferweg) : NICHT_HINTERLEGT}</td>
     <td>${linkZelle}</td>
   </tr>`;
 }
@@ -1669,8 +1723,8 @@ function viewLexikonDetail(handle) {
   const bestellTabelle = musterVarianten.length
     ? `<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
       <tbody>${musterVarianten.map(musterBestellZeile).join('')}</tbody></table></div>`
-    : `<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Bestelleinheit</th><th>Lieferantenseite</th></tr></thead>
-      <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="6">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
+    : `<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
+      <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${p.eigenschaften?.qmProPaket ? `<p class="small muted" style="margin:6px 0 0">m² pro Paket: ${esc(p.eigenschaften.qmProPaket)}</p>` : ''}
       ${p.eigenschaften?.rollenbreite ? `<p class="small muted" style="margin:6px 0 0">Rollenbreite: ${esc(p.eigenschaften.rollenbreite)} cm</p>` : ''}
@@ -1713,15 +1767,31 @@ const kunden = {
   suche: null, loadingSuche: false, sucheKey: null,
   detail: null, loadingDetail: false, detailKey: null,
   rueckrufe: null, loadingRueckrufe: false,
+  bestellungen: null, loadingBestellungen: false,
+  erweitert: new Set(),
 };
 
-function ensureKundenSuche(q) {
+function ensureKundenBestellungen() {
+  if (kunden.bestellungen || kunden.loadingBestellungen) return;
+  kunden.loadingBestellungen = true;
+  fetchEinkauf('/api/kunden/bestellungen').then(d => {
+    kunden.bestellungen = d; kunden.loadingBestellungen = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
+
+// Voreinstellung "in Arbeit" (Inhabervorgabe) - die Liste ist beim Oeffnen
+// sofort da, ohne Suchtext getippt zu haben.
+const KUNDEN_FILTER_STANDARD = 'in_arbeit';
+const KUNDEN_FILTER_LABEL = { alle: 'Alle', in_arbeit: 'In Arbeit', fertig: 'Fertig', rueckruf_offen: 'Rückruf offen', muster: 'Muster', test: 'Testbestellungen' };
+
+function ensureKundenSuche(q, filter) {
   const query = String(q || '').trim();
-  if (kunden.sucheKey === query && (kunden.suche || kunden.loadingSuche)) return;
-  kunden.sucheKey = query;
-  if (query.length < 2) { kunden.suche = { verfuegbar: true, treffer: [] }; return; }
+  const key = `${query}::${filter}`;
+  if (kunden.sucheKey === key && (kunden.suche || kunden.loadingSuche)) return;
+  kunden.sucheKey = key;
   kunden.loadingSuche = true;
-  fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query })}`).then(d => {
+  fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query, filter: filter === 'alle' ? '' : filter })}`).then(d => {
     kunden.suche = d; kunden.loadingSuche = false;
     if (state.route.view === 'kunden') render();
   });
@@ -1821,11 +1891,18 @@ function openRueckrufDialog(orderId, status) {
   });
 }
 
+function kundenFortschrittBadge(f) {
+  if (!f || !f.gesamt) return '';
+  const klasse = f.fertig ? 'ok' : 'plain';
+  return ` <span class="badge ${klasse}">${f.fertig ? 'Fertig' : esc(f.text)}</span>`;
+}
+
 function kundenTrefferZeile(k) {
-  return `<div class="row" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
+  const fertig = k.fortschritt?.fertig;
+  return `<div class="row kunden-zeile${fertig ? ' fertig' : ''}" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
     <div>
-      <div class="t">${esc(k.name)}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}</div>
-      <div class="m">${esc(k.email !== '–' ? k.email : '')}${k.telefon !== '–' ? ` · ${esc(k.telefon)}` : ''}</div>
+      <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${kundenFortschrittBadge(k.fortschritt)}</div>
+      <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}" onclick="event.stopPropagation()">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}</div>
     </div>
     <div class="r">
       <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
@@ -1836,15 +1913,19 @@ function kundenTrefferZeile(k) {
 
 function viewKundenSuche() {
   const q = state.route.params.get('kq') || '';
-  ensureKundenSuche(q);
-  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ …" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
+  const filterRaw = state.route.params.get('kf') || '';
+  const filter = Object.hasOwn(KUNDEN_FILTER_LABEL, filterRaw) ? filterRaw : KUNDEN_FILTER_STANDARD;
+  ensureKundenSuche(q, filter);
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ … (Liste filtert waehrend des Tippens)" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
+  const chips = `<div class="btn-row" style="margin:8px 0">
+    ${Object.entries(KUNDEN_FILTER_LABEL).map(([k, l]) => `<button type="button" class="btn btn-sm${filter === k ? ' btn-primary' : ' btn-ghost'}" data-param="kf" data-value="${k === KUNDEN_FILTER_STANDARD ? '' : k}" aria-pressed="${filter === k}">${esc(l)}</button>`).join('')}
+  </div>`;
   const d = kunden.suche;
-  if (q.trim().length < 2) return toolbar + `<div class="empty search-hint"><strong>Kundensuche.</strong> Mindestens zwei Zeichen eingeben – gesucht wird über Kundenname, E-Mail, Telefonnummer, Bestellnummer, Straße/Ort und PLZ.</div>`;
-  if (!d && kunden.loadingSuche) return toolbar + `<div class="empty">Suche …</div>`;
-  if (!d || !d.verfuegbar) return toolbar + emptyState('Keine Kundendaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
-  return toolbar + `
-    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Treffer${d.treffer.length === 50 ? ' (mehr – Suche genauer eingrenzen)' : ''}</p>
-    <div class="rows">${d.treffer.length ? d.treffer.map(kundenTrefferZeile).join('') : emptyState('Keine Treffer.', 'Begriff prüfen oder anders schreiben.')}</div>`;
+  if (!d && kunden.loadingSuche) return toolbar + chips + `<div class="empty">Lade Kunden …</div>`;
+  if (!d || !d.verfuegbar) return toolbar + chips + emptyState('Keine Kundendaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  return toolbar + chips + `
+    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Kunde${d.treffer.length === 1 ? '' : 'n'}${d.treffer.length === 50 && q.trim().length >= 2 ? ' (mehr – Suche genauer eingrenzen)' : ''}</p>
+    <div class="rows">${d.treffer.length ? d.treffer.map(kundenTrefferZeile).join('') : emptyState('Keine Treffer.', 'Begriff oder Filter anpassen.')}</div>`;
 }
 
 function kundenPositionZeile(p) {
@@ -1893,7 +1974,7 @@ function viewKundenDetail(key) {
   const k = d.kunde;
   return zurueck + `
     <section class="card">
-      <div class="card-head"><h2>${esc(k.kunde.name)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
+      <div class="card-head"><h2>${esc(k.kunde.name)}${kundenFortschrittBadge(k.fortschritt)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
       <p class="small">E-Mail: ${k.kunde.email !== '–' ? esc(k.kunde.email) : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
       <div class="kunden-adressen">
         ${adresseHtml(k.lieferadresse, 'Lieferadresse')}
@@ -1919,21 +2000,168 @@ function viewKundenRueckrufe() {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Unteransicht: Bestellungen - vollwertige Bestellliste wie im Shopify-Admin,
+// nur uebersichtlicher. Eine Zeile je Bestellung, sortierbar, filterbar,
+// durchsuchbar; Klick auf die Zeile klappt die Detailansicht auf.
+// ---------------------------------------------------------------------------
+// "nicht_fertig" zuerst - das ist die Voreinstellung (Inhabervorgabe: "welcher
+// Kunde ist fertig, welcher nicht" soll sofort sichtbar sein). Muss zu
+// operations/lib/bestellliste.mjs (FILTERCHIPS/wendeFilterAn) passen.
+const BQ_FILTER_LABEL = { nicht_fertig: 'Nicht fertig', fertig: 'Fertig', offen: 'Zahlung offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
+const BQ_SORT_LABEL = { datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel', fortschritt: 'Fortschritt' };
+
+function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q)); }
+
+function bestellzeileGefiltert(zeilen, params) {
+  const filter = params.get('bfilter') || 'nicht_fertig';
+  const q = (params.get('bq') || '').trim().toLowerCase();
+  const sort = params.get('bsort') || 'datum';
+  const dir = params.get('bdir') || 'desc';
+  let liste = zeilen.filter(z => filter === 'nicht_fertig' ? (!z.fertig && !z.testbestellung)
+    : filter === 'fertig' ? (z.fertig && !z.testbestellung)
+    : filter === 'offen' ? (z.offen && !z.testbestellung)
+    : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
+    : filter === 'unerfuellt' ? ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus)
+    : filter === 'storniert' ? z.storniert
+    : filter === 'beratung' ? z.beratungOffen
+    : filter === 'muster' ? (z.tags.typ.some(t => /muster/i.test(t)) || (z.auftrag?.positionen || []).some(p => p.istMuster))
+    : filter === 'test' ? z.testbestellung
+    : !z.testbestellung);
+  if (q) liste = liste.filter(z => bqFeldTreffer([z.orderName, z.kundenname, z.email, z.telefon, z.kundenId, z.kanal, z.zustellmethode, z.zahlungsstatus, z.fulfillmentstatus, ...(z.tags.beratung || []), ...(z.tags.typ || []), ...(z.tags.sonstige || [])], q));
+  const cmp = {
+    datum: z => z.datum || '', orderName: z => z.orderName || '', kundenname: z => (z.kundenname || '').toLowerCase(),
+    gesamtbetrag: z => z.gesamtbetrag ?? -Infinity, zahlungsstatus: z => z.zahlungsstatus || '', fulfillmentstatus: z => z.fulfillmentstatus || '', anzahlArtikel: z => z.anzahlArtikel ?? 0,
+    fortschritt: z => z.fortschritt?.minStufe ?? 0,
+  }[sort] || (z => z.datum || '');
+  const vz = dir === 'asc' ? 1 : -1;
+  liste = [...liste].sort((a, b) => { const av = cmp(a), bv = cmp(b); return av < bv ? -vz : av > bv ? vz : 0; });
+  return liste;
+}
+
+function fortschrittKlasse(stufe) {
+  if (stufe === 'erledigt' || stufe === 'keine') return 'erledigt';
+  if (stufe === 'offen') return 'offen';
+  return 'unterwegs';
+}
+
+function wertText(v) { return v === null || v === undefined ? '<span class="small muted">nicht hinterlegt</span>' : esc(v); }
+
+function bestellzeileAktionen(z) {
+  const af = ['bestellt', 'geliefert', 'raus'];
+  return `<div class="btn-row">
+    ${af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}</button>`).join('')}
+    ${!z.fertig && z.anzahlArtikel ? `<button type="button" class="btn btn-sm btn-primary" data-bq-fertig="${esc(z.orderId)}">Kunde fertig …</button>` : ''}
+    ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
+  </div>`;
+}
+
+/** "Kunde fertig": alle Positionen einer Bestellung auf Erledigt - mit Rueckfrage,
+ * kein stiller Massenwechsel. Protokolleintrag laeuft serverseitig (merke()). */
+async function kundeFertigSetzen(orderId) {
+  const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
+  const ids = (zeile?.auftrag?.positionen || []).filter(p => p.lineItemId).map(p => p.lineItemId);
+  if (!ids.length) return;
+  if (!window.confirm(`${zeile.orderName}: alle ${ids.length} Artikel dieser Bestellung wirklich auf „Erledigt" setzen?`)) return;
+  try {
+    const r = await fetch('/api/kunden/bestellung-fertig', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId, lineItemIds: ids, notiz: 'Kunde fertig (Sammelschritt, Bestellliste)' }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return; }
+    toast(`${zeile.orderName}: ${j.anzahl} Artikel abgeschlossen`);
+    kunden.bestellungen = null;
+    einkauf.auftragsstatus = null;
+    ensureKundenBestellungen();
+    render();
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); }
+}
+
+function bestellzeileHtml(z) {
+  const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
+  const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
+  const pk = fortschrittKlasse(z.fortschritt?.stufe);
+  return `<tr class="bq-row${offenKlasse}" data-bq-toggle="${esc(z.orderId)}">
+      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+      <td data-l="Datum">${fmtDateTime(z.datum)}</td>
+      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}" onclick="event.stopPropagation()">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
+      <td data-l="E-Mail">${z.email ? `<a href="mailto:${esc(z.email)}" onclick="event.stopPropagation()">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.email)}</td>
+      <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.telefon)}</td>
+      <td data-l="Kunden-ID">${wertText(z.kundenId)}</td>
+      <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
+      <td data-l="Zahlung">${wertText(z.zahlungsstatus)}</td>
+      <td data-l="Versand">${wertText(z.fulfillmentstatus)}</td>
+      <td data-l="Kanal">${wertText(z.kanal)}</td>
+      <td data-l="Zustellmethode">${wertText(z.zustellmethode)}</td>
+      <td data-l="Artikel">${z.anzahlArtikel}</td>
+      <td data-l="Tags">${tagListe.length ? tagListe.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') : '<span class="small muted">–</span>'}</td>
+      <td data-l="Fortschritt"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></td>
+      <td data-l="Was fehlt">${z.wasFehlt?.length ? `<span class="bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</span>` : '<span class="small muted">nichts</span>'}</td>
+    </tr>
+    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="15">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
+}
+
+function bestellzeileKarte(z) {
+  const pk = fortschrittKlasse(z.fortschritt?.stufe);
+  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}">
+    <div>
+      <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${wertText(z.zahlungsstatus)} · ${fmtDate(z.datum)}</div>
+      <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
+      ${z.wasFehlt?.length ? `<div class="m bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</div>` : ''}
+    </div>
+    <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
+  </div>
+  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
+}
+
+function viewKundenBestellungen() {
+  ensureKundenBestellungen();
+  const d = kunden.bestellungen;
+  if (!d && kunden.loadingBestellungen) return `<div class="empty">Lade Bestellungen …</div>`;
+  if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  const params = state.route.params;
+  const filter = params.get('bfilter') || 'nicht_fertig';
+  const sort = params.get('bsort') || 'datum';
+  const dir = params.get('bdir') || 'desc';
+  const zeilen = bestellzeileGefiltert(d.zeilen, params);
+  const chips = `<div class="btn-row" style="margin:8px 0">
+    ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="btn btn-sm${filter === f ? ' btn-primary' : ' btn-ghost'}" data-param="bfilter" data-value="${f === 'nicht_fertig' ? '' : f}" aria-pressed="${filter === f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
+  </div>`;
+  const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-param="bsort" data-value="${feld}" data-bq-sort-toggle="${feld}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
+  const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>E-Mail</th><th>Telefon</th><th>Kunden-ID</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}<th>Kanal</th><th>Zustellmethode</th>${sortHead('anzahlArtikel', 'Artikel')}<th>Tags</th>${sortHead('fortschritt', 'Fortschritt')}<th>Was fehlt</th></tr>`;
+  return `
+    <div class="toolbar search-hero"><input type="search" placeholder="Suche über alle Spalten – Kunde, E-Mail, Telefon, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    ${chips}
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Datum')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}</p>
+    <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
+    <tbody class="bq-tbody-desktop">${zeilen.length ? zeilen.map(bestellzeileHtml).join('') : `<tr><td colspan="15">${emptyState('Keine Treffer.', '')}</td></tr>`}</tbody>
+    </table></div>
+    <div class="rows bq-karten">${zeilen.length ? zeilen.map(bestellzeileKarte).join('') : emptyState('Keine Treffer.', '')}</div>
+  `;
+}
+
+const FILTERCHIPS_KUNDEN = ['nicht_fertig', 'fertig', 'offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
+
 function viewKunden() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche und Rückruf-/Beratungsliste.</p></div></div>
+    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche, Bestellliste und Rückruf-/Beratungsliste.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Kundendaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const key = state.route.params.get('key');
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
-  const tab = state.route.params.get('tab') === 'rueckrufe' ? 'rueckrufe' : 'suche';
+  const tabRaw = state.route.params.get('tab');
+  const tab = ['bestellungen', 'rueckrufe'].includes(tabRaw) ? tabRaw : 'suche';
   ensureKundenRueckrufe();
-  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden – und wer zurückgerufen werden möchte.</p></div></div>
+  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden, alle Bestellungen im Überblick – und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
     </div>`;
-  return head + (tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche());
+  const body = tab === 'bestellungen' ? viewKundenBestellungen() : tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche();
+  return head + body;
 }
 
 function r_badge() {
@@ -2404,6 +2632,17 @@ function bindEvents() {
     if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
     const druckBtn = e.target.closest('[data-drucken]');
     if (druckBtn) { e.preventDefault(); window.print(); return; }
+    const bqToggle = e.target.closest('[data-bq-toggle]');
+    if (bqToggle) {
+      const id = bqToggle.dataset.bqToggle;
+      if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
+      render();
+      return;
+    }
+    const bqAf = e.target.closest('[data-bq-af]');
+    if (bqAf) { e.preventDefault(); e.stopPropagation(); setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus); return; }
+    const bqFertig = e.target.closest('[data-bq-fertig]');
+    if (bqFertig) { e.preventDefault(); e.stopPropagation(); kundeFertigSetzen(bqFertig.dataset.bqFertig); return; }
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;

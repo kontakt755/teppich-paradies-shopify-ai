@@ -4,6 +4,9 @@
   assign max_items = section.settings.max_products
 %}
 
+{%- comment -%} TP: leere Kollektion optional ganz ausblenden (Startseite "Stark reduziert", 2026-09-24) {%- endcomment -%}
+{%- if section.settings.tp_leer_ausblenden and section.settings.collection.products_count == 0 -%}
+{%- else -%}
 <div class="section-background color-{{ section.settings.color_scheme }}"></div>
 <div
   data-testid="product-list"
@@ -80,6 +83,8 @@
   </div>
 </div>
 
+{%- endif -%}
+
 {% schema %}
 {
   "name": "t:names.product_list",
@@ -99,6 +104,12 @@
     "groups": ["header", "footer"]
   },
   "settings": [
+    {
+      "type": "checkbox",
+      "id": "tp_leer_ausblenden",
+      "label": "Ohne Produkte ausblenden",
+      "default": false
+    },
     {
       "type": "collection",
       "id": "collection",

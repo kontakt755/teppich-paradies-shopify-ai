@@ -139,6 +139,7 @@
 
 <carpet-size-preview-{{ ai_gen_id }}
   class="ai-carpet-preview-{{ ai_gen_id }}"
+  style="display: none;"
   {{ block.shopify_attributes }}
 >
   {% if title != blank %}
@@ -269,6 +270,9 @@
       const dimensions = getDimensions();
       const breite = dimensions.breite;
       const hoehe = dimensions.hoehe;
+
+      // Vorschau erst zeigen, wenn Breite und Laenge eingegeben sind (2026-09-24)
+      component.style.display = breite && hoehe ? 'block' : 'none';
 
       if (breite && hoehe) {
         carpetEl.style.display = 'block';

@@ -108,7 +108,7 @@
     assign tp_ab_alt_cent = 0
     if tp_ab_alt_einheit_cent > tp_ab_einheit_cent
       capture tp_ab_aktion
-        render 'tp-aktion-aktiv', product: product
+        render 'tp-rabatt-sichtbar', product: product
       endcapture
       assign tp_ab_aktion = tp_ab_aktion | strip
       if tp_ab_aktion == 'ja'
