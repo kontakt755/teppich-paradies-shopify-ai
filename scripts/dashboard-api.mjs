@@ -94,6 +94,45 @@ function passtZuKundenFilter(filter) {
   };
 }
 
+/**
+ * Kunden aus dem Shopify-Kundenstamm, die in den Bestellungen nicht
+ * vorkommen (noch nichts bestellt oder die Bestellung liegt ausserhalb des
+ * exportierten Zeitfensters). Ohne sie zeigte die Kundenliste nur einen
+ * Bruchteil dessen, was im Shopify-Admin steht.
+ * Form wie kundenListenEintrag, damit Filter und Anzeige unveraendert
+ * funktionieren; `nurStammdaten` markiert die Herkunft.
+ */
+function stammOhneBestellung(dir, vorhandeneKeys) {
+  const daten = readJsonIfExists(path.join(dir, 'kunden', 'kunden.json'));
+  const zeilen = [];
+  for (const k of daten?.kunden ?? []) {
+    const key = k.email ? `email:${String(k.email).toLowerCase()}`
+      : k.telefon ? `tel:${String(k.telefon).replace(/[^0-9+]/g, '')}`
+      : `name:${String(k.name || 'unbekannt').toLowerCase()}`;
+    if (vorhandeneKeys.has(key)) continue;
+    zeilen.push({
+      key,
+      name: k.name || '–',
+      email: k.email || null,
+      telefon: k.telefon || null,
+      telefonQuelle: k.telefonQuelle || null,
+      ort: k.anschrift?.ort || null,
+      letzteBestellung: null,
+      letzteBestellungName: null,
+      anzahlBestellungen: k.anzahlBestellungen || 0,
+      gesamtumsatz: k.gesamtumsatz || 0,
+      waehrung: k.waehrung || 'EUR',
+      nurTestbestellungen: false,
+      fortschritt: { fertig: true, gesamt: 0, erledigt: 0 },
+      aeltesteOffeneBestellungDatum: null,
+      beratungOffen: false,
+      muster: false,
+      nurStammdaten: true,
+    });
+  }
+  return zeilen;
+}
+
 /** Laedt und bereitet orders.json auf (dieselbe Logik wie einkaufBestellungen()); null wenn nicht vorhanden/kaputt. */
 function ladeBestellModell(dir) {
   const file = path.join(dir, 'bestelluebersicht', 'orders.json');
@@ -550,12 +589,19 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ? sucheKunden(modell, q2, { statusAlle }).map(k => kundenListenEintrag(k, { statusAlle })).filter(passtZuKundenFilter(filter))
         : alleKunden(modell, { statusAlle, filter });
       const stamm = stammKontakte(dir);
-      const treffer = roh.map((t) => {
+      const ausBestellungen = roh.map((t) => {
         if (t.telefon && t.telefon !== '–') return t;
         const k = stamm.get(`mail:${String(t.email || '').toLowerCase()}`) || stamm.get(`name:${String(t.name || '').toLowerCase()}`);
         if (!k?.telefon) return t;
         return { ...t, telefon: k.telefon, telefonQuelle: k.telefonQuelle || 'kundenstamm' };
       });
+      // Kunden aus Shopify, zu denen es hier keine Bestellung gibt, gehoeren
+      // trotzdem in die Liste - sonst fehlen sie am Telefon.
+      const alleKeys = new Set(ausBestellungen.map(t => t.key));
+      const nurStamm = stammOhneBestellung(dir, alleKeys)
+        .filter(passtZuKundenFilter(filter))
+        .filter(t => q2.length < 2 || [t.name, t.email, t.telefon, t.ort].filter(Boolean).some(f => String(f).toLowerCase().includes(q2.toLowerCase())));
+      const treffer = [...ausBestellungen, ...nurStamm];
       return { verfuegbar: true, treffer, gesamt: treffer.length };
     },
 

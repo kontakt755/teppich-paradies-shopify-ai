@@ -2116,12 +2116,12 @@ function kundenTrefferZeile(k) {
   const fertig = k.fortschritt?.fertig;
   return `<div class="row kunden-zeile${fertig ? ' fertig' : ''}" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
     <div>
-      <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${kundenFortschrittBadge(k.fortschritt)}</div>
+      <div class="t">${esc(k.name)}${k.ort ? ` <span class="small muted">· ${esc(k.ort)}</span>` : ''}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}${k.nurStammdaten ? ' <span class="badge plain">aus Shopify, keine Bestellung hier</span>' : kundenFortschrittBadge(k.fortschritt)}</div>
       <div class="m">${k.email && k.email !== '–' ? `<a href="mailto:${esc(k.email)}" onclick="event.stopPropagation()">${esc(k.email)}</a>` : '<span class="small muted">keine E-Mail</span>'} · ${telLink(k.telefon)}${k.telefonQuelle === 'lieferadresse' ? ' <span class="small muted">(aus der Lieferadresse)</span>' : ''}</div>
     </div>
     <div class="r">
       <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
-      <div class="small muted">letzte: ${k.letzteBestellungName ? `${esc(k.letzteBestellungName)} · ` : ''}${fmtDate(k.letzteBestellung)}</div>
+      <div class="small muted">${k.nurStammdaten && !k.letzteBestellung ? 'noch keine Bestellung' : `letzte: ${k.letzteBestellungName ? `${esc(k.letzteBestellungName)} · ` : ''}${fmtDate(k.letzteBestellung)}`}</div>
     </div>
   </div>`;
 }

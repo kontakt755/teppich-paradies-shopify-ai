@@ -742,3 +742,25 @@ function api0KundenName(api) {
   const t = api.kundenSuche({ filter: 'alle' }).treffer;
   return t[0]?.name;
 }
+
+test('kundenSuche zeigt auch Shopify-Kunden ohne Bestellung in dieser Datei', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  fs.mkdirSync(path.join(dir, 'kunden'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'kunden', 'kunden.json'), JSON.stringify({
+    erstellt: '2026-09-24T10:00:00Z', anzahl: 1,
+    kunden: [{
+      name: 'Erika Musterfrau', email: 'erika@example.test', telefon: '+4930111222',
+      telefonQuelle: 'lieferadresse', anzahlBestellungen: 0, gesamtumsatz: 0, waehrung: 'EUR',
+      anschrift: { ort: 'Oranienburg' },
+    }],
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const treffer = api.kundenSuche({ filter: 'alle' }).treffer;
+  const neu = treffer.find(t => t.name === 'Erika Musterfrau');
+  assert.ok(neu, 'Kunde ohne Bestellung fehlt in der Liste');
+  assert.equal(neu.nurStammdaten, true);
+  assert.equal(neu.telefon, '+4930111222');
+  // Freitextsuche erfasst ihn ebenfalls
+  assert.ok(api.kundenSuche({ q: 'erika', filter: 'alle' }).treffer.some(t => t.name === 'Erika Musterfrau'));
+});
