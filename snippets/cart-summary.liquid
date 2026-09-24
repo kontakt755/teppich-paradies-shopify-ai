@@ -262,7 +262,7 @@
     </p>
   {%- endif -%}
 
-  <div class="cart-totals__container{% if settings.show_installments %} cart-totals__container--has-installments{% endif %}">
+  <div class="cart-totals__container">
     <span
       class="cart-totals__item cart-totals__total"
       role="status"
@@ -279,21 +279,20 @@
         {{ total_price }}
       </text-component>
     </span>
-    {% if settings.show_installments %}
-      <span class="cart-totals__item cart-totals__installments">
-        {% form 'cart', cart %}
-          {{ form | payment_terms }}
-        {% endform %}
-      </span>
-    {% endif %}
+    {% comment %}
+      Zwischen Gesamtbetrag und "Zur Kasse" steht nur noch der gesetzlich zum
+      Preis gehoerende Hinweis (inkl. MwSt., Versandkosten - PAngV verlangt ihn
+      in unmittelbarer Naehe des Preises). Die Ratenzahlungs-Werbung steht
+      unter den Kaufknoepfen.
+    {% endcomment %}
     <div class="cart-totals__item cart-totals__tax-note cart-primary-typography">
       {% render 'tax-info', has_discounts_enabled: settings.show_add_discount_code %}
     </div>
   </div>
 </div>
 
-{% # Beratung, Masspruefung, Verlegeanfrage - Pflichtentscheidung vor dem Checkout (snippets/tp-cart-beratung.liquid) %}
-{% render 'tp-cart-beratung' %}
+{% # Vor dem Kaufknopf: was beantwortet sein muss, bevor bestellt wird - die Pflichtfrage bei reiner Musterbestellung und die Masspruefung. Bei normaler Ware rendert das Snippet hier nichts (snippets/tp-cart-beratung.liquid) %}
+{% render 'tp-cart-beratung', stelle: 'vor_kasse' %}
 
 <div class="cart__ctas">
   <button
@@ -322,6 +321,17 @@
     </div>
   {% endif %}
 </div>
+
+{% # Hinter dem Kaufknopf: die freiwillige Verlegeanfrage - sie haelt einen Kaufkunden nicht auf %}
+{% render 'tp-cart-beratung', stelle: 'nach_kasse' %}
+
+{% if settings.show_installments %}
+  <div class="cart-totals__item cart-totals__installments cart-totals__installments--nach-cta">
+    {% form 'cart', cart %}
+      {{ form | payment_terms }}
+    {% endform %}
+  </div>
+{% endif %}
 
 {% stylesheet %}
   .cart-actions {
@@ -399,10 +409,6 @@
 
   .cart-totals__container {
     row-gap: var(--gap-2xs);
-
-    &.cart-totals__container--has-installments {
-      row-gap: var(--gap-xs);
-    }
   }
 
   .cart-totals__original-container:empty {
@@ -451,6 +457,10 @@
   .cart-totals__installments {
     color: var(--color-foreground);
     font-size: var(--font-size--2xs);
+  }
+
+  .cart-totals__installments--nach-cta {
+    margin-block-start: var(--gap-xs);
   }
 
   .cart-note {

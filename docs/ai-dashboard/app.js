@@ -1015,10 +1015,17 @@ function afEintragFuer(p) {
 
 /** Lieferanten-Link oder kurzer Hinweis, warum keiner hinterlegt ist. */
 function lieferantLinkZelle(p) {
+  // Zwei Wege zum Originalartikel: direkt zum Lieferanten, wenn eine
+  // Produktseite hinterlegt ist - und immer ins Lexikon, wo Originalname,
+  // Artikelnummer, Farbnummer und Bestellweg beieinanderstehen. Ohne den
+  // Lexikon-Weg bliebe die Zelle bei fehlender URL eine Sackgasse.
+  const lex = p.handle
+    ? `<div style="margin-top:4px"><a class="btn btn-sm btn-ghost" href="#" data-lex-open="${esc(p.handle)}" title="Originalname, Artikelnummer und Bestellweg im Lexikon">Lexikon</a></div>`
+    : '';
   if (hatLieferantLink(p)) {
-    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Öffnen ↗</a>`;
+    return `<a class="btn btn-sm" href="${esc(p.lieferantUrl)}" target="_blank" rel="noopener" title="Produktseite beim Lieferanten in neuem Tab">Öffnen ↗</a>${lex}`;
   }
-  return `<span class="small muted" title="Metafeld einkauf.lieferant_url fehlt">kein Link</span>`;
+  return `<span class="small muted" title="Metafeld einkauf.lieferant_url fehlt">kein Link</span>${lex}`;
 }
 const hatLieferantLink = p => Boolean(p.lieferantUrl && p.lieferantUrl !== 'UNGEKLAERT');
 

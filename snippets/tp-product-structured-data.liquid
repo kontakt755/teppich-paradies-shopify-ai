@@ -40,7 +40,19 @@
   3. Alle anderen Produkte behalten Shopifys natives structured_data.
 
   Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
-  Marke, SKU (nur wenn vorhanden), Farbe. Keine lieferant.*-Metafelder.
+  Marke, SKU (nur wenn vorhanden), Farbe und - im ProductGroup-Zweig - die
+  technischen Merkmale als additionalProperty aus
+  snippets/tp-produkt-merkmale-json.liquid. Das sind genau die Werte der
+  sichtbaren Merkmalstabelle (Material, Florhoehe, Nutzungsklasse,
+  Fussbodenheizung, Rollenbreite, Inhalt je Paket ...), damit eine
+  Antwortmaschine sie nicht aus dem Fliesstext raten muss.
+  Keine lieferant.*- oder einkauf.*-Metafelder.
+
+  Fall 3 (Shopifys natives structured_data) bleibt bewusst unangetastet: dort
+  haengt der Preis dran, und ein zweiter Product-Knoten mit derselben @id
+  laesst sich ohne Live-Pruefung im Rich-Results-Test nicht verantworten.
+  Diese Produkte tragen ihre Merkmale in der serverseitig gerenderten
+  Tabelle - fuer Crawler lesbar, nur eben nicht als JSON-LD.
 {% endcomment %}
 
 {%- liquid
@@ -176,6 +188,8 @@
     {%- endfor -%}
   {%- endcapture -%}
   {%- assign tp_sd_offers = tp_sd_offers | strip -%}
+  {%- capture tp_sd_merkmale -%}{%- render 'tp-produkt-merkmale-json', produkt: product_resource -%}{%- endcapture -%}
+  {%- assign tp_sd_merkmale = tp_sd_merkmale | strip -%}
   {%- if tp_sd_offers != blank -%}
     <script type="application/ld+json">
       {
@@ -199,6 +213,9 @@
         {%- endif -%}
         {%- if tp_sd_color_index >= 0 -%}
         "variesBy": ["https://schema.org/color"],
+        {%- endif -%}
+        {%- if tp_sd_merkmale != blank -%}
+        "additionalProperty": [{{ tp_sd_merkmale }}],
         {%- endif -%}
         "hasVariant": [
           {{ tp_sd_offers }}

@@ -30,6 +30,11 @@
   .tp-faq__a p { margin: 0 0 8px; }
 {% endstylesheet %}
 
+{%- comment -%}
+  FAQPage-JSON-LD aus genau diesen Bloecken - nur, was oben sichtbar steht.
+{%- endcomment -%}
+{% render 'tp-faq-structured-data', bloecke: section.blocks, frage_key: 'frage', antwort_key: 'antwort' %}
+
 {% schema %}
 {
   "name": "TP FAQ",

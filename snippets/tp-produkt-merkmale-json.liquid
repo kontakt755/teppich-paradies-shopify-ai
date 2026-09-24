@@ -1,0 +1,116 @@
+{%- doc -%}
+  Technische Produktmerkmale als schema.org-additionalProperty-Array
+  (PropertyValue) - fuer Google und fuer KI-Suchsysteme, die eine Frage wie
+  "Welcher Teppichboden hat Nutzungsklasse 33 und ist fussbodenheizungs-
+  geeignet?" aus strukturierten Daten beantworten wollen.
+
+  Aufruf: {% render 'tp-produkt-merkmale-json', produkt: product_resource %}
+  Ausgabe: der Inhalt eines JSON-Arrays OHNE aeussere Klammern, also
+  `{...},{...}` - oder leer, wenn kein Merkmal gepflegt ist. Der Aufrufer
+  setzt die Klammern und prueft vorher auf blank.
+
+  Gezeigt wird ausschliesslich, was auch in der sichtbaren Tabelle steht
+  (blocks/tp-produktinfo-tabelle.liquid fuer Bodenbelaege,
+  blocks/tp-teppich-produktdetails.liquid fuer Teppiche). Gleiche Konvention
+  Label::metafield_key::display_field, gleiche Metafelder, gleiche
+  Reihenfolge - erfundene Merkmale waeren Structured-Data-Spam.
+
+  Die beiden Tabellen benutzen fuer denselben Schluessel teils name, teils
+  value als display_field. Die Ausleseklette unten faengt beides ab:
+  Feld -> .value -> .name -> Rohwert.
+
+  Keine lieferant.*- oder einkauf.*-Metafelder. Diese Datei ist oeffentlich.
+{%- enddoc -%}
+
+{%- liquid
+  assign tpm_produkt = produkt
+  assign tpm_erste = true
+-%}
+{%- capture tpm_config -%}
+Marke::marke::name|
+Belagsart::belagsart::name|
+Optik::optik::optik|
+Material::material::name|
+Fasermaterial::fasermaterial::fasermaterial|
+Aufbau::aufbau::name|
+Rückenausstattung::ruckenausstattung::name|
+Florhöhe::florhohe::name|
+Gesamtstärke::gesamtstarke::name|
+Poleneinsatzgewicht::poleneinsatzgewicht::name|
+Nutzungsklassen::nutzungsklassen::nutzungsklasse|
+Komfortklasse::komfortklasse::name|
+Fußbodenheizung::fusbodenheizung::fusbodenheizung|
+Trittschallverbesserung::trittschallverbesserung::name|
+Brandverhalten::brandverhalten::brandverhalten|
+Zimmer::zimmer::zimmer|
+Einsatzbereich::indoor_outdoor::name|
+Herstellungsland::herstellungsland::name|
+OEKO-TEX::oeko_tex::name|
+Pflegeleicht::pflegeleicht::name
+{%- endcapture -%}
+{%- assign tpm_zeilen = tpm_config | strip | split: '|' -%}
+
+{%- for tpm_zeile in tpm_zeilen -%}
+  {%- liquid
+    assign tpm_teile = tpm_zeile | split: '::'
+    assign tpm_label = tpm_teile[0] | strip
+    assign tpm_key = tpm_teile[1] | strip
+    assign tpm_feld = tpm_teile[2] | strip
+    assign tpm_mf = tpm_produkt.metafields.custom[tpm_key]
+    assign tpm_wert = tpm_mf.value
+  -%}
+  {%- if tpm_wert != blank -%}
+    {%- capture tpm_text -%}
+      {%- if tpm_mf.type contains 'list.' -%}
+        {%- for tpm_item in tpm_wert -%}
+          {%- assign tpm_drop = tpm_item[tpm_feld] -%}
+          {{- tpm_drop.value | default: tpm_drop | default: tpm_item.name | default: tpm_item -}}
+          {%- unless forloop.last -%}, {% endunless -%}
+        {%- endfor -%}
+      {%- else -%}
+        {%- assign tpm_drop = tpm_wert[tpm_feld] -%}
+        {{- tpm_drop.value | default: tpm_drop | default: tpm_wert.name | default: tpm_wert -}}
+      {%- endif -%}
+    {%- endcapture -%}
+    {%- assign tpm_text = tpm_text | strip_html | strip_newlines | strip -%}
+    {%- if tpm_text != blank -%}
+      {%- unless tpm_erste -%},{%- endunless -%}
+      {%- assign tpm_erste = false -%}
+      {"@type":"PropertyValue","name":{{ tpm_label | json }},"value":{{ tpm_text | json }}}
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- comment -%}
+  Mengen- und Massangaben mit Einheit. Sie stehen nicht in der Merkmalstabelle,
+  beantworten aber genau die Fragen, die Kunden und Antwortmaschinen stellen
+  ("wie viel m2 sind in einem Paket?").
+{%- endcomment -%}
+{%- capture tpm_zahlen -%}
+Rollenbreite:: m::rollenbreite|
+Inhalt je Paket:: m²::qm_pro_paket|
+Stück je Paket::::stueck_pro_paket|
+Format:: cm::format_cm|
+Stangenlänge:: m::stangenlaenge
+{%- endcapture -%}
+{%- comment -%}
+  Der Filter gehoert vor die Schleife: in Shopify-Liquid nimmt for keine
+  gefilterte Sammlung entgegen, die Schleife liefe sonst still ins Leere.
+{%- endcomment -%}
+{%- assign tpm_zahl_zeilen = tpm_zahlen | strip | split: '|' -%}
+{%- for tpm_zeile in tpm_zahl_zeilen -%}
+  {%- liquid
+    assign tpm_teile = tpm_zeile | split: '::'
+    assign tpm_label = tpm_teile[0] | strip
+    assign tpm_einheit = tpm_teile[1]
+    assign tpm_key = tpm_teile[2] | strip
+    assign tpm_wert = tpm_produkt.metafields.custom[tpm_key].value
+  -%}
+  {%- if tpm_wert != blank -%}
+    {%- capture tpm_text -%}{{ tpm_wert }}{{ tpm_einheit }}{%- endcapture -%}
+    {%- assign tpm_text = tpm_text | strip -%}
+    {%- unless tpm_erste -%},{%- endunless -%}
+    {%- assign tpm_erste = false -%}
+    {"@type":"PropertyValue","name":{{ tpm_label | json }},"value":{{ tpm_text | json }}}
+  {%- endif -%}
+{%- endfor -%}
