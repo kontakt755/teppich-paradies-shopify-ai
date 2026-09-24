@@ -235,8 +235,9 @@ async function handleLogin(req, res) {
   }
   auth.registerSuccess(rateKey);
   auth.registerSuccess(ip);
-  const sid = auth.createSession(benutzer);
-  res.setHeader('Set-Cookie', sessionCookieHeader(sid));
+  const lang = body?.angemeldetBleiben !== false; // Standard: Ladenrechner bleibt angemeldet
+  const sid = auth.createSession(benutzer, { lang });
+  res.setHeader('Set-Cookie', sessionCookieHeader(sid, { lang }));
   send(res, 200, { ok: true, benutzer });
 }
 
