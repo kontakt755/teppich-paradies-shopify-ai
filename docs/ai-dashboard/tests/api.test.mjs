@@ -787,3 +787,21 @@ test('kundenDetail zeigt auch einen Kunden ohne Bestellung in dieser Datei', () 
   // Unbekannter Schluessel bleibt eine ehrliche Fehlanzeige
   assert.equal(api.kundenDetail({ key: 'email:gibtsnicht@example.test' }).verfuegbar, false);
 });
+
+test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  const api0 = createApi({ gh: async () => '', root, privatDirPath: dir });
+  assert.equal(api0.shopwacheStatus().verfuegbar, false);
+
+  fs.mkdirSync(path.join(dir, 'shopwache'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'shopwache', 'status.json'), JSON.stringify({
+    geprueftAm: '2026-09-24T12:00:00Z', basis: 'https://shop.example', ampel: 'gelb',
+    kritisch: 0, warnungen: 1, seiten: [], preise: [], befunde: [{ art: 'warnung', titel: 'Suche laedt langsam', text: '3.4 s' }],
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.shopwacheStatus();
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.ampel, 'gelb');
+  assert.equal(r.befunde.length, 1);
+});
