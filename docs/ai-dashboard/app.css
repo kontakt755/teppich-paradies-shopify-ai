@@ -254,8 +254,13 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 .toolbar input[type="search"], .toolbar select, .field input, .field select, .field textarea { font: inherit; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--text); font-size: .88rem; }
 .toolbar input[type="search"] { min-width: 220px; flex: 1 1 220px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.chip { padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: .82rem; }
-.chip[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+/* Filter sind Pillen, echte Aktionen sind gefuellte Schaltflaechen. Vorher gab
+   es beide Stile fuer dieselbe Aufgabe - im Einkauf schwarz, bei den Kunden
+   terrakotta. */
+.chip { min-height: 32px; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-size: .85rem; font-weight: 500; }
+.chip:hover { background: var(--surface-2); }
+.chip[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.chip[aria-pressed="true"] .c { opacity: .85; }
 .chip .c { opacity: .7; margin-left: 4px; }
 .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
 .seg button { border: none; background: var(--surface); padding: 6px 12px; cursor: pointer; font-size: .85rem; }
