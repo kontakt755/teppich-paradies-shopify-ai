@@ -926,6 +926,20 @@ function openAuftragsstatusDialog(pos, status) {
   });
 }
 
+/** Setzt den Auftragsfluss-Status fuer ALLE Positionen einer Bestellung auf einmal (Bereich Kunden/Bestellungen). */
+async function setzeAuftragsstatusFuerBestellung(orderId, status) {
+  const zeile = (kunden.bestellungen?.zeilen || []).find(z => z.orderId === orderId);
+  const positionen = (zeile?.auftrag?.positionen || []).filter(p => p.lineItemId);
+  if (!positionen.length) { toast('Keine Positionen mit Auftragsfluss gefunden', 'warn'); return; }
+  let ok = 0;
+  for (const p of positionen) {
+    const gesetzt = await setzeAuftragsstatus({ orderId, lineItemId: p.lineItemId, orderName: zeile.orderName, titel: p.titel, farbe: p.farbe }, status, { still: true });
+    if (gesetzt) ok += 1;
+  }
+  toast(`${ok}/${positionen.length} Artikel: ${AF_STATUS_LABEL[status]}`);
+  render();
+}
+
 function ensureEinkaufKennzahlen() {
   if (einkauf.kennzahlen || einkauf.loadingKennzahlen) return;
   einkauf.loadingKennzahlen = true;
@@ -1547,7 +1561,18 @@ const kunden = {
   suche: null, loadingSuche: false, sucheKey: null,
   detail: null, loadingDetail: false, detailKey: null,
   rueckrufe: null, loadingRueckrufe: false,
+  bestellungen: null, loadingBestellungen: false,
+  erweitert: new Set(),
 };
+
+function ensureKundenBestellungen() {
+  if (kunden.bestellungen || kunden.loadingBestellungen) return;
+  kunden.loadingBestellungen = true;
+  fetchEinkauf('/api/kunden/bestellungen').then(d => {
+    kunden.bestellungen = d; kunden.loadingBestellungen = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
 
 function ensureKundenSuche(q) {
   const query = String(q || '').trim();
@@ -1753,21 +1778,129 @@ function viewKundenRueckrufe() {
   `;
 }
 
+// ---------------------------------------------------------------------------
+// Unteransicht: Bestellungen - vollwertige Bestellliste wie im Shopify-Admin,
+// nur uebersichtlicher. Eine Zeile je Bestellung, sortierbar, filterbar,
+// durchsuchbar; Klick auf die Zeile klappt die Detailansicht auf.
+// ---------------------------------------------------------------------------
+const BQ_FILTER_LABEL = { offen: 'Offen', bezahlt: 'Bezahlt', unerfuellt: 'Unerfüllt', storniert: 'Storniert', beratung: 'Beratung offen', muster: 'Muster', test: 'Testbestellung' };
+const BQ_SORT_LABEL = { datum: 'Datum', orderName: 'Bestellnr.', kundenname: 'Kunde', gesamtbetrag: 'Betrag', zahlungsstatus: 'Zahlung', fulfillmentstatus: 'Versand', anzahlArtikel: 'Artikel' };
+
+function bqFeldTreffer(felder, q) { return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(q)); }
+
+function bestellzeileGefiltert(zeilen, params) {
+  const filter = params.get('bfilter') || '';
+  const q = (params.get('bq') || '').trim().toLowerCase();
+  const sort = params.get('bsort') || 'datum';
+  const dir = params.get('bdir') || 'desc';
+  let liste = filter
+    ? zeilen.filter(z => filter === 'offen' ? (z.offen && !z.testbestellung)
+      : filter === 'bezahlt' ? z.zahlungsstatus === 'PAID'
+      : filter === 'unerfuellt' ? ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(z.fulfillmentstatus)
+      : filter === 'storniert' ? z.storniert
+      : filter === 'beratung' ? z.beratungOffen
+      : filter === 'muster' ? (z.tags.typ.some(t => /muster/i.test(t)) || (z.auftrag?.positionen || []).some(p => p.istMuster))
+      : filter === 'test' ? z.testbestellung
+      : true)
+    : zeilen.filter(z => !z.testbestellung);
+  if (q) liste = liste.filter(z => bqFeldTreffer([z.orderName, z.kundenname, z.email, z.telefon, z.kundenId, z.kanal, z.zustellmethode, z.zahlungsstatus, z.fulfillmentstatus, ...(z.tags.beratung || []), ...(z.tags.typ || []), ...(z.tags.sonstige || [])], q));
+  const cmp = {
+    datum: z => z.datum || '', orderName: z => z.orderName || '', kundenname: z => (z.kundenname || '').toLowerCase(),
+    gesamtbetrag: z => z.gesamtbetrag ?? -Infinity, zahlungsstatus: z => z.zahlungsstatus || '', fulfillmentstatus: z => z.fulfillmentstatus || '', anzahlArtikel: z => z.anzahlArtikel ?? 0,
+  }[sort] || (z => z.datum || '');
+  const vz = dir === 'asc' ? 1 : -1;
+  liste = [...liste].sort((a, b) => { const av = cmp(a), bv = cmp(b); return av < bv ? -vz : av > bv ? vz : 0; });
+  return liste;
+}
+
+function wertText(v) { return v === null || v === undefined ? '<span class="small muted">nicht hinterlegt</span>' : esc(v); }
+
+function bestellzeileAktionen(z) {
+  const af = ['bestellt', 'geliefert', 'raus', 'erledigt'];
+  return `<div class="btn-row">
+    ${af.map(s => `<button type="button" class="btn btn-sm btn-ghost" data-bq-af="${esc(z.orderId)}" data-bq-af-status="${s}" title="${esc(`Alle Artikel dieser Bestellung auf „${AF_STATUS_LABEL[s]}“`)}">${esc(AF_STATUS_LABEL[s])}</button>`).join('')}
+    ${z.beratungOffen ? `<a class="btn btn-sm" href="#/kunden?tab=rueckrufe">Zur Rückrufliste →</a>` : ''}
+  </div>`;
+}
+
+function bestellzeileHtml(z) {
+  const offenKlasse = kunden.erweitert.has(z.orderId) ? ' offen' : '';
+  const tagListe = [...z.tags.beratung, ...z.tags.typ, ...z.tags.sonstige];
+  return `<tr class="bq-row${offenKlasse}" data-bq-toggle="${esc(z.orderId)}">
+      <td data-l="Bestellnr."><a href="${esc(z.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(z.orderName)}</a>${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</td>
+      <td data-l="Datum">${fmtDateTime(z.datum)}</td>
+      <td data-l="Kunde">${z.kundenSchluessel ? `<a href="#" data-kunden-open="${esc(z.kundenSchluessel)}" onclick="event.stopPropagation()">${wertText(z.kundenname)}</a>` : wertText(z.kundenname)}</td>
+      <td data-l="E-Mail">${z.email ? `<a href="mailto:${esc(z.email)}" onclick="event.stopPropagation()">${esc(z.email)}</a> <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.email)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.email)}</td>
+      <td data-l="Telefon">${z.telefon ? `${telLink(z.telefon)} <button type="button" class="btn btn-sm btn-ghost" data-kopiertext="${esc(z.telefon)}" onclick="event.stopPropagation()">Kopieren</button>` : wertText(z.telefon)}</td>
+      <td data-l="Kunden-ID">${wertText(z.kundenId)}</td>
+      <td data-l="Betrag">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })}</td>
+      <td data-l="Zahlung">${wertText(z.zahlungsstatus)}</td>
+      <td data-l="Versand">${wertText(z.fulfillmentstatus)}</td>
+      <td data-l="Kanal">${wertText(z.kanal)}</td>
+      <td data-l="Zustellmethode">${wertText(z.zustellmethode)}</td>
+      <td data-l="Artikel">${z.anzahlArtikel}</td>
+      <td data-l="Tags">${tagListe.length ? tagListe.map(t => `<span class="tag">${esc(t)}</span>`).join(' ') : '<span class="small muted">–</span>'}</td>
+    </tr>
+    ${kunden.erweitert.has(z.orderId) ? `<tr class="bq-detail"><td colspan="13">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</td></tr>` : ''}`;
+}
+
+function bestellzeileKarte(z) {
+  return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}">
+    <div>
+      <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
+      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${wertText(z.zahlungsstatus)} · ${fmtDate(z.datum)}</div>
+    </div>
+    <div class="r"><span class="small muted">${kunden.erweitert.has(z.orderId) ? 'zuklappen ▲' : 'Details ▼'}</span></div>
+  </div>
+  ${kunden.erweitert.has(z.orderId) ? `<div class="bq-detail-mobil">${kundenAuftragKarte(z.auftrag)}${bestellzeileAktionen(z)}</div>` : ''}`;
+}
+
+function viewKundenBestellungen() {
+  ensureKundenBestellungen();
+  const d = kunden.bestellungen;
+  if (!d && kunden.loadingBestellungen) return `<div class="empty">Lade Bestellungen …</div>`;
+  if (!d || !d.verfuegbar) return emptyState('Keine Bestelldaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  const params = state.route.params;
+  const filter = params.get('bfilter') || '';
+  const sort = params.get('bsort') || 'datum';
+  const dir = params.get('bdir') || 'desc';
+  const zeilen = bestellzeileGefiltert(d.zeilen, params);
+  const chips = `<div class="btn-row" style="margin:8px 0">
+    ${FILTERCHIPS_KUNDEN.map(f => `<button type="button" class="btn btn-sm${filter === f ? ' btn-primary' : ' btn-ghost'}" data-param="bfilter" data-value="${filter === f ? '' : f}">${esc(BQ_FILTER_LABEL[f])}</button>`).join('')}
+  </div>`;
+  const sortHead = (feld, label) => `<th><button type="button" class="th-sort" data-param="bsort" data-value="${feld}" data-bq-sort-toggle="${feld}">${esc(label)}${sort === feld ? (dir === 'asc' ? ' ↑' : ' ↓') : ''}</button></th>`;
+  const kopf = `<tr>${sortHead('orderName', 'Bestellnr.')}${sortHead('datum', 'Datum')}${sortHead('kundenname', 'Kunde')}<th>E-Mail</th><th>Telefon</th><th>Kunden-ID</th>${sortHead('gesamtbetrag', 'Betrag')}${sortHead('zahlungsstatus', 'Zahlung')}${sortHead('fulfillmentstatus', 'Versand')}<th>Kanal</th><th>Zustellmethode</th>${sortHead('anzahlArtikel', 'Artikel')}<th>Tags</th></tr>`;
+  return `
+    <div class="toolbar search-hero"><input type="search" placeholder="Suche über alle Spalten – Kunde, E-Mail, Telefon, Kunden-ID, Kanal, Tags …" value="${esc(params.get('bq') || '')}" data-param="bq" aria-label="Bestellungen durchsuchen"></div>
+    ${chips}
+    <p class="small muted" style="margin:0 0 8px">${zeilen.length} ${zeilen.length === 1 ? 'Bestellung' : 'Bestellungen'} · Sortiert nach ${esc(BQ_SORT_LABEL[sort] || 'Datum')} ${dir === 'asc' ? 'aufsteigend' : 'absteigend'}</p>
+    <div class="table-wrap kunden-table bq-table"><table><thead>${kopf}</thead>
+    <tbody class="bq-tbody-desktop">${zeilen.length ? zeilen.map(bestellzeileHtml).join('') : `<tr><td colspan="13">${emptyState('Keine Treffer.', '')}</td></tr>`}</tbody>
+    </table></div>
+    <div class="rows bq-karten">${zeilen.length ? zeilen.map(bestellzeileKarte).join('') : emptyState('Keine Treffer.', '')}</div>
+  `;
+}
+
+const FILTERCHIPS_KUNDEN = ['offen', 'bezahlt', 'unerfuellt', 'storniert', 'beratung', 'muster', 'test'];
+
 function viewKunden() {
   if (state.capabilities.mode !== 'local') {
-    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche und Rückruf-/Beratungsliste.</p></div></div>
+    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche, Bestellliste und Rückruf-/Beratungsliste.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Kundendaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
   const key = state.route.params.get('key');
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
-  const tab = state.route.params.get('tab') === 'rueckrufe' ? 'rueckrufe' : 'suche';
+  const tabRaw = state.route.params.get('tab');
+  const tab = ['bestellungen', 'rueckrufe'].includes(tabRaw) ? tabRaw : 'suche';
   ensureKundenRueckrufe();
-  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden – und wer zurückgerufen werden möchte.</p></div></div>
+  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden, alle Bestellungen im Überblick – und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
     </div>`;
-  return head + (tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche());
+  const body = tab === 'bestellungen' ? viewKundenBestellungen() : tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche();
+  return head + body;
 }
 
 function r_badge() {
@@ -2220,6 +2353,15 @@ function bindEvents() {
     if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
     const druckBtn = e.target.closest('[data-drucken]');
     if (druckBtn) { e.preventDefault(); window.print(); return; }
+    const bqToggle = e.target.closest('[data-bq-toggle]');
+    if (bqToggle) {
+      const id = bqToggle.dataset.bqToggle;
+      if (kunden.erweitert.has(id)) kunden.erweitert.delete(id); else kunden.erweitert.add(id);
+      render();
+      return;
+    }
+    const bqAf = e.target.closest('[data-bq-af]');
+    if (bqAf) { e.preventDefault(); e.stopPropagation(); setzeAuftragsstatusFuerBestellung(bqAf.dataset.bqAf, bqAf.dataset.bqAfStatus); return; }
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;

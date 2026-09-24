@@ -24,6 +24,7 @@ import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde } from '../operations/lib/kundensuche.mjs';
+import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
 
@@ -506,6 +507,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const kunde = findeKunde(modell, key);
       if (!kunde) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
       return { verfuegbar: true, kunde };
+    },
+
+    /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
+    kundenBestellungen() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      return { verfuegbar: true, zeilen: bestellliste(modell) };
     },
 
     /** Rueckruf-/Beratungs-Arbeitsliste, aelteste Bestellung zuerst, mit lokalem Bearbeitungsstatus. */
