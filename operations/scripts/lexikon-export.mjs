@@ -300,7 +300,9 @@ export function ladeLieferantSuchen() {
   if (!fs.existsSync(datei)) return {};
   const inhalt = fs.readFileSync(datei, 'utf8');
   const m = inhalt.match(/^LIEFERANT_A_BASIS=(.+)$/m);
-  return m ? { A: m[1].trim() } : {};
+  // __standard: Hauptlieferant. Produkte ohne hinterlegten Lieferanten
+  // bekommen damit wenigstens einen Namenssuchlink (siehe linkStatus).
+  return m ? { A: m[1].trim(), __standard: m[1].trim() } : {};
 }
 
 async function main() {

@@ -185,21 +185,29 @@ function preisJeEinheit(preis, qmProPaketText) {
  * operations/scripts/lexikon-export.mjs, nie im Repository hinterlegt -
  * CLAUDE.md Punkt 8).
  */
-function linkStatus(einkauf, lieferantSuchen) {
+function quicksearchLink(basis, begriff) {
+  if (!basis || leer(begriff)) return null;
+  return `${String(basis).replace(/\/$/, '')}/de-DE/quicksearch?query=${encodeURIComponent(begriff)}`;
+}
+
+function linkStatus(einkauf, lieferantSuchen, nameFuerSuche = null) {
   if (!leer(einkauf.url)) return { status: 'vorhanden', grund: null, suchlink: null };
   if (!leer(einkauf.artikelnummer)) {
-    const basis = lieferantSuchen?.[einkauf.lieferant];
-    const suchlink = basis ? `${String(basis).replace(/\/$/, '')}/de-DE/quicksearch?query=${encodeURIComponent(einkauf.artikelnummer)}` : null;
     return {
       status: 'nur_artikelnummer',
       grund: `Artikelnummer vorhanden, aber kein Link hinterlegt${einkauf.lieferant ? ` (Lieferant ${einkauf.lieferant})` : ''}`,
-      suchlink,
+      suchlink: quicksearchLink(lieferantSuchen?.[einkauf.lieferant], einkauf.artikelnummer),
     };
   }
+  // Ohne Artikelnummer bleibt nur der Name. Der Treffer ist nicht garantiert,
+  // deshalb heisst der Link "suchen" und nicht "oeffnen" - er erspart dem
+  // Mitarbeiter im Kundengespraech trotzdem den Umweg ueber die Startseite.
+  const basis = lieferantSuchen?.[einkauf.lieferant] ?? lieferantSuchen?.__standard ?? null;
+  const suchlink = quicksearchLink(basis, nameFuerSuche);
   if (!leer(einkauf.lieferant)) {
-    return { status: 'fehlt', grund: `Artikelnummer bei Lieferant ${einkauf.lieferant} fehlt noch`, suchlink: null };
+    return { status: 'fehlt', grund: `Artikelnummer bei Lieferant ${einkauf.lieferant} fehlt noch`, suchlink };
   }
-  return { status: 'fehlt', grund: 'kein Lieferantenartikel hinterlegt - keine Einkaufsdaten', suchlink: null };
+  return { status: 'fehlt', grund: 'kein Lieferantenartikel hinterlegt - keine Einkaufsdaten', suchlink };
 }
 
 /**
@@ -389,7 +397,7 @@ export function aufbereiten(exportDaten, opt = {}) {
       if (produktIstMuster || skuIstMuster(v.sku)) {
         return { ...variante, original: originalFuer(v, p) };
       }
-      return { ...variante, link: linkStatus(variante.einkauf ?? {}, lieferantSuchen) };
+      return { ...variante, link: linkStatus(variante.einkauf ?? {}, lieferantSuchen, p.titel) };
     });
   }
 
