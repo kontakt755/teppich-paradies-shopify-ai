@@ -237,6 +237,14 @@ Endpunkte: `/api/einkauf/bestellungen`, `/api/einkauf/produktstatus` (Query `pag
 fragt das Frontend diese Endpunkte gar nicht erst ab und zeigt nur den Hinweis „Nur lokal im Betrieb
 verfügbar".
 
+**Auftragsfluss rückgängig (seit 2026-09-24):** `POST /api/einkauf/auftragsstatus` mit
+`{orderId, lineItemId, aktion: "wiederOeffnen", notiz?}` öffnet eine erledigte Position wieder
+(`oeffneWieder()` in `operations/lib/auftragsstatus.mjs`). Sie fällt auf den letzten belegten Schritt
+vor „Erledigt" zurück (ohne solchen: kein Status = noch nicht bestellt). Die Abschlussfelder
+(`erledigtAm/Von/Notiz`) wandern mit Zeit, Person und Notiz in `verlauf` (höchstens 20 Einträge);
+`wiederGeoeffnetAm/Von` stehen am Datensatz, der Audit-Log erhält `auftragsstatus-wieder-geoeffnet`.
+Wartezeiten im Einkauf rechnet das Frontend aus `bestelltAm`/`geliefertAm` (7 Tage bernstein, 14 rot).
+
 ## 9. Startseite „Heute" (seit 2026-09-23)
 
 `viewHeute()` in `docs/ai-dashboard/app.js` ist die Startseite und bleibt primär aufgabenbasiert

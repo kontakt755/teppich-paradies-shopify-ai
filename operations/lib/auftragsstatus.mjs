@@ -119,3 +119,62 @@ export function setzeStatus(file, { orderId, lineItemId, status, actor, lieferan
   schreibeAlle(file, alle);
   return eintrag;
 }
+
+/**
+ * Schritt, auf den eine erledigte Position beim Wiederoeffnen zurueckfaellt: der letzte
+ * Schritt vor "Erledigt", der im Datensatz belegt ist (z. B. "An Kunden raus"), sonst
+ * gar keiner (= noch nicht bestellt, typisch nach "Ohne Einkauf abschliessen").
+ * Nur Zeitstempel VOR dem Abschluss zaehlen - so bleibt ein Schritt aus einem
+ * frueheren Durchlauf nicht faelschlich haengen.
+ */
+export function statusVorErledigt(eintrag) {
+  if (!eintrag) return null;
+  const bis = eintrag.erledigtAm || '';
+  for (const s of ['raus', 'geliefert', 'bestellt']) {
+    const am = eintrag[`${s}Am`];
+    if (am && (!bis || am <= bis)) return s;
+  }
+  return null;
+}
+
+/**
+ * Oeffnet eine erledigte Position wieder (macht "Ohne Einkauf abschliessen" oder einen
+ * versehentlichen Abschluss rueckgaengig). Der Abschluss wird nicht geloescht, sondern
+ * wandert mit Zeitpunkt, Person und Grund in `verlauf` - wer wann was getan hat, bleibt
+ * nachvollziehbar. Nur Positionen im Status "erledigt" lassen sich wieder oeffnen.
+ *
+ * @param {string} file
+ * @param {object} p
+ * @param {string} p.orderId
+ * @param {string} p.lineItemId
+ * @param {string} p.actor
+ * @param {string} [p.notiz]
+ * @param {Date}   [p.jetzt]
+ */
+export function oeffneWieder(file, { orderId, lineItemId, actor, notiz = null, jetzt = new Date() } = {}) {
+  const key = positionKey(orderId, lineItemId);
+  if (!key) throw new AuftragsstatusFehler('orderId und lineItemId sind Pflicht');
+  if (!actor) throw new AuftragsstatusFehler('actor (gh-Login) ist Pflicht');
+
+  const alle = leseAlle(file);
+  const bisher = alle[key];
+  if (!bisher || bisher.status !== 'erledigt') throw new AuftragsstatusFehler('Nur erledigte Positionen lassen sich wieder öffnen');
+  const zeit = jetzt.toISOString();
+  const zurueck = statusVorErledigt(bisher);
+  const { erledigtAm, erledigtVon, erledigtNotiz, ...rest } = bisher;
+  const protokoll = { aktion: 'wieder geöffnet', am: zeit, von: actor, zurueckAuf: zurueck, abgeschlossenAm: erledigtAm || null, abgeschlossenVon: erledigtVon || null, abschlussGrund: erledigtNotiz || null };
+  if (notiz) protokoll.notiz = clip(notiz, 2000);
+  const eintrag = {
+    ...rest,
+    status: zurueck,
+    aktualisiertAm: zeit,
+    aktualisiertVon: actor,
+    wiederGeoeffnetAm: zeit,
+    wiederGeoeffnetVon: actor,
+    // Begrenzen, damit eine oft hin- und hergeschobene Position die Datei nicht aufblaeht.
+    verlauf: [...(Array.isArray(bisher.verlauf) ? bisher.verlauf : []), protokoll].slice(-20),
+  };
+  alle[key] = eintrag;
+  schreibeAlle(file, alle);
+  return eintrag;
+}

@@ -263,3 +263,54 @@ Format je Inkrement: Änderung · Test · offene Risiken/Annahmen · nächste St
 - **Risiken/Annahmen:** Grundsätze aus den öffentlichen Anthropic-Skills `frontend-design` und
   `webapp-testing` sinngemäß übernommen und auf den Betrieb zugeschnitten, kein Text kopiert.
 - **Nächste Stufe:** Ideenliste im Skill mit dem Inhaber priorisieren und über den Agenten umsetzen.
+
+## 2026-09-24 · Einkauf: Wieder öffnen, Wartezeit, Sammelaktion; Heute: „Seit gestern neu" (#561)
+
+- **Geändert:** `docs/ai-dashboard/app.js`, `app.css`; `operations/lib/auftragsstatus.mjs`
+  (`oeffneWieder()`, `statusVorErledigt()`); `scripts/dashboard-api.mjs` (POST
+  `/api/einkauf/auftragsstatus` mit `aktion: "wiederOeffnen"`); `scripts/dashboard-pruefen.mjs`.
+  - **Wieder öffnen:** Im Filter „Erledigt" hat jeder erledigte Artikel „Wieder öffnen…", darüber
+    listet „Abgeschlossene Aufträge" jeden Auftrag mit erledigten Artikeln (auch Testbestellungen)
+    samt wer/wann/Grund. Rückfrage-Dialog zeigt, wohin jeder Artikel zurückfällt: auf den letzten
+    Schritt vor „Erledigt" (z. B. „An Kunden raus"), nach „Ohne Einkauf abschließen" auf „Noch nicht
+    bestellt". Der Abschluss wird nicht gelöscht, sondern wandert mit Zeit, Person, Grund und
+    optionaler Notiz in `verlauf` der Position; zusätzlich Audit-Zeile
+    `auftragsstatus-wieder-geoeffnet` und ein Eintrag „Auftragsstatus wieder geöffnet" im
+    Aktivitätsprotokoll (angemeldeter Benutzer). Die Zelle zeigt danach „wieder geöffnet … · @name".
+  - **Wartezeit:** Bei „Bestellt" und „Geliefert an uns" steht „seit N Tagen" (aus
+    `bestelltAm`/`geliefertAm`), ab 7 Tagen bernsteinfarben, ab 14 rot. Auf „Heute" erscheint die
+    Kachel „seit 7 Tagen oder länger bestellt" nur, wenn die Zahl > 0 ist (Klick → Filter „Bestellt").
+  - **Sammelaktion:** Lieferanten-Gruppen mit mindestens zwei sichtbaren, noch nicht bestellten
+    Artikeln haben „Alle als bestellt markieren…" – Dialog mit Artikelliste, Hinweis auf fehlende
+    Angaben und einer optionalen Lieferanten-Bestellnummer für alle; Rückmeldung
+    „N Artikel als bestellt markiert".
+  - **Heute – Seit gestern neu:** Kundenaufträge der letzten 24 Stunden (Auftragsdatum, ohne Test-
+    und stornierte Bestellungen), Probleme darin rot markiert mit dem ersten Hinweis. Ohne neue
+    Aufträge nur der Halbsatz „Seit gestern keine neuen Aufträge" in der Stand-Zeile.
+  - Behoben: „Ohne Einkauf abschließen…" bei Testbestellungen tat nichts (Auftrag wurde nur unter
+    den Kundenaufträgen gesucht). `dashboard:pruefen` blieb nach dem Bericht hängen (Server-Kind
+    hielt die Ereignisschleife offen, Instanz und Datenkopie blieben liegen) – räumt jetzt selbst auf.
+    `docs/ai-dashboard/tests/api.test.mjs` lädt jetzt zuerst `_testumgebung.mjs`: ohne das schrieben
+    die API-Tests über `merke()` Testeinträge in das echte `protokoll.jsonl` unter `$TP_PRIVAT_DIR`.
+- **Getestet:** `operations/tests/auftragsstatus.test.mjs` (+4: zurück auf „noch nicht bestellt"
+  mit Verlauf, zurück auf letzten Schritt mit erhaltenem Bestelldatum, Ablehnung nicht erledigter
+  Positionen, Zeitstempel nach Abschluss ignoriert), `docs/ai-dashboard/tests/api.test.mjs` (+1:
+  wiederOeffnen über die API inkl. Audit, unbekannte Aktion → 400); `npm run dashboard:test` (99),
+  `npm test` (alle Teilläufe grün); `npm run dashboard:pruefen` 14× `OK`. Klickstrecke gegen die
+  Datenkopie (Puppeteer): Sammelaktion Muster-Gruppe „Noch zu bestellen 6 → 0, Bestellt 0 → 6",
+  6 Einträge mit gemeinsamer Bestellnummer; Wartezeit nach Zurückdatieren in der Kopie „seit 15
+  Tagen" rot, „seit 8 Tagen" bernstein, „seit 3 Tagen" neutral, Heute-Kachel 2; Testbestellung
+  ohne Einkauf abgeschlossen (3 Artikel) → „Abgeschlossene Aufträge" 1 → wieder geöffnet → 0,
+  Verlauf mit wer/wann/Grund/Notiz; ein Artikel über den Ablauf auf „Erledigt" → wieder geöffnet →
+  „An Kunden raus" (Erledigt 1 → 0, Unterwegs 0 → 1); „Seit gestern neu" mit 1 Auftrag, nach
+  Zurückdatieren in der Kopie die ruhige Zeile; Esc schließt den Dialog; Handy 390 px ohne
+  Überstand; keine JS-Fehler.
+- **Risiken/Annahmen:** Das echte `protokoll.jsonl` enthält bereits Testeinträge aus früheren
+  Läufen (Benutzer „tobias", „Issue #41", „Order/1") – nicht angefasst, bitte einmal von Hand
+  bereinigen. „Neu aufgetretene Probleme" = Probleme in den neuen Aufträgen; ältere
+  Aufträge, die erst jetzt rot werden, erkennt die Liste nicht (kein gespeicherter Vortagesstand).
+  Die Chip-Zahl „Erledigt" zählt wie bisher nur Artikel der Lieferanten-Gruppen; abgeschlossene
+  Testbestellungen stehen nur in der Auftragsliste darüber. Sammelaktion schreibt Artikel
+  nacheinander (je ein Request); bricht einer ab, meldet der Hinweis „nur N von M".
+- **Nächste Stufe:** Vortagesstand der Ampeln sichern, damit „Seit gestern neu" auch neu rot
+  gewordene ältere Aufträge zeigt; Einkauf-Suche nach Auftrag/Kunde.

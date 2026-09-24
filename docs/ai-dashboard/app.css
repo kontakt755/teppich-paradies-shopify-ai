@@ -97,6 +97,9 @@ button { font: inherit; color: inherit; }
 
 /* Layout */
 .warnc { color: var(--crit); }
+/* Wartezeit im Auftragsfluss: ab 7 Tagen nachhaken, ab 14 Tagen Problem. */
+.wait-warn { color: var(--warn); font-weight: 600; }
+.wait-crit { color: var(--crit); font-weight: 600; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .visually-hidden { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -375,6 +378,10 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 
 /* Auftraege (Heute / Einkauf) */
 .problem-card { background: var(--surface); }
+.neu-card { margin-top: 12px; }
+.neu-card .card-head h3 { font-size: 1rem; }
+.neu-row { padding: 6px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.neu-row:first-child { border-top: 0; padding-top: 0; }
 .problem-card .card-head h2, .problem-card .card-head h3 { font-size: 1rem; }
 .order-row { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 10px 12px; border: 1px solid var(--line); border-left-width: 3px; border-radius: 8px; background: var(--surface); }
 .order-row.rot { border-left-color: var(--crit); }

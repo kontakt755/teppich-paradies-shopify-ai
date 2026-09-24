@@ -387,17 +387,45 @@ function heuteEinkaufBlock() {
   const musterPendent = muster.filter(p => gruppe(p) === 'offen').length;
   const af = heuteAuftragsflussZaehler(b);
   const unterwegs = af.bestellt + af.unterwegs;
+  // Nur sichtbar, wenn es etwas zum Nachhaken gibt - eine 0 waere hier reines Rauschen.
+  const langeBestellt = [...ware, ...muster].filter(p => { const e = afEintragFuer(p); return e?.status === 'bestellt' && afWartetage(e) >= AF_WARTE_WARN; }).length;
+  const neu = heuteNeuSeitGestern(b);
   return `
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain', '#/einkauf')}
       ${bandItem(warePendent, 'Artikel noch zu bestellen', 'warn', '#/einkauf')}
       ${bandItem(musterPendent, 'Muster noch zu bestellen', 'warn', '#/einkauf')}
       ${bandItem(probleme.length, probleme.length === 1 ? 'Auftrag mit Problem' : 'Aufträge mit Problem', 'crit', '#/einkauf')}
+      ${langeBestellt ? bandItem(langeBestellt, 'seit 7 Tagen oder länger bestellt', 'warn', '#/einkauf?af=bestellt') : ''}
     </div>
     ${probleme.length
       ? `<section class="card problem-card"><div class="card-head"><h3>Zuerst klären</h3><a class="more" href="#/einkauf">Alle Aufträge im Einkauf →</a></div><div class="rows">${probleme.slice(0, 3).map(a => einkaufAuftragZeile(a)).join('')}</div>${probleme.length > 3 ? `<p class="small muted" style="margin-top:6px">+${probleme.length - 3} weitere – <a href="#/einkauf">alle ansehen →</a></p>` : ''}</section>`
       : `<p class="notice ok">Kein Auftrag mit Problem.</p>`}
-    <p class="small muted flow-line">${unterwegs ? `${plural(unterwegs, 'Artikel ist', 'Artikel sind')} beim Lieferanten bestellt oder unterwegs · ` : ''}Stand Bestellungen ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Einkauf öffnen →</a></p>`;
+    ${neu.karte}
+    <p class="small muted flow-line">${neu.zeile}${unterwegs ? `${plural(unterwegs, 'Artikel ist', 'Artikel sind')} beim Lieferanten bestellt oder unterwegs · ` : ''}Stand Bestellungen ${esc(fmtDateTime(b.exportiertAm || b.erstellt))} · <a href="#/einkauf">Einkauf öffnen →</a></p>`;
+}
+
+/**
+ * "Seit gestern neu": Kundenauftraege der letzten 24 Stunden (Auftragsdatum), Probleme darin
+ * markiert. Ist nichts neu, genuegt ein Halbsatz in der Stand-Zeile statt eines leeren Kastens.
+ * Testbestellungen und stornierte Auftraege zaehlen nicht.
+ */
+function heuteNeuSeitGestern(b, jetzt = Date.now()) {
+  const neu = (b.auftraege || []).filter(a => a.datum && !a.storniert && jetzt - new Date(a.datum) < 864e5 && jetzt - new Date(a.datum) >= -36e5)
+    .sort((x, y) => String(y.datum).localeCompare(String(x.datum)));
+  if (!neu.length) return { karte: '', zeile: 'Seit gestern keine neuen Aufträge · ' };
+  const probleme = neu.filter(a => a.ampel === 'rot').length;
+  const zeile = a => {
+    // Mehrere Farben desselben Artikels (typisch bei Mustern) nur einmal nennen.
+    const artikel = [...new Set((a.positionen || []).map(p => anzeigeWert(p.titel)).filter(Boolean))];
+    const marke = a.ampel === 'rot' ? '<span class="badge status blockiert">Problem</span> ' : a.ampel === 'gelb' ? '<span class="badge status freigabe">Prüfen</span> ' : '';
+    return `<div class="neu-row">${marke}<a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a> <span class="muted small">${esc(fmtDateTime(a.datum))}</span>${artikel.length ? ` <span class="small muted">· ${esc(artikel.slice(0, 2).join(' · '))}${artikel.length > 2 ? ` · +${artikel.length - 2}` : ''}</span>` : ''}${a.ampel === 'rot' && a.hinweise?.length ? `<div class="small warnc">${esc(hinweisText(a.hinweise[0]))}</div>` : ''}</div>`;
+  };
+  return {
+    zeile: '',
+    karte: `<section class="card neu-card"><div class="card-head"><h3>Seit gestern neu</h3><span class="more muted">${plural(neu.length, 'Auftrag', 'Aufträge')}${probleme ? ` · davon ${probleme} mit Problem` : ''}</span></div>
+      <div class="rows">${neu.slice(0, 5).map(zeile).join('')}</div>${neu.length > 5 ? `<p class="small muted" style="margin-top:6px">+${neu.length - 5} weitere – <a href="#/einkauf">im Einkauf ansehen →</a></p>` : ''}</section>`,
+  };
 }
 
 /** Shop-Kennzahlen: eine kompakte Tabelle statt sechs Kacheln. Erfindet ohne Export nichts. */
@@ -915,6 +943,27 @@ function afFilterGruppe(status) {
 }
 function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 
+// Wartezeit: wie lange steht eine Position schon auf "Bestellt" bzw. "Geliefert an uns"?
+// Ab 7 Tagen beim Lieferanten nachhaken (Bernstein), ab 14 Tagen ist es ein Problem (Rot).
+const AF_WARTE_WARN = 7;
+const AF_WARTE_CRIT = 14;
+function afWartetage(eintrag, jetzt = Date.now()) {
+  const seit = eintrag?.status === 'bestellt' ? eintrag.bestelltAm : eintrag?.status === 'geliefert' ? eintrag.geliefertAm : null;
+  if (!seit) return null;
+  const tage = Math.floor((jetzt - new Date(seit)) / 864e5);
+  return Number.isFinite(tage) && tage >= 0 ? tage : null;
+}
+const afWarteText = tage => tage === 0 ? 'seit heute' : tage === 1 ? 'seit 1 Tag' : `seit ${tage} Tagen`;
+const afWarteKlasse = tage => tage >= AF_WARTE_CRIT ? 'wait-crit' : tage >= AF_WARTE_WARN ? 'wait-warn' : 'muted';
+
+// Schritt, auf den "Wieder öffnen" zurueckfaellt - Spiegel von statusVorErledigt() in
+// operations/lib/auftragsstatus.mjs (dort entscheidet der Server; hier nur fuer den Dialogtext).
+function afVorErledigt(eintrag) {
+  if (!eintrag) return null;
+  const bis = eintrag.erledigtAm || '';
+  return ['raus', 'geliefert', 'bestellt'].find(s => eintrag[`${s}Am`] && (!bis || eintrag[`${s}Am`] <= bis)) || null;
+}
+
 async function fetchEinkauf(path) {
   try {
     const r = await fetch(path, { cache: 'no-store' });
@@ -974,6 +1023,90 @@ function openAuftragsstatusDialog(pos, status) {
     const ok = await setzeAuftragsstatus(pos, status, { lieferantBestellnummer: (new FormData(form).get('nr') || '').trim() || null });
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
+  });
+}
+
+/** Macht einen Abschluss rueckgaengig (Server prueft: nur erledigte Positionen). */
+async function oeffneAuftragsstatusWieder(pos, notiz) {
+  try {
+    const r = await fetch('/api/einkauf/auftragsstatus', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId: pos.orderId, lineItemId: pos.lineItemId, aktion: 'wiederOeffnen', notiz: notiz || null }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
+    if (!einkauf.auftragsstatus || !einkauf.auftragsstatus.positionen) einkauf.auftragsstatus = { verfuegbar: true, positionen: {} };
+    einkauf.auftragsstatus.positionen[afKey(pos.orderId, pos.lineItemId)] = j.eintrag;
+    return true;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
+}
+
+/** Alle Auftraege der Bestelluebersicht, auch Testbestellungen (die "Ohne Einkauf
+ * abschliessen" am haeufigsten trifft und die in keiner Lieferanten-Gruppe stehen). */
+const alleAuftraege = () => [...(einkauf.bestellungen?.auftraege || []), ...(einkauf.bestellungen?.testauftraege || [])];
+const erledigtePositionen = a => (a.positionen || []).filter(p => p.lineItemId && afEintragFuer({ orderId: a.id, lineItemId: p.lineItemId })?.status === 'erledigt');
+
+/** Rueckfrage vor "Wieder öffnen": zeigt, was zurueckkommt und wohin, und wer wann abgeschlossen hat. */
+function openWiederOeffnenDialog(orderId, lineItemId = null) {
+  const a = alleAuftraege().find(x => x.id === orderId);
+  if (!a) { toast('Auftrag nicht in der Bestellübersicht gefunden.', 'crit'); return; }
+  const positionen = erledigtePositionen(a).filter(p => !lineItemId || p.lineItemId === lineItemId);
+  if (!positionen.length) { toast('Nichts abgeschlossen in diesem Auftrag.'); return; }
+  const eintrag = p => afEintragFuer({ orderId: a.id, lineItemId: p.lineItemId });
+  const ziel = p => { const s = afVorErledigt(eintrag(p)); return s ? AF_STATUS_LABEL[s] : 'Noch nicht bestellt'; };
+  const e0 = eintrag(positionen[0]);
+  const abschluss = e0?.erledigtAm ? `Abgeschlossen ${fmtDateTime(e0.erledigtAm)}${e0.erledigtVon ? ` von @${esc(e0.erledigtVon)}` : ''}${e0.erledigtNotiz ? ` · Grund: ${esc(e0.erledigtNotiz)}` : ''}` : '';
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="woTitle" data-dialog>
+    <h2 id="woTitle">Wieder öffnen · ${esc(a.name)}</h2>
+    <p class="small muted">${plural(positionen.length, 'Artikel kommt', 'Artikel kommen')} zurück in die Arbeitsliste. Der Abschluss bleibt im Verlauf der Position gespeichert; in Shopify ändert sich nichts.${abschluss ? `<br>${abschluss}` : ''}</p>
+    <ul class="small" style="margin:0;padding-left:18px">${positionen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)} → ${esc(ziel(p))}</li>`).join('')}</ul>
+    <div class="field"><label for="woNotiz">Notiz (optional)</label><input id="woNotiz" name="notiz" maxlength="500" placeholder="z. B. doch keine Testbestellung"></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Wieder öffnen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('input')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const notiz = (new FormData(form).get('notiz') || '').trim();
+    let ok = 0;
+    for (const p of positionen) if (await oeffneAuftragsstatusWieder({ orderId: a.id, lineItemId: p.lineItemId }, notiz)) ok += 1;
+    $('#dialogRoot').innerHTML = '';
+    toast(ok === positionen.length ? `${a.name}: ${plural(ok, 'Artikel', 'Artikel')} wieder geöffnet` : `${a.name}: nur ${ok} von ${positionen.length} wieder geöffnet`, ok === positionen.length ? '' : 'crit');
+    render();
+  });
+}
+
+// Sammelaktion je Lieferanten-Gruppe: die Positionen stehen hier (beim Zeichnen gemerkt), nicht
+// in data-Attributen - eine Gruppe kann viele Artikel haben.
+const sammelGruppen = new Map();
+
+function openSammelBestelltDialog(id) {
+  const g = sammelGruppen.get(id);
+  if (!g) return;
+  // Beim Oeffnen neu pruefen: zwischen Zeichnen und Klick kann jemand einzelne Artikel gesetzt haben.
+  const positionen = g.positionen.filter(p => !afEintragFuer(p)?.status);
+  if (!positionen.length) { toast('Alle Artikel dieser Gruppe sind bereits bestellt.'); return; }
+  const luecken = positionen.filter(positionUnvollstaendig).length;
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="sbTitle" data-dialog>
+    <h2 id="sbTitle">Als bestellt markieren · ${esc(g.titel)}</h2>
+    <p class="small muted">Setzt ${plural(positionen.length, 'Artikel', 'Artikel')} auf „Bestellt" – nur verwenden, wenn die Bestellung beim Lieferanten wirklich raus ist.</p>
+    <ul class="small" style="margin:0;padding-left:18px;max-height:200px;overflow:auto">${positionen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)} · ${esc(p.orderName)}</li>`).join('')}</ul>
+    ${luecken ? `<p class="notice warn">${plural(luecken, 'Artikel hat', 'Artikel haben')} fehlende Angaben (in der Liste markiert).</p>` : ''}
+    <div class="field"><label for="sbNr">Lieferanten-Bestellnummer (optional, gilt für alle)</label><input id="sbNr" name="nr" placeholder="z. B. 2026-4711" maxlength="200"></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">${plural(positionen.length, 'Artikel', 'Artikel')} als bestellt markieren</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('input')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const nr = (new FormData(form).get('nr') || '').trim() || null;
+    let ok = 0;
+    for (const p of positionen) if (await setzeAuftragsstatus(p, 'bestellt', { lieferantBestellnummer: nr, still: true })) ok += 1;
+    $('#dialogRoot').innerHTML = '';
+    toast(ok === positionen.length ? `${plural(ok, 'Artikel', 'Artikel')} als bestellt markiert` : `Nur ${ok} von ${positionen.length} Artikeln als bestellt markiert`, ok === positionen.length ? '' : 'crit');
+    render();
   });
 }
 
@@ -1091,11 +1224,16 @@ function afStatusZelle(p) {
   const status = eintrag?.status || null;
   const gruppe = afFilterGruppe(status);
   const badgeClass = gruppe === 'erledigt' ? 'fertig' : gruppe === 'unterwegs' ? 'in-arbeit' : gruppe === 'bestellt' ? 'freigabe' : 'plain';
-  const stand = status ? `<div class="small muted">${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>` : '';
+  const stand = status ? `<div class="small muted">${fmtDateTime(eintrag.aktualisiertAm)} · @${esc(eintrag.aktualisiertVon)}</div>`
+    : eintrag?.wiederGeoeffnetAm ? `<div class="small muted">wieder geöffnet ${fmtDateTime(eintrag.wiederGeoeffnetAm)} · @${esc(eintrag.wiederGeoeffnetVon)}</div>` : '';
+  const tage = afWartetage(eintrag);
+  const warte = tage === null ? '' : `<div class="small ${afWarteKlasse(tage)}" title="${esc(AF_STATUS_LABEL[status])} am ${esc(fmtDate(eintrag[`${status}Am`]))}">${esc(afWarteText(tage))}</div>`;
+  const grund = status === 'erledigt' && eintrag.erledigtNotiz ? `<div class="small muted">Grund: ${esc(eintrag.erledigtNotiz)}</div>` : '';
   const nr = eintrag?.lieferantBestellnummer ? `<div class="small muted">Bestellnr. ${esc(eintrag.lieferantBestellnummer)}</div>` : '';
   const naechster = afNaechsterStatus(status);
-  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">→ ${esc(AF_STATUS_LABEL[naechster])}</button>` : '';
-  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}</span>${stand}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
+  const btn = naechster ? `<button type="button" class="btn btn-sm" data-af-set data-af-order="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" data-af-status="${naechster}" data-af-name="${esc(p.orderName)}" data-af-titel="${esc(p.titel)}" data-af-farbe="${esc(p.farbe)}">→ ${esc(AF_STATUS_LABEL[naechster])}</button>`
+    : status === 'erledigt' ? `<button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(p.orderId)}" data-af-item="${esc(p.lineItemId)}" title="Abschluss rückgängig machen">Wieder öffnen…</button>` : '';
+  return `<span class="badge status ${badgeClass}">${esc(status ? AF_STATUS_LABEL[status] : 'Noch nicht bestellt')}</span>${warte}${stand}${grund}${nr}${btn ? `<div style="margin-top:6px">${btn}</div>` : ''}`;
 }
 
 /** Fehlt einer Position etwas, das die Bestellung beim Lieferanten verhindert? */
@@ -1117,6 +1255,11 @@ function einkaufGruppeKarte(g, i, praefix) {
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
     : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
+  const zuBestellen = positionen.filter(p => p.lineItemId && !afEintragFuer(p)?.status);
+  // Ab zwei Artikeln lohnt die Sammelaktion; fuer einen reicht der Knopf in der Zeile.
+  const sammel = zuBestellen.length >= 2 ? `<button type="button" class="btn btn-sm" data-af-sammel="${esc(id)}">Alle als bestellt markieren…</button>` : '';
+  if (sammel) sammelGruppen.set(id, { titel: unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${g.lieferant}`, positionen: zuBestellen });
+  else sammelGruppen.delete(id);
   const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
       <td><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
       <td class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a><div class="small muted">${fmtDate(p.orderDatum)}</div></td>
@@ -1126,7 +1269,7 @@ function einkaufGruppeKarte(g, i, praefix) {
       <td>${afStatusZelle(p)}</td>
     </tr>`).join('');
   return `<section class="card group-card${luecken ? ' has-gap' : ''}">
-    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3>${kopierbutton(id)}</div>
+    <div class="card-head"><h3>${titel}${route} <span class="muted small">${plural(positionen.length, 'Artikel', 'Artikel')}</span></h3><div class="head-actions">${sammel}${kopierbutton(id)}</div></div>
     ${unterzeile}
     <div class="table-scroll"><table class="tasks compact"><thead><tr><th>Artikel</th><th>Auftrag</th><th>Menge beim Lieferanten</th><th>Großhändler-ID</th><th>Lieferant</th><th>Stand</th></tr></thead>
     <tbody>${zeilen}</tbody></table></div>
@@ -1239,6 +1382,7 @@ function viewEinkaufBestellungen() {
   const musterKarten = (d.musterGruppen || []).map((g, i) => einkaufGruppeKarte(g, i, 'muster')).join('');
   const af = state.route.params.get('af') || '';
   const leer = af ? 'Kein Artikel in diesem Schritt.' : 'Alles bestellt.';
+  const abgeschlossen = af === 'erledigt' ? abgeschlosseneAuftraegeKarte() : '';
   return `
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain')}
@@ -1248,6 +1392,7 @@ function viewEinkaufBestellungen() {
     </div>
     ${klaeren.length ? `<section class="card problem-card"><div class="card-head"><h2>Zuerst klären</h2><span class="more muted">Rot = blockiert, Gelb = vor dem Bestellen prüfen</span></div><div class="rows">${klaeren.map(einkaufAuftragZeile).join('')}</div></section>` : ''}
     <div class="section-bar"><h2 class="section-title" style="margin:0">Bestellen</h2>${afFilterChips([...ware, ...muster])}</div>
+    ${abgeschlossen}
     <h3 class="sub-title">Ware <span class="muted small">je Lieferant</span></h3>
     ${wareKarten || emptyState(leer, af ? '' : 'Keine offenen Warenartikel.')}
     <h3 class="sub-title">Muster</h3>
@@ -1263,15 +1408,39 @@ function viewEinkaufBestellungen() {
     <p class="small muted" style="margin-top:12px">Stand der Bestellungen: ${esc(fmtDateTime(d.exportiertAm || d.erstellt))} · Hier wird nie etwas automatisch bestellt oder versendet.</p>`;
 }
 
+/**
+ * Im Filter "Erledigt": Auftraege mit abgeschlossenen Artikeln, je mit "Wieder öffnen…".
+ * Auch Testbestellungen, deren Artikel in keiner Lieferanten-Gruppe stehen - sonst gaebe es
+ * fuer sie keinen Weg zurueck.
+ */
+function abgeschlosseneAuftraegeKarte() {
+  const liste = alleAuftraege().map(a => ({ a, erledigt: erledigtePositionen(a) })).filter(x => x.erledigt.length);
+  if (!liste.length) return '';
+  const zeile = ({ a, erledigt }) => {
+    const e = afEintragFuer({ orderId: a.id, lineItemId: erledigt[0].lineItemId });
+    const wer = e?.erledigtAm ? ` · abgeschlossen ${esc(fmtDateTime(e.erledigtAm))}${e.erledigtVon ? ` von @${esc(e.erledigtVon)}` : ''}` : '';
+    return `<div class="order-row">
+      <div class="order-main">
+        <div class="t"><a href="${esc(a.adminUrl || '')}" target="_blank" rel="noopener" title="In Shopify öffnen">${esc(a.name)} ↗</a> <span class="muted small">${fmtDate(a.datum)}</span>${a.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
+        <div class="small muted">${plural(erledigt.length, 'Artikel', 'Artikel')} erledigt${wer}${e?.erledigtNotiz ? ` · Grund: ${esc(e.erledigtNotiz)}` : ''}</div>
+      </div>
+      <button type="button" class="btn btn-sm btn-ghost" data-af-reopen="${esc(a.id)}" title="Artikel zurück in die Arbeitsliste holen">Wieder öffnen…</button>
+    </div>`;
+  };
+  return `<section class="card section"><div class="card-head"><h3>Abgeschlossene Aufträge</h3><span class="more muted">Versehentlich abgeschlossen? „Wieder öffnen" holt die Artikel zurück.</span></div><div class="rows">${liste.map(zeile).join('')}</div></section>`;
+}
+
 /** Dialog "Ohne Einkauf abschließen": setzt alle offenen Artikel eines Auftrags auf Erledigt. */
 function openAuftragAbschliessenDialog(orderId) {
-  const a = (einkauf.bestellungen?.auftraege || []).find(x => x.id === orderId);
+  // Auch Testbestellungen: dort steht der Knopf ebenfalls, fand den Auftrag aber frueher nicht
+  // (Suche nur in den Kundenauftraegen) - der Klick blieb ohne Wirkung.
+  const a = alleAuftraege().find(x => x.id === orderId);
   if (!a) return;
   const offen = auftragOffenePositionen(a).filter(p => p.lineItemId);
   if (!offen.length) { toast('Keine offenen Artikel in diesem Auftrag.'); return; }
   $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="abTitle" data-dialog>
     <h2 id="abTitle">Ohne Einkauf abschließen · ${esc(a.name)}</h2>
-    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. In Shopify ändert sich nichts; der Schritt lässt sich über den Filter „Erledigt" nachvollziehen.</p>
+    <p class="small muted">Setzt ${plural(offen.length, 'Artikel', 'Artikel')} dieses Auftrags im Auftragsfluss auf „Erledigt". Gedacht für Testbestellungen oder Aufträge, die anders erledigt wurden. In Shopify ändert sich nichts; über den Filter „Erledigt" lässt sich der Schritt nachvollziehen und wieder öffnen.</p>
     <ul class="small" style="margin:0;padding-left:18px">${offen.map(p => `<li>${esc(anzeigeWert(p.titel))} · ${esc(p.farbe)}</li>`).join('')}</ul>
     <div class="field"><label for="abGrund">Grund (Pflicht)</label><textarea id="abGrund" name="grund" required maxlength="500" placeholder="z. B. Testbestellung, kein Einkauf nötig"></textarea></div>
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Abschließen</button></div>
@@ -2248,6 +2417,10 @@ function bindEvents() {
     }
     const proj = e.target.closest('[data-toggle-projekt]');
     if (proj) { const k = proj.dataset.toggleProjekt; if (state.offeneProjekte.has(k)) state.offeneProjekte.delete(k); else state.offeneProjekte.add(k); render(); return; }
+    const reopen = e.target.closest('[data-af-reopen]');
+    if (reopen) { openWiederOeffnenDialog(reopen.dataset.afReopen, reopen.dataset.afItem || null); return; }
+    const sammelBtn = e.target.closest('[data-af-sammel]');
+    if (sammelBtn) { openSammelBestelltDialog(sammelBtn.dataset.afSammel); return; }
     const abschl = e.target.closest('[data-auftrag-erledigt]');
     if (abschl) { openAuftragAbschliessenDialog(abschl.dataset.auftragErledigt); return; }
     const p = e.target.closest('button[data-param]');
