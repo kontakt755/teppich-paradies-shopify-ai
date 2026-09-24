@@ -15,7 +15,7 @@ import {
   freshness, matchesQuery, dependentsOf,
 } from './lib/model.mjs';
 import { ratgeberStatus, pipelineRows, statusLabel, suchleistungHinweis } from './lib/bodenwissen.mjs';
-import { merkeEingabe, stelleEingabeWiederHer } from './lib/eingabe.mjs';
+import { merkeEingabe, stelleEingabeWiederHer, darfUebernehmen } from './lib/eingabe.mjs';
 
 const CONFIG = {
   owner: 'kontakt755',
@@ -3336,7 +3336,25 @@ function bindEvents() {
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;
-  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); render(); }, 150); });
+  document.addEventListener('input', e => {
+    const el = e.target.closest('input[type=search][data-param]');
+    if (!el) return;
+    const key = el.dataset.param;
+    // Ansicht und Feld festhalten: wer waehrend der Entprellzeit die Ansicht
+    // wechselt, soll seinen Suchtext nicht in der neuen wiederfinden.
+    const ansicht = state.route.view;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(() => {
+      if (!darfUebernehmen({ gemerkteAnsicht: ansicht, aktuelleAnsicht: state.route.view, feldNochDa: document.contains(el) })) return;
+      const p = new URLSearchParams(state.route.params);
+      if (el.value) p.set(key, el.value); else p.delete(key);
+      if (key === 'psq') p.delete('seite');
+      if (key === 'lq') p.delete('lseite');
+      history.replaceState(null, '', `#/${state.route.view}?${p}`);
+      parseRoute();
+      render();
+    }, 150);
+  });
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }
@@ -3371,7 +3389,7 @@ function bindEvents() {
   $('#sessionBtn').addEventListener('click', logout);
   $('#syncChip').addEventListener('click', () => navigate('insights'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
-  window.addEventListener('hashchange', async () => { const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
+  window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });
 }
 
