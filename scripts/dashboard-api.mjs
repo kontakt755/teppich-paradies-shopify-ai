@@ -612,8 +612,32 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       if (!modell) return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
       const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
       const kunde = findeKunde(modell, key, { statusAlle });
-      if (!kunde) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
-      return { verfuegbar: true, kunde };
+      if (kunde) return { verfuegbar: true, kunde };
+      // Kunde aus dem Shopify-Stamm ohne Bestellung in dieser Datei: die
+      // Akte zeigt dann Kontakt und Anschrift statt einer Fehlermeldung.
+      const ausStamm = stammOhneBestellung(dir, new Set()).find(k => k.key === key);
+      if (!ausStamm) return { verfuegbar: false, hinweis: 'Kunde nicht gefunden - Bestelldaten evtl. inzwischen aktualisiert.' };
+      const roh = (readJsonIfExists(path.join(dir, 'kunden', 'kunden.json'))?.kunden ?? [])
+        .find(k => (k.email && `email:${String(k.email).toLowerCase()}` === key) || (k.name && `name:${String(k.name).toLowerCase()}` === key));
+      return {
+        verfuegbar: true,
+        nurStammdaten: true,
+        kunde: {
+          key,
+          kunde: { name: ausStamm.name, email: ausStamm.email || '–', telefon: ausStamm.telefon || '–' },
+          lieferadresse: roh?.anschrift || null,
+          rechnungsadresse: null,
+          auftraege: [],
+          anzahlBestellungen: ausStamm.anzahlBestellungen,
+          gesamtumsatz: ausStamm.gesamtumsatz,
+          waehrung: ausStamm.waehrung,
+          nurTestbestellungen: false,
+          fortschritt: ausStamm.fortschritt,
+          hinweis: ausStamm.anzahlBestellungen > 0
+            ? `Shopify fuehrt ${ausStamm.anzahlBestellungen} Bestellung(en) - sie liegen ausserhalb der hier exportierten Daten.`
+            : 'Noch keine Bestellung.',
+        },
+      };
     },
 
     /** Vollstaendige Bestelluebersicht (eine Zeile je Bestellung) fuer die Tabellenansicht - Sortierung/Filter/Suche laufen im Browser, das lokale Datenvolumen ist klein. */
