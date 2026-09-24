@@ -175,7 +175,7 @@ async function inspectPage(browser, pageConfig, viewportName, viewport) {
       bodyText, mainText, jsonLd, links, facets, scripts,
       images: relevantImages.map(img => ({ src: img.currentSrc || img.src, alt: img.getAttribute('alt'), broken: img.complete && img.naturalWidth === 0, loading: img.loading || '', naturalWidth: img.naturalWidth, renderedWidth: Math.round(img.getBoundingClientRect().width), top: Math.round(img.getBoundingClientRect().top) })),
       unnamedButtons, unnamedLinks, unlabeledInputs, smallTargets, resourceEntries,
-      visiblePriceTexts: [...document.querySelectorAll('main product-price, main .price, main [class*="price"]')].filter(visible).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 160),
+      visiblePriceTexts: [...document.querySelectorAll('main product-price, main .price, main [class*="price"]')].filter(visible).filter((el, _, all) => !all.some(other => other !== el && other.contains(el))).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 160),
       visibleComparePrices: [...document.querySelectorAll('main s, main del, main [class*="compare-at"]')].filter(visible).map(el => el.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean),
       footerShipping: !!document.querySelector('footer a[href*="/pages/versand-lieferung"]'),
       productShipping: !!document.querySelector('main a[href*="/pages/versand-lieferung"]'),
