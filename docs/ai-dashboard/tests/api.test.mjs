@@ -764,3 +764,26 @@ test('kundenSuche zeigt auch Shopify-Kunden ohne Bestellung in dieser Datei', ()
   // Freitextsuche erfasst ihn ebenfalls
   assert.ok(api.kundenSuche({ q: 'erika', filter: 'alle' }).treffer.some(t => t.name === 'Erika Musterfrau'));
 });
+
+test('kundenDetail zeigt auch einen Kunden ohne Bestellung in dieser Datei', () => {
+  const root = tmpRoot();
+  const dir = privatFixture(root);
+  fs.mkdirSync(path.join(dir, 'kunden'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'kunden', 'kunden.json'), JSON.stringify({
+    erstellt: '2026-09-24T10:00:00Z', anzahl: 1,
+    kunden: [{
+      name: 'Erika Musterfrau', email: 'erika@example.test', telefon: '+4930111222',
+      anzahlBestellungen: 2, gesamtumsatz: 250, waehrung: 'EUR',
+      anschrift: { name: 'Erika Musterfrau', strasse: 'Musterweg 1', plz: '16515', ort: 'Oranienburg', land: 'DE', telefon: null },
+    }],
+  }));
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const r = api.kundenDetail({ key: 'email:erika@example.test' });
+  assert.equal(r.verfuegbar, true);
+  assert.equal(r.nurStammdaten, true);
+  assert.equal(r.kunde.kunde.name, 'Erika Musterfrau');
+  assert.equal(r.kunde.lieferadresse.ort, 'Oranienburg');
+  assert.match(r.kunde.hinweis, /ausserhalb der hier exportierten Daten/);
+  // Unbekannter Schluessel bleibt eine ehrliche Fehlanzeige
+  assert.equal(api.kundenDetail({ key: 'email:gibtsnicht@example.test' }).verfuegbar, false);
+});

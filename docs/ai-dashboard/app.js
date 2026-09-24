@@ -2197,7 +2197,7 @@ function viewKundenDetail(key) {
       </div>
     </section>
     <h2 style="margin-top:18px">Bestellungen</h2>
-    ${k.auftraege.map(kundenAuftragKarte).join('') || emptyState('Keine Bestellungen.', '')}
+    ${k.auftraege.map(kundenAuftragKarte).join('') || emptyState('Keine Bestellungen in den hier vorliegenden Daten.', k.hinweis || '')}
   `;
 }
 
