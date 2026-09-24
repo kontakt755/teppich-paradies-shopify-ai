@@ -1,6 +1,6 @@
 ---
 name: automation-vorabklaerung
-description: Checkliste VOR dem Bau jeder Automation, die externe Connectors (Gmail, Calendar, Drive, ...) braucht oder fertige Dateien an den Nutzer ausliefern soll. Verwenden, bevor Scanner-Skripte, Scheduled Routines oder Datei-Auslieferung gebaut werden - nicht danach. Vorfall: VMA-Zeiterfassungs-Automation (2026-09-24), siehe docs/lessons falls vorhanden.
+description: Checkliste VOR dem Bau jeder Automation, die externe Connectors (Gmail, Calendar, Drive, ...) braucht, fertige Dateien an den Nutzer ausliefern soll, oder in eine bestehende Excel-/Dokument-Vorlage schreibt. Verwenden, bevor Scanner-Skripte, Scheduled Routines, Datei-Auslieferung oder Excel-Schreiblogik gebaut werden - nicht danach. Vorfaelle: VMA-Zeiterfassungs-Automation (2026-09-24) - Gmail-Kontoverwechslung UND ein 2-Spalten-Offset-Bug, der wochenlang unbemerkt falsche Kalendertage befuellt haette.
 ---
 
 # Automation-Vorabklaerung
@@ -81,6 +81,42 @@ Wenn der Nutzer eine Korrektur oder fehlende Information nachliefert (z. B.
 ein genaues Datum), diese direkt in den naechsten Schritt einbauen - nicht
 nochmal spekulieren oder den alten (geschaetzten) Stand weiterverwenden.
 
+## 7. Schreiben in bestehende Excel-/Dokument-Vorlagen: nie blind vertrauen
+
+**Vorfall (2026-09-24):** Ein VMA-Generator schrieb Arbeitszeit/Krankheit
+2 Kalendertage zu spaet, weil eine Spalten-Konstante (`DAYS_COLUMNS`) falsch
+hart codiert war (Start bei Spalte D statt B) - und niemand hat das gegen die
+eigene Tages-Kopfzeile der Datei geprueft, bis der Nutzer es im fertigen
+Excel von Hand nachgezaehlt hat. Ein zweiter, noch gefaehrlicherer Bug lag
+daneben: Die "Vorlage" war keine leere Datei, sondern eine bereits mit
+echten Werten eines fruehren Monats ausgefuellte Datei. Weil der Schreib-Code
+nur schrieb, wenn ein neuer Wert > 0 war (statt Felder zuerst zu leeren),
+blieben an Kranktagen die alten Arbeitszeiten aus dem Vormonat einfach stehen.
+
+**Daraus folgt fuer JEDE Automation, die in eine bestehende Datei
+(Excel/Word/etc.) schreibt, nicht in eine leere:**
+
+- **Spalten-/Zeilen-Konstanten nie aus dem Gedaechtnis/einer Doku-Zeile
+  hart codieren, ohne sie gegen die Datei selbst zu verifizieren.** Bei
+  Excel: die Kopfzeilen-Formel der Datei lesen (z. B. `=DATE($D$3,$E$3,
+  COLUMN()-1)` in Zeile 12) und pruefen, welche Spalte wirklich Tag 1 ist -
+  nicht einfach eine Konstante aus einer fruehen Analyse uebernehmen.
+- **Nach dem Schreiben immer zurücklesen und stichprobenartig gegen den
+  echten Kalender pruefen** (z. B. "Krankheit 18.-25.09. eingetragen -
+  steht das wirklich unter den Spalten fuer Tag 18-25, nicht 16-23 oder
+  20-27?"). Ein Validierungsschritt, der nur "Summe <= Max" prueft, faengt
+  einen Spalten-Offset NICHT ab - er muss explizit Tag-fuer-Tag gegen den
+  Kalender pruefen.
+- **Wenn die Vorlage eine bereits ausgefuellte Datei eines anderen Zeitraums
+  ist** (nicht leer): vor dem Schreiben ALLE Eingabefelder des neuen
+  Zeitraums explizit zuruecksetzen/leeren (bzw. Formel-Defaults
+  wiederherstellen), nicht nur bedingt ueberschreiben. "Ich schreibe nur
+  wenn ein Wert vorhanden ist" reicht nicht, wenn die Zelle vorher schon
+  einen (falschen, alten) Wert enthalten kann.
+- Diese Klasse Bug ist besonders gefaehrlich, weil `validate_workbook()`-
+  artige Pruefungen (Max-Stunden, Wochenlimit) sie **nicht** entdecken - die
+  Summen koennen zufaellig plausibel bleiben, obwohl die Tage falsch liegen.
+
 ## Kurzform zum Selbst-Abhaken
 
 - [ ] `ListConnectors` geprueft, bevor Code/Doku geschrieben wurde
@@ -89,3 +125,9 @@ nochmal spekulieren oder den alten (geschaetzten) Stand weiterverwenden.
 - [ ] Angenommene Fakten (Adressen, IDs) verifiziert statt hardcoded
 - [ ] Scope-Grenze (externe APIs, Kosten) kurz erfragt vor Full-Design
 - [ ] Datei-Auslieferung: `SendUserFile` statt Base64-Mail-Draft, wenn moeglich
+- [ ] Spalten-/Zeilen-Konstanten fuer Excel-Schreibzugriff gegen die
+      Datei selbst verifiziert (Kopfzeilen-Formel lesen), nicht nur codiert
+- [ ] Nach dem Schreiben: Tag-fuer-Tag-Stichprobe gegen echten Kalender,
+      nicht nur Summen-/Max-Pruefung
+- [ ] Bei vorausgefuellter Vorlage: Eingabefelder vor dem Schreiben explizit
+      zurueckgesetzt, nicht nur bedingt ueberschrieben

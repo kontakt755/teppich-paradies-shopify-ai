@@ -49,8 +49,11 @@ EMPLOYEES = {
     },
 }
 
-# Spalten für Tage (D=1, E=2, ... AF=31)
-DAYS_COLUMNS = [get_column_letter(i) for i in range(4, 35)]  # D bis AF
+# Spalten für Tage (B=1, C=2, ... AF=31)
+# Bug 2026-09-24: war faelschlich range(4,35) = D bis AH -> 2-Spalten-Offset,
+# alle Werte landeten 2 Kalendertage zu spaet. Zeile 12 (Tagesformel) bestaetigt
+# B12 = Tag 1: DATE($D$3,$E$3,COLUMN()-1) mit COLUMN()=2 ergibt Tag 1.
+DAYS_COLUMNS = [get_column_letter(i) for i in range(2, 33)]  # B bis AF
 
 # Zeilen
 ROW_YEAR = 3
@@ -368,12 +371,32 @@ def write_data_to_worksheet(
     """
     Schreibt Stundendaten in die Zeilen
     data: {day: {work, leave, holiday, sick, other}}
+
+    Die Vorlage ist eine bereits ausgefuellte Datei eines frueheren Monats
+    (echte Zahlen aus Juni), kein leeres Formular. Deshalb MUESSEN die
+    Eingabezeilen zuerst geleert/zurueckgesetzt werden - sonst bleiben alte
+    Werte an Tagen stehen, die der neue Monat nicht (mehr) befuellt (z.B.
+    Krankheitstage, an denen 'work' bewusst 0 ist und daher nie geschrieben
+    wuerde). Bug 2026-09-24: fehlende Reset-Schritt fuehrte dazu, dass an
+    Kranktagen weiterhin die alte Arbeitszeit aus der Vorlage sichtbar war.
     """
+    for col in DAYS_COLUMNS:  # immer alle 31 Tagesspalten (B bis AF) zuruecksetzen
+        # Arbeitszeit (Zeile 14) und bezahlter Urlaub (Zeile 15) sind reine
+        # Eingabefelder ohne Formel-Default -> auf leer zuruecksetzen.
+        ws[f'{col}{ROW_WORK_TIME}'] = None
+        ws[f'{col}{ROW_PAID_LEAVE}'] = None
+        # Feiertag/Krankheit/Sonstige haben einen Formel-Default ("-" wenn
+        # der Tag existiert, sonst leer) -> Formel wiederherstellen statt
+        # nur zu leeren, damit das Template-Verhalten erhalten bleibt.
+        ws[f'{col}{ROW_HOLIDAYS}'] = f'=IF({col}$12="","","-")'
+        ws[f'{col}{ROW_SICK}'] = f'=IF({col}$12="","","-")'
+        ws[f'{col}{ROW_OTHER_ABSENCE}'] = f'=IF({col}$12="","","-")'
+
     import calendar
     num_days = calendar.monthrange(year, month)[1]
 
     for day in range(1, num_days + 1):
-        col = DAYS_COLUMNS[day - 1]  # D für Tag 1
+        col = DAYS_COLUMNS[day - 1]  # B für Tag 1
         day_data = data[day]
 
         # Arbeitszeit (Zeile 14)
