@@ -3120,13 +3120,18 @@ const VIEWS = { heute: viewHeute, hilfe: viewHilfe, shopwache: viewShopwache, ar
 function merkeEingabe(main) {
   const el = document.activeElement;
   if (!el || !main.contains(el) || !el.dataset?.param) return null;
-  return { param: el.dataset.param, start: el.selectionStart, ende: el.selectionEnd };
+  // Der Wert gehoert dazu: die Ansicht baut das Feld aus der Adresszeile neu
+  // auf, und die hinkt dem Tippen um die Entprellzeit hinterher. Wer schnell
+  // tippt, verlor sonst genau die Zeichen aus diesem Zeitfenster.
+  return { param: el.dataset.param, wert: el.value, start: el.selectionStart, ende: el.selectionEnd };
 }
 
 function stelleEingabeWiederHer(main, merk) {
   if (!merk) return false;
   const feld = main.querySelector(`input[data-param="${merk.param}"]`);
   if (!feld) return false;
+  // Getipptes schlaegt den aus der Adresse rekonstruierten Wert.
+  if (typeof merk.wert === 'string' && feld.value !== merk.wert) feld.value = merk.wert;
   feld.focus();
   try {
     const pos = merk.start ?? feld.value.length;
@@ -3291,7 +3296,7 @@ function bindEvents() {
   });
   document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
   let qTimer;
-  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); render(); }, 220); });
+  document.addEventListener('input', e => { const el = e.target.closest('input[type=search][data-param]'); if (!el) return; const key = el.dataset.param; clearTimeout(qTimer); qTimer = setTimeout(() => { const p = new URLSearchParams(state.route.params); if (el.value) p.set(key, el.value); else p.delete(key); if (key === 'psq') p.delete('seite'); if (key === 'lq') p.delete('lseite'); history.replaceState(null, '', `#/${state.route.view}?${p}`); parseRoute(); render(); }, 150); });
   document.addEventListener('keydown', e => {
     const inField = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '');
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#paletteRoot').children.length ? closePalette() : openPalette(); return; }
