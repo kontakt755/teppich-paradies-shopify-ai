@@ -68,6 +68,9 @@ export function schnappschuss(daten, opt = {}) {
       waehrung,
       durchschnitt: gezaehlt.length ? runden(umsatz / gezaehlt.length) : 0,
       storniert: drin.length - gezaehlt.length,
+      // Bezahlte Bestellungen ohne Betrag - in der Praxis kostenlose Musterbestellungen.
+      // Damit erklaert das Dashboard "Umsatz 0 €" statt wie ein Datenfehler auszusehen.
+      kostenlos: gezaehlt.filter(o => betrag(o) === 0).length,
     };
   }
 

@@ -1,0 +1,38 @@
+# Prueft monatlich, ob die oeffentliche Datenschutzerklaerung den
+# Newsletter-Abschnitt noch enthaelt. Hintergrund: Die automatisierte
+# Shopify-Richtlinie ist bewusst AUS, weil sie den Abschnitt ueberschreiben
+# wuerde (docs/kundenbindung/datenschutz-newsletter-abschnitt.md).
+# Fehlt er, legt der Job ein Issue an (einmalig, kein Duplikat).
+name: datenschutz-pruefung
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Datenschutzerklaerung lesen und pruefen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -u
+          seite=$(curl -sfL --retry 3 https://www.teppich-paradies.net/policies/privacy-policy || true)
+          fehlt=""
+          for teil in "Newsletter und Werbe-E-Mails" "Double-Opt-in" "Shopify Messaging" "Abmeldung."; do
+            printf '%s' "$seite" | grep -q "$teil" || fehlt="$fehlt- $teil"$'\n'
+          done
+          if [ -z "$seite" ]; then fehlt="- Seite nicht abrufbar"$'\n'; fi
+          if [ -z "$fehlt" ]; then echo "Datenschutzerklaerung vollstaendig."; exit 0; fi
+          titel="Datenschutzerklaerung: Newsletter-Abschnitt fehlt"
+          if gh issue list --state open --search "\"$titel\" in:title" --json number -q '.[].number' | grep -q .; then
+            echo "Issue existiert bereits."; exit 1
+          fi
+          gh issue create --title "$titel" --label "priority:p1" --body "$(printf 'Die monatliche Pruefung hat in https://www.teppich-paradies.net/policies/privacy-policy nicht gefunden:\n\n%s\nVermutlich hat Shopify den Text ueberschrieben (Schalter \"Automatisierte Richtlinie verwenden\" muss AUS sein).\nAbschnitt neu einfuegen: docs/kundenbindung/datenschutz-newsletter-abschnitt.md\n' "$fehlt")" || gh issue create --title "$titel" --body "Newsletter-Abschnitt fehlt in der Datenschutzerklaerung. Fehlend: $fehlt"
+          exit 1
