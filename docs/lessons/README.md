@@ -17,6 +17,7 @@ sie zu umgehen.
 | [router-belege.md](router-belege.md) | Laeuft der Router gerade? | Zwei erfundene Pruefpfade fuehrten zum Schluss, der Router laufe nicht |
 | [codex-review-pruefbereich.md](codex-review-pruefbereich.md) | Wenn das Codex-Review fremde Arbeit anmahnt | Reviewer prueften den Working Tree anderer Sitzungen und verlangten, ihn zu „isolieren" |
 | [dashboard-issues-json.md](dashboard-issues-json.md) | Dashboard | Stash pro Sitzung im geteilten Stash-Stack, weil Doku und Hook sich widersprachen |
+| [rebase-ours-ist-der-upstream.md](rebase-ours-ist-der-upstream.md) | Dashboard | `dashboard-data.yml` loeste Konflikte mit `--ours` auf und verwarf damit die Datei, die es gerade erzeugt hatte |
 
 Konvention: keine Theme-IDs, keine Lieferantennamen (nur Pseudonyme, siehe
 CLAUDE.md Punkt 8). Eine neue Lesson bekommt eine Zeile in dieser Tabelle und
