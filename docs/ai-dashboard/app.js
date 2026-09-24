@@ -1946,9 +1946,11 @@ function viewLexikonDetail(handle) {
       ${mengenhilfeWidget(p, zielVariante)}`;
 
   return `${zurueck}
-    <div class="page-head" style="display:flex;gap:14px;align-items:flex-start">
-      ${p.bild ? `<img src="${esc(p.bild)}" alt="" loading="lazy" style="width:88px;height:88px;object-fit:cover;border-radius:8px;background:var(--bg-2,#eee);flex:none">` : ''}
-      <div><h1>${esc(p.titel)}</h1><p class="sub">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</p></div>
+    <div class="page-head">
+      <div style="display:flex;gap:14px;align-items:center">
+        ${p.bild ? `<img src="${esc(p.bild)}" alt="" loading="lazy" style="width:88px;height:88px;object-fit:cover;border-radius:8px;background:var(--bg-2,#eee);flex:none">` : ''}
+        <div><h1>${esc(p.titel)}</h1><p class="sub">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</p></div>
+      </div>
     </div>
     <div class="toolbar" style="margin:10px 0 16px">
       ${p.shopUrl ? `<a class="btn btn-primary" href="${esc(p.shopUrl)}" target="_blank" rel="noopener">Im Shop ansehen ↗</a>` : `<span class="btn" aria-disabled="true">Im Shop ansehen (${NICHT_HINTERLEGT})</span>`}
