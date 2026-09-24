@@ -1690,6 +1690,24 @@ function preisText(betrag, einheit) {
 }
 function fmtPreis(n) { return Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+/**
+ * Preis einer Variante fuers Bestellen. Der Shopify-Rohpreis ist je nach
+ * Produkt der Paketpreis oder der Preis je 0,01 m² - nackt hingeschrieben
+ * ("0.85 EUR") verleitet er zu falschen Aussagen am Telefon. Deshalb zuerst
+ * der Preis je Verkaufseinheit, der Rohwert klein daneben.
+ */
+function preisZelle(v) {
+  const jeEinheit = v.preisJeEinheit;
+  if (jeEinheit && typeof jeEinheit.betrag === 'number') {
+    const roh = (typeof v.preis === 'number' && Math.abs(v.preis - jeEinheit.betrag) > 0.005)
+      ? `<div class="small muted">Shopify-Preis ${esc(fmtPreis(v.preis))} ${esc(v.waehrung || 'EUR')}</div>`
+      : '';
+    return `${esc(preisText(jeEinheit.betrag, jeEinheit.einheit))}${roh}`;
+  }
+  if (v.preis === null || v.preis === undefined) return NICHT_HINTERLEGT;
+  return `${esc(fmtPreis(v.preis))} ${esc(v.waehrung || 'EUR')}`;
+}
+
 function lexikonTrefferZeile(p) {
   const bild = p.bild ? `<img src="${esc(p.bild)}" alt="" loading="lazy" style="width:48px;height:48px;object-fit:cover;border-radius:6px;background:var(--bg-2,#eee)">` : `<div style="width:48px;height:48px;border-radius:6px;background:var(--bg-2,#eee)"></div>`;
   const preis = preisText(p.preisAb, p.preisEinheit);
@@ -1843,7 +1861,7 @@ function bestellZeile(v) {
     <td>${artikelZelle}</td>
     <td>${lexWert(e.farbnummer)}</td>
     <td>${lexWert(e.bestelleinheit)}</td>
-    <td>${(v.preis !== null && v.preis !== undefined) ? `${esc(v.preis)} ${esc(v.waehrung || '')}` : NICHT_HINTERLEGT}</td>
+    <td>${preisZelle(v)}</td>
     <td>${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
     <td>${e.lieferweg ? esc(LIEFERWEG_LABEL[e.lieferweg] || e.lieferweg) : NICHT_HINTERLEGT}</td>
     <td>${linkZelle}</td>
@@ -1928,7 +1946,10 @@ function viewLexikonDetail(handle) {
       ${mengenhilfeWidget(p, zielVariante)}`;
 
   return `${zurueck}
-    <div class="page-head"><div><h1>${esc(p.titel)}</h1><p class="sub">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</p></div></div>
+    <div class="page-head" style="display:flex;gap:14px;align-items:flex-start">
+      ${p.bild ? `<img src="${esc(p.bild)}" alt="" loading="lazy" style="width:88px;height:88px;object-fit:cover;border-radius:8px;background:var(--bg-2,#eee);flex:none">` : ''}
+      <div><h1>${esc(p.titel)}</h1><p class="sub">${p.produktgruppe ? esc(p.produktgruppe) : NICHT_HINTERLEGT}${p.status ? ` · ${esc(p.status)}` : ''}</p></div>
+    </div>
     <div class="toolbar" style="margin:10px 0 16px">
       ${p.shopUrl ? `<a class="btn btn-primary" href="${esc(p.shopUrl)}" target="_blank" rel="noopener">Im Shop ansehen ↗</a>` : `<span class="btn" aria-disabled="true">Im Shop ansehen (${NICHT_HINTERLEGT})</span>`}
       ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
