@@ -721,6 +721,71 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /**
+     * Kunden als eigene Datenart (nicht aus Bestellungen abgeleitet) - liest
+     * die von operations/scripts/aktualisieren.mjs (Teil "kunden") bereits
+     * aufbereitete Datei. Lesend, nur mit optionaler Textsuche ueber Name/
+     * E-Mail/Telefon, damit die potenziell grosse Datei nicht komplett an
+     * den Browser geht.
+     */
+    kundenListe({ q = '' } = {}) {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'kunden', 'kunden.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.kunden)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Kundendaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur kunden' };
+      }
+      const suchtext = String(q || '').trim().toLowerCase();
+      const kunden = suchtext
+        ? daten.kunden.filter(k => [k.name, k.email, k.telefon].filter(Boolean).some(f => String(f).toLowerCase().includes(suchtext)))
+        : daten.kunden;
+      return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.kunden.length, kunden };
+    },
+
+    /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */
+    angeboteListe() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'angebote', 'angebote.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.angebote)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Angebotsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur angebote' };
+      }
+      return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /** Abgebrochene Warenkoerbe der letzten 30 Tage - verlorener Umsatz. */
+    warenkoerbeListe() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'warenkoerbe', 'warenkoerbe.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.warenkoerbe)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Warenkorb-Daten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur warenkoerbe' };
+      }
+      return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /** Lagerbestand je Standort/Variante - oder der Hinweis, dass der Shop keinen fuehrt. */
+    bestandListe() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'bestand', 'bestand.json');
+      const daten = readJsonIfExists(file);
+      if (!daten) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Bestandsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestand' };
+      }
+      return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /** Erfuellungen (Sendungen) und Rueckerstattungen je Bestellung. */
+    erfuellungListe() {
+      const dir = privatDirPath || privatDir();
+      const file = path.join(dir, 'erfuellung', 'erfuellung.json');
+      const daten = readJsonIfExists(file);
+      if (!daten || !Array.isArray(daten.eintraege)) {
+        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Erfuellungsdaten exportiert.', befehl: 'npm run daten:aktualisieren -- --nur bestellungen' };
+      }
+      return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
      * Stand je lokaler Datenquelle (Lexikon, Bestelluebersicht, Kennzahlen),
      * geschrieben von operations/scripts/aktualisieren.mjs
      * ($TP_PRIVAT_DIR/aktualisierung.json). Liefert rohe Zeitstempel plus

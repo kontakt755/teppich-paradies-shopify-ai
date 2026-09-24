@@ -30,23 +30,28 @@ test('argumente: --nur akzeptiert nur bekannte Teile', () => {
   assert.throws(() => argumente(['--nur', 'unbekannt']), /Unbekannter Teil/);
 });
 
-test('alle drei Teile erfolgreich: Status enthaelt Zeitpunkt, Dauer, Anzahl je Teil', async () => {
+test('alle sieben Teile erfolgreich: Status enthaelt Zeitpunkt, Dauer, Anzahl je Teil', async () => {
   const dir = tmpDir();
   const teilFn = {
     lexikon: async () => ({ anzahl: 12 }),
     bestellungen: async () => ({ anzahl: 5, hinweis: '2/2 Quellvarianten geladen' }),
     kennzahlen: async () => ({ anzahl: 40 }),
+    kunden: async () => ({ anzahl: 7 }),
+    angebote: async () => ({ anzahl: 2 }),
+    warenkoerbe: async () => ({ anzahl: 3 }),
+    bestand: async () => ({ anzahl: 9 }),
   };
   const { statusDatei, status, ergebnisse } = await aktualisiere({ dir, teilFn });
   assert.equal(statusDatei, path.join(dir, 'aktualisierung.json'));
-  assert.equal(ergebnisse.length, 3);
-  for (const teil of ['lexikon', 'bestellungen', 'kennzahlen']) {
+  assert.equal(ergebnisse.length, 7);
+  for (const teil of ['lexikon', 'bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand']) {
     assert.equal(status.teile[teil].erfolg, true);
     assert.ok(status.teile[teil].zeitpunkt);
     assert.equal(typeof status.teile[teil].dauerMs, 'number');
   }
   assert.equal(status.teile.lexikon.anzahl, 12);
   assert.equal(status.teile.bestellungen.meldung, '2/2 Quellvarianten geladen');
+  assert.equal(status.teile.kunden.anzahl, 7);
 
   const aufDisk = JSON.parse(fs.readFileSync(statusDatei, 'utf8'));
   assert.deepEqual(aufDisk, status);

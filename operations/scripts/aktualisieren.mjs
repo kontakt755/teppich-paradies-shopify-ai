@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const STANDARD_PRIVAT_DIR = path.join(os.homedir(), 'teppich-paradies-analyse');
-const TEILE = ['lexikon', 'bestellungen', 'kennzahlen'];
+const TEILE = ['lexikon', 'bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand'];
 
 export function argumente(argv) {
   const a = { nur: null, privatDir: null, hilfe: false };
@@ -162,14 +162,87 @@ async function teilBestellungen(dir) {
 
   const ziel = path.join(dir, 'bestelluebersicht', 'orders.json');
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
-  fs.writeFileSync(ziel, JSON.stringify({ exportiertAm: new Date().toISOString(), orders, quellvarianten }, null, 2));
+  const exportiertAm = new Date().toISOString();
+  fs.writeFileSync(ziel, JSON.stringify({ exportiertAm, orders, quellvarianten }, null, 2));
+
+  // Erfuellungen/Rueckerstattungen stecken schon in denselben Bestelldaten
+  // (fulfillments/refunds in ORDERS_QUERY) - kein zweiter Abruf noetig.
+  const { aufbereiten: erfuellungAufbereiten } = await import('../lib/erfuellung.mjs');
+  const erfuellung = erfuellungAufbereiten({ orders });
+  const erfuellungZiel = path.join(dir, 'erfuellung', 'erfuellung.json');
+  fs.mkdirSync(path.dirname(erfuellungZiel), { recursive: true });
+  fs.writeFileSync(erfuellungZiel, JSON.stringify(erfuellung, null, 2));
+
   return {
     anzahl: orders.length,
-    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen`,
+    hinweis: `${seiten} Seite(n) · ${quellvarianten.length}/${ids.length} Quellvarianten der Muster geladen · ${erfuellung.versendet} versendet · ${erfuellung.erstattet} erstattet`,
   };
 }
 
-export const TEIL_FN = { lexikon: teilLexikon, bestellungen: teilBestellungen, kennzahlen: teilKennzahlen };
+async function teilKunden(dir) {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { fetchCustomers } = await import('../sync/customers.mjs');
+  const { aufbereiten } = await import('../lib/kunden.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET)');
+  const { customers, seiten, gesammelt } = await fetchCustomers(proxy);
+  if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Kunden konnten nicht geladen werden');
+  const modell = aufbereiten({ customers });
+  const ziel = path.join(dir, 'kunden', 'kunden.json');
+  fs.mkdirSync(path.dirname(ziel), { recursive: true });
+  fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
+  return { anzahl: modell.anzahl, hinweis: `${seiten} Seite(n)` };
+}
+
+async function teilAngebote(dir) {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { fetchDraftOrders } = await import('../sync/draftOrders.mjs');
+  const { aufbereiten } = await import('../lib/angebote.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET)');
+  const { draftOrders, seiten, gesammelt } = await fetchDraftOrders(proxy);
+  if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Angebote konnten nicht geladen werden');
+  const modell = aufbereiten({ draftOrders });
+  const ziel = path.join(dir, 'angebote', 'angebote.json');
+  fs.mkdirSync(path.dirname(ziel), { recursive: true });
+  fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
+  return { anzahl: modell.anzahl, hinweis: `${seiten} Seite(n) · ${modell.offen} offen` };
+}
+
+async function teilWarenkoerbe(dir) {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { fetchAbandonedCheckouts } = await import('../sync/abandonedCheckouts.mjs');
+  const { aufbereiten } = await import('../lib/warenkoerbe.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET)');
+  const { checkouts, seiten, gesammelt } = await fetchAbandonedCheckouts(proxy);
+  if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Warenkoerbe konnten nicht geladen werden');
+  const modell = aufbereiten({ checkouts });
+  const ziel = path.join(dir, 'warenkoerbe', 'warenkoerbe.json');
+  fs.mkdirSync(path.dirname(ziel), { recursive: true });
+  fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
+  return { anzahl: modell.anzahl, hinweis: `${seiten} Seite(n) · ${modell.offenWert} € offener Wert` };
+}
+
+async function teilBestand(dir) {
+  const { erzeugeProxy } = await import('../sync/zugang.mjs');
+  const { fetchInventoryLevels } = await import('../sync/inventory.mjs');
+  const { aufbereiten } = await import('../lib/bestand.mjs');
+  const { proxy, art } = await erzeugeProxy();
+  if (art === 'sammeln') throw new Error('Kein Zugang in .env.local (SHOPIFY_ADMIN_TOKEN oder SHOPIFY_CLIENT_ID/SECRET)');
+  const { standorte, bestand, gesammelt } = await fetchInventoryLevels(proxy);
+  if (gesammelt) throw new Error('Kein Zugang (Sammelmodus) - Lagerbestand konnte nicht geladen werden');
+  const modell = aufbereiten({ standorte, bestand });
+  const ziel = path.join(dir, 'bestand', 'bestand.json');
+  fs.mkdirSync(path.dirname(ziel), { recursive: true });
+  fs.writeFileSync(ziel, JSON.stringify(modell, null, 2));
+  return { anzahl: modell.anzahl, hinweis: modell.gefuehrt ? `${modell.standorte.length} Standort(e)` : modell.hinweis };
+}
+
+export const TEIL_FN = {
+  lexikon: teilLexikon, bestellungen: teilBestellungen, kennzahlen: teilKennzahlen,
+  kunden: teilKunden, angebote: teilAngebote, warenkoerbe: teilWarenkoerbe, bestand: teilBestand,
+};
 
 /**
  * @param {object} opt
@@ -219,7 +292,7 @@ export async function aktualisiere({ nur = null, dir = privatDir(), teilFn = TEI
 async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) {
-    console.log('npm run daten:aktualisieren -- [--nur lexikon|bestellungen|kennzahlen[,...]] [--privat-dir <pfad>]');
+    console.log('npm run daten:aktualisieren -- [--nur lexikon|bestellungen|kennzahlen|kunden|angebote|warenkoerbe|bestand[,...]] [--privat-dir <pfad>]');
     return;
   }
   const dir = privatDir(a.privatDir);
