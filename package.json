@@ -75,7 +75,8 @@
     "daten:aktualisieren": "node operations/scripts/aktualisieren.mjs",
     "daten:sync-dienst": "node operations/scripts/sync-dienst.mjs",
     "daten:sichern": "node operations/scripts/sicherung.mjs",
-    "operations:einrichten": "bash operations/scripts/app-einrichten.sh"
+    "operations:einrichten": "bash operations/scripts/app-einrichten.sh",
+    "rabatt:plan": "node operations/scripts/rabatt-plan.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",

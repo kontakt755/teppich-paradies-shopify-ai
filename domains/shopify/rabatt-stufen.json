@@ -1,0 +1,23 @@
+{
+  "_comment": "Einzige Quelle fuer den Dauerrabatt je Produkttyp (Inhaber, 2026-09-24). Aendern -> npm run rabatt:plan -> Plan pruefen -> Bulk-Lauf. Basis ist immer der regulaere Preis (compare_at_price, sonst price). Rechtlich: compare_at muss der zuvor gueltige Preis sein (PAngV 11) - Prozente also nur senken oder vom regulaeren Preis aus neu rechnen, nie den regulaeren Preis anheben.",
+  "stufen": {
+    "Teppichboden": 15,
+    "Klebevinyl": 15,
+    "Klickvinyl": 15,
+    "Vinyl von der Rolle": 15,
+    "Linoleumboden": 15,
+    "Sockelleisten": 5,
+    "Abschlussprofile": 5,
+    "Übergangsprofile": 5,
+    "Bauchemie": 5,
+    "Kleber & Fixierung": 5,
+    "Reinigungsmittel": 5,
+    "Sauberlauf": 5,
+    "Verlege- u. Dämmunterlagen": 5,
+    "Verlegeband": 5,
+    "Teppich nach Maß": 5,
+    "Teppich": 5
+  },
+  "bestehendeRabatteBehalten": true,
+  "ohneTypNachHandle": { "vinyl": 15 }
+}
