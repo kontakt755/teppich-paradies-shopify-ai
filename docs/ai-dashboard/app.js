@@ -1137,7 +1137,14 @@ function einkaufGruppeKarte(g, i, praefix) {
   const ungeklaert = grund => `<span class="badge gap" title="${esc(grund || 'Nicht in Shopify hinterlegt')}">fehlt</span>`;
   // Kundenmenge nur zeigen, wenn sie vom Wortlaut der Bestellmenge abweicht -
   // sonst stehen zwei Zeilen da, die dasselbe sagen (Inhaber-Feedback).
-  const kundenmengeWeicht = p => p.bestellmenge.menge === 'UNGEKLAERT' || !p.bestellmenge.text.includes(String(p.kundenmenge).split(' ')[0]);
+  // Vergleich ueber die Zahl selbst, nicht ueber Teilstrings: "1 Stk." steckt
+  // sonst in "10 lfm" und die abweichende Kundenmenge verschwindet.
+  const zahlAus = t => { const m = String(t ?? '').match(/-?\d+(?:[.,]\d+)?/); return m ? m[0].replace(',', '.') : null; };
+  const kundenmengeWeicht = p => {
+    if (p.bestellmenge.menge === 'UNGEKLAERT') return true;
+    const k = zahlAus(p.kundenmenge); const b = zahlAus(p.bestellmenge.text);
+    return k === null || b === null || k !== b;
+  };
   const zeilen = positionen.map(p => `<tr class="${positionUnvollstaendig(p) ? 'row-gap' : ''}">
       <td><div class="cell-title">${esc(anzeigeWert(p.titel))}</div><div class="small muted">${esc(p.farbe)}${p.sku && p.sku !== 'UNGEKLAERT' ? ` · unsere SKU: <span class="mono">${esc(p.sku)}</span>` : ''}</div></td>
       <td class="nowrap"><a href="${esc(adminAuftragUrl(p.orderId))}" target="_blank" rel="noopener" title="Bestellung in Shopify öffnen">${esc(p.orderName)} ↗</a>${auftragKundeHtml(p.orderId)}<div class="small muted">${fmtDate(p.orderDatum)}</div></td>
