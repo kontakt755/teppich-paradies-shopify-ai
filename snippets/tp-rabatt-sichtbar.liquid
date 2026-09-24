@@ -3,7 +3,7 @@
   erscheinen? Gibt "ja" aus oder nichts. Einzige Quelle fuer die Anzeige.
 
   Zwei Wege (Inhaber, 2026-09-24):
-    1. Dauerrabatt: aktion.klasse == "dauerrabatt". Gesetzt vom Rotationsskript
+    1. Dauerrabatt: aktion.klasse == "preisanker" (Dauerrabatt). Gesetzt vom Rotationsskript
        (operations/scripts/rabatt-rotation.mjs). Mit dem kostenlosen
        Verlegeservice kombinierbar.
     2. Befristete Aktion: snippets/tp-aktion-aktiv. Schliesst den kostenlosen
@@ -13,7 +13,7 @@
   @param {object} product - das Produkt
 {% enddoc %}
 {%- liquid
-  if product.metafields.aktion.klasse.value == 'dauerrabatt'
+  if product.metafields.aktion.klasse.value == 'preisanker'
     echo 'ja'
   else
     render 'tp-aktion-aktiv', product: product

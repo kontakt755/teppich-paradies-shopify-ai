@@ -64,6 +64,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   fs.mkdirSync(ziel, { recursive: true });
   fs.writeFileSync(path.join(ziel, 'plan.csv'), ['typ;handle;variante;preis_alt;vergleichspreis;preis_neu;prozent', ...csv].join('\n') + '\n');
   fs.writeFileSync(path.join(ziel, 'varianten.jsonl'), [...varianten].map(([productId, variants]) => JSON.stringify({ productId, variants })).join('\n') + '\n');
-  fs.writeFileSync(path.join(ziel, 'produkte.jsonl'), [...produkte.keys()].map((ownerId) => JSON.stringify({ metafields: [{ ownerId, namespace: 'aktion', key: 'klasse', type: 'single_line_text_field', value: 'dauerrabatt' }] })).join('\n') + '\n');
+  fs.writeFileSync(path.join(ziel, 'produkte.jsonl'), [...produkte.keys()].map((ownerId) => JSON.stringify({ metafields: [{ ownerId, namespace: 'aktion', key: 'klasse', type: 'single_line_text_field', value: 'preisanker' }] })).join('\n') + '\n');
   console.log(`Plan: ${csv.length} Varianten in ${produkte.size} Produkten -> ${ziel}`);
 }
