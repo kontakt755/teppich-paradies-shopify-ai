@@ -260,7 +260,7 @@
     {% comment %} Standard pricing display {% endcomment %}
     {% if show_compare_price %}
       <div class="price__sale">
-        {%- if tp_pr_chip -%}<span class="tp-rabatt-badge">−{{ tp_pr_prozent }}&nbsp;%</span>{%- endif -%}
+        {%- if tp_pr_chip -%}{% render 'tp-rabatt-badge-styles' %}<span class="tp-rabatt-badge">−{{ tp_pr_prozent }}&nbsp;%</span>{%- endif -%}
         {% if show_sale_price_first %}
           <span class="price-item__group">
             <span class="visually-hidden">{{ 'content.price_sale' | t }}&nbsp;</span>
