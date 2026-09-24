@@ -25,9 +25,15 @@ except ImportError:
 
 EMPLOYEES = {
     'Thomas': ['Thomas', 'Rückheim'],
-    'Ben': ['Ben', 'Ben Jason', 'Pinske'],
+    'Ben': ['Ben', 'Ben Jason', 'Penske'],
     'Rufat': ['Rufat', 'Guseynov'],
     'Hayatin': ['Hayatin', 'Yuscen'],
+}
+
+# Manager-E-Mails für Krankschreibungs-Bestätigungen
+# (E-Mails an diese Adresse = Krankschreibungen wurden eingereicht)
+MANAGER_EMAILS = {
+    'Rufat': 'e.carl-uezer@teppich-paradies.net',  # Empfänger von Krankschreibungen für Rufat
 }
 
 SEARCH_KEYWORDS = {
@@ -123,7 +129,11 @@ def assess_confidence(subject: str, body: str, absence_type: str) -> str:
 def search_gmail_for_absences(month: int, year: int) -> Dict[str, List[Dict]]:
     """
     Sucht im Gmail nach Abwesenheits-E-Mails.
-    Gibt {employee: [{'date': (start, end), 'type': 'krank|urlaub', 'subject': '...', 'confidence': 'hoch|mittel|niedrig', 'body': '...'}]} zurück.
+    Gibt {employee: [{'date': (start, end), 'type': 'krank|urlaub', 'subject': '...', 'confidence': 'hoch|mittel|niedrig', 'body': '...', 'source': 'gmail|manager_email'}]} zurück.
+
+    Suchquellen:
+    1. E-Mails VON Mitarbeitern (Betreff: krank, urlaub, au, etc.)
+    2. E-Mails AN Manager (z.B. e.carl-uezer@ für Rufat) = Krankschreibungen eingereicht
 
     WARNUNG: Diese Funktion benötigt Gmail-Zugriff über MCP.
     Falls nicht verfügbar, gibt sie ein leeres Dict zurück.
@@ -132,23 +142,30 @@ def search_gmail_for_absences(month: int, year: int) -> Dict[str, List[Dict]]:
 
     # Zeitfenster: Monat ± 3 Tage
     start_date = datetime(year, month, 1) - timedelta(days=3)
-    end_date = datetime(year, month, 28) + timedelta(days=3)  # Vereinfachung
+    end_date = datetime(year, month, 28) + timedelta(days=3)
 
     print(f"\n📧 Gmail-Suche: {month}/{year} ({start_date.date()} bis {end_date.date()})")
     print("⚠️  Hinweis: Gmail-Zugriff nicht implementiert (würde MCP verwenden)")
+    print("   → Sucht nach:")
+    print("     • E-Mails VON Mitarbeitern (krank, urlaub, au, etc.)")
+    print("     • E-Mails AN Manager (z.B. e.carl-uezer@ für Rufat)")
     print("   → Verwende stattdessen CSV-Abwesenheits-Datei")
     print()
 
     # PLACEHOLDER: Echte Implementierung würde MCP Gmail-Tools verwenden
-    # Beispiel-Struktur (würde von echtem Gmail kommen):
-    # results['Thomas'] = [
+    # Zwei Such-Strategien:
+    # 1. Nach Mitarbeiternamen + Keyword suchen
+    # 2. Nach Manager-Emails durchsuchen (TO: e.carl-uezer@...) und Mitarbeiter identifizieren
+    #
+    # Beispiel (würde von echtem Gmail kommen):
+    # results['Rufat'] = [
     #     {
     #         'date': (10, 12),
     #         'type': 'krank',
     #         'subject': 'Krankmeldung 10.-12. Juni',
     #         'body': 'Bin erkältet und krankgemeldet...',
-    #         'confidence': 'mittel',
-    #         'source_email': 'thomas@example.com',
+    #         'confidence': 'hoch',  # Von Manager-Email = high confidence
+    #         'source': 'manager_email',  # Eingereicht an e.carl-uezer@
     #     }
     # ]
 

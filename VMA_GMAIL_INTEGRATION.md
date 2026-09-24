@@ -13,13 +13,21 @@ Das System kann optional **automatisch im Gmail nach Krankschreibungen, Urlaub, 
 
 ## 🔍 Was wird gesucht?
 
-Das System sucht nach:
+Das System sucht in **zwei Quellen**:
 
+### Quelle 1: E-Mails VON Mitarbeitern
 | Kategorie | Keywords | Beispiele |
 |-----------|----------|----------|
 | **Krankheit** | krank, krankmeldung, krankschein, arzt | "Bin erkältet", "Ärztliche Bescheinigung", "Arzttermin heute" |
 | **Urlaub** | urlaub, freistellung, frei | "Nehme Urlaub", "Urlaubsantrag genehmigt", "Freigegeben" |
 | **AU** | au, eAU, arbeitsunfähig | "Arbeitsunfähigkeit", "eAU vom Arzt", "Arbeitsunfähigkeitsbescheinigung" |
+
+### Quelle 2: E-Mails AN Manager (HIGH CONFIDENCE!)
+| Mitarbeiter | Manager-Email | Bedeutung |
+|---|---|---|
+| **Rufat** | `e.carl-uezer@teppich-paradies.net` | Krankschreibungen eingereicht = automatisch HIGH CONFIDENCE |
+
+**Hinweis:** E-Mails an Manager-Adressen = bewusste Abwesenheitsmeldungen → hochgewichtet!
 
 ---
 
