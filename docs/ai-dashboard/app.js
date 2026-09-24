@@ -2751,27 +2751,35 @@ function openActionDialog(t, act, extra = {}) {
 // Treffer aus den Betriebsdaten - Kunden und Produkte. Die Suche ist fuer
 // viele der schnellste Weg ueberhaupt ("Kunde am Telefon, Produktname
 // genannt"), deshalb muss sie mehr finden als GitHub-Aufgaben.
-const paletteFern = { q: '', kunden: [], produkte: [], laeuft: false };
+const paletteFern = { q: '', kunden: [], produkte: [] };
+let paletteTimer = null;
 
+/**
+ * Sucht Kunden und Produkte zur Eingabe. Kein Sperr-Flag: eine laufende
+ * Abfrage darf die naechste Eingabe nicht verschlucken (sonst bleibt die
+ * Liste bei schnellem Tippen auf einem alten Suchwort stehen). Stattdessen
+ * kurz entprellt, und Antworten zu einer alten Eingabe werden verworfen.
+ */
 function paletteFernSuche(q, fertig) {
   const query = String(q || '').trim();
+  paletteFern.q = query;
+  clearTimeout(paletteTimer);
   if (query.length < 2 || state.capabilities.mode !== 'local') {
-    paletteFern.q = query; paletteFern.kunden = []; paletteFern.produkte = [];
+    paletteFern.kunden = []; paletteFern.produkte = [];
     fertig();
     return;
   }
-  if (paletteFern.q === query || paletteFern.laeuft) return;
-  paletteFern.q = query; paletteFern.laeuft = true;
-  Promise.all([
-    fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query, filter: 'alle' })}`),
-    fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q: query })}`),
-  ]).then(([k, l]) => {
-    paletteFern.laeuft = false;
-    if (paletteFern.q !== query) return; // Antwort einer aelteren Eingabe
-    paletteFern.kunden = (k?.treffer || []).slice(0, 5);
-    paletteFern.produkte = (l?.treffer?.items || []).slice(0, 5);
-    fertig();
-  }).catch(() => { paletteFern.laeuft = false; });
+  paletteTimer = setTimeout(() => {
+    Promise.all([
+      fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query, filter: 'alle' })}`),
+      fetchEinkauf(`/api/lexikon/liste?${new URLSearchParams({ q: query })}`),
+    ]).then(([k, l]) => {
+      if (paletteFern.q !== query) return; // Antwort einer aelteren Eingabe
+      paletteFern.kunden = (k?.treffer || []).slice(0, 5);
+      paletteFern.produkte = (l?.treffer?.items || []).slice(0, 5);
+      fertig();
+    }).catch(() => { /* Suche bleibt bei den lokalen Treffern */ });
+  }, 150);
 }
 
 function paletteItems(q) {
