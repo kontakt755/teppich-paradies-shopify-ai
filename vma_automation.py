@@ -25,6 +25,7 @@ EMPLOYEES = {
         'type': 'fulltime',
         'vma_target': (18, 20),  # Zielbereich VMA-Tage
         'style': 'high_vma',  # viele Tage 8,10-8,50, manche kurze Tage
+        'short_range': (330, 410),  # Kurztage 5,30-6,50
     },
     'Ben': {
         'fullname': 'Ben Jason Pinske',
@@ -32,13 +33,15 @@ EMPLOYEES = {
         'type': 'fulltime_lower',
         'vma_target': (12, 16),
         'style': 'medium_vma',
+        'short_range': (360, 410),  # meist 6,00-8,50
     },
     'Rufat': {
         'fullname': 'Rufat Guseynov',
         'max_hours': 156.00,
         'type': 'flexible',
-        'vma_target': 13,
+        'vma_target': (12, 14),  # ca. 13
         'style': 'flexible',
+        'short_range': (320, 410),  # Kurztage 5,20-6,50
     },
     'Hayatin': {
         'fullname': 'Hayatin Yuscen',
@@ -46,6 +49,7 @@ EMPLOYEES = {
         'type': 'flex_part_time',
         'vma_target': (10, 13),
         'style': 'irregular',
+        'short_range': (490, 530),  # nur lange Einsatztage
     },
 }
 
@@ -69,6 +73,7 @@ ROW_SICK = 17
 ROW_OTHER_ABSENCE = 18
 ROW_VMA_DAY = 20
 ROW_VMA_EUR = 21
+
 
 # ============================================================================
 # HILFSFUNKTIONEN: HH,MM-FORMAT KONVERTIERUNG
@@ -197,6 +202,24 @@ def generate_hours_for_employee(
     week_minutes = {}  # week_start_date -> minutes
     current_week_monday = None
     current_week_minutes = 0
+    week_days = []
+
+    # Hayatin: feste Zahl Einsatztage (10-13 laut Vorgabe), zufaellig verteilt
+    einsatztage = None
+    if emp_config['style'] == 'irregular':
+        frei = [d for d in range(1, num_days + 1)
+                if datetime(year, month, d).weekday() < 5
+                and d not in holidays_dict and d not in absence_map]
+        max_tage = hhmm_to_minutes(max_hours) // 510  # Tage a ca. 8,30
+        anzahl = min(len(frei), max_tage, random.randint(12, 13))
+        # hoechstens 4 Einsatztage pro Woche, sonst reisst die 40:00-Grenze
+        random.shuffle(frei)
+        einsatztage, pro_woche = set(), {}
+        for d in frei:
+            woche = datetime(year, month, d).isocalendar()[1]
+            if len(einsatztage) < anzahl and pro_woche.get(woche, 0) < 4:
+                einsatztage.add(d)
+                pro_woche[woche] = pro_woche.get(woche, 0) + 1
 
     for day in range(1, num_days + 1):
         date = datetime(year, month, day).date()
@@ -208,11 +231,13 @@ def generate_hours_for_employee(
                 week_minutes[current_week_monday] = current_week_minutes
             current_week_monday = date
             current_week_minutes = 0
+            week_days = []
 
         result[day] = {'work': 0.0, 'leave': 0.0, 'holiday': 0.0, 'sick': 0.0, 'other': 0.0}
 
         # 1. Prüfe Feiertag
-        if day in holidays_dict:
+        # Feiertag am Wochenende: keine Stunden eintragen (Vorgabe)
+        if day in holidays_dict and weekday < 5:
             # Feiertag: Grundsätzlich 8,00 wenn Mitarbeiter normalerweise arbeitet
             # Aber nur wenn nicht bereits Absence vorhanden
             if day not in absence_map:
@@ -237,6 +262,8 @@ def generate_hours_for_employee(
         # 3. Normalarbeitstag - generiere realistische Stunden
         if weekday >= 5:  # Sa/So: normalerweise kein Arbeitstag
             continue
+        if einsatztage is not None and day not in einsatztage:
+            continue
 
         # Generiere Stunden basierend auf Mitarbeiterprofil
         work_hours = _generate_daily_hours(
@@ -248,12 +275,20 @@ def generate_hours_for_employee(
 
             # Prüfe Wochenlimit 40:00 (2400 Minuten)
             if current_week_minutes + work_minutes > 2400:  # Über Limit
-                overage = (current_week_minutes + work_minutes) - 2400
-                work_minutes = max(0, work_minutes - overage)
-                # Auf volle 5-Minuten-Schritte abrunden (bleibt sicher unter
-                # dem Limit; verhindert krumme Minutenwerte wie 8,13 statt 8,10)
-                work_minutes = (work_minutes // 5) * 5
+                allowed = 2400 - current_week_minutes
+                # Kurztag nie unter den Kurztag-Bereich des Mitarbeiters: fehlende Minuten in 5er-Schritten
+                # vom laengsten frueheren Tag derselben Woche nehmen
+                while allowed < emp_config['short_range'][0]:
+                    longest = max(week_days, key=lambda d: hhmm_to_minutes(result[d]['work']), default=None)
+                    if longest is None or hhmm_to_minutes(result[longest]['work']) <= emp_config['short_range'][0]:
+                        break
+                    result[longest]['work'] = minutes_to_hhmm(hhmm_to_minutes(result[longest]['work']) - 5)
+                    current_week_minutes -= 5
+                    total_minutes -= 5
+                    allowed += 5
+                work_minutes = (max(0, min(work_minutes, allowed)) // 5) * 5
 
+            week_days.append(day)
             current_week_minutes += work_minutes
             result[day]['work'] = minutes_to_hhmm(work_minutes)
             total_minutes += work_minutes
@@ -266,22 +301,46 @@ def generate_hours_for_employee(
     if current_week_monday is not None:
         week_minutes[current_week_monday] = current_week_minutes
 
-    # Prüfe Gesamtstunden <= max_hours
-    if total_minutes > hhmm_to_minutes(max_hours):
-        # Zu hoch - kürze Tage
-        overage_minutes = total_minutes - hhmm_to_minutes(max_hours)
-        for day in range(num_days, 0, -1):
-            if result[day]['work'] > 0:
-                day_minutes = hhmm_to_minutes(result[day]['work'])
-                new_minutes = max(0, day_minutes - overage_minutes)
-                # Auf volle 5-Minuten-Schritte abrunden (bleibt sicher unter
-                # der Monatsgrenze; verhindert krumme Minutenwerte)
-                new_minutes = (new_minutes // 5) * 5
-                actual_reduction = day_minutes - new_minutes
-                result[day]['work'] = minutes_to_hhmm(new_minutes)
-                overage_minutes -= actual_reduction
-                if overage_minutes <= 0:
-                    break
+    # Monatsgrenze: zuerst einzelne Tage (Freitage vorn) zu Kurztagen im
+    # Bereich des Mitarbeiters machen, Rest in 5er-Schritten vom laengsten Tag.
+    # So bleiben die uebrigen Tage ueber 8,00 und behalten die VMA.
+    short_lo, short_hi = emp_config['short_range']
+    limit = hhmm_to_minutes(max_hours)
+
+    def mins(d):
+        return hhmm_to_minutes(result[d]['work'])
+
+    def overage():
+        return sum(mins(d) for d in result if result[d]['work'] > 0) - limit
+
+    work_days = [d for d in result if result[d]['work'] > 0]
+    # 1. Lange Tage zuerst kuerzen - kostet keine VMA-Tage. Jeder Tag hat
+    # eine eigene Untergrenze 8,05-8,25 und es wird zufaellig gekuerzt,
+    # sonst landen alle Tage auf demselben Wert (z.B. ueberall 8,15).
+    untergrenze = {d: random.randrange(485, 506, 5) for d in work_days}
+    while overage() > 0:
+        lang = [d for d in work_days if mins(d) > untergrenze[d]]
+        if not lang:
+            break
+        d = random.choice(lang)
+        result[d]['work'] = minutes_to_hhmm(mins(d) - 5)
+    # 2. Reicht das nicht: einzelne Tage (Freitage vorn) zu Kurztagen
+    kandidaten = sorted(work_days, key=lambda d: (datetime(year, month, d).weekday() != 4, random.random()))
+    for d in kandidaten:
+        if overage() <= 0:
+            break
+        if mins(d) <= short_hi:
+            continue
+        ziel = random.randrange(short_lo, short_hi + 1, 5)
+        result[d]['work'] = minutes_to_hhmm(max(ziel, mins(d) - overage()))
+    while overage() > 0:
+        # VMA-Tage (ueber 8,00) nicht unter 8,05 kuerzen, sonst geht die VMA verloren
+        kuerzbar = [d for d in work_days
+                    if mins(d) - 5 >= (485 if mins(d) > 480 else short_lo)]
+        if not kuerzbar:
+            break
+        d = random.choice(kuerzbar)
+        result[d]['work'] = minutes_to_hhmm(mins(d) - 5)
 
     return result
 
@@ -297,59 +356,54 @@ def _generate_daily_hours(
     emp = EMPLOYEES[employee_key]
     style = emp['style']
 
-    # Seed für Konsistenz pro Monat/Mitarbeiter
-    random.seed(hash(f"{employee_key}_{year}_{month}_{day}") % (2**32))
 
     # Alle Werte in vollen 5-Minuten-Schritten (Vorbild: echte Referenzdatei
     # nutzt ausschliesslich :00/:05/:10/.../:55, nie krumme Minuten wie :13).
     # randrange(a, b+1, 5) statt randint(a, b) - a und b muessen Vielfache
     # von 5 sein (sind sie in allen Bereichen unten bereits).
-    if style == 'high_vma':  # Thomas - viele VMA-Tage
-        # 70% normale Tage 8,10-8,50
-        # 20% längere Tage 8,50-9,00+
-        # 10% kurze Ausgleichstage 5,20-6,50
+    kurz = random.randrange(emp['short_range'][0], emp['short_range'][1] + 1, 5)
+
+    # Tagesbereiche nach der echten Referenzdatei (Thomas Juni: meist
+    # 8,05-8,30, einzelne 8,40, kurze Tage 6,40-7,05). Hoehere Werte
+    # verbrauchen das Monatsbudget und kosten VMA-Tage.
+    if style == 'high_vma':  # Thomas: viele VMA-Tage, einzelne kurze Tage
         r = random.random()
-        if r < 0.70:
-            # 8,10 bis 8,50
-            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
-        elif r < 0.90:
-            # 8,50 bis 9,10 (für VMA)
-            mins = random.randrange(530, 551, 5)
+        if r < 0.80:
+            mins = random.randrange(485, 511, 5)   # 8,05-8,30
+        elif r < 0.92:
+            mins = random.randrange(510, 531, 5)   # 8,30-8,50
         else:
-            # 5,20 bis 6,50 (Ausgleichstage)
-            mins = random.randrange(320, 411, 5)
+            mins = kurz
         return minutes_to_hhmm(mins)
 
-    elif style == 'medium_vma':  # Ben
-        # Ähnlich wie Thomas, aber etwas niedriger
+    elif style == 'medium_vma':  # Ben: gemischt, haeufig kurze Freitage
         r = random.random()
-        if r < 0.75:
-            mins = random.randrange(480, 521, 5)  # 8:00 bis 8:40
-        elif r < 0.90:
-            mins = random.randrange(500, 541, 5)  # 8:20 bis 9:00
-        else:
-            mins = random.randrange(300, 401, 5)  # 5:00 bis 6:40
-        return minutes_to_hhmm(mins)
-
-    elif style == 'flexible':  # Rufat
-        # Flexibler Mix
-        r = random.random()
-        if r < 0.65:
-            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
+        if weekday == 4 and r < 0.6:
+            mins = kurz
+        elif r < 0.75:
+            mins = random.randrange(485, 511, 5)   # 8,05-8,30
         elif r < 0.85:
-            mins = random.randrange(510, 541, 5)  # 8:30 bis 9:00
+            mins = random.randrange(510, 531, 5)   # 8,30-8,50
         else:
-            mins = random.randrange(300, 391, 5)  # 5:00 bis 6:30
+            mins = kurz
         return minutes_to_hhmm(mins)
 
-    elif style == 'irregular':  # Hayatin
-        # Unregelmäßig verteilt, nicht jeden Tag
-        # Nur ca. 55-60% der Werktage arbeiten
-        if random.random() < 0.55:
-            mins = random.randrange(490, 531, 5)  # 8:10 bis 8:50
-            return minutes_to_hhmm(mins)
+    elif style == 'flexible':  # Rufat: viele mittlere Tage, Freitage oft kuerzer
+        r = random.random()
+        if weekday == 4 and r < 0.5:
+            mins = kurz
+        elif r < 0.80:
+            mins = random.randrange(490, 526, 5)   # 8,10-8,45
+        elif r < 0.88:
+            mins = random.randrange(525, 531, 5)   # 8,45-8,50
         else:
-            return 0.0
+            mins = kurz
+        return minutes_to_hhmm(mins)
+
+    elif style == 'irregular':  # Hayatin: Einsatztage werden vorab gewaehlt
+        return minutes_to_hhmm(random.randrange(490, 531, 5))  # 8,10-8,50
+
+    return 0.0
 
     return 0.0
 
@@ -565,12 +619,30 @@ def create_vma_file(
         absences = read_absences_from_file(absences_file, year, month)
 
     # 4. Generiere Stunden
-    data = generate_hours_for_employee(
-        employee_key, year, month, holidays_dict, absences
-    )
+    # Zufall bis zu 30x wiederholen, die Version naechst am VMA-Ziel nehmen
+    lo, hi = EMPLOYEES[employee_key]['vma_target']
+    def abstand(d):
+        werte = [hhmm_to_minutes(t['work']) for t in d.values() if t['work'] > 0]
+        vma = sum(1 for m in werte if m > 480)
+        ziel = 0 if lo <= vma <= hi else min(abs(vma - lo), abs(vma - hi))
+        # auffaellige Wiederholung (ein Wert an mehr als 30% der Tage) verwerfen
+        haeufigster = max((werte.count(m) for m in set(werte)), default=0)
+        return ziel + (1 if haeufigster > max(4, len(werte) * 0.3) else 0)
+    data = None
+    for _ in range(30):
+        versuch = generate_hours_for_employee(
+            employee_key, year, month, holidays_dict, absences
+        )
+        if data is None or abstand(versuch) < abstand(data):
+            data = versuch
+        if abstand(data) == 0:
+            break
 
-    # 5. Setze Monat/Jahr
+    # 5. Setze Monat/Jahr, Name und Monatstext (A9/H3 sind feste Texte der
+    # Vorlage, keine Formeln - sonst steht Thomas/06-26 in jeder Datei)
     set_month_year(ws, year, month)
+    ws['A9'] = EMPLOYEES[employee_key]['fullname']
+    ws['H3'] = f'für Monat {month:02d}/{year % 100:02d}'
 
     # 6. Schreibe Daten
     write_data_to_worksheet(ws, year, month, data, holidays_dict)

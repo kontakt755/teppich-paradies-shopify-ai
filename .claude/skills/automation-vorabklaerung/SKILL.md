@@ -119,6 +119,11 @@ blieben an Kranktagen die alten Arbeitszeiten aus dem Vormonat einfach stehen.
   der Werte mit openpyxl zeigt den Fehler nicht, nur das `number_format`.
 - **Werte-Stil an der echten Referenzdatei ablesen** (z. B. nur 5-Minuten-
   Schritte), nicht aus der Beschreibung ableiten.
+- **Feste Texte der Vorlage suchen** (Name, "für Monat 06/26"): Sie sind
+  keine Formeln und bleiben sonst in jeder neuen Datei stehen.
+- **Zufallsgeneratoren ueber viele Laeufe pruefen** (z. B. 15x), nicht einen.
+  Kuerzungen verteilen statt einen Tag auf 0,55 zu druecken, und auf
+  Muster pruefen (ein Wert an mehr als 30 % der Tage).
 - Diese Klasse Bug ist besonders gefaehrlich, weil `validate_workbook()`-
   artige Pruefungen (Max-Stunden, Wochenlimit) sie **nicht** entdecken - die
   Summen koennen zufaellig plausibel bleiben, obwohl die Tage falsch liegen.
