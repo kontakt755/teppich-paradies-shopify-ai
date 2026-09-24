@@ -15,6 +15,7 @@ import {
   freshness, matchesQuery, dependentsOf,
 } from './lib/model.mjs';
 import { ratgeberStatus, pipelineRows, statusLabel, suchleistungHinweis } from './lib/bodenwissen.mjs';
+import { merkeEingabe, stelleEingabeWiederHer } from './lib/eingabe.mjs';
 
 const CONFIG = {
   owner: 'kontakt755',
@@ -3162,41 +3163,11 @@ function viewShopwache() {
 
 const VIEWS = { heute: viewHeute, hilfe: viewHilfe, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
-/**
- * Merkt sich das gerade benutzte Eingabefeld samt Cursorposition. Jede
- * Eingabe aendert die Adresse und zeichnet die Ansicht neu - ohne das hier
- * war nach dem ersten Zeichen der Fokus weg und alles Weitere landete im
- * Nichts. Betrifft jedes Feld mit data-param (Lexikon, Kundensuche,
- * Bestellsuche, ...).
- */
-function merkeEingabe(main) {
-  const el = document.activeElement;
-  if (!el || !main.contains(el) || !el.dataset?.param) return null;
-  // Der Wert gehoert dazu: die Ansicht baut das Feld aus der Adresszeile neu
-  // auf, und die hinkt dem Tippen um die Entprellzeit hinterher. Wer schnell
-  // tippt, verlor sonst genau die Zeichen aus diesem Zeitfenster.
-  return { param: el.dataset.param, wert: el.value, start: el.selectionStart, ende: el.selectionEnd };
-}
-
-function stelleEingabeWiederHer(main, merk) {
-  if (!merk) return false;
-  const feld = main.querySelector(`input[data-param="${merk.param}"]`);
-  if (!feld) return false;
-  // Getipptes schlaegt den aus der Adresse rekonstruierten Wert.
-  if (typeof merk.wert === 'string' && feld.value !== merk.wert) feld.value = merk.wert;
-  feld.focus();
-  try {
-    const pos = merk.start ?? feld.value.length;
-    feld.setSelectionRange(pos, merk.ende ?? pos);
-  } catch { /* Feldtypen ohne Auswahlbereich (z. B. number) */ }
-  return true;
-}
-
 let letzteAnsicht = null;
 
 function render() {
   const main = $('#main');
-  const eingabe = merkeEingabe(main);
+  const eingabe = merkeEingabe(document.activeElement, (el) => main.contains(el));
   document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
@@ -3227,7 +3198,7 @@ function render() {
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
-  if (stelleEingabeWiederHer(main, eingabe)) return;
+  if (eingabe && stelleEingabeWiederHer(main.querySelector(`input[data-param="${eingabe.param}"]`), eingabe)) return;
   // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz)
   // - aber nur beim Betreten. Sonst riss der stille 2-Minuten-Refresh den Fokus
   // aus jedem anderen Bedienelement (auf dem Handy samt Tastatur).
