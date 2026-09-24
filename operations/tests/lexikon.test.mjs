@@ -74,7 +74,7 @@ test('aufbereiten baut das verbindliche Format', () => {
     hersteller: 'Herstellwerk Nord',
     bestelleinheit: 'm2',
     procurementId: 'TP-A-4711-33-400',
-        lieferweg: null,
+    lieferweg: null,
     marke: null,
   });
 });
