@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { aktualisiere, argumente, TEIL_FN } from '../scripts/aktualisieren.mjs';
+import { aktualisiere, argumente, standNachLauf, TEIL_FN } from '../scripts/aktualisieren.mjs';
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'tp-aktualisieren-'));
@@ -146,4 +146,36 @@ test('fehlende Zieldatei ist kein Fehler: erster Lauf legt sie neu an', async ()
   assert.equal(fs.existsSync(path.join(dir, 'aktualisierung.json')), false);
   const { status } = await aktualisiere({ dir, teilFn });
   assert.equal(status.teile.lexikon.erfolg, true);
+});
+
+test('gescheiterter Lauf behaelt den letzten erfolgreichen Stand und vermerkt den Fehler daneben', async () => {
+  const dir = tmpDir();
+  const erste = await aktualisiere({ dir, teilFn: {
+    lexikon: async () => ({ anzahl: 635 }),
+    bestellungen: async () => ({ anzahl: 10 }),
+    kennzahlen: async () => ({ anzahl: 8 }),
+  } });
+  const kaputt = async () => { throw new Error('Kein Zugang in .env.local'); };
+  const { status } = await aktualisiere({ dir, teilFn: { lexikon: kaputt, bestellungen: kaputt, kennzahlen: async () => ({ anzahl: 9 }) } });
+  const lex = status.teile.lexikon;
+  assert.equal(lex.erfolg, true);
+  assert.equal(lex.anzahl, 635);
+  assert.equal(lex.zeitpunkt, erste.status.teile.lexikon.zeitpunkt);
+  assert.equal(lex.letzterFehler.meldung, 'Kein Zugang in .env.local');
+  assert.ok(lex.letzterFehler.zeitpunkt);
+  assert.equal(status.teile.kennzahlen.anzahl, 9);
+  assert.equal(status.teile.kennzahlen.letzterFehler, undefined);
+
+  // Der naechste erfolgreiche Lauf raeumt den Fehlervermerk wieder ab.
+  const { status: danach } = await aktualisiere({ dir, nur: ['lexikon'], teilFn: { lexikon: async () => ({ anzahl: 636 }) } });
+  assert.equal(danach.teile.lexikon.anzahl, 636);
+  assert.equal(danach.teile.lexikon.letzterFehler, undefined);
+});
+
+test('standNachLauf: ohne frueheren Erfolg bleibt der Teil gescheitert', () => {
+  const r = { teil: 'lexikon', zeitpunkt: '2026-09-24T10:00:00Z', dauerMs: 5, erfolg: false, anzahl: null, meldung: 'Kein Zugang' };
+  assert.deepEqual(standNachLauf(undefined, r), { zeitpunkt: r.zeitpunkt, dauerMs: 5, erfolg: false, anzahl: null, meldung: 'Kein Zugang' });
+  const alterFehler = { zeitpunkt: '2026-09-23T10:00:00Z', dauerMs: 3, erfolg: false, anzahl: null, meldung: 'alt' };
+  assert.equal(standNachLauf(alterFehler, r).meldung, 'Kein Zugang');
+  assert.equal(standNachLauf(alterFehler, r).letzterFehler, undefined);
 });

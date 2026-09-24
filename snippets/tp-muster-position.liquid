@@ -1,0 +1,38 @@
+{%- doc -%}
+  Einzige Stelle im Theme, die entscheidet, ob eine Warenkorbzeile ein Muster
+  ist. Gibt "ja" oder "nein" aus; auswerten mit contains 'ja'.
+
+  Aufruf: {% render 'tp-muster-position', line_item: item %}
+
+  Regel - wortgleich in operations/lib/muster.mjs (istMusterPosition):
+  1. Line-Item-Property _Muster_ID gesetzt (Musterkonfigurator,
+     assets/tp-sample-checkout-core.js)
+  2. SKU beginnt mit M-        (Muster mit eigener Variante, ab Bestellung 1009)
+  3. SKU beginnt mit TP-MUSTER (Sammelprodukt, Altmodell bis Bestellung 1008)
+  4. product.type == Musterservice
+
+  Bewusst NICHT geprueft:
+  - Preis 0,00 - Aktionsware und Zugaben waeren sonst Muster.
+  - Der Handle. "Muster" heisst auf Deutsch auch Dessin; echte Bodenbelaege
+    tragen Tags wie "muster: fischgraet". operations/lib/bestelluebersicht.mjs
+    hatte diese Regex und damit ein Falsch-Positiv-Risiko.
+  - Der Variantentitel - er traegt die Farbe (domains/shopify/
+    benachrichtigungen/musterartikel.md).
+{%- enddoc -%}
+{%- liquid
+  assign tpmp_treffer = 'nein'
+  assign tpmp_sku = line_item.sku | default: '' | upcase
+  assign tpmp_sku_2 = tpmp_sku | slice: 0, 2
+  assign tpmp_sku_9 = tpmp_sku | slice: 0, 9
+
+  if line_item.properties._Muster_ID != blank
+    assign tpmp_treffer = 'ja'
+  elsif tpmp_sku_2 == 'M-'
+    assign tpmp_treffer = 'ja'
+  elsif tpmp_sku_9 == 'TP-MUSTER'
+    assign tpmp_treffer = 'ja'
+  elsif line_item.product.type == 'Musterservice'
+    assign tpmp_treffer = 'ja'
+  endif
+-%}
+{{- tpmp_treffer -}}

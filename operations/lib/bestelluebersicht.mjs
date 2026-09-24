@@ -16,6 +16,7 @@ import { gruppieren } from './einkauf.mjs';
 import { ableiten } from './status.mjs';
 import { procurementReady, GRUPPE } from './ampel.mjs';
 import { normalisiereLineItem } from '../sync/orders.mjs';
+import { istMusterPosition as musterRegel } from './muster.mjs';
 import { istTestbestellung } from './testbestellung.mjs';
 
 export const ADMIN_ORDER_URL = 'https://admin.shopify.com/store/sjjyq1-6w/orders/';
@@ -82,10 +83,13 @@ export function lieferantFuer(item, variantMetafelder) {
 
 export function istMusterPosition(item, lineItem) {
   if (item.istMuster) return true;
-  const sku = String(item.sku ?? '');
-  if (/^TP-MUSTER/i.test(sku)) return true;
-  const handle = String(lineItem?.variant?.product?.handle ?? '');
-  return /(^|-)muster(-|$)/i.test(handle);
+  // Eine Regel fuer alle Module: operations/lib/muster.mjs. Die frueher hier
+  // stehende Handle-Regex /(^|-)muster(-|$)/ ist bewusst entfallen - sie traf
+  // jeden Bodenbelag, dessen Handle das Dessin "Muster" nennt.
+  return musterRegel({
+    sku: item.sku,
+    produktTyp: lineItem?.variant?.product?.productType ?? lineItem?.variant?.product?.type ?? null,
+  });
 }
 
 /**
@@ -279,6 +283,9 @@ export function aufbereiten(daten, { jetzt = new Date() } = {}) {
         lineItemId: li.id ?? null,
         lieferantUrl: istM ? (mq?.lieferantUrl ?? UNGEKLAERT) : (item.einkauf.lieferant_url ?? UNGEKLAERT),
         titel: istM && props.Produkt ? `Muster: ${props.Produkt}` : (li.title ?? li.variant?.product?.title ?? '–'),
+        // Schluessel fuers Produktlexikon: von der Bestellposition direkt zum
+        // Originalartikel beim Lieferanten, ohne Suche.
+        handle: li.variant?.product?.handle ?? null,
         farbe,
         sku: item.sku,
         preis: geld(li.originalUnitPriceSet),

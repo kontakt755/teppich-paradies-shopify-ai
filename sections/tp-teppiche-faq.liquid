@@ -23,6 +23,11 @@
   </div>
 </section>
 
+{%- comment -%}
+  FAQPage-JSON-LD aus genau diesen Bloecken - nur, was oben sichtbar steht.
+{%- endcomment -%}
+{% render 'tp-faq-structured-data', bloecke: section.blocks, frage_key: 'question', antwort_key: 'answer' %}
+
 {% schema %}
 {
   "name": "TP Teppiche Fragen",
