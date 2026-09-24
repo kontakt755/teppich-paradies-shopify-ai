@@ -1,5 +1,5 @@
 {
-  "erzeugtAm": "2026-09-23T10:35:46.879Z",
+  "erzeugtAm": "2026-09-24T11:21:46.234Z",
   "statusReihenfolge": [
     "idee",
     "recherche",
@@ -451,7 +451,7 @@
         "quelle": "lexikon",
         "handle": "fussbodenheizung",
         "titel": "Fußbodenheizung",
-        "frage": "Fuer welche Produktgruppen ausser Linoleum eine belastbare Aussage zur Fussbodenheizungseignung vorliegt. Fuer Linoleum ist die Einschaetzung laut domains/shopify/linoleum-rollenware-template.md bewusst als allgemeines Materialklassen-Wissen ohne eigenes Metafeld dokumentiert; fuer Teppichboden und Vinyl ist das offen."
+        "frage": "Für welche Produktgruppen ausser Linoleum eine belastbare Aussage zur Fussbodenheizungseignung vorliegt. Für Linoleum ist die Einschaetzung laut domains/shopify/linoleum-rollenware-template.md bewusst als allgemeines Materialklassen-Wissen ohne eigenes Metafeld dokumentiert; für Teppichboden und Vinyl ist das offen."
       },
       {
         "quelle": "lexikon",

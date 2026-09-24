@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-24T11:18:33.753Z",
+  "generated_at": "2026-09-24T11:21:46.163Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
   "count": 136,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-24T11:18:33.753Z",
+    "fetchedAt": "2026-09-24T11:21:46.163Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -166,7 +166,7 @@
       "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/535",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:warenkorb"
@@ -175,22 +175,22 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 3,
+      "comments": 4,
       "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
       "fields": {
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-23T12:15:03Z",
-      "updated_at": "2026-09-24T11:18:18Z",
+      "updated_at": "2026-09-24T11:18:35Z",
       "closed_at": "2026-09-24T11:18:18Z"
     },
     {
       "number": 529,
       "title": "dashboard-data.yml loeste Rebase-Konflikte zur falschen Seite auf",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/529",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p2",
         "area:technik"
@@ -205,8 +205,8 @@
         "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
       },
       "created_at": "2026-09-23T11:57:24Z",
-      "updated_at": "2026-09-23T11:58:58Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:21:43Z",
+      "closed_at": "2026-09-24T11:21:28Z"
     },
     {
       "number": 525,
@@ -257,10 +257,10 @@
     {
       "number": 505,
       "title": "Bodenwissen: Ratgeber-Portal ausbauen (Lexikon, Suche, Problem-Finder, Rechner, Cluster, Messung)",
-      "state": "open",
+      "state": "closed",
       "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/505",
       "labels": [
-        "status:review",
+        "status:fertig",
         "type:technik",
         "priority:p1",
         "area:content"
@@ -269,12 +269,12 @@
       "assignees": [
         "kontakt755"
       ],
-      "comments": 5,
+      "comments": 6,
       "nextStep": null,
       "fields": {},
       "created_at": "2026-09-23T09:48:27Z",
-      "updated_at": "2026-09-23T13:23:12Z",
-      "closed_at": null
+      "updated_at": "2026-09-24T11:21:44Z",
+      "closed_at": "2026-09-24T11:21:27Z"
     },
     {
       "number": 498,
