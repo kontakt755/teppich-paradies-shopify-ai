@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-24T12:22:23.885Z",
+  "generated_at": "2026-09-24T13:00:38.643Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 137,
+  "count": 138,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-24T12:22:23.885Z",
+    "fetchedAt": "2026-09-24T13:00:38.643Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,28 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 588,
+      "title": "Control Center: Kunden, Angebote, Warenkoerbe, Suche und Hilfe fuer Mitarbeiter",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/588",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": null,
+      "fields": {},
+      "created_at": "2026-09-24T13:00:21Z",
+      "updated_at": "2026-09-24T13:00:22Z",
+      "closed_at": null
+    },
     {
       "number": 561,
       "title": "Control Center: Wieder öffnen, Seit gestern neu, Wartezeit im Einkauf, Sammelaktion bestellt",
