@@ -102,9 +102,8 @@ jobs:
           # Zwischen checkout und push kann ein anderer Commit auf main
           # gelandet sein (paralleler Lauf oder lokaler Push). Dann wird der
           # Push abgelehnt - also rebasen und erneut versuchen. Beide Dateien
-          # sind erzeugt: bei einem Konflikt zaehlt nicht der Textinhalt,
-          # sondern dass wieder eine gueltige Fassung auf main liegt. Der
-          # naechste Lauf schreibt sie ohnehin neu.
+          # sind erzeugt: bei einem Konflikt soll die Fassung gewinnen, die
+          # dieser Lauf gerade erzeugt hat - sie ist die juengere.
           for versuch in 1 2 3 4 5; do
             if git push; then
               echo "Push erfolgreich (Versuch $versuch)"
@@ -117,10 +116,18 @@ jobs:
               # anderen Datei bleibt stehen, "rebase --continue" scheitert
               # dann und der Lauf bricht kontrolliert ab - statt fremde
               # Aenderungen blind zu ueberschreiben.
+              #
+              # --theirs, nicht --ours: waehrend eines Rebase ist "ours" der
+              # Upstream (origin/main), auf den wiedergespielt wird, und
+              # "theirs" der eigene Commit, der gerade wiedergespielt wird.
+              # Die Benennung ist genau umgekehrt zum Merge. Mit --ours stand
+              # hier die AELTERE Fassung vom Server, die frisch erzeugte war
+              # weg (belegt mit dem Szenario aus docs/lessons/
+              # rebase-ours-ist-der-upstream.md).
               for datei in $(git diff --name-only --diff-filter=U); do
                 case " $DATEIEN " in
                   *" $datei "*)
-                    git checkout --ours -- "$datei"
+                    git checkout --theirs -- "$datei"
                     git add -- "$datei"
                     ;;
                 esac
