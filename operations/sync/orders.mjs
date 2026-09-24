@@ -32,7 +32,14 @@ query OpsOrders($first: Int!, $after: String, $query: String) {
       customAttributes { key value }
       shippingAddress { name address1 address2 zip city country countryCodeV2 phone }
       billingAddress { name address1 address2 zip city country countryCodeV2 phone }
-      fulfillments(first: 10) { trackingInfo { number url company } }
+      fulfillments(first: 10) {
+        status displayStatus createdAt updatedAt
+        trackingInfo { number url company }
+      }
+      refunds(first: 10) {
+        id createdAt note
+        totalRefundedSet { shopMoney { amount currencyCode } }
+      }
       metafields(namespace: "ops", first: 20) { nodes { namespace key type value } }
       lineItems(first: 50) {
         nodes {
