@@ -1,5 +1,5 @@
 {%- doc -%}
-  Beratung, Masspruefung und Verlegeanfrage im Warenkorb (Auftrag Shop 2.0,
+  Beratung und Verlegeanfrage im Warenkorb (Auftrag Shop 2.0,
   Abschnitte 11-14). Wird in snippets/cart-summary.liquid vor den
   Checkout-Buttons gerendert - Warenkorbseite und Drawer.
 
@@ -10,16 +10,17 @@
   Gesamtbetrag und "Zur Kasse". Was ein Muster ist, entscheidet allein
   snippets/tp-muster-position.liquid (gleiche Regel wie operations/lib/muster.mjs).
 
-  Unabhaengig davon bleiben zwei Fragen an regulaeren Positionen, weil sie
-  nicht beraten, sondern eine nicht ruecknehmbare Leistung absichern:
-  - Masspruefung, wenn eine berechnete Position (Zuschnitt, Raummass,
-    Wunschmass, Einfassung) im Warenkorb liegt - freiwillig, sperrt nichts.
-  - Verlegeanfrage bei Positionen, fuer die der Verlegeservice gilt
-    (snippets/tp-vs-berechtigt) - freiwillig.
-  Beide ueberspringen Musterzeilen.
+  Unabhaengig davon bleibt die Verlegeanfrage bei Positionen, fuer die der
+  Verlegeservice gilt (snippets/tp-vs-berechtigt) - freiwillig, ueberspringt
+  Musterzeilen.
+
+  Die frueher hier gestellte Frage "Maße vor dem Zuschnitt prüfen lassen?"
+  ist entfernt (Inhaberentscheidung 2026-09-24): sie lud Kunden kurz vor der
+  Kasse ein, die Bestellung noch einmal zu ueberdenken. Eine noch am Cart
+  haengende Antwort wird ueber data-aufraeumen leergeschrieben.
 
   Gespeichert wird als Cart-Attribut (Beratung, Telefon, Rueckruf,
-  Beratungsthema, Masspruefung, Verlegung) - per /cart/update.js aus
+  Beratungsthema, Verlegung) - per /cart/update.js aus
   assets/tp-cart-beratung.js und zusaetzlich ueber die Inputs im
   Cart-Formular. Die Attribute stehen an der Bestellung unter "Zusaetzliche
   Details"; Shopify Flow setzt daraus die Tags BERATUNG-JA/-NEIN,
@@ -43,7 +44,6 @@
 {%- enddoc -%}
 
 {%- liquid
-  assign tpb_mass = false
   assign tpb_verlegung = false
   assign tpb_muster_zeilen = 0
   assign tpb_ware_zeilen = 0
@@ -57,9 +57,6 @@
       continue
     endif
     assign tpb_ware_zeilen = tpb_ware_zeilen | plus: 1
-    if tpb_item.properties._Zuschnitt != blank or tpb_item.properties['Maße'] != blank or tpb_item.properties['Gewünschte Länge'] != blank or tpb_item.properties['Art'] == 'Raummaß'
-      assign tpb_mass = true
-    endif
     if tpb_verlegung == false
       capture tpb_vs
         render 'tp-vs-berechtigt', product: tpb_item.product
@@ -87,6 +84,10 @@
   # Antwort aus einem frueheren, reinen Musterwarenkorb steht noch am Cart,
   # die Frage wird aber nicht mehr gestellt -> einmal leerschreiben lassen.
   assign tpb_aufraeumen = false
+  # Die Masspruefung wird nicht mehr gefragt: eine alte Antwort immer leeren.
+  if tpb_masswahl != blank
+    assign tpb_aufraeumen = true
+  endif
   if tpb_frage == false
     if tpb_beratung != blank or tpb_zeit != blank or tpb_thema != blank
       assign tpb_aufraeumen = true
@@ -98,9 +99,6 @@
 
   assign tpb_telefon_noetig = false
   if tpb_frage and tpb_beratung == 'Ja'
-    assign tpb_telefon_noetig = true
-  endif
-  if tpb_mass and tpb_masswahl == 'Ja'
     assign tpb_telefon_noetig = true
   endif
 
@@ -123,7 +121,7 @@
   # Sichtbar ist das Element nur mit echtem Inhalt; zum reinen Aufraeumen
   # haengt es stumm im Dokument.
   assign tpb_sichtbar = false
-  if tpb_frage or tpb_mass or tpb_verlegung
+  if tpb_frage or tpb_verlegung
     assign tpb_sichtbar = true
   endif
   assign tpb_zeigen = tpb_sichtbar
@@ -132,8 +130,7 @@
   endif
 
   # Vor oder hinter dem Kaufknopf? Was beantwortet werden muss, bevor bestellt
-  # wird, steht davor: die Pflichtfrage bei reiner Musterbestellung und die
-  # Masspruefung, die einen nicht ruecknehmbaren Zuschnitt betrifft. Die
+  # wird, steht davor: die Pflichtfrage bei reiner Musterbestellung. Die
   # Verlegeanfrage ist ein freiwilliges Interesse und darf einem Kaufkunden
   # nicht zwischen Gesamtbetrag und "Zur Kasse" stehen.
   # Umgesetzt ueber die Aufrufstelle statt ueber CSS order, damit Lesereihenfolge
@@ -141,7 +138,7 @@
   # entsteht immer nur EINMAL - zwei davon wuerden sich beim Speichern der
   # Cart-Attribute gegenseitig ueberschreiben.
   assign tpb_stelle_soll = 'nach_kasse'
-  if tpb_frage or tpb_mass
+  if tpb_frage
     assign tpb_stelle_soll = 'vor_kasse'
   endif
   assign tpb_stelle = stelle | default: 'vor_kasse'
@@ -155,7 +152,6 @@
 <tp-cart-beratung
   class="tp-beratung{% unless tpb_sichtbar %} tp-beratung--stumm{% endunless %}{% if tpb_offen %} tp-beratung-offen{% endif %}"
   {% if tpb_frage %}data-beratungsfrage{% endif %}
-  {% if tpb_mass %}data-masspruefung{% endif %}
   {% if tpb_verlegung %}data-verlegung{% endif %}
   {% if tpb_aufraeumen %}data-aufraeumen{% endif %}
 >
@@ -192,22 +188,6 @@
     </div>
   {%- endif -%}
 
-  {%- if tpb_mass -%}
-    <fieldset class="tp-beratung__gruppe">
-      <legend class="tp-beratung__frage">Möchten Sie Ihre Maße vor dem Zuschnitt prüfen lassen?</legend>
-      <div class="tp-beratung__optionen">
-        <label class="tp-beratung__option">
-          <input type="radio" name="attributes[Maßprüfung]" value="Nein" data-tp-feld="mass" form="cart-form" {% if tpb_masswahl == 'Nein' %}checked{% endif %}>
-          <span>Nein, Bestellung direkt ausführen</span>
-        </label>
-        <label class="tp-beratung__option">
-          <input type="radio" name="attributes[Maßprüfung]" value="Ja" data-tp-feld="mass" form="cart-form" {% if tpb_masswahl == 'Ja' %}checked{% endif %}>
-          <span>Ja, bitte kurz prüfen</span>
-        </label>
-      </div>
-      <p class="tp-beratung__hinweis">Wir gleichen Ihre Maße vor dem Zuschnitt telefonisch mit Ihnen ab. Die Lieferung verzögert sich dadurch nicht.</p>
-    </fieldset>
-  {%- endif -%}
 
   <div class="tp-beratung__telefon" data-tp-telefon-box {% unless tpb_telefon_noetig %}hidden{% endunless %}>
     <label class="tp-beratung__feld" for="{{ tpb_id }}-telefon">
