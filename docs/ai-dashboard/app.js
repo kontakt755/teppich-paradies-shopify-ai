@@ -162,7 +162,7 @@ async function refresh({ silent = false } = {}) {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'lexikon', 'ratgeber'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -292,7 +292,7 @@ function viewHeute() {
   const health = systemHealth();
   const worst = health.some(h => h.level === 'crit') ? 'crit' : health.some(h => h.level === 'warn') ? 'warn' : 'ok';
   const localMode = state.capabilities.mode === 'local';
-  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); }
+  if (localMode) { ensureEinkaufBestellungen(); ensureEinkaufAuftragsstatus(); ensureEinkaufKennzahlen(); ensureAktualisierung(); ensureKundenRueckrufe(); }
 
   // Interne Arbeit: Kacheln mit 0 sind Rauschen und fallen weg; "erledigt" bleibt als
   // positives Signal immer stehen.
@@ -310,6 +310,7 @@ function viewHeute() {
 
     <h2 class="section-title">Kundengeschäft</h2>
     ${heuteEinkaufBlock()}
+    ${heuteRueckrufBlock()}
 
     <h2 class="section-title">Shop-Zahlen</h2>
     ${heuteKennzahlenBlock()}
@@ -1582,6 +1583,250 @@ function viewLexikon() {
 }
 
 // ---------------------------------------------------------------------------
+// Ansicht: Kunden (Kundensuche, Rueckruf-/Beratungsliste, Druckansicht)
+//
+// Wofuer: Mitarbeiter am Telefon findet einen Kunden ueber Name, E-Mail,
+// Telefonnummer, Bestellnummer, Strasse/Ort oder PLZ und sieht sofort alle
+// Bestellungen. Der Rueckruf-Bereich listet alle Bestellungen mit
+// Beratungswunsch oder Massspruefung, aelteste zuerst, mit klickbarer
+// Telefonnummer. Alles kommt aus der bereits lokal vorliegenden
+// Bestelluebersicht - keine neue Shopify-Abfrage im Browser.
+// ---------------------------------------------------------------------------
+const RUECKRUF_STATUS_LABEL = { offen: 'Offen', angerufen: 'Angerufen', erledigt: 'Erledigt' };
+
+const kunden = {
+  suche: null, loadingSuche: false, sucheKey: null,
+  detail: null, loadingDetail: false, detailKey: null,
+  rueckrufe: null, loadingRueckrufe: false,
+};
+
+function ensureKundenSuche(q) {
+  const query = String(q || '').trim();
+  if (kunden.sucheKey === query && (kunden.suche || kunden.loadingSuche)) return;
+  kunden.sucheKey = query;
+  if (query.length < 2) { kunden.suche = { verfuegbar: true, treffer: [] }; return; }
+  kunden.loadingSuche = true;
+  fetchEinkauf(`/api/kunden/suche?${new URLSearchParams({ q: query })}`).then(d => {
+    kunden.suche = d; kunden.loadingSuche = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
+
+function ensureKundenDetail(key) {
+  if (kunden.detailKey === key && (kunden.detail || kunden.loadingDetail)) return;
+  kunden.detailKey = key;
+  kunden.loadingDetail = true;
+  fetchEinkauf(`/api/kunden/detail?${new URLSearchParams({ key })}`).then(d => {
+    kunden.detail = d; kunden.loadingDetail = false;
+    if (state.route.view === 'kunden') render();
+  });
+}
+
+function ensureKundenRueckrufe() {
+  if (kunden.rueckrufe || kunden.loadingRueckrufe) return;
+  kunden.loadingRueckrufe = true;
+  fetchEinkauf('/api/kunden/rueckrufe').then(d => {
+    kunden.rueckrufe = d; kunden.loadingRueckrufe = false;
+    if (['heute', 'kunden'].includes(state.route.view)) render();
+  });
+}
+
+async function setzeRueckrufStatus(orderId, status, notiz) {
+  try {
+    const r = await fetch('/api/kunden/rueckrufe', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId, status, notiz: notiz ?? null }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
+    if (kunden.rueckrufe?.zeilen) {
+      const zeile = kunden.rueckrufe.zeilen.find(z => z.orderId === orderId);
+      if (zeile) Object.assign(zeile, j.eintrag);
+    }
+    toast(`Rückruf: ${RUECKRUF_STATUS_LABEL[status]}`);
+    render();
+    return true;
+  } catch (e) { toast(`Fehler: ${e.message}`, 'crit'); return false; }
+}
+
+function telLink(telefon) {
+  if (!telefon || telefon === '–') return '<span class="small muted">keine Telefonnummer</span>';
+  const zifferAllein = String(telefon).replace(/[^0-9+]/g, '');
+  return `<a class="tel-link" href="tel:${esc(zifferAllein)}">${esc(telefon)}</a>`;
+}
+
+/** Startseiten-Block "Heute": die aeltesten offenen Rueckrufe, damit niemand vergessen wird. */
+function heuteRueckrufBlock() {
+  ensureKundenRueckrufe();
+  const r = kunden.rueckrufe;
+  if (!r && kunden.loadingRueckrufe) return '';
+  if (!r || !r.verfuegbar) return '';
+  const offen = r.zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
+  if (!offen.length) return '';
+  return collapsibleCard('rueckrufe', 'Rückrufe & Beratungen', `${offen.length} offen`, `
+    <p class="small muted" style="margin:0 0 8px">Bestellungen mit Beratungswunsch oder Maßprüfung – ältester Wunsch zuerst.</p>
+    <div class="rows">${offen.slice(0, 5).map(rueckrufZeileHtml).join('')}</div>
+    ${offen.length > 5 ? `<p class="small muted" style="margin-top:6px">+${offen.length - 5} weitere – <a href="#/kunden?tab=rueckrufe">alle ansehen →</a></p>` : ''}
+  `, { openByDefault: true });
+}
+
+function rueckrufZeileHtml(z) {
+  return `<div class="row rueckruf-row">
+    <div>
+      <div class="t">${esc(z.kundenname)} <span class="muted small mono">${esc(z.orderName)}</span>${z.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</div>
+      <div class="m">${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}</div>
+      <div class="tel-gross">${telLink(z.telefon)}</div>
+      ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
+    </div>
+    <div class="r rueckruf-actions">
+      <span class="badge ${z.status === 'erledigt' ? 'ok' : z.status === 'angerufen' ? 'plain' : 'gap'}">${esc(RUECKRUF_STATUS_LABEL[z.status])}</span>
+      <div class="btn-row">
+        ${['offen', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-rueckruf-open="${esc(z.orderId)}" data-rueckruf-status="${s}">${esc(RUECKRUF_STATUS_LABEL[s])}</button>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+function openRueckrufDialog(orderId, status) {
+  const z = kunden.rueckrufe?.zeilen?.find(x => x.orderId === orderId);
+  $('#dialogRoot').innerHTML = `<div class="dialog-backdrop" data-close-dialog><form class="dialog" role="dialog" aria-modal="true" aria-labelledby="rrTitle" data-dialog>
+    <h2 id="rrTitle">Rückruf · ${esc(z?.orderName || '')} → ${esc(RUECKRUF_STATUS_LABEL[status])}</h2>
+    <p class="small muted">${esc(z?.kundenname || '')} · ${esc(z?.thema || '')}</p>
+    <div class="field"><label for="rrNotiz">Notiz (optional)</label><textarea id="rrNotiz" name="notiz" maxlength="2000" placeholder="z. B. Ergebnis des Anrufs">${esc(z?.notiz || '')}</textarea></div>
+    <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
+  </form></div>`;
+  const form = $('#dialogRoot form');
+  form.querySelector('textarea')?.focus();
+  form.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    form.querySelector('[type=submit]').disabled = true;
+    const ok = await setzeRueckrufStatus(orderId, status, (new FormData(form).get('notiz') || '').trim() || null);
+    if (ok) $('#dialogRoot').innerHTML = '';
+    else form.querySelector('[type=submit]').disabled = false;
+  });
+}
+
+function kundenTrefferZeile(k) {
+  return `<div class="row" data-kunden-open="${esc(k.key)}" tabindex="0" role="button" aria-label="${esc(k.name)}">
+    <div>
+      <div class="t">${esc(k.name)}${k.nurTestbestellungen ? ' <span class="badge plain">nur Testbestellungen</span>' : ''}</div>
+      <div class="m">${esc(k.email !== '–' ? k.email : '')}${k.telefon !== '–' ? ` · ${esc(k.telefon)}` : ''}</div>
+    </div>
+    <div class="r">
+      <div class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</div>
+      <div class="small muted">letzte: ${k.letzteBestellungName ? `${esc(k.letzteBestellungName)} · ` : ''}${fmtDate(k.letzteBestellung)}</div>
+    </div>
+  </div>`;
+}
+
+function viewKundenSuche() {
+  const q = state.route.params.get('kq') || '';
+  ensureKundenSuche(q);
+  const toolbar = `<div class="toolbar search-hero"><input type="search" placeholder="Name, E-Mail, Telefon, Bestellnummer, Straße/Ort oder PLZ …" value="${esc(q)}" data-param="kq" aria-label="Kunden durchsuchen" autofocus></div>`;
+  const d = kunden.suche;
+  if (q.trim().length < 2) return toolbar + `<div class="empty search-hint"><strong>Kundensuche.</strong> Mindestens zwei Zeichen eingeben – gesucht wird über Kundenname, E-Mail, Telefonnummer, Bestellnummer, Straße/Ort und PLZ.</div>`;
+  if (!d && kunden.loadingSuche) return toolbar + `<div class="empty">Suche …</div>`;
+  if (!d || !d.verfuegbar) return toolbar + emptyState('Keine Kundendaten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  return toolbar + `
+    <p class="small muted" style="margin:-4px 0 10px">${d.treffer.length} Treffer${d.treffer.length === 50 ? ' (mehr – Suche genauer eingrenzen)' : ''}</p>
+    <div class="rows">${d.treffer.length ? d.treffer.map(kundenTrefferZeile).join('') : emptyState('Keine Treffer.', 'Begriff prüfen oder anders schreiben.')}</div>`;
+}
+
+function kundenPositionZeile(p) {
+  return `<tr>
+    <td data-l="Artikel">${esc(p.titel)}${p.farbe ? `<br><span class="small muted">${esc(p.farbe)}</span>` : ''}</td>
+    <td data-l="Unsere SKU">${esc(p.sku || '–')}</td>
+    <td data-l="Lieferanten-Art.-Nr.">${esc(p.lieferantenArtikelnummer || '–')}</td>
+    <td data-l="Menge">${esc(p.kundenmasse || p.menge)}</td>
+    <td data-l="Preis">${p.preis?.betrag != null ? geldText(p.preis) : '–'}</td>
+  </tr>`;
+}
+
+function kundenAuftragKarte(a) {
+  const dt = a.details;
+  const beratungsZeilen = Object.entries(dt?.beratungsangaben || {}).filter(([, v]) => v);
+  return `<article class="card kunden-auftrag${a.testbestellung ? ' testbestellung' : ''}" id="druck-${esc(a.id.replace(/\W/g, ''))}">
+    <div class="card-head">
+      <h3>${esc(a.name)} <span class="small muted">${fmtDate(a.datum)}</span>${a.testbestellung ? ' <span class="badge plain">Testbestellung</span>' : ''}</h3>
+      <span class="no-print"><a class="btn btn-sm btn-ghost" href="${esc(a.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin öffnen ↗</a> <button type="button" class="btn btn-sm" data-drucken="${esc(a.id)}">Drucken</button></span>
+    </div>
+    <div class="chips">
+      <span class="chip">Status: <b>${esc(a.status)}</b></span>
+      <span class="chip">Bezahlt: <b>${esc(a.bezahlt)}</b></span>
+      <span class="chip">Versand: <b>${esc(a.erfuellt)}</b></span>
+      <span class="chip">Beratung: <b>${esc(a.checks?.beratung || '–')}</b></span>
+      <span class="chip">Maßprüfung: <b>${esc(a.checks?.masspruefung || '–')}</b></span>
+    </div>
+    ${beratungsZeilen.length ? `<p class="small">${beratungsZeilen.map(([k, v]) => `<b>${esc(k)}:</b> ${esc(v)}`).join(' · ')}</p>` : ''}
+    <div class="table-wrap kunden-table"><table><thead><tr><th>Artikel</th><th>Unsere SKU</th><th>Lieferanten-Art.-Nr.</th><th>Menge</th><th>Preis</th></tr></thead>
+    <tbody>${(dt?.positionen || []).map(kundenPositionZeile).join('') || `<tr><td colspan="5">Keine Positionen.</td></tr>`}</tbody></table></div>
+    <p class="small muted" style="margin-top:8px">Gesamt: ${geldText(dt?.summen?.gesamt)} · Zahlungsart: ${esc(dt?.zahlungsart || '–')} · Versandart: ${esc(dt?.versandart || '–')}</p>
+  </article>`;
+}
+
+function adresseHtml(a, titel) {
+  if (!a) return '';
+  return `<div><p class="small muted" style="margin:0">${esc(titel)}</p><p style="margin:2px 0">${esc(a.name)}<br>${esc(a.strasse)}<br>${esc(a.plz)} ${esc(a.ort)}${a.land && a.land !== '–' ? `, ${esc(a.land)}` : ''}${a.telefon && a.telefon !== '–' ? `<br>${esc(a.telefon)}` : ''}</p></div>`;
+}
+
+function viewKundenDetail(key) {
+  ensureKundenDetail(key);
+  const zurueck = `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
+  const d = kunden.detail;
+  if (!d && kunden.loadingDetail) return zurueck + `<div class="empty">Lade Kunde …</div>`;
+  if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
+  const k = d.kunde;
+  return zurueck + `
+    <section class="card">
+      <div class="card-head"><h2>${esc(k.kunde.name)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
+      <p class="small">E-Mail: ${k.kunde.email !== '–' ? esc(k.kunde.email) : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
+      <div class="kunden-adressen">
+        ${adresseHtml(k.lieferadresse, 'Lieferadresse')}
+        ${adresseHtml(k.rechnungsadresse, 'Rechnungsadresse')}
+      </div>
+    </section>
+    <h2 style="margin-top:18px">Bestellungen</h2>
+    ${k.auftraege.map(kundenAuftragKarte).join('') || emptyState('Keine Bestellungen.', '')}
+  `;
+}
+
+function viewKundenRueckrufe() {
+  ensureKundenRueckrufe();
+  const r = kunden.rueckrufe;
+  if (!r && kunden.loadingRueckrufe) return `<div class="empty">Lade Rückrufliste …</div>`;
+  if (!r || !r.verfuegbar) return emptyState('Keine Daten verfügbar.', r?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  const offen = r.zeilen.filter(z => z.status !== 'erledigt');
+  const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
+  return `
+    <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch oder Maßprüfung „Ja" – älteste zuerst. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
+    <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
+    ${erledigt.length ? `<details style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
+  `;
+}
+
+function viewKunden() {
+  if (state.capabilities.mode !== 'local') {
+    return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche und Rückruf-/Beratungsliste.</p></div></div>
+      ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Kundendaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
+  }
+  const key = state.route.params.get('key');
+  if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
+  const tab = state.route.params.get('tab') === 'rueckrufe' ? 'rueckrufe' : 'suche';
+  ensureKundenRueckrufe();
+  const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden – und wer zurückgerufen werden möchte.</p></div></div>
+    <div class="tabs no-print" role="tablist">
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
+    </div>`;
+  return head + (tab === 'rueckrufe' ? viewKundenRueckrufe() : viewKundenSuche());
+}
+
+function r_badge() {
+  const n = (kunden.rueckrufe?.zeilen || []).filter(z => z.status !== 'erledigt').length;
+  return n ? ` <span class="badge gap">${n}</span>` : '';
+}
+
+// ---------------------------------------------------------------------------
 // Ansicht: Ratgeber (Bodenwissen-Inhalte)
 // ---------------------------------------------------------------------------
 /**
@@ -1922,7 +2167,7 @@ function pollAktualisierung() {
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
-const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 function render() {
   const main = $('#main');
@@ -1952,9 +2197,14 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', lexikon: 'Lexikon', ratgeber: 'Ratgeber' }[state.route.view]} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber' }[state.route.view]} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
+  // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz).
+  if (state.route.view === 'kunden' && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
+    const feld = main.querySelector('input[type=search][data-param="kq"]');
+    if (feld && document.activeElement !== feld) { feld.focus(); feld.setSelectionRange(feld.value.length, feld.value.length); }
+  }
 }
 
 function bindEvents() {
@@ -2015,6 +2265,14 @@ function bindEvents() {
     if (lexOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('handle', lexOpen.dataset.lexOpen); location.hash = `#/lexikon?${p}`; return; }
     const lexZurueck = e.target.closest('[data-lex-zurueck]');
     if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return; }
+    const kundenOpen = e.target.closest('[data-kunden-open]');
+    if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('key', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
+    const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
+    if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return; }
+    const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
+    if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
+    const druckBtn = e.target.closest('[data-drucken]');
+    if (druckBtn) { e.preventDefault(); window.print(); return; }
     const kt = e.target.closest('[data-kopiertext]');
     if (kt) {
       const text = kt.dataset.kopiertext;
