@@ -175,8 +175,17 @@ function skuIstMuster(sku) {
  *   Fall stand im Lexikon "€/Stück", was im Kundengespraech falsch ist.
  * - Sonst bleibt der Stueckpreis stehen.
  */
-function preisJeEinheit(preis, qmProPaketText, bestelleinheit = null) {
+function jaWert(v) {
+  const t = String(v ?? '').trim().toLowerCase();
+  return t === 'true' || t === 'ja' || t === '1';
+}
+
+function preisJeEinheit(preis, qmProPaketText, bestelleinheit = null, preisPro001Qm = null) {
   if (leer(preis)) return null;
+  // Ware nach Mass: der Variantenpreis ist der Preis je 0,01 m² (Metafeld
+  // custom.preis_pro_001_qm, so rechnet auch die Produktseite). Ohne das
+  // stand im Lexikon "ab 0,85 €/m²" statt 85,00 € - Faktor 100 daneben.
+  if (jaWert(preisPro001Qm)) return { betrag: Math.round(preis * 100 * 100) / 100, einheit: 'm2' };
   const qm = zahl(qmProPaketText);
   if (qm && qm > 0) return { betrag: Math.round((preis / qm) * 100) / 100, einheit: 'm2' };
   if (String(bestelleinheit || '').toLowerCase() === 'lfm') return { betrag: preis, einheit: 'm2' };
@@ -305,7 +314,7 @@ export function aufbereiten(exportDaten, opt = {}) {
         farbe: farbeAusOptionen(v.selectedOptions),
         preis,
         waehrung: preis === null ? null : waehrung,
-        preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket, einkauf.bestelleinheit),
+        preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket, einkauf.bestelleinheit, customMap?.preis_pro_001_qm),
         verfuegbar: typeof v.availableForSale === 'boolean' ? v.availableForSale : null,
         // Wunschmass (Zuschnitt nach Mass): SKU/Artikelnummer/Farbnummer sind
         // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
