@@ -13,7 +13,7 @@ import path from 'node:path';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 // Reine Formatierer ohne eigene Entscheidung, ob ein Streichpreis erscheint.
-const AUSNAHMEN = new Set(['snippets/tp-aktion-aktiv.liquid', 'snippets/format-price.liquid']);
+const AUSNAHMEN = new Set(['snippets/tp-aktion-aktiv.liquid', 'snippets/tp-rabatt-sichtbar.liquid', 'snippets/format-price.liquid']);
 
 const dateien = ['blocks', 'snippets', 'sections'].flatMap((ordner) =>
   readdirSync(path.join(root, ordner))
@@ -28,9 +28,9 @@ test('es gibt Dateien mit compare_at_price - sonst prueft dieser Test nichts', (
 });
 
 for (const datei of mitStreichpreis) {
-  test(`${datei}: Streichpreis haengt an tp-aktion-aktiv`, () => {
+  test(`${datei}: Streichpreis haengt an tp-rabatt-sichtbar`, () => {
     const code = readFileSync(path.join(root, datei), 'utf8');
-    assert.match(code, /render 'tp-aktion-aktiv'/, 'Die Datei liest compare_at_price, fragt aber nicht das gemeinsame Aktions-Snippet.');
+    assert.match(code, /render 'tp-rabatt-sichtbar'/, 'Die Datei liest compare_at_price, fragt aber nicht das gemeinsame Aktions-Snippet.');
     // Jede Vergleichsbedingung "compare... > ..." muss in derselben Zeile ein Aktions-Flag tragen.
     const offen = code.split('\n').filter((zeile) =>
       /\bif\b.*compare_at_price[^\n]*>/.test(zeile) && !/aktion\s*==\s*'ja'/.test(zeile));
@@ -47,6 +47,7 @@ let sqm = ohneDoc('snippets/tp-price-per-sqm.liquid');
 sqm = sqm.slice(0, sqm.indexOf('{% stylesheet %}'));
 const engine = new Liquid({ templates: {
   'tp-aktion-aktiv': ohneDoc('snippets/tp-aktion-aktiv.liquid'),
+  'tp-rabatt-sichtbar': ohneDoc('snippets/tp-rabatt-sichtbar.liquid'),
   'tp-paketinhalt': '',
 } });
 engine.registerFilter('money_without_currency', (c) => (Number(c) / 100).toFixed(2).replace('.', ','));
@@ -68,4 +69,17 @@ test('Paketpreis: Streichpreis 29,95 erscheint nur mit laufender Aktion', async 
 
   const vorbei = await engine.parseAndRender(sqm, paket({ start: { value: '2026-01-01' }, ende: { value: gestern } }));
   assert.doesNotMatch(vorbei, /tp-price-per-sqm__compare/);
+});
+
+test('Dauerrabatt (aktion.klasse = preisanker) zeigt den Streichpreis ohne Aktionsdatum', async () => {
+  const mit = await engine.parseAndRender(sqm, paket({ klasse: { value: 'preisanker' } }));
+  assert.match(mit, /tp-price-per-sqm__compare[\s\S]*29,95/);
+  const andere = await engine.parseAndRender(sqm, paket({ klasse: { value: 'premium' } }));
+  assert.doesNotMatch(andere, /tp-price-per-sqm__compare/);
+});
+
+test('Verlegeservice-Hinweis fragt weiter nur die befristete Aktion', () => {
+  const code = readFileSync(path.join(root, 'blocks/tp-verlegeservice-hinweis.liquid'), 'utf8');
+  assert.match(code, /render 'tp-aktion-aktiv'/);
+  assert.doesNotMatch(code, /tp-rabatt-sichtbar/);
 });

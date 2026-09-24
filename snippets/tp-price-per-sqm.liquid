@@ -21,7 +21,7 @@
   assign compare_per_sqm = blank
   # Streichpreis/Sale nur bei aktiver Aktion (snippets/tp-aktion-aktiv) - ein stehen gebliebener compare_at_price allein zeigt nichts (S-20, 2026-09-20).
   capture tp_pps_aktion
-    render 'tp-aktion-aktiv', product: product
+    render 'tp-rabatt-sichtbar', product: product
   endcapture
   assign tp_pps_aktion = tp_pps_aktion | strip
   assign show_compare_price = false

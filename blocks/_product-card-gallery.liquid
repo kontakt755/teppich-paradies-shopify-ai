@@ -12,24 +12,25 @@
       "
     >
       {%- comment -%} Streichpreis/Sale nur bei aktiver Aktion (snippets/tp-aktion-aktiv) - ein stehen gebliebener compare_at_price allein zeigt nichts (S-20, 2026-09-20). {%- endcomment -%}
-      {%- capture tp_pcg_aktion -%}{% render 'tp-aktion-aktiv', product: product %}{%- endcapture -%}
+      {%- capture tp_pcg_aktion -%}{% render 'tp-rabatt-sichtbar', product: product %}{%- endcapture -%}
       {%- assign tp_pcg_aktion = tp_pcg_aktion | strip -%}
       {%- assign tp_pcg_sale = false -%}
-      {%- if tp_pcg_aktion == 'ja' and product.compare_at_price > product.price -%}
+      {%- assign tp_pcg_v = product.selected_or_first_available_variant -%}
+      {%- if tp_pcg_aktion == 'ja' and tp_pcg_v.compare_at_price > tp_pcg_v.price -%}
         {%- assign tp_pcg_sale = true -%}
+        {%- assign tp_pcg_prozent = tp_pcg_v.compare_at_price | minus: tp_pcg_v.price | times: 100.0 | divided_by: tp_pcg_v.compare_at_price | round -%}
       {%- endif -%}
-      {%- if product.available == false or tp_pcg_sale -%}
+      {%- if tp_pcg_sale and product.available -%}
+        {%- comment -%} Rabattbadge statt weissem "Angebot"-Kasten (2026-09-24), Prozent dynamisch {%- endcomment -%}
+        <span class="tp-rabatt-badge tp-rabatt-badge--karte">−{{ tp_pcg_prozent }}&nbsp;%</span>
+      {%- elsif product.available == false -%}
         <div
           class="
             product-badges__badge product-badges__badge--rectangle
             {% if product.available == false %} color-{{ settings.badge_sold_out_color_scheme }}{% elsif tp_pcg_sale %} color-{{ settings.badge_sale_color_scheme }}{% endif %}
           "
         >
-          {%- if product.available == false -%}
-            {{ 'content.product_badge_sold_out' | t }}
-          {%- elsif tp_pcg_sale -%}
-            {{ 'content.product_badge_sale' | t }}
-          {%- endif -%}
+          {{ 'content.product_badge_sold_out' | t }}
         </div>
       {%- endif -%}
     </div>
@@ -72,6 +73,31 @@
 </div>
 
 {% render 'product-badges-styles' %}
+
+{% stylesheet %}
+  /* Rabattbadge (2026-09-24): kompakte Pille, Karte und Produktseite gleich */
+  .tp-rabatt-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #b3261e;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .price__sale .tp-rabatt-badge {
+    margin-inline-end: 8px;
+    vertical-align: middle;
+  }
+  .product-badges .tp-rabatt-badge--karte {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
