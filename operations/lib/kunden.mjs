@@ -21,14 +21,32 @@ function anschrift(a) {
   };
 }
 
+/**
+ * Telefonnummer des Kunden. Shopify fuellt `defaultPhoneNumber` nur, wenn der
+ * Kunde sie im Konto hinterlegt hat - beim Bestellen landet sie dagegen in der
+ * Lieferadresse. Ohne diesen Rueckgriff sah es aus, als haetten fast alle
+ * Kunden keine Nummer, obwohl sie in der Anschrift steht. `telefonQuelle`
+ * sagt, woher sie kommt, damit am Telefon niemand raten muss.
+ */
+function telefonVon(c) {
+  const direkt = c?.defaultPhoneNumber?.phoneNumber;
+  if (direkt) return { telefon: direkt, telefonQuelle: 'kundenkonto' };
+  const adressen = [c?.defaultAddress, ...(c?.addressesV2?.nodes ?? [])];
+  const ausAdresse = adressen.find(a => a?.phone)?.phone;
+  if (ausAdresse) return { telefon: ausAdresse, telefonQuelle: 'lieferadresse' };
+  return { telefon: null, telefonQuelle: null };
+}
+
 /** Ein Kunde fuers Dashboard: Kontakt, Zahlen, Adressen, Einwilligung. */
 export function kundenEintrag(c) {
   const betrag = Number(c?.amountSpent?.amount);
+  const tel = telefonVon(c);
   return {
     id: c.id,
     name: c.displayName || [c.firstName, c.lastName].filter(Boolean).join(' ') || null,
     email: c.defaultEmailAddress?.emailAddress || null,
-    telefon: c.defaultPhoneNumber?.phoneNumber || null,
+    telefon: tel.telefon,
+    telefonQuelle: tel.telefonQuelle,
     anzahlBestellungen: Number(c.numberOfOrders) || 0,
     gesamtumsatz: Number.isFinite(betrag) ? betrag : 0,
     waehrung: c.amountSpent?.currencyCode || 'EUR',
