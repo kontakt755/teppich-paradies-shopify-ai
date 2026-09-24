@@ -23,6 +23,10 @@ export function angebotEintrag(d) {
     status: d.status || null,
     kunde: d.customer?.displayName || d.email || null,
     email: d.customer?.defaultEmailAddress?.emailAddress || d.email || null,
+    // Ohne Telefonnummer stand in der Angebotsliste immer "keine Kontaktdaten
+    // hinterlegt", obwohl der Entwurf oder der Kunde eine Nummer traegt.
+    telefon: d.phone || d.customer?.defaultPhoneNumber?.phoneNumber || d.customer?.phone
+      || d.shippingAddress?.phone || d.billingAddress?.phone || null,
     betrag: betrag(d),
     waehrung: d.totalPriceSet?.shopMoney?.currencyCode || 'EUR',
     erstelltAm: d.createdAt || null,

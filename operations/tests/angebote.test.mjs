@@ -41,3 +41,13 @@ test('aufbereiten: offene vor abgeschlossenen, offen-Zaehler korrekt', () => {
   assert.equal(modell.offen, 2);
   assert.deepEqual(modell.angebote.map(a => a.status), ['OPEN', 'INVOICE_SENT', 'COMPLETED']);
 });
+
+test('Telefonnummer kommt aus Entwurf, Kunde oder Adresse', () => {
+  const ausEntwurf = angebotEintrag({ id: 'gid://shopify/DraftOrder/1', phone: '+4930111' });
+  assert.equal(ausEntwurf.telefon, '+4930111');
+  const ausKunde = angebotEintrag({ id: 'gid://shopify/DraftOrder/2', customer: { defaultPhoneNumber: { phoneNumber: '+4930222' } } });
+  assert.equal(ausKunde.telefon, '+4930222');
+  const ausAdresse = angebotEintrag({ id: 'gid://shopify/DraftOrder/3', shippingAddress: { phone: '+4930333' } });
+  assert.equal(ausAdresse.telefon, '+4930333');
+  assert.equal(angebotEintrag({ id: 'gid://shopify/DraftOrder/4' }).telefon, null);
+});

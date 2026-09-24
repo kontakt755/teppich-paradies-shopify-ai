@@ -167,14 +167,19 @@ function skuIstMuster(sku) {
 
 /**
  * Preis je Verkaufseinheit fuer das Kundengespraech - abgeleitet, nie neu
- * erfunden: bei Paketware (qm_pro_paket bekannt) ist der Shopify-Listenpreis
- * der interne Paketpreis (CLAUDE.md "Produktdaten"), das Kundengespraech
- * braucht den Preis je m². Ohne qm_pro_paket bleibt der Stueckpreis stehen.
+ * erfunden:
+ * - Paketware (qm_pro_paket bekannt): der Shopify-Listenpreis ist der interne
+ *   Paketpreis (CLAUDE.md "Produktdaten"), geteilt ergibt er den m²-Preis.
+ * - Rollenware (Bestelleinheit lfm): der Listenpreis ist bereits der
+ *   m²-Preis - genau der, den die Produktseite als €/m² ausweist. Ohne diesen
+ *   Fall stand im Lexikon "€/Stück", was im Kundengespraech falsch ist.
+ * - Sonst bleibt der Stueckpreis stehen.
  */
-function preisJeEinheit(preis, qmProPaketText) {
+function preisJeEinheit(preis, qmProPaketText, bestelleinheit = null) {
   if (leer(preis)) return null;
   const qm = zahl(qmProPaketText);
   if (qm && qm > 0) return { betrag: Math.round((preis / qm) * 100) / 100, einheit: 'm2' };
+  if (String(bestelleinheit || '').toLowerCase() === 'lfm') return { betrag: preis, einheit: 'm2' };
   return { betrag: preis, einheit: 'stueck' };
 }
 
@@ -300,7 +305,7 @@ export function aufbereiten(exportDaten, opt = {}) {
         farbe: farbeAusOptionen(v.selectedOptions),
         preis,
         waehrung: preis === null ? null : waehrung,
-        preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket),
+        preisJeEinheit: preisJeEinheit(preis, customMap?.qm_pro_paket, einkauf.bestelleinheit),
         verfuegbar: typeof v.availableForSale === 'boolean' ? v.availableForSale : null,
         // Wunschmass (Zuschnitt nach Mass): SKU/Artikelnummer/Farbnummer sind
         // hier immer leer, weil die Ware erst beim Zuschnitt entsteht - keine
@@ -392,6 +397,13 @@ export function aufbereiten(exportDaten, opt = {}) {
 
   for (const p of ergebnis) {
     const produktIstMuster = typeof p.handle === 'string' && p.handle.startsWith('muster-');
+    // Musterprodukte haben in Shopify selten ein eigenes Bild. Statt eines
+    // leeren Kastens zeigt die Liste dann das Bild des Originalprodukts -
+    // im Kundengespraech ist genau das gemeint.
+    if (!p.bild && produktIstMuster) {
+      const original = produktByHandle.get(p.handle.slice('muster-'.length));
+      if (original?.bild) p.bild = original.bild;
+    }
     p.varianten = p.varianten.map((v) => {
       const { __musterRef, ...variante } = v;
       if (produktIstMuster || skuIstMuster(v.sku)) {

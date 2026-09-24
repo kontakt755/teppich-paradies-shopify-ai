@@ -424,3 +424,48 @@ test('preisJeEinheit: m2 bei qm_pro_paket, sonst stueck', () => {
   assert.equal(v2.preisJeEinheit.einheit, 'stueck');
   assert.equal(v2.preisJeEinheit.betrag, 129.9);
 });
+
+
+test('preisJeEinheit: Rollenware (Bestelleinheit lfm) ist bereits der m2-Preis', () => {
+  const rolle = produkt({
+    id: 'gid://shopify/Product/9300', handle: 'rollenware', variants: [{
+      id: 'gid://shopify/ProductVariant/5300', title: 'Sand / 400cm', sku: 'R-1', price: '55.90',
+      availableForSale: true, selectedOptions: [{ name: 'Farbe', value: 'Sand' }],
+      metafields: [{ namespace: 'einkauf', key: 'bestelleinheit', value: 'lfm' }],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [rolle] }, { jetzt: JETZT });
+  const v = modell.produkte[0].varianten[0];
+  assert.deepEqual(v.preisJeEinheit, { betrag: 55.9, einheit: 'm2' });
+});
+
+test('preisJeEinheit: Stueckware bleibt Stueckpreis', () => {
+  const stueck = produkt({
+    id: 'gid://shopify/Product/9301', handle: 'stueckware', variants: [{
+      id: 'gid://shopify/ProductVariant/5301', title: 'Default', sku: 'S-1', price: '12.00',
+      availableForSale: true, selectedOptions: [],
+      metafields: [{ namespace: 'einkauf', key: 'bestelleinheit', value: 'stueck' }],
+    }],
+  });
+  const modell = aufbereiten({ produkte: [stueck] }, { jetzt: JETZT });
+  assert.deepEqual(modell.produkte[0].varianten[0].preisJeEinheit, { betrag: 12, einheit: 'stueck' });
+});
+
+test('Musterprodukt ohne eigenes Bild zeigt das Bild des Originals', () => {
+  const original = produkt({ id: 'gid://shopify/Product/9400', handle: 'sonnenhain', titel: 'Sonnenhain', variants: [{
+    id: 'gid://shopify/ProductVariant/5400', title: 'Beige', sku: 'SH-1', price: '30', availableForSale: true,
+    selectedOptions: [{ name: 'Farbe', value: 'Beige' }],
+    metafields: [{ namespace: 'einkauf', key: 'artikelnummer', value: 'SH-1' }],
+  }] });
+  original.featuredImage = { url: 'https://cdn.example/sonnenhain.jpg' };
+  const muster = produkt({ id: 'gid://shopify/Product/9401', handle: 'muster-sonnenhain', titel: 'Muster Sonnenhain', featuredImage: null, variants: [{
+    id: 'gid://shopify/ProductVariant/5401', title: 'Beige', sku: 'M-SH-1', price: '0', availableForSale: true,
+    selectedOptions: [{ name: 'Farbe', value: 'Beige' }], metafields: [],
+  }] });
+  const modell = aufbereiten({ produkte: [original, muster] }, { jetzt: JETZT });
+  const m = modell.produkte.find((p) => p.handle === 'muster-sonnenhain');
+  assert.equal(m.bild, 'https://cdn.example/sonnenhain.jpg');
+  // Ein Muster ohne auffindbares Original bleibt ohne Bild statt irgendeins zu zeigen
+  const allein = produkt({ id: 'gid://shopify/Product/9402', handle: 'muster-gibtsnicht', titel: 'Muster X', featuredImage: null, variants: [] });
+  assert.equal(aufbereiten({ produkte: [allein] }, { jetzt: JETZT }).produkte[0].bild, null);
+});

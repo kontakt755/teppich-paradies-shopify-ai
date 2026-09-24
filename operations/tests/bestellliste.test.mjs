@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { aufbereiten } from '../lib/bestelluebersicht.mjs';
-import { bestellliste, fortschritt, wasFehlt, kundenFortschritt, wendeFilterAn, FILTERCHIPS } from '../lib/bestellliste.mjs';
+import { bestellliste, fortschritt, istFertig, wasFehlt, kundenFortschritt, wendeFilterAn, FILTERCHIPS } from '../lib/bestellliste.mjs';
 import { kundenIndex, sucheKunden } from '../lib/kundensuche.mjs';
 import { positionKey } from '../lib/auftragsstatus.mjs';
 
@@ -152,4 +152,14 @@ test('alleKunden: "test" zeigt nur Kunden mit ausschliesslich Testbestellungen',
   const liste = alleKunden(modell, { statusAlle: {}, filter: 'test' });
   assert.ok(liste.length >= 1);
   assert.ok(liste.every(k => k.nurTestbestellungen));
+});
+
+test('Positionen ohne lineItemId gelten nicht still als fertig', () => {
+  const auftrag = { id: 'gid://shopify/Order/77', positionen: [{ lineItemId: null, titel: 'Teppichboden' }] };
+  const f = fortschritt(auftrag, {});
+  assert.equal(f.unklar, true);
+  assert.match(f.text, /Nicht nachverfolgbar/);
+  assert.equal(istFertig(auftrag, {}), false);
+  // Eine Bestellung ganz ohne Positionen bleibt wie bisher "fertig"
+  assert.equal(istFertig({ id: 'gid://shopify/Order/78', positionen: [] }, {}), true);
 });

@@ -1095,9 +1095,19 @@ function lexikonSucheTreffer(p, suchtext) {
 function lexikonListenEintrag(p) {
   const varianten = p.varianten || [];
   const farben = new Set(varianten.map(v => v.farbe).filter(Boolean));
-  const preise = varianten.map(v => v.preisJeEinheit?.betrag ?? v.preis).filter(v => typeof v === 'number');
-  const preisAb = preise.length ? Math.min(...preise) : null;
-  const preisEinheit = varianten.find(v => v.preisJeEinheit)?.preisJeEinheit?.einheit ?? null;
+  // Betrag und Einheit muessen aus derselben Variante kommen. Sonst stand an
+  // einem Paketpreis die Einheit einer anderen Variante ("ab 19,50 €/m²",
+  // obwohl 19,50 der Paketpreis war).
+  const kandidaten = varianten
+    .map(v => (v.preisJeEinheit && typeof v.preisJeEinheit.betrag === 'number')
+      ? { betrag: v.preisJeEinheit.betrag, einheit: v.preisJeEinheit.einheit }
+      : (typeof v.preis === 'number' ? { betrag: v.preis, einheit: null } : null))
+    .filter(Boolean);
+  const guenstigste = kandidaten.length
+    ? kandidaten.reduce((a, b) => (b.betrag < a.betrag ? b : a))
+    : null;
+  const preisAb = guenstigste ? guenstigste.betrag : null;
+  const preisEinheit = guenstigste ? guenstigste.einheit : null;
   // Muster haben "original" statt "link"; ein Produkt gilt als verlinkt, wenn
   // jede echte Variante einen Link hat bzw. jede Mustervariante ein Original.
   const linkRelevant = varianten.filter(v => v.link || v.original);
