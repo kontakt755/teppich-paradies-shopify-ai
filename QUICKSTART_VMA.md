@@ -28,8 +28,9 @@ Fertig! 4 neue Excel-Dateien im aktuellen Verzeichnis:
 - `Zeiterfassung_Juni_2026_Rufat_fertig.xlsx`
 - `Zeiterfassung_Juni_2026_Hayatin_fertig.xlsx`
 
-### Schritt 3: Mit Abwesenheiten
+### Schritt 3: Mit Abwesenheiten (3 Optionen)
 
+**Option A: Manuell (einfach)**
 Erstelle `abwesenheiten.csv`:
 ```csv
 Mitarbeiter,Startdatum,Enddatum,Art,Stunden_pro_Tag,Hinweis
@@ -40,6 +41,18 @@ Ben,24.06.2026,24.06.2026,urlaub,8.00,Urlaubstag
 Dann:
 ```bash
 python3 vma_batch.py 6 2026 --absences abwesenheiten.csv
+```
+
+**Option B: Gmail Scanner**
+```bash
+python3 vma_gmail_scanner.py 6 2026 --create-csv
+python3 vma_batch.py 6 2026 --absences abwesenheiten_06_2026.csv
+```
+
+**Option C: Gmail + Google Calendar (EMPFOHLEN)**
+```bash
+python3 vma_combined_scanner.py 6 2026
+python3 vma_batch.py 6 2026 --absences abwesenheiten_kombiniert_06_2026.csv
 ```
 
 ### Schritt 4: Eigener Ausgabe-Ordner

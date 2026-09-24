@@ -47,7 +47,7 @@ Jeder Fund wird bewertet:
 python3 vma_batch.py 6 2026 --absences abwesenheiten.csv
 ```
 
-### Option 2: Gmail automatisch scannen (EMPFOHLEN)
+### Option 2: Gmail automatisch scannen
 
 ```bash
 # 1. Gmail-Scanner ausführen
@@ -60,6 +60,42 @@ python3 vma_gmail_scanner.py 6 2026 --create-csv
 # 4. Datei prüfen & verwenden:
 python3 vma_batch.py 6 2026 --absences abwesenheiten_06_2026.csv
 ```
+
+### Option 3: Google Calendar automatisch scannen
+
+```bash
+# 1. Kalender-Scanner ausführen (sucht Urlaub)
+python3 vma_calendar_scanner.py 6 2026
+
+# 2. Prüfe die Ergebnisse in der Ausgabe
+# 3. CSV erstellen (automatisch):
+python3 vma_calendar_scanner.py 6 2026 --create-csv
+
+# 4. Datei prüfen & verwenden:
+python3 vma_batch.py 6 2026 --absences abwesenheiten_kalender_06_2026.csv
+```
+
+**Hinweis:** Hayatin's Kalender-Einträge werden ignoriert (nicht zuverlässig).
+
+### Option 4: Gmail + Google Calendar kombiniert (EMPFOHLEN)
+
+```bash
+# 1. Kombinierter Scanner (Gmail + Kalender)
+python3 vma_combined_scanner.py 6 2026
+
+# 2. Datei prüfen:
+cat abwesenheiten_kombiniert_06_2026.csv
+
+# 3. Mit VMA-Batch verwenden:
+python3 vma_batch.py 6 2026 --absences abwesenheiten_kombiniert_06_2026.csv
+```
+
+Dieser Modus:
+- ✅ Scannt Gmail nach Krankheit, Urlaub, AU
+- ✅ Scannt Google Calendar nach Urlaubseinträgen
+- ✅ Merged Results (Duplikate werden erkannt)
+- ✅ Ignoriert Hayatin's Kalender-Einträge automatisch
+- ✅ Exportiert zu einheitlicher CSV
 
 ---
 

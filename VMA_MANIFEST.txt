@@ -16,6 +16,24 @@ KERN-SKRIPTE
 
 ✓ vma_automation.py (21 KB)
   Hauptmodul mit 8 Funktionen:
+
+✓ vma_batch.py (3.8 KB)
+  Batch-Processor für mehrere Mitarbeiter
+
+✓ vma_gmail_scanner.py (4 KB, 250+ Zeilen) – NEU
+  Gmail-Abwesenheits-Scanner (Krankheit, Urlaub, AU)
+
+✓ vma_calendar_scanner.py (6 KB, 300+ Zeilen) – NEU
+  Google Calendar-Urlaubsscanner (ignoriert Hayatin)
+
+✓ vma_combined_scanner.py (5 KB, 250+ Zeilen) – NEU
+  Kombinierter Scanner (Gmail + Calendar, Duplikate merged)
+
+KERN-SKRIPTE DETAILLIERT
+──────────────────────────────────────────────────────────────────────────
+
+✓ vma_automation.py (21 KB)
+  Hauptmodul mit 8 Funktionen:
   1. load_template() – Excel laden
   2. set_month_year() – D3/E3 setzen
   3. get_brandenburg_holidays() – Feiertage
