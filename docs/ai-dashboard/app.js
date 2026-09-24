@@ -2442,7 +2442,7 @@ function bestellzeileKarte(z) {
   return `<div class="row bq-karte" data-bq-toggle="${esc(z.orderId)}" tabindex="0" role="button" aria-expanded="${kunden.erweitert.has(z.orderId)}">
     <div>
       <div class="t">${esc(z.orderName)} · ${wertText(z.kundenname)}${z.testbestellung ? ' <span class="badge plain">Test</span>' : ''}</div>
-      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${wertText(z.zahlungsstatus)} · ${fmtDate(z.datum)}</div>
+      <div class="m">${geldText({ betrag: z.gesamtbetrag, waehrung: z.waehrung })} · ${statusText(z.zahlungsstatus, ZAHLUNG_TEXT)} · ${fmtDate(z.datum)}</div>
       <div class="m"><span class="bq-fortschritt ${pk}">${esc(z.fortschritt?.text || '–')}</span></div>
       ${z.wasFehlt?.length ? `<div class="m bq-fehlt">${z.wasFehlt.map(esc).join(' · ')}</div>` : ''}
     </div>
