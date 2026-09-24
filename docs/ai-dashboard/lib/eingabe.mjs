@@ -43,3 +43,17 @@ export function stelleEingabeWiederHer(feld, merk) {
   try { feld.setSelectionRange?.(pos, merk.ende ?? pos); } catch { /* Feldtypen ohne Auswahlbereich */ }
   return true;
 }
+
+/**
+ * Darf ein entprellter Sucheingabe-Lauf noch in die Adresszeile schreiben?
+ *
+ * Nein, wenn der Benutzer waehrend der Entprellzeit die Ansicht gewechselt hat
+ * (sonst taucht der Suchtext in der neuen Ansicht auf) oder das Feld gar nicht
+ * mehr existiert.
+ *
+ * @param {{gemerkteAnsicht: string, aktuelleAnsicht: string, feldNochDa: boolean}} lage
+ */
+export function darfUebernehmen({ gemerkteAnsicht, aktuelleAnsicht, feldNochDa }) {
+  if (gemerkteAnsicht !== aktuelleAnsicht) return false;
+  return feldNochDa !== false;
+}
