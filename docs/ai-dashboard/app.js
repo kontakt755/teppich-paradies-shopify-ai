@@ -2974,7 +2974,7 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber' }[state.route.view]} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Kundensuche: Feld soll beim Öffnen sofort tippbereit sein (Telefon-Arbeitsplatz).
