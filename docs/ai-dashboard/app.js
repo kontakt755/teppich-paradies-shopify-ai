@@ -162,7 +162,7 @@ async function refresh({ silent = false } = {}) {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -2790,7 +2790,7 @@ function paletteItems(q) {
   for (const p of paletteFern.produkte) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
   for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
@@ -2885,7 +2885,66 @@ function pollAktualisierung() {
 // ---------------------------------------------------------------------------
 // Render + Events
 // ---------------------------------------------------------------------------
-const VIEWS = { heute: viewHeute, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+// ---------------------------------------------------------------------------
+// Ansicht: Hilfe. Bewusst in Alltagssprache und ohne Fachbegriffe - sie ist
+// fuer neue Mitarbeiter am ersten Tag gedacht, nicht fuer Entwickler.
+// ---------------------------------------------------------------------------
+function hilfeKarte(titel, inhalt) {
+  return `<section class="card" style="margin-bottom:14px"><div class="card-head"><h2>${esc(titel)}</h2></div>${inhalt}</section>`;
+}
+
+function viewHilfe() {
+  return `
+    <div class="page-head"><div><h1>So arbeitest du damit</h1><p class="sub">Die wichtigsten Handgriffe – in der Reihenfolge, in der sie im Laden vorkommen.</p></div></div>
+
+    ${hilfeKarte('Morgens: Seite „Heute"', `
+      <p>Ganz oben steht das Kundengeschäft: offene Aufträge, was noch beim Lieferanten bestellt werden muss, Muster.</p>
+      <p><b>Nicht liegen lassen</b> darunter ist Geld, das schon im Haus war: bezahlte Bestellungen ohne Versand, Angebote, auf die jemand wartet, und abgebrochene Warenkörbe. Erscheint der Block nicht, gibt es dort nichts zu tun.</p>
+      <p class="small muted">Rechts oben steht, wann die Daten zuletzt geholt wurden. „Jetzt aktualisieren" holt sie neu.</p>`)}
+
+    ${hilfeKarte('Ein Kunde ruft an', `
+      <ol style="margin:0;padding-left:20px;line-height:1.9">
+        <li>Oben auf <b>Suche</b> klicken (oder ⌘K drücken).</li>
+        <li>Name, Telefonnummer, E-Mail oder Bestellnummer tippen – die Treffer kommen beim Tippen.</li>
+        <li>Auf den Kunden klicken: Kontakt, Anschrift und alle Bestellungen mit Positionen.</li>
+      </ol>
+      <p class="small muted" style="margin-top:8px">Steht bei der Telefonnummer „(aus der Lieferadresse)", stammt sie aus der Bestellung, nicht aus dem Kundenkonto – anrufen kannst du trotzdem.</p>`)}
+
+    ${hilfeKarte('Der Kunde nennt einen Produktnamen', `
+      <p>Denselben Weg nehmen: <b>Suche</b> öffnen und den Produktnamen tippen – oder oben auf <b>Lexikon</b>.</p>
+      <p>Die Produktseite hat zwei Teile: <b>Für das Kundengespräch</b> (Preis ab, Farben, Material, Brandverhalten, Fußbodenheizung) und <b>Zum Bestellen</b> (unsere SKU, Lieferant, Artikelnummer, Bestelleinheit, Link zum Lieferanten).</p>
+      <p>Die <b>Mengenhilfe</b> rechnet die Kundenmenge in Pakete um. Bei einem Muster zeigt das Lexikon das Originalprodukt beim Lieferanten.</p>`)}
+
+    ${hilfeKarte('Beim Lieferanten bestellen', `
+      <ol style="margin:0;padding-left:20px;line-height:1.9">
+        <li>Oben auf <b>Einkauf</b>: dort stehen die Aufträge und was je Auftrag zu bestellen ist.</li>
+        <li>Artikelnummer anklicken – sie wird kopiert.</li>
+        <li><b>Beim Lieferanten öffnen</b> führt direkt zum Artikel; steht dort <b>suchen</b>, ist kein Direktlink hinterlegt und die Suche beim Lieferanten wird vorbereitet.</li>
+        <li>Nach dem Bestellen den Status setzen, damit der Nächste sieht, was schon läuft.</li>
+      </ol>`)}
+
+    ${hilfeKarte('Was die Kennzeichen bedeuten', `
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li><b>Fertig / In Arbeit</b> bei Kunden: ob bei dieser Bestellung noch etwas offen ist.</li>
+        <li><b>Bezahlt, noch nicht versandt</b>: Geld ist da, Ware nicht raus – das hat Vorrang.</li>
+        <li><b>Angebot wartet auf Antwort</b>: ein Angebot wurde erstellt, aber nie bezahlt.</li>
+        <li><b>Liegengeblieben</b>: der Kunde hatte den Warenkorb voll und hat abgebrochen.</li>
+        <li><b>aus Shopify, keine Bestellung hier</b>: den Kunden gibt es, seine Bestellungen liegen außerhalb der hier geladenen Daten.</li>
+      </ul>`)}
+
+    ${hilfeKarte('„nicht hinterlegt" heißt: es fehlt wirklich', `
+      <p>Das Dashboard rät nie. Steht irgendwo „nicht hinterlegt", „ungeklärt" oder ein Grund statt einer Zahl, dann fehlt die Angabe in Shopify oder beim Lieferanten – dann lieber nachfragen als schätzen.</p>`)}
+
+    ${hilfeKarte('Wenn etwas nicht stimmt', `
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li>Daten sehen alt aus? Rechts oben auf den Stand schauen und <b>Jetzt aktualisieren</b> drücken.</li>
+        <li>Seite leer oder Fehlermeldung? Einmal neu laden (⌘R). Bleibt es, bei Ahmet melden.</li>
+        <li>Lagerbestand: aktuell führt der Shop keinen echten Bestand – die 999 ist ein Platzhalter, keine Menge.</li>
+      </ul>`)}
+  `;
+}
+
+const VIEWS = { heute: viewHeute, hilfe: viewHilfe, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 function render() {
   const main = $('#main');
