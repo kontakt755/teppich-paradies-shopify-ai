@@ -522,6 +522,8 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 
 /* Bestellliste (Bereich Kunden -> Bestellungen): dichte Tabelle am Rechner, Karten mobil. */
 .bq-table { display: block; }
+/* Neun statt fuenfzehn Spalten passen auf einen normalen Bildschirm. */
+.bq-table table.tasks { min-width: 760px; }
 .bq-karten { display: none; }
 .th-sort { background: none; border: 0; font: inherit; font-weight: 600; color: var(--text-2); cursor: pointer; padding: 0; white-space: nowrap; }
 .th-sort:hover { color: var(--text); }
@@ -540,3 +542,8 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   .bq-table { display: none; }
   .bq-karten { display: flex; flex-direction: column; gap: 8px; }
 }
+
+/* Weitere Angaben in der aufgeklappten Bestellzeile - vorher eigene Spalten,
+   die die Tabelle auf fuenfzehn Spalten trieben. */
+.bq-weitere { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 18px; padding: 12px 14px; margin-bottom: 12px; background: var(--surface-2); border-radius: var(--radius); }
+.bq-weitere > div > div { font-size: .9rem; }
