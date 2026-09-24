@@ -389,7 +389,24 @@ test('link: vorhanden bei URL, nur_artikelnummer mit Suchlink, fehlt ohne Einkau
 
   const vOhne = modell.produkte.find((p) => p.handle === 'ohne-einkauf').varianten[0];
   assert.equal(vOhne.link.status, 'fehlt');
-  assert.equal(vOhne.link.suchlink, null);
+  assert.equal(vOhne.link.suchlink, null); // ohne Standardbasis kein geratener Link
+});
+
+test('ohne Artikelnummer fuehrt ein Namenssuchlink zum Hauptlieferanten', () => {
+  const ohneDaten = produkt({
+    id: 'gid://shopify/Product/9202', handle: 'ohne-einkauf-2', titel: 'Nordsee Teppichboden',
+    variants: [{
+      id: 'gid://shopify/ProductVariant/5202', title: 'Default', sku: 'OD-2', price: '10', availableForSale: true,
+      selectedOptions: [], metafields: [],
+    }],
+  });
+  const modell = aufbereiten(
+    { produkte: [ohneDaten] },
+    { jetzt: JETZT, lieferantSuchen: { A: 'https://lieferant-a.example', __standard: 'https://lieferant-a.example' } },
+  );
+  const v = modell.produkte[0].varianten[0];
+  assert.equal(v.link.status, 'fehlt');
+  assert.equal(v.link.suchlink, `https://lieferant-a.example/de-DE/quicksearch?query=${encodeURIComponent(modell.produkte[0].titel)}`);
 });
 
 test('preisJeEinheit: m2 bei qm_pro_paket, sonst stueck', () => {
