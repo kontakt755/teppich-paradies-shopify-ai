@@ -188,11 +188,17 @@ function rohVariantenVon(p) {
  * bzw. list.metaobject_reference (roh, noch nicht aufgeloest - value ist
  * dort eine GID bzw. ein JSON-Array von GIDs als String).
  */
+// Namensraeume mit Metaobjekt-Referenzen: custom.* (Nutzungsklasse,
+// Brandverhalten, Zimmer, ...) und einkauf.lieferant (tp_lieferant). Ohne
+// einkauf blieb im Lexikon die rohe GID stehen - damit konnte weder die
+// Suchbasis des Lieferanten noch der Mitarbeiter etwas anfangen.
+const REFERENZ_NAMESPACES = new Set(['custom', 'einkauf']);
+
 export function sammleMetaobjectGids(rohProdukte) {
   const gids = new Set();
   const ausListe = (metafields) => {
     for (const mf of Array.isArray(metafields) ? metafields : []) {
-      if (mf?.namespace !== 'custom' || typeof mf.value !== 'string') continue;
+      if (!REFERENZ_NAMESPACES.has(mf?.namespace) || typeof mf.value !== 'string') continue;
       if (mf.type === 'metaobject_reference') gids.add(mf.value);
       else if (mf.type === 'list.metaobject_reference') {
         try { for (const g of JSON.parse(mf.value)) if (typeof g === 'string') gids.add(g); } catch { /* kein JSON - ignorieren */ }
@@ -207,7 +213,7 @@ export function sammleMetaobjectGids(rohProdukte) {
 }
 
 /**
- * Ersetzt rohe GIDs in custom.*-Metaobjekt-Referenzen durch die aufgeloesten
+ * Ersetzt rohe GIDs in Metaobjekt-Referenzen (custom.*, einkauf.lieferant) durch die aufgeloesten
  * Anzeigenamen aus `gidZuName` (Map gid -> displayName). Einzelreferenz ->
  * String, Listenreferenz -> Array von Strings (lib/lexikon.mjs::feldWert
  * fuegt Listen mit ", " zusammen - genau das Format aus dem Auftrag,
@@ -217,7 +223,7 @@ export function sammleMetaobjectGids(rohProdukte) {
 export function resolveMetaobjectReferenzen(rohProdukte, gidZuName) {
   const aufloesen = (metafields) => {
     for (const mf of Array.isArray(metafields) ? metafields : []) {
-      if (mf?.namespace !== 'custom' || typeof mf.value !== 'string') continue;
+      if (!REFERENZ_NAMESPACES.has(mf?.namespace) || typeof mf.value !== 'string') continue;
       if (mf.type === 'metaobject_reference') {
         mf.value = gidZuName.get(mf.value) ?? null;
       } else if (mf.type === 'list.metaobject_reference') {

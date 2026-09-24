@@ -15,7 +15,7 @@ test('argumente: --jsonl ist ein gueltiger Weg neben --input/--live, --metaobjek
   assert.throws(() => argumente([]), /--input.*--live.*--jsonl/);
 });
 
-test('sammleMetaobjectGids findet Einzel- und Listenreferenzen ueber custom.*, ignoriert andere Namespaces', () => {
+test('sammleMetaobjectGids findet Referenzen aus custom.* und einkauf.lieferant, ignoriert andere Namespaces', () => {
   const produkte = [
     {
       id: 'gid://shopify/Product/1', handle: 'a', variants: [],
@@ -24,6 +24,8 @@ test('sammleMetaobjectGids findet Einzel- und Listenreferenzen ueber custom.*, i
         { namespace: 'custom', key: 'fusbodenheizung', value: 'gid://shopify/Metaobject/3', type: 'metaobject_reference' },
         { namespace: 'custom', key: 'material', value: 'Wolle', type: 'single_line_text_field' },
         { namespace: 'einkauf', key: 'lieferant', value: 'gid://shopify/Metaobject/99', type: 'metaobject_reference' },
+        { namespace: 'einkauf', key: 'artikelnummer', value: '123456', type: 'single_line_text_field' },
+        { namespace: 'ops', key: 'irgendwas', value: 'gid://shopify/Metaobject/77', type: 'metaobject_reference' },
       ],
     },
     {
@@ -37,6 +39,7 @@ test('sammleMetaobjectGids findet Einzel- und Listenreferenzen ueber custom.*, i
   const gids = sammleMetaobjectGids(produkte);
   assert.deepEqual([...gids].sort(), [
     'gid://shopify/Metaobject/1', 'gid://shopify/Metaobject/2', 'gid://shopify/Metaobject/3',
+    'gid://shopify/Metaobject/99',
   ]);
 });
 
