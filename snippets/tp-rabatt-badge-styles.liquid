@@ -1,0 +1,32 @@
+{%- doc -%}
+  Stile des Rabattbadges (-X %), gemeinsam fuer Produktkarte
+  (blocks/_product-card-gallery.liquid) und Preisanzeige (snippets/price.liquid).
+  Eigenes Snippet, damit beide Dateien die Klasse im eigenen Geltungsbereich
+  haben - theme check (ValidScopedCSSClass) meldet sonst die Nutzung in der
+  Datei, die die Stile nicht selbst definiert. Gibt kein Markup aus.
+{%- enddoc -%}
+
+{% stylesheet %}
+  /* Rabattbadge (2026-09-24): kompakte Pille, Karte und Produktseite gleich */
+  .tp-rabatt-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: #b3261e;
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .price__sale .tp-rabatt-badge {
+    margin-inline-end: 8px;
+    vertical-align: middle;
+  }
+  .product-badges .tp-rabatt-badge--karte {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  }
+{% endstylesheet %}
