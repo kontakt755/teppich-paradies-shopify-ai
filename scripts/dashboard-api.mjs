@@ -27,7 +27,7 @@ import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../ope
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
-  istUeberfaellig, tageBis, istPerson,
+  istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit,
 } from '../operations/lib/organisation.mjs';
 import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
@@ -1003,7 +1003,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
-    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', q = '', benutzer = null } = {}) {
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = 'kunden', q = '', benutzer = null } = {}) {
       const datei = this._orgDatei();
       const daten = orgLies(datei);
       const jetzt = new Date();
@@ -1020,7 +1020,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       } else if (bereich === 'meine-notizen') {
         liste = liste.filter(e => e.typ === 'NOTE' && istPerson(e.besitzer, ich) && e.sichtbarkeit === 'PRIVAT');
       } else if (bereich === 'team-aufgaben') {
-        liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT');
+        // Das Team hat mit Shop und Website nichts zu tun - was dort auftaucht,
+        // sucht dort niemand. Standardmaessig zeigt die Liste das, wofuer das
+        // Team ueberhaupt hereinschaut: Kunden, Bestellungen, kleine Auftraege.
+        liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT' && !istTechnisch(e.bereich));
+        // Ohne Bereich bleibt ein Eintrag sichtbar - sonst verschwindet er
+        // genau dort, wo ihn jemand einsortieren muesste.
+        if (gruppe === 'kunden') liste = liste.filter(e => !e.bereich || istTeamarbeit(e.bereich));
+        else if (gruppe === 'rest') liste = liste.filter(e => e.bereich && !istTeamarbeit(e.bereich));
         if (person === 'unzugewiesen') liste = liste.filter(e => !e.verantwortlich);
         else if (person) liste = liste.filter(e => istPerson(e.verantwortlich, person));
         if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
@@ -1047,6 +1054,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
       const sichtbar = this._orgSichtbar(daten, benutzer).filter(e => e.typ === 'TASK');
       const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich));
+      // Die Team-Kennzahl zaehlt alles, was im Team-Reiter steht - nur
+      // Technisches nicht, dafuer ist das Team nicht zustaendig.
+      const teamArbeit = sichtbar.filter(e => !istTechnisch(e.bereich) && e.sichtbarkeit !== 'PRIVAT');
       const zaehl = (l) => ({
         offen: l.filter(e => e.status !== 'DONE').length,
         heute: l.filter(e => e.status !== 'DONE' && tageBis(e.faellig, jetzt) === 0).length,
@@ -1056,7 +1066,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ueberfaellig: l.filter(e => istUeberfaellig(e, jetzt)).length,
       });
       return {
-        verfuegbar: true, meine: zaehl(meine), team: zaehl(sichtbar.filter(e => e.sichtbarkeit !== 'PRIVAT')),
+        verfuegbar: true, meine: zaehl(meine),
+        team: zaehl(teamArbeit),
         naechste: orgSortiere(meine.filter(e => passtZuAnsicht(e, 'fokus', jetzt)), jetzt).slice(0, 5),
       };
     },

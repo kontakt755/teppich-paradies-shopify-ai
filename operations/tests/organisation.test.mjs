@@ -5,9 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   sortiere, rang, passtZuAnsicht, darfSehen, darfAendern, istUeberfaellig,
-  aehnlichkeit, findeDoppelgaenger, alsTag, STATUS_LABEL, istPerson,
+  aehnlichkeit, findeDoppelgaenger, alsTag, STATUS_LABEL, istPerson, istTechnisch, istTeamarbeit,
 } from '../lib/organisation.mjs';
-import { analysiere, erkenneFaelligkeit, erkennePerson, teileAuf } from '../lib/organisation-analyse.mjs';
+import { analysiere, erkenneFaelligkeit, erkennePerson, teileAuf, ausListe } from '../lib/organisation-analyse.mjs';
 import { baueEintrag, aendere, kommentiere, haltePruefungFest, lies, schreib, dateiPfad } from '../lib/organisation-speicher.mjs';
 
 const JETZT = new Date('2026-09-25T09:00:00');
@@ -377,4 +377,51 @@ test('Geschäftliches geht ins Team, Technik zu mir', async () => {
   }
   // Eine genannte Person schlägt die Regel immer
   assert.equal(analysiere('Ben soll den Lagerbestand nachzählen', opt).verantwortlich, 'ben');
+});
+
+test('Liste aus ChatGPT: Titel, Erklaerung und Bereich kommen getrennt an', () => {
+  const text = [
+    '## Offene Punkte',
+    '- [Online-Shop] Produktbilder ergänzen :: 45 Produkte ohne Bild. Fertig, wenn die Liste leer ist.',
+    '- [Kunden] Frau Meier zurückrufen :: will Muster in Beige',
+    '- Preisformel prüfen',
+    '    Der Faktor 100 war falsch, danach alle Kollektionen gegenprüfen.',
+  ].join('\n');
+
+  const v = ausListe(text, { benutzer: { kuerzel: 'chef' } });
+  assert.equal(v.length, 3, 'Überschrift und eingerückte Zeile werden nicht zu eigenen Aufgaben');
+
+  assert.equal(v[0].titel, 'Produktbilder ergänzen');
+  assert.equal(v[0].bereich, 'Online-Shop');
+  assert.match(v[0].beschreibung, /45 Produkte ohne Bild/);
+  assert.equal(v[0].verantwortlich, 'chef', 'Shop-Arbeit gehört dem, der die Technik macht');
+
+  assert.equal(v[1].bereich, 'Kunden');
+  assert.equal(v[1].verantwortlich, null, 'Kundenarbeit geht ins Team');
+
+  // Eingerückte Folgezeile erklärt die Aufgabe darüber
+  assert.equal(v[2].titel, 'Preisformel prüfen');
+  assert.match(v[2].beschreibung, /Faktor 100/);
+});
+
+test('Ansicht "offen" zeigt alles Unerledigte, auch ohne Termin und Priorität', () => {
+  const jetzt = new Date('2026-09-25T10:00:00Z');
+  const schlicht = { typ: 'TASK', status: 'PLANNED', prioritaet: 'NORMAL', faellig: null };
+  assert.equal(passtZuAnsicht(schlicht, 'fokus', jetzt), false, 'Fokus blendet sie aus …');
+  assert.equal(passtZuAnsicht(schlicht, 'offen', jetzt), true, '… "Alles Offene" nicht');
+  assert.equal(passtZuAnsicht({ ...schlicht, status: 'DONE' }, 'offen', jetzt), false);
+});
+
+test('Team-Bereiche sind Kunden, Bestellungen und kleine Aufträge - nichts aus Shop oder Website', () => {
+  for (const b of ['Kunden', 'Bestellungen', 'Angebote / Lexware', 'Baustelle', 'Laden']) {
+    assert.equal(istTeamarbeit(b), true, `${b} gehört ins Team`);
+    assert.equal(istTechnisch(b), false);
+  }
+  for (const b of ['Website & KI', 'Online-Shop']) {
+    assert.equal(istTeamarbeit(b), false, `${b} hat im Team nichts zu suchen`);
+    assert.equal(istTechnisch(b), true);
+  }
+  // Einkauf, Lager & Co. sind weder Technik noch Tagesgeschäft des Teams
+  assert.equal(istTeamarbeit('Lager'), false);
+  assert.equal(istTechnisch('Lager'), false);
 });
