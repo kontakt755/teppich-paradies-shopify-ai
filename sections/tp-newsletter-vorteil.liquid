@@ -4,7 +4,7 @@
   keinen Grund, sich einzutragen. Bodenbelag kauft man selten - ein
   Prozent-Rabatt jeden Monat verpufft. Der Inhaber will kleine feste
   Betraege statt Prozent, hoechstens 15 EUR, dazu ein viertes Gratis-Muster
-  (2026-09-25). Nur Vorteile, die ohne monatliche Handarbeit stimmen - keine
+  (2026-09-25). Zwei Vorteile, die ohne monatliche Handarbeit stimmen - keine
   "Aktion des Monats" (Inhaber 2026-09-25: keine wechselnden Codes). Das Muster-Extra steckt in assets/tp-sample-checkout-core.js.
   Betrag und Mindestbestellwert stehen als Einstellung hier, damit sie nicht
   in Texten verstreut hartkodiert sind. Der Rabattcode selbst liegt nur in
@@ -16,7 +16,7 @@
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
   assign tp_nv_betrag = section.settings.betrag | default: 15
-  assign tp_nv_ab = section.settings.mindestwert | default: 200
+  assign tp_nv_ab = section.settings.mindestwert | default: 100
   capture tp_nv_hinweis
     echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein: einmalig, ab '
     echo tp_nv_ab
@@ -41,10 +41,6 @@
         <li>
           <b>4 statt 3 Muster gratis</b>
           <small>zu Hause in Ruhe vergleichen, ohne Versandkosten</small>
-        </li>
-        <li>
-          <b>Tipps vom Fachhändler</b>
-          <small>gelegentlich per E-Mail, jederzeit abbestellbar</small>
         </li>
       </ul>
     </div>
@@ -174,7 +170,7 @@
       "type": "number",
       "id": "mindestwert",
       "label": "Mindestbestellwert in €",
-      "default": 200,
+      "default": 100,
       "info": "Muss zum Rabattcode in Shopify passen."
     }
   ],

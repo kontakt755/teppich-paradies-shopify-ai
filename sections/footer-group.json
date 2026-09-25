@@ -53,11 +53,11 @@
           "type": "tp-newsletter",
           "settings": {
             "ueberschrift": "Neuigkeiten aus dem Teppich Paradies",
-            "text": "15 € Rabatt ab 200 € Bestellwert und 4 statt 3 Muster gratis.",
+            "text": "15 € Rabatt ab 100 € Bestellwert und 4 statt 3 Muster gratis.",
             "button": "Gutschein sichern",
             "quelle": "footer",
             "kompakt": true,
-            "hinweis": "<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein einmalig ab 200 €, nicht für reduzierte Artikel. Näheres in unserer <a href=\"/pages/datenschutzerklarung\">Datenschutzerklärung</a>.</p>"
+            "hinweis": "<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein einmalig ab 100 €, nicht für reduzierte Artikel. Näheres in unserer <a href=\"/pages/datenschutzerklarung\">Datenschutzerklärung</a>.</p>"
           }
         }
       },

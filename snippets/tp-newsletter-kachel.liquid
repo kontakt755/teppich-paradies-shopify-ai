@@ -7,7 +7,7 @@
 
   Betrag und Mindestwert muessen zum Rabattcode in Shopify und zu den
   Einstellungen von sections/tp-newsletter-vorteil.liquid passen (Inhaber
-  2026-09-25: 15 EUR ab 200 EUR, einmal pro Kunde, 4. Gratis-Muster).
+  2026-09-25: 15 EUR ab 100 EUR, einmal pro Kunde, 4. Gratis-Muster).
 
   CSS: assets/tp-newsletter-kachel.css (eigene Datei, per stylesheet_tag).
 
@@ -16,7 +16,7 @@
 
 {%- liquid
   capture tp_nk_hinweis
-    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten; Abmeldung jederzeit. Gutschein einmalig ab 200 € Bestellwert, nicht für reduzierte Artikel. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
+    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten; Abmeldung jederzeit. Gutschein einmalig ab 100 € Bestellwert, nicht für reduzierte Artikel. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
   endcapture
 -%}
 
@@ -26,7 +26,7 @@
     <div class="tp-nk__text">
       <p class="tp-nk__eyebrow">Noch unsicher?</p>
       <p class="tp-nk__titel">15 € sparen und ein Muster mehr</p>
-      <p class="tp-nk__lead">Newsletter abonnieren und 15 € Rabatt auf die erste Bestellung ab 200 € sichern – dazu 4 statt 3 Muster gratis.</p>
+      <p class="tp-nk__lead">Newsletter abonnieren und 15 € Rabatt auf die erste Bestellung ab 100 € sichern – dazu 4 statt 3 Muster gratis.</p>
     </div>
     <div class="tp-nk__form">
       {%- render 'tp-newsletter',
