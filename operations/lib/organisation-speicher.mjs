@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { STANDARD_BEREICHE, STATUS, PRIORITAETEN, PRUEFTYPEN, TYPEN } from './organisation.mjs';
+import { STANDARD_BEREICHE, STATUS, PRIORITAETEN, PRUEFTYPEN, TYPEN, naechsterTermin, faelligeWiederholungen } from './organisation.mjs';
 
 export function privatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
@@ -124,7 +124,14 @@ export function aendere(eintrag, felder, { benutzer = null, jetzt = new Date() }
   }
   if (felder.status === 'WAITING' && !eintrag.wartetSeit) eintrag.wartetSeit = zeit;
   if (felder.status && felder.status !== 'WAITING') eintrag.wartetSeit = null;
-  if (felder.status === 'DONE') eintrag.erledigtAm = zeit;
+  if (felder.status === 'DONE') {
+    eintrag.erledigtAm = zeit;
+    // Wiederkehrende Aufgabe: den naechsten Termin gleich festhalten, damit
+    // der Waechter sie spaeter neu anlegen kann.
+    if (eintrag.wiederholung?.regel) {
+      eintrag.wiederholung.naechsteFaelligkeit = naechsterTermin(eintrag.wiederholung.regel, jetzt);
+    }
+  }
   if (felder.status && felder.status !== 'DONE' && eintrag.erledigtAm) {
     eintrag.erledigtAm = null;
     eintrag.verlauf.push({ zeit, wer, was: 'wieder geöffnet' });
@@ -185,4 +192,89 @@ export function haltePruefungFest(eintrag, ergebnis, { jetzt = new Date(), pruef
   }
   eintrag.aktualisiertAm = zeit;
   return eintrag;
+}
+
+/**
+ * Faellige Wiederholungen neu anlegen. Der Nachfolger ist eine frische
+ * Aufgabe mit demselben Inhalt; die erledigte bleibt als Nachweis stehen.
+ */
+export function erzeugeWiederholungen(daten, { jetzt = new Date() } = {}) {
+  const faellig = faelligeWiederholungen(daten.eintraege, { jetzt });
+  const neue = [];
+  for (const alt of faellig) {
+    const nachfolger = baueEintrag({
+      typ: 'TASK', titel: alt.titel, beschreibung: alt.beschreibung, bereich: alt.bereich,
+      prioritaet: alt.prioritaet, verantwortlich: alt.verantwortlich, sichtbarkeit: alt.sichtbarkeit,
+      faellig: alt.wiederholung.naechsteFaelligkeit, erfolgskriterium: alt.erfolgskriterium,
+      pruefTyp: alt.pruefTyp, pruefung: alt.pruefung, verknuepft: alt.verknuepft,
+      wiederholung: { regel: alt.wiederholung.regel, naechsteFaelligkeit: null, zuletztErzeugt: null },
+      status: 'PLANNED',
+    }, { benutzer: { kuerzel: alt.besitzer }, jetzt });
+    nachfolger.verlauf.push({ zeit: jetzt.toISOString(), wer: 'Wiederholung', was: `aus „${alt.titel}" erzeugt (${alt.wiederholung.regel})` });
+    alt.wiederholung.zuletztErzeugt = alt.wiederholung.naechsteFaelligkeit;
+    neue.push(nachfolger);
+  }
+  daten.eintraege.push(...neue);
+  return neue;
+}
+
+// -- Anhaenge ---------------------------------------------------------------
+
+/** Was angehaengt werden darf. Alles andere waere ein unnoetiges Risiko. */
+export const ANHANG_TYPEN = Object.freeze({
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp', 'image/heic': 'heic',
+  'application/pdf': 'pdf', 'text/plain': 'txt', 'text/csv': 'csv',
+});
+export const ANHANG_MAX_BYTES = 10 * 1024 * 1024;   // 10 MB je Datei
+
+/** Dateinamen entschaerfen: keine Pfade, keine Sonderzeichen, nie leer. */
+export function sichererName(name, typ) {
+  const endung = ANHANG_TYPEN[typ] || 'bin';
+  const roh = String(name || '').split(/[\\/]/).pop() || '';
+  const basis = roh.replace(/\.[^.]*$/, '').replace(/[^\w.\- ]+/g, '_').trim().slice(0, 60);
+  return `${basis || 'anhang'}.${endung}`;
+}
+
+/**
+ * Anhang speichern. Liegt unter $TP_PRIVAT_DIR/organisation/anhaenge/<id>/ -
+ * dieselbe Ablage wie die uebrigen Betriebsdaten, nie im Repository.
+ */
+export function speichereAnhang(eintrag, { name, typ, daten }, { dir = privatDir(), jetzt = new Date(), benutzer = null } = {}) {
+  if (!ANHANG_TYPEN[typ]) throw new Error(`Dateityp nicht erlaubt: ${typ || 'unbekannt'}`);
+  const roh = Buffer.from(String(daten || ''), 'base64');
+  if (!roh.length) throw new Error('Datei ist leer');
+  if (roh.length > ANHANG_MAX_BYTES) throw new Error(`Datei ist zu groß (max. ${Math.round(ANHANG_MAX_BYTES / 1024 / 1024)} MB)`);
+
+  const ordner = path.join(anhangOrdner(dir), eintrag.id);
+  fs.mkdirSync(ordner, { recursive: true });
+  let dateiname = sicherName_frei(ordner, sichererName(name, typ));
+  fs.writeFileSync(path.join(ordner, dateiname), roh, { mode: 0o600 });
+
+  const zeit = jetzt.toISOString();
+  const wer = benutzer?.kuerzel || benutzer?.name || 'inhaber';
+  const anhang = { datei: dateiname, name: String(name || dateiname), typ, groesse: roh.length, zeit, wer };
+  eintrag.anhaenge.push(anhang);
+  eintrag.verlauf.push({ zeit, wer, was: `Anhang „${anhang.name}" hinzugefügt` });
+  eintrag.aktualisiertAm = zeit;
+  return anhang;
+}
+
+/** Namenskollision vermeiden, ohne eine vorhandene Datei zu ueberschreiben. */
+function sicherName_frei(ordner, name) {
+  let kandidat = name;
+  let i = 1;
+  while (fs.existsSync(path.join(ordner, kandidat))) {
+    const punkt = name.lastIndexOf('.');
+    kandidat = `${name.slice(0, punkt)}-${i}${name.slice(punkt)}`;
+    i += 1;
+  }
+  return kandidat;
+}
+
+/** Pfad zu einem Anhang - nur innerhalb des eigenen Ordners. */
+export function anhangPfad(eintragId, dateiname, dir = privatDir()) {
+  const ordner = path.resolve(anhangOrdner(dir), eintragId);
+  const ziel = path.resolve(ordner, String(dateiname || ''));
+  if (!ziel.startsWith(`${ordner}${path.sep}`)) throw new Error('Ungültiger Dateiname');
+  return ziel;
 }

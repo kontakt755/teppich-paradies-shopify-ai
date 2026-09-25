@@ -122,15 +122,25 @@ export function passtZuAnsicht(t, ansicht, jetzt = new Date()) {
 }
 
 /**
+ * Sind das dieselbe Person? Kuerzel kommen mal aus der Auswahlliste, mal aus
+ * einem Import, mal von Hand - "inhaber" und "Inhaber" ist derselbe Mensch.
+ * Ohne diesen Vergleich verschwinden Aufgaben aus "Meine Aufgaben".
+ */
+export function istPerson(a, b) {
+  if (!a || !b) return false;
+  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+}
+
+/**
  * Wer darf was sehen? Persoenliche Notizen bleiben privat - auch vor dem
  * Inhaber. Alles andere richtet sich nach Sichtbarkeit und Rolle.
  */
 export function darfSehen(eintrag, benutzer) {
   const kuerzel = benutzer?.kuerzel || benutzer?.name || null;
-  const istEigen = eintrag.besitzer && kuerzel && eintrag.besitzer === kuerzel;
+  const istEigen = istPerson(eintrag.besitzer, kuerzel);
   if (eintrag.sichtbarkeit === 'PRIVAT') return Boolean(istEigen);
   if (eintrag.sichtbarkeit === 'PERSONEN') {
-    return Boolean(istEigen || (eintrag.fuer ?? []).includes(kuerzel));
+    return Boolean(istEigen || (eintrag.fuer ?? []).some(f => istPerson(f, kuerzel)));
   }
   return true; // TEAM
 }
@@ -141,7 +151,7 @@ export function darfAendern(eintrag, benutzer) {
   if (benutzer.rolle === 'lesen') return false;
   if (benutzer.rolle === 'inhaber') return darfSehen(eintrag, benutzer);
   const kuerzel = benutzer.kuerzel || benutzer.name;
-  return eintrag.besitzer === kuerzel || eintrag.verantwortlich === kuerzel;
+  return istPerson(eintrag.besitzer, kuerzel) || istPerson(eintrag.verantwortlich, kuerzel);
 }
 
 // -- Texterkennung ----------------------------------------------------------
@@ -206,8 +216,57 @@ export function findeDoppelgaenger(text, vorhandene, { jetzt = new Date(), schwe
   return vorhandene
     .filter(t => t.typ === 'TASK')
     .filter(t => t.status !== 'DONE' || (t.erledigtAm && t.erledigtAm >= grenze))
-    .map(t => ({ eintrag: t, wert: aehnlichkeit(text, `${t.titel} ${t.beschreibung || ''}`) }))
+    // Titel gegen Titel UND gegen Titel+Text, das Beste zaehlt: eine lange
+    // Beschreibung verwaesserte sonst den Vergleich so stark, dass selbst
+    // fast gleiche Titel unter die Schwelle fielen.
+    .map(t => ({
+      eintrag: t,
+      wert: Math.max(
+        aehnlichkeit(text, t.titel),
+        aehnlichkeit(text, `${t.titel} ${t.beschreibung || ''}`),
+      ),
+    }))
     .filter(x => x.wert >= schwelle)
     .sort((a, b) => b.wert - a.wert)
     .slice(0, 5);
+}
+
+// -- Wiederkehrende Aufgaben ------------------------------------------------
+
+/** Was sich wiederholen kann. Bewusst wenige, klar benannte Rhythmen. */
+export const WIEDERHOLUNGEN = Object.freeze({
+  taeglich: { label: 'täglich', tage: 1 },
+  woechentlich: { label: 'wöchentlich', tage: 7 },
+  zweiwoechentlich: { label: 'alle zwei Wochen', tage: 14 },
+  vierwoechentlich: { label: 'alle vier Wochen', tage: 28 },
+  monatlich: { label: 'monatlich', monate: 1 },
+  vierteljaehrlich: { label: 'vierteljährlich', monate: 3 },
+  jaehrlich: { label: 'jährlich', monate: 12 },
+});
+
+/** Naechster Termin nach einer Erledigung. Gibt null zurueck, wenn die Regel unbekannt ist. */
+export function naechsterTermin(regel, ab = new Date()) {
+  const r = WIEDERHOLUNGEN[regel];
+  if (!r) return null;
+  const d = ab instanceof Date ? new Date(ab) : new Date(`${ab}T00:00:00`);
+  if (r.tage) d.setDate(d.getDate() + r.tage);
+  else d.setMonth(d.getMonth() + r.monate);
+  return alsTag(d);
+}
+
+/**
+ * Faellige Wiederholungen: erledigte Aufgaben mit Regel, deren naechster
+ * Termin erreicht ist. Erzeugt die Nachfolger - der Verlauf der erledigten
+ * Aufgabe bleibt unangetastet, damit nachvollziehbar ist, was wann lief.
+ */
+export function faelligeWiederholungen(eintraege, { jetzt = new Date() } = {}) {
+  const heute = alsTag(jetzt);
+  return (eintraege ?? []).filter(e =>
+    e.typ === 'TASK' &&
+    e.status === 'DONE' &&
+    e.wiederholung?.regel &&
+    WIEDERHOLUNGEN[e.wiederholung.regel] &&
+    e.wiederholung.naechsteFaelligkeit &&
+    e.wiederholung.naechsteFaelligkeit <= heute &&
+    e.wiederholung.zuletztErzeugt !== e.wiederholung.naechsteFaelligkeit);
 }

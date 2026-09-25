@@ -27,12 +27,13 @@ import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../ope
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
-  istUeberfaellig, tageBis,
+  istUeberfaellig, tageBis, istPerson,
 } from '../operations/lib/organisation.mjs';
-import { analysiere as orgAnalysiere } from '../operations/lib/organisation-analyse.mjs';
+import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
   lies as orgLies, schreib as orgSchreib, dateiPfad as orgDatei, baueEintrag,
   findeEintrag, aendere as orgAendere, kommentiere as orgKommentiere,
+  speichereAnhang, anhangPfad, ANHANG_TYPEN,
 } from '../operations/lib/organisation-speicher.mjs';
 import { leseBenutzer as orgLeseBenutzer } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
@@ -1011,14 +1012,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let liste = this._orgSichtbar(daten, benutzer);
 
       if (bereich === 'meine-aufgaben') {
-        liste = liste.filter(e => e.typ === 'TASK' && (e.verantwortlich === ich || (!e.verantwortlich && e.besitzer === ich)));
+        liste = liste.filter(e => e.typ === 'TASK' && (istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istPerson(e.besitzer, ich))));
         liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
       } else if (bereich === 'meine-notizen') {
-        liste = liste.filter(e => e.typ === 'NOTE' && e.besitzer === ich && e.sichtbarkeit === 'PRIVAT');
+        liste = liste.filter(e => e.typ === 'NOTE' && istPerson(e.besitzer, ich) && e.sichtbarkeit === 'PRIVAT');
       } else if (bereich === 'team-aufgaben') {
         liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT');
         if (person === 'unzugewiesen') liste = liste.filter(e => !e.verantwortlich);
-        else if (person) liste = liste.filter(e => e.verantwortlich === person);
+        else if (person) liste = liste.filter(e => istPerson(e.verantwortlich, person));
         if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
       } else if (bereich === 'team-notizen') {
         liste = liste.filter(e => e.typ === 'NOTE' && e.sichtbarkeit !== 'PRIVAT');
@@ -1042,7 +1043,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const jetzt = new Date();
       const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
       const sichtbar = this._orgSichtbar(daten, benutzer).filter(e => e.typ === 'TASK');
-      const meine = sichtbar.filter(e => e.verantwortlich === ich || (!e.verantwortlich && e.besitzer === ich));
+      const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istPerson(e.besitzer, ich)));
       const zaehl = (l) => ({
         offen: l.filter(e => e.status !== 'DONE').length,
         heute: l.filter(e => e.status !== 'DONE' && tageBis(e.faellig, jetzt) === 0).length,
@@ -1066,6 +1067,39 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: true, vorschlag, doppelgaenger: doppelt };
     },
 
+    /**
+     * Liste einfuegen: eine Zeile je Aufgabe. So kommen Sammlungen aus
+     * ChatGPT, aus einer Mail oder vom Zettel herein. Erst Vorschau
+     * (`speichern: false`), dann Anlegen - jede Zeile mit Duplikatpruefung.
+     */
+    orgListeEinfuegen({ text = '', speichern = false, zeilen = null } = {}, { benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const sichtbar = this._orgSichtbar(daten, benutzer);
+
+      if (!speichern) {
+        const vorschlaege = orgAusListe(text, { mitarbeiter: this.orgTeam(), bereiche: daten.bereiche, benutzer });
+        return {
+          verfuegbar: true,
+          anzahl: vorschlaege.length,
+          vorschlaege: vorschlaege.map(v => ({
+            ...v,
+            doppelgaenger: findeDoppelgaenger(v.titel, sichtbar)
+              .map(d => ({ id: d.eintrag.id, titel: d.eintrag.titel, status: d.eintrag.status, wert: Math.round(d.wert * 100) })),
+          })),
+        };
+      }
+
+      const anzulegen = Array.isArray(zeilen) ? zeilen : [];
+      const angelegt = [];
+      for (const roh of anzulegen) {
+        angelegt.push(baueEintrag(roh, { benutzer }));
+      }
+      daten.eintraege.push(...angelegt);
+      if (angelegt.length) orgSchreib(daten, datei);
+      return { ok: true, angelegt: angelegt.length, eintraege: angelegt };
+    },
+
     orgNeu(roh = {}, { benutzer = null } = {}) {
       const datei = this._orgDatei();
       const daten = orgLies(datei);
@@ -1081,6 +1115,13 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
       if (!darfSehen(eintrag, benutzer) || !darfAendern(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
+      // Wiederholung wird als eigenes Objekt gefuehrt, deshalb hier gesetzt.
+      if ('wiederholungRegel' in felder) {
+        const regel = felder.wiederholungRegel || null;
+        eintrag.wiederholung = regel ? { regel, naechsteFaelligkeit: null, zuletztErzeugt: null } : null;
+        eintrag.verlauf.push({ zeit: new Date().toISOString(), wer: benutzer?.kuerzel || benutzer?.name || 'inhaber', was: regel ? `Wiederholung auf ${regel} gesetzt` : 'Wiederholung entfernt' });
+        delete felder.wiederholungRegel;
+      }
       orgAendere(eintrag, felder, { benutzer });
       orgSchreib(daten, datei);
       return { ok: true, eintrag };
@@ -1105,6 +1146,32 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const { laufe } = await import('../operations/scripts/aufgaben-pruefen.mjs');
       const ergebnis = await laufe({ datei: this._orgDatei(), id });
       return { ok: true, ...ergebnis };
+    },
+
+    /** Anhang hochladen (Base64 im Rumpf - kein Multipart noetig). */
+    orgAnhang({ id, name, typ, daten } = {}, { benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const gespeichert = orgLies(datei);
+      const eintrag = findeEintrag(gespeichert, id);
+      if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
+      if (!darfSehen(eintrag, benutzer) || !darfAendern(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
+      let anhang;
+      try {
+        anhang = speichereAnhang(eintrag, { name, typ, daten }, { dir: privatDirPath || privatDir(), benutzer });
+      } catch (e) { throw new ApiError(400, e.message); }
+      orgSchreib(gespeichert, datei);
+      return { ok: true, anhang, eintrag };
+    },
+
+    /** Anhang ausliefern - nur wer den Eintrag sehen darf. */
+    orgAnhangLesen({ id = '', datei = '', benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      const eintrag = findeEintrag(daten, id);
+      if (!eintrag || !darfSehen(eintrag, benutzer)) throw new ApiError(404, 'Nicht gefunden');
+      const anhang = (eintrag.anhaenge ?? []).find(a => a.datei === datei);
+      if (!anhang) throw new ApiError(404, 'Anhang nicht gefunden');
+      const pfad = anhangPfad(id, datei, privatDirPath || privatDir());
+      return { pfad, typ: anhang.typ, name: anhang.name };
     },
 
     orgEintrag({ id = '', benutzer = null } = {}) {
