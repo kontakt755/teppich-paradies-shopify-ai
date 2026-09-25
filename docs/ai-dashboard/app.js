@@ -4249,6 +4249,10 @@ function openOrgSchnell(vorbelegt = '', verknuepft = null) {
       org.entwurf = null;
       $('#dialogRoot').innerHTML = '';
       orgFrisch();
+      // Wurde die Aufgabe aus einer Kundenakte heraus angelegt, muss deren
+      // Notizliste neu geladen werden - sonst steht die frische Notiz erst
+      // nach einem Seitenwechsel dort.
+      if (verknuepft?.art === 'kunde') { kunden.notizen = null; kunden.notizenKey = null; }
       render();
     } catch (e) {
       toast(`Fehler: ${e.message}`, 'crit');
