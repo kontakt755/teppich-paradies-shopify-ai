@@ -1118,6 +1118,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           boden: eingang.boden || null,
           produkt: hinweis.handle,
           produktTitel: hinweis.titel,
+          farbe: hinweis.farbe ?? null,
           sicher: hinweis.sicher,
           einwilligung: true,
         },

@@ -178,7 +178,7 @@ function datenKennung() {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -3548,7 +3548,7 @@ function viewFotos() {
           <div>
             <div class="t">${esc(e.titel)}</div>
             <div class="m">${e.produkt
-              ? `<a href="https://www.teppich-paradies.net/products/${esc(e.produkt)}" target="_blank" rel="noopener">${esc(e.produktTitel || e.produkt)}</a>`
+              ? `<a href="https://www.teppich-paradies.net/products/${esc(e.produkt)}" target="_blank" rel="noopener">${esc(e.produktTitel || e.produkt)}</a>${e.farbe ? ` <span class="muted">· Farbe ${esc(e.farbe)}</span>` : ''}`
               : '<span class="muted">nicht im Shop – „exklusiv bei Teppich-Paradies"</span>'}
               ${e.sicher === false && e.produkt ? ' <span class="badge gap">bitte prüfen</span>' : ''}
               · von ${esc(e.wer)} · ${esc(fmtDate(e.erstelltAm))}</div>
