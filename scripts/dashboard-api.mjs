@@ -1012,8 +1012,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let liste = this._orgSichtbar(daten, benutzer);
 
       if (bereich === 'meine-aufgaben') {
-        liste = liste.filter(e => e.typ === 'TASK' && (istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istPerson(e.besitzer, ich))));
-        liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
+        // Nur was mir ausdruecklich zugewiesen ist. Unzugewiesenes steht im
+        // Team und wird dort verteilt - sonst sammelt sich bei dem, der es
+        // aufgeschrieben hat, Arbeit an, die er gar nicht macht.
+        liste = liste.filter(e => e.typ === 'TASK' && istPerson(e.verantwortlich, ich));
+        if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
       } else if (bereich === 'meine-notizen') {
         liste = liste.filter(e => e.typ === 'NOTE' && istPerson(e.besitzer, ich) && e.sichtbarkeit === 'PRIVAT');
       } else if (bereich === 'team-aufgaben') {
@@ -1043,7 +1046,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const jetzt = new Date();
       const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
       const sichtbar = this._orgSichtbar(daten, benutzer).filter(e => e.typ === 'TASK');
-      const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istPerson(e.besitzer, ich)));
+      const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich));
       const zaehl = (l) => ({
         offen: l.filter(e => e.status !== 'DONE').length,
         heute: l.filter(e => e.status !== 'DONE' && tageBis(e.faellig, jetzt) === 0).length,

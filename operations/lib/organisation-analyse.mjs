@@ -8,7 +8,7 @@
  * Jeder Vorschlag ist aenderbar und nennt seine Begruendung.
  */
 
-import { alsTag, STANDARD_BEREICHE } from './organisation.mjs';
+import { alsTag, STANDARD_BEREICHE, istTechnisch } from './organisation.mjs';
 
 /** Woerter, die eine Handlung anzeigen - daran erkennt man eine Aufgabe. */
 const HANDLUNG = [
@@ -22,6 +22,7 @@ const HANDLUNG = [
 const FESTSTELLUNG = ['steht', 'stehen', 'liegt', 'liegen', 'ist neu', 'wurde geändert', 'wurde geaendert', 'info', 'hinweis', 'zur info', 'merken'];
 
 const BEREICH_WOERTER = {
+  'Website & KI': ['dashboard', 'claude', 'chatgpt', 'ki ', 'skript', 'script', 'code', 'theme', 'template', 'schnittstelle', 'api', 'automatisierung', 'token', 'zugang'],
   'Online-Shop': ['shop', 'shopify', 'online', 'webshop', 'website', 'webseite', 'produktseite', 'artikel online'],
   Laden: ['laden', 'ladengeschäft', 'ladengeschaeft', 'theke', 'ausstellung', 'schaufenster'],
   Baustelle: ['baustelle', 'verlegen', 'verlegung', 'aufmaß', 'aufmass', 'montage'],
@@ -171,7 +172,10 @@ export function analysiere(text, { mitarbeiter = [], bereiche = STANDARD_BEREICH
   const teile = teileAuf(text);
 
   const eigen = benutzer?.kuerzel || benutzer?.name || null;
-  const fuerMich = !person && typ.typ === 'TASK';
+  // Ohne genannte Person: nur technische Aufgaben landen bei mir. Bestellungen,
+  // Kunden, Lieferanten und alles Geschaeftliche gehoert ins Team - dort sieht
+  // es jeder, statt still bei einem zu liegen, der es nicht macht.
+  const fuerMich = !person && typ.typ === 'TASK' && istTechnisch(bereich?.bereich ?? null);
 
   return {
     typ: typ.typ,
