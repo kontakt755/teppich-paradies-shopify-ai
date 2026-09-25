@@ -135,6 +135,9 @@ export function bestellzeile(auftrag, { statusAlle = {}, rueckrufeAlle = {} } = 
     storniert: !!auftrag.storniert,
     offen: !!auftrag.offen,
     beratungOffen,
+    // Der lokal gepflegte Rueckrufstand gehoert an die Zeile: ohne ihn stuende
+    // ein bereits erledigter Rueckruf in jeder Arbeitsliste weiter ganz oben.
+    rueckrufStatus: rueckruf?.status ?? null,
     status: auftrag.status,
     ampel: auftrag.ampel,
     adminUrl: auftrag.adminUrl,
