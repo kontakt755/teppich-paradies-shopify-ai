@@ -637,6 +637,13 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+  /* Lange Handlungshinweise in der Kundenliste sind inhaltlich Badges, aber
+     keine kurzen Statuswoerter. Sie muessen auf schmalen Displays umbrechen. */
+  .fall-punkt .badge {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 /* Der klebende Tabellenkopf klebte nicht: der Rahmen war selbst der

@@ -460,7 +460,7 @@ function heuteEinkaufBlock() {
   // Nur sichtbar, wenn es etwas zum Nachhaken gibt - eine 0 waere hier reines Rauschen.
   const langeBestellt = [...ware, ...muster].filter(p => { const e = afEintragFuer(p); return e?.status === 'bestellt' && afWartetage(e) >= AF_WARTE_WARN; }).length;
   const neu = heuteNeuSeitGestern(b);
-  const stand = bestelldatenStand(b);
+  const stand = bestelldatenStand(b, einkauf.aktualisierung);
   return `
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain', '#/einkauf')}
@@ -480,14 +480,21 @@ function heuteEinkaufBlock() {
 /**
  * Wie alt sind die Bestelldaten wirklich? `erstellt` ist nur der Zeitpunkt,
  * zu dem der Server die Datei gelesen hat - es als "Stand" anzuzeigen, sah
- * immer taufrisch aus, egal wie alt der Shopify-Abruf war. Ohne
- * `exportiertAm` wird das jetzt gesagt statt beschoenigt.
+ * immer taufrisch aus, egal wie alt der Shopify-Abruf war. Wenn ein alter
+ * Export `exportiertAm` noch nicht enthaelt, gilt nur der nachweislich
+ * erfolgreiche Bestelllauf als belastbarer Ersatz.
  */
-function bestelldatenStand(b) {
-  if (!b?.exportiertAm) return { text: 'Stand der Bestelldaten unbekannt', alt: true };
-  const alter = Date.now() - new Date(b.exportiertAm).getTime();
+function bestelldatenStand(b, aktualisierung) {
+  // Aeltere und extern erzeugte Admin-API-Exporte enthalten noch kein
+  // `exportiertAm`. Der erfolgreiche Aktualisierungslauf kennt trotzdem den
+  // Zeitpunkt, zu dem genau dieser Datenbestand geholt wurde. Ein fehlgeschlagener
+  // Lauf darf dagegen keinen frischen Stand vortaeuschen.
+  const bestellungen = aktualisierung?.teile?.bestellungen;
+  const zeitpunkt = b?.exportiertAm || (bestellungen?.erfolg ? bestellungen.zeitpunkt : null);
+  if (!zeitpunkt) return { text: 'Stand der Bestelldaten unbekannt', alt: true };
+  const alter = Date.now() - new Date(zeitpunkt).getTime();
   const alt = !(alter < 24 * 60 * 60 * 1000);
-  return { text: `Stand Bestellungen ${fmtDateTime(b.exportiertAm)}${alt ? ' – älter als ein Tag' : ''}`, alt };
+  return { text: `Stand Bestellungen ${fmtDateTime(zeitpunkt)}${alt ? ' – älter als ein Tag' : ''}`, alt };
 }
 
 /**
