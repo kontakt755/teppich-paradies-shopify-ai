@@ -1328,7 +1328,7 @@
       "settings": {
         "eyebrow": "Newsletter",
         "betrag": 15,
-        "mindestwert": 200
+        "mindestwert": 100
       }
     }
   },
