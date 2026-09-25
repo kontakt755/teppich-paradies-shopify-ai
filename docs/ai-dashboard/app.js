@@ -3038,6 +3038,7 @@ function paletteItems(q) {
   items.push({ kind: 'Aktion', label: 'Neue Aufgabe auf GitHub anlegen', run: () => window.open(newIssueUrl({ template: 'feature.yml' }), '_blank', 'noopener') });
   items.push({ kind: 'Aktion', label: 'Entscheidung anlegen', run: () => window.open(newIssueUrl({ template: 'entscheidung.yml' }), '_blank', 'noopener') });
   items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
+  items.push({ kind: 'Aktion', label: 'Liste einfügen (mehrere Aufgaben auf einmal)', run: () => openOrgListe() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
   if (state.capabilities.sync) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
   items.push({ kind: 'Aktion', label: 'GitHub Issues öffnen', run: () => window.open(`${REPO_URL}/issues`, '_blank', 'noopener') });
@@ -3185,8 +3186,22 @@ function viewHilfe() {
         <li><b>Meine Notizen</b>: dein privater Block. Niemand sonst sieht ihn – auch der Chef nicht. Mit einem Klick wird daraus eine Aufgabe.</li>
         <li><b>Team-Aufgaben / Team-Notizen</b>: alles, was andere angeht.</li>
         <li><b>✓ Abhaken</b> erledigt eine Aufgabe. Erledigtes bleibt im <b>Archiv</b> auffindbar.</li>
+        <li><b>Wiederholung</b> in der Aufgabe (z. B. „monatlich"): nach dem Abhaken taucht sie am nächsten Termin von selbst wieder auf.</li>
+        <li><b>Anhänge</b>: Bilder, PDF oder Text bis 10 MB direkt an der Aufgabe.</li>
+        <li><b>Jetzt prüfen</b> misst Aufgaben mit hinterlegtem Erfolgskriterium am echten Shop – automatisch auch jeden Morgen um 9:30.</li>
       </ul>
       <p class="small muted" style="margin-top:8px">Der Bereich <b>Entwicklung</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub, KI-Läufe). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
+
+    ${hilfeKarte('Aufgaben aus ChatGPT oder von einem Zettel übernehmen', `
+      <p>Im Bereich <b>Aufgaben</b> oben auf <b>Liste einfügen</b>. Eine Zeile je Aufgabe – Aufzählungszeichen, Nummerierung und Kästchen werden automatisch entfernt, Überschriften übersprungen.</p>
+      <p>Dann <b>Vorschau</b>: Jede Zeile bekommt einen Vorschlag für Art, Bereich, Person und Termin. Zeilen, die es vielleicht schon gibt, sind rot markiert und <b>nicht</b> angehakt. Mit <b>Ausgewählte anlegen</b> geht nur rein, was du auch willst.</p>
+      <p class="small muted">Das kannst du ChatGPT sagen, damit die Liste gleich passt:</p>
+      <pre class="mono small" style="white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:8px;margin:6px 0 0">Gib mir die offenen Aufgaben als einfache Liste.
+Eine Zeile je Aufgabe, keine Unterpunkte, keine Erklärungen.
+Beginne jede Zeile mit einem Bindestrich.
+Schreib die Tätigkeit ans Ende: „Preisliste einpflegen“, nicht „Einpflegen der Preisliste“.
+Wenn jemand zuständig ist, nenne den Namen am Anfang.
+Wenn es einen Termin gibt, schreib „heute“, „morgen“ oder das Datum dazu.</pre>`)}
 
     ${hilfeKarte('Wenn etwas nicht stimmt', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">
@@ -3305,6 +3320,10 @@ const ORG_STATUS_LABEL = {
   WAITING: 'Warten auf', DEFERRED: 'Zurückgestellt', DONE: 'Erledigt',
 };
 const ORG_PRIO_LABEL = { URGENT: 'dringend', HIGH: 'hoch', NORMAL: 'normal', LOW: 'niedrig' };
+const ORG_WIEDERHOLUNG_LABEL = {
+  '': 'einmalig', taeglich: 'täglich', woechentlich: 'wöchentlich', zweiwoechentlich: 'alle zwei Wochen',
+  vierwoechentlich: 'alle vier Wochen', monatlich: 'monatlich', vierteljaehrlich: 'vierteljährlich', jaehrlich: 'jährlich',
+};
 const ORG_PRUEF_LABEL = {
   AUTO: 'automatisch prüfbar', SEMI_AUTO: 'automatisch prüfbar, Mensch bestätigt',
   MANUAL: 'nur von Hand', EXTERNAL: 'hängt an jemandem von außen',
@@ -3435,6 +3454,9 @@ function orgDetailAnsicht(id) {
           ? `<input type="date" data-org-feld="faellig" data-org-id="${esc(e.id)}" value="${esc(e.faellig || '')}">`
           : (e.faellig ? esc(fmtDate(e.faellig)) : '–'))}
         ${feld('Prüfart', d.darfAendern ? auswahl('pruefTyp', Object.entries(ORG_PRUEF_LABEL), e.pruefTyp) : esc(ORG_PRUEF_LABEL[e.pruefTyp]))}
+        ${feld('Wiederholung', d.darfAendern
+          ? auswahl('wiederholungRegel', Object.entries(ORG_WIEDERHOLUNG_LABEL), e.wiederholung?.regel || '')
+          : esc(ORG_WIEDERHOLUNG_LABEL[e.wiederholung?.regel || ''] || 'einmalig'))}
         ${e.wartetAuf ? feld('Warten auf', `${esc(e.wartetAuf)}${e.wartetSeit ? ` <span class="small muted">seit ${esc(fmtDate(e.wartetSeit))}</span>` : ''}`) : ''}
         ${e.erledigtAm ? feld('Erledigt am', esc(fmtDateTime(e.erledigtAm))) : ''}
       </div>
@@ -3448,6 +3470,16 @@ function orgDetailAnsicht(id) {
         · ${esc(fmtDateTime(p.zeit))} · ${esc(p.pruefer)} · ${esc(p.methode)}
         ${p.soll !== null || p.ist !== null ? `<div class="small">Soll: ${esc(p.soll ?? '–')} · Ist: ${esc(p.ist ?? '–')}</div>` : ''}
         ${p.begruendung ? `<div class="small muted">${esc(p.begruendung)}</div>` : ''}</li>`).join('')}</ul></section>` : ''}
+
+    <section class="card" style="margin-bottom:14px"><div class="card-head"><h2>Anhänge</h2></div>
+      ${e.anhaenge?.length ? `<ul style="margin:0 0 10px;padding-left:20px;line-height:1.9">${e.anhaenge.map(a => `<li>
+        <a href="/api/org/anhang-lesen?${new URLSearchParams({ id: e.id, datei: a.datei })}" target="_blank" rel="noopener">${esc(a.name)}</a>
+        <span class="small muted">${esc((a.groesse / 1024).toFixed(0))} KB · ${esc(fmtDate(a.zeit))}</span></li>`).join('')}</ul>`
+        : '<p class="small muted">Noch kein Anhang.</p>'}
+      ${d.darfAendern ? `<label class="btn btn-sm" style="cursor:pointer">Datei anhängen
+        <input type="file" data-org-anhang="${esc(e.id)}" accept="image/*,application/pdf,text/plain,text/csv" hidden>
+      </label> <span class="small muted">Bilder, PDF, Text – bis 10 MB</span>` : ''}
+    </section>
 
     <section class="card" style="margin-bottom:14px"><div class="card-head"><h2>Kommentare</h2></div>
       ${e.kommentare?.length ? `<div class="rows">${e.kommentare.map(k => `<div class="row"><div>
@@ -3501,6 +3533,7 @@ function viewOrganisation() {
   const kopf = `<div class="page-head">
       <div><h1>Aufgaben &amp; Organisation</h1><p class="sub">Alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
       <div class="head-actions">
+        <button type="button" class="btn" data-org-liste title="Mehrere Aufgaben auf einmal einfügen – z. B. eine Liste aus ChatGPT">Liste einfügen</button>
         <button type="button" class="btn" data-org-pruefen title="Prüft Aufgaben mit hinterlegtem Erfolgskriterium gegen den echten Shop">Jetzt prüfen</button>
         <button type="button" class="btn btn-primary" data-org-schnell>+ Schnell erfassen</button>
       </div>
@@ -3536,6 +3569,8 @@ function openOrgSchnell(vorbelegt = '') {
       <button type="button" class="btn btn-primary" id="orgSpeichern">Speichern</button>
     </div>
   </div></div>`;
+  const meiner = root.firstElementChild;
+  const lebt = () => meiner.isConnected;
   const feld = $('#orgText');
   feld.focus();
   feld.setSelectionRange(feld.value.length, feld.value.length);
@@ -3545,7 +3580,7 @@ function openOrgSchnell(vorbelegt = '') {
     const v = org.entwurf?.vorschlag;
     const dop = org.entwurf?.doppelgaenger || [];
     const ziel = $('#orgVorschlag');
-    if (!ziel) return;
+    if (!ziel || !lebt()) return;
     if (!v) { ziel.innerHTML = ''; return; }
     const team = org.liste?.team || [];
     const bereiche = org.liste?.bereiche || [];
@@ -3581,6 +3616,7 @@ function openOrgSchnell(vorbelegt = '') {
   };
 
   const analysiere = () => {
+    if (!lebt()) return;
     const text = feld.value.trim();
     if (text.length < 4) { org.entwurf = null; zeichneVorschlag(); return; }
     orgSchreiben('/api/org/analyse', { text })
@@ -3628,6 +3664,7 @@ function openOrgSchnell(vorbelegt = '') {
   };
 
   root.addEventListener('click', (e) => {
+    if (!lebt()) return;
     if (e.target.closest('#orgSpeichern')) { speichern(); return; }
     if (e.target.closest('#orgTeilen')) { speichern(org.entwurf?.vorschlag?.mehrereAufgaben || []); return; }
     const oeffnen = e.target.closest('[data-org-oeffnen]');
@@ -3636,6 +3673,78 @@ function openOrgSchnell(vorbelegt = '') {
   feld.addEventListener('keydown', (e) => {
     // Auf dem Handy und am Rechner: fertig getippt, abschicken.
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); speichern(); }
+  });
+}
+
+/**
+ * Liste einfuegen: eine Zeile je Aufgabe. Gedacht fuer Sammlungen aus
+ * ChatGPT, aus einer Mail oder von einem Zettel - erst Vorschau mit
+ * Duplikatwarnung, dann anlegen. Nichts wird ungefragt gespeichert.
+ */
+function openOrgListe() {
+  const root = $('#dialogRoot');
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Liste einfügen" style="max-width:720px">
+    <h2>Liste einfügen</h2>
+    <p class="small muted">Eine Zeile je Aufgabe. Aufzählungszeichen, Nummerierung und Kästchen werden entfernt, Überschriften übersprungen.</p>
+    <textarea id="orgListeText" rows="7" style="width:100%;box-sizing:border-box" placeholder="- Logo im Shop austauschen&#10;- Vinylpreise beim Lieferanten prüfen&#10;- Ben soll die Tarkett-Muster bestellen"></textarea>
+    <div class="toolbar" style="margin-top:8px"><button type="button" class="btn" id="orgListeVorschau">Vorschau</button></div>
+    <div id="orgListeErgebnis" class="small" style="margin-top:10px"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>Abbrechen</button>
+      <button type="button" class="btn btn-primary" id="orgListeSpeichern" disabled>Ausgewählte anlegen</button>
+    </div>
+  </div></div>`;
+  const meiner = root.firstElementChild;      // dieser Dialog, nicht irgendeiner
+  const lebt = () => meiner.isConnected;
+  $('#orgListeText').focus();
+  let vorschlaege = [];
+
+  const zeichne = () => {
+    const ziel = $('#orgListeErgebnis');
+    if (!ziel || !lebt()) return;             // Dialog inzwischen geschlossen
+    if (!vorschlaege.length) { ziel.innerHTML = '<p class="small muted">Noch keine Vorschau.</p>'; $('#orgListeSpeichern').disabled = true; return; }
+    ziel.innerHTML = `<p class="small muted">${vorschlaege.length} ${vorschlaege.length === 1 ? 'Zeile' : 'Zeilen'} erkannt – abwählen, was nicht rein soll:</p>
+      <div class="rows">${vorschlaege.map((v, i) => `<div class="row">
+        <div>
+          <div class="t"><label style="display:flex;gap:8px;align-items:flex-start">
+            <input type="checkbox" data-org-liste-an="${i}" ${v.doppelgaenger?.length ? '' : 'checked'}>
+            <span>${esc(v.titel)}</span></label></div>
+          <div class="m">${esc(v.typ === 'TASK' ? 'Aufgabe' : 'Notiz')}${v.bereich ? ` · ${esc(v.bereich)}` : ''}${v.verantwortlich ? ` · für ${esc(v.verantwortlich)}` : ''}${v.faellig ? ` · fällig ${esc(fmtDate(v.faellig))}` : ''}</div>
+          ${v.doppelgaenger?.length ? `<div class="m warnc">Gibt es vielleicht schon: ${v.doppelgaenger.map(d => esc(d.titel)).join(' · ')} – standardmäßig abgewählt</div>` : ''}
+        </div>
+      </div>`).join('')}</div>`;
+    $('#orgListeSpeichern').disabled = false;
+  };
+
+  root.addEventListener('click', async (e) => {
+    if (!lebt()) return;
+    if (e.target.closest('#orgListeVorschau')) {
+      const text = $('#orgListeText').value;
+      try {
+        const d = await orgSchreiben('/api/org/liste-einfuegen', { text, speichern: false });
+        vorschlaege = d.vorschlaege || [];
+        zeichne();
+      } catch (err) { toast(`Fehler: ${err.message}`, 'crit'); }
+      return;
+    }
+    if (e.target.closest('#orgListeSpeichern')) {
+      const knopf = $('#orgListeSpeichern');
+      const gewaehlt = vorschlaege.filter((_, i) => root.querySelector(`[data-org-liste-an="${i}"]`)?.checked);
+      if (!gewaehlt.length) { toast('Nichts ausgewählt', 'crit'); return; }
+      knopf.disabled = true; knopf.textContent = 'Lege an …';
+      try {
+        const r = await orgSchreiben('/api/org/liste-einfuegen', { speichern: true, zeilen: gewaehlt.map(v => ({
+          typ: v.typ, titel: v.titel, beschreibung: v.beschreibung, verantwortlich: v.verantwortlich,
+          bereich: v.bereich, prioritaet: v.prioritaet, faellig: v.faellig, sichtbarkeit: v.sichtbarkeit,
+        })) });
+        toast(`${r.angelegt} ${r.angelegt === 1 ? 'Eintrag' : 'Einträge'} angelegt`);
+        root.innerHTML = '';
+        orgFrisch(); render();
+      } catch (err) {
+        toast(`Fehler: ${err.message}`, 'crit');
+        knopf.disabled = false; knopf.textContent = 'Ausgewählte anlegen';
+      }
+    }
   });
 }
 
@@ -3737,8 +3846,12 @@ function bindEvents() {
     // dadurch ging jeder per Maus-Klick bestaetigte Dialog verloren, ohne zu speichern.
     const closeTarget = e.target.closest('[data-close-dialog]');
     if (closeTarget) {
-      const insideForm = e.target.closest('form');
-      if (closeTarget === e.target || !insideForm) { $('#dialogRoot').innerHTML = ''; return; }
+      // Geschlossen wird nur, wenn das Schliessen-Element selbst getroffen
+      // wurde (Abbrechen) oder direkt der Hintergrund. Die frühere Regel
+      // "ausserhalb eines <form>" schloss jeden Klick in Dialogen ohne
+      // Formular - dort war kein Knopf bedienbar.
+      const imDialog = e.target.closest('.dialog');
+      if (closeTarget === e.target || !imDialog) { $('#dialogRoot').innerHTML = ''; return; }
     }
     if (e.target.closest('[data-close-palette]') && !e.target.closest('.palette')) { closePalette(); return; }
     const act = e.target.closest('[data-act]');
@@ -3805,6 +3918,7 @@ function bindEvents() {
     if (druckBtn) { e.preventDefault(); window.print(); return; }
     // Aufgaben & Organisation
     if (e.target.closest('[data-org-schnell]')) { e.preventDefault(); openOrgSchnell(); return; }
+    if (e.target.closest('[data-org-liste]')) { e.preventDefault(); openOrgListe(); return; }
     const orgPruef = e.target.closest('[data-org-pruefen]');
     if (orgPruef) {
       e.preventDefault();
@@ -3899,7 +4013,27 @@ function bindEvents() {
     const a = e.target.closest('[data-action]');
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
-  document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
+  document.addEventListener('change', async e => {
+    const datei = e.target.closest('[data-org-anhang]');
+    if (datei?.files?.length) {
+      const f = datei.files[0];
+      if (f.size > 10 * 1024 * 1024) { toast('Datei ist größer als 10 MB', 'crit'); datei.value = ''; return; }
+      toast('Lade hoch …');
+      try {
+        const daten = await new Promise((fertig, schief) => {
+          const leser = new FileReader();
+          leser.onload = () => fertig(String(leser.result).split(',')[1] || '');
+          leser.onerror = () => schief(new Error('Datei nicht lesbar'));
+          leser.readAsDataURL(f);
+        });
+        await orgSchreiben('/api/org/anhang', { id: datei.dataset.orgAnhang, name: f.name, typ: f.type, daten });
+        toast('Angehängt');
+        org.detail = null; org.detailId = null; render();
+      } catch (err) { toast(`Fehler: ${err.message}`, 'crit'); }
+      datei.value = '';
+      return;
+    }
+    const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
     const org1 = e.target.closest('[data-org-feld]');
     if (org1) {
       const wert = org1.value === '' ? null : org1.value;

@@ -13,7 +13,7 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { lies, schreib, dateiPfad, haltePruefungFest, privatDir } from '../lib/organisation-speicher.mjs';
+import { lies, schreib, dateiPfad, haltePruefungFest, privatDir, erzeugeWiederholungen } from '../lib/organisation-speicher.mjs';
 import { pruefeAufgabe, pruefbar } from '../lib/aufgaben-waechter.mjs';
 
 export function argumente(argv) {
@@ -39,6 +39,9 @@ async function holen(url) {
 /** Ein Lauf ueber alle (oder eine) Aufgabe. Gibt die Zusammenfassung zurueck. */
 export async function laufe({ datei = dateiPfad(privatDir()), id = null, basis, holenFn = holen, jetzt = new Date() } = {}) {
   const daten = lies(datei);
+  // Erst die faelligen Wiederholungen anlegen, dann pruefen - so taucht eine
+  // monatliche Aufgabe am Stichtag von selbst wieder auf.
+  const wiederholt = id ? [] : erzeugeWiederholungen(daten, { jetzt });
   const kandidaten = pruefbar(daten.eintraege).filter(e => !id || e.id === id);
   const ergebnisse = [];
   for (const aufgabe of kandidaten) {
@@ -47,9 +50,10 @@ export async function laufe({ datei = dateiPfad(privatDir()), id = null, basis, 
     haltePruefungFest(aufgabe, ergebnis, { jetzt, pruefer: 'Aufgabenwächter' });
     ergebnisse.push({ id: aufgabe.id, titel: aufgabe.titel, vorher, nachher: aufgabe.status, ...ergebnis });
   }
-  if (ergebnisse.length) schreib(daten, datei);
+  if (ergebnisse.length || wiederholt.length) schreib(daten, datei);
   return {
     geprueftAm: jetzt.toISOString(),
+    wiederholt: wiederholt.length,
     geprueft: ergebnisse.length,
     erfuellt: ergebnisse.filter(r => r.erfuellt === true).length,
     offen: ergebnisse.filter(r => r.erfuellt === false).length,
@@ -62,7 +66,7 @@ async function main() {
   const a = argumente(process.argv.slice(2));
   if (a.hilfe) { console.log('npm run aufgaben:pruefen -- [--id <id>] [--basis <url>]'); return; }
   const r = await laufe({ id: a.id, basis: a.basis });
-  console.log(`Aufgabenwächter: ${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar`);
+  console.log(`Aufgabenwächter: ${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar${r.wiederholt ? ` · ${r.wiederholt} Wiederholung(en) neu angelegt` : ''}`);
   for (const e of r.ergebnisse) {
     console.log(`  [${e.erfuellt === true ? 'erfüllt' : e.erfuellt === false ? 'offen' : 'unklar'}] ${e.titel} (${e.vorher} → ${e.nachher}) · ${e.begruendung}`);
   }
