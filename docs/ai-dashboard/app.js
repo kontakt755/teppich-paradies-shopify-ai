@@ -175,10 +175,29 @@ function datenKennung() {
 // ---------------------------------------------------------------------------
 // Routing
 // ---------------------------------------------------------------------------
+/**
+ * Welche Ansicht gehoert wem. Das Ausblenden lief bisher nur ueber CSS an den
+ * Nav-Links - ueber die Befehlspalette, ein Lesezeichen oder den Datenstand-Chip
+ * landete ein Mitarbeiter trotzdem in der Entwicklungsansicht. Entschieden wird
+ * weiterhin serverseitig; hier geht es um eine ruhige, ehrliche Oberflaeche.
+ */
+const ANSICHT_ROLLEN = {
+  arbeit: 'inhaber', freigaben: 'inhaber', bereiche: 'inhaber',
+  insights: 'inhaber', aktivitaet: 'inhaber', team: 'inhaber',
+};
+
+function darfAnsicht(view) {
+  const noetig = ANSICHT_ROLLEN[view];
+  if (!noetig) return true;
+  const rolle = state.session?.benutzer?.rolle;
+  return !rolle || rolle === 'inhaber';        // ohne Anmeldung gilt der Notzugang
+}
+
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'team'].includes(path) ? path : 'heute';
+  const bekannt = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation', 'fotos', 'team'].includes(path) ? path : 'heute';
+  const view = darfAnsicht(bekannt) ? bekannt : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -3032,20 +3051,26 @@ function paletteItems(q) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
   const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (KI & GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
-  for (const [k, l] of views) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
-  for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
-  for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
-  items.push({ kind: 'Aktion', label: 'Neue Aufgabe auf GitHub anlegen', run: () => window.open(newIssueUrl({ template: 'feature.yml' }), '_blank', 'noopener') });
-  items.push({ kind: 'Aktion', label: 'Entscheidung anlegen', run: () => window.open(newIssueUrl({ template: 'entscheidung.yml' }), '_blank', 'noopener') });
+  for (const [k, l] of views) if (darfAnsicht(k)) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
+  items.push({ kind: 'Ansicht', label: 'Fotos vom fertigen Raum', run: () => navigate('fotos') });
+  if (darfAnsicht('team')) items.push({ kind: 'Ansicht', label: 'Team: Zugänge verwalten', run: () => navigate('team') });
+  if (darfAnsicht('arbeit')) {
+    for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
+    for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
+    items.push({ kind: 'Aktion', label: 'Neue Aufgabe auf GitHub anlegen', run: () => window.open(newIssueUrl({ template: 'feature.yml' }), '_blank', 'noopener') });
+    items.push({ kind: 'Aktion', label: 'Entscheidung anlegen', run: () => window.open(newIssueUrl({ template: 'entscheidung.yml' }), '_blank', 'noopener') });
+  }
   items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
   items.push({ kind: 'Aktion', label: 'Liste einfügen (mehrere Aufgaben auf einmal)', run: () => openOrgListe() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
-  if (state.capabilities.sync) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
-  items.push({ kind: 'Aktion', label: 'GitHub Issues öffnen', run: () => window.open(`${REPO_URL}/issues`, '_blank', 'noopener') });
-  const owners = [...new Set(state.tasks.map(t => t.owner).filter(Boolean))];
-  for (const o of owners) items.push({ kind: 'Person', label: `@${o}`, run: () => navigate('arbeit', { owner: o }) });
-  for (const e of [...new Set(state.tasks.map(t => t.executor).filter(Boolean))]) items.push({ kind: 'Agent', label: e, run: () => navigate('arbeit', { q: e }) });
-  for (const t of state.tasks) items.push({ kind: t.isDecision ? 'Entscheidung' : 'Aufgabe', label: `${t.id} ${t.title}`, sub: t.statusLabel, run: () => openTask(t.number) });
+  if (state.capabilities.sync && darfAnsicht('arbeit')) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
+  if (darfAnsicht('arbeit')) {
+    items.push({ kind: 'Aktion', label: 'GitHub Issues öffnen', run: () => window.open(`${REPO_URL}/issues`, '_blank', 'noopener') });
+    const owners = [...new Set(state.tasks.map(t => t.owner).filter(Boolean))];
+    for (const o of owners) items.push({ kind: 'Person', label: `@${o}`, run: () => navigate('arbeit', { owner: o }) });
+    for (const e of [...new Set(state.tasks.map(t => t.executor).filter(Boolean))]) items.push({ kind: 'Agent', label: e, run: () => navigate('arbeit', { q: e }) });
+    for (const t of state.tasks) items.push({ kind: t.isDecision ? 'Entscheidung' : 'Aufgabe', label: `${t.id} ${t.title}`, sub: t.statusLabel, run: () => openTask(t.number) });
+  }
   const ql = q.trim().toLowerCase();
   const scored = items.map(i => ({
     i,
@@ -3562,18 +3587,26 @@ async function teamSchreiben(nutzlast, meldung) {
 
 function openTeamNeu() {
   const root = $('#dialogRoot');
+  // Der erste Zugang muss der eigene sein: sobald ein Zugang existiert,
+  // verlangt jede Seite eine Anmeldung. Wer hier mit einem Mitarbeiter
+  // anfaengt, steht selbst vor der Tuer.
+  const erster = team.daten?.eingerichtet === false;
   root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Zugang anlegen" style="max-width:520px">
-    <h2>Zugang anlegen</h2>
+    <h2>${erster ? 'Dein eigener Zugang' : 'Zugang anlegen'}</h2>
+    ${erster ? `<div class="notice warn" style="margin-bottom:12px">Der erste Zugang ist deiner, als <strong>Inhaber</strong>.
+      Ab dann verlangt das Dashboard eine Anmeldung – du musst dich einmal mit diesem Namen und Passwort neu anmelden.
+      Danach legst du hier deine Mitarbeiter an.</div>` : ''}
     <p class="small muted">Das Passwort vergibst du und gibst es der Person weiter. Danach ist es nicht mehr einsehbar – nur neu setzbar.</p>
     <label class="small" for="tmName">Name</label>
     <input type="text" id="tmName" placeholder="z. B. Ben Beispiel" style="width:100%;box-sizing:border-box;margin:4px 0 10px">
     <label class="small" for="tmKuerzel">Anmeldename <span class="muted">(kurz, ohne Leerzeichen)</span></label>
     <input type="text" id="tmKuerzel" placeholder="z. B. ben" autocapitalize="off" style="width:100%;box-sizing:border-box;margin:4px 0 10px">
     <label class="small" for="tmRolle">Rolle</label>
-    <select id="tmRolle" style="width:100%;box-sizing:border-box;margin:4px 0 10px">
+    <select id="tmRolle"${erster ? ' disabled' : ''} style="width:100%;box-sizing:border-box;margin:4px 0 10px">
+      ${erster ? '<option value="inhaber">Inhaber – alles, auch Zugänge</option>' : `
       <option value="mitarbeiter">Mitarbeiter – Kunden, Bestellungen, Aufgaben</option>
       <option value="lesen">Nur lesen – darf nichts ändern</option>
-      <option value="inhaber">Inhaber – alles, auch Zugänge</option>
+      <option value="inhaber">Inhaber – alles, auch Zugänge</option>`}
     </select>
     <label class="small" for="tmPasswort">Passwort <span class="muted">(mindestens 8 Zeichen)</span></label>
     <input type="password" id="tmPasswort" style="width:100%;box-sizing:border-box;margin:4px 0 12px">
@@ -3589,13 +3622,20 @@ function openTeamNeu() {
       was: 'anlegen',
       name: $('#tmName').value.trim(),
       kuerzel: $('#tmKuerzel').value.trim(),
-      rolle: $('#tmRolle').value,
+      rolle: erster ? 'inhaber' : $('#tmRolle').value,
       passwort: $('#tmPasswort').value,
     };
     if (!nutzlast.name || !nutzlast.kuerzel) { toast('Name und Anmeldename sind nötig', 'crit'); return; }
     if (nutzlast.passwort.length < 8) { toast('Das Passwort braucht mindestens 8 Zeichen', 'crit'); return; }
     root.innerHTML = '';
-    await teamSchreiben(nutzlast, `${nutzlast.name} kann sich jetzt anmelden`);
+    await teamSchreiben(nutzlast, erster
+      ? 'Angelegt – bitte einmal neu anmelden'
+      : `${nutzlast.name} kann sich jetzt anmelden`);
+    if (erster) {
+      // Ab jetzt ist die Anmeldung Pflicht; ohne diesen Schritt sieht der
+      // Inhaber ab dem naechsten Klick nur noch Fehler.
+      setTimeout(() => { location.href = '/login'; }, 1200);
+    }
   });
 }
 
@@ -4493,7 +4533,9 @@ function bindEvents() {
   });
   $('#searchBtn').addEventListener('click', openPalette);
   $('#sessionBtn').addEventListener('click', logout);
-  $('#syncChip').addEventListener('click', () => navigate('insights'));
+  // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
+  // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.
+  $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));
   $('#navToggle').addEventListener('click', () => { const nav = $('#mainnav'); const open = nav.classList.toggle('open'); $('#navToggle').setAttribute('aria-expanded', String(open)); });
   window.addEventListener('hashchange', async () => { clearTimeout(qTimer); const prev = state.route.view; parseRoute(); state.selectedRow = -1; if (state.route.view === 'aktivitaet' && prev !== 'aktivitaet') { activityCache = await loadActivity(); protokollCache = await loadProtokoll(); benutzerCache = await loadBenutzer(); } render(); if (state.route.view === 'lexikon' && prev !== 'lexikon' && !state.route.params.get('handle')) $('#main input[data-param="lq"]')?.focus(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh({ silent: true }); });

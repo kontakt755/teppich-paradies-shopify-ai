@@ -1007,3 +1007,54 @@ test('Team verwalten: anlegen, Rolle, sperren - mit Schutz für den letzten Inha
   assert.equal(nachher.benutzer.find(b => b.kuerzel === 'ben').aktiv, false);
   assert.equal(api.teamAendern({ was: 'entsperren', kuerzel: 'ben' }, { benutzer: chef }).benutzer.find(b => b.kuerzel === 'ben').aktiv, true);
 });
+
+test('Rechte: Mitarbeiter kommt nicht an Inhaber-Endpunkte, Notzugang bleibt Inhaber', async () => {
+  const { handleApi } = await import('../../../scripts/serve-dashboard.mjs');
+  const antwort = () => {
+    const res = { code: null, body: null, writeHead(c) { this.code = c; return this; }, end(b) { this.body = b; },
+      setHeader() {}, getHeader() { return null; } };
+    return res;
+  };
+  const anfrage = (pfad, { method = 'GET', host = 'localhost:8001' } = {}) => ({ method, url: pfad, headers: { host } });
+
+  const chef = { name: 'Ahmet', kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { name: 'Ben', kuerzel: 'ben', rolle: 'mitarbeiter' };
+
+  // Mitarbeiter darf GitHub-Aufgaben nicht umhängen - das schreibt öffentlich
+  let res = antwort();
+  await handleApi(anfrage('/api/tasks/92/transition', { method: 'POST' }), res, '/api/tasks/92/transition', ben);
+  assert.equal(res.code, 403);
+
+  // ... und die Zugangsverwaltung sieht er auch nicht
+  res = antwort();
+  await handleApi(anfrage('/api/team/liste'), res, '/api/team/liste', ben);
+  assert.equal(res.code, 403);
+
+  // Fremder Host wird abgewiesen, auch lesend (DNS-Rebinding)
+  res = antwort();
+  await handleApi(anfrage('/api/kunden/liste', { host: 'boese.example' }), res, '/api/kunden/liste', chef);
+  assert.equal(res.code, 403);
+
+  // Der Notzugang (kein Mehrbenutzerbetrieb) bleibt Inhaber
+  res = antwort();
+  await handleApi(anfrage('/api/team/liste'), res, '/api/team/liste', null);
+  assert.notEqual(res.code, 403);
+});
+
+test('Der erste Zugang muss der Inhaber sein - sonst sperrt sich niemand wieder auf', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-erster');
+  fs.mkdirSync(dir, { recursive: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+
+  assert.throws(
+    () => api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: null }),
+    /erste Zugang muss dein eigener sein/,
+  );
+  // Ohne ausdrückliche Rolle wird der erste Zugang zum Inhaber statt zum Mitarbeiter
+  const r = api.teamAendern({ was: 'anlegen', name: 'Ahmet', kuerzel: 'ahmet', passwort: 'geheim12345' }, { benutzer: null });
+  assert.equal(r.benutzer[0].rolle, 'inhaber');
+  // Danach sind Mitarbeiter normal anlegbar
+  const r2 = api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: { kuerzel: 'ahmet', rolle: 'inhaber' } });
+  assert.equal(r2.benutzer.find(b => b.kuerzel === 'ben').rolle, 'mitarbeiter');
+});

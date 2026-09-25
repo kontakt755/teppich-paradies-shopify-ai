@@ -350,7 +350,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -1205,7 +1205,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try {
         let neu;
         if (was === 'anlegen') {
-          neu = benutzerAnlegen(liste, { name, kuerzel, passwort, rolle: rolle || 'mitarbeiter' });
+          // Der erste Zugang MUSS der Inhaber sein. Sobald benutzer.json
+          // existiert, verlangt jede Seite eine Anmeldung - wer als erstes
+          // einen Mitarbeiter anlegt, sperrt sich selbst aus.
+          const ersterZugang = liste.length === 0;
+          const gewuenscht = ersterZugang ? 'inhaber' : (rolle || 'mitarbeiter');
+          if (ersterZugang && rolle && rolle !== 'inhaber') {
+            throw new BenutzerFehler('Der erste Zugang muss dein eigener sein (Rolle „Inhaber") – sonst kommst du selbst nicht mehr herein');
+          }
+          neu = benutzerAnlegen(liste, { name, kuerzel, passwort, rolle: gewuenscht });
         } else if (was === 'passwort') {
           neu = passwortSetzen(liste, kuerzel, passwort);
         } else if (was === 'rolle') {
@@ -1232,7 +1240,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
         schreibeBenutzer(neu, datei);
         merke(benutzer, benutzer?.kuerzel || 'inhaber', 'Team', `${was}: ${kuerzel || name}`);
-        return { ok: true, ...this.teamListe() };
+        // Sperre, Rollenwechsel und neues Passwort gelten sofort - die
+        // laufenden Sitzungen dieses Zugangs verlieren damit ihre Wirkung.
+        if (['sperren', 'rolle', 'passwort'].includes(was) && typeof sitzungenVerwerfen === 'function') {
+          try { sitzungenVerwerfen(kuerzel); } catch { /* Abmelden darf die Aenderung nicht verhindern */ }
+        }
+        return { ok: true, ersterZugang: liste.length === 0, ...this.teamListe() };
       } catch (e) {
         if (e instanceof BenutzerFehler) throw new ApiError(400, e.message);
         throw e;
