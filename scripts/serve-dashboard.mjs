@@ -111,7 +111,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
@@ -123,9 +123,13 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
       // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
       if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
-    } else if (simple === 'benutzer') {
+    } else if (simple === 'benutzer' || simple === 'team/liste') {
       if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
       if (benutzer && benutzer.rolle !== 'inhaber') { send(res, 403, { error: 'Nur fuer die Rolle "inhaber" sichtbar' }); return; }
+    } else if (simple === 'team/aendern') {
+      if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
+      if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+      if (benutzer && benutzer.rolle !== 'inhaber') { send(res, 403, { error: 'Nur der Inhaber darf Zugaenge verwalten' }); return; }
     } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
@@ -164,6 +168,8 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'fotos/neu') result = api.fotosNeu(await readJson(req), { benutzer });
     else if (simple === 'fotos/liste') result = api.fotosListe({ offen: url.searchParams.get('offen') === '1', benutzer });
     else if (simple === 'fotos/produkt') result = api.fotosProdukt({ boden: url.searchParams.get('boden') || '' });
+    else if (simple === 'team/liste') result = api.teamListe();
+    else if (simple === 'team/aendern') result = api.teamAendern(await readJson(req), { benutzer });
     else if (simple === 'org/analyse') result = api.orgAnalyse({ text: (await readJson(req))?.text || '', benutzer });
     else if (simple === 'org/neu') result = api.orgNeu(await readJson(req), { benutzer });
     else if (simple === 'org/aendern') result = api.orgAendern(await readJson(req), { benutzer });

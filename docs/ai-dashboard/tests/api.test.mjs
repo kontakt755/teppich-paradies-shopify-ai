@@ -973,3 +973,37 @@ test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an'
   const meine = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: { kuerzel: 'Inhaber', rolle: 'inhaber' } });
   assert.equal(meine.eintraege.some(e => e.id === r.id), false);
 });
+
+test('Team verwalten: anlegen, Rolle, sperren - mit Schutz für den letzten Inhaber', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-team');
+  fs.mkdirSync(dir, { recursive: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  const chef = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+
+  assert.equal(api.teamListe().eingerichtet, false, 'ohne Zugänge läuft alles als Inhaber');
+
+  api.teamAendern({ was: 'anlegen', name: 'Ahmet', kuerzel: 'ahmet', passwort: 'geheim12345', rolle: 'inhaber' }, { benutzer: chef });
+  api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: chef });
+  assert.equal(api.teamListe().benutzer.length, 2);
+
+  // Passwörter verlassen den Server nicht und liegen nicht im Klartext
+  const roh = fs.readFileSync(path.join(dir, 'benutzer.json'), 'utf8');
+  assert.equal(roh.includes('geheim12345'), false, 'nur der Hash wird gespeichert');
+  assert.equal(JSON.stringify(api.teamListe()).toLowerCase().includes('hash'), false, 'kein Hash an die Oberfläche');
+
+  // Ein Mitarbeiter kommt hier nicht durch - serverseitig, nicht nur im Frontend
+  assert.throws(() => api.teamAendern({ was: 'rolle', kuerzel: 'ben', rolle: 'inhaber' }, { benutzer: ben }), /Nur der Inhaber/);
+
+  // Der letzte Inhaber kann sich nicht selbst aussperren
+  assert.throws(() => api.teamAendern({ was: 'rolle', kuerzel: 'ahmet', rolle: 'mitarbeiter' }, { benutzer: chef }), /einzige Inhaber/);
+  assert.throws(() => api.teamAendern({ was: 'sperren', kuerzel: 'ahmet' }, { benutzer: chef }), /einzige Inhaber/);
+
+  // Zu kurze Passwörter lehnt schon die Fachlogik ab
+  assert.throws(() => api.teamAendern({ was: 'anlegen', name: 'X', kuerzel: 'x', passwort: 'kurz', rolle: 'lesen' }, { benutzer: chef }), /mindestens 8/);
+
+  const nachher = api.teamAendern({ was: 'sperren', kuerzel: 'ben' }, { benutzer: chef });
+  assert.equal(nachher.benutzer.find(b => b.kuerzel === 'ben').aktiv, false);
+  assert.equal(api.teamAendern({ was: 'entsperren', kuerzel: 'ben' }, { benutzer: chef }).benutzer.find(b => b.kuerzel === 'ben').aktiv, true);
+});
