@@ -323,7 +323,7 @@ function viewHeute() {
 
   return `
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
-      <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Aufgaben frisch von GitHub holen">Aufgaben synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
+      <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Entwicklungsaufgaben frisch von GitHub holen">GitHub synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neues GitHub-Issue ↗</a></div></div>
 
     ${localMode ? heuteFaelle() : ''}
     <h2 class="section-title">Kundengeschäft</h2>
@@ -582,7 +582,7 @@ function viewArbeit() {
   const sel = (name, opts, cur, first) => `<select data-param="${name}" aria-label="${esc(first)}"><option value="">${esc(first)}</option>${opts.map(([v, l]) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   const unassigned = state.tasks.filter(t => SAVED_VIEWS.find(v => v.key === 'unzugeordnet').filter(t, {})).length;
   return `
-    <div class="page-head"><div><h1>Arbeit</h1><p class="sub">${plural(list.length, 'Aufgabe', 'Aufgaben')} in dieser Ansicht · Quelle GitHub Issues</p></div>
+    <div class="page-head"><div><h1>Entwicklung</h1><p class="sub">${plural(list.length, 'Aufgabe', 'Aufgaben')} in dieser Ansicht · Quelle GitHub Issues</p></div>
       <div class="seg" role="group" aria-label="Darstellung"><button data-param="mode" data-value="liste" aria-pressed="${mode === 'liste'}">Liste</button><button data-param="mode" data-value="kanban" aria-pressed="${mode === 'kanban'}">Kanban</button></div></div>
     ${unassigned && !p.get('view') ? `<div class="notice warn" style="margin-bottom:12px">${plural(unassigned, 'aktive Aufgabe', 'aktive Aufgaben')} ohne Owner. <a href="#/arbeit?view=unzugeordnet">Jetzt zuordnen</a></div>` : ''}
     <div class="chips" role="group" aria-label="Gespeicherte Ansichten">${SAVED_VIEWS.filter(v => v.key !== 'meine' || state.me).map(v => `<button class="chip" data-param="view" data-value="${v.key === 'alle' ? '' : v.key}" aria-pressed="${(p.get('view') || 'alle') === v.key && !p.get('status')}">${esc(v.label)}<span class="c">${counts[v.key]}</span></button>`).join('')}</div>
@@ -3031,7 +3031,7 @@ function paletteItems(q) {
   for (const p of paletteFern.produkte) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Entwicklung (KI & GitHub)'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
   for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
@@ -3176,6 +3176,17 @@ function viewHilfe() {
 
     ${hilfeKarte('„nicht hinterlegt" heißt: es fehlt wirklich', `
       <p>Das Dashboard rät nie. Steht irgendwo „nicht hinterlegt", „ungeklärt" oder ein Grund statt einer Zahl, dann fehlt die Angabe in Shopify oder beim Lieferanten – dann lieber nachfragen als schätzen.</p>`)}
+
+    ${hilfeKarte('Aufgaben und Notizen', `
+      <p>Der Bereich <b>Aufgaben</b> ist für alles, was im Betrieb ansteht – Laden, Lager, Baustelle, Kunden, Lieferanten.</p>
+      <ul style="margin:0;padding-left:20px;line-height:1.9">
+        <li><b>+ Erfassen</b> (oben rechts, oder Taste <b>n</b>): hinschreiben, fertig. Art, Person, Bereich und Termin schlägt das Dashboard vor – alles änderbar.</li>
+        <li><b>Meine Aufgaben</b>: nur was auf dich läuft. „Fokus" zeigt, was jetzt zählt.</li>
+        <li><b>Meine Notizen</b>: dein privater Block. Niemand sonst sieht ihn – auch der Chef nicht. Mit einem Klick wird daraus eine Aufgabe.</li>
+        <li><b>Team-Aufgaben / Team-Notizen</b>: alles, was andere angeht.</li>
+        <li><b>✓ Abhaken</b> erledigt eine Aufgabe. Erledigtes bleibt im <b>Archiv</b> auffindbar.</li>
+      </ul>
+      <p class="small muted" style="margin-top:8px">Der Bereich <b>Entwicklung</b> unter „Mehr" ist etwas anderes: dort steht die Arbeit an Shop und Technik (GitHub, KI-Läufe). Für den Ladenalltag brauchst du ihn nicht.</p>`)}
 
     ${hilfeKarte('Wenn etwas nicht stimmt', `
       <ul style="margin:0;padding-left:20px;line-height:1.9">
@@ -3359,7 +3370,11 @@ function orgFaelligText(e) {
   return `fällig ${fmtDate(e.faellig)}`;
 }
 
-function orgZeile(e) {
+/**
+ * Eine Zeile. Badges nur dort, wo sie etwas Neues sagen: in "Meine Notizen"
+ * ist "Notiz" und "privat" selbstverstaendlich und damit Rauschen.
+ */
+function orgZeile(e, { bereich = '' } = {}) {
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
     e.bereich ? esc(e.bereich) : '',
@@ -3367,18 +3382,20 @@ function orgZeile(e) {
     orgFaelligText(e),
     e.wartetAuf ? `wartet auf ${esc(e.wartetAuf)}` : '',
   ].filter(Boolean);
-  return `<div class="row org-zeile" data-org-open="${esc(e.id)}" tabindex="0" role="button" aria-label="${esc(e.titel)}">
+  const inNotizAnsicht = bereich === 'meine-notizen' || bereich === 'team-notizen';
+  return `<div class="row org-zeile${e.status === 'DONE' ? ' fertig' : ''}" data-org-open="${esc(e.id)}" tabindex="0" role="button" aria-label="${esc(e.titel)}">
     <div>
       <div class="t">${esc(e.titel)}
-        ${e.prioritaet !== 'NORMAL' ? `<span class="badge ${prioKlasse}">${esc(ORG_PRIO_LABEL[e.prioritaet])}</span>` : ''}
-        ${e.typ === 'NOTE' ? '<span class="badge plain">Notiz</span>' : ''}
-        ${e.sichtbarkeit === 'PRIVAT' ? '<span class="badge plain">privat</span>' : ''}
+        ${e.prioritaet !== 'NORMAL' && e.typ === 'TASK' ? `<span class="badge ${prioKlasse}">${esc(ORG_PRIO_LABEL[e.prioritaet])}</span>` : ''}
+        ${e.typ === 'NOTE' && !inNotizAnsicht ? '<span class="badge plain">Notiz</span>' : ''}
+        ${e.sichtbarkeit === 'PRIVAT' && bereich !== 'meine-notizen' ? '<span class="badge plain">privat</span>' : ''}
       </div>
       <div class="m">${merkmale.join(' · ')}</div>
     </div>
     <div class="r">
-      <span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>
-      ${e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()">Erledigt</button>` : ''}
+      ${e.typ === 'TASK' ? `<span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>` : ''}
+      ${e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
+      ${e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
     </div>
   </div>`;
 }
@@ -3469,13 +3486,13 @@ function viewOrganisation() {
   </div>`;
 
   const ansichten = ['meine-aufgaben', 'team-aufgaben'].includes(bereich)
-    ? `<div class="chips" style="margin:8px 0">
+    ? `<div class="chips" style="margin:8px 0"><span class="small muted chip-label">Zeigen:</span>
         ${bereich === 'team-aufgaben' ? `<button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>` : ''}
         ${ORG_ANSICHTEN.map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
       </div>` : '';
 
   const personen = bereich === 'team-aufgaben'
-    ? `<div class="chips" style="margin:0 0 8px">
+    ? `<div class="chips" style="margin:0 0 8px"><span class="small muted chip-label">Wer:</span>
         <button type="button" class="chip" data-param="op" data-value="" aria-pressed="${!person}">Alle</button>
         <button type="button" class="chip" data-param="op" data-value="unzugewiesen" aria-pressed="${person === 'unzugewiesen'}">Unzugewiesen</button>
         ${team.map(t => `<button type="button" class="chip" data-param="op" data-value="${esc(t.kuerzel)}" aria-pressed="${person === t.kuerzel}">${esc(t.name)}</button>`).join('')}
@@ -3495,7 +3512,7 @@ function viewOrganisation() {
   if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
 
   const liste = d.eintraege.length
-    ? `<div class="rows">${d.eintraege.map(orgZeile).join('')}</div>`
+    ? `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
     : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
   return kopf + reiter + suche + ansichten + personen +
@@ -3666,7 +3683,7 @@ function render() {
   const more = $('#navMore');
   if (more) {
     const mc = $('#navMoreCount'); mc.hidden = !approvals; mc.textContent = approvals;
-    more.querySelector('summary').classList.toggle('current', ['freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'].includes(state.route.view));
+    more.querySelector('summary').classList.toggle('current', ['arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'].includes(state.route.view));
     more.open = false;
   }
   if (state.capabilities.mode === 'ausgeloggt') {
@@ -3684,7 +3701,7 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Entwicklung', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
@@ -3811,6 +3828,17 @@ function bindEvents() {
       orgSchreiben('/api/org/aendern', { id: orgFertig.dataset.orgFertig, felder: { status: 'DONE' } })
         .then(() => { toast('Erledigt'); orgFrisch(); render(); })
         .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgFertig.disabled = false; });
+      return;
+    }
+    const zuAufgabe = e.target.closest('[data-org-zuaufgabe]');
+    if (zuAufgabe) {
+      e.preventDefault(); e.stopPropagation();
+      zuAufgabe.disabled = true;
+      // Aus der Notiz wird eine Aufgabe: derselbe Eintrag, neuer Typ - so
+      // bleiben Text, Kommentare und Verlauf erhalten.
+      orgSchreiben('/api/org/aendern', { id: zuAufgabe.dataset.orgZuaufgabe, felder: { typ: 'TASK', status: 'INBOX' } })
+        .then(() => { toast('In eine Aufgabe umgewandelt'); orgFrisch(); render(); })
+        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); zuAufgabe.disabled = false; });
       return;
     }
     const orgKomm = e.target.closest('[data-org-kommentar]');

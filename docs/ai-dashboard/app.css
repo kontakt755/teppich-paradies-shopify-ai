@@ -78,7 +78,15 @@ button { font: inherit; color: inherit; }
 .nav-more > summary.current { background: var(--accent-soft); color: var(--accent); }
 .nav-more-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 190px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.12); padding: 6px; display: flex; flex-direction: column; z-index: 30; }
 .nav-more-menu a { justify-content: space-between; }
-.topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* Auf schmalen Fenstern schrumpfen die Beschriftungen, statt dass die Leiste
+   umbricht oder der Erfassen-Knopf aus dem Bild rutscht. */
+@media (max-width: 1180px) {
+  .topbar-tools [data-org-schnell] .lang,
+  .topbar-tools #sessionBtnText,
+  .topbar-tools #syncChipText { display: none; }
+  .topbar-tools [data-org-schnell] { padding-left: 10px; padding-right: 10px; }
+}
 .nav-toggle { display: none; }
 .sync-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: .8rem; color: var(--text-2); cursor: pointer; }
 .sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
@@ -553,3 +561,7 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .fall-sofort { border-left: 3px solid var(--crit); }
 .fall-punkte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .fall-punkt { padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius); display: flex; flex-direction: column; gap: 3px; }
+
+/* Aufgaben & Organisation */
+.org-zeile.fertig { opacity: .6; }
+.chip-label { align-self: center; margin-right: 2px; }
