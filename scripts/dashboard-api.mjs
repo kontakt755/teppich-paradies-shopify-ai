@@ -25,6 +25,16 @@ import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
+import {
+  sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
+  istUeberfaellig, tageBis,
+} from '../operations/lib/organisation.mjs';
+import { analysiere as orgAnalysiere } from '../operations/lib/organisation-analyse.mjs';
+import {
+  lies as orgLies, schreib as orgSchreib, dateiPfad as orgDatei, baueEintrag,
+  findeEintrag, aendere as orgAendere, kommentiere as orgKommentiere,
+} from '../operations/lib/organisation-speicher.mjs';
+import { leseBenutzer as orgLeseBenutzer } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
@@ -972,6 +982,136 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ? daten.kunden.filter(k => [k.name, k.email, k.telefon].filter(Boolean).some(f => String(f).toLowerCase().includes(suchtext)))
         : daten.kunden;
       return { verfuegbar: true, quelle: file, erstellt: daten.erstellt || null, anzahl: daten.anzahl ?? daten.kunden.length, kunden };
+    },
+
+    // -- Aufgaben & Organisation ------------------------------------------
+    // Jede Leseabfrage filtert serverseitig nach Sichtbarkeit: persoenliche
+    // Notizen duerfen das Geraet eines anderen Benutzers nie erreichen. Ein
+    // Ausblenden allein in der Oberflaeche waere kein Schutz.
+
+    _orgDatei() { return orgDatei(privatDirPath || privatDir()); },
+
+    _orgSichtbar(daten, benutzer) { return daten.eintraege.filter(e => darfSehen(e, benutzer)); },
+
+    /** Team aus dem vorhandenen Benutzersystem - keine fest verdrahtete Namensliste. */
+    orgTeam() {
+      try {
+        return orgLeseBenutzer().filter(b => b.aktiv !== false)
+          .map(b => ({ name: b.name, kuerzel: b.kuerzel || b.name, rolle: b.rolle }));
+      } catch { return []; }
+    },
+
+    /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', q = '', benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const jetzt = new Date();
+      const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
+      const suchtext = String(q || '').trim().toLowerCase();
+      let liste = this._orgSichtbar(daten, benutzer);
+
+      if (bereich === 'meine-aufgaben') {
+        liste = liste.filter(e => e.typ === 'TASK' && (e.verantwortlich === ich || (!e.verantwortlich && e.besitzer === ich)));
+        liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
+      } else if (bereich === 'meine-notizen') {
+        liste = liste.filter(e => e.typ === 'NOTE' && e.besitzer === ich && e.sichtbarkeit === 'PRIVAT');
+      } else if (bereich === 'team-aufgaben') {
+        liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT');
+        if (person === 'unzugewiesen') liste = liste.filter(e => !e.verantwortlich);
+        else if (person) liste = liste.filter(e => e.verantwortlich === person);
+        if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
+      } else if (bereich === 'team-notizen') {
+        liste = liste.filter(e => e.typ === 'NOTE' && e.sichtbarkeit !== 'PRIVAT');
+      } else if (bereich === 'archiv') {
+        liste = liste.filter(e => e.status === 'DONE');
+      }
+
+      if (suchtext) {
+        liste = liste.filter(e => [e.titel, e.beschreibung, e.bereich, e.verantwortlich,
+          ...(e.kommentare ?? []).map(k => k.text)].filter(Boolean)
+          .some(f => String(f).toLowerCase().includes(suchtext)));
+      }
+      return {
+        verfuegbar: true, quelle: datei, bereiche: daten.bereiche, team: this.orgTeam(), ich,
+        anzahl: liste.length, eintraege: orgSortiere(liste, jetzt).slice(0, 200),
+      };
+    },
+
+    orgKennzahlen({ benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      const jetzt = new Date();
+      const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
+      const sichtbar = this._orgSichtbar(daten, benutzer).filter(e => e.typ === 'TASK');
+      const meine = sichtbar.filter(e => e.verantwortlich === ich || (!e.verantwortlich && e.besitzer === ich));
+      const zaehl = (l) => ({
+        offen: l.filter(e => e.status !== 'DONE').length,
+        heute: l.filter(e => e.status !== 'DONE' && tageBis(e.faellig, jetzt) === 0).length,
+        dringend: l.filter(e => e.status !== 'DONE' && e.prioritaet === 'URGENT').length,
+        warten: l.filter(e => e.status === 'WAITING').length,
+        pruefung: l.filter(e => e.status === 'REVIEW').length,
+        ueberfaellig: l.filter(e => istUeberfaellig(e, jetzt)).length,
+      });
+      return {
+        verfuegbar: true, meine: zaehl(meine), team: zaehl(sichtbar.filter(e => e.sichtbarkeit !== 'PRIVAT')),
+        naechste: orgSortiere(meine.filter(e => passtZuAnsicht(e, 'fokus', jetzt)), jetzt).slice(0, 5),
+      };
+    },
+
+    /** Vorschlag zu einer Eingabe - ohne zu speichern, samt moeglicher Doppelgaenger. */
+    orgAnalyse({ text = '', benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      const vorschlag = orgAnalysiere(text, { mitarbeiter: this.orgTeam(), bereiche: daten.bereiche, benutzer });
+      const doppelt = findeDoppelgaenger(text, this._orgSichtbar(daten, benutzer))
+        .map(d => ({ id: d.eintrag.id, titel: d.eintrag.titel, status: d.eintrag.status, wert: Math.round(d.wert * 100) }));
+      return { verfuegbar: true, vorschlag, doppelgaenger: doppelt };
+    },
+
+    orgNeu(roh = {}, { benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const eintrag = baueEintrag(roh, { benutzer });
+      daten.eintraege.push(eintrag);
+      orgSchreib(daten, datei);
+      return { ok: true, eintrag };
+    },
+
+    orgAendern({ id, felder = {} } = {}, { benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const eintrag = findeEintrag(daten, id);
+      if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
+      if (!darfSehen(eintrag, benutzer) || !darfAendern(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
+      orgAendere(eintrag, felder, { benutzer });
+      orgSchreib(daten, datei);
+      return { ok: true, eintrag };
+    },
+
+    orgKommentar({ id, text = '' } = {}, { benutzer = null } = {}) {
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const eintrag = findeEintrag(daten, id);
+      if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
+      if (!darfSehen(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
+      orgKommentiere(eintrag, text, { benutzer });
+      orgSchreib(daten, datei);
+      return { ok: true, eintrag };
+    },
+
+    /**
+     * Prüflauf anstoßen (Knopf im Dashboard und die tägliche Ausführung um
+     * 9:30 nutzen denselben Weg). Erledigt wird nur, was gemessen wurde.
+     */
+    async orgPruefen({ id = null } = {}, { benutzer = null } = {}) {
+      const { laufe } = await import('../operations/scripts/aufgaben-pruefen.mjs');
+      const ergebnis = await laufe({ datei: this._orgDatei(), id });
+      return { ok: true, ...ergebnis };
+    },
+
+    orgEintrag({ id = '', benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      const eintrag = findeEintrag(daten, id);
+      if (!eintrag || !darfSehen(eintrag, benutzer)) return { verfuegbar: false, hinweis: 'Eintrag nicht gefunden oder nicht freigegeben.' };
+      return { verfuegbar: true, eintrag, darfAendern: darfAendern(eintrag, benutzer) };
     },
 
     /**

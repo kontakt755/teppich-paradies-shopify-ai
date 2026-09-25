@@ -805,3 +805,86 @@ test('shopwacheStatus liest das Pruefergebnis und meldet sonst ehrlich nichts', 
   assert.equal(r.ampel, 'gelb');
   assert.equal(r.befunde.length, 1);
 });
+
+// -- Aufgaben & Organisation: Rechte serverseitig --------------------------
+
+function orgApi(root, dir) {
+  return createApi({ gh: async () => '', root, privatDirPath: dir });
+}
+
+test('persönliche Notizen erreichen die API eines anderen Benutzers nicht', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org');
+  const ahmet = { kuerzel: 'ahmet', name: 'Ahmet', rolle: 'inhaber' };
+  const ben = { kuerzel: 'ben', name: 'Ben', rolle: 'mitarbeiter' };
+
+  const api = orgApi(root, dir);
+  api.orgNeu({ typ: 'NOTE', titel: 'Private Preisidee', sichtbarkeit: 'PRIVAT' }, { benutzer: ahmet });
+  api.orgNeu({ typ: 'NOTE', titel: 'Musterrollen hinten links', sichtbarkeit: 'TEAM' }, { benutzer: ahmet });
+
+  // Ben sieht nur die Team-Notiz - in JEDER Liste, auch in der Suche
+  const teamNotizen = api.orgListe({ bereich: 'team-notizen', benutzer: ben });
+  assert.deepEqual(teamNotizen.eintraege.map(e => e.titel), ['Musterrollen hinten links']);
+  const suche = api.orgListe({ bereich: 'archiv', q: 'preisidee', benutzer: ben });
+  assert.equal(suche.eintraege.length, 0);
+  const eigene = api.orgListe({ bereich: 'meine-notizen', benutzer: ben });
+  assert.equal(eigene.eintraege.length, 0);
+
+  // Ahmet sieht seine eigene
+  assert.equal(api.orgListe({ bereich: 'meine-notizen', benutzer: ahmet }).eintraege.length, 1);
+});
+
+test('fremde Einträge lassen sich nicht über die ID öffnen oder ändern', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org2');
+  const ahmet = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const api = orgApi(root, dir);
+  const { eintrag } = api.orgNeu({ typ: 'NOTE', titel: 'Geheim', sichtbarkeit: 'PRIVAT' }, { benutzer: ahmet });
+
+  assert.equal(api.orgEintrag({ id: eintrag.id, benutzer: ben }).verfuegbar, false);
+  assert.throws(() => api.orgAendern({ id: eintrag.id, felder: { titel: 'gekapert' } }, { benutzer: ben }), /Berechtigung/);
+  assert.throws(() => api.orgKommentar({ id: eintrag.id, text: 'hallo' }, { benutzer: ben }), /Berechtigung/);
+});
+
+test('Mitarbeiter darf eigene zugewiesene Aufgabe ändern, fremde nicht', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org3');
+  const chef = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const api = orgApi(root, dir);
+  const meins = api.orgNeu({ titel: 'Muster prüfen', verantwortlich: 'ben' }, { benutzer: chef }).eintrag;
+  const fremd = api.orgNeu({ titel: 'Buchhaltung', verantwortlich: 'thomas' }, { benutzer: chef }).eintrag;
+
+  assert.equal(api.orgAendern({ id: meins.id, felder: { status: 'IN_PROGRESS' } }, { benutzer: ben }).ok, true);
+  assert.throws(() => api.orgAendern({ id: fremd.id, felder: { status: 'DONE' } }, { benutzer: ben }), /Berechtigung/);
+});
+
+test('Analyse schlägt vor und meldet Doppelgänger, ohne zu speichern', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org4');
+  const ahmet = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Neues Logo in Shopify einbauen' }, { benutzer: ahmet });
+
+  const a = api.orgAnalyse({ text: 'Shop Logo austauschen', benutzer: ahmet });
+  assert.equal(a.vorschlag.typ, 'TASK');
+  assert.equal(a.doppelgaenger.length, 1);
+  assert.match(a.doppelgaenger[0].titel, /Logo/);
+  // nichts gespeichert
+  assert.equal(api.orgListe({ bereich: 'team-aufgaben', ansicht: 'alle', benutzer: ahmet }).anzahl, 1);
+});
+
+test('Kennzahlen zählen nur, was der Benutzer sehen darf', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org5');
+  const ahmet = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Für Ben', verantwortlich: 'ben', prioritaet: 'URGENT' }, { benutzer: ahmet });
+  api.orgNeu({ titel: 'Für Ahmet', verantwortlich: 'ahmet', prioritaet: 'URGENT' }, { benutzer: ahmet });
+
+  const k = api.orgKennzahlen({ benutzer: ben });
+  assert.equal(k.meine.offen, 1, 'Ben sieht eine eigene Aufgabe');
+  assert.equal(k.team.offen, 2, 'Team-Aufgaben sind für alle sichtbar');
+});

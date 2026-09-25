@@ -111,10 +111,10 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
-  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || ['transition', 'assign', 'comment'].includes(taskOp);
+  const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
@@ -148,6 +148,22 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'kunden/detail') result = api.kundenDetail({ key: url.searchParams.get('key') || '' });
     else if (simple === 'kunden/bestellungen') result = api.kundenBestellungen();
     else if (simple === 'kunden/faelle') result = api.kundenFaelle();
+    // Aufgaben & Organisation. `benutzer` kommt aus der Sitzung, nie aus der
+    // Anfrage - sonst koennte jemand fremde Notizen anfordern.
+    else if (simple === 'org/liste') result = api.orgListe({
+      bereich: url.searchParams.get('bereich') || 'meine-aufgaben',
+      ansicht: url.searchParams.get('ansicht') || 'fokus',
+      person: url.searchParams.get('person') || '',
+      q: url.searchParams.get('q') || '',
+      benutzer,
+    });
+    else if (simple === 'org/eintrag') result = api.orgEintrag({ id: url.searchParams.get('id') || '', benutzer });
+    else if (simple === 'org/kennzahlen') result = api.orgKennzahlen({ benutzer });
+    else if (simple === 'org/analyse') result = api.orgAnalyse({ text: (await readJson(req))?.text || '', benutzer });
+    else if (simple === 'org/neu') result = api.orgNeu(await readJson(req), { benutzer });
+    else if (simple === 'org/aendern') result = api.orgAendern(await readJson(req), { benutzer });
+    else if (simple === 'org/kommentar') result = api.orgKommentar(await readJson(req), { benutzer });
+    else if (simple === 'org/pruefen') result = await api.orgPruefen(await readJson(req).catch(() => ({})), { benutzer });
     else if (simple === 'kunden/bestellung-fertig') result = await api.kundenBestellungFertig(await readJson(req), benutzer);
     else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();
     else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req));
