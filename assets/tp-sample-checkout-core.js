@@ -1,6 +1,30 @@
 (function (global) {
   var SAMPLE_HANDLE = 'kostenloses-muster';
-  var MAX_SAMPLES = 3;
+  // Grundgrenze 3; Newsletter-Abonnenten bekommen ein viertes Muster als
+  // Bonus (Inhaber 2026-09-25). Erkannt wird das an window.TPMusterBonus
+  // (eingeloggter Kunde mit Werbe-Einwilligung, gesetzt in
+  // sections/tp-sample-checkout.liquid) oder am Bonus-Link aus der
+  // Willkommensmail (?muster-bonus=1), der im Browser gemerkt wird. Die
+  // Grenze ist wie bisher nur eine Browser-Grenze - Muster sind kostenlos,
+  // es gibt keine serverseitige Pruefung.
+  var BASE_SAMPLES = 3;
+  var BONUS_KEY = 'tp-muster-bonus';
+
+  function hasSampleBonus() {
+    if (global.TPMusterBonus === true) return true;
+    try {
+      if (global.location && /[?&]muster-bonus=1(&|$)/.test(global.location.search || '')) {
+        global.localStorage.setItem(BONUS_KEY, '1');
+        return true;
+      }
+      return global.localStorage && global.localStorage.getItem(BONUS_KEY) === '1';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  var HAS_BONUS = hasSampleBonus();
+  var MAX_SAMPLES = BASE_SAMPLES + (HAS_BONUS ? 1 : 0);
 
   // Der Konfigurator listet die Werte EINER Produktoption als Muster. Welche
   // Option das ist, heisst je nach Sortiment anders: Teppich- und Vinylboden
@@ -135,13 +159,13 @@
     var message;
 
     if (total === 0) {
-      message = '0 von 3 Mustern ausgewählt';
+      message = '0 von ' + MAX_SAMPLES + ' Mustern ausgewählt';
     } else if (total >= MAX_SAMPLES) {
-      message = '3 von 3 Mustern erreicht. Entfernen Sie zuerst ein Muster im Warenkorb, um ein anderes auszuwählen.';
+      message = MAX_SAMPLES + ' von ' + MAX_SAMPLES + ' Mustern erreicht. Entfernen Sie zuerst ein Muster im Warenkorb, um ein anderes auszuwählen.';
     } else {
       var location = newlySelected === 0 ? ' im Warenkorb' : ' insgesamt ausgewählt';
       var possibility = remaining === 1 ? 'noch 1 weiteres möglich' : remaining + ' weitere möglich';
-      message = total + ' von 3 Mustern' + location + ' · ' + possibility;
+      message = total + ' von ' + MAX_SAMPLES + ' Mustern' + location + ' · ' + possibility;
     }
 
     return {
@@ -186,6 +210,7 @@
   global.TPSampleCheckoutCore = {
     SAMPLE_HANDLE: SAMPLE_HANDLE,
     MAX_SAMPLES: MAX_SAMPLES,
+    HAS_BONUS: HAS_BONUS,
     getUniqueColors: getUniqueColors,
     getOptionName: getOptionName,
     getOptionTerm: getOptionTerm,
