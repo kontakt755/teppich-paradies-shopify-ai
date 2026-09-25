@@ -1079,3 +1079,47 @@ test('Eigenes Passwort: nur mit dem bisherigen, und nur für sich selbst', () =>
   assert.throws(() => api.eigenesPasswort({ alt: 'alt12345678', neu: 'noch12345678' }, { benutzer: ich }), /stimmt nicht/);
   assert.equal(api.eigenesPasswort({ alt: 'neu12345678', neu: 'noch12345678' }, { benutzer: ich }).ok, true);
 });
+
+test('Notizen zum Kunden: nur die verknüpften, neueste zuerst', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-kundennotiz');
+  const ich = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const api = orgApi(root, dir);
+
+  api.orgNeu({ titel: 'Frau Meier: Muster Beige nachschicken', verknuepft: { art: 'kunde', id: 'meier@example.de', titel: 'Frau Meier' } }, { benutzer: ich });
+  api.orgNeu({ titel: 'Frau Meier: Termin am Freitag', verknuepft: { art: 'kunde', id: 'meier@example.de', titel: 'Frau Meier' } }, { benutzer: ich });
+  api.orgNeu({ titel: 'Herr Krause: Rechnung offen', verknuepft: { art: 'kunde', id: 'krause@example.de', titel: 'Herr Krause' } }, { benutzer: ich });
+  api.orgNeu({ titel: 'Ohne Kundenbezug' }, { benutzer: ich });
+
+  const d = api.orgZuKunde({ key: 'meier@example.de', benutzer: ich });
+  assert.equal(d.anzahl, 2);
+  assert.equal(d.eintraege[0].titel, 'Frau Meier: Termin am Freitag', 'neueste zuerst');
+  assert.equal(api.orgZuKunde({ key: 'krause@example.de', benutzer: ich }).anzahl, 1);
+  assert.equal(api.orgZuKunde({ key: '', benutzer: ich }).anzahl, 0);
+
+  // Private Notizen einer anderen Person tauchen nicht in fremden Akten auf
+  const anna = { kuerzel: 'anna', rolle: 'mitarbeiter' };
+  api.orgNeu({ typ: 'NOTE', titel: 'Privat zu Meier', sichtbarkeit: 'PRIVAT', verknuepft: { art: 'kunde', id: 'meier@example.de' } }, { benutzer: anna });
+  assert.equal(api.orgZuKunde({ key: 'meier@example.de', benutzer: ich }).anzahl, 2);
+  assert.equal(api.orgZuKunde({ key: 'meier@example.de', benutzer: anna }).anzahl, 3);
+});
+
+test('Kaputte Datei sieht nicht mehr aus wie eine fehlende', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-kaputt');
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+
+  // Fehlt sie, bleibt es der ruhige Normalfall
+  const fehlt = api.lexikonListe({});
+  assert.equal(fehlt.verfuegbar, false);
+  assert.equal(fehlt.fehler, false);
+  assert.match(fehlt.hinweis, /Noch keine Lexikon-Daten/);
+
+  // Ist sie beschädigt, wird das gesagt - vorher stand dort "noch nicht exportiert"
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), '{ das ist kein json');
+  const kaputt = api.lexikonListe({});
+  assert.equal(kaputt.verfuegbar, false);
+  assert.equal(kaputt.fehler, true);
+  assert.match(kaputt.hinweis, /beschädigt/);
+});
