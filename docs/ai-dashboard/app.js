@@ -1244,7 +1244,12 @@ function ensureEinkaufKennzahlen() {
   });
 }
 
-const AKTUALISIERUNG_TEIL_LABEL = { lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen' };
+// Ohne Eintrag stuende hier der interne Schluessel ('warenkoerbe') - die vier
+// Teile kamen spaeter dazu und fehlten in dieser Liste.
+const AKTUALISIERUNG_TEIL_LABEL = {
+  lexikon: 'Lexikon', bestellungen: 'Bestellübersicht', kennzahlen: 'Kennzahlen',
+  kunden: 'Kunden', angebote: 'Angebote', warenkoerbe: 'Liegengebliebene Warenkörbe', bestand: 'Lagerbestand',
+};
 
 function ensureAktualisierung() {
   if (einkauf.aktualisierung || einkauf.loadingAktualisierung) return;
