@@ -14,8 +14,7 @@ from pathlib import Path
 import openpyxl
 from openpyxl.utils import get_column_letter
 
-from vma_automation import (EMPLOYEES, get_brandenburg_holidays, hhmm_to_minutes,
-                            read_absences_from_file)
+from vma_automation import EMPLOYEES, get_brandenburg_holidays, read_absences_from_file
 
 MONATE = {1: 'Januar', 2: 'Februar', 3: 'Maerz', 4: 'April', 5: 'Mai', 6: 'Juni', 7: 'Juli',
           8: 'August', 9: 'September', 10: 'Oktober', 11: 'November', 12: 'Dezember'}
@@ -82,8 +81,10 @@ def pruefe(emp, pfad, vorlage, month, year, absences, holidays, verbose):
                 probleme.append(f'Tag {d}: zu kurz ({m // 60},{m % 60:02d})')
 
     summe = sum(werte)
-    if summe > hhmm_to_minutes(cfg['max_hours']):
-        probleme.append('ueber Monatsmaximum')
+    # Maximum gilt fuer die Summe-Spalte (Excel addiert HH,MM wie Kommazahlen)
+    spalte = sum((m // 60) * 100 + m % 60 for m in werte)
+    if spalte > round(cfg['max_hours'] * 100):
+        probleme.append('Summe-Spalte ueber Maximum')
     if wochen and max(wochen.values()) > 2400:
         probleme.append('Woche ueber 40:00')
     if werte:
@@ -94,8 +95,9 @@ def pruefe(emp, pfad, vorlage, month, year, absences, holidays, verbose):
     lo, hi = cfg['vma_target']
     hinweis = '' if lo <= vma <= hi else f' (Ziel {lo}-{hi})'
 
-    print(f'{emp:8s} {summe // 60},{summe % 60:02d} / {cfg["max_hours"]:.2f}'.replace('.', ',')
-          + f'  VMA {vma}{hinweis}  ' + ('OK' if not probleme else 'FEHLER: ' + '; '.join(probleme)))
+    print(f'{emp:8s} Summe-Spalte {spalte / 100:.2f} / Max {cfg["max_hours"]:.2f}'.replace('.', ',')
+          + f'  (echt {summe // 60}:{summe % 60:02d})  VMA {vma}{hinweis}  '
+          + ('OK' if not probleme else 'FEHLER: ' + '; '.join(probleme)))
     if verbose:
         print('   ', ' '.join(f'{m // 60},{m % 60:02d}' for m in werte))
     return not probleme

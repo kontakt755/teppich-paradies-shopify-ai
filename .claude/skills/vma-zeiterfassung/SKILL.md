@@ -46,8 +46,12 @@ Kranktage (Gesundheitsdaten, DSGVO Art. 9). Deshalb:
 
 ## Grenzen
 
-- Monatsmaximum je Mitarbeiter nie ueberschreiten, moeglichst knapp darunter.
-- Woche Mo-So hoechstens 40:00.
+- Monatsmaximum gilt fuer die **Summe-Spalte** der Vorlage, also HH,MM wie
+  Kommazahlen addiert (8,30 + 8,30 = 16,60) - wie in der abgenommenen
+  Juni-Datei (Summe 173,20, echte Zeit 176:00). Nutzerentscheidung
+  2026-09-25, Rueckfrage an die Buchhaltung laeuft. Nie ueberschreiten,
+  moeglichst knapp darunter. Nur Zeile 14 (Arbeitszeit) zaehlt.
+- Woche Mo-So hoechstens 40:00 in **echter** Zeit (Stunden + Minuten).
 - Zu viele Stunden: erst lange Tage bis zu einer zufaelligen Untergrenze
   8,05-8,25 kuerzen, dann einzelne Tage (Freitage zuerst) zu Kurztagen,
   zuletzt in 5er-Schritten nachkuerzen. Nie einen Tag auf Werte wie 0,55.

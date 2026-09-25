@@ -301,19 +301,29 @@ def generate_hours_for_employee(
     if current_week_monday is not None:
         week_minutes[current_week_monday] = current_week_minutes
 
-    # Monatsgrenze: zuerst einzelne Tage (Freitage vorn) zu Kurztagen im
-    # Bereich des Mitarbeiters machen, Rest in 5er-Schritten vom laengsten Tag.
-    # So bleiben die uebrigen Tage ueber 8,00 und behalten die VMA.
+    # Monatsgrenze gilt fuer die SUMME-SPALTE der Vorlage (Nutzerentscheidung
+    # 2026-09-25, "Variante A"): Excel addiert HH,MM wie Kommazahlen
+    # (8,30 + 8,30 = 16,60). So war auch die abgenommene Juni-Datei gebaut.
+    # Gerechnet wird in Hundertstel der Spaltenwerte (8,30 -> 830).
+    # Die Wochengrenze 40:00 bleibt echte Zeit (siehe oben).
     short_lo, short_hi = emp_config['short_range']
-    limit = hhmm_to_minutes(max_hours)
+    limit = round(max_hours * 100)
 
     def mins(d):
         return hhmm_to_minutes(result[d]['work'])
 
+    def spalte(m):
+        return (m // 60) * 100 + m % 60
+
     def overage():
-        return sum(mins(d) for d in result if result[d]['work'] > 0) - limit
+        return sum(spalte(mins(d)) for d in result if result[d]['work'] > 0) - limit
+
+    def setze(d, m):
+        result[d]['work'] = minutes_to_hhmm(m)
 
     work_days = [d for d in result if result[d]['work'] > 0]
+    original = {d: mins(d) for d in work_days}
+
     # 1. Lange Tage zuerst kuerzen - kostet keine VMA-Tage. Jeder Tag hat
     # eine eigene Untergrenze 8,05-8,25 und es wird zufaellig gekuerzt,
     # sonst landen alle Tage auf demselben Wert (z.B. ueberall 8,15).
@@ -323,7 +333,7 @@ def generate_hours_for_employee(
         if not lang:
             break
         d = random.choice(lang)
-        result[d]['work'] = minutes_to_hhmm(mins(d) - 5)
+        setze(d, mins(d) - 5)
     # 2. Reicht das nicht: einzelne Tage (Freitage vorn) zu Kurztagen
     kandidaten = sorted(work_days, key=lambda d: (datetime(year, month, d).weekday() != 4, random.random()))
     for d in kandidaten:
@@ -331,16 +341,29 @@ def generate_hours_for_employee(
             break
         if mins(d) <= short_hi:
             continue
-        ziel = random.randrange(short_lo, short_hi + 1, 5)
-        result[d]['work'] = minutes_to_hhmm(max(ziel, mins(d) - overage()))
+        setze(d, random.randrange(short_lo, short_hi + 1, 5))
+    # 3. Rest in 5er-Schritten; VMA-Tage nicht unter 8,05
     while overage() > 0:
-        # VMA-Tage (ueber 8,00) nicht unter 8,05 kuerzen, sonst geht die VMA verloren
         kuerzbar = [d for d in work_days
                     if mins(d) - 5 >= (485 if mins(d) > 480 else short_lo)]
         if not kuerzbar:
             break
         d = random.choice(kuerzbar)
-        result[d]['work'] = minutes_to_hhmm(mins(d) - 5)
+        setze(d, mins(d) - 5)
+    # 4. Zu viel gekuerzt? Wieder auffuellen, bis knapp unter der Grenze -
+    # hoechstens bis zum urspruenglichen Tageswert und nie ueber 40:00/Woche
+    def woche(d):
+        kw = datetime(year, month, d).isocalendar()[1]
+        return sum(mins(t) for t in work_days if datetime(year, month, t).isocalendar()[1] == kw)
+
+    while overage() < 0:
+        moeglich = [d for d in work_days
+                    if mins(d) + 5 <= original[d] and woche(d) + 5 <= 2400
+                    and spalte(mins(d) + 5) - spalte(mins(d)) <= -overage()]
+        if not moeglich:
+            break
+        d = random.choice(moeglich)
+        setze(d, mins(d) + 5)
 
     return result
 
@@ -560,17 +583,19 @@ def validate_workbook(
     if current_week is not None:
         weekly_totals[current_week_start_day] = current_week
 
-    # Konvertiere zurück zu HH,MM
-    total_hours = minutes_to_hhmm(total_work_minutes)
+    # Maximum gilt fuer die Summe-Spalte (Excel addiert HH,MM wie Kommazahlen)
+    spalte = sum((hhmm_to_minutes(d['work']) // 60) * 100 + hhmm_to_minutes(d['work']) % 60
+                 for d in data.values() if d['work'] > 0)
+    total_hours = spalte / 100
     total_max = max_hours
-    diff_to_max = minutes_to_hhmm(hhmm_to_minutes(total_max) - total_work_minutes)
+    diff_to_max = round(total_max - total_hours, 2)
 
     # Wochenlimit-Prüfung
     week_ok = all(mins <= 2400 for mins in weekly_totals.values())
 
     # Auffälligkeiten
     issues = []
-    if total_work_minutes > hhmm_to_minutes(max_hours):
+    if spalte > round(max_hours * 100):
         issues.append(f"⚠ Gesamtstunden ({total_hours}) überschreiten Maximum ({total_max})")
     if not week_ok:
         issues.append(f"⚠ Mindestens eine Woche überschreitet 40:00")
