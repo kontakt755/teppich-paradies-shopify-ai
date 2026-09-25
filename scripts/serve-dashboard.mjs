@@ -152,7 +152,8 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     // Anfrage - sonst koennte jemand fremde Notizen anfordern.
     else if (simple === 'org/liste') result = api.orgListe({
       bereich: url.searchParams.get('bereich') || 'meine-aufgaben',
-      ansicht: url.searchParams.get('ansicht') || 'fokus',
+      ansicht: url.searchParams.get('ansicht') || 'offen',
+      gruppe: url.searchParams.get('gruppe') ?? 'kunden',
       person: url.searchParams.get('person') || '',
       q: url.searchParams.get('q') || '',
       benutzer,

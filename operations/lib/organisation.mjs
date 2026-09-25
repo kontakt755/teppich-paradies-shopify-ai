@@ -33,8 +33,9 @@ export const PRUEFTYP_LABEL = Object.freeze({
 
 /** Startbereiche. Erweiterbar - die Liste steht in den Daten, nicht im Code fest. */
 export const STANDARD_BEREICHE = Object.freeze([
-  'Website & KI', 'Online-Shop', 'Laden', 'Baustelle', 'Kunden', 'Angebote / Lexware', 'Einkauf',
-  'Lieferanten', 'Marketing', 'Buchhaltung', 'Mitarbeiter', 'Lager', 'Fahrzeuge', 'Sonstiges',
+  'Website & KI', 'Online-Shop', 'Kunden', 'Bestellungen', 'Angebote / Lexware', 'Baustelle',
+  'Laden', 'Einkauf', 'Lieferanten', 'Marketing', 'Buchhaltung', 'Mitarbeiter', 'Lager',
+  'Fahrzeuge', 'Sonstiges',
 ]);
 
 /**
@@ -44,8 +45,23 @@ export const STANDARD_BEREICHE = Object.freeze([
  */
 export const TECHNISCHE_BEREICHE = Object.freeze(['Website & KI', 'Online-Shop']);
 
+/**
+ * Die Arbeit, fuer die das Team ueberhaupt ins Dashboard schaut: ein Kunde
+ * will etwas, eine Bestellung muss raus, ein kleiner Auftrag steht an. Alles
+ * andere Geschaeftliche (Einkauf, Lager, Buchhaltung ...) ist Chefsache und
+ * verstopft diese Liste nur.
+ */
+export const TEAM_BEREICHE = Object.freeze([
+  'Kunden', 'Bestellungen', 'Angebote / Lexware', 'Baustelle', 'Laden',
+]);
+
 export function istTechnisch(bereich) {
   return TECHNISCHE_BEREICHE.includes(bereich);
+}
+
+/** Haengt an einem Kunden, einer Bestellung oder einem kleinen Auftrag? */
+export function istTeamarbeit(bereich) {
+  return TEAM_BEREICHE.includes(bereich);
 }
 
 const TAG_MS = 86400000;
@@ -113,6 +129,7 @@ export function passtZuAnsicht(t, ansicht, jetzt = new Date()) {
   if (t.typ !== 'TASK') return false;
   const d = tageBis(t.faellig, jetzt);
   switch (ansicht) {
+    case 'offen': return t.status !== 'DONE';
     case 'erledigt': return t.status === 'DONE';
     case 'warten': return t.status === 'WAITING';
     case 'pruefung': return t.status === 'REVIEW';

@@ -26,9 +26,10 @@ const BEREICH_WOERTER = {
   'Online-Shop': ['shop', 'shopify', 'online', 'webshop', 'website', 'webseite', 'produktseite', 'artikel online'],
   Laden: ['laden', 'ladengeschäft', 'ladengeschaeft', 'theke', 'ausstellung', 'schaufenster'],
   Baustelle: ['baustelle', 'verlegen', 'verlegung', 'aufmaß', 'aufmass', 'montage'],
-  Kunden: ['kunde', 'kundin', 'kundenanfrage', 'reklamation', 'rückruf', 'rueckruf'],
+  Kunden: ['kunde', 'kundin', 'kundenanfrage', 'reklamation', 'rückruf', 'rueckruf', 'anruf', 'zurückrufen', 'zurueckrufen'],
+  Bestellungen: ['kundenbestellung', 'bestellnummer', 'versenden', 'verschicken', 'versand', 'paket', 'retoure', 'ruecksendung', 'rücksendung', 'abholung', 'liefertermin', 'storno'],
   'Angebote / Lexware': ['angebot', 'lexware', 'rechnung', 'kostenvoranschlag'],
-  Einkauf: ['einkauf', 'bestellen', 'bestellung', 'nachbestellen', 'order'],
+  Einkauf: ['einkauf', 'nachbestellen', 'nachbestellung', 'bestellen beim', 'wareneingang'],
   Lieferanten: ['lieferant', 'jordan', 'grosshändler', 'grosshaendler', 'lieferung'],
   Marketing: ['marketing', 'newsletter', 'werbung', 'google', 'anzeige', 'logo', 'social'],
   Buchhaltung: ['buchhaltung', 'buchen', 'steuer', 'datev', 'beleg'],
@@ -199,13 +200,53 @@ export function analysiere(text, { mitarbeiter = [], bereiche = STANDARD_BEREICH
  * einfache Zeilenlisten; Ueberschriften und leere Zeilen fallen weg.
  */
 export function ausListe(text, opt = {}) {
-  const zeilen = String(text || '')
-    .split(/\r?\n/)
-    .map(z => z.replace(/^\s*(?:[-*•–]|\d+[.)])\s*/, '').trim())
-    .map(z => z.replace(/^\[\s*[x ]?\s*\]\s*/i, '').trim())   // Kaestchen aus Markdown
-    .filter(z => z.length > 3)
-    .filter(z => !/^#{1,6}\s/.test(z))                          // Ueberschriften
-    .filter(z => !/^(aufgaben|todo|to-?do|offene punkte|liste)\s*:?\s*$/i.test(z));
-  // Zeilen ohne eigenen Inhalt (reine Trenner) verwerfen
-  return zeilen.filter(z => /[a-zA-ZäöüÄÖÜß]/.test(z)).map(z => analysiere(z, opt));
+  const roh = String(text || '').split(/\r?\n/);
+  const bloecke = [];
+  const uebersprungen = z => !/[a-zA-ZäöüÄÖÜß]/.test(z) || /^#{1,6}\s/.test(z)
+    || /^(aufgaben|todo|to-?do|offene punkte|liste)\s*:?\s*$/i.test(z) || z.length <= 3;
+
+  for (const zeile of roh) {
+    const eingerueckt = /^(\s{2,}|\t)/.test(zeile) && !/^\s*(?:[-*•–]|\d+[.)])\s/.test(zeile);
+    const sauber = zeile
+      .replace(/^\s*(?:[-*•–]|\d+[.)])\s*/, '')
+      .replace(/^\[\s*[x ]?\s*\]\s*/i, '')
+      .trim();
+    if (!sauber) continue;
+    // Eingerueckte Folgezeile erklaert die Aufgabe darueber - so kommen
+    // ChatGPT-Listen mit Erlaeuterung an, ohne dass daraus eigene Aufgaben werden.
+    if (eingerueckt && bloecke.length) { bloecke[bloecke.length - 1].zusatz.push(sauber); continue; }
+    if (uebersprungen(sauber)) continue;
+    bloecke.push({ kopf: sauber, zusatz: [] });
+  }
+
+  return bloecke.map(b => {
+    // "Titel :: was genau gemeint ist" - der Trenner haelt die Liste lesbar
+    // und gibt jeder Aufgabe die Erklaerung mit, die sie braucht.
+    // Fuehrendes [Bereich] gewinnt gegen die Worterkennung - wer den Bereich
+    // hinschreibt, weiss es besser als ein Stichwortvergleich.
+    const markiert = b.kopf.match(/^\[([^\]]{2,40})\]\s*(.+)$/);
+    const kopf = markiert ? markiert[2].trim() : b.kopf;
+    const bereiche = opt.bereiche ?? STANDARD_BEREICHE;
+    const gesetzt = markiert
+      ? bereiche.find(x => x.toLowerCase() === markiert[1].trim().toLowerCase()) ?? null
+      : null;
+    const geteilt = kopf.match(/^(.{3,}?)\s+(?:::|—|–\s|\|)\s*(.+)$/);
+    const titel = geteilt ? geteilt[1].trim() : kopf;
+    const erklaerung = [geteilt ? geteilt[2].trim() : '', ...b.zusatz].filter(Boolean).join(' ');
+    const vorschlag = analysiere(erklaerung ? `${titel} ${erklaerung}` : titel, opt);
+    // Ob Aufgabe oder Notiz, entscheidet der Titel. Die Erklaerung darunter
+    // ist beschreibender Text und wuerde die Erkennung sonst verwaessern.
+    const typ = erkenneTyp(titel).typ;
+    const bereich = gesetzt ?? vorschlag.bereich;
+    // Der gesetzte Bereich entscheidet auch ueber die Zustaendigkeit - sonst
+    // widerspraeche die Zuweisung dem, was daneben steht.
+    const eigen = opt.benutzer?.kuerzel || opt.benutzer?.name || null;
+    const verantwortlich = vorschlag.verantwortlich
+      ?? (typ === 'TASK' && istTechnisch(bereich) ? eigen : null);
+    return {
+      ...vorschlag, typ, titel: titelAus(titel), bereich, verantwortlich,
+      beschreibung: erklaerung || vorschlag.beschreibung,
+      sichtbarkeit: typ === 'TASK' ? 'TEAM' : vorschlag.sichtbarkeit,
+    };
+  });
 }
