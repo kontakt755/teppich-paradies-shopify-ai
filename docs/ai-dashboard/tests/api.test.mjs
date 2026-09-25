@@ -957,7 +957,7 @@ test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an'
 
   assert.equal(r.anzahl, 1);
   assert.equal(r.produkt.handle, 'selene-linoleumboden-620');
-  assert.equal(r.eintrag.bereich, 'Marketing');
+  assert.equal(r.eintrag.bereich, 'Baustelle', 'landet in einer Liste, die jemand ansieht');
   assert.match(r.eintrag.beschreibung, /Wohnzimmer 4 × 5 m/);
 
   const liste = api.fotosListe({ benutzer: ben });
@@ -969,9 +969,12 @@ test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an'
   const gelesen = api.orgAnhangLesen({ id: r.id, datei: liste.eintraege[0].fotos[0].datei, benutzer: ben });
   assert.equal(fs.readFileSync(gelesen.pfad).toString(), 'foto');
 
-  // Fotos tauchen nicht als normale Aufgabe in "Meine Aufgaben" des Inhabers auf
+  // Fotos gehören ins Team, nicht in die persönliche Liste des Inhabers -
+  // sichtbar sind sie dort unter "Kunden & Aufträge".
   const meine = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: { kuerzel: 'Inhaber', rolle: 'inhaber' } });
   assert.equal(meine.eintraege.some(e => e.id === r.id), false);
+  const team = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'offen', gruppe: 'kunden', benutzer: ben });
+  assert.equal(team.eintraege.some(e => e.id === r.id), true, 'Baustellenfotos stehen in der Team-Liste');
 });
 
 test('Team verwalten: anlegen, Rolle, sperren - mit Schutz für den letzten Inhaber', () => {

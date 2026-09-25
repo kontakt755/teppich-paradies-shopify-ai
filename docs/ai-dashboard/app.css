@@ -583,3 +583,54 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   border-radius: 8px; border: 1px solid var(--line); background: var(--bg-soft);
 }
 @media (max-width: 480px) { .foto-band img { width: 72px; height: 72px; } }
+
+/* --- Bedienung: Befunde aus der Durchsicht vom 25.09.2026 ----------------- */
+
+/* Fuenf Dialoge benutzen `.dialog-actions` - die Klasse gab es im CSS nie.
+   Dadurch standen "Abbrechen" und "Speichern" 4 px nebeneinander. */
+.dialog .actions,
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+/* Rueckmeldungen standen am Handy in der rechten Bildschirmhaelfte und
+   brachen dort um. Jetzt volle Breite mit Rand. */
+.toasts {
+  left: 12px;
+  right: 12px;
+  transform: none;
+  align-items: center;
+}
+.toast { max-width: min(520px, 100%); }
+
+/* Auf Fingergeraeten (Baustelle, Laden) sind 32 px zu klein zum Treffen. */
+@media (pointer: coarse) {
+  .btn, .btn-sm, .chip, .tab, .mainnav a, .seg button { min-height: 44px; }
+  .btn-sm { padding: 8px 14px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+}
+
+/* Das Handy-Menue lief unten aus dem Bild und liess sich nicht schieben. */
+@media (max-width: 760px) {
+  .mainnav {
+    max-height: calc(100vh - 52px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Der klebende Tabellenkopf klebte nicht: der Rahmen war selbst der
+   Scroll-Container, hatte aber keine Hoehe. */
+.table-wrap, .table-scroll { max-height: calc(100vh - 200px); overflow: auto; }
+
+/* Filterchips: die vier wichtigsten stehen offen, der Rest klappt auf.
+   Am Handy fuellten elf Chips sonst den halben Bildschirm. */
+.chip-mehr { display: inline-block; }
+.chip-mehr > summary { list-style: none; cursor: pointer; }
+.chip-mehr > summary::-webkit-details-marker { display: none; }
+.chip-mehr[open] > summary { background: var(--surface-2); }
+.chip-mehr > .chips { margin-top: 6px; }

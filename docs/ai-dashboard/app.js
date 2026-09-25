@@ -240,8 +240,25 @@ function taskRow(t, { showNext = true } = {}) {
   </div>`;
 }
 
+function fehlerText(status, roh) {
+  if (status === 404) return 'Diese Daten liegen noch nicht vor.';
+  if (status === 401 || status === 403) return 'Dafür fehlt die Berechtigung – oder die Anmeldung ist abgelaufen.';
+  if (status >= 500) return 'Das Dashboard am Mac antwortet gerade nicht. Läuft es noch?';
+  return roh || 'Unbekannter Fehler';
+}
+
 function emptyState(title, hint, link) {
   return `<div class="empty"><strong>${esc(title)}</strong> ${esc(hint)}${link ? `<a href="${esc(link.href)}">${esc(link.text)}</a>` : ''}</div>`;
+}
+
+/**
+ * Stoerung statt Leere. Eine fehlgeschlagene Abfrage sah bisher genauso aus
+ * wie "nichts zu tun" - man wartete auf Arbeit, die nie kam.
+ */
+function stoerungState(d, was = 'Diese Daten') {
+  return `<div class="notice crit"><strong>${esc(was)} konnten nicht geladen werden.</strong>
+    ${esc(d?.hinweis || 'Unbekannter Fehler')}
+    <button type="button" class="btn btn-sm" data-action="reload" style="margin-left:8px">Nochmal versuchen</button></div>`;
 }
 
 /**
@@ -1024,9 +1041,17 @@ function afVorErledigt(eintrag) {
 async function fetchEinkauf(path) {
   try {
     const r = await fetch(path, { cache: 'no-store' });
-    if (!r.ok) return { verfuegbar: false, hinweis: `HTTP ${r.status}` };
+    if (!r.ok) {
+      // "HTTP 500" sagt niemandem etwas, und eine Stoerung sah bisher aus wie
+      // "nichts zu tun" - beides in derselben blassen Box.
+      let roh = null;
+      try { roh = (await r.json())?.error || null; } catch { /* kein JSON im Fehlerfall */ }
+      return { verfuegbar: false, fehler: true, status: r.status, hinweis: fehlerText(r.status, roh) };
+    }
     return await r.json();
-  } catch (e) { return { verfuegbar: false, hinweis: e.message }; }
+  } catch (e) {
+    return { verfuegbar: false, fehler: true, hinweis: 'Keine Verbindung zum Dashboard am Mac. Läuft es noch?', roh: e.message };
+  }
 }
 
 function ensureEinkaufBestellungen() {
@@ -2034,7 +2059,7 @@ function viewLexikon() {
 // Telefonnummer. Alles kommt aus der bereits lokal vorliegenden
 // Bestelluebersicht - keine neue Shopify-Abfrage im Browser.
 // ---------------------------------------------------------------------------
-const RUECKRUF_STATUS_LABEL = { offen: 'Offen', angerufen: 'Angerufen', erledigt: 'Erledigt' };
+const RUECKRUF_STATUS_LABEL = { offen: 'Offen', nicht_erreicht: 'Nicht erreicht', angerufen: 'Angerufen', erledigt: 'Erledigt' };
 
 const kunden = {
   suche: null, loadingSuche: false, sucheKey: null,
@@ -2096,11 +2121,19 @@ function ensureKundenRueckrufe() {
   });
 }
 
-async function setzeRueckrufStatus(orderId, status, notiz) {
+/** Tagesdatum als JJJJ-MM-TT in lokaler Zeit - Wiedervorlagen sind Kalendertage. */
+function heuteTag(versatz = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + versatz);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function morgenTag() { return heuteTag(1); }
+
+async function setzeRueckrufStatus(orderId, status, notiz, wiedervorlage = null) {
   try {
     const r = await fetch('/api/kunden/rueckrufe', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ orderId, status, notiz: notiz ?? null }),
+      body: JSON.stringify({ orderId, status, notiz: notiz ?? null, wiedervorlage }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) { toast(`Fehler: ${j.error || r.status}`, 'crit'); return false; }
@@ -2185,11 +2218,12 @@ function rueckrufZeileHtml(z) {
       <div class="tel-gross">${telLink(z.telefon)}</div>
       ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
       ${z.aktualisiertVon ? `<div class="small muted">Zuletzt: ${esc(z.aktualisiertVon)}${z.aktualisiertAm ? ` am ${esc(fmtDate(z.aktualisiertAm))}` : ''}</div>` : ''}
+      ${z.wiedervorlage ? `<div class="small${z.wiedervorlage <= heuteTag() ? ' warnc' : ' muted'}">Nochmal versuchen: ${esc(fmtDate(z.wiedervorlage))}${z.wiedervorlage <= heuteTag() ? ' – heute fällig' : ''}</div>` : ''}
     </div>
     <div class="r rueckruf-actions">
       <span class="badge ${z.status === 'erledigt' ? 'ok' : z.status === 'angerufen' ? 'plain' : 'gap'}">${esc(RUECKRUF_STATUS_LABEL[z.status])}</span>
       <div class="btn-row">
-        ${['offen', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-rueckruf-open="${esc(z.orderId)}" data-rueckruf-status="${s}">${esc(RUECKRUF_STATUS_LABEL[s])}</button>`).join('')}
+        ${['nicht_erreicht', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-rueckruf-open="${esc(z.orderId)}" data-rueckruf-status="${s}">${esc(RUECKRUF_STATUS_LABEL[s])}</button>`).join('')}
       </div>
     </div>
   </div>`;
@@ -2201,6 +2235,8 @@ function openRueckrufDialog(orderId, status) {
     <h2 id="rrTitle">Rückruf · ${esc(z?.orderName || '')} → ${esc(RUECKRUF_STATUS_LABEL[status])}</h2>
     <p class="small muted">${esc(z?.kundenname || '')} · ${esc(z?.thema || '')}</p>
     <div class="field"><label for="rrNotiz">Notiz (optional)</label><textarea id="rrNotiz" name="notiz" maxlength="2000" placeholder="z. B. Ergebnis des Anrufs">${esc(z?.notiz || '')}</textarea></div>
+    ${status === 'erledigt' ? '' : `<div class="field"><label for="rrWieder">Nochmal versuchen am (optional)</label>
+      <input type="date" id="rrWieder" name="wiedervorlage" value="${esc(z?.wiedervorlage || (status === 'nicht_erreicht' ? morgenTag() : ''))}"></div>`}
     <div class="actions"><button type="button" class="btn" data-close-dialog>Abbrechen</button><button type="submit" class="btn btn-primary">Übernehmen</button></div>
   </form></div>`;
   const form = $('#dialogRoot form');
@@ -2208,7 +2244,9 @@ function openRueckrufDialog(orderId, status) {
   form.addEventListener('submit', async ev => {
     ev.preventDefault();
     form.querySelector('[type=submit]').disabled = true;
-    const ok = await setzeRueckrufStatus(orderId, status, (new FormData(form).get('notiz') || '').trim() || null);
+    const daten = new FormData(form);
+    const ok = await setzeRueckrufStatus(orderId, status, (daten.get('notiz') || '').trim() || null,
+      (daten.get('wiedervorlage') || '').trim() || null);
     if (ok) $('#dialogRoot').innerHTML = '';
     else form.querySelector('[type=submit]').disabled = false;
   });
@@ -2299,6 +2337,7 @@ function adresseHtml(a, titel) {
 
 function viewKundenDetail(key) {
   ensureKundenDetail(key);
+  ensureKundenFaelle();      // der naechste Schritt liegt berechnet vor
   const zurueck = `<p class="no-print" style="margin:0 0 12px"><a href="#" data-kunden-zurueck>← Zurück zur Kundensuche</a></p>`;
   // Nur anzeigen, was zu DIESEM Kunden gehoert: sonst stehen waehrend des
   // Ladens Name und Adresse des zuvor geoeffneten Kunden unter der neuen
@@ -2307,7 +2346,11 @@ function viewKundenDetail(key) {
   if (!d) return zurueck + `<div class="empty">Lade Kunde …</div>`;
   if (!d || !d.verfuegbar) return zurueck + emptyState('Kunde nicht gefunden.', d?.hinweis || '');
   const k = d.kunde;
+  // "Was ist hier offen?" musste man sich bisher aus den Bestellkarten
+  // zusammenreimen - dabei rechnet kundenfaelle.mjs es laengst aus.
+  const fall = kunden.faelle?.faelle?.find(f => f.schluessel === key || f.key === key);
   return zurueck + `
+    ${fall ? fallKarte(fall) : ''}
     <section class="card">
       <div class="card-head"><h2>${esc(k.kunde.name)}${kundenFortschrittBadge(k.fortschritt)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
       <p class="small">E-Mail: ${k.kunde.email !== '–'
@@ -2331,6 +2374,7 @@ function viewKundenRueckrufe() {
   ensureKundenRueckrufe();
   const r = kunden.rueckrufe;
   if (!r && kunden.loadingRueckrufe) return `<div class="empty">Lade Rückrufliste …</div>`;
+  if (r?.fehler) return stoerungState(r, 'Die Rückrufliste');
   if (!r || !r.verfuegbar) return emptyState('Keine Daten verfügbar.', r?.hinweis || 'Bestellübersicht noch nicht exportiert.');
   const offen = r.zeilen.filter(z => z.status !== 'erledigt');
   const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
@@ -3347,6 +3391,9 @@ const ORG_ANSICHTEN = [
   ['woche', 'Diese Woche'], ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
   ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
 ];
+// Am Handy nahmen elf Chips den halben Bildschirm ein, bevor die erste
+// Aufgabe kam. Vier reichen fuer den Alltag, der Rest steht einen Klick weiter.
+const ORG_ANSICHTEN_HAUPT = ['offen', 'heute', 'ueberfaellig', 'erledigt'];
 /**
  * Der Stand als Text: was schon offen ist, damit ChatGPT nicht dieselben
  * Punkte noch einmal liefert. Zusammen mit der Anweisung ergibt das den
@@ -3556,6 +3603,7 @@ function viewTeam() {
   ensureTeam();
   const d = team.daten;
   if (!d) return `<div class="page-head"><h1>Team</h1></div><div class="empty">Lade …</div>`;
+  if (d.fehler) return `<div class="page-head"><h1>Team</h1></div>${stoerungState(d, 'Die Zugangsliste')}`;
   if (!d.verfuegbar) return `<div class="page-head"><h1>Team</h1></div>${emptyState('Nicht verfügbar.', d.hinweis || 'Nur der Inhaber darf Zugänge verwalten.')}`;
 
   const hinweis = !d.eingerichtet
@@ -3687,7 +3735,13 @@ function openTeamPasswort(kuerzel) {
  * schmutzige Hände und wenig Zeit: Fotos aussuchen, Auftragsnummer eintippen,
  * abschicken. Alles andere passiert hier.
  */
-const fotos = { liste: null, loading: false, gewaehlt: [], sendet: false, vorschlag: null };
+const fotos = {
+  liste: null, loading: false, gewaehlt: [], sendet: false, vorschlag: null,
+  // Auf der Baustelle tippt man einhaendig. Was eingegeben ist, muss ein
+  // Neuzeichnen ueberleben - sonst steht man nach einem Fehlversuch wieder
+  // vor leeren Feldern.
+  auftrag: '', boden: '', notiz: '', einwilligung: false,
+};
 
 function fotoSrc(id, datei) {
   return `/api/org/anhang-lesen?${new URLSearchParams({ id, datei })}`;
@@ -3716,20 +3770,20 @@ function viewFotos() {
     <p class="small muted" id="fotoGewaehlt" style="margin:0 0 12px">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
 
     <label class="small" for="fotoAuftrag">Auftragsnummer</label>
-    <input type="text" id="fotoAuftrag" inputmode="numeric" placeholder="z. B. 1042"
+    <input type="text" id="fotoAuftrag" inputmode="numeric" placeholder="z. B. 1042" value="${esc(fotos.auftrag)}"
            style="width:100%;box-sizing:border-box;margin:4px 0 12px">
 
     <label class="small" for="fotoBoden">Welcher Boden? <span class="muted">(steht auf dem Auftragszettel)</span></label>
-    <input type="text" id="fotoBoden" placeholder="z. B. Selene 620"
+    <input type="text" id="fotoBoden" placeholder="z. B. Selene 620" value="${esc(fotos.boden)}"
            style="width:100%;box-sizing:border-box;margin:4px 0 4px">
     <p class="small" id="fotoProdukt" style="margin:0 0 12px">&nbsp;</p>
 
     <label class="small" for="fotoNotiz">Notiz <span class="muted">(optional – Raumgröße, Besonderheit)</span></label>
-    <input type="text" id="fotoNotiz" placeholder="z. B. Wohnzimmer 4 × 5 m"
+    <input type="text" id="fotoNotiz" placeholder="z. B. Wohnzimmer 4 × 5 m" value="${esc(fotos.notiz)}"
            style="width:100%;box-sizing:border-box;margin:4px 0 12px">
 
     <label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
-      <input type="checkbox" id="fotoEinwilligung">
+      <input type="checkbox" id="fotoEinwilligung"${fotos.einwilligung ? ' checked' : ''}>
       <span>Der Kunde ist damit einverstanden, dass wir die Fotos verwenden.
         <span class="muted">Ohne Zustimmung dürfen wir Bilder aus einer Wohnung nicht zeigen – dann bitte nicht abschicken.</span></span>
     </label>
@@ -3782,9 +3836,10 @@ async function fotosAbschicken() {
   if (!dateien.length) { toast('Bitte zuerst Fotos auswählen', 'crit'); return; }
   if (!$('#fotoEinwilligung')?.checked) { toast('Ohne die Zustimmung des Kunden geht es nicht', 'crit'); return; }
 
-  const auftrag = $('#fotoAuftrag')?.value || '';
-  const boden = $('#fotoBoden')?.value || '';
-  const notiz = $('#fotoNotiz')?.value || '';
+  const auftrag = $('#fotoAuftrag')?.value ?? fotos.auftrag;
+  const boden = $('#fotoBoden')?.value ?? fotos.boden;
+  const notiz = $('#fotoNotiz')?.value ?? fotos.notiz;
+  Object.assign(fotos, { auftrag, boden, notiz, einwilligung: true });
   if (!auftrag.trim() && !boden.trim()) { toast('Bitte Auftragsnummer oder Boden angeben', 'crit'); return; }
 
   fotos.sendet = true; render();
@@ -3795,7 +3850,8 @@ async function fotosAbschicken() {
     }
     const r = await orgSchreiben('/api/fotos/neu', { auftrag, boden, notiz, einwilligung: true, fotos: fertig });
     toast(`${r.anzahl} ${r.anzahl === 1 ? 'Foto' : 'Fotos'} angekommen – ${r.produkt.text}`);
-    fotos.gewaehlt = []; fotos.liste = null; fotos.vorschlag = null;
+    // Erst nach dem Erfolg leeren - bei einem Fehler bleibt alles stehen.
+    Object.assign(fotos, { gewaehlt: [], liste: null, vorschlag: null, auftrag: '', boden: '', notiz: '', einwilligung: false });
   } catch (err) {
     toast(`Fehler: ${err.message}`, 'crit');
   } finally {
@@ -3903,8 +3959,16 @@ function viewOrganisation() {
 
   const ansichten = ['meine-aufgaben', 'team-aufgaben'].includes(bereich)
     ? `<div class="chips" style="margin:8px 0"><span class="small muted chip-label">Zeigen:</span>
-        ${ORG_ANSICHTEN.map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k === 'offen' ? '' : k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
-        <button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>
+        ${ORG_ANSICHTEN.filter(([k]) => ORG_ANSICHTEN_HAUPT.includes(k))
+          .map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k === 'offen' ? '' : k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
+        <details class="chip-mehr"${ORG_ANSICHTEN_HAUPT.includes(ansicht) || ansicht === 'alle' ? '' : ' open'}>
+          <summary class="chip">Mehr …</summary>
+          <div class="chips">
+            ${ORG_ANSICHTEN.filter(([k]) => !ORG_ANSICHTEN_HAUPT.includes(k))
+              .map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
+            <button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>
+          </div>
+        </details>
       </div>` : '';
 
   // Das Team sucht hier Kunden, Bestellungen und kleine Auftraege - alles
@@ -3924,9 +3988,9 @@ function viewOrganisation() {
   const kopf = `<div class="page-head">
       <div><h1>Aufgaben &amp; Organisation</h1><p class="sub">Alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
       <div class="head-actions">
-        <button type="button" class="btn" data-org-fuer-chatgpt title="Kopiert den aktuellen Stand, damit ChatGPT weiß, was schon offen ist">Stand für ChatGPT</button>
-        <button type="button" class="btn" data-org-liste title="Mehrere Aufgaben auf einmal einfügen – z. B. eine Liste aus ChatGPT">Liste einfügen</button>
-        <button type="button" class="btn" data-org-pruefen title="Prüft Aufgaben mit hinterlegtem Erfolgskriterium gegen den echten Shop">Jetzt prüfen</button>
+        <button type="button" class="btn" data-nur-inhaber data-org-fuer-chatgpt title="Kopiert den aktuellen Stand, damit ChatGPT weiß, was schon offen ist">Stand für ChatGPT</button>
+        <button type="button" class="btn" data-nur-inhaber data-org-liste title="Mehrere Aufgaben auf einmal einfügen – z. B. eine Liste aus ChatGPT">Liste einfügen</button>
+        <button type="button" class="btn" data-nur-inhaber data-org-pruefen title="Prüft Aufgaben mit hinterlegtem Erfolgskriterium gegen den echten Shop">Jetzt prüfen</button>
         <button type="button" class="btn btn-primary" data-org-schnell>+ Schnell erfassen</button>
       </div>
     </div>`;
@@ -4197,7 +4261,13 @@ let letzteAnsicht = null;
 function render() {
   const main = $('#main');
   const eingabe = merkeEingabe(document.activeElement, (el) => main.contains(el));
-  document.querySelectorAll('.mainnav a').forEach(a => a.toggleAttribute('aria-current', a.dataset.nav === state.route.view) || (a.dataset.nav === state.route.view ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+  // aria-current braucht den Wert "page". toggleAttribute setzte nur einen
+  // leeren Wert und gab true zurueck - der zweite Zweig lief nie, der aktive
+  // Reiter war nirgends hervorgehoben.
+  document.querySelectorAll('.mainnav a').forEach(a => {
+    if (a.dataset.nav === state.route.view) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
   const nf = $('#navFreigaben'); const approvals = state.tasks.filter(t => t.status === 'freigabe').length;
   nf.hidden = !approvals; nf.textContent = approvals;
   // "Mehr" traegt die Freigaben-Zahl mit, damit sie im eingeklappten Menue nicht untergeht,
@@ -4253,6 +4323,10 @@ function bindEvents() {
   });
   let bodenTimer;
   document.addEventListener('input', e => {
+    const feldId = e.target.id;
+    if (feldId === 'fotoAuftrag') { fotos.auftrag = e.target.value; return; }
+    if (feldId === 'fotoNotiz') { fotos.notiz = e.target.value; return; }
+    if (feldId === 'fotoBoden') fotos.boden = e.target.value;
     if (!e.target.closest('#fotoBoden')) return;
     const feld = e.target;
     clearTimeout(bodenTimer);
@@ -4485,9 +4559,10 @@ function bindEvents() {
       return;
     }
     const a = e.target.closest('[data-action]');
-    if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
+    if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'reload') location.reload(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', async e => {
+    if (e.target.id === 'fotoEinwilligung') { fotos.einwilligung = e.target.checked; return; }
     const bilder = e.target.closest('#fotoDateien');
     if (bilder) {
       const zuGross = [...bilder.files].filter(f => f.size > 10 * 1024 * 1024);

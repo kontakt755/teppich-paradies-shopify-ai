@@ -704,7 +704,11 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const statusAlle = leseRueckrufe(rueckrufePfad(dir));
       const zeilen = rueckrufliste(modell).map(z => {
         const s = statusAlle[z.orderId];
-        return { ...z, status: s?.status || 'offen', notiz: s?.notiz || null, aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null };
+        return {
+          ...z, status: s?.status || 'offen', notiz: s?.notiz || null,
+          aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null,
+          wiedervorlage: s?.wiedervorlage || null,
+        };
       });
       return { verfuegbar: true, zeilen };
     },
@@ -719,14 +723,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      */
     async kundenRueckrufSetzen(payload = {}, benutzer = null) {
       const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
-      const { orderId, status, notiz } = payload || {};
+      const { orderId, status, notiz, wiedervorlage } = payload || {};
       if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
       if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = rueckrufePfad(dir);
       let eintrag;
       try {
-        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, jetzt: now() });
+        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, wiedervorlage, jetzt: now() });
       } catch (e) {
         if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
         throw e;
@@ -1121,7 +1125,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         typ: 'TASK',
         titel: titelFuer(eingang),
         beschreibung: text,
-        bereich: 'Marketing',
+        // "Baustelle" statt "Marketing": Marketing gehoert weder zur Technik
+        // noch zur Teamarbeit - solche Eintraege standen in keiner der
+        // Standardlisten und waren nur ueber die Fotoseite auffindbar.
+        bereich: 'Baustelle',
         status: 'INBOX',
         erfolgskriterium: 'Beitrag ist veröffentlicht oder bewusst verworfen.',
         verknuepft: {
