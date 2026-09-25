@@ -325,6 +325,7 @@ function viewHeute() {
     <div class="page-head"><div><h1>Heute</h1><p class="sub">${esc(today)}</p></div>
       <div class="head-actions">${aktualisierenButton()}${state.capabilities.sync ? '<button class="btn" data-action="sync" data-nur-inhaber title="Aufgaben frisch von GitHub holen">Aufgaben synchronisieren</button>' : ''}<a class="btn btn-ghost" data-nur-inhaber href="${newIssueUrl({ template: 'feature.yml' })}" target="_blank" rel="noopener">Neue Aufgabe ↗</a></div></div>
 
+    ${localMode ? heuteFaelle() : ''}
     <h2 class="section-title">Kundengeschäft</h2>
     ${heuteEinkaufBlock()}
     ${heuteRueckrufBlock()}
@@ -2005,6 +2006,7 @@ const kunden = {
   rueckrufe: null, loadingRueckrufe: false,
   bestellungen: null, loadingBestellungen: false,
   angebote: null, loadingAngebote: false,
+  faelle: null, loadingFaelle: false,
   warenkoerbe: null, loadingWarenkoerbe: false,
   erweitert: new Set(),
 };
@@ -2598,6 +2600,80 @@ function viewKundenWarenkoerbe() {
     <div class="rows">${liste.length ? liste.map(warenkorbZeile).join('') : emptyState('Kein liegengebliebener Warenkorb.', '')}</div>`;
 }
 
+// ---------------------------------------------------------------------------
+// Unteransicht "Zu tun": alles offene je Kunde in einem Eintrag. Im Laden
+// denkt niemand in Aufgabenarten ("Bestellungen", "Angebote", "Warenkoerbe"),
+// sondern in Kunden: wer wartet auf was, und was mache ich als Naechstes.
+// ---------------------------------------------------------------------------
+
+function ensureKundenFaelle() {
+  if (kunden.faelle || kunden.loadingFaelle) return;
+  kunden.loadingFaelle = true;
+  fetchEinkauf('/api/kunden/faelle').then(d => {
+    kunden.faelle = d; kunden.loadingFaelle = false;
+    if (['heute', 'kunden'].includes(state.route.view)) render();
+  });
+}
+
+const FALL_QUELLE_LABEL = { bestellung: 'Bestellung', angebot: 'Angebot', warenkorb: 'Warenkorb' };
+const DRINGEND_LABEL = ['sofort', 'bald', 'wenn Zeit ist'];
+
+function fallKontakt(f) {
+  const teile = [];
+  if (f.telefon) teile.push(`<a href="tel:${esc(String(f.telefon).replace(/\s/g, ''))}" onclick="event.stopPropagation()">${esc(f.telefon)}</a>`);
+  if (f.email) teile.push(`<a href="mailto:${esc(f.email)}" onclick="event.stopPropagation()">${esc(f.email)}</a>`);
+  return teile.length ? teile.join(' · ') : '<span class="muted">kein Kontakt hinterlegt</span>';
+}
+
+/** Ein Punkt: was der Kunde moechte und was als Naechstes zu tun ist. */
+function fallPunkt(p) {
+  const produkte = (p.produkte || []).filter(x => x.handle);
+  const nachschlagen = produkte.length
+    ? ` <a class="small" href="#/lexikon?handle=${encodeURIComponent(produkte[0].handle)}" onclick="event.stopPropagation()">im Lexikon nachschlagen →</a>`
+    : '';
+  const klasse = p.schritt.dringend === 0 ? 'crit' : p.schritt.dringend === 1 ? 'gap' : 'plain';
+  return `<li class="fall-punkt">
+    <div><span class="badge ${klasse}">${esc(p.schritt.text)}</span></div>
+    <div class="small">${esc(FALL_QUELLE_LABEL[p.quelle] || p.quelle)}${p.bezug ? ` ${esc(p.bezug)}` : ''}${p.tage !== null ? ` · seit ${p.tage === 0 ? 'heute' : `${p.tage} Tagen`}` : ''}${p.betrag ? ` · ${esc(fmtPreis(p.betrag))} ${esc(p.waehrung)}` : ''}</div>
+    <div class="small">${p.moechte.length ? esc(p.moechte.join(' · ')) : '<span class="muted">keine Positionen</span>'}${nachschlagen}</div>
+    ${p.adminUrl ? `<a class="small" href="${esc(p.adminUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">In Shopify öffnen ↗</a>` : ''}
+  </li>`;
+}
+
+function fallKarte(f) {
+  const stufe = DRINGEND_LABEL[f.dringend] || '';
+  return `<section class="card fall${f.dringend === 0 ? ' fall-sofort' : ''}" style="margin-bottom:12px">
+    <div class="card-head">
+      <h3>${esc(f.name)} <span class="small muted">${esc(stufe)}</span></h3>
+      <span class="small">${f.summe ? `${esc(fmtPreis(f.summe))} €` : ''}</span>
+    </div>
+    <p class="small" style="margin:0 0 8px">${fallKontakt(f)}${f.ort ? ` · ${esc(f.ort)}` : ''}</p>
+    <ul class="fall-punkte">${f.punkte.map(fallPunkt).join('')}</ul>
+  </section>`;
+}
+
+function viewKundenFaelle() {
+  ensureKundenFaelle();
+  const d = kunden.faelle;
+  if (!d && kunden.loadingFaelle) return `<div class="empty">Lade offene Fälle …</div>`;
+  if (!d || !d.verfuegbar) return emptyState('Keine Daten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
+  if (!d.faelle.length) return emptyState('Nichts offen.', 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.');
+  return `
+    <p class="small muted" style="margin:0 0 10px">${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'}${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst, bei gleicher Stufe das älteste</p>
+    ${d.faelle.map(fallKarte).join('')}`;
+}
+
+/** Startseite: die drei dringendsten Kunden - der Rest steht im Reiter. */
+function heuteFaelle() {
+  ensureKundenFaelle();
+  const d = kunden.faelle;
+  if (!d || !d.verfuegbar || !d.faelle.length) return '';
+  const oben = d.faelle.slice(0, 3);
+  return `<h2 class="section-title">Wer wartet auf was <span class="section-note">${d.anzahl} ${d.anzahl === 1 ? 'Kunde' : 'Kunden'}${d.sofort ? `, ${d.sofort} sofort` : ''}</span></h2>
+    ${oben.map(fallKarte).join('')}
+    ${d.faelle.length > 3 ? `<p class="small muted" style="margin:-4px 0 0">+${d.faelle.length - 3} weitere – <a href="#/kunden?tab=zutun">alle ansehen →</a></p>` : ''}`;
+}
+
 function viewKunden() {
   if (state.capabilities.mode !== 'local') {
     return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche, Bestellliste und Rückruf-/Beratungsliste.</p></div></div>
@@ -2606,22 +2682,29 @@ function viewKunden() {
   const key = state.route.params.get('key');
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
   const tabRaw = state.route.params.get('tab');
-  const tab = ['bestellungen', 'rueckrufe', 'angebote', 'warenkoerbe'].includes(tabRaw) ? tabRaw : 'suche';
+  const tab = ['bestellungen', 'rueckrufe', 'angebote', 'warenkoerbe', 'zutun'].includes(tabRaw) ? tabRaw : 'suche';
   ensureKundenRueckrufe();
   const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden, alle Bestellungen im Überblick – und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="zutun">Zu tun${f_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
     </div>`;
-  const body = tab === 'bestellungen' ? viewKundenBestellungen()
+  const body = tab === 'zutun' ? viewKundenFaelle()
+    : tab === 'bestellungen' ? viewKundenBestellungen()
     : tab === 'rueckrufe' ? viewKundenRueckrufe()
     : tab === 'angebote' ? viewKundenAngebote()
     : tab === 'warenkoerbe' ? viewKundenWarenkoerbe()
     : viewKundenSuche();
   return head + body;
+}
+
+function f_badge() {
+  const n = kunden.faelle?.sofort || 0;
+  return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 
 function r_badge() {
