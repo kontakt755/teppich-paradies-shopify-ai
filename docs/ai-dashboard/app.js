@@ -3483,6 +3483,130 @@ function orgZeile(e, { bereich = '' } = {}) {
   </div>`;
 }
 
+
+// -- Baustellenfotos --------------------------------------------------------
+
+/**
+ * Der Weg vom Handy ins Haus. Die Monteure stehen im fertigen Raum, haben
+ * schmutzige Hände und wenig Zeit: Fotos aussuchen, Auftragsnummer eintippen,
+ * abschicken. Alles andere passiert hier.
+ */
+const fotos = { liste: null, loading: false, gewaehlt: [], sendet: false, vorschlag: null };
+
+function fotoSrc(id, datei) {
+  return `/api/org/anhang-lesen?${new URLSearchParams({ id, datei })}`;
+}
+
+function ensureFotos() {
+  if (fotos.liste || fotos.loading) return;
+  fotos.loading = true;
+  fetchEinkauf('/api/fotos/liste').then(d => { fotos.liste = d; })
+    .catch(() => { fotos.liste = { verfuegbar: false, eintraege: [] }; })
+    .finally(() => { fotos.loading = false; render(); });
+}
+
+function viewFotos() {
+  ensureFotos();
+  const d = fotos.liste;
+  const gewaehlt = fotos.gewaehlt.length;
+
+  const formular = `<form id="fotoForm" class="card" style="padding:16px;max-width:640px">
+    <h2 style="margin:0 0 4px">Fotos vom fertigen Raum</h2>
+    <p class="small muted" style="margin:0 0 12px">Bilder aussuchen, Auftragsnummer eintippen, abschicken. Mehr ist es nicht.</p>
+
+    <label class="small" for="fotoDateien">Fotos <span class="muted">(bis 20 Stück, je 10 MB)</span></label>
+    <input type="file" id="fotoDateien" accept="image/*" multiple capture="environment"
+           style="width:100%;box-sizing:border-box;margin:4px 0 4px">
+    <p class="small muted" id="fotoGewaehlt" style="margin:0 0 12px">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
+
+    <label class="small" for="fotoAuftrag">Auftragsnummer</label>
+    <input type="text" id="fotoAuftrag" inputmode="numeric" placeholder="z. B. 1042"
+           style="width:100%;box-sizing:border-box;margin:4px 0 12px">
+
+    <label class="small" for="fotoBoden">Welcher Boden? <span class="muted">(steht auf dem Auftragszettel)</span></label>
+    <input type="text" id="fotoBoden" placeholder="z. B. Selene 620"
+           style="width:100%;box-sizing:border-box;margin:4px 0 4px">
+    <p class="small" id="fotoProdukt" style="margin:0 0 12px">&nbsp;</p>
+
+    <label class="small" for="fotoNotiz">Notiz <span class="muted">(optional – Raumgröße, Besonderheit)</span></label>
+    <input type="text" id="fotoNotiz" placeholder="z. B. Wohnzimmer 4 × 5 m"
+           style="width:100%;box-sizing:border-box;margin:4px 0 12px">
+
+    <label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
+      <input type="checkbox" id="fotoEinwilligung">
+      <span>Der Kunde ist damit einverstanden, dass wir die Fotos verwenden.
+        <span class="muted">Ohne Zustimmung dürfen wir Bilder aus einer Wohnung nicht zeigen – dann bitte nicht abschicken.</span></span>
+    </label>
+
+    <button type="submit" class="btn btn-primary" id="fotoSenden"${fotos.sendet ? ' disabled' : ''}>${fotos.sendet ? 'Wird gesendet …' : 'Abschicken'}</button>
+  </form>`;
+
+  const galerie = !d ? `<div class="empty">Lade …</div>`
+    : !d.eintraege.length
+      ? emptyState('Noch keine Fotos eingegangen.', 'Das erste Mal dauert zwei Minuten – danach ist es Routine.')
+      : `<div class="rows">${d.eintraege.map(e => `<div class="row">
+          <div>
+            <div class="t">${esc(e.titel)}</div>
+            <div class="m">${e.produkt
+              ? `<a href="https://www.teppich-paradies.net/products/${esc(e.produkt)}" target="_blank" rel="noopener">${esc(e.produktTitel || e.produkt)}</a>`
+              : '<span class="muted">nicht im Shop – „exklusiv bei Teppich-Paradies"</span>'}
+              ${e.sicher === false && e.produkt ? ' <span class="badge gap">bitte prüfen</span>' : ''}
+              · von ${esc(e.wer)} · ${esc(fmtDate(e.erstelltAm))}</div>
+            <div class="foto-band">${e.fotos.map(f => `<a href="${fotoSrc(e.id, f.datei)}" target="_blank" rel="noopener">
+              <img src="${fotoSrc(e.id, f.datei)}" alt="${esc(f.name)}" loading="lazy"></a>`).join('')}</div>
+          </div>
+          <div class="r">
+            <span class="badge status ${esc(String(e.status).toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>
+            <a class="btn btn-sm" href="#/organisation?oid=${encodeURIComponent(e.id)}">Öffnen</a>
+          </div>
+        </div>`).join('')}</div>`;
+
+  return `<div class="page-head">
+      <div><h1>Baustellenfotos</h1>
+      <p class="sub">Fotos vom fertigen Raum – die Grundlage für unsere Beiträge.</p></div>
+    </div>
+    ${formular}
+    <h2 style="margin:24px 0 8px">Eingegangen${d?.anzahl ? ` (${d.anzahl})` : ''}</h2>
+    ${galerie}`;
+}
+
+/** Datei -> base64, ohne den Praefix "data:...;base64," */
+function alsBase64(datei) {
+  return new Promise((ja, nein) => {
+    const leser = new FileReader();
+    leser.onload = () => ja(String(leser.result).split(',')[1] || '');
+    leser.onerror = () => nein(new Error(`„${datei.name}" ließ sich nicht lesen`));
+    leser.readAsDataURL(datei);
+  });
+}
+
+async function fotosAbschicken() {
+  if (fotos.sendet) return;
+  const dateien = fotos.gewaehlt;
+  if (!dateien.length) { toast('Bitte zuerst Fotos auswählen', 'crit'); return; }
+  if (!$('#fotoEinwilligung')?.checked) { toast('Ohne die Zustimmung des Kunden geht es nicht', 'crit'); return; }
+
+  const auftrag = $('#fotoAuftrag')?.value || '';
+  const boden = $('#fotoBoden')?.value || '';
+  const notiz = $('#fotoNotiz')?.value || '';
+  if (!auftrag.trim() && !boden.trim()) { toast('Bitte Auftragsnummer oder Boden angeben', 'crit'); return; }
+
+  fotos.sendet = true; render();
+  try {
+    const fertig = [];
+    for (const f of dateien) {
+      fertig.push({ name: f.name, typ: f.type, daten: await alsBase64(f) });
+    }
+    const r = await orgSchreiben('/api/fotos/neu', { auftrag, boden, notiz, einwilligung: true, fotos: fertig });
+    toast(`${r.anzahl} ${r.anzahl === 1 ? 'Foto' : 'Fotos'} angekommen – ${r.produkt.text}`);
+    fotos.gewaehlt = []; fotos.liste = null; fotos.vorschlag = null;
+  } catch (err) {
+    toast(`Fehler: ${err.message}`, 'crit');
+  } finally {
+    fotos.sendet = false; render();
+  }
+}
+
 // -- Detailansicht ----------------------------------------------------------
 
 function orgDetailAnsicht(id) {
@@ -3864,7 +3988,7 @@ function heuteOrganisation() {
     ${team.length ? `<h2 class="section-title">Team</h2><div class="band">${team.join('')}</div>` : ''}`;
 }
 
-const VIEWS = { heute: viewHeute, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+const VIEWS = { heute: viewHeute, fotos: viewFotos, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 let letzteAnsicht = null;
 
@@ -3920,6 +4044,29 @@ function bindEvents() {
     if (!d) return;
     try { localStorage.setItem(`tp-heute-${d.dataset.collapsible}`, d.open ? '1' : '0'); } catch {}
   }, true);
+  document.addEventListener('submit', e => {
+    if (!e.target.closest('#fotoForm')) return;
+    e.preventDefault();
+    fotosAbschicken();
+  });
+  let bodenTimer;
+  document.addEventListener('input', e => {
+    if (!e.target.closest('#fotoBoden')) return;
+    const feld = e.target;
+    clearTimeout(bodenTimer);
+    bodenTimer = setTimeout(async () => {
+      const ziel = $('#fotoProdukt');
+      if (!ziel || !document.contains(feld)) return;          // Ansicht gewechselt
+      const wert = feld.value.trim();
+      if (wert.length < 3) { ziel.innerHTML = '&nbsp;'; return; }
+      try {
+        const d = await fetchEinkauf(`/api/fotos/produkt?${new URLSearchParams({ boden: wert })}`);
+        if (!document.contains(feld) || feld.value.trim() !== wert) return;   // Antwort veraltet
+        ziel.textContent = d.hinweis.text;
+        ziel.className = d.hinweis.handle ? 'small ok' : 'small muted';
+      } catch { /* Vorschlag ist Beiwerk - eine Stoerung darf das Formular nicht blockieren */ }
+    }, 300);
+  });
   document.addEventListener('click', e => {
     const more = $('#navMore');
     if (more?.open && !e.target.closest('#navMore')) more.open = false;
@@ -4102,6 +4249,17 @@ function bindEvents() {
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
   document.addEventListener('change', async e => {
+    const bilder = e.target.closest('#fotoDateien');
+    if (bilder) {
+      const zuGross = [...bilder.files].filter(f => f.size > 10 * 1024 * 1024);
+      if (zuGross.length) toast(`${zuGross.length} ${zuGross.length === 1 ? 'Bild ist' : 'Bilder sind'} größer als 10 MB und bleiben draußen`, 'crit');
+      fotos.gewaehlt = [...bilder.files].filter(f => f.size <= 10 * 1024 * 1024).slice(0, 20);
+      const zeile = $('#fotoGewaehlt');
+      if (zeile) zeile.textContent = fotos.gewaehlt.length
+        ? `${fotos.gewaehlt.length} ${fotos.gewaehlt.length === 1 ? 'Bild' : 'Bilder'} ausgewählt`
+        : 'Noch nichts ausgewählt';
+      return;
+    }
     const datei = e.target.closest('[data-org-anhang]');
     if (datei?.files?.length) {
       const f = datei.files[0];

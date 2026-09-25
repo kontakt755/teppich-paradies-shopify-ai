@@ -574,3 +574,11 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   line-height: 1.45;
   max-width: 72ch;
 }
+
+/* Baustellenfotos: Vorschaustreifen, der auf dem Handy nicht ausbricht. */
+.foto-band { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.foto-band img {
+  width: 92px; height: 92px; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--line); background: var(--bg-soft);
+}
+@media (max-width: 480px) { .foto-band img { width: 72px; height: 72px; } }

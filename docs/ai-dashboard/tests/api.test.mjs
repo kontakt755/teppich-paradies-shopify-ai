@@ -931,3 +931,45 @@ test('Stand für ChatGPT: offene Aufgaben mit Zuständigkeit und Erklärung, Erl
   assert.equal(/Altes Angebot/.test(d.text), false);
   assert.match(d.text, /Leg nichts davon noch einmal an/);
 });
+
+test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-fotos');
+  fs.mkdirSync(path.join(dir, 'lexikon'), { recursive: true });
+  fs.writeFileSync(path.join(dir, 'lexikon', 'produkte.json'), JSON.stringify({
+    produkte: [{ handle: 'selene-linoleumboden-620', titel: 'Selene Linoleumboden Farbe 620' }],
+  }));
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const api = orgApi(root, dir);
+  const bild = Buffer.from('foto').toString('base64');
+
+  // Ohne Zustimmung entsteht gar nichts - auch keine Datei auf der Platte
+  assert.throws(
+    () => api.fotosNeu({ auftrag: '1042', fotos: [{ name: 'a.png', typ: 'image/png', daten: bild }] }, { benutzer: ben }),
+    /Zustimmung/,
+  );
+  assert.equal(api.fotosListe({ benutzer: ben }).anzahl, 0);
+
+  const r = api.fotosNeu({
+    auftrag: '1042', boden: 'Selene 620', notiz: 'Wohnzimmer 4 × 5 m', einwilligung: true,
+    fotos: [{ name: 'raum.png', typ: 'image/png', daten: bild }],
+  }, { benutzer: ben });
+
+  assert.equal(r.anzahl, 1);
+  assert.equal(r.produkt.handle, 'selene-linoleumboden-620');
+  assert.equal(r.eintrag.bereich, 'Marketing');
+  assert.match(r.eintrag.beschreibung, /Wohnzimmer 4 × 5 m/);
+
+  const liste = api.fotosListe({ benutzer: ben });
+  assert.equal(liste.anzahl, 1);
+  assert.equal(liste.eintraege[0].produkt, 'selene-linoleumboden-620');
+  assert.equal(liste.eintraege[0].fotos.length, 1);
+
+  // Das Bild ist über den vorhandenen Anhangweg abrufbar
+  const gelesen = api.orgAnhangLesen({ id: r.id, datei: liste.eintraege[0].fotos[0].datei, benutzer: ben });
+  assert.equal(fs.readFileSync(gelesen.pfad).toString(), 'foto');
+
+  // Fotos tauchen nicht als normale Aufgabe in "Meine Aufgaben" des Inhabers auf
+  const meine = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: { kuerzel: 'Inhaber', rolle: 'inhaber' } });
+  assert.equal(meine.eintraege.some(e => e.id === r.id), false);
+});
