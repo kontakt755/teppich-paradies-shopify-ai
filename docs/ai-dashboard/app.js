@@ -3959,14 +3959,16 @@ function viewFotos() {
   const d = fotos.liste;
   const gewaehlt = fotos.gewaehlt.length;
 
-  const formular = `<form id="fotoForm" class="card" style="padding:16px;max-width:640px">
+  const formular = `<form id="fotoForm" class="card foto-form">
     <h2 style="margin:0 0 4px">Fotos vom fertigen Raum</h2>
     <p class="small muted" style="margin:0 0 12px">Bilder aussuchen, Auftragsnummer eintippen, abschicken. Mehr ist es nicht.</p>
 
-    <label class="small" for="fotoDateien">Fotos <span class="muted">(bis 20 Stück – große Bilder werden vor dem Senden automatisch verkleinert)</span></label>
-    <input type="file" id="fotoDateien" accept="image/*" multiple
-           style="width:100%;box-sizing:border-box;margin:4px 0 4px">
-    <p class="small muted" id="fotoGewaehlt" style="margin:0 0 12px">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
+    <input class="visually-hidden" type="file" id="fotoDateien" accept="image/*" multiple>
+    <label class="foto-upload" for="fotoDateien">
+      <span class="foto-upload-plus" aria-hidden="true">+</span>
+      <span><strong>Fotos auswählen</strong><small>Bis zu 20 Bilder – große Fotos werden automatisch verkleinert</small></span>
+    </label>
+    <p class="small ${gewaehlt ? '' : 'muted'}" id="fotoGewaehlt">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
 
     <label class="small" for="fotoAuftrag">Auftragsnummer</label>
     <input type="text" id="fotoAuftrag" inputmode="numeric" placeholder="z. B. 1042" value="${esc(fotos.auftrag)}"
@@ -3981,7 +3983,7 @@ function viewFotos() {
     <input type="text" id="fotoNotiz" placeholder="z. B. Wohnzimmer 4 × 5 m" value="${esc(fotos.notiz)}"
            style="width:100%;box-sizing:border-box;margin:4px 0 12px">
 
-    <label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
+    <label class="small foto-einwilligung">
       <input type="checkbox" id="fotoEinwilligung"${fotos.einwilligung ? ' checked' : ''}>
       <span>Der Kunde ist damit einverstanden, dass wir die Fotos verwenden.
         <span class="muted">Ohne Zustimmung dürfen wir Bilder aus einer Wohnung nicht zeigen – dann bitte nicht abschicken.</span></span>
@@ -4014,7 +4016,19 @@ function viewFotos() {
       <div><h1>Baustellenfotos</h1>
       <p class="sub">Fotos vom fertigen Raum – die Grundlage für unsere Beiträge.</p></div>
     </div>
-    ${formular}
+    <div class="foto-layout">
+      ${formular}
+      <aside class="card foto-hilfe" aria-label="So entstehen gute Baustellenfotos">
+        <span class="badge plain">In zwei Minuten erledigt</span>
+        <h2>So werden die Bilder brauchbar</h2>
+        <ol class="foto-schritte">
+          <li><span>1</span><div><strong>Raum fertig machen</strong><small>Werkzeug und Verpackung aus dem Bild nehmen.</small></div></li>
+          <li><span>2</span><div><strong>Übersicht und Details</strong><small>Ein Bild vom ganzen Raum, danach Übergänge und Kanten.</small></div></li>
+          <li><span>3</span><div><strong>Auftrag zuordnen</strong><small>Auftragsnummer und Boden vom Auftragszettel eintragen.</small></div></li>
+        </ol>
+        <p class="small muted foto-datenschutz">Nur mit Zustimmung des Kunden abschicken. Die Bilder bleiben im internen Arbeitsbereich, bis sie geprüft wurden.</p>
+      </aside>
+    </div>
     <h2 style="margin:24px 0 8px">Eingegangen${d?.anzahl ? ` (${d.anzahl})` : ''}</h2>
     ${galerie}`;
 }
