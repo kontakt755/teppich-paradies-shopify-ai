@@ -9,13 +9,17 @@
 {% endcomment %}
 
 {{ 'tp-sample-checkout.css' | asset_url | stylesheet_tag }}
+{%- if customer and customer.accepts_marketing -%}
+  <script>window.TPMusterBonus = true;</script>
+{%- endif -%}
 <script src="{{ 'tp-sample-checkout-core.js' | asset_url }}" defer></script>
 <script src="{{ 'tp-sample-checkout.js' | asset_url }}" defer></script>
 
 <section class="tp-sample" data-tp-sample-checkout>
   <header class="tp-sample__header">
     <p class="tp-sample__eyebrow">Kostenloser Musterservice</p>
-    <h1>Bis zu 3 <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
+    <h1>Bis zu <span data-sample-max>3</span> <span data-sample-term="plural">Farben</span> zu Hause vergleichen</h1>
+    <p class="tp-sample__bonus" data-sample-bonus hidden>Abonnenten-Bonus: Sie können 4 statt 3 Muster bestellen.</p>
     <p data-sample-intro>Wählen Sie Ihre <span data-sample-term="plural">Farben</span> aus. Die Nummer wird automatisch übernommen.</p>
   </header>
   {% comment %}
@@ -111,7 +115,7 @@
   <div class="tp-sample__error" data-sample-error role="alert" hidden></div>
   <fieldset class="tp-sample__fieldset" data-sample-fieldset hidden>
     <legend><span data-sample-term="plural">Farben</span> auswählen</legend>
-    <p class="tp-sample__count" data-sample-count aria-live="polite">0 von 3 Mustern ausgewählt</p>
+    <p class="tp-sample__count" data-sample-count aria-live="polite">0 von <span data-sample-max>3</span> Mustern ausgewählt</p>
     <div class="tp-sample__grid" data-sample-grid></div>
   </fieldset>
   <button class="tp-sample__submit" type="button" data-sample-submit disabled>Auswahl in den Warenkorb</button>

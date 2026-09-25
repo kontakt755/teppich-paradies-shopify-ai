@@ -888,3 +888,20 @@ test('Kennzahlen zählen nur, was der Benutzer sehen darf', () => {
   assert.equal(k.meine.offen, 1, 'Ben sieht eine eigene Aufgabe');
   assert.equal(k.team.offen, 2, 'Team-Aufgaben sind für alle sichtbar');
 });
+
+test('"Meine Aufgaben" zeigt nur Zugewiesenes - Unzugewiesenes bleibt im Team', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org6');
+  const ich = { kuerzel: 'tristan', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Dashboard-Skript anpassen', verantwortlich: 'tristan', prioritaet: 'HIGH' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Muster beim Lieferanten bestellen' }, { benutzer: ich });   // ohne Namen
+
+  const meine = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'fokus', benutzer: ich });
+  assert.deepEqual(meine.eintraege.map(e => e.titel), ['Dashboard-Skript anpassen']);
+
+  const team = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'alle', person: 'unzugewiesen', benutzer: ich });
+  assert.deepEqual(team.eintraege.map(e => e.titel), ['Muster beim Lieferanten bestellen']);
+
+  assert.equal(api.orgKennzahlen({ benutzer: ich }).meine.offen, 1);
+});

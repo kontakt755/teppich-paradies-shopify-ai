@@ -26,6 +26,14 @@
   var remaining = window.TPSampleCheckoutCore ? window.TPSampleCheckoutCore.MAX_SAMPLES : 3;
   var submitting = false;
 
+  if (window.TPSampleCheckoutCore && window.TPSampleCheckoutCore.HAS_BONUS) {
+    root.querySelectorAll('[data-sample-max]').forEach(function (el) {
+      el.textContent = String(window.TPSampleCheckoutCore.MAX_SAMPLES);
+    });
+    var bonusEl = root.querySelector('[data-sample-bonus]');
+    if (bonusEl) bonusEl.hidden = false;
+  }
+
   function showError(message) {
     errorEl.textContent = message;
     errorEl.hidden = false;
