@@ -1,0 +1,42 @@
+{% doc %}
+  Newsletter-Anmeldung als ganze Zeile im Produktraster der Kategorieseiten
+  (nach dem sechsten Produkt, nur Seite 1). Zielgruppe: wer vergleicht und
+  noch nicht kauft. Traegt bewusst kein ref="cards[]" - assets/paginated-list.js
+  haengt beim Nachladen nur Elemente mit diesem ref an, die Kachel erscheint
+  also genau einmal und stoert das Endlos-Scrollen nicht.
+
+  Betrag und Mindestwert muessen zum Rabattcode in Shopify und zu den
+  Einstellungen von sections/tp-newsletter-vorteil.liquid passen (Inhaber
+  2026-09-25: 15 EUR ab 200 EUR, einmal pro Kunde, 4. Gratis-Muster).
+
+  CSS: assets/tp-newsletter-kachel.css (eigene Datei, per stylesheet_tag).
+
+  @param {string} [instanz] - eindeutiger Suffix fuer die Formular-ID.
+{% enddoc %}
+
+{%- liquid
+  capture tp_nk_hinweis
+    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten; Abmeldung jederzeit. Gutschein einmalig ab 200 € Bestellwert, nicht für reduzierte Artikel. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
+  endcapture
+-%}
+
+{{ 'tp-newsletter-kachel.css' | asset_url | stylesheet_tag }}
+<li class="product-grid__item tp-nk" role="listitem">
+  <div class="tp-nk__inner">
+    <div class="tp-nk__text">
+      <p class="tp-nk__eyebrow">Noch unsicher?</p>
+      <p class="tp-nk__titel">15 € Gutschein und 4 statt 3 Gratis-Muster</p>
+      <p class="tp-nk__lead">Für Newsletter-Abonnenten: einmalig 15 € ab 200 € Bestellwert und ein Muster mehr zum Vergleichen.</p>
+    </div>
+    <div class="tp-nk__form">
+      {%- render 'tp-newsletter',
+        ueberschrift: 'Gutschein sichern',
+        text: 'Der Code kommt nach der Bestätigung per E-Mail.',
+        button: 'Gutschein sichern',
+        hinweis: tp_nk_hinweis,
+        quelle: 'kategorie',
+        instanz: instanz
+      -%}
+    </div>
+  </div>
+</li>
