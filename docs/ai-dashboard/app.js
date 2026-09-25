@@ -2847,7 +2847,11 @@ function viewKunden() {
     return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kundensuche, Bestellliste und Rückruf-/Beratungsliste.</p></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Diese Ansicht liest private Bestell- und Kundendaten, die nie im öffentlichen Repository landen. Auf dem Mac starten: npm run dashboard')}`;
   }
-  const key = state.route.params.get('key');
+  // Parameter heisst 'kunde', nicht 'key': 'key' zaehlt im Secret-Scan als
+  // sensibler URL-Parameter (automation/core/url-sanitizer.mjs) und liesse das
+  // Gate auf jedem PR rot leuchten - und wuerde die Adresse in Protokollen
+  // unlesbar machen, weil der Sanitizer sie schwaerzt.
+  const key = state.route.params.get('kunde');
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
   const tabRaw = state.route.params.get('tab');
   // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
@@ -3625,7 +3629,7 @@ function orgZeile(e, { bereich = '' } = {}) {
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
     e.verknuepft?.art === 'kunde' && e.verknuepft.id
-      ? `<a href="#/kunden?key=${encodeURIComponent(e.verknuepft.id)}" onclick="event.stopPropagation()">${esc(e.verknuepft.titel || 'Kunde')}</a>`
+      ? `<a href="#/kunden?kunde=${encodeURIComponent(e.verknuepft.id)}" onclick="event.stopPropagation()">${esc(e.verknuepft.titel || 'Kunde')}</a>`
       : '',
     e.bereich ? esc(e.bereich) : '',
     e.verantwortlich ? `für ${esc(e.verantwortlich)}` : (e.typ === 'TASK' ? '<span class="muted">unzugewiesen</span>' : ''),
@@ -4441,7 +4445,7 @@ function render() {
   // aus jedem anderen Bedienelement (auf dem Handy samt Tastatur).
   const kundenAnsichtNeu = state.route.view === 'kunden' && letzteAnsicht !== 'kunden';
   letzteAnsicht = state.route.view;
-  if (kundenAnsichtNeu && !state.route.params.get('key') && state.route.params.get('tab') !== 'rueckrufe') {
+  if (kundenAnsichtNeu && !state.route.params.get('kunde') && state.route.params.get('tab') !== 'rueckrufe') {
     const feld = main.querySelector('input[type=search][data-param="kq"]');
     if (feld && document.activeElement !== feld) { feld.focus(); feld.setSelectionRange(feld.value.length, feld.value.length); }
   }
@@ -4557,7 +4561,7 @@ function bindEvents() {
     const lexZurueck = e.target.closest('[data-lex-zurueck]');
     if (lexZurueck) { e.preventDefault(); location.hash = `#/lexikon${state.route.params.get('lq') ? `?${new URLSearchParams({ lq: state.route.params.get('lq') })}` : ''}`; return; }
     const kundenOpen = e.target.closest('[data-kunden-open]');
-    if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('key', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
+    if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
     const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
     if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return; }
     const rueckrufBtn = e.target.closest('[data-rueckruf-open]');

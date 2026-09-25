@@ -184,3 +184,109 @@ test('standNachLauf: ohne frueheren Erfolg bleibt der Teil gescheitert', () => {
   assert.equal(standNachLauf(alterFehler, r).meldung, 'Kein Zugang');
   assert.equal(standNachLauf(alterFehler, r).letzterFehler, undefined);
 });
+
+// --- MCP-Weg: fertige Admin-API-Antwort statt eigenem Abruf ----------------
+// Ohne Token kam bisher nur eine Fehlermeldung. Der Weg ueber eine Datei ist
+// der einzige, den eine Claude-Sitzung mit Shopify-MCP gehen kann.
+
+test('argumente: --input nimmt <teil>=<datei> und meldet Unsinn sofort', () => {
+  assert.deepEqual(argumente(['--input', 'kunden=/tmp/k.json']).eingaben, { kunden: '/tmp/k.json' });
+  assert.deepEqual(
+    argumente(['--input', 'kunden=/tmp/k.json', '--input', 'bestand=/tmp/b.json']).eingaben,
+    { kunden: '/tmp/k.json', bestand: '/tmp/b.json' },
+  );
+  assert.throws(() => argumente(['--input', 'kunden']), /erwartet <teil>=<datei>/);
+  assert.throws(() => argumente(['--input', 'kunden=']), /Dateiname fehlt/);
+  assert.throws(() => argumente(['--input', 'quatsch=/tmp/x.json']), /Unbekannter Teil in --input/);
+});
+
+test('argumente: --input fuer einen Teil mit eigenem Skript nennt dieses Skript', () => {
+  assert.throws(() => argumente(['--input', 'lexikon=/tmp/l.json']), /npm run lexikon:export/);
+  assert.throws(() => argumente(['--input', 'kennzahlen=/tmp/k.json']), /npm run kennzahlen:export/);
+  assert.throws(() => argumente(['--input', 'bestellungen=/tmp/b.json']), /npm run ops:bestelluebersicht/);
+});
+
+test('argumente: --input fuer einen von --nur ausgelassenen Teil ist ein Fehler', () => {
+  // Sonst liegt eine Datei bereit und der Lauf ignoriert sie stillschweigend.
+  assert.throws(
+    () => argumente(['--nur', 'kunden', '--input', 'bestand=/tmp/b.json']),
+    /laesst diesen Teil aus/,
+  );
+});
+
+test('ohne --nur laufen genau die Teile, fuer die eine Datei vorliegt', async () => {
+  const dir = tmpDir();
+  const gelaufen = [];
+  const teilFn = {};
+  for (const t of ['lexikon', 'bestellungen', 'kennzahlen', 'kunden', 'angebote', 'warenkoerbe', 'bestand']) {
+    teilFn[t] = async () => { gelaufen.push(t); return { anzahl: 1 }; };
+  }
+  const eingaben = { kunden: { daten: { customers: [] }, datei: 'k.json' } };
+  const { ergebnisse } = await aktualisiere({ dir, teilFn, eingaben });
+  assert.deepEqual(gelaufen, ['kunden']);
+  assert.equal(ergebnisse.length, 1);
+});
+
+test('teilKunden schreibt aus der Datei und vermerkt die Herkunft', async () => {
+  const dir = tmpDir();
+  const eingabe = {
+    datei: 'kunden-roh.json',
+    daten: { data: { customers: { nodes: [
+      { id: 'gid://shopify/Customer/1', displayName: 'A B', numberOfOrders: '2', amountSpent: { amount: '10.0', currencyCode: 'EUR' } },
+    ] } } },
+  };
+  const r = await TEIL_FN.kunden(dir, eingabe);
+  assert.equal(r.anzahl, 1);
+  // Der Vermerk muss die Datei nennen: ein Stand aus einer Datei darf im
+  // Dashboard nicht wie ein Live-Abruf aussehen.
+  assert.match(r.hinweis, /aus Datei kunden-roh\.json \(MCP-Export\)/);
+  const geschrieben = JSON.parse(fs.readFileSync(path.join(dir, 'kunden', 'kunden.json'), 'utf8'));
+  assert.equal(geschrieben.anzahl, 1);
+  assert.equal(geschrieben.kunden[0].name, 'A B');
+});
+
+test('teilWarenkoerbe und teilAngebote nehmen ebenfalls eine Datei', async () => {
+  const dir = tmpDir();
+  const wk = await TEIL_FN.warenkoerbe(dir, {
+    datei: 'wk.json',
+    daten: { checkouts: [{ id: 'gid://shopify/AbandonedCheckout/1', createdAt: '2026-09-20T10:00:00Z', completedAt: null, totalPriceSet: { shopMoney: { amount: '99.5', currencyCode: 'EUR' } }, lineItems: { nodes: [] } }] },
+  });
+  assert.equal(wk.anzahl, 1);
+  assert.match(wk.hinweis, /aus Datei wk\.json .* · 99\.5 € offener Wert/);
+
+  const ang = await TEIL_FN.angebote(dir, {
+    datei: 'ang.json',
+    daten: { draftOrders: [{ id: 'gid://shopify/DraftOrder/1', name: '#D1', status: 'OPEN', createdAt: '2026-09-20T10:00:00Z', totalPriceSet: { shopMoney: { amount: '50.0', currencyCode: 'EUR' } }, lineItems: { nodes: [] } }] },
+  });
+  assert.equal(ang.anzahl, 1);
+  assert.match(ang.hinweis, /aus Datei ang\.json .* · 1 offen/);
+});
+
+test('teilBestand aus Datei: Lage und Herkunft stehen beide im Vermerk', async () => {
+  const dir = tmpDir();
+  const r = await TEIL_FN.bestand(dir, {
+    datei: 'bestand-roh.json',
+    daten: {
+      standorte: [{ id: 'gid://shopify/Location/1', name: 'Lager' }],
+      // Gleiche Form wie sync/inventory.mjs fetchInventoryLevels sie baut:
+      // der Standort haengt als Objekt am Level, nicht als flacher Name.
+      bestand: [{
+        quantities: [{ name: 'available', quantity: 5 }, { name: 'on_hand', quantity: 5 }],
+        item: { id: 'gid://shopify/InventoryItem/1', sku: 'X-1', tracked: true, variant: { title: 'Default Title', product: { handle: 'x', title: 'X' } } },
+        standort: { id: 'gid://shopify/Location/1', name: 'Lager' },
+      }],
+    },
+  });
+  assert.match(r.hinweis, /aus Datei bestand-roh\.json \(MCP-Export\) · 1 Standort\(e\)/);
+  const geschrieben = JSON.parse(fs.readFileSync(path.join(dir, 'bestand', 'bestand.json'), 'utf8'));
+  assert.equal(geschrieben.gefuehrt, true);
+  assert.equal(geschrieben.eintraege[0].standort, 'Lager');
+  assert.equal(geschrieben.eintraege[0].verfuegbar, 5);
+});
+
+test('ohne Zugang nennt die Fehlermeldung den --input-Weg', async () => {
+  const dir = tmpDir();
+  // Ohne Token und ohne Datei: der Text muss den zweiten Weg zeigen, sonst
+  // sucht der naechste Leser wieder nach einem Token, den es nicht gibt.
+  await assert.rejects(() => TEIL_FN.kunden(dir, null), /--input kunden=<datei>/);
+});
