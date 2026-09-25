@@ -1327,8 +1327,8 @@
       "type": "tp-newsletter-vorteil",
       "settings": {
         "eyebrow": "Newsletter",
-        "betrag": 10,
-        "mindestwert": 150
+        "betrag": 15,
+        "mindestwert": 200
       }
     }
   },

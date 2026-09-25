@@ -3,8 +3,8 @@
   Warum es die Section gibt: Die Anmeldung stand nur im Footer und bot
   keinen Grund, sich einzutragen. Bodenbelag kauft man selten - ein
   Prozent-Rabatt jeden Monat verpufft. Der Inhaber will kleine feste
-  Betraege statt Prozent (2026-09-25): einmaliger Willkommensgutschein plus
-  eine Abonnenten-Aktion im Monat.
+  Betraege statt Prozent, hoechstens 15 EUR, dazu ein viertes Gratis-Muster
+  (2026-09-25). Das Muster-Extra steckt in assets/tp-sample-checkout-core.js.
   Betrag und Mindestbestellwert stehen als Einstellung hier, damit sie nicht
   in Texten verstreut hartkodiert sind. Der Rabattcode selbst liegt nur in
   Shopify (Repository ist oeffentlich) und wird erst mit der Freigabe
@@ -14,8 +14,8 @@
 {%- endcomment -%}
 {{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
 {%- liquid
-  assign tp_nv_betrag = section.settings.betrag | default: 10
-  assign tp_nv_ab = section.settings.mindestwert | default: 150
+  assign tp_nv_betrag = section.settings.betrag | default: 15
+  assign tp_nv_ab = section.settings.mindestwert | default: 200
   capture tp_nv_hinweis
     echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein: einmalig, ab '
     echo tp_nv_ab
@@ -30,20 +30,20 @@
         <p class="tp-nv__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {%- endif -%}
       <h2 class="tp-nv__titel" id="tp-nv-titel-{{ section.id }}">
-        {{- tp_nv_betrag }} € Willkommensgutschein für Ihren Boden
+        {{- tp_nv_betrag }} € Gutschein und ein Gratis-Muster extra
       </h2>
       <ul class="tp-nv__vorteile">
         <li>
-          <b>{{ tp_nv_betrag }} € auf die erste Bestellung</b>
+          <b>{{ tp_nv_betrag }} € auf Ihre erste Bestellung</b>
           <small>einmalig ab {{ tp_nv_ab }} € Bestellwert</small>
         </li>
         <li>
-          <b>Abonnenten-Aktion des Monats</b>
-          <small>ausgewählte Artikel günstiger – nur für Abonnenten</small>
+          <b>4 statt 3 kostenlose Muster</b>
+          <small>ein Muster mehr zum Vergleichen – ohne Versandkosten</small>
         </li>
         <li>
-          <b>Ratgeber und Neuheiten</b>
-          <small>höchstens zweimal im Monat, jederzeit abbestellbar</small>
+          <b>Abonnenten-Aktion des Monats</b>
+          <small>ausgewählte Artikel günstiger, dazu Ratgeber-Tipps – jederzeit abbestellbar</small>
         </li>
       </ul>
     </div>
@@ -166,14 +166,14 @@
       "type": "number",
       "id": "betrag",
       "label": "Gutscheinbetrag in €",
-      "default": 10,
+      "default": 15,
       "info": "Muss zum Rabattcode in Shopify passen."
     },
     {
       "type": "number",
       "id": "mindestwert",
       "label": "Mindestbestellwert in €",
-      "default": 150,
+      "default": 200,
       "info": "Muss zum Rabattcode in Shopify passen."
     }
   ],
