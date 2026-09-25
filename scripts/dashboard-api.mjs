@@ -37,6 +37,9 @@ import {
 } from '../operations/lib/organisation-speicher.mjs';
 import { leseBenutzer as orgLeseBenutzer } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
+import {
+  FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
+} from '../operations/lib/baustellenfotos.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
 import { rueckrufePfad, leseAlle as leseRueckrufe, setzeStatus as setzeRueckrufStatus, RUECKRUF_STATUS, RueckrufFehler } from '../operations/lib/rueckrufe.mjs';
@@ -1079,6 +1082,90 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         ...(rest.length ? rest.map(zeile) : ['- (nichts offen)']),
       ].join('\n');
       return { verfuegbar: true, anzahl: offen.length, text };
+    },
+
+    /**
+     * Fotos vom fertigen Raum. Sie landen als Eintrag im Aufgabensystem -
+     * damit haengen Anhaenge, Verlauf und Freigabe schon dran, statt dass
+     * daneben ein zweiter Speicher entsteht, in den keiner schaut.
+     */
+    fotosNeu({ auftrag = '', boden = '', notiz = '', einwilligung = false, fotos = [] } = {}, { benutzer = null } = {}) {
+      let eingang;
+      try { eingang = pruefeEingang({ auftrag, boden, einwilligung, fotos }); }
+      catch (e) { throw new ApiError(400, e instanceof FotoFehler ? e.message : 'Eingabe unvollständig'); }
+
+      const treffer = eingang.boden ? passendeProdukte(eingang.boden, this._lexikonProdukte()) : [];
+      const hinweis = produktHinweis(treffer);
+      const text = [
+        eingang.boden ? `Verlegter Boden laut Auftragszettel: ${eingang.boden}.` : '',
+        hinweis.text,
+        String(notiz || '').trim(),
+        'Der Kunde hat der Verwendung der Fotos zugestimmt.',
+      ].filter(Boolean).map(t => (/[.!?]$/.test(t) ? t : `${t}.`)).join(' ');
+
+      const datei = this._orgDatei();
+      const daten = orgLies(datei);
+      const eintrag = baueEintrag({
+        typ: 'TASK',
+        titel: titelFuer(eingang),
+        beschreibung: text,
+        bereich: 'Marketing',
+        status: 'INBOX',
+        erfolgskriterium: 'Beitrag ist veröffentlicht oder bewusst verworfen.',
+        verknuepft: {
+          art: FOTO_ART,
+          auftrag: eingang.auftrag || null,
+          boden: eingang.boden || null,
+          produkt: hinweis.handle,
+          produktTitel: hinweis.titel,
+          sicher: hinweis.sicher,
+          einwilligung: true,
+        },
+      }, { benutzer });
+
+      const abgelegt = [];
+      try {
+        for (const f of fotos) {
+          abgelegt.push(speichereAnhang(eintrag, f, { dir: privatDirPath || privatDir(), benutzer }));
+        }
+      } catch (e) { throw new ApiError(400, e.message); }
+
+      daten.eintraege.push(eintrag);
+      orgSchreib(daten, datei);
+      return { ok: true, id: eintrag.id, anzahl: abgelegt.length, produkt: hinweis, eintrag };
+    },
+
+    /** Was bisher hereingekommen ist - neueste zuerst. */
+    fotosListe({ offen = false, benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      let liste = this._orgSichtbar(daten, benutzer).filter(e => e.verknuepft?.art === FOTO_ART);
+      if (offen) liste = liste.filter(e => e.status !== 'DONE');
+      liste.sort((a, b) => String(b.erstelltAm).localeCompare(String(a.erstelltAm)));
+      return {
+        verfuegbar: true,
+        anzahl: liste.length,
+        eintraege: liste.slice(0, 100).map(e => ({
+          id: e.id, titel: e.titel, status: e.status, beschreibung: e.beschreibung,
+          erstelltAm: e.erstelltAm, wer: e.besitzer, ...e.verknuepft,
+          fotos: (e.anhaenge ?? []).map(a => ({ datei: a.datei, name: a.name, typ: a.typ })),
+        })),
+      };
+    },
+
+    /** Produktvorschlaege zu einem Bodennamen - fuer die Eingabe unterwegs. */
+    fotosProdukt({ boden = '' } = {}) {
+      const treffer = passendeProdukte(boden, this._lexikonProdukte());
+      return {
+        verfuegbar: true,
+        hinweis: produktHinweis(treffer),
+        vorschlaege: treffer.map(t => ({ handle: t.produkt.handle, titel: t.produkt.titel })),
+      };
+    },
+
+    _lexikonProdukte() {
+      const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
+      const daten = readJsonIfExists(file);
+      return Array.isArray(daten?.produkte) ? daten.produkte : [];
     },
 
     orgKennzahlen({ benutzer = null } = {}) {
