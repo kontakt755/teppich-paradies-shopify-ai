@@ -957,7 +957,7 @@ test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an'
 
   assert.equal(r.anzahl, 1);
   assert.equal(r.produkt.handle, 'selene-linoleumboden-620');
-  assert.equal(r.eintrag.bereich, 'Marketing');
+  assert.equal(r.eintrag.bereich, 'Baustelle', 'landet in einer Liste, die jemand ansieht');
   assert.match(r.eintrag.beschreibung, /Wohnzimmer 4 × 5 m/);
 
   const liste = api.fotosListe({ benutzer: ben });
@@ -969,9 +969,12 @@ test('Baustellenfotos: Eingang legt Eintrag mit Bildern und Produktzuordnung an'
   const gelesen = api.orgAnhangLesen({ id: r.id, datei: liste.eintraege[0].fotos[0].datei, benutzer: ben });
   assert.equal(fs.readFileSync(gelesen.pfad).toString(), 'foto');
 
-  // Fotos tauchen nicht als normale Aufgabe in "Meine Aufgaben" des Inhabers auf
+  // Fotos gehören ins Team, nicht in die persönliche Liste des Inhabers -
+  // sichtbar sind sie dort unter "Kunden & Aufträge".
   const meine = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: { kuerzel: 'Inhaber', rolle: 'inhaber' } });
   assert.equal(meine.eintraege.some(e => e.id === r.id), false);
+  const team = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'offen', gruppe: 'kunden', benutzer: ben });
+  assert.equal(team.eintraege.some(e => e.id === r.id), true, 'Baustellenfotos stehen in der Team-Liste');
 });
 
 test('Team verwalten: anlegen, Rolle, sperren - mit Schutz für den letzten Inhaber', () => {
@@ -1006,4 +1009,55 @@ test('Team verwalten: anlegen, Rolle, sperren - mit Schutz für den letzten Inha
   const nachher = api.teamAendern({ was: 'sperren', kuerzel: 'ben' }, { benutzer: chef });
   assert.equal(nachher.benutzer.find(b => b.kuerzel === 'ben').aktiv, false);
   assert.equal(api.teamAendern({ was: 'entsperren', kuerzel: 'ben' }, { benutzer: chef }).benutzer.find(b => b.kuerzel === 'ben').aktiv, true);
+});
+
+test('Rechte: Mitarbeiter kommt nicht an Inhaber-Endpunkte, Notzugang bleibt Inhaber', async () => {
+  const { handleApi } = await import('../../../scripts/serve-dashboard.mjs');
+  const antwort = () => {
+    const res = { code: null, body: null, writeHead(c) { this.code = c; return this; }, end(b) { this.body = b; },
+      setHeader() {}, getHeader() { return null; } };
+    return res;
+  };
+  const anfrage = (pfad, { method = 'GET', host = 'localhost:8001' } = {}) => ({ method, url: pfad, headers: { host } });
+
+  const chef = { name: 'Ahmet', kuerzel: 'ahmet', rolle: 'inhaber' };
+  const ben = { name: 'Ben', kuerzel: 'ben', rolle: 'mitarbeiter' };
+
+  // Mitarbeiter darf GitHub-Aufgaben nicht umhängen - das schreibt öffentlich
+  let res = antwort();
+  await handleApi(anfrage('/api/tasks/92/transition', { method: 'POST' }), res, '/api/tasks/92/transition', ben);
+  assert.equal(res.code, 403);
+
+  // ... und die Zugangsverwaltung sieht er auch nicht
+  res = antwort();
+  await handleApi(anfrage('/api/team/liste'), res, '/api/team/liste', ben);
+  assert.equal(res.code, 403);
+
+  // Fremder Host wird abgewiesen, auch lesend (DNS-Rebinding)
+  res = antwort();
+  await handleApi(anfrage('/api/kunden/liste', { host: 'boese.example' }), res, '/api/kunden/liste', chef);
+  assert.equal(res.code, 403);
+
+  // Der Notzugang (kein Mehrbenutzerbetrieb) bleibt Inhaber
+  res = antwort();
+  await handleApi(anfrage('/api/team/liste'), res, '/api/team/liste', null);
+  assert.notEqual(res.code, 403);
+});
+
+test('Der erste Zugang muss der Inhaber sein - sonst sperrt sich niemand wieder auf', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-erster');
+  fs.mkdirSync(dir, { recursive: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+
+  assert.throws(
+    () => api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: null }),
+    /erste Zugang muss dein eigener sein/,
+  );
+  // Ohne ausdrückliche Rolle wird der erste Zugang zum Inhaber statt zum Mitarbeiter
+  const r = api.teamAendern({ was: 'anlegen', name: 'Ahmet', kuerzel: 'ahmet', passwort: 'geheim12345' }, { benutzer: null });
+  assert.equal(r.benutzer[0].rolle, 'inhaber');
+  // Danach sind Mitarbeiter normal anlegbar
+  const r2 = api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: { kuerzel: 'ahmet', rolle: 'inhaber' } });
+  assert.equal(r2.benutzer.find(b => b.kuerzel === 'ben').rolle, 'mitarbeiter');
 });

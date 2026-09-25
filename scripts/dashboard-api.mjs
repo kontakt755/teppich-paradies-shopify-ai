@@ -350,7 +350,7 @@ function stammKontakte(dir) {
   return index;
 }
 
-export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date() } = {}) {
+export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.cwd(), rebuild = null, stateDir = null, ledgerPath = null, privatDirPath = null, now = () => new Date(), sitzungenVerwerfen = null } = {}) {
   let userCache = null;
   let labelCache = { at: 0, names: [] };
   // Prozesszustand des Knopfs "Jetzt aktualisieren" - genau ein Lauf gleichzeitig,
@@ -704,28 +704,39 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const statusAlle = leseRueckrufe(rueckrufePfad(dir));
       const zeilen = rueckrufliste(modell).map(z => {
         const s = statusAlle[z.orderId];
-        return { ...z, status: s?.status || 'offen', notiz: s?.notiz || null, aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null };
+        return {
+          ...z, status: s?.status || 'offen', notiz: s?.notiz || null,
+          aktualisiertAm: s?.aktualisiertAm || null, aktualisiertVon: s?.aktualisiertVon || null,
+          wiedervorlage: s?.wiedervorlage || null,
+        };
       });
       return { verfuegbar: true, zeilen };
     },
 
-    /** Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt), rein lokal. */
-    async kundenRueckrufSetzen(payload = {}) {
-      const actor = await currentUser();
-      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
-      const { orderId, status, notiz } = payload || {};
+    /**
+     * Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt).
+     *
+     * Rein lokal - es wird eine JSON-Datei geschrieben, nichts auf GitHub.
+     * Frueher verlangte diese Funktion trotzdem ein angemeldetes gh und brach
+     * sonst mit 403 ab; ausserdem stand am Eintrag der GitHub-Login statt der
+     * Person, die wirklich angerufen hat.
+     */
+    async kundenRueckrufSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
+      const { orderId, status, notiz, wiedervorlage } = payload || {};
       if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
       if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
       const dir = privatDirPath || privatDir();
       const file = rueckrufePfad(dir);
       let eintrag;
       try {
-        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, jetzt: now() });
+        eintrag = setzeRueckrufStatus(file, { orderId, status, actor, notiz, wiedervorlage, jetzt: now() });
       } catch (e) {
         if (e instanceof RueckrufFehler) throw new ApiError(400, e.message);
         throw e;
       }
       audit({ actor, action: 'rueckruf', orderId, status });
+      merke(benutzer, actor, 'Rückruf', `${orderId}: ${status}`);
       return { ok: true, eintrag };
     },
 
@@ -1052,7 +1063,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       return {
         verfuegbar: true, quelle: datei, bereiche: daten.bereiche, team: this.orgTeam(), ich,
-        anzahl: liste.length, eintraege: orgSortiere(liste, jetzt).slice(0, 200),
+        anzahl: liste.length,
+        eintraege: orgSortiere(liste, jetzt).slice(0, 200)
+          .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
       };
     },
 
@@ -1112,7 +1125,10 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         typ: 'TASK',
         titel: titelFuer(eingang),
         beschreibung: text,
-        bereich: 'Marketing',
+        // "Baustelle" statt "Marketing": Marketing gehoert weder zur Technik
+        // noch zur Teamarbeit - solche Eintraege standen in keiner der
+        // Standardlisten und waren nur ueber die Fotoseite auffindbar.
+        bereich: 'Baustelle',
         status: 'INBOX',
         erfolgskriterium: 'Beitrag ist veröffentlicht oder bewusst verworfen.',
         verknuepft: {
@@ -1205,7 +1221,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       try {
         let neu;
         if (was === 'anlegen') {
-          neu = benutzerAnlegen(liste, { name, kuerzel, passwort, rolle: rolle || 'mitarbeiter' });
+          // Der erste Zugang MUSS der Inhaber sein. Sobald benutzer.json
+          // existiert, verlangt jede Seite eine Anmeldung - wer als erstes
+          // einen Mitarbeiter anlegt, sperrt sich selbst aus.
+          const ersterZugang = liste.length === 0;
+          const gewuenscht = ersterZugang ? 'inhaber' : (rolle || 'mitarbeiter');
+          if (ersterZugang && rolle && rolle !== 'inhaber') {
+            throw new BenutzerFehler('Der erste Zugang muss dein eigener sein (Rolle „Inhaber") – sonst kommst du selbst nicht mehr herein');
+          }
+          neu = benutzerAnlegen(liste, { name, kuerzel, passwort, rolle: gewuenscht });
         } else if (was === 'passwort') {
           neu = passwortSetzen(liste, kuerzel, passwort);
         } else if (was === 'rolle') {
@@ -1232,7 +1256,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         }
         schreibeBenutzer(neu, datei);
         merke(benutzer, benutzer?.kuerzel || 'inhaber', 'Team', `${was}: ${kuerzel || name}`);
-        return { ok: true, ...this.teamListe() };
+        // Sperre, Rollenwechsel und neues Passwort gelten sofort - die
+        // laufenden Sitzungen dieses Zugangs verlieren damit ihre Wirkung.
+        if (['sperren', 'rolle', 'passwort'].includes(was) && typeof sitzungenVerwerfen === 'function') {
+          try { sitzungenVerwerfen(kuerzel); } catch { /* Abmelden darf die Aenderung nicht verhindern */ }
+        }
+        return { ok: true, ersterZugang: liste.length === 0, ...this.teamListe() };
       } catch (e) {
         if (e instanceof BenutzerFehler) throw new ApiError(400, e.message);
         throw e;

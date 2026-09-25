@@ -72,7 +72,13 @@ async function rebuild() {
   await execFileP(process.execPath, [join(HERE, 'build-dashboard-data.mjs')], { cwd: REPO_ROOT, timeout: 120_000, maxBuffer: 8 * 1024 * 1024 });
 }
 
-export const api = createApi({ root: REPO_ROOT, rebuild });
+// sitzungenVerwerfen reicht das Auth-Objekt hinein, statt es zu importieren -
+// auth entsteht hier, ein Import in dashboard-api.mjs waere ein Zyklus.
+export const api = createApi({
+  root: REPO_ROOT,
+  rebuild,
+  sitzungenVerwerfen: (kuerzel) => auth.sitzungenVerwerfen(kuerzel),
+});
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer' });
@@ -93,7 +99,10 @@ function readJson(req) {
 // Der Host-Header kommt vom TCP-Ziel der Verbindung, ein fremder Browser-Tab
 // kann ihn per fetch()/Formular nicht faelschen - nur der Origin-Header ist
 // vom anfragenden Ursprung gesetzt und wird zusaetzlich geprueft.
-const LAN_HOST_RE = /^(127\.0\.0\.1|localhost|10(\.\d{1,3}){3}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|192\.168(\.\d{1,3}){2})(:\d+)?$/i;
+// `name.local` ist der Bonjour-Name des Rechners im eigenen Netz. Eine fremde
+// Domain laesst sich darauf nicht zeigen lassen (mDNS aufloest nur das lokale
+// Netz), ein Zugriff vom Tablet im Laden aber schon.
+const LAN_HOST_RE = /^(127\.0\.0\.1|localhost|[a-z0-9-]+\.local|10(\.\d{1,3}){3}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|192\.168(\.\d{1,3}){2})(:\d+)?$/i;
 
 function sameOrigin(req) {
   const host = req.headers.host || '';
@@ -106,6 +115,36 @@ function sameOrigin(req) {
   return true;
 }
 
+/**
+ * Wer darf welchen Pfad? Bisher gab es nur zwei Stufen - "lesen" durfte nichts
+ * schreiben, alles andere durfte alles. Ein Mitarbeiter konnte damit ueber die
+ * API GitHub-Aufgaben umhaengen und kommentieren; das laeuft unter dem Konto
+ * des Inhabers in ein oeffentliches Repository.
+ *
+ * Nicht aufgefuehrte Pfade gelten als Arbeit fuer alle Angemeldeten
+ * ('mitarbeiter'). Der Notzugang (benutzer === null, Einzelpasswort-Betrieb)
+ * gilt weiterhin als Inhaber, sonst sperrt sich der Betrieb selbst aus.
+ */
+const RANG = { lesen: 0, mitarbeiter: 1, inhaber: 2 };
+const NUR_INHABER = new Set([
+  'sync',              // GitHub-Issues holen
+  'activity',          // Entwicklungsverlauf
+  'agent-runs',        // KI-Laeufe
+  'benutzer',
+  'team/liste',
+  'team/aendern',
+  'einkauf/kennzahlen', // Umsatzzahlen
+]);
+
+function darfPfad(benutzer, simple, taskOp) {
+  if (!benutzer) return true;                       // Notzugang = Inhaber
+  const rang = RANG[benutzer.rolle] ?? 0;
+  // GitHub-Schreibaktionen gehoeren dem Inhaber - sie wirken oeffentlich.
+  if (taskOp && ['transition', 'assign', 'comment'].includes(taskOp)) return rang >= RANG.inhaber;
+  if (NUR_INHABER.has(simple)) return rang >= RANG.inhaber;
+  return true;
+}
+
 export async function handleApi(req, res, pathname, benutzer = null) {
   // Pfadliste aus allen Zweigen: Mehrbenutzer/Protokoll, Kundenansicht mit
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
@@ -114,22 +153,25 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
+  // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
+  // eine fremde Seite per DNS-Rebinding die Kundendaten auslesen.
+  if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+  if (!darfPfad(benutzer, simple, taskOp)) {
+    send(res, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
+    return;
+  }
   const write = simple === 'sync' || simple === 'aktualisierung/start' || (simple === 'einkauf/auftragsstatus' && req.method === 'POST') || (simple === 'kunden/rueckrufe' && req.method === 'POST') || simple === 'kunden/bestellung-fertig' || ['org/neu', 'org/aendern', 'org/kommentar', 'org/pruefen', 'org/analyse', 'org/liste-einfuegen', 'org/anhang', 'fotos/neu'].includes(simple) || ['transition', 'assign', 'comment'].includes(taskOp);
   try {
     if (write) {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
-      if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
       // Rolle "lesen" darf serverseitig nichts veraendern - unabhaengig davon, ob das
       // Frontend die Aktion anzeigt. Ohne Mehrbenutzerbetrieb (kein `benutzer`) gilt
       // weiterhin der bisherige Notzugang (Inhaber, alle Rechte).
       if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
     } else if (simple === 'benutzer' || simple === 'team/liste') {
       if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
-      if (benutzer && benutzer.rolle !== 'inhaber') { send(res, 403, { error: 'Nur fuer die Rolle "inhaber" sichtbar' }); return; }
     } else if (simple === 'team/aendern') {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
-      if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
-      if (benutzer && benutzer.rolle !== 'inhaber') { send(res, 403, { error: 'Nur der Inhaber darf Zugaenge verwalten' }); return; }
     } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     let result;
     const url = new URL(req.url, `http://${req.headers.host || HOST}`);
@@ -191,7 +233,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     }
     else if (simple === 'kunden/bestellung-fertig') result = await api.kundenBestellungFertig(await readJson(req), benutzer);
     else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();
-    else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req));
+    else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req), benutzer);
     else if (simple === 'kunden/liste') result = api.kundenListe({ q: url.searchParams.get('q') || '' });
     else if (simple === 'angebote/liste') result = api.angeboteListe();
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
