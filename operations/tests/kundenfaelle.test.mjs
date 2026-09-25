@@ -109,3 +109,14 @@ test('was der Kunde moechte steht in Klartext, nicht als SKU', () => {
   assert.deepEqual(r.faelle[0].punkte[0].moechte, ['14 m² Piumera Teppichboden (Sand Hell)']);
   assert.equal(r.faelle[0].punkte[0].produkte[0].handle, 'piumera', 'Handle fuers Lexikon');
 });
+
+test('erledigter Rueckruf steht nicht mehr als Beratung oben', () => {
+  const offen = bestellzeile({ beratungOffen: true, telefon: '+4930111', rueckrufStatus: 'offen' });
+  assert.match(naechsterSchritt(offen, { jetzt: JETZT }).text, /Zurückrufen/);
+
+  const erledigt = bestellzeile({ beratungOffen: true, telefon: '+4930111', rueckrufStatus: 'erledigt' });
+  const s = naechsterSchritt(erledigt, { jetzt: JETZT });
+  assert.doesNotMatch(s.text, /Zurückrufen/);
+  // Die Bestellung selbst bleibt sichtbar, solange sie nicht versandt ist
+  assert.match(s.text, /bestellen|Versenden/);
+});
