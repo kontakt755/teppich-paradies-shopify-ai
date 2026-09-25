@@ -1061,3 +1061,21 @@ test('Der erste Zugang muss der Inhaber sein - sonst sperrt sich niemand wieder 
   const r2 = api.teamAendern({ was: 'anlegen', name: 'Ben', kuerzel: 'ben', passwort: 'geheim12345', rolle: 'mitarbeiter' }, { benutzer: { kuerzel: 'ahmet', rolle: 'inhaber' } });
   assert.equal(r2.benutzer.find(b => b.kuerzel === 'ben').rolle, 'mitarbeiter');
 });
+
+test('Eigenes Passwort: nur mit dem bisherigen, und nur für sich selbst', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-pw');
+  fs.mkdirSync(dir, { recursive: true });
+  const api = createApi({ gh: async () => '', root, privatDirPath: dir });
+  api.teamAendern({ was: 'anlegen', name: 'Ahmet', kuerzel: 'ahmet', passwort: 'alt12345678', rolle: 'inhaber' }, { benutzer: null });
+  const ich = { name: 'Ahmet', kuerzel: 'ahmet', rolle: 'inhaber' };
+
+  assert.throws(() => api.eigenesPasswort({ alt: 'falsch1234', neu: 'neu12345678' }, { benutzer: ich }), /bisherige Passwort stimmt nicht/);
+  assert.throws(() => api.eigenesPasswort({ alt: 'alt12345678', neu: 'kurz' }, { benutzer: ich }), /mindestens 8/);
+  assert.throws(() => api.eigenesPasswort({ alt: 'alt12345678', neu: 'neu12345678' }, { benutzer: null }), /angemeldet/);
+
+  assert.equal(api.eigenesPasswort({ alt: 'alt12345678', neu: 'neu12345678' }, { benutzer: ich }).ok, true);
+  // Das neue Passwort gilt, das alte nicht mehr
+  assert.throws(() => api.eigenesPasswort({ alt: 'alt12345678', neu: 'noch12345678' }, { benutzer: ich }), /stimmt nicht/);
+  assert.equal(api.eigenesPasswort({ alt: 'neu12345678', neu: 'noch12345678' }, { benutzer: ich }).ok, true);
+});
