@@ -1939,6 +1939,21 @@ function internesDetails(p) {
   </details>`;
 }
 
+/**
+ * Rueckweg vom Produkt zum Kunden: steht dieses Produkt gerade bei jemandem
+ * offen? Wer im Kundengespraech nachschlaegt, sieht das sofort - ohne in die
+ * Kundenliste zu wechseln.
+ */
+function wartendeKundenBlock(wartende) {
+  if (!wartende?.length) return '';
+  return `<section class="card" style="margin-bottom:16px;border-left:3px solid var(--warn)">
+    <div class="card-head"><h2>${wartende.length === 1 ? 'Ein Kunde wartet' : `${wartende.length} Kunden warten`} auf dieses Produkt</h2><a class="more" href="#/kunden">Zu tun öffnen →</a></div>
+    <ul style="margin:0;padding-left:20px;line-height:1.9">
+      ${wartende.map(w => `<li><b>${esc(w.kunde)}</b>${w.bezug ? ` · ${esc(w.bezug)}` : ''}${w.tage !== null && w.tage !== undefined ? ` · seit ${w.tage === 0 ? 'heute' : `${w.tage} Tagen`}` : ''} – ${esc(w.schritt)}</li>`).join('')}
+    </ul>
+  </section>`;
+}
+
 function viewLexikonDetail(handle) {
   ensureLexikonProdukt(handle);
   const zurueck = `<p style="margin:0 0 12px"><a href="#" data-lex-zurueck>← Zurück zur Lexikon-Suche</a></p>`;
@@ -1973,6 +1988,7 @@ function viewLexikonDetail(handle) {
       ${p.shopUrl ? `<a class="btn btn-primary" href="${esc(p.shopUrl)}" target="_blank" rel="noopener">Im Shop ansehen ↗</a>` : `<span class="btn" aria-disabled="true">Im Shop ansehen (${NICHT_HINTERLEGT})</span>`}
       ${p.adminUrl ? `<a class="btn" href="${esc(p.adminUrl)}" target="_blank" rel="noopener">Im Shopify-Admin ↗</a>` : `<span class="btn" aria-disabled="true">Im Shopify-Admin (${NICHT_HINTERLEGT})</span>`}
     </div>
+    ${wartendeKundenBlock(d.wartendeKunden)}
     ${fuersKundengespraech(p)}
     <section class="card" style="margin-bottom:16px"><div class="card-head"><h2>Zum Bestellen</h2></div>${bestellTabelle}</section>
     ${internesDetails(p)}`;
@@ -2682,23 +2698,25 @@ function viewKunden() {
   const key = state.route.params.get('key');
   if (key) return `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kontaktdaten, Anschriften und alle Bestellungen dieses Kunden.</p></div></div>` + viewKundenDetail(key);
   const tabRaw = state.route.params.get('tab');
-  const tab = ['bestellungen', 'rueckrufe', 'angebote', 'warenkoerbe', 'zutun'].includes(tabRaw) ? tabRaw : 'suche';
+  // Standard ist die Arbeitsansicht: wer wartet auf was. Einen Kunden am
+  // Telefon findet man ueber die Schnellsuche oder den Reiter "Suche".
+  const tab = ['bestellungen', 'rueckrufe', 'angebote', 'warenkoerbe', 'suche'].includes(tabRaw) ? tabRaw : 'zutun';
   ensureKundenRueckrufe();
   const head = `<div class="page-head"><div><h1>Kunden</h1><p class="sub">Kunden am Telefon schnell finden, alle Bestellungen im Überblick – und wer zurückgerufen werden möchte.</p></div></div>
     <div class="tabs no-print" role="tablist">
-      <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="zutun">Zu tun${f_badge()}</button>
-      <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="">Suche</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'zutun'}" data-param="tab" data-value="">Zu tun${f_badge()}</button>
+      <button type="button" class="tab" role="tab" aria-selected="${tab === 'suche'}" data-param="tab" data-value="suche">Suche</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'bestellungen'}" data-param="tab" data-value="bestellungen">Bestellungen</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'rueckrufe'}" data-param="tab" data-value="rueckrufe">Rückrufe &amp; Beratungen${r_badge()}</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'angebote'}" data-param="tab" data-value="angebote">Angebote</button>
       <button type="button" class="tab" role="tab" aria-selected="${tab === 'warenkoerbe'}" data-param="tab" data-value="warenkoerbe">Liegengeblieben</button>
     </div>`;
-  const body = tab === 'zutun' ? viewKundenFaelle()
-    : tab === 'bestellungen' ? viewKundenBestellungen()
+  const body = tab === 'bestellungen' ? viewKundenBestellungen()
     : tab === 'rueckrufe' ? viewKundenRueckrufe()
     : tab === 'angebote' ? viewKundenAngebote()
     : tab === 'warenkoerbe' ? viewKundenWarenkoerbe()
-    : viewKundenSuche();
+    : tab === 'suche' ? viewKundenSuche()
+    : viewKundenFaelle();
   return head + body;
 }
 
