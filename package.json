@@ -85,7 +85,8 @@
     "lexikon:payload": "node scripts/lexikon-payload.mjs",
     "probleme:payload": "node scripts/probleme-payload.mjs",
     "bodenwissen:daten": "node scripts/build-bodenwissen-data.mjs",
-    "shop:wache": "node operations/scripts/shopwache.mjs"
+    "shop:wache": "node operations/scripts/shopwache.mjs",
+    "aufgaben:pruefen": "node operations/scripts/aufgaben-pruefen.mjs"
   },
   "devDependencies": {
     "liquidjs": "^10.29.0",
