@@ -178,7 +178,7 @@ function datenKennung() {
 function parseRoute() {
   const hash = location.hash.replace(/^#\/?/, '');
   const [path, query = ''] = hash.split('?');
-  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache'].includes(path) ? path : 'heute';
+  const view = ['heute', 'arbeit', 'freigaben', 'bereiche', 'insights', 'aktivitaet', 'einkauf', 'kunden', 'lexikon', 'ratgeber', 'hilfe', 'shopwache', 'organisation'].includes(path) ? path : 'heute';
   state.route = { view, params: new URLSearchParams(query) };
 }
 function navigate(view, params = {}, { keepTask = false } = {}) {
@@ -331,6 +331,7 @@ function viewHeute() {
     ${heuteRueckrufBlock()}
     ${localMode ? heuteNichtLiegenLassen() : ''}
     ${localMode ? heuteShopwache() : ''}
+    ${localMode ? heuteOrganisation() : ''}
 
     <h2 class="section-title">Shop-Zahlen</h2>
     ${heuteKennzahlenBlock()}
@@ -3030,12 +3031,13 @@ function paletteItems(q) {
   for (const p of paletteFern.produkte) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
   }
-  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
+  const views = [['heute', 'Heute'], ['einkauf', 'Einkauf'], ['kunden', 'Kunden'], ['lexikon', 'Lexikon'], ['arbeit', 'Arbeit'], ['freigaben', 'Freigaben'], ['bereiche', 'Bereiche'], ['insights', 'Insights'], ['aktivitaet', 'Aktivität'], ['ratgeber', 'Ratgeber'], ['organisation', 'Aufgaben & Organisation'], ['shopwache', 'Shop-Wache'], ['hilfe', 'Hilfe: So arbeitest du damit']];
   for (const [k, l] of views) items.push({ kind: 'Ansicht', label: l, run: () => navigate(k) });
   for (const v of SAVED_VIEWS) items.push({ kind: 'Ansicht', label: `Arbeit: ${v.label}`, run: () => navigate('arbeit', { view: v.key }) });
   for (const a of AREAS) items.push({ kind: 'Bereich', label: a.label, run: () => navigate('arbeit', { area: a.key }) });
   items.push({ kind: 'Aktion', label: 'Neue Aufgabe auf GitHub anlegen', run: () => window.open(newIssueUrl({ template: 'feature.yml' }), '_blank', 'noopener') });
   items.push({ kind: 'Aktion', label: 'Entscheidung anlegen', run: () => window.open(newIssueUrl({ template: 'entscheidung.yml' }), '_blank', 'noopener') });
+  items.push({ kind: 'Aktion', label: 'Schnell erfassen (Aufgabe oder Notiz)', run: () => openOrgSchnell() });
   items.push({ kind: 'Aktion', label: 'Daten neu laden', run: () => refresh() });
   if (state.capabilities.sync) items.push({ kind: 'Aktion', label: 'Jetzt mit GitHub synchronisieren', run: () => syncNow() });
   items.push({ kind: 'Aktion', label: 'GitHub Issues öffnen', run: () => window.open(`${REPO_URL}/issues`, '_blank', 'noopener') });
@@ -3262,7 +3264,394 @@ function viewShopwache() {
     </section>`;
 }
 
-const VIEWS = { heute: viewHeute, hilfe: viewHilfe, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
+// ---------------------------------------------------------------------------
+// Aufgaben & Organisation: der Betriebsalltag - Laden, Lager, Baustelle,
+// Kunden, Lieferanten. Die Ansicht "Arbeit" fuehrt weiterhin die
+// Entwicklungsarbeit als GitHub Issues; das hier ist bewusst getrennt, weil
+// diese Eintraege personenbezogen sind und nie ins Repository gehoeren.
+// ---------------------------------------------------------------------------
+const org = {
+  liste: null, loading: false, key: null,
+  detail: null, detailId: null, loadingDetail: false,
+  kennzahlen: null, loadingKennzahlen: false,
+  entwurf: null,          // Schnellerfassung: Vorschlag + moegliche Doppelgaenger
+};
+
+const ORG_BEREICHE = [
+  ['meine-aufgaben', 'Meine Aufgaben'],
+  ['meine-notizen', 'Meine Notizen'],
+  ['team-aufgaben', 'Team-Aufgaben'],
+  ['team-notizen', 'Team-Notizen'],
+  ['archiv', 'Archiv'],
+];
+const ORG_ANSICHTEN = [
+  ['fokus', 'Fokus'], ['heute', 'Heute'], ['dringend', 'Dringend'], ['woche', 'Diese Woche'],
+  ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
+  ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
+];
+const ORG_STATUS_LABEL = {
+  INBOX: 'Eingang', PLANNED: 'Geplant', IN_PROGRESS: 'In Arbeit', REVIEW: 'Prüfung',
+  WAITING: 'Warten auf', DEFERRED: 'Zurückgestellt', DONE: 'Erledigt',
+};
+const ORG_PRIO_LABEL = { URGENT: 'dringend', HIGH: 'hoch', NORMAL: 'normal', LOW: 'niedrig' };
+const ORG_PRUEF_LABEL = {
+  AUTO: 'automatisch prüfbar', SEMI_AUTO: 'automatisch prüfbar, Mensch bestätigt',
+  MANUAL: 'nur von Hand', EXTERNAL: 'hängt an jemandem von außen',
+};
+
+function orgParams() {
+  const p = state.route.params;
+  const bereich = ORG_BEREICHE.map(b => b[0]).includes(p.get('ob')) ? p.get('ob') : 'meine-aufgaben';
+  const ansicht = ORG_ANSICHTEN.map(a => a[0]).includes(p.get('oa')) ? p.get('oa') : (bereich === 'team-aufgaben' ? 'alle' : 'fokus');
+  return { bereich, ansicht, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
+}
+
+function ensureOrgListe() {
+  const { bereich, ansicht, person, q } = orgParams();
+  const key = `${bereich}|${ansicht}|${person}|${q}`;
+  if (org.key === key && (org.liste || org.loading)) return;
+  org.key = key; org.loading = true;
+  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, person, q })}`).then(d => {
+    if (org.key !== key) return;            // Antwort einer aelteren Eingabe
+    org.liste = d; org.loading = false;
+    if (state.route.view === 'organisation') render();
+  });
+}
+
+function ensureOrgKennzahlen() {
+  if (org.kennzahlen || org.loadingKennzahlen) return;
+  org.loadingKennzahlen = true;
+  fetchEinkauf('/api/org/kennzahlen').then(d => {
+    org.kennzahlen = d; org.loadingKennzahlen = false;
+    if (['heute', 'organisation'].includes(state.route.view)) render();
+  });
+}
+
+function ensureOrgDetail(id) {
+  if (org.detailId === id && (org.detail || org.loadingDetail)) return;
+  org.detailId = id; org.loadingDetail = true;
+  fetchEinkauf(`/api/org/eintrag?${new URLSearchParams({ id })}`).then(d => {
+    if (org.detailId !== id) return;
+    org.detail = d; org.loadingDetail = false;
+    if (state.route.view === 'organisation') render();
+  });
+}
+
+async function orgSchreiben(pfad, rumpf) {
+  const r = await fetch(pfad, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(rumpf) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
+  return j;
+}
+
+function orgFrisch() { org.liste = null; org.key = null; org.kennzahlen = null; org.detail = null; org.detailId = null; }
+
+// -- Zeilen und Karten ------------------------------------------------------
+
+function orgFaelligText(e) {
+  if (!e.faellig) return '';
+  const heute = new Date(); heute.setHours(0, 0, 0, 0);
+  const ziel = new Date(`${e.faellig}T00:00:00`);
+  const tage = Math.round((ziel - heute) / 86400000);
+  if (tage < 0) return `<span class="warnc">${Math.abs(tage)} ${Math.abs(tage) === 1 ? 'Tag' : 'Tage'} überfällig</span>`;
+  if (tage === 0) return '<b>heute fällig</b>';
+  if (tage === 1) return 'morgen fällig';
+  return `fällig ${fmtDate(e.faellig)}`;
+}
+
+function orgZeile(e) {
+  const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
+  const merkmale = [
+    e.bereich ? esc(e.bereich) : '',
+    e.verantwortlich ? `für ${esc(e.verantwortlich)}` : (e.typ === 'TASK' ? '<span class="muted">unzugewiesen</span>' : ''),
+    orgFaelligText(e),
+    e.wartetAuf ? `wartet auf ${esc(e.wartetAuf)}` : '',
+  ].filter(Boolean);
+  return `<div class="row org-zeile" data-org-open="${esc(e.id)}" tabindex="0" role="button" aria-label="${esc(e.titel)}">
+    <div>
+      <div class="t">${esc(e.titel)}
+        ${e.prioritaet !== 'NORMAL' ? `<span class="badge ${prioKlasse}">${esc(ORG_PRIO_LABEL[e.prioritaet])}</span>` : ''}
+        ${e.typ === 'NOTE' ? '<span class="badge plain">Notiz</span>' : ''}
+        ${e.sichtbarkeit === 'PRIVAT' ? '<span class="badge plain">privat</span>' : ''}
+      </div>
+      <div class="m">${merkmale.join(' · ')}</div>
+    </div>
+    <div class="r">
+      <span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>
+      ${e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()">Erledigt</button>` : ''}
+    </div>
+  </div>`;
+}
+
+// -- Detailansicht ----------------------------------------------------------
+
+function orgDetailAnsicht(id) {
+  ensureOrgDetail(id);
+  const zurueck = `<p style="margin:0 0 12px"><a href="#" data-org-zurueck>← Zurück zur Liste</a></p>`;
+  const d = org.detailId === id ? org.detail : null;
+  if (!d) return zurueck + `<div class="empty">Lade Eintrag …</div>`;
+  if (!d.verfuegbar) return zurueck + emptyState('Nicht gefunden.', d.hinweis || '');
+  const e = d.eintrag;
+  const team = org.liste?.team || [];
+  const bereiche = org.liste?.bereiche || [];
+  const feld = (label, inhalt) => `<div><span class="small muted">${esc(label)}</span><div>${inhalt}</div></div>`;
+  const auswahl = (name, werte, aktiv) => `<select data-org-feld="${name}" data-org-id="${esc(e.id)}">
+    ${werte.map(([w, l]) => `<option value="${esc(w)}"${w === aktiv ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+
+  return zurueck + `
+    <div class="page-head"><div><h1>${esc(e.titel)}</h1>
+      <p class="sub">${esc(e.typ === 'TASK' ? 'Aufgabe' : 'Notiz')}${e.bereich ? ` · ${esc(e.bereich)}` : ''} · angelegt von ${esc(e.besitzer)} am ${esc(fmtDate(e.erstelltAm))}</p></div></div>
+
+    ${e.beschreibung ? `<section class="card" style="margin-bottom:14px"><p style="white-space:pre-wrap">${esc(e.beschreibung)}</p></section>` : ''}
+
+    <section class="card" style="margin-bottom:14px">
+      <div class="bq-weitere">
+        ${feld('Status', d.darfAendern ? auswahl('status', Object.entries(ORG_STATUS_LABEL), e.status) : esc(ORG_STATUS_LABEL[e.status]))}
+        ${feld('Priorität', d.darfAendern ? auswahl('prioritaet', Object.entries(ORG_PRIO_LABEL), e.prioritaet) : esc(ORG_PRIO_LABEL[e.prioritaet]))}
+        ${feld('Verantwortlich', d.darfAendern
+          ? auswahl('verantwortlich', [['', 'unzugewiesen'], ...team.map(t => [t.kuerzel, t.name])], e.verantwortlich || '')
+          : esc(e.verantwortlich || 'unzugewiesen'))}
+        ${feld('Bereich', d.darfAendern
+          ? auswahl('bereich', [['', 'keiner'], ...bereiche.map(b => [b, b])], e.bereich || '')
+          : esc(e.bereich || '–'))}
+        ${feld('Fällig', d.darfAendern
+          ? `<input type="date" data-org-feld="faellig" data-org-id="${esc(e.id)}" value="${esc(e.faellig || '')}">`
+          : (e.faellig ? esc(fmtDate(e.faellig)) : '–'))}
+        ${feld('Prüfart', d.darfAendern ? auswahl('pruefTyp', Object.entries(ORG_PRUEF_LABEL), e.pruefTyp) : esc(ORG_PRUEF_LABEL[e.pruefTyp]))}
+        ${e.wartetAuf ? feld('Warten auf', `${esc(e.wartetAuf)}${e.wartetSeit ? ` <span class="small muted">seit ${esc(fmtDate(e.wartetSeit))}</span>` : ''}`) : ''}
+        ${e.erledigtAm ? feld('Erledigt am', esc(fmtDateTime(e.erledigtAm))) : ''}
+      </div>
+      ${e.erfolgskriterium ? `<p class="small" style="margin:10px 0 0"><b>Erfolgskriterium:</b> ${esc(e.erfolgskriterium)}</p>` : ''}
+      ${e.verknuepft ? `<p class="small" style="margin:6px 0 0"><b>Gehört zu:</b> ${esc(e.verknuepft.titel || e.verknuepft.id)} (${esc(e.verknuepft.art)})</p>` : ''}
+    </section>
+
+    ${e.pruefungen?.length ? `<section class="card" style="margin-bottom:14px"><div class="card-head"><h2>Prüfungen</h2></div>
+      <ul style="margin:0;padding-left:20px;line-height:1.9">${e.pruefungen.slice().reverse().map(p => `<li>
+        <b>${p.erfuellt === true ? 'erfüllt' : p.erfuellt === false ? 'nicht erfüllt' : 'unklar'}</b>
+        · ${esc(fmtDateTime(p.zeit))} · ${esc(p.pruefer)} · ${esc(p.methode)}
+        ${p.soll !== null || p.ist !== null ? `<div class="small">Soll: ${esc(p.soll ?? '–')} · Ist: ${esc(p.ist ?? '–')}</div>` : ''}
+        ${p.begruendung ? `<div class="small muted">${esc(p.begruendung)}</div>` : ''}</li>`).join('')}</ul></section>` : ''}
+
+    <section class="card" style="margin-bottom:14px"><div class="card-head"><h2>Kommentare</h2></div>
+      ${e.kommentare?.length ? `<div class="rows">${e.kommentare.map(k => `<div class="row"><div>
+        <div class="t">${esc(k.wer)} <span class="small muted">${esc(fmtDateTime(k.zeit))}</span></div>
+        <div class="m" style="white-space:pre-wrap">${esc(k.text)}</div></div></div>`).join('')}</div>`
+        : '<p class="small muted">Noch kein Kommentar.</p>'}
+      <div class="toolbar" style="margin-top:10px">
+        <input type="text" placeholder="Kommentar schreiben …" data-org-kommentar-text style="flex:1">
+        <button type="button" class="btn" data-org-kommentar="${esc(e.id)}">Hinzufügen</button>
+      </div>
+    </section>
+
+    <details><summary class="small muted" style="cursor:pointer">Verlauf (${e.verlauf?.length || 0})</summary>
+      <ul style="margin:8px 0 0;padding-left:20px;line-height:1.8" class="small">
+        ${(e.verlauf ?? []).slice().reverse().map(v => `<li>${esc(fmtDateTime(v.zeit))} · ${esc(v.wer)} · ${esc(v.was)}${v.von || v.zu ? ` <span class="muted">(${esc(v.von ?? '–')} → ${esc(v.zu ?? '–')})</span>` : ''}</li>`).join('')}
+      </ul>
+    </details>`;
+}
+
+// -- Hauptansicht -----------------------------------------------------------
+
+function viewOrganisation() {
+  if (state.capabilities.mode !== 'local') {
+    return `<div class="page-head"><div><h1>Aufgaben &amp; Organisation</h1></div></div>
+      ${emptyState('Nur lokal im Betrieb verfügbar.', 'Dieser Bereich enthält interne Aufgaben und Notizen, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard')}`;
+  }
+  const { bereich, ansicht, person, q, id } = orgParams();
+  if (id) return orgDetailAnsicht(id);
+
+  ensureOrgListe();
+  const d = org.liste;
+  const team = d?.team || [];
+
+  const reiter = `<div class="tabs no-print" role="tablist">
+    ${ORG_BEREICHE.map(([k, l]) => `<button type="button" class="tab" role="tab" aria-selected="${bereich === k}" data-param="ob" data-value="${k === 'meine-aufgaben' ? '' : k}">${esc(l)}</button>`).join('')}
+  </div>`;
+
+  const ansichten = ['meine-aufgaben', 'team-aufgaben'].includes(bereich)
+    ? `<div class="chips" style="margin:8px 0">
+        ${bereich === 'team-aufgaben' ? `<button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>` : ''}
+        ${ORG_ANSICHTEN.map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
+      </div>` : '';
+
+  const personen = bereich === 'team-aufgaben'
+    ? `<div class="chips" style="margin:0 0 8px">
+        <button type="button" class="chip" data-param="op" data-value="" aria-pressed="${!person}">Alle</button>
+        <button type="button" class="chip" data-param="op" data-value="unzugewiesen" aria-pressed="${person === 'unzugewiesen'}">Unzugewiesen</button>
+        ${team.map(t => `<button type="button" class="chip" data-param="op" data-value="${esc(t.kuerzel)}" aria-pressed="${person === t.kuerzel}">${esc(t.name)}</button>`).join('')}
+      </div>` : '';
+
+  const kopf = `<div class="page-head">
+      <div><h1>Aufgaben &amp; Organisation</h1><p class="sub">Alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
+      <div class="head-actions">
+        <button type="button" class="btn" data-org-pruefen title="Prüft Aufgaben mit hinterlegtem Erfolgskriterium gegen den echten Shop">Jetzt prüfen</button>
+        <button type="button" class="btn btn-primary" data-org-schnell>+ Schnell erfassen</button>
+      </div>
+    </div>`;
+
+  const suche = `<div class="toolbar search-hero"><input type="search" placeholder="Suchen – Titel, Text, Bereich, Kommentare …" value="${esc(q)}" data-param="oq" aria-label="Aufgaben und Notizen durchsuchen"></div>`;
+
+  if (!d && org.loading) return kopf + reiter + `<div class="empty">Lade …</div>`;
+  if (!d || !d.verfuegbar) return kopf + reiter + emptyState('Noch nichts erfasst.', 'Mit „+ Schnell erfassen" anfangen.');
+
+  const liste = d.eintraege.length
+    ? `<div class="rows">${d.eintraege.map(orgZeile).join('')}</div>`
+    : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
+
+  return kopf + reiter + suche + ansichten + personen +
+    `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}</p>` + liste;
+}
+
+/**
+ * Schnellerfassung: von ueberall erreichbar, ein Feld, fertig. Der Vorschlag
+ * (Typ, Person, Bereich, Priorität, Fälligkeit) erscheint erst nach der
+ * Eingabe und ist immer aenderbar - er haelt niemanden auf.
+ */
+function openOrgSchnell(vorbelegt = '') {
+  const root = $('#dialogRoot');
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Schnell erfassen" style="max-width:560px">
+    <h2>Schnell erfassen</h2>
+    <p class="small muted">Was möchtest du festhalten? Einfach hinschreiben – der Rest kommt als Vorschlag.</p>
+    <textarea id="orgText" rows="3" style="width:100%;box-sizing:border-box" placeholder="z. B. „Ben soll morgen prüfen, ob die neuen Teppichmuster angekommen sind."">${esc(vorbelegt)}</textarea>
+    <div id="orgVorschlag" class="small" style="margin-top:10px"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>Abbrechen</button>
+      <button type="button" class="btn btn-primary" id="orgSpeichern">Speichern</button>
+    </div>
+  </div></div>`;
+  const feld = $('#orgText');
+  feld.focus();
+  feld.setSelectionRange(feld.value.length, feld.value.length);
+
+  let timer;
+  const zeichneVorschlag = () => {
+    const v = org.entwurf?.vorschlag;
+    const dop = org.entwurf?.doppelgaenger || [];
+    const ziel = $('#orgVorschlag');
+    if (!ziel) return;
+    if (!v) { ziel.innerHTML = ''; return; }
+    const team = org.liste?.team || [];
+    const bereiche = org.liste?.bereiche || [];
+    ziel.innerHTML = `
+      ${dop.length ? `<div class="notice warn" style="margin-bottom:10px">
+        <b>Gibt es das vielleicht schon?</b>
+        <ul style="margin:6px 0 0;padding-left:18px">${dop.map(x => `<li>${esc(x.titel)} <span class="muted">(${esc(ORG_STATUS_LABEL[x.status] || x.status)}, ${x.wert}% ähnlich)</span>
+          <button type="button" class="btn btn-sm btn-ghost" data-org-oeffnen="${esc(x.id)}">Öffnen</button></li>`).join('')}</ul>
+        <div class="small muted" style="margin-top:6px">Du kannst trotzdem neu anlegen – zusammengeführt wird nie automatisch.</div>
+      </div>` : ''}
+      <div class="bq-weitere" style="margin:0">
+        <div><span class="small muted">Art</span><div><select id="orgTyp">
+          <option value="TASK"${v.typ === 'TASK' ? ' selected' : ''}>Aufgabe</option>
+          <option value="NOTE"${v.typ === 'NOTE' ? ' selected' : ''}>Notiz</option></select></div></div>
+        <div><span class="small muted">Für wen</span><div><select id="orgWer">
+          <option value="">unzugewiesen</option>
+          ${team.map(t => `<option value="${esc(t.kuerzel)}"${v.verantwortlich === t.kuerzel ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}</select></div></div>
+        <div><span class="small muted">Bereich</span><div><select id="orgBereich">
+          <option value="">keiner</option>
+          ${bereiche.map(b => `<option value="${esc(b)}"${v.bereich === b ? ' selected' : ''}>${esc(b)}</option>`).join('')}</select></div></div>
+        <div><span class="small muted">Dringlichkeit</span><div><select id="orgPrio">
+          ${Object.entries(ORG_PRIO_LABEL).map(([k, l]) => `<option value="${k}"${v.prioritaet === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></div></div>
+        <div><span class="small muted">Fällig</span><div><input type="date" id="orgFaellig" value="${esc(v.faellig || '')}"></div></div>
+        <div><span class="small muted">Sichtbar</span><div><select id="orgSicht">
+          <option value="PRIVAT"${v.sichtbarkeit === 'PRIVAT' ? ' selected' : ''}>nur ich</option>
+          <option value="TEAM"${v.sichtbarkeit === 'TEAM' ? ' selected' : ''}>ganzes Team</option></select></div></div>
+      </div>
+      ${v.begruendung?.length ? `<p class="small muted" style="margin:8px 0 0">Vorschlag wegen: ${esc(v.begruendung.join(' · '))}</p>` : ''}
+      ${!team.length ? `<p class="small muted" style="margin:6px 0 0">Namen im Text werden erkannt, sobald Mitarbeiterzugänge angelegt sind (Schreibtisch: „Mitarbeiter verwalten").</p>` : ''}
+      ${v.mehrereAufgaben?.length ? `<div class="notice" style="margin-top:10px"><b>Das klingt nach ${v.mehrereAufgaben.length} Aufgaben.</b>
+        <ul style="margin:6px 0 0;padding-left:18px">${v.mehrereAufgaben.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+        <button type="button" class="btn btn-sm" id="orgTeilen" style="margin-top:6px">Als ${v.mehrereAufgaben.length} einzelne Aufgaben anlegen</button></div>` : ''}`;
+  };
+
+  const analysiere = () => {
+    const text = feld.value.trim();
+    if (text.length < 4) { org.entwurf = null; zeichneVorschlag(); return; }
+    orgSchreiben('/api/org/analyse', { text })
+      .then(d => { org.entwurf = d; zeichneVorschlag(); })
+      .catch(() => { /* ohne Vorschlag speichern geht trotzdem */ });
+  };
+  feld.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(analysiere, 350); });
+  if (vorbelegt) analysiere();
+
+  const lese = () => {
+    const v = org.entwurf?.vorschlag || {};
+    return {
+      typ: $('#orgTyp')?.value || v.typ || 'TASK',
+      titel: (org.entwurf?.vorschlag?.titel) || feld.value.trim().split('\n')[0].slice(0, 90),
+      beschreibung: feld.value.trim(),
+      verantwortlich: $('#orgWer')?.value || null,
+      bereich: $('#orgBereich')?.value || null,
+      prioritaet: $('#orgPrio')?.value || 'NORMAL',
+      faellig: $('#orgFaellig')?.value || null,
+      sichtbarkeit: $('#orgSicht')?.value || (($('#orgTyp')?.value || 'TASK') === 'NOTE' ? 'PRIVAT' : 'TEAM'),
+    };
+  };
+
+  const speichern = async (mehrere = null) => {
+    const knopf = $('#orgSpeichern');
+    if (knopf) { knopf.disabled = true; knopf.textContent = 'Speichere …'; }
+    try {
+      if (mehrere?.length) {
+        const basis = lese();
+        for (const titel of mehrere) await orgSchreiben('/api/org/neu', { ...basis, titel, beschreibung: titel });
+        toast(`${mehrere.length} Aufgaben angelegt`);
+      } else {
+        if (!feld.value.trim()) throw new Error('Bitte etwas eintragen');
+        await orgSchreiben('/api/org/neu', lese());
+        toast('Gespeichert');
+      }
+      org.entwurf = null;
+      $('#dialogRoot').innerHTML = '';
+      orgFrisch();
+      render();
+    } catch (e) {
+      toast(`Fehler: ${e.message}`, 'crit');
+      if (knopf) { knopf.disabled = false; knopf.textContent = 'Speichern'; }
+    }
+  };
+
+  root.addEventListener('click', (e) => {
+    if (e.target.closest('#orgSpeichern')) { speichern(); return; }
+    if (e.target.closest('#orgTeilen')) { speichern(org.entwurf?.vorschlag?.mehrereAufgaben || []); return; }
+    const oeffnen = e.target.closest('[data-org-oeffnen]');
+    if (oeffnen) { $('#dialogRoot').innerHTML = ''; navigate('organisation', { oid: oeffnen.dataset.orgOeffnen }); }
+  });
+  feld.addEventListener('keydown', (e) => {
+    // Auf dem Handy und am Rechner: fertig getippt, abschicken.
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); speichern(); }
+  });
+}
+
+/** Startseite: zwei kompakte Widgets statt der ganzen Verwaltung. */
+function heuteOrganisation() {
+  ensureOrgKennzahlen();
+  const k = org.kennzahlen;
+  if (!k || !k.verfuegbar) return '';
+  const zahl = (n, label, cls, ziel) => n ? bandItem(n, label, cls, `#/organisation?${ziel}`) : '';
+  const meine = [
+    // "offen" zuerst: ohne sie blieb das Widget leer, solange nichts faellig
+    // oder dringend war - obwohl Aufgaben dalagen.
+    zahl(k.meine.offen, 'offen', 'plain', 'oa=fokus'),
+    zahl(k.meine.ueberfaellig, 'überfällig', 'crit', 'oa=ueberfaellig'),
+    zahl(k.meine.heute, 'heute fällig', 'warn', 'oa=heute'),
+    zahl(k.meine.dringend, 'dringend', 'crit', 'oa=dringend'),
+    zahl(k.meine.warten, 'warten auf', 'plain', 'oa=warten'),
+    zahl(k.meine.pruefung, 'in Prüfung', 'plain', 'oa=pruefung'),
+  ].filter(Boolean);
+  const team = [
+    zahl(k.team.offen, 'offen im Team', 'plain', 'ob=team-aufgaben&oa=alle'),
+    zahl(k.team.heute, 'heute fällig', 'warn', 'ob=team-aufgaben&oa=heute'),
+    zahl(k.team.ueberfaellig, 'überfällig', 'crit', 'ob=team-aufgaben&oa=ueberfaellig'),
+  ].filter(Boolean);
+  if (!meine.length && !team.length && !k.naechste.length) return '';
+
+  return `<h2 class="section-title">Meine Arbeit <span class="section-note"><a href="#/organisation">alles ansehen →</a></span></h2>
+    ${meine.length ? `<div class="band">${meine.join('')}</div>` : ''}
+    ${k.naechste.length ? `<div class="rows" style="margin-bottom:14px">${k.naechste.map(orgZeile).join('')}</div>` : ''}
+    ${team.length ? `<h2 class="section-title">Team</h2><div class="band">${team.join('')}</div>` : ''}`;
+}
+
+const VIEWS = { heute: viewHeute, hilfe: viewHilfe, organisation: viewOrganisation, shopwache: viewShopwache, arbeit: viewArbeit, freigaben: viewFreigaben, bereiche: viewBereiche, insights: viewInsights, aktivitaet: viewAktivitaet, einkauf: viewEinkauf, kunden: viewKunden, lexikon: viewLexikon, ratgeber: viewRatgeber };
 
 let letzteAnsicht = null;
 
@@ -3295,7 +3684,7 @@ function render() {
     return;
   }
   main.innerHTML = (state.loadError ? `<div class="notice crit" style="margin-bottom:12px">Aktualisierung fehlgeschlagen: ${esc(state.loadError)} – es wird der letzte geladene Stand gezeigt.</div>` : '') + VIEWS[state.route.view]();
-  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
+  document.title = `${{ heute: 'Heute', arbeit: 'Arbeit', freigaben: 'Freigaben', bereiche: 'Bereiche', insights: 'Insights', aktivitaet: 'Aktivität', einkauf: 'Einkauf', kunden: 'Kunden', lexikon: 'Lexikon', ratgeber: 'Ratgeber', hilfe: 'Hilfe', shopwache: 'Shop-Wache', organisation: 'Aufgaben & Organisation' }[state.route.view] || 'Teppich Paradies'} · Teppich Dashboard`;
   renderSheet();
   $('#mainnav').classList.remove('open'); $('#navToggle').setAttribute('aria-expanded', 'false');
   // Zuerst weitertippen lassen, wo jemand gerade tippt.
@@ -3397,6 +3786,53 @@ function bindEvents() {
     if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
     const druckBtn = e.target.closest('[data-drucken]');
     if (druckBtn) { e.preventDefault(); window.print(); return; }
+    // Aufgaben & Organisation
+    if (e.target.closest('[data-org-schnell]')) { e.preventDefault(); openOrgSchnell(); return; }
+    const orgPruef = e.target.closest('[data-org-pruefen]');
+    if (orgPruef) {
+      e.preventDefault();
+      orgPruef.disabled = true; orgPruef.textContent = 'Prüfe …';
+      orgSchreiben('/api/org/pruefen', {})
+        .then(r => {
+          toast(r.geprueft
+            ? `${r.geprueft} geprüft · ${r.erfuellt} erfüllt · ${r.offen} offen · ${r.unklar} unklar`
+            : 'Keine Aufgabe mit hinterlegter Prüfvorgabe');
+          orgFrisch(); render();
+        })
+        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgPruef.disabled = false; orgPruef.textContent = 'Jetzt prüfen'; });
+      return;
+    }
+    const orgZurueck = e.target.closest('[data-org-zurueck]');
+    if (orgZurueck) { e.preventDefault(); const p = new URLSearchParams(state.route.params); p.delete('oid'); location.hash = `#/organisation?${p}`; return; }
+    const orgFertig = e.target.closest('[data-org-fertig]');
+    if (orgFertig) {
+      e.preventDefault(); e.stopPropagation();
+      orgFertig.disabled = true;
+      orgSchreiben('/api/org/aendern', { id: orgFertig.dataset.orgFertig, felder: { status: 'DONE' } })
+        .then(() => { toast('Erledigt'); orgFrisch(); render(); })
+        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgFertig.disabled = false; });
+      return;
+    }
+    const orgKomm = e.target.closest('[data-org-kommentar]');
+    if (orgKomm) {
+      e.preventDefault();
+      const feld = document.querySelector('[data-org-kommentar-text]');
+      const text = feld?.value.trim();
+      if (!text) { toast('Bitte etwas schreiben', 'crit'); return; }
+      orgKomm.disabled = true;
+      orgSchreiben('/api/org/kommentar', { id: orgKomm.dataset.orgKommentar, text })
+        .then(() => { toast('Kommentar gespeichert'); org.detail = null; org.detailId = null; render(); })
+        .catch(err => { toast(`Fehler: ${err.message}`, 'crit'); orgKomm.disabled = false; });
+      return;
+    }
+    const orgOpen = e.target.closest('[data-org-open]');
+    if (orgOpen && !e.target.closest('button, a, select, input')) {
+      e.preventDefault();
+      const p = new URLSearchParams(state.route.params);
+      p.set('oid', orgOpen.dataset.orgOpen);
+      location.hash = `#/organisation?${p}`;
+      return;
+    }
     const sortKopf = e.target.closest('[data-bq-sort-toggle]');
     if (sortKopf) {
       // Zweiter Klick auf dieselbe Spalte dreht die Richtung - vorher war
@@ -3435,7 +3871,15 @@ function bindEvents() {
     const a = e.target.closest('[data-action]');
     if (a) { if (a.dataset.action === 'sync') syncNow(); if (a.dataset.action === 'refresh') refresh(); if (a.dataset.action === 'aktualisieren') aktualisierenNow(); if (a.dataset.action === 'clear-filters') navigate('arbeit', { mode: state.route.params.get('mode') || '' }); }
   });
-  document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) setParam(el.dataset.param, el.value); });
+  document.addEventListener('change', e => { const el = e.target.closest('select[data-param]'); if (el) { setParam(el.dataset.param, el.value); return; }
+    const org1 = e.target.closest('[data-org-feld]');
+    if (org1) {
+      const wert = org1.value === '' ? null : org1.value;
+      orgSchreiben('/api/org/aendern', { id: org1.dataset.orgId, felder: { [org1.dataset.orgFeld]: wert } })
+        .then(() => { toast('Gespeichert'); org.detail = null; org.detailId = null; org.liste = null; org.key = null; render(); })
+        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
+    }
+  });
   let qTimer;
   document.addEventListener('input', e => {
     const el = e.target.closest('input[type=search][data-param]');
@@ -3462,6 +3906,8 @@ function bindEvents() {
     if (e.key === 'Escape') { if ($('#paletteRoot').children.length) closePalette(); else if ($('#dialogRoot').children.length) $('#dialogRoot').innerHTML = ''; else if (state.route.params.get('task')) closeTask(); return; }
     if (inField || $('#dialogRoot').children.length || $('#paletteRoot').children.length) return;
     if (e.key === '/') { e.preventDefault(); openPalette(); return; }
+    // "n" wie neu: Schnellerfassung von jeder Seite aus.
+    if (e.key === 'n' && state.capabilities.mode === 'local') { e.preventDefault(); openOrgSchnell(); return; }
     const rows = [...document.querySelectorAll('#main [data-open][tabindex]')];
     if (!rows.length) return;
     // Solange eine Aufgabe offen ist, gehoert die Tastatur dem Panel. Vorher
