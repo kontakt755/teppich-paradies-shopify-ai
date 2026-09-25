@@ -1050,6 +1050,37 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       };
     },
 
+    /**
+     * Der Stand als Text fuer ChatGPT. Ohne ihn liefert ChatGPT jedes Mal
+     * dieselben Punkte neu - es kann ja nicht wissen, was schon dasteht.
+     */
+    orgExportText({ benutzer = null } = {}) {
+      const daten = orgLies(this._orgDatei());
+      const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
+      const offen = this._orgSichtbar(daten, benutzer)
+        .filter(e => e.typ === 'TASK' && e.status !== 'DONE');
+      const zeile = (e) => {
+        const wer = istPerson(e.verantwortlich, ich) ? 'ich'
+          : e.verantwortlich ? e.verantwortlich
+          : istTechnisch(e.bereich) ? 'ich' : 'Team';
+        const was = String(e.beschreibung || '').replace(/\s+/g, ' ').trim().slice(0, 200);
+        return `- [${e.bereich || 'Sonstiges'}] ${e.titel} (${wer}${e.faellig ? `, bis ${e.faellig}` : ''})${was ? ` :: ${was}` : ''}`;
+      };
+      const meine = offen.filter(e => istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istTechnisch(e.bereich)));
+      const rest = offen.filter(e => !meine.includes(e));
+      const text = [
+        `Stand vom ${new Date().toLocaleDateString('de-DE')} - das steht bereits im Dashboard.`,
+        'Leg nichts davon noch einmal an; ergaenze nur, was fehlt, oder sag mir, was sich geaendert hat.',
+        '',
+        `Meine Aufgaben (${meine.length}):`,
+        ...(meine.length ? meine.map(zeile) : ['- (nichts offen)']),
+        '',
+        `Team (${rest.length}):`,
+        ...(rest.length ? rest.map(zeile) : ['- (nichts offen)']),
+      ].join('\n');
+      return { verfuegbar: true, anzahl: offen.length, text };
+    },
+
     orgKennzahlen({ benutzer = null } = {}) {
       const daten = orgLies(this._orgDatei());
       const jetzt = new Date();

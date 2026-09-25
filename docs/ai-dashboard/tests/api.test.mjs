@@ -913,3 +913,21 @@ test('"Meine Aufgaben" zeigt nur Zugewiesenes - Unzugewiesenes bleibt im Team', 
   const team2 = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'offen', gruppe: '', benutzer: ich });
   assert.equal(team2.eintraege.some(e => e.titel === 'Produktseite reparieren'), false);
 });
+
+test('Stand für ChatGPT: offene Aufgaben mit Zuständigkeit und Erklärung, Erledigtes nicht', () => {
+  const root = tmpRoot();
+  const dir = path.join(root, 'privat-org7');
+  const ich = { kuerzel: 'Inhaber', rolle: 'inhaber' };
+  const api = orgApi(root, dir);
+  api.orgNeu({ titel: 'Produktbilder ergänzen', bereich: 'Online-Shop', beschreibung: '45 Produkte ohne Bild' }, { benutzer: ich });
+  api.orgNeu({ titel: 'Frau Meier zurückrufen', bereich: 'Kunden' }, { benutzer: ich });
+  const fertig = api.orgNeu({ titel: 'Altes Angebot geschlossen', bereich: 'Angebote / Lexware' }, { benutzer: ich });
+  api.orgAendern({ id: fertig.eintrag.id, felder: { status: 'DONE' } }, { benutzer: ich });
+
+  const d = api.orgExportText({ benutzer: ich });
+  assert.equal(d.anzahl, 2, 'Erledigtes zählt nicht mit');
+  assert.match(d.text, /\[Online-Shop\] Produktbilder ergänzen \(ich\) :: 45 Produkte ohne Bild/);
+  assert.match(d.text, /\[Kunden\] Frau Meier zurückrufen \(Team\)/);
+  assert.equal(/Altes Angebot/.test(d.text), false);
+  assert.match(d.text, /Leg nichts davon noch einmal an/);
+});

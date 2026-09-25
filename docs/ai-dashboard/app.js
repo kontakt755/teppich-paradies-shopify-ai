@@ -3316,6 +3316,41 @@ const ORG_ANSICHTEN = [
   ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
 ];
 /**
+ * Der Stand als Text: was schon offen ist, damit ChatGPT nicht dieselben
+ * Punkte noch einmal liefert. Zusammen mit der Anweisung ergibt das den
+ * Rueckkanal - sonst weiss ChatGPT nur, was es selbst gesagt hat.
+ */
+async function openOrgFuerChatGPT() {
+  const root = $('#dialogRoot');
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Stand für ChatGPT" style="max-width:720px">
+    <h2>Stand für ChatGPT</h2>
+    <p class="small muted">Lade …</p></div></div>`;
+  const meiner = root.firstElementChild;
+  let d;
+  try { d = await fetchEinkauf('/api/org/export'); }
+  catch (err) { if (meiner.isConnected) root.innerHTML = ''; toast(`Fehler: ${err.message}`, 'crit'); return; }
+  if (!meiner.isConnected) return;                 // inzwischen geschlossen
+
+  const gesamt = `${ORG_CHATGPT_PROMPT}\n\n${d.text}`;
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Stand für ChatGPT" style="max-width:720px">
+    <h2>Stand für ChatGPT</h2>
+    <p class="small muted">Das hier ChatGPT geben: erst die Anweisung, dann der aktuelle Stand
+      (${d.anzahl} ${d.anzahl === 1 ? 'offene Aufgabe' : 'offene Aufgaben'}). ChatGPT weiß dann,
+      was schon dasteht, und liefert nur Neues – im Format, das „Liste einfügen" versteht.</p>
+    <textarea id="orgStandText" rows="14" readonly style="width:100%;box-sizing:border-box">${esc(gesamt)}</textarea>
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>Schließen</button>
+      <button type="button" class="btn btn-primary" id="orgStandKopieren">Alles kopieren</button>
+    </div>
+  </div></div>`;
+  root.addEventListener('click', async (e) => {
+    if (!e.target.closest('#orgStandKopieren')) return;
+    try { await navigator.clipboard.writeText(gesamt); toast('Kopiert – jetzt bei ChatGPT einfügen'); }
+    catch { $('#orgStandText')?.select(); toast('Bitte von Hand kopieren', 'crit'); }
+  });
+}
+
+/**
  * Anweisung fuer ChatGPT. Das Dashboard kann Listen lesen - aber nur, wenn
  * Titel und Erklaerung getrennt ankommen. Sonst steht spaeter eine Zeile da,
  * die niemand mehr einordnen kann.
@@ -3569,6 +3604,7 @@ function viewOrganisation() {
   const kopf = `<div class="page-head">
       <div><h1>Aufgaben &amp; Organisation</h1><p class="sub">Alles, was im Betrieb ansteht – getrennt nach dir und dem Team.</p></div>
       <div class="head-actions">
+        <button type="button" class="btn" data-org-fuer-chatgpt title="Kopiert den aktuellen Stand, damit ChatGPT weiß, was schon offen ist">Stand für ChatGPT</button>
         <button type="button" class="btn" data-org-liste title="Mehrere Aufgaben auf einmal einfügen – z. B. eine Liste aus ChatGPT">Liste einfügen</button>
         <button type="button" class="btn" data-org-pruefen title="Prüft Aufgaben mit hinterlegtem Erfolgskriterium gegen den echten Shop">Jetzt prüfen</button>
         <button type="button" class="btn btn-primary" data-org-schnell>+ Schnell erfassen</button>
@@ -3969,6 +4005,7 @@ function bindEvents() {
     if (druckBtn) { e.preventDefault(); window.print(); return; }
     // Aufgaben & Organisation
     if (e.target.closest('[data-org-schnell]')) { e.preventDefault(); openOrgSchnell(); return; }
+    if (e.target.closest('[data-org-fuer-chatgpt]')) { e.preventDefault(); openOrgFuerChatGPT(); return; }
     if (e.target.closest('[data-org-liste]')) { e.preventDefault(); openOrgListe(); return; }
     const orgPruef = e.target.closest('[data-org-pruefen]');
     if (orgPruef) {
