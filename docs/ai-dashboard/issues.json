@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-25T12:23:46.748Z",
+  "generated_at": "2026-09-25T12:29:45.873Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 145,
+  "count": 146,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-25T12:23:46.748Z",
+    "fetchedAt": "2026-09-25T12:29:45.873Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,59 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 637,
+      "title": "Dashboard als modernen Betriebsleitstand gestalten",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/637",
+      "labels": [
+        "status:in-arbeit",
+        "type:ux",
+        "priority:p2",
+        "area:design"
+      ],
+      "assignee": null,
+      "assignees": [],
+      "comments": 1,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "goal": "Das funktionale Control Center erhält eine ruhigere, hochwertigere visuelle Hierarchie. Die wichtigsten Tagesaufgaben sollen schneller erfassbar sein, während Kunden-, Einkaufs-, Organisations- und Fotoansichten wie ein zusammengehöriges System wirken.",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+        "acceptance": {
+          "total": 6,
+          "done": 0,
+          "items": [
+            {
+              "done": false,
+              "text": "Einheitliches Farb-, Abstands-, Karten- und Typografiesystem für alle Hauptansichten"
+            },
+            {
+              "done": false,
+              "text": "Heute-Seite priorisiert Tagesgeschäft visuell klar"
+            },
+            {
+              "done": false,
+              "text": "Navigation, Filter, Tabellen, Dialoge und Aufgabenzeilen wirken konsistent"
+            },
+            {
+              "done": false,
+              "text": "Bedienung bleibt auf Desktop und 390-Pixel-Handys ohne Überbreite erhalten"
+            },
+            {
+              "done": false,
+              "text": "Kontrast, Fokusmarkierungen und Statusbedeutungen bleiben verständlich"
+            },
+            {
+              "done": false,
+              "text": "Dashboard-Tests, Sicherheitscheck und vollständige Sichtprüfung sind grün"
+            }
+          ]
+        }
+      },
+      "created_at": "2026-09-25T12:29:23Z",
+      "updated_at": "2026-09-25T12:29:32Z",
+      "closed_at": null
+    },
     {
       "number": 634,
       "title": "Dashboard-Datenstand und Handybreite korrigieren",
