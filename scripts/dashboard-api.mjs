@@ -24,6 +24,7 @@ import { aufbereiten } from '../operations/lib/bestelluebersicht.mjs';
 import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
+import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import { protokollPfad, protokolliere } from '../operations/lib/protokoll.mjs';
 import { rueckrufliste } from '../operations/lib/rueckrufliste.mjs';
@@ -976,6 +977,25 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         return { verfuegbar: false, quelle: file, hinweis: 'Shop-Wache noch nie gelaufen.', befehl: 'npm run shop:wache' };
       }
       return { verfuegbar: true, quelle: file, ...daten };
+    },
+
+    /**
+     * Alles offene je Kunde in einem Eintrag - Bestellungen, Angebote und
+     * liegengebliebene Warenkoerbe zusammengefuehrt. Beantwortet die Frage,
+     * in der im Laden gedacht wird: wer wartet auf was.
+     */
+    kundenFaelle() {
+      const dir = privatDirPath || privatDir();
+      const modell = ladeBestellModell(dir);
+      if (!modell) {
+        return { verfuegbar: false, quelle: path.join(dir, 'bestelluebersicht', 'orders.json'), hinweis: 'orders.json fehlt.' };
+      }
+      const statusAlle = leseAuftragsstatus(auftragsstatusPfad(dir));
+      const rueckrufeAlle = leseRueckrufe(rueckrufePfad(dir));
+      const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle });
+      const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
+      const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];
+      return { verfuegbar: true, ...kundenFaelle({ bestellzeilen, angebote, warenkoerbe }) };
     },
 
     /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */
