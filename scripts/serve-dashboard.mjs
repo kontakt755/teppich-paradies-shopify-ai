@@ -102,17 +102,60 @@ function readJson(req) {
 // `name.local` ist der Bonjour-Name des Rechners im eigenen Netz. Eine fremde
 // Domain laesst sich darauf nicht zeigen lassen (mDNS aufloest nur das lokale
 // Netz), ein Zugriff vom Tablet im Laden aber schon.
-const LAN_HOST_RE = /^(127\.0\.0\.1|localhost|[a-z0-9-]+\.local|10(\.\d{1,3}){3}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|192\.168(\.\d{1,3}){2})(:\d+)?$/i;
+// 100.64.0.0/10 ist der Bereich, aus dem Tailscale seinen Geraeten Adressen
+// gibt (CGNAT). Wer darin liegt, ist bereits im eigenen Tailnet - dieselbe
+// Vertrauensstufe wie 192.168.x.x im Laden. Der Bereich endet bei 100.127:
+// 100.128.x.x gehoert nicht mehr dazu.
+const LAN_HOST_RE = /^(127\.0\.0\.1|localhost|[a-z0-9-]+\.local|10(\.\d{1,3}){3}|172\.(1[6-9]|2\d|3[01])(\.\d{1,3}){2}|192\.168(\.\d{1,3}){2}|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])(\.\d{1,3}){2})(:\d+)?$/i;
+
+/**
+ * Namen, die zusaetzlich gelten duerfen - kommagetrennt in
+ * TP_DASHBOARD_EXTRA_HOSTS. Gedacht fuer den MagicDNS-Namen des Tailnets
+ * (z. B. "macmini.tailXXXX.ts.net"), unter dem `tailscale serve` das Dashboard
+ * per HTTPS ausliefert.
+ *
+ * Bewusst eine Liste ganzer Namen und kein Muster wie *.ts.net: der Host-Check
+ * ist der Schutz gegen DNS-Rebinding. Ein Muster wuerde jeden fremden
+ * ts.net-Namen mit abdecken; hier steht genau der eine Name, den der Betrieb
+ * benutzt.
+ */
+export function extraHostsAus(wert) {
+  return String(wert ?? '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+}
+const EXTRA_HOSTS = extraHostsAus(process.env.TP_DASHBOARD_EXTRA_HOSTS);
+
+/** Ein Host-Wert (mit oder ohne Port) aus dem lokalen Netz, dem Tailnet oder der Liste? */
+export function hostErlaubt(host, extra = EXTRA_HOSTS) {
+  const h = String(host ?? '').trim().toLowerCase();
+  if (!h) return false;
+  if (LAN_HOST_RE.test(h)) return true;
+  // Der Name darf mit oder ohne Port eingetragen sein; hinter `tailscale serve`
+  // kommt er ohne, bei direktem Zugriff auf Port 8001 mit.
+  return extra.includes(h) || extra.includes(h.replace(/:\d+$/, ''));
+}
 
 function sameOrigin(req) {
   const host = req.headers.host || '';
   const origin = req.headers.origin;
-  if (!LAN_HOST_RE.test(host)) return false;
+  if (!hostErlaubt(host)) return false;
   if (origin) {
     const m = /^https?:\/\/(.+)$/i.exec(origin);
-    if (!m || !LAN_HOST_RE.test(m[1])) return false;
+    if (!m || !hostErlaubt(m[1])) return false;
   }
   return true;
+}
+
+/**
+ * 403-Text. "Nur lokal erlaubt" fuehrt in die Irre, sobald jemand ueber
+ * Tailscale kommt und bloss der Name fehlt - dann ist nicht der Ort das
+ * Problem, sondern ein nicht eingetragener Name.
+ */
+function herkunftFehler(req) {
+  const host = String(req.headers.host || '');
+  if (/\.ts\.net(:\d+)?$/i.test(host)) {
+    return 'Host nicht freigegeben - diesen Namen in TP_DASHBOARD_EXTRA_HOSTS eintragen und den Dienst neu starten';
+  }
+  return 'Nur lokal erlaubt';
 }
 
 /**
@@ -155,7 +198,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
   // eine fremde Seite per DNS-Rebinding die Kundendaten auslesen.
-  if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+  if (!sameOrigin(req)) { send(res, 403, { error: herkunftFehler(req) }); return; }
   if (!darfPfad(benutzer, simple, taskOp)) {
     send(res, 403, { error: 'Dafür fehlt dir die Berechtigung – das macht der Inhaber.' });
     return;
@@ -303,7 +346,7 @@ function sessionBenutzer(req) {
 
 async function handleLogin(req, res) {
   if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
-  if (!sameOrigin(req)) { send(res, 403, { error: 'Nur lokal erlaubt' }); return; }
+  if (!sameOrigin(req)) { send(res, 403, { error: herkunftFehler(req) }); return; }
   const ip = clientIp(req);
   let body;
   try { body = await readJson(req); } catch (e) {
