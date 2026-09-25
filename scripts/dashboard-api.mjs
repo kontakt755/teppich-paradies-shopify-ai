@@ -1012,10 +1012,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       let liste = this._orgSichtbar(daten, benutzer);
 
       if (bereich === 'meine-aufgaben') {
-        // Nur was mir ausdruecklich zugewiesen ist. Unzugewiesenes steht im
-        // Team und wird dort verteilt - sonst sammelt sich bei dem, der es
-        // aufgeschrieben hat, Arbeit an, die er gar nicht macht.
-        liste = liste.filter(e => e.typ === 'TASK' && istPerson(e.verantwortlich, ich));
+        // Zugewiesenes plus herrenlose Technik: fuer Website und Shop bin ich
+        // zustaendig, auch ohne Namen. Unzugewiesenes Geschaeftliches dagegen
+        // steht im Team - sonst sammelt sich bei dem, der es aufgeschrieben
+        // hat, Arbeit an, die er gar nicht macht.
+        liste = liste.filter(e => e.typ === 'TASK'
+          && (istPerson(e.verantwortlich, ich) || (!e.verantwortlich && istTechnisch(e.bereich))));
         if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
       } else if (bereich === 'meine-notizen') {
         liste = liste.filter(e => e.typ === 'NOTE' && istPerson(e.besitzer, ich) && e.sichtbarkeit === 'PRIVAT');
@@ -1053,7 +1055,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const jetzt = new Date();
       const ich = benutzer?.kuerzel || benutzer?.name || 'inhaber';
       const sichtbar = this._orgSichtbar(daten, benutzer).filter(e => e.typ === 'TASK');
-      const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich));
+      const meine = sichtbar.filter(e => istPerson(e.verantwortlich, ich)
+        || (!e.verantwortlich && istTechnisch(e.bereich)));
       // Die Team-Kennzahl zaehlt alles, was im Team-Reiter steht - nur
       // Technisches nicht, dafuer ist das Team nicht zustaendig.
       const teamArbeit = sichtbar.filter(e => !istTechnisch(e.bereich) && e.sichtbarkeit !== 'PRIVAT');
