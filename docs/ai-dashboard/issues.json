@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-25T03:28:17.983Z",
+  "generated_at": "2026-09-25T09:02:55.989Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 140,
+  "count": 141,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-25T03:28:17.983Z",
+    "fetchedAt": "2026-09-25T09:02:55.989Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,28 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 608,
+      "title": "Dashboard kundenzentriert: Wer wartet auf was, Lexikon-Rueckweg",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/608",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": null,
+      "fields": {},
+      "created_at": "2026-09-25T08:16:11Z",
+      "updated_at": "2026-09-25T08:16:43Z",
+      "closed_at": "2026-09-25T08:16:43Z"
+    },
     {
       "number": 602,
       "title": "Dashboard-Durchlauf: Suchwettlauf, acht Bedienfehler, Design",
