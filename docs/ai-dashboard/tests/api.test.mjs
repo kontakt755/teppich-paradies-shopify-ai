@@ -904,4 +904,12 @@ test('"Meine Aufgaben" zeigt nur Zugewiesenes - Unzugewiesenes bleibt im Team', 
   assert.deepEqual(team.eintraege.map(e => e.titel), ['Muster beim Lieferanten bestellen']);
 
   assert.equal(api.orgKennzahlen({ benutzer: ich }).meine.offen, 1);
+
+  // Technik ohne Namen darf nicht zwischen den Listen verschwinden: das Team
+  // sieht sie nicht, also muss sie bei dem stehen, der die Technik macht.
+  api.orgNeu({ titel: 'Produktseite reparieren', bereich: 'Online-Shop' }, { benutzer: ich });
+  const nachher = api.orgListe({ bereich: 'meine-aufgaben', ansicht: 'offen', benutzer: ich });
+  assert.ok(nachher.eintraege.some(e => e.titel === 'Produktseite reparieren'));
+  const team2 = api.orgListe({ bereich: 'team-aufgaben', ansicht: 'offen', gruppe: '', benutzer: ich });
+  assert.equal(team2.eintraege.some(e => e.titel === 'Produktseite reparieren'), false);
 });
