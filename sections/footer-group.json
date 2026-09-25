@@ -53,7 +53,7 @@
           "type": "tp-newsletter",
           "settings": {
             "ueberschrift": "Neuigkeiten aus dem Teppich Paradies",
-            "text": "15 € Gutschein ab 200 €, 4 statt 3 Gratis-Muster und die Abonnenten-Aktion des Monats.",
+            "text": "15 € Rabatt ab 200 € Bestellwert und 4 statt 3 Muster gratis.",
             "button": "Gutschein sichern",
             "quelle": "footer",
             "kompakt": true,

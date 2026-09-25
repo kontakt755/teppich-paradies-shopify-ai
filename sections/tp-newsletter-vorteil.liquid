@@ -4,7 +4,8 @@
   keinen Grund, sich einzutragen. Bodenbelag kauft man selten - ein
   Prozent-Rabatt jeden Monat verpufft. Der Inhaber will kleine feste
   Betraege statt Prozent, hoechstens 15 EUR, dazu ein viertes Gratis-Muster
-  (2026-09-25). Das Muster-Extra steckt in assets/tp-sample-checkout-core.js.
+  (2026-09-25). Nur Vorteile, die ohne monatliche Handarbeit stimmen - keine
+  "Aktion des Monats" (Inhaber 2026-09-25: keine wechselnden Codes). Das Muster-Extra steckt in assets/tp-sample-checkout-core.js.
   Betrag und Mindestbestellwert stehen als Einstellung hier, damit sie nicht
   in Texten verstreut hartkodiert sind. Der Rabattcode selbst liegt nur in
   Shopify (Repository ist oeffentlich) und wird erst mit der Freigabe
@@ -30,27 +31,27 @@
         <p class="tp-nv__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {%- endif -%}
       <h2 class="tp-nv__titel" id="tp-nv-titel-{{ section.id }}">
-        {{- tp_nv_betrag }} € Gutschein und ein Gratis-Muster extra
+        {{- tp_nv_betrag }} € sparen und ein Muster mehr
       </h2>
       <ul class="tp-nv__vorteile">
         <li>
-          <b>{{ tp_nv_betrag }} € auf Ihre erste Bestellung</b>
-          <small>einmalig ab {{ tp_nv_ab }} € Bestellwert</small>
+          <b>{{ tp_nv_betrag }} € Rabatt auf Ihre erste Bestellung</b>
+          <small>ab {{ tp_nv_ab }} € Bestellwert, einmal pro Kunde</small>
         </li>
         <li>
-          <b>4 statt 3 kostenlose Muster</b>
-          <small>ein Muster mehr zum Vergleichen – ohne Versandkosten</small>
+          <b>4 statt 3 Muster gratis</b>
+          <small>zu Hause in Ruhe vergleichen, ohne Versandkosten</small>
         </li>
         <li>
-          <b>Abonnenten-Aktion des Monats</b>
-          <small>ausgewählte Artikel günstiger, dazu Ratgeber-Tipps – jederzeit abbestellbar</small>
+          <b>Tipps vom Fachhändler</b>
+          <small>gelegentlich per E-Mail, jederzeit abbestellbar</small>
         </li>
       </ul>
     </div>
     <div class="tp-nv__form">
       {%- render 'tp-newsletter',
         ueberschrift: 'Gutschein sichern',
-        text: 'Der Gutschein kommt per E-Mail, sobald Sie die Anmeldung bestätigt haben.',
+        text: 'E-Mail eintragen, bestätigen – der Code kommt sofort.',
         button: 'Gutschein sichern',
         hinweis: tp_nv_hinweis,
         quelle: 'startseite',
