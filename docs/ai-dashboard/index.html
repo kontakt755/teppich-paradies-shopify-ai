@@ -33,11 +33,11 @@
         <a href="#/einkauf" data-nav="einkauf">Einkauf</a>
         <a href="#/kunden" data-nav="kunden">Kunden</a>
         <a href="#/organisation" data-nav="organisation">Aufgaben</a>
-        <a href="#/arbeit" data-nav="arbeit" data-nur-inhaber>Arbeit</a>
         <a href="#/lexikon" data-nav="lexikon">Lexikon</a>
         <details class="nav-more" id="navMore">
           <summary data-nav-more>Mehr<span class="nav-count" id="navMoreCount" hidden></span></summary>
           <div class="nav-more-menu">
+            <a href="#/arbeit" data-nav="arbeit" data-nur-inhaber>Entwicklung (KI &amp; GitHub)</a>
             <a href="#/freigaben" data-nav="freigaben" data-nur-inhaber>Freigaben<span class="nav-count" id="navFreigaben" hidden></span></a>
             <a href="#/ratgeber" data-nav="ratgeber">Ratgeber</a>
             <a href="#/bereiche" data-nav="bereiche" data-nur-inhaber>Bereiche</a>
@@ -49,6 +49,9 @@
         </details>
       </nav>
       <div class="topbar-tools">
+        <!-- Global erreichbar: Erfassen darf nie mehr als einen Klick kosten.
+             Steht vorn, damit es auf schmalen Fenstern nicht herausrutscht. -->
+        <button type="button" class="btn btn-primary btn-sm" data-org-schnell title="Schnell erfassen (Taste n)">+<span class="lang"> Erfassen</span></button>
         <button type="button" class="btn btn-ghost" id="searchBtn" title="Suche und Befehle (⌘K)">
           <span aria-hidden="true">⌕</span> Suche <kbd>⌘K</kbd>
         </button>
@@ -58,8 +61,6 @@
         <button type="button" class="btn btn-ghost" id="sessionBtn" title="Angemeldet – abmelden" hidden>
           <span aria-hidden="true">🔒</span> <span id="sessionBtnText">Angemeldet</span>
         </button>
-        <!-- Global erreichbar: Erfassen darf nie mehr als einen Klick kosten. -->
-        <button type="button" class="btn btn-primary btn-sm" data-org-schnell title="Schnell erfassen (Taste n)">+ Erfassen</button>
         <button type="button" class="btn btn-ghost nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mainnav" aria-label="Navigation öffnen">☰</button>
       </div>
     </div>

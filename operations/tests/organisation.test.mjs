@@ -241,3 +241,15 @@ test('Nebensätze sind keine zweite Aufgabe', () => {
   // Drei echte Vorhaben bleiben drei.
   assert.equal(teileAuf('Logo ändern, Vinylpreise kontrollieren und Newsletter einbauen').length, 3);
 });
+
+test('aus einer Notiz wird eine Aufgabe - Text, Kommentare und Verlauf bleiben', () => {
+  const e = baueEintrag({ typ: 'NOTE', titel: 'Vinylpreise wirken hoch', beschreibung: 'Gedanke vom Gespräch' }, { benutzer: { kuerzel: 'ahmet' }, jetzt: JETZT });
+  kommentiere(e, 'Beim Lieferanten nachfragen', { benutzer: { kuerzel: 'ahmet' }, jetzt: JETZT });
+  aendere(e, { typ: 'TASK', status: 'INBOX' }, { benutzer: { kuerzel: 'ahmet' }, jetzt: JETZT });
+  assert.equal(e.typ, 'TASK');
+  assert.equal(e.beschreibung, 'Gedanke vom Gespräch');
+  assert.equal(e.kommentare.length, 1);
+  assert.ok(e.verlauf.some(v => v.was === 'Art geändert'));
+  // Unsinnige Werte werden abgewiesen
+  assert.throws(() => aendere(e, { typ: 'IRGENDWAS' }, {}), /typ/);
+});

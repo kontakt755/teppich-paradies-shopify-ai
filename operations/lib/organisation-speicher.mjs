@@ -105,13 +105,16 @@ export function aendere(eintrag, felder, { benutzer = null, jetzt = new Date() }
   const wer = benutzer?.kuerzel || benutzer?.name || 'inhaber';
   const zeit = jetzt.toISOString();
   const LABEL = {
-    status: 'Status', prioritaet: 'Priorität', verantwortlich: 'Verantwortlich', faellig: 'Fälligkeit',
+    // typ ist aenderbar, damit aus einer Notiz eine Aufgabe werden kann, ohne
+    // Text, Kommentare und Verlauf zu verlieren.
+    typ: 'Art', status: 'Status', prioritaet: 'Priorität', verantwortlich: 'Verantwortlich', faellig: 'Fälligkeit',
     bereich: 'Bereich', titel: 'Titel', beschreibung: 'Beschreibung', erfolgskriterium: 'Erfolgskriterium',
     pruefTyp: 'Prüfart', wartetAuf: 'Warten auf', sichtbarkeit: 'Sichtbarkeit',
   };
   for (const [feld, wert] of Object.entries(felder)) {
     if (!(feld in LABEL)) continue;
     if (eintrag[feld] === wert) continue;
+    if (feld === 'typ') pruefeWert(wert, TYPEN, 'typ');
     if (feld === 'status') pruefeWert(wert, STATUS, 'status');
     if (feld === 'prioritaet') pruefeWert(wert, PRIORITAETEN, 'prioritaet');
     if (feld === 'pruefTyp') pruefeWert(wert, PRUEFTYPEN, 'pruefTyp');
