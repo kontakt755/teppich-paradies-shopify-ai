@@ -33,9 +33,20 @@ export const PRUEFTYP_LABEL = Object.freeze({
 
 /** Startbereiche. Erweiterbar - die Liste steht in den Daten, nicht im Code fest. */
 export const STANDARD_BEREICHE = Object.freeze([
-  'Online-Shop', 'Laden', 'Baustelle', 'Kunden', 'Angebote / Lexware', 'Einkauf',
+  'Website & KI', 'Online-Shop', 'Laden', 'Baustelle', 'Kunden', 'Angebote / Lexware', 'Einkauf',
   'Lieferanten', 'Marketing', 'Buchhaltung', 'Mitarbeiter', 'Lager', 'Fahrzeuge', 'Sonstiges',
 ]);
+
+/**
+ * Bereiche, die an der Technik haengen. Wer hier arbeitet, macht Website und
+ * KI - nicht das Geschaeft. Alles andere (Bestellungen, Kunden, Lieferanten,
+ * Lager ...) gehoert ins Team, auch wenn es niemand ausdruecklich sagt.
+ */
+export const TECHNISCHE_BEREICHE = Object.freeze(['Website & KI', 'Online-Shop']);
+
+export function istTechnisch(bereich) {
+  return TECHNISCHE_BEREICHE.includes(bereich);
+}
 
 const TAG_MS = 86400000;
 

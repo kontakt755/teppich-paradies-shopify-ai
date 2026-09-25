@@ -360,3 +360,21 @@ test('Anhänge: erlaubte Typen, Größengrenze, sichere Dateinamen', async () =>
   assert.throws(() => speichereAnhang(e, { name: 'gross.pdf', typ: 'application/pdf', daten: zuGross }, { dir }), /zu groß/);
   assert.throws(() => speichereAnhang(e, { name: 'leer.pdf', typ: 'application/pdf', daten: '' }, { dir }), /leer/);
 });
+
+test('Geschäftliches geht ins Team, Technik zu mir', async () => {
+  const { analysiere } = await import('../lib/organisation-analyse.mjs');
+  const opt = { mitarbeiter: TEAM, jetzt: JETZT, benutzer: { kuerzel: 'tristan' } };
+
+  // Bestellungen, Kunden, Lieferanten: niemand persönlich, sondern Team
+  for (const satz of ['Muster beim Lieferanten bestellen', 'Kunden zurückrufen wegen Reklamation', 'Lagerbestand nachzählen']) {
+    const v = analysiere(satz, opt);
+    assert.equal(v.verantwortlich, null, satz);
+  }
+  // Technik bleibt bei mir
+  for (const satz of ['Dashboard-Skript anpassen', 'Produktseite im Shop korrigieren']) {
+    const v = analysiere(satz, opt);
+    assert.equal(v.verantwortlich, 'tristan', satz);
+  }
+  // Eine genannte Person schlägt die Regel immer
+  assert.equal(analysiere('Ben soll den Lagerbestand nachzählen', opt).verantwortlich, 'ben');
+});
