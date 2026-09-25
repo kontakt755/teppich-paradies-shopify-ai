@@ -21,3 +21,11 @@ Wenn Sie sich für unseren Newsletter anmelden oder beim Bestellen dem Erhalt vo
 **Erinnerung an einen nicht abgeschlossenen Kauf.** Wenn Sie Werbe-E-Mails abonniert haben und einen Bestellvorgang nicht abschließen, können wir Sie per E-Mail daran erinnern.
 
 **Abmeldung.** Sie können Ihre Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen, über den Abmeldelink in jeder E-Mail oder per Nachricht an kontakt@teppich-paradies.net. Nach der Abmeldung erhalten Sie keine Werbe-E-Mails mehr; den Nachweis Ihrer früheren Einwilligung bewahren wir auf, solange dies zur Abwehr möglicher Ansprüche erforderlich ist.
+
+---
+
+## Ergaenzung 2026-09-25: Willkommensgutschein und Muster-Bonus
+
+Im Admin direkt **nach dem Absatz „Double-Opt-in.“** einfuegen:
+
+**Willkommensgutschein und Muster-Bonus.** Nach der Bestätigung Ihrer Anmeldung erhalten Sie per E-Mail einen einmaligen Gutscheincode sowie einen Link, mit dem Sie statt drei bis zu vier kostenlose Muster bestellen können. Damit wir den Muster-Bonus auf unserer Website erkennen, speichert Ihr Browser nach dem Klick auf diesen Link einen Hinweis im lokalen Speicher (localStorage); er enthält keine personenbezogenen Daten und lässt sich über die Browsereinstellungen löschen. Den Gutschein kann jede Kundin und jeder Kunde nur einmal einlösen; dazu gleicht Shopify die bei der Bestellung angegebene E-Mail-Adresse ab.
