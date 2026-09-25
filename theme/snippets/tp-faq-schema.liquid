@@ -1,0 +1,64 @@
+{%- comment -%}
+  JSON-LD FAQPage Schema für Häufig-Gefragt-Seiten
+  Ermöglicht KI-Modellen (Google AI, Gemini) direkte Antworten ohne Seite zu lesen
+
+  Einbindung in page.faq.liquid (oder ähnlich, im <head>-Bereich):
+  {% render 'tp-faq-schema', faqs: page.metafields.custom.faqs %}
+
+  Metafeld-Setup (Shopify Admin):
+  - Namespace: custom
+  - Key: faqs
+  - Type: JSON
+  - Struktur: [{"question": "...", "answer": "..."}, ...]
+{%- endcomment -%}
+
+{%- if template.name == 'page' and page.title contains 'FAQ' or page.title contains 'Fragen' -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Bietet ihr kostenlose Muster an?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja, bis zu 3 Muster kostenlos. Besuchen Sie unsere Musterseite: www.teppich-paradies.net/pages/muster"
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Bietet ihr einen Verlegeservice an?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja, kostenlos in einem Radius von bis zu 50 km um Oranienburg. Kontaktieren Sie uns unter 03301 573 37 20 oder via E-Mail."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Kostenlos Versand?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja, versandkostenfrei in ganz Deutschland ab 50 EUR. Lieferzeit: 2-4 Werktage."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Wie berechne ich die richtige Menge Teppichboden?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Messen Sie Länge × Breite des Raums. Teppichboden wird in Rollen mit Standard-Breiten (2m, 3m, 4m, 5m) angeboten. Unsere Fachberater helfen gern unter 03301 573 37 20."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Können Sie Zuschnitte durchführen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Ja, wir schneiden nach Ihren Maßangaben zu. Beachten Sie jedoch kleine Unterschiede (±5mm) durch den Schneidprozess."
+        }
+      }
+    ]
+  }
+  </script>
+{%- endif -%}
