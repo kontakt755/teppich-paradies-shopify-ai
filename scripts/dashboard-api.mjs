@@ -941,7 +941,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       const produkt = daten.produkte.find(p => p.handle === handle);
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
-      return { verfuegbar: true, quelle: file, produkt };
+      // Rueckweg zum Kunden: wer wartet gerade auf genau dieses Produkt? Wer im
+      // Kundengespraech nachschlaegt, sieht so sofort, dass da noch etwas offen
+      // ist - ohne in die Kundenliste zu wechseln.
+      const wartende = this.kundenFaelle?.() ?? { verfuegbar: false };
+      const offen = wartende.verfuegbar
+        ? (wartende.faelle ?? []).flatMap(k => (k.punkte ?? [])
+          .filter(pt => (pt.produkte ?? []).some(pr => pr.handle === handle))
+          .map(pt => ({ kunde: k.name, schluessel: k.schluessel, bezug: pt.bezug, schritt: pt.schritt.text, tage: pt.tage })))
+        : [];
+      return { verfuegbar: true, quelle: file, produkt, wartendeKunden: offen };
     },
 
     /**
