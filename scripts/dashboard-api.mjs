@@ -35,7 +35,10 @@ import {
   findeEintrag, aendere as orgAendere, kommentiere as orgKommentiere,
   speichereAnhang, anhangPfad, ANHANG_TYPEN,
 } from '../operations/lib/organisation-speicher.mjs';
-import { leseBenutzer as orgLeseBenutzer } from '../operations/lib/benutzer.mjs';
+import {
+  leseBenutzer as orgLeseBenutzer, schreibeBenutzer, benutzerAnlegen, passwortSetzen,
+  benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN,
+} from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import {
   FOTO_ART, FotoFehler, passendeProdukte, produktHinweis, pruefeEingang, titelFuer,
@@ -1167,6 +1170,73 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(privatDirPath || privatDir(), 'lexikon', 'produkte.json');
       const daten = readJsonIfExists(file);
       return Array.isArray(daten?.produkte) ? daten.produkte : [];
+    },
+
+    /**
+     * Team verwalten - bisher ging das nur im Terminal, deshalb gab es bis
+     * heute keinen einzigen Mitarbeiterzugang. Ohne Zugaenge bleibt jede
+     * Rechteregelung wirkungslos: alles laeuft als "Inhaber".
+     */
+    _benutzerDatei() { return path.join(privatDirPath || privatDir(), 'benutzer.json'); },
+
+    teamListe() {
+      const liste = orgLeseBenutzer(this._benutzerDatei());
+      return {
+        verfuegbar: true,
+        rollen: ROLLEN,
+        eingerichtet: liste.length > 0,
+        benutzer: liste.map(b => ({
+          name: b.name, kuerzel: b.kuerzel, rolle: b.rolle, aktiv: b.aktiv !== false,
+        })),
+      };
+    },
+
+    /**
+     * Anlegen, Rolle aendern, Passwort neu setzen, sperren. Passwoerter werden
+     * nur als Hash gespeichert (operations/lib/benutzer.mjs) und nie
+     * zurueckgegeben - auch nicht an den Inhaber.
+     */
+    teamAendern({ was = '', name = '', kuerzel = '', passwort = '', rolle = '' } = {}, { benutzer = null } = {}) {
+      // Serverseitig pruefen, nicht nur im Frontend: wer kein Inhaber ist,
+      // darf hier nichts - auch nicht ueber einen selbstgebauten Aufruf.
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Nur der Inhaber darf das Team verwalten');
+      const datei = this._benutzerDatei();
+      const liste = orgLeseBenutzer(datei);
+      try {
+        let neu;
+        if (was === 'anlegen') {
+          neu = benutzerAnlegen(liste, { name, kuerzel, passwort, rolle: rolle || 'mitarbeiter' });
+        } else if (was === 'passwort') {
+          neu = passwortSetzen(liste, kuerzel, passwort);
+        } else if (was === 'rolle') {
+          validiereRolle(rolle);
+          const idx = liste.findIndex(b => String(b.kuerzel).toLowerCase() === String(kuerzel).toLowerCase());
+          if (idx < 0) throw new BenutzerFehler(`Benutzer „${kuerzel}" nicht gefunden`);
+          // Der letzte aktive Inhaber darf sich nicht selbst entmachten -
+          // sonst kann niemand mehr Zugaenge verwalten.
+          if (liste[idx].rolle === 'inhaber' && rolle !== 'inhaber'
+            && liste.filter(b => b.rolle === 'inhaber' && b.aktiv !== false).length <= 1) {
+            throw new BenutzerFehler('Das ist der einzige Inhaber - sonst kann niemand mehr Zugänge verwalten');
+          }
+          neu = liste.slice();
+          neu[idx] = { ...neu[idx], rolle };
+        } else if (was === 'sperren' || was === 'entsperren') {
+          const ziel = liste.find(b => String(b.kuerzel).toLowerCase() === String(kuerzel).toLowerCase());
+          if (ziel?.rolle === 'inhaber' && was === 'sperren'
+            && liste.filter(b => b.rolle === 'inhaber' && b.aktiv !== false).length <= 1) {
+            throw new BenutzerFehler('Das ist der einzige Inhaber - er lässt sich nicht sperren');
+          }
+          neu = benutzerDeaktivieren(liste, kuerzel, was === 'entsperren');
+        } else {
+          throw new BenutzerFehler('Unbekannte Aktion');
+        }
+        schreibeBenutzer(neu, datei);
+        merke(benutzer, benutzer?.kuerzel || 'inhaber', 'Team', `${was}: ${kuerzel || name}`);
+        return { ok: true, ...this.teamListe() };
+      } catch (e) {
+        if (e instanceof BenutzerFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
     },
 
     orgKennzahlen({ benutzer = null } = {}) {
