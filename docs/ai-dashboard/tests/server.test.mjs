@@ -5,7 +5,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { requestHandler } from '../../../scripts/serve-dashboard.mjs';
+import { requestHandler, hostErlaubt, extraHostsAus } from '../../../scripts/serve-dashboard.mjs';
 
 
 async function withServer(run) {
@@ -97,4 +97,77 @@ test('einkauf/auftragsstatus: GET liest lokal, POST verlangt JSON und lokalen Or
 
   const form = await fetch(`${base}/api/einkauf/auftragsstatus`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'a=b' });
   assert.equal(form.status, 415);
+}));
+
+// --- Zugriff von unterwegs (Tailscale) ------------------------------------
+// Der Host-Check ist der Schutz gegen DNS-Rebinding: eine fremde Seite darf den
+// Browser nicht dazu bringen, das Dashboard im eigenen Netz abzufragen. Er
+// muss deshalb genau so weit aufgehen wie noetig - und keinen Schritt weiter.
+
+test('hostErlaubt: eigenes Netz und Tailnet ja, fremde Namen nein', () => {
+  for (const h of ['127.0.0.1:8001', 'localhost', 'macmini.local:8001', '192.168.2.222:8001', '10.0.0.5', '172.16.3.9']) {
+    assert.ok(hostErlaubt(h), `${h} sollte erlaubt sein`);
+  }
+  // 100.64.0.0/10 = Tailscale-Adressbereich, endet bei 100.127.255.255.
+  assert.ok(hostErlaubt('100.64.0.1:8001'));
+  assert.ok(hostErlaubt('100.101.22.9'));
+  assert.ok(hostErlaubt('100.127.255.255'));
+  assert.ok(!hostErlaubt('100.128.0.1'), '100.128 liegt ausserhalb des Tailscale-Bereichs');
+  assert.ok(!hostErlaubt('100.63.0.1'), '100.63 liegt unterhalb des Tailscale-Bereichs');
+
+  for (const h of ['teppich-paradies.net', 'boese.example', '8.8.8.8', '', null]) {
+    assert.ok(!hostErlaubt(h), `${h} darf nicht erlaubt sein`);
+  }
+});
+
+test('hostErlaubt: MagicDNS-Name nur, wenn er eingetragen ist', () => {
+  const liste = extraHostsAus(' MacMini.tail1234.ts.net , ');
+  assert.deepEqual(liste, ['macmini.tail1234.ts.net']);
+  assert.ok(hostErlaubt('macmini.tail1234.ts.net', liste));
+  assert.ok(hostErlaubt('MacMini.Tail1234.TS.NET', liste), 'Gross-/Kleinschreibung darf nicht entscheiden');
+  assert.ok(hostErlaubt('macmini.tail1234.ts.net:8001', liste), 'mit Port genauso');
+  // Genau der eingetragene Name - kein Muster fuer die ganze Endung, sonst
+  // waere jedes fremde Tailnet mit abgedeckt.
+  assert.ok(!hostErlaubt('fremd.tail9999.ts.net', liste));
+  assert.ok(!hostErlaubt('macmini.tail1234.ts.net', []), 'ohne Eintrag kein Zugriff');
+});
+
+test('extraHostsAus: leere Angabe ergibt eine leere Liste', () => {
+  assert.deepEqual(extraHostsAus(''), []);
+  assert.deepEqual(extraHostsAus(undefined), []);
+  assert.deepEqual(extraHostsAus(' , , '), []);
+});
+
+/**
+ * fetch() darf den Host-Header nicht setzen (verbotener Header-Name) - er
+ * bliebe auf 127.0.0.1 stehen und der Test liefe ins Leere. Deshalb hier eine
+ * rohe HTTP-Anfrage.
+ */
+function rufMitHost(base, pfad, host) {
+  const { port } = new URL(base);
+  return new Promise((ok, fehler) => {
+    const req = http.request({ host: '127.0.0.1', port, path: pfad, headers: { Host: host } }, res => {
+      let text = '';
+      res.on('data', c => { text += c; });
+      res.on('end', () => ok({ status: res.statusCode, text }));
+    });
+    req.on('error', fehler);
+    req.end();
+  });
+}
+
+test('403 bei fremdem Host, mit Hinweis wenn es nur der fehlende Name ist', async () => withServer(async base => {
+  const fremd = await rufMitHost(base, '/api/shopwache/status', 'boese.example');
+  assert.equal(fremd.status, 403);
+  assert.match(fremd.text, /Nur lokal erlaubt/);
+
+  // Derselbe Fall, aber erkennbar ein Tailnet-Name: dann ist nicht der Ort das
+  // Problem, sondern der fehlende Eintrag - der Text muss das sagen.
+  const tailnet = await rufMitHost(base, '/api/shopwache/status', 'macmini.tail1234.ts.net');
+  assert.equal(tailnet.status, 403);
+  assert.match(tailnet.text, /TP_DASHBOARD_EXTRA_HOSTS/);
+
+  // Gegenprobe: aus dem Tailnet-Adressbereich geht es ohne Eintrag durch.
+  const ausTailnet = await rufMitHost(base, '/api/shopwache/status', '100.101.22.9');
+  assert.notEqual(ausTailnet.status, 403);
 }));

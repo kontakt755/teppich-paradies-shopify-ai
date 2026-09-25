@@ -57,6 +57,57 @@ ein Passwort wiederverwenden, das auch woanders (E-Mail, GitHub, Shopify-Login) 
 Ist kein Passwort gesetzt und bleibt `TP_DASHBOARD_HOST` auf `127.0.0.1` (Standard), verhält sich der
 Server exakt wie vorher: kein Login, kein Unterschied zum bisherigen lokalen Betrieb.
 
+## 1d. Von unterwegs erreichbar über Tailscale (seit 2026-09-25)
+
+**Inhaberentscheidung 2026-09-25:** Das Control Center soll von Arbeit, zu Hause und vom Handy aus
+nutzbar sein – für jeden, der einen Zugang bekommt. Gewählter Weg: **Tailscale**, ein privates Netz
+zwischen den eigenen Geräten.
+
+**Warum nicht öffentlich.** Das Dashboard zeigt Kundennamen, Anschriften und Bestellungen. Eine
+öffentliche Adresse (Cloudflare-Tunnel o. Ä.) hätte verlangt, die DNS-Verwaltung der Shop-Domain von Wix
+zu Cloudflare umzuziehen – ein Eingriff an der Domain eines laufenden Shops für eine reine
+Bequemlichkeit. Über Tailscale steht nichts im Internet: Wer nicht im Tailnet ist, findet die Adresse
+nicht einmal.
+
+**Zwei Schichten, die beide greifen müssen:**
+
+1. **Tailscale** entscheidet, welches *Gerät* den Server überhaupt erreicht.
+2. **Der Dashboard-Zugang** (Abschnitt 1c, Benutzer und Rollen) entscheidet, *wer* was sieht.
+
+Ein Gerät im Tailnet ohne Zugang kommt nicht weiter als bis zur Anmeldeseite.
+
+**Host-Prüfung.** `sameOrigin()` in `scripts/serve-dashboard.mjs` schützt gegen DNS-Rebinding und lässt
+deshalb nur bekannte Adressen durch. Dazu gehören jetzt:
+
+- `100.64.0.0/10` – der Bereich, aus dem Tailscale seinen Geräten Adressen gibt. Wer darin liegt, ist
+  bereits im eigenen Tailnet; dieselbe Vertrauensstufe wie `192.168.x.x` im Laden.
+- Namen aus **`TP_DASHBOARD_EXTRA_HOSTS`** (kommagetrennt) – gedacht für den MagicDNS-Namen, unter dem
+  `tailscale serve` das Dashboard per HTTPS ausliefert, z. B. `macmini.tailXXXX.ts.net`.
+
+Bewusst eine Liste ganzer Namen und **kein Muster wie `*.ts.net`**: ein Muster würde jedes fremde Tailnet
+mit abdecken. Fehlt der Name, antwortet der Server mit 403 und nennt die Variable – statt des
+irreführenden „Nur lokal erlaubt".
+
+**Einrichtung auf dem Mac mini** (er ist der Rechner, auf dem die Daten liegen, und bleibt an):
+
+```
+brew install --cask tailscale-app     # einmalig
+tailscale up                          # oeffnet eine Adresse zum Anmelden
+tailscale serve --bg 8001             # HTTPS unter dem MagicDNS-Namen
+tailscale status                      # zeigt den Namen
+```
+
+Danach den Namen in den Dienst eintragen (`~/Library/LaunchAgents/net.teppich-paradies.dashboard.plist`,
+`EnvironmentVariables` → `TP_DASHBOARD_EXTRA_HOSTS`) und
+`launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard`.
+
+**Auf jedem weiteren Gerät:** Tailscale-App installieren, mit demselben Konto anmelden, fertig – das
+Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über „Zum Home-Bildschirm".
+
+**Grenze.** Geht der Mac mini aus oder ist das Internet im Laden weg, ist das Dashboard weg – die Daten
+liegen dort und nirgendwo sonst. Das ist gewollt (keine Kundendaten in fremder Hand), aber es heißt: der
+Mac mini ist ab jetzt Betriebsmittel, nicht nur Arbeitsplatz.
+
 ## 1. Leitentscheidung: Eine Wahrheit, nur noch lokaler Betrieb
 
 **GitHub Issues bleiben die führende Aufgabenquelle.** Das Control Center legt kein zweites Aufgabensystem an.
