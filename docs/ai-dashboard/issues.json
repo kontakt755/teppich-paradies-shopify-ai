@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-25T09:02:55.989Z",
+  "generated_at": "2026-09-25T09:05:10.046Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 141,
+  "count": 142,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-25T09:02:55.989Z",
+    "fetchedAt": "2026-09-25T09:05:10.046Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,28 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 611,
+      "title": "Dashboard: Aufgaben und Organisation (Betriebsalltag)",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/611",
+      "labels": [
+        "status:in-arbeit",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 1,
+      "nextStep": null,
+      "fields": {},
+      "created_at": "2026-09-25T09:04:54Z",
+      "updated_at": "2026-09-25T09:05:05Z",
+      "closed_at": null
+    },
     {
       "number": 608,
       "title": "Dashboard kundenzentriert: Wer wartet auf was, Lexikon-Rueckweg",
