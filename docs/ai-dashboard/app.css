@@ -519,7 +519,9 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .kg-zeile { display: grid; grid-template-columns: 200px 1fr; gap: 8px; font-size: .92rem; }
 .kg-frage { color: var(--text-2); }
 .kg-antwort { font-weight: 500; }
-@media (max-width: 640px) { .kg-zeile { grid-template-columns: 1fr; } .kg-frage { font-size: .74rem; } }
+/* Das sind die Saetze, die jemand am Telefon vorliest - am Handy wurden sie
+   auf 11,8 px geschrumpft. Die Frage wird jetzt ueber Fettung abgesetzt. */
+@media (max-width: 640px) { .kg-zeile { grid-template-columns: 1fr; } .kg-frage { font-size: .92rem; font-weight: 600; } }
 
 /* Druckansicht: nur die Bestellkarte, ohne Navigation/Buttons/Sync-Chip. */
 @media print {
@@ -634,3 +636,13 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .chip-mehr > summary::-webkit-details-marker { display: none; }
 .chip-mehr[open] > summary { background: var(--surface-2); }
 .chip-mehr > .chips { margin-top: 6px; }
+
+/* Aufgabentitel ist bearbeitbar: sieht aus wie eine Ueberschrift, ist aber
+   ein Feld - ein Tippfehler liess sich frueher nie mehr korrigieren. */
+.titel-feld {
+  font-size: 1.45rem; font-weight: 700; width: 100%;
+  border: 1px solid transparent; background: transparent;
+  padding: 2px 6px; margin: -2px 0 0 -6px; border-radius: 8px; color: var(--text);
+}
+.titel-feld:hover { border-color: var(--line); }
+.titel-feld:focus { border-color: var(--accent); background: var(--surface); outline: none; }

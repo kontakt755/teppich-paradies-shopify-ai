@@ -91,6 +91,9 @@ function renderSessionButton() {
   if (!btn) return;
   const show = Boolean(state.session?.required && state.session?.authenticated);
   btn.hidden = !show;
+  // Das eigene Passwort darf jeder aendern - nicht nur der Inhaber fuer andere.
+  const pw = $('#meinPasswortBtn');
+  if (pw) pw.hidden = !show || !state.session?.benutzer?.kuerzel;
   const label = $('#sessionBtnText');
   if (label) {
     const b = state.session?.benutzer;
@@ -184,6 +187,9 @@ function datenKennung() {
 const ANSICHT_ROLLEN = {
   arbeit: 'inhaber', freigaben: 'inhaber', bereiche: 'inhaber',
   insights: 'inhaber', aktivitaet: 'inhaber', team: 'inhaber',
+  // Shop-Wache und Ratgeber sind Website-Arbeit: Erreichbarkeit von Seiten,
+  // Ladezeiten, Texte fuer den Shop. Das Team hat damit nichts zu tun.
+  shopwache: 'inhaber', ratgeber: 'inhaber',
 };
 
 function darfAnsicht(view) {
@@ -976,11 +982,14 @@ function renderProtokoll() {
 /** Benutzerverwaltung - nur fuer die Rolle "inhaber" sichtbar. Anlegen/Deaktivieren laeuft ueber
  * das Skript (operations/scripts/benutzer.mjs), hier reicht eine Liste plus Hinweis. */
 function renderBenutzerverwaltung() {
+  // Die Verwaltung wohnt jetzt unter "Team" - hier stand eine zweite, nur
+  // lesende Tabelle mit dem Hinweis, man moege es im Terminal erledigen.
   if (!benutzerCache) return '';
-  const liste = benutzerCache.benutzer || [];
-  return `
-    <div class="page-head" style="margin-top:24px"><div><h2>Mitarbeiterzugänge</h2><p class="sub">${esc(benutzerCache.hinweis || '')}</p></div></div>
-    <section class="card">${liste.length ? `<table class="table"><thead><tr><th>Name</th><th>Kürzel</th><th>Rolle</th><th>Status</th></tr></thead><tbody>${liste.map(b => `<tr><td>${esc(b.name)}</td><td class="mono">${esc(b.kuerzel)}</td><td>${esc(b.rolle)}</td><td>${b.aktiv ? 'aktiv' : 'deaktiviert'}</td></tr>`).join('')}</tbody></table>` : '<p class="muted">Noch keine Mitarbeiterzugänge angelegt – Notzugang per Einzelpasswort aktiv.</p>'}</section>`;
+  return `<div class="page-head" style="margin-top:24px">
+      <div><h2>Mitarbeiterzugänge</h2>
+      <p class="sub">${esc((benutzerCache.benutzer || []).length)} Zugänge eingerichtet.</p></div>
+      <div class="head-actions"><a class="btn" href="#/team">Zugänge verwalten →</a></div>
+    </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1015,6 +1024,21 @@ function afFilterGruppe(status) {
   if (status === 'erledigt') return 'erledigt';
   return 'offen';
 }
+// einkauf.route -> Klartext (domains/shopify/einkauf-metafelder.json)
+// Steht bewusst weit oben: die Einkaufsansicht zeigte den Rohwert
+// ("SUPPLIER_DIRECT") - ausgerechnet bei der Angabe, an der haengt, wohin die
+// Ware geliefert wird.
+const LIEFERWEG_LABEL = {
+  OWN_STOCK: 'Eigenes Lager',
+  SUPPLIER_TO_TP: 'Lieferant → Teppich-Paradies',
+  SUPPLIER_DIRECT: 'Direktlieferung an Kunde',
+  SUPPLIER_TO_SITE: 'Lieferant → Baustelle',
+  SAMPLE_STOCK: 'Muster aus Lager',
+  SAMPLE_SUPPLIER: 'Muster vom Lieferanten',
+  SAMPLE_CUT: 'Muster (Zuschnitt)',
+  NO_PROCUREMENT: 'Kein Einkauf',
+};
+
 function afKey(orderId, lineItemId) { return `${orderId}::${lineItemId}`; }
 
 // Wartezeit: wie lange steht eine Position schon auf "Bestellt" bzw. "Geliefert an uns"?
@@ -1356,7 +1380,8 @@ function einkaufGruppeKarte(g, i, praefix) {
   const unbekannt = g.lieferant === 'UNGEKLAERT';
   const luecken = positionen.filter(positionUnvollstaendig).length;
   const titel = unbekannt ? 'Lieferant nicht zugeordnet' : `Lieferant ${esc(g.lieferant)}`;
-  const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER' ? ` <span class="badge plain">${esc(g.route)}</span>` : '';
+  const route = g.route && g.route !== 'UNGEKLAERT' && g.route !== 'MUSTER'
+    ? ` <span class="badge plain" title="${esc(g.route)}">${esc(LIEFERWEG_LABEL[g.route] || g.route)}</span>` : '';
   const unterzeile = luecken
     ? `<p class="small warnc" style="margin:-6px 0 10px">${plural(luecken, 'Artikel kann', 'Artikel können')} so nicht bestellt werden – Angaben fehlen (siehe markierte Felder).</p>`
     : unbekannt ? '<p class="small muted" style="margin:-6px 0 10px">Großhändler-ID und Produktseite sind je Artikel hinterlegt – über „Öffnen" beim Lieferanten bestellen.</p>' : '';
@@ -1859,17 +1884,6 @@ function nutzungsklasseText(roh) {
 }
 function leerWert(w) { return w === null || w === undefined || w === ''; }
 
-// einkauf.route -> Klartext (domains/shopify/einkauf-metafelder.json)
-const LIEFERWEG_LABEL = {
-  OWN_STOCK: 'Eigenes Lager',
-  SUPPLIER_TO_TP: 'Lieferant → Teppich-Paradies',
-  SUPPLIER_DIRECT: 'Direktlieferung an Kunde',
-  SUPPLIER_TO_SITE: 'Lieferant → Baustelle',
-  SAMPLE_STOCK: 'Muster aus Lager',
-  SAMPLE_SUPPLIER: 'Muster vom Lieferanten',
-  SAMPLE_CUT: 'Muster (Zuschnitt)',
-  NO_PROCUREMENT: 'Kein Einkauf',
-};
 
 /** Kundengespraechs-Kachel: Frage -> Antwort, nur was hinterlegt ist. */
 function kgZeile(frage, antwort) {
@@ -2222,7 +2236,7 @@ function rueckrufZeileHtml(z) {
     </div>
     <div class="r rueckruf-actions">
       <span class="badge ${z.status === 'erledigt' ? 'ok' : z.status === 'angerufen' ? 'plain' : 'gap'}">${esc(RUECKRUF_STATUS_LABEL[z.status])}</span>
-      <div class="btn-row">
+      <div class="btn-row"${istNurLesend() ? ' hidden' : ''}>
         ${['nicht_erreicht', 'angerufen', 'erledigt'].map(s => `<button type="button" class="btn btn-sm${z.status === s ? ' btn-primary' : ' btn-ghost'}" data-rueckruf-open="${esc(z.orderId)}" data-rueckruf-status="${s}">${esc(RUECKRUF_STATUS_LABEL[s])}</button>`).join('')}
       </div>
     </div>
@@ -2376,11 +2390,15 @@ function viewKundenRueckrufe() {
   if (!r && kunden.loadingRueckrufe) return `<div class="empty">Lade Rückrufliste …</div>`;
   if (r?.fehler) return stoerungState(r, 'Die Rückrufliste');
   if (!r || !r.verfuegbar) return emptyState('Keine Daten verfügbar.', r?.hinweis || 'Bestellübersicht noch nicht exportiert.');
-  const offen = r.zeilen.filter(z => z.status !== 'erledigt');
+  // Testbestellungen sind keine Arbeit - auf der Startseite waren sie schon
+  // ausgenommen, in dieser Liste und im Zaehler standen sie weiter drin.
+  const offen = r.zeilen.filter(z => z.status !== 'erledigt' && !z.testbestellung);
   const erledigt = r.zeilen.filter(z => z.status === 'erledigt');
+  const tests = r.zeilen.filter(z => z.status !== 'erledigt' && z.testbestellung);
   return `
     <p class="small muted" style="margin:0 0 10px">Alle Bestellungen mit Beratungswunsch oder Maßprüfung „Ja" – älteste zuerst. Status und Notiz werden lokal auf diesem Mac gespeichert.</p>
     <div class="rows">${offen.length ? offen.map(rueckrufZeileHtml).join('') : emptyState('Keine offenen Rückrufe.', '')}</div>
+    ${tests.length ? `<details style="margin-top:14px"><summary>${tests.length} aus Testbestellungen</summary><div class="rows">${tests.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
     ${erledigt.length ? `<details style="margin-top:14px"><summary>${erledigt.length} erledigt</summary><div class="rows">${erledigt.map(rueckrufZeileHtml).join('')}</div></details>` : ''}
   `;
 }
@@ -3706,6 +3724,35 @@ function openTeamNeu() {
   });
 }
 
+/** Eigenes Passwort - erreichbar fuer jeden Angemeldeten, nicht nur den Inhaber. */
+function openMeinPasswort() {
+  const root = $('#dialogRoot');
+  root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Mein Passwort" style="max-width:480px">
+    <h2>Mein Passwort ändern</h2>
+    <p class="small muted">Danach meldest du dich mit dem neuen Passwort an. Niemand sonst sieht es.</p>
+    <label class="small" for="mpAlt">Bisheriges Passwort</label>
+    <input type="password" id="mpAlt" style="width:100%;box-sizing:border-box;margin:4px 0 10px">
+    <label class="small" for="mpNeu">Neues Passwort <span class="muted">(mindestens 8 Zeichen)</span></label>
+    <input type="password" id="mpNeu" style="width:100%;box-sizing:border-box;margin:4px 0 12px">
+    <div class="dialog-actions">
+      <button type="button" class="btn" data-close-dialog>Abbrechen</button>
+      <button type="button" class="btn btn-primary" id="mpSetzen">Ändern</button>
+    </div>
+  </div></div>`;
+  $('#mpAlt')?.focus();
+  root.addEventListener('click', async (e) => {
+    if (!e.target.closest('#mpSetzen')) return;
+    const alt = $('#mpAlt').value;
+    const neu = $('#mpNeu').value;
+    if (neu.length < 8) { toast('Das neue Passwort braucht mindestens 8 Zeichen', 'crit'); return; }
+    try {
+      await orgSchreiben('/api/mein-passwort', { alt, neu });
+      root.innerHTML = '';
+      toast('Passwort geändert – beim nächsten Anmelden gilt das neue');
+    } catch (err) { toast(`Fehler: ${err.message}`, 'crit'); }
+  });
+}
+
 function openTeamPasswort(kuerzel) {
   const root = $('#dialogRoot');
   root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Neues Passwort" style="max-width:480px">
@@ -3875,10 +3922,25 @@ function orgDetailAnsicht(id) {
     ${werte.map(([w, l]) => `<option value="${esc(w)}"${w === aktiv ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
 
   return zurueck + `
-    <div class="page-head"><div><h1>${esc(e.titel)}</h1>
+    <div class="page-head"><div>${d.darfAendern
+      ? `<input type="text" class="titel-feld" value="${esc(e.titel)}" data-org-feld="titel" data-org-id="${esc(e.id)}" aria-label="Titel ändern">`
+      : `<h1>${esc(e.titel)}</h1>`}
       <p class="sub">${esc(e.typ === 'TASK' ? 'Aufgabe' : 'Notiz')}${e.bereich ? ` · ${esc(e.bereich)}` : ''} · angelegt von ${esc(e.besitzer)} am ${esc(fmtDate(e.erstelltAm))}</p></div></div>
 
-    ${e.beschreibung ? `<section class="card" style="margin-bottom:14px"><p style="white-space:pre-wrap">${esc(e.beschreibung)}</p></section>` : ''}
+    ${d.darfAendern
+      // Bisher liess sich ein Tippfehler im Text nie mehr korrigieren, obwohl
+      // die Fachlogik titel, beschreibung, erfolgskriterium und wartetAuf
+      // ausdruecklich annimmt.
+      ? `<section class="card" style="margin-bottom:14px">
+          <label class="small muted" for="orgBeschr">Beschreibung – was genau gemeint ist</label>
+          <textarea id="orgBeschr" rows="4" style="width:100%;box-sizing:border-box;margin-top:4px"
+            data-org-feld="beschreibung" data-org-id="${esc(e.id)}"
+            placeholder="Worum geht es, warum steht es an, woran sieht man, dass es fertig ist?">${esc(e.beschreibung || '')}</textarea>
+          <label class="small muted" for="orgKrit" style="display:block;margin-top:10px">Woran sieht man, dass es erledigt ist?</label>
+          <input type="text" id="orgKrit" style="width:100%;box-sizing:border-box;margin-top:4px"
+            data-org-feld="erfolgskriterium" data-org-id="${esc(e.id)}" value="${esc(e.erfolgskriterium || '')}">
+        </section>`
+      : (e.beschreibung ? `<section class="card" style="margin-bottom:14px"><p style="white-space:pre-wrap">${esc(e.beschreibung)}</p></section>` : '')}
 
     <section class="card" style="margin-bottom:14px">
       <div class="bq-weitere">
@@ -4658,6 +4720,7 @@ function bindEvents() {
   });
   $('#searchBtn').addEventListener('click', openPalette);
   $('#sessionBtn').addEventListener('click', logout);
+  $('#meinPasswortBtn')?.addEventListener('click', openMeinPasswort);
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
   // also fuehrt er sie auf die Startseite statt in eine leere Umleitung.
   $('#syncChip').addEventListener('click', () => navigate(darfAnsicht('insights') ? 'insights' : 'heute'));

@@ -37,7 +37,7 @@ import {
 } from '../operations/lib/organisation-speicher.mjs';
 import {
   leseBenutzer as orgLeseBenutzer, schreibeBenutzer, benutzerAnlegen, passwortSetzen,
-  benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN,
+  benutzerDeaktivieren, validiereRolle, BenutzerFehler, ROLLEN, pruefePasswort,
 } from '../operations/lib/benutzer.mjs';
 import { bestellliste } from '../operations/lib/bestellliste.mjs';
 import {
@@ -1268,6 +1268,30 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
     },
 
+    /**
+     * Eigenes Passwort aendern. Bisher konnte das nur der Inhaber - fuer
+     * andere. Wer sein Passwort fuer sich behalten will (oder es jemandem
+     * genannt hat), musste darum bitten.
+     */
+    eigenesPasswort({ alt = '', neu = '' } = {}, { benutzer = null } = {}) {
+      if (!benutzer?.kuerzel) throw new ApiError(400, 'Dafür musst du angemeldet sein');
+      const datei = this._benutzerDatei();
+      const liste = orgLeseBenutzer(datei);
+      const ich = liste.find(b => String(b.kuerzel).toLowerCase() === String(benutzer.kuerzel).toLowerCase());
+      if (!ich) throw new ApiError(404, 'Zugang nicht gefunden');
+      // Das alte Passwort wird verlangt, damit ein offener Rechner nicht
+      // reicht, um jemanden auszusperren.
+      if (!pruefePasswort(alt, ich.passwortHash)) throw new ApiError(403, 'Das bisherige Passwort stimmt nicht');
+      try {
+        schreibeBenutzer(passwortSetzen(liste, ich.kuerzel, neu), datei);
+      } catch (e) {
+        if (e instanceof BenutzerFehler) throw new ApiError(400, e.message);
+        throw e;
+      }
+      merke(benutzer, benutzer.kuerzel, 'Team', 'eigenes Passwort geändert');
+      return { ok: true };
+    },
+
     orgKennzahlen({ benutzer = null } = {}) {
       const daten = orgLies(this._orgDatei());
       const jetzt = new Date();
@@ -1569,9 +1593,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
 
 /** Sucht ueber Produktname, Handle, SKU, Lieferanten-Artikelnummer, Farbe und Kollektion. */
 function lexikonSucheTreffer(p, suchtext) {
-  const felder = [p.titel, p.handle];
+  // Am Telefon nennt der Kunde die Farbnummer vom Muster oder den Hersteller -
+  // beides war bisher nicht durchsuchbar, die Suche blieb leer.
+  const felder = [p.titel, p.handle, p.produktgruppe];
   for (const v of p.varianten || []) {
-    felder.push(v.sku, v.farbe, v.einkauf?.artikelnummer, v.einkauf?.kollektion, v.einkauf?.produktname);
+    felder.push(v.sku, v.farbe, v.einkauf?.artikelnummer, v.einkauf?.kollektion, v.einkauf?.produktname,
+      v.einkauf?.farbnummer, v.einkauf?.hersteller, v.einkauf?.marke);
   }
   return felder.some(f => typeof f === 'string' && f.toLowerCase().includes(suchtext));
 }

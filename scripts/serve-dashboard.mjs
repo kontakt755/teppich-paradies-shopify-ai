@@ -150,7 +150,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
   // Bestelltabelle, Lexikon samt Mengenhilfe und die neuen Datenarten
   // (Kunden, Angebote, Warenkoerbe, Bestand, Erfuellung) - fehlt einer,
   // antwortet der Server 404.
-  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
+  const m = pathname.match(/^\/api\/(?:(capabilities|sync|activity|agent-runs|benutzer|protokoll|einkauf\/bestellungen|einkauf\/produktstatus|einkauf\/klaerung|einkauf\/auftragsstatus|einkauf\/kennzahlen|lexikon\/liste|lexikon\/produkt|lexikon\/mengenhilfe|kunden\/suche|kunden\/detail|kunden\/rueckrufe|kunden\/liste|angebote\/liste|warenkoerbe\/liste|bestand\/liste|erfuellung\/liste|shopwache\/status|aktualisierung|aktualisierung\/status|aktualisierung\/start|kunden\/bestellungen|kunden\/bestellung-fertig|kunden\/faelle|org\/liste|org\/eintrag|org\/kennzahlen|org\/export|fotos\/neu|fotos\/liste|fotos\/produkt|team\/liste|team\/aendern|mein-passwort|org\/analyse|org\/neu|org\/aendern|org\/kommentar|org\/pruefen|org\/liste-einfuegen|org\/anhang|org\/anhang-lesen)|tasks\/(\d+)\/(activity|transition|assign|comment))$/);
   if (!m) { send(res, 404, { error: 'Unbekannter API-Pfad' }); return; }
   const [, simple, number, taskOp] = m;
   // Host-Pruefung fuer JEDEN Aufruf, nicht nur fuer schreibende: sonst kann
@@ -170,7 +170,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
       if (benutzer && benutzer.rolle === 'lesen') { send(res, 403, { error: 'Rolle "lesen" darf keine Aenderungen vornehmen' }); return; }
     } else if (simple === 'benutzer' || simple === 'team/liste') {
       if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
-    } else if (simple === 'team/aendern') {
+    } else if (simple === 'team/aendern' || simple === 'mein-passwort') {
       if (req.method !== 'POST') { send(res, 405, { error: 'POST erwartet' }); return; }
     } else if (req.method !== 'GET') { send(res, 405, { error: 'GET erwartet' }); return; }
     let result;
@@ -212,6 +212,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'fotos/produkt') result = api.fotosProdukt({ boden: url.searchParams.get('boden') || '' });
     else if (simple === 'team/liste') result = api.teamListe();
     else if (simple === 'team/aendern') result = api.teamAendern(await readJson(req), { benutzer });
+    else if (simple === 'mein-passwort') result = api.eigenesPasswort(await readJson(req), { benutzer });
     else if (simple === 'org/analyse') result = api.orgAnalyse({ text: (await readJson(req))?.text || '', benutzer });
     else if (simple === 'org/neu') result = api.orgNeu(await readJson(req), { benutzer });
     else if (simple === 'org/aendern') result = api.orgAendern(await readJson(req), { benutzer });
@@ -250,9 +251,16 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     send(res, 200, result);
   } catch (e) {
     if (e instanceof ApiError) { send(res, e.status, { error: e.message, ...e.extra }); return; }
+    // Die englische Node-Meldung samt Dateipfad hilft am Ladentresen niemandem.
+    // Sie steht im Serverprotokoll und zusaetzlich im Feld `technisch`, damit
+    // sie beim Nachfragen nicht verloren ist.
     const msg = String(e?.message || e).split('\n')[0].slice(0, 300);
     console.error(`[api] ${pathname}: ${msg}`);
-    send(res, 500, { error: `Interner Fehler: ${msg}` });
+    send(res, 500, {
+      error: 'Das hat nicht geklappt. Bitte noch einmal versuchen – bleibt es dabei, gib Ahmet Bescheid.',
+      technisch: msg,
+      pfad: pathname,
+    });
   }
 }
 
