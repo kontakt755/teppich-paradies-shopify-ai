@@ -25,6 +25,28 @@ const CONFIG = {
   workflowFile: 'dashboard-data.yml',
 };
 const REPO_URL = `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
+const THEME_KEY = 'tp-theme';
+
+function renderThemeButton() {
+  const btn = $('#themeBtn');
+  if (!btn) return;
+  const dunkel = document.documentElement.dataset.theme !== 'light';
+  const ziel = dunkel ? 'Helle' : 'Dunkle';
+  btn.title = `${ziel} Ansicht einschalten`;
+  btn.setAttribute('aria-label', `${ziel} Ansicht einschalten`);
+  const icon = $('#themeIcon');
+  const text = $('#themeBtnText');
+  if (icon) icon.textContent = dunkel ? '☀' : '☾';
+  if (text) text.textContent = dunkel ? 'Hell' : 'Dunkel';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dunkel ? '#0d0c0b' : '#241a16');
+}
+
+function toggleTheme() {
+  const naechstes = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = naechstes;
+  try { localStorage.setItem(THEME_KEY, naechstes); } catch {}
+  renderThemeButton();
+}
 
 // ---------------------------------------------------------------------------
 // Zustand
@@ -4950,6 +4972,7 @@ function bindEvents() {
     openActionDialog(t, 'move', { target });
   });
   $('#searchBtn').addEventListener('click', openPalette);
+  $('#themeBtn')?.addEventListener('click', toggleTheme);
   $('#sessionBtn').addEventListener('click', logout);
   $('#meinPasswortBtn')?.addEventListener('click', openMeinPasswort);
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
@@ -4963,6 +4986,7 @@ function bindEvents() {
 async function init() {
   parseRoute();
   bindEvents();
+  renderThemeButton();
   await loadSession();
   await loadCapabilities();
   await loadData();

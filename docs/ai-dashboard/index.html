@@ -10,14 +10,23 @@
   <!-- use-credentials: das Manifest wird sonst ohne Sitzungscookie geholt und landet im
        Netzmodus (Passwortschutz) auf der Anmeldeseite. -->
   <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
-  <meta name="theme-color" content="#241a16">
+  <meta name="theme-color" content="#0d0c0b">
   <meta name="description" content="Control Center: Aufgaben, Freigaben, Blocker und naechste Schritte fuer Teppich Paradies">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Teppich Dashboard">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="stylesheet" href="./app.css?v=20260925-design">
+  <script>
+    // Dunkel ist die Grundeinstellung. Die Auswahl wird vor dem Laden des
+    // Stylesheets gesetzt, damit die helle Ansicht nicht kurz aufblitzt.
+    (() => {
+      let theme = 'dark';
+      try { theme = localStorage.getItem('tp-theme') || 'dark'; } catch {}
+      document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+    })();
+  </script>
+  <link rel="stylesheet" href="./app.css?v=20260925-theme">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -59,6 +68,9 @@
         </button>
         <button type="button" class="sync-chip" id="syncChip" title="Datenstand und Synchronisation">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
+        </button>
+        <button type="button" class="btn btn-ghost theme-toggle" id="themeBtn" title="Helle Ansicht einschalten" aria-label="Helle Ansicht einschalten">
+          <span id="themeIcon" aria-hidden="true">☀</span><span class="theme-text" id="themeBtnText">Hell</span>
         </button>
         <button type="button" class="btn btn-ghost" id="meinPasswortBtn" title="Mein Passwort ändern" hidden>
           <span aria-hidden="true">🔑</span> <span class="lang">Passwort</span>

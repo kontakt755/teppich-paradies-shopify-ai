@@ -2,6 +2,7 @@
    Farbe codiert Zustand, Text macht ihn immer zusaetzlich verstaendlich. */
 
 :root {
+  color-scheme: light;
   --bg: #f3f0ea;
   --surface: #fffdf9;
   --surface-2: #f3eee7;
@@ -24,15 +25,24 @@
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #171412; --surface: #211d1a; --surface-2: #29231f; --line: #3b332e; --line-strong: #51463f;
-    --text: #f0ebe6; --text-2: #c8beb6; --text-3: #9e9188;
-    --accent: #d0906f; --accent-soft: #3a2a22;
-    --ok: #5fc48a; --ok-soft: #173525; --warn: #e2b04a; --warn-soft: #3a2e12;
-    --crit: #f08a83; --crit-soft: #3d1c1a; --info: #7faaf0; --info-soft: #1c2a42; --focus: #7faaf0;
-    --shadow: 0 1px 2px rgba(0,0,0,.4);
-  }
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0c0b;
+  --surface: #181614;
+  --surface-2: #211e1b;
+  --line: #332e2a;
+  --line-strong: #4b433d;
+  --text: #f4efea;
+  --text-2: #cec3bb;
+  --text-3: #a4968d;
+  --accent: #d68b65;
+  --accent-soft: #3a261e;
+  --ok: #63c991;   --ok-soft: #153225;
+  --warn: #e5b34f; --warn-soft: #352a12;
+  --crit: #f18b84; --crit-soft: #3b1b19;
+  --info: #8bb6f5; --info-soft: #192940;
+  --focus: #8bb6f5;
+  --shadow: 0 1px 2px rgba(0,0,0,.48), 0 14px 34px rgba(0,0,0,.22);
 }
 
 * { box-sizing: border-box; }
@@ -79,15 +89,18 @@ button { font: inherit; color: inherit; }
 .nav-more-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 190px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.12); padding: 6px; display: flex; flex-direction: column; z-index: 30; }
 .nav-more-menu a { justify-content: space-between; }
 .topbar-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.theme-toggle { min-width: 72px; }
 /* Auf schmalen Fenstern schrumpfen die Beschriftungen, statt dass die Leiste
    umbricht oder der Erfassen-Knopf aus dem Bild rutscht. */
-@media (max-width: 1180px) {
+@media (max-width: 1320px) {
   .topbar-tools [data-org-schnell] .lang,
   .topbar-tools #sessionBtnText,
-  .topbar-tools #syncChipText { display: none; }
+  .topbar-tools #syncChipText,
+  .topbar-tools .theme-text { display: none; }
   .topbar-tools [data-org-schnell] { padding-left: 10px; padding-right: 10px; }
+  .theme-toggle { min-width: 38px; padding-left: 9px; padding-right: 9px; }
 }
-.nav-toggle { display: none; }
+.nav-toggle { display: none !important; }
 .sync-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 11px; font-size: .8rem; color: var(--text-2); cursor: pointer; }
 .sync-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); }
 .sync-chip.frisch .dot { background: var(--ok); }
@@ -379,7 +392,7 @@ table.tasks .gapc { color: var(--warn); font-size: .8rem; }
 }
 @media (max-width: 760px) {
   .topbar-inner { gap: 10px; height: 52px; }
-  .nav-toggle { display: inline-flex; }
+  .nav-toggle { display: inline-flex !important; }
   .mainnav { display: none; position: absolute; top: 52px; left: 0; right: 0; background: var(--surface); border-bottom: 1px solid var(--line); flex-direction: column; padding: 8px; }
   .mainnav.open { display: flex; }
   #searchBtn kbd, #searchBtn span + span { display: none; }
