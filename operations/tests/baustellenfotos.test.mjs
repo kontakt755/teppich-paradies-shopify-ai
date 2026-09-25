@@ -34,6 +34,35 @@ test('Füllwörter stören die Zuordnung nicht', () => {
   assert.equal(h.handle, 'vellana-teppichboden');
 });
 
+test('Farbe steht in der Variante, nicht im Titel - trotzdem Treffer', () => {
+  // So sieht es im echten Shop aus: ein Produkt, Farben als Varianten.
+  const echt = [{
+    handle: 'selene-linoleumboden-200cm', titel: 'Selene Linoleumboden 200cm',
+    varianten: [
+      { titel: 'Grau Grün / 200cm', farbe: 'Grau Grün', sku: 'LINARTMOON_4129' },
+      { titel: 'Sand Hell / 200cm', farbe: 'Sand Hell', sku: 'LINARTMOON_620' },
+    ],
+  }];
+  const nachFarbe = produktHinweis(passendeProdukte('Selene Grau Grün', echt));
+  assert.equal(nachFarbe.handle, 'selene-linoleumboden-200cm');
+  assert.equal(nachFarbe.farbe, 'Grau Grün');
+  assert.match(nachFarbe.text, /Farbe Grau Grün/);
+
+  // Die Zahl vom Auftragszettel steckt in der SKU
+  assert.equal(produktHinweis(passendeProdukte('Selene 620', echt)).farbe, 'Sand Hell');
+
+  // Ein fremder Farbname macht daraus kein Produkt aus unserem Sortiment
+  assert.equal(produktHinweis(passendeProdukte('Selene Feuerrot', echt)).handle, null);
+});
+
+test('Muster-Artikel gewinnt nie gegen die echte Ware', () => {
+  const mitMuster = [
+    { handle: 'muster-vellana-teppichboden', titel: 'Muster Vellana Teppichboden' },
+    { handle: 'vellana-teppichboden-400cm', titel: 'Vellana Teppichboden 400cm' },
+  ];
+  assert.equal(produktHinweis(passendeProdukte('Vellana', mitMuster)).handle, 'vellana-teppichboden-400cm');
+});
+
 test('Ohne Zustimmung des Kunden entsteht kein Eingang', () => {
   assert.throws(
     () => pruefeEingang({ auftrag: '1042', fotos: [{ name: 'a.jpg' }], einwilligung: false }),
