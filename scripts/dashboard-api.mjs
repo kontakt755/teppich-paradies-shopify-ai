@@ -96,9 +96,35 @@ export function privatDir() {
   return process.env.TP_PRIVAT_DIR || path.join(os.homedir(), 'teppich-paradies-analyse');
 }
 
+/**
+ * Datei lesen, wenn sie da ist.
+ *
+ * Frueher verschluckte ein einziges catch jeden Fehler: eine fehlende Datei,
+ * kaputtes JSON und fehlende Leserechte wurden ununterscheidbar zu null - die
+ * Oberflaeche meldete dann "noch nicht exportiert", obwohl die Datei da, aber
+ * beschaedigt war. Fehlt sie wirklich, bleibt es still; alles andere landet
+ * im Serverprotokoll und ist ueber leseFehler(file) abrufbar.
+ */
+const leseFehlerCache = new Map();
+
 function readJsonIfExists(file) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+  try {
+    const roh = fs.readFileSync(file, 'utf8');
+    leseFehlerCache.delete(file);
+    return JSON.parse(roh);
+  } catch (e) {
+    if (e?.code === 'ENOENT') { leseFehlerCache.delete(file); return null; }
+    const text = e instanceof SyntaxError
+      ? 'Die Datei ist beschädigt (kein gültiges JSON).'
+      : e?.code === 'EACCES' ? 'Keine Leserechte für die Datei.' : String(e?.message || e).slice(0, 200);
+    leseFehlerCache.set(file, text);
+    console.error(`[daten] ${file}: ${text}`);
+    return null;
+  }
 }
+
+/** Grund, warum eine Datei nicht gelesen werden konnte - null, wenn sie schlicht fehlt. */
+export function leseFehler(file) { return leseFehlerCache.get(file) || null; }
 
 /** Wendet dieselben Filterchips wie alleKunden() auf Freitextsuchtreffer an (kundenListenEintrag-Form). */
 function passtZuKundenFilter(filter) {
@@ -890,7 +916,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(dir, 'lexikon', 'produkte.json');
       const daten = readJsonIfExists(file);
       if (!daten || !Array.isArray(daten.produkte)) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+        const kaputt = leseFehler(file);
+        return {
+          verfuegbar: false, quelle: file, fehler: Boolean(kaputt),
+          hinweis: kaputt || 'Noch keine Lexikon-Daten exportiert.',
+          befehl: 'npm run lexikon:export',
+        };
       }
       const suchtext = String(q || '').trim().toLowerCase();
       const treffer = suchtext
@@ -919,7 +950,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(dir, 'lexikon', 'produkte.json');
       const daten = readJsonIfExists(file);
       if (!daten || !Array.isArray(daten.produkte)) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+        const kaputt = leseFehler(file);
+        return {
+          verfuegbar: false, quelle: file, fehler: Boolean(kaputt),
+          hinweis: kaputt || 'Noch keine Lexikon-Daten exportiert.',
+          befehl: 'npm run lexikon:export',
+        };
       }
       const produkt = daten.produkte.find(p => p.handle === handle);
       if (!produkt) return { verfuegbar: false, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
@@ -965,7 +1001,12 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const file = path.join(dir, 'lexikon', 'produkte.json');
       const daten = readJsonIfExists(file);
       if (!daten || !Array.isArray(daten.produkte)) {
-        return { verfuegbar: false, quelle: file, hinweis: 'Noch keine Lexikon-Daten exportiert.', befehl: 'npm run lexikon:export' };
+        const kaputt = leseFehler(file);
+        return {
+          verfuegbar: false, quelle: file, fehler: Boolean(kaputt),
+          hinweis: kaputt || 'Noch keine Lexikon-Daten exportiert.',
+          befehl: 'npm run lexikon:export',
+        };
       }
       const produkt = daten.produkte.find(p => p.handle === handle);
       if (!produkt) return { verfuegbar: false, quelle: file, hinweis: `Kein Produkt mit Handle "${handle}" im Lexikon.` };
@@ -1314,6 +1355,33 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         verfuegbar: true, meine: zaehl(meine),
         team: zaehl(teamArbeit),
         naechste: orgSortiere(meine.filter(e => passtZuAnsicht(e, 'fokus', jetzt)), jetzt).slice(0, 5),
+      };
+    },
+
+    /**
+     * Was zu diesem Kunden notiert wurde. Die Verknuepfung entsteht beim
+     * Anlegen aus der Kundenakte heraus - ohne diese Liste sieht man in der
+     * Akte nicht, was beim letzten Anruf besprochen wurde.
+     */
+    orgZuKunde({ key = '', benutzer = null } = {}) {
+      const gesucht = String(key || '').trim();
+      if (!gesucht) return { verfuegbar: true, anzahl: 0, eintraege: [] };
+      const daten = orgLies(this._orgDatei());
+      // Bei gleichem Zeitstempel (zwei Notizen in derselben Sekunde) entscheidet
+      // die Reihenfolge in der Datei - sonst steht die aeltere oben.
+      const liste = this._orgSichtbar(daten, benutzer)
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => e.verknuepft?.art === 'kunde' && String(e.verknuepft.id || '') === gesucht)
+        .sort((a, b) => String(b.e.erstelltAm).localeCompare(String(a.e.erstelltAm)) || (b.i - a.i))
+        .map(({ e }) => e);
+      return {
+        verfuegbar: true,
+        anzahl: liste.length,
+        eintraege: liste.slice(0, 50).map(e => ({
+          id: e.id, typ: e.typ, titel: e.titel, beschreibung: e.beschreibung, status: e.status,
+          verantwortlich: e.verantwortlich, faellig: e.faellig, erstelltAm: e.erstelltAm,
+          kommentare: (e.kommentare ?? []).length,
+        })),
       };
     },
 

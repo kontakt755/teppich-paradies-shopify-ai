@@ -646,3 +646,41 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 }
 .titel-feld:hover { border-color: var(--line); }
 .titel-feld:focus { border-color: var(--accent); background: var(--surface); outline: none; }
+
+/* Einkaufstabellen am Handy: aus jeder Zeile wird eine Karte, die
+   Spaltenueberschrift steht als data-l in der Zelle. Vorher war die Tabelle
+   741 px breit in einem 351 px schmalen Rahmen - die halbe Zeile lag
+   ausserhalb des Bildes. */
+@media (max-width: 760px) {
+  .table-scroll table.tasks.compact { min-width: 0; width: 100%; }
+  .table-scroll table.tasks.compact thead { display: none; }
+  .table-scroll table.tasks.compact tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--surface);
+  }
+  /* Label ueber dem Wert statt daneben: "Artikelnummer beim Lieferanten"
+     brach sonst in drei Zeilen um und quetschte den Wert daneben. */
+  .table-scroll table.tasks.compact td {
+    display: block;
+    padding: 6px 0;
+    border: none;
+    border-top: 1px solid var(--line);
+  }
+  .table-scroll table.tasks.compact td:first-child { border-top: none; padding-top: 0; }
+  .table-scroll table.tasks.compact td::before {
+    content: attr(data-l);
+    display: block;
+    font-size: .72rem;
+    color: var(--text-2);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .02em;
+    margin-bottom: 2px;
+  }
+  .table-scroll table.tasks.compact td:empty { display: none; }
+  .table-scroll table.tasks.compact td.num { justify-items: start; }
+}
