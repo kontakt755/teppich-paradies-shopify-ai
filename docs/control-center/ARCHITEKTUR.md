@@ -91,15 +91,40 @@ irreführenden „Nur lokal erlaubt".
 **Einrichtung auf dem Mac mini** (er ist der Rechner, auf dem die Daten liegen, und bleibt an):
 
 ```
-brew install --cask tailscale-app     # einmalig
+brew install --cask tailscale-app     # einmalig, verlangt das Mac-Passwort
 tailscale up                          # oeffnet eine Adresse zum Anmelden
-tailscale serve --bg 8001             # HTTPS unter dem MagicDNS-Namen
-tailscale status                      # zeigt den Namen
+tailscale status                      # zeigt den Namen des Rechners im Tailnet
 ```
 
+Die CLI liegt bei der Standalone-App unter
+`/Applications/Tailscale.app/Contents/MacOS/Tailscale` und steht nicht von selbst im PATH.
+
+**HTTPS ist nicht automatisch dabei.** `tailscale serve --bg 8001` liefert das Dashboard unter
+`https://<name>.ts.net` aus – aber nur, wenn im Tailscale-Adminbereich unter *Settings → Feature
+previews* **HTTPS Certificates** eingeschaltet ist. Fehlt das, antwortet `tailscale cert` mit
+`your Tailscale account does not support getting TLS certs`, und `tailscale serve` bleibt haengen,
+statt einen Fehler zu zeigen. Ohne HTTPS laeuft der Zugriff ueber
+`http://<name>.ts.net:8001` – die Verbindung ist durch Tailscale (WireGuard) trotzdem verschluesselt,
+der Browser zeigt aber „Nicht sicher".
+
+**Schluesselablauf abschalten.** Tailscale laesst den Geraeteschluessel nach 180 Tagen ablaufen; der Mac
+mini faellt dann ohne Vorwarnung aus dem Tailnet und das Dashboard ist von unterwegs weg. Im
+Adminbereich unter *Machines* beim Mac mini **Disable key expiry** setzen. Fuer einen Rechner, der die
+Daten haelt, ist das keine Bequemlichkeit, sondern Betriebsvoraussetzung.
+
 Danach den Namen in den Dienst eintragen (`~/Library/LaunchAgents/net.teppich-paradies.dashboard.plist`,
-`EnvironmentVariables` → `TP_DASHBOARD_EXTRA_HOSTS`) und
-`launchctl kickstart -k gui/$(id -u)/net.teppich-paradies.dashboard`.
+`EnvironmentVariables` → `TP_DASHBOARD_EXTRA_HOSTS`). **`launchctl kickstart -k` reicht dafuer nicht** –
+es startet den Prozess neu, liest die geaenderte Datei aber nicht neu ein, sodass die Variable fehlt und
+jeder Zugriff ueber den Namen mit 403 endet. Richtig ist ab- und wieder anmelden:
+
+```
+launchctl bootout   gui/$(id -u)/net.teppich-paradies.dashboard
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.teppich-paradies.dashboard.plist
+```
+
+Gegenprobe, ohne das Passwort zu kennen: eine Anmeldung mit absichtlich falschem Passwort ueber den
+Namen muss `401 Name oder Passwort falsch` ergeben (die Herkunftspruefung ist passiert), ueber einen
+fremden Namen `403 Nur lokal erlaubt`.
 
 **Auf jedem weiteren Gerät:** Tailscale-App installieren, mit demselben Konto anmelden, fertig – das
 Dashboard ist dann unter `https://<name>.ts.net` erreichbar, auch am Handy über „Zum Home-Bildschirm".
