@@ -3311,9 +3311,33 @@ const ORG_BEREICHE = [
   ['archiv', 'Archiv'],
 ];
 const ORG_ANSICHTEN = [
-  ['fokus', 'Fokus'], ['heute', 'Heute'], ['dringend', 'Dringend'], ['woche', 'Diese Woche'],
-  ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
+  ['offen', 'Alles Offene'], ['fokus', 'Fokus'], ['heute', 'Heute'], ['dringend', 'Dringend'],
+  ['woche', 'Diese Woche'], ['spaeter', 'Später'], ['warten', 'Warten auf'], ['pruefung', 'In Prüfung'],
   ['ueberfaellig', 'Überfällig'], ['erledigt', 'Erledigt'],
+];
+/**
+ * Anweisung fuer ChatGPT. Das Dashboard kann Listen lesen - aber nur, wenn
+ * Titel und Erklaerung getrennt ankommen. Sonst steht spaeter eine Zeile da,
+ * die niemand mehr einordnen kann.
+ */
+const ORG_CHATGPT_PROMPT = `Du sammelst unsere offenen Punkte und gibst sie mir am Ende in einem Format, das ich in mein Dashboard einfuegen kann.
+
+Regeln fuer die Ausgabe:
+- Eine Zeile je Aufgabe, beginnend mit "- ".
+- Aufbau: - [Bereich] Kurzer Titel :: Was genau gemeint ist
+- Der Titel ist knapp (max. 8 Woerter) und beginnt mit einem Verb.
+- Nach "::" steht in ein bis drei Saetzen: worum es geht, warum es ansteht und woran man sieht, dass es fertig ist. Schreib es so, dass ich es in vier Wochen noch verstehe, ohne nachzufragen.
+- Erlaubte Bereiche: Website & KI, Online-Shop, Kunden, Bestellungen, Angebote / Lexware, Baustelle, Laden, Einkauf, Lieferanten, Marketing, Buchhaltung, Mitarbeiter, Lager, Fahrzeuge, Sonstiges.
+- Keine Ueberschriften, keine Nummerierung, keine Leerzeilen, kein Fliesstext davor oder danach - nur die Zeilen.
+- Keine Lieferantennamen, keine Kundendaten ueber den Namen hinaus, keine Passwoerter oder Zugangsdaten.
+- Was schon erledigt ist, laesst du weg.
+
+Beispiel:
+- [Online-Shop] Produktbilder ergaenzen :: 45 Produkte haben noch kein Bild. Ohne Bild bricht die Kaufentscheidung ab. Fertig, wenn die Liste im Dashboard leer ist.
+- [Kunden] Frau Meier zurueckrufen :: Sie fragt nach Mustern in Beige. Nummer steht im Angebot. Fertig, wenn Muster raus sind.`;
+
+const ORG_GRUPPEN = [
+  ['kunden', 'Kunden & Aufträge'], ['rest', 'Übriges'], ['', 'Alles'],
 ];
 const ORG_STATUS_LABEL = {
   INBOX: 'Eingang', PLANNED: 'Geplant', IN_PROGRESS: 'In Arbeit', REVIEW: 'Prüfung',
@@ -3332,16 +3356,20 @@ const ORG_PRUEF_LABEL = {
 function orgParams() {
   const p = state.route.params;
   const bereich = ORG_BEREICHE.map(b => b[0]).includes(p.get('ob')) ? p.get('ob') : 'meine-aufgaben';
-  const ansicht = ORG_ANSICHTEN.map(a => a[0]).includes(p.get('oa')) ? p.get('oa') : (bereich === 'team-aufgaben' ? 'alle' : 'fokus');
-  return { bereich, ansicht, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
+  // Standard ist alles Offene - eine Aufgabe, die keiner sieht, wird nicht erledigt.
+  const oa = p.get('oa');
+  const ansicht = (oa === 'alle' || ORG_ANSICHTEN.map(a => a[0]).includes(oa)) ? oa : 'offen';
+  const og = p.get('og');
+  const gruppe = ORG_GRUPPEN.map(g => g[0]).includes(og) ? og : 'kunden';
+  return { bereich, ansicht, gruppe, person: p.get('op') || '', q: p.get('oq') || '', id: p.get('oid') || '' };
 }
 
 function ensureOrgListe() {
-  const { bereich, ansicht, person, q } = orgParams();
-  const key = `${bereich}|${ansicht}|${person}|${q}`;
+  const { bereich, ansicht, gruppe, person, q } = orgParams();
+  const key = `${bereich}|${ansicht}|${gruppe}|${person}|${q}`;
   if (org.key === key && (org.liste || org.loading)) return;
   org.key = key; org.loading = true;
-  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, person, q })}`).then(d => {
+  fetchEinkauf(`/api/org/liste?${new URLSearchParams({ bereich, ansicht, gruppe, person, q })}`).then(d => {
     if (org.key !== key) return;            // Antwort einer aelteren Eingabe
     org.liste = d; org.loading = false;
     if (state.route.view === 'organisation') render();
@@ -3409,6 +3437,7 @@ function orgZeile(e, { bereich = '' } = {}) {
         ${e.typ === 'NOTE' && !inNotizAnsicht ? '<span class="badge plain">Notiz</span>' : ''}
         ${e.sichtbarkeit === 'PRIVAT' && bereich !== 'meine-notizen' ? '<span class="badge plain">privat</span>' : ''}
       </div>
+      ${e.beschreibung ? `<div class="m org-was">${esc(String(e.beschreibung).replace(/\s+/g, ' ').slice(0, 220))}${String(e.beschreibung).length > 220 ? ' …' : ''}</div>` : ''}
       <div class="m">${merkmale.join(' · ')}</div>
     </div>
     <div class="r">
@@ -3506,7 +3535,7 @@ function viewOrganisation() {
     return `<div class="page-head"><div><h1>Aufgaben &amp; Organisation</h1></div></div>
       ${emptyState('Nur lokal im Betrieb verfügbar.', 'Dieser Bereich enthält interne Aufgaben und Notizen, die nie öffentlich werden. Auf dem Mac starten: npm run dashboard')}`;
   }
-  const { bereich, ansicht, person, q, id } = orgParams();
+  const { bereich, ansicht, gruppe, person, q, id } = orgParams();
   if (id) return orgDetailAnsicht(id);
 
   ensureOrgListe();
@@ -3519,8 +3548,15 @@ function viewOrganisation() {
 
   const ansichten = ['meine-aufgaben', 'team-aufgaben'].includes(bereich)
     ? `<div class="chips" style="margin:8px 0"><span class="small muted chip-label">Zeigen:</span>
-        ${bereich === 'team-aufgaben' ? `<button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>` : ''}
-        ${ORG_ANSICHTEN.map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
+        ${ORG_ANSICHTEN.map(([k, l]) => `<button type="button" class="chip" data-param="oa" data-value="${k === 'offen' ? '' : k}" aria-pressed="${ansicht === k}">${esc(l)}</button>`).join('')}
+        <button type="button" class="chip" data-param="oa" data-value="alle" aria-pressed="${ansicht === 'alle'}">Alle</button>
+      </div>` : '';
+
+  // Das Team sucht hier Kunden, Bestellungen und kleine Auftraege - alles
+  // andere Geschaeftliche steht daneben, aber nicht im Weg.
+  const gruppen = bereich === 'team-aufgaben'
+    ? `<div class="chips" style="margin:0 0 8px"><span class="small muted chip-label">Worum:</span>
+        ${ORG_GRUPPEN.map(([k, l]) => `<button type="button" class="chip" data-param="og" data-value="${k}" aria-pressed="${gruppe === k}">${esc(l)}</button>`).join('')}
       </div>` : '';
 
   const personen = bereich === 'team-aufgaben'
@@ -3548,7 +3584,7 @@ function viewOrganisation() {
     ? `<div class="rows">${d.eintraege.map(e => orgZeile(e, { bereich })).join('')}</div>`
     : emptyState(bereich === 'meine-aufgaben' ? 'Nichts offen in dieser Ansicht.' : 'Nichts vorhanden.', 'Mit „+ Schnell erfassen" etwas anlegen.');
 
-  return kopf + reiter + suche + ansichten + personen +
+  return kopf + reiter + suche + ansichten + gruppen + personen +
     `<p class="small muted" style="margin:0 0 8px">${d.anzahl} ${d.anzahl === 1 ? 'Eintrag' : 'Einträge'}</p>` + liste;
 }
 
@@ -3685,8 +3721,15 @@ function openOrgListe() {
   const root = $('#dialogRoot');
   root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Liste einfügen" style="max-width:720px">
     <h2>Liste einfügen</h2>
-    <p class="small muted">Eine Zeile je Aufgabe. Aufzählungszeichen, Nummerierung und Kästchen werden entfernt, Überschriften übersprungen.</p>
-    <textarea id="orgListeText" rows="7" style="width:100%;box-sizing:border-box" placeholder="- Logo im Shop austauschen&#10;- Vinylpreise beim Lieferanten prüfen&#10;- Ben soll die Tarkett-Muster bestellen"></textarea>
+    <p class="small muted">Eine Zeile je Aufgabe. Nach <code>::</code> steht, was genau gemeint ist; ein <code>[Bereich]</code> davor setzt den Bereich. Aufzählungszeichen und Überschriften fallen weg.</p>
+    <textarea id="orgListeText" rows="8" style="width:100%;box-sizing:border-box" placeholder="- [Online-Shop] Produktbilder ergänzen :: 45 Produkte haben kein Bild, Liste steht im Dashboard&#10;- [Kunden] Frau Meier zurückrufen :: will Muster in Beige, Nummer im Angebot&#10;- [Website & KI] Preisformel prüfen :: nach dem Fix alle Kollektionen gegenprüfen"></textarea>
+    <label class="small" style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <input type="checkbox" id="orgListeMir" checked> Alles mir zuweisen (sonst entscheidet der Bereich)
+    </label>
+    <details style="margin-top:8px"><summary class="small">Anweisung für ChatGPT zum Kopieren</summary>
+      <textarea id="orgListePrompt" rows="8" readonly style="width:100%;box-sizing:border-box;margin-top:6px">${esc(ORG_CHATGPT_PROMPT)}</textarea>
+      <button type="button" class="btn btn-sm" id="orgListePromptKopieren" style="margin-top:6px">Anweisung kopieren</button>
+    </details>
     <div class="toolbar" style="margin-top:8px"><button type="button" class="btn" id="orgListeVorschau">Vorschau</button></div>
     <div id="orgListeErgebnis" class="small" style="margin-top:10px"></div>
     <div class="dialog-actions">
@@ -3709,6 +3752,7 @@ function openOrgListe() {
           <div class="t"><label style="display:flex;gap:8px;align-items:flex-start">
             <input type="checkbox" data-org-liste-an="${i}" ${v.doppelgaenger?.length ? '' : 'checked'}>
             <span>${esc(v.titel)}</span></label></div>
+          ${v.beschreibung && v.beschreibung !== v.titel ? `<div class="m org-was">${esc(v.beschreibung)}</div>` : ''}
           <div class="m">${esc(v.typ === 'TASK' ? 'Aufgabe' : 'Notiz')}${v.bereich ? ` · ${esc(v.bereich)}` : ''}${v.verantwortlich ? ` · für ${esc(v.verantwortlich)}` : ''}${v.faellig ? ` · fällig ${esc(fmtDate(v.faellig))}` : ''}</div>
           ${v.doppelgaenger?.length ? `<div class="m warnc">Gibt es vielleicht schon: ${v.doppelgaenger.map(d => esc(d.titel)).join(' · ')} – standardmäßig abgewählt</div>` : ''}
         </div>
@@ -3718,6 +3762,11 @@ function openOrgListe() {
 
   root.addEventListener('click', async (e) => {
     if (!lebt()) return;
+    if (e.target.closest('#orgListePromptKopieren')) {
+      try { await navigator.clipboard.writeText(ORG_CHATGPT_PROMPT); toast('Anweisung kopiert'); }
+      catch { $('#orgListePrompt')?.select(); toast('Bitte von Hand kopieren', 'crit'); }
+      return;
+    }
     if (e.target.closest('#orgListeVorschau')) {
       const text = $('#orgListeText').value;
       try {
@@ -3731,10 +3780,12 @@ function openOrgListe() {
       const knopf = $('#orgListeSpeichern');
       const gewaehlt = vorschlaege.filter((_, i) => root.querySelector(`[data-org-liste-an="${i}"]`)?.checked);
       if (!gewaehlt.length) { toast('Nichts ausgewählt', 'crit'); return; }
+      const mir = $('#orgListeMir')?.checked ? (org.liste?.ich || null) : null;
       knopf.disabled = true; knopf.textContent = 'Lege an …';
       try {
         const r = await orgSchreiben('/api/org/liste-einfuegen', { speichern: true, zeilen: gewaehlt.map(v => ({
-          typ: v.typ, titel: v.titel, beschreibung: v.beschreibung, verantwortlich: v.verantwortlich,
+          typ: v.typ, titel: v.titel, beschreibung: v.beschreibung,
+          verantwortlich: v.typ === 'TASK' && mir ? mir : v.verantwortlich,
           bereich: v.bereich, prioritaet: v.prioritaet, faellig: v.faellig, sichtbarkeit: v.sichtbarkeit,
         })) });
         toast(`${r.angelegt} ${r.angelegt === 1 ? 'Eintrag' : 'Einträge'} angelegt`);
@@ -3757,7 +3808,7 @@ function heuteOrganisation() {
   const meine = [
     // "offen" zuerst: ohne sie blieb das Widget leer, solange nichts faellig
     // oder dringend war - obwohl Aufgaben dalagen.
-    zahl(k.meine.offen, 'offen', 'plain', 'oa=fokus'),
+    zahl(k.meine.offen, 'offen', 'plain', 'oa='),
     zahl(k.meine.ueberfaellig, 'überfällig', 'crit', 'oa=ueberfaellig'),
     zahl(k.meine.heute, 'heute fällig', 'warn', 'oa=heute'),
     zahl(k.meine.dringend, 'dringend', 'crit', 'oa=dringend'),
