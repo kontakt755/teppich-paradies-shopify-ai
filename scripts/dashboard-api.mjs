@@ -709,10 +709,16 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       return { verfuegbar: true, zeilen };
     },
 
-    /** Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt), rein lokal. */
-    async kundenRueckrufSetzen(payload = {}) {
-      const actor = await currentUser();
-      if (!actor) throw new ApiError(403, 'gh ist nicht angemeldet – keine Schreibaktion möglich');
+    /**
+     * Setzt den Bearbeitungsstatus eines Rueckrufs (offen/angerufen/erledigt).
+     *
+     * Rein lokal - es wird eine JSON-Datei geschrieben, nichts auf GitHub.
+     * Frueher verlangte diese Funktion trotzdem ein angemeldetes gh und brach
+     * sonst mit 403 ab; ausserdem stand am Eintrag der GitHub-Login statt der
+     * Person, die wirklich angerufen hat.
+     */
+    async kundenRueckrufSetzen(payload = {}, benutzer = null) {
+      const actor = benutzer?.name || benutzer?.kuerzel || await currentUser() || 'Unbekannt';
       const { orderId, status, notiz } = payload || {};
       if (!orderId) throw new ApiError(400, 'orderId ist Pflicht');
       if (!RUECKRUF_STATUS.includes(status)) throw new ApiError(400, `Unbekannter Status „${status}"`, { missing: [`Status muss einer von ${RUECKRUF_STATUS.join(', ')} sein`] });
@@ -726,6 +732,7 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         throw e;
       }
       audit({ actor, action: 'rueckruf', orderId, status });
+      merke(benutzer, actor, 'Rückruf', `${orderId}: ${status}`);
       return { ok: true, eintrag };
     },
 
@@ -1052,7 +1059,9 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       }
       return {
         verfuegbar: true, quelle: datei, bereiche: daten.bereiche, team: this.orgTeam(), ich,
-        anzahl: liste.length, eintraege: orgSortiere(liste, jetzt).slice(0, 200),
+        anzahl: liste.length,
+        eintraege: orgSortiere(liste, jetzt).slice(0, 200)
+          .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
       };
     },
 

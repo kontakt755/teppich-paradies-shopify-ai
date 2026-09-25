@@ -2184,6 +2184,7 @@ function rueckrufZeileHtml(z) {
       <div class="m">${esc(z.thema)}${z.wunschzeit ? ` · Wunschzeit: ${esc(z.wunschzeit)}` : ''} · seit ${fmtDate(z.datum)}</div>
       <div class="tel-gross">${telLink(z.telefon)}</div>
       ${z.notiz ? `<div class="small muted">Notiz: ${esc(z.notiz)}</div>` : ''}
+      ${z.aktualisiertVon ? `<div class="small muted">Zuletzt: ${esc(z.aktualisiertVon)}${z.aktualisiertAm ? ` am ${esc(fmtDate(z.aktualisiertAm))}` : ''}</div>` : ''}
     </div>
     <div class="r rueckruf-actions">
       <span class="badge ${z.status === 'erledigt' ? 'ok' : z.status === 'angerufen' ? 'plain' : 'gap'}">${esc(RUECKRUF_STATUS_LABEL[z.status])}</span>
@@ -2309,10 +2310,16 @@ function viewKundenDetail(key) {
   return zurueck + `
     <section class="card">
       <div class="card-head"><h2>${esc(k.kunde.name)}${kundenFortschrittBadge(k.fortschritt)}</h2><span class="small">${plural(k.anzahlBestellungen, 'Bestellung', 'Bestellungen')} · ${geldText({ betrag: k.gesamtumsatz, waehrung: k.waehrung })}</span></div>
-      <p class="small">E-Mail: ${k.kunde.email !== '–' ? esc(k.kunde.email) : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
+      <p class="small">E-Mail: ${k.kunde.email !== '–'
+        ? `<a href="mailto:${esc(k.kunde.email)}">${esc(k.kunde.email)}</a>`
+        : '–'} · Telefon: ${telLink(k.kunde.telefon)}</p>
       <div class="kunden-adressen">
         ${adresseHtml(k.lieferadresse, 'Lieferadresse')}
         ${adresseHtml(k.rechnungsadresse, 'Rechnungsadresse')}
+      </div>
+      <div class="toolbar no-print" style="margin-top:10px">
+        <button type="button" class="btn btn-primary" data-kunde-aufgabe="${esc(key)}" data-kunde-name="${esc(k.kunde.name)}"
+          title="Notiz oder Aufgabe zu diesem Kunden – der Bezug bleibt erhalten">+ Aufgabe zu diesem Kunden</button>
       </div>
     </section>
     <h2 style="margin-top:18px">Bestellungen</h2>
@@ -3482,8 +3489,16 @@ function orgFaelligText(e) {
  * ist "Notiz" und "privat" selbstverstaendlich und damit Rauschen.
  */
 function orgZeile(e, { bereich = '' } = {}) {
+  // Der Server liefert je Eintrag mit, ob man ihn aendern darf. Ohne das
+  // standen Knoepfe da, die in einer Fehlermeldung endeten.
+  const darf = e.darfAendern !== false && !istNurLesend();
+  const istMeine = e.verantwortlich && org.liste?.ich
+    && String(e.verantwortlich).toLowerCase() === String(org.liste.ich).toLowerCase();
   const prioKlasse = e.prioritaet === 'URGENT' ? 'crit' : e.prioritaet === 'HIGH' ? 'gap' : 'plain';
   const merkmale = [
+    e.verknuepft?.art === 'kunde' && e.verknuepft.id
+      ? `<a href="#/kunden?key=${encodeURIComponent(e.verknuepft.id)}" onclick="event.stopPropagation()">${esc(e.verknuepft.titel || 'Kunde')}</a>`
+      : '',
     e.bereich ? esc(e.bereich) : '',
     e.verantwortlich ? `für ${esc(e.verantwortlich)}` : (e.typ === 'TASK' ? '<span class="muted">unzugewiesen</span>' : ''),
     orgFaelligText(e),
@@ -3502,8 +3517,12 @@ function orgZeile(e, { bereich = '' } = {}) {
     </div>
     <div class="r">
       ${e.typ === 'TASK' ? `<span class="badge status ${esc(e.status.toLowerCase())}">${esc(ORG_STATUS_LABEL[e.status] || e.status)}</span>` : ''}
-      ${e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
-      ${e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
+      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && !e.verantwortlich
+        ? `<button type="button" class="btn btn-sm" data-org-uebernehmen="${esc(e.id)}" onclick="event.stopPropagation()" title="Diese Aufgabe auf deinen Namen setzen">Ich mache das</button>` : ''}
+      ${darf && e.typ === 'TASK' && e.status !== 'DONE' && istMeine
+        ? `<button type="button" class="btn btn-sm" data-org-abgeben="${esc(e.id)}" onclick="event.stopPropagation()" title="Zurück ins Team legen">Abgeben</button>` : ''}
+      ${darf && e.typ === 'TASK' && e.status !== 'DONE' ? `<button type="button" class="btn btn-sm" data-org-fertig="${esc(e.id)}" onclick="event.stopPropagation()" title="Aufgabe abhaken">✓ Abhaken</button>` : ''}
+      ${darf && e.typ === 'NOTE' ? `<button type="button" class="btn btn-sm" data-org-zuaufgabe="${esc(e.id)}" onclick="event.stopPropagation()" title="Aus dieser Notiz eine Aufgabe machen">In Aufgabe umwandeln</button>` : ''}
     </div>
   </div>`;
 }
@@ -3930,7 +3949,12 @@ function viewOrganisation() {
  * (Typ, Person, Bereich, Priorität, Fälligkeit) erscheint erst nach der
  * Eingabe und ist immer aenderbar - er haelt niemanden auf.
  */
-function openOrgSchnell(vorbelegt = '') {
+/**
+ * @param vorbelegt  Text, der schon im Feld steht
+ * @param verknuepft {art, id, titel} - woraus die Aufgabe entstanden ist, z. B.
+ *   ein Kunde. Damit fuehrt die Aufgabe spaeter wieder dorthin zurueck.
+ */
+function openOrgSchnell(vorbelegt = '', verknuepft = null) {
   const root = $('#dialogRoot');
   root.innerHTML = `<div class="dialog-backdrop" data-close-dialog><div class="dialog" role="dialog" aria-modal="true" aria-label="Schnell erfassen" style="max-width:560px">
     <h2>Schnell erfassen</h2>
@@ -4010,6 +4034,7 @@ function openOrgSchnell(vorbelegt = '') {
       prioritaet: $('#orgPrio')?.value || 'NORMAL',
       faellig: $('#orgFaellig')?.value || null,
       sichtbarkeit: $('#orgSicht')?.value || (($('#orgTyp')?.value || 'TASK') === 'NOTE' ? 'PRIVAT' : 'TEAM'),
+      ...(verknuepft ? { verknuepft } : {}),
     };
   };
 
@@ -4339,6 +4364,31 @@ function bindEvents() {
       const aktiv = ts.dataset.aktiv === 'true';
       teamSchreiben({ was: aktiv ? 'sperren' : 'entsperren', kuerzel: ts.dataset.teamSperren },
         aktiv ? 'Zugang gesperrt' : 'Zugang wieder frei');
+      return;
+    }
+    const ka = e.target.closest('[data-kunde-aufgabe]');
+    if (ka) {
+      e.preventDefault();
+      // Am Telefon notiert man mitten im Gespraech. Der Kundenname steht
+      // schon da, und die Aufgabe findet spaeter zum Kunden zurueck.
+      openOrgSchnell(`${ka.dataset.kundeName}: `,
+        { art: 'kunde', id: ka.dataset.kundeAufgabe, titel: ka.dataset.kundeName });
+      return;
+    }
+    const ueb = e.target.closest('[data-org-uebernehmen]');
+    if (ueb) {
+      e.preventDefault(); e.stopPropagation();
+      orgSchreiben('/api/org/aendern', { id: ueb.dataset.orgUebernehmen, felder: { verantwortlich: org.liste?.ich || null } })
+        .then(() => { toast('Steht jetzt auf deinem Namen'); orgFrisch(); render(); })
+        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
+      return;
+    }
+    const abg = e.target.closest('[data-org-abgeben]');
+    if (abg) {
+      e.preventDefault(); e.stopPropagation();
+      orgSchreiben('/api/org/aendern', { id: abg.dataset.orgAbgeben, felder: { verantwortlich: null } })
+        .then(() => { toast('Zurück ins Team gelegt'); orgFrisch(); render(); })
+        .catch(err => toast(`Fehler: ${err.message}`, 'crit'));
       return;
     }
     if (e.target.closest('[data-org-fuer-chatgpt]')) { e.preventDefault(); openOrgFuerChatGPT(); return; }

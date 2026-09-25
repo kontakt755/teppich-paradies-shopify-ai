@@ -233,7 +233,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     }
     else if (simple === 'kunden/bestellung-fertig') result = await api.kundenBestellungFertig(await readJson(req), benutzer);
     else if (simple === 'kunden/rueckrufe' && req.method === 'GET') result = api.kundenRueckrufe();
-    else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req));
+    else if (simple === 'kunden/rueckrufe' && req.method === 'POST') result = await api.kundenRueckrufSetzen(await readJson(req), benutzer);
     else if (simple === 'kunden/liste') result = api.kundenListe({ q: url.searchParams.get('q') || '' });
     else if (simple === 'angebote/liste') result = api.angeboteListe();
     else if (simple === 'warenkoerbe/liste') result = api.warenkoerbeListe();
