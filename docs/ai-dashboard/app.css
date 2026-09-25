@@ -564,6 +564,12 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .fall-sofort { border-left: 3px solid var(--crit); }
 .fall-punkte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .fall-punkt { padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius); display: flex; flex-direction: column; gap: 3px; }
+/* Hier steht im Etikett ein ganzer Satz ("Beim Lieferanten bestellen - bezahlt,
+   noch nichts bestellt"), kein kurzes Wort. Mit dem nowrap aus .badge wird es
+   am Handy breiter als das Fenster (gemessen 398 px bei 390 px) und die Seite
+   laesst sich seitwaerts schieben. Nur hier umbrechen lassen - kurze Etiketten
+   sollen weiterhin nicht mitten im Wort brechen. */
+.fall-punkt .badge { white-space: normal; text-align: left; }
 
 /* Aufgaben & Organisation */
 .org-zeile.fertig { opacity: .6; }
@@ -614,6 +620,14 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   .btn, .btn-sm, .chip, .tab, .mainnav a, .seg button { min-height: 44px; }
   .btn-sm { padding: 8px 14px; }
   input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  /* Safari auf dem iPhone zoomt in die Seite hinein, sobald ein Eingabefeld
+     mit weniger als 16px Schrift den Fokus bekommt - und zoomt nicht wieder
+     heraus. Wer auf der Baustelle die Auftragsnummer eintippt, arbeitet danach
+     in einer verschobenen, vergroesserten Ansicht weiter. Die Felder standen
+     auf .88rem (14 px), die Dialogfelder sogar auf dem Browser-Standard. */
+  input, select, textarea,
+  .toolbar input[type="search"], .toolbar select,
+  .field input, .field select, .field textarea { font-size: 16px; }
 }
 
 /* Das Handy-Menue lief unten aus dem Bild und liess sich nicht schieben. */

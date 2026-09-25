@@ -327,7 +327,11 @@ function renderSyncChip() {
   chip.className = `sync-chip ${state.loadError ? 'fehler' : fr.level}`;
   // Kurz halten: der Chip darf in der Kopfzeile nicht umbrechen. Details stehen im Tooltip.
   const uhrzeit = state.raw?.generated_at ? new Date(state.raw.generated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '–';
-  txt.textContent = state.loadError ? 'Daten fehlen' : `Stand ${uhrzeit}`;
+  // "Stand 14:30" liest sich wie der Stand aller Zahlen im Dashboard. Der Wert
+  // kommt aber allein aus issues.json, also von den Entwicklungsaufgaben; die
+  // Betriebsdaten (Bestellungen, Kunden, Lexikon) haben eigene, meist aeltere
+  // Zeitpunkte in aktualisierung.json. Deshalb steht dran, wovon er gilt.
+  txt.textContent = state.loadError ? 'Daten fehlen' : `Aufgaben ${uhrzeit}`;
   chip.title = state.loadError ? state.loadError : `Aufgabendaten ${fr.text} · ${fmtDateTime(state.raw?.generated_at)} · ${state.raw?.count ?? 0} Aufgaben · Klick: Systemzustand`;
 }
 
@@ -1942,17 +1946,21 @@ function bestellZeile(v) {
   const linkZelle = v.link?.status === 'vorhanden'
     ? `<a class="btn btn-sm" href="${esc(e.url)}" target="_blank" rel="noopener">Beim Lieferanten öffnen ↗</a>`
     : `<div class="small muted">${esc(v.link?.grund || 'kein Link hinterlegt')}</div>${v.link?.suchlink ? `<a class="small" href="${esc(v.link.suchlink)}" target="_blank" rel="noopener">Beim Lieferanten suchen ↗</a>` : ''}`;
+  // data-l traegt die Spaltenueberschrift; am Handy wird daraus eine Karte
+  // (app.css, .table-scroll table.tasks.compact). Ohne sie stand die Tabelle
+  // mit zehn Spalten auf 980 px fest - die Artikelnummer, wegen der man diese
+  // Ansicht ueberhaupt oeffnet, lag ausserhalb des Bildes.
   return `<tr>
-    <td>${lexWert(v.farbe)}</td>
-    <td>${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
-    <td>${lexWert(e.lieferant)}</td>
-    <td>${artikelZelle}</td>
-    <td>${lexWert(e.farbnummer)}</td>
-    <td>${lexWert(e.bestelleinheit)}</td>
-    <td>${preisZelle(v)}</td>
-    <td>${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
-    <td>${e.lieferweg ? esc(LIEFERWEG_LABEL[e.lieferweg] || e.lieferweg) : NICHT_HINTERLEGT}</td>
-    <td>${linkZelle}</td>
+    <td data-l="Farbe">${lexWert(v.farbe)}</td>
+    <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
+    <td data-l="Lieferant">${lexWert(e.lieferant)}</td>
+    <td data-l="Artikelnummer">${artikelZelle}</td>
+    <td data-l="Farbnummer">${lexWert(e.farbnummer)}</td>
+    <td data-l="Bestelleinheit">${lexWert(e.bestelleinheit)}</td>
+    <td data-l="Preis">${preisZelle(v)}</td>
+    <td data-l="Verfügbar">${v.verfuegbar === true ? 'Ja' : v.verfuegbar === false ? 'Nein' : NICHT_HINTERLEGT}</td>
+    <td data-l="Lieferweg">${e.lieferweg ? esc(LIEFERWEG_LABEL[e.lieferweg] || e.lieferweg) : NICHT_HINTERLEGT}</td>
+    <td data-l="Lieferantenseite">${linkZelle}</td>
   </tr>`;
 }
 
@@ -1965,10 +1973,10 @@ function musterBestellZeile(v) {
     ? `<a class="btn btn-sm" href="${esc(o.url)}" target="_blank" rel="noopener">Original beim Lieferanten ↗</a>`
     : `<div class="small muted">${esc(o.grund || 'kein Original hinterlegt')}</div>`;
   return `<tr>
-    <td>${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
-    <td>${lexWert(o.lieferant)}</td>
-    <td>${artikelZelle}<div class="small muted">Original beim Lieferanten – das Muster selbst hat keine eigene Artikelnummer</div></td>
-    <td>${linkZelle}</td>
+    <td data-l="Unsere SKU">${v.sku ? `<code class="mono">${esc(v.sku)}</code>` : NICHT_HINTERLEGT}</td>
+    <td data-l="Lieferant">${lexWert(o.lieferant)}</td>
+    <td data-l="Original-Artikelnummer">${artikelZelle}<div class="small muted">Original beim Lieferanten – das Muster selbst hat keine eigene Artikelnummer</div></td>
+    <td data-l="Original beim Lieferanten">${linkZelle}</td>
   </tr>`;
 }
 
@@ -2039,9 +2047,9 @@ function viewLexikonDetail(handle) {
   const zielVariante = normaleVarianten[0] || alleVarianten[0];
 
   const bestellTabelle = musterVarianten.length
-    ? `<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
+    ? `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Unsere SKU</th><th>Lieferant</th><th>Original-Artikelnummer</th><th>Original beim Lieferanten</th></tr></thead>
       <tbody>${musterVarianten.map(musterBestellZeile).join('')}</tbody></table></div>`
-    : `<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
+    : `<div class="table-scroll"><table class="tasks compact"><thead><tr><th>Farbe</th><th>Unsere SKU</th><th>Lieferant</th><th>Artikelnummer</th><th>Farbnummer</th><th>Bestelleinheit</th><th>Preis</th><th>Verfügbar</th><th>Lieferweg</th><th>Lieferantenseite</th></tr></thead>
       <tbody>${normaleVarianten.map(bestellZeile).join('') || `<tr><td colspan="10">${NICHT_HINTERLEGT}</td></tr>`}</tbody></table></div>
       ${wunschmassVarianten.length ? `<p class="small muted" style="margin:10px 0 0">Wunschmaß (${wunschmassVarianten.length} Variante${wunschmassVarianten.length === 1 ? '' : 'n'}): wird erst beim Zuschnitt bestellt, deshalb hier ohne eigene Artikelnummer – keine fehlende Angabe.</p>` : ''}
       ${p.eigenschaften?.qmProPaket ? `<p class="small muted" style="margin:6px 0 0">m² pro Paket: ${esc(p.eigenschaften.qmProPaket)}</p>` : ''}
@@ -2216,9 +2224,17 @@ function heuteNichtLiegenLassen() {
       zeilen.push(bandItem(liste.length, `liegengebliebene Warenkörbe (${summe.toFixed(0)} €)`, 'warn', '#/kunden?tab=warenkoerbe'));
     }
   }
-  if (!zeilen.length) return '';
+  // Eine Quelle, die gar nicht geladen werden konnte, darf nicht wie "nichts zu
+  // tun" aussehen. Bisher verschwand der ganze Block stillschweigend - genau
+  // dann, wenn jemand ihn am noetigsten braucht. `fehler` unterscheidet den
+  // Ausfall von "Datei noch nicht exportiert" (dann fehlt die Quelle einfach).
+  const gestoert = [[b, 'Bestellungen'], [a, 'Angebote'], [w, 'Warenkörbe']]
+    .filter(([q]) => q && q.fehler)
+    .map(([, name]) => name);
+  if (!zeilen.length && !gestoert.length) return '';
   return `<h2 class="section-title">Nicht liegen lassen <span class="section-note">Kunden, die schon gekauft oder gefragt haben</span></h2>
-    <div class="band">${zeilen.join('')}</div>
+    ${gestoert.length ? stoerungState({ hinweis: `Betroffen: ${gestoert.join(', ')}. Solange diese Daten fehlen, kann hier etwas übersehen werden.` }, `${gestoert.length === 1 ? 'Eine Quelle' : `${gestoert.length} Quellen`} dieses Blocks`) : ''}
+    ${zeilen.length ? `<div class="band">${zeilen.join('')}</div>` : ''}
     ${aeltesterVersand ? `<p class="small muted" style="margin:6px 0 0">Älteste unversandte Bestellung vom ${esc(fmtDate(aeltesterVersand))}.</p>` : ''}`;
 }
 
@@ -2887,7 +2903,10 @@ function f_badge() {
 }
 
 function r_badge() {
-  const n = (kunden.rueckrufe?.zeilen || []).filter(z => z.status !== 'erledigt').length;
+  // Dieselbe Bedingung wie die Liste darunter (viewKundenRueckrufe) und wie der
+  // Startseitenblock: ohne das !testbestellung stand am Reiter eine hoehere
+  // Zahl als Eintraege zu sehen waren, und man suchte die fehlenden.
+  const n = (kunden.rueckrufe?.zeilen || []).filter(z => z.status !== 'erledigt' && !z.testbestellung).length;
   return n ? ` <span class="badge gap">${n}</span>` : '';
 }
 
@@ -3186,7 +3205,7 @@ function paletteFernSuche(q, fertig) {
 function paletteItems(q) {
   const items = [];
   for (const k of paletteFern.kunden) {
-    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { key: k.key }) });
+    items.push({ kind: 'Kunde', label: k.name || 'ohne Namen', sub: [k.ort, k.telefon].filter(x => x && x !== '–').join(' · ') || undefined, treffer: true, run: () => navigate('kunden', { kunde: k.key }) });
   }
   for (const p of paletteFern.produkte) {
     items.push({ kind: 'Produkt', label: p.titel, sub: p.produktgruppe || undefined, treffer: true, run: () => navigate('lexikon', { handle: p.handle }) });
@@ -3279,6 +3298,32 @@ async function aktualisierenNow() {
   } catch (e) { toast(`Aktualisierung fehlgeschlagen: ${e.message}`, 'crit'); }
 }
 
+/**
+ * Alles verwerfen, was aus den privaten Datendateien stammt. Jede ensure*-
+ * Funktion steigt sofort wieder aus, solange ihr Feld gefuellt ist - ohne
+ * dieses Leeren meldete "Jetzt aktualisieren" zwar Erfolg, aber Heute, Einkauf
+ * und Kunden zeigten weiter die Zahlen vom Seitenaufruf. Der Knopf sagte damit
+ * die Unwahrheit, und niemand konnte sehen, dass er nichts bewirkt hat.
+ *
+ * Nicht geleert wird, was nicht aus diesen Dateien kommt: die Aufgabenliste
+ * (org, GitHub bzw. eintraege.json) und der Zustand der Oberflaeche selbst
+ * (aufgeklappte Zeilen, Entwuerfe) - sonst verlaere der Benutzer beim
+ * Aktualisieren seine Arbeit.
+ */
+function verwirfDatenspeicher() {
+  Object.assign(einkauf, {
+    bestellungen: null, produktstatus: null, produktstatusKey: null,
+    auftragsstatus: null, kennzahlen: null,
+  });
+  Object.assign(kunden, {
+    suche: null, sucheKey: null, detail: null, detailKey: null,
+    rueckrufe: null, bestellungen: null, angebote: null, faelle: null,
+    warenkoerbe: null, notizen: null, notizenKey: null,
+  });
+  Object.assign(lexikon, { liste: null, listeKey: null, produkt: null, produktKey: null });
+  shopwache.daten = null;
+}
+
 function pollAktualisierung() {
   clearTimeout(einkauf.aktualisierungPollTimer);
   einkauf.aktualisierungPollTimer = setTimeout(async () => {
@@ -3286,8 +3331,13 @@ function pollAktualisierung() {
     einkauf.aktualisierung = d;
     einkauf.aktualisierungLaeuft = !!d.laeuft;
     if (einkauf.aktualisierungLaeuft) { pollAktualisierung(); return; }
-    toast('Aktualisierung abgeschlossen.');
-    if (state.route.view === 'heute' || state.route.view === 'einkauf' || state.route.view === 'insights') render();
+    verwirfDatenspeicher();
+    const geholt = Object.values(d.teile || {}).filter(t => t.erfolg).length;
+    const gesamt = Object.keys(d.teile || {}).length;
+    toast(gesamt && geholt < gesamt
+      ? `Aktualisierung fertig – ${geholt} von ${gesamt} Quellen erneuert, der Rest steht im Systemzustand.`
+      : 'Aktualisierung abgeschlossen – die Ansichten zeigen jetzt den neuen Stand.');
+    render();
   }, 2000);
 }
 
@@ -3309,7 +3359,7 @@ function viewHilfe() {
     ${hilfeKarte('Morgens: Seite „Heute"', `
       <p>Ganz oben steht das Kundengeschäft: offene Aufträge, was noch beim Lieferanten bestellt werden muss, Muster.</p>
       <p><b>Nicht liegen lassen</b> darunter ist Geld, das schon im Haus war: bezahlte Bestellungen ohne Versand, Angebote, auf die jemand wartet, und abgebrochene Warenkörbe. Erscheint der Block nicht, gibt es dort nichts zu tun.</p>
-      <p class="small muted">Rechts oben steht, wann die Daten zuletzt geholt wurden. „Jetzt aktualisieren" holt sie neu.</p>`)}
+      <p class="small muted">Rechts oben steht, wann die <b>Aufgaben</b> zuletzt geholt wurden – nur die. Wie alt die Bestell-, Kunden- und Lexikondaten sind, steht je Quelle unter <i>Mehr → Insights → Systemzustand</i>. „Jetzt aktualisieren" holt die Betriebsdaten neu.</p>`)}
 
     ${hilfeKarte('Ein Kunde ruft an', `
       <ol style="margin:0;padding-left:20px;line-height:1.9">
@@ -3401,8 +3451,20 @@ function heuteShopwache() {
   ensureShopwache();
   const d = shopwache.daten;
   if (!d || !d.verfuegbar) return '';
+  // Die Wache laeuft stuendlich. Bleibt sie aus (Rechner aus, Auftrag geloescht,
+  // npm-Fehler), stand hier trotzdem im Praesens "Shop laeuft" - eine Aussage
+  // ueber jetzt, gestuetzt auf eine womoeglich tagealte Messung. Ab drei
+  // Stunden gilt der Stand als zu alt, um daraus etwas ueber jetzt zu sagen.
+  const alterStunden = d.geprueftAm ? (Date.now() - new Date(d.geprueftAm).getTime()) / 3_600_000 : null;
+  const veraltet = alterStunden === null || alterStunden > 3;
+  if (d.ampel === 'gruen' && !veraltet) {
+    return `<p class="health-ok"><span class="dot" aria-hidden="true"></span>${esc(AMPEL_TEXT.gruen)} · alle Pflichtseiten erreichbar, Preise stimmen · geprüft ${esc(fmtDateTime(d.geprueftAm))} · <a href="#/shopwache">Shop-Wache ansehen</a></p>`;
+  }
   if (d.ampel === 'gruen') {
-    return `<p class="health-ok"><span class="dot" aria-hidden="true"></span>${esc(AMPEL_TEXT.gruen)} · alle Pflichtseiten erreichbar, Preise stimmen · <a href="#/shopwache">Shop-Wache ansehen</a></p>`;
+    return `<p class="notice warn" style="margin:8px 0 0"><strong>Shop-Wache meldet sich nicht.</strong>
+      Die letzte Prüfung war ${d.geprueftAm ? esc(fmtDateTime(d.geprueftAm)) : 'unbekannt'} – sie läuft sonst stündlich.
+      Damals war alles in Ordnung; über den Shop <em>jetzt</em> sagt das nichts.
+      <a href="#/shopwache">Shop-Wache ansehen</a></p>`;
   }
   const klasse = d.ampel === 'rot' ? 'crit' : 'warn';
   return `<section class="card section health-card ${klasse}" style="margin-top:12px">
@@ -3815,7 +3877,12 @@ function openMeinPasswort() {
     </div>
   </div></div>`;
   $('#mpAlt')?.focus();
-  root.addEventListener('click', async (e) => {
+  // Der Zuhoerer gehoert an den Dialog, nicht an #dialogRoot: root bleibt
+  // bestehen, wenn sein innerHTML ersetzt wird. Beim zweiten Oeffnen haengen
+  // sonst zwei Zuhoerer daran - der erste noch mit den Daten des ersten
+  // Dialogs. Die anderen Dialoge in dieser Datei binden aus demselben Grund
+  // an das <form>, das jedes Mal neu entsteht.
+  root.querySelector('.dialog').addEventListener('click', async (e) => {
     if (!e.target.closest('#mpSetzen')) return;
     const alt = $('#mpAlt').value;
     const neu = $('#mpNeu').value;
@@ -3841,7 +3908,10 @@ function openTeamPasswort(kuerzel) {
     </div>
   </div></div>`;
   $('#tmPw2')?.focus();
-  root.addEventListener('click', async (e) => {
+  // Siehe openMeinPasswort: an den Dialog binden, nicht an #dialogRoot. Sonst
+  // setzt der Inhaber beim zweiten Zugang in Folge das Passwort des ersten
+  // gleich mit - der alte Zuhoerer haelt dessen Kuerzel noch fest.
+  root.querySelector('.dialog').addEventListener('click', async (e) => {
     if (!e.target.closest('#tmPwSetzen')) return;
     const passwort = $('#tmPw2').value;
     if (passwort.length < 8) { toast('Das Passwort braucht mindestens 8 Zeichen', 'crit'); return; }
@@ -3886,8 +3956,8 @@ function viewFotos() {
     <h2 style="margin:0 0 4px">Fotos vom fertigen Raum</h2>
     <p class="small muted" style="margin:0 0 12px">Bilder aussuchen, Auftragsnummer eintippen, abschicken. Mehr ist es nicht.</p>
 
-    <label class="small" for="fotoDateien">Fotos <span class="muted">(bis 20 Stück, je 10 MB)</span></label>
-    <input type="file" id="fotoDateien" accept="image/*" multiple capture="environment"
+    <label class="small" for="fotoDateien">Fotos <span class="muted">(bis 20 Stück – große Bilder werden vor dem Senden automatisch verkleinert)</span></label>
+    <input type="file" id="fotoDateien" accept="image/*" multiple
            style="width:100%;box-sizing:border-box;margin:4px 0 4px">
     <p class="small muted" id="fotoGewaehlt" style="margin:0 0 12px">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
 
@@ -3952,6 +4022,43 @@ function alsBase64(datei) {
   });
 }
 
+/** Lange Kante, auf die Fotos vor dem Hochladen verkleinert werden. */
+const FOTO_MAX_KANTE = 2000;
+
+/**
+ * Ein Foto vom Handy hat 12 Megapixel und 3-5 MB. Fuer einen Beitrag und fuer
+ * die Ablage reicht die lange Kante mit 2000 px; das spart auf der Baustelle
+ * Mobilfunkdaten und haelt die Anfrage klein genug, dass sie ueberhaupt
+ * ankommt (der Server nimmt 24 MB fuer den ganzen Schwung).
+ *
+ * Geht das Verkleinern nicht - unbekanntes Format, kein canvas, HEIC, das der
+ * Browser nicht dekodiert -, wird die Datei unveraendert geschickt. Lieber ein
+ * grosses Foto als gar keins; die Groessengrenze faengt den Rest ab.
+ */
+async function alsHochladbar(datei) {
+  const unveraendert = async () => ({ name: datei.name, typ: datei.type, daten: await alsBase64(datei) });
+  if (!/^image\//.test(datei.type) || typeof createImageBitmap !== 'function') return unveraendert();
+  let bild = null;
+  try {
+    bild = await createImageBitmap(datei);
+    const faktor = Math.min(1, FOTO_MAX_KANTE / Math.max(bild.width, bild.height));
+    // Schon klein genug: nicht neu kodieren, das wuerde nur Qualitaet kosten.
+    if (faktor === 1 && datei.size <= 1_500_000) return unveraendert();
+    const flaeche = document.createElement('canvas');
+    flaeche.width = Math.max(1, Math.round(bild.width * faktor));
+    flaeche.height = Math.max(1, Math.round(bild.height * faktor));
+    flaeche.getContext('2d').drawImage(bild, 0, 0, flaeche.width, flaeche.height);
+    const klein = await new Promise(ja => flaeche.toBlob(ja, 'image/jpeg', 0.82));
+    // Wenn das Ergebnis nicht kleiner ist, hat das Verkleinern nichts gebracht.
+    if (!klein || klein.size >= datei.size) return unveraendert();
+    return { name: datei.name.replace(/\.[^.]+$/, '') + '.jpg', typ: 'image/jpeg', daten: await alsBase64(klein) };
+  } catch {
+    return unveraendert();
+  } finally {
+    bild?.close?.();
+  }
+}
+
 async function fotosAbschicken() {
   if (fotos.sendet) return;
   const dateien = fotos.gewaehlt;
@@ -3968,7 +4075,15 @@ async function fotosAbschicken() {
   try {
     const fertig = [];
     for (const f of dateien) {
-      fertig.push({ name: f.name, typ: f.type, daten: await alsBase64(f) });
+      // eslint-disable-next-line no-await-in-loop -- nacheinander, damit nicht 20 Bilder gleichzeitig im Speicher liegen.
+      fertig.push(await alsHochladbar(f));
+    }
+    // base64 macht aus drei Bytes vier; der Server nimmt 24 MB. Lieber hier
+    // mit klarem Satz abbrechen als drueben mit "Request zu groß".
+    const roh = fertig.reduce((summe, f) => summe + f.daten.length, 0);
+    if (roh > 22_000_000) {
+      toast(`Zusammen zu groß (${(roh / 1_048_576).toFixed(0)} MB). Bitte in zwei Schwüngen schicken.`, 'crit');
+      return;
     }
     const r = await orgSchreiben('/api/fotos/neu', { auftrag, boden, notiz, einwilligung: true, fotos: fertig });
     toast(`${r.anzahl} ${r.anzahl === 1 ? 'Foto' : 'Fotos'} angekommen – ${r.produkt.text}`);
