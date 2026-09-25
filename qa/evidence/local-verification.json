@@ -2,7 +2,7 @@
   "workflow": "validate",
   "status": "PASS",
   "validationScope": "FULL",
-  "commit": "3d72811a94a9d477d97d3c03cd42bbeacb2a621a",
+  "commit": "b7a846800ce865a61dfad241e2d8639d78540856",
   "branch": "main",
   "orderCompleted": false,
   "externalBlock": null,
@@ -116,8 +116,8 @@
       "blocker": null
     }
   ],
-  "head": "3d72811a94a9d477d97d3c03cd42bbeacb2a621a",
-  "originMain": "3d72811a94a9d477d97d3c03cd42bbeacb2a621a",
+  "head": "b7a846800ce865a61dfad241e2d8639d78540856",
+  "originMain": "b7a846800ce865a61dfad241e2d8639d78540856",
   "clean": true,
   "worktreeFingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
   "p0": "0",
@@ -126,5 +126,5 @@
   "readyForPr": false,
   "readyForMain": false,
   "readyForPreview": false,
-  "readyForLive": false
+  "readyForLive": true
 }
