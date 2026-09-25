@@ -57,7 +57,9 @@ export function naechsterSchritt(zeile, { jetzt = new Date() } = {}) {
   const unversandt = ['UNFULFILLED', 'PARTIALLY_FULFILLED', null].includes(zeile.fulfillmentstatus);
   const offeneArtikel = (zeile.auftrag?.positionen ?? []).filter(p => p.lineItemId);
 
-  if (zeile.beratungOffen) {
+  // Ein abgeschlossener Rueckruf ist erledigt, auch wenn das Bestell-Tag
+  // weiterhin "Beratung: Ja" sagt.
+  if (zeile.beratungOffen && zeile.rueckrufStatus !== 'erledigt') {
     return zeile.telefon
       ? { text: 'Zurückrufen – Beratung gewünscht', dringend: DRINGEND.SOFORT, art: 'beratung' }
       : { text: 'Beratung gewünscht, aber keine Telefonnummer hinterlegt – per E-Mail melden', dringend: DRINGEND.SOFORT, art: 'beratung' };
