@@ -53,10 +53,11 @@
           "type": "tp-newsletter",
           "settings": {
             "ueberschrift": "Neuigkeiten aus dem Teppich Paradies",
-            "text": "Neue Kollektionen, Ratgeber und Aktionen – gelegentlich per E-Mail.",
-            "button": "Anmelden",
+            "text": "10 € Willkommensgutschein ab 150 € und die Abonnenten-Aktion des Monats.",
+            "button": "Gutschein sichern",
             "quelle": "footer",
-            "kompakt": true
+            "kompakt": true,
+            "hinweis": "<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein einmalig ab 150 €, nicht für reduzierte Artikel. Näheres in unserer <a href=\"/pages/datenschutzerklarung\">Datenschutzerklärung</a>.</p>"
           }
         }
       },

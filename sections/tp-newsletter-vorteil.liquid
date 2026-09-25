@@ -1,0 +1,186 @@
+{%- comment -%}
+  Newsletter-Anmeldung mit Anreiz auf der Startseite (Entwurf zur Ansicht).
+  Warum es die Section gibt: Die Anmeldung stand nur im Footer und bot
+  keinen Grund, sich einzutragen. Bodenbelag kauft man selten - ein
+  Prozent-Rabatt jeden Monat verpufft. Der Inhaber will kleine feste
+  Betraege statt Prozent (2026-09-25): einmaliger Willkommensgutschein plus
+  eine Abonnenten-Aktion im Monat.
+  Betrag und Mindestbestellwert stehen als Einstellung hier, damit sie nicht
+  in Texten verstreut hartkodiert sind. Der Rabattcode selbst liegt nur in
+  Shopify (Repository ist oeffentlich) und wird erst mit der Freigabe
+  angelegt - bis dahin ist das hier eine Ansicht, kein Versprechen.
+  Gestaltung wie tp-start-muster: dieselben Linien, Schriftskala und
+  Akzentfarbe, damit der Abschnitt zur Seite gehoert.
+{%- endcomment -%}
+{{ 'tp-startseite.css' | asset_url | stylesheet_tag }}
+{%- liquid
+  assign tp_nv_betrag = section.settings.betrag | default: 10
+  assign tp_nv_ab = section.settings.mindestwert | default: 150
+  capture tp_nv_hinweis
+    echo '<p>Mit der Anmeldung willigen Sie ein, unseren Newsletter per E-Mail zu erhalten. Abmeldung jederzeit über den Link in jeder E-Mail. Gutschein: einmalig, ab '
+    echo tp_nv_ab
+    echo ' € Bestellwert, nicht für reduzierte Artikel und nicht mit anderen Rabatten kombinierbar. Näheres in unserer <a href="/pages/datenschutzerklarung">Datenschutzerklärung</a>.</p>'
+  endcapture
+-%}
+
+<section class="tp-nv" role="region" aria-labelledby="tp-nv-titel-{{ section.id }}">
+  <div class="tp-s-wrap tp-nv__wrap">
+    <div class="tp-nv__text">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="tp-nv__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      <h2 class="tp-nv__titel" id="tp-nv-titel-{{ section.id }}">
+        {{- tp_nv_betrag }} € Willkommensgutschein für Ihren Boden
+      </h2>
+      <ul class="tp-nv__vorteile">
+        <li>
+          <b>{{ tp_nv_betrag }} € auf die erste Bestellung</b>
+          <small>einmalig ab {{ tp_nv_ab }} € Bestellwert</small>
+        </li>
+        <li>
+          <b>Abonnenten-Aktion des Monats</b>
+          <small>ausgewählte Artikel günstiger – nur für Abonnenten</small>
+        </li>
+        <li>
+          <b>Ratgeber und Neuheiten</b>
+          <small>höchstens zweimal im Monat, jederzeit abbestellbar</small>
+        </li>
+      </ul>
+    </div>
+    <div class="tp-nv__form">
+      {%- render 'tp-newsletter',
+        ueberschrift: 'Gutschein sichern',
+        text: 'Der Gutschein kommt per E-Mail, sobald Sie die Anmeldung bestätigt haben.',
+        button: 'Gutschein sichern',
+        hinweis: tp_nv_hinweis,
+        quelle: 'startseite',
+        instanz: section.id
+      -%}
+    </div>
+  </div>
+</section>
+
+{% stylesheet %}
+  .tp-nv {
+    border-top: 1px solid #e6e0d8;
+    border-bottom: 1px solid #e6e0d8;
+    background: #faf7f3;
+  }
+
+  .tp-nv__wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: 40px;
+    align-items: center;
+    padding-top: 36px;
+    padding-bottom: 36px;
+  }
+
+  .tp-nv__eyebrow {
+    margin: 0 0 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b73740;
+  }
+
+  .tp-nv__titel {
+    margin: 0 0 16px;
+    font-size: 26px;
+    line-height: 1.22;
+    color: #1d1a17;
+  }
+
+  .tp-nv__vorteile {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+
+  .tp-nv__vorteile li {
+    position: relative;
+    padding-left: 30px;
+  }
+
+  .tp-nv__vorteile li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #b73740 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 12px no-repeat;
+  }
+
+  .tp-nv__vorteile b {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: #1d1a17;
+  }
+
+  .tp-nv__vorteile small {
+    display: block;
+    margin-top: 2px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--tp-muted, #655e57);
+  }
+
+  .tp-nv__form .tp-nl {
+    max-width: none;
+    background: #fff;
+  }
+
+  @media screen and (max-width: 749px) {
+    .tp-nv__wrap {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 24px;
+      padding-top: 28px;
+      padding-bottom: 28px;
+    }
+
+    .tp-nv__titel {
+      font-size: 22px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "TP Newsletter-Gutschein",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Überzeile",
+      "default": "Newsletter"
+    },
+    {
+      "type": "number",
+      "id": "betrag",
+      "label": "Gutscheinbetrag in €",
+      "default": 10,
+      "info": "Muss zum Rabattcode in Shopify passen."
+    },
+    {
+      "type": "number",
+      "id": "mindestwert",
+      "label": "Mindestbestellwert in €",
+      "default": 150,
+      "info": "Muss zum Rabattcode in Shopify passen."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TP Newsletter-Gutschein"
+    }
+  ]
+}
+{% endschema %}
