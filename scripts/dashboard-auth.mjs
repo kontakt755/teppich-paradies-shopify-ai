@@ -19,7 +19,9 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { leseBenutzer, benutzerDateiExistiert, authentifiziere, benutzerDateiPfad } from '../operations/lib/benutzer.mjs';
+import {
+  leseBenutzer, benutzerDateiExistiert, authentifiziere, benutzerDateiPfad, findeAktivenBenutzer,
+} from '../operations/lib/benutzer.mjs';
 
 export const SESSION_COOKIE = 'tp_dashboard_sid';
 export const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 Stunden (ohne "angemeldet bleiben")
@@ -147,21 +149,64 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     return sid;
   }
 
-  function validSession(sid) {
-    if (!sid) return false;
+  /**
+   * Der Benutzer zu einer Sitzung - bei JEDEM Zugriff frisch aus benutzer.json.
+   *
+   * Frueher lag im Sitzungsobjekt eine Kopie vom Anmeldezeitpunkt. Wer gesperrt
+   * oder herabgestuft wurde, arbeitete damit bis zu 30 Tage weiter, als waere
+   * nichts geschehen. Jetzt entscheidet die Datei, nicht die Erinnerung.
+   *
+   * Rueckgabe: { gueltig, benutzer }. Der Notzugang (Einzelpasswort, kein
+   * Benutzereintrag) hat kein Kuerzel und bleibt unveraendert gueltig.
+   */
+  function loeseSitzungAuf(sid) {
+    if (!sid) return { gueltig: false, benutzer: null };
     purgeExpiredSessions();
-    return sessions.has(sidHash(sid));
+    const eintrag = sessions.get(sidHash(sid));
+    if (!eintrag) return { gueltig: false, benutzer: null };
+
+    const kuerzel = eintrag.benutzer?.kuerzel || null;
+    if (!kuerzel) return { gueltig: true, benutzer: eintrag.benutzer || null };   // Notzugang
+
+    const aktuell = findeAktivenBenutzer(leseBenutzer(benutzerDatei), kuerzel);
+    if (!aktuell) {
+      // Gesperrt oder geloescht: die Sitzung ist wertlos und verschwindet sofort.
+      if (sessions.delete(sidHash(sid))) speichereSitzungen();
+      return { gueltig: false, benutzer: null };
+    }
+    return { gueltig: true, benutzer: { name: aktuell.name, kuerzel: aktuell.kuerzel, rolle: aktuell.rolle } };
+  }
+
+  function validSession(sid) {
+    return loeseSitzungAuf(sid).gueltig;
   }
 
   /** Gibt den angemeldeten Benutzer ({name, kuerzel, rolle}) zurueck oder null. */
   function sessionBenutzer(sid) {
-    if (!sid) return null;
-    purgeExpiredSessions();
-    return sessions.get(sidHash(sid))?.benutzer || null;
+    return loeseSitzungAuf(sid).benutzer;
   }
 
   function destroySession(sid) {
     if (sid && sessions.delete(sidHash(sid))) speichereSitzungen();
+  }
+
+  /**
+   * Alle Sitzungen eines Zugangs beenden - nach Sperre, Rollenwechsel oder
+   * neuem Passwort. Die frische Aufloesung in loeseSitzungAuf() faengt das
+   * ohnehin ab; hier verschwindet zusaetzlich der Eintrag, damit niemand mit
+   * einem alten Cookie noch auf der Oberflaeche steht.
+   */
+  function sitzungenVerwerfen(kuerzel) {
+    if (!kuerzel) return 0;
+    const gesucht = String(kuerzel).trim().toLowerCase();
+    let weg = 0;
+    for (const [hash, eintrag] of sessions) {
+      if (String(eintrag.benutzer?.kuerzel || '').trim().toLowerCase() === gesucht) {
+        sessions.delete(hash); weg += 1;
+      }
+    }
+    if (weg) speichereSitzungen();
+    return weg;
   }
 
   function rateState(key) {
@@ -197,6 +242,7 @@ export function createAuth({ password = null, benutzerDatei = benutzerDateiPfad(
     validSession,
     sessionBenutzer,
     destroySession,
+    sitzungenVerwerfen,
     isLocked,
     registerFailure,
     registerSuccess,

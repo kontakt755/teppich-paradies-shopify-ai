@@ -425,3 +425,21 @@ test('Team-Bereiche sind Kunden, Bestellungen und kleine Aufträge - nichts aus 
   assert.equal(istTeamarbeit('Lager'), false);
   assert.equal(istTechnisch('Lager'), false);
 });
+
+test('Mitarbeiter darf unzugewiesene Team-Aufgaben übernehmen - Privates und Technik bleiben zu', () => {
+  const ben = { kuerzel: 'ben', rolle: 'mitarbeiter' };
+  const lesen = { kuerzel: 'gast', rolle: 'lesen' };
+  const chef = { kuerzel: 'ahmet', rolle: 'inhaber' };
+  const t = (o) => ({ typ: 'TASK', sichtbarkeit: 'TEAM', besitzer: 'Inhaber', verantwortlich: null, bereich: 'Kunden', fuer: [], ...o });
+
+  // Genau die Aufgaben, die absichtlich ohne Namen im Team liegen
+  assert.equal(darfAendern(t(), ben), true, 'unzugewiesene Kundenarbeit darf jeder ziehen');
+  assert.equal(darfAendern(t({ verantwortlich: 'ben' }), ben), true, 'eigene sowieso');
+  assert.equal(darfAendern(t({ verantwortlich: 'anna' }), ben), false, 'fremd zugewiesene nicht');
+  assert.equal(darfAendern(t({ bereich: 'Online-Shop' }), ben), false, 'Technik bleibt beim Inhaber');
+  assert.equal(darfAendern(t({ sichtbarkeit: 'PRIVAT' }), ben), false, 'fremde private Notiz nie');
+  assert.equal(darfAendern(t({ typ: 'NOTE', sichtbarkeit: 'TEAM' }), ben), false, 'fremde Notiz ist keine liegengebliebene Aufgabe');
+
+  assert.equal(darfAendern(t(), lesen), false, 'Rolle "lesen" ändert nichts');
+  assert.equal(darfAendern(t({ bereich: 'Online-Shop' }), chef), true, 'der Inhaber darf alles Sichtbare');
+});

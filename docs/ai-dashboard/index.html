@@ -30,8 +30,8 @@
       <nav class="mainnav" id="mainnav" aria-label="Hauptnavigation">
         <!-- Reihenfolge nach Wichtigkeit im Tagesgeschaeft; Seltenes unter "Mehr". -->
         <a href="#/heute" data-nav="heute">Heute</a>
-        <a href="#/einkauf" data-nav="einkauf">Einkauf</a>
         <a href="#/kunden" data-nav="kunden">Kunden</a>
+        <a href="#/einkauf" data-nav="einkauf">Einkauf</a>
         <a href="#/organisation" data-nav="organisation">Aufgaben</a>
         <a href="#/lexikon" data-nav="lexikon">Lexikon</a>
         <a href="#/fotos" data-nav="fotos">Fotos</a>
@@ -59,6 +59,9 @@
         </button>
         <button type="button" class="sync-chip" id="syncChip" title="Datenstand und Synchronisation">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
+        </button>
+        <button type="button" class="btn btn-ghost" id="meinPasswortBtn" title="Mein Passwort ändern" hidden>
+          <span aria-hidden="true">🔑</span> <span class="lang">Passwort</span>
         </button>
         <button type="button" class="btn btn-ghost" id="sessionBtn" title="Angemeldet – abmelden" hidden>
           <span aria-hidden="true">🔒</span> <span id="sessionBtnText">Angemeldet</span>

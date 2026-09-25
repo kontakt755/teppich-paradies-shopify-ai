@@ -173,13 +173,25 @@ export function darfSehen(eintrag, benutzer) {
   return true; // TEAM
 }
 
-/** Darf jemand diesen Eintrag aendern? Inhaber ja, sonst nur Eigenes oder Zugewiesenes. */
+/**
+ * Darf jemand diesen Eintrag aendern?
+ *
+ * Inhaber alles, "lesen" nichts. Ein Mitarbeiter darf Eigenes und ihm
+ * Zugewiesenes - und zusaetzlich jede unzugewiesene Team-Aufgabe, die nicht
+ * an der Technik haengt. Genau diese Aufgaben liegen absichtlich ohne Namen
+ * im Team; ohne diese Regel konnte sie niemand uebernehmen oder abhaken,
+ * und sie blieben liegen. Wer etwas aendert, steht im Verlauf.
+ */
 export function darfAendern(eintrag, benutzer) {
   if (!benutzer) return true;                       // Notzugang ohne benutzer.json
   if (benutzer.rolle === 'lesen') return false;
   if (benutzer.rolle === 'inhaber') return darfSehen(eintrag, benutzer);
   const kuerzel = benutzer.kuerzel || benutzer.name;
-  return istPerson(eintrag.besitzer, kuerzel) || istPerson(eintrag.verantwortlich, kuerzel);
+  if (istPerson(eintrag.besitzer, kuerzel) || istPerson(eintrag.verantwortlich, kuerzel)) return true;
+  return eintrag.typ === 'TASK'
+    && eintrag.sichtbarkeit === 'TEAM'
+    && !eintrag.verantwortlich
+    && !istTechnisch(eintrag.bereich);
 }
 
 // -- Texterkennung ----------------------------------------------------------

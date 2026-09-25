@@ -13,10 +13,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-export const RUECKRUF_STATUS = Object.freeze(['offen', 'angerufen', 'erledigt']);
+/**
+ * "nicht erreicht" ist am Telefon der Normalfall: zweimal geklingelt, niemand
+ * da, morgen nochmal. Ohne diesen Zustand blieb nur die Wahl zwischen
+ * "Angerufen" (verschwindet aus der Dringlichkeit, bleibt aber ewig offen)
+ * und "Erledigt" (obwohl niemand erreicht wurde).
+ */
+export const RUECKRUF_STATUS = Object.freeze(['offen', 'nicht_erreicht', 'angerufen', 'erledigt']);
 
 export const RUECKRUF_STATUS_LABEL = Object.freeze({
   offen: 'Offen',
+  nicht_erreicht: 'Nicht erreicht',
   angerufen: 'Angerufen',
   erledigt: 'Erledigt',
 });
@@ -60,15 +67,19 @@ function clip(text, max) {
  * @param {object} p
  * @param {string} p.orderId
  * @param {string} p.status    einer aus RUECKRUF_STATUS
- * @param {string} p.actor     gh-Login, der die Aktion ausgeloest hat
+ * @param {string} p.actor     wer die Aktion ausgeloest hat
  * @param {string} [p.notiz]
+ * @param {string} [p.wiedervorlage]  YYYY-MM-DD: wann nochmal versuchen
  * @param {Date}   [p.jetzt]
  */
-export function setzeStatus(file, { orderId, status, actor, notiz = null, jetzt = new Date() } = {}) {
+export function setzeStatus(file, { orderId, status, actor, notiz = null, wiedervorlage = null, jetzt = new Date() } = {}) {
   const key = String(orderId ?? '').trim();
   if (!key) throw new RueckrufFehler('orderId ist Pflicht');
   if (!RUECKRUF_STATUS.includes(status)) throw new RueckrufFehler(`Unbekannter Status "${status}"`);
-  if (!actor) throw new RueckrufFehler('actor (gh-Login) ist Pflicht');
+  if (!actor) throw new RueckrufFehler('actor ist Pflicht');
+  if (wiedervorlage && !/^\d{4}-\d{2}-\d{2}$/.test(String(wiedervorlage))) {
+    throw new RueckrufFehler('Wiedervorlage braucht ein Datum im Format JJJJ-MM-TT');
+  }
 
   const alle = leseAlle(file);
   const bisher = alle[key] || {};
@@ -83,6 +94,9 @@ export function setzeStatus(file, { orderId, status, actor, notiz = null, jetzt 
     [`${status}Von`]: actor,
   };
   if (notiz !== null) eintrag.notiz = clip(notiz, 2000);
+  // Ein erledigter Vorgang braucht keine Wiedervorlage mehr.
+  if (status === 'erledigt') eintrag.wiedervorlage = null;
+  else if (wiedervorlage !== null) eintrag.wiedervorlage = wiedervorlage || null;
 
   alle[key] = eintrag;
   schreibeAlle(file, alle);
