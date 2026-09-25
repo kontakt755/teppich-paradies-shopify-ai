@@ -325,3 +325,14 @@
   font-size: 14px;
   line-height: 1.45;
 }
+
+.tp-sample__bonus {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fbeaea;
+  color: #96262f;
+  font-size: 13.5px;
+  font-weight: 600;
+}

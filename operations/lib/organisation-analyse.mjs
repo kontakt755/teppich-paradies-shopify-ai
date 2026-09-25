@@ -102,10 +102,25 @@ export function erkennePrioritaet(text) {
   return null;
 }
 
+/**
+ * Endet die Zeile auf einem Verb im Infinitiv ("einrichten", "beantworten",
+ * "anmelden", "kontrollieren")? Dann ist etwas zu tun. Ohne diese Regel
+ * muesste die Wortliste endlos wachsen - und Listen aus ChatGPT, die fast
+ * immer so formuliert sind, landeten alle als Notiz.
+ */
+function endetAufHandlung(t) {
+  const letztes = t.trim().replace(/[.!?,;:]+$/, '').split(/\s+/).pop() || '';
+  if (letztes.length < 6) return false;
+  return /(?:ieren|eln|ern|en)$/.test(letztes) && !/^(?:morgen|übermorgen|ubermorgen|hinten|innen|außen|ausen|oben|unten)$/.test(letztes);
+}
+
 export function erkenneTyp(text) {
   const t = nurText(text);
   const handlung = HANDLUNG.filter(w => t.includes(w));
   const feststellung = FESTSTELLUNG.filter(w => t.includes(w));
+  if (!handlung.length && !feststellung.length && endetAufHandlung(t)) {
+    return { typ: 'TASK', grund: 'endet auf eine Tätigkeit' };
+  }
   if (handlung.length && !feststellung.length) return { typ: 'TASK', grund: `„${handlung[0]}" deutet auf etwas zu Erledigendes` };
   if (feststellung.length && !handlung.length) return { typ: 'NOTE', grund: `„${feststellung[0]}" klingt nach einer Information` };
   if (handlung.length) return { typ: 'TASK', grund: `„${handlung[0]}" im Text` };
@@ -171,4 +186,22 @@ export function analysiere(text, { mitarbeiter = [], bereiche = STANDARD_BEREICH
     mehrereAufgaben: teile,
     begruendung: [typ.grund, person?.grund, bereich?.grund, prio?.grund, faellig?.grund].filter(Boolean),
   };
+}
+
+/**
+ * Mehrere Aufgaben aus einer Liste - so kommen Sammlungen aus ChatGPT, aus
+ * einer Mail oder von einem Zettel ins System, ohne jede Zeile einzeln zu
+ * tippen. Erkannt werden Aufzaehlungen mit -, *, • oder Nummerierung sowie
+ * einfache Zeilenlisten; Ueberschriften und leere Zeilen fallen weg.
+ */
+export function ausListe(text, opt = {}) {
+  const zeilen = String(text || '')
+    .split(/\r?\n/)
+    .map(z => z.replace(/^\s*(?:[-*•–]|\d+[.)])\s*/, '').trim())
+    .map(z => z.replace(/^\[\s*[x ]?\s*\]\s*/i, '').trim())   // Kaestchen aus Markdown
+    .filter(z => z.length > 3)
+    .filter(z => !/^#{1,6}\s/.test(z))                          // Ueberschriften
+    .filter(z => !/^(aufgaben|todo|to-?do|offene punkte|liste)\s*:?\s*$/i.test(z));
+  // Zeilen ohne eigenen Inhalt (reine Trenner) verwerfen
+  return zeilen.filter(z => /[a-zA-ZäöüÄÖÜß]/.test(z)).map(z => analysiere(z, opt));
 }

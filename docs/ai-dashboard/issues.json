@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-25T09:16:04.484Z",
+  "generated_at": "2026-09-25T09:32:29.687Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 143,
+  "count": 144,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-25T09:16:04.484Z",
+    "fetchedAt": "2026-09-25T09:32:29.687Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,30 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 615,
+      "title": "Dashboard-Organisation nutzbar: Listenimport, Wiederholungen, Anhaenge",
+      "state": "closed",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/615",
+      "labels": [
+        "status:fertig",
+        "type:technik",
+        "priority:p2",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 3,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-25T09:31:32Z",
+      "updated_at": "2026-09-25T09:32:03Z",
+      "closed_at": "2026-09-25T09:32:03Z"
+    },
     {
       "number": 613,
       "title": "SEO: Snippets ins Shopify Admin einbinden + Sitemap einreichen",
