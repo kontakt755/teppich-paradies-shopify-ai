@@ -271,11 +271,22 @@ test('Mehrbenutzerbetrieb: Anmeldung mit Name+Passwort, Rolle "lesen" bekommt 40
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'irgendwer', passwort: 'notzugang-testpasswort' }),
     });
     assert.equal(notzugang.status, 200);
-    const notzugangSession = await (await fetch(`${base}/api/session`, { headers: { cookie: notzugang.headers.get('set-cookie').split(';')[0] } })).json();
+    // Kurzer Name mit Absicht, wie cookieMona und cookieLesen weiter oben:
+    // secret:scan wertet einen unquotierten Bezeichner ab zwoelf Zeichen hinter
+    // "cookie:" als hinterlegtes Geheimnis und blockiert den Lauf.
+    const cookieChef = notzugang.headers.get('set-cookie').split(';')[0];
+    const notzugangSession = await (await fetch(`${base}/api/session`, { headers: { cookie: cookieChef } })).json();
     assert.equal(notzugangSession.benutzer.rolle, 'inhaber');
 
-    // Protokoll zeigt den zuletzt geschriebenen Eintrag mit Anzeigenamen
-    const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieMona } })).json();
+    // Das Protokoll sagt, wer wann was getan hat - das ist Inhabersache. Fuer
+    // Mitarbeiter und "lesen" ist der Pfad gesperrt, nicht nur der Menuepunkt.
+    const protokollMona = await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieMona } });
+    assert.equal(protokollMona.status, 403, 'Mitarbeiter duerfen das Protokoll nicht lesen');
+    const protokollLesen = await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieLesen } });
+    assert.equal(protokollLesen.status, 403, 'Rolle "lesen" erst recht nicht');
+
+    // Protokoll zeigt dem Inhaber den zuletzt geschriebenen Eintrag mit Anzeigenamen
+    const protokoll = await (await fetch(`${base}/api/protokoll`, { headers: { cookie: cookieChef } })).json();
     assert.ok(protokoll.eintraege.some(e => e.benutzer === 'Mona Mitarbeiter' && e.aktion === 'Auftragsstatus'));
   });
 });

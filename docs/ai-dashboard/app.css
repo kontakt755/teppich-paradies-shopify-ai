@@ -620,6 +620,14 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
   .btn, .btn-sm, .chip, .tab, .mainnav a, .seg button { min-height: 44px; }
   .btn-sm { padding: 8px 14px; }
   input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  /* Safari auf dem iPhone zoomt in die Seite hinein, sobald ein Eingabefeld
+     mit weniger als 16px Schrift den Fokus bekommt - und zoomt nicht wieder
+     heraus. Wer auf der Baustelle die Auftragsnummer eintippt, arbeitet danach
+     in einer verschobenen, vergroesserten Ansicht weiter. Die Felder standen
+     auf .88rem (14 px), die Dialogfelder sogar auf dem Browser-Standard. */
+  input, select, textarea,
+  .toolbar input[type="search"], .toolbar select,
+  .field input, .field select, .field textarea { font-size: 16px; }
 }
 
 /* Das Handy-Menue lief unten aus dem Bild und liess sich nicht schieben. */

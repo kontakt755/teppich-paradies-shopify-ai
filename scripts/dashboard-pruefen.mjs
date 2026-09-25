@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'lexikon', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
 // Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom
 // Monteur auf der Baustelle), ist die Handy-Ansicht kein Sonderfall mehr:
 // geprueft wird alles, was es gibt. Vorher standen hier vier Ansichten - die

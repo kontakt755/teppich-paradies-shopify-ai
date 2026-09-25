@@ -42,6 +42,19 @@ const ROOT = resolve(REPO_ROOT, 'docs/ai-dashboard');
 const PORT = Number(process.env.PORT || 8001);
 const HOST = process.env.TP_DASHBOARD_HOST || '127.0.0.1';
 const MAX_BODY = 64 * 1024;
+/**
+ * Fotos und Anhaenge kommen als base64 im JSON an - base64 macht aus drei
+ * Bytes vier. Mit 64 KB brach der Server jeden Upload mit 413 ab, waehrend die
+ * Oberflaeche "bis 10 MB je Datei" zusagte: der Fotoeingang konnte so nie
+ * funktionieren. Nur diese beiden Pfade duerfen mehr; alle anderen bleiben
+ * klein, weil dieser Server den Koerper vollstaendig im Speicher haelt und
+ * eine grosszuegige Grenze auf jedem Pfad ein bequemer Weg waere, ihn
+ * lahmzulegen.
+ *
+ * Das Frontend verkleinert Bilder vorher auf 2000 px lange Kante (~300 KB je
+ * Foto), 24 MB sind damit reichlich Reserve fuer 20 Fotos plus Formularfelder.
+ */
+const MAX_BODY_UPLOAD = 24 * 1024 * 1024;
 
 const CONFIGURED_PASSWORD = loadConfiguredPassword();
 export const auth = createAuth({ password: CONFIGURED_PASSWORD });
@@ -85,11 +98,11 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 }
 
-function readJson(req) {
+function readJson(req, max = MAX_BODY) {
   return new Promise((resolveBody, reject) => {
     if (!/^application\/json/i.test(req.headers['content-type'] || '')) { reject(new ApiError(415, 'Nur application/json')); return; }
     let size = 0; const chunks = [];
-    req.on('data', c => { size += c.length; if (size > MAX_BODY) { req.destroy(); reject(new ApiError(413, 'Request zu groß')); } else chunks.push(c); });
+    req.on('data', c => { size += c.length; if (size > max) { req.destroy(); reject(new ApiError(413, `Request zu groß (über ${Math.round(max / 1024)} KB)`)); } else chunks.push(c); });
     req.on('end', () => { try { resolveBody(chunks.length ? JSON.parse(Buffer.concat(chunks).toString('utf8')) : {}); } catch { reject(new ApiError(400, 'Ungültiges JSON')); } });
     req.on('error', reject);
   });
@@ -177,6 +190,15 @@ const NUR_INHABER = new Set([
   'team/liste',
   'team/aendern',
   'einkauf/kennzahlen', // Umsatzzahlen
+  // Das Protokoll sagt, wer wann was getan hat. Es haengt im Frontend allein an
+  // der Ansicht "Aktivitaet" (inhaber-only), stand aber unter keiner
+  // Rollenpruefung - als GET griff auch der lesen-Riegel nicht. Wer die Adresse
+  // kennt, las damit die Arbeitsschritte aller Kollegen mit.
+  'protokoll',
+  // Der Aufgabenwaechter laeuft ueber ALLE Eintraege, auch private des
+  // Inhabers, gibt deren Titel zurueck und schreibt ihren Status. Der Knopf
+  // dafuer traegt im Frontend data-nur-inhaber, der Pfad war es nicht.
+  'org/pruefen',
 ]);
 
 function darfPfad(benutzer, simple, taskOp) {
@@ -251,7 +273,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'org/kennzahlen') result = api.orgKennzahlen({ benutzer });
     else if (simple === 'org/zu-kunde') result = api.orgZuKunde({ key: url.searchParams.get('key') || '', benutzer });
     else if (simple === 'org/export') result = api.orgExportText({ benutzer });
-    else if (simple === 'fotos/neu') result = api.fotosNeu(await readJson(req), { benutzer });
+    else if (simple === 'fotos/neu') result = api.fotosNeu(await readJson(req, MAX_BODY_UPLOAD), { benutzer });
     else if (simple === 'fotos/liste') result = api.fotosListe({ offen: url.searchParams.get('offen') === '1', benutzer });
     else if (simple === 'fotos/produkt') result = api.fotosProdukt({ boden: url.searchParams.get('boden') || '' });
     else if (simple === 'team/liste') result = api.teamListe();
@@ -263,7 +285,7 @@ export async function handleApi(req, res, pathname, benutzer = null) {
     else if (simple === 'org/kommentar') result = api.orgKommentar(await readJson(req), { benutzer });
     else if (simple === 'org/pruefen') result = await api.orgPruefen(await readJson(req).catch(() => ({})), { benutzer });
     else if (simple === 'org/liste-einfuegen') result = api.orgListeEinfuegen(await readJson(req), { benutzer });
-    else if (simple === 'org/anhang') result = api.orgAnhang(await readJson(req), { benutzer });
+    else if (simple === 'org/anhang') result = api.orgAnhang(await readJson(req, MAX_BODY_UPLOAD), { benutzer });
     else if (simple === 'org/anhang-lesen') {
       // Datei direkt ausliefern, nicht als JSON - der Browser soll sie anzeigen.
       const { pfad, typ, name } = api.orgAnhangLesen({ id: url.searchParams.get('id') || '', datei: url.searchParams.get('datei') || '', benutzer });

@@ -1442,6 +1442,15 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const eintrag = findeEintrag(daten, id);
       if (!eintrag) throw new ApiError(404, 'Eintrag nicht gefunden');
       if (!darfSehen(eintrag, benutzer) || !darfAendern(eintrag, benutzer)) throw new ApiError(403, 'Keine Berechtigung für diesen Eintrag');
+      // Sichtbarkeit ist die einzige Angabe, die darueber entscheidet, WER den
+      // Eintrag noch sehen darf. Ein Mitarbeiter darf jede unzugewiesene
+      // Team-Aufgabe aendern - stellte er sie auf PRIVAT, verschwand sie damit
+      // auch fuer den Inhaber, denn darfSehen kennt fuer PRIVAT keine Ausnahme.
+      // Wer die Sichtbarkeit aendern will, muss Inhaber sein.
+      if ('sichtbarkeit' in felder && felder.sichtbarkeit !== eintrag.sichtbarkeit
+        && benutzer && benutzer.rolle !== 'inhaber') {
+        throw new ApiError(403, 'Nur der Inhaber darf die Sichtbarkeit ändern');
+      }
       // Wiederholung wird als eigenes Objekt gefuehrt, deshalb hier gesetzt.
       if ('wiederholungRegel' in felder) {
         const regel = felder.wiederholungRegel || null;
@@ -1469,7 +1478,14 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
      * Prüflauf anstoßen (Knopf im Dashboard und die tägliche Ausführung um
      * 9:30 nutzen denselben Weg). Erledigt wird nur, was gemessen wurde.
      */
+    /**
+     * Der Aufgabenwaechter laeuft ueber alle Eintraege - auch ueber private des
+     * Inhabers -, gibt deren Titel zurueck und setzt ihren Status. Das ist
+     * Inhabersache. Die Sperre steht zusaetzlich zu NUR_INHABER im Server,
+     * damit sie auch gilt, wenn diese API einmal von anderswoher benutzt wird.
+     */
     async orgPruefen({ id = null } = {}, { benutzer = null } = {}) {
+      if (benutzer && benutzer.rolle !== 'inhaber') throw new ApiError(403, 'Nur der Inhaber darf die Aufgabenprüfung starten');
       const { laufe } = await import('../operations/scripts/aufgaben-pruefen.mjs');
       const ergebnis = await laufe({ datei: this._orgDatei(), id });
       return { ok: true, ...ergebnis };
