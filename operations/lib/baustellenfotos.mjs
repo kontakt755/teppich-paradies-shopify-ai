@@ -27,24 +27,50 @@ export function normal(text) {
 }
 
 /**
- * Produkte, die zum Namen auf dem Auftragszettel passen. Der Zettel nennt
- * selten den vollen Shop-Titel - "Selene 620" statt "Selene Linoleumboden
- * Farbe 620". Deshalb wird wortweise verglichen, nicht auf Gleichheit.
+ * Produkte, die zum Namen auf dem Auftragszettel passen.
+ *
+ * Der Zettel nennt selten den vollen Shop-Titel: "Selene 620" steht dort fuer
+ * das Produkt "Selene Linoleumboden 200cm" in der Farbe 620. Deshalb werden
+ * Name und Zahl getrennt behandelt - der Name sucht das Produkt, die Zahl die
+ * Variante. Ein Muster-Artikel ist nie gemeint, wenn ein Raum verlegt wurde.
  */
 export function passendeProdukte(bodenname, produkte = [], grenze = 5) {
-  const gesucht = normal(bodenname).split(' ').filter(w => w.length > 1);
-  if (!gesucht.length) return [];
+  const worte = normal(bodenname).split(' ').filter(Boolean);
+  const namen = worte.filter(w => /[a-z]/.test(w) && w.length > 1);
+  const zahlen = worte.filter(w => /^\d+$/.test(w));
+  if (!namen.length && !zahlen.length) return [];
 
   const bewertet = [];
   for (const p of produkte) {
     const heu = normal([p.titel, p.handle, p.marke].filter(Boolean).join(' '));
-    if (!heu) continue;
-    const worte = new Set(heu.split(' '));
-    const treffer = gesucht.filter(w => worte.has(w) || heu.includes(w));
-    if (!treffer.length) continue;
-    // Alle gesuchten Worte gefunden wiegt schwerer als viele Teiltreffer.
-    const wert = treffer.length / gesucht.length + (treffer.length === gesucht.length ? 0.5 : 0);
-    bewertet.push({ produkt: p, wert, treffer });
+    const gefunden = namen.filter(w => heu.includes(w));
+    const offen = namen.filter(w => !heu.includes(w));
+
+    // Was im Titel fehlt, steht oft in der Variante: die Farbe. "Selene 620"
+    // und "Selene Grau Grün" meinen dasselbe Produkt, nur anders benannt.
+    const suchIn = (v) => normal([v.farbe, v.sku, v.titel, v.einkauf?.farbnummer, v.einkauf?.artikelnummer]
+      .filter(Boolean).join(' '));
+    // Manche Produkte tragen die Farbe schon im Titel - dann muss keine
+    // Variante herhalten.
+    const rest = [...offen, ...zahlen].filter(w => !heu.includes(w));
+    const imTitel = zahlen.filter(w => heu.includes(w));
+    let variante = null;
+    if (rest.length) {
+      variante = (p.varianten ?? []).find(v => {
+        const feld = suchIn(v);
+        return rest.every(w => feld.includes(w));
+      }) ?? null;
+    }
+    // Ein Name, der weder im Titel noch in einer Variante vorkommt, ist ein
+    // anderes Produkt - dann lieber kein Treffer als der falsche.
+    if (offen.length && !variante) continue;
+    if (!gefunden.length && !variante) continue;
+    const istMuster = /\bmuster\b/.test(heu);
+    const wert = (gefunden.length ? 1 : 0.5)
+      + (imTitel.length ? 0.5 : 0)
+      + (rest.length ? (variante ? 0.5 : -0.25) : 0)
+      - (istMuster ? 0.75 : 0);
+    bewertet.push({ produkt: p, variante, wert, treffer: gefunden });
   }
   return bewertet.sort((a, b) => b.wert - a.wert).slice(0, grenze);
 }
@@ -55,17 +81,19 @@ export function passendeProdukte(bodenname, produkte = [], grenze = 5) {
  */
 export function produktHinweis(treffer) {
   const beste = treffer[0];
-  if (!beste || beste.wert < 1) {
-    return { sicher: false, handle: null, titel: null, text: 'Nicht im Shop gefunden – Beitrag ohne Produktlink planen.' };
+  if (!beste || beste.wert < 0.75) {
+    return { sicher: false, handle: null, titel: null, farbe: null, text: 'Nicht im Shop gefunden – Beitrag ohne Produktlink planen.' };
   }
   const mehrdeutig = treffer[1] && treffer[1].wert >= beste.wert;
+  const farbe = beste.variante?.farbe ?? null;
   return {
     sicher: !mehrdeutig,
     handle: beste.produkt.handle ?? null,
     titel: beste.produkt.titel ?? null,
+    farbe,
     text: mehrdeutig
       ? `Mehrere Produkte passen (${treffer.slice(0, 3).map(t => t.produkt.titel).join(', ')}) – bitte das richtige auswählen.`
-      : `Im Shop: ${beste.produkt.titel}`,
+      : `Im Shop: ${beste.produkt.titel}${farbe ? ` – Farbe ${farbe}` : ''}`,
   };
 }
 
