@@ -10,14 +10,14 @@
   <!-- use-credentials: das Manifest wird sonst ohne Sitzungscookie geholt und landet im
        Netzmodus (Passwortschutz) auf der Anmeldeseite. -->
   <link rel="manifest" href="./manifest.webmanifest" crossorigin="use-credentials">
-  <meta name="theme-color" content="#1f2937">
+  <meta name="theme-color" content="#241a16">
   <meta name="description" content="Control Center: Aufgaben, Freigaben, Blocker und naechste Schritte fuer Teppich Paradies">
   <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Teppich Dashboard">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <link rel="stylesheet" href="./app.css">
+  <link rel="stylesheet" href="./app.css?v=20260925-design">
 </head>
 <body>
   <a class="skip-link" href="#main">Zum Inhalt springen</a>
@@ -55,7 +55,7 @@
              Steht vorn, damit es auf schmalen Fenstern nicht herausrutscht. -->
         <button type="button" class="btn btn-primary btn-sm" data-org-schnell title="Schnell erfassen (Taste n)">+<span class="lang"> Erfassen</span></button>
         <button type="button" class="btn btn-ghost" id="searchBtn" title="Suche und Befehle (⌘K)">
-          <span aria-hidden="true">⌕</span> Suche <kbd>⌘K</kbd>
+          <span aria-hidden="true">⌕</span><span>Suche</span><kbd>⌘K</kbd>
         </button>
         <button type="button" class="sync-chip" id="syncChip" title="Datenstand und Synchronisation">
           <span class="dot" aria-hidden="true"></span><span id="syncChipText">Lade …</span>
