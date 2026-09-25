@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   sortiere, rang, passtZuAnsicht, darfSehen, darfAendern, istUeberfaellig,
-  aehnlichkeit, findeDoppelgaenger, alsTag, STATUS_LABEL,
+  aehnlichkeit, findeDoppelgaenger, alsTag, STATUS_LABEL, istPerson,
 } from '../lib/organisation.mjs';
 import { analysiere, erkenneFaelligkeit, erkennePerson, teileAuf } from '../lib/organisation-analyse.mjs';
 import { baueEintrag, aendere, kommentiere, haltePruefungFest, lies, schreib, dateiPfad } from '../lib/organisation-speicher.mjs';
@@ -252,4 +252,111 @@ test('aus einer Notiz wird eine Aufgabe - Text, Kommentare und Verlauf bleiben',
   assert.ok(e.verlauf.some(v => v.was === 'Art geändert'));
   // Unsinnige Werte werden abgewiesen
   assert.throws(() => aendere(e, { typ: 'IRGENDWAS' }, {}), /typ/);
+});
+
+test('Groß- und Kleinschreibung trennt keine Person von ihren Aufgaben', () => {
+  const notiz = { typ: 'NOTE', besitzer: 'Inhaber', sichtbarkeit: 'PRIVAT', fuer: [] };
+  assert.equal(darfSehen(notiz, { kuerzel: 'inhaber' }), true, '"inhaber" ist derselbe wie "Inhaber"');
+  assert.equal(darfSehen(notiz, { kuerzel: ' INHABER ' }), true, 'Leerzeichen und Großschreibung egal');
+  assert.equal(darfSehen(notiz, { kuerzel: 'ben' }), false, 'andere Person bleibt außen vor');
+
+  const aufgabe = { besitzer: 'Ahmet', verantwortlich: 'BEN', sichtbarkeit: 'TEAM' };
+  assert.equal(darfAendern(aufgabe, { kuerzel: 'ben', rolle: 'mitarbeiter' }), true);
+});
+
+test('Liste aus ChatGPT oder von einem Zettel wird zu mehreren Vorschlägen', async () => {
+  const { ausListe } = await import('../lib/organisation-analyse.mjs');
+  const text = `## Offene Aufgaben
+- Logo im Shop austauschen
+- [ ] Vinylpreise beim Lieferanten prüfen
+3) Newsletter für Oktober vorbereiten
+
+Ben soll die Tarkett-Muster bestellen`;
+  const v = ausListe(text, { mitarbeiter: [{ name: 'Ben', kuerzel: 'ben' }], jetzt: JETZT });
+  assert.equal(v.length, 4, 'Überschrift und Leerzeile fallen weg');
+  assert.deepEqual(v.map(x => x.titel), [
+    'Logo im Shop austauschen',
+    'Vinylpreise beim Lieferanten prüfen',
+    'Newsletter für Oktober vorbereiten',
+    'Ben soll die Tarkett-Muster bestellen',
+  ]);
+  assert.equal(v[3].verantwortlich, 'ben', 'Person wird je Zeile erkannt');
+  assert.equal(ausListe('', {}).length, 0);
+});
+
+test('Zeilen, die auf eine Tätigkeit enden, sind Aufgaben - nicht Notizen', async () => {
+  const { erkenneTyp } = await import('../lib/organisation-analyse.mjs');
+  for (const zeile of ['Shopify-Zugang einrichten', 'Google-Bewertungen beantworten', 'Transporter zum TÜV anmelden', 'Preise kontrollieren']) {
+    assert.equal(erkenneTyp(zeile).typ, 'TASK', zeile);
+  }
+  // Feststellungen bleiben Notizen
+  assert.equal(erkenneTyp('Neue Musterrollen stehen hinten links').typ, 'NOTE');
+  assert.equal(erkenneTyp('Artikelnummer beim Lieferanten wurde geändert').typ, 'NOTE');
+});
+
+test('lange Beschreibungen verhindern die Duplikatwarnung nicht mehr', () => {
+  const vorhanden = [{
+    typ: 'TASK', status: 'PLANNED', titel: 'Shopify-Zugang einrichten (Token)',
+    beschreibung: 'Ohne Zugang aktualisiert sich im Dashboard nichts von selbst - Bestellungen, Kunden, Lexikon und Kennzahlen altern. Auf dem Schreibtisch die Einrichtung starten, Token einfügen, fertig.',
+  }];
+  const treffer = findeDoppelgaenger('Shopify-Zugang einrichten', vorhanden, { jetzt: JETZT });
+  assert.equal(treffer.length, 1, 'fast gleicher Titel muss gefunden werden');
+  assert.ok(treffer[0].wert > 0.6);
+});
+
+test('wiederkehrende Aufgabe: nach dem Abhaken steht der nächste Termin fest', async () => {
+  const { naechsterTermin, faelligeWiederholungen } = await import('../lib/organisation.mjs');
+  assert.equal(naechsterTermin('monatlich', new Date('2026-09-25T10:00:00')), '2026-10-25');
+  assert.equal(naechsterTermin('vierwoechentlich', new Date('2026-09-25T10:00:00')), '2026-10-23');
+  assert.equal(naechsterTermin('gibtsnicht', new Date()), null);
+
+  const e = baueEintrag({ titel: 'Google-Bewertungen prüfen', wiederholung: { regel: 'monatlich', naechsteFaelligkeit: null, zuletztErzeugt: null } }, { jetzt: JETZT });
+  aendere(e, { status: 'DONE' }, { jetzt: JETZT });
+  assert.equal(e.wiederholung.naechsteFaelligkeit, '2026-10-25');
+  // Noch nicht fällig
+  assert.equal(faelligeWiederholungen([e], { jetzt: JETZT }).length, 0);
+  assert.equal(faelligeWiederholungen([e], { jetzt: new Date('2026-10-25T08:00:00') }).length, 1);
+});
+
+test('Wiederholung erzeugt eine neue Aufgabe und läuft nicht doppelt', async () => {
+  const { erzeugeWiederholungen } = await import('../lib/organisation-speicher.mjs');
+  const e = baueEintrag({ titel: 'Shoppreise kontrollieren', wiederholung: { regel: 'vierwoechentlich', naechsteFaelligkeit: null, zuletztErzeugt: null } }, { jetzt: JETZT });
+  aendere(e, { status: 'DONE' }, { jetzt: JETZT });
+  const daten = { version: 1, bereiche: [], eintraege: [e] };
+
+  const spaeter = new Date('2026-10-23T08:00:00');
+  const neu = erzeugeWiederholungen(daten, { jetzt: spaeter });
+  assert.equal(neu.length, 1);
+  assert.equal(neu[0].status, 'PLANNED');
+  assert.equal(neu[0].faellig, '2026-10-23');
+  assert.ok(neu[0].verlauf.some(v => v.wer === 'Wiederholung'));
+  // Zweiter Lauf am selben Tag erzeugt nichts Neues
+  assert.equal(erzeugeWiederholungen(daten, { jetzt: spaeter }).length, 0);
+  assert.equal(daten.eintraege.length, 2);
+});
+
+test('Anhänge: erlaubte Typen, Größengrenze, sichere Dateinamen', async () => {
+  const { speichereAnhang, sichererName, anhangPfad, ANHANG_MAX_BYTES } = await import('../lib/organisation-speicher.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tp-anhang-'));
+  const e = baueEintrag({ titel: 'Mit Foto' }, { jetzt: JETZT });
+
+  const a = speichereAnhang(e, { name: 'Muster foto.JPG', typ: 'image/jpeg', daten: Buffer.from('bild').toString('base64') }, { dir, jetzt: JETZT });
+  assert.equal(a.datei, 'Muster foto.jpg');
+  assert.equal(e.anhaenge.length, 1);
+  assert.ok(e.verlauf.some(v => v.was.includes('Anhang')));
+  assert.ok(fs.existsSync(path.join(dir, 'organisation', 'anhaenge', e.id, a.datei)));
+
+  // Zweite Datei mit gleichem Namen überschreibt nichts
+  const b = speichereAnhang(e, { name: 'Muster foto.JPG', typ: 'image/jpeg', daten: Buffer.from('zweites').toString('base64') }, { dir, jetzt: JETZT });
+  assert.notEqual(b.datei, a.datei);
+
+  // Pfadausbruch im Dateinamen wird entschärft
+  assert.equal(sichererName('../../etc/passwd', 'application/pdf'), 'passwd.pdf');
+  assert.throws(() => anhangPfad(e.id, '../../../etc/passwd', dir), /Ungültig/);
+
+  // Nicht erlaubte Typen und zu große Dateien
+  assert.throws(() => speichereAnhang(e, { name: 'x.exe', typ: 'application/x-msdownload', daten: 'AA==' }, { dir }), /nicht erlaubt/);
+  const zuGross = Buffer.alloc(ANHANG_MAX_BYTES + 10).toString('base64');
+  assert.throws(() => speichereAnhang(e, { name: 'gross.pdf', typ: 'application/pdf', daten: zuGross }, { dir }), /zu groß/);
+  assert.throws(() => speichereAnhang(e, { name: 'leer.pdf', typ: 'application/pdf', daten: '' }, { dir }), /leer/);
 });
