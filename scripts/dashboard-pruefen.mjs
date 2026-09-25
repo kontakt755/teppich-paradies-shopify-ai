@@ -32,8 +32,12 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
-const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'arbeit', 'lexikon', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet'];
-const HANDY_ANSICHTEN = ['heute', 'einkauf', 'kunden', 'arbeit'];
+const ALLE_ANSICHTEN = ['heute', 'einkauf', 'einkauf?tab=produktdaten', 'kunden', 'kunden?tab=bestellungen', 'kunden?tab=warenkoerbe', 'organisation', 'fotos', 'lexikon', 'lexikon?handle=kontura-teppichboden', 'arbeit', 'freigaben', 'ratgeber', 'bereiche', 'insights', 'aktivitaet', 'shopwache', 'team', 'hilfe'];
+// Seit das Control Center ueber Tailscale vom Handy aus benutzt wird (auch vom
+// Monteur auf der Baustelle), ist die Handy-Ansicht kein Sonderfall mehr:
+// geprueft wird alles, was es gibt. Vorher standen hier vier Ansichten - die
+// Aufgabenliste, der Fotoeingang und die Zugangsverwaltung waren nie dabei.
+const HANDY_ANSICHTEN = ALLE_ANSICHTEN.map(v => v.split('?')[0]);
 // Grosse Exporte, die das Dashboard nur liest: verlinken statt kopieren.
 const NUR_LESEN = ['einkauf-dryrun', 'einkauf-klaerung', 'lexikon'];
 // Klein oder beschreibbar: kopieren, damit Klicktests nie die echten Dateien treffen.

@@ -171,3 +171,39 @@ test('403 bei fremdem Host, mit Hinweis wenn es nur der fehlende Name ist', asyn
   const ausTailnet = await rufMitHost(base, '/api/shopwache/status', '100.101.22.9');
   assert.notEqual(ausTailnet.status, 403);
 }));
+
+// --- Groesse des Anfragekoerpers ------------------------------------------
+// Fotos und Anhaenge kommen als base64 im JSON. Mit der alten Grenze von 64 KB
+// fuer alle Pfade brach jeder Upload mit 413 ab, obwohl die Oberflaeche
+// "bis 10 MB je Datei" zusagte - der Fotoeingang konnte nie funktionieren.
+
+function postGross(base, pfad, nutzlast) {
+  const koerper = JSON.stringify(nutzlast);
+  const { port } = new URL(base);
+  return new Promise((ok, fehler) => {
+    const req = http.request(
+      { host: '127.0.0.1', port, path: pfad, method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(koerper) } },
+      res => { let t = ''; res.on('data', c => { t += c; }); res.on('end', () => ok({ status: res.statusCode, text: t })); },
+    );
+    req.on('error', e => (e.code === 'ECONNRESET' ? ok({ status: 0, text: 'abgebrochen' }) : fehler(e)));
+    req.end(koerper);
+  });
+}
+
+test('gewoehnliche Pfade bleiben bei 64 KB', async () => withServer(async base => {
+  const gross = { text: 'x'.repeat(100 * 1024) };
+  const r = await postGross(base, '/api/org/kommentar', gross);
+  // 413, oder die Verbindung wurde beim Abbruch geschlossen (req.destroy).
+  assert.ok(r.status === 413 || r.status === 0, `erwartet 413/Abbruch, bekam ${r.status}`);
+}));
+
+test('der Fotoeingang nimmt mehr als 64 KB an', async () => withServer(async base => {
+  // Ein Bild von ~300 KB als base64 - genau der Fall, der vorher scheiterte.
+  const bild = 'A'.repeat(400 * 1024);
+  const r = await postGross(base, '/api/fotos/neu', {
+    auftrag: 'T-1', boden: 'Piumera Sand Hell', einwilligung: true,
+    fotos: [{ name: 'baustelle.jpg', typ: 'image/jpeg', daten: bild }],
+  });
+  assert.notEqual(r.status, 413, `Upload wurde mit 413 abgewiesen: ${r.text.slice(0, 120)}`);
+  assert.notEqual(r.status, 0, 'Verbindung wurde abgebrochen - Groessengrenze greift noch');
+}));
