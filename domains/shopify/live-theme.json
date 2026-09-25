@@ -4,13 +4,13 @@
     "themeId": "204438208846",
     "name": "preview-main-2026-09-15",
     "verifiedAt": "2026-09-25T11:30:00Z",
-    "verifiedBy": "Shopify Admin API, role MAIN nach workflow:live (main d3f0288: Newsletter-Texte, Gutschein ab 100 EUR)"
+    "verifiedBy": "Shopify Admin API, role MAIN nach workflow:live (Newsletter 15 EUR ab 100 EUR, #626)"
   },
   "preview": {
     "themeId": "204436144462",
     "name": "Kopie von preview-main-2026-09-04",
     "verifiedAt": "2026-09-25T11:30:00Z",
-    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN. Naechstes Preview-Ziel."
+    "verifiedBy": "Shopify Admin API, Rollentausch per workflow:live; zuvor MAIN"
   },
   "fallback": {
     "themeId": "204440699214",
@@ -236,6 +236,12 @@
       "name": "Kopie von preview-main-2026-09-04",
       "retiredNoticedAt": "2026-09-25",
       "note": "Per workflow:live abgeloest durch 204438208846 (main d3f0288). Rollentausch am 2026-09-25 um 11:29:00Z per Admin API gegengeprueft. Bleibt unpublished als naechstes Preview-Ziel und Rueckfallpunkt, nicht loeschen."
+    },
+    {
+      "themeId": "204436144462",
+      "name": "Kopie von preview-main-2026-09-04",
+      "retiredNoticedAt": "2026-09-25",
+      "note": "Per workflow:live abgeloest durch 204438208846 (PR #626: Newsletter 15 EUR ab 100 EUR, nur zwei Vorteile). Bleibt als unpublished Theme erhalten und ist das naechste Preview-Ziel, nicht loeschen."
     }
   ],
   "verifyQuery": "query { themes(first: 20) { nodes { id name role updatedAt } } }",
