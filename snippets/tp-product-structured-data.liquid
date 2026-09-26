@@ -1,16 +1,18 @@
 {% comment %}
   Product-JSON-LD (Google Product Snippets / Merchant Listings).
 
-  Drei Faelle, alle datengetrieben (keine Titel-/Tag-Heuristik fuer Preise):
+  Zwei Ausschluesse und ein gemeinsames ProductGroup fuer Kaufprodukte:
 
   1. Service- und Hilfsprodukte (Typ "Service"/"Musterservice" oder Tag
      "service": Kettelservice, Fussleiste, kostenloses Muster) bekommen
      KEIN JSON-LD. Ihre Variantenpreise sind Rechengroessen (0,19 EUR je
      0,01 lfm, 0,00 EUR) und duerfen nie als Angebot erscheinen.
 
-  2. Flaechenware wird als ProductGroup mit einem Offer je Variante
-     ausgegeben, Preis als UnitPriceSpecification je Quadratmeter
-     (referenceQuantity 1 MTK) - so, wie die Seite ihn zeigt (EUR/m2).
+  2. Kaufprodukte werden als ProductGroup mit einem Offer je Variante
+     ausgegeben. Beschreibung, Preis, SKU und nur validierte GTIN kommen aus
+     den vorhandenen Shopify-Produkt- und Variantendaten.
+     Flaechenware fuehrt zusaetzlich eine UnitPriceSpecification je m2
+     (referenceQuantity 1 MTK), wie auf der Seite angezeigt.
      Erkannt wird sie an
      - custom.preis_pro_001_qm == true (Variantenpreis gilt je 0,01 m2,
        z. B. Teppich nach Mass: 0,89 -> 89,00 EUR/m2), oder
@@ -37,8 +39,6 @@
      auf den Quadratmeter heruntergerechnet, mit derselben Rundung wie
      snippets/price.liquid.
 
-  3. Alle anderen Produkte behalten Shopifys natives structured_data.
-
   Ausgegeben werden nur Shop-Daten: Titel, Beschreibung, Bilder, Vendor als
   Marke, SKU (nur wenn vorhanden), Farbe und - im ProductGroup-Zweig - die
   technischen Merkmale als additionalProperty aus
@@ -48,11 +48,10 @@
   Antwortmaschine sie nicht aus dem Fliesstext raten muss.
   Keine lieferant.*- oder einkauf.*-Metafelder.
 
-  Fall 3 (Shopifys natives structured_data) bleibt bewusst unangetastet: dort
-  haengt der Preis dran, und ein zweiter Product-Knoten mit derselben @id
-  laesst sich ohne Live-Pruefung im Rich-Results-Test nicht verantworten.
-  Diese Produkte tragen ihre Merkmale in der serverseitig gerenderten
-  Tabelle - fuer Crawler lesbar, nur eben nicht als JSON-LD.
+  Alle Kaufprodukte verwenden dieselbe Quelle, damit Variantenbeschreibung,
+  SKU und GTIN nicht zwischen Theme- und Shopify-Ausgabe auseinanderlaufen.
+  Preise bleiben Variantenpreise; nur bei Flaechenware wird die vorhandene
+  m2-Logik angewendet. So wird kein zweiter Product-Knoten erzeugt.
 {% endcomment %}
 
 {%- liquid
@@ -113,7 +112,7 @@
 
 {%- if tp_sd_skip -%}
   {%- comment -%} Service-/Hilfsprodukt: bewusst kein JSON-LD {%- endcomment -%}
-{%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
+{%- elsif tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket or tp_sd_is_wunschmass_legacy == false -%}
   {%- capture tp_sd_offers -%}
     {%- assign tp_sd_first = true -%}
     {%- for tp_sd_variant in product_resource.variants -%}
@@ -215,6 +214,7 @@
             "url": {{ tp_sd_variant_url | json }},
             "price": {{ tp_sd_price }},
             "priceCurrency": {{ cart.currency.iso_code | json }},
+            {%- if tp_sd_per_001 or tp_sd_is_roll or tp_sd_is_paket -%}
             "priceSpecification": {
               "@type": "UnitPriceSpecification",
               "price": {{ tp_sd_price }},
@@ -225,6 +225,7 @@
                 "unitCode": "MTK"
               }
             },
+            {%- endif -%}
             "itemCondition": "https://schema.org/NewCondition",
             "availability": {% if tp_sd_variant.available %}"https://schema.org/InStock"{% else %}"https://schema.org/OutOfStock"{% endif %},
             "seller": {
@@ -247,6 +248,9 @@
         "@id": {{ tp_sd_product_url | append: '#product' | json }},
         "productGroupID": {{ product_resource.id | json }},
         "name": {{ product_resource.title | json }},
+        {%- if product_resource.type != blank -%}
+        "category": {{ product_resource.type | json }},
+        {%- endif -%}
         {%- if tp_sd_description != blank -%}
         "description": {{ tp_sd_description | json }},
         {%- endif -%}
