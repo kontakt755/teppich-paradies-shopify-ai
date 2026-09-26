@@ -43,9 +43,13 @@ im Repo `domains/lieferanten/AUSGELAGERT.md`).
 
 ## Der Import-Skill liegt in einem synchronisierten Bundle
 
-Der Import-Skill fuer Lieferant A (`teppichparadies-*-import` in der Skill-Liste)
-liegt unter `~/Library/Application Support/Claude/…/skills-plugin/` — ein Sync
-von claude.ai setzt ihn zurueck. Sicherung und Wiederherstellung (der gepatchte
-Volltext und `skill-patch.py`, das die Patches erneut einspielt und sauber
-abbricht, wenn der Skill bereits gepatcht ist oder sich geaendert hat) liegen
-nur lokal unter `~/teppich-paradies-analyse/lieferantendaten/`.
+Der alte Import-Skill fuer Lieferant A (`teppichparadies-*-import`) kam aus dem
+Claude-Konto und wurde bei jedem Sync von claude.ai zurueckgesetzt. Am 2026-09-26
+war wieder der ungepatchte Stand vom 2026-08-07 aktiv: Browser statt `curl`,
+Lieferant beim Namen. Die gepatchte Fassung samt `skill-patch.py` liegt weiter nur
+lokal unter `~/teppich-paradies-analyse/lieferantendaten/domains/shopify/`; ihr
+Inhalt steckt bereits in `domains/shopify/produktimport-arbeitsweise.md`.
+
+Seit 2026-09-26 liegt der Ablauf versioniert im Repository:
+`.claude/skills/produktimport/SKILL.md`. Den Konto-Skill im Claude-Konto
+deaktivieren, damit nicht zwei Anleitungen um denselben Auftrag konkurrieren.
