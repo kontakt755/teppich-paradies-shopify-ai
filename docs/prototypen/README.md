@@ -30,7 +30,7 @@ abgeschaltet wurde, sondern weil die Dateien dort liegen, wo sie hingehoeren.
 |---|---|---|
 | `sisal/` | Sisal-Kategorie (SHP-017) | Entwurf, nie ausgeliefert |
 | `linoleum/` | Linoleum-Kategorieseite | Entwurf, nie ausgeliefert |
-| `ki-sichtbarkeit/` | JSON-LD fuer Produkt und FAQ | Entwurf, nie ausgeliefert |
+| `ki-sichtbarkeit/` | JSON-LD fuer Produkt und FAQ | **ueberholt** — das Theme liefert das laengst, siehe unten |
 
 Frueherer Ort der Dateien:
 
@@ -57,12 +57,34 @@ npm run liquid:guard && npm run schema:guard && npm run template:guard
 Ein Snippet, das niemand rendert, meldet der Theme-Check als
 `OrphanedSnippet` — im Theme-Root ist das ein echter Befund, kein Fehlalarm.
 
-## Offene Punkte in `ki-sichtbarkeit/tp-product-schema.liquid`
+## `ki-sichtbarkeit/` ist ueberholt — nicht einbinden
 
-Zwei Defekte, die nur die Laufzeit betreffen und deshalb bewusst offen sind —
-sie wirken erst, wenn die Datei tatsaechlich eingebunden wird:
+Diese beiden Entwuerfe nicht fertigstellen und nicht ins Theme holen. Das
+ausgelieferte Theme macht dasselbe bereits, und zwar besser. Am 2026-09-26 am
+Live-Shop nachgemessen (Aufgabe #613):
+
+| Seite | Ausgeliefertes JSON-LD |
+|---|---|
+| Produktseite | `Product`, `ProductGroup`, `Offer`, `Brand`, `UnitPriceSpecification`, `PropertyValue`, `QuantitativeValue`, dazu Local-Business- und `BreadcrumbList`-Block |
+| Startseite | `FAQPage`, `Question`, `Answer`, `WebSite`, `Service` |
+
+Zustaendig dafuer sind, jeweils eingebunden und gerendert:
+
+```
+snippets/tp-product-structured-data.liquid  -> sections/product-information.liquid,
+                                               featured-product.liquid, featured-product-information.liquid
+snippets/tp-faq-structured-data.liquid      -> sections/tp-start-faq.liquid, tp-teppiche-faq.liquid
+snippets/tp-ratgeber-structured-data.liquid -> sections/tp-ratgeber-beitrag.liquid
+```
+
+Die Entwuerfe hier koennen weniger — ihnen fehlen `UnitPriceSpecification` und
+die Variantendetails — und sie tragen zwei Defekte, die erst beim Einbinden
+wirken wuerden:
 
 - Die Bildschleife laeuft ueber `product.featured_image` (ein einzelnes Bild)
   statt ueber `product.images`.
 - Ohne verfuegbare Variante bleibt ein Komma vor der schliessenden Klammer
   stehen; das JSON-LD ist dann ungueltig.
+
+Sie bleiben vorerst liegen, weil sie einer anderen Sitzung gehoeren. Wer sie
+loeschen will, kann das ohne Verlust tun.
