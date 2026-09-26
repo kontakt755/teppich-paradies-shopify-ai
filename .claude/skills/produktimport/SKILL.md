@@ -29,7 +29,14 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
    Seiten, die ohne JavaScript leer bleiben - dann einmal pruefen und begruenden.
 4. **Farbcodes abschreiben, nie fortzaehlen.** Luecken in der Lieferantenliste sind
    echt. Farbnamen per Bildmessung (Abschnitt 7 der Arbeitsweise), nicht aus den
-   Lieferantenattributen. Danach `npm run farbcode:guard`.
+   Lieferantenattributen.
+   **Pruefen, bevor geschrieben wird:** die neuen Codes je Produkt aus der Rohdatendatei als
+   `[{ "titel": "…", "status": "DRAFT", "codes": ["Farbe 4153", …] }]` an
+   `node scripts/farbcode-guard.mjs --stdin < <datei>` geben. `npm run farbcode:guard`
+   ohne Eingabe liest nur `data/farbcode-guard-input.json` (Altbestand) und prueft den
+   neuen Import nicht. Der Guard meldet nur einen Verdacht - Beleg ist der Abgleich
+   **jedes einzelnen Codes** mit der Lieferantenliste; Ergebnis in der Rohdatendatei
+   festhalten (Quelle, Datum, fehlende Codes). Gleiche Anzahl ist kein Abgleich.
 5. **Paketinhalt je Artikel pruefen** - m² wird zwischen Formaten kopiert.
    Fliesen/Planken: `mindestmenge` = Paketinhalt. Paketprodukte tragen `custom.qm_pro_paket`.
 6. **Anlegen mit `productSet` - nur fuer neue Produkte**, Varianten im selben Aufruf.
@@ -42,7 +49,15 @@ URLs als `lieferant-a.example`. Rohdaten nur unter `~/teppich-paradies-analyse/l
    Verkaufskanaele des Referenzprodukts (IDs aus Schritt 1 lesen, nicht aus dem Gedaechtnis).
 9. **Gegenprobe nach jedem Schreibvorgang:** Variantenzahl, SKU, Optionswerte,
    `variant.image`, Metafelder, Veroeffentlichung. `userErrors: []` ist kein Beleg.
-10. **Muster:** eigene Variante, SKU `M-<Nummer>`, Farbe im Variantentitel.
+10. **Muster** nach `domains/shopify/benachrichtigungen/musterartikel.md` (verbindlich):
+    eigenes Produkt `muster-<Handle des Quellprodukts>`, Titel `Muster <Name ohne Breite>`,
+    dieselbe Option wie die Quelle, eine Variante je Farbe, SKU `M-<SKU der Quellvariante>`,
+    0,00 EUR, Status UNLISTED und im Onlineshop veroeffentlicht. Fehlt das Produkt oder eine
+    Farbe, faellt der Konfigurator still auf das Sammelprodukt `kostenloses-muster` zurueck.
+    **Jede neue Mustervariante gehoert ins Versandprofil "Kostenlose Muster"**, sonst zahlt
+    der Kunde Versand. Das Zuordnen ist eine Versandaenderung: nur mit ausdruecklicher
+    Freigabe des Inhabers. Gegenprobe ueber `deliveryProfile.profileItems`, nicht
+    `productVariantsCount` (deckelt bei 500).
 
 Mehr als etwa 50 Werte auf bestehenden Produkten (Metafelder, Tags, Einkaufsfelder):
 Skill `shopify-massendaten` (Plan, Rollback, Batchdateien).
