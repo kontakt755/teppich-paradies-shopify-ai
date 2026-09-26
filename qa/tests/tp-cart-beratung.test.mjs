@@ -156,22 +156,23 @@ test('Fehlender ctx verhaelt sich wie bisher (Frage gestellt)', () => {
   assert.equal(B.pruefen({}).fehler[0].code, 'BERATUNG_FEHLT');
 });
 
-test('Snippet stellt die Beratungsfrage nur bei reiner Musterbestellung', () => {
+test('Keine Pflichtfrage mehr - Beratung laeuft als Musteranfrage (2026-09-26)', () => {
   const s = lies('snippets/tp-cart-beratung.liquid');
-  // Die Frage haengt an tpb_frage ...
-  const if_frage = s.indexOf('{%- if tpb_frage -%}');
-  const frage = s.indexOf('Persönliche Beratung gewünscht?');
-  assert.ok(if_frage > 0 && frage > if_frage, 'Frage steht im tpb_frage-Zweig');
-  // ... und tpb_frage nur, wenn Muster da sind und keine regulaere Ware.
-  assert.match(s, /if tpb_muster_zeilen > 0 and tpb_ware_zeilen == 0\s*\n\s*assign tpb_frage = true/);
-  // Die Sperre gilt nur, solange die Frage gestellt ist.
-  assert.match(s, /if tpb_frage and tpb_beratung != 'Ja' and tpb_beratung != 'Nein'/);
-  // Keine eigene Muster-Regel im Snippet, nur das zentrale Snippet.
-  assert.ok(s.includes("render 'tp-muster-position', line_item: tpb_item"));
-  assert.ok(!/_Muster_ID/.test(s), 'Muster-Erkennung steht nicht mehr doppelt im Beratungs-Snippet');
-  // Aufraeumpfad ist verdrahtet.
+  // Die Frage ist abgeschaltet, alte Antworten werden aufgeraeumt.
+  assert.match(s, /assign tpb_frage = false/);
+  assert.ok(!/assign tpb_frage = true/.test(s), 'tpb_frage wird nie mehr true');
   assert.ok(s.includes('data-aufraeumen'));
-  assert.ok(lies('assets/tp-cart-beratung.js').includes("hasAttribute('data-aufraeumen')"));
+  assert.ok(s.includes("render 'tp-muster-position', line_item: tpb_item"));
+  // Neue Anfrage: nur bei reiner Musterbestellung, Kontaktformular mit Telefonpflicht.
+  const m = lies('snippets/tp-muster-beratungsanfrage.liquid');
+  assert.ok(m.includes("render 'tp-muster-position', line_item: tpm_item"));
+  assert.match(m, /if tpm_muster != blank and tpm_ware == 0/);
+  assert.match(m, /form 'contact'/);
+  assert.match(m, /name="contact\[Telefon\]"[^>]*required/);
+  assert.match(m, /name="contact\[email\]"[^>]*required/);
+  assert.match(m, /RÜCKRUF – Musterberatung/);
+  assert.match(m, /cart\/clear\.js/);
+  assert.ok(lies('snippets/cart-summary.liquid').includes("render 'tp-muster-beratungsanfrage'"));
 });
 
 test('Muster-Regel steht in Liquid und Node deckungsgleich', () => {
