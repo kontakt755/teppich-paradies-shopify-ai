@@ -1,6 +1,33 @@
 # Control Center – Technische Bestandsaufnahme
 
-Stand: 2026-09-08 · Branch `feature/control-center` · Basis `origin/main` (281bd69)
+Stand der ursprünglichen Aufnahme: 2026-09-08 · Branch `feature/control-center` · Basis `origin/main` (281bd69)
+
+> **Aktualisierung 2026-09-26:** Die Abschnitte ab „Was heute existiert“ dokumentieren den damaligen
+> Ausgangspunkt und bleiben als Entscheidungsverlauf erhalten. Der aktuelle Betriebsstand steht direkt
+> hier; laufende Änderungen werden im [`CHANGELOG.md`](./CHANGELOG.md) festgehalten.
+
+## Aktueller Betriebsstand 2026-09-26
+
+- Das **Teppich Paradies Control Center** läuft lokal auf Port 8001 und ist über das freigegebene
+  Betriebsnetz erreichbar. Kundendaten und Einkaufsdaten werden nicht öffentlich über GitHub Pages
+  bereitgestellt.
+- Die Oberfläche besteht aus `index.html`, `app.css`, `app.js` und testbaren Modulen. Sie bietet Heute,
+  Kunden, Einkauf, Aufgaben, Lexikon, Baustellenfotos, Shop-Wache und die internen Inhaberbereiche.
+- Inhaber, Mitarbeiter und reine Lesezugänge melden sich mit eigenen Zugängen an. Rollen werden sowohl
+  in der Oberfläche als auch an allen schreibenden Server-Endpunkten geprüft.
+- GitHub Issues bleiben die Quelle für Entwicklungsaufgaben. Betriebliche Aufgaben, persönliche Notizen,
+  Fotoeingänge und Auftragsfortschritt liegen ausschließlich im privaten Betriebsverzeichnis.
+- Shopify-Exporte liefern Bestellungen, Kunden, Produktlexikon und Kennzahlen. Fehlen Exporte oder
+  Zugangsdaten, zeigt das Dashboard den fehlenden Stand ausdrücklich an und erfindet keine Zahlen.
+- Die Oberfläche startet im schwarzen Dunkelmodus; Hell/Dunkel ist umschaltbar und wird je Browser
+  gespeichert. Desktop und Smartphone werden über `npm run dashboard:pruefen` vollständig geprüft.
+- Der aktuelle Prüfumfang umfasst 140 Funktionsprüfungen sowie alle 19 Ansichten auf Desktop und Handy.
+
+Aktuelle Betriebsrisiken: Der Datenexport braucht weiterhin eine gültige Shopify-Verbindung oder einen
+manuellen Export; das Dashboard läuft im lokalen Netz über HTTP und darf deshalb nur über das freigegebene
+Netz beziehungsweise Tailscale erreichbar sein. `issues.json` bleibt eine erzeugte Datei und kann bei
+gleichzeitigen Bot-Commits Konflikte verursachen; der dokumentierte Rebase-Ablauf löst sie mit der frisch
+erzeugten Fassung von `main`.
 
 ## 1. Was heute existiert: drei Oberflächen, ein Repository
 
