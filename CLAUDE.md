@@ -13,9 +13,11 @@ fuer den Session-Alltag. Die Vorfaelle hinter jeder Regel stehen in
 Repository konsistent und verbietet Theme-IDs in Anweisungsdateien. Nachpruefen
 ueber den Shopify-MCP — live ist der Knoten mit `role: MAIN`:
 
-```graphql
-query { themes(first: 20) { nodes { id name role updatedAt } } }
 ```
+npm run -s kurz -- themes-query   # gibt die Abfrage aus: nur MAIN + preview/fallback/arbeit, vier Knoten
+```
+
+Nicht `themes(first: 20)` — das sind 20 volle Knoten im Verlauf, fuer vier Zeilen Antwort.
 
 Danach `live-theme.json` aktualisieren (inklusive `verifiedAt`), das alte Theme
 unter `retired` eintragen und `npm run theme:guard` laufen lassen.
@@ -136,6 +138,8 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run pr:doctor:melden` | dasselbe als idempotenter PR-Kommentar (CI: Push auf `main`, alle 6 h) |
 | `npm run farbcode:guard` | Farbvarianten, deren Codes durchgezaehlt statt abgeschrieben wurden |
 | `npm run bewertung:guard` | Google-Bewertung, die wieder einzeln im Template steht statt in der Theme-Einstellung |
+| `npm run -s kurz -- <art>` | Theme-Rollen, Push-Ergebnis, Worktrees gefiltert statt als Rohdump |
+| `npm run -s handoff` | Uebergabetext fuer die naechste Sitzung aus dem Git-Stand |
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
 
@@ -152,6 +156,23 @@ query { theme(id: "gid://shopify/OnlineStoreTheme/<id>") {
 **`workflow:scratch`** laeuft aus jedem Branch, auch mit uncommitteten
 Aenderungen, schreibt keine Evidence und verweigert das Live-Theme und das
 Preview-Evidence-Theme. Zum Deployen bleibt es bei `preview` → `live`.
+
+## Verbrauch: eine Sitzung pro Aufgabe, Ausgaben gefiltert (#361)
+
+Grundlast einer Sitzung ~72k Tokens (System-Tools ~30k, MCP ~19k, Memory ~13k),
+kaum beeinflussbar. In langen Sitzungen ist aber der **Verlauf** 84 % — und den
+bezahlt jede Runde erneut. Er waechst durch Rohdumps, nicht durch Prosa.
+
+- **Hook `kontext-waechter.mjs`** meldet sich, sobald im selben Chat ein zweites
+  `workflow:route` lief oder der Kontext 250k ueberschreitet (danach je +150k).
+  Dann: Aufgabe abschliessen, `npm run -s handoff` ausgeben, neue Sitzung.
+- **Gefiltert statt roh:** `npm run -s kurz -- themes-query | themes | push | worktrees`.
+  `shopify theme push --json ... | npm run -s kurz -- push` zeigt Fehler, zaehlt Offenses.
+- **GraphQL nur mit den Feldern, die die Entscheidung braucht.** Zaehlen per
+  `productsCount(query:)` bzw. `first:` + `pageInfo`, nicht 100 Produkte holen.
+  Ein Menuelink wird ueber `menu(id:)` mit `items { title url }` geprueft, nicht
+  zweimal der ganze Baum. Ergebnis einmal holen und weiterverwenden.
+- `live-theme.json` nicht ganz lesen (Retired-Liste ~10k): `jq '{live,preview,fallback,arbeit}'`.
 
 ## Context Mode (grosse Ausgaben aus dem Kontext halten)
 
