@@ -6,7 +6,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { auswerten, stufe } from './kontext-waechter.mjs';
+import { auswerten, stufe, istRoute } from './kontext-waechter.mjs';
 
 const HOOK = join(dirname(fileURLToPath(import.meta.url)), 'kontext-waechter.mjs');
 const assistent = (kontext, cmd) => JSON.stringify({
@@ -66,4 +66,12 @@ test('kaputte Eingabe oder fehlendes Transkript: still, Exit 0', () => {
     assert.equal(r.status, 0);
     assert.equal(r.stdout, '');
   }
+});
+
+test('Text im Commit, grep oder echo ist kein Routenaufruf', () => {
+  assert.equal(istRoute('git commit -m "npm run workflow:route erwaehnt"'), false);
+  assert.equal(istRoute("grep -n 'workflow:route' CLAUDE.md"), false);
+  assert.equal(istRoute('echo workflow:route'), false);
+  assert.equal(istRoute('cd x && npm run -s workflow:route -- "A"'), true);
+  assert.equal(istRoute('node workflow/cli.mjs route "A"'), true);
 });
