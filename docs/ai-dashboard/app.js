@@ -25,6 +25,28 @@ const CONFIG = {
   workflowFile: 'dashboard-data.yml',
 };
 const REPO_URL = `https://github.com/${CONFIG.owner}/${CONFIG.repo}`;
+const THEME_KEY = 'tp-theme';
+
+function renderThemeButton() {
+  const btn = $('#themeBtn');
+  if (!btn) return;
+  const dunkel = document.documentElement.dataset.theme !== 'light';
+  const ziel = dunkel ? 'Helle' : 'Dunkle';
+  btn.title = `${ziel} Ansicht einschalten`;
+  btn.setAttribute('aria-label', `${ziel} Ansicht einschalten`);
+  const icon = $('#themeIcon');
+  const text = $('#themeBtnText');
+  if (icon) icon.textContent = dunkel ? '☀' : '☾';
+  if (text) text.textContent = dunkel ? 'Hell' : 'Dunkel';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dunkel ? '#0d0c0b' : '#241a16');
+}
+
+function toggleTheme() {
+  const naechstes = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = naechstes;
+  try { localStorage.setItem(THEME_KEY, naechstes); } catch {}
+  renderThemeButton();
+}
 
 // ---------------------------------------------------------------------------
 // Zustand
@@ -460,7 +482,7 @@ function heuteEinkaufBlock() {
   // Nur sichtbar, wenn es etwas zum Nachhaken gibt - eine 0 waere hier reines Rauschen.
   const langeBestellt = [...ware, ...muster].filter(p => { const e = afEintragFuer(p); return e?.status === 'bestellt' && afWartetage(e) >= AF_WARTE_WARN; }).length;
   const neu = heuteNeuSeitGestern(b);
-  const stand = bestelldatenStand(b);
+  const stand = bestelldatenStand(b, einkauf.aktualisierung);
   return `
     <div class="band">
       ${bandItem(aktiv.length, 'offene Kundenaufträge', 'plain', '#/einkauf')}
@@ -480,14 +502,21 @@ function heuteEinkaufBlock() {
 /**
  * Wie alt sind die Bestelldaten wirklich? `erstellt` ist nur der Zeitpunkt,
  * zu dem der Server die Datei gelesen hat - es als "Stand" anzuzeigen, sah
- * immer taufrisch aus, egal wie alt der Shopify-Abruf war. Ohne
- * `exportiertAm` wird das jetzt gesagt statt beschoenigt.
+ * immer taufrisch aus, egal wie alt der Shopify-Abruf war. Wenn ein alter
+ * Export `exportiertAm` noch nicht enthaelt, gilt nur der nachweislich
+ * erfolgreiche Bestelllauf als belastbarer Ersatz.
  */
-function bestelldatenStand(b) {
-  if (!b?.exportiertAm) return { text: 'Stand der Bestelldaten unbekannt', alt: true };
-  const alter = Date.now() - new Date(b.exportiertAm).getTime();
+function bestelldatenStand(b, aktualisierung) {
+  // Aeltere und extern erzeugte Admin-API-Exporte enthalten noch kein
+  // `exportiertAm`. Der erfolgreiche Aktualisierungslauf kennt trotzdem den
+  // Zeitpunkt, zu dem genau dieser Datenbestand geholt wurde. Ein fehlgeschlagener
+  // Lauf darf dagegen keinen frischen Stand vortaeuschen.
+  const bestellungen = aktualisierung?.teile?.bestellungen;
+  const zeitpunkt = b?.exportiertAm || (bestellungen?.erfolg ? bestellungen.zeitpunkt : null);
+  if (!zeitpunkt) return { text: 'Stand der Bestelldaten unbekannt', alt: true };
+  const alter = Date.now() - new Date(zeitpunkt).getTime();
   const alt = !(alter < 24 * 60 * 60 * 1000);
-  return { text: `Stand Bestellungen ${fmtDateTime(b.exportiertAm)}${alt ? ' – älter als ein Tag' : ''}`, alt };
+  return { text: `Stand Bestellungen ${fmtDateTime(zeitpunkt)}${alt ? ' – älter als ein Tag' : ''}`, alt };
 }
 
 /**
@@ -3952,14 +3981,16 @@ function viewFotos() {
   const d = fotos.liste;
   const gewaehlt = fotos.gewaehlt.length;
 
-  const formular = `<form id="fotoForm" class="card" style="padding:16px;max-width:640px">
+  const formular = `<form id="fotoForm" class="card foto-form">
     <h2 style="margin:0 0 4px">Fotos vom fertigen Raum</h2>
     <p class="small muted" style="margin:0 0 12px">Bilder aussuchen, Auftragsnummer eintippen, abschicken. Mehr ist es nicht.</p>
 
-    <label class="small" for="fotoDateien">Fotos <span class="muted">(bis 20 Stück – große Bilder werden vor dem Senden automatisch verkleinert)</span></label>
-    <input type="file" id="fotoDateien" accept="image/*" multiple
-           style="width:100%;box-sizing:border-box;margin:4px 0 4px">
-    <p class="small muted" id="fotoGewaehlt" style="margin:0 0 12px">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
+    <input class="visually-hidden" type="file" id="fotoDateien" accept="image/*" multiple>
+    <label class="foto-upload" for="fotoDateien">
+      <span class="foto-upload-plus" aria-hidden="true">+</span>
+      <span><strong>Fotos auswählen</strong><small>Bis zu 20 Bilder – große Fotos werden automatisch verkleinert</small></span>
+    </label>
+    <p class="small ${gewaehlt ? '' : 'muted'}" id="fotoGewaehlt">${gewaehlt ? `${gewaehlt} ${gewaehlt === 1 ? 'Bild' : 'Bilder'} ausgewählt` : 'Noch nichts ausgewählt'}</p>
 
     <label class="small" for="fotoAuftrag">Auftragsnummer</label>
     <input type="text" id="fotoAuftrag" inputmode="numeric" placeholder="z. B. 1042" value="${esc(fotos.auftrag)}"
@@ -3974,7 +4005,7 @@ function viewFotos() {
     <input type="text" id="fotoNotiz" placeholder="z. B. Wohnzimmer 4 × 5 m" value="${esc(fotos.notiz)}"
            style="width:100%;box-sizing:border-box;margin:4px 0 12px">
 
-    <label class="small" style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px">
+    <label class="small foto-einwilligung">
       <input type="checkbox" id="fotoEinwilligung"${fotos.einwilligung ? ' checked' : ''}>
       <span>Der Kunde ist damit einverstanden, dass wir die Fotos verwenden.
         <span class="muted">Ohne Zustimmung dürfen wir Bilder aus einer Wohnung nicht zeigen – dann bitte nicht abschicken.</span></span>
@@ -4007,7 +4038,19 @@ function viewFotos() {
       <div><h1>Baustellenfotos</h1>
       <p class="sub">Fotos vom fertigen Raum – die Grundlage für unsere Beiträge.</p></div>
     </div>
-    ${formular}
+    <div class="foto-layout">
+      ${formular}
+      <aside class="card foto-hilfe" aria-label="So entstehen gute Baustellenfotos">
+        <span class="badge plain">In zwei Minuten erledigt</span>
+        <h2>So werden die Bilder brauchbar</h2>
+        <ol class="foto-schritte">
+          <li><span>1</span><div><strong>Raum fertig machen</strong><small>Werkzeug und Verpackung aus dem Bild nehmen.</small></div></li>
+          <li><span>2</span><div><strong>Übersicht und Details</strong><small>Ein Bild vom ganzen Raum, danach Übergänge und Kanten.</small></div></li>
+          <li><span>3</span><div><strong>Auftrag zuordnen</strong><small>Auftragsnummer und Boden vom Auftragszettel eintragen.</small></div></li>
+        </ol>
+        <p class="small muted foto-datenschutz">Nur mit Zustimmung des Kunden abschicken. Die Bilder bleiben im internen Arbeitsbereich, bis sie geprüft wurden.</p>
+      </aside>
+    </div>
     <h2 style="margin:24px 0 8px">Eingegangen${d?.anzahl ? ` (${d.anzahl})` : ''}</h2>
     ${galerie}`;
 }
@@ -4929,6 +4972,7 @@ function bindEvents() {
     openActionDialog(t, 'move', { target });
   });
   $('#searchBtn').addEventListener('click', openPalette);
+  $('#themeBtn')?.addEventListener('click', toggleTheme);
   $('#sessionBtn').addEventListener('click', logout);
   $('#meinPasswortBtn')?.addEventListener('click', openMeinPasswort);
   // Der Chip fuehrt in den Systemzustand - fuer Mitarbeiter gibt es dort nichts,
@@ -4942,6 +4986,7 @@ function bindEvents() {
 async function init() {
   parseRoute();
   bindEvents();
+  renderThemeButton();
   await loadSession();
   await loadCapabilities();
   await loadData();
