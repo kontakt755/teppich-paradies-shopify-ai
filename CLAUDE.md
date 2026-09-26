@@ -153,6 +153,18 @@ query { theme(id: "gid://shopify/OnlineStoreTheme/<id>") {
 Aenderungen, schreibt keine Evidence und verweigert das Live-Theme und das
 Preview-Evidence-Theme. Zum Deployen bleibt es bei `preview` → `live`.
 
+## Context Mode (grosse Ausgaben aus dem Kontext halten)
+
+`.mcp.json` bindet Context Mode **nur als MCP-Server** ein, Version gepinnt,
+**ohne** das Plugin mit seinen Hooks (das faengt Bash/`curl` ab und umgeht die
+Hook-Sperren). Fuer Ausgaben ueber ~50 Zeilen (lange Logs, `git log --stat`,
+Testlaeufe, Bulk-JSON) `ctx_execute` / `ctx_batch_execute` mit `intent` nutzen;
+kurze Befehle, Git-Schreibbefehle und Deploys bleiben im Bash-Tool.
+`.claude/hooks/context-mode-guard.mjs` schickt jeden Shell-Befehl darin durch
+`git-gh-guard` und `theme-delete-guard`, erlaubt nur shell/javascript/typescript/python
+und verbietet Prozessstarts ausserhalb von `shell`. **Nie** `/plugin install
+context-mode` und kein `ctx_upgrade` — Versionswechsel nur ueber `.mcp.json` per PR.
+
 ## Shopify-Schreibzugriff — nicht nach einem Token suchen
 
 **Der Shopify-MCP-Server ist bereits authentifiziert.** Produkte, Varianten,

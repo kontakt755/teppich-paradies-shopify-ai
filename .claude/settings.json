@@ -15,7 +15,8 @@
       "TaskList",
       "mcp__claude-in-chrome",
       "mcp__Claude_Browser",
-      "mcp__87afcfe9-ad55-49fd-b364-c250eb5ccf31"
+      "mcp__87afcfe9-ad55-49fd-b364-c250eb5ccf31",
+      "mcp__context-mode"
     ]
   },
   "hooks": {
@@ -99,6 +100,20 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__context-mode__ctx_(execute|execute_file|batch_execute)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/context-mode-guard.mjs\"",
+            "statusMessage": "Context-Mode-Befehl pruefen"
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
@@ -124,6 +139,15 @@
       },
       {
         "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/record-bash-write.mjs\""
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__context-mode__ctx_(execute|execute_file|batch_execute)",
         "hooks": [
           {
             "type": "command",
