@@ -22,6 +22,13 @@ import { join } from 'node:path';
 export const SCHWELLE = Number(process.env.TP_KONTEXT_SCHWELLE) || 250000;
 export const SCHRITT = 150000;
 
+// Nur ein echter Aufruf zaehlt, nicht jeder Befehl, in dem der Text vorkommt
+// (Commit-Texte, Heredocs, grep, echo enthalten ihn auch).
+export function istRoute(cmd) {
+  return cmd.split(/&&|;|\|\||\|/).some((teil) =>
+    /^\s*(?:npm run(?: -s)? workflow:route|node (?:\.\/)?workflow\/cli\.mjs route)(?:\s|$)/.test(teil));
+}
+
 // Liest das JSONL-Transkript und liefert { kontext, routen }.
 export function auswerten(text) {
   let kontext = 0;
@@ -40,7 +47,7 @@ export function auswerten(text) {
     }
     for (const teil of Array.isArray(m.content) ? m.content : []) {
       const cmd = teil?.type === 'tool_use' ? teil.input?.command : null;
-      if (typeof cmd === 'string' && /workflow:route\b|workflow\/cli\.mjs\s+route\b/.test(cmd)) routen++;
+      if (typeof cmd === 'string' && istRoute(cmd)) routen++;
     }
   }
   return { kontext, routen };
