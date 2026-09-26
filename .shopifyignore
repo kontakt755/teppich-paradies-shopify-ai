@@ -1,13 +1,9 @@
 # Nicht ins Shopify-Theme hochladen.
 
-# Sisal-Prototyp (Commit 39029ac). Liegt bewusst unter theme/ und ist damit
-# kein ausliefbares Template - Shopify erwartet templates/, snippets/ und
-# assets/ direkt im Root. Ohne diesen Eintrag scannt der Push den Prototyp mit
-# und bricht mit --strict am Theme-Check ab. CLI 4.8 versteht nur noch
-# Glob-Muster, ein blosses "theme/" wird als irrefuehrend gemeldet und
-# nicht angewendet.
-theme/*
-theme/**/*
+# Prototypen liegen seit 2026-09-26 unter docs/prototypen/ und damit ausserhalb
+# jedes Theme-Ordners. Der frueher noetige theme/-Eintrag ist entfallen: er hat
+# den Upload zwar verhindert, den Theme-Check aber nicht - und ein kaputtes
+# Prototyp-Snippet legte darueber dreimal die ganze Deploy-Kette lahm.
 
 # domains/ traegt Dokumentation und Vorlagen fuer den Shopify-Admin (etwa den
 # Block der internen Bestellmail). Nichts davon gehoert ins Theme.

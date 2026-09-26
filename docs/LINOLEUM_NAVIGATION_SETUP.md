@@ -28,7 +28,7 @@ Diese Dokumentation beschreibt die Einrichtung der Linoleumboden-Navigation für
 - Max. Produkte: 4
 - Layout: 4-spaltig (Desktop), 2-spaltig (Mobile)
 
-### 3. Collection Landing Page (theme/templates/collection-linoleumboden.liquid)
+### 3. Collection Landing Page (docs/prototypen/linoleum/collection-linoleumboden.liquid)
 Erstellt als spezialisiertes Template mit:
 
 **Hero Section:**
@@ -146,7 +146,7 @@ Folgende Dateien wurden geändert:
 
 1. **sections/Startseite.liquid** — 4. Kasten + Grid-Anpassung
 2. **templates/index.json** — Neue Linoleum-Produktlisten-Section
-3. **theme/templates/collection-linoleumboden.liquid** — Neues Collection-Template
+3. **docs/prototypen/linoleum/collection-linoleumboden.liquid** — Neues Collection-Template
 4. **docs/LINOLEUM_NAVIGATION_SETUP.md** — Diese Dokumentation
 
 ---
