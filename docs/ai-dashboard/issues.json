@@ -1,12 +1,12 @@
 {
   "schema": 2,
-  "generated_at": "2026-09-26T09:26:58.518Z",
+  "generated_at": "2026-09-26T09:29:29.010Z",
   "repo": "kontakt755/teppich-paradies-shopify-ai",
-  "count": 159,
+  "count": 160,
   "sync": {
     "source": "github-issues",
     "repo": "kontakt755/teppich-paradies-shopify-ai",
-    "fetchedAt": "2026-09-26T09:26:58.518Z",
+    "fetchedAt": "2026-09-26T09:29:29.010Z",
     "labelsAvailable": [
       "area:ads",
       "area:analytics",
@@ -63,6 +63,31 @@
     "ok": true
   },
   "issues": [
+    {
+      "number": 675,
+      "title": "Verbrauch III: Handoff bei task done, Gedaechtnis-Notizen zu Lessons, Abfrage-Cache",
+      "state": "open",
+      "html_url": "https://github.com/kontakt755/teppich-paradies-shopify-ai/issues/675",
+      "labels": [
+        "status:eingang",
+        "type:technik",
+        "priority:p3",
+        "area:technik"
+      ],
+      "assignee": "kontakt755",
+      "assignees": [
+        "kontakt755"
+      ],
+      "comments": 0,
+      "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen",
+      "fields": {
+        "description": "Vorschlaege 3, 5, 6 aus der #361-Sitzung, gebuendelt (Freigabe Inhaber 2026-09-26). Reine Technik, keine Inhaberentscheidung noetig. Nach #670 angehen, weil beide CLAUDE.md und die Hooks beruehren.\n\n1. Handoff bei task done: Wenn npm run task -- done laeuft, schreibt scripts/task.mjs den Text von npm run -s handoff als Issue-Kommentar und der Stop-Hook schlaegt den Sitzungswechsel vor. Baut auf .claude/hooks/kontext-waechter.mjs und scripts/handoff.mjs (#361) auf. Test.\n\n2. Gedaechtnis-Notizen (Typ feedback) aelter als 14 Tage werden entweder eine Lesson unter docs/lessons/ oder geloescht. Skript npm run gedaechtnis:pruefen listet die Kandidaten mit Alter und Verweisen; nichts loescht automatisch. Ziel: eine Quelle (docs/lessons/), Gedaechtnis bleibt klein, Obsidian zeigt beides. Gedaechtnis liegt im privaten Repo tp-claude-gedaechtnis (#665), Lieferantennamen duerfen nicht in Lessons wandern (Pseudonyme, AGENTS.md).\n\n3. Abfrage-Cache unter .router/cache/ (gitignored), 10 Minuten gueltig, fuer Theme-Rollen, Menuebaum und Kollektionszahlen. npm run -s kurz -- themes|... liest zuerst den Cache; --frisch erzwingt die Abfrage. Vor Deploy-Schritten nie aus dem Cache (Theme-Rollen im Mom…",
+        "nextStep": "Triage: Priorität, Owner und Akzeptanzkriterien festlegen"
+      },
+      "created_at": "2026-09-26T09:29:14Z",
+      "updated_at": "2026-09-26T09:29:15Z",
+      "closed_at": null
+    },
     {
       "number": 673,
       "title": "Woechentlicher Rueckblick als Routine: was lief schief, was war teuer, was fehlt",
