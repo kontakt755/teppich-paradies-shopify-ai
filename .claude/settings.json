@@ -36,6 +36,14 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/openrouter-user-prompt.mjs\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/kontext-waechter.mjs\""
+          }
+        ]
       }
     ],
     "Stop": [
