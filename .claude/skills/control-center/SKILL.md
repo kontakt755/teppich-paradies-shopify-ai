@@ -190,3 +190,53 @@ Vor dem Umsetzen als Aufgabe anlegen und mit dem Inhaber abstimmen:
   aeltere Auftraege erscheinen, die erst jetzt rot geworden sind.
 - Arbeit: Owner-Filter und Spalte automatisch einblenden, sobald mehr als eine
   Person Aufgaben hat.
+
+
+## Regeln aus CLAUDE.md (ausgelagert, #670)
+
+`docs/ai-dashboard/` ist das Control Center; Konzept in `docs/control-center/`
+(**vor Aenderungen am Dashboard lesen**). `dashboard-data.yml` schreibt
+`docs/ai-dashboard/issues.json` (Schema 2); das Frontend liest **nur** diese
+Datei; lokal (`npm run dashboard`, `:8001`) kommt `/api/*` aus
+`scripts/dashboard-api.mjs` dazu. Keinen GitHub-API-Aufruf mit Token ins
+Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
+
+Label-Gruppen: `status:*`, `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`
+(`./setup-dashboard.sh` legt sie an). Tests: `npm run dashboard:test`.
+
+**Vor jeder Aenderung am Dashboard** den Skill `.claude/skills/control-center/SKILL.md`
+lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Browser
+mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
+Scrollen; `--offen` fuer Klicktests).
+
+`issues.json` gehoert dem Bot: **nicht mitcommitten**, Dateien gezielt mit
+`git add <datei>` stagen, nie `git add -A`. Zuruecksetzen ist fuer genau diesen
+Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
+`.claude/hooks/git-gh-guard.mjs`, der sonst jede Stelle im Befehl prueft und
+fail-closed blockiert (Fliesstext mit Git-Befehlen per Heredoc).
+→ `docs/lessons/dashboard-issues-json.md`
+
+**Beim Rebase ist `--ours` der Upstream, nicht die eigene Arbeit.** Genau
+umgekehrt zum Merge. Wer den eigenen, gerade wiedergespielten Stand behalten
+will — etwa der Bot mit seinen frisch erzeugten Dateien — nimmt `--theirs`.
+`dashboard-data.yml` nahm seit dem 2026-09-03 `--ours` und verwarf damit die
+Datei, die es im selben Lauf erzeugt hatte.
+→ `docs/lessons/rebase-ours-ist-der-upstream.md`
+
+**Aufgaben pflegen sich ueber Ereignisse selbst** (`task-automation.yml`):
+neues Issue → Eingang, PR referenziert `#n` → In Arbeit, PR gemergt → Review,
+Issue geschlossen → Erledigt. Prioritaeten und Owner nie automatisch.
+
+**KI-Sessions legen ihre Arbeit als Aufgabe an und fuehren den Status nach.**
+Zwischenstand und Entscheidungen gehoeren als Notiz ans Issue — das ist der
+Mac-uebergreifende Handoff, kein zweiter Aufgabenspeicher:
+
+```
+npm run task -- create "Titel" --area google --type technik --prio p2 --owner kontakt755
+npm run task -- start 92 --owner kontakt755 --note "Beginne mit …"
+npm run task -- review 92 --note "PR #101, Tests gruen"
+npm run task -- done 92 --confirm --note "gemergt"
+npm run task -- block 92 --reason "Warte auf … von Ahmet"
+```
+
+Owner ist Ahmet = GitHub-Login `kontakt755`. `Closes #n` im PR-Text schliesst beim Merge.

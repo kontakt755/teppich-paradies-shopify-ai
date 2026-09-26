@@ -7,7 +7,12 @@
     "README.md",
     ".claude/README.md",
     "QUICK_START.md",
-    "RISK_MODEL_SPEC.md"
+    "RISK_MODEL_SPEC.md",
+    ".claude/skills/deploy/SKILL.md",
+    ".claude/skills/ai-orchestrator/SKILL.md",
+    ".claude/skills/control-center/SKILL.md",
+    ".claude/skills/produktimport/SKILL.md",
+    ".claude/skills/produktimport/shopify-daten.md"
   ],
   "registry": "domains/shopify/live-theme.json",
   "riskMap": "domains/shopify/risk-map.json"

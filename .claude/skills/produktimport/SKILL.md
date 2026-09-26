@@ -7,7 +7,8 @@ description: Neue Produkte aus einer Lieferantenquelle in Shopify anlegen (Teppi
 
 Verbindlich ist `domains/shopify/produktimport-arbeitsweise.md` - **vor dem ersten
 Produkt ganz lesen**. Dieser Skill ist die Reihenfolge und die Checkliste dazu, keine
-zweite Regelquelle. Vorfaelle: `docs/lessons/produktimport.md`.
+zweite Regelquelle. Vorfaelle: `docs/lessons/produktimport.md`. Schreibzugriff und
+Produktdatenregeln: `shopify-daten.md` in diesem Ordner.
 
 Lieferantennamen gehoeren nicht ins Repository, in Commit-/PR-Texte oder in
 `npm run task`-Notizen: nur **Lieferant A** bis **D**, Linien **A-1** bis **A-3**,
