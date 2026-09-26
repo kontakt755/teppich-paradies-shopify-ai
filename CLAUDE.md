@@ -143,19 +143,21 @@ lokal auf dem Mac. Unbekannte Flags brechen ab.
 | `npm run theme:diff -- --manifest <datei>` | Theme gegen Repository abgleichen |
 | `npm run workflow:scratch -- --theme-id <id>` | Wegwerf-Theme zum Ausprobieren, ohne Evidence |
 
-**`theme:diff`** braucht ein Manifest aus der Admin API (`checksumMd5` = MD5 der
-Rohbytes, rund 500 Dateien = zwei Seiten, bei `hasNextPage` mit `after` blaettern).
-Ergebnis als `{themeId, themeName, files:[{filename, checksumMd5}]}` ablegen:
+## Shopify-Schreibzugriff und Produktdaten
 
-```graphql
-query { theme(id: "gid://shopify/OnlineStoreTheme/<id>") {
-  name files(first: 250) { pageInfo { hasNextPage endCursor }
-  nodes { filename checksumMd5 } } } }
-```
+Der Shopify-MCP ist bereits authentifiziert: nicht nach einem Token suchen, der
+Browser ist nie der Ausweichweg. Bevor „die API kann das nicht" faellt, per
+`graphql_schema` nachschlagen. Farben sind die Produktoption `Farbe`, Bloecke gehen
+auf die Option; Produkteigenschaften und Farbcodes nie erfinden oder fortzaehlen.
+Details: Skill `produktimport` (`shopify-daten.md`), `docs/lessons/shopify-schreibzugriff.md`.
 
-**`workflow:scratch`** laeuft aus jedem Branch, auch mit uncommitteten
-Aenderungen, schreibt keine Evidence und verweigert das Live-Theme und das
-Preview-Evidence-Theme. Zum Deployen bleibt es bei `preview` → `live`.
+## Fertige Features — nicht neu bauen
+
+€/m²-Anzeige, Paket-/Verschnittrechner samt Warenkorb-Logik, deutsche Paket- und
+Bestellmengen-Anzeige, Produktvergleich (max. 3), Musterbestellung, Breadcrumb,
+Produktvorteile, technische Daten, Produktkarten-Logik mit gekuerzten Titeln,
+Predictive Search, Startseitenstruktur, Vinyl-Kategorie-Karussell, Mobile-Peek
+und Karussell-Navigation. Alles getestet und in Benutzung.
 
 ## Verbrauch: eine Sitzung pro Aufgabe, Ausgaben gefiltert (#361)
 
@@ -172,121 +174,24 @@ bezahlt jede Runde erneut. Er waechst durch Rohdumps, nicht durch Prosa.
   `productsCount(query:)` bzw. `first:` + `pageInfo`, nicht 100 Produkte holen.
   Ein Menuelink wird ueber `menu(id:)` mit `items { title url }` geprueft, nicht
   zweimal der ganze Baum. Ergebnis einmal holen und weiterverwenden.
+- **Voranalyse nur bei Klasse C/D** (#670); bei A/B kein Drittmodell im Kontext.
+- **`workflow:route` nennt `SESSION_MODEL`** und die Handlung dazu: die eigene Sitzung
+  laesst sich per Tool nicht umstellen, der Wechsel geht ueber das Modellmenue bzw. `/model`.
 - `live-theme.json` nicht ganz lesen (Retired-Liste ~10k): `jq '{live,preview,fallback,arbeit}'`.
 
-## Gedaechtnis auf mehreren Macs (#665)
+## Ausgelagert in Skills (#670)
 
-Claudes Gedaechtnis-Ordner (`~/.claude/projects/<projekt>/memory`) ist ein
-Checkout des **privaten** Repos `tp-claude-gedaechtnis`. `gedaechtnis-sync.sh`
-zieht beim Sitzungsstart und schiebt beim Stop; ohne `.git` oder Netz tut er
-still nichts. Obsidian oeffnet denselben Ordner als Vault. Neuer Mac:
-`git clone git@github.com:<konto>/tp-claude-gedaechtnis.git <pfad>/memory`.
-Das Repo bleibt privat - es enthaelt Lieferanten-Interna. Zweiter Speicher
-verboten: dauerhafte Erkenntnisse gehoeren nach `docs/lessons/`, nicht doppelt.
-
-## Context Mode (grosse Ausgaben aus dem Kontext halten)
-
-`.mcp.json` bindet Context Mode **nur als MCP-Server** ein, Version gepinnt,
-**ohne** das Plugin mit seinen Hooks (das faengt Bash/`curl` ab und umgeht die
-Hook-Sperren). Fuer Ausgaben ueber ~50 Zeilen (lange Logs, `git log --stat`,
-Testlaeufe, Bulk-JSON) `ctx_execute` / `ctx_batch_execute` mit `intent` nutzen;
-kurze Befehle, Git-Schreibbefehle und Deploys bleiben im Bash-Tool.
-`.claude/hooks/context-mode-guard.mjs` schickt jeden Shell-Befehl darin durch
-`git-gh-guard` und `theme-delete-guard`, erlaubt nur shell/javascript/typescript/python
-und verbietet Prozessstarts ausserhalb von `shell`. **Nie** `/plugin install
-context-mode` und kein `ctx_upgrade` — Versionswechsel nur ueber `.mcp.json` per PR.
-
-## Shopify-Schreibzugriff — nicht nach einem Token suchen
-
-**Der Shopify-MCP-Server ist bereits authentifiziert.** Produkte, Varianten,
-Metafelder und Preise laufen ueber `graphql_query` / `graphql_mutation`. Kein
-`SHOPIFY_ADMIN_TOKEN` noetig — den braucht nur der GitHub-Actions-Job
-`.github/workflows/grosshandel-sync.yml` (Repository-Secret). `atkn_`-Tokens
-sind Automatisierungstoken ohne Admin-GraphQL-Zugriff; `shpat_` hat ihn.
-
-- Variantenpreis und SKU: `productVariantsBulkUpdate` (SKU in `inventoryItem: { sku }`).
-- Neue Option: `productOptionsCreate` mit `variantStrategy: LEAVE_AS_IS`.
-- `productVariantUpdate`, `productVariantCreate`, `productVariantsUpdate` existieren nicht.
-
-**Bevor „die API kann das nicht" faellt, das Schema fragen** — auch Subagenten
-schlagen den Mutationsnamen selbst nach, statt ihn im Prompt vorgesetzt zu bekommen.
-Der Browser ist nie der Ausweichweg. → `docs/lessons/shopify-schreibzugriff.md`
-
-```
-graphql_schema(types: ["OptionCreateInput"])  # Welche Mutations nutzen diesen Input?
-graphql_schema(types: ["Query", "Mutation"]) # Alles verfuegbar?
-```
-
-## In Remote-Sessions (claude.ai/code)
-
-| | Status |
+| Skill | Inhalt |
 |---|---|
-| GitHub, git push | geht |
-| Shopify Admin API (Shopify MCP) | geht — liest Theme-Dateien und Produktdaten, schreibt in unpublished Themes |
-| Storefront `teppich-paradies.net` / `*.myshopify.com` | **403 an der Egress-Policy** — keine Screenshots |
-| Shopify CLI (`theme push/pull/list`) | kein Token + Domains blockiert |
+| `deploy` | Deploy-Kette, Sperre, Remote-Sessions, `theme:diff`, `workflow:scratch` |
+| `ai-orchestrator` | Router, Modellmatrix, Codex-Review, Prompt-Caching, Gedaechtnis-Sync, Context Mode |
+| `control-center` | Dashboard, `issues.json`, Rebase-`--theirs`, `npm run task` |
+| `produktimport` | Import, Schreibzugriff (`shopify-daten.md`), Produktdaten |
 
-Struktur und Syntax sind hier pruefbar, **das Aussehen nicht**. Browser-Schritte
-(COMPARE, SEO, FULL_QA, SALES) schlagen fehl — deshalb `--static`. Deploys laufen lokal.
-
-## Produktdaten (bestimmt, was Bloecke rendern duerfen)
-
-- Farben sind eine echte Produktoption `Farbe` mit Bild je Variante. Bloecke
-  gehen auf die **Option**, nicht auf `product.variants` — sonst erscheint
-  dieselbe Farbe mehrfach bei zusaetzlichen Breiten-/Laengenvarianten.
-- Fixpreis-/Rollenware-Produkte haben nur `Default Title` und kein Variantenbild.
-  Bloecke rendern dort **still nichts**, kein Fallback auf `product.images`.
-- Paketprodukte erkennt man am Metafeld `custom.qm_pro_paket`.
-- €/m² ist die kundenseitige Leitgroesse; der Shopify-Listenpreis bleibt der
-  interne Paketpreis und gehoert nicht prominent auf die Kollektionskarte.
-- Produkteigenschaften nicht erfinden und nicht aus Bildern ableiten. Im Zweifel
-  als offenen Fall dokumentieren.
-- **Farbcodes werden abgeschrieben, nie fortgesetzt.** Echte Lieferantenlisten
-  haben Luecken. **24 = 24 ist keine Pruefung** — verglichen werden die Codes
-  selbst. `npm run farbcode:guard` findet das Zaehlmuster. → `docs/lessons/produktimport.md`
-
-## Fertige Features — nicht neu bauen
-
-€/m²-Anzeige, Paket-/Verschnittrechner samt Warenkorb-Logik, deutsche Paket- und
-Bestellmengen-Anzeige, Produktvergleich (max. 3), Musterbestellung, Breadcrumb,
-Produktvorteile, technische Daten, Produktkarten-Logik mit gekuerzten Titeln,
-Predictive Search, Startseitenstruktur, Vinyl-Kategorie-Karussell, Mobile-Peek
-und Karussell-Navigation. Alles getestet und in Benutzung.
-
-## Deploy-Kette
-
-```
-Branch → PR → main → workflow:preview (unpublished Theme) → workflow:live
-```
-
-Preview und Live verlangen `branch === main && head === origin/main` und einen
-sauberen Working Tree. Live zusaetzlich passende Preview-Evidence und explizite
-Freigabe. **Die Kette darf der Agent eigenstaendig durchlaufen**, sobald der
-Nutzer einen Deploy verlangt („deploy", „live stellen", „push das raus") — die
-Freigabe-Flags sind Teil des Befehls, keine zweite Bestaetigung:
-
-```
-npm run workflow:doctor                     # zuerst - meldet alle Blocker auf einmal
-node workflow/cli.mjs preview --theme-id <id> --approve-preview
-node workflow/cli.mjs live --theme-id <id> --approve-live --approval-text "PUBLISH LIVE" --execute
-```
-
-**Pro Arbeitskopie laeuft nur ein Deploy.** `preview`, `live` und die volle
-`validate` nehmen eine Sperre (`.workflow/lock.json`), QA ebenfalls; der
-Kindprozess des Workflows erkennt die eigene und laeuft durch. Ein zweiter Lauf
-bricht mit `WORKTREE_BUSY` ab und nennt, wer blockiert. Grund: am 2026-09-26
-arbeiteten zwei Sitzungen gleichzeitig im selben Worktree — die
-Theme-Check-Baseline wurde zwischen Schreiben und Lesen ueberschrieben, HEAD
-sprang mitten im Lauf weg, und das freigegebene Preview-Theme wurde von der
-anderen Sitzung publiziert. Eine verwaiste Sperre uebernimmt der naechste Lauf
-selbst; sofort geht es mit Loeschen der Datei. `doctor`, `route` und
-`validate --static` sind absichtlich frei und geben auch waehrend eines Deploys
-Auskunft.
-
-Bricht ein Gate ab, ist das ein echter Befund — Ursache beheben, niemals das
-Gate ausbauen. Ein abgelehnter Push mit „fetch first" ist meist nur der
-Dashboard-Bot (`dashboard-data.yml` committet stuendlich nach `main`):
-`git pull --rebase origin main`, dann erneut pushen.
+Unverzichtbar auch ohne Skill: Deploy nur `Branch → PR → main → workflow:preview →
+workflow:live`, vorher `npm run workflow:doctor`; ein abgebrochenes Gate ist ein
+Befund, nie ausbauen. `issues.json` nie mitcommitten, nie `git add -A`. Context Mode
+nie als Plugin installieren. KI-Sessions fuehren ihre Aufgabe per `npm run task`.
 
 ## Sicherheitsgrenzen
 
@@ -309,140 +214,10 @@ Harte Grenzen gehoeren als `deny` in `.claude/hooks/git-gh-guard.mjs`. Details: 
 erlaubte, greift `HARD_STOP`. Review-Schleifen laufen maximal dreimal, danach
 `REVIEW_LIMIT_REACHED` → menschliches Gate.
 
-## AI-Orchestrator
-
-- `workflow/router.mjs` — einzige Quelle fuer die Klassifikation A/B/C/D
-- `workflow/core.mjs` — Zustandsautomat, Manifest-Laden, Risk-Engine
-- `router_api_migration.py` — Python-Adapter fuer Claude-API-Aufrufe
-- `api_cost_monitor.py` — Budget und Rate-Limits
-
-Klassen und Modelle kommen aus **einer** Quelle, `workflow/model-matrix.mjs`
-(Prioritaet Qualitaet vor Kosten):
-**A** trivial → `haiku` low, kein Modell-Review ·
-**B** normale Entwicklung → `fable` medium, Review Codex `gpt-5.6-sol` ·
-**C** komplex → `fable` high, Review Codex `gpt-6-astra`, Zweitblick `gpt-5.6-sol` ·
-**D** kritisch → `opus` high, Review Codex `gpt-6-astra` xhigh, Security-Review `fable`.
-Corrector ist immer das Implementer-Modell; die Eskalationsleiter geht nur nach
-oben. Haiku ist ein Werkzeug fuer Klasse A und Voranalysen, nie Hauptentwickler.
-Rollback: `TP_ROUTING_STRATEGY=legacy`. Der Python-Adapter liest
-`CLAUDE_HAIKU_MODEL`, `CLAUDE_FABLE_MODEL`, `CLAUDE_OPUS_MODEL` — keine IDs hart verdrahten.
-
-**Ein Modell pro Session.** Der Prompt-Cache ist modellgebunden; jeder Wechsel
-mitten in der Session laedt den gesamten Kontext zum vollen Preis neu. Modell am
-Anfang ueber `workflow:route` waehlen, Session nach der Aufgabe schliessen.
-
-Zustaende: `PENDING → RUNNING → IMPLEMENT → REVIEW → PASS`, daneben
-`CORRECTION_REQUIRED`, `PARKED`, `SKIPPED_DEPENDENCY`, `NEEDS_AHMET`,
-`HARD_FAIL`, `SECURITY_STOP`. Blocker aus `workflow:state`: `RATE_LIMIT`,
-`UPSTREAM`, `CODE_DEFECT`, `UNKNOWN_BLOCKER`.
-
-```
-npm run workflow:state     # Klassifikationen und Blocker
-npm run workflow:next      # naechste zulaessige Aufgabe
-npm run workflow:continue  # nach menschlichem Eingriff weiter
-```
-
-### Laeuft der Router gerade?
-
-`npm run router:status` antwortet mit Belegen. Die Voranalyse haengt am
-`UserPromptSubmit`-Hook, das Codex-Review am `Stop`-Hook (`.claude/settings.json`).
-Genau zwei Laufzeit-Belege, keine weiteren: `.router/ai-usage.jsonl` (jeder
-Provider-Aufruf) und `.router/manifest-run/`. **In einem Worktree fehlt das
-alles** — `.router/` ist gitignored. → `docs/lessons/router-belege.md`
-
-### Wenn das Codex-Review fremde Arbeit anmahnt
-
-**Zuerst nachsehen, welchen Diff es gelesen hat:**
-
-```
-git -C <hauptcheckout> log --oneline -1
-git diff --name-only origin/main..<eigener-branch>
-```
-
-Der Pruefbereich sind nur die Pfade, die die eigene Sitzung geschrieben hat
-(`.router/claude-writes/`, Hooks `record-session-write.mjs` und
-`record-bash-write.mjs`); Massstab ist `.router/claude-handoffs/<TASK-ID>.review.md`.
-Die Hooks laufen immer aus dem Hauptcheckout (`CLAUDE_PROJECT_DIR`) — steht
-der auf einem alten Branch, laeuft alte Logik. Liegt das Ergebnis als gemergter
-Commit vor, zeigt `<TASK-ID>.ergebnis.json` (`{ commit, basis, pr }`) darauf;
-angenommen nur, wenn von `origin/*` erreichbar.
-
-**Empfohlene Korrekturen niemals blind ausfuehren** — „fremde Commits
-herausloesen" oder „ungetrackte Dateien aufraeumen" zerstoert die Arbeit
-anderer Sitzungen. Nach drei Runden `REVIEW_LIMIT_REACHED`: Befunde berichten,
-aufhoeren. → `docs/lessons/codex-review-pruefbereich.md`
-
-### Prompt-Caching
-
-Nur stabilen, wiederverwendbaren Kontext cachen (Projektregeln, Tool-Schemata,
-versionierte Context-Packs). Aufgabe, Diffs, Zeitstempel und dynamische
-Tool-Ergebnisse gehoeren **hinter** den Cache-Breakpoint. Cache-Treffer ueber
-die tatsaechlichen `usage`-Felder pruefen, nicht ueber Marker. API-Key nur ueber
-Umgebungsvariable oder Secret-Manager. Vor dem ersten Aufruf `./api_cost_check.sh`
-(read-only) und `python3 demo_run.py` (offline).
-
-## Dashboard (Control Center)
-
-`docs/ai-dashboard/` ist das Control Center; Konzept in `docs/control-center/`
-(**vor Aenderungen am Dashboard lesen**). `dashboard-data.yml` schreibt
-`docs/ai-dashboard/issues.json` (Schema 2); das Frontend liest **nur** diese
-Datei; lokal (`npm run dashboard`, `:8001`) kommt `/api/*` aus
-`scripts/dashboard-api.mjs` dazu. Keinen GitHub-API-Aufruf mit Token ins
-Frontend bauen. GitHub Issues sind die einzige Aufgabenquelle.
-
-Label-Gruppen: `status:*`, `type:*`, `priority:p0`–`p3`, `area:*`, `reviewer:*`
-(`./setup-dashboard.sh` legt sie an). Tests: `npm run dashboard:test`.
-
-**Vor jeder Aenderung am Dashboard** den Skill `.claude/skills/control-center/SKILL.md`
-lesen (oder den Subagenten `control-center` beauftragen). Sichtpruefung im Browser
-mit Datenkopie: `npm run dashboard:pruefen` (Desktop + Handy, JS-Fehler, seitliches
-Scrollen; `--offen` fuer Klicktests).
-
-`issues.json` gehoert dem Bot: **nicht mitcommitten**, Dateien gezielt mit
-`git add <datei>` stagen, nie `git add -A`. Zuruecksetzen ist fuer genau diesen
-Pfad erlaubt — die einzige Ausnahme im Verwerfen-Verbot von
-`.claude/hooks/git-gh-guard.mjs`, der sonst jede Stelle im Befehl prueft und
-fail-closed blockiert (Fliesstext mit Git-Befehlen per Heredoc).
-→ `docs/lessons/dashboard-issues-json.md`
-
-**Beim Rebase ist `--ours` der Upstream, nicht die eigene Arbeit.** Genau
-umgekehrt zum Merge. Wer den eigenen, gerade wiedergespielten Stand behalten
-will — etwa der Bot mit seinen frisch erzeugten Dateien — nimmt `--theirs`.
-`dashboard-data.yml` nahm seit dem 2026-09-03 `--ours` und verwarf damit die
-Datei, die es im selben Lauf erzeugt hatte.
-→ `docs/lessons/rebase-ours-ist-der-upstream.md`
-
-**Aufgaben pflegen sich ueber Ereignisse selbst** (`task-automation.yml`):
-neues Issue → Eingang, PR referenziert `#n` → In Arbeit, PR gemergt → Review,
-Issue geschlossen → Erledigt. Prioritaeten und Owner nie automatisch.
-
-**KI-Sessions legen ihre Arbeit als Aufgabe an und fuehren den Status nach.**
-Zwischenstand und Entscheidungen gehoeren als Notiz ans Issue — das ist der
-Mac-uebergreifende Handoff, kein zweiter Aufgabenspeicher:
-
-```
-npm run task -- create "Titel" --area google --type technik --prio p2 --owner kontakt755
-npm run task -- start 92 --owner kontakt755 --note "Beginne mit …"
-npm run task -- review 92 --note "PR #101, Tests gruen"
-npm run task -- done 92 --confirm --note "gemergt"
-npm run task -- block 92 --reason "Warte auf … von Ahmet"
-```
-
-Owner ist Ahmet = GitHub-Login `kontakt755`. `Closes #n` im PR-Text schliesst beim Merge.
-
 ## Tests
 
-```
-npm test                    # alle sieben Suiten, 1.251 Tests, rund 18 s
-npm run qa                  # volle Suite inkl. visuell (nur lokal)
-```
-
-Einzeln laufen sie weiterhin: `qa:unit:test`, `dashboard:test`, `operations:test`,
-`automation:test`, `workflow:test`, `control:center:test`, `hooks:test`. Bis 2026-09-23 startete
-`npm test` nur die ersten drei — neue Suiten liefen jahrelang gruen, weil sie gar
-nicht liefen. `qa/tests/npm-test-deckung.test.mjs` prueft jetzt, dass jedes
-Verzeichnis mit `*.test.mjs` in der Kette haengt; eine bewusste Ausnahme braucht
-dort einen Eintrag mit Begruendung.
+`npm test` startet alle Suiten (rund 18 s), `npm run qa` zusaetzlich visuell (nur lokal).
+`qa/tests/npm-test-deckung.test.mjs` prueft, dass jedes Verzeichnis mit `*.test.mjs` in der Kette haengt.
 
 ## Konventionen
 

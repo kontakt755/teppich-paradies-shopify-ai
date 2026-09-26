@@ -7,6 +7,7 @@ import {
   commandName, compareThemeMaps, createDryRunSummary, createPreviewTempDir, deriveWorkflowState, fileSha256, findingsAreClear, livePublishArgs, parseArgs, parseThemeList,
   previewPushArgs, requireSuccess, runBounded, runValidation, selectThemeTargets, themeFileMap, TRACKED_EVIDENCE_PATH, verifyPreviewPayload, verifyPreviewSnapshot, writeRuntimeReport, writeTrackedEvidence,
 } from './core.mjs';
+import { sessionModelDirective } from './session-model.mjs';
 import { deriveHandoffState, formatRouterOutput, normalizeTaskText, planContinue, routeTask } from './router.mjs';
 import { acquireWorktreeLock, releaseOnProcessExit } from './worktree-lock.mjs';
 
@@ -365,6 +366,8 @@ async function runMode() {
     writeRuntimeReport(root, 'task.json', route);
     const state = currentHandoffState();
     console.log(formatRouterOutput(route, state.nextAllowedAction));
+    // Modell der Matrix fuer die Sitzung (#670); Rueckfall auf Ausgabe.
+    console.log(sessionModelDirective(route.modelPlan).lines.join('\n'));
     return route;
   }
 
