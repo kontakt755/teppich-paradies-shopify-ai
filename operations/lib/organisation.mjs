@@ -55,6 +55,43 @@ export const TEAM_BEREICHE = Object.freeze([
   'Kunden', 'Bestellungen', 'Angebote / Lexware', 'Baustelle', 'Laden',
 ]);
 
+/**
+ * Gruppen fuer die Aufgabenliste - nach Art der Arbeit, nicht nach Bereich.
+ * Inhaberentscheidung 2026-09-26: die 15 Bereiche sind zum Sortieren zu fein,
+ * und "alles oder Kunden oder Rest" war zu grob.
+ *
+ * "Offene Fragen" ist bewusst KEIN Bereich, sondern ein Zustand: eine Aufgabe,
+ * bei der nicht Arbeit fehlt, sondern eine Entscheidung. Sie steht deshalb in
+ * ihrer Gruppe, egal aus welchem Bereich sie kommt - genau diese Aufgaben
+ * blockieren sonst wochenlang alles andere, ohne dass es jemandem auffaellt.
+ */
+export const ARBEITSGRUPPEN = Object.freeze([
+  ['kunden', 'Kunden & Aufträge', ['Kunden', 'Bestellungen', 'Angebote / Lexware', 'Baustelle', 'Laden']],
+  ['geld', 'Geld', ['Buchhaltung']],
+  ['fragen', 'Offene Fragen', []],          // ueber den Zustand, siehe unten
+  ['shop', 'Online-Shop', ['Online-Shop']],
+  ['werbung', 'Werbung', ['Marketing']],
+  ['betrieb', 'Einkauf & Lager', ['Einkauf', 'Lieferanten', 'Lager', 'Fahrzeuge', 'Mitarbeiter', 'Sonstiges']],
+  ['technik', 'Technik', ['Website & KI']],
+]);
+
+/**
+ * Wartet die Aufgabe auf eine Entscheidung statt auf Arbeit? Entweder steht
+ * der Status auf WAITING oder es ist ausdruecklich vermerkt, worauf gewartet
+ * wird. Nicht am Titel geraten - "Kläre..." kann auch schlicht Arbeit sein.
+ */
+export function istOffeneFrage(eintrag) {
+  return eintrag?.status === 'WAITING' || Boolean(eintrag?.wartetAuf);
+}
+
+/** Gruppe eines Eintrags. Offene Fragen gehen vor dem Bereich. */
+export function gruppeVon(eintrag) {
+  if (istOffeneFrage(eintrag)) return 'fragen';
+  const bereich = eintrag?.bereich || '';
+  const treffer = ARBEITSGRUPPEN.find(([, , bereiche]) => bereiche.includes(bereich));
+  return treffer ? treffer[0] : 'betrieb';   // Unbekanntes landet bei "Einkauf & Lager", nicht im Nichts
+}
+
 export function istTechnisch(bereich) {
   return TECHNISCHE_BEREICHE.includes(bereich);
 }

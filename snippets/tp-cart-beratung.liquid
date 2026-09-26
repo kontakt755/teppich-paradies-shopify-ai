@@ -68,10 +68,11 @@
   endfor
 
   # Reine Musterbestellung: Muster da, regulaere Ware nicht.
+  # Seit 2026-09-26 keine Pflichtfrage mehr (Inhaber): reine Musterbestellungen
+  # gehen direkt zur Kasse, Beratung laeuft als Anfrage ueber
+  # snippets/tp-muster-beratungsanfrage.liquid. tpb_frage bleibt false, damit
+  # alte Antworten am Cart aufgeraeumt werden.
   assign tpb_frage = false
-  if tpb_muster_zeilen > 0 and tpb_ware_zeilen == 0
-    assign tpb_frage = true
-  endif
 
   assign tpb_beratung = cart.attributes['Beratung'] | default: ''
   assign tpb_telefon = cart.attributes['Telefon'] | default: ''

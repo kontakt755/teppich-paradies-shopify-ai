@@ -84,6 +84,23 @@ export function naechsterSchritt(zeile, { jetzt = new Date() } = {}) {
  * Baut die Fallliste.
  * @param {object} quellen  {bestellzeilen, angebote, warenkoerbe}
  */
+/**
+ * Adressen, die nach RFC 2606 fuer Beispiele und Tests reserviert sind. Wer
+ * eine davon benutzt, ist mit Sicherheit kein Kunde. Bewusst NUR diese:
+ * eine Regel, die auf "test" im Namen anschlaegt, wuerde irgendwann eine Frau
+ * Testorf aus der Arbeitsliste werfen, und das faellt niemandem auf.
+ *
+ * Alles andere - eigene Wegwerfadressen, Probekaeufe unter echtem Namen -
+ * markiert der Mensch von Hand (operations/lib/fallmarken.mjs). Lieber einmal
+ * klicken als raten.
+ */
+const RESERVIERTE_DOMAeNEN = /@(?:[^@\s]*\.)?(?:example\.(?:com|net|org)|(?:[^@\s.]+\.)?(?:test|invalid|localhost))$/i;
+
+/** Offensichtliche Testadresse? Nur an der Domaene, nie am Namen. */
+export function istTestkontakt({ email = null } = {}) {
+  return Boolean(email && RESERVIERTE_DOMAeNEN.test(String(email).trim()));
+}
+
 export function faelle(quellen = {}, opt = {}) {
   const jetzt = opt.jetzt ?? new Date();
   const map = new Map();
@@ -166,6 +183,10 @@ export function faelle(quellen = {}, opt = {}) {
 
   const liste = [...map.values()].filter(k => k.punkte.length);
   for (const k of liste) {
+    // Reservierte Domaene = sicher kein Kunde. Der Fall wird nicht
+    // weggeworfen, sondern markiert - die Oberflaeche blendet ihn aus und
+    // zeigt ihn auf Wunsch trotzdem.
+    k.testkontakt = istTestkontakt(k);
     k.punkte.sort((a, b) => a.schritt.dringend - b.schritt.dringend || (b.tage ?? 0) - (a.tage ?? 0));
     k.dringend = Math.min(...k.punkte.map(p => p.schritt.dringend));
     k.aeltesteTage = Math.max(...k.punkte.map(p => p.tage ?? 0));

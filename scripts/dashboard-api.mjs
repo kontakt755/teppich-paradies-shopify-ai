@@ -25,9 +25,10 @@ import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
+import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
-  istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit,
+  istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit, gruppeVon, ARBEITSGRUPPEN,
 } from '../operations/lib/organisation.mjs';
 import { analysiere as orgAnalysiere, ausListe as orgAusListe } from '../operations/lib/organisation-analyse.mjs';
 import {
@@ -1061,7 +1062,8 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
     },
 
     /** bereich: meine-aufgaben | meine-notizen | team-aufgaben | team-notizen | archiv */
-    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = 'kunden', q = '', benutzer = null } = {}) {
+    orgListe({ bereich = 'meine-aufgaben', ansicht = 'fokus', person = '', gruppe = '', q = '', benutzer = null } = {}) {
+      let gruppenZaehlung = {};
       const datei = this._orgDatei();
       const daten = orgLies(datei);
       const jetzt = new Date();
@@ -1086,8 +1088,6 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
         liste = liste.filter(e => e.typ === 'TASK' && e.sichtbarkeit !== 'PRIVAT' && !istTechnisch(e.bereich));
         // Ohne Bereich bleibt ein Eintrag sichtbar - sonst verschwindet er
         // genau dort, wo ihn jemand einsortieren muesste.
-        if (gruppe === 'kunden') liste = liste.filter(e => !e.bereich || istTeamarbeit(e.bereich));
-        else if (gruppe === 'rest') liste = liste.filter(e => e.bereich && !istTeamarbeit(e.bereich));
         if (person === 'unzugewiesen') liste = liste.filter(e => !e.verantwortlich);
         else if (person) liste = liste.filter(e => istPerson(e.verantwortlich, person));
         if (ansicht && ansicht !== 'alle') liste = liste.filter(e => passtZuAnsicht(e, ansicht, jetzt));
@@ -1102,9 +1102,18 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
           ...(e.kommentare ?? []).map(k => k.text)].filter(Boolean)
           .some(f => String(f).toLowerCase().includes(suchtext)));
       }
+
+      // Gruppen nach Art der Arbeit (ARBEITSGRUPPEN) - fuer jeden Bereich,
+      // nicht nur fuer die Teamliste. Die Zahl an jeder Gruppe zaehlt den Stand
+      // NACH allen anderen Filtern, aber VOR der Gruppenwahl: sonst zeigte die
+      // gewaehlte Gruppe ihre eigene Zahl und alle anderen eine Null.
+      for (const e of liste) gruppenZaehlung[gruppeVon(e)] = (gruppenZaehlung[gruppeVon(e)] || 0) + 1;
+      if (gruppe && gruppe !== 'alles') liste = liste.filter(e => gruppeVon(e) === gruppe);
+
       return {
         verfuegbar: true, quelle: datei, bereiche: daten.bereiche, team: this.orgTeam(), ich,
         anzahl: liste.length,
+        gruppen: ARBEITSGRUPPEN.map(([key, label]) => ({ key, label, anzahl: gruppenZaehlung[key] || 0 })),
         eintraege: orgSortiere(liste, jetzt).slice(0, 200)
           .map(e => ({ ...e, darfAendern: darfAendern(e, benutzer) })),
       };
@@ -1554,7 +1563,50 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle });
       const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
       const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];
-      return { verfuegbar: true, ...kundenFaelle({ bestellzeilen, angebote, warenkoerbe }) };
+      const roh = kundenFaelle({ bestellzeilen, angebote, warenkoerbe });
+      // Von Hand gesetzte Marken und erkannte Testadressen fuehren zum selben
+      // Ergebnis: der Fall verschwindet aus der Arbeitsliste, bleibt aber
+      // einsehbar. Nichts wird geloescht, in Shopify aendert sich nichts.
+      const marken = leseFallmarken(fallmarkenPfad(dir));
+      const mitAuto = (roh.faelle ?? []).map(f => (
+        f.testkontakt && !marken[f.schluessel]
+          ? { ...f, marke: { grund: 'test', automatisch: true, zeit: null, von: null, bisPunkt: null } }
+          : f
+      ));
+      const autoAus = mitAuto.filter(f => f.marke?.automatisch);
+      const rest = mitAuto.filter(f => !f.marke?.automatisch);
+      const { sichtbar, ausgeblendet } = teileFaelleAuf(rest, marken);
+      return {
+        verfuegbar: true,
+        ...roh,
+        faelle: sichtbar,
+        anzahl: sichtbar.length,
+        sofort: sichtbar.filter(k => k.dringend === 0).length,
+        ausgeblendet: [...autoAus, ...ausgeblendet],
+      };
+    },
+
+    /**
+     * Fall abhaken oder als "kein echter Kunde" markieren - und beides wieder
+     * zuruecknehmen (grund: null). Der Stand des juengsten Punktes wird
+     * mitgeschrieben: bestellt derselbe Kunde spaeter erneut, kommt der Fall
+     * von selbst zurueck.
+     */
+    fallMarkieren({ schluessel, grund = null } = {}, { benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      if (!schluessel) throw new ApiError(400, 'Kein Fall angegeben');
+      if (grund !== null && !FALL_GRUND.includes(grund)) throw new ApiError(400, `Unbekannter Grund: ${grund}`);
+      let bisPunkt = null;
+      if (grund) {
+        const aktuell = this.kundenFaelle?.();
+        const alle = [...(aktuell?.faelle ?? []), ...(aktuell?.ausgeblendet ?? [])];
+        bisPunkt = juengsterPunkt(alle.find(f => f.schluessel === schluessel));
+      }
+      const ergebnis = setzeFallmarke(fallmarkenPfad(dir), schluessel, {
+        grund, bisPunkt, von: benutzer?.name || benutzer?.kuerzel || 'Inhaber',
+      });
+      merke(benutzer, null, 'Fall markiert', `${schluessel}: ${grund || 'zurückgenommen'}`);
+      return { ok: true, ...ergebnis };
     },
 
     /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */

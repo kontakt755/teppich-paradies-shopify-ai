@@ -1,0 +1,103 @@
+{%- doc -%}
+  Musterberatung als Anfrage statt Pflichtfrage (Inhaber, 2026-09-26).
+
+  Nur bei einer REINEN Musterbestellung (Muster im Warenkorb, keine regulaere
+  Ware; Regel aus snippets/tp-muster-position.liquid). Der Kunde hat zwei Wege:
+  - "Zur Kasse": Muster wie bisher kostenlos bestellen, ohne Zwischenfrage.
+  - "Lieber erst beraten lassen?": kurzes Formular. Es schickt ueber das
+    Shopify-Kontaktformular eine als RUECKRUF gekennzeichnete E-Mail mit den
+    gewaehlten Mustern an die Shop-Adresse. Es entsteht keine Bestellung und
+    kein Versand; nach dem Absenden wird der Warenkorb geleert.
+
+  Wird in snippets/cart-summary.liquid unter den Kaufknoepfen gerendert
+  (Warenkorbseite und Drawer). Kein eigenes form im Warenkorb-Formular:
+  cart-summary liegt ausserhalb von #cart-form.
+{%- enddoc -%}
+
+{%- liquid
+  assign tpm_muster = ''
+  assign tpm_ware = 0
+  for tpm_item in cart.items
+    capture tpm_ist
+      render 'tp-muster-position', line_item: tpm_item
+    endcapture
+    if tpm_ist contains 'ja'
+      assign tpm_zeile = tpm_item.product.title | append: ' – ' | append: tpm_item.variant.title
+      if tpm_item.sku != blank
+        assign tpm_zeile = tpm_zeile | append: ' (' | append: tpm_item.sku | append: ')'
+      endif
+      if tpm_muster != blank
+        assign tpm_muster = tpm_muster | append: ' · '
+      endif
+      assign tpm_muster = tpm_muster | append: tpm_zeile
+    else
+      assign tpm_ware = tpm_ware | plus: 1
+    endif
+  endfor
+  assign tpm_id = 'tpm-' | append: section.id | downcase | replace: '_', ''
+-%}
+
+{%- if tpm_muster != blank and tpm_ware == 0 -%}
+  {%- form 'contact', id: tpm_id, class: 'tp-mba' -%}
+    {%- if form.posted_successfully? -%}
+      <p class="tp-mba__ok" role="status" data-tp-mba-ok>
+        <b>Danke, Ihre Anfrage ist angekommen.</b>
+        Wir rufen Sie kurz an, beraten Sie und schicken Ihnen dann die passenden Muster.
+      </p>
+    {%- else -%}
+      <details class="tp-mba__box" {% if form.errors %}open{% endif %}>
+        <summary class="tp-mba__summary">
+          <span class="tp-mba__titel">Lieber erst beraten lassen?</span>
+          <span class="tp-mba__unter">Muster mit Rückruf anfragen – wir melden uns und schicken dann die passenden Muster.</span>
+        </summary>
+        {%- if form.errors -%}
+          <p class="tp-mba__err" role="alert">Bitte Name, E-Mail und Telefonnummer prüfen.</p>
+        {%- endif -%}
+        <input type="hidden" name="contact[Betreff]" value="RÜCKRUF – Musterberatung">
+        <input type="hidden" name="contact[Muster]" value="{{ tpm_muster | escape }}">
+        <label class="tp-mba__feld">Name<input type="text" name="contact[name]" autocomplete="name" required value="{{ form.name }}"></label>
+        <label class="tp-mba__feld">Telefon<input type="tel" name="contact[Telefon]" autocomplete="tel" inputmode="tel" required pattern="[0-9 +()/.-]{6,}" placeholder="z. B. 0176 1234567"></label>
+        <label class="tp-mba__feld">E-Mail<input type="email" name="contact[email]" autocomplete="email" required value="{{ form.email }}"></label>
+        <label class="tp-mba__feld">Worum geht es? <em>(optional)</em><textarea name="contact[body]" rows="2" maxlength="500">{{ form.body }}</textarea></label>
+        <p class="tp-mba__note">Es entsteht keine Bestellung. Mit dem Absenden stimmen Sie der Verarbeitung Ihrer Angaben zur Bearbeitung der Anfrage zu.</p>
+        <button type="submit" class="button tp-mba__btn">Beratung anfragen</button>
+      </details>
+    {%- endif -%}
+  {%- endform -%}
+{%- endif -%}
+
+{%- comment -%} Nach erfolgreicher Anfrage den Musterwarenkorb leeren (kein Versand ohne Rueckruf) {%- endcomment -%}
+<script>
+  (function () {
+    if (!document.querySelector('[data-tp-mba-ok]')) return;
+    fetch('/cart/clear.js', { method: 'POST' }).catch(function () {});
+  })();
+</script>
+
+{% stylesheet %}
+  .tp-mba { margin-block-start: var(--margin-sm, 1rem); }
+  .tp-mba__box {
+    border: 1px solid var(--color-border);
+    border-radius: var(--style-border-radius-inputs, 6px);
+    padding: 0.75rem 0.875rem;
+  }
+  .tp-mba__summary { cursor: pointer; display: grid; gap: 0.15rem; list-style-position: outside; }
+  .tp-mba__titel { font-weight: 600; }
+  .tp-mba__unter { font-size: 0.875rem; color: rgb(from var(--color-foreground) r g b / 0.75); }
+  .tp-mba__box[open] .tp-mba__summary { margin-block-end: 0.75rem; }
+  .tp-mba__feld { display: grid; gap: 0.25rem; margin-block-end: 0.6rem; font-size: 0.875rem; }
+  .tp-mba__feld em { font-style: normal; color: rgb(from var(--color-foreground) r g b / 0.6); }
+  .tp-mba__feld input,
+  .tp-mba__feld textarea {
+    inline-size: 100%;
+    min-block-size: 44px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-input-border, var(--color-border));
+    border-radius: var(--style-border-radius-inputs, 4px);
+    font: inherit;
+  }
+  .tp-mba__note { font-size: 0.8rem; margin: 0 0 0.6rem; color: rgb(from var(--color-foreground) r g b / 0.7); }
+  .tp-mba__btn { inline-size: 100%; }
+  .tp-mba__ok { padding: 0.75rem 0.875rem; border-radius: 6px; background: #e8f4ec; color: #1d5b3a; }
+  .tp-mba__err { color: var(--color-error, #b3261e); margin: 0 0 0.5rem; }
+{% endstylesheet %}
