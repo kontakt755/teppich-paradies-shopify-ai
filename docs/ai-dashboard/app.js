@@ -2857,16 +2857,43 @@ function fallPunkt(p) {
   </li>`;
 }
 
-function fallKarte(f) {
+const FALL_GRUND_LABEL = { erledigt: 'Erledigt', test: 'Kein echter Kunde' };
+
+/**
+ * Die Karte hatte bis hierher keinen einzigen Knopf: man konnte einen Fall
+ * weder abhaken noch als eigenen Testkauf kennzeichnen. Zwei Testkaeufe
+ * standen deshalb mit den groessten Betraegen ueber dem groessten echten Fall.
+ * Geloescht wird nichts - die Marke liegt lokal, Shopify bleibt unberuehrt.
+ */
+function fallKarte(f, { ausgeblendet = false } = {}) {
   const stufe = DRINGEND_LABEL[f.dringend] || '';
-  return `<section class="card fall${f.dringend === 0 ? ' fall-sofort' : ''}" style="margin-bottom:12px">
+  const aktionen = ausgeblendet
+    ? (f.marke?.automatisch
+      ? `<span class="small muted">automatisch erkannt (Testadresse)</span>`
+      : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="">Wieder einblenden</button>`)
+    : `<button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="erledigt" title="Ist erledigt – aus der Arbeitsliste nehmen">✓ Erledigt</button>
+       <button type="button" class="btn btn-sm" data-fall-marke="${esc(f.schluessel)}" data-grund="test" title="Eigener Testkauf, kein Kunde">Kein echter Kunde</button>`;
+  return `<section class="card fall${f.dringend === 0 && !ausgeblendet ? ' fall-sofort' : ''}${ausgeblendet ? ' fertig' : ''}" style="margin-bottom:12px">
     <div class="card-head">
-      <h3>${esc(f.name)} <span class="small muted">${esc(stufe)}</span></h3>
+      <h3>${esc(f.name)} <span class="small muted">${ausgeblendet ? esc(FALL_GRUND_LABEL[f.marke?.grund] || 'ausgeblendet') : esc(stufe)}</span></h3>
       <span class="small">${f.summe ? `${esc(fmtPreis(f.summe))} €` : ''}</span>
     </div>
     <p class="small" style="margin:0 0 8px">${fallKontakt(f)}${f.ort ? ` · ${esc(f.ort)}` : ''}</p>
     <ul class="fall-punkte">${f.punkte.map(fallPunkt).join('')}</ul>
+    <div class="fall-aktionen">${aktionen}</div>
   </section>`;
+}
+
+/** Setzt oder loescht eine Marke und laedt die Liste neu. */
+async function fallMarkeSetzen(schluessel, grund) {
+  try {
+    await orgSchreiben('/api/kunden/fall-marke', { schluessel, grund: grund || null });
+    kunden.faelle = null;                 // Liste neu holen, sonst bleibt der Fall stehen
+    toast(grund ? `${FALL_GRUND_LABEL[grund]} – aus der Liste genommen` : 'Wieder in der Liste');
+    render();
+  } catch (err) {
+    toast(`Fehler: ${err.message}`, 'crit');
+  }
 }
 
 function viewKundenFaelle() {
@@ -2875,10 +2902,20 @@ function viewKundenFaelle() {
   if (!d && kunden.loadingFaelle) return `<div class="empty">Lade offene Fälle …</div>`;
   if (d?.fehler) return stoerungState(d, 'Die offenen Fälle');
   if (!d || !d.verfuegbar) return emptyState('Keine Daten verfügbar.', d?.hinweis || 'Bestellübersicht noch nicht exportiert.');
-  if (!d.faelle.length) return emptyState('Nichts offen.', 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.');
+  const aus = d.ausgeblendet || [];
+  // Ausgeblendetes verschwindet nicht spurlos - sonst sucht man den Fall, den
+  // man gerade abgehakt hat, und weiss nicht, wohin er ist.
+  const ausBlock = aus.length
+    ? `<details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Ausgeblendet (${aus.length}) – Testkäufe und Abgehaktes</summary>
+        <div style="margin-top:10px">${aus.map(f => fallKarte(f, { ausgeblendet: true })).join('')}</div></details>`
+    : '';
+  if (!d.faelle.length) {
+    return emptyState('Nichts offen.', 'Keine Bestellung, kein Angebot und kein Warenkorb wartet gerade auf eine Antwort.') + ausBlock;
+  }
   return `
     <p class="small muted" style="margin:0 0 10px">${d.anzahl} ${d.anzahl === 1 ? 'Kunde wartet' : 'Kunden warten'}${d.sofort ? `, davon ${d.sofort} sofort` : ''} · dringendstes zuerst, bei gleicher Stufe das älteste</p>
-    ${d.faelle.map(fallKarte).join('')}`;
+    ${d.faelle.map(f => fallKarte(f)).join('')}
+    ${ausBlock}`;
 }
 
 /** Startseite: die drei dringendsten Kunden - der Rest steht im Reiter. */
@@ -2886,9 +2923,9 @@ function heuteFaelle() {
   ensureKundenFaelle();
   const d = kunden.faelle;
   if (!d || !d.verfuegbar || !d.faelle.length) return '';
-  const oben = d.faelle.slice(0, 3);
+  const oben = d.faelle.slice(0, 3);   // ausgeblendete sind hier schon raus
   return `<h2 class="section-title">Wer wartet auf was <span class="section-note">${d.anzahl} ${d.anzahl === 1 ? 'Kunde' : 'Kunden'}${d.sofort ? `, ${d.sofort} sofort` : ''}</span></h2>
-    ${oben.map(fallKarte).join('')}
+    ${oben.map(f => fallKarte(f)).join('')}
     ${d.faelle.length > 3 ? `<p class="small muted" style="margin:-4px 0 0">+${d.faelle.length - 3} weitere – <a href="#/kunden?tab=zutun">alle ansehen →</a></p>` : ''}`;
 }
 
@@ -4727,6 +4764,8 @@ function bindEvents() {
     if (kundenOpen) { e.preventDefault(); const p = new URLSearchParams(); p.set('kunde', kundenOpen.dataset.kundenOpen); location.hash = `#/kunden?${p}`; return; }
     const kundenZurueck = e.target.closest('[data-kunden-zurueck]');
     if (kundenZurueck) { e.preventDefault(); location.hash = `#/kunden${state.route.params.get('kq') ? `?${new URLSearchParams({ kq: state.route.params.get('kq') })}` : ''}`; return; }
+    const fallMarke = e.target.closest('[data-fall-marke]');
+    if (fallMarke) { e.preventDefault(); fallMarkeSetzen(fallMarke.dataset.fallMarke, fallMarke.dataset.grund); return; }
     const rueckrufBtn = e.target.closest('[data-rueckruf-open]');
     if (rueckrufBtn) { e.preventDefault(); openRueckrufDialog(rueckrufBtn.dataset.rueckrufOpen, rueckrufBtn.dataset.rueckrufStatus); return; }
     const druckBtn = e.target.closest('[data-drucken]');

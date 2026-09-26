@@ -25,6 +25,7 @@ import { ladeExport } from '../operations/scripts/bestelluebersicht.mjs';
 import { auftragsstatusPfad, leseAlle as leseAuftragsstatus, setzeStatus, oeffneWieder, STATUS_ORDER, AuftragsstatusFehler } from '../operations/lib/auftragsstatus.mjs';
 import { sucheKunden, kundenListenEintrag, findeKunde, alleKunden } from '../operations/lib/kundensuche.mjs';
 import { faelle as kundenFaelle } from '../operations/lib/kundenfaelle.mjs';
+import { fallmarkenPfad, leseAlle as leseFallmarken, setzeMarke as setzeFallmarke, teileAuf as teileFaelleAuf, juengsterPunkt, FALL_GRUND } from '../operations/lib/fallmarken.mjs';
 import {
   sortiere as orgSortiere, passtZuAnsicht, darfSehen, darfAendern, findeDoppelgaenger,
   istUeberfaellig, tageBis, istPerson, istTechnisch, istTeamarbeit,
@@ -1554,7 +1555,50 @@ export function createApi({ gh = defaultGh, repo = DEFAULT_REPO, root = process.
       const bestellzeilen = bestellliste(modell, { statusAlle, rueckrufeAlle });
       const angebote = readJsonIfExists(path.join(dir, 'angebote', 'angebote.json'))?.angebote ?? [];
       const warenkoerbe = readJsonIfExists(path.join(dir, 'warenkoerbe', 'warenkoerbe.json'))?.warenkoerbe ?? [];
-      return { verfuegbar: true, ...kundenFaelle({ bestellzeilen, angebote, warenkoerbe }) };
+      const roh = kundenFaelle({ bestellzeilen, angebote, warenkoerbe });
+      // Von Hand gesetzte Marken und erkannte Testadressen fuehren zum selben
+      // Ergebnis: der Fall verschwindet aus der Arbeitsliste, bleibt aber
+      // einsehbar. Nichts wird geloescht, in Shopify aendert sich nichts.
+      const marken = leseFallmarken(fallmarkenPfad(dir));
+      const mitAuto = (roh.faelle ?? []).map(f => (
+        f.testkontakt && !marken[f.schluessel]
+          ? { ...f, marke: { grund: 'test', automatisch: true, zeit: null, von: null, bisPunkt: null } }
+          : f
+      ));
+      const autoAus = mitAuto.filter(f => f.marke?.automatisch);
+      const rest = mitAuto.filter(f => !f.marke?.automatisch);
+      const { sichtbar, ausgeblendet } = teileFaelleAuf(rest, marken);
+      return {
+        verfuegbar: true,
+        ...roh,
+        faelle: sichtbar,
+        anzahl: sichtbar.length,
+        sofort: sichtbar.filter(k => k.dringend === 0).length,
+        ausgeblendet: [...autoAus, ...ausgeblendet],
+      };
+    },
+
+    /**
+     * Fall abhaken oder als "kein echter Kunde" markieren - und beides wieder
+     * zuruecknehmen (grund: null). Der Stand des juengsten Punktes wird
+     * mitgeschrieben: bestellt derselbe Kunde spaeter erneut, kommt der Fall
+     * von selbst zurueck.
+     */
+    fallMarkieren({ schluessel, grund = null } = {}, { benutzer = null } = {}) {
+      const dir = privatDirPath || privatDir();
+      if (!schluessel) throw new ApiError(400, 'Kein Fall angegeben');
+      if (grund !== null && !FALL_GRUND.includes(grund)) throw new ApiError(400, `Unbekannter Grund: ${grund}`);
+      let bisPunkt = null;
+      if (grund) {
+        const aktuell = this.kundenFaelle?.();
+        const alle = [...(aktuell?.faelle ?? []), ...(aktuell?.ausgeblendet ?? [])];
+        bisPunkt = juengsterPunkt(alle.find(f => f.schluessel === schluessel));
+      }
+      const ergebnis = setzeFallmarke(fallmarkenPfad(dir), schluessel, {
+        grund, bisPunkt, von: benutzer?.name || benutzer?.kuerzel || 'Inhaber',
+      });
+      merke(benutzer, null, 'Fall markiert', `${schluessel}: ${grund || 'zurückgenommen'}`);
+      return { ok: true, ...ergebnis };
     },
 
     /** Angebote/Entwuerfe (DraftOrder) - Mass-/Verlegeangebote, die noch keine Bestellung sind. */

@@ -576,6 +576,8 @@ table.tasks tr.in-group td:first-child { padding-left: 28px; }
 .fall .card-head h3 { display: flex; align-items: baseline; gap: 8px; }
 .fall-sofort { border-left: 3px solid var(--crit); }
 .fall-punkte { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+/* Knopfzeile der Fallkarte. Am Handy umbrechen statt herauslaufen. */
+.fall-aktionen { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .fall-punkt { padding: 10px 12px; background: var(--surface-2); border-radius: var(--radius); display: flex; flex-direction: column; gap: 3px; }
 /* Hier steht im Etikett ein ganzer Satz ("Beim Lieferanten bestellen - bezahlt,
    noch nichts bestellt"), kein kurzes Wort. Mit dem nowrap aus .badge wird es
